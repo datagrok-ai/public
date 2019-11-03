@@ -1,0 +1,7 @@
+{
+  "name": "Sequence",
+  "version": "0.1",
+  "fullName": "Sequence",
+  "description": "Support for DNA sequences",
+  "sources": ["ntseq/ntseq.js", "feature-viewer/feature-viewer.bundle.js", "msa/msa.min.gz.js"]
+}

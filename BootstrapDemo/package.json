@@ -1,0 +1,12 @@
+{
+  "name": "BootstrapDemo",
+  "version": "1",
+  "description": "BootstrapDemo package",
+  "sources": [
+    "vendors/@coreui/icons/css/coreui-icons.min.css",
+    "vendors/flag-icon-css/css/flag-icon.min.css",
+    "vendors/font-awesome/css/font-awesome.min.css",
+    "vendors/simple-line-icons/css/simple-line-icons.css",
+    "css/style.css",
+    "vendors/pace-progress/css/pace.min.css"]
+}

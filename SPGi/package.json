@@ -1,0 +1,9 @@
+{
+  "name": "SPGi",
+  "version": "0.4",
+  "fullName": "SPGi",
+  "description": "SPGi projects views",
+  "sources": [
+    "css/spgi.css"
+  ]
+}

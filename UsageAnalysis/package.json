@@ -1,0 +1,9 @@
+{
+  "name": "UsageAnalysis",
+  "version": "0.1",
+  "fullName": "Usage Analysis",
+  "description": "Usage Analysis System",
+  "sources": [
+    "css/usage_analysis.css"
+  ]
+}

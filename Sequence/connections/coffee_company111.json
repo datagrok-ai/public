@@ -1,0 +1,11 @@
+{
+  "parameters": {
+    "server": "$DEMO_DB_SERVER",
+    "port": 5432,
+    "db": "starbucks",
+    "login": "starbucks",
+    "password": "starbucks"
+  },
+  "dataSource": "PostgreSQL",
+  "description": "343243243243243"
+}
