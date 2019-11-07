@@ -1,0 +1,8 @@
+{
+  "name": "Blast",
+  "type": "Python web service",
+  "version": "0.1",
+  "fullName": "Blast",
+  "description": "BLAST service",
+  "start": "python blast.py"
+}

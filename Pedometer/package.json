@@ -1,0 +1,8 @@
+{
+  "name": "Pedometer",
+  "version": "0.1",
+  "fullName": "Pedometer",
+  "description": "Pedometer for accelerometer signals",
+  "sources": [
+  ]
+}
