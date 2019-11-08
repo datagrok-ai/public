@@ -22,7 +22,7 @@ class PedometerPackage extends GrokPackage {
         let sampleRate = 1.0 / (time.get(1) - time.get(0));
         viewer.root.appendChild(ui.divText('Sample rate: ' + sampleRate.toString() + ' Hz'));
 
-        gr.callFunc('Demo:PythonScripts:DetectSteps', {
+        gr.callFunc('Pedometer:DetectSteps', {
             "accel": accel.d,
             "x": x.name,
             "y": y.name,
