@@ -1,0 +1,6 @@
+# Git
+*.orig
+
+# IDE files
+.idea
+*.iml
