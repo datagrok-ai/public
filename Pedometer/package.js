@@ -15,16 +15,40 @@ class PedometerPackage extends GrokPackage {
     pedometer(accel, x, y, z) {
         let view = gr.getTableView(accel.name);
 
-        let viewer = view.markup({content: ''});
-        let sampleRate = ui.intInput('Sample rate, Hz', 32);
-        viewer.root.appendChild(ui.inputs([sampleRate]));
+        let viewer = view.markup();
+        while (viewer.root.firstChild)
+            viewer.root.removeChild(viewer.root.firstChild);
+        let time = accel.col('time');
+        let sampleRate = 1.0 / (time.get(1) - time.get(0));
+        viewer.root.appendChild(ui.divText('Sample rate: ' + sampleRate.toString() + ' Hz'));
 
-        gr.callFunc('Demo:PythonScripts:DetectSteps', {"accel": accel, "x": x, "y": y, "z": z, "sample_rate": sampleRate.value})
+        gr.callFunc('Demo:PythonScripts:DetectSteps', {
+            "accel": accel.d,
+            "x": x.name,
+            "y": y.name,
+            "z": z.name,
+            "sample_rate": sampleRate
+        }, true)
             .then(result => {
+                let steps = accel.cols.add(new DataFrame(result).col('steps'), true);
                 view.lineChart({
-                    xColumnName: 'time',
-                    yColumnNames: [x.name, y.name, z.name, 'steps']
-                })
+                    xColumnName: time.name,
+                    yColumnNames: [x.name, y.name, z.name, steps.name]
+                });
+
+                let filtered = viewer.root.appendChild(ui.divText('Filtered steps: 0'));
+                let selected = viewer.root.appendChild(ui.divText('Selected steps: 0'));
+
+                function countSteps(index) {
+                    let count = 0;
+                    for (let n = -1; (n = index.findNext(n, true)) !== -1;)
+                        if (steps.get(n) === 1)
+                            count++;
+                    return count;
+                }
+
+                accel.onFilterChanged((_) => filtered.innerText = 'Filtered steps: ' + countSteps(accel.filter));
+                accel.onSelectionChanged((_) => selected.innerText = 'Selected steps: ' + countSteps(accel.selection));
             });
     }
 }
