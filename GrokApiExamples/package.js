@@ -4,8 +4,8 @@ class GrokApiExamplesPackage extends GrokPackage {
     init() { console.log('Examples package initialized.'); }
     
     //description: test
-    void test() {
+    test() {
        alert('Examples package test');
     }
-    	
+
 }
