@@ -41,19 +41,6 @@ class SPGiPackage extends GrokPackage {
         if (table.cols.contains('RowID'))
             table.cols.remove('RowID');
 
-        // DRCs ID to image URL
-        if (table.cols.contains('Competition assay Curve ID')) {
-            let col = table.col('Competition assay Curve ID')
-            for (let n = 0; n < col.length; n++) {
-                let value = col.get(n)
-                if (value !== '') {
-                    let idx = Math.abs(this.stringHashCode(value)) % 10;
-                    col.set(n, `${this.webRoot}images/drcs/drc000${idx}.png`);
-                }
-            }
-            col.semType = 'Image';
-        }
-
         // Pack units into tags
         let names = table.cols.names();
         const factors = {
@@ -119,6 +106,20 @@ class SPGiPackage extends GrokPackage {
     layoutMain(view) {
         let table = view.table;
         const floatNone = 2.6789344063684636e-34;
+
+        // DRCs ID to image URL
+        if (table.cols.contains('Competition assay Curve ID')) {
+            let col = table.col('Competition assay Curve ID')
+            for (let n = 0; n < col.length; n++) {
+                let value = col.get(n)
+                if (value !== '') {
+                    let idx = Math.abs(this.stringHashCode(value)) % 10;
+                    col.set(n, `${this.webRoot}images/drcs/drc000${idx}.png`);
+                }
+            }
+            col.semType = 'Image';
+        }
+
         view.grid.columns.setOrder([
             'Unique_Identifier',
             'Structure',
