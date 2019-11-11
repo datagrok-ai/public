@@ -12,14 +12,14 @@ class PedometerPackage extends GrokPackage {
     //input: column x {semType: Accelerometer-X} [X axis]
     //input: column y {semType: Accelerometer-Y} [Y axis]
     //input: column z {semType: Accelerometer-Z} [Z axis]
-    pedometer(accel, x, y, z) {
+    //input: column timeOffset {semType: Time-Offset} [Time offset column]
+    pedometer(accel, x, y, z, timeOffset) {
         let view = gr.getTableView(accel.name);
 
         let viewer = view.markup();
         while (viewer.root.firstChild)
             viewer.root.removeChild(viewer.root.firstChild);
-        let time = accel.col('time');
-        let sampleRate = 1.0 / (time.get(1) - time.get(0));
+        let sampleRate = 1.0 / (timeOffset.get(1) - timeOffset.get(0));
         viewer.root.appendChild(ui.divText('Sample rate: ' + sampleRate.toString() + ' Hz'));
 
         gr.callFunc('Pedometer:DetectSteps', {
@@ -32,7 +32,7 @@ class PedometerPackage extends GrokPackage {
             .then(result => {
                 let steps = accel.cols.add(new DataFrame(result).col('steps'), true);
                 view.lineChart({
-                    xColumnName: time.name,
+                    xColumnName: timeOffset.name,
                     yColumnNames: [x.name, y.name, z.name, steps.name]
                 });
 
