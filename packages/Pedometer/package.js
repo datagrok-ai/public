@@ -76,13 +76,13 @@ class PedometerPackage extends GrokPackage {
         return 1.0 / (timeOffset.get(1) - timeOffset.get(0));
     }
 
-    _detectSteps(accel, x, y, z, sampleRate, showProgress, callBack) {
+    _detectSteps(accel, x, y, z, sampleRate, showProgress, callback) {
         gr.callFunc('Pedometer:DetectSteps', {
             "accel": accel.d,
             "x": x.name,
             "y": y.name,
             "z": z.name,
             "sample_rate": sampleRate
-        }, showProgress).then(callBack);
+        }, showProgress).then(callback);
     }
 }
