@@ -208,7 +208,6 @@ class SPGiPackage extends GrokPackage {
     //output: widget result
     //condition: t.tags.contains("spgi")
     samplesAvailability(smiles) {
-        console.log("test");
         let table = gr.tableByName('Availability');
         let noInfo = new Widget(ui.divText('Information not available'));
         if (table.d === null)
