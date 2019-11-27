@@ -5,17 +5,16 @@ var properties = [name, age, height];
 
 let v = View.create();
 v.name = 'JS View';
-let content = ui.div();
 
-var inputName = InputBase.forProperty(name);
-var inputAge = InputBase.forProperty(age);
 var inputHeight = InputBase.forProperty(height);
 inputHeight.format = 'two digits after comma';
-var inputs = [inputName, inputAge, inputHeight];
-
-content.appendChild(inputName.root);
-content.appendChild(inputAge.root);
-content.appendChild(inputHeight.root);
+var inputs = [
+    InputBase.forProperty(name),
+    InputBase.forProperty(age),
+    inputHeight
+];
+let content = ui.div();
+content.appendChild(ui.inputs(inputs));
 
 for (let n = 0; n < inputs.length; n++) {
     let input = inputs[n];
@@ -24,6 +23,7 @@ for (let n = 0; n < inputs.length; n++) {
     input.nullable = false;
     input.fireChanged();
     let label = ui.divText('');
+    label.style.margin = '10px';
     content.appendChild(label);
     input.onChanged(function () {
         label.innerText = `${input.caption}: ${input.stringValue}`;
