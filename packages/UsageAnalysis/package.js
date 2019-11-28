@@ -13,9 +13,13 @@ class UsageAnalysisPackage extends GrokPackage {
             let acc = ui.accordion();
 
             function addPane(paneName, queryName, f) {
-                acc.addPane((paneName), () => {
+                acc.addPane(paneName, () => {
                     let host = ui.div([], 'usage-analysis-card');
-                    gr.query(queryName, {'date': date.value}).then((t) => host.appendChild(f(t)));
+                    host.appendChild(ui.loader());
+                    gr.query(queryName, {'date': date.value}).then((t) => {
+                        host.removeChild(host.firstChild);
+                        host.appendChild(f(t));
+                    });
                     return host;
                 });
             }
@@ -23,12 +27,16 @@ class UsageAnalysisPackage extends GrokPackage {
             while (results.firstChild)
                 results.removeChild(results.firstChild);
 
-            acc.addPane(('Users'), () => {
+            acc.addPane('Users', () => {
                 let host = ui.div();
+                host.appendChild(ui.loader());
                 gr.query('UniqueUsersByDate', {'date': date.value})
                     .then(t => {
                         let ids = Array.from(t.getCol('id').values());
-                        gr.dapi.getEntities(ids).then((users) => host.appendChild(ui.list(users)));
+                        gr.dapi.getEntities(ids).then((users) => {
+                            host.removeChild(host.firstChild);
+                            host.appendChild(ui.list(users));
+                        });
                     });
                 return host;
             });
