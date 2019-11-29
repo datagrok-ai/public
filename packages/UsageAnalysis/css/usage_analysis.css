@@ -2,3 +2,32 @@
     width: 100%;
     height: 400px;
 }
+
+.usage-analysis-date {
+    width: 100%;
+    padding: 0px 10px 0px 10px;
+    margin-bottom: 6px;
+}
+
+.usage-analysis-date label {
+    margin-right: 10px;
+}
+
+.usage-analysis-date input {
+    background-color: var(--warm-grey-1);
+}
+
+.usage-analysis-users {
+    width: 100%;
+    line-height: 35px;
+    padding: 0px 10px 0px 10px;
+}
+
+.usage-analysis-users-title {
+    margin-right: 10px;
+}
+
+.usage-analysis-users-plus {
+    margin-right: 6px;
+}
+

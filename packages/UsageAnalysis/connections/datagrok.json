@@ -1,0 +1,13 @@
+{
+  "#type": "DataConnection",
+  "friendlyName": "datagrok",
+  "parameters": {
+    "server": "localhost:5432",
+    "db": "datagrok",
+    "login": "datagrok",
+    "password": "123"
+  },
+  "dataSource": "PostgreSQL",
+  "description": "DataGrok service db",
+  "tags": ["service"]
+}

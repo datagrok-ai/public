@@ -3,8 +3,7 @@ let age = Property.int('Age', null, null, 30);
 let height = Property.float('Height', null, null, 175.5);
 var properties = [name, age, height];
 
-let v = View.create();
-v.name = 'JS View';
+let v = gr.newView('demo: inputs extended');
 
 var inputHeight = InputBase.forProperty(height);
 inputHeight.format = 'two digits after comma';
