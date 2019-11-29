@@ -18,8 +18,6 @@ class UsageAnalysisPackage extends GrokPackage {
         let addUser = ui.div([ui.iconFA('plus', () => {
             gr.dapi.users.list().then((allUsers) => {
                 Menu.popup()
-                    .item('Show info', () => gr.balloon.info('Info'))
-                    .separator()
                     .items(allUsers.map(u => u.login), (item) => users.addTag(item))
                     .show();
             });
