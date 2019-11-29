@@ -3,7 +3,7 @@
 var demog = gr.testData('demog', 5000);
 var view = gr.newView('stats');
 
-for (var col of demog.cols.toList()) {
+for (var col of demog.columns.toList()) {
     view.append(ui.tableFromMap({
         name: col.name,
         totalCount: col.stats.totalCount,

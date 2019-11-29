@@ -27,8 +27,8 @@ class PedometerPackageDetectors extends GrokPackage {
     //input: dataframe table
     //output: bool result
     stepCounterCondition(table) {
-        if (table.cols.length >= 4) {
-            let columns = table.cols.toList();
+        if (table.columns.length >= 4) {
+            let columns = table.columns.toList();
 
             function checkSemType(semType) {
                 return columns.some((c) => c.semType === semType)

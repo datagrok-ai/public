@@ -106,7 +106,7 @@ _seq = new SequencePackage(null);
 class SequenceViewer extends JsViewer {
     onFrameAttached(dataFrameHandle) {
         this.dataFrame = new DataFrame(dataFrameHandle);
-        let seqCol = this.dataFrame.cols.toList().find((c) => c.semType == 'nucleotides');
+        let seqCol = this.dataFrame.columns.toList().find((c) => c.semType == 'nucleotides');
         let fasta = _seq.toFasta(Array.from(seqCol.values()), null);
         let seqs = msa.io.fasta.parse(fasta);
 

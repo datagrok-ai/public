@@ -14,5 +14,5 @@ t2.rows.removeAt(10, 3, false);
 t2.set('weight', 2, 80.5);
 gr.addTableView(t2);
 
-let values = t1.cols.names().filter(name => name !== 'subj');
+let values = t1.columns.names().filter(name => name !== 'subj');
 gr.compareTables(t1, t2, ['subj'], ['subj'], values, values);

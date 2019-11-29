@@ -10,11 +10,11 @@ var tickers = new Map([
 
 var df = DataFrame.create(0);
 df.name = 'stocks';
-df.cols.addNew('symbol', TYPE_STRING);
-df.cols.addNew('time', TYPE_DATE_TIME);
-df.cols.addNew('price', TYPE_FLOAT);
-df.cols.addNew('volume', TYPE_FLOAT);
-df.cols.addNew('up', TYPE_STRING);
+df.columns.addNew('symbol', TYPE_STRING);
+df.columns.addNew('time', TYPE_DATE_TIME);
+df.columns.addNew('price', TYPE_FLOAT);
+df.columns.addNew('volume', TYPE_FLOAT);
+df.columns.addNew('up', TYPE_STRING);
 
 var addMilliseconds = function (time, ms) {
     time.setMilliseconds(time.getMilliseconds() + ms);

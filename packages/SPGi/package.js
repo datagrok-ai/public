@@ -38,23 +38,23 @@ class SPGiPackage extends GrokPackage {
     //input: dataframe table
     prepare(table) {
         // Remove dummy columns
-        if (table.cols.contains('RowID'))
-            table.cols.remove('RowID');
+        if (table.columns.contains('RowID'))
+            table.columns.remove('RowID');
 
         // Pack units into tags
-        let names = table.cols.names();
+        let names = table.columns.names();
         const factors = {
             'm': 1e-3,
             'u': 1e-6,
             'n': 1e-9,
             'p': 1e-12
         }
-        for (let n = 0; n < table.cols.length; n++) {
+        for (let n = 0; n < table.columns.length; n++) {
             let name = names[n];
-            for (let m = n + 1; m < table.cols.length; m++) {
+            for (let m = n + 1; m < table.columns.length; m++) {
                 if (names[m].startsWith(name) && names[m] === `${name} Unit`) {
-                    let col = table.cols.byName(name);
-                    let units = table.cols.byName(names[m]);
+                    let col = table.columns.byName(name);
+                    let units = table.columns.byName(names[m]);
                     if (units.categories.filter((c) => c !== '').length === 1) {
                         let unit = '';
                         for (let r = 0; r < col.length; r++) {
@@ -71,15 +71,15 @@ class SPGiPackage extends GrokPackage {
                             }
                         }
                         col.setTag('units', unit);
-                        table.cols.remove(names[m]);
+                        table.columns.remove(names[m]);
                     }
                 }
             }
         }
 
         // Date, multiline strings
-        table.cols.names().forEach(function (name) {
-            let col = table.cols.byName(name);
+        table.columns.names().forEach(function (name) {
+            let col = table.columns.byName(name);
 
             if (name.endsWith('Date')) {
                 if (col.type === TYPE_DATE_TIME)
@@ -108,7 +108,7 @@ class SPGiPackage extends GrokPackage {
         const floatNone = 2.6789344063684636e-34;
 
         // DRCs ID to image URL
-        if (table.cols.contains('Competition assay Curve ID')) {
+        if (table.columns.contains('Competition assay Curve ID')) {
             let col = table.col('Competition assay Curve ID')
             for (let n = 0; n < col.length; n++) {
                 let value = col.get(n)
@@ -159,7 +159,7 @@ class SPGiPackage extends GrokPackage {
             gc.style.backColor = this.resolveBackColor(gc.gridColumn.name, gc.cell.value);
         }.bind(this));
 
-        let col = table.cols.byName('CSF_Scaffold');
+        let col = table.columns.byName('CSF_Scaffold');
         if (col.semType !== 'Molecule') {
             const scaffoldsMap = new Map([
                 ['Scaffold 1', 'C1CCNC1'],
@@ -234,7 +234,7 @@ class SPGiPackage extends GrokPackage {
         for (let n = 0; n < available.rowCount; n++)
             if (unit.get(n) !== '')
                 unit.set(n, `${amount.get(n)} ${unit.get(n)}`);
-        available.cols.remove('Amount');
+        available.columns.remove('Amount');
         unit.name = 'Amount';
         available.selection.setAll(false);
         let grid = Grid.create(available);

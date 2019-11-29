@@ -7,4 +7,4 @@ view.grid.columns.setVisible(['age', 'sex', 'race']);
 
 // or hiding by adding '~' prefix to column name
 
-table.cols.byName('sex').name = '~sex';
+table.columns.byName('sex').name = '~sex';
