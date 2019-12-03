@@ -45,6 +45,8 @@ class UsageAnalysisPackage extends GrokPackage {
                         params['users'] = selectedUsers;
                     }
                     gr.query('UsageAnalysis:' + queryName, params).then((t) => {
+                        if (paneName === 'Errors')
+                            gr.detectSemanticTypes(t);
                         host.removeChild(host.firstChild);
                         host.appendChild(f(t));
                     });
@@ -97,7 +99,6 @@ class UsageAnalysisPackage extends GrokPackage {
         ]);
     }
 
-
     debounce(fn, time) {
         let timeout;
         return function() {
@@ -105,5 +106,23 @@ class UsageAnalysisPackage extends GrokPackage {
             clearTimeout(timeout);
             timeout = setTimeout(functionCall, time);
         }
+    }
+
+
+    //name: Create JIRA ticket
+    //description: Creates JIRA ticket using current error log
+    //tags: panel, widgets
+    //input: string msg {semType: ErrorMessage}
+    //output: widget result
+    //condition: true
+    createJiraTicket(msg) {
+        //let stackTrace = columns.find((c) => c.semType === 'ErrorStackTrace');
+        let root = ui.div();
+
+        let button = ui.bigButton('CREATE');
+        button.style.marginBottom = '6px';
+        root.appendChild(button);
+
+        return new Widget(root);
     }
 }
