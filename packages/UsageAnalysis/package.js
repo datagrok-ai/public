@@ -116,11 +116,33 @@ class UsageAnalysisPackage extends GrokPackage {
     //output: widget result
     //condition: true
     createJiraTicket(msg) {
-        //let stackTrace = columns.find((c) => c.semType === 'ErrorStackTrace');
         let root = ui.div();
 
-        let button = ui.bigButton('CREATE');
-        button.style.marginBottom = '6px';
+        let summary = ui.stringInput('Summary', '');
+        let description = ui.stringInput('Description', msg);
+
+        let button = ui.bigButton('CREATE', () => {
+            gr.query('Vnerozin:JiraCreateIssue', {
+                'createRequest': JSON.stringify({
+                    "fields": {
+                        "project": {
+                            "key": "GROK"
+                        },
+                        "summary": summary.value,
+                        "description": description.value,
+                        "issuetype": {
+                            "name": "Bug"
+                        }
+                    }
+                }),
+                'updateHistory': false,
+            }).then((t) => {
+                gr.balloon.info('Created');
+            });
+        });
+        button.style.marginTop = '12px';
+
+        root.appendChild(ui.inputs([summary, description]));
         root.appendChild(button);
 
         return new Widget(root);
