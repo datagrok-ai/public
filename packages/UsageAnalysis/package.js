@@ -85,19 +85,45 @@ class UsageAnalysisPackage extends GrokPackage {
 
         showUsage();
 
-        view.root.appendChild(results);
-
         let usersLabel = ui.div(null, 'usage-analysis-users-title');
         usersLabel.innerText = 'Users';
-        view.toolbox = ui.divV([
-            date.root,
-            ui.divV([
-                ui.divH([usersLabel, addUser]),
-                users.root
-            ], 'usage-analysis-users')
 
-        ]);
+        let usersSelection = ui.divV([
+            ui.divH([usersLabel, addUser]),
+            users.root
+        ], 'usage-analysis-users');
+        usersSelection.style.marginBottom = '12px';
+
+        let accToolbox = ui.accordion();
+        accToolbox.addPane('Filters', () => ui.divV([
+            date.root,
+            usersSelection
+        ]), true);
+        accToolbox.addPane(('Layouts'), () => {
+            let link = ui.divText('Summary');
+            link.classList.add('d4-link-label');
+            return link;
+        }, true);
+
+        view.root.appendChild(results);
+        view.toolbox = accToolbox.root;
     }
+
+    /*
+        // Aggregation
+        gr.scriptSync('ExtractValue("events", "utc_timestamp", "date")');
+        gr.scriptSync('SplitByRegExp("events", "event_info_json", "\\\"NumStructures\\\"\\: (\\d*)\\,")');
+        gr.scriptSync('Aggregate("events", pivots = [], aggregations = ["sum(r)"], groupByFields = ["date(utc_timestamp)"])');
+
+        var t = gr.getTableView('result').table;
+        var r = t.cols.byName('sum(r)');
+        var col = t.cols.addNew('sum', 'int');
+        var sum = 0;
+        for (let i = 0; i < t.rowCount; i++) {
+          if (!r.isNone(i))
+              col.set(i, sum += r.get(i));
+        }
+     */
 
     debounce(fn, time) {
         let timeout;
