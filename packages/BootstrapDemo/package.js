@@ -1,11 +1,5 @@
 class BootstrapDemoPackage extends GrokPackage {
 
-    // Guaranteed to get called exactly once before the execution of any function below
-    init() {
-        console.log('BootstrapDemo package initialized.');
-    }
-
-
     //name: Custom UI demo
     //tags: app
     //meta.icon-path: coreui.png

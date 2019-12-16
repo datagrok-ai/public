@@ -2,7 +2,10 @@
 var _initRDKitResolve = null;
 
 function initRDKit() {
-    return new Promise((resolve, reject) => _initRDKitResolve = resolve);
+    if (_initRDKitResolve == null)
+        return new Promise((resolve, reject) => _initRDKitResolve = resolve);
+    else
+        return Promise.resolve(null);
 }
 
 var Module = {

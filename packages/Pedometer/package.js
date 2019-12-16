@@ -1,13 +1,5 @@
 class PedometerPackage extends GrokPackage {
 
-    init() {
-        console.log('Pedometer package initialized.');
-    }
-
-    //tags: app
-    startApp() {
-    }
-
     //input: dataframe accel [Accelerometry data table]
     //input: column x {semType: Accelerometer-X} [X axis]
     //input: column y {semType: Accelerometer-Y} [Y axis]

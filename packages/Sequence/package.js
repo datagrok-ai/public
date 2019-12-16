@@ -1,7 +1,7 @@
 class SequencePackage extends GrokPackage {
 
     // Guaranteed to get called exactly once before the execution of any function below
-    init() {
+    async init() {
         // console.log('Sequence package initialized.');
         // gr.registerViewer('SequenceViewer', 'SequenceViewer', () => new SequenceViewer());
     }

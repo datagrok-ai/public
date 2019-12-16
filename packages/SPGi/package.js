@@ -1,10 +1,5 @@
 class SPGiPackage extends GrokPackage {
 
-    init() {
-        console.log('SPGi package initialized.');
-    }
-
-
     //tags: app
     startApp(context) {
         let view = View.create();

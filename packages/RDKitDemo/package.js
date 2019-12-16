@@ -1,5 +1,11 @@
 class RDKitDemoPackage extends GrokPackage {
 
+    async init() {
+        console.log('async init started');
+        await initRDKit();
+        console.log('async init finished');
+    }
+
     //name: RDKitInfo
     //tags: panel, widgets
     //input: string smiles {semType: Molecule}
@@ -24,9 +30,16 @@ class RDKitDemoPackage extends GrokPackage {
     }
 
 
+    //name: AsyncTest
+    //output: string userInfo
+    async asyncTest() {
+        var userInfo = await fetch('https://api.github.com/users/skalkin');
+        return userInfo;
+    }
+
     //name: Test
     async test() {
-        await initRDKit();
+        //await initRDKit();
 
         var mol = Module.get_mol("c1ccccc1O");
         var descrs = JSON.parse(mol.get_descriptors());
