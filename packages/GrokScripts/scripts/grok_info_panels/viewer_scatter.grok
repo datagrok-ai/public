@@ -1,0 +1,10 @@
+#name: Scatter Plot
+#description: Panel that contains an interactive scatter plot
+#language: grok
+#tags: panel
+#input: dataframe table
+#condition: table.name == "demog" && table.columns.containsAll(["height", "weight", "age", "sex"])
+#output: viewer plot
+
+plot = table.ScatterPlot("height", "weight", "age", "sex")
+plot.showRegressionLine = true

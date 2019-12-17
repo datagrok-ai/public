@@ -1,0 +1,11 @@
+#name: Harmonize county maps
+#description: Renames counties so that ShapeViewer would understand them
+#language: grok
+#tags: context-action
+#sample: geo/us_2016_election_by_county.csv
+#condition: col.name == "county_name"
+#input: column col
+
+ReplaceValues(col.table.name, [col.name], " city", "", false, false, false, false, true)
+ReplaceValues(col.table.name, [col.name], " County", "", false, false, false, false, true)
+ReplaceValues(col.table.name, [col.name], " Parish", "", false, false, false, false, true)

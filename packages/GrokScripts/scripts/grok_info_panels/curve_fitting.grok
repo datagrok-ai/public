@@ -1,0 +1,10 @@
+#name: Fit
+#description: Curve fitting example
+#language: grok
+#tags: panel
+#sample: acidiq.csv
+#input: dataframe table
+#output: graphics pic
+#condition: "acidiq" == table.name
+
+pic = Rscripts:Fittingdrc("acidiq", "dose", "rgr")

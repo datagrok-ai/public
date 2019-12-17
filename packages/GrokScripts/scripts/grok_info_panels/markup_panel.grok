@@ -1,0 +1,9 @@
+#name: Markup demo
+#description: Panel that contains a markup
+#language: grok
+#tags: panel
+#condition: true
+#input: column col {type:numerical}
+#output: string markup {action:markup}
+
+markup = "Current time: #{date}"

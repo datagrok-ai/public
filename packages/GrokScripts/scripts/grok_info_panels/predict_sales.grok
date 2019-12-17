@@ -1,0 +1,14 @@
+#name: Predict sales
+#description: Predicting yearly sales of the franchise store by using previously trained predictive model
+#language: grok
+#tags: panel, prediction
+#input: dataframe table
+#input: column address {semType: Street Address} [Column with addresses]
+#output: dataframe predictions {action: join(table)}
+#condition: true
+featureNames = ["population_density", "us_population_eighteen_to_twenty_four_years_old", "us_population_low_income", "us_housing_units_one_person", "us_population_bachelors_degree"]
+AddressToCoordinates(table, address)
+CoordinatesToStatistics(table, "latitude", "longitude")
+MissingValuesImputation(table, featureNames, featureNames, 5)
+ApplyModel(Demo:PredictSales, table, showProgress=false)
+predictions = ExtractColumns(table, ["value"])

@@ -1,0 +1,10 @@
+name: scalogram
+
+channels:
+  - conda-forge
+
+dependencies:
+  - python=2.7
+  - numpy
+  - obspy
+  - matplotlib

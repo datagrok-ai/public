@@ -1,0 +1,14 @@
+#name: Column stats
+#description: Uses column as an input, returns multiple values
+#language: grok
+#tags: panel
+#sample: acidiq.csv
+#condition: col.name == "AGE"
+#input: column col
+#output: double min
+#output: double max
+#output: double avg
+
+min = col.stats.min
+max = col.stats.max
+avg = col.stats.avg

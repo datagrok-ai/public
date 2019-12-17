@@ -1,0 +1,8 @@
+#name: GrokDataTest
+#language: grok
+#tags: demo
+#output: double result [Sin(x)]
+
+result = TestData("cars")
+DeleteColumns(result, ["model", "cylinders"])
+DeleteRows(result, CellEquals("make", "BMW"))

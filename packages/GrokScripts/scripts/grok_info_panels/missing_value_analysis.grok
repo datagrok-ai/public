@@ -1,0 +1,9 @@
+#name: Missing values
+#description: Shows number of missing values, if any
+#language: grok
+#tags: panel
+#input: column signal {type:numerical}
+#condition: t != null && t.name == "demog" && t.rowCount < 100000 && signal.stats.nulls > 0
+#output: int missingValueCount
+
+missingValueCount = signal.stats.nulls

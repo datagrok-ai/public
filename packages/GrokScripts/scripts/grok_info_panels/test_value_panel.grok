@@ -1,0 +1,10 @@
+#name: Column summary
+#description: Basic statistics
+#language: grok
+#tags: panel
+#condition: true
+#input: column col {type:numerical}
+#output: double avg
+
+avg = col.stats.avg
+
