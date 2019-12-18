@@ -1,4 +1,4 @@
-// Master-detail table linkagefeature.
+// Master-detail table linking feature.
 //
 // "linkTables" links two tables based on the key columns. The last parameter specifies what
 // should be synchronized (current record, filter, selection, and mouse-over record),
