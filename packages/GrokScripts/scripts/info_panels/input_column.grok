@@ -1,7 +1,7 @@
 #name: Column stats
 #description: Uses column as an input, returns multiple values
 #language: grok
-#tags: panel
+#tags: demo, panel
 #sample: acidiq.csv
 #condition: col.name == "AGE"
 #input: column col

@@ -1,7 +1,7 @@
 #name: Table input
 #description: Summary of the "demog" table
 #language: grok
-#tags: panel
+#tags: demo, panel
 #sample: demog.csv
 #condition: "demog" == table.name
 #input: dataframe table

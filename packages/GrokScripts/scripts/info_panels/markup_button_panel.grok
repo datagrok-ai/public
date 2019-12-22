@@ -1,7 +1,7 @@
 #name: Markup Button Demo
 #description: Panel that contains a markup button
 #language: grok
-#tags: panel
+#tags: demo, panel
 #condition: table.name == "demog"
 #input: dataframe table
 #output: string markup {action:markup}

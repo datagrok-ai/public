@@ -1,7 +1,7 @@
 #name: Spectrogram
 #description: Panel that contains graphics produced by the R script
 #language: grok
-#tags: panel,dsp
+#tags: demo, panel,dsp
 #input: column signal {type:numerical}
 #output: graphics pic
 #condition: "F3" == signal.name

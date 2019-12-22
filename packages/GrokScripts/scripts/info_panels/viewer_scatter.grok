@@ -1,7 +1,7 @@
 #name: Scatter Plot
 #description: Panel that contains an interactive scatter plot
 #language: grok
-#tags: panel
+#tags: demo, panel
 #input: dataframe table
 #condition: table.name == "demog" && table.columns.containsAll(["height", "weight", "age", "sex"])
 #output: viewer plot

@@ -1,7 +1,7 @@
 #name: Fit
 #description: Curve fitting example
 #language: grok
-#tags: panel
+#tags: demo, panel
 #sample: acidiq.csv
 #input: dataframe table
 #output: graphics pic

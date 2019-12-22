@@ -1,7 +1,7 @@
 #name: Histogram
 #description: Panel that contains an interactive histogram
 #language: grok
-#tags: panel
+#tags: demo, panel
 #input: column signal {type:numerical}
 #condition: signal.name == "F3"
 #output: viewer hist

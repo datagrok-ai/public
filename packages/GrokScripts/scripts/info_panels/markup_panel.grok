@@ -1,7 +1,7 @@
 #name: Markup demo
 #description: Panel that contains a markup
 #language: grok
-#tags: panel
+#tags: demo, panel
 #condition: true
 #input: column col {type:numerical}
 #output: string markup {action:markup}

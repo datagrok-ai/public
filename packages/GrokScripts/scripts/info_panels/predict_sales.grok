@@ -1,7 +1,7 @@
 #name: Predict sales
 #description: Predicting yearly sales of the franchise store by using previously trained predictive model
 #language: grok
-#tags: panel, prediction
+#tags: demo, panel, prediction
 #input: dataframe table
 #input: column address {semType: Street Address} [Column with addresses]
 #output: dataframe predictions {action: join(table)}
