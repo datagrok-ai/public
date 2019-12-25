@@ -27,7 +27,7 @@
 | Ctrl+Page Up          | Jump to first row    |
 | Ctrl+Page Down        | Jump to last row     |
 | Home                  | Jump to first column |
-| End                   | Jump to last row     |
+| End                   | Jump to last column  |
 
 ### Sorting
 
