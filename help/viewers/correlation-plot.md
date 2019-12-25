@@ -1,0 +1,26 @@
+<!-- TITLE: Correlation Plot -->
+<!-- SUBTITLE: -->
+
+# Correlation Plot
+
+A quick way to assess correlations between all columns at once. Cells are color-coded by the
+[Pearsson correlation coefficient](https://en.wikipedia.org/wiki/Pearson_product-moment_correlation_coefficient). 
+Histograms along the diagonal show the corresponding distribution. Hover over the cell to see the corresponding 
+scatter plot. The grid is sortable. Select columns in the view by selecting corresponding rows.
+
+General:
+
+| []()                |              |
+|---------------------|--------------|
+| Right click         | Context menu |
+| Header double-click | Sort column  |
+
+
+![Correlation Plot](../uploads/gifs/correlation-plot.gif "correlation plot")
+
+
+See also: 
+  
+  * [Viewers](../viewers/viewers.md)
+  * [Table View](../views/table-view.md)
+  * [JS API: Correlation plot](https://public.datagrok.ai/js/samples/ui/viewers/corr-plot)

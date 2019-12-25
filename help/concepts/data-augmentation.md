@@ -1,0 +1,56 @@
+<!-- TITLE: Data Augmentation -->
+<!-- SUBTITLE: -->
+
+# Data Augmentation
+
+_Data augmentation adds value to base data by adding information derived from internal and external 
+sources within an enterprise. Data is one of the core assets for an enterprise, making data management 
+essential. Data augmentation can help reduce the manual effort required to developed meaningful 
+information and insight of business data, as well as significantly enhance data quality._
+
+One of the Datagrok's goals is to provide the relevant information to the user whenever he needs it.
+In many cases, that involves presenting additional augmented data without the explicit request. Here are 
+few examples of the platform going an extra mile, and delivering these simple insights:
+ * Showing quick data summary in the column tooltip
+   * Histogram
+   * Basic statistics
+   * Highlighting missing value
+
+## Suggesting applicable view and viewer layouts
+Whenever you open a table, the platform analyzes its structure and determines whether any of the
+previously used layouts (not necessarily by you) can be used to visualize that dataset. It then [suggests
+these layouts to you](../entities/view-layout.md#layout-suggestions), even showing the preview of how 
+the data would look like if visualized with that layout.
+
+## Suggesting applicable predictive models
+Whenever a table is open, the platform [suggests predictive models](self-learning-platform.md)
+that can be applied to the table. Then you can predict the outcome in one click.
+    
+## Suggesting applicable actions
+Using the repository of [functions](../entities/function.md) (over 200+ functions), historical activity,
+and the structure of the current table, the system uses AI techniques to suggest actions that are likely to 
+be relevant at the moment. For instance, if it finds a column that looks like street address, it will suggest
+to convert it to geographical positions by doing the geo-coding and adding two columns (longitude, latitude).
+Or, it may suggest to enrich the current dataset by extracting 50+ statistics associated with the location
+(using US census data available on the platform).
+
+## Manual augmentation
+The suggestion mechanism is quite powerful, but oftentimes you know exactly how you want to augment the data. 
+To get the external data on demand, use an extensive collection of 
+[data connectors](../entities/data-connection.md). Use parameterized queries to retrieve external data for each 
+record (or do it on demand whenever the current record changes), and visualize the results with 
+[Markup Viewer](../viewers/markup.md) for complex data, or [Form](../viewers/form.md) for scalars.
+
+## Info panels
+[Info panels](info-panels.md) provide additional information about the 
+current context (which can be a table, a column, or pretty much
+any other [object](../entities/entities.md)). Info panels are meant to be 
+easily developed by the users of the platform, and shared with other users. 
+You can use all features of the Grok platform, such as scripting, data 
+querying and transformation pipeline, user-defined functions,
+markup, viewers, predictive models.
+
+See also:
+* [Info panels](info-panels.md)
+* [Self-learning platform]()
+* [Predictive modeling](../plugins/predictive-modeling.md)

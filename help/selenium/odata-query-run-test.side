@@ -1,0 +1,186 @@
+{
+  "id": "b390008b-1b39-4405-bcfd-6b03f9f4d568",
+  "version": "2.0",
+  "name": "odata-query-run-test",
+  "url": "https://dev.datagrok.ai/",
+  "tests": [{
+    "id": "1e1a7755-4e26-458c-9783-60348afe35cf",
+    "name": "odata-query-run-test",
+    "commands": [{
+      "id": "8ff604b9-81db-4083-8663-4b119b7492f9",
+      "comment": "",
+      "command": "open",
+      "target": "/datasets?selenium=true&q=",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "2e74e989-5df1-447f-bf7b-163871b24921",
+      "comment": "",
+      "command": "type",
+      "target": "xpath=//div[@id='signup-login-fields']/div/div/input",
+      "targets": [
+        ["id=password", "id"],
+        ["css=#password", "css:finder"],
+        ["xpath=//input[@id='password']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/input[2]", "xpath:idRelative"],
+        ["xpath=//input[2]", "xpath:position"]
+      ],
+      "value": "selenium"
+    }, {
+      "id": "d9132049-31ef-45e7-bd38-43ed931a9bc2",
+      "comment": "",
+      "command": "type",
+      "target": "xpath=//div[@id='signup-login-fields']/div/div[2]/input",
+      "targets": [
+        ["id=password", "id"],
+        ["css=#password", "css:finder"],
+        ["xpath=//input[@id='password']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/input[2]", "xpath:idRelative"],
+        ["xpath=//input[2]", "xpath:position"]
+      ],
+      "value": "selenium"
+    }, {
+      "id": "c06f8d03-321e-40fa-bf29-25ec098103fc",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@id='signup-login-fields']/div[2]/button",
+      "targets": [
+        ["linkText=LOGIN", "linkText"],
+        ["css=a", "css:finder"],
+        ["xpath=//a[contains(text(),'LOGIN')]", "xpath:link"],
+        ["xpath=//div[@id='rootDiv']/div/a", "xpath:idRelative"],
+        ["xpath=//a[contains(@href, '#')]", "xpath:href"],
+        ["xpath=//a", "xpath:position"],
+        ["xpath=//a[contains(.,'LOGIN')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "ab8f2726-12a0-40e3-ac90-4730f3344006",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "3c3c8e53-d62c-407e-8034-91ad1d7e0018",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//i[@name='icon-connect-to-data']",
+      "targets": [
+        ["css=.svg-connect-to-data", "css:finder"],
+        ["xpath=//i[@name='icon-connect-to-data']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[3]/div/i", "xpath:idRelative"],
+        ["xpath=//div[3]/div/i", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "ecfeff23-80f4-4bdb-b641-44e866fc451c",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "cb7c0554-da9a-4165-b3f6-0736619cdc6f",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='tree-expander-ODATA']",
+      "targets": [
+        ["css=.d4-tree-view-node-selected > .d4-tree-view-tri", "css:finder"],
+        ["xpath=//div[@name='tree-expander-ODATA']", "xpath:attributes"],
+        ["xpath=//div[@id='data-sources']/div/div[2]/div[16]/div/div", "xpath:idRelative"],
+        ["xpath=//div[16]/div/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "4b7b6ece-216a-4016-adc9-9ce05f0c452b",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='tree-expander-ODATA---services.odata.org']",
+      "targets": [
+        ["css=.d4-tree-view-group:nth-child(16) > .d4-tree-view-group-host > .d4-tree-view-group > .d4-tree-view-node > .d4-tree-view-tri", "css:finder"],
+        ["xpath=//div[@name='tree-expander-ODATA---services.odata.org']", "xpath:attributes"],
+        ["xpath=//div[@id='data-sources']/div/div[2]/div[16]/div[2]/div/div/div", "xpath:idRelative"],
+        ["xpath=//div[16]/div[2]/div/div/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "04a60a22-d25b-46b7-84b0-df4e7b097b48",
+      "comment": "",
+      "command": "doubleClick",
+      "target": "xpath=//div[@name='tree-ODATA---services.odata.org---Products']",
+      "targets": [
+        ["css=.d4-tree-view-node-selected", "css:finder"],
+        ["xpath=//div[@name='tree-ODATA---services.odata.org---Products']", "xpath:attributes"],
+        ["xpath=//div[@id='data-sources']/div/div[2]/div[16]/div[2]/div/div[2]/div/div", "xpath:idRelative"],
+        ["xpath=//div[16]/div[2]/div/div[2]/div/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "a7b8bfb7-ea4b-45e7-aa53-3c14d5ee60ab",
+      "comment": "",
+      "command": "pause",
+      "target": "3000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "a60088f3-a34c-49a4-a721-42b9189182a3",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "xpath=//div[@name='view-handle: Products']",
+      "targets": [
+        ["css=.tab-handle:nth-child(4)", "css:finder"],
+        ["xpath=//div[@name='view-handle: Products']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div[3]/div/div/div[2]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div[3]/div/div/div[2]", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "988f5e5a-d009-478a-9c15-33c6b29137ea",
+      "comment": "",
+      "command": "verifyElementNotPresent",
+      "target": "xpath=//i[@name='icon-exclamation-circle']",
+      "targets": [
+        ["css=.fa-exclamation-circle", "css:finder"],
+        ["xpath=//i[@name='icon-exclamation-circle']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/i", "xpath:idRelative"],
+        ["xpath=//div[2]/i", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "ea28217d-4ec8-4821-aa69-50ad4e1f5bac",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='tree-ODATA---services.odata.org']",
+      "targets": [
+        ["css=.d4-tree-view-group:nth-child(16) > .d4-tree-view-group-host > .d4-tree-view-group > .d4-tree-view-node", "css:finder"],
+        ["xpath=//div[@name='tree-ODATA---services.odata.org']", "xpath:attributes"],
+        ["xpath=//div[@id='data-sources']/div/div[2]/div[16]/div[2]/div/div", "xpath:idRelative"],
+        ["xpath=//div[16]/div[2]/div/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "9b139767-27a2-4504-9a05-505cbca06bdd",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='tree-ODATA---services.odata.org---Products']",
+      "targets": [
+        ["css=.d4-tree-view-node-selected", "css:finder"],
+        ["xpath=//div[@name='tree-ODATA---services.odata.org---Products']", "xpath:attributes"],
+        ["xpath=//div[@id='data-sources']/div/div[2]/div[16]/div[2]/div/div[2]/div/div", "xpath:idRelative"],
+        ["xpath=//div[16]/div[2]/div/div[2]/div/div", "xpath:position"]
+      ],
+      "value": ""
+    }]
+  }],
+  "suites": [{
+    "id": "ec967ec6-1191-47c4-9144-a537f982d65b",
+    "name": "Default Suite",
+    "persistSession": false,
+    "parallel": false,
+    "timeout": 300,
+    "tests": ["1e1a7755-4e26-458c-9783-60348afe35cf"]
+  }],
+  "urls": ["https://dev.datagrok.ai/"],
+  "plugins": []
+}

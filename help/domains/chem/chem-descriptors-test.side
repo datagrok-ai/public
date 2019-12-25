@@ -1,0 +1,343 @@
+{
+  "id": "9944c9b1-070f-41ab-8685-f5d63e72a95f",
+  "version": "2.0",
+  "name": "chem-descriptors-test",
+  "url": "https://dev.datagrok.ai",
+  "tests": [{
+    "id": "11989356-39f1-46f8-a411-51ada2017ee8",
+    "name": "chem-descriptors",
+    "commands": [{
+      "id": "16d51daa-b9f7-40a9-b0f5-d6ce2b4a16ef",
+      "comment": "",
+      "command": "open",
+      "target": "/datasets?selenium=true&q=",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "c8220308-f801-482e-89b3-d1f83328c66d",
+      "comment": "",
+      "command": "type",
+      "target": "xpath=//div[@id='signup-login-fields']/div/div/input",
+      "targets": [
+        ["id=login", "id"],
+        ["css=#login", "css:finder"],
+        ["xpath=//input[@id='login']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/input", "xpath:idRelative"],
+        ["xpath=//input", "xpath:position"]
+      ],
+      "value": "selenium"
+    }, {
+      "id": "a1cf8b68-5e8b-4d0b-aad2-16104e6dde11",
+      "comment": "",
+      "command": "type",
+      "target": "xpath=//div[@id='signup-login-fields']/div/div[2]/input",
+      "targets": [
+        ["id=password", "id"],
+        ["css=#password", "css:finder"],
+        ["xpath=//input[@id='password']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/input[2]", "xpath:idRelative"],
+        ["xpath=//input[2]", "xpath:position"]
+      ],
+      "value": "selenium"
+    }, {
+      "id": "c85cd56f-66b1-4618-84e8-4d1604549a1d",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@id='signup-login-fields']/div[2]/button",
+      "targets": [
+        ["linkText=LOGIN", "linkText"],
+        ["css=a", "css:finder"],
+        ["xpath=//a[contains(text(),'LOGIN')]", "xpath:link"],
+        ["xpath=//div[@id='rootDiv']/div/a", "xpath:idRelative"],
+        ["xpath=//a[contains(@href, '#')]", "xpath:href"],
+        ["xpath=//a", "xpath:position"],
+        ["xpath=//a[contains(.,'LOGIN')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "19ff038e-fbfb-4b74-9c26-0bf9323a701b",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "a2c37eaf-ed9b-4079-ac0f-ae169d2469d3",
+      "comment": "",
+      "command": "type",
+      "target": "xpath=(//input[@type='text'])[2]",
+      "targets": [
+        ["css=.type-ahead-input", "css:finder"],
+        ["xpath=(//input[@type='text'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='datasets']/div/div/div/div/input", "xpath:idRelative"],
+        ["xpath=//div/div/div/div/div/input", "xpath:position"]
+      ],
+      "value": "smiles"
+    }, {
+      "id": "a7c271cd-1c6d-46b1-ad56-752b3f1dcdf7",
+      "comment": "",
+      "command": "pause",
+      "target": "2000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "c3fe9ba2-4b3c-44d4-8561-ed1cdade3d73",
+      "comment": "",
+      "command": "doubleClick",
+      "target": "name=div-Smiles",
+      "targets": [
+        ["css=.grok-gallery-grid-item-wrapper:nth-child(2)", "css:finder"],
+        ["xpath=//div[@id='datasets']/div/div[2]/div[2]", "xpath:idRelative"],
+        ["xpath=//div[3]/div/div/div/div/div[2]/div[2]", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "e9e54b3d-03da-43f0-a08f-e2174e9507c6",
+      "comment": "",
+      "command": "pause",
+      "target": "3000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "b11b6ed8-acfc-4bf4-8be2-4520c1bf4bfb",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='view-handle: smiles']",
+      "targets": [
+        ["css=.tab-handle:nth-child(4)", "css:finder"],
+        ["xpath=//div[@name='view-handle: smiles']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
+        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "75ec7fd5-1a50-49c4-b7a2-c7f8d560cfd2",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=(//div[@name='div-section--Columns'])[2]",
+      "targets": [
+        ["css=.d4-accordion:nth-child(1) > .d4-accordion-pane:nth-child(4) > .d4-accordion-pane-header", "css:finder"],
+        ["xpath=(//div[@name='div-section--Columns'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div", "xpath:idRelative"],
+        ["xpath=//div[3]/div/div[2]/div/div/div/div/div[4]/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "48179ba2-02d0-401a-b890-28c839ed4e2c",
+      "comment": "",
+      "command": "click",
+      "target": "name=span-canonical-smiles-(1000-categories)",
+      "targets": [
+        ["css=.d4-entity-markup-row:nth-child(1) > .d4-link-label:nth-child(1) > label", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div[2]/div/span/span/label", "xpath:idRelative"],
+        ["xpath=//div[4]/div[2]/div/span/span/label", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "93f1b4ca-e66e-4ebf-95ed-07e578be382d",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=(//div[@name='div-section--Actions'])[3]",
+      "targets": [
+        ["css=.d4-accordion:nth-child(1) > .d4-accordion-pane:nth-child(3) > .d4-accordion-pane-header", "css:finder"],
+        ["xpath=(//div[@name='div-section--Actions'])[3]", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div", "xpath:idRelative"],
+        ["xpath=//div[3]/div/div[2]/div/div/div/div/div[3]/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "3616e741-73ed-4021-a0b7-f83cc2a6050c",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//label[contains(.,'Chem | Descriptors...')]",
+      "targets": [
+        ["css=.d4-entity-markup-row:nth-child(7) > .d4-link-action", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div[2]/div/span[7]/label", "xpath:idRelative"],
+        ["xpath=//span[7]/label", "xpath:position"],
+        ["xpath=//label[contains(.,'Chem | Descriptors...')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "69d26b77-b80a-4e01-b91e-c032f80f1af2",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "c2cea07e-11c4-43e2-b9c3-a95f4e1caf11",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "xpath=//h1[contains(.,'Molecular Descriptors')]",
+      "targets": [
+        ["id=molecular-descriptors", "id"],
+        ["css=#molecular-descriptors", "css:finder"],
+        ["xpath=//h1[@id='molecular-descriptors']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/span/h1", "xpath:idRelative"],
+        ["xpath=//h1", "xpath:position"],
+        ["xpath=//h1[contains(.,'Molecular Descriptors')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "82759594-04e1-4bcb-8401-d9020d78b43d",
+      "comment": "",
+      "command": "verifyElementNotPresent",
+      "target": "xpath=//i[@name='icon-exclamation-circle']",
+      "targets": [
+        ["css=.fa-exclamation-circle", "css:finder"],
+        ["xpath=//i[@name='icon-exclamation-circle']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/i", "xpath:idRelative"],
+        ["xpath=//div[2]/i", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "caa81e01-857e-470a-8266-79574b7cfe7a",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "6b658b3a-4653-4190-a178-bce25f5fa3c0",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//input[@type='checkbox']",
+      "targets": [
+        ["css=.d4-tree-view-group:nth-child(1) > .d4-tree-view-node > input", "css:finder"],
+        ["xpath=//input[@type='checkbox']", "xpath:attributes"],
+        ["xpath=//div[3]/div[2]/div/div/input", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "43eeea8a-62cd-49e5-a132-a94228985c07",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "9741fc45-dc86-4413-9d22-5b146d5f811c",
+      "comment": "",
+      "command": "click",
+      "target": "name=button-OK",
+      "targets": [
+        ["name=button-OK", "name"],
+        ["css=.enabled", "css:finder"],
+        ["xpath=//button[@name='button-OK']", "xpath:attributes"],
+        ["xpath=//button", "xpath:position"],
+        ["xpath=//button[contains(.,'OK')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "5ba73d74-5e8d-4d6a-8b4a-29bd80728526",
+      "comment": "",
+      "command": "pause",
+      "target": "10000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "c5f9c58b-df62-412d-989b-095f71b1196e",
+      "comment": "",
+      "command": "verifyElementNotPresent",
+      "target": "xpath=//i[@name='icon-exclamation-circle']",
+      "targets": [
+        ["css=.fa-exclamation-circle", "css:finder"],
+        ["xpath=//i[@name='icon-exclamation-circle']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/i", "xpath:idRelative"],
+        ["xpath=//div[2]/i", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "2ebe2705-6cd8-46e0-8849-3ba6f44fc36c",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='view-handle: smiles']",
+      "targets": [
+        ["css=.tab-handle:nth-child(4)", "css:finder"],
+        ["xpath=//div[@name='view-handle: smiles']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
+        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "6969f4b5-bde2-4776-8692-b33f53b79825",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='div-section--Properties']",
+      "targets": [
+        ["css=.d4-accordion:nth-child(1) > .d4-accordion-pane:nth-child(3) > .d4-accordion-pane-header", "css:finder"],
+        ["xpath=//div[@name='div-section--Properties']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div", "xpath:idRelative"],
+        ["xpath=//div[3]/div/div[2]/div/div/div/div/div[3]/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "a0b9d68e-28bd-4c23-afea-c5820bc4a04b",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "xpath=//span[contains(.,'24')]",
+      "targets": [
+        ["css=.d4-accordion-pane:nth-child(2) tr:nth-child(2) > td:nth-child(2) > span", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[2]/div[2]/table/tbody/tr[2]/td[2]/span", "xpath:idRelative"],
+        ["xpath=//tr[2]/td[2]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'41')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "b2157f6f-a08e-495d-8338-a2876f74a3f9",
+      "comment": "",
+      "command": "click",
+      "target": "name=span-canonical-smiles-(1000-categories)",
+      "targets": [
+        ["css=.d4-entity-markup-row:nth-child(1) > .d4-link-label:nth-child(1) > label", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div[2]/div/span/span/label", "xpath:idRelative"],
+        ["xpath=//div[4]/div[2]/div/span/span/label", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "fe7fd934-65a9-42ae-86e1-8757048ae358",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//label[contains(.,'Chem | Descriptors...')]",
+      "targets": [
+        ["css=.d4-entity-markup-row:nth-child(7) > .d4-link-action", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div[2]/div/span[7]/label", "xpath:idRelative"],
+        ["xpath=//span[7]/label", "xpath:position"],
+        ["xpath=//label[contains(.,'Chem | Descriptors...')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "b92d08ed-e4eb-414c-8253-57c7d5a4856e",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//i[@name='icon-history']",
+      "targets": [
+        ["css=.fa-history", "css:finder"],
+        ["xpath=//i[@name='icon-history']", "xpath:attributes"],
+        ["xpath=//div[23]/div[3]/div/i", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "17e1466e-0497-405c-a9bf-86466ba4ef7b",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "xpath=//label[contains(.,'MaxEStateIndex, MinEStateIndex, MaxAbsEStateIndex, MinAbsESt...')]",
+      "targets": [
+        ["css=.d4-menu-item-hover label:nth-child(2)", "css:finder"],
+        ["xpath=//div[6]/div/div/div/label[2]", "xpath:position"],
+        ["xpath=//label[contains(.,'MaxEStateIndex, MinEStateIndex, MaxAbsEStateIndex, MinAbsESt...')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }]
+  }],
+  "suites": [{
+    "id": "9dc44007-ce36-485b-a97f-84b02396f5ba",
+    "name": "chem-descriptors",
+    "persistSession": false,
+    "parallel": false,
+    "timeout": 300,
+    "tests": ["11989356-39f1-46f8-a411-51ada2017ee8"]
+  }],
+  "urls": ["https://dev.datagrok.ai/"],
+  "plugins": []
+}

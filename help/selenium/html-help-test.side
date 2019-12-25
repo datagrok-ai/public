@@ -1,0 +1,263 @@
+{
+  "id": "6d06687b-90bd-4cd6-9ce7-4035c2554fa2",
+  "version": "2.0",
+  "name": "html-help-test",
+  "url": "https://datagrok.ai/",
+  "tests": [{
+    "id": "96bb9127-e312-4100-89b8-b5efa70030a7",
+    "name": "html-help-test",
+    "commands": [{
+      "id": "cbad45da-58f3-405c-9886-391010a724f1",
+      "comment": "",
+      "command": "open",
+      "target": "/help/",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "c495d4ef-7c94-4065-b305-b0cb65d4e110",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "a6f6dd21-86bc-42c1-8617-31a7f213934d",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//h1[@id='datagrok-swiss-army-knife-for-data']",
+      "targets": [
+        ["id=datagrok-swiss-army-knife-for-data", "id"],
+        ["css=#datagrok-swiss-army-knife-for-data", "css:finder"],
+        ["xpath=//h1[@id='datagrok-swiss-army-knife-for-data']", "xpath:attributes"],
+        ["xpath=//div[@id='root']/div/h1", "xpath:idRelative"],
+        ["xpath=//h1", "xpath:position"],
+        ["xpath=//h1[contains(.,'DataGrok: Swiss Army Knife for Data')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "eb58d7a9-3e16-46db-bac0-e4747f2a24c8",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "xpath=//h2[@id='why-datagrok']",
+      "targets": [
+        ["id=why-datagrok", "id"],
+        ["css=#why-datagrok", "css:finder"],
+        ["xpath=//h2[@id='why-datagrok']", "xpath:attributes"],
+        ["xpath=//div[@id='root']/div/h2", "xpath:idRelative"],
+        ["xpath=//h2", "xpath:position"],
+        ["xpath=//h2[contains(.,'Why Datagrok?')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "df44e55c-a245-4e7c-8a28-b20bd4901cb7",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "xpath=//h2[@id='access']",
+      "targets": [
+        ["id=access", "id"],
+        ["css=#access", "css:finder"],
+        ["xpath=//h2[@id='access']", "xpath:attributes"],
+        ["xpath=//div[@id='root']/div/h2[2]", "xpath:idRelative"],
+        ["xpath=//h2[2]", "xpath:position"],
+        ["xpath=//h2[contains(.,'Access')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "05069d38-71b0-4858-94f3-bfb9cd93e527",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "xpath=//div[@id='sidebar']/div",
+      "targets": [
+        ["css=.tree-menu", "css:finder"],
+        ["xpath=//div[@id='sidebar']/div", "xpath:idRelative"],
+        ["xpath=//div[4]/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "a2220008-2cc2-48c6-9072-f762fadf3d3f",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=(//a[contains(text(),'OpenAPI')])[2]",
+      "targets": [
+        ["linkText=OpenAPI", "linkText"],
+        ["css=ul:nth-child(8) > li:nth-child(2) > a", "css:finder"],
+        ["xpath=(//a[contains(text(),'OpenAPI')])[2]", "xpath:link"],
+        ["xpath=//div[@id='root']/div/ul/li[2]/a", "xpath:idRelative"],
+        ["xpath=(//a[contains(@href, '/help/features/open-api')])[2]", "xpath:href"],
+        ["xpath=//div/ul/li[2]/a", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "5b8dade3-8dc5-459e-8c69-e323891a24e2",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "a3ce5787-705f-40c1-b51e-00bbd7315ce5",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "xpath=//h1[@id='openapi']",
+      "targets": [
+        ["id=openapi", "id"],
+        ["css=#openapi", "css:finder"],
+        ["xpath=//h1[@id='openapi']", "xpath:attributes"],
+        ["xpath=//div[@id='root']/div/h1", "xpath:idRelative"],
+        ["xpath=//h1", "xpath:position"],
+        ["xpath=//h1[contains(.,'OpenAPI')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "3ec31fec-d978-44ac-99de-746c74171d1f",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//a[contains(text(),'functions')]",
+      "targets": [
+        ["linkText=functions", "linkText"],
+        ["css=p:nth-child(3) > a:nth-child(1)", "css:finder"],
+        ["xpath=//a[contains(text(),'functions')]", "xpath:link"],
+        ["xpath=//div[@id='root']/div/p[2]/a", "xpath:idRelative"],
+        ["xpath=//a[contains(@href, '/help/entities/function')]", "xpath:href"],
+        ["xpath=//p[2]/a", "xpath:position"],
+        ["xpath=//a[contains(.,'functions')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "d100d8a2-e00a-4fad-a0bd-c1ddd064b40d",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "f9e46465-dfc9-42a6-a888-064fcfecda53",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "xpath=//h1[@id='functions']",
+      "targets": [
+        ["id=functions", "id"],
+        ["css=#functions", "css:finder"],
+        ["xpath=//h1[@id='functions']", "xpath:attributes"],
+        ["xpath=//div[@id='root']/div/h1", "xpath:idRelative"],
+        ["xpath=//h1", "xpath:position"],
+        ["xpath=//h1[contains(.,'Functions')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "1f7d4051-587c-44ba-bb15-0798d328ad7e",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "9a54186d-f129-4883-8759-c8bbb1354477",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "linkText=Functions",
+      "targets": [
+        ["linkText=Functions", "linkText"],
+        ["css=.active", "css:finder"],
+        ["xpath=//a[contains(text(),'Functions')]", "xpath:link"],
+        ["xpath=//div[@id='sidebar']/div/ul/li[5]/ul/li[11]/a", "xpath:idRelative"],
+        ["xpath=(//a[contains(@href, '/help/entities/function')])[2]", "xpath:href"],
+        ["xpath=//li[5]/ul/li[11]/a", "xpath:position"],
+        ["xpath=//a[contains(.,'Functions')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "400b5b35-9eac-4b3d-a13d-c1b85f0f0b53",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//label[contains(.,'Dialogs')]",
+      "targets": [
+        ["css=li:nth-child(3) > label", "css:finder"],
+        ["xpath=//div[@id='sidebar']/div/ul/li[3]/label", "xpath:idRelative"],
+        ["xpath=//li[3]/label", "xpath:position"],
+        ["xpath=//label[contains(.,'Dialogs')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "e4479e1c-553d-48bd-8ab9-ab08873d4d9c",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "b7454b0b-daf9-4c13-b487-cecc5512008d",
+      "comment": "",
+      "command": "click",
+      "target": "linkText=Anonymize Data",
+      "targets": [
+        ["linkText=Anonymize Data", "linkText"],
+        ["css=.expanded:nth-child(3) li:nth-child(4) > a", "css:finder"],
+        ["xpath=//a[contains(text(),'Anonymize Data')]", "xpath:link"],
+        ["xpath=//div[@id='sidebar']/div/ul/li[3]/ul/li[4]/a", "xpath:idRelative"],
+        ["xpath=//a[contains(@href, '/help/dialogs/anonymize-data')]", "xpath:href"],
+        ["xpath=//li[3]/ul/li[4]/a", "xpath:position"],
+        ["xpath=//a[contains(.,'Anonymize Data')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "2145901a-e589-45cf-b542-305c0ffc512b",
+      "comment": "",
+      "command": "pause",
+      "target": "2000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "f0b75a70-74d6-4795-8c35-32f3f234cb63",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "xpath=//h1[contains(.,'Anonymize Data')]",
+      "targets": [
+        ["id=anonymize-data", "id"],
+        ["css=#anonymize-data", "css:finder"],
+        ["xpath=//h1[@id='anonymize-data']", "xpath:attributes"],
+        ["xpath=//div[@id='root']/div/h1", "xpath:idRelative"],
+        ["xpath=//h1", "xpath:position"],
+        ["xpath=//h1[contains(.,'Anonymize Data')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "5b3f2cfe-8693-413c-a029-458a78051689",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "8cd777aa-0f2b-4ce0-bf25-5abfdf5ba8c5",
+      "comment": "",
+      "command": "click",
+      "target": "id=helpPath",
+      "targets": [
+        ["id=helpPath", "id"],
+        ["css=#helpPath", "css:finder"],
+        ["xpath=//span[@id='helpPath']", "xpath:attributes"],
+        ["xpath=//nav/span", "xpath:position"],
+        ["xpath=//span[contains(.,'/ Dialogs /')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "ba8c407b-f331-4a8e-955a-e0bbb85332b3",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }]
+  }],
+  "suites": [{
+    "id": "1a335a7e-9953-42ef-beea-de5e2dbc7962",
+    "name": "Workspace ",
+    "persistSession": false,
+    "parallel": false,
+    "timeout": 300,
+    "tests": ["96bb9127-e312-4100-89b8-b5efa70030a7"]
+  }],
+  "urls": ["https://dev.datagrok.ai/", "https://datagrok.ai/", "https://datagrok.ai/help", "http://datagrok.ai/"],
+  "plugins": []
+}

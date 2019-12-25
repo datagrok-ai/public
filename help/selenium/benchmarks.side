@@ -1,0 +1,413 @@
+{
+  "id": "b390008b-1b39-4405-bcfd-6b03f9f4d568",
+  "version": "2.0",
+  "name": "benchmarks",
+  "url": "https://dev.datagrok.ai",
+  "tests": [{
+    "id": "1e1a7755-4e26-458c-9783-60348afe35cf",
+    "name": "benchmarks",
+    "commands": [{
+      "id": "8ff604b9-81db-4083-8663-4b119b7492f9",
+      "comment": "",
+      "command": "open",
+      "target": "/?selenium=true",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "2e74e989-5df1-447f-bf7b-163871b24921",
+      "comment": "",
+      "command": "type",
+      "target": "xpath=//div[@id='signup-login-fields']/div/div/input",
+      "targets": [
+        ["id=password", "id"],
+        ["css=#password", "css:finder"],
+        ["xpath=//input[@id='password']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/input[2]", "xpath:idRelative"],
+        ["xpath=//input[2]", "xpath:position"]
+      ],
+      "value": "selenium"
+    }, {
+      "id": "d9132049-31ef-45e7-bd38-43ed931a9bc2",
+      "comment": "",
+      "command": "type",
+      "target": "xpath=//div[@id='signup-login-fields']/div/div[2]/input",
+      "targets": [
+        ["id=password", "id"],
+        ["css=#password", "css:finder"],
+        ["xpath=//input[@id='password']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/input[2]", "xpath:idRelative"],
+        ["xpath=//input[2]", "xpath:position"]
+      ],
+      "value": "selenium"
+    }, {
+      "id": "c06f8d03-321e-40fa-bf29-25ec098103fc",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@id='signup-login-fields']/div[2]/button",
+      "targets": [
+        ["linkText=LOGIN", "linkText"],
+        ["css=a", "css:finder"],
+        ["xpath=//a[contains(text(),'LOGIN')]", "xpath:link"],
+        ["xpath=//div[@id='rootDiv']/div/a", "xpath:idRelative"],
+        ["xpath=//a[contains(@href, '#')]", "xpath:href"],
+        ["xpath=//a", "xpath:position"],
+        ["xpath=//a[contains(.,'LOGIN')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "ab8f2726-12a0-40e3-ac90-4730f3344006",
+      "comment": "",
+      "command": "pause",
+      "target": "2000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "c12a9553-b698-4342-99c1-9867e881ae28",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='div-Tools']",
+      "targets": [
+        ["css=.d4-menu-item-horz:nth-child(7)", "css:finder"],
+        ["xpath=//div[@name='div-Tools']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div/div[7]", "xpath:idRelative"],
+        ["xpath=//div[3]/div/div/div/div[7]", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "be812ebd-f02b-42a1-99fb-7fe7642dd654",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='div-Tools---Dev']",
+      "targets": [
+        ["css=.d4-menu-item-hover:nth-child(4)", "css:finder"],
+        ["xpath=//div[@name='div-Tools---Dev']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div/div[7]/div/div[4]", "xpath:idRelative"],
+        ["xpath=//div[7]/div/div[4]", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "4a068db4-451a-4ad3-b24e-47fe601f875b",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='div-Tools---Dev---Benchmarks']",
+      "targets": [
+        ["css=.d4-vert-menu > .d4-menu-group:nth-child(1)", "css:finder"],
+        ["xpath=//div[@name='div-Tools---Dev---Benchmarks']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div/div[7]/div/div[4]/div/div", "xpath:idRelative"],
+        ["xpath=//div[7]/div/div[4]/div/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "3bc8ad60-c597-4608-8af9-851cbe04c32e",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='div-Tools---Dev---Benchmarks---Benchmark-Encoders']",
+      "targets": [
+        ["css=.d4-menu-item-vert:nth-child(1) .d4-menu-item:nth-child(3)", "css:finder"],
+        ["xpath=//div[@name='div-Tools---Dev---Benchmarks---Benchmark-Encoders']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div/div[7]/div/div[4]/div/div/div/div[3]", "xpath:idRelative"],
+        ["xpath=//div[7]/div/div[4]/div/div/div/div[3]", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "1ad7f21a-7eb1-498d-9695-09bfdc106b2e",
+      "comment": "",
+      "command": "pause",
+      "target": "360000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "6d9c8103-f20c-4832-871a-975ea3db3168",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='div-Tools']",
+      "targets": [
+        ["css=.d4-menu-item-horz:nth-child(7)", "css:finder"],
+        ["xpath=//div[@name='div-Tools']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div/div[7]", "xpath:idRelative"],
+        ["xpath=//div[3]/div/div/div/div[7]", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "11c6234c-dd11-4df6-ba1c-bbbc82052184",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='div-Tools---Dev']",
+      "targets": [
+        ["css=.d4-menu-item-hover:nth-child(4)", "css:finder"],
+        ["xpath=//div[@name='div-Tools---Dev']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div/div[7]/div/div[4]", "xpath:idRelative"],
+        ["xpath=//div[7]/div/div[4]", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "ddf76bf8-031c-4db8-a55a-3067bd147d35",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='div-Tools---Dev---Benchmarks']",
+      "targets": [
+        ["css=.d4-vert-menu > .d4-menu-group:nth-child(1)", "css:finder"],
+        ["xpath=//div[@name='div-Tools---Dev---Benchmarks']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div/div[7]/div/div[4]/div/div", "xpath:idRelative"],
+        ["xpath=//div[7]/div/div[4]/div/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "641f1e38-3d47-40f0-9029-2f3929043def",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='div-Tools---Dev---Benchmarks---Run-Benchmark']",
+      "targets": [
+        ["css=.d4-menu-item-vert:nth-child(1) .d4-menu-item:nth-child(1)", "css:finder"],
+        ["xpath=//div[@name='div-Tools---Dev---Benchmarks---Run Benchmark']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div/div[7]/div/div[4]/div/div/div/div", "xpath:idRelative"],
+        ["xpath=//div[7]/div/div[4]/div/div/div/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "4c780d35-82d2-4460-af7f-25199a3f4b4d",
+      "comment": "",
+      "command": "pause",
+      "target": "40000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "0afcbd85-a9b5-47f5-99ff-122b36093d35",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='div-Tools']",
+      "targets": [
+        ["css=.d4-menu-item-horz:nth-child(7)", "css:finder"],
+        ["xpath=//div[@name='div-Tools']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div/div[7]", "xpath:idRelative"],
+        ["xpath=//div[3]/div/div/div/div[7]", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "e697cf9b-835b-4c9e-934f-b40f0a52e2c5",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='div-Tools---Dev']",
+      "targets": [
+        ["css=.d4-menu-item-hover:nth-child(4)", "css:finder"],
+        ["xpath=//div[@name='div-Tools---Dev']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div/div[7]/div/div[4]", "xpath:idRelative"],
+        ["xpath=//div[7]/div/div[4]", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "6a74ffff-8503-4c13-bc70-328fba157ad3",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='div-Tools---Dev---Benchmarks']",
+      "targets": [
+        ["css=.d4-vert-menu > .d4-menu-group:nth-child(1)", "css:finder"],
+        ["xpath=//div[@name='div-Tools---Dev---Benchmarks']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div/div[7]/div/div[4]/div/div", "xpath:idRelative"],
+        ["xpath=//div[7]/div/div[4]/div/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "7b51cebe-7bc8-411e-b3f9-33b6a70aab28",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='div-Tools---Dev---Benchmarks---Benchmark-Encoders-+-Archive']",
+      "targets": [
+        ["css=.d4-menu-item-vert:nth-child(1) .d4-menu-item:nth-child(4)", "css:finder"],
+        ["xpath=//div[@name='div-Tools---Dev---Benchmarks---Benchmark-Encoders-+-Archive']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div/div[7]/div/div[4]/div/div/div/div[4]", "xpath:idRelative"],
+        ["xpath=//div[7]/div/div[4]/div/div/div/div[4]", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "91febaee-9631-4260-bce7-240cf1b787ed",
+      "comment": "",
+      "command": "pause",
+      "target": "360000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "dfbb0691-4f1e-470e-b4ce-f73a5fffe55a",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='div-Tools']",
+      "targets": [
+        ["css=.d4-menu-item-horz:nth-child(7)", "css:finder"],
+        ["xpath=//div[@name='div-Tools']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div/div[7]", "xpath:idRelative"],
+        ["xpath=//div[3]/div/div/div/div[7]", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "7e333982-be15-46e7-9126-97f33694b906",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='div-Tools---Dev']",
+      "targets": [
+        ["css=.d4-menu-item-hover:nth-child(4)", "css:finder"],
+        ["xpath=//div[@name='div-Tools---Dev']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div/div[7]/div/div[4]", "xpath:idRelative"],
+        ["xpath=//div[7]/div/div[4]", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "49d7b361-402c-45a3-945c-89cc52f16f44",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='div-Tools---Dev---Benchmarks']",
+      "targets": [
+        ["css=.d4-vert-menu > .d4-menu-group:nth-child(1)", "css:finder"],
+        ["xpath=//div[@name='div-Tools---Dev---Benchmarks']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div/div[7]/div/div[4]/div/div", "xpath:idRelative"],
+        ["xpath=//div[7]/div/div[4]/div/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "0e0bb8ca-8b29-4799-9d20-46eef05af682",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='div-Tools---Dev---Benchmarks---Benchmark-Column-Access']",
+      "targets": [
+        ["css=.d4-menu-item-vert:nth-child(1) .d4-menu-item:nth-child(5)", "css:finder"],
+        ["xpath=//div[@name='div-Tools---Dev---Benchmarks---Benchmark-Column Access']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div/div[7]/div/div[4]/div/div/div/div[5]", "xpath:idRelative"],
+        ["xpath=//div[7]/div/div[4]/div/div/div/div[5]", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "cbcc644b-726e-4bf5-b686-e685cdfd6e3d",
+      "comment": "",
+      "command": "pause",
+      "target": "40000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "91c51bfb-fedb-4a13-a92c-dbb9a4e41c28",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='div-Tools']",
+      "targets": [
+        ["css=.d4-menu-item-horz:nth-child(7)", "css:finder"],
+        ["xpath=//div[@name='div-Tools']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div/div[7]", "xpath:idRelative"],
+        ["xpath=//div[3]/div/div/div/div[7]", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "728c092b-754d-4eaf-a5a9-53b92a33f285",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='div-Tools---Dev']",
+      "targets": [
+        ["css=.d4-menu-item-hover:nth-child(4)", "css:finder"],
+        ["xpath=//div[@name='div-Tools---Dev']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div/div[7]/div/div[4]", "xpath:idRelative"],
+        ["xpath=//div[7]/div/div[4]", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "806f5028-c868-4f61-ae93-990a0b8fa83f",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='div-Tools---Dev---Benchmarks']",
+      "targets": [
+        ["css=.d4-vert-menu > .d4-menu-group:nth-child(1)", "css:finder"],
+        ["xpath=//div[@name='div-Tools---Dev---Benchmarks']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div/div[7]/div/div[4]/div/div", "xpath:idRelative"],
+        ["xpath=//div[7]/div/div[4]/div/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "2319433f-d690-45d8-bcef-77d79c6a2909",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='div-Tools---Dev---Benchmarks---Run-JS-Performance-Tests']",
+      "targets": [
+        ["css=.d4-menu-item-vert:nth-child(1) .d4-menu-item:nth-child(7)", "css:finder"],
+        ["xpath=//div[@name='div-Tools---Dev---Benchmarks---Run-JS-Performance-Tests']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div/div[7]/div/div[4]/div/div/div/div[7]", "xpath:idRelative"],
+        ["xpath=//div[7]/div/div[4]/div/div/div/div[7]", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "e66baca7-3e5b-4da3-81bd-75d9432e0ec5",
+      "comment": "",
+      "command": "pause",
+      "target": "180000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "30d49de1-623f-4d72-866f-3707d206563f",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='div-Tools']",
+      "targets": [
+        ["css=.d4-menu-item-horz:nth-child(7)", "css:finder"],
+        ["xpath=//div[@name='div-Tools']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div/div[7]", "xpath:idRelative"],
+        ["xpath=//div[3]/div/div/div/div[7]", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "74d5e291-af5c-4e6b-ad75-11f6fde4ff43",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='div-Tools---Dev']",
+      "targets": [
+        ["css=.d4-menu-item-hover:nth-child(4)", "css:finder"],
+        ["xpath=//div[@name='div-Tools---Dev']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div/div[7]/div/div[4]", "xpath:idRelative"],
+        ["xpath=//div[7]/div/div[4]", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "63dd8fb4-e58b-4676-86ef-31110fea7acb",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='div-Tools---Dev---Benchmarks']",
+      "targets": [
+        ["css=.d4-vert-menu > .d4-menu-group:nth-child(1)", "css:finder"],
+        ["xpath=//div[@name='div-Tools---Dev---Benchmarks']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div/div[7]/div/div[4]/div/div", "xpath:idRelative"],
+        ["xpath=//div[7]/div/div[4]/div/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "dd127258-707b-4995-bda2-faec35fe17ef",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='div-Tools---Dev---Benchmarks---Benchmark-Chem-Functions']",
+      "targets": [
+        ["css=.d4-menu-item-vert:nth-child(1) .d4-menu-item:nth-child(6)", "css:finder"],
+        ["xpath=//div[@name='div-Tools---Dev---Benchmarks---Benchmark-Chem Functions']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div/div[7]/div/div[4]/div/div/div/div[6]", "xpath:idRelative"],
+        ["xpath=//div[7]/div/div[4]/div/div/div/div[6]", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "f42eae6a-e3cc-4b94-9f6b-d775e36684bc",
+      "comment": "",
+      "command": "pause",
+      "target": "7200000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "8ac69679-1d11-4db7-8b8e-929968c34dfc",
+      "comment": "",
+      "command": "",
+      "target": "",
+      "targets": [],
+      "value": ""
+    }]
+  }],
+  "suites": [{
+    "id": "ec967ec6-1191-47c4-9144-a537f982d65b",
+    "name": "benchmarks",
+    "persistSession": false,
+    "parallel": false,
+    "timeout": 600,
+    "tests": ["1e1a7755-4e26-458c-9783-60348afe35cf"]
+  }],
+  "urls": ["https://dev.datagrok.ai/"],
+  "plugins": []
+}

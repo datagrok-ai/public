@@ -1,0 +1,363 @@
+{
+  "id": "4b5ebbbb-aab4-437f-9e7b-a5659a18533a",
+  "version": "2.0",
+  "name": "markup-viewer-test",
+  "url": "https://dev.datagrok.ai/",
+  "tests": [{
+    "id": "f3cd043a-6e48-4add-a9a1-c5c17587fc54",
+    "name": "markup-viewer-test",
+    "commands": [{
+      "id": "94df53ce-1880-43fc-afd1-4dcab6d68852",
+      "comment": "",
+      "command": "open",
+      "target": "/datasets?selenium=true&q=",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "9fcf7373-c913-45ab-bec9-269d52152909",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "e84f8e62-8c9d-4194-bbff-27ceb61ef682",
+      "comment": "",
+      "command": "type",
+      "target": "xpath=//div[@id='signup-login-fields']/div/div/input",
+      "targets": [
+        ["id=login", "id"],
+        ["css=#login", "css"],
+        ["css=#login", "css:finder"],
+        ["xpath=//input[@id='login']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/input", "xpath:idRelative"],
+        ["xpath=//input", "xpath:position"]
+      ],
+      "value": "selenium"
+    }, {
+      "id": "707e53fe-f5bd-4f75-905b-e218da266a46",
+      "comment": "",
+      "command": "type",
+      "target": "xpath=//div[@id='signup-login-fields']/div/div[2]/input",
+      "targets": [
+        ["id=password", "id"],
+        ["css=#password", "css"],
+        ["css=#password", "css:finder"],
+        ["xpath=//input[@id='password']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/input[2]", "xpath:idRelative"],
+        ["xpath=//input[2]", "xpath:position"]
+      ],
+      "value": "selenium"
+    }, {
+      "id": "be35f33e-05f8-4ab8-b543-ac7c2bc095be",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@id='signup-login-fields']/div[2]/button",
+      "targets": [
+        ["linkText=LOGIN", "linkText"],
+        ["css=a", "css"],
+        ["css=a", "css:finder"],
+        ["xpath=//a[contains(text(),'LOGIN')]", "xpath:link"],
+        ["xpath=//div[@id='rootDiv']/div/a", "xpath:idRelative"],
+        ["xpath=//a[contains(@href, '#')]", "xpath:href"],
+        ["xpath=//a", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "cfe50028-b347-4562-a692-fe86c4d23fbc",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "0f1ba132-fd58-4878-9d26-e40f8892b24e",
+      "comment": "",
+      "command": "type",
+      "target": "xpath=(//input[@type='text'])[2]",
+      "targets": [
+        ["css=.type-ahead-input", "css:finder"],
+        ["xpath=(//input[@type='text'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='datasets']/div/div/div/div/input", "xpath:idRelative"],
+        ["xpath=//div/div/div/div/div/input", "xpath:position"]
+      ],
+      "value": "selenium"
+    }, {
+      "id": "125ab046-e564-40ee-a24d-19b9ecca6c23",
+      "comment": "",
+      "command": "pause",
+      "target": "2000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "a2bf01a2-f819-4439-ae22-0ab07643f6b9",
+      "comment": "",
+      "command": "doubleClick",
+      "target": "name=div-SeleniumTestDataP1",
+      "targets": [
+        ["css=.grok-gallery-grid-item-wrapper:nth-child(3)", "css:finder"],
+        ["xpath=//div[@id='datasets']/div/div[2]/div[3]", "xpath:idRelative"],
+        ["xpath=//div[3]/div/div/div/div/div[2]/div[3]", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "0a4acc12-921f-402b-b7c3-1bde97e088d0",
+      "comment": "",
+      "command": "pause",
+      "target": "3000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "262276f9-8855-4f28-8407-918b464a5202",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//i[@name='icon-markup']",
+      "targets": [
+        ["css=.svg-markup", "css:finder"],
+        ["xpath=//i[@name='icon-markup']", "xpath:attributes"],
+        ["xpath=//div[@id='grok-viewers-toolbox']/div[2]/div[3]/div[2]/div/i[20]", "xpath:idRelative"],
+        ["xpath=//i[20]", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "3fe81bf1-e8c3-4796-89ad-e3753243369e",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "587a91b2-7497-4d3a-aafa-4c50496427c1",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "name=viewer-Markup",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "e945f24e-5e7c-4ba2-9ceb-a841f6ce2867",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "28e1794f-6b88-4b41-b27b-48f5058f6f90",
+      "comment": "",
+      "command": "verifyElementNotPresent",
+      "target": "name=icon-exclamation-circle",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "55f04cea-35b6-4f62-90e8-6d85ef4c57b4",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "xpath=//h1[contains(.,'What’s Markdown?')]",
+      "targets": [
+        ["id=whats-markdown", "id"],
+        ["css=#whats-markdown", "css:finder"],
+        ["xpath=//h1[@id='whats-markdown']", "xpath:attributes"],
+        ["xpath=//div[@id='center']/div/div/span/h1", "xpath:idRelative"],
+        ["xpath=//h1", "xpath:position"],
+        ["xpath=//h1[contains(.,'What’s Markdown?')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "5382a8e7-e280-4e5d-9fe2-820176ac8374",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "xpath=//a[contains(.,'Headings')]",
+      "targets": [
+        ["linkText=Headings", "linkText"],
+        ["css=li:nth-child(1) > a", "css:finder"],
+        ["xpath=//a[contains(text(),'Headings')]", "xpath:link"],
+        ["xpath=//div[@id='center']/div/div/span/ul/li/a", "xpath:idRelative"],
+        ["xpath=//a[contains(@href, 'https://www.markdownguide.org/basic-syntax/#headings')]", "xpath:href"],
+        ["xpath=//li/a", "xpath:position"],
+        ["xpath=//a[contains(.,'Headings')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "0d201fc8-4115-4252-935e-f19be0bb62c2",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "xpath=//a[contains(.,'Bold and italic')]",
+      "targets": [
+        ["linkText=Bold and italic", "linkText"],
+        ["css=li:nth-child(2) > a", "css:finder"],
+        ["xpath=//a[contains(text(),'Bold and italic')]", "xpath:link"],
+        ["xpath=//div[@id='center']/div/div/span/ul/li[2]/a", "xpath:idRelative"],
+        ["xpath=//a[contains(@href, 'https://www.markdownguide.org/basic-syntax/#bold-and-italic')]", "xpath:href"],
+        ["xpath=//li[2]/a", "xpath:position"],
+        ["xpath=//a[contains(.,'Bold and italic')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "1bb4a8d2-1a1c-4268-bb53-3b1328fee933",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "xpath=//a[contains(.,'Lists')]",
+      "targets": [
+        ["linkText=Lists", "linkText"],
+        ["css=li:nth-child(3) > a", "css:finder"],
+        ["xpath=//a[contains(text(),'Lists')]", "xpath:link"],
+        ["xpath=//div[@id='center']/div/div/span/ul/li[3]/a", "xpath:idRelative"],
+        ["xpath=//a[contains(@href, 'https://www.markdownguide.org/basic-syntax/#lists')]", "xpath:href"],
+        ["xpath=//li[3]/a", "xpath:position"],
+        ["xpath=//a[contains(.,'Lists')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "35d7e8f7-f416-4edb-a2f9-a9fab734ec9a",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "xpath=//li[contains(.,'and much more!')]",
+      "targets": [
+        ["css=ul:nth-child(3) > li:nth-child(4)", "css:finder"],
+        ["xpath=//div[@id='center']/div/div/span/ul/li[4]", "xpath:idRelative"],
+        ["xpath=//li[4]", "xpath:position"],
+        ["xpath=//li[contains(.,'and much more!')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "fdc35666-95aa-4ad3-9fcc-9bbce720f1fa",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=(//i[@name='icon-font-icon-menu'])[3]",
+      "targets": [
+        ["css=.splitter-container-horizontal > .panel-titlebar > .grok-font-icon-menu", "css:finder"],
+        ["xpath=(//i[@name='icon-font-icon-menu'])[3]", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div/i", "xpath:idRelative"],
+        ["xpath=//div[3]/div/div/div/div/div[3]/div/i", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "633c36bd-6e91-4ad0-bf69-d78bfb0aa2d2",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "d566a2b1-67a5-48ae-b14c-805d89e23b50",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='div-Edit-content...']",
+      "targets": [
+        ["css=.d4-menu-item-container:nth-child(15) > .d4-menu-item:nth-child(1)", "css:finder"],
+        ["xpath=//div[@name='div-Edit-content...']", "xpath:attributes"],
+        ["xpath=//body/div[14]/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "c2abcf9c-f460-4ac7-b045-23bd1d73bdfc",
+      "comment": "",
+      "command": "verifyElementNotPresent",
+      "target": "name=icon-exclamation-circle",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "f286f483-42ef-445e-a654-a8dd9b20f4af",
+      "comment": "",
+      "command": "verifyText",
+      "target": "css=.d4-dialog-header",
+      "targets": [],
+      "value": "Edit"
+    }, {
+      "id": "7e526c97-4aa3-48fd-881b-eb30787505e4",
+      "comment": "",
+      "command": "click",
+      "target": "css=textarea:nth-child(2)",
+      "targets": [
+        ["css=textarea:nth-child(2)", "css:finder"],
+        ["xpath=//div[2]/div/textarea", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "051913a2-453f-4bfb-bf2c-c9cc2929f271",
+      "comment": "",
+      "command": "type",
+      "target": "css=textarea:nth-child(2)",
+      "targets": [
+        ["css=textarea:nth-child(2)", "css:finder"],
+        ["xpath=//div[2]/div/textarea", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "d3ab43fd-1896-44c5-8902-0ab3e962193c",
+      "comment": "",
+      "command": "type",
+      "target": "css=textarea:nth-child(2)",
+      "targets": [
+        ["css=textarea:nth-child(2)", "css:finder"],
+        ["xpath=//div[2]/div/textarea", "xpath:position"]
+      ],
+      "value": "<iframe fremeborder=\"0\" id=\"iframe_opkomst\" src=\"https://dirkmjk.nl/files/articles/2016/opkomst/en.html\"\\nwidth=\"100%\" height=\"100%\">\\n</iframe>"
+    }, {
+      "id": "ff890997-c898-42a3-9829-5adb4f93cc4a",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "aafbe112-8b44-4bd8-8e8f-684d40037853",
+      "comment": "",
+      "command": "click",
+      "target": "name=button-APPLY",
+      "targets": [
+        ["name=button-APPLY", "name"],
+        ["css=.d4-command-bar > .btn:nth-child(2)", "css:finder"],
+        ["xpath=//button[@name='button-APPLY']", "xpath:attributes"],
+        ["xpath=//button[2]", "xpath:position"],
+        ["xpath=//button[contains(.,'APPLY')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "e8e1319d-1ef4-4fcf-93fe-5acf6125152f",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "34fb61f3-f3a5-44cb-969b-d7f22f062f62",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "css=#chart",
+      "targets": [
+        ["css=svg", "css:finder"]
+      ],
+      "value": ""
+    }, {
+      "id": "7f98219e-1376-4b9c-8b0a-b645020b99e3",
+      "comment": "",
+      "command": "click",
+      "target": "name=button-OK",
+      "targets": [
+        ["name=button-OK", "name"],
+        ["css=.enabled", "css:finder"],
+        ["xpath=//button[@name='button-OK']", "xpath:attributes"],
+        ["xpath=//div[3]/div/button", "xpath:position"],
+        ["xpath=//button[contains(.,'OK')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "a55aa946-5651-4e07-909d-b6d5d1663092",
+      "comment": "",
+      "command": "verifyElementNotPresent",
+      "target": "name=icon-exclamation-circle",
+      "targets": [],
+      "value": ""
+    }]
+  }],
+  "suites": [{
+    "id": "714aa4e8-ce22-4893-85d3-15f3540428a1",
+    "name": "markup-viewer-test",
+    "persistSession": false,
+    "parallel": false,
+    "timeout": 300,
+    "tests": ["f3cd043a-6e48-4add-a9a1-c5c17587fc54"]
+  }],
+  "urls": ["https://dev.datagrok.ai/"],
+  "plugins": []
+}

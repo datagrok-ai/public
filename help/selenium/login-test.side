@@ -1,0 +1,213 @@
+{
+  "id": "af6a5d9d-edb6-4109-b886-bb079072bfef",
+  "version": "2.0",
+  "name": "login-test",
+  "url": "https://dev.datagrok.ai/datagrok.html",
+  "tests": [{
+    "id": "4f507ae6-5a13-41e6-a1c6-1e1e14686a9f",
+    "name": "login",
+    "commands": [{
+      "id": "2dffdea5-675c-4df6-81da-b3a6f86bdbb8",
+      "comment": "",
+      "command": "open",
+      "target": "/datasets?selenium=true&q=",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "d5852f98-dcc0-4c73-955c-b4576db67bff",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "76504988-9da6-4a3f-ba87-79e07bd2df9e",
+      "comment": "",
+      "command": "type",
+      "target": "xpath=//div[@id='signup-login-fields']/div/div/input",
+      "targets": [
+        ["css=#signup-login-fields > div.signup-inner-box-form > div.signup-field > input[type=\"text\"]", "css"],
+        ["css=#signup-login-fields .signup-field:nth-child(1) > input", "css:finder"],
+        ["xpath=(//input[@type='text'])[6]", "xpath:attributes"],
+        ["xpath=//form[@id='signup-login-fields']/div/div/input", "xpath:idRelative"],
+        ["xpath=//form[2]/div/div/input", "xpath:position"]
+      ],
+      "value": "test"
+    }, {
+      "id": "6e7950ba-aa63-4742-9bc0-c5f0b81b8684",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@id='signup-login-fields']/div[2]/button",
+      "targets": [
+        ["css=#signup-login-fields > div.signup-inner-box-right.signup-buttons > button", "css"],
+        ["css=#signup-login-fields button", "css:finder"],
+        ["xpath=//div[@id='signup-login-fields']/div[2]/button", "xpath:idRelative"],
+        ["xpath=//div[3]/div[2]/button", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "b435af35-bfa6-4a56-bdb0-0eeb55db6f3d",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "1548acb7-c5de-404b-98de-b69b5643efce",
+      "comment": "",
+      "command": "verifyText",
+      "target": "xpath=//div[@id='signup-login-fields']/div/label",
+      "targets": [
+        ["css=.signup-status:nth-child(4)", "css:finder"],
+        ["xpath=//div[@id='signup-login-fields']/div/label", "xpath:idRelative"],
+        ["xpath=//div[3]/div/label", "xpath:position"],
+        ["xpath=//label[contains(.,'Login failed')]", "xpath:innerText"]
+      ],
+      "value": "Login failed"
+    }, {
+      "id": "45a6bf6d-bf3b-4e81-92db-da1f3f3d67a7",
+      "comment": "",
+      "command": "type",
+      "target": "xpath=//div[@id='signup-login-fields']/div/div[2]/input",
+      "targets": [
+        ["css=#signup-login-fields > div.signup-inner-box-form > div.signup-field > input[type=\"password\"]", "css"],
+        ["css=#signup-login-fields .signup-field:nth-child(2) > input", "css:finder"],
+        ["xpath=(//input[@type='password'])[3]", "xpath:attributes"],
+        ["xpath=//div[@id='signup-login-fields']/div/div[2]/input", "xpath:idRelative"],
+        ["xpath=//div[3]/div/div[2]/input", "xpath:position"]
+      ],
+      "value": "test"
+    }, {
+      "id": "e85954fe-6c38-4760-aebc-4b0e8080dfc3",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@id='signup-login-fields']/div[2]/button",
+      "targets": [
+        ["css=#signup-login-fields > div.signup-inner-box-right.signup-buttons > button", "css"],
+        ["css=#signup-login-fields button", "css:finder"],
+        ["xpath=//div[@id='signup-login-fields']/div[2]/button", "xpath:idRelative"],
+        ["xpath=//div[3]/div[2]/button", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "4f5485e7-dd2c-4b58-8f61-78bdf1d8c7fe",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "e99da3e4-30db-4384-8b2b-4eda78683ea8",
+      "comment": "",
+      "command": "type",
+      "target": "xpath=//div[@id='signup-login-fields']/div/div/input",
+      "targets": [
+        ["css=#signup-login-fields > div.signup-inner-box-form > div.signup-field > input[type=\"text\"]", "css"],
+        ["css=#signup-login-fields .signup-field:nth-child(1) > input", "css:finder"],
+        ["xpath=(//input[@type='text'])[6]", "xpath:attributes"],
+        ["xpath=//div[@id='signup-login-fields']/div/div/input", "xpath:idRelative"],
+        ["xpath=//div[3]/div/div/input", "xpath:position"]
+      ],
+      "value": "selenium"
+    }, {
+      "id": "43b57a72-de0f-49d8-a74a-3f185fdf7fc1",
+      "comment": "",
+      "command": "type",
+      "target": "xpath=//div[@id='signup-login-fields']/div/div[2]/input",
+      "targets": [
+        ["css=#signup-login-fields > div.signup-inner-box-form > div.signup-field > input[type=\"password\"]", "css"],
+        ["css=#signup-login-fields .signup-field:nth-child(2) > input", "css:finder"],
+        ["xpath=(//input[@type='password'])[3]", "xpath:attributes"],
+        ["xpath=//div[@id='signup-login-fields']/div/div[2]/input", "xpath:idRelative"],
+        ["xpath=//div[3]/div/div[2]/input", "xpath:position"]
+      ],
+      "value": "selenium"
+    }, {
+      "id": "72c978cf-63aa-45a1-9b3c-8ec58be54344",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@id='signup-login-fields']/div[2]/button",
+      "targets": [
+        ["css=#signup-login-fields > div.signup-inner-box-right.signup-buttons > button", "css"],
+        ["css=#signup-login-fields button", "css:finder"],
+        ["xpath=//div[@id='signup-login-fields']/div[2]/button", "xpath:idRelative"],
+        ["xpath=//div[3]/div[2]/button", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "a89638c5-9853-4919-854c-7b5ee394552f",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "d1a4987c-cb17-4486-b1a7-6beb0e5df365",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//i[@name='icon-icon-user']",
+      "targets": [
+        ["css=.grok-ribbon-profile-picture > .grok-icon", "css:finder"],
+        ["xpath=//i[@name='icon-icon-user']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div[2]/div/i", "xpath:idRelative"],
+        ["xpath=//div[2]/div/i", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "3f7d8a12-75bf-4132-ae89-440addfde6d9",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "0ad9d1af-3c5c-4dd9-88b6-66b386767b85",
+      "comment": "",
+      "command": "verifyText",
+      "target": "css=.grok-user-profile-login",
+      "targets": [
+        ["css=.grok-user-profile-login", "css:finder"],
+        ["xpath=//div[@id='personal']/div[2]/div[2]/div", "xpath:idRelative"],
+        ["xpath=//div[3]/div/div/div/div/div/div/div[2]/div[2]/div", "xpath:position"]
+      ],
+      "value": "selenium"
+    }, {
+      "id": "550a4605-9e26-4fc3-800a-35c34691c41d",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "275c901d-eaa3-414d-a9d5-fa213fcca3c9",
+      "comment": "",
+      "command": "click",
+      "target": "css=label[name=\"label-Logout\"]",
+      "targets": [
+        ["css=label[name=\"label-Logout\"]", "css"],
+        ["css=.grok-user-profile-details > .d4-link-label:nth-child(7)", "css:finder"],
+        ["xpath=//label[@name='label-Logout']", "xpath:attributes"],
+        ["xpath=//div[@id='personal']/div[2]/label[4]", "xpath:idRelative"],
+        ["xpath=//div[2]/label[4]", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "71b6ee99-36ab-4a3a-bd76-a3689aa2e24c",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }]
+  }],
+  "suites": [{
+    "id": "05687f83-60a2-41b8-b757-11e378fafa29",
+    "name": "Login",
+    "persistSession": false,
+    "parallel": false,
+    "timeout": 300,
+    "tests": ["4f507ae6-5a13-41e6-a1c6-1e1e14686a9f"]
+  }],
+  "urls": ["https://dev.datagrok.ai/", "https://dev.datagrok.ai/datagrok.html"],
+  "plugins": []
+}
