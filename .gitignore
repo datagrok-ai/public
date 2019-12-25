@@ -4,3 +4,9 @@
 # IDE files
 .idea
 *.iml
+
+# Java files
+/connectors/grok_connect/target/
+/connectors/serialization/target/
+dependency-reduced-pom.xml
+*.class
