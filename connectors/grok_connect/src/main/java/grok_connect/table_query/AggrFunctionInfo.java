@@ -17,7 +17,7 @@ public class AggrFunctionInfo
 
     /// Defines the way the function should be rendered for SQL, using '#' as a column name.
     /// Examples:
-    ///   Minimum:  'min(#)'
+    ///   Maximum:  'max(#)'
     ///   Number of empty values: 'count(*) - count(#)'
     public String dbFunctionName;
 
