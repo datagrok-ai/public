@@ -44,6 +44,18 @@ Check out our [YouTube channel](https://www.youtube.com/channel/UCXPHEjOd4gyZ6m6
 </div>
 
 <div class="card" style="width:512px;">
+<iframe src="https://www.youtube.com/embed/YJmSvh3_uCM?vq=hd1080&rel=0&color=white&autohide=0" width="512" height="288" frameborder="0"></iframe>
+  <div class="card-body">
+    <h2 class="card-title">Database Exploration</h2>
+    <p class="card-text">We will learn how to create and share database connections, and interactively explore database content using a number of tools:
+                         • Property panel - for quick browsing
+                         • Visual query - for interactive aggregation and pivoting
+                         • Schema browser
+    </p>
+  </div>
+</div>
+
+<div class="card" style="width:512px;">
 <iframe src="https://www.youtube.com/embed/-yTTaS_WOU4?vq=hd1080&rel=0&color=white&autohide=0" width="512" height="288" frameborder="0"></iframe>
   <div class="card-body">
     <h2 class="card-title">Using formulas in calculated columns</h2>
