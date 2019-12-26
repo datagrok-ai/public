@@ -5,36 +5,30 @@ class RDKitDemoPackage extends GrokPackage {
         await initRDKit();
     }
 
+    _svgDiv(mol) {
+        let root = ui.div();
+        var svg = mol.get_svg();
+        root.innerHTML = svg;
+        return root;
+    }
+
+    //name: getCLogP
+    //input: string smiles {semType: Molecule}
+    //output: double cLogP
+    getCLogP(smiles) {
+        var mol = Module.get_mol(smiles);
+        return JSON.parse(mol.get_descriptors()).CrippenClogP;
+    }
+
     //name: RDKitInfo
     //tags: panel, widgets
     //input: string smiles {semType: Molecule}
     //output: widget result
     rdkitInfoPanel(smiles) {
         var mol = Module.get_mol(smiles);
-        let root = ui.div();
-        var svg = mol.get_svg();
-        root.innerHTML = svg;
-        return new Widget(root);
-    }
-
-
-    //name: ShowMol
-    //input: string smiles {semType: Molecule}
-    showMol(smiles) {
-        ui.dialog('Molecule')
-            .add(ui.h1(smiles))
-            .show();
-    }
-
-
-    //name: Test
-    async test() {
-        var mol = Module.get_mol("c1ccccc1O");
-        var descrs = JSON.parse(mol.get_descriptors());
-        var clogP = descrs.CrippenClogP;
-
-        ui.dialog('Molecule')
-            .add(`LogP: ${clogP}`)
-            .show();
+        return new Widget(ui.divV([
+            this._svgDiv(mol),
+            ui.divText(`${this.getCLogP(smiles)}`)
+        ]));
     }
 }
