@@ -9,4 +9,11 @@ class TestPackage extends GrokPackage {
             gc.style.backColor = 0xFFFFFF00;
         });
     }
+
+    //name: AsyncTest
+    //output: string userInfo
+    async asyncTest() {
+        var userInfo = await fetch('https://api.github.com/users/skalkin');
+        return userInfo;
+    }
 }
