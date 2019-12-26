@@ -1,9 +1,8 @@
 class RDKitDemoPackage extends GrokPackage {
 
+    /** Guaranteed to be executed exactly once before the execution of any function below */
     async init() {
-        console.log('async init started');
         await initRDKit();
-        console.log('async init finished');
     }
 
     //name: RDKitInfo
@@ -23,30 +22,18 @@ class RDKitDemoPackage extends GrokPackage {
     //input: string smiles {semType: Molecule}
     showMol(smiles) {
         ui.dialog('Molecule')
-            .add(this.webRoot)
             .add(ui.h1(smiles))
             .show();
-        this._foo(smiles);
     }
 
-
-    //name: AsyncTest
-    //output: string userInfo
-    async asyncTest() {
-        var userInfo = await fetch('https://api.github.com/users/skalkin');
-        return userInfo;
-    }
 
     //name: Test
     async test() {
-        //await initRDKit();
-
         var mol = Module.get_mol("c1ccccc1O");
         var descrs = JSON.parse(mol.get_descriptors());
         var clogP = descrs.CrippenClogP;
 
         ui.dialog('Molecule')
-            .add(this.webRoot)
             .add(`LogP: ${clogP}`)
             .show();
     }
