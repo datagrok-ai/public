@@ -1,6 +1,6 @@
 #name: BMI
 #description: Body Mass Index
-#language: r
+#language: python
 #input: double height
 #input: double weight
 #output: double bmi
