@@ -22,7 +22,7 @@ Set **Use Open Cpu For Predictive Modeling** to use R Caret, H2O will be used in
 
 ### Available models
 
-For R Caret via OpenCPU:
+For Caret via OpenCPU:
 
 | Method    | Model                                                     |
 |-----------|-----------------------------------------------------------|
