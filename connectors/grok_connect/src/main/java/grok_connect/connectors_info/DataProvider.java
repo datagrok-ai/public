@@ -102,6 +102,7 @@ public abstract class DataProvider
         add(new SQLiteDataProvider());
         add(new TeradataDataProvider());
         add(new VerticaDataProvider());
+        add(new VirtuosoDataProvider());
     }};
 
     public static List<String> getAllProvidersTypes() {
