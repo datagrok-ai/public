@@ -1,6 +1,6 @@
 // Creating custom views
 
-let v = gr.newView('list');
+let v = grok.newView('list');
 
 v.root.appendChild(ui.h1('List'));
 

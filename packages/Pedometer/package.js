@@ -6,7 +6,7 @@ class PedometerPackage extends GrokPackage {
     //input: column z {semType: Accelerometer-Z} [Z axis]
     //input: column timeOffset {semType: Time-Offset} [Time offset column]
     pedometer(accel, x, y, z, timeOffset) {
-        let view = gr.getTableView(accel.name);
+        let view = grok.getTableView(accel.name);
 
         let viewer = view.markup();
         while (viewer.root.firstChild)
@@ -69,7 +69,7 @@ class PedometerPackage extends GrokPackage {
     }
 
     _detectSteps(accel, x, y, z, sampleRate, showProgress, callback) {
-        gr.callFunc('Pedometer:DetectSteps', {
+        grok.callFunc('Pedometer:DetectSteps', {
             "accel": accel.d,
             "x": x.name,
             "y": y.name,

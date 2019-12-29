@@ -2,7 +2,7 @@
 //
 // https://datagrok.ai/help/dialogs/random-data
 
-var t = gr.testData('demog', 1000);
+var t = grok.testData('demog', 1000);
 
 async function generate() {
     await ml.randomData(t, 'normal', {sd: 3.0, mean: 1.0}, 77);
@@ -11,7 +11,7 @@ async function generate() {
 }
 
 generate().then(function () {
-    let view = gr.addTableView(t);
+    let view = grok.addTableView(t);
     view.histogram({value: 'normal'});
     view.histogram({value: 'uniform'});
     view.histogram({value: 'binomial'});

@@ -9,8 +9,8 @@ It is written in an object-oriented style and is easy to use.
 
 Access the platform via the global 'gr' variable. The API is self-explanatory, let's take a look at the following example:
 ```javascript
-let demog = gr.testData('demog', 5000);       // create test table
-let view = gr.addTableView(demog);            // add it as a view
+let demog = grok.testData('demog', 5000);       // create test table
+let view = grok.addTableView(demog);            // add it as a view
 let hist = view.addViewer('histogram');       // add histogram to that view
 hist.options({'valueColumnName': 'weight'});  // customize the histogram
 ``` 
@@ -33,7 +33,7 @@ capabilities of the JavaScript integration.
 ```javascript
 // Table manipulations
 
-demog = gr.testData('demog', 5000);
+demog = grok.testData('demog', 5000);
 demog.cols.remove('sex');
 foo = demog.cols.addNew('foo', 'int');
 demog.rows.removeAt(1, 3);
@@ -57,8 +57,8 @@ demog.selection.findNext(0, false);
 ```javascript
 // An example of using Dart's future as JavaScript's promises
 
-gr.openTable("8352e030-5970-11e9-b8a0-4f392518d7b3")
-  .then(t => gr.balloon.info(t.name));
+grok.openTable("8352e030-5970-11e9-b8a0-4f392518d7b3")
+  .then(t => grok.balloon.info(t.name));
 ```
 
 #### Registering JavaScript functions
@@ -75,11 +75,11 @@ For asynchronous JS functions, set flag "isAsync" to "true", see "jsSuggestCount
 
 ```javascript
 
-gr.functions.register({
+grok.functions.register({
     signature: 'String jsConcat(int foo, int bar)',
     run: (foo, bar) => `${foo}_${bar}`});
 
-gr.functions.register({
+grok.functions.register({
     signature: 'Widget jsWidget()',
     tags: 'Widgets',
     run: function() {
@@ -93,7 +93,7 @@ gr.functions.register({
         return new JsWidget(e);
     }});
 
-gr.functions.register({
+grok.functions.register({
   signature: 'List<String> jsSuggestCountryName(String text)',
   isAsync: true,
   run: async function(text) {
@@ -109,10 +109,10 @@ Demonstrates subscribing to platform events.
 
 ```javascript
 
-   demog = gr.testData('demog', 5000);
-   view = gr.addTableView(demog);
+   demog = grok.testData('demog', 5000);
+   view = grok.addTableView(demog);
    
-   function info(s) { gr.balloon.info(s); }
+   function info(s) { grok.balloon.info(s); }
    
    demog.onValuesChanged((_) => info('ddt-values-changed'));
    demog.onCurrentRowChanged((_) => info('ddt-current-row-changed'));
@@ -133,15 +133,15 @@ Demonstrates subscribing to platform events.
    demog.onFilterChanged((_) => info('ddt-filter-changed'));
    demog.onSelectionChanged((_) => info('ddt-selection-changed'));
    
-   gr.onProjectClosed(p => info(`${p.name}: closed`));
-   gr.onProjectModified(p => info(`${p.name}: modified`));
-   gr.onProjectOpened(p => info(`${p.name}: opened`));
-   gr.onProjectSaved(p => info(`${p.name}: saved`));
-   gr.onProjectUploaded(p => info(`${p.name}: uploaded`));
+   grok.onProjectClosed(p => info(`${p.name}: closed`));
+   grok.onProjectModified(p => info(`${p.name}: modified`));
+   grok.onProjectOpened(p => info(`${p.name}: opened`));
+   grok.onProjectSaved(p => info(`${p.name}: saved`));
+   grok.onProjectUploaded(p => info(`${p.name}: uploaded`));
    
-   gr.onCurrentProjectChanged(p => info(`Current project changed: ${gr.project.name}`));
+   grok.onCurrentProjectChanged(p => info(`Current project changed: ${grok.project.name}`));
    
-   gr.onEvent('d4-current-view-changed', (_) => info('view changed'));
+   grok.onEvent('d4-current-view-changed', (_) => info('view changed'));
 ```
 
 #### Creating custom viewers
@@ -158,13 +158,13 @@ Barry,Alice,2
 Elvis,Sarah,2
 Elvis,Alice,2
 Sarah,Alice,4`;
-let table = gr.parseCsv(csv);
+let table = grok.parseCsv(csv);
 
 let viewer = new SankeyViewer();
 viewer.table = table;
 viewer.options = {source: 'source', target: 'target', value: 'value'};
 viewer.init();
-gr.dockElement(viewer.root, 'Sankey Chart', 'left', 0.5);
+grok.dockElement(viewer.root, 'Sankey Chart', 'left', 0.5);
 ```
 
 #### Docking
@@ -174,5 +174,5 @@ Docking an arbitrary element
 ```javascript
 let e = document.createElement('DIV');
 e.innerText = 'This element has been created in JavaScript';
-gr.dockElement(e, 'JS', 'left', 0.5);
+grok.dockElement(e, 'JS', 'left', 0.5);
 ```

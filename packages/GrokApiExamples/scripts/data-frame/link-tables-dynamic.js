@@ -5,15 +5,15 @@ let tickers = DataFrame.fromCsv(
 AAPL
 TSLA
 MSFT`);
-gr.addTableView(tickers);
+grok.addTableView(tickers);
 
 var detailsView;
 
 tickers.onCurrentRowChanged(function (_) {
-    gr.loadDataFrame(`https://www.quandl.com/api/v1/datasets/WIKI/${tickers.currentRow.ticker}.csv`)
+    grok.loadDataFrame(`https://www.quandl.com/api/v1/datasets/WIKI/${tickers.currentRow.ticker}.csv`)
         .then(function(t) {
            if (detailsView == null)
-               detailsView = gr.addTableView(t);
+               detailsView = grok.addTableView(t);
            else
                detailsView.dataFrame = t;
         });

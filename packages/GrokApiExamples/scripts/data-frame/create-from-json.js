@@ -13,4 +13,4 @@ let table = DataFrame.fromJson(`[
   }
 ]`);
 
-gr.addTableView(table);
+grok.addTableView(table);

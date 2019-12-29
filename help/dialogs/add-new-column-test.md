@@ -89,7 +89,7 @@ See also:
 
 (*):
 ```
-gr.functions.register({
+grok.functions.register({
        signature: 'double norm2(double x, double y)',
        run: (x, y) => Math.sqrt(x / y)});
 ```

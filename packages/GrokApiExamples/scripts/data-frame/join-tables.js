@@ -20,11 +20,11 @@ a5,b0,9,9
 a6,b5,10,10`);
 t2.name = 't2';
 
-let tj = gr.joinTables(t1, t2, ['id1', 'id2'], ['id3', 'id4'], ['v1', 'v2'], ['v3', 'v4'], JOIN_TYPE_INNER, false);
+let tj = grok.joinTables(t1, t2, ['id1', 'id2'], ['id3', 'id4'], ['v1', 'v2'], ['v3', 'v4'], JOIN_TYPE_INNER, false);
 
-gr.addTableView(t1);
-gr.addTableView(t2);
-gr.addTableView(tj);
+grok.addTableView(t1);
+grok.addTableView(t2);
+grok.addTableView(tj);
 
 // Join types:
 //

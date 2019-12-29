@@ -3,7 +3,7 @@ let age = Property.int('Age', null, null, 30);
 let height = Property.float('Height', null, null, 175.5);
 var properties = [name, age, height];
 
-let v = gr.newView('demo: inputs extended');
+let v = grok.newView('demo: inputs extended');
 
 var inputHeight = InputBase.forProperty(height);
 inputHeight.format = 'two digits after comma';
@@ -36,7 +36,7 @@ var reset = function () {
 reset();
 
 content.appendChild(ui.bigButton('Post', function () {
-    gr.balloon.info(inputs.map((input) => `${input.caption}: ${input.stringValue}`).join('<br>'));
+    grok.balloon.info(inputs.map((input) => `${input.caption}: ${input.stringValue}`).join('<br>'));
 }));
 content.appendChild(ui.bigButton('Toggle enabled', function () {
     for (let input of inputs)
@@ -45,4 +45,4 @@ content.appendChild(ui.bigButton('Toggle enabled', function () {
 content.appendChild(ui.bigButton('Reset', reset));
 
 v.root.appendChild(content);
-gr.addView(v);
+grok.addView(v);

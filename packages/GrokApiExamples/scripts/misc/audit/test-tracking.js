@@ -1,4 +1,4 @@
-let view = gr.newView('Usage');
+let view = grok.newView('Usage');
 
-gr.query('ManualActivityByDate', {'date': 'today'})
+grok.query('ManualActivityByDate', {'date': 'today'})
   .then(t => view.append(Viewer.grid(t)));

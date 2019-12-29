@@ -8,19 +8,19 @@
 //
 // See also https://datagrok.ai/help/entities/function
 
-gr.functions.register({
+grok.functions.register({
     signature: 'String jsConcat(int foo, int bar)',
     run: (foo, bar) => `${foo}_${bar}`});
 
-gr.functions.register({
+grok.functions.register({
     signature: 'double norm2(double x, double y)',
     run: (x, y) => Math.sqrt(x / y)});
 
-gr.functions.register({
+grok.functions.register({
     signature: 'String/Molecule testMol()',
     run: () => `C(=O)(O)c1ccccc1N`});
 
-gr.functions.register({
+grok.functions.register({
     signature: 'Widget jsWidget()',
     tags: 'Widgets',
     run: function() {

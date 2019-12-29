@@ -3,7 +3,7 @@ class SequencePackage extends GrokPackage {
     // Guaranteed to get called exactly once before the execution of any function below
     async init() {
         // console.log('Sequence package initialized.');
-        // gr.registerViewer('SequenceViewer', 'SequenceViewer', () => new SequenceViewer());
+        // grok.registerViewer('SequenceViewer', 'SequenceViewer', () => new SequenceViewer());
     }
 
     //description: Returns a string containing the Amino Acid sequence represented by the nucleotide sequence

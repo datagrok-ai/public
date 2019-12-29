@@ -1,6 +1,6 @@
 // Different ways to edit table's content, filter, selection, and metadata.
 
-var demog = gr.testData('demog', 5000);
+var demog = grok.testData('demog', 5000);
 demog.columns.remove('sex');
 foo = demog.columns.addNew('foo', 'int');
 demog.rows.removeAt(1, 3);
@@ -23,4 +23,4 @@ demog.columns.byName('height').setTag('units', 'm');
 demog.columns.byName('weight').setTag('units', 'kg');
 foo = demog.columns.byName('height').getTag('units');
 
-gr.addTableView(demog);
+grok.addTableView(demog);

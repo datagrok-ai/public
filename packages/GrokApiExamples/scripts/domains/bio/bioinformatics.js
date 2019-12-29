@@ -27,7 +27,7 @@ function translate(seq) {
     return protein
 }
 
-gr.functions.register({
+grok.functions.register({
     signature: 'String translate(String s)',
     run: (s) => translate(s)
 });

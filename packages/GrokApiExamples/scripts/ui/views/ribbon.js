@@ -7,8 +7,8 @@ v.root.appendChild(ui.divText('Custom body'));
 // ribbons
 v.setRibbonPanels([
     [
-        ui.iconFA('search', () => gr.balloon.info("clicked")),
-        ui.iconFA('plus', () => gr.balloon.info("plus"))
+        ui.iconFA('search', () => grok.balloon.info("clicked")),
+        ui.iconFA('plus', () => grok.balloon.info("plus"))
     ],
     [ui.divText('Custom panel')]
 ]);
@@ -19,4 +19,4 @@ acc.addPane(('header 1'), () => ui.divText('Dynamic content'));
 acc.addPane(('header 2'), () => ui.divText('More dynamic content'));
 v.root.appendChild(acc.root);
 
-gr.addView(v);
+grok.addView(v);

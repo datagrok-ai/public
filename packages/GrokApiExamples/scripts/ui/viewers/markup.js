@@ -1,6 +1,6 @@
 // https://datagrok.ai/help/viewers/markup-viewer
 
-let view = gr.addTableView(gr.testData('demog', 5000));
+let view = grok.addTableView(grok.testData('demog', 5000));
 
 // Supports three modes, 'text', 'markup' and 'html'.
 // Set 'mode' property to control it (which is auto-detected by default)

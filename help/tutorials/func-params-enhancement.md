@@ -68,7 +68,7 @@ Let's open JS editor:
 
 Suggests country by name: 
 ```javascript
-gr.functions.register({
+grok.functions.register({
   signature: 'List<String> jsSuggestCountryName(String text)',
   isAsync: true,
   run: async function(text) {
@@ -82,7 +82,7 @@ gr.functions.register({
 
 Returns veggies list: 
 ```javascript
-gr.functions.register({
+grok.functions.register({
     signature: 'List<String> jsVeggies()',
     run: () => ["Artichoke", "Cucumber", "Cauliflower", "Onion"]});
 ```
@@ -91,7 +91,7 @@ gr.functions.register({
 
 Checks saltiness range:
 ```javascript
-gr.functions.register({
+grok.functions.register({
     signature: 'List<String> jsSaltinessRange(double input)',
     run: (input) => input >= 0 && input <= 100 ? null : "Saltiness is out of range"});
 ```

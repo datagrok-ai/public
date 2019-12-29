@@ -1,10 +1,10 @@
 // Aggregations
 
-let demog = gr.testData('demog', 5000);
+let demog = grok.testData('demog', 5000);
 
 let avgAgesByRace = demog
     .groupBy(['race', 'sex'])
     .avg('age')
     .aggregate();
 
-gr.addTableView(avgAgesByRace);
+grok.addTableView(avgAgesByRace);

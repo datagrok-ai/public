@@ -1,6 +1,6 @@
 // Creating custom views
 
-let v = gr.newView('accordion');
+let v = grok.newView('accordion');
 
 v.root.appendChild(ui.h1('UI Toolkit'));
 
@@ -17,30 +17,30 @@ acc.addPane(('headers'), () => ui.divV([
     ui.h3('Header 3')]));
 
 acc.addPane(('tables'), () => ui.tableFromMap({
-    user: gr.user,
-    project: gr.project,
+    user: grok.user,
+    project: grok.project,
     time: new Date(),
 }));
 
 acc.addPane(('rendering'), () => ui.span([
     ui.h1('Rendering'),
-    'Currently, ', gr.user, ' has the following project open: ', gr.project
+    'Currently, ', grok.user, ' has the following project open: ', grok.project
 ]));
 
 acc.addPane(('dialogs'), () => ui.button('OPEN', () => {
     ui.dialog('Vogon Announcement')
       .add(ui.h1(''))
       .add(ui.span(['People of Earth, your attention, please… ']))
-      .onOK(() => { gr.balloon.info('OK!'); })
+      .onOK(() => { grok.balloon.info('OK!'); })
       .show();
 }));
 
 acc.addPane(('menus'), () => ui.button('SHOW', () => {
     ui.popupMenu({
-        'About': () => gr.balloon.info('About'),
+        'About': () => grok.balloon.info('About'),
         'File': {
-            'Open': () => gr.balloon.info('Open'),
-            'Close': () => gr.balloon.info('Close'),
+            'Open': () => grok.balloon.info('Open'),
+            'Close': () => grok.balloon.info('Close'),
         }
     });
 }));
