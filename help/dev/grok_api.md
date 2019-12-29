@@ -17,7 +17,7 @@ Use [DataFrame](api/DataFrame.html), [Column](api/Column.html), [ColumnList](api
 and [Row](api/Row.html) classes for table manipulation.
 
 ```javascript
-demog = gr.testData('demog', 5000);
+demog = grok.testData('demog', 5000);
 demog.cols.remove('sex');
 foo = demog.cols.addNew('foo', 'int');
 demog.rows.removeAt(1, 3);
@@ -37,7 +37,7 @@ Each [DataFrame](api/DataFrame.html) is associated with two [bitsets](api/BitSet
 Control [views](../features/navigation.md) via the following methods:
 
 ```javascript
-gr.addTableView(table);
+grok.addTableView(table);
 ```
 
 Dock an arbitrary visual element in a platform:
@@ -45,7 +45,7 @@ Dock an arbitrary visual element in a platform:
 ```javascript
 let e = document.createElement('DIV');
 e.innerText = 'This element has been created in JavaScript';
-gr.dockElement(e, 'JS', 'left', 0.5);
+grok.dockElement(e, 'JS', 'left', 0.5);
 ```
 
 ## Pre-defined viewers
@@ -58,7 +58,7 @@ well as for developing custom viewers.
 Add a new viewer and set up its properties:
 
 ```javascript
-view = gr.addTableView(gr.testData('demog', 5000));
+view = grok.addTableView(grok.testData('demog', 5000));
 hist = view.addViewer('histogram');
 hist.options({'valueColumnName': 'weight'});
 ```
@@ -93,7 +93,7 @@ class JsDemoViewer extends JsViewer {
     }
 }
 
-gr.registerViewer('JsDemoViewer', 'JavaScript-based viewer', () => new JsDemoViewer());
+grok.registerViewer('JsDemoViewer', 'JavaScript-based viewer', () => new JsDemoViewer());
 ```
 
 ## Registering functions
@@ -107,7 +107,7 @@ citizen in the platform (i.e., it can be used from console, gets registered
 in help, there could be an optional audit trail associated with the invocations, etc)
 
 ```javascript
-gr.functions.register({
+grok.functions.register({
     signature: 'String jsConcat(int foo, int bar)',
     run: (foo, bar) => `${foo}_${bar}`});
 ```

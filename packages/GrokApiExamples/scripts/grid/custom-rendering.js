@@ -1,4 +1,4 @@
-let view = gr.addTableView(gr.testData('demog', 5000));
+let view = grok.addTableView(grok.testData('demog', 5000));
 
 // handle onCellPrepare event to set GridCell's parameters
 

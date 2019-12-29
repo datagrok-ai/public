@@ -5,4 +5,4 @@ let acc = ui.accordion();
 acc.addPane(('pane 1'), () => ui.divText(new Date().toTimeString()));
 acc.addPane(('pane 2'), () => ui.divText(new Date().toTimeString()));
 
-gr.newView('tables', [acc.root]);
+grok.newView('tables', [acc.root]);

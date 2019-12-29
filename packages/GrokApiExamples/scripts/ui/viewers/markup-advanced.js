@@ -1,9 +1,9 @@
 // https://datagrok.ai/help/viewers/markup-viewer
 
-let user = gr.user;
+let user = grok.user;
 
-let table = gr.testData('demog', 10000);
-let view = gr.addTableView(table);
+let table = grok.testData('demog', 10000);
+let view = grok.addTableView(table);
 
 let sp = Viewer.scatterPlot(table, {
     xColumnName: 'age',

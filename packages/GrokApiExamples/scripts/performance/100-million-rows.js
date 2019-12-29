@@ -6,6 +6,6 @@
 //
 // See also: https://public.datagrok.ai/help/concepts/performance
 
-let table = gr.testData('random walk', 100000000, 2);
+let table = grok.testData('random walk', 100000000, 2);
 
-gr.addTableView(table);
+grok.addTableView(table);

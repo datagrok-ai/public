@@ -39,7 +39,7 @@ let addTick = function (time) {
 for (let i = 0; i < count; i++)
     addTick(addMilliseconds(start, tick));
 
-var view = gr.addTableView(df);
+var view = grok.addTableView(df);
 
 view.boxPlot({
     categoryColumnName: 'symbol',
@@ -70,7 +70,7 @@ var timer = setInterval(function() {
     df.fireValuesChanged();
 }, tick);
 
-gr.onViewRemoved(function (v) {
+grok.onViewRemoved(function (v) {
     if (v.name === view.name)
         clearInterval(timer);
 });

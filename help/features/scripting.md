@@ -97,11 +97,11 @@ The following example adds a "containsLettersOnly" function to the "col" paramet
 ```
 
 ```js
-gr.functions.register({
+grok.functions.register({
     signature: 'List<String> jsVal1(int input)',
     run: (input) => input < 11 ? null : "Error val1" });
 
-gr.functions.register({
+grok.functions.register({
     signature: 'List<String> jsVal2(int input)',
     run: (input) => input > 9 ? null : "Error val2" });
 ```
@@ -133,7 +133,7 @@ The following example demonstrates two ways of defining choices:
 
 Here is a possible implementation of the "jsTypes" function used in the example:
 ```javascript
-gr.functions.register({
+grok.functions.register({
     signature: 'List<String> jsVeggies()',
     run: () => ["Cucumber", "Cauliflower"]});
 ```
@@ -160,7 +160,7 @@ from a web service:
 ```
 
 ```js
-gr.functions.register({
+grok.functions.register({
   signature: 'List<String> jsSuggestCountryName(String text)',
   isAsync: true,
   run: async function(text) {

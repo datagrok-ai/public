@@ -12,11 +12,11 @@
 //
 // https://datagrok.ai/help/features/tables-link
 
-gr.loadDataFrame("/demo/demog.csv").then((demog) =>
-    gr.loadDataFrame("/demo/demog-types.csv").then(function (demogTypes) {
-        gr.addTableView(demog);
-        gr.addTableView(demogTypes);
-        gr.linkTables(demogTypes, demog,
+grok.loadDataFrame("/demo/demog.csv").then((demog) =>
+    grok.loadDataFrame("/demo/demog-types.csv").then(function (demogTypes) {
+        grok.addTableView(demog);
+        grok.addTableView(demogTypes);
+        grok.linkTables(demogTypes, demog,
             ['sex', 'race'], ['sex', 'race'],
             [CURRENT_ROW_TO_FILTER, MOUSE_OVER_ROW_TO_SELECTION]);
     }));

@@ -3,7 +3,7 @@ class UsageAnalysisPackage extends GrokPackage {
     //tags: app
     startApp() {
         let acc = null;
-        let view = gr.newView('Usage');
+        let view = grok.newView('Usage');
         let results = ui.div();
         let panesExpanded = {};
 
@@ -16,7 +16,7 @@ class UsageAnalysisPackage extends GrokPackage {
         users.doDrop = (user) => users.addTag(user.login);
 
         let addUser = ui.div([ui.iconFA('plus', () => {
-            gr.dapi.users.order('login').list().then((allUsers) => {
+            grok.dapi.users.order('login').list().then((allUsers) => {
                 Menu.popup()
                     .items(allUsers.map(u => u.login), (item) => users.addTag(item))
                     .show();
@@ -42,9 +42,9 @@ class UsageAnalysisPackage extends GrokPackage {
                         queryName += 'AndUsers';
                         params['users'] = selectedUsers;
                     }
-                    gr.query('UsageAnalysis:' + queryName, params).then((t) => {
+                    grok.query('UsageAnalysis:' + queryName, params).then((t) => {
                         if (paneName === 'Errors')
-                            gr.detectSemanticTypes(t);
+                            grok.detectSemanticTypes(t);
                         host.removeChild(host.firstChild);
                         host.appendChild(f(t));
                     });
@@ -58,10 +58,10 @@ class UsageAnalysisPackage extends GrokPackage {
             acc.addPane('Unique users', () => {
                 let host = ui.div();
                 host.appendChild(ui.loader());
-                gr.query('UsageAnalysis:UniqueUsersByDate', {'date': date.value})
+                grok.query('UsageAnalysis:UniqueUsersByDate', {'date': date.value})
                     .then(t => {
                         let ids = Array.from(t.getCol('id').values());
-                        gr.dapi.getEntities(ids).then((users) => {
+                        grok.dapi.getEntities(ids).then((users) => {
                             host.removeChild(host.firstChild);
                             host.appendChild(ui.list(users));
                         });
@@ -109,11 +109,11 @@ class UsageAnalysisPackage extends GrokPackage {
 
     /*
         // Aggregation
-        gr.scriptSync('ExtractValue("events", "utc_timestamp", "date")');
-        gr.scriptSync('SplitByRegExp("events", "event_info_json", "\\\"NumStructures\\\"\\: (\\d*)\\,")');
-        gr.scriptSync('Aggregate("events", pivots = [], aggregations = ["sum(r)"], groupByFields = ["date(utc_timestamp)"])');
+        grok.scriptSync('ExtractValue("events", "utc_timestamp", "date")');
+        grok.scriptSync('SplitByRegExp("events", "event_info_json", "\\\"NumStructures\\\"\\: (\\d*)\\,")');
+        grok.scriptSync('Aggregate("events", pivots = [], aggregations = ["sum(r)"], groupByFields = ["date(utc_timestamp)"])');
 
-        var t = gr.getTableView('result').table;
+        var t = grok.getTableView('result').table;
         var r = t.cols.byName('sum(r)');
         var col = t.cols.addNew('sum', 'int');
         var sum = 0;
@@ -146,7 +146,7 @@ class UsageAnalysisPackage extends GrokPackage {
         let description = ui.stringInput('Description', msg);
 
         let button = ui.bigButton('CREATE', () => {
-            gr.query('Vnerozin:JiraCreateIssue', {
+            grok.query('Vnerozin:JiraCreateIssue', {
                 'createRequest': JSON.stringify({
                     "fields": {
                         "project": {
@@ -161,7 +161,7 @@ class UsageAnalysisPackage extends GrokPackage {
                 }),
                 'updateHistory': false,
             }).then((t) => {
-                gr.balloon.info('Created');
+                grok.balloon.info('Created');
             });
         });
         button.style.marginTop = '12px';

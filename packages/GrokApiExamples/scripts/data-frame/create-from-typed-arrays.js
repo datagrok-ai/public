@@ -17,4 +17,4 @@ let table = DataFrame.fromColumns([
    Column.fromFloat32Array('floats', floats)
 ]);
 
-gr.addTableView(table);
+grok.addTableView(table);

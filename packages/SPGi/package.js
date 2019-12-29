@@ -21,9 +21,9 @@ class SPGiPackage extends GrokPackage {
         view.root.appendChild(content);
         view.root.classList.add('d4-flex-col');
         view.root.classList.add('grok-app-view');
-        gr.addView(view);
+        grok.addView(view);
 
-        gr.onViewAdded(function (view) {
+        grok.onViewAdded(function (view) {
             if (view.type === VIEW_TYPE_TABLE_VIEW && view.name === 'Main')
                 this.layoutMain(view);
         }.bind(this));
@@ -92,7 +92,7 @@ class SPGiPackage extends GrokPackage {
 
     //description: Prepares all opened tables
     prepareAll() {
-        for (let table of gr.tables)
+        for (let table of grok.tables)
             this.prepare(table);
     }
 
@@ -137,8 +137,8 @@ class SPGiPackage extends GrokPackage {
         table.setTag(TAGS_TOOLTIP, 'Structure\nUnique_Identifier\nauthor\nstatus');
 
         this.formatsMap = new Map();
-        if (gr.tableByName('SupData').d !== null) {
-            let table = gr.tableByName('SupData');
+        if (grok.tableByName('SupData').d !== null) {
+            let table = grok.tableByName('SupData');
             for (let n = 0; n < table.rowCount; n++)
                 if (table.get('Property Name', n) === 'STDF DartConditionalFormatting') {
                     let format = JSON.parse(table.get('Property Value', n)).conditionalFormatting;
@@ -203,7 +203,7 @@ class SPGiPackage extends GrokPackage {
     //output: widget result
     //condition: t.tags.contains("spgi")
     samplesAvailability(smiles) {
-        let table = gr.tableByName('Availability');
+        let table = grok.tableByName('Availability');
         let noInfo = new Widget(ui.divText('Information not available'));
         if (table.d === null)
             return noInfo;

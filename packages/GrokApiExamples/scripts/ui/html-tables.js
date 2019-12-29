@@ -1,10 +1,10 @@
 // Creating HTML-driven tables
 // For high-performance grid, check out samples under /grid
 
-gr.newView('tables', [
+grok.newView('tables', [
     ui.tableFromMap({
-        user: gr.user.toMarkup(),
-        project: gr.project.toMarkup(),
+        user: grok.user.toMarkup(),
+        project: grok.project.toMarkup(),
         time: new Date(),
     })
 ]);

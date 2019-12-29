@@ -1,4 +1,4 @@
-let view = gr.newView('Usage');
+let view = grok.newView('Usage');
 
-gr.query('EventsOnDate', {'date': 'today'})
+grok.query('EventsOnDate', {'date': 'today'})
   .then(t => view.append(Viewer.scatterPlot(t)));

@@ -1,3 +1,3 @@
-gr.topMenu
+grok.topMenu
     .group('Custom')
-    .item('Foo!', () => gr.balloon.info('Foo clicked'));
+    .item('Foo!', () => grok.balloon.info('Foo clicked'));

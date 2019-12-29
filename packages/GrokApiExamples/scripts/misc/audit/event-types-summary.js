@@ -1,4 +1,4 @@
-let view = gr.newView('Usage');
+let view = grok.newView('Usage');
 
-gr.query('EventsSummaryOnDate', {'date': 'today'})
+grok.query('EventsSummaryOnDate', {'date': 'today'})
   .then(t => view.append(Viewer.barChart(t)));

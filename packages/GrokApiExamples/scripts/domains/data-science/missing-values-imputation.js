@@ -2,6 +2,6 @@
 //
 // https://datagrok.ai/help/dialogs/missing-values-imputation
 
-gr.loadDataFrame('/demo/demog.csv')
+grok.loadDataFrame('/demo/demog.csv')
     .then(t => ml.missingValuesImputation(t, ['age', 'height', 'weight'], ['age', 'height', 'weight'], 5)
-        .then(t => gr.addTableView(t)));
+        .then(t => grok.addTableView(t)));

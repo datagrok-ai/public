@@ -1,6 +1,6 @@
 // https://datagrok.ai/help/viewers/shape-map
 
-gr.loadDataFrame("/demo/earnings-by-state.csv").then((t) => {
-    let view = gr.addTableView(t);
+grok.loadDataFrame("/demo/earnings-by-state.csv").then((t) => {
+    let view = grok.addTableView(t);
     view.shapeMap();
 })

@@ -1,10 +1,10 @@
-let v = gr.newView('demo: context menu');
+let v = grok.newView('demo: context menu');
 
 let showMenu = () => {
-    let showBalloon = (item) => gr.balloon.info(item);
+    let showBalloon = (item) => grok.balloon.info(item);
 
     Menu.popup()
-        .item('Show info', () => gr.balloon.info('Info'))
+        .item('Show info', () => grok.balloon.info('Info'))
         .separator()
         .items(['First', 'Second'], showBalloon)
         .show();

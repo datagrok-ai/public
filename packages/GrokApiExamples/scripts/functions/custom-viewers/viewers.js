@@ -17,7 +17,7 @@ class JsDemoViewer extends JsViewer {
 
     // override to handle property changes
     onPropertyChanged(prop) {
-        gr.balloon.info(`${prop.name}: ${prop.get(this)}`);
+        grok.balloon.info(`${prop.name}: ${prop.get(this)}`);
     }
 
     onFrameAttached(dataFrameHandle) {
@@ -45,9 +45,9 @@ class JsDemoViewer extends JsViewer {
 // * Add viewer from Add | JsDemoViewer, or from the toolbar 'viewers' popup
 // * Persist viewer as part of the layout
 // * Common viewer operations under the "Viewer" popup menu, such as cloning, embedding, etc
-gr.registerViewer('JsDemoViewer', 'JavaScript-based viewer', () => new JsDemoViewer());
+grok.registerViewer('JsDemoViewer', 'JavaScript-based viewer', () => new JsDemoViewer());
 
 // Add viewer to a table view
-demog = gr.testData('demog', 5000);
-view = gr.addTableView(demog);
+demog = grok.testData('demog', 5000);
+view = grok.addTableView(demog);
 hist = view.addViewer('JsDemoViewer');

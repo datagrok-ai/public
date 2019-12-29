@@ -1,4 +1,4 @@
-let v = gr.newView('Tooltips demo');
+let v = grok.newView('Tooltips demo');
 
 v.root.appendChild(ui.divV([
     ui.tooltip(ui.span(['Static']), 'Parameter is a string parameter'),

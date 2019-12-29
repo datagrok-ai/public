@@ -1,4 +1,4 @@
-let view = gr.newView('Usage');
+let view = grok.newView('Usage');
 
-gr.query('ErrorsSummaryOnDate', {'date': 'this year'})
-    .then(t => gr.addTableView(t));
+grok.query('ErrorsSummaryOnDate', {'date': 'this year'})
+    .then(t => grok.addTableView(t));

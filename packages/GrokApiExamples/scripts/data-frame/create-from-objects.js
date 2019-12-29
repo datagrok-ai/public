@@ -6,4 +6,4 @@ let t = DataFrame.fromObjects([
     { country: 'Mexico', population: 121 }
 ]);
 
-gr.addTableView(t);
+grok.addTableView(t);

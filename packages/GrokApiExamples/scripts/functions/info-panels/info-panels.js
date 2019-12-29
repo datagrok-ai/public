@@ -4,7 +4,7 @@
 //
 // See also: // https://datagrok.ai/help/concepts/info-panels
 
-gr.functions.register({
+grok.functions.register({
     signature: 'widget molWidget(String/Molecule smiles)',
     tags: 'panel',
     run: (smiles) => new Widget(ui.divText(`mol panel: ${smiles}`))
