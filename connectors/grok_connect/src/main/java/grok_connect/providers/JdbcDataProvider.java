@@ -66,6 +66,8 @@ public abstract class JdbcDataProvider extends DataProvider {
                 ? ((Double)queryRun.options.get(DataProvider.QUERY_COUNT)).intValue() : 0;
         int memoryLimit = (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_MEMORY_LIMIT_MB))
                 ? ((Double)queryRun.options.get(DataProvider.QUERY_MEMORY_LIMIT_MB)).intValue() : 0;
+        int timeout = (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_TIMEOUT_SEC))
+                ? ((Double)queryRun.options.get(DataProvider.QUERY_TIMEOUT_SEC)).intValue() : 300;
 
         // Remove header lines
         DataQuery dataQuery = queryRun.func;
@@ -103,7 +105,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                         }
                     }
                 }
-                statement.setQueryTimeout(60);
+                statement.setQueryTimeout(timeout);
                 resultSet = statement.executeQuery();
             } else {
                 // Put parameters into func
@@ -141,13 +143,13 @@ public abstract class JdbcDataProvider extends DataProvider {
                 query = queryBuffer.toString();
 
                 Statement statement = connection.createStatement();
-                statement.setQueryTimeout(60);
+                statement.setQueryTimeout(timeout);
                 resultSet = statement.executeQuery(query);
             }
         } else {
             // Query without parameters
             Statement statement = connection.createStatement();
-            statement.setQueryTimeout(60);
+            statement.setQueryTimeout(timeout);
             resultSet = statement.executeQuery(query);
         }
 

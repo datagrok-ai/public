@@ -15,6 +15,7 @@ public abstract class DataProvider
     public static String CONN_AVAILABLE = "ok";
     public static String QUERY_COUNT = "#queryCount";
     public static String QUERY_MEMORY_LIMIT_MB = "#queryMemoryLimitMB";
+    public static String QUERY_TIMEOUT_SEC = "#queryTimeoutSec";
 
     public DataSource descriptor;
 
