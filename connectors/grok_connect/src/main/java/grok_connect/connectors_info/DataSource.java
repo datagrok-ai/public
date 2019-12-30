@@ -21,6 +21,7 @@ public class DataSource
     public boolean limitAtEnd = true;
 
     public List<Property> connectionTemplate;
+    public List<Property> credentialsTemplate;
     public List<Property> queryTemplate;
 
     public List<AggrFunctionInfo> aggregations;

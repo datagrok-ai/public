@@ -8,7 +8,8 @@ public class Hive2DataProvider extends HiveDataProvider {
         descriptor = new DataSource();
         descriptor.type = "Hive2";
         descriptor.description = "Query Hive2 database";
-        descriptor.connectionTemplate = DbCredentials.dbConnectionTemplate;        
+        descriptor.connectionTemplate = DbCredentials.dbConnectionTemplate;
+        descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
     }
 
     public String getConnectionString(DataConnection conn) {

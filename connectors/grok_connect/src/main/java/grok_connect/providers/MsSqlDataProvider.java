@@ -15,6 +15,7 @@ public class MsSqlDataProvider extends JdbcDataProvider {
         descriptor.category = "Database";
         descriptor.description = "Query MS SQL database";
         descriptor.connectionTemplate = DbCredentials.dbConnectionTemplate;
+        descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
         descriptor.canBrowseSchema = true;
         descriptor.limitAtEnd = false;
 
@@ -59,7 +60,7 @@ public class MsSqlDataProvider extends JdbcDataProvider {
     public String getConnectionString(DataConnection conn) {
         String port = (conn.getPort() == null) ? "" : ":" + conn.getPort();
         return "jdbc:sqlserver://" + conn.getServer() + port + ";databaseName=" + conn.getDb() +
-                ";user=" + conn.getLogin() + ";password=" + conn.getPassword() + ";";
+                ";user=" + conn.credentials.getLogin() + ";password=" + conn.credentials.getPassword() + ";";
     }
 
     public String getSchemaSql(String db, String schema, String table)

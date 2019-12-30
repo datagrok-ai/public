@@ -163,10 +163,13 @@ public abstract class JdbcDataProvider extends DataProvider {
             String typeName = resultSetMetaData.getColumnTypeName(c);
             supportedType.add(c - 1, true);
 
-            if (isFloat(type, typeName) || isDecimal(type, typeName))
-                column = new FloatColumn();
-            else if (isInteger(type, typeName))
+            int precision = resultSetMetaData.getPrecision(c);
+            int scale = resultSetMetaData.getScale(c);
+
+            if (isInteger(type, typeName, precision, scale))
                 column = new IntColumn();
+            else if (isFloat(type, typeName) || isDecimal(type, typeName))
+                column = new FloatColumn();
             else if (isBoolean(type, typeName))
                 column = new BoolColumn();
             else if (isString(type, typeName) ||
@@ -195,20 +198,28 @@ public abstract class JdbcDataProvider extends DataProvider {
 
                 int type = resultSetMetaData.getColumnType(c);
                 String typeName = resultSetMetaData.getColumnTypeName(c);
+                int precision = resultSetMetaData.getPrecision(c);
+                int scale = resultSetMetaData.getScale(c);
 
                 if (supportedType.get(c - 1)) {
                     String colType = columns.get(c - 1).getType();
-                    if (isDecimal(type, typeName))
+                    if (isInteger(type, typeName, precision, scale) || isBoolean(type, typeName) ||
+                            isString(type, typeName) || colType.equals(Types.INT) || colType.equals(Types.BOOL))
+                        if (value instanceof Short)
+                            columns.get(c - 1).add(((Short)value).intValue());
+                        else if (value instanceof Double)
+                            columns.get(c - 1).add(((Double)value).intValue());
+                        else if (value instanceof Float)
+                            columns.get(c - 1).add(((Float)value).intValue());
+                        else if (value instanceof BigDecimal)
+                            columns.get(c - 1).add(((BigDecimal)value).intValue());
+                        else
+                            columns.get(c - 1).add(value);
+                    else if (isDecimal(type, typeName))
                         columns.get(c - 1).add((value == null) ? null : ((BigDecimal)value).floatValue());
                     else if (isFloat(type, typeName) || (colType.equals(Types.FLOAT)))
                         if (value instanceof Double)
                             columns.get(c - 1).add(new Float((Double)value));
-                        else
-                            columns.get(c - 1).add(value);
-                    else if (isInteger(type, typeName) || isBoolean(type, typeName) || isString(type, typeName) ||
-                            colType.equals(Types.INT) || colType.equals(Types.BOOL))
-                        if (value instanceof Short)
-                            columns.get(c - 1).add(new Integer((Short)value));
                         else
                             columns.get(c - 1).add(value);
                     else if (isBigInt(type, typeName) ||
@@ -399,13 +410,14 @@ public abstract class JdbcDataProvider extends DataProvider {
         return execute(queryRun);
     }
 
-    private static boolean isInteger(int type, String typeName) {
+    private static boolean isInteger(int type, String typeName, int precision, int scale) {
         return (type == java.sql.Types.INTEGER) || (type == java.sql.Types.TINYINT) || (type == java.sql.Types.SMALLINT) ||
                 typeName.equalsIgnoreCase("int4") ||
                 typeName.equalsIgnoreCase("int2") ||
                 typeName.equalsIgnoreCase("int") ||
                 typeName.equalsIgnoreCase("serial2") ||
-                typeName.equalsIgnoreCase("serial4");
+                typeName.equalsIgnoreCase("serial4") ||
+                ((precision < 33) && (scale == 0) && (isFloat(type, typeName) || isDecimal(type, typeName)));
     }
 
     private static boolean isTime(int type, String typeName) {

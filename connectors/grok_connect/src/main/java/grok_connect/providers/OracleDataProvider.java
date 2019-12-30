@@ -14,6 +14,7 @@ public class OracleDataProvider extends JdbcDataProvider {
         descriptor.type = "Oracle";
         descriptor.description = "Query Oracle database";
         descriptor.connectionTemplate = DbCredentials.dbConnectionTemplate;
+        descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
         descriptor.canBrowseSchema = true;
 
         descriptor.typesMap = new HashMap<String, String>() {{
@@ -43,7 +44,7 @@ public class OracleDataProvider extends JdbcDataProvider {
 
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
         Class.forName("oracle.jdbc.driver.OracleDriver");
-        return DriverManager.getConnection(getConnectionString(conn), conn.getLogin(), conn.getPassword());
+        return DriverManager.getConnection(getConnectionString(conn), conn.credentials.getLogin(), conn.credentials.getPassword());
     }
 
     public String getConnectionString(DataConnection conn) {
