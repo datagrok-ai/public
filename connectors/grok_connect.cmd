@@ -1,5 +1,5 @@
 :: Base project directory and executable
-SET GROK_CONNECT_DIR=connectors\grok_connect
+SET GROK_CONNECT_DIR=grok_connect
 SET GROK_CONNECT=grok_connect-1.0.3.jar
 
 :: Remove target
@@ -15,7 +15,7 @@ call pub get
 cd ..\ddt\bin\serialization_test
 call pub get
 
-cd ..\..\..\java
+cd ..\..\..\public\connectors
 
 :: Build project
 call mvn package
