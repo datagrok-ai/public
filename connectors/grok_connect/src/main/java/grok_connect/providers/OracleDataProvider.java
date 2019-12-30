@@ -61,7 +61,7 @@ public class OracleDataProvider extends JdbcDataProvider {
         String whereClause = " WHERE " + String.join(" AND \n", filters);
 
         return "SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE " +
-                "FROM USER_TAB_COLUMNS" + ((filters.size() > 0) ? whereClause : "");
+                "FROM ALL_TAB_COLUMNS" + ((filters.size() > 0) ? whereClause : "");
     }
 
     public String limitToSql(String query, Integer limit) {
