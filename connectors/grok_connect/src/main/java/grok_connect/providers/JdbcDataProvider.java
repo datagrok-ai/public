@@ -264,7 +264,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                 for (Column column : columns)
                     size += column.memoryInBytes();
                 size = ((count > 0) ? (int)((long)count * size / rowCount) : size) / 1000000;
-                if (size > memoryLimit)
+                if (memoryLimit > 0 && size > memoryLimit)
                     throw new SQLException("Too large query result: " +
                             String.valueOf(size) + " > " + String.valueOf(memoryLimit) + " MB");
             }
