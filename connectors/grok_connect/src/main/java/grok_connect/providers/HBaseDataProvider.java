@@ -10,11 +10,12 @@ public class HBaseDataProvider extends JdbcDataProvider {
         descriptor.type = "HBase";
         descriptor.description = "Query HBase database";
         descriptor.connectionTemplate = DbCredentials.dbConnectionTemplate;
+        descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
     }
 
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
         Class.forName("org.apache.phoenix.queryserver.client.Driver");
-        return DriverManager.getConnection(getConnectionString(conn), conn.getLogin(), conn.getPassword());
+        return DriverManager.getConnection(getConnectionString(conn), conn.credentials.getLogin(), conn.credentials.getPassword());
     }
 
     public String getConnectionString(DataConnection conn) {

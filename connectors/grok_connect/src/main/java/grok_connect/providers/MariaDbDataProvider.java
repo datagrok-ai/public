@@ -10,12 +10,13 @@ public class MariaDbDataProvider extends MySqlDataProvider {
         descriptor.type = "MariaDB";
         descriptor.description = "Query MariaDB database";
         descriptor.connectionTemplate = DbCredentials.dbConnectionTemplate;
+        descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
         descriptor.canBrowseSchema = true;
     }
 
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
         Class.forName("org.mariadb.jdbc.Driver");
-        return DriverManager.getConnection(getConnectionString(conn), conn.getLogin(), conn.getPassword());
+        return DriverManager.getConnection(getConnectionString(conn), conn.credentials.getLogin(), conn.credentials.getPassword());
     }
 
     public String getConnectionString(DataConnection conn) {

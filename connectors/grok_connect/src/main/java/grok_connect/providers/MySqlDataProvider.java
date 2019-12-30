@@ -14,6 +14,7 @@ public class MySqlDataProvider extends JdbcDataProvider {
         descriptor.type = "MySQL";
         descriptor.description = "Query MySQL database";
         descriptor.connectionTemplate = DbCredentials.dbConnectionTemplate;
+        descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
         descriptor.canBrowseSchema = true;
         descriptor.nameBrackets = "`";
 
@@ -55,7 +56,7 @@ public class MySqlDataProvider extends JdbcDataProvider {
 
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
         Class.forName("com.mysql.jdbc.Driver");
-        return DriverManager.getConnection(getConnectionString(conn), conn.getLogin(), conn.getPassword());
+        return DriverManager.getConnection(getConnectionString(conn), conn.credentials.getLogin(), conn.credentials.getPassword());
     }
 
     public String getConnectionString(DataConnection conn) {

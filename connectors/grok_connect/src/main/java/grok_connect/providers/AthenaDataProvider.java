@@ -16,15 +16,18 @@ public class AthenaDataProvider extends JdbcDataProvider {
             add(new Property(Property.STRING_TYPE, DbCredentials.SERVER));
             add(new Property(Property.INT_TYPE, DbCredentials.PORT));
             add(new Property(Property.STRING_TYPE, DbCredentials.DB, DbCredentials.DB_DESCRIPTION));
+            add(new Property(Property.STRING_TYPE, "s3_staging_dir", "The name of the staging bucket"));
+        }};
+        descriptor.credentialsTemplate = new ArrayList<Property>() {{
             add(new Property(Property.STRING_TYPE, DbCredentials.LOGIN));
             add(new Property(Property.STRING_TYPE, DbCredentials.PASSWORD, new Prop("password")));
-            add(new Property(Property.STRING_TYPE, "s3_staging_dir", "The name of the staging bucket"));
         }};
     }
 
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
         Class.forName("com.amazonaws.athena.jdbc.AthenaDriver");
-        return DriverManager.getConnection(getConnectionString(conn), conn.getLogin(), conn.getPassword());
+        return DriverManager.getConnection(getConnectionString(conn), conn.credentials.getLogin(),
+                conn.credentials.getPassword());
     }
 
     public String getConnectionString(DataConnection conn) {

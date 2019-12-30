@@ -14,12 +14,13 @@ public class MongoDbDataProvider extends JdbcDataProvider {
         descriptor.type = "MongoDB";
         descriptor.description = "Query MongoDB database";
         descriptor.connectionTemplate = DbCredentials.dbConnectionTemplate;
+        descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
         descriptor.queryLanguage = "mongodb";
     }
 
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
         Class.forName("com.dbschema.MongoJdbcDriver");
-        return DriverManager.getConnection(getConnectionString(conn), conn.getLogin(), conn.getPassword());
+        return DriverManager.getConnection(getConnectionString(conn), conn.credentials.getLogin(), conn.credentials.getPassword());
     }
 
     public String getConnectionString(DataConnection conn) {

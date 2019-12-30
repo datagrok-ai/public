@@ -13,6 +13,8 @@ public class AccessDataProvider extends JdbcDataProvider {
         descriptor.description = "Query Access database";
         descriptor.connectionTemplate = new ArrayList<Property>() {{
             add(new Property(Property.STRING_TYPE, DbCredentials.DB, DbCredentials.DB_DESCRIPTION));
+        }};
+        descriptor.credentialsTemplate = new ArrayList<Property>() {{
             add(new Property(Property.STRING_TYPE, DbCredentials.LOGIN));
             add(new Property(Property.STRING_TYPE, DbCredentials.PASSWORD, new Prop("password")));
         }};
@@ -20,7 +22,8 @@ public class AccessDataProvider extends JdbcDataProvider {
 
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
         Class.forName("net.ucanaccess.jdbc.UcanaccessDriver");
-        return DriverManager.getConnection(getConnectionString(conn), conn.getLogin(), conn.getPassword());
+        return DriverManager.getConnection(getConnectionString(conn), conn.credentials.getLogin(),
+                conn.credentials.getPassword());
     }
 
     public String getConnectionString(DataConnection conn) {

@@ -35,6 +35,9 @@ public class DbCredentials
         add(new Property(Property.STRING_TYPE, DbCredentials.SERVER));
         add(new Property(Property.INT_TYPE, DbCredentials.PORT));
         add(new Property(Property.STRING_TYPE, DbCredentials.DB, DbCredentials.DB_DESCRIPTION));
+    }};
+
+    public static List<Property> dbCredentialsTemplate = new ArrayList<Property>() {{
         add(new Property(Property.STRING_TYPE, DbCredentials.LOGIN));
         add(new Property(Property.STRING_TYPE, DbCredentials.PASSWORD, new Prop("password")));
     }};

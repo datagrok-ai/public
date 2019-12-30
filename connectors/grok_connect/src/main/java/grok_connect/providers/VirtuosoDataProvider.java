@@ -15,15 +15,16 @@ public class VirtuosoDataProvider extends JdbcDataProvider {
         descriptor.type = "Virtuoso";
         descriptor.description = "Query Virtuoso database";
         descriptor.connectionTemplate = DbCredentials.dbConnectionTemplate;
+        descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
     }
 
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
         Class.forName("virtuoso.jdbc4.Driver");
-        return DriverManager.getConnection(getConnectionString(conn), conn.getLogin(), conn.getPassword());
+        return DriverManager.getConnection(getConnectionString(conn), conn.credentials.getLogin(), conn.credentials.getPassword());
     }
 
     public String getConnectionString(DataConnection conn) {
         String port = (conn.getPort() == null) ? "" : ":" + conn.getPort();
-        return "jdbc:virtuoso://" + conn.getServer() + port + "/TIMEOUT=100/UID=" + conn.getLogin() + "/PWD=" + conn.getPassword() + "/";
+        return "jdbc:virtuoso://" + conn.getServer() + port + "/TIMEOUT=100/UID=" + conn.credentials.getLogin() + "/PWD=" + conn.credentials.getPassword() + "/";
     }
 }

@@ -13,6 +13,8 @@ public class PostgresDataProvider extends JdbcDataProvider {
         descriptor.type = "PostgresNet";
         descriptor.description = "Query PostgresNet database";
         descriptor.connectionTemplate = DbCredentials.dbConnectionTemplate;
+        descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
+
         descriptor.canBrowseSchema = true;
         descriptor.typesMap = new HashMap<String, String>() {{
             put("smallint", Types.INT);
@@ -39,7 +41,7 @@ public class PostgresDataProvider extends JdbcDataProvider {
 
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
         Class.forName("org.postgresql.Driver");
-        return DriverManager.getConnection(getConnectionString(conn), conn.getLogin(), conn.getPassword());
+        return DriverManager.getConnection(getConnectionString(conn), conn.credentials.getLogin(), conn.credentials.getPassword());
     }
 
     public String getConnectionString(DataConnection conn) {

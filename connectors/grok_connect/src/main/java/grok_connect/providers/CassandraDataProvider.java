@@ -11,6 +11,7 @@ public class CassandraDataProvider extends JdbcDataProvider {
         descriptor.type = "Cassandra";
         descriptor.description = "Query Cassandra database";
         descriptor.connectionTemplate = DbCredentials.dbConnectionTemplate;
+        descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
     }
 
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
@@ -19,7 +20,8 @@ public class CassandraDataProvider extends JdbcDataProvider {
         Logger logger = Logger.getLogger("com.github.cassandra.jdbc");
         logger.setLevel(Level.ERROR);
 
-        return DriverManager.getConnection(getConnectionString(conn), conn.getLogin(), conn.getPassword());
+        return DriverManager.getConnection(getConnectionString(conn), conn.credentials.getLogin(),
+                conn.credentials.getPassword());
     }
 
     public String getConnectionString(DataConnection conn) {
