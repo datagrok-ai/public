@@ -55,7 +55,7 @@ public class OracleDataProvider extends JdbcDataProvider {
     public String getSchemaSql(String db, String schema, String table)
     {
         List<String> filters = new ArrayList<>();
-        if (table!= null)
+        if (table != null)
             filters.add("(TABLE_NAME = '" + table + "')");
 
         String whereClause = " WHERE " + String.join(" AND \n", filters);
