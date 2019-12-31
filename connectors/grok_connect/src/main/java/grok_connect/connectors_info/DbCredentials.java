@@ -8,6 +8,7 @@ public class DbCredentials
 {
     public static final String SERVER = "server";
     public static final String DB = "db";
+    public static final String SCHEMA = "schema";
     public static final String LOGIN = "login";
     public static final String PASSWORD = "password";
     public static final String PORT = "port";

@@ -15,7 +15,7 @@ Controls:
 | Right click               | Context menu           |
 | Mouse Wheel Up or Plus    | Zoom in                |
 | Mouse Wheel Down or Minus | Zoom out               |
-| Shift+Mouse Drag          | Select                 |
+| Click                     | Make current           |
 
 
 ![3D Scatter Plot](../uploads/gifs/3d-scatter-plot.gif "3D scatter plot") 
