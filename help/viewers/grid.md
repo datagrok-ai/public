@@ -17,6 +17,8 @@
 | (Ctrl+) Shift + ←→              | (Un)select columns |
 | (Ctrl+) Shift + mouse-drag       | (Un)select rows    |
 | (Ctrl+) Shift + ENTER            | (Un)Select rows with the current value  |
+| Ctrl + Shift + Home             | Select rows above current |
+| Ctrl + Shift + End              | Select rows below current |
 
 ### Navigation
           
@@ -24,8 +26,8 @@
 |-----------------------|----------------------|
 | Up, Down, Left, Right | Navigate             |
 | Page Up, Page Down    | Navigate             |
-| Ctrl+Page Up          | Jump to first row    |
-| Ctrl+Page Down        | Jump to last row     |
+| Ctrl+Home             | Jump to first row    |
+| Ctrl+End              | Jump to last row     |
 | Home                  | Jump to first column |
 | End                   | Jump to last column  |
 
