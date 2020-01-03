@@ -1,11 +1,5 @@
 class SequencePackage extends GrokPackage {
 
-    // Guaranteed to get called exactly once before the execution of any function below
-    async init() {
-        // console.log('Sequence package initialized.');
-        // grok.registerViewer('SequenceViewer', 'SequenceViewer', () => new SequenceViewer());
-    }
-
     //description: Returns a string containing the Amino Acid sequence represented by the nucleotide sequence
     //tags: converter
     //input: string nucleotides {semType: nucleotides}
@@ -56,6 +50,24 @@ class SequencePackage extends GrokPackage {
                     bubbleHelp: true,
                     zoomMax: 50 //define the maximum range of the zoom
                 });
+        }, 1000);
+
+        return new Widget(e);
+    }
+
+    //description: returns a sequence widget
+    //input: string pdbId {semType: pdb_id}
+    //tags: panel
+    //output: widget result
+    pdbWidget(pdbId) {
+        let e = ui.div([], 'd4-ngl-viewer');
+        e.id = 'pdb77';
+        e.style.height = '500px';
+        e.style.width = '500px';
+
+        setTimeout(function() {
+            var stage = new NGL.Stage('pdb77', { backgroundColor: 'white' });
+            stage.loadFile(`rcsb://${pdbId}`, { defaultRepresentation: true });
         }, 1000);
 
         return new Widget(e);

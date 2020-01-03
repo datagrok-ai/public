@@ -12,6 +12,18 @@ class SequencePackageDetectors extends GrokPackage {
         return null;
     }
 
+    //tags: semTypeDetector
+    //input: column col
+    //output: string semType
+    detectPdb(col) {
+        if (col.name === "pdb") {
+            col.semType = 'pdb_id';
+            return 'pdb_id';
+        }
+
+        return null;
+    }
+
     //input: string s
     //output: string ss
     dupXX(s) {
