@@ -52,16 +52,15 @@ public class OracleDataProvider extends JdbcDataProvider {
         return "jdbc:oracle:thin:@//" + conn.getServer() + port + "/" + conn.getDb();
     }
 
-    public String getSchemaSql(String db, String schema, String table)
-    {
-        List<String> filters = new ArrayList<>();
-        if (table != null)
-            filters.add("(TABLE_NAME = '" + table + "')");
+    public String getSchemaSql(String db, String schema, String table) {
+        String whereClause = " WHERE OWNER != 'SYS' AND OWNER != 'SYSTEM' AND " +
+                "OWNER != 'CTXSYS' AND OWNER != 'MDSYS' AND OWNER != 'XDB' AND OWNER != 'APEX_040000'";
 
-        String whereClause = " WHERE " + String.join(" AND \n", filters);
+        if (table != null) {
+            whereClause = whereClause + " AND (TABLE_NAME = '" + table + "')";
+        }
 
-        return "SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE " +
-                "FROM ALL_TAB_COLUMNS" + ((filters.size() > 0) ? whereClause : "");
+        return "SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE FROM ALL_TAB_COLUMNS" + whereClause;
     }
 
     public String limitToSql(String query, Integer limit) {
