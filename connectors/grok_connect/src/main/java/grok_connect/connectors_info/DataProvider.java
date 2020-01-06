@@ -4,6 +4,7 @@ import java.sql.*;
 import java.text.*;
 import java.util.*;
 import java.util.regex.*;
+import java.io.IOException;
 import serialization.*;
 import grok_connect.utils.*;
 import grok_connect.providers.*;
@@ -22,10 +23,10 @@ public abstract class DataProvider
     public abstract boolean isParametrized();
 
     public abstract DataFrame execute(FuncCall queryRun)
-            throws ClassNotFoundException, SQLException, ParseException;
+            throws ClassNotFoundException, SQLException, ParseException, IOException;
 
     public DataFrame getSchema(DataConnection dataConnection, String schema, String table)
-            throws ClassNotFoundException, SQLException, ParseException {
+            throws ClassNotFoundException, SQLException, ParseException, IOException {
         throw new UnsupportedOperationException();
     }
 
@@ -117,7 +118,7 @@ public abstract class DataProvider
     }
 
     public DataFrame queryTable(DataConnection conn, TableQuery query)
-            throws ClassNotFoundException, SQLException, ParseException {
+            throws ClassNotFoundException, SQLException, ParseException, IOException {
         throw new UnsupportedOperationException();
     }
 
