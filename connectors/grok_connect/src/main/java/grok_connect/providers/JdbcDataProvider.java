@@ -6,7 +6,7 @@ import java.util.*;
 import java.math.*;
 import java.text.*;
 import java.util.regex.*;
-
+import org.apache.commons.io.IOUtils;
 import serialization.*;
 import grok_connect.utils.*;
 import grok_connect.table_query.*;
@@ -43,7 +43,7 @@ public abstract class JdbcDataProvider extends DataProvider {
     }
 
     public DataFrame getSchema(DataConnection connection, String schema, String table)
-            throws ClassNotFoundException, SQLException, ParseException {
+            throws ClassNotFoundException, SQLException, ParseException, IOException {
         FuncCall queryRun = new FuncCall();
         queryRun.func = new DataQuery();
         queryRun.func.query = getSchemaSql(connection.getDb(), schema, table);
@@ -58,7 +58,7 @@ public abstract class JdbcDataProvider extends DataProvider {
 
     @SuppressWarnings("unchecked")
     public DataFrame execute(FuncCall queryRun)
-            throws ClassNotFoundException, SQLException, ParseException {
+            throws ClassNotFoundException, SQLException, ParseException, IOException {
 
         ResultSet resultSet;
         Pattern pattern = Pattern.compile("(?m)@(\\w+)");
@@ -206,7 +206,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                 if (supportedType.get(c - 1)) {
                     String colType = columns.get(c - 1).getType();
                     if (isInteger(type, typeName, precision, scale) || isBoolean(type, typeName) ||
-                            isString(type, typeName) || colType.equals(Types.INT) || colType.equals(Types.BOOL))
+                            colType.equals(Types.INT) || colType.equals(Types.BOOL))
                         if (value instanceof Short)
                             columns.get(c - 1).add(((Short)value).intValue());
                         else if (value instanceof Double)
@@ -217,7 +217,15 @@ public abstract class JdbcDataProvider extends DataProvider {
                             columns.get(c - 1).add(((BigDecimal)value).intValue());
                         else
                             columns.get(c - 1).add(value);
-                    else if (isDecimal(type, typeName))
+                    else if (isString(type, typeName)) {
+                        if (type == java.sql.Types.CLOB) {
+                            Reader reader = ((Clob)value).getCharacterStream();
+                            StringWriter writer = new StringWriter();
+                            IOUtils.copy(reader, writer);
+                            columns.get(c - 1).add(writer.toString());
+                        } else
+                            columns.get(c - 1).add(value);
+                    } else if (isDecimal(type, typeName))
                         columns.get(c - 1).add((value == null) ? null : ((BigDecimal)value).floatValue());
                     else if (isFloat(type, typeName) || (colType.equals(Types.FLOAT)))
                         if (value instanceof Double)
@@ -400,7 +408,7 @@ public abstract class JdbcDataProvider extends DataProvider {
     }
 
     public DataFrame queryTable(DataConnection conn, TableQuery query)
-            throws ClassNotFoundException, SQLException, ParseException {
+            throws ClassNotFoundException, SQLException, ParseException, IOException {
         FuncCall queryRun = new FuncCall();
         queryRun.func = new DataQuery();
         String sql = queryTableSql(conn, query);
@@ -452,7 +460,8 @@ public abstract class JdbcDataProvider extends DataProvider {
 
     private static boolean isString(int type, String typeName) {
         return ((type == java.sql.Types.VARCHAR)|| (type == java.sql.Types.CHAR) ||
-                (type == java.sql.Types.LONGVARCHAR) || typeName.equalsIgnoreCase("varchar") ||
+                (type == java.sql.Types.LONGVARCHAR) || (type == java.sql.Types.CLOB) ||
+                typeName.equalsIgnoreCase("varchar") ||
                 typeName.equalsIgnoreCase("nvarchar") ||
                 typeName.equalsIgnoreCase("nchar") ||
                 typeName.equalsIgnoreCase("ntext")) &&
