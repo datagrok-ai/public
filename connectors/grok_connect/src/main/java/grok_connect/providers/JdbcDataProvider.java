@@ -238,7 +238,9 @@ public abstract class JdbcDataProvider extends DataProvider {
                             colType.equals(Types.STRING))
                         columns.get(c - 1).add((value != null) ? value.toString() : "");
                     else if (isTime(type, typeName)) {
-                        java.util.Date time = ((java.util.Date) value);
+                        java.util.Date time = (value instanceof oracle.sql.TIMESTAMP)
+                                ? ((oracle.sql.TIMESTAMP)value).dateValue()
+                                : ((java.util.Date) value);
                         columns.get(c - 1).add((time == null) ? null : time.getTime() * 1000.0);
                     }
                 } else {
