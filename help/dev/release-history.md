@@ -3,10 +3,6 @@
 
 # 2020.01.07: Service Update
 
-## Breaking changes
-
-After installing all data connections credentials will be dropped because of the new credentials store system.
-
 ## Latest docker images
 * Datagrok (new): 766822877060.dkr.ecr.us-east-2.amazonaws.com/datagrok:1.0.X-192a6a4
 * CVM (old): 766822877060.dkr.ecr.us-east-2.amazonaws.com/grok_cvm:1.0.31-6261445
