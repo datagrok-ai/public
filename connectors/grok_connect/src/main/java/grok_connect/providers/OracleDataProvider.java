@@ -44,6 +44,7 @@ public class OracleDataProvider extends JdbcDataProvider {
 
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
         Class.forName("oracle.jdbc.driver.OracleDriver");
+        System.getProperties().setProperty("oracle.jdbc.J2EE13Compliant", "true");
         return DriverManager.getConnection(getConnectionString(conn), conn.credentials.getLogin(), conn.credentials.getPassword());
     }
 
