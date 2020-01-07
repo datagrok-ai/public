@@ -1,6 +1,49 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2020.01.07: Service Update
+
+## Breaking changes
+
+After installing all data connections credentials will be dropped because of the new credentials store system.
+
+## Latest docker images
+* Datagrok (new): 766822877060.dkr.ecr.us-east-2.amazonaws.com/datagrok:1.0.X-192a6a4
+* CVM (old): 766822877060.dkr.ecr.us-east-2.amazonaws.com/grok_cvm:1.0.31-6261445
+
+## Addressed issues
+
+* Scripting/Notebooks: Ability to create separate environment for custom packages
+* AmazonCloudProvider: FileExists raises signing error
+* Grok API: Ability to set Grok variables
+* DbContext: connections leaking fixed
+* Credentials Management System
+* JS API: Grid: cell-based tooltip
+* Pressing Ctrl+Z in a text field should not initiate platform's undo command
+* Grok API: Rename gr to grok
+* Grid: "Ctlr+A" should only select filtered rows
+* Grid: Column filter: Stops working after it's used once
+* Scatter plot: If you zoom with the touchbar (two finger pinch), then the browser window also zooms
+* Hotkeys: Ctrl+Page Up (Page Down) does not go to the first (last) row in Grid
+* Grid: Shift+PgUp/PgDown should select rows
+* Grid: Ctrl+Shift + ↑↓ does not deselect rows
+* Filter Rows: returns no rows if used on filtered values
+* GrokConnect: Virtuoso support
+* GrokConnect: ORACLE num with int precision should be handled as integer data type
+* GrokConnect: Schema does not work for ORACLE
+* Oracle connector: error when returned dataset contains columns of the same name
+* GrokConnect: Parametrize Query timeout
+* Connections list: Show only used datasources on first page
+* UI: Compare client and server versions on startup
+* Dialogs: Columns Selectors: Ability to mark all columns found after searching
+* Grok API: Moved NGL viewer to common libraries
+* Git data provider
+* HashId: ability to overwrite ID
+* Credentials: ability to save bool and int parameters
+* Mask passwords in settings
+* LDAP authentication
+* GrokConnect: Oracle timestamp and clob column types cause errors
+
 # 2019.12.23: Stable version
 ## Latest docker images
 * Datagrok (new): 766822877060.dkr.ecr.us-east-2.amazonaws.com/datagrok:1.0.48-5791556
