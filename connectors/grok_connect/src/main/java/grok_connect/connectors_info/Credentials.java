@@ -1,5 +1,7 @@
 package grok_connect.connectors_info;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.*;
 
 
@@ -14,4 +16,12 @@ public class Credentials {
 
     public String getLogin() { return (String)parameters.get(LOGIN); }
     public String getPassword () { return (String)parameters.get(PASSWORD); }
+
+    public String getPasswordUrlEncoded () {
+        try {
+            return URLEncoder.encode(getPassword(), "UTF-8");
+        } catch (UnsupportedEncodingException ex) {
+            throw new RuntimeException(ex.getCause());
+        }
+    }
 }
