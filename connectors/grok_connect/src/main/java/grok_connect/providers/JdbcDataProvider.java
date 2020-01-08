@@ -238,8 +238,8 @@ public abstract class JdbcDataProvider extends DataProvider {
                             colType.equals(Types.STRING))
                         columns.get(c - 1).add((value != null) ? value.toString() : "");
                     else if (isTime(type, typeName)) {
-                        java.util.Date time = (value instanceof oracle.sql.TIMESTAMP)
-                                ? ((oracle.sql.TIMESTAMP)value).dateValue()
+                        java.util.Date time = (value instanceof java.sql.Timestamp)
+                                ? java.util.Date.from(((java.sql.Timestamp)value).toInstant())
                                 : ((java.util.Date) value);
                         columns.get(c - 1).add((time == null) ? null : time.getTime() * 1000.0);
                     }
@@ -422,6 +422,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         return execute(queryRun);
     }
 
+    // TODO Convert following code into "List.contains() style
     private static boolean isInteger(int type, String typeName, int precision, int scale) {
         return (type == java.sql.Types.INTEGER) || (type == java.sql.Types.TINYINT) || (type == java.sql.Types.SMALLINT) ||
                 typeName.equalsIgnoreCase("int4") ||
@@ -430,6 +431,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                 typeName.equalsIgnoreCase("serial2") ||
                 typeName.equalsIgnoreCase("serial4") ||
                 ((precision < 33) && (scale == 0) && (isFloat(type, typeName) || isDecimal(type, typeName)));
+        // TODO Investigate precision value for current case
     }
 
     private static boolean isTime(int type, String typeName) {
