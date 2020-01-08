@@ -445,8 +445,13 @@
       "id": "093ca161-ac77-4663-99f4-0c323ffe1c8e",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//span[contains(.,'starbucks_us')]",
-      "targets": [],
+      "target": "xpath=//label[contains(.,'coffee_company')]",
+      "targets": [
+        ["css=.d4-accordion-header label", "css:finder"],
+        ["xpath=//div[@id='grok-viewers-toolbox']/div[2]/div/span/span/label", "xpath:idRelative"],
+        ["xpath=//span/label", "xpath:position"],
+        ["xpath=//label[contains(.,'coffee_company')]", "xpath:innerText"]
+      ],
       "value": ""
     }, {
       "id": "437b52ee-b50b-4e88-986b-55007d46af7b",
