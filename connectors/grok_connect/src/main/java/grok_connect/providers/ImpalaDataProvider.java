@@ -4,6 +4,7 @@ import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
 import grok_connect.utils.Property;
+import jdk.nashorn.internal.objects.Global;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -29,7 +30,11 @@ public class ImpalaDataProvider extends JdbcDataProvider {
 
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
         Class.forName("com.cloudera.impala.jdbc41.Driver");
-        return DriverManager.getConnection(getConnectionString(conn), conn.credentials.getLogin(), conn.credentials.getPassword());
+
+        String connStr = getConnectionString(conn);
+        System.out.println(connStr);
+
+        return DriverManager.getConnection(connStr, conn.credentials.getLogin(), conn.credentials.getPassword());
     }
 
     public String getConnectionString(DataConnection conn) {
@@ -38,6 +43,6 @@ public class ImpalaDataProvider extends JdbcDataProvider {
         String schema = (String)conn.parameters.get(DbCredentials.SCHEMA);
         schema = schema == null ? "/default" : "/" + schema;
 
-        return "jdbc:impala://" + conn.getServer() + port + schema + ";AuthMech=3;/UID=" + conn.credentials.getLogin() + "/PWD=" + conn.credentials.getPassword();
+        return "jdbc:impala://" + conn.getServer() + port + schema + ";AuthMech=3;UID=" + conn.credentials.getLogin() + ";PWD=" + conn.credentials.getPasswordUrlEncoded();
     }
 }
