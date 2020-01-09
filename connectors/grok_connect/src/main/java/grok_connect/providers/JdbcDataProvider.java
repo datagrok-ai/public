@@ -38,6 +38,7 @@ public abstract class JdbcDataProvider extends DataProvider {
             StringWriter errors = new StringWriter();
             errors.write("ERROR:\n" + ex.toString() + "\n\nSTACK TRACE:\n");
             ex.printStackTrace(new PrintWriter(errors));
+            System.out.println(errors.toString());
             return errors.toString();
         }
     }

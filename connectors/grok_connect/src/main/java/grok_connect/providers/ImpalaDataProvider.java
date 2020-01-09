@@ -43,6 +43,6 @@ public class ImpalaDataProvider extends JdbcDataProvider {
         String schema = (String)conn.parameters.get(DbCredentials.SCHEMA);
         schema = schema == null ? "/default" : "/" + schema;
 
-        return "jdbc:impala://" + conn.getServer() + port + schema + ";AuthMech=3;UID=" + conn.credentials.getLogin() + ";PWD=" + conn.credentials.getPasswordUrlEncoded();
+        return "jdbc:impala://" + conn.getServer() + port + schema + ";AuthMech=3;SSL=1;AllowSelfSignedCerts=1";
     }
 }
