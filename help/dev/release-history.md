@@ -4,7 +4,7 @@
 # 2020.01.07: Service Update
 
 ## Latest docker images
-* Datagrok (new): 766822877060.dkr.ecr.us-east-2.amazonaws.com/datagrok:1.0.X-192a6a4
+* Datagrok (new): 766822877060.dkr.ecr.us-east-2.amazonaws.com/datagrok:1.0.X-0dc9ba6
 * CVM (old): 766822877060.dkr.ecr.us-east-2.amazonaws.com/grok_cvm:1.0.31-6261445
 
 ## Addressed issues
