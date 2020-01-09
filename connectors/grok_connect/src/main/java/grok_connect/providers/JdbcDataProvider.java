@@ -42,6 +42,16 @@ public abstract class JdbcDataProvider extends DataProvider {
         }
     }
 
+    public DataFrame getSchemas(DataConnection connection)
+            throws ClassNotFoundException, SQLException, ParseException, IOException {
+        FuncCall queryRun = new FuncCall();
+        queryRun.func = new DataQuery();
+        queryRun.func.query = getSchemasSql(connection.getDb());
+        queryRun.func.connection = connection;
+
+        return execute(queryRun);
+    }
+
     public DataFrame getSchema(DataConnection connection, String schema, String table)
             throws ClassNotFoundException, SQLException, ParseException, IOException {
         FuncCall queryRun = new FuncCall();
@@ -50,6 +60,10 @@ public abstract class JdbcDataProvider extends DataProvider {
         queryRun.func.connection = connection;
 
         return execute(queryRun);
+    }
+
+    public String getSchemasSql(String db) {
+        throw new UnsupportedOperationException();
     }
 
     public String getSchemaSql(String db, String schema, String table) {

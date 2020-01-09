@@ -9,6 +9,10 @@ import grok_connect.connectors_info.*;
 
 
 public class OracleDataProvider extends JdbcDataProvider {
+    private static final String SYS_SCHEMAS_FILTER =
+            "OWNER != 'SYSTEM' AND OWNER != 'CTXSYS' AND OWNER != 'MDSYS' " +
+            "AND OWNER != 'XDB' AND OWNER != 'APEX_040000' AND OWNER != 'SYS'";
+
     public OracleDataProvider() {
         descriptor = new DataSource();
         descriptor.type = "Oracle";
@@ -53,15 +57,19 @@ public class OracleDataProvider extends JdbcDataProvider {
         return "jdbc:oracle:thin:@//" + conn.getServer() + port + "/" + conn.getDb();
     }
 
+    public String getSchemasSql(String db) {
+        return "SELECT OWNER as TABLE_SCHEMA FROM ALL_TABLES WHERE " + SYS_SCHEMAS_FILTER + " GROUP BY OWNER";
+    }
+
     public String getSchemaSql(String db, String schema, String table) {
-        String whereClause = " WHERE OWNER != 'SYS' AND OWNER != 'SYSTEM' AND " +
-                "OWNER != 'CTXSYS' AND OWNER != 'MDSYS' AND OWNER != 'XDB' AND OWNER != 'APEX_040000'";
+        String whereClause = "WHERE " + SYS_SCHEMAS_FILTER;
 
-        if (table != null) {
+        if (table != null)
             whereClause = whereClause + " AND (TABLE_NAME = '" + table + "')";
-        }
+        if (schema != null)
+            whereClause = whereClause + " AND (OWNER = '" + schema + "')";
 
-        return "SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE FROM ALL_TAB_COLUMNS" + whereClause;
+        return "SELECT OWNER as TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, DATA_TYPE FROM ALL_TAB_COLUMNS " + whereClause;
     }
 
     public String limitToSql(String query, Integer limit) {

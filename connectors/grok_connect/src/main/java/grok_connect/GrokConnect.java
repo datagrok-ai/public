@@ -27,7 +27,6 @@ public class GrokConnect {
             logger.setLevel(Level.ERROR);
 
             port(port);
-            //secure(keystoreFilePath, keystorePassword, truststoreFilePath, truststorePassword);
             connectorsModule();
 
             System.out.printf("grok_connect: Running on %s\n", uri);
@@ -40,7 +39,7 @@ public class GrokConnect {
         }
     }
 
-    public static void connectorsModule() {
+    private static void connectorsModule() {
         Gson gson = new GsonBuilder()
                 .registerTypeAdapter(Property.class, new PropertyAdapter())
                 .create();
@@ -77,13 +76,9 @@ public class GrokConnect {
                 buffer.bufPos = result.blob.length;
 
             } catch (Throwable ex) {
-                result.errorMessage = ex.toString();
-                StringWriter stackTrace = new StringWriter();
-                ex.printStackTrace(new PrintWriter(stackTrace));
-                result.errorStackTrace = stackTrace.toString();
-
-                System.out.println("ERROR: " + result.errorMessage);
-                System.out.println("STACK TRACE: " + result.errorStackTrace);
+                Map<String, String> exception = printError(ex);
+                result.errorMessage = exception.get("errorMessage");
+                result.errorStackTrace = exception.get("errorStackTrace");
 
                 buffer = new BufferAccessor();
             }
@@ -92,9 +87,7 @@ public class GrokConnect {
                 buffer.insertStringHeader(gson.toJson(result));
                 buildResponse(response, buffer.toUint8List());
             } catch (Throwable ex) {
-                System.out.println("ERROR: " + ex.toString());
-                System.out.print("STACK TRACE: ");
-                ex.printStackTrace(System.out);
+                buildExceptionResponse(response, printError(ex));
             }
 
             return response;
@@ -114,9 +107,7 @@ public class GrokConnect {
                 DataFrame result = provider.queryTable(connection, query);
                 buildResponse(response, result.toByteArray());
             } catch (Throwable ex) {
-                System.out.println("ERROR: " + ex.toString());
-                System.out.print("STACK TRACE: ");
-                ex.printStackTrace(System.out);
+                buildExceptionResponse(response, printError(ex));
             }
 
             return response;
@@ -130,12 +121,23 @@ public class GrokConnect {
                 DataProvider provider = DataProvider.getByName(connection.dataSource);
                 result = provider.queryTableSql(connection, query);
             } catch (Throwable ex) {
-                System.out.println("ERROR: " + ex.toString());
-                System.out.print("STACK TRACE: ");
-                ex.printStackTrace(System.out);
+                buildExceptionResponse(response, printError(ex));
             }
 
             return result;
+        });
+
+        post("/schemas", (request, response) -> {
+            try {
+                DataConnection connection = gson.fromJson(request.body(), DataConnection.class);
+                DataProvider provider = DataProvider.getByName(connection.dataSource);
+                DataFrame result = provider.getSchemas(connection);
+                buildResponse(response, result.toByteArray());
+            } catch (Throwable ex) {
+                buildExceptionResponse(response, printError(ex));
+            }
+
+            return response;
         });
 
         post("/schema", (request, response) -> {
@@ -145,9 +147,7 @@ public class GrokConnect {
                 DataFrame result = provider.getSchema(connection, connection.get("schema"), connection.get("table"));
                 buildResponse(response, result.toByteArray());
             } catch (Throwable ex) {
-                System.out.println("ERROR: " + ex.toString());
-                System.out.print("STACK TRACE: ");
-                ex.printStackTrace(System.out);
+                buildExceptionResponse(response, printError(ex));
             }
 
             return response;
@@ -176,7 +176,7 @@ public class GrokConnect {
         });
     }
 
-    public static void buildResponse(Response response, byte[] bytes) throws Throwable {
+    private static void buildResponse(Response response, byte[] bytes) throws Throwable {
         response.type(MediaType.APPLICATION_OCTET_STREAM);
         response.raw().setContentLength(bytes.length);
         response.status(Status.SUCCESS_OK.getCode());
@@ -184,5 +184,26 @@ public class GrokConnect {
         final ServletOutputStream os = response.raw().getOutputStream();
         os.write(bytes);
         os.close();
+    }
+
+    private static void buildExceptionResponse(Response response, Map<String, String> exception) {
+        response.type(MediaType.TEXT_HTML);
+        response.body(exception.get("errorMessage") + "\n" + exception.get("errorStackTrace"));
+        response.status(Status.SERVER_ERROR_INTERNAL.getCode());
+    }
+
+    private static Map<String, String> printError(Throwable ex) {
+        String errorMessage = ex.toString();
+        StringWriter stackTrace = new StringWriter();
+        ex.printStackTrace(new PrintWriter(stackTrace));
+        String errorStackTrace = stackTrace.toString();
+
+        System.out.println("ERROR: \n" + errorMessage);
+        System.out.print("STACK TRACE: \n" + errorStackTrace);
+
+        return new HashMap<String, String>() {{
+            put("errorMessage", errorMessage);
+            put("errorStackTrace", errorStackTrace);
+        }};
     }
 }
