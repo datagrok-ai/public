@@ -25,6 +25,11 @@ public abstract class DataProvider
     public abstract DataFrame execute(FuncCall queryRun)
             throws ClassNotFoundException, SQLException, ParseException, IOException;
 
+    public DataFrame getSchemas(DataConnection dataConnection)
+            throws ClassNotFoundException, SQLException, ParseException, IOException {
+        throw new UnsupportedOperationException();
+    }
+
     public DataFrame getSchema(DataConnection dataConnection, String schema, String table)
             throws ClassNotFoundException, SQLException, ParseException, IOException {
         throw new UnsupportedOperationException();
