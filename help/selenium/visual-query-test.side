@@ -1517,19 +1517,19 @@
       "id": "6e8f1ecc-3047-4d7b-aae5-7305889d01cf",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span-GROSELLA-Restaurante-(min-0.00,-max-0.00)",
+      "target": "name=span-GROSELLA-Restaurante-(min-0,-max-0)",
       "targets": [
-        ["css=.d4-entity-markup-row:nth-child(20)", "css:finder"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div[2]/div/div/span[20]", "xpath:idRelative"],
-        ["xpath=//span[20]", "xpath:position"],
-        ["xpath=//span[contains(.,'Que Delícia')]", "xpath:innerText"]
+        ["css=.d4-entity-markup-row:nth-child(7) label", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div[2]/div/div/span[7]/span/label", "xpath:idRelative"],
+        ["xpath=//span[7]/span/label", "xpath:position"],
+        ["xpath=//label[contains(.,'GROSELLA-Restaurante')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
       "id": "842a1de0-4eef-4d7c-8745-b587a9928fab",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span-LILA-Supermercado-(min-0.00,-max-0.00)",
+      "target": "name=span-LILA-Supermercado-(min-0,-max-0)",
       "targets": [
         ["css=.d4-entity-markup-row:nth-child(20) label", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div[2]/div/div/span[20]/span/label", "xpath:idRelative"],

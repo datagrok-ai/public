@@ -313,42 +313,7 @@
       "id": "0488c8da-8858-43c9-919a-484b0cce826c",
       "comment": "",
       "command": "pause",
-      "target": "1000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "7c567f99-be09-4abc-aad4-ac85a25c395f",
-      "comment": "",
-      "command": "verifyText",
-      "target": "id=balloon: info",
-      "targets": [],
-      "value": "Query started"
-    }, {
-      "id": "f1818b88-4b3c-4827-85bd-d9c618539a8f",
-      "comment": "",
-      "command": "click",
-      "target": "id=balloon: info",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "59d99a14-5a4c-4b36-8e12-8c6860cd6032",
-      "comment": "",
-      "command": "pause",
-      "target": "2000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "fca2602c-f50b-4af3-8e77-5d68b63e21ae",
-      "comment": "",
-      "command": "verifyText",
-      "target": "id=balloon: info",
-      "targets": [],
-      "value": "Query finished"
-    }, {
-      "id": "f6824839-4d2e-448a-9501-d22555501751",
-      "comment": "",
-      "command": "click",
-      "target": "id=balloon: info",
+      "target": "5000",
       "targets": [],
       "value": ""
     }, {
@@ -358,6 +323,13 @@
       "target": "id=balloon: info",
       "targets": [],
       "value": "Stores: 645"
+    }, {
+      "id": "f6824839-4d2e-448a-9501-d22555501751",
+      "comment": "",
+      "command": "click",
+      "target": "id=balloon: info",
+      "targets": [],
+      "value": ""
     }, {
       "id": "c7296301-c0ab-443c-b323-1015cfc30218",
       "comment": "",

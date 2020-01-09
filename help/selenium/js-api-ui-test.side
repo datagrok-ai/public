@@ -380,102 +380,6 @@
       "targets": [],
       "value": ""
     }, {
-      "id": "b22defd5-7449-4fab-88e8-f3cb3fea4274",
-      "comment": "",
-      "command": "doubleClick",
-      "target": "xpath=//div[@name='tree-ui---events']",
-      "targets": [
-        ["css=.d4-tree-view-item:nth-child(8)", "css:finder"],
-        ["xpath=//div[@name='tree-ui---events']", "xpath:attributes"],
-        ["xpath=//div[@id='grok-viewers-toolbox']/div/div[3]/div[2]/div/div[2]/div[10]/div[2]/div[8]", "xpath:idRelative"],
-        ["xpath=//div[10]/div[2]/div[8]", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "b26b2d2a-ca32-4dee-b6a2-c55bcaa6007b",
-      "comment": "",
-      "command": "pause",
-      "target": "1000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "2a4e19da-0a2a-4660-b98e-adf180fe4255",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//i[@name='icon-play']",
-      "targets": [
-        ["css=.fa-play", "css:finder"],
-        ["xpath=//i[@name='icon-play']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[3]/div[7]/div/div[2]/i", "xpath:idRelative"],
-        ["xpath=//div[7]/div/div[2]/i", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "e3018631-458a-4c4f-bbfa-8ab7c57c0c75",
-      "comment": "",
-      "command": "pause",
-      "target": "1000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "26e1c636-8426-46ff-b4f8-0fc4cf46b54d",
-      "comment": "",
-      "command": "verifyElementNotPresent",
-      "target": "css=i[name=\"icon-exclamation-circle\"]",
-      "targets": [
-        ["id=error_outline_black", "id"],
-        ["name=image-ic_error_outline_black_24dp_1x", "name"],
-        ["css=#error_outline_black", "css"],
-        ["css=#error_outline_black", "css:finder"],
-        ["xpath=//img[@id='error_outline_black']", "xpath:attributes"],
-        ["xpath=//img", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "e0b55f84-23ae-46bd-a6e6-f09ba62665be",
-      "comment": "",
-      "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='view-handle: demog 5000']",
-      "targets": [
-        ["css=.tab-handle:nth-child(6)", "css:finder"],
-        ["xpath=//div[@name='view-handle: demog 5000']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[4]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/div[4]", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "2df988a8-0d68-4385-b7bc-b00ac4c8bc3a",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@name='view-handle: events']",
-      "targets": [
-        ["css=.tab-handle:nth-child(4)", "css:finder"],
-        ["xpath=//div[@name='view-handle: events']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "181562e8-f055-4e83-b1bd-c31a13376477",
-      "comment": "",
-      "command": "verifyText",
-      "target": "id=balloon: info",
-      "targets": [
-        ["id=balloon: info", "id"],
-        ["css=#balloon\\3A\\ info", "css:finder"],
-        ["xpath=//div[@id='balloon: info']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[4]/div", "xpath:idRelative"],
-        ["xpath=//div[14]/div[4]/div", "xpath:position"]
-      ],
-      "value": "view changed"
-    }, {
-      "id": "f0699f24-c076-465c-b8e2-76f2a66401ae",
-      "comment": "",
-      "command": "click",
-      "target": "id=balloon: info",
-      "targets": [],
-      "value": ""
-    }, {
       "id": "5e5f0526-559d-4f45-97e6-38733b20b9b9",
       "comment": "",
       "command": "doubleClick",
@@ -1119,7 +1023,7 @@
       "id": "b2a2523c-b068-4eb6-bcdf-7c022b53c6be",
       "comment": "",
       "command": "verifyText",
-      "target": "xpath=(//div[@id='balloon: info'])[3]",
+      "target": "xpath=(//div[@id='balloon: info'])",
       "targets": [
         ["xpath=(//div[@id='balloon: info'])[3]", "xpath:attributes"],
         ["xpath=//div[@id='rootDiv']/div[4]/div[3]", "xpath:idRelative"],
