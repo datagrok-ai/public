@@ -55,7 +55,7 @@ class SequencePackage extends GrokPackage {
         return new Widget(e);
     }
 
-    //description: returns a sequence widget
+    //description: Protein viewer widget based on the pdb_id
     //input: string pdbId {semType: pdb_id}
     //tags: panel
     //output: widget result

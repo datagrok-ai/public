@@ -3,6 +3,7 @@
   "version": "0.4",
   "fullName": "SPGi",
   "description": "SPGi projects views",
+  "groups": ["NXEval"],
   "sources": [
     "css/spgi.css"
   ]
