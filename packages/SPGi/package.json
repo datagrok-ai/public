@@ -3,7 +3,10 @@
   "version": "0.4",
   "fullName": "SPGi",
   "description": "SPGi projects views",
-  "groups": ["NXEval"],
+  "privileges": {
+    "NXEval": "suggest",
+    "Datagrok": "use"
+  },
   "sources": [
     "css/spgi.css"
   ]
