@@ -55,7 +55,7 @@ public abstract class DataProvider
     }
 
     public String convertPatternParamsToQueryParams(FuncCall queryRun, String query) {
-        Pattern pattern = Pattern.compile("@(\\w+)\\((\\w+)\\)");
+        Pattern pattern = Pattern.compile("@(\\w+)\\((\\S+)\\)");
         Matcher matcher = pattern.matcher(query);
         StringBuilder queryBuffer = new StringBuilder();
         int idx = 0;
