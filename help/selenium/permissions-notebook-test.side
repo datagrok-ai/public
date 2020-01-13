@@ -264,28 +264,7 @@
       "targets": [],
       "value": ""
     }, {
-      "id": "95d0124f-ab8d-4b82-b418-631110208870",
-      "comment": "",
-      "command": "click",
-      "target": "css=.tab-handle:nth-child(4) > .tab-handle-close-button",
-      "targets": [],
-      "value": ""
-    }, {
       "id": "c5859841-629d-472c-8165-b14bfcef7216",
-      "comment": "",
-      "command": "pause",
-      "target": "500",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "563ef4a5-1ba4-40af-82b4-bb7c806bd716",
-      "comment": "",
-      "command": "click",
-      "target": "css=.tab-handle:nth-child(4) > .tab-handle-close-button",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "fdea6636-09f3-4daf-897d-961a3e8625c0",
       "comment": "",
       "command": "pause",
       "target": "500",
@@ -650,13 +629,6 @@
       "comment": "",
       "command": "verifyElementNotPresent",
       "target": "name=div-PermissionsModelTest",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "3dd0695b-91ff-4e99-a713-abc0aa5e1b27",
-      "comment": "",
-      "command": "click",
-      "target": "css=.tab-handle:nth-child(4) > .tab-handle-close-button",
       "targets": [],
       "value": ""
     }, {
@@ -1260,20 +1232,6 @@
       "targets": [],
       "value": ""
     }, {
-      "id": "5669513c-055a-4669-a64a-928c07495fbe",
-      "comment": "",
-      "command": "click",
-      "target": "css=.tab-handle:nth-child(4) > .tab-handle-close-button",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "6911351c-3885-4555-9f82-ce2855636905",
-      "comment": "",
-      "command": "pause",
-      "target": "500",
-      "targets": [],
-      "value": ""
-    }, {
       "id": "8a8a95d5-781f-4fe0-95fa-af761cc51a54",
       "comment": "",
       "command": "click",
@@ -1391,7 +1349,7 @@
       "id": "f4248175-f4dd-4697-a92c-39a060c78824",
       "comment": "",
       "command": "pause",
-      "target": "500",
+      "target": "1500",
       "targets": [],
       "value": ""
     }, {
