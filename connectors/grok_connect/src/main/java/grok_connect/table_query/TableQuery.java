@@ -7,6 +7,7 @@ import org.apache.commons.lang.StringUtils;
 public class TableQuery
 {
     public String tableName;
+    public String schema;
     public List<String> fields = new ArrayList<>();
     public List<String> pivots = new ArrayList<>();
 
@@ -66,7 +67,7 @@ public class TableQuery
             return "";
         selectFields = pad(selectFields);
         str += StringUtils.join(selectFields,",\n") + "\n";
-        String _tableName = tableName;
+        String _tableName = (schema != null && schema.length() != 0) ? schema + "." + tableName : tableName;
         if (_tableName.contains(" "))
             _tableName = nameBrackets.substring(0, 1) + _tableName +
                     nameBrackets.substring(nameBrackets.length() - 1, nameBrackets.length());
