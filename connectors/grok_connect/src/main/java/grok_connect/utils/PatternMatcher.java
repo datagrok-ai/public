@@ -50,6 +50,9 @@ public class PatternMatcher {
     }
 
     public String toSql(String type, String variable) {
+        if (op.equals(NONE))
+            return "(1 = 1)";
+
         if (type.equals("num") || type.equals("double") || type.equals("int")) {
             if (op.equals(RANGE_NUM))
                 return "(" + variable + " >= " + values.get(0) + " AND " + variable + " <= " + values.get(1) + ")";
@@ -58,9 +61,7 @@ public class PatternMatcher {
             return "(" + variable + op + values.get(0) + ")";
         } else if (type.equals("string")) {
             String val = ((String)values.get(0)).toLowerCase();
-            if (op.equals(NONE)) 
-                return "";
-            else if (op.equals(EQUALS))
+            if (op.equals(EQUALS))
                 return "(LOWER(" + variable + ") LIKE '" + val + ")";
             else if (op.equals(CONTAINS))    
                 return "(LOWER(" + variable + ") LIKE '%" + val + "%')";
@@ -78,9 +79,7 @@ public class PatternMatcher {
             } else
                 throw new UnsupportedOperationException("Unknown operation " + op);
         } else if (type.equals("datetime")) {
-            if (op.equals(NONE))
-                return "";
-            else if (op.equals(EQUALS))
+            if (op.equals(EQUALS))
                 return "(" + variable + " = '" + values.get(0) + "')";
             else if (op.equals(BEFORE))
                 return "(" + variable + cmp(BEFORE, include1) + "'" + values.get(0) + "')";
