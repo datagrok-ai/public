@@ -3,7 +3,7 @@
 
 # Parameterized Queries
 
-A parameterized query is a query in a query having one or more parameters. When the query is
+A parameterized query is a query with one or more parameters. When the query is
 executed from the UI, a user is prompted to enter parameters. It is also possible
 to run a query programmatically with the specified parameters 
 (see [code snippet](https://public.datagrok.ai/js/samples/data-access/parameterized-query)). 
