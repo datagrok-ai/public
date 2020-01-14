@@ -3,8 +3,10 @@
 
 # Parameterized Queries
 
-A parameterized query is a query in which placeholders are used for 
-parameters, and the actual parameter values are supplied at execution time. 
+A parameterized query is a query in a query having one or more parameters. When the query is
+executed from the UI, a user is prompted to enter parameters. It is also possible
+to run a query programmatically with the specified parameters 
+(see [code snippet](https://public.datagrok.ai/js/samples/data-access/parameterized-query)). 
 
 ## Creating a parameterized query
 
@@ -20,8 +22,8 @@ select * from products where name == '@productName'
 
 ## Syntax
 
-Syntax for query parameters is based on [Scripting](../../features/scripting.md) 
-with some specifics:
+The syntax for defining query parameters is based on [Scripting](../../features/scripting.md), 
+with some additions specific to queries.
 
 ### Header parameters
 
@@ -53,13 +55,12 @@ Comments style can be used '#' for Sparql.
 
 Options for supported data typed are described in [Scripting](../../features/scripting.md) section. 
 
-| Option      | Value                     | Description                             |
-|-------------|---------------------------|-----------------------------------------|
-| choices     | List separates with comma | List of choices for string parameter    |
-| suggestions | Query name                | Name of query tat generates suggestions |     
+| Option      | Description                              |
+|-------------|------------------------------------------|
+| choices     | Comma-separated list of choices  |
+| suggestions | Name of the query to be called to generate suggestion as the user types the value  |     
 
-"choices" option can be result of defined query: as direct query definition or reference by name to 
-existing query.
+"choices" option can be either a list, a name of the query, or the actual SQL query.
 
 Examples:
 ```
@@ -68,7 +69,8 @@ Examples:
 --input: string shipCountry = France {suggestions: northwind:countries}
 ```
 
-Example of query for suggestions generation (one parameter is required):
+This query can be used as a "suggestion" query. It accepts exactly one parameter,
+which is what a user has typed in the input box so far:
 ```
 --name: country
 --input: string sub
@@ -77,32 +79,24 @@ SELECT DISTINCT shipCountry FROM Orders WHERE shipCountry LIKE '%' || @sub || '%
 
 #### Patterns
 
-For all parameters types is supported [Search Patterns](../../features/data-search-patterns.md) feature.
+Sometime, we want to give users the possibility to enter the filtering criteria as 
+a free text. On a server side, this query would be parsed and safely transformed to a proper
+SQL clause. Check out [search Patterns](../../features/data-search-patterns.md) for more details.
 
-| Option  | Value               | Description                                                           |
-|---------|---------------------|-----------------------------------------------------------------------|
-| pattern | True parameter type | See in [Search Patterns](../../features/data-search-patterns.md) section |
+In this case, the input type has to be `string`, since the user will be entering 
+free-text query, and the actual data type should be put in the `pattern` option. Then,
+in the query, you would use `@<patternName>(columnName)` to specify a pattern that should
+be evaluated against the specified column, like that:
 
-To enable this feature set input parameter type to "string" and add "pattern" option 
-with true column data type.
-
-### SQL syntax
-
-#### Parameters
-
-```
-@<parameter name>
-```
-
-#### Parameters with pattern option
-
-```
-@<parameter name>(<column name>)
+```sql
+--input: string orderDate = after 1/1/1995 {pattern: datetime}
+select * from orders
+where @orderDate(orderDate)
 ```
 
 ## Example
 
-Following example can be applied to "Northwind" database "Orders" table. 
+Here is an example of the parameterized query applicable to the "Northwind" database: 
 
 ```$sql
 --input: int employeeId = 5
@@ -122,6 +116,12 @@ SELECT * FROM Orders WHERE (employeeId = @employeeId)
    AND @orderDate(orderDate)
    AND (requiredDate >= @requiredDate)
 ```
+
+When this query is started, the following dialog with the auto-generated inputs appears.
+Note that inputs marked as patters allow users to enter expressions like "> 5" for numbers,
+"after 2019" for dates, and ""
+
+![](parameterized-queries.png)
 
 See also:
 
