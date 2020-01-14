@@ -173,12 +173,14 @@ public abstract class JdbcDataProvider extends DataProvider {
         int columnCount = resultSetMetaData.getColumnCount();
         List<Column> columns = new ArrayList<>(columnCount);
         List<Boolean> supportedType = new ArrayList<>(columnCount);
+        List<Boolean> initColumn = new ArrayList<>(columnCount);
         for (int c = 1; c < columnCount + 1; c++) {
             Column column;
 
             int type = resultSetMetaData.getColumnType(c);
             String typeName = resultSetMetaData.getColumnTypeName(c);
             supportedType.add(c - 1, true);
+            initColumn.add(c - 1, true);
 
             int precision = resultSetMetaData.getPrecision(c);
             int scale = resultSetMetaData.getScale(c);
@@ -198,12 +200,12 @@ public abstract class JdbcDataProvider extends DataProvider {
             else if (isTime(type, typeName))
                 column = new DateTimeColumn();
             else {
-                column = null;
+                column = new StringColumn();
                 supportedType.set(c - 1, false);
+                initColumn.set(c - 1, false);
             }
 
-            if (column != null)
-                column.name = resultSetMetaData.getColumnLabel(c);
+            column.name = resultSetMetaData.getColumnLabel(c);
             columns.add(c - 1, column);
         }
 
@@ -261,7 +263,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                     }
                 } else {
                     Column column = columns.get(c - 1);
-                    if (column == null) {
+                    if (!initColumn.get(c - 1) && value != null) {
                         if ((value instanceof Byte) || (value instanceof Short) || (value instanceof Integer)) {
                             column = new IntColumn();
                             column.addAll(new Integer[rowCount - 1]);
@@ -271,24 +273,22 @@ public abstract class JdbcDataProvider extends DataProvider {
                         } else if ((value instanceof Boolean)) {
                             column = new BoolColumn();
                             column.addAll(new Boolean[rowCount - 1]);
-                        } else {
-                            column = new StringColumn();
-                            column.addAll(new String[rowCount - 1]);
                         }
                         column.name = resultSetMetaData.getColumnLabel(c);
                         columns.set(c - 1, column);
+                        initColumn.set(c - 1, true);
+
+                        System.out.printf("Data type '%s' is not supported yet. Write as '%s'.\n",
+                                resultSetMetaData.getColumnTypeName(c), column.getType());
                     }
 
                     if (value instanceof Double)
-                        value = new Float((Double)value).floatValue();
-                    else if (!(value instanceof Byte) && !(value instanceof Short) && !(value instanceof Integer) && !(value instanceof Boolean))
-                        value = (value != null) ? value.toString() : "";
+                        value = new Float((Double)value);
+                    else if (!(value instanceof Byte) && !(value instanceof Short) &&
+                            !(value instanceof Integer) && !(value instanceof Boolean))
+                        value = (value != null) ? value.toString() : null;
 
                     column.add(value);
-
-                    if (rowCount == 1)
-                        System.out.printf("Data type '%s' is not supported yet. Write as '%s'.\n",
-                                resultSetMetaData.getColumnTypeName(c), column.getType());
                 }
             }
 
