@@ -321,8 +321,9 @@ public abstract class JdbcDataProvider extends DataProvider {
     public PatternMatcherResult numericPatternConverter(FuncParam param, PatternMatcher matcher) {
         PatternMatcherResult result = new PatternMatcherResult();
         String type = param.options.get("pattern");
-
-        if (matcher.op.equals(PatternMatcher.RANGE_NUM)) {
+        if (matcher.op.equals(PatternMatcher.NONE))
+            result.query = "(1 = 1)";
+        else if (matcher.op.equals(PatternMatcher.RANGE_NUM)) {
             String name0 = param.name + "R0";
             String name1 = param.name + "R1";
             result.query = "(" + matcher.colName + " >= @" + name0 + " AND " + matcher.colName + " <= @" + name1 + ")";
@@ -341,13 +342,17 @@ public abstract class JdbcDataProvider extends DataProvider {
 
     public PatternMatcherResult stringPatternConverter(FuncParam param, PatternMatcher matcher) {
         PatternMatcherResult result = new PatternMatcherResult();
+
+        if (matcher.op.equals(PatternMatcher.NONE)) {
+            result.query = "(1 = 1)";
+            return result;
+        }
+
         String type = "string";
         String _query = "(LOWER(" + matcher.colName + ") LIKE @" + param.name + ")";
         String value = ((String)matcher.values.get(0)).toLowerCase();
 
-        if (matcher.op.equals(PatternMatcher.NONE)) {
-            result.query = "(1 = 1)";
-        } else if (matcher.op.equals(PatternMatcher.EQUALS)) {
+        if (matcher.op.equals(PatternMatcher.EQUALS)) {
             result.query = _query;
             result.params.add(new FuncParam(type, param.name, value));
         } else if (matcher.op.equals(PatternMatcher.CONTAINS)) {
