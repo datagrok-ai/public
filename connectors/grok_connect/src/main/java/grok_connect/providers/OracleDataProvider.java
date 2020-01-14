@@ -58,7 +58,7 @@ public class OracleDataProvider extends JdbcDataProvider {
     }
 
     public String getSchemasSql(String db) {
-        return "SELECT OWNER as TABLE_SCHEMA FROM ALL_TABLES WHERE " + SYS_SCHEMAS_FILTER +
+        return "SELECT OWNER as TABLE_SCHEMA FROM ALL_TAB_COLUMNS WHERE " + SYS_SCHEMAS_FILTER +
                 " GROUP BY OWNER ORDER BY OWNER";
     }
 
