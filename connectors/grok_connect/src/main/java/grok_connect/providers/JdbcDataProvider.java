@@ -96,7 +96,7 @@ public abstract class JdbcDataProvider extends DataProvider {
 
             if (isParametrized()) {
                 // Parametrized func
-                List<String> nameMap = new ArrayList<>();
+                List<String> names = new ArrayList<>();
                 Matcher matcher = pattern.matcher(query);
                 StringBuilder queryBuffer = new StringBuilder();
                 int idx = 0;
@@ -104,21 +104,18 @@ public abstract class JdbcDataProvider extends DataProvider {
                     queryBuffer.append(query, idx, matcher.start());
                     queryBuffer.append("?");
                     idx = matcher.end();
-                    nameMap.add(matcher.group(1));
+                    names.add(matcher.group(1));
                 }
                 queryBuffer.append(query, idx, query.length());
                 query = queryBuffer.toString();
                 PreparedStatement statement = connection.prepareStatement(query);
-                for (FuncParam param : dataQuery.getInputParams()) {
-                    if (nameMap.contains(param.name)) {
-                        if (param.propertyType.equals("datetime")) {
-                            Calendar calendar = javax.xml.bind.DatatypeConverter.parseDateTime((String)param.value);
-                            statement.setTimestamp(nameMap.indexOf(param.name) + 1,
-                                    new Timestamp(calendar.getTime().getTime()));
-                        } else {
-                            statement.setObject(nameMap.indexOf(param.name) + 1, param.value);
-                        }
-                    }
+                for (int n = 0; n < names.size(); n++) {
+                    FuncParam param = dataQuery.getParam(names.get(n));
+                    if (param.propertyType.equals("datetime")) {
+                        Calendar calendar = javax.xml.bind.DatatypeConverter.parseDateTime((String)param.value);
+                        statement.setTimestamp(n + 1, new Timestamp(calendar.getTime().getTime()));
+                    } else
+                        statement.setObject(n + 1, param.value);
                 }
                 statement.setQueryTimeout(timeout);
                 resultSet = statement.executeQuery();
