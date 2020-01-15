@@ -11,7 +11,8 @@ import grok_connect.connectors_info.*;
 public class OracleDataProvider extends JdbcDataProvider {
     private static final String SYS_SCHEMAS_FILTER =
             "OWNER != 'SYSTEM' AND OWNER != 'CTXSYS' AND OWNER != 'MDSYS' " +
-            "AND OWNER != 'XDB' AND OWNER != 'APEX_040000' AND OWNER != 'SYS'";
+            "AND OWNER != 'XDB' AND OWNER != 'APEX_040000' AND OWNER != 'SYS'" +
+            "AND OWNER != 'WMSYS' AND OWNER != 'EXFSYS' AND OWNER != 'ORDSYS'";
 
     public OracleDataProvider() {
         descriptor = new DataSource();
