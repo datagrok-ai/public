@@ -147,20 +147,6 @@
       "targets": [],
       "value": ""
     }, {
-      "id": "6ace8f81-fa4a-44c6-87b3-cc68d8d69064",
-      "comment": "",
-      "command": "verifyElementPresent",
-      "target": "id=random-data",
-      "targets": [
-        ["id=random-data", "id"],
-        ["css=#random-data", "css"],
-        ["css=#random-data", "css:finder"],
-        ["xpath=//h1[@id='random-data']", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/h1", "xpath:idRelative"],
-        ["xpath=//h1", "xpath:position"]
-      ],
-      "value": ""
-    }, {
       "id": "c24b3481-5157-4af5-b87e-4250753a4ded",
       "comment": "",
       "command": "click",

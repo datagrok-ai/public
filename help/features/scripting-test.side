@@ -405,10 +405,10 @@
       "id": "bf3dcb5f-0bbf-469c-8d59-ce9fb5217660",
       "comment": "",
       "command": "doubleClick",
-      "target": "xpath=//div[@name='tree-ARIMAForecasting']",
+      "target": "xpath=//div[@name='tree-ARIMA-Forecasting']",
       "targets": [
         ["css=.d4-tree-view-item:nth-child(3)", "css:finder"],
-        ["xpath=//div[@name='tree-ARIMAForecasting']", "xpath:attributes"],
+        ["xpath=//div[@name='tree-ARIMA-Forecasting']", "xpath:attributes"],
         ["xpath=//div[@id='grok-viewers-toolbox']/div/div[3]/div[2]/div/div[2]/div[3]", "xpath:idRelative"],
         ["xpath=//div[3]/div[2]/div/div[2]/div[3]", "xpath:position"]
       ],
@@ -569,7 +569,7 @@
         ["xpath=//div[@id='elementContent']/div/div[2]/div[4]/pre[2]", "xpath:idRelative"],
         ["xpath=//div[4]/pre[2]", "xpath:position"]
       ],
-      "value": "Demo:RScripts:ARIMAForecasting(\"TSLA\", \"Date\", \"Close\", 4, 3, 3, 25)"
+      "value": "RScripts:ARIMAForecasting(\"TSLA\", \"Date\", \"Close\", 4, 3, 3, 25)"
     }, {
       "id": "49d20360-baad-42b8-9cd3-14abcdf47e8c",
       "comment": "",
