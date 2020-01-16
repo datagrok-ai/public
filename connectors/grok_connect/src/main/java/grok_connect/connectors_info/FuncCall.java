@@ -7,7 +7,7 @@ public class FuncCall
 {
     public DataQuery func;
     public Map options;
-    public Map<String, Object> parameterValues;
+    public Map<String, Object> parameterValues = new HashMap<>();
 
     public void setParamValues() {
         for (String paramName: parameterValues.keySet()) {

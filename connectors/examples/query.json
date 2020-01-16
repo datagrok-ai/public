@@ -1,0 +1,21 @@
+{
+  "func": {
+    "query": "select * from products",
+    "connection": {
+      "dataSource": "PostgresNet",
+      "credentials": {
+        "parameters": {
+          "login": "northwind",
+          "password": "northwind"
+        }
+      },
+      "parameters": {
+        "server": "localhost",
+        "port": 5432,
+        "db": "northwind"
+      },
+      "name": "northwind"
+    },
+    "name": "products"
+  }
+}

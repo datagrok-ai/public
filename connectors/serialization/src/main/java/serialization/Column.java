@@ -16,5 +16,7 @@ public abstract class Column<T> {
     public abstract void encode(BufferAccessor buf);
     public abstract void add(T value);
     public abstract void addAll(T[] value);
+    public abstract Object get(int idx);
     public abstract long memoryInBytes();
+    public abstract boolean isNone(int idx);
 }

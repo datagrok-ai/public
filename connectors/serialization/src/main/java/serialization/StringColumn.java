@@ -44,6 +44,10 @@ public class StringColumn extends Column<String> {
             data[length++] = values[n];
     }
 
+    public Object get(int idx) {
+        return data[idx];
+    }
+
     private void ensureSpace(int extraLength) {
         if (length + extraLength > data.length) {
             String[] newData = new String[data.length * 2 + Math.max(0, length + extraLength - data.length * 2)];
@@ -66,6 +70,10 @@ public class StringColumn extends Column<String> {
             if (data[n] != null)
                 size += data[n].length();
         return size * 2 + data.length * 16;
+    }
+
+    public boolean isNone(int idx) {
+        return data[idx] == null || data[idx].equals("");
     }
 
     private void categorize() {
