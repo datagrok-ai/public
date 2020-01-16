@@ -487,7 +487,7 @@
       "id": "c42954c5-4900-43e6-a164-50897d5ff3e5",
       "comment": "",
       "command": "pause",
-      "target": "2000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {
@@ -525,10 +525,10 @@
       "id": "fd0b43ef-bb51-400a-9e7a-c1d1f08a8519",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-section--Shared-with']",
+      "target": "xpath=//div[@name='div-section--Sharing']",
       "targets": [
         ["css=.d4-accordion-pane:nth-child(12) > .d4-accordion-pane-header", "css:finder"],
-        ["xpath=//div[@name='div-section--Shared-with']", "xpath:attributes"],
+        ["xpath=//div[@name='div-section--Sharing']", "xpath:attributes"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[12]/div", "xpath:idRelative"],
         ["xpath=//div[2]/div/div/div/div/div[12]/div", "xpath:position"]
       ],
@@ -544,7 +544,7 @@
       "id": "34919acd-a54b-4cc7-8e52-6a5749b5a439",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//span[contains(.,'selenium')]",
+      "target": "name=span-Selenium",
       "targets": [
         ["css=.expanded .d4-entity-markup-row:nth-child(1)", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[12]/div[2]/div/div/div/span", "xpath:idRelative"],
