@@ -43,6 +43,14 @@ public class BoolColumn extends Column<Boolean> {
         }
     }
 
+    public Object get(int idx) {
+        return data[idx];
+    }
+
+    public boolean isNone(int idx) {
+        return false;
+    }
+
     @Override
     public long memoryInBytes() {
         return data.length * 4;

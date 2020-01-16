@@ -12,6 +12,8 @@ public class DataFrame {
     public List<Column> columns = new ArrayList<>();
     public Map<String, String> tags;
 
+    private static final String delimiter = ",";
+
     public DataFrame() {
     }
 
@@ -31,9 +33,42 @@ public class DataFrame {
         }
     }
 
+    String csvQuote(String s) {
+        boolean quotes = s.contains("\"");
+        s = s.replaceAll("\"", "\"\"");
+        return quotes || s.contains(delimiter) || s.contains("\n") ? "\"" + s + "\"" : s;
+    }
+
+    public String toCsv() {
+        StringBuilder buffer = new StringBuilder();
+
+        for (Column column : columns) {
+            buffer.append(column.name);
+            buffer.append(delimiter);
+        }
+        buffer.append("\n");
+
+        for (int r = 0; r < columns.get(0).length; r++) {
+            for (Column column : columns) {
+                buffer.append(columnToStr(column, r));
+                buffer.append(delimiter);
+            }
+            buffer.append("\n");
+        }
+
+        return buffer.toString();
+    }
+
     public byte[] toByteArray() {
         DataFrame[] tables = {this};
         return (new TablesBlob(tables)).toByteArray();
+    }
+
+    private String columnToStr(Column col, int row) {
+        if (col.isNone(row))
+            return "";
+        String str = String.valueOf(col.get(row));
+        return csvQuote(str);
     }
 
     private String getUniqueName(String name) {

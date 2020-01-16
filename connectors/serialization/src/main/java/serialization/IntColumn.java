@@ -38,9 +38,17 @@ public class IntColumn extends Column<Integer> {
             data[length++] = (values[n] != null) ? values[n] : None;
     }
 
+    public Object get(int idx) {
+        return data[idx];
+    }
+
     @Override
     public long memoryInBytes() {
         return data.length * 4;
+    }
+
+    public boolean isNone(int idx) {
+        return data[idx] == None;
     }
 
     private void ensureSpace(int extraLength) {

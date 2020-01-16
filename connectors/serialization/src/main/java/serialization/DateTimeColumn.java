@@ -77,9 +77,17 @@ public class DateTimeColumn extends Column<Double> {
             setValue(length++, (values[n] != null) ? values[n] : _doubleNone);
     }
 
+    public Object get(int idx) {
+        return data[idx];
+    }
+
     @Override
     public long memoryInBytes() {
         return data.length * 8;
+    }
+
+    public boolean isNone(int idx) {
+        return data[idx] == _doubleNone;
     }
 
     private void ensureSpace(int extraLength) {
