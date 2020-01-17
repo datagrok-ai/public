@@ -1,0 +1,992 @@
+{
+  "id": "b390008b-1b39-4405-bcfd-6b03f9f4d568",
+  "version": "2.0",
+  "name": "query-parameters-test",
+  "url": "https://dev.datagrok.ai/",
+  "tests": [{
+    "id": "1e1a7755-4e26-458c-9783-60348afe35cf",
+    "name": "query-parameters-test",
+    "commands": [{
+      "id": "8ff604b9-81db-4083-8663-4b119b7492f9",
+      "comment": "",
+      "command": "open",
+      "target": "/datasets?selenium=true&q=",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "2e74e989-5df1-447f-bf7b-163871b24921",
+      "comment": "",
+      "command": "type",
+      "target": "xpath=//div[@id='signup-login-fields']/div/div/input",
+      "targets": [
+        ["id=password", "id"],
+        ["css=#password", "css:finder"],
+        ["xpath=//input[@id='password']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/input[2]", "xpath:idRelative"],
+        ["xpath=//input[2]", "xpath:position"]
+      ],
+      "value": "selenium"
+    }, {
+      "id": "d9132049-31ef-45e7-bd38-43ed931a9bc2",
+      "comment": "",
+      "command": "type",
+      "target": "xpath=//div[@id='signup-login-fields']/div/div[2]/input",
+      "targets": [
+        ["id=password", "id"],
+        ["css=#password", "css:finder"],
+        ["xpath=//input[@id='password']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/input[2]", "xpath:idRelative"],
+        ["xpath=//input[2]", "xpath:position"]
+      ],
+      "value": "selenium"
+    }, {
+      "id": "c06f8d03-321e-40fa-bf29-25ec098103fc",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@id='signup-login-fields']/div[2]/button",
+      "targets": [
+        ["linkText=LOGIN", "linkText"],
+        ["css=a", "css:finder"],
+        ["xpath=//a[contains(text(),'LOGIN')]", "xpath:link"],
+        ["xpath=//div[@id='rootDiv']/div/a", "xpath:idRelative"],
+        ["xpath=//a[contains(@href, '#')]", "xpath:href"],
+        ["xpath=//a", "xpath:position"],
+        ["xpath=//a[contains(.,'LOGIN')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "ab8f2726-12a0-40e3-ac90-4730f3344006",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "3a9abedd-ad0c-402c-8915-477b76ed0a5d",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//label[@name='label-Connect-to-data...']",
+      "targets": [
+        ["css=.d4-link-label:nth-child(7)", "css:finder"],
+        ["xpath=//label[@name='label-Connect-to-data...']", "xpath:attributes"],
+        ["xpath=//div[@id='start']/label[6]", "xpath:idRelative"],
+        ["xpath=//label[6]", "xpath:position"],
+        ["xpath=//label[@name='label-Connect-to-data...']", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "32896f50-c984-4159-a91e-919fd65621b3",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='tree-expander-Oracle']",
+      "targets": [
+        ["css=.d4-tree-view-node-selected > .d4-tree-view-tri", "css:finder"],
+        ["xpath=//div[@name='tree-expander-Oracle']", "xpath:attributes"],
+        ["xpath=//div[@id='data-sources']/div/div[2]/div[18]/div/div", "xpath:idRelative"],
+        ["xpath=//div[18]/div/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "fe846fa6-ad8a-41c8-a0b9-ab4667a9fd32",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='tree-expander-Oracle---northwind']",
+      "targets": [
+        ["css=.d4-tree-view-group:nth-child(18) > .d4-tree-view-group-host .d4-tree-view-tri", "css:finder"],
+        ["xpath=//div[@name='tree-expander-Oracle---northwind']", "xpath:attributes"],
+        ["xpath=//div[@id='data-sources']/div/div[2]/div[18]/div[2]/div/div/div", "xpath:idRelative"],
+        ["xpath=//div[18]/div[2]/div/div/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "ad494e6c-6808-4824-8b47-61d9b1ad4a8e",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "97462d15-7f15-429d-8341-667038db0fc1",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='tree-Oracle---northwind---Orders']",
+      "targets": [
+        ["css=.d4-tree-view-group:nth-child(1) .d4-tree-view-group:nth-child(2) > .d4-tree-view-node", "css:finder"],
+        ["xpath=//div[@name='tree-Oracle---northwind---Orders']", "xpath:attributes"],
+        ["xpath=//div[@id='data-sources']/div/div[2]/div[22]/div[2]/div/div[2]/div[2]/div", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div[2]/div[2]/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "f92e889b-3286-4606-94f1-24855b08bb6a",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "098fce0b-8345-430e-92a9-9c9d172c977c",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='div-section--Run']",
+      "targets": [
+        ["css=.d4-accordion-pane:nth-child(3) > .d4-accordion-pane-header", "css:finder"],
+        ["xpath=//div[@name='div-section--Run']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div", "xpath:idRelative"],
+        ["xpath=//div[3]/div/div[2]/div/div/div/div/div[3]/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "b9b05d1f-e826-48e9-8b54-c3768dd03f9d",
+      "comment": "",
+      "command": "pause",
+      "target": "3000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "122567c7-eccd-4e5f-8533-cf5b78e2e557",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "name=input-Employee-Id",
+      "targets": [
+        ["id=editor", "id"],
+        ["name=input-Employee-Id", "name"],
+        ["css=.d4-input-int > #editor", "css:finder"],
+        ["xpath=//input[@id='editor']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div[2]/div/div/input", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/input", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "f03039ee-1032-4dcb-9453-7366a5d23cc9",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "name=input-Ship-Via",
+      "targets": [
+        ["name=input-Ship-Via", "name"],
+        ["css=.d4-input-text:nth-child(2) > #editor", "css:finder"],
+        ["xpath=(//input[@id='editor'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div[2]/div/div[2]/input", "xpath:idRelative"],
+        ["xpath=//div[2]/input", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "7cfce59e-a42e-4ef5-a610-c52c3608e5b6",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "name=input-Freight",
+      "targets": [
+        ["name=input-Freight", "name"],
+        ["css=.d4-input-float > #editor", "css:finder"],
+        ["xpath=(//input[@id='editor'])[3]", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div[2]/div/div[3]/input", "xpath:idRelative"],
+        ["xpath=//div[3]/input", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "e376dc0b-eafa-4a07-b1ec-7b376fbafccd",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "name=input-Ship-Country",
+      "targets": [
+        ["name=input-Ship-Country", "name"],
+        ["css=.d4-input-choice > #editor", "css:finder"],
+        ["xpath=//select[@id='editor']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div[2]/div/div[4]/select", "xpath:idRelative"],
+        ["xpath=//select", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "5aea38ab-418e-48bd-9650-f08e9a9589fc",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "name=input-Ship-City",
+      "targets": [
+        ["name=input-Ship-City", "name"],
+        ["css=.d4-input-text:nth-child(5) > #editor", "css:finder"],
+        ["xpath=(//input[@id='editor'])[4]", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div[2]/div/div[5]/input", "xpath:idRelative"],
+        ["xpath=//div[5]/input", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "8385ab9f-efe4-47ba-8e6f-abf0d4f77371",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "name=input-Freight-Less1000",
+      "targets": [
+        ["css=.pure-checkbox", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div[2]/div/div[6]/label", "xpath:idRelative"],
+        ["xpath=//div[6]/label", "xpath:position"],
+        ["xpath=//label[contains(.,' Freight Less1000')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "49ffdef5-11d9-4a7c-907e-81269c4b805c",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "name=input-Required-Date",
+      "targets": [
+        ["name=input-Required-Date", "name"],
+        ["css=.d4-input-date > #editor", "css:finder"],
+        ["xpath=(//input[@id='editor'])[6]", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div[2]/div/div[7]/input", "xpath:idRelative"],
+        ["xpath=//div[7]/input", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "92d54a7d-5b88-4e07-b19e-f21e1da341f1",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "name=input-Order-Date",
+      "targets": [
+        ["name=input-Order-Date", "name"],
+        ["css=.d4-input-text:nth-child(8) > #editor", "css:finder"],
+        ["xpath=(//input[@id='editor'])[7]", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div[2]/div/div[8]/input", "xpath:idRelative"],
+        ["xpath=//div[8]/input", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "2829afac-d8f2-4cfd-a11f-12541d3659f9",
+      "comment": "",
+      "command": "verifyValue",
+      "target": "name=input-Ship-Country",
+      "targets": [],
+      "value": "France"
+    }, {
+      "id": "bcc8e6f0-ac46-4fc8-8c02-a1672c09a1b2",
+      "comment": "",
+      "command": "click",
+      "target": "name=button-btn-RUN",
+      "targets": [
+        ["name=button-btn-RUN", "name"],
+        ["css=.btn:nth-child(10)", "css:finder"],
+        ["xpath=//button[@name='button-btn-RUN']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div[2]/div/button", "xpath:idRelative"],
+        ["xpath=//div[2]/div/button", "xpath:position"],
+        ["xpath=//button[contains(.,'RUN')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "075b7526-0fc3-4aee-959a-88192b48bcdf",
+      "comment": "",
+      "command": "pause",
+      "target": "4000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "02788a65-8d4b-40f9-b732-4610c5fc7d6d",
+      "comment": "",
+      "command": "click",
+      "target": "id=balloon: info",
+      "targets": [
+        ["id=balloon: info", "id"],
+        ["xpath=//div[@id='balloon: info']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div[4]/div", "xpath:idRelative"],
+        ["xpath=//div[16]/div[4]/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "58328aa9-aaea-49f7-968b-896266c4c8d7",
+      "comment": "",
+      "command": "click",
+      "target": "id=balloon: info",
+      "targets": [
+        ["id=balloon: info", "id"],
+        ["xpath=//div[@id='balloon: info']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div[4]/div", "xpath:idRelative"],
+        ["xpath=//div[16]/div[4]/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "7a5e359d-f3f6-4e6f-8242-18e32a9fb6dd",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "xpath=//div[@name='view-handle: Orders']",
+      "targets": [
+        ["css=.tab-handle:nth-child(4)", "css:finder"],
+        ["xpath=//div[@name='view-handle: Orders']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
+        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "1fb4c992-02bd-4ba4-a675-292cb281f84a",
+      "comment": "",
+      "command": "verifyElementNotPresent",
+      "target": "xpath=//i[@name='icon-exclamation-circle']",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "45073376-deb4-448f-bca9-632359c875a8",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='div-File']",
+      "targets": [
+        ["css=.d4-menu-item-container > .d4-menu-item-hover", "css:finder"],
+        ["xpath=//div[@name='div-File']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div/div", "xpath:idRelative"],
+        ["xpath=//div[18]/div/div/div/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "39fcd652-477f-44f7-97c7-88634498fc9d",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "b1af5c12-e5c6-48b5-965d-c1b03dc4729e",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='div-File---Close-All']",
+      "targets": [
+        ["css=.d4-menu-item-horz:nth-child(1) > .d4-vert-menu > .d4-menu-item:nth-child(7)", "css:finder"],
+        ["xpath=//div[@name='div-File---Close-All']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div/div/div/div[7]", "xpath:idRelative"],
+        ["xpath=//div[20]/div/div/div/div/div/div[7]", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "c9213327-9757-4b38-a632-6b81203dd539",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "c0f33cb1-777c-4e7e-888f-d7878bc5ad53",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='tree-expander-Oracle']",
+      "targets": [
+        ["css=.d4-tree-view-group:nth-child(22) > .d4-tree-view-node > .d4-tree-view-tri", "css:finder"],
+        ["xpath=//div[@name='tree-expander-Oracle']", "xpath:attributes"],
+        ["xpath=//div[@id='data-sources']/div/div[2]/div[22]/div/div", "xpath:idRelative"],
+        ["xpath=//div[22]/div/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "a5579de4-b352-4dcf-9987-8edaf3576622",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='tree-expander-PostgreSQL']",
+      "targets": [
+        ["css=.d4-tree-view-group:nth-child(23) .d4-tree-view-tri", "css:finder"],
+        ["xpath=//div[@name='tree-expander-PostgreSQL']", "xpath:attributes"],
+        ["xpath=//div[@id='data-sources']/div/div[2]/div[23]/div/div", "xpath:idRelative"],
+        ["xpath=//div[23]/div/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "cc7ac58b-fcb6-41c4-9351-90ca53b54960",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='tree-expander-PostgreSQL---northwind']",
+      "targets": [
+        ["css=.d4-tree-view-group:nth-child(23) .d4-tree-view-group:nth-child(4) .d4-tree-view-tri", "css:finder"],
+        ["xpath=//div[@name='tree-expander-PostgreSQL---northwind']", "xpath:attributes"],
+        ["xpath=//div[@id='data-sources']/div/div[2]/div[23]/div[2]/div[4]/div/div", "xpath:idRelative"],
+        ["xpath=//div[23]/div[2]/div[4]/div/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "0fbfeb72-486f-4f4b-b49f-bb92f6ef1316",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "e58c2bca-17b8-4508-ac5d-17ace3af3303",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='tree-PostgreSQL---northwind---Orders']",
+      "targets": [
+        ["css=.d4-tree-view-group:nth-child(4) .d4-tree-view-group:nth-child(7) > .d4-tree-view-node", "css:finder"],
+        ["xpath=//div[@name='tree-PostgreSQL---northwind---Orders']", "xpath:attributes"],
+        ["xpath=//div[@id='data-sources']/div/div[2]/div[23]/div[2]/div[4]/div[2]/div[7]/div", "xpath:idRelative"],
+        ["xpath=//div[4]/div[2]/div[7]/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "7bb3235c-a368-4b3f-ba5b-49e5db17eb12",
+      "comment": "",
+      "command": "pause",
+      "target": "3000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "3ae05aa5-7799-4274-8217-2911633a75d7",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "name=input-Employee-Id",
+      "targets": [
+        ["id=editor", "id"],
+        ["name=input-Employee-Id", "name"],
+        ["css=.d4-input-int > #editor", "css:finder"],
+        ["xpath=//input[@id='editor']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div[2]/div/div/input", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/input", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "345b3b90-1e23-4a08-9afa-9f62ff23e991",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "name=input-Ship-Via",
+      "targets": [
+        ["name=input-Ship-Via", "name"],
+        ["css=.d4-input-text:nth-child(2) > #editor", "css:finder"],
+        ["xpath=(//input[@id='editor'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div[2]/div/div[2]/input", "xpath:idRelative"],
+        ["xpath=//div[2]/input", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "4f29b27b-3b9e-4ffe-922c-d15a73e85d1d",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "name=input-Freight",
+      "targets": [
+        ["name=input-Freight", "name"],
+        ["css=.d4-input-float > #editor", "css:finder"],
+        ["xpath=(//input[@id='editor'])[3]", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div[2]/div/div[3]/input", "xpath:idRelative"],
+        ["xpath=//div[3]/input", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "72c2f713-a20f-4b8b-aef5-197727f4911a",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "name=input-Ship-Country",
+      "targets": [
+        ["name=input-Ship-Country", "name"],
+        ["css=.d4-input-choice > #editor", "css:finder"],
+        ["xpath=//select[@id='editor']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div[2]/div/div[4]/select", "xpath:idRelative"],
+        ["xpath=//select", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "01ac1473-fae6-42d8-bd64-d9a7535f6373",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "name=input-Ship-City",
+      "targets": [
+        ["name=input-Ship-City", "name"],
+        ["css=.d4-input-text:nth-child(5) > #editor", "css:finder"],
+        ["xpath=(//input[@id='editor'])[4]", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div[2]/div/div[5]/input", "xpath:idRelative"],
+        ["xpath=//div[5]/input", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "67577ae8-f8ba-472e-a937-fc526d1f113d",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "name=input-Freight-Less1000",
+      "targets": [
+        ["css=.pure-checkbox", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div[2]/div/div[6]/label", "xpath:idRelative"],
+        ["xpath=//div[6]/label", "xpath:position"],
+        ["xpath=//label[contains(.,' Freight Less1000')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "6b5bbb97-6609-42df-b021-2919c678718a",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "name=input-Required-Date",
+      "targets": [
+        ["name=input-Required-Date", "name"],
+        ["css=.d4-input-date > #editor", "css:finder"],
+        ["xpath=(//input[@id='editor'])[6]", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div[2]/div/div[7]/input", "xpath:idRelative"],
+        ["xpath=//div[7]/input", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "4445ce1f-79f9-49ff-8134-e1856fdeb015",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "name=input-Order-Date",
+      "targets": [
+        ["name=input-Order-Date", "name"],
+        ["css=.d4-input-text:nth-child(8) > #editor", "css:finder"],
+        ["xpath=(//input[@id='editor'])[7]", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div[2]/div/div[8]/input", "xpath:idRelative"],
+        ["xpath=//div[8]/input", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "405d3348-e453-4790-8ee5-7a93fd83c0f6",
+      "comment": "",
+      "command": "verifyValue",
+      "target": "name=input-Ship-Country",
+      "targets": [],
+      "value": "France"
+    }, {
+      "id": "4ac1573f-8e5f-4f1a-b8c4-caf00dc4c6f8",
+      "comment": "",
+      "command": "click",
+      "target": "name=button-btn-RUN",
+      "targets": [
+        ["name=button-btn-RUN", "name"],
+        ["css=.btn:nth-child(10)", "css:finder"],
+        ["xpath=//button[@name='button-btn-RUN']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div[2]/div/button", "xpath:idRelative"],
+        ["xpath=//div[2]/div/button", "xpath:position"],
+        ["xpath=//button[contains(.,'RUN')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "d6e0be90-821d-44dc-b5a2-a1efdb70f797",
+      "comment": "",
+      "command": "pause",
+      "target": "4000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "f3f7beac-ae28-4af6-a8c7-8b9b26b394d3",
+      "comment": "",
+      "command": "click",
+      "target": "id=balloon: info",
+      "targets": [
+        ["id=balloon: info", "id"],
+        ["xpath=//div[@id='balloon: info']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div[4]/div", "xpath:idRelative"],
+        ["xpath=//div[16]/div[4]/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "1cbdf376-cb41-407d-a10d-1eff654abf4b",
+      "comment": "",
+      "command": "click",
+      "target": "id=balloon: info",
+      "targets": [
+        ["id=balloon: info", "id"],
+        ["xpath=//div[@id='balloon: info']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div[4]/div", "xpath:idRelative"],
+        ["xpath=//div[16]/div[4]/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "442fbbd2-c518-47db-b70f-77cd8f834ef4",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "xpath=//div[@name='view-handle: Orders']",
+      "targets": [
+        ["css=.tab-handle:nth-child(4)", "css:finder"],
+        ["xpath=//div[@name='view-handle: Orders']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
+        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "7a937a71-d862-4179-b88f-edab99d8b4ba",
+      "comment": "",
+      "command": "verifyElementNotPresent",
+      "target": "xpath=//i[@name='icon-exclamation-circle']",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "0d69ef4c-8606-4ee9-a936-bf11e44de96a",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='div-File']",
+      "targets": [
+        ["css=.d4-menu-item-container > .d4-menu-item-hover", "css:finder"],
+        ["xpath=//div[@name='div-File']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div/div", "xpath:idRelative"],
+        ["xpath=//div[18]/div/div/div/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "10c0def3-5100-44c3-9481-c85cb090d822",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "43d091cb-c592-4b71-915a-298eced9a89a",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='div-File---Close-All']",
+      "targets": [
+        ["css=.d4-menu-item-horz:nth-child(1) > .d4-vert-menu > .d4-menu-item:nth-child(7)", "css:finder"],
+        ["xpath=//div[@name='div-File---Close-All']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div/div/div/div[7]", "xpath:idRelative"],
+        ["xpath=//div[20]/div/div/div/div/div/div[7]", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "5e6210ec-c47b-4089-84d1-d819a0441d81",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "f868228d-c82e-4a68-a581-4fdea809ebd5",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='tree-expander-PostgreSQL']",
+      "targets": [
+        ["css=.d4-tree-view-group:nth-child(23) .d4-tree-view-tri", "css:finder"],
+        ["xpath=//div[@name='tree-expander-PostgreSQL']", "xpath:attributes"],
+        ["xpath=//div[@id='data-sources']/div/div[2]/div[23]/div/div", "xpath:idRelative"],
+        ["xpath=//div[23]/div/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "ae920a39-d1c1-4d31-a597-de1e25e781ce",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='tree-expander-Sparql']",
+      "targets": [
+        ["css=.d4-tree-view-group:nth-child(28) .d4-tree-view-tri", "css:finder"],
+        ["xpath=//div[@name='tree-expander-Sparql']", "xpath:attributes"],
+        ["xpath=//div[@id='data-sources']/div/div[2]/div[28]/div/div", "xpath:idRelative"],
+        ["xpath=//div[28]/div/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "5e4e11f9-aa98-4830-bbc3-6d84083efba5",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "07d45632-d57a-46a0-9375-6fb7cb62d820",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='tree-expander-Sparql---Fact-Forge']",
+      "targets": [
+        ["css=.d4-tree-view-group:nth-child(5) > .d4-tree-view-node > .d4-tree-view-tri-expanded", "css:finder"],
+        ["xpath=//div[@name='tree-expander-Sparql---Fact-Forge']", "xpath:attributes"],
+        ["xpath=//div[@id='data-sources']/div/div[2]/div[28]/div[2]/div[5]/div/div", "xpath:idRelative"],
+        ["xpath=//div[28]/div[2]/div[5]/div/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "96596291-57e7-4bde-be77-46fd377beb69",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "e5caa442-951b-4a95-8c59-e6f6252a2555",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='tree-Sparql---Fact-Forge---Big-Cities-in-@continent']",
+      "targets": [
+        ["css=.d4-tree-view-group:nth-child(5) .d4-tree-view-group:nth-child(2) > .d4-tree-view-node", "css:finder"],
+        ["xpath=//div[@name='tree-Sparql---Fact-Forge---Big-Cities-in-@continent']", "xpath:attributes"],
+        ["xpath=//div[@id='data-sources']/div/div[2]/div[28]/div[2]/div[5]/div[2]/div[2]/div", "xpath:idRelative"],
+        ["xpath=//div[5]/div[2]/div[2]/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "3828f0d2-28ab-44dc-af4b-1c72a412dc68",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "7b1b6828-a294-4231-a522-e469589ec829",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "name=input-Continent",
+      "targets": [
+        ["id=editor", "id"],
+        ["name=input-Continent", "name"],
+        ["css=#editor", "css:finder"],
+        ["xpath=//select[@id='editor']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div[2]/div/div/select", "xpath:idRelative"],
+        ["xpath=//select", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "a2ff8a49-d9f5-4914-b6c0-5384734c40e7",
+      "comment": "",
+      "command": "verifyValue",
+      "target": "name=input-Continent",
+      "targets": [],
+      "value": "Eastern_Europe"
+    }, {
+      "id": "7d072c28-fb2e-46df-bad1-6046bf99f4b9",
+      "comment": "",
+      "command": "click",
+      "target": "name=button-btn-RUN",
+      "targets": [
+        ["name=button-btn-RUN", "name"],
+        ["css=.btn", "css:finder"],
+        ["xpath=//button[@name='button-btn-RUN']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div[2]/div/button", "xpath:idRelative"],
+        ["xpath=//button", "xpath:position"],
+        ["xpath=//button[contains(.,'RUN')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "c1b4f6f9-b363-40dc-a68f-7c06d3183d01",
+      "comment": "",
+      "command": "pause",
+      "target": "3000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "2a6c0830-b510-47c3-bba9-b1038ae4c128",
+      "comment": "",
+      "command": "click",
+      "target": "id=balloon: info",
+      "targets": [
+        ["id=balloon: info", "id"],
+        ["xpath=//div[@id='balloon: info']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div[4]/div", "xpath:idRelative"],
+        ["xpath=//div[16]/div[4]/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "57454ad6-7133-4c04-8d3a-9dad4b062a3c",
+      "comment": "",
+      "command": "click",
+      "target": "id=balloon: info",
+      "targets": [
+        ["id=balloon: info", "id"],
+        ["xpath=//div[@id='balloon: info']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div[4]/div", "xpath:idRelative"],
+        ["xpath=//div[16]/div[4]/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "afbd0118-37e6-4a22-b952-525ec95071e7",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "xpath=//div[@name='view-handle: Big Cities in @continent']",
+      "targets": [
+        ["css=.tab-handle:nth-child(4)", "css:finder"],
+        ["xpath=//div[@name='view-handle: Big Cities in @continent']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
+        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "e9d98838-3823-4cc4-b97d-3b5d5e88fed4",
+      "comment": "",
+      "command": "verifyElementNotPresent",
+      "target": "xpath=//i[@name='icon-exclamation-circle']",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "6592c015-2857-4f79-ae3f-feb975d0ec95",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='div-File']",
+      "targets": [
+        ["css=.d4-menu-item-container > .d4-menu-item-hover", "css:finder"],
+        ["xpath=//div[@name='div-File']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div/div", "xpath:idRelative"],
+        ["xpath=//div[18]/div/div/div/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "1d47b5f4-a977-4593-a793-1ec2a9aa9db8",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "295b16d3-3006-43e4-8134-5b39e7572765",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='div-File---Close-All']",
+      "targets": [
+        ["css=.d4-menu-item-horz:nth-child(1) > .d4-vert-menu > .d4-menu-item:nth-child(7)", "css:finder"],
+        ["xpath=//div[@name='div-File---Close-All']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div/div/div/div[7]", "xpath:idRelative"],
+        ["xpath=//div[20]/div/div/div/div/div/div[7]", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "1ef3a35b-600a-4b4d-8d1d-b2ea172958b9",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "0ba1b1bb-7fd7-45d1-bcd9-9fdc33f2e3c5",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='tree-expander-Sparql']",
+      "targets": [
+        ["css=.d4-tree-view-group:nth-child(28) > .d4-tree-view-node > .d4-tree-view-tri", "css:finder"],
+        ["xpath=//div[@name='tree-expander-Sparql']", "xpath:attributes"],
+        ["xpath=//div[@id='data-sources']/div/div[2]/div[28]/div/div", "xpath:idRelative"],
+        ["xpath=//div[28]/div/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "d11ba51d-1523-40e9-9065-82ccf42c04ae",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='tree-expander-Web']",
+      "targets": [
+        ["css=.d4-tree-view-group:nth-child(33) .d4-tree-view-tri", "css:finder"],
+        ["xpath=//div[@name='tree-expander-Web']", "xpath:attributes"],
+        ["xpath=//div[@id='data-sources']/div/div[2]/div[33]/div/div", "xpath:idRelative"],
+        ["xpath=//div[2]/div[33]/div/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "3dd36228-ab81-4604-90af-49170b9b7a37",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "fb6dfe28-af86-49bc-ac17-0109a455ec2d",
+      "comment": "",
+      "command": "click",
+      "target": "name=tree-expander-Web---OpenWeatherMap",
+      "targets": [
+        ["css=.d4-tree-view-group:nth-child(33) .d4-tree-view-group:nth-child(24) .d4-tree-view-tri", "css:finder"],
+        ["xpath=//div[@name='tree-expander-Web---OpenWeatherMap']", "xpath:attributes"],
+        ["xpath=//div[@id='data-sources']/div/div[2]/div[33]/div[2]/div[24]/div/div", "xpath:idRelative"],
+        ["xpath=//div[33]/div[2]/div[24]/div/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "652e88e3-3117-4b62-b0e7-18dffcf92635",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "c2c2826a-7197-48d4-bec3-5cfd34cc015f",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='tree-Web---OpenWeatherMap---5-day/3-hour-Forecast-By-City-Name']",
+      "targets": [
+        ["css=.d4-tree-view-group:nth-child(24) .d4-tree-view-group:nth-child(1) > .d4-tree-view-node", "css:finder"],
+        ["xpath=//div[@name='tree-Web---OpenWeatherMap---5-day/3-hour-Forecast-By-City-Name']", "xpath:attributes"],
+        ["xpath=//div[@id='data-sources']/div/div[2]/div[33]/div[2]/div[24]/div[2]/div/div", "xpath:idRelative"],
+        ["xpath=//div[24]/div[2]/div/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "dfe53501-5ba6-457c-a23f-6ebe7245535e",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "4bbdac99-6cf0-4352-b82f-20b6c3bb067d",
+      "comment": "",
+      "command": "verifyValue",
+      "target": "name=input-Q",
+      "targets": [
+        ["id=editor", "id"],
+        ["name=input-Q", "name"],
+        ["css=#editor", "css:finder"],
+        ["xpath=//input[@id='editor']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div[2]/div/div/input", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/input", "xpath:position"]
+      ],
+      "value": "München,DE"
+    }, {
+      "id": "3128d680-e8ef-41f5-9ff6-2459051fd9d5",
+      "comment": "",
+      "command": "click",
+      "target": "name=button-btn-RUN",
+      "targets": [
+        ["name=button-btn-RUN", "name"],
+        ["css=.btn", "css:finder"],
+        ["xpath=//button[@name='button-btn-RUN']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div[2]/div/button", "xpath:idRelative"],
+        ["xpath=//button", "xpath:position"],
+        ["xpath=//button[contains(.,'RUN')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "ae6af251-add6-4e9c-99e9-4159e99cb9bd",
+      "comment": "",
+      "command": "pause",
+      "target": "3000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "4a79c590-2dd9-452e-b4c5-d68cd3658490",
+      "comment": "",
+      "command": "click",
+      "target": "id=balloon: info",
+      "targets": [
+        ["id=balloon: info", "id"],
+        ["xpath=//div[@id='balloon: info']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div[4]/div", "xpath:idRelative"],
+        ["xpath=//div[16]/div[4]/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "93387936-219a-4c6d-9c85-d82c52783f61",
+      "comment": "",
+      "command": "click",
+      "target": "id=balloon: info",
+      "targets": [
+        ["id=balloon: info", "id"],
+        ["xpath=//div[@id='balloon: info']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div[4]/div", "xpath:idRelative"],
+        ["xpath=//div[16]/div[4]/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "7536807c-5aeb-456b-81e4-6b6f2b50762b",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "xpath=//div[@name='view-handle: result']",
+      "targets": [
+        ["css=.tab-handle:nth-child(4)", "css:finder"],
+        ["xpath=//div[@name='view-handle: result']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
+        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "86109895-b528-4db0-83ec-72bc23f3fd81",
+      "comment": "",
+      "command": "verifyElementNotPresent",
+      "target": "xpath=//i[@name='icon-exclamation-circle']",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "18c8c047-e6d6-4f56-a9d4-be80f4ae5941",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }]
+  }],
+  "suites": [{
+    "id": "ec967ec6-1191-47c4-9144-a537f982d65b",
+    "name": "query-parameters-test",
+    "persistSession": false,
+    "parallel": false,
+    "timeout": 300,
+    "tests": ["1e1a7755-4e26-458c-9783-60348afe35cf"]
+  }],
+  "urls": ["https://dev.datagrok.ai/"],
+  "plugins": []
+}

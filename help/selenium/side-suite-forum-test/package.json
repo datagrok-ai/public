@@ -1,0 +1,25 @@
+{
+  "name": "forum-test",
+  "version": "0.0.0",
+  "jest": {
+    "extraGlobals": [],
+    "modulePaths": [
+      "C:\\Users\\Xiaomi\\AppData\\Roaming\\npm\\node_modules\\selenium-side-runner\\node_modules",
+      "C:\\Users\\Xiaomi\\AppData\\Roaming\\npm\\node_modules"
+    ],
+    "setupFilesAfterEnv": [
+      "C:\\Users\\Xiaomi\\AppData\\Roaming\\npm\\node_modules\\selenium-side-runner\\node_modules\\jest-environment-selenium\\dist\\setup.js"
+    ],
+    "testEnvironment": "jest-environment-selenium",
+    "testEnvironmentOptions": {
+      "capabilities": {
+        "browserName": "chrome"
+      },
+      "params": {},
+      "runId": "1a17b9e4bfafe3123696e24153a3b675",
+      "path": "C:\\Users\\Xiaomi\\AppData\\Roaming\\npm\\node_modules\\",
+      "timeout": 15000
+    }
+  },
+  "dependencies": {}
+}

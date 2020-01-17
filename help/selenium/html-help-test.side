@@ -17,7 +17,7 @@
       "id": "c495d4ef-7c94-4065-b305-b0cb65d4e110",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {
@@ -91,7 +91,7 @@
       "id": "5b8dade3-8dc5-459e-8c69-e323891a24e2",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "2000",
       "targets": [],
       "value": ""
     }, {
@@ -127,7 +127,7 @@
       "id": "d100d8a2-e00a-4fad-a0bd-c1ddd064b40d",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "2000",
       "targets": [],
       "value": ""
     }, {
@@ -148,7 +148,7 @@
       "id": "1f7d4051-587c-44ba-bb15-0798d328ad7e",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "2000",
       "targets": [],
       "value": ""
     }, {
@@ -182,7 +182,7 @@
       "id": "e4479e1c-553d-48bd-8ab9-ab08873d4d9c",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "2000",
       "targets": [],
       "value": ""
     }, {
@@ -225,7 +225,7 @@
       "id": "5b3f2cfe-8693-413c-a029-458a78051689",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "2000",
       "targets": [],
       "value": ""
     }, {
