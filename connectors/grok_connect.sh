@@ -15,7 +15,7 @@
 #      * mode - run/build
 #      * args:
 #          -o, --output <arg>   Output CSV file path
-#          -q, --query  <arg>   Query JSON file path
+#          -q, --query  <arg>   Query JSON file path (optional, if is not specified CSV will be printed into console)
 #
 #    see query json example in "query_example.json"
 #
