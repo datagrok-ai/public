@@ -111,7 +111,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                 PreparedStatement statement = connection.prepareStatement(query);
                 for (int n = 0; n < names.size(); n++) {
                     FuncParam param = dataQuery.getParam(names.get(n));
-                    if (param.propertyType.equals("datetime")) {
+                    if (param.propertyType.equals(Types.DATE_TIME)) {
                         Calendar calendar = javax.xml.bind.DatatypeConverter.parseDateTime((String)param.value);
                         statement.setTimestamp(n + 1, new Timestamp(calendar.getTime().getTime()));
                     } else
@@ -130,15 +130,15 @@ public abstract class JdbcDataProvider extends DataProvider {
                     for (FuncParam param: dataQuery.getInputParams()) {
                         if (param.name.equals(name)) {
                             switch (param.propertyType) {
-                                case "datetime":
+                                case Types.DATE_TIME:
                                     queryBuffer.append("datetime('");
                                     queryBuffer.append(param.value.toString());
                                     queryBuffer.append("')");
                                     break;
-                                case "bool":
+                                case Types.BOOL:
                                     queryBuffer.append(((boolean) param.value) ? "1=1" : "1=0");
                                     break;
-                                case "string":
+                                case Types.STRING:
                                     queryBuffer.append("'");
                                     queryBuffer.append(param.value.toString());
                                     queryBuffer.append("'");

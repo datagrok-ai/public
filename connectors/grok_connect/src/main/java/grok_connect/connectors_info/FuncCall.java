@@ -13,7 +13,7 @@ public class FuncCall
         for (String paramName: parameterValues.keySet()) {
             for (FuncParam param: func.getInputParams()) {
                 if (param.name.equals(paramName)) {
-                    param.value = parameterValues.get(paramName);
+                    param.setValue(parameterValues.get(paramName));
                     break;
                 }
             }
