@@ -2,8 +2,12 @@
 
 # Builds "GrokConnect" server or runs as shell application
 #
+#  Requirements:
+#    * jdk 8 (https://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html)
+#    * maven 3+ (https://maven.apache.org/install.html)
+#
 # Parameters:
-#   - mode: test/run/shell
+#    * mode: test/run/shell
 #
 #
 # "shell" mode:
@@ -14,8 +18,8 @@
 #    where:
 #      * mode - run/build
 #      * args:
-#          -o, --output <arg>   Output CSV file path
-#          -q, --query  <arg>   Query JSON file path (optional, if is not specified CSV will be printed into console)
+#          -q, --query  <arg>   Query JSON file path
+#          -o, --output <arg>   Output CSV file path (optional, if is not specified CSV will be printed into console)
 #
 #    see query json example in "query_example.json"
 #
