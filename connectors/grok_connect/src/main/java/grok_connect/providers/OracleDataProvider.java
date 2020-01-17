@@ -22,6 +22,7 @@ public class OracleDataProvider extends JdbcDataProvider {
         descriptor.connectionTemplate = DbCredentials.dbConnectionTemplate;
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
         descriptor.canBrowseSchema = true;
+        descriptor.nameBrackets = "\"";
 
         descriptor.typesMap = new HashMap<String, String>() {{
             put("long", Types.INT);
