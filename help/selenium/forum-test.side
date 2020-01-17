@@ -58,7 +58,7 @@
       "id": "8219f3c0-63c1-4d07-942d-7f69af1a9cc5",
       "comment": "",
       "command": "pause",
-      "target": "2000",
+      "target": "4000",
       "targets": [],
       "value": ""
     }, {
