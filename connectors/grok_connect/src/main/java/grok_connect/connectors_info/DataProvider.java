@@ -111,6 +111,7 @@ public abstract class DataProvider
         add(new VerticaDataProvider());
         add(new VirtuosoDataProvider());
         add(new ImpalaDataProvider());
+        add(new DenodoDataProvider());
     }};
 
     public static List<String> getAllProvidersTypes() {
