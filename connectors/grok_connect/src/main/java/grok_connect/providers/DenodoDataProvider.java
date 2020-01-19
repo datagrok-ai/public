@@ -15,7 +15,7 @@ public class DenodoDataProvider extends JdbcDataProvider {
     public DenodoDataProvider() {
         descriptor = new DataSource();
         descriptor.type = "Denodo";
-        descriptor.description = "Query Impala database";
+        descriptor.description = "Query Denodo database";
 
         descriptor.connectionTemplate = DbCredentials.dbConnectionTemplate;
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
