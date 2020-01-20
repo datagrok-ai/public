@@ -30,7 +30,8 @@ Table of contents
 
 Here are the typical steps for creating and debugging applications on the Datagrok platform:
 
-1. [Download package template](https://public.datagrok.ai/packages) that contains sources, upload-debug.cmd and upload-deploy.cmd
+1. Download package template: [Open Packages Browser](https://public.datagrok.ai/packages), click on toolbox 
+   "Actions | Download package template..." that contains sources, upload-debug.cmd and upload-deploy.cmd
 2. Setup development environment (see [video](https://www.youtube.com/watch?v=PDcXLMsu6UM))
 3. Debug using [upload-debug.cmd](#publishing) pre-run step
 4. Publish using [upload-deploy.cmd](#publishing) 
