@@ -23,7 +23,6 @@ public class DenodoDataProvider extends JdbcDataProvider {
 
 
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
-        //Class.forName("com.denodo.vdb.jdbcdriver.VDBJDBCDriver");
         Class.forName("com.denodo.vdp.jdbc.Driver");
         String connStr = getConnectionString(conn);
         return DriverManager.getConnection(connStr, conn.credentials.getLogin(), conn.credentials.getPassword());
