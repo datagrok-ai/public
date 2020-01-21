@@ -65,13 +65,13 @@ is stored in the default Conda format and can be
 [exported](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#creating-an-environment-from-an-environment-yml-file) 
 or [created manually](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#create-env-file-manually).
 
-Configurations are stored in the same repository with the script; here is an 
+Configurations are stored in the same repository with the script, in the folder called `environments`
+located under the repository root. Here is an 
 [example of such configuration](https://github.com/datagrok-ai/public/tree/master/environments)
 for the [Datagrok public repository](https://github.com/datagrok-ai/public).  
 
-If the `#environment` tag in the script header is not specified, the script uses the "stable" configuration,
-which consists of the latest stable versions of the selected packages (typically, most popular amongst
-data scientists), curated by the Datagrok team.  
+If the `#environment` tag in the script header is not specified, the script uses the configuration
+defined in the `default.yaml`.  
 
 This is how to define the "chemprop" environment in the script header: 
 
