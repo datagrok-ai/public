@@ -45,11 +45,11 @@ over 20 different data sources, and the list is quickly growing!
 * Teradata
 * Vertica
 * Redis
-* ODBC
 * Linked Data ([SPARQL](connect/sparql.md))
 * Scripts (Dart, JavaScript, C#)
 * SAP
 * SAS
+
 
 See also:
 
