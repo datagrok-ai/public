@@ -81,7 +81,6 @@ If the input does not match above-mentioned patterns, 'exact value' search is us
 | Teradata               | + |     
 | Vertica                | + |    
 | Redis                  |   |  
-| ODBC                   |   | 
 | SPARQL                 | + |   
 | SAP                    |   |
 | SAS                    |   |
