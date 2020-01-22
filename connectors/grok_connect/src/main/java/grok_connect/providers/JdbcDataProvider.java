@@ -101,10 +101,13 @@ public abstract class JdbcDataProvider extends DataProvider {
                 StringBuilder queryBuffer = new StringBuilder();
                 int idx = 0;
                 while (matcher.find()) {
-                    queryBuffer.append(query, idx, matcher.start());
-                    queryBuffer.append("?");
-                    idx = matcher.end();
-                    names.add(matcher.group(1));
+                    String name = matcher.group(1);
+                    if (dataQuery.existsParam(name)) {
+                        queryBuffer.append(query, idx, matcher.start());
+                        queryBuffer.append("?");
+                        idx = matcher.end();
+                        names.add(name);
+                    }
                 }
                 queryBuffer.append(query, idx, query.length());
                 query = queryBuffer.toString();
