@@ -1,0 +1,2 @@
+class ChemblPackage extends GrokPackage {
+}

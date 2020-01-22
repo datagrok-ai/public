@@ -1,0 +1,16 @@
+{
+  "#type": "DataConnection",
+  "parameters":{
+    "server": "$GROK_DB_SERVER",
+    "db": "unichem"
+  },
+  "credentials" : {
+    "parameters" : {
+      "login": "unichem",
+      "password": "unichem"
+    }
+  },
+  "dataSource": "PostgreSQL",
+  "description": "Unichem db",
+  "tags": ["demo", "chem"]
+}

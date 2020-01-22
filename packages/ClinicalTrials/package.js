@@ -1,4 +1,6 @@
-class ClinicalTrialsApp extends GrokPackage {
+class ClinicalTrialsPackage extends GrokPackage {
+
+    //tags: app
     start(context) {
          grok.balloon.info("Clinical Trials App launched.");
 

@@ -1,0 +1,16 @@
+{
+  "#type": "DataConnection",
+  "parameters":{
+    "server": "$DEMO_DB_SERVER",
+    "db": "chembl"
+  },
+  "credentials" : {
+    "parameters" : {
+      "login": "chembl",
+      "password": "chembl"
+    }
+  },
+  "dataSource": "PostgreSQL",
+  "description": "CHEMBL db",
+  "tags": ["demo", "chem"]
+}
