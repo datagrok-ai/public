@@ -36,7 +36,7 @@ public class DataQuery
         return inputParams;
     }
 
-    public int numInputParams() {
+    public int inputParamsCount() {
         int cnt = 0;
 
         if (params != null)

@@ -91,7 +91,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         query = query.replaceAll("(?m)^" + commentStart + ".*\\n", "");
 
         Connection connection = getConnection(dataQuery.connection);
-        if (dataQuery.numInputParams() > 0) {
+        if (dataQuery.inputParamsCount() > 0) {
             query = convertPatternParamsToQueryParams(queryRun, query);
 
             if (isParametrized()) {
