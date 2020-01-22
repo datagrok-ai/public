@@ -48,13 +48,17 @@ public class DataQuery
     }
 
     public FuncParam getParam(String name) {
-        FuncParam param = null;
+         for (FuncParam p : params)
+            if (p.name.equals(name))
+                return p;
+         return null;
+    }
 
+    public boolean existsParam(String name) {
         for (FuncParam p : params)
             if (p.name.equals(name))
-                param = p;
-
-        return param;
+                return true;
+        return false;
     }
 
     public void removeParam(FuncParam param) {
