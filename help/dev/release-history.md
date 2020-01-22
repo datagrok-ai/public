@@ -1,6 +1,34 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2020.01.20 Service update
+
+## Latest docker images
+* Datagrok (new): 766822877060.dkr.ecr.us-east-2.amazonaws.com/datagrok:1.0.X-da74169
+* CVM (old): 766822877060.dkr.ecr.us-east-2.amazonaws.com/grok_cvm:1.0.31-6261445
+
+## Addressed issues
+* GrokCon* nect: Denodo integration
+* GrokConnect: ODBC driver
+* JS API examples: manual master-detail linking
+* Chembl project: moved to public repository
+* GrokConnect: MSSQL collision on usage @<> syntax with query parameters
+* GrokConnect: MSSQL provider - "the value is not set for the parameter #2"
+* Support schemas for PostgreSql provider
+* Query: Improve parameter editor
+* Web provider: Editing some demo connections throws an exception
+* Added options to project entity
+* DataQuery: Parameter values casting is missing on server and java
+* Data connections: Sparql connections testing does not work correctly
+* Optimized DB queries
+* Predictive Modeling: Train: Table field should be before the column selection fields (H2O)
+* upload.dart fails with self-signed SSL certificates
+* Predictive Modeling: Chemprop models do not train
+* TreeView: Item context menu exception
+* Grok Connect: Db Table PP: Content: error
+* GrokConnect: Schema table content errors
+* grok.query(query, params): make params optional
+
 # 2020.01.15 Stable version
 
 ## Latest docker images
