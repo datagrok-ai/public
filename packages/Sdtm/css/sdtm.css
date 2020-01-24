@@ -8,21 +8,21 @@
 .sdtm-view-preview {
 }
 
-.stdm-selector {
+.sdtm-selector {
   height: 36px;
   align-items: center;
   margin-top: 8px;
 }
 
-.stdm-selector span {
+.sdtm-selector span {
   margin-right: 8px;
 }
 
-.stdm-selector-host .grok-loader {
+.sdtm-selector-host .grok-loader {
   margin-top: 36px;
 }
 
-.stdm-result .grok-loader {
+.sdtm-result .grok-loader {
   margin-top: 12px;
   margin-right: 48px;
 }
