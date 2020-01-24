@@ -11,7 +11,7 @@ with thousands of statistical packages and visualizations available in
 
 ## Header
 
-Each script, written in a native language, should have a header that contains some metadata, 
+Each script should have a header that contains some metadata, 
 along with the information on input and output parameters. See all available [header parameters](#header-parameters). 
 Each line starts with a comment. 
 

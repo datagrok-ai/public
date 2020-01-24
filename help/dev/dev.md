@@ -5,11 +5,11 @@
 
 Datagrok was designed to be as extensible as possible, so naturally JavaScript-based development
 is the preferred way to develop user-facing applications on top of the platform. 
-Use [Grok API](grok_api.md) to control pretty much anything within Datagrok,
-including [data manipulation](grok_api.md#data-manipulation), 
-adding [views](grok_api.md#views) or [viewers](grok_api.md#pre-defined-viewers), 
-[developing custom viewers](grok_api.md#custom-viewers),
-[registering functions](grok_api.md#registering-functions),
+Use [Grok API](grok-api.md) to control pretty much anything within Datagrok,
+including [data manipulation](grok-api.md#data-manipulation), 
+adding [views](grok-api.md#views) or [viewers](grok-api.md#pre-defined-viewers), 
+[developing custom viewers](grok-api.md#custom-viewers),
+[registering functions](grok-api.md#registering-functions),
 training and applying [predictive models](../plugins/predictive-modeling.md), 
 and even [building custom apps](app_development.md).
 
@@ -195,9 +195,9 @@ above-mentioned groups to be productive.
 * [Sample browser](https://public.datagrok.ai/js) (`Tools | Scripting | JavaScript`) is an interactive tool
   for browsing, editing, and running JavaScript samples that come with the platform. Samples are grouped by
   domain, such as data manipulation, visualization, or cheminformatics. They are short, clean examples
-  of the working code using [Grok API](grok_api.md) that can be copy-and-pasted into the existing solution.
+  of the working code using [Grok API](grok-api.md) that can be copy-and-pasted into the existing solution.
   The samples are also cross-linked with the [help](https://datagrok.ai/help) system. 
-* [Grok API](grok_api.md) provides complete control over the platform. 
+* [Grok API](grok-api.md) provides complete control over the platform. 
   [JSDoc documentation](https://datagrok.ai/help/dev/api/index.html) is available.
 * [Platform help](https://datagrok.ai/help/) explains the functionality from the user's point of view. Where
   appropriate, it is hyper-linked to samples and demo projects. In the near future, we plan to turn it
@@ -211,7 +211,7 @@ Additionally, there are few ways to connect with fellow developers:
 * [Slack space](https://datagrok.slack.com) 
 
 See also: 
-* [Grok API](grok_api.md)
+* [Grok API](grok-api.md)
 * [How Developers Use API Documentation: An Observation Study](http://sigdoc.acm.org/wp-content/uploads/2019/01/CDQ18002_Meng_Steinhardt_Schubert.pdf)
 
 ## Roadmap

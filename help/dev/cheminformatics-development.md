@@ -19,7 +19,7 @@ via [Scripting](../features/scripting.md).
 
 ## Grok JS API
 
-For convenience, some of the commonly used functions are exposed via the [JS API](grok_api.md).
+For convenience, some of the commonly used functions are exposed via the [JS API](grok-api.md).
 Use `grok.chem` instance to invoke the following methods (most of them are asynchronous, since
 behind the scenes they use server-side assist):
 
