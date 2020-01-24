@@ -1,0 +1,16 @@
+{
+  "#type": "DataConnection",
+  "parameters":{
+    "server": "$DEMO_DB_SERVER",
+    "db": "clin"
+  },
+  "credentials" : {
+    "parameters" : {
+      "login": "postgres",
+      "password": "postgres"
+    }
+  },
+  "dataSource": "PostgreSQL",
+  "description": "clin",
+  "tags": ["sdtm", "clin"]
+}

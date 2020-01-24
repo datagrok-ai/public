@@ -1,0 +1,2 @@
+class SDTMPackageDetectors extends GrokPackage {
+}
