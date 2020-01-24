@@ -1,0 +1,28 @@
+.sdtm-view {
+}
+
+.sdtm-view-controls {
+    height: 250px;
+}
+
+.sdtm-view-preview {
+}
+
+.stdm-selector {
+  height: 36px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.stdm-selector span {
+  margin-right: 8px;
+}
+
+.stdm-selector-host .grok-loader {
+  margin-top: 36px;
+}
+
+.stdm-result .grok-loader {
+  margin-top: 12px;
+  margin-right: 48px;
+}
