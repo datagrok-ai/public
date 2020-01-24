@@ -8,7 +8,7 @@ class SDTMPackage extends GrokPackage {
         let view = View.create();
         view.name = 'SDTM:LB:Preview';
         view.description = 'SDTM LB domain viewer';
-        view.root.className = 'grok-view grok-table-view stdm-result';
+        view.root.className = 'grok-view grok-table-view sdtm-result';
 
         function removeChildren(node) {
             while (node.firstChild)
@@ -26,7 +26,7 @@ class SDTMPackage extends GrokPackage {
         ui.setUpdateIndicator(view.root, true);
 
         function selector(query, itemsColumn, caption, updateHandler) {
-            let host = ui.divV([], 'stdm-selector-host');
+            let host = ui.divV([], 'sdtm-selector-host');
             host.appendChild(ui.loader());
             grok.query(query, {}).then(t => {
                 let items = t.getCol(itemsColumn).toList();
@@ -35,7 +35,7 @@ class SDTMPackage extends GrokPackage {
                 let add = ui.divH([ui.span([caption]),
                     ui.iconFA('plus', () => {
                     Menu.popup().items(items, (item) => input.addTag(item)).show();
-                })], 'stdm-selector');
+                })], 'sdtm-selector');
                 removeChildren(host);
                 host.appendChild(add);
                 host.appendChild(input.root);
@@ -107,7 +107,7 @@ class SDTMPackage extends GrokPackage {
         view.toolbox = ui.div([
             limit.root,
             selectors
-        ], 'stdm-controls,pure-form');
+        ], 'sdtm-controls,pure-form');
 
         grok.addView(view);
     }
