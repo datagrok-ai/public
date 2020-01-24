@@ -3,13 +3,16 @@
 
 # JavaScript API
 
-[Grok API](api/grok_api.js.html) allows to control all aspects of the Datagrok platform.
+[Grok JS API](api/grok_api.js.html) allows to control all aspects of the Datagrok platform. The API
+can be used from either ad-hoc scripts (`Tools | Scripting | JavaScript`), 
+or from [packages](dev.md#packages). 
 
-* Data manipulation
-* Views
-* Pre-defined viewers
-* Custom viewers
-* Registering functions
+This document covers the following areas:
+* [Data manipulation](#data-manipulation)
+* [Views](#views)
+* [Pre-defined viewers](#pre-defined-viewers)
+* [Custom viewers](#custom-viewers)
+* [Registering functions](#registering-functions)
 
 ## Data manipulation
 
@@ -131,3 +134,6 @@ fastaFileHandler(content) {
     return tables;
 }
 ```
+
+See also:
+* [JavaScript development](dev.md) 
