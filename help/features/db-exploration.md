@@ -23,6 +23,16 @@ item's properties in the [property panel](property-panel.md).
 
 ![DB Hierarchy Browser](../uploads/features/db-hierarchy-browser.gif "DB Hierarchy Browser")  
 
+## Tips and tricks
+
+### Context actions for db columns
+
+In case you want to retrieve only some of the columns, select them (Shift+click) in the schema, and then
+use context actions that appear in the property panel
+
+![](db-exploration-get-columns.png)
+
+
 ### Videos
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/YJmSvh3_uCM" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
