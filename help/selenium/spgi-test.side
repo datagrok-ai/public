@@ -122,7 +122,7 @@
       "id": "488420f5-d357-47bd-ad65-515cb7e20466",
       "comment": "",
       "command": "doubleClick",
-      "target": "xpath=//h1[contains(.,'SPGi')]",
+      "target": "name=div-SPGi",
       "targets": [
         ["css=span:nth-child(1) > label", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[2]/div[2]/div/table/tbody/tr/td[2]/span/span/label", "xpath:idRelative"],
