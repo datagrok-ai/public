@@ -1,6 +1,7 @@
 package grok_connect.table_query;
 
 import java.util.*;
+import java.util.stream.*;
 import org.apache.commons.lang.StringUtils;
 
 
@@ -49,7 +50,7 @@ public class TableQuery
     public TableQuery() {
     }
 
-    public String toSql(AggrToSql aggrToSql, PatternToSql patternToSql, LimitToSql limitToSql, String nameBrackets,
+    public String toSql(AggrToSql aggrToSql, PatternToSql patternToSql, LimitToSql limitToSql, AddBrackets addBrackets,
                         boolean limitAtEnd) {
         if (aggrToSql == null)
             aggrToSql = GroupAggregation::toSqlString;
@@ -60,7 +61,7 @@ public class TableQuery
 
         String sql = "";
         String str = "";
-        List<String> selectFields = new ArrayList<>(fields);
+        List<String> selectFields = fields.stream().map(addBrackets::convert).collect(Collectors.toList());
         for (GroupAggregation func : getAggFuncs())
             selectFields.add(aggrToSql.convert(func));
         if (selectFields.size() == 0)
@@ -73,9 +74,7 @@ public class TableQuery
             schema = _tableName.substring(0, idx);
             _tableName = _tableName.substring(idx + 1);
         }
-        if (_tableName.contains(" "))
-            _tableName = nameBrackets.substring(0, 1) + _tableName +
-                    nameBrackets.substring(nameBrackets.length() - 1, nameBrackets.length());
+        _tableName = addBrackets.convert(_tableName);
         _tableName = (schema != null && schema.length() != 0) ? schema + "." + _tableName : _tableName;
         sql += "select \n" + ((limit != null && !limitAtEnd) ? limitToSql.convert("", limit) + "\n" : "") +
                 str + "from \n  " + _tableName + "\n";
