@@ -1,0 +1,287 @@
+swagger: "2.0"
+info:
+  title: 'OpenFDA API'
+  description: "OpenFDA is an Elasticsearch-based API that serves public FDA data about nouns like drugs, devices, and foods. Each of these nouns has one or more categories, which serve unique data-such as data about recall enforcement reports, or about adverse events. Every query to the API must go through one endpoint for one kind of data."
+  version: 1.0.0
+host: api.fda.gov
+basePath: /
+schemes:
+  - https
+paths:
+  /drug/enforcement.json:
+    get:
+      summary: drugRecallEnforcementReports
+      operationId: Drugs | Recall Enforcement Reports
+      produces: application.json
+      parameters:
+        - $ref: '#/parameters/Limit'
+        - name: search
+          in: query
+          type: string
+          default: state:FL
+          description: "Available fields for search: recalling_firm: classification: status: distribution_pattern: product_description: code_info reason_for_recall: product_quantity: voluntary_mandated: report_date: recall_initiation_date: initial_firm_notification: recall_number: event_id product_type: city: state: country:"
+        - name: count
+          in: query
+          type: string
+          enum:
+            - event_id
+            - status
+            - city
+            - state
+            - country
+            - voluntary_mandated
+            - initial_firm_notification
+            - recall_initiation_date
+          description: "Count the number of unique values of a certain field, for all the records that matched the search parameter. By default, the API returns the 1000 most frequent values."
+      responses:
+        '200':
+          description: successful operation
+        '400':
+          description: Invalid status value
+  /drug/label.json:
+    get:
+      summary: drugProductLabeling
+      operationId: Drugs | Product Labeling
+      produces: application.json
+      parameters:
+        - $ref: '#/parameters/Limit'
+        - name: search
+          in: query
+          type: string
+          default: drug_interactions:caffeine
+        - name: count
+          in: query
+          type: string
+          description: "Count the number of unique values of a certain field, for all the records that matched the search parameter. By default, the API returns the 1000 most frequent values."
+      responses:
+        '200':
+          description: successful operation
+        '400':
+          description: Invalid status value
+  /drug/event.json:
+    get:
+      summary: drugAdverseEvents
+      operationId: Drugs | Adverse Events
+      produces: application.json
+      parameters:
+        - $ref: '#/parameters/Limit'
+        - name: search
+          in: query
+          type: string
+          default: patient.drug.openfda.pharm_class_epc:"nonsteroidal+anti-inflammatory+drug"
+        - name: count
+          in: query
+          type: string
+          description: "Count the number of unique values of a certain field, for all the records that matched the search parameter. By default, the API returns the 1000 most frequent values."
+      responses:
+        '200':
+          description: successful operation
+        '400':
+          description: Invalid status value
+  /device/510k.json:
+    get:
+      summary: device510K
+      operationId: Device | 510(k)
+      produces: application.json
+      parameters:
+        - $ref: '#/parameters/Limit'
+        - name: search
+          in: query
+          type: string
+          default: openfda.regulation_number:868.5895
+        - name: count
+          in: query
+          type: string
+          description: "Count the number of unique values of a certain field, for all the records that matched the search parameter. By default, the API returns the 1000 most frequent values."
+      responses:
+        '200':
+          description: successful operation
+        '400':
+          description: Invalid status value
+  /device/enforcement.json:
+    get:
+      summary: deviceRecallEnforcementReports
+      operationId: Device | Recall Enforcement Reports
+      produces: application.json
+      parameters:
+        - $ref: '#/parameters/Limit'
+        - name: search
+          in: query
+          type: string
+          default: classification:"Class+III"
+        - name: count
+          in: query
+          type: string
+          description: "Count the number of unique values of a certain field, for all the records that matched the search parameter. By default, the API returns the 1000 most frequent values."
+      responses:
+        '200':
+          description: successful operation
+        '400':
+          description: Invalid status value
+  /device/event.json:
+    get:
+      summary: deviceAdverseEvents
+      operationId: Device | Adverse Events
+      produces: application.json
+      parameters:
+        - $ref: '#/parameters/Limit'
+        - name: search
+          in: query
+          type: string
+          default: device.generic_name:x-ra
+        - name: count
+          in: query
+          type: string
+          description: "Count the number of unique values of a certain field, for all the records that matched the search parameter. By default, the API returns the 1000 most frequent values."
+      responses:
+        '200':
+          description: successful operation
+        '400':
+          description: Invalid status value
+  /device/pma.json:
+    get:
+      summary: devicePreMarketApproval
+      operationId: Device | Pre-Market Approval
+      produces: application.json
+      parameters:
+        - $ref: '#/parameters/Limit'
+        - name: search
+          in: query
+          type: string
+          default: product_code:LWP
+        - name: count
+          in: query
+          type: string
+          description: "Count the number of unique values of a certain field, for all the records that matched the search parameter. By default, the API returns the 1000 most frequent values."
+      responses:
+        '200':
+          description: successful operation
+        '400':
+          description: Invalid status value
+  /device/recall.json:
+    get:
+      summary: deviceRecalls
+      operationId: Device | Recalls
+      produces: application.json
+      parameters:
+        - $ref: '#/parameters/Limit'
+        - name: search
+          in: query
+          type: string
+          default: product_code:FOZ
+        - name: count
+          in: query
+          type: string
+          description: "Count the number of unique values of a certain field, for all the records that matched the search parameter. By default, the API returns the 1000 most frequent values."
+      responses:
+        '200':
+          description: successful operation
+        '400':
+          description: Invalid status value
+  /device/registrationlisting.json:
+    get:
+      summary: deviceRegistrationsAndListings
+      operationId: Device | Registrations And Listings
+      produces: application.json
+      parameters:
+        - $ref: '#/parameters/Limit'
+        - name: search
+          in: query
+          type: string
+          default: products.product_code:HQY
+        - name: count
+          in: query
+          type: string
+          description: "Count the number of unique values of a certain field, for all the records that matched the search parameter. By default, the API returns the 1000 most frequent values."
+      responses:
+        '200':
+          description: successful operation
+        '400':
+          description: Invalid status value
+  /device/udi.json:
+    get:
+      summary: deviceUniqueDeviceIdentifier
+      operationId: Device | Unique Device Identifier
+      produces: application.json
+      parameters:
+        - $ref: '#/parameters/Limit'
+        - name: search
+          in: query
+          type: string
+          default: products.product_code:HQY
+        - name: count
+          in: query
+          type: string
+          description: "Count the number of unique values of a certain field, for all the records that matched the search parameter. By default, the API returns the 1000 most frequent values."
+      responses:
+        '200':
+          description: successful operation
+        '400':
+          description: Invalid status value
+  /food/enforcement.json:
+    get:
+      summary: foodRecallEnforcementReports
+      operationId: Device | Recall Enforcement Reports
+      produces: application.json
+      parameters:
+        - $ref: '#/parameters/Limit'
+        - name: search
+          in: query
+          type: string
+          default: classification:"Class+III"
+        - name: count
+          in: query
+          type: string
+          description: "Count the number of unique values of a certain field, for all the records that matched the search parameter. By default, the API returns the 1000 most frequent values."
+      responses:
+        '200':
+          description: successful operation
+        '400':
+          description: Invalid status value
+  /food/event.json:
+    get:
+      summary: foodAdverseReport
+      operationId: Food | Adverse Report
+      produces: application.json
+      parameters:
+        - $ref: '#/parameters/Limit'
+        - name: search
+          in: query
+          type: string
+          default: products.industry_code:23
+        - name: count
+          in: query
+          type: string
+          description: "Count the number of unique values of a certain field, for all the records that matched the search parameter. By default, the API returns the 1000 most frequent values."
+      responses:
+        '200':
+          description: successful operation
+        '400':
+          description: Invalid status value
+  /other/nsde.json:
+    get:
+      summary: NSDE
+      operationId: NSDE
+      produces: application.json
+      parameters:
+        - $ref: '#/parameters/Limit'
+        - name: search
+          in: query
+          type: string
+          default: package_ndc:"55700-019-60"
+        - name: count
+          in: query
+          type: string
+          description: "Count the number of unique values of a certain field, for all the records that matched the search parameter. By default, the API returns the 1000 most frequent values."
+      responses:
+        '200':
+          description: successful operation
+        '400':
+          description: Invalid status value
+parameters:
+  Limit:
+    name: limit
+    in: query
+    type: integer
+    description: "Number of results returned. Maximum 100"
+definitions: []

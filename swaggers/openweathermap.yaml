@@ -1,0 +1,184 @@
+swagger: '2.0'
+info:
+  description: 'openweathermap.org'
+  version: "1.0.0"
+  title: OpenWeatherMap
+  x-logo:
+    backgroundColor: '#FFFFFF'
+    url: 'https://openweathermap.org/themes/openweathermap/assets/vendor/owm/img/icons/favicon.ico'
+host: api.openweathermap.org/data
+basePath: /2.5
+schemes:
+  - https
+paths:
+  /weather:
+    get:
+      summary: currentWeatherDataByCityName
+      operationId: Current Weather Data By City Name
+      parameters:
+         - $ref: '#/parameters/cityName'
+      responses:
+        200:
+          description: OK
+  /box/city:
+    get:
+      summary: citiesWithinRectangleZone
+      operationId: Cities Within a Rectangle Zone
+      decription: Returns the data from cities within the defined rectangle specified by the geographic coordinates.
+      parameters:
+        - name: bbox
+          in: query
+          description: The bounding box of the area of interest in latitude and longitude. Comma separated list [lon-left,lat-bottom,lon-right,lat-top,zoom]
+          required: true
+          type: array
+          items:
+            type: number
+            format: float
+          maxItems: 5
+      responses:
+        200:
+          description: OK
+  /find:
+    get:
+      summary: citiesInCycle
+      operationId: Cities In Cycle
+      description: Returns data from cities laid within definite circle that is specified by center point ('lat', 'lon') and expected number of cities ('cnt') around this point. The default number of cities is 10, the maximum is 50.
+      parameters:
+        - $ref: '#/parameters/lat'
+        - $ref: '#/parameters/lon'
+        - name: cnt
+          in: query
+          required: true
+          type: integer
+          default: 10
+          minimum: 1
+          maximum: 50
+      responses:
+        200:
+          description: OK
+  /forecast:
+    get:
+      summary: forecastByCityName5Day3Hour
+      operationId: 5 day/3 hour Forecast By City Name
+      parameters:
+        - $ref: '#/parameters/cityName'
+      responses:
+        200:
+          description: OK
+  /uvi:
+    get:
+      summary: callCurrentUVDataForOneLocationByGeographicCoordinates
+      operationId: Call Current UV Data For One Location By Geographic Coordinates
+      parameters:
+        - $ref: '#/parameters/lat'
+        - $ref: '#/parameters/lon'
+      responses:
+        200:
+          description: OK
+  /uvi/forecast:
+    get:
+      summary: callForecastUVDataForOneLocationByGeographicCoordinates
+      operationId: Call Forecast UV Data For One Location By Geographic Coordinates
+      parameters:
+        - $ref: '#/parameters/lat'
+        - $ref: '#/parameters/lon'
+        - name: cnt
+          description: Number of returned days (max value - 8)
+          in: query
+          required: true
+          type: integer
+          default: 1
+      responses:
+        200:
+          description: OK
+  /uvi/history:
+    get:
+      summary: callHistoricalUVDataForOneLocation
+      operationId: Call Historical UV Data For One Location
+      parameters:
+        - $ref: '#/parameters/lat'
+        - $ref: '#/parameters/lon'
+        - name: cnt
+          description: Number of returned days
+          in: query
+          required: false
+          type: integer
+        - name: start
+          description: Starting point of time period in UNIX time
+          in: query
+          required: false
+          type: string
+          format: date-time
+          grok-datetime-format: secondsSinceEpoch
+        - name: end
+          description: Final point of time period in UNIX time
+          in: query
+          required: false
+          type: string
+          format: date-time
+          grok-datetime-format: secondsSinceEpoch
+      responses:
+        200:
+          description: OK
+parameters:
+  cityName:
+    in: query
+    name: q
+    required: true
+    type: string
+    default: München,DE
+    description: City name and country code divided by comma, use ISO 3166 country codes
+  lat:
+    name: lat
+    in: query
+    required: true
+    type: number
+    format: float
+    default: 55.5
+  lon:
+    name: lon
+    in: query
+    required: true
+    type: number
+    format: float
+    default: 37.5
+definitions:
+  Forecast:
+    title: forecast
+    type: object
+    properties:
+      DateIssue:
+        type: string
+        format: date-time
+      DateForecast:
+        type: string
+        format: date-time
+      ReportingArea:
+        type: string
+      StateCode":
+        type: string
+      Latitude:
+        type: number
+        format: float
+      Longitude:
+        type: number
+        format: float
+      ParameterName:
+        type: string
+      Aqi:
+        type: number
+        format: float
+      CategoryNumber:
+        type: number
+        format: float
+      CategoryName:
+        type: string
+      ActionDay:
+        type: boolean
+      Discussion:
+        type: string
+securityDefinitions:
+  api_key:
+    type: apiKey
+    name: appid
+    in: query

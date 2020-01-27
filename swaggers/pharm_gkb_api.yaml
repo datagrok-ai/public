@@ -1,0 +1,155 @@
+swagger: "2.0"
+info:
+  description: "This is the RESTful API for accessing data stored in PharmGKB. All responses are in JSON format and can be retrieved as either JSON or JSON-LD linked data format."
+  title: PharmGKB REST API
+host: api.pharmgkb.org
+basePath: /v1
+schemes:
+  - https
+paths:
+   /data/label:
+    get:
+      summary: queryDrugLabels
+      operationId: Query Drug Labels
+      description: "Query Drug Labels"
+      produces:
+        - application/json
+      parameters:
+        - name: source
+          in: query
+          type: string
+          description: "The source of the Drug Label"
+          required: true
+          default: "fda"
+          enum:
+            - fda
+            - ema
+            - pmda
+            - hcsc
+        - name: relatedChemicals.accessionId
+          in: path
+          type: string
+          description: "The accession ID of a chemical associated with the Drug Label"
+          required: false
+        - name: relatedChemicals.name
+          in: query
+          type: string
+          description: "The  name of a chemical associated with the Drug Label"
+          required: false
+        - name: relatedGenes.accessionId
+          in: query
+          type: string
+          description: "The accession ID of a gene associated with the Drug Label"
+          required: false
+        - name: relatedGenes.symbol
+          in: query
+          type: string
+          description: "The symbol of a gene associated with the Drug Label"
+          required: false
+        - name: view
+          in: query
+          type: string
+          description: "How much data to retrieve on the object"
+          required: true
+          default: "max"
+          enum:
+            - min
+            - base
+            - max
+      responses:
+         200:
+           description: OK
+   /data/guideline:
+    get:
+      summary: queryDosingGudielines
+      operationId: Query a Dosing Gudielines
+      description: "Query a Dosing Gudielines"
+      produces:
+        - application/json
+      parameters:
+        - name: source
+          in: query
+          type: string
+          description: "The source of the Dosing Guideline"
+          required: true
+          default: "cpic"
+          enum:
+            - cpic
+            - dpwg
+            - pro
+        - name: view
+          in: query
+          type: string
+          description: "How much data to retrieve on the object"
+          required: true
+          default: "max"
+          enum:
+            - min
+            - base
+            - max
+        - name: relatedChemicals.accessionId
+          in: query
+          type: string
+          description: "The accession ID of a chemical associated with the Dosing Guideline"
+          required: false
+        - name: relatedGenes.accessionId
+          in: query
+          type: string
+          description: "The accession ID of a gene associated with the Dosing Guideline"
+          required: false
+      responses:
+         200:
+           description: OK
+   /data/ontologyTerm:
+    get:
+      summary: queryOntologyTerms
+      operationId: Query Ontology Terms
+      description: "Query Ontology Terms"
+      produces:
+        - application/json
+      parameters:
+        - name: resource
+          in: query
+          type: string
+          description: "The source of the Dosing Guideline"
+          required: true
+          default: "biomarkerStatus"
+          enum:
+            - biomarkerStatus
+            - alleleFunction
+            - cpicLevelOfEvidence
+            - cpicStatus
+            - geneTestLevel
+            - guidelineStrength
+            - levelsOfEvidence
+        - name: view
+          in: query
+          type: string
+          description: "How much data to retrieve on the object"
+          required: true
+          default: "max"
+          enum:
+            - min
+            - base
+            - max
+      responses:
+         200:
+           description: OK
+   /report/variantFrequency:
+    get:
+      summary: getVriantFrequencyDataForVariantFingerprint
+      operationId: Get all variant frequency data for a given variant fingerprint
+      description: "Get all variant frequency data for a given variant fingerprints"
+      produces:
+        - application/json
+      parameters:
+        - name: fp
+          in: query
+          type: string
+          description: "Variant fingerprint to query (e.g. RSID)"
+          required: true
+          default: "rs2228001"
+      responses:
+         200:
+           description: OK
+definitions: []

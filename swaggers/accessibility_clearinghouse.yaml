@@ -1,0 +1,338 @@
+swagger: "2.0"
+info:
+  title: "Accessibility Clearinghouse API"
+  description: "The 21st Century Communications and Video Accessibility Act put into motion new requirements to ensure that everyone has access to communications as well as the ability to send and receive emergency information and services."
+  version: 2.0.0
+host: data.fcc.gov:443
+basePath: /api/accessibilityclearinghouse
+schemes:
+  - https
+paths:
+  /disabilityTypes:
+    get:
+      summary: disabilityTypes
+      operationId: Disability Types
+      description: 'Returns a list of disabilities along with the disability type name, id, short description and long description..'
+      parameters:
+        - $ref: '#/parameters/Format'
+      responses:
+        '200':
+          description: successful operation
+        '400':
+          description: Invalid status value
+  /product/products:
+    get:
+      summary: products
+      operationId: Products
+      description: "Returns a list of mobile devices as well as the original source of the data. The features, manufacturers, and regions API's can be used to provide optional parameter inputs."
+      parameters:
+        - $ref: '#/parameters/Category'
+        - $ref: '#/parameters/Feat'
+        - $ref: '#/parameters/Format'
+        - $ref: '#/parameters/Mfg'
+        - $ref: '#/parameters/Page'
+        - $ref: '#/parameters/Region'
+        - $ref: '#/parameters/RowPerPage'
+      responses:
+        '200':
+          description: successful operation
+        '400':
+          description: Invalid status value
+  /product/productFeatures:
+    get:
+      summary: productFeatures
+      operationId: Product Features
+      description: 'Returns a list of accessibility features (with name and description) that are supported by a particular device as well as the source for the original data.'
+      parameters:
+        - name: productID
+          in: query
+          decription: "Returns results based on the product ID."
+          type: integer
+          required: true
+        - $ref: '#/parameters/Format'
+      responses:
+        '200':
+          description: successful operation
+        '400':
+          description: Invalid status value
+  /featureGroups:
+    get:
+      summary: featureGroups
+      operationId: Feature Groups
+      description: 'Returns a list of accessibility features (with name and description) that may be supported by various products. Can be used with the Products (Mobile Devices) API to provide optional parameters for feat.'
+      parameters:
+        - name: disabilityId
+          in: query
+          decription: "Returns results based on the disability ID."
+          type: integer
+          required: true
+        - $ref: '#/parameters/Format'
+      responses:
+        '200':
+          description: successful operation
+        '400':
+          description: Invalid status value
+  /product/regions:
+    get:
+      summary: regions
+      operationId: Regions
+      description: 'Returns a list of regions where various products may be available. Can be used with the Products (Mobile Devices) API to provide optional parameter inputs for region).'
+      parameters:
+        - $ref: '#/parameters/Format'
+        - $ref: '#/parameters/Category'
+        - $ref: '#/parameters/Order'
+      responses:
+        '200':
+          description: successful operation
+        '400':
+          description: Invalid status value
+  /product/searchProducts:
+    get:
+      summary: searchProducts
+      operationId: Search Products
+      description: 'Returns a list of mobile devices based on a search query (manufacturer, brand, or model) as well as the original source of the data.'
+      parameters:
+        - $ref: '#/parameters/Format'
+        - $ref: '#/parameters/Page'
+        - $ref: '#/parameters/RowPerPage'
+        - $ref: '#/parameters/SearchString'
+      responses:
+        '200':
+          description: successful operation
+        '400':
+          description: Invalid status value
+  /product/makerBrandModel:
+    get:
+      summary: makerBrandModel
+      operationId: Maker Brand Model
+      description: 'Returns a list of mobile devices (manufacturer or brand and model number) as the user types a search query.'
+      parameters:
+        - $ref: '#/parameters/Format'
+        - $ref: '#/parameters/Limit'
+        - $ref: '#/parameters/SearchString'
+      responses:
+        '200':
+          description: successful operation
+        '400':
+          description: Invalid status value
+  /apps:
+    get:
+      summary: apps
+      operationId: Apps
+      description: 'Returns a list of accessible apps and assistive technologies as well as the original source of the data.'
+      parameters:
+        - $ref: '#/parameters/Format'
+        - $ref: '#/parameters/Page'
+        - $ref: '#/parameters/RowPerPage'
+        - $ref: '#/parameters/DisabilityID'
+      responses:
+        '200':
+          description: successful operation
+        '400':
+          description: Invalid status value
+  /contacts:
+    get:
+      summary: contacts
+      operationId: Contacts
+      description: 'Returns a variety of convenience contact information as well as the original source of the data for Service Providers, Equipment Manufacturers, Schools and Universities, and National and International Organizations. The list of contacts can be grouped by state..'
+      parameters:
+        - name: entityType
+          in: query
+          description: 'Returns results based on the entity type. tag and entityType should not be used together.'
+          type: string
+          enum:
+            - AT Program
+            - Equipment Manufacturer
+            - Service Provider
+            - International
+            - National
+        - name: entityRangeStartWith
+          in: query
+          description: 'Used with entityRangeStartWith to filter entity names within a defined range.'
+          type: string
+        - name: entityRangeEndWith
+          in: query
+          description: 'Used with entityRangeEndWith to filter entity names within a defined range.'
+        - name: groupByState
+          in: query
+          type: boolean
+          description: 'Returns results grouped by state name.'
+        - name: stateName
+          in: query
+          type: string
+          description: 'Returns results with addresses within a specified state.'
+        - name: tag
+          in: query
+          type: string
+          description: 'Returns results that have been tagged as contacts for Veterans, Family & Children or Seniors. tag and entityType should not be used together.'
+          enum:
+            - VET
+            - KID
+            - SEN
+        - $ref: '#/parameters/Format'
+        - $ref: '#/parameters/Page'
+        - $ref: '#/parameters/RowPerPage'
+        - $ref: '#/parameters/DisabilityID'
+      responses:
+        '200':
+          description: successful operation
+        '400':
+          description: Invalid status value
+  /states:
+    get:
+      summary: states
+      operationId: States
+      description: 'Returns a list of states by which the convenience contacts can be grouped.'
+      parameters:
+        - name: entityType
+          in: query
+          description: 'Returns a list of states where the specified entity type can be found.'
+          type: string
+          enum:
+            - Service Provider
+            - Equipment Manufacturer
+            - Skhool
+            - International
+        - $ref: '#/parameters/Format'
+      responses:
+        '200':
+          description: successful operation
+        '400':
+          description: Invalid status value
+  /events:
+    get:
+      summary: events
+      operationId: Events
+      description: 'Returns a list of upcoming and past Disability Related Events.'
+      parameters:
+        - name: date
+          in: query
+          description: 'Returns current events based on the given date. If null then dateFlag is required.'
+          type: string
+          format: date-time
+          grok-datetime-format: MM/dd/yyyy
+        - name: dateFlag
+          in: query
+          decription: "Returns past or future events based on a given date. If date is null past or future events are returned based on the current date. Valid values: past, future (default)"
+          type: string
+          enum:
+            - future
+            - past
+        - name: disabilityId
+          in: query
+          description: 'Returns results based on the disability ID. Valid values: 3, 4, 5, 6, 7 (for mapping details on the disability type name and id please use the Disability Types API)'
+          type: string
+          enum:
+            - 3
+            - 4
+            - 5
+            - 6
+            - 7
+        - $ref: '#/parameters/Format'
+        - $ref: '#/parameters/Page'
+        - $ref: '#/parameters/RowPerPage'
+      responses:
+        '200':
+          description: successful operation
+        '400':
+          description: Invalid status value
+  /fedContacts:
+    get:
+      summary: fedContacts
+      operationId: Fed Contacts
+      description: 'Returns a list of Federal Agencies that provide accessibility related services or information.'
+      parameters:
+        - name: disabilityId
+          in: query
+          description: 'Returns results based on the disability ID. Valid values: 3, 4, 5, 6, 7 (for mapping details on the disability type name and id please use the Disability Types API)'
+          type: string
+          enum:
+            - 3
+            - 4
+            - 5
+            - 6
+            - 7
+        - $ref: '#/parameters/Format'
+        - $ref: '#/parameters/Page'
+        - $ref: '#/parameters/RowPerPage'
+      responses:
+        '200':
+          description: successful operation
+        '400':
+          description: Invalid status value
+parameters:
+  Format:
+    name: format
+    in: query
+    required: true
+    description: "Format for the returned results."
+    type: string
+    enum:
+      - xml
+      - json
+      - jsonp
+    default: xml
+  Category:
+    name: category
+    in: query
+    description: "Returns the results based on a category type. (only the mobile category is currently supported)"
+    type: string
+    default: mobile
+  Feat:
+    name: feat
+    in: query
+    description: "One or more feature ID's. Used to identify a device's supported accessibility features."
+    type: integer
+  Mfg:
+    name: mfg
+    in: query
+    description: "One or more device manufacturer names."
+    type: string
+  Page:
+    name: page
+    in: query
+    description: "Returns the results for a specified page number."
+    type: integer
+  Region:
+    name: region
+    in: query
+    description: "One or more geographical regions where a device may be available. (Refer to the Product Regions API for more info.)"
+    type: string
+  RowPerPage:
+    name: rowPerPage
+    in: query
+    description: "The number of results to show per page. (a value of -1 will show all rows on one page)"
+    type: string
+    default: 20
+  Order:
+    name: order
+    in: query
+    description: "Order of the returned results."
+    type: string
+    enum:
+      - asc
+      - desc
+    default: asc
+  SearchString:
+    name: searchString
+    in: query
+    description: "Search term."
+    type: string
+    required: true
+  Limit:
+    name: limit
+    in: query
+    description: "Maximum number of results to return."
+    type: integer
+    default: 20
+  DisabilityID:
+    name: disabilityId
+    in: query
+    description: 'Returns results based on the disability ID.'
+    type: integer
+definitions: []
+securityDefinitions:
+  api_key:
+    type: apiKey
+    name: api_key
+    in: query

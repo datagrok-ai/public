@@ -1,0 +1,232 @@
+swagger: "2.0"
+info:
+  title: USDA Food Composition Databases
+  description: 'Our API provides REST access to the USDA Food Composition Databases. It is intended primarily to assist application developers wishing to incorporate nutrient data into their applications or websites.'
+  version: 1.0.0
+  x-logo:
+    backgroundColor: '#FFFFFF'
+    url: 'https://ndb.nal.usda.gov/ndb/assets/favicon-586b9f862ff9b9e158afa1e50eb9a8e3.ico'
+host: api.nal.usda.gov
+basePath: /ndb
+schemes:
+  - https
+paths:
+  /reports/:
+    get:
+      summary: foodReport
+      operationId: Food Report
+      description: 'A Food Report is a list of nutrients and their values in various portions for a specific food.'
+      parameters:
+        - name: ndbno
+          in: query
+          required: true
+          description: NDB number
+          type: string
+          default: 01009
+        - name: type
+          in: query
+          type: string
+          required: false
+          enum:
+            - b
+            - f
+            - s
+          description: 'Report type: [b]asic or [f]ull or [s]tats'
+        - name: format
+          in: query
+          required: true
+          type: string
+          enum:
+            - json
+            - xml
+          default: xml
+      responses:
+        '200':
+          description: successful operation
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Observation'
+        '400':
+          description: Invalid status value
+  /list:
+    get:
+      summary: foodList
+      operationId: Food List
+      description: 'You may request a list of foods, nutrients or food groups.'
+      parameters:
+        - name: lt
+          in: query
+          description: 'List type(lt): d = derivation codes, f = food , n = all nutrients, ns = speciality nutrients, nr = standard release nutrients only,g = food group'
+          type: string
+          required: true
+          enum:
+            - d
+            - f
+            - n
+            - ns
+            - nr
+            - g
+          default: f
+        - name: max
+          in: query
+          description: 'Maximum number of items to return'
+          type: integer
+          required: false
+          default: 50
+        - name: offset
+          in: query
+          required: false
+          description: 'Beginning item in the result set'
+          type: integer
+        - name: sort
+          in: query
+          required: false
+          description: 'Sort order: n=name or id (Meaning of id varies by list type: nutrient number for a nutrient list, NDBno for a foods list ,food group id for a food group list'
+          type: string
+          enum:
+            - n
+            - id
+        - name: format
+          in: query
+          required: true
+          type: string
+          enum:
+            - json
+            - xml
+          default: xml
+      responses:
+        '200':
+          description: successful operation
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Observation'
+        '400':
+          description: Invalid status value
+  /nutrients/:
+    get:
+      summary: nutrientReport
+      operationId: Nutrient Report
+      description: 'A Nutrient Report is a list of foods and their nutrient values for a set of specified nutrients. This API request provides similar functionality to the Nutrients List component of the NDB search application.'
+      parameters:
+        - name: fg
+          in: query
+          description: 'Limit your nutrients to one or more food groups by providing a list of food group IDs via the fg parameter. The default is a blank list meaning no food group filtering will be applied. Up to 10 food groups may be specified.'
+          type: string
+          required: false
+        - name: max
+          in: query
+          description: 'Number of rows to return. The maximum per request is 1,500.'
+          type: integer
+          required: false
+        - name: offset
+          in: query
+          required: false
+          description: 'Beginning item in the result set'
+          type: integer
+        - name: ndbno
+          in: query
+          required: false
+          description: 'Report the nutrients for a single food identified by its unique id -- nutrient number'
+          type: string
+        - name: nutrients
+          in: query
+          required: true
+          description: 'List of up to a maximum of 20 nutrient_ids to include in the report'
+          type: string
+          default: 208
+        - name: sort
+          in: query
+          required: false
+          description: 'Sort the list of foods by (f)ood name or nutrient (c)ontent. If you are requesting more than one nutrient and specifying sort = c then the first nutrient in your list is used for the content sort.'
+          type: string
+          enum:
+            - f
+            - c
+          default: f
+        - name: subset
+          in: query
+          required: false
+          description: 'You may indicate all the foods in the SR database or an abridged list from the pull down menu. Set the subset parameter to 1 for the abridged list of about 1,000 foods commonly consumed in the U.S. The default 0 for all of the foods in the database'
+          type: integer
+        - name: format
+          in: query
+          required: true
+          type: string
+          enum:
+            - json
+            - xml
+          default: xml
+      responses:
+        '200':
+          description: successful operation
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Observation'
+        '400':
+          description: Invalid status value
+  /search/:
+    get:
+      summary: foodSearch
+      operationId: Food Search
+      description: 'A search request sends keyword queries and returns lists of foods which contain one or more of the keywords in the food description, scientific name, or commerical name fields. Search requests are a good way to locate NDB numbers (NDBno) for the reports API as well as for general discovery.'
+      parameters:
+        - name: q
+          in: query
+          description: 'Search terms'
+          type: string
+          required: true
+        - name: ds
+          in: query
+          description: "Data source. Must be either 'Branded Food Products' or 'Standard Reference'"
+          type: string
+          required: false
+        - name: fg
+          in: query
+          description: 'Food group ID'
+          type: string
+          required: false
+        - name: max
+          in: query
+          description: 'Maximum rows to return'
+          type: integer
+          required: false
+        - name: offset
+          in: query
+          required: false
+          description: 'Beginning item in the result set'
+          type: integer
+        - name: sort
+          in: query
+          required: false
+          description: 'Sort the results by food name (n) or by search relevance (r)'
+          type: string
+          enum:
+            - n
+            - r
+          default: n
+        - name: format
+          in: query
+          required: true
+          type: string
+          enum:
+            - json
+            - xml
+          default: xml
+      responses:
+        '200':
+          description: successful operation
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Observation'
+        '400':
+          description: Invalid status value
+definitions: []
+securityDefinitions:
+  api_key:
+    type: apiKey
+    name: api_key
+    in: query

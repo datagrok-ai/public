@@ -1,0 +1,114 @@
+swagger: "2.0"
+info:
+  title: 'Analytics.usa.gov API'
+  description: "In addition to being published and available for download, the data generated for this site is also available via an API."
+  version: 1.0.0
+  x-logo:
+    backgroundColor: '#FFFFFF'
+    url: 'https://analytics.usa.gov/images/analytics-favicon.ico'
+host: api.gsa.gov
+basePath: /analytics/dap/v1
+schemes:
+  - https
+paths:
+  /reports/{report_Name}/data:
+    get:
+      summary: queryingReports
+      operationId: Querying reports
+      produces: application.json
+      parameters:
+        - $ref: '#/parameters/Report_Name'
+      responses:
+        '200':
+          description: successful operation
+        '400':
+          description: Invalid status value
+  /agencies/{agency_Name}/reports/{report_Name}/data:
+    get:
+      summary: filteringBasedOnAgencies
+      operationId: Filtering based on agencies
+      produces: application.json
+      parameters:
+        - $ref: '#/parameters/Report_Name'
+        - $ref: '#/parameters/Page'
+        - $ref: '#/parameters/Limit'
+        - name: agency_Name
+          in: path
+          type: string
+          enum:
+            - agency-international-development
+            - agriculture
+            - commerce
+            - defense
+            - education
+            - energy
+            - environmental-protection-agency
+            - executive-office-president
+            - general-services-administration
+            - health-human-services
+            - homeland-security
+            - housing-urban-development
+            - interior
+            - justice
+            - labor
+            - national-aeronautics-space-administration
+            - national-archives-records-administration
+            - national-science-foundation
+            - nuclear-regulatory-commission
+            - office-personnel-management
+            - postal-service
+            - small-business-administration
+            - social-security-administration
+            - state
+            - transportation
+            - treasury
+            - veterans-affairs
+          default: agriculture
+          required: true
+          description: "Reports can be queried by substituting <agency name> in the path with the name of the agency. If the path without an agency name parameter is used, the reports correspond to government wide data."
+      responses:
+        '200':
+          description: successful operation
+        '400':
+          description: Invalid status value
+parameters:
+  Report_Name:
+    name: report_Name
+    in: path
+    type: string
+    enum:
+      - download
+      - traffic-source
+      - device-model
+      - domain
+      - site
+      - second-level-domain
+      - language
+      - os-browser
+      - windows-browser
+      - browser
+      - windows-ie
+      - os
+      - windows
+      - ie
+      - device
+    default: download
+    required: true
+    description: "Reports can be queried by substituting <report name> in the path with the name of the report."
+  Limit:
+    name: limit
+    in: query
+    type: integer
+    description: "Limit the number of data points that are rendered. The default is 1000 and the max is 10,000"
+    default: 1000
+  Page:
+    name: page
+    in: query
+    type: integer
+    description: "Pages through the results. If the limit is set to 1000, using page=2 will render the 1001st through 2000th data point."
+definitions: []
+securityDefinitions:
+  api_key:
+    type: apiKey
+    name: api_key
+    in: query

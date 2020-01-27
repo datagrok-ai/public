@@ -1,0 +1,108 @@
+swagger: "2.0"
+info:
+  title: Alpha Vantage
+  description: 'Alpha Vantage APIs are grouped into four categories: (1) Stock Time
+    Series Data, (2) Physical and Digital/Crypto Currencies (e.g., Bitcoin), (3) Stock
+    Technical Indicators, and (4) Sector Performances. All APIs are realtime: the
+    latest data points are derived from the current trading day. '
+  version: 1.0.0
+host: www.alphavantage.co
+basePath: /
+schemes:
+  - https
+paths:
+   /query:
+    get:
+      summary: alphaVantage
+      operationId: Alpha Vantage API
+      parameters:
+        - in: query
+          name: function
+          required: true
+          type: string
+          enum:  [ADX, AD, AROON, BBANDS, CCI, CURRENCY_EXCHANGE_RATE, DIGITAL_CURRENCY_DAILY, DIGITAL_CURRENCY_WEEKLY, DIGITAL_CURRENCY_MONTHLY, EMA, MACD, OBV, RSI, SMA, STOCH, TIME_SERIES_DAILY, TIME_SERIES_DAILY_ADJUSTED, TIME_SERIES_INTRADAY, FX_INTRADAY]
+          description: >
+            Function:
+               * `ADX` - Average directional movement index (ADX) values. Required parameters: Symbol, Interval
+               * `AD` - Chaikin A/D line (AD) values. Required parameters: Symbol, Interval, Time_period
+               * `AROON` - Returns the Aroon (AROON) values. Required parameters: Symbol, Interval, Time_period
+               * `BBANDS` - Returns the Bollinger bands (BBANDS) values. Required parameters: Symbol, Interval, Time_period, Series_type
+               * `CCI` -  Returns the commodity channel index (CCI) values. Required parameters: Symbol, Interval, Time_period
+               * `CURRENCY_EXCHANGE_RATE` - Realtime currency exchange rates for physical and digital currencies. Required parameters: From_currency, To_currency
+               * `DIGITAL_CURRENCY_DAILY` -  Returns the daily historical time series for a digital currency. Required parameters: Symbol, Market
+               * `DIGITAL_CURRENCY_WEEKLY` - Returns the weekly historical time series for a digital currency: Symbol, Market
+               * `DIGITAL_CURRENCY_MONTHLY` -  Returns the monthly historical time series for a digital currency: Symbol, Market
+               * `EMA` - Returns the exponential moving average. Required parameters: Symbol, Interval, Time_period, Series_type
+               * `MACD` - Returns the moving average convergence / divergence (MACD). Required parameters: Symbol, Interval, Series_type
+               * `OBV` - Returns the on balance volume (OBV) values. Required parameters: Symbol, Interval
+               * `RSI` - Returns the relative strength index (RSI) values. Required parameters: Symbol, Interval, Time_period, Series_type
+               * `SMA` - Returns the simple moving average (SMA) values. Required parameters: Symbol, Interval, Time_period, Series_type
+               * `STOCH` - Returns the stochastic oscillator (STOCH) values. Required parameters: Symbol, Interval
+               * `TIME_SERIES_DAILY` - Returns daily time series (date, daily open, daily high, daily low, daily close, daily volume) of the equity specified, covering up to 20 years of historical data. Required parameters: Symbol
+               * `TIME_SERIES_DAILY_ADJUSTED` - Returns daily time series (date, daily open, daily high, daily low, daily close, daily volume, daily adjusted close, and split/dividend events) of the equity specified, covering up to 20 years of historical data. Required parameters: Symbol
+               * `TIME_SERIES_INTRADAY` - Returns intraday time series (timestamp, open, high, low, close, volume) of the equity specified, updated realtime. Required parameters: Symbol, Interval
+               * `FX_INTRADAY` - Returns intraday time series (timestamp, open, high, low, close) of the FX currency pair specified, updated realtime. Required parameters: Interval, From_symbol, To_symbol
+        - in: query
+          name: interval
+          description: 'Time interval between two consecutive data points in the time series'
+          type: string
+          enum:
+            - 1min
+            - 5min
+            - 15min
+            - 30min
+            - 60min
+            - daily
+            - weekly
+            - monthly
+        - in: query
+          name: symbol
+          description: 'The name of the equity of your choice. For example: symbol = MSFT'
+          type: string
+        - in: query
+          name: time_period
+          description: 'Number of data points used to calculate each value. (e.g., time_period=60, time_period=200)'
+          type: integer
+        - in: query
+          name: series_type
+          description: 'The desired price type in the time series'
+          type: string
+          enum:
+            - close
+            - open
+            - hight
+            - low
+        - in: query
+          name: from_currency
+          description: 'The currency you would like to get the exchange rate for. It can either be a physical currency or digital/crypto currency. For example: from_currency=USD or from_currency=BTC.'
+          type: string
+        - in: query
+          name: to_currency
+          description: 'The destination currency for the exchange rate. It can either be a physical currency or digital/crypto currency. For example: to_currency=USD or to_currency=BTC.'
+          type: string
+        - in: query
+          name: market
+          description: 'The exchange market of your choice. For example: market=CNY.'
+          type: string
+        - in: query
+          name: from_symbol
+          description: 'A three-letter symbol from the forex currency list. For example: from_symbol=EUR'
+          type: string
+        - in: query
+          name: to_symbol
+          description:' A three-letter symbol from the forex currency list. For example: to_symbol=USD'
+          type: string
+        - in: query
+          name: datatype
+          description: 'Output format'
+          type: string
+          default: csv
+      responses:
+        200:
+          description: OK
+definitions: []
+securityDefinitions:
+  api_key:
+    type: apiKey
+    name: apikey
+    in: query

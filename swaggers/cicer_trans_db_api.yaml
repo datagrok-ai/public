@@ -1,0 +1,157 @@
+swagger: "2.0"
+info:
+  description: "The CicerTransDB API is a RESTful URL API that is used for the retrieval of sequences and features from CicerTransDB. CicerTransDB is a database for Chickpea Transcription factors. It is a unified portal for various applications and provides users with a platform for the study of chickpea transcription factors."
+  title: CicerTransDB API
+host: cicertransdb.esy.es
+basePath: /download
+schemes:
+  - http
+paths:
+   /{sequence}/json/chromosome/{chromosome}:
+    get:
+      summary: getInChromosome
+      operationId: Get all TFs in a TF chromosome
+      description: "Browse all TFs in a chromosome (specified by options)"
+      produces:
+        - application/json
+      parameters:
+        - name: sequence
+          in: path
+          type: string
+          description: "Type of sequence (gene, genome, protein, promoter)."
+          required: true
+          default: "gene"
+          enum:
+            - gene
+            - genome
+            - protein
+            - promoter
+        - name: chromosome
+          in: path
+          type: string
+          default: "Ca1"
+          required: true
+          enum:
+            - Ca1
+            - Ca2
+            - Ca3
+            - Ca4
+            - Ca5
+            - Ca6
+            - Ca7
+            - Ca8
+      responses:
+         200:
+           description: OK
+   /{sequence}/json/family/{family}:
+    get:
+      summary: getInFamily
+      operationId: Get all TFs in a TF family
+      description: "Browse all TFs in a TF family (specified by options)"
+      produces:
+        - application/json
+      parameters:
+        - name: sequence
+          in: path
+          type: string
+          description: "Type of sequence (gene, genome, protein, promoter)."
+          required: true
+          default: "gene"
+          enum:
+            - gene
+            - genome
+            - protein
+            - promoter
+        - name: family
+          in: path
+          type: string
+          default: "AP2"
+          required: true
+          enum:
+            - AP2
+            - ARF
+            - B3
+            - BBR-BPC
+            - BES1
+            - bHLH
+            - bZIP_1
+            - C2H2
+            - C3H
+            - CAMTA
+            - CO-like
+            - CPP
+            - Dof
+            - E2F-DP
+            - EIL
+            - ERF
+            - FAR1
+            - GATA
+            - GeBP
+            - GRAS
+            - GRF
+            - HB-other
+            - HB-PHD
+            - HD_ZIP
+            - HSF
+            - LBD (AS2-LOB)
+            - LFY
+            - LSD
+            - M-type
+            - MIKC
+            - MYB
+            - MYB_related
+            - NAC
+            - NF-X1
+            - NF-YA
+            - Nin-like
+            - NZZ-SPL
+            - RAV
+            - S1Fa-like
+            - SBP
+            - SRS
+            - TCP
+            - Tubby
+            - Whirly
+            - WRKY
+            - YABBY
+            - ZF-HD
+      responses:
+         200:
+           description: OK
+   /{sequence}/json/localization/{localization}:
+    get:
+      summary: getInCompartment
+      operationId: Get all TFs in a compartment
+      description: "Browse all TFs in a compartment (specified by options)"
+      produces:
+        - application/json
+      parameters:
+        - name: sequence
+          in: path
+          type: string
+          description: "Type of sequence (gene, genome, protein, promoter)."
+          required: true
+          default: "gene"
+          enum:
+            - gene
+            - genome
+            - protein
+            - promoter
+        - name: localization
+          in: path
+          type: string
+          default: "chloroplast"
+          required: true
+          enum:
+            - chloroplast
+            - chloroplast membrane
+            - cytoplasm
+            - endoplasmic reticulum membrane
+            - mitochondrion
+            - nucleus
+            - plasma membrane
+            - secreted
+      responses:
+         200:
+           description: OK
+definitions: []

@@ -1,0 +1,93 @@
+swagger: "2.0"
+info:
+  title: 'Commerce.gov API'
+  description: "As 'America's Data Agency,' the Department of Commerce is prepared and well-positioned to foster the next phase in the open data revolution."
+  version: 1.0.0
+  x-logo:
+    backgroundColor: '#FFFFFF'
+    url: 'https://www.commerce.gov/themes/commerce/assets/img/favicons/favicon-32x32.png'
+host:  api.commerce.gov
+basePath: /api
+schemes:
+  - https
+paths:
+  /blogs:
+    get:
+      summary: blogsSearch
+      operationId: Blogs Search
+      description: 'Provides blog content entries and fields'
+      parameters:
+        - $ref: '#/parameters/Range'
+        - $ref: '#/parameters/Filter'
+        - $ref: '#/parameters/Sort'
+        - $ref: '#/parameters/Page'
+        - $ref: '#/parameters/Fields'
+      responses:
+        '200':
+          description: successful operation
+        '400':
+          description: Invalid status value
+  /news:
+    get:
+      summary: newsSearch
+      operationId: News Search
+      description: 'Provides newsroom content entries and fields'
+      parameters:
+        - $ref: '#/parameters/Range'
+        - $ref: '#/parameters/Filter'
+        - $ref: '#/parameters/Sort'
+        - $ref: '#/parameters/Page'
+        - $ref: '#/parameters/Fields'
+      responses:
+        '200':
+          description: successful operation
+        '400':
+          description: Invalid status value
+  /image:
+    get:
+      summary: imageSearch
+      operationId: Image Search
+      description: 'Provides image content with fields'
+      parameters:
+        - $ref: '#/parameters/Range'
+        - $ref: '#/parameters/Filter'
+        - $ref: '#/parameters/Sort'
+        - $ref: '#/parameters/Page'
+        - $ref: '#/parameters/Fields'
+      responses:
+        '200':
+          description: successful operation
+        '400':
+          description: Invalid status value
+parameters:
+  Range:
+    name: range
+    in: query
+    description: "Set's the limit for how many results you want back from a listing, per page. Maximum is 50, any range passed over 50 will still only result in 50 per page."
+    type: string
+  Filter:
+    name: filter
+    in: query
+    description: "Filter the API results by fields available in the API. Not all fields work as filters."
+    type: string
+  Sort:
+    name: sort
+    in: query
+    description: "Sort API results by fields available in the API."
+    type: string
+  Page:
+    name: page
+    in: query
+    description: "Request specific page of results from the API."
+    type: string
+  Fields:
+    name: fields
+    in: query
+    description: "Only return fields specified."
+    type: string
+definitions: []
+securityDefinitions:
+  api_key:
+    type: apiKey
+    name: api_key
+    in: query

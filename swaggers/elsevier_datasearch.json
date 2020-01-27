@@ -1,0 +1,1191 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "description": "Elsevier DataSearch is a prototype research data search engine, developed by Elsevier’s Research Data Management team.<br/>Please visit us https://datasearch.elsevier.com.<br/><br/>Our API does not yet support API keys, but we will be adding this functionality over the coming months. If you have any questions about the API, please contact us at datasearch-support@elsevier.com.",
+    "version": "v1",
+    "title": "Elsevier DataSearch API Documentation",
+    "termsOfService": "https://www.elsevier.com/legal/elsevier-website-terms-and-conditions",
+    "contact": {
+
+    },
+    "license": {
+      "name": " ",
+      "url": "https://www.elsevier.com/legal/elsevier-website-terms-and-conditions"
+    }
+  },
+  "host": "api.datasearch.elsevier.com",
+  "basePath": "/api/v1",
+  "tags": [
+    {
+      "name": "previews",
+      "description": "Asset Preview Controller"
+    },
+    {
+      "name": "search",
+      "description": "Search API Controller"
+    },
+    {
+      "name": "typeAhead",
+      "description": "Type Ahead API Controller"
+    }
+  ],
+  "schemes": [
+    "https"
+  ],
+  "paths": {
+    "/container/{containerId}/asset/{assetId}/preview": {
+      "get": {
+        "tags": [
+          "previews"
+        ],
+        "summary": "Fetch an asset preview",
+        "operationId": "get preview",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/octet-stream"
+        ],
+        "parameters": [
+          {
+            "name": "containerId",
+            "in": "path",
+            "description": "Container ID to fetch the asset(s) for",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "assetId",
+            "in": "path",
+            "description": "Asset ID to fetch the preview for",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "An asset preview",
+            "schema": {
+              "$ref": "#/definitions/InputStream"
+            }
+          },
+          "404": {
+            "description": "Preview not found"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          }
+        }
+      }
+    },
+    "/container/{containerId}/assets": {
+      "get": {
+        "tags": [
+          "search"
+        ],
+        "summary": "Term(s) search on the assets of a given container",
+        "operationId": "get assets",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json;charset=UTF-8"
+        ],
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "description": "Follows the Lucene search syntax applying the edismax parser. User field selection is not allowed. So your main usage will be of phrase queries (\"...\"), mandatory terms (+ prefix), must not (- prefix). Term boosting with ^f.f (where is f.f is a floating point number) is allowed.",
+            "required": false,
+            "type": "string",
+            "default": "*"
+          },
+          {
+            "name": "containerId",
+            "in": "path",
+            "description": "Container ID to fetch the asset(s) for",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "requester",
+            "in": "query",
+            "description": "Generally a 2 letter code that describes your product, i.e DataSearch = DS",
+            "required": false,
+            "type": "string",
+            "default": "DS"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Changes the sort order of results, specify only one of the values.",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "RELEVANCY_DATE",
+              "RELEVANCY",
+              "PUBLICATION_DATE",
+              "MENDELEY_DATA_ALL"
+            ]
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of asset search results",
+            "schema": {
+              "$ref": "#/definitions/AssetResponse"
+            }
+          },
+          "500": {
+            "description": "Unexpected server error",
+            "schema": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "/search": {
+      "get": {
+        "tags": [
+          "search"
+        ],
+        "summary": "Run a search on DataSearch",
+        "operationId": "search",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json;charset=UTF-8"
+        ],
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "description": "Follows the Lucene search syntax applying the edismax parser. User field selection is not allowed. So your main usage will be of phrase queries (\"...\"), mandatory terms (+ prefix), must not (- prefix). Term boosting with ^f.f (where is f.f is a floating point number) is allowed.",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "requester",
+            "in": "query",
+            "description": "Generally a 2 letter code that describes your product, i.e DataSearch = DS",
+            "required": false,
+            "type": "string",
+            "default": "DS"
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Controls paginating through results, starts from 0.",
+            "required": false,
+            "type": "integer",
+            "default": 10,
+            "format": "int32"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Controls size of each results list page.",
+            "required": false,
+            "type": "integer",
+            "default": 0,
+            "format": "int32"
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "description": "Multiple sources can be provided as a comma-separated list, and will handled as an OR",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "SCIENCE_DIRECT",
+                "PET_DB",
+                "NIST_TRC",
+                "HARVARD_DATAVERSE",
+                "DRYAD",
+                "MENDELEY_DATA",
+                "MENDELEY_DATA_STAGING",
+                "ARXIV",
+                "NEURO_ELECTRO",
+                "ICPSR",
+                "GEOROC",
+                "USGS",
+                "NAVDAT",
+                "PANGAEA",
+                "METPETDB",
+                "ZENODO",
+                "APOLLO",
+                "DATASPACE",
+                "DSPACEUNIVERSITYOFWASHINGTON",
+                "MEDECINSSANSFONTIERESFIELDRESEARCH",
+                "FOURTUCENTREOFRESEARCHDATA",
+                "SMITHSONIANDIGITALREPOSITORY",
+                "LSHTMDATACOMPASS",
+                "NATIONAL_INSTITUTE_OF_MENTAL_HEALTH",
+                "SBGRID",
+                "THIEME_CHEMISTRY",
+                "DATABRARY",
+                "COLLABORATIVE_RESEARCH_IN_COMPUTATIONAL_NEUROSCIENCE",
+                "COHERENT_XRAY_IMAGING_DATA_BANK",
+                "UCSF_CLINICAL_TRANSLATIONAL_SCIENCE_INSTITUTE",
+                "RESEARCH_DATA_CENTRE_DZA",
+                "AUSTRALIAN_DATA_ARCHIVE",
+                "BIOINFORMATICS_INFRASTRUCTURE_FOR_LIFE_SCIENCES",
+                "ARRAYEXPRESS",
+                "GEO",
+                "RCSBPDB",
+                "CLINVAR",
+                "THE_CAMBRIDGE_CRYSTALLOGRAPHIC_DATA_CENTER",
+                "BIOLOGICAL_MAGNETIC_RESONANCE_DATABANK"
+              ]
+            },
+            "collectionFormat": "multi",
+            "enum": [
+              "SCIENCE_DIRECT",
+              "PET_DB",
+              "NIST_TRC",
+              "HARVARD_DATAVERSE",
+              "DRYAD",
+              "MENDELEY_DATA",
+              "MENDELEY_DATA_STAGING",
+              "ARXIV",
+              "NEURO_ELECTRO",
+              "ICPSR",
+              "GEOROC",
+              "USGS",
+              "NAVDAT",
+              "PANGAEA",
+              "METPETDB",
+              "ZENODO",
+              "APOLLO",
+              "DATASPACE",
+              "DSPACEUNIVERSITYOFWASHINGTON",
+              "MEDECINSSANSFONTIERESFIELDRESEARCH",
+              "FOURTUCENTREOFRESEARCHDATA",
+              "SMITHSONIANDIGITALREPOSITORY",
+              "LSHTMDATACOMPASS",
+              "NATIONAL_INSTITUTE_OF_MENTAL_HEALTH",
+              "SBGRID",
+              "THIEME_CHEMISTRY",
+              "DATABRARY",
+              "COLLABORATIVE_RESEARCH_IN_COMPUTATIONAL_NEUROSCIENCE",
+              "COHERENT_XRAY_IMAGING_DATA_BANK",
+              "UCSF_CLINICAL_TRANSLATIONAL_SCIENCE_INSTITUTE",
+              "RESEARCH_DATA_CENTRE_DZA",
+              "AUSTRALIAN_DATA_ARCHIVE",
+              "BIOINFORMATICS_INFRASTRUCTURE_FOR_LIFE_SCIENCES",
+              "ARRAYEXPRESS",
+              "GEO",
+              "RCSBPDB",
+              "CLINVAR",
+              "THE_CAMBRIDGE_CRYSTALLOGRAPHIC_DATA_CENTER",
+              "BIOLOGICAL_MAGNETIC_RESONANCE_DATABANK"
+            ]
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "description": "Multiple types can be provided as a comma-separated list, and will be handled as an AND (at the container level) so it will have at least one assets of each type specified. Each asset is only tagged as a single type.",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "TABULAR_DATA",
+                "IMAGE",
+                "DOCUMENT",
+                "FILE_SET",
+                "SOFTWARE_CODE",
+                "UNKNOWN",
+                "SEQUENCING_DATA",
+                "GEO_DATA",
+                "AUDIO",
+                "VIDEO",
+                "SLIDES",
+                "TEXT",
+                "NO_ASSET"
+              ]
+            },
+            "collectionFormat": "multi",
+            "enum": [
+              "TABULAR_DATA",
+              "IMAGE",
+              "DOCUMENT",
+              "FILE_SET",
+              "SOFTWARE_CODE",
+              "UNKNOWN",
+              "SEQUENCING_DATA",
+              "GEO_DATA",
+              "AUDIO",
+              "VIDEO",
+              "SLIDES",
+              "TEXT",
+              "NO_ASSET"
+            ]
+          },
+          {
+            "name": "repositoryType",
+            "in": "query",
+            "description": "Source classification into either Article-Based Repository or Non-Article Based Repository",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "ARTICLE_BASED_REPOSITORY",
+                "NON_ARTICLE_BASED_REPOSITORY"
+              ]
+            },
+            "collectionFormat": "multi",
+            "enum": [
+              "ARTICLE_BASED_REPOSITORY",
+              "NON_ARTICLE_BASED_REPOSITORY"
+            ]
+          },
+          {
+            "name": "minPublicationDate",
+            "in": "query",
+            "description": "Sets the start date for date ranged restriction.",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "maxPublicationDate",
+            "in": "query",
+            "description": "Sets the end date for date ranged restriction.",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "classification",
+            "in": "query",
+            "description": "Container classification, based on the Omniscience classifications",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "multi"
+          },
+          {
+            "name": "geoFilter",
+            "in": "query",
+            "description": "<a href='https://en.wikipedia.org/wiki/Well-known_text'>String formatted according to Well-Known Text (WKT). The usage of this parameter is highly restricted and at this time is not fully supported for ad-hoc usage.</a>",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Changes the sort order of results, specify only one of the values.",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "RELEVANCY_DATE",
+              "RELEVANCY",
+              "PUBLICATION_DATE",
+              "MENDELEY_DATA_ALL"
+            ]
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of search results",
+            "schema": {
+              "$ref": "#/definitions/ContainerResponse"
+            }
+          },
+          "500": {
+            "description": "Unexpected server error",
+            "schema": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "/suggest": {
+      "get": {
+        "tags": [
+          "typeAhead"
+        ],
+        "summary": "Give query suggestions to datasearch users",
+        "operationId": "suggest",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json;charset=UTF-8"
+        ],
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "description": "Query for which suggestions are generated",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "method",
+            "in": "query",
+            "description": "A comma-separated list of values to specify which boost modules are to be used to provide the suggestions.The boost modules that can be selected are : gaussianBoost,prefixBoost,termCountBoost,sourceBoost,logBoost.",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "pfactor",
+            "in": "query",
+            "description": "The boost factor applicable to the prefixBoost module.The default value is 3.0",
+            "required": false,
+            "type": "number",
+            "default": 5.0,
+            "format": "double"
+          },
+          {
+            "name": "scount",
+            "in": "query",
+            "description": "The no. of sources used to build the phrase index.The default value is 10",
+            "required": false,
+            "type": "integer",
+            "default": 10,
+            "format": "int32"
+          },
+          {
+            "name": "suggestionsSize",
+            "in": "query",
+            "description": "Number of suggestions for user query",
+            "required": false,
+            "type": "integer",
+            "default": 5,
+            "format": "int32"
+          },
+          {
+            "name": "maxAmplitude",
+            "in": "query",
+            "description": "A parameter used in the gaussianBoost module that specifies the maximum boost value for the phrases around central frequency.The default value is 2.713",
+            "required": false,
+            "type": "number",
+            "default": 2.713,
+            "format": "double"
+          },
+          {
+            "name": "centralFrequency",
+            "in": "query",
+            "description": "A parameter used in the gaussianBoost module that specifies the log of the frequency around which the phrases will be boosted the most.The default values is 3.0",
+            "required": false,
+            "type": "number",
+            "default": 3.0,
+            "format": "double"
+          },
+          {
+            "name": "stdDeviation",
+            "in": "query",
+            "description": "A parameter used in the gaussianBoost module that specifies how fast the boost factor would decay as we move away from the central frequency.The default value is 1.414",
+            "required": false,
+            "type": "number",
+            "default": 1.414,
+            "format": "double"
+          },
+          {
+            "name": "termCount",
+            "in": "query",
+            "description": "The minimum no. of terms to be present in the phrase suggestion.The default value is 1",
+            "required": false,
+            "type": "integer",
+            "default": 8,
+            "format": "int32"
+          },
+          {
+            "name": "phraseLength",
+            "in": "query",
+            "description": "The minimum length from which to apply the lengthTermRatio heuristic.The default value is 40",
+            "required": false,
+            "type": "integer",
+            "default": 40,
+            "format": "int32"
+          },
+          {
+            "name": "lengthTermRatio",
+            "in": "query",
+            "description": "The maximum ratio of the phrase length to the no. of terms in a phrase.The default value is 10.0 ",
+            "required": false,
+            "type": "number",
+            "default": 10.0,
+            "format": "double"
+          },
+          {
+            "name": "tcbf",
+            "in": "query",
+            "description": "The boost factor applicable to the termCountBoost module.The default value is 2.0",
+            "required": false,
+            "type": "number",
+            "default": 2.0,
+            "format": "double"
+          },
+          {
+            "name": "tcbt",
+            "in": "query",
+            "description": "The minimum no. of terms from which to apply the boost factor for termCountBoost module.The default value is 1",
+            "required": false,
+            "type": "integer",
+            "default": 1,
+            "format": "int32"
+          },
+          {
+            "name": "sources",
+            "in": "query",
+            "description": "Multiple sources can be provided as a comma-separated list, and will handled as an OR",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "weightThreshold",
+            "in": "query",
+            "description": "Suggestions returned will be above a certain weight(frequency) threshold.  Default threshold is 1.",
+            "required": false,
+            "type": "number",
+            "default": 1.0,
+            "format": "double"
+          },
+          {
+            "name": "highlightSuggestions",
+            "in": "query",
+            "description": "Suggestions returned will be highlighted.",
+            "required": false,
+            "type": "boolean",
+            "default": false
+          },
+          {
+            "name": "allTermsMustMatch",
+            "in": "query",
+            "description": "All the Query Terms would be required in the phrase for it to be suggested.The default value is True",
+            "required": false,
+            "type": "boolean",
+            "default": true
+          },
+          {
+            "name": "enableContextSearch",
+            "in": "query",
+            "description": "Enabled suggestions for the most probable succeeding token based on the user’s query context.It helps in providing continuous suggestions to the user even if there aren’t any phrases that match the user’s query in our corpus.The default value is True",
+            "required": false,
+            "type": "boolean",
+            "default": true
+          },
+          {
+            "name": "debug",
+            "in": "query",
+            "description": "Enable debugging of the query.The default value is False",
+            "required": false,
+            "type": "boolean",
+            "default": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list query suggestions",
+            "schema": {
+              "$ref": "#/definitions/SuggestResult"
+            }
+          },
+          "500": {
+            "description": "Unexpected server error",
+            "schema": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "Optional«AssetPreview»": {
+      "type": "object",
+      "properties": {
+        "present": {
+          "type": "boolean"
+        }
+      }
+    },
+    "Optional«string»": {
+      "type": "object",
+      "properties": {
+        "present": {
+          "type": "boolean"
+        }
+      }
+    },
+    "ContainerResponse": {
+      "type": "object",
+      "properties": {
+        "count": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "debug": {
+          "type": "object"
+        },
+        "facets": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          }
+        },
+        "promotedResultIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "query": {
+          "type": "string"
+        },
+        "results": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Container"
+          }
+        },
+        "solrQuery": {
+          "type": "object"
+        }
+      }
+    },
+    "Optional«Array«byte»»": {
+      "type": "object",
+      "properties": {
+        "present": {
+          "type": "boolean"
+        }
+      }
+    },
+    "InputStream": {
+      "type": "object"
+    },
+    "AssetPreview": {
+      "type": "object",
+      "properties": {
+        "assetContent": {
+          "$ref": "#/definitions/InputStream"
+        },
+        "assetExtractedTerms": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "assetId": {
+          "type": "string"
+        },
+        "assetName": {
+          "type": "string"
+        },
+        "containerId": {
+          "type": "string"
+        },
+        "previewMimeType": {
+          "type": "string"
+        },
+        "rawContent": {
+          "type": "object"
+        }
+      }
+    },
+    "DSDate": {
+      "type": "object",
+      "properties": {
+        "dsdate": {
+          "type": "string"
+        }
+      }
+    },
+    "SuggestResult": {
+      "type": "object",
+      "properties": {
+        "contextSearchUsed": {
+          "type": "boolean"
+        },
+        "fixedPhrase": {
+          "type": "string"
+        },
+        "phrases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "AssetResponse": {
+      "type": "object",
+      "properties": {
+        "count": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "query": {
+          "type": "string"
+        },
+        "results": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Asset"
+          }
+        }
+      }
+    },
+    "URI": {
+      "type": "object",
+      "properties": {
+        "absolute": {
+          "type": "boolean"
+        },
+        "authority": {
+          "type": "string"
+        },
+        "fragment": {
+          "type": "string"
+        },
+        "host": {
+          "type": "string"
+        },
+        "opaque": {
+          "type": "boolean"
+        },
+        "path": {
+          "type": "string"
+        },
+        "port": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "query": {
+          "type": "string"
+        },
+        "rawAuthority": {
+          "type": "string"
+        },
+        "rawFragment": {
+          "type": "string"
+        },
+        "rawPath": {
+          "type": "string"
+        },
+        "rawQuery": {
+          "type": "string"
+        },
+        "rawSchemeSpecificPart": {
+          "type": "string"
+        },
+        "rawUserInfo": {
+          "type": "string"
+        },
+        "scheme": {
+          "type": "string"
+        },
+        "schemeSpecificPart": {
+          "type": "string"
+        },
+        "userInfo": {
+          "type": "string"
+        }
+      }
+    },
+    "Optional«DOI»": {
+      "type": "object",
+      "properties": {
+        "present": {
+          "type": "boolean"
+        }
+      }
+    },
+    "Optional«DSDate»": {
+      "type": "object",
+      "properties": {
+        "present": {
+          "type": "boolean"
+        }
+      }
+    },
+    "Container": {
+      "type": "object",
+      "properties": {
+        "accessRights": {
+          "$ref": "#/definitions/Optional«string»"
+        },
+        "assetTypes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "assets": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/Asset"
+          }
+        },
+        "authors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "contact": {
+          "$ref": "#/definitions/Optional«string»"
+        },
+        "containerDescription": {
+          "$ref": "#/definitions/Optional«string»"
+        },
+        "containerKeywords": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "containerTitle": {
+          "type": "string"
+        },
+        "containerType": {
+          "type": "string"
+        },
+        "containerURI": {
+          "$ref": "#/definitions/Optional«URI»"
+        },
+        "containerValid": {
+          "type": "boolean"
+        },
+        "dataStandard": {
+          "$ref": "#/definitions/Optional«string»"
+        },
+        "dateAvailable": {
+          "$ref": "#/definitions/Optional«DSDate»"
+        },
+        "dateCreated": {
+          "$ref": "#/definitions/Optional«DSDate»"
+        },
+        "doi": {
+          "$ref": "#/definitions/Optional«DOI»"
+        },
+        "externalContainerType": {
+          "$ref": "#/definitions/Optional«string»"
+        },
+        "externalDateModified": {
+          "$ref": "#/definitions/Optional«DSDate»"
+        },
+        "externalId": {
+          "type": "string"
+        },
+        "externalSubjectAreas": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "extractedEntities": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "funding": {
+          "$ref": "#/definitions/Optional«string»"
+        },
+        "howToCite": {
+          "$ref": "#/definitions/Optional«string»"
+        },
+        "institution": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "institutionIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "language": {
+          "$ref": "#/definitions/Optional«string»"
+        },
+        "location": {
+          "$ref": "#/definitions/Optional«GeoJsonObject»"
+        },
+        "method": {
+          "$ref": "#/definitions/Optional«string»"
+        },
+        "publicationDate": {
+          "$ref": "#/definitions/Optional«DSDate»"
+        },
+        "references": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "relatedResources": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "snippets": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "SCIENCE_DIRECT",
+            "PET_DB",
+            "NIST_TRC",
+            "HARVARD_DATAVERSE",
+            "DRYAD",
+            "MENDELEY_DATA",
+            "MENDELEY_DATA_STAGING",
+            "ARXIV",
+            "NEURO_ELECTRO",
+            "ICPSR",
+            "GEOROC",
+            "USGS",
+            "NAVDAT",
+            "PANGAEA",
+            "METPETDB",
+            "ZENODO",
+            "APOLLO",
+            "DATASPACE",
+            "DSPACEUNIVERSITYOFWASHINGTON",
+            "MEDECINSSANSFONTIERESFIELDRESEARCH",
+            "FOURTUCENTREOFRESEARCHDATA",
+            "SMITHSONIANDIGITALREPOSITORY",
+            "LSHTMDATACOMPASS",
+            "NATIONAL_INSTITUTE_OF_MENTAL_HEALTH",
+            "SBGRID",
+            "THIEME_CHEMISTRY",
+            "DATABRARY",
+            "COLLABORATIVE_RESEARCH_IN_COMPUTATIONAL_NEUROSCIENCE",
+            "COHERENT_XRAY_IMAGING_DATA_BANK",
+            "UCSF_CLINICAL_TRANSLATIONAL_SCIENCE_INSTITUTE",
+            "RESEARCH_DATA_CENTRE_DZA",
+            "AUSTRALIAN_DATA_ARCHIVE",
+            "BIOINFORMATICS_INFRASTRUCTURE_FOR_LIFE_SCIENCES",
+            "ARRAYEXPRESS",
+            "GEO",
+            "RCSBPDB",
+            "CLINVAR",
+            "THE_CAMBRIDGE_CRYSTALLOGRAPHIC_DATA_CENTER",
+            "BIOLOGICAL_MAGNETIC_RESONANCE_DATABANK"
+          ]
+        },
+        "spatialCoverage": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "subjectAreas": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "temporalCoverage": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "version": {
+          "$ref": "#/definitions/Optional«string»"
+        }
+      }
+    },
+    "Optional«URI»": {
+      "type": "object",
+      "properties": {
+        "present": {
+          "type": "boolean"
+        }
+      }
+    },
+    "Map«string,object»": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object"
+      }
+    },
+    "Asset": {
+      "type": "object",
+      "properties": {
+        "assetPreview": {
+          "$ref": "#/definitions/Optional«AssetPreview»"
+        },
+        "assetPreviewUrl": {
+          "$ref": "#/definitions/Optional«URI»"
+        },
+        "assetType": {
+          "type": "string",
+          "enum": [
+            "TABULAR_DATA",
+            "IMAGE",
+            "DOCUMENT",
+            "FILE_SET",
+            "SOFTWARE_CODE",
+            "UNKNOWN",
+            "SEQUENCING_DATA",
+            "GEO_DATA",
+            "AUDIO",
+            "VIDEO",
+            "SLIDES",
+            "TEXT",
+            "NO_ASSET"
+          ]
+        },
+        "assetValid": {
+          "type": "boolean"
+        },
+        "containerExternalId": {
+          "type": "string"
+        },
+        "description": {
+          "$ref": "#/definitions/Optional«string»"
+        },
+        "externalId": {
+          "type": "string"
+        },
+        "extractedTerms": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "filename": {
+          "$ref": "#/definitions/Optional«string»"
+        },
+        "format": {
+          "$ref": "#/definitions/Optional«string»"
+        },
+        "keywords": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "location": {
+          "$ref": "#/definitions/Optional«GeoJsonObject»"
+        },
+        "previewGeneratorStrategy": {
+          "$ref": "#/definitions/Optional«string»"
+        },
+        "previewMimeType": {
+          "$ref": "#/definitions/Optional«string»"
+        },
+        "rawAsset": {
+          "$ref": "#/definitions/Optional«Array«byte»»"
+        },
+        "rawMimeType": {
+          "$ref": "#/definitions/Optional«string»"
+        },
+        "referencingParagraphs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "restricted": {
+          "type": "boolean"
+        },
+        "s3Key": {
+          "$ref": "#/definitions/Optional«string»"
+        },
+        "score": {
+          "type": "number",
+          "format": "double"
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "SCIENCE_DIRECT",
+            "PET_DB",
+            "NIST_TRC",
+            "HARVARD_DATAVERSE",
+            "DRYAD",
+            "MENDELEY_DATA",
+            "MENDELEY_DATA_STAGING",
+            "ARXIV",
+            "NEURO_ELECTRO",
+            "ICPSR",
+            "GEOROC",
+            "USGS",
+            "NAVDAT",
+            "PANGAEA",
+            "METPETDB",
+            "ZENODO",
+            "APOLLO",
+            "DATASPACE",
+            "DSPACEUNIVERSITYOFWASHINGTON",
+            "MEDECINSSANSFONTIERESFIELDRESEARCH",
+            "FOURTUCENTREOFRESEARCHDATA",
+            "SMITHSONIANDIGITALREPOSITORY",
+            "LSHTMDATACOMPASS",
+            "NATIONAL_INSTITUTE_OF_MENTAL_HEALTH",
+            "SBGRID",
+            "THIEME_CHEMISTRY",
+            "DATABRARY",
+            "COLLABORATIVE_RESEARCH_IN_COMPUTATIONAL_NEUROSCIENCE",
+            "COHERENT_XRAY_IMAGING_DATA_BANK",
+            "UCSF_CLINICAL_TRANSLATIONAL_SCIENCE_INSTITUTE",
+            "RESEARCH_DATA_CENTRE_DZA",
+            "AUSTRALIAN_DATA_ARCHIVE",
+            "BIOINFORMATICS_INFRASTRUCTURE_FOR_LIFE_SCIENCES",
+            "ARRAYEXPRESS",
+            "GEO",
+            "RCSBPDB",
+            "CLINVAR",
+            "THE_CAMBRIDGE_CRYSTALLOGRAPHIC_DATA_CENTER",
+            "BIOLOGICAL_MAGNETIC_RESONANCE_DATABANK"
+          ]
+        },
+        "title": {
+          "type": "string"
+        }
+      }
+    },
+    "Optional«GeoJsonObject»": {
+      "type": "object",
+      "properties": {
+        "present": {
+          "type": "boolean"
+        }
+      }
+    },
+    "GeoJsonObject": {
+      "type": "object",
+      "properties": {
+        "bbox": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      }
+    },
+    "DOI": {
+      "type": "object",
+      "properties": {
+        "doi": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

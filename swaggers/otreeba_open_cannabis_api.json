@@ -1,0 +1,2242 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Otreeba Open Cannabis API",
+        "description": "This is an open, canonical database of cannabis seed companies, strains, brands, products, retailers, and studies from [Otreeba](https://otreeba.com). It is written on the OpenAPI Specification AKA Swagger. You can find out more about the Open API Initiative at [https://www.openapis.org/](https://www.openapis.org), or more info on Swagger at [http://swagger.io/](http://swagger.io/).",
+        "termsOfService": "https://otreeba.com/terms/",
+        "contact": {
+            "email": "api@otreeba.com"
+        },
+        "license": {
+            "name": "Attribution 4.0 International (CC BY 4.0)",
+            "url": "https://creativecommons.org/licenses/by/4.0/"
+        },
+        "version": "1.0.0"
+    },
+    "host": "api.otreeba.com",
+    "basePath": "/v1",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/seed-companies": {
+            "get": {
+                "tags": [
+                    "Seed Companies"
+                ],
+                "summary": "Get a list of all current seed companies.",
+                "description": "Returns a paginated list of seed companies.",
+                "operationId": "getSeedCompanies",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page to be returned.",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "count",
+                        "in": "query",
+                        "description": "The number of items to return. Default 10. Max 50.",
+                        "type": "integer",
+                        "default": 10
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "description": "How to sort the items.",
+                        "type": "string",
+                        "default": "-createdAt",
+                        "enum": [
+                            "-createdAt",
+                            "createdAt",
+                            "-updatedAt",
+                            "updatedAt",
+                            "-name",
+                            "name"
+                        ]
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation.",
+                        "schema": {
+                            "properties": {
+                                "data": {
+                                    "description": "Gets the current list of Seed Comapnies.",
+                                    "items": {
+                                        "$ref": "#/definitions/SeedCompany"
+                                    }
+                                },
+                                "meta": {
+                                    "description": "Gets the current list of Seed Comapnies.",
+                                    "$ref": "#/definitions/Meta"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid OCPC supplied."
+                    },
+                    "404": {
+                        "description": "Seed company not found."
+                    },
+                    "401": {
+                        "description": "Unauthorized action."
+                    }
+                }
+            }
+        },
+        "/seed-companies/{ocpc}": {
+            "get": {
+                "tags": [
+                    "Seed Companies"
+                ],
+                "summary": "Find seed company by Open Cannabis Product Code (OCPC).",
+                "description": "Returns a single seed company.",
+                "operationId": "getSeedCompanyByOcpc",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "ocpc",
+                        "in": "path",
+                        "description": "OCPC of the seed company to return.",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation.",
+                        "schema": {
+                            "$ref": "#/definitions/SeedCompany"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid OCPC supplied."
+                    },
+                    "404": {
+                        "description": "Seed company not found."
+                    },
+                    "401": {
+                        "description": "Unauthorized action."
+                    }
+                }
+            }
+        },
+        "/seed-companies/{ocpc}/strains": {
+            "get": {
+                "tags": [
+                    "Seed Companies"
+                ],
+                "summary": "Find strains for a seed company by Open Cannabis Product Code (OCPC).",
+                "description": "Returns a paginated list of strains for a single seed company.",
+                "operationId": "getSeedCompanyStrainsByOcpc",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "ocpc",
+                        "in": "path",
+                        "description": "OCPC of the seed company to return strains for.",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page to be returned.",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "count",
+                        "in": "query",
+                        "description": "The number of items to return. Default 10. Max 50.",
+                        "type": "integer",
+                        "default": 10
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation.",
+                        "schema": {
+                            "properties": {
+                                "data": {
+                                    "description": "Gets the Strains for a Seed Company listing from a given OCPC.",
+                                    "items": {
+                                        "$ref": "#/definitions/Strain"
+                                    }
+                                },
+                                "meta": {
+                                    "description": "Gets the Strains for a Seed Company listing from a given OCPC.",
+                                    "properties": {
+                                        "pagination": {
+                                            "description": "Gets the Strains for a Seed Company listing from a given OCPC.",
+                                            "$ref": "#/definitions/Pagination"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid OCPC supplied."
+                    },
+                    "404": {
+                        "description": "Seed company not found."
+                    },
+                    "401": {
+                        "description": "Unauthorized action."
+                    }
+                }
+            }
+        },
+        "/edibles": {
+            "get": {
+                "tags": [
+                    "Edibles"
+                ],
+                "summary": "Get a list of all current edibles.",
+                "description": "Returns a paginated list of edibles.",
+                "operationId": "getEdibles",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page to be returned.",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "count",
+                        "in": "query",
+                        "description": "The number of items to return. Default 10. Max 50.",
+                        "type": "integer",
+                        "default": 10
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "description": "How to sort the items.",
+                        "type": "string",
+                        "default": "-createdAt",
+                        "enum": [
+                            "-createdAt",
+                            "createdAt",
+                            "-updatedAt",
+                            "updatedAt",
+                            "-name",
+                            "name"
+                        ]
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation.",
+                        "schema": {
+                            "properties": {
+                                "data": {
+                                    "description": "Gets the current list of Edibles.",
+                                    "items": {
+                                        "$ref": "#/definitions/Edible"
+                                    }
+                                },
+                                "meta": {
+                                    "description": "Gets the current list of Edibles.",
+                                    "$ref": "#/definitions/Meta"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid OCPC supplied."
+                    },
+                    "404": {
+                        "description": "Edible not found."
+                    },
+                    "401": {
+                        "description": "Unauthorized action."
+                    }
+                }
+            }
+        },
+        "/edibles/{ocpc}": {
+            "get": {
+                "tags": [
+                    "Edibles"
+                ],
+                "summary": "Find edible by Open Cannabis Product Code (OCPC).",
+                "description": "Returns a single edible.",
+                "operationId": "getEdibleByOcpc",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "ocpc",
+                        "in": "path",
+                        "description": "OCPC of the edible to return.",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation.",
+                        "schema": {
+                            "$ref": "#/definitions/Edible"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid OCPC supplied."
+                    },
+                    "404": {
+                        "description": "Edible not found."
+                    },
+                    "401": {
+                        "description": "Unauthorized action."
+                    }
+                }
+            }
+        },
+        "/extracts": {
+            "get": {
+                "tags": [
+                    "Extracts"
+                ],
+                "summary": "Get a list of all current extracts.",
+                "description": "Returns a paginated list of extracts.",
+                "operationId": "getExtracts",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page to be returned.",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "count",
+                        "in": "query",
+                        "description": "The number of items to return. Default 10. Max 50.",
+                        "type": "integer",
+                        "default": 10
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "description": "How to sort the items.",
+                        "type": "string",
+                        "default": "-createdAt",
+                        "enum": [
+                            "-createdAt",
+                            "createdAt",
+                            "-updatedAt",
+                            "updatedAt",
+                            "-name",
+                            "name"
+                        ]
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation.",
+                        "schema": {
+                            "properties": {
+                                "data": {
+                                    "description": "Gets the current list of Extracts.",
+                                    "items": {
+                                        "$ref": "#/definitions/Extract"
+                                    }
+                                },
+                                "meta": {
+                                    "description": "Gets the current list of Extracts.",
+                                    "$ref": "#/definitions/Meta"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid OCPC supplied."
+                    },
+                    "404": {
+                        "description": "Extract not found."
+                    },
+                    "401": {
+                        "description": "Unauthorized action."
+                    }
+                }
+            }
+        },
+        "/extracts/{ocpc}": {
+            "get": {
+                "tags": [
+                    "Extracts"
+                ],
+                "summary": "Find extract by Open Cannabis Product Code (OCPC).",
+                "description": "Returns a single extract.",
+                "operationId": "getExtractByOcpc",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "ocpc",
+                        "in": "path",
+                        "description": "OCPC of the extract to return.",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation.",
+                        "schema": {
+                            "$ref": "#/definitions/Extract"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid OCPC supplied."
+                    },
+                    "404": {
+                        "description": "Extract not found."
+                    },
+                    "401": {
+                        "description": "Unauthorized action."
+                    }
+                }
+            }
+        },
+        "/flowers": {
+            "get": {
+                "tags": [
+                    "Flowers"
+                ],
+                "summary": "Get a list of all current flowers.",
+                "description": "Returns a paginated list of flowers.",
+                "operationId": "getFlowers",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page to be returned.",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "count",
+                        "in": "query",
+                        "description": "The number of items to return. Default 10. Max 50.",
+                        "type": "integer",
+                        "default": 10
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "description": "How to sort the items.",
+                        "type": "string",
+                        "default": "-createdAt",
+                        "enum": [
+                            "-createdAt",
+                            "createdAt",
+                            "-updatedAt",
+                            "updatedAt",
+                            "-name",
+                            "name"
+                        ]
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation.",
+                        "schema": {
+                            "properties": {
+                                "data": {
+                                    "description": "Gets the current list of Flowers.",
+                                    "items": {
+                                        "$ref": "#/definitions/Flower"
+                                    }
+                                },
+                                "meta": {
+                                    "description": "Gets the current list of Flowers.",
+                                    "$ref": "#/definitions/Meta"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid OCPC supplied."
+                    },
+                    "404": {
+                        "description": "Flower not found."
+                    },
+                    "401": {
+                        "description": "Unauthorized action."
+                    }
+                }
+            }
+        },
+        "/flowers/{ocpc}": {
+            "get": {
+                "tags": [
+                    "Flowers"
+                ],
+                "summary": "Find flower by Open Cannabis Product Code (OCPC).",
+                "description": "Returns a single flower.",
+                "operationId": "getFlowerByOcpc",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "ocpc",
+                        "in": "path",
+                        "description": "OCPC of the flower to return.",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation.",
+                        "schema": {
+                            "$ref": "#/definitions/Flower"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid OCPC supplied."
+                    },
+                    "404": {
+                        "description": "Flower not found."
+                    },
+                    "401": {
+                        "description": "Unauthorized action."
+                    }
+                }
+            }
+        },
+        "/brands": {
+            "get": {
+                "tags": [
+                    "Brands"
+                ],
+                "summary": "Get a list of all current brands.",
+                "description": "Returns a paginated list of brands.",
+                "operationId": "getBrands",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page to be returned.",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "count",
+                        "in": "query",
+                        "description": "The number of items to return. Default 10. Max 50.",
+                        "type": "integer",
+                        "default": 10
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "description": "How to sort the items.",
+                        "type": "string",
+                        "default": "-createdAt",
+                        "enum": [
+                            "-createdAt",
+                            "createdAt",
+                            "-updatedAt",
+                            "updatedAt",
+                            "-name",
+                            "name"
+                        ]
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation.",
+                        "schema": {
+                            "properties": {
+                                "data": {
+                                    "description": "Gets the current list of Brands.",
+                                    "items": {
+                                        "$ref": "#/definitions/Brand"
+                                    }
+                                },
+                                "meta": {
+                                    "description": "Gets the current list of Brands.",
+                                    "$ref": "#/definitions/Meta"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid OCPC supplied."
+                    },
+                    "404": {
+                        "description": "Brand not found."
+                    },
+                    "401": {
+                        "description": "Unauthorized action."
+                    }
+                }
+            }
+        },
+        "/brands/{ocpc}": {
+            "get": {
+                "tags": [
+                    "Brands"
+                ],
+                "summary": "Find brand by Open Cannabis Product Code (OCPC).",
+                "description": "Returns a single brand.",
+                "operationId": "getBrandByOcpc",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "ocpc",
+                        "in": "path",
+                        "description": "OCPC of the brand to return.",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation.",
+                        "schema": {
+                            "$ref": "#/definitions/Brand"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid OCPC supplied."
+                    },
+                    "404": {
+                        "description": "Brand not found."
+                    },
+                    "401": {
+                        "description": "Unauthorized action."
+                    }
+                }
+            }
+        },
+        "/brands/{ocpc}/flowers": {
+            "get": {
+                "tags": [
+                    "Brands"
+                ],
+                "summary": "Get a list of all current flowers for the given brand.",
+                "description": "Returns a paginated list of flowers.",
+                "operationId": "getBrandFlowers",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "ocpc",
+                        "in": "path",
+                        "description": "OCPC of the brand to list flowers for.",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page to be returned.",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "count",
+                        "in": "query",
+                        "description": "The number of items to return. Default 10. Max 50.",
+                        "type": "integer",
+                        "default": 10
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "description": "How to sort the items.",
+                        "type": "string",
+                        "default": "-createdAt",
+                        "enum": [
+                            "-createdAt",
+                            "createdAt",
+                            "-updatedAt",
+                            "updatedAt",
+                            "-name",
+                            "name"
+                        ]
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation.",
+                        "schema": {
+                            "properties": {
+                                "data": {
+                                    "description": "Gets the current list of Flowers for a Brand.",
+                                    "items": {
+                                        "$ref": "#/definitions/Flower"
+                                    }
+                                },
+                                "meta": {
+                                    "description": "Gets the current list of Flowers for a Brand.",
+                                    "$ref": "#/definitions/Meta"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid OCPC supplied."
+                    },
+                    "404": {
+                        "description": "Brand not found."
+                    },
+                    "401": {
+                        "description": "Unauthorized action."
+                    }
+                }
+            }
+        },
+        "/brands/{ocpc}/extracts": {
+            "get": {
+                "tags": [
+                    "Brands"
+                ],
+                "summary": "Get a list of all current extracts for the given brand.",
+                "description": "Returns a paginated list of extracts.",
+                "operationId": "getBrandExtracts",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "ocpc",
+                        "in": "path",
+                        "description": "OCPC of the brand to list extracts for.",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page to be returned.",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "count",
+                        "in": "query",
+                        "description": "The number of items to return. Default 10. Max 50.",
+                        "type": "integer",
+                        "default": 10
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "description": "How to sort the items.",
+                        "type": "string",
+                        "default": "-createdAt",
+                        "enum": [
+                            "-createdAt",
+                            "createdAt",
+                            "-updatedAt",
+                            "updatedAt",
+                            "-name",
+                            "name"
+                        ]
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation.",
+                        "schema": {
+                            "properties": {
+                                "data": {
+                                    "description": "Gets the current list of Extracts for a Brand.",
+                                    "items": {
+                                        "$ref": "#/definitions/Extract"
+                                    }
+                                },
+                                "meta": {
+                                    "description": "Gets the current list of Extracts for a Brand.",
+                                    "$ref": "#/definitions/Meta"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid OCPC supplied."
+                    },
+                    "404": {
+                        "description": "Brand not found."
+                    },
+                    "401": {
+                        "description": "Unauthorized action."
+                    }
+                }
+            }
+        },
+        "/brands/{ocpc}/edibles": {
+            "get": {
+                "tags": [
+                    "Brands"
+                ],
+                "summary": "Get a list of all current edibles for the given brand.",
+                "description": "Returns a paginated list of edibles.",
+                "operationId": "getBrandEdibles",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "ocpc",
+                        "in": "path",
+                        "description": "OCPC of the brand to list edibles for.",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page to be returned.",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "count",
+                        "in": "query",
+                        "description": "The number of items to return. Default 10. Max 50.",
+                        "type": "integer",
+                        "default": 10
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "description": "How to sort the items.",
+                        "type": "string",
+                        "default": "-createdAt",
+                        "enum": [
+                            "-createdAt",
+                            "createdAt",
+                            "-updatedAt",
+                            "updatedAt",
+                            "-name",
+                            "name"
+                        ]
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation.",
+                        "schema": {
+                            "properties": {
+                                "data": {
+                                    "description": "Gets the current list of Edibles for a Brand.",
+                                    "items": {
+                                        "$ref": "#/definitions/Edible"
+                                    }
+                                },
+                                "meta": {
+                                    "description": "Gets the current list of Edibles for a Brand.",
+                                    "$ref": "#/definitions/Meta"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid OCPC supplied."
+                    },
+                    "404": {
+                        "description": "Brand not found."
+                    },
+                    "401": {
+                        "description": "Unauthorized action."
+                    }
+                }
+            }
+        },
+        "/brands/{ocpc}/products": {
+            "get": {
+                "tags": [
+                    "Brands"
+                ],
+                "summary": "Get a list of all current products for the given brand.",
+                "description": "Returns a paginated list of products.",
+                "operationId": "getBrandProducts",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "ocpc",
+                        "in": "path",
+                        "description": "OCPC of the brand to list products for.",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page to be returned.",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "count",
+                        "in": "query",
+                        "description": "The number of items to return. Default 10. Max 50.",
+                        "type": "integer",
+                        "default": 10
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "description": "How to sort the items.",
+                        "type": "string",
+                        "default": "-createdAt",
+                        "enum": [
+                            "-createdAt",
+                            "createdAt",
+                            "-updatedAt",
+                            "updatedAt",
+                            "-name",
+                            "name"
+                        ]
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation.",
+                        "schema": {
+                            "properties": {
+                                "data": {
+                                    "description": "Gets the current list of Products for a Brand.",
+                                    "items": {
+                                        "$ref": "#/definitions/Product"
+                                    }
+                                },
+                                "meta": {
+                                    "description": "Gets the current list of Products for a Brand.",
+                                    "$ref": "#/definitions/Meta"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid OCPC supplied."
+                    },
+                    "404": {
+                        "description": "Brand not found."
+                    },
+                    "401": {
+                        "description": "Unauthorized action."
+                    }
+                }
+            }
+        },
+        "/products": {
+            "get": {
+                "tags": [
+                    "Products"
+                ],
+                "summary": "Get a list of all current products.",
+                "description": "Returns a paginated list of products.",
+                "operationId": "getProducts",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page to be returned.",
+                        "required": true,
+                        "type": "integer"
+                    },
+                    {
+                        "name": "count",
+                        "in": "query",
+                        "description": "The number of items to return. Default 10. Max 50.",
+                        "type": "integer",
+                        "default": 10
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "description": "How to sort the items.",
+                        "type": "string",
+                        "default": "-createdAt",
+                        "enum": [
+                            "-createdAt",
+                            "createdAt",
+                            "-updatedAt",
+                            "updatedAt",
+                            "-name",
+                            "name"
+                        ]
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation.",
+                        "schema": {
+                            "properties": {
+                                "data": {
+                                    "description": "Gets the current list of Products.",
+                                    "items": {
+                                        "$ref": "#/definitions/Product"
+                                    }
+                                },
+                                "meta": {
+                                    "description": "Gets the current list of Products.",
+                                    "$ref": "#/definitions/Meta"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid OCPC supplied."
+                    },
+                    "404": {
+                        "description": "Product not found."
+                    },
+                    "401": {
+                        "description": "Unauthorized action."
+                    }
+                }
+            }
+        },
+        "/products/{ocpc}": {
+            "get": {
+                "tags": [
+                    "Products"
+                ],
+                "summary": "Find product by Open Cannabis Product Code (OCPC).",
+                "description": "Returns a single product.",
+                "operationId": "getProductByOcpc",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "ocpc",
+                        "in": "path",
+                        "description": "OCPC of the product to return.",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation.",
+                        "schema": {
+                            "$ref": "#/definitions/Product"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid OCPC supplied."
+                    },
+                    "404": {
+                        "description": "Product not found."
+                    },
+                    "401": {
+                        "description": "Unauthorized action."
+                    }
+                }
+            }
+        },
+        "/strains": {
+            "get": {
+                "tags": [
+                    "Strains"
+                ],
+                "summary": "Get a list of all current strains.",
+                "description": "Returns a paginated list of strains.",
+                "operationId": "getStrains",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page to be returned.",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "count",
+                        "in": "query",
+                        "description": "The number of items to return. Default 10. Max 50.",
+                        "type": "integer",
+                        "default": 10
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "description": "How to sort the items.",
+                        "type": "string",
+                        "default": "-createdAt",
+                        "enum": [
+                            "-createdAt",
+                            "createdAt",
+                            "-updatedAt",
+                            "updatedAt",
+                            "-name",
+                            "name"
+                        ]
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation.",
+                        "schema": {
+                            "properties": {
+                                "data": {
+                                    "description": "Gets the current list of Strains.",
+                                    "items": {
+                                        "$ref": "#/definitions/Strain"
+                                    }
+                                },
+                                "meta": {
+                                    "description": "Gets the current list of Strains.",
+                                    "$ref": "#/definitions/Meta"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid OCPC supplied."
+                    },
+                    "404": {
+                        "description": "Strain not found."
+                    },
+                    "401": {
+                        "description": "Unauthorized action."
+                    }
+                }
+            }
+        },
+        "/strains/{ocpc}": {
+            "get": {
+                "tags": [
+                    "Strains"
+                ],
+                "summary": "Find strain by Open Cannabis Product Code (OCPC).",
+                "description": "Returns a single strain.",
+                "operationId": "getStrainByOcpc",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "ocpc",
+                        "in": "path",
+                        "description": "OCPC of the strain to return.",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation.",
+                        "schema": {
+                            "$ref": "#/definitions/Strain"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid OCPC supplied."
+                    },
+                    "404": {
+                        "description": "Strain not found."
+                    },
+                    "401": {
+                        "description": "Unauthorized action."
+                    }
+                }
+            }
+        },
+        "/studies": {
+            "get": {
+                "tags": [
+                    "Studies"
+                ],
+                "summary": "Get a list of all current studies.",
+                "description": "Returns a paginated list of studies.",
+                "operationId": "getStudies",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page to be returned.",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "count",
+                        "in": "query",
+                        "description": "The number of items to return. Default 10. Max 50.",
+                        "type": "integer",
+                        "default": 10
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "description": "How to sort the items.",
+                        "type": "string",
+                        "default": "-createdAt",
+                        "enum": [
+                            "-createdAt",
+                            "createdAt",
+                            "-updatedAt",
+                            "updatedAt",
+                            "-name",
+                            "name"
+                        ]
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation.",
+                        "schema": {
+                            "properties": {
+                                "data": {
+                                    "description": "Gets the current list of Studies.",
+                                    "items": {
+                                        "$ref": "#/definitions/Study"
+                                    }
+                                },
+                                "meta": {
+                                    "description": "Gets the current list of Studies.",
+                                    "$ref": "#/definitions/Meta"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid arguments supplied."
+                    },
+                    "404": {
+                        "description": "Study not found."
+                    },
+                    "401": {
+                        "description": "Unauthorized action."
+                    }
+                }
+            }
+        },
+        "/studies/conditions": {
+            "get": {
+                "tags": [
+                    "Studies"
+                ],
+                "summary": "Get a list of all current conditions for studies.",
+                "description": "Returns a list of all current conditions for studies.",
+                "operationId": "getStudiesConditions",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "description": "How to sort the items.",
+                        "type": "string",
+                        "default": "name",
+                        "enum": [
+                            "-createdAt",
+                            "createdAt",
+                            "-updatedAt",
+                            "updatedAt",
+                            "-name",
+                            "name"
+                        ]
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation.",
+                        "schema": {
+                            "properties": {
+                                "data": {
+                                    "description": "Gets the current list of Conditions for Studies.",
+                                    "items": {
+                                        "$ref": "#/definitions/Condition"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid arguments supplied."
+                    },
+                    "401": {
+                        "description": "Unauthorized action."
+                    }
+                }
+            }
+        },
+        "/studies/{identifierType}/{identifier}": {
+            "get": {
+                "tags": [
+                    "Studies"
+                ],
+                "summary": "Find study by DOI, PubMed ID, or slug.",
+                "description": "Returns a single study.",
+                "operationId": "getStudyByIdentifier",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "identifierType",
+                        "in": "path",
+                        "description": "Type of identifier to for the study to return.",
+                        "required": true,
+                        "type": "string",
+                        "default": "doi",
+                        "enum": [
+                            "doi",
+                            "pubMedId",
+                            "slug"
+                        ]
+                    },
+                    {
+                        "name": "identifier",
+                        "in": "path",
+                        "description": "Identifier for the study to return.",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation.",
+                        "schema": {
+                            "$ref": "#/definitions/Study"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid argument supplied."
+                    },
+                    "404": {
+                        "description": "Study not found."
+                    },
+                    "401": {
+                        "description": "Unauthorized action."
+                    }
+                }
+            }
+        },
+        "/studies/conditions/{conditionSlug}": {
+            "get": {
+                "tags": [
+                    "Studies"
+                ],
+                "summary": "Get a list of all current studies for a given condition.",
+                "description": "Returns a paginated list of studies.",
+                "operationId": "getStudiesByCondition",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "conditionSlug",
+                        "in": "path",
+                        "description": "Slug of the condition to return studies for.",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page to be returned.",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "count",
+                        "in": "query",
+                        "description": "The number of items to return. Default 10. Max 50.",
+                        "type": "integer",
+                        "default": 10
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "description": "How to sort the items.",
+                        "type": "string",
+                        "default": "-year",
+                        "enum": [
+                            "-year",
+                            "year",
+                            "-createdAt",
+                            "createdAt",
+                            "-updatedAt",
+                            "updatedAt"
+                        ]
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation.",
+                        "schema": {
+                            "properties": {
+                                "data": {
+                                    "description": "Gets the current list of Studies for a given Condition.",
+                                    "items": {
+                                        "$ref": "#/definitions/Study"
+                                    }
+                                },
+                                "meta": {
+                                    "description": "Gets the current list of Studies for a given Condition.",
+                                    "$ref": "#/definitions/Meta"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid arguments supplied."
+                    },
+                    "404": {
+                        "description": "Condition."
+                    },
+                    "401": {
+                        "description": "Unauthorized action."
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "Error": {
+            "required": [
+                "code",
+                "message"
+            ],
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "Brand": {
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "description": "Name of the brand.",
+                    "type": "string",
+                    "example": "Kiva"
+                },
+                "ocpc": {
+                    "description": "Open Cannabis Product Code for the brand.",
+                    "type": "string",
+                    "example": "0000000000L6M7E0000000000"
+                },
+                "link": {
+                    "description": "URL for brand on Otreeba.",
+                    "type": "string",
+                    "example": "https://api.otreeba.com/v1/brands/0000000000L6M7E0000000000"
+                },
+                "qr": {
+                    "description": "URL for QR that leads to page on Cannabis Reports.",
+                    "type": "string",
+                    "example": "https://www.cannabisreports.com/producer-reports/kiva/qr-code"
+                },
+                "url": {
+                    "description": "URL for brand on Cannabis Reports.",
+                    "type": "string",
+                    "example": "https://www.cannabisreports.com/producer-reports/kiva"
+                },
+                "image": {
+                    "description": "URL for logo for brand.",
+                    "type": "string",
+                    "example": "https://www.cannabisreports.com/images/profile/8/full_8b44ce75bfba676790018d8a1d275d4d736883a9.jpg"
+                },
+                "flowers": {
+                    "description": "OCPCs of the flowers from this brand.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "extracts": {
+                    "description": "OCPCs of the extracts from this brand.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "edibles": {
+                    "description": "OCPCs of the edibles from this brand.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "products": {
+                    "description": "OCPCs of the products from this brand.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "createdAt": {
+                    "description": "Date and time record was created, UTC.",
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2014-04-09 09:29:57"
+                },
+                "updatedAt": {
+                    "description": "Date and time record was updated, UTC.",
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2014-04-09 09:29:57"
+                }
+            },
+            "type": "object",
+            "xml": {
+                "name": "Brand"
+            }
+        },
+        "Condition": {
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "description": "Name of the condition.",
+                    "type": "string",
+                    "example": "Fibromyalgia"
+                },
+                "slug": {
+                    "description": "Slug based on the condition name.",
+                    "type": "string",
+                    "example": "fibromyalgia"
+                },
+                "description": {
+                    "description": "Description of the condition.",
+                    "type": "string",
+                    "example": "Fibromyalgia, an illness characterized by chronic pain combined with some form of psychiatric diagnosis, still lacks an observable underlying pathology. The disease picture of fibromyalgia usually includes widespread chronic pains in muscles and connective tissue, joint stiffness, general weakness, exhaustion, depression, anxiety, and insomnia. \u201cNearly 2 percent of the general population in the United States suffers from fibromyalgia, the majority of them being middle-aged females.\u201d"
+                },
+                "createdAt": {
+                    "description": "Date and time record was created, UTC.",
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2014-04-09 09:29:57"
+                },
+                "updatedAt": {
+                    "description": "Date and time record was updated, UTC.",
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2014-04-09 09:29:57"
+                }
+            },
+            "type": "object",
+            "xml": {
+                "name": "Condition"
+            }
+        },
+        "Edible": {
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "description": "Name of the edible.",
+                    "type": "string",
+                    "example": "Moxey's Mints - Ginger"
+                },
+                "ocpc": {
+                    "description": "Open Cannabis Product Code for the edible.",
+                    "type": "string",
+                    "example": "0000000000NJKLWH2HNZ00000"
+                },
+                "brand": {
+                    "description": "Name and Open Cannabis Product Code of the brand that created this edible.",
+                    "type": "object",
+                    "example": {
+                        "name": "Mr. Moxey's Mints",
+                        "ocpc": "0000000000NJKLW0000000000"
+                    }
+                },
+                "type": {
+                    "description": "Type of edible.",
+                    "type": "string",
+                    "example": "Mint"
+                },
+                "strain": {
+                    "description": "Name and Open Cannabis Product Code of the strain for this edible.",
+                    "type": "object",
+                    "example": {
+                        "name": "Confidential Cheese",
+                        "ocpc": "TTUYNUF3TP000000000000000"
+                    }
+                },
+                "description": {
+                    "description": "Description of the edible.",
+                    "type": "string"
+                },
+                "qr": {
+                    "description": "URL for QR that leads to page on Cannabis Reports.",
+                    "type": "string",
+                    "example": "https://www.cannabisreports.com/edible-reports/qr-code/mr-moxeys-mints/moxeys-mints-ginger"
+                },
+                "url": {
+                    "description": "URL for the edible on Cannabis Reports.",
+                    "type": "string",
+                    "example": "https://www.cannabisreports.com/edible-reports/mr-moxeys-mints/moxeys-mints-ginger"
+                },
+                "image": {
+                    "description": "URL for the main photo of the edible.",
+                    "type": "string",
+                    "example": "https://www.cannabisreports.com/images/edibles/b/full_bf53ef28bb19d97624cab43e12614b3affbf1a31.jpg"
+                },
+                "labTest": {
+                    "description": "URL for the PDF containing lab testing information for this edible.",
+                    "type": "string",
+                    "example": "https://www.cannabisreports.com/lab-tests/b/bf53ef28bb19d97624cab43e12614b3affbf1a31.pdf"
+                },
+                "thc": {
+                    "description": "THC measurement for this edible.",
+                    "type": "string",
+                    "example": "20mg"
+                },
+                "cbd": {
+                    "description": "CBD measurement for this edible.",
+                    "type": "string",
+                    "example": "100mg"
+                },
+                "cannabis": {
+                    "description": "Cannabis measurement for this edible.",
+                    "type": "string",
+                    "example": "0mg"
+                },
+                "hashOil": {
+                    "description": "Hash oil measurement for this edible.",
+                    "type": "string",
+                    "example": "0mg"
+                },
+                "createdAt": {
+                    "description": "Date and time record was created, UTC.",
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2014-04-09 09:29:57"
+                },
+                "updatedAt": {
+                    "description": "Date and time record was updated, UTC.",
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2014-04-09 09:29:57"
+                }
+            },
+            "type": "object",
+            "xml": {
+                "name": "Edible"
+            }
+        },
+        "Extract": {
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "description": "Name of the extract.",
+                    "type": "string",
+                    "example": "Confidential Cheese - Wax"
+                },
+                "ocpc": {
+                    "description": "Open Cannabis Product Code for the extract.",
+                    "type": "string",
+                    "example": "TTUYNUF3TP6DZTPWPG3200000"
+                },
+                "brand": {
+                    "description": "Name and Open Cannabis Product Code of the brand that created these extract.",
+                    "type": "object",
+                    "example": {
+                        "name": "Kaizen Medicinal",
+                        "ocpc": "00000000006DZTP0000000000"
+                    }
+                },
+                "type": {
+                    "description": "Type of extract.",
+                    "type": "string",
+                    "example": "wax"
+                },
+                "strain": {
+                    "description": "Name and Open Cannabis Product Code of the strain for these extract.",
+                    "type": "object",
+                    "example": {
+                        "name": "Confidential Cheese",
+                        "ocpc": "TTUYNUF3TP000000000000000"
+                    }
+                },
+                "description": {
+                    "description": "Description of the extract.",
+                    "type": "string"
+                },
+                "qr": {
+                    "description": "URL for QR that leads to page on Cannabis Reports.",
+                    "type": "string",
+                    "example": "https://www.cannabisreports.com/extract-reports/qr-code/kaizen-medicinal/dna-genetics/confidential-cheese/wax.png"
+                },
+                "url": {
+                    "description": "URL for the extract on Cannabis Reports.",
+                    "type": "string",
+                    "example": "https://www.cannabisreports.com/extract-reports/kaizen-medicinal/dna-genetics/confidential-cheese/wax"
+                },
+                "image": {
+                    "description": "URL for the main photo of the extract.",
+                    "type": "string",
+                    "example": "https://www.cannabisreports.com/images/extracts/2/full_2172a2e37b3711da4666899be1dddc1157d60190.jpg"
+                },
+                "labTest": {
+                    "description": "URL for the PDF containing lab testing information for these extract.",
+                    "type": "string",
+                    "example": "https://www.cannabisreports.com/lab-tests/c/cc7b037528c7661dafde2a1e36f3c6d3ffcccb40.pdf"
+                },
+                "thc": {
+                    "description": "THC measurement for these extract.",
+                    "type": "string",
+                    "example": "87.92%"
+                },
+                "cbd": {
+                    "description": "CBD measurement for these extract.",
+                    "type": "string",
+                    "example": "0.22%"
+                },
+                "createdAt": {
+                    "description": "Date and time record was created, UTC.",
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2014-04-09 09:29:57"
+                },
+                "updatedAt": {
+                    "description": "Date and time record was updated, UTC.",
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2014-04-09 09:29:57"
+                }
+            },
+            "type": "object",
+            "xml": {
+                "name": "Extract"
+            }
+        },
+        "Flower": {
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "description": "Name of the flowers.",
+                    "type": "string",
+                    "example": "Half Dome Haze - Flowers"
+                },
+                "ocpc": {
+                    "description": "Open Cannabis Product Code for the flowers.",
+                    "type": "string",
+                    "example": "9XVU7JDFUGLTE2ATJ7CD00000"
+                },
+                "brand": {
+                    "description": "Name and Open Cannabis Product Code of the brand that created these flowers.",
+                    "type": "object",
+                    "example": {
+                        "name": "Advantage Healing",
+                        "ocpc": "0000000000LTE2A0000000000"
+                    }
+                },
+                "type": {
+                    "description": "Type of flowers.",
+                    "type": "string",
+                    "example": "flowers"
+                },
+                "strain": {
+                    "description": "Name and Open Cannabis Product Code of the strain for these flowers.",
+                    "type": "object",
+                    "example": {
+                        "name": "Half Dome Haze",
+                        "ocpc": "9XVU7JDFUG000000000000000"
+                    }
+                },
+                "description": {
+                    "description": "Description of the flowers.",
+                    "type": "string"
+                },
+                "qr": {
+                    "description": "URL for QR that leads to page on Cannabis Reports.",
+                    "type": "string",
+                    "example": "https://www.cannabisreports.com/flower-reports/advantage-healing/unknown-breeder/half-dome-haze/flowers/qr-code.svg"
+                },
+                "url": {
+                    "description": "URL for the flowers on Cannabis Reports.",
+                    "type": "string",
+                    "example": "https://www.cannabisreports.com/flower-reports/advantage-healing/unknown-breeder/half-dome-haze/flowers"
+                },
+                "image": {
+                    "description": "URL for the main photo of the flowers.",
+                    "type": "string",
+                    "example": "https://www.cannabisreports.com/images/flowers/c/full_c4b27703dedbccd4a9f4bb0ca89bf4520aa4aca0.jpg"
+                },
+                "labTest": {
+                    "description": "URL for the PDF containing lab testing information for these flowers.",
+                    "type": "string",
+                    "example": "https://www.cannabisreports.com/lab-tests/c/c702502526ef743651e29f14ccfa84423fadfdf0.pdf"
+                },
+                "thc": {
+                    "description": "THC measurement for these flowers.",
+                    "type": "string",
+                    "example": "27.50%"
+                },
+                "cbd": {
+                    "description": "CBD measurement for these flowers.",
+                    "type": "string",
+                    "example": "0.05%"
+                },
+                "createdAt": {
+                    "description": "Date and time record was created, UTC.",
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2014-04-09 09:29:57"
+                },
+                "updatedAt": {
+                    "description": "Date and time record was updated, UTC.",
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2014-04-09 09:29:57"
+                }
+            },
+            "type": "object",
+            "xml": {
+                "name": "Flower"
+            }
+        },
+        "Meta": {
+            "properties": {
+                "pagination": {
+                    "$ref": "#/definitions/Pagination"
+                }
+            },
+            "type": "object",
+            "xml": {
+                "name": "Meta"
+            }
+        },
+        "Pagination": {
+            "properties": {
+                "total": {
+                    "description": "Total number of results available.",
+                    "type": "integer",
+                    "example": 64
+                },
+                "count": {
+                    "description": "Number of results to return. Default 10. Max 50.",
+                    "type": "integer",
+                    "example": 10
+                },
+                "per_page": {
+                    "description": "Number of results per page.",
+                    "type": "integer",
+                    "example": 10
+                },
+                "current_page": {
+                    "description": "Page of results.",
+                    "type": "integer",
+                    "example": 1
+                },
+                "total_pages": {
+                    "description": "Total number of pages of results.",
+                    "type": "integer",
+                    "example": 1
+                },
+                "links": {
+                    "description": "Links to the previous and/or next pages of results.",
+                    "type": "object",
+                    "example": {
+                        "previous": "https://api.otreeba.com/v1/seed-companies/VUJCJ00000000000000000000/strains?page=1",
+                        "next": "https://api.otreeba.com/v1/seed-companies/VUJCJ00000000000000000000/strains?page=3"
+                    }
+                }
+            },
+            "type": "object",
+            "xml": {
+                "name": "Pagination"
+            }
+        },
+        "Product": {
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "description": "Name of the product.",
+                    "type": "string",
+                    "example": "X-Pen"
+                },
+                "ocpc": {
+                    "description": "Open Cannabis Product Code for the product.",
+                    "type": "string",
+                    "example": "0000000000YPLU3Z2YUM00000"
+                },
+                "brand": {
+                    "description": "Name and Open Cannabis Product Code of the brand that created this product.",
+                    "type": "object",
+                    "example": {
+                        "name": "Elixinol",
+                        "ocpc": "0000000000YPLU30000000000"
+                    }
+                },
+                "type": {
+                    "description": "Type of product.",
+                    "type": "string",
+                    "example": "Oil Applicator"
+                },
+                "strain": {
+                    "description": "Name and Open Cannabis Product Code of the strain for this product.",
+                    "type": "object",
+                    "example": {
+                        "name": "Confidential Cheese",
+                        "ocpc": "TTUYNUF3TP000000000000000"
+                    }
+                },
+                "description": {
+                    "description": "Description of the product.",
+                    "type": "string"
+                },
+                "qr": {
+                    "description": "URL for QR that leads to page on Cannabis Reports.",
+                    "type": "string",
+                    "example": "https://www.cannabisreports.com/product-reports/qr-code/elixinol/x-pen.png"
+                },
+                "url": {
+                    "description": "URL for the product on Cannabis Reports.",
+                    "type": "string",
+                    "example": "https://www.cannabisreports.com/product-reports/elixinol/x-pen"
+                },
+                "image": {
+                    "description": "URL for the main photo of the product.",
+                    "type": "string",
+                    "example": "https://www.cannabisreports.com/images/products/f/full_f592eb462df530c23a98d0fb6330fc895c8cfe18.jpg"
+                },
+                "labTest": {
+                    "description": "URL for the PDF containing lab testing information for this product.",
+                    "type": "string",
+                    "example": "https://www.cannabisreports.com/lab-tests/1/140c73d2606fded84e6a14ca07aed77eb1e73827.pdf"
+                },
+                "thc": {
+                    "description": "THC measurement for this product.",
+                    "type": "string",
+                    "example": "0mg"
+                },
+                "cbd": {
+                    "description": "CBD measurement for this product.",
+                    "type": "string",
+                    "example": "1,000mg"
+                },
+                "cannabis": {
+                    "description": "Cannabis measurement for this product.",
+                    "type": "string",
+                    "example": ""
+                },
+                "hashOil": {
+                    "description": "Hash oil measurement for this product.",
+                    "type": "string",
+                    "example": ""
+                },
+                "createdAt": {
+                    "description": "Date and time record was created, UTC.",
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2014-04-09 09:29:57"
+                },
+                "updatedAt": {
+                    "description": "Date and time record was updated, UTC.",
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2014-04-09 09:29:57"
+                }
+            },
+            "type": "object",
+            "xml": {
+                "name": "Product"
+            }
+        },
+        "SeedCompany": {
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "description": "Name of the seed company.",
+                    "type": "string",
+                    "example": "Sensi Seeds"
+                },
+                "ocpc": {
+                    "description": "Open Cannabis Product Code for the seed company.",
+                    "type": "string",
+                    "example": "VUJCJ00000000000000000000"
+                },
+                "description": {
+                    "description": "Description of the seed company.",
+                    "type": "string"
+                },
+                "qr": {
+                    "description": "URL for QR that leads to page on Cannabis Reports.",
+                    "type": "string",
+                    "example": "https://www.cannabisreports.com/strain-reports/sensi-seeds/qr-code.svg"
+                },
+                "url": {
+                    "description": "URL for seed company on Cannabis Reports.",
+                    "type": "string",
+                    "example": "https://www.cannabisreports.com/strain-reports/sensi-seeds"
+                },
+                "image": {
+                    "description": "URL for logo for seed company.",
+                    "type": "string",
+                    "example": "https://www.cannabisreports.com/images/profile/1/full_15fda07a135540c1de6afbb38dafe2113a11a7a4.jpg"
+                },
+                "lineage": {
+                    "description": "Object of countries that this seed company has lineages from. {'Country Name' => 'ISO 3166-1 Two Letter Country Code'}",
+                    "type": "object",
+                    "example": {
+                        "Afghanistan": "AF",
+                        "Canada": "CA",
+                        "Colombia": "CO",
+                        "Hungary": "HU",
+                        "India": "IN"
+                    }
+                },
+                "strains": {
+                    "description": "OCPCs of the strains from this seed company.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "createdAt": {
+                    "description": "Date and time record was created, UTC.",
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2014-04-09 09:29:57"
+                },
+                "updatedAt": {
+                    "description": "Date and time record was updated, UTC.",
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2014-04-09 09:29:57"
+                }
+            },
+            "type": "object",
+            "xml": {
+                "name": "Seed Company"
+            }
+        },
+        "Strain": {
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "description": "Name of the strain.",
+                    "type": "string",
+                    "example": "Jack Herer"
+                },
+                "ocpc": {
+                    "description": "Open Cannabis Product Code for the strain.",
+                    "type": "string",
+                    "example": "VUJCJ4TYMG000000000000000"
+                },
+                "seedCompany": {
+                    "description": "Name and Open Cannabis Product Code of the seed company that created the strain.",
+                    "type": "object",
+                    "example": {
+                        "name": "Sensi Seeds",
+                        "ocpc": "VUJCJ00000000000000000000"
+                    }
+                },
+                "qr": {
+                    "description": "URL for QR that leads to page on Cannabis Reports.",
+                    "type": "string",
+                    "example": "https://www.cannabisreports.com/strain-reports/sensi-seeds/jack-herer/qr-code.svg"
+                },
+                "url": {
+                    "description": "URL for strain on Cannabis Reports.",
+                    "type": "string",
+                    "example": "https://www.cannabisreports.com/strain-reports/sensi-seeds/jack-herer"
+                },
+                "image": {
+                    "description": "URL for the main photo of the strain.",
+                    "type": "string",
+                    "example": "https://www.cannabisreports.com/images/strains/a/full_ae82eef3bb2b7694df7f8bfa0da22a5d2b0f3689.jpg"
+                },
+                "lineage": {
+                    "description": "Object of countries that this strain has lineages from. {'Country Name' => 'ISO 3166-1 Two Letter Country Code'}",
+                    "type": "object",
+                    "example": {
+                        "Afghanistan": "AF",
+                        "Colombia": "CO",
+                        "India": "IN",
+                        "Mexico": "MX",
+                        "Thailand": "TH"
+                    }
+                },
+                "genetics": {
+                    "description": "Names of the parents of the strains and their associated Open Cannabis Product Codes.",
+                    "type": "object",
+                    "example": {
+                        "names": "(Northern Lights #5 x Skunk #1) x Haze",
+                        "ucpc": "(VUJCJ4MPQ2000000000000000 x VUJCJY6ZUC000000000000000) x 9XVU7WJQCD000000000000000"
+                    }
+                },
+                "children": {
+                    "description": "Open Cannabis Product Codes of the children of this strain.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "createdAt": {
+                    "description": "Date and time record was created, UTC.",
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2014-04-09 09:29:57"
+                },
+                "updatedAt": {
+                    "description": "Date and time record was updated, UTC.",
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2014-04-09 09:29:57"
+                }
+            },
+            "type": "object",
+            "xml": {
+                "name": "Strain"
+            }
+        },
+        "Study": {
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "description": "Name of the study.",
+                    "type": "string",
+                    "example": "Trans- \u03b2 -Caryophyllene: An Effective Antileishmanial Compound Found in Commercial Copaiba Oil (Copaifera spp.)."
+                },
+                "year": {
+                    "description": "Year of the study.",
+                    "type": "integer",
+                    "example": 2013
+                },
+                "doi": {
+                    "description": "Digital Object Identifier for the study.",
+                    "type": "string",
+                    "example": "10.1155/2013/761323"
+                },
+                "pubMedId": {
+                    "description": "PubMed ID for the study.",
+                    "type": "string",
+                    "example": "23864897"
+                },
+                "slug": {
+                    "description": "Slug based on the study name.",
+                    "type": "string",
+                    "example": "trans-b-caryophyllene-an-effective-antileishmanial-compound-found-in-commercial-copaiba-oil-copaifera-spp"
+                },
+                "keyFindings": {
+                    "description": "Key findings for the study.",
+                    "type": "string",
+                    "example": "This study pointed out \u03b2 -caryophyllene as an effective antileishmanial compound."
+                },
+                "conditions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Condition"
+                    }
+                },
+                "createdAt": {
+                    "description": "Date and time record was created, UTC.",
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2014-04-09 09:29:57"
+                },
+                "updatedAt": {
+                    "description": "Date and time record was updated, UTC.",
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2014-04-09 09:29:57"
+                }
+            },
+            "type": "object",
+            "xml": {
+                "name": "Study"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Seed Companies",
+            "description": "Companies that create cannabis seeds."
+        },
+        {
+            "name": "Strains",
+            "description": "Individual varieities of cannabis."
+        },
+        {
+            "name": "Brands",
+            "description": "Companies that create or distribute various forms of flowers, extracts, edibles, or products."
+        },
+        {
+            "name": "Flowers",
+            "description": "Finished cannabis seeds, clones, flowers, or shake."
+        },
+        {
+            "name": "Extracts",
+            "description": "Extracted or concentrated forms of cannabis."
+        },
+        {
+            "name": "Edibles",
+            "description": "Consumable products infused with cannabis extracts or flowers."
+        },
+        {
+            "name": "Products",
+            "description": "Products not meant for consumption infused with cannabis extracts or flowers."
+        },
+        {
+            "name": "Studies",
+            "description": "Studies on cannabis for different medical conditions."
+        }
+    ],
+    "externalDocs": {
+        "description": "Find out more about Otreeba",
+        "url": "https://otreeba.com"
+    }
+}

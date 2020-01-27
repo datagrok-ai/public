@@ -1,0 +1,26 @@
+swagger: "2.0"
+info:
+  title: Socrata
+  description: 'Find by query term Assets may be searched by any of the text found in the name, description, category, tags, column names, column fieldnames, column descriptions, attribution fields.'
+  version: 1.0.0
+host: api.us.socrata.com/api
+basePath: /catalog/
+schemes:
+  - http
+paths:
+   /v1:
+    get:
+      summary: FindByQueryTerm
+      operationId: Find by query term
+      parameters:
+        - in: query
+          name: q
+          required: false
+          descriptin: The q parameter takes arbitrary text and will limit the results to those having some or all of the text.
+          type: string
+        - in: query
+          name: min_should_match
+          required: false
+          description: 'The optional min_should_match parameter may be used to explicitly specify the number or percent of words that must match'
+          type: string
+definitions: []

@@ -1,0 +1,1850 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "version": "0.0.1",
+    "title": "OpenTrials API"
+  },
+  "host": "api.opentrials.net",
+  "schemes": [
+    "https"
+  ],
+  "basePath": "/v1",
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/swagger.yaml": {},
+    "/search": {
+      "get": {
+        "tags": [
+          "trials"
+        ],
+        "description": "Returns trials based on a search query. By default, it'll search in all of a trial's attributes.\n- `q` is a [ElasticSearch query string](https://www.elastic.co/guide/en/elasticsearch/reference/2.3/query-dsl-query-string-query.html#query-string-syntax) (e.g. `public_title:(depressive OR depression)`)\n- `page` can take a value between `1` and `100`\n- `per_page` can take a value between `10` and `100`",
+        "operationId": "searchTrials",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "The search query (follows the [ElasticSearch Query String](https://www.elastic.co/guide/en/elasticsearch/reference/2.3/query-dsl-query-string-query.html#query-string-syntax) syntax)",
+            "type": "string"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "The page number",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 1
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "description": "Number of items per page",
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 100,
+            "default": 20
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/TrialSearchResults"
+            }
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/search/autocomplete/{in}": {
+      "get": {
+        "tags": [
+          "search"
+        ],
+        "description": "Autocomplete search feature for supported database entities (`location`). It has the same options as a regular `search` operation, with an extra **required** `in` parameter indicating the entity type to search.",
+        "operationId": "autocomplete",
+        "parameters": [
+          {
+            "name": "in",
+            "in": "path",
+            "required": true,
+            "description": "The entity to search for",
+            "type": "string",
+            "enum": [
+              "location"
+            ]
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "description": "The search query",
+            "type": "string"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "The page number",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 1
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "description": "Number of items per page",
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 100,
+            "default": 20
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/AutocompleteResults"
+            }
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/search/fda_documents": {
+      "get": {
+        "tags": [
+          "search"
+        ],
+        "description": "Search the FDA documents",
+        "operationId": "searchFDADocuments",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "The search query (follows the [ElasticSearch Query String](https://www.elastic.co/guide/en/elasticsearch/reference/2.3/query-dsl-query-string-query.html#query-string-syntax) syntax)",
+            "type": "string"
+          },
+          {
+            "name": "text",
+            "in": "query",
+            "description": "Search query on the documents file's text (follows the [ElasticSearch Simple Query String](https://www.elastic.co/guide/en/elasticsearch/reference/2.3/query-dsl-simple-query-string-query.html#_simple_query_string_syntax) syntax)",
+            "type": "string"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "The page number",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 1
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "description": "Number of items per page",
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 100,
+            "default": 20
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/FDADocumentSearchResults"
+            }
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/trials/{id}": {
+      "get": {
+        "tags": [
+          "trials"
+        ],
+        "description": "Returns a trial's details and related entities (e.g. `conditions`).",
+        "operationId": "getTrial",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the trial",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/Trial"
+            }
+          },
+          "404": {
+            "description": "Trial not found"
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/publications/{id}": {
+      "get": {
+        "tags": [
+          "publications"
+        ],
+        "description": "Returns publication details",
+        "operationId": "getPublication",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the publication",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/Publication"
+            }
+          },
+          "404": {
+            "description": "Publication not found"
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/conditions/{id}": {
+      "get": {
+        "tags": [
+          "conditions"
+        ],
+        "description": "Returns condition details",
+        "operationId": "getCondition",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the condition",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/Condition"
+            }
+          },
+          "404": {
+            "description": "Condition not found"
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/organisations/{id}": {
+      "get": {
+        "tags": [
+          "organisations"
+        ],
+        "description": "Returns organisation details",
+        "operationId": "getOrganisation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the organisation",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/Organisation"
+            }
+          },
+          "404": {
+            "description": "Organisation not found"
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/trials/{id}/records": {
+      "get": {
+        "tags": [
+          "trials"
+        ],
+        "description": "Returns a trial's raw records from its sources",
+        "operationId": "getRecords",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the trial",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/RecordList"
+            }
+          },
+          "404": {
+            "description": "Trial not found"
+          }
+        }
+      }
+    },
+    "/trials/{trialId}/records/{id}": {
+      "get": {
+        "tags": [
+          "trials"
+        ],
+        "description": "Returns a trial's raw record from its sources",
+        "operationId": "getRecord",
+        "parameters": [
+          {
+            "name": "trialId",
+            "in": "path",
+            "description": "ID of the trial",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the trial's record",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/Record"
+            }
+          },
+          "404": {
+            "description": "Trial not found"
+          }
+        }
+      }
+    },
+    "/persons/{id}": {
+      "get": {
+        "tags": [
+          "persons"
+        ],
+        "description": "Returns person details",
+        "operationId": "getPerson",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the person",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/Person"
+            }
+          },
+          "404": {
+            "description": "Person not found"
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/interventions/{id}": {
+      "get": {
+        "tags": [
+          "interventions"
+        ],
+        "description": "Returns intervention details",
+        "operationId": "getIntervention",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the intervention",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/Intervention"
+            }
+          },
+          "404": {
+            "description": "Intervention not found"
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/sources": {
+      "get": {
+        "tags": [
+          "sources"
+        ],
+        "description": "Returns list of sources",
+        "operationId": "list",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/SourceList"
+            }
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/fda_applications": {
+      "get": {
+        "tags": [
+          "fda_applications"
+        ],
+        "description": "Returns FDA applications",
+        "operationId": "listFDAApplications",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "The page number",
+            "type": "integer",
+            "minimum": 1,
+            "default": 1
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "description": "Number of items per page",
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 100,
+            "default": 20
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/FDAApplicationList"
+            }
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/fda_applications/{id}": {
+      "get": {
+        "tags": [
+          "fda_applications"
+        ],
+        "description": "Returns an FDA application details",
+        "operationId": "getFDAApplication",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the FDA application",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/FDAApplication"
+            }
+          },
+          "404": {
+            "description": "FDA application not found"
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/documents": {
+      "get": {
+        "tags": [
+          "documents"
+        ],
+        "description": "Returns documents",
+        "operationId": "listDocuments",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "The page number",
+            "type": "integer",
+            "minimum": 1,
+            "default": 1
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "description": "Number of items per page",
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 100,
+            "default": 20
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/DocumentList"
+            }
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/documents/{id}": {
+      "get": {
+        "tags": [
+          "documents"
+        ],
+        "description": "Returns details of a document",
+        "operationId": "getDocument",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the document",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/Document"
+            }
+          },
+          "404": {
+            "description": "Document not found"
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/document_categories": {
+      "get": {
+        "tags": [
+          "document_categories"
+        ],
+        "description": "Returns document categories",
+        "operationId": "listDocumentCategories",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/DocumentCategoryList"
+            }
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "Trial": {
+      "type": "object",
+      "required": [
+        "id",
+        "url",
+        "public_title",
+        "locations",
+        "interventions",
+        "persons",
+        "organisations",
+        "records",
+        "publications",
+        "sources",
+        "risks_of_bias"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "ID of the trial"
+        },
+        "source_id": {
+          "type": "string",
+          "description": "ID of the trial's source"
+        },
+        "identifiers": {
+          "type": "object",
+          "description": "Object that maps the trial's sources ids with its identifiers."
+        },
+        "url": {
+          "type": "string",
+          "description": "Source URL (where the trial was collected from)"
+        },
+        "public_title": {
+          "type": "string",
+          "description": "Title of the trial"
+        },
+        "brief_summary": {
+          "type": "string",
+          "description": "Summary of the trial"
+        },
+        "target_sample_size": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Target sample size for the trial"
+        },
+        "gender": {
+          "type": "string",
+          "description": "Gender of the subjects of the trial",
+          "enum": [
+            "both",
+            "male",
+            "female"
+          ]
+        },
+        "age_range": {
+          "type": "object",
+          "properties": {
+            "min_age": {
+              "type": "string",
+              "description": "Minimum participant age (e.g. \"12 Years\", \"1 Month\", \"15 Days\"). If unknown, it's `undefined`. If no limit, it's \"any\". If not applicable, it's \"N/A\"."
+            },
+            "max_age": {
+              "type": "string",
+              "description": "Maximum participant age (e.g. \"12 Years\", \"1 Month\", \"15 Days\"). If unknown, it's `undefined`. If no limit, it's \"any\". If not applicable, it's \"N/A\"."
+            }
+          }
+        },
+        "has_published_results": {
+          "type": "boolean",
+          "description": "Trial has its results published (true/false)"
+        },
+        "registration_date": {
+          "type": "string",
+          "description": "Date the trial was registered",
+          "format": "date-time"
+        },
+        "completion_date": {
+          "type": "string",
+          "description": "Date the trial was completed",
+          "format": "date-time"
+        },
+        "results_exemption_date": {
+          "type": "string",
+          "description": "Date when a certification of exemption has been filed for the trial",
+          "format": "date-time"
+        },
+        "study_phase": {
+          "type": "array",
+          "description": "Phases of the study (e.g. `[\"Phase 2\"]` or `[\"Phase 1\", \"Phase 2\"]`)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "status": {
+          "type": "string",
+          "description": "Completion status of the trial",
+          "enum": [
+            "ongoing",
+            "withdrawn",
+            "suspended",
+            "terminated",
+            "complete",
+            "unknown",
+            "other"
+          ]
+        },
+        "recruitment_status": {
+          "type": "string",
+          "description": "Recruitment status of the trial",
+          "enum": [
+            "recruiting",
+            "not_recruiting",
+            "unknown",
+            "other"
+          ]
+        },
+        "locations": {
+          "type": "array",
+          "description": "Locations related to the trial",
+          "items": {
+            "$ref": "#/definitions/TrialLocation"
+          }
+        },
+        "interventions": {
+          "type": "array",
+          "description": "Interventions related to the trial",
+          "items": {
+            "$ref": "#/definitions/Intervention"
+          }
+        },
+        "conditions": {
+          "type": "array",
+          "description": "Conditions the trial refers to",
+          "items": {
+            "$ref": "#/definitions/Condition"
+          }
+        },
+        "persons": {
+          "type": "array",
+          "description": "People related to the trial",
+          "items": {
+            "$ref": "#/definitions/TrialPerson"
+          }
+        },
+        "organisations": {
+          "type": "array",
+          "description": "Organisations related to the trial",
+          "items": {
+            "$ref": "#/definitions/TrialOrganisation"
+          }
+        },
+        "records": {
+          "type": "array",
+          "description": "(published) records of the trial",
+          "items": {
+            "$ref": "#/definitions/RecordSummary"
+          }
+        },
+        "publications": {
+          "type": "array",
+          "description": "Publications referring the trial",
+          "items": {
+            "$ref": "#/definitions/PublicationSummary"
+          }
+        },
+        "discrepancies": {
+          "type": "object",
+          "description": "Discrepancies in trial's details between different sources",
+          "items": {
+            "$ref": "#/definitions/Discrepancies"
+          }
+        },
+        "documents": {
+          "type": "array",
+          "description": "Documents related to the trial",
+          "items": {
+            "$ref": "#/definitions/DocumentSummary"
+          }
+        },
+        "sources": {
+          "type": "object",
+          "items": {
+            "$ref": "#/definitions/Source"
+          }
+        },
+        "risks_of_bias": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/RiskOfBias"
+          }
+        }
+      }
+    },
+    "TrialLocation": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/definitions/Location"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "role": {
+              "type": "string",
+              "enum": [
+                "recruitment_countries",
+                "other"
+              ]
+            }
+          }
+        }
+      ],
+      "description": "Location of a trial"
+    },
+    "TrialSummary": {
+      "type": "object",
+      "required": [
+        "id",
+        "url",
+        "public_title"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "ID of the trial"
+        },
+        "url": {
+          "type": "string",
+          "description": "OpenTrials API URL for this trial"
+        },
+        "public_title": {
+          "type": "string",
+          "description": "Title of the record"
+        }
+      }
+    },
+    "Location": {
+      "type": "object",
+      "required": [
+        "id",
+        "name"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "ID of the location"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the location"
+        },
+        "type": {
+          "type": "string",
+          "description": "Type of the location (country / city / other)",
+          "enum": [
+            "country",
+            "city",
+            "other"
+          ]
+        }
+      }
+    },
+    "Intervention": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "url"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "ID of the intervention"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the intervention"
+        },
+        "url": {
+          "type": "string",
+          "description": "OpenTrials API URL of the intervention"
+        },
+        "type": {
+          "type": "string",
+          "description": "Type of the intervention (drug / other)",
+          "enum": [
+            "drug",
+            "procedure",
+            "other"
+          ]
+        }
+      }
+    },
+    "Condition": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "url"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "ID of the condition"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the condition"
+        },
+        "url": {
+          "type": "string",
+          "description": "OpenTrials API URL of the condition"
+        }
+      }
+    },
+    "TrialPerson": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/definitions/Person"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "role": {
+              "type": "string",
+              "enum": [
+                "principal_investigator",
+                "public_queries",
+                "scientific_queries",
+                "other"
+              ]
+            }
+          }
+        }
+      ],
+      "description": "People related to a trial"
+    },
+    "Person": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "url"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "ID of the person"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the person"
+        },
+        "url": {
+          "type": "string",
+          "description": "OpenTrials API URL of the person"
+        }
+      }
+    },
+    "TrialOrganisation": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/definitions/Organisation"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "role": {
+              "type": "string",
+              "enum": [
+                "primary_sponsor",
+                "sponsor",
+                "funder",
+                "other"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "Organisation": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "url"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "ID of the organisation"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the organisation"
+        },
+        "url": {
+          "type": "string",
+          "description": "OpenTrials API URL of the organisation"
+        }
+      }
+    },
+    "RecordList": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Record"
+      }
+    },
+    "Record": {
+      "type": "object",
+      "required": [
+        "id",
+        "url",
+        "trial_id",
+        "trial_url",
+        "source",
+        "source_url",
+        "public_title",
+        "created_at",
+        "updated_at"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "ID of the record"
+        },
+        "identifiers": {
+          "type": "object",
+          "description": "Object that maps the trial's sources ids with its identifiers."
+        },
+        "source_id": {
+          "type": "string",
+          "description": "ID of the record's source"
+        },
+        "url": {
+          "type": "string",
+          "description": "OpenTrials API URL of the record"
+        },
+        "trial_id": {
+          "type": "string",
+          "description": "ID of the trial referenced in the record"
+        },
+        "trial_url": {
+          "type": "string",
+          "description": "OpenTrials API URL of the trial referenced in the record"
+        },
+        "source": {
+          "$ref": "#/definitions/Source"
+        },
+        "source_url": {
+          "type": "string",
+          "description": "URL of the record's source (where it was collected from)"
+        },
+        "public_title": {
+          "type": "string",
+          "description": "Title of the record"
+        },
+        "status": {
+          "type": "string",
+          "description": "Trial's status (e.g. ongoing, withdrawn, complete etc.)",
+          "enum": [
+            "ongoing",
+            "withdrawn",
+            "suspended",
+            "terminated",
+            "complete",
+            "unknown",
+            "other"
+          ]
+        },
+        "recruitment_status": {
+          "type": "string",
+          "description": "Trial's recruitment status (e.g. recruiting, unknown etc.)",
+          "enum": [
+            "recruiting",
+            "not_recruiting",
+            "unknown",
+            "other"
+          ]
+        },
+        "is_primary": {
+          "type": "boolean",
+          "description": "Is this record the primary source of data for its trial"
+        },
+        "last_verification_date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date when the record's data was last verified by provider"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date when the record was created"
+        },
+        "updated_at": {
+          "type": "string",
+          "description": "Date when the record was updated",
+          "format": "date-time"
+        }
+      }
+    },
+    "Publication": {
+      "type": "object",
+      "required": [
+        "id",
+        "url",
+        "source",
+        "source_url",
+        "title",
+        "abstract"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "ID of the publication"
+        },
+        "url": {
+          "type": "string"
+        },
+        "source": {
+          "$ref": "#/definitions/Source"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "source_url": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "abstract": {
+          "type": "string"
+        },
+        "authors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "journal": {
+          "type": "string"
+        },
+        "date": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "slug": {
+          "type": "string"
+        }
+      }
+    },
+    "RecordSummary": {
+      "type": "object",
+      "required": [
+        "id",
+        "url",
+        "source_id"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "source_id": {
+          "type": "string"
+        },
+        "is_primary": {
+          "type": "boolean"
+        },
+        "last_verification_date": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "PublicationSummary": {
+      "type": "object",
+      "required": [
+        "id",
+        "url",
+        "title",
+        "source_id",
+        "source_url"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "source_id": {
+          "type": "string"
+        },
+        "source_url": {
+          "type": "string"
+        }
+      }
+    },
+    "Discrepancies": {
+      "type": "object",
+      "description": "Object listing the Trial's discrepant fields",
+      "properties": {
+        "gender": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/DiscrepantFieldString"
+          }
+        },
+        "target_sample_size": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/DiscrepantFieldInteger"
+          }
+        },
+        "status": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/DiscrepantFieldString"
+          }
+        },
+        "recruitment_status": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/DiscrepantFieldString"
+          }
+        },
+        "has_published_results": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/DiscrepantFieldBoolean"
+          }
+        }
+      }
+    },
+    "DiscrepantFieldString": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/definitions/DiscrepancyFieldBase"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "DiscrepantFieldInteger": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/definitions/DiscrepancyFieldBase"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "integer"
+            }
+          }
+        }
+      ]
+    },
+    "DiscrepantFieldBoolean": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/definitions/DiscrepancyFieldBase"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "boolean"
+            }
+          }
+        }
+      ]
+    },
+    "DiscrepancyFieldBase": {
+      "type": "object",
+      "required": [
+        "record_id",
+        "source_name"
+      ],
+      "properties": {
+        "record_id": {
+          "type": "string"
+        },
+        "source_name": {
+          "type": "string"
+        }
+      }
+    },
+    "Document": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "url",
+        "document_category"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "ID of the document"
+        },
+        "name": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string",
+          "description": "OpenTrials API URL of the document"
+        },
+        "document_category": {
+          "type": "object",
+          "$ref": "#/definitions/DocumentCategory"
+        },
+        "source_url": {
+          "type": "string",
+          "description": "URL of origin for this document"
+        },
+        "trials": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TrialSummary"
+          }
+        },
+        "file": {
+          "type": "object",
+          "$ref": "#/definitions/File"
+        },
+        "fda_application": {
+          "$ref": "#/definitions/FDAApplication"
+        },
+        "source": {
+          "type": "object",
+          "$ref": "#/definitions/Source"
+        }
+      }
+    },
+    "DocumentSummary": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "url",
+        "document_category"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string",
+          "description": "OpenTrials API URL of the document"
+        },
+        "document_category": {
+          "type": "object",
+          "$ref": "#/definitions/DocumentCategory"
+        },
+        "trials": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TrialSummary"
+          }
+        },
+        "file": {
+          "type": "object",
+          "$ref": "#/definitions/FileSummary"
+        },
+        "fda_application": {
+          "$ref": "#/definitions/FDAApplication"
+        },
+        "source_id": {
+          "type": "string",
+          "description": "ID of the document's source"
+        },
+        "source_url": {
+          "type": "string",
+          "description": "URL of origin for this document"
+        }
+      }
+    },
+    "DocumentCategory": {
+      "type": "object",
+      "required": [
+        "id",
+        "name"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "group": {
+          "type": "string",
+          "description": "Name of document category"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of document sub-category"
+        }
+      }
+    },
+    "DocumentCategoryList": {
+      "type": "object",
+      "required": [
+        "total_count",
+        "items"
+      ],
+      "properties": {
+        "total_count": {
+          "type": "integer"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/DocumentCategory"
+          }
+        }
+      }
+    },
+    "DocumentList": {
+      "type": "object",
+      "required": [
+        "total_count",
+        "items"
+      ],
+      "properties": {
+        "total_count": {
+          "type": "integer"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/DocumentSummary"
+          }
+        }
+      }
+    },
+    "FileSummary": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "ID of the file"
+        },
+        "sha1": {
+          "type": "string"
+        },
+        "source_url": {
+          "type": "string",
+          "description": "URL of origin for this file"
+        },
+        "documentcloud_id": {
+          "type": "string"
+        }
+      }
+    },
+    "File": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/definitions/FileSummary"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "pages": {
+              "type": "array",
+              "description": "Array with text of each of the file's pages",
+              "items": {
+                "type": "object",
+                "required": [
+                  "num",
+                  "text"
+                ],
+                "properties": {
+                  "num": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "Page number"
+                  },
+                  "text": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "RiskOfBias": {
+      "type": "object",
+      "required": [
+        "id",
+        "source_id",
+        "source_url",
+        "study_id"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "source_id": {
+          "type": "string"
+        },
+        "source_url": {
+          "type": "string"
+        },
+        "study_id": {
+          "type": "string"
+        },
+        "risk_of_bias_criteria": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/RiskOfBiasCriteria"
+          }
+        }
+      }
+    },
+    "RiskOfBiasCriteria": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "value"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string",
+          "enum": [
+            "yes",
+            "no",
+            "unknown"
+          ]
+        }
+      }
+    },
+    "SourceList": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Source"
+      }
+    },
+    "Source": {
+      "type": "object",
+      "required": [
+        "id",
+        "name"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "source_url": {
+          "type": "string",
+          "description": "URL to source's website"
+        },
+        "terms_and_conditions_url": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "register",
+            "journal",
+            "other"
+          ]
+        }
+      }
+    },
+    "FDADocumentSearchResults": {
+      "type": "object",
+      "required": [
+        "total_count",
+        "items"
+      ],
+      "properties": {
+        "total_count": {
+          "type": "integer"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/FDADocumentSearchResult"
+          }
+        }
+      }
+    },
+    "FDADocumentSearchResult": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/DocumentSummary"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "file": {
+              "$ref": "#/definitions/File"
+            }
+          }
+        }
+      ]
+    },
+    "TrialSearchResults": {
+      "type": "object",
+      "required": [
+        "total_count",
+        "items"
+      ],
+      "properties": {
+        "total_count": {
+          "type": "integer"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Trial"
+          }
+        }
+      }
+    },
+    "AutocompleteResults": {
+      "type": "object",
+      "required": [
+        "total_count",
+        "items"
+      ],
+      "properties": {
+        "total_count": {
+          "type": "integer"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AutocompleteResult"
+          }
+        }
+      }
+    },
+    "AutocompleteResult": {
+      "type": "object",
+      "required": [
+        "id",
+        "name"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "FDAApplicationList": {
+      "type": "object",
+      "required": [
+        "total_count",
+        "items"
+      ],
+      "properties": {
+        "total_count": {
+          "type": "integer"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/FDAApplication"
+          }
+        }
+      }
+    },
+    "FDAApplication": {
+      "type": "object",
+      "required": [
+        "id",
+        "url"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "FDA application ID"
+        },
+        "drug_name": {
+          "type": "string",
+          "description": "Name of the drug"
+        },
+        "active_ingredients": {
+          "type": "string",
+          "description": "Active ingredients contained in the drug"
+        },
+        "fda_approvals": {
+          "type": "array",
+          "description": "Associated FDA approvals",
+          "items": {
+            "$ref": "#/definitions/FDAApproval"
+          }
+        },
+        "organisation": {
+          "type": "object",
+          "description": "Associated organisation",
+          "$ref": "#/definitions/Organisation"
+        },
+        "type": {
+          "type": "string",
+          "description": "The FDA application type (e.g. \"NDA\", \"ANDA\", etc.)"
+        },
+        "url": {
+          "type": "string",
+          "description": "OpenTrials API URL for this FDA application"
+        }
+      }
+    },
+    "FDAApproval": {
+      "type": "object",
+      "required": [
+        "id",
+        "action_date",
+        "supplement_number",
+        "type"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "FDA approval ID"
+        },
+        "supplement_number": {
+          "type": "integer"
+        },
+        "type": {
+          "type": "string",
+          "description": "Type of FDA approval"
+        },
+        "action_date": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Additional information about the FDA approval"
+        },
+        "fda_application": {
+          "$ref": "#/definitions/FDAApplication"
+        }
+      }
+    },
+    "ErrorResponse": {
+      "type": "object",
+      "required": [
+        "message"
+      ],
+      "properties": {
+        "message": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
