@@ -8,6 +8,6 @@
     "password": "123"
   },
   "dataSource": "PostgreSQL",
-  "description": "DataGrok service db",
+  "description": "Datagrok service db",
   "tags": ["service"]
 }
