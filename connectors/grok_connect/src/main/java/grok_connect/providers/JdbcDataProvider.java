@@ -422,6 +422,13 @@ public abstract class JdbcDataProvider extends DataProvider {
             return null;
     }
 
+    public String addBrackets(String name) {
+        String brackets = descriptor.nameBrackets;
+        return (name.contains(" ") && !name.startsWith(brackets.substring(0, 1)))
+                ? brackets.substring(0, 1) + name + brackets.substring(brackets.length() - 1, brackets.length())
+                : name;
+    }
+
     public String limitToSql(String query, Integer limit) {
         return query + "limit " + limit.toString();
     }
@@ -431,8 +438,8 @@ public abstract class JdbcDataProvider extends DataProvider {
     }
 
     public String queryTableSql(DataConnection conn, TableQuery query) {
-        return query.toSql(this::aggrToSql, this::patternToSql, this::limitToSql,
-                descriptor.nameBrackets, descriptor.limitAtEnd);
+        return query.toSql(this::aggrToSql, this::patternToSql, this::limitToSql, this::addBrackets,
+                descriptor.limitAtEnd);
     }
 
     public DataFrame queryTable(DataConnection conn, TableQuery query)

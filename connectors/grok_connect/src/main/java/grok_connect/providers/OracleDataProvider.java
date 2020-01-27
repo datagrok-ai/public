@@ -79,4 +79,9 @@ public class OracleDataProvider extends JdbcDataProvider {
     public String limitToSql(String query, Integer limit) {
         return "select * from (\n" + query + "\n) where ROWNUM <= " + limit.toString();
     }
+
+    public String addBrackets(String name) {
+        String brackets = descriptor.nameBrackets;
+        return brackets.substring(0, 1) + name + brackets.substring(brackets.length() - 1, brackets.length());
+    }
 }
