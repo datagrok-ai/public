@@ -1,0 +1,71 @@
+swagger: "2.0"
+info:
+  title: USDA National Agricultural Library
+  description: 'Our RESTful Web Service gives you access to the publications and related information we hold in the PubAg repository.'
+  version: 1.0.0
+  x-logo:
+    backgroundColor: '#FFFFFF'
+    url: 'https://ndb.nal.usda.gov/ndb/assets/favicon-586b9f862ff9b9e158afa1e50eb9a8e3.ico'
+host: api.nal.usda.gov
+basePath: /pubag/rest
+schemes:
+  - https
+paths:
+  /search/:
+    get:
+      summary: APIModuleSearch
+      operationId: API Module - Search
+      description: Use this module to search the publications and related information we hold in the PubAg repository.
+      parameters:
+        - name: query
+          in: query
+          required: true
+          type: string
+        - name: page
+          in: query
+          type: integer
+          required: false
+        - name: per_page
+          in: query
+          type: integer
+          required: false
+        - name: format
+          in: query
+          required: true
+          type: string
+          default: json
+      responses:
+        '200':
+          description: successful operation
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Observation'
+        '400':
+          description: Invalid status value
+  /articles/{id}:
+    get:
+      summary: APIModuleArticle
+      operationId: API Module - Article
+      description: Use this module to request an article metadata and related information.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: integer
+          default: 100
+      responses:
+        '200':
+          description: successful operation
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Observation'
+        '400':
+          description: Invalid status value
+definitions: []
+securityDefinitions:
+  api_key:
+    type: apiKey
+    name: api_key
+    in: query

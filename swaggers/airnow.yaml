@@ -1,0 +1,507 @@
+swagger: '2.0'
+info:
+  description: 'AirNow'
+  version: "1.0.0"
+  title: AirNow
+  x-logo:
+    backgroundColor: '#FFFFFF'
+    url: 'https://www.airnow.gov/images/favicon.ico'
+host: airnowapi.org
+basePath: /aq
+schemes:
+  - http
+paths:
+  /forecast/zipCode/:
+    get:
+      summary: forecastByZipCode
+      operationId: Forecast By Zip Code
+      produces:
+        - text/csv
+        - application/xml
+        - application/json
+      parameters:
+        - $ref: '#/parameters/zipCode'
+        - $ref: '#/parameters/date'
+        - $ref: '#/parameters/format'
+        - $ref: '#/parameters/distance'
+      responses:
+        '200':
+          description: successful operation
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Forecast'
+        '400':
+          description: Invalid status value
+  /forecast/latLong/:
+    get:
+      summary: forecastByLatitudeAndLongitude
+      operationId: Forecast by Latitude and Longitude
+      produces:
+        - text/csv
+        - application/xml
+        - application/json
+      parameters:
+        - $ref: '#/parameters/latitude'
+        - $ref: '#/parameters/longitude'
+        - $ref: '#/parameters/date'
+        - $ref: '#/parameters/format'
+        - $ref: '#/parameters/distance'
+      responses:
+        '200':
+          description: successful operation
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Forecast'
+        '400':
+          description: Invalid status value
+  /observation/zipCode/current/:
+    get:
+      summary: currentObservationByZipCode
+      operationId: Current Observation By ZipCode
+      produces:
+        - text/csv
+        - application/xml
+        - application/json
+      parameters:
+        - $ref: '#/parameters/zipCode'
+        - $ref: '#/parameters/format'
+        - $ref: '#/parameters/distance'
+      responses:
+        '200':
+          description: successful operation
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Observation'
+        '400':
+          description: Invalid status value
+  /observation/latLong/current/:
+    get:
+      summary: currentObservationByLatitudeAndLongitude
+      operationId: Current Observation By Latitude and Longitude
+      produces:
+        - text/csv
+        - application/xml
+        - application/json
+      parameters:
+        - $ref: '#/parameters/latitude'
+        - $ref: '#/parameters/longitude'
+        - $ref: '#/parameters/format'
+        - $ref: '#/parameters/distance'
+      responses:
+        '200':
+          description: successful operation
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Observation'
+        '400':
+          description: Invalid status value
+  /observation/zipCode/historical/:
+    get:
+      summary: historicalObservationByZipCode
+      operationId: Historical Observation By Zip Code
+      produces:
+        - text/csv
+        - application/xml
+        - application/json
+      parameters:
+       - $ref: '#/parameters/zipCode'
+       - $ref: '#/parameters/format'
+       - $ref: '#/parameters/distance'
+       - name: date
+         in: query
+         required: false
+         description: Date of forecast. If date is omitted, the current forecast is returned.
+         type: string
+         format: date-time
+         grok-datetime-format: yyyy-MM-ddT00-0000
+      responses:
+        '200':
+          description: successful operation
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Observation'
+        '400':
+          description: Invalid status value
+  /observation/latLong/historical/:
+    get:
+      summary: historicalObservationByLatitudeAndLongitude
+      operationId: Historical Observation By Latitude and Longitude
+      produces:
+        - text/csv
+        - application/xml
+        - application/json
+      parameters:
+        - name: date
+          in: query
+          required: false
+          description: Date of forecast. If date is omitted, the current forecast is returned.
+          type: string
+          format: date-time
+          grok-datetime-format: yyyy-MM-ddT00-0000
+        - $ref: '#/parameters/latitude'
+        - $ref: '#/parameters/longitude'
+        - $ref: '#/parameters/format'
+        - $ref: '#/parameters/distance'
+      responses:
+        '200':
+          description: successful operation
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Observation'
+        '400':
+          description: Invalid status value
+  /data/:
+    get:
+      summary: observationsByMonitoringSite
+      operationId: Observations by Monitoring Site
+      produces:
+        - text/csv
+        - application/xml
+        - application/json
+        - application/vnd.google-earth.kml
+      parameters:
+        - name: bbox
+          in: query
+          description: The bounding box of the area of interest in latitude and longitude. Comma separated list (minX,minY,maxX,maxY)
+          required: true
+          type: array
+          items:
+            type: number
+            format: float
+          maxItems: 4
+        - name: startDate
+          in: query
+          description: The start date and time of the data requested.
+          type: string
+          format: date-time
+          required: false
+          grok-datetime-format: yyyy-MM-ddTHH
+        - name: enddate
+          in: query
+          description: The end date and time of of the data requested.
+          type: string
+          format: date-time
+          required: false
+          grok-datetime-format: yyyy-MM-ddTHH
+        - name: parameters
+          in: query
+          description: Parameters for returning data
+          required: true
+          type: array
+          items:
+            type: string
+            enum:
+              - OZONE
+              - PM25
+              - PM10
+              - CO
+              - NO2
+              - SO2
+        - name: datatype
+          in: query
+          required: true
+          type: string
+          enum:
+            - A
+            - B
+            - C
+          description: >
+            Datatype:
+              * `A` - AQI
+              * `B` - Concentrations & AQI
+              * `C` - Concentrations
+          default: A
+        - name: format
+          in: query
+          description: Format of the payload file returned.
+          required: true
+          type: string
+          enum:
+            - text/csv
+            - application/xml
+            - application/json
+            - application/vnd.google-earth.kml
+          default: application/json
+        - name: verbose
+          in: query
+          description: Verobose
+          required: true
+          type: string
+          enum:
+            - 0
+            - 1
+          default: 0
+      responses:
+        '200':
+          description: successful operation
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Observation'
+        '400':
+          description: Invalid status value
+  /kml/PM25/:
+    get:
+      summary: contourPM2.5KMLService
+      operationId: Contour PM2.5 KML Service
+      produces:
+        - application/vnd.google-earth.kml
+      parameters:
+        - name: bbox
+          in: query
+          description: The bounding box of the area of interest in latitude and longitude. Comma separated list (minX,minY,maxX,maxY)
+          required: true
+          type: array
+          items:
+            type: number
+            format: float
+          maxItems: 4
+        - name: date
+          in: query
+          description: The date and hour of the data (in UTC).
+          type: string
+          format: date-time
+          required: true
+          grok-datetime-format: yyyy-MM-ddTHH
+        - name: srs
+          in: query
+          description: The coordinate system of the bounding box.
+          required: true
+          type: string
+          enum:
+            - EPSG:4326
+      responses:
+        '200':
+          description: successful operation
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Observation'
+        '400':
+          description: Invalid status value
+  /kml/Ozone/:
+    get:
+      summary: contourOzoneKMLService
+      operationId: Contour Ozone KML Service
+      produces:
+        - application/vnd.google-earth.kml
+      parameters:
+        - name: bbox
+          in: query
+          description: The bounding box of the area of interest in latitude and longitude. Comma separated list (minX,minY,maxX,maxY)
+          required: true
+          type: array
+          items:
+            type: number
+            format: float
+          maxItems: 4
+        - name: date
+          in: query
+          description: The date and hour of the data (in UTC).
+          type: string
+          format: date-time
+          required: true
+          grok-datetime-format: yyyy-MM-ddTHH
+        - name: srs
+          in: query
+          description: The coordinate system of the bounding box.
+          required: true
+          type: string
+          enum:
+            - EPSG:4326
+      responses:
+        '200':
+          description: successful operation
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Observation'
+        '400':
+          description: Invalid status value
+  /kml/Combined/:
+    get:
+      summary: contourCombinedKMLService
+      operationId: Contour Combined KML Service
+      produces:
+        - application/vnd.google-earth.kml
+      parameters:
+        - name: bbox
+          in: query
+          description: The bounding box of the area of interest in latitude and longitude. Comma separated list (minX,minY,maxX,maxY)
+          required: true
+          type: array
+          items:
+            type: number
+            format: float
+          maxItems: 4
+        - name: date
+          in: query
+          description: The date and hour of the data (in UTC).
+          type: string
+          format: date-time
+          required: true
+          grok-datetime-format: yyyy-MM-ddTHH
+        - name: srs
+          in: query
+          description: The coordinate system of the bounding box.
+          required: true
+          type: string
+          enum:
+            - EPSG:4326
+      responses:
+        '200':
+          description: successful operation
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Observation'
+        '400':
+          description: Invalid status value
+grok-datetime-format: yyyy-MM-dd
+parameters:
+  zipCode:
+    name: zipCode
+    in: query
+    description: Zip code
+    required: true
+    type: integer
+    format: int32
+  date:
+     name: date
+     in: query
+     required: false
+     description: Date of forecast. If date is omitted, the current forecast is returned.
+     type: string
+     format: date-time
+  format:
+     name: format
+     in: query
+     description: Format of the payload file returned.
+     required: true
+     type: string
+     enum:
+       - text/csv
+       - application/xml
+       - application/json
+     default: application/json
+  distance:
+     name: distance
+     in: query
+     required: false
+     description: If no reporting area is associated with the specified Zip Code, return a forecast from a nearby reporting area within this distance (in miles).
+     type: integer
+     format: int32
+  latitude:
+     name: latitude
+     in: query
+     description: Latitude in decimal degrees.
+     required: true
+     type: number
+     format: float
+  longitude:
+     name: longitude
+     in: query
+     required: true
+     description: Longitude in decimal degrees.
+     type: number
+     format: float
+definitions:
+  Forecast:
+    title: forecast
+    type: object
+    properties:
+      dateIssue:
+        type: string
+        format: date-time
+        description: "Date the forecast was issued (yyyy-mm-dd)"
+      dateForecast:
+        type: string
+        format: date-time
+        description: "Date for which the forecast applies (yyyy-mm-dd)"
+      reportingArea:
+        type: string
+        description: "City or area name for which the forecast applies"
+      stateCode":
+        type: string
+        description: "Two-character state abbreviation"
+      latitude:
+        type: number
+        format: float
+        description: "Latitude in decimal degrees"
+      longitude:
+        type: number
+        format: float
+        description: "Longitude in decimal degrees"
+      parameterName:
+        type: string
+        description: "Forecasted parameter name"
+      aqi:
+        type: number
+        format: float
+        description: "Numerical AQI value forecasted. When a numerical AQI value is not available, such as when only a categorical forecast has been submitted, a -1 will be returned"
+      categoryNumber:
+        type: integer
+        description: "Forecasted AQI category number: 1 - Good; 2 - Moderate; 3 - Unhealthy for Sensitive Groups; 4 - Unhealthy; 5 - Very Unhealthy; 6 - Hazardous; 7 - Unavailable"
+      categoryName:
+        type: string
+        description: "Name of the AQI category"
+      actionDay:
+        type: boolean
+        description: "Action day status (true or false)"
+      discussion:
+        type: string
+        description: "Forecast discussion narrative"
+  Observation:
+     title: observation
+     type: object
+     properties:
+       dateObserved:
+         type: string
+         format: date-time
+         description: "Date of observation (yyyy-mm-dd)"
+       hourObservedt:
+         type: integer
+         format: int32
+         description: "Hour of observation (00-23)"
+       localTimeZone:
+         type: string
+         description: "Time zone of observed data value"
+       reportingArea:
+         type: string
+         description: "City or area name of observed data (data values are peak of monitoring sites associated with this area)"
+       stateCode:
+         type: string
+         description: "Two-character state abbreviation"
+       latitude:
+         type: number
+         format: float
+         description: "Latitude in decimal degrees"
+       longitude:
+         type: number
+         format: float
+         description: "Longitude in decimal degrees"
+       parameterName:
+         type: string
+         description: "Name of parameter"
+       aqi:
+         type: number
+         format: float
+         description: "Observed AQI value (peak value of monitoring sites associated with a reporting area)"
+       categoryNumber:
+         type: number
+         format: float
+         description: "Forecasted AQI category number: 1 - Good; 2 - Moderate; 3 - Unhealthy for Sensitive Groups; 4 - Unhealthy; 5 - Very Unhealthy; 6 - Hazardous; 7 - Unavailable"
+       categoryName:
+         type: string
+         description: "Name of the AQI category"
+securityDefinitions:
+  api_key:
+    type: apiKey
+    name: API_KEY
+    in: query

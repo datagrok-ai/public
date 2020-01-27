@@ -1,0 +1,85 @@
+swagger: "2.0"
+info:
+  title: 'Civil Rights Data Collection (CRDC) APIs'
+  description: "Since 1968, the U.S. Department of Education (ED) has conducted the Civil Rights Data Collection (CRDC) to collect data on key education and civil rights issues in our nation's public schools. The 2013-14 collection includes equity data from nearly every public school and public school district in the nation. The following APIs provide access to several CRDC indicators."
+  version: 1.0.0
+  x-logo:
+    backgroundColor: '#FFFFFF'
+    url: 'https://www.ed.gov/profiles/ed_main/themes/ed3/images/apple-touch-icon-72x72.png'
+host:  api.ed.gov
+basePath: /data
+schemes:
+  - https
+paths:
+  /crdc_enrollment_2013-14:
+    get:
+      summary: publicSchoolEnrollment
+      operationId: Public School Enrollment in 2013-14
+      description: 'Public school information on the number of students enrolled in public education in 2013-14 by race/ethnicity, gender, and program status.'
+      parameters:
+        - $ref: '#/parameters/PerPage'
+        - $ref: '#/parameters/Page'
+        - $ref: '#/parameters/Sort'
+        - $ref: '#/parameters/Columnx'
+      responses:
+        '200':
+          description: successful operation
+        '400':
+          description: Invalid status value
+  /crdc_absenteeism_2013-14:
+    get:
+      summary: chronicAbsenteeism
+      operationId: Chronic Absenteeism in 2013-14
+      description: 'Public school information on the number of students who were chronically absent (missed 15 days or more of the school year) by race/ethnicity, gender, and program status.'
+      parameters:
+        - $ref: '#/parameters/PerPage'
+        - $ref: '#/parameters/Page'
+        - $ref: '#/parameters/Sort'
+        - $ref: '#/parameters/Columnx'
+      responses:
+        '200':
+          description: successful operation
+        '400':
+          description: Invalid status value
+  /crdc_oosuspensions_2013-14:
+    get:
+      summary: outOfSchoolSuspension
+      operationId: Out-of-School Suspension in 2013-14
+      description: 'Provides image content with fields'
+      parameters:
+        - $ref: '#/parameters/PerPage'
+        - $ref: '#/parameters/Page'
+        - $ref: '#/parameters/Sort'
+        - $ref: '#/parameters/Columnx'
+      responses:
+        '200':
+          description: successful operation
+        '400':
+          description: Invalid status value
+parameters:
+  PerPage:
+    name: per_page
+    in: query
+    description: "Select number of results per page."
+    type: string
+  Page:
+    name: filter
+    in: query
+    description: "Select results page."
+    type: string
+  Sort:
+    name: sort
+    in: query
+    description: "Sort by Column."
+    type: string
+  Columnx:
+    name: Columnx
+    in: query
+    description: "Filter by Columnx"
+    type: string
+definitions: []
+securityDefinitions:
+  api_key:
+    type: apiKey
+    name: api_key
+    in: query

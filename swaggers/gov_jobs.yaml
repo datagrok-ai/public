@@ -1,0 +1,70 @@
+swagger: "2.0"
+info:
+  title: Government Jobs API
+  description: 'This API returns job openings across the federal government, and includes all current openings posted on USAJobs.gov that are open to the public and located in the United States. It also includes some state and local government jobs.'
+  version: 1.0.0
+  x-logo:
+    backgroundColor: '#FFFFFF'
+    url: 'https://d3qcdigd1fhos0.cloudfront.net/blog/img/favicon.ico'
+host: jobs.search.gov
+basePath: /jobs
+schemes:
+  - https
+paths:
+  /search.json:
+    get:
+      summary: jobsSearch
+      operationId: jobsSearch
+      description: 'Federal, state, and local government agencies are hiring and have thousands of job openings across the country, posted on USAJobs.gov and local government jobs sites.'
+      parameters:
+        - name: query
+          in: query
+          required: true
+          description: 'Attempts to extract as much “signal” as possible from the input text. Handles word variants.'
+          type: string
+        - name: organization_ids
+          in: query
+          type: array
+          items:
+            type: string
+          required: false
+          description: 'Comma-separated string specifying which federal, state, or local agencies to use as a filter.'
+        - name: size
+          in: query
+          required: false
+          type: integer
+          description: 'Specifies how many results are returned (up to 100 at a time).'
+        - name: from
+          in: query
+          required: false
+          type: string
+          description: 'Specifies the starting record.'
+        - name: tags
+          in: query
+          required: false
+          type: array
+          items:
+            type: string
+          description: 'A comma-separated string specifying the level of government. Current tags are "federal", "state", "county", and "city".'
+        - name: lat_lon
+          in: query
+          required: false
+          type: array
+          items:
+            type: number
+            format: float
+          description: 'Comma-separated pair denoting the position of the searcher looking for a job. For example, ‘lat_lon=37.783333,-122.416667’ is the value for San Francisco, CA.'
+      responses:
+        '200':
+          description: successful operation
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Observation'
+        '400':
+          description: Invalid status value
+definitions: []
+securityDefinitions:
+  api_key:
+    type: apiKey
+    name: api_key

@@ -1,0 +1,99 @@
+swagger: "2.0"
+info:
+  title: 'Import and Marketplace Violation Data API'
+  description: "The Consumer Product Safety Commission Violations & NEISS Data API combines all of the Letters of Advice (LOA) Data and National Electronic Injury Surveillance System (NEISS) Data information into one finalized data set with hospital report information and violation of mandatory standard."
+  version: 1.0.0
+host: api.cpsc.gov
+basePath: /opendataApi
+schemes:
+  - https
+paths:
+  /{source}/list.json:
+    get:
+      summary: CPSCViolationsAndNEISSDataSearch
+      operationId: CPSC Violations And NEISS Data Search
+      produces: application.json
+      parameters:
+        - name: source
+          in: path
+          type: string
+          description: "'loadata' for LOA data access. 'neissdata' for NEISS data access. "
+          enum:
+            - loadata
+            - neissdata
+          required: true
+        - name: firm
+          in: query
+          type: string
+          description: "Allows users to query LOAD Data from specific firms based on this parameter"
+        - name: product
+          in: query
+          type: string
+          format: string
+          description: "Allows users to query Incident Data from specific products based on this parameter"
+        - name: sex
+          in: query
+          type: string
+          enum:
+            - 0
+            - 1
+          description: "Allows users to query NEISS Data from specific gender based on this parameter. (0 - male, 1 - female)"
+        - name: startAge
+          in: query
+          type: integer
+          description: "Allows users to query the patients Age within a range. Start of age range (2-114)"
+        - name: endAge
+          in: query
+          type: integer
+          description: "Allows users to query the patients Age within a range. End of age range (2-114)"
+        - name: startProductCode1
+          in: query
+          type: string
+          description: "Allows users to query the products involved in reported injuries"
+        - name: startProductCode2
+          in: query
+          type: string
+          description: "Allows users to query the products involved in reported injuries"
+        - name: startProductCode3
+          in: query
+          type: string
+          description: "Allows users to query the products involved in reported injuries"
+        - name: endProductCode1
+          in: query
+          type: string
+          description: "Allows users to query the products involved in reported injuries"
+        - name: endProductCode2
+          in: query
+          type: string
+          description: "Allows users to query the products involved in reported injuries"
+        - name: endProductCode3
+          in: query
+          type: string
+          description: "Allows users to query the products involved in reported injuries"
+        - name: disposition
+          in: query
+          type: integer
+          description: "Allows users to query the final disposition of the patient from the emergency department"
+        - name: bodyPart
+          in: query
+          type: integer
+          description: "Allows users to query the body part affected in the product-related incident"
+        - name: diagnosis
+          in: query
+          type: integer
+          description: "Allows users to queryt the nature of the injury"
+        - name: location
+          in: query
+          type: integer
+          description: "Allows users to query the location where the incident occurred"
+      responses:
+        '200':
+          description: successful operation
+        '400':
+          description: Invalid status value
+definitions: []
+securityDefinitions:
+  api_key:
+    type: apiKey
+    name: api_key
+    in: query

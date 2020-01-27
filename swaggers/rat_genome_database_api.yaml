@@ -1,0 +1,64 @@
+swagger: "2.0"
+info:
+  description: "The RGD REST API provides programmatic access to information and annotation stored in the Rat Genome Database"
+  title: Rat Genome Database REST API
+host: rest.rgd.mcw.edu
+basePath: /rgdws
+schemes:
+  - https
+paths:
+   /genes/{rgdId}:
+    get:
+      summary: getInChromosome
+      operationId: Get a gene record by RGD ID
+      description: "Get a gene record by RGD ID"
+      produces:
+        - application/json
+      parameters:
+        - name: rgdId
+          in: path
+          type: integer
+          description: "The RGD ID of a Gene in RGD"
+          required: true
+          default: 13209000
+      responses:
+         200:
+           description: OK
+   /strains/all:
+    get:
+      summary: getAllActiveStrains
+      operationId: Get all active strains in RGD
+      description: "Return all active strains in RGD"
+      produces:
+        - application/json
+      responses:
+         200:
+           description: OK
+   /maps/{speciesTypeKey}:
+    get:
+      summary: getListOfAssemblies
+      operationId: Get the list of assemblies
+      description: "Return a list of assemblies"
+      produces:
+        - application/json
+      parameters:
+        - name: speciesTypeKey
+          in: path
+          type: string
+          description: "species Key"
+          required: true
+          default: "1"
+      responses:
+         200:
+           description: OK
+   /lookup/geneTypes:
+    get:
+      summary: getListOfGeneTypes
+      operationId: Get a list of gene types avialable in RGD
+      description: "Returns a list of gene types avialable in RGD"
+      produces:
+        - application/json
+      responses:
+         200:
+           description: OK
+definitions: []
