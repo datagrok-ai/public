@@ -25,13 +25,13 @@ technology denominator is an Excel file passed in an email.
 
 # Solution
 
-In order to address all of these issues, we developed Grok, a unique, next-generation data 
+In order to address all of these issues, we developed Datagrok, a unique, next-generation data 
 platform. Out-of-the-box, it offers the most popular common data-related functionality (storage, ingestion, 
 transformation, analysis, visualization, publishing, reporting, predicting, etc). It does it in 
 a centralized, coherent manner, with all parts based on the same solid infrastructure, 
 similar design and usage patterns, and complete audit trail. 
 
-Grok is a web application with auto updates and zero installation costs. The user interface 
+Datagrok is a web application with auto updates and zero installation costs. The user interface 
 can be tailored for particular user roles. 
 Cross-cutting concepts like performance, security, and extensibility were thought-through
 and carefully integrated into the platform since the very beginning. 

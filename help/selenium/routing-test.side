@@ -340,7 +340,7 @@
         ["xpath=//h1[@id='datagrok-swiss-army-knife-for-data']", "xpath:attributes"],
         ["xpath=//div[@id='elementContent']/div/div/div[2]/span/h1", "xpath:idRelative"],
         ["xpath=//h1", "xpath:position"],
-        ["xpath=//h1[contains(.,'DataGrok: Swiss Army Knife for Data')]", "xpath:innerText"]
+        ["xpath=//h1[contains(.,'Datagrok: Swiss Army Knife for Data')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
