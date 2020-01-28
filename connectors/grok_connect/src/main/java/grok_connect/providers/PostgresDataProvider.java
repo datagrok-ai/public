@@ -17,6 +17,7 @@ public class PostgresDataProvider extends JdbcDataProvider {
         descriptor.description = "Query PostgresNet database";
         descriptor.connectionTemplate = DbCredentials.dbConnectionTemplate;
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
+        descriptor.nameBrackets = "\"";
 
         descriptor.canBrowseSchema = true;
         descriptor.typesMap = new HashMap<String, String>() {{
