@@ -135,21 +135,4 @@ paths:
       responses:
          200:
            description: OK
-   /report/variantFrequency:
-    get:
-      summary: getVriantFrequencyDataForVariantFingerprint
-      operationId: Get all variant frequency data for a given variant fingerprint
-      description: "Get all variant frequency data for a given variant fingerprints"
-      produces:
-        - application/json
-      parameters:
-        - name: fp
-          in: query
-          type: string
-          description: "Variant fingerprint to query (e.g. RSID)"
-          required: true
-          default: "rs2228001"
-      responses:
-         200:
-           description: OK
 definitions: []
