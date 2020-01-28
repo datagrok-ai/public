@@ -82,6 +82,7 @@ public class OracleDataProvider extends JdbcDataProvider {
 
     public String addBrackets(String name) {
         String brackets = descriptor.nameBrackets;
-        return brackets.substring(0, 1) + name + brackets.substring(brackets.length() - 1, brackets.length());
+        return name.startsWith(brackets.substring(0, 1)) ? name :
+                brackets.substring(0, 1) + name + brackets.substring(brackets.length() - 1, brackets.length());
     }
 }
