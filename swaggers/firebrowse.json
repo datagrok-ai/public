@@ -141,29 +141,17 @@
           {
             "description": "Which page (slice) of entire results set should be returned. ",
             "in": "query",
-            "items": {
-              "default": 1,
-              "format": "int32",
-              "minimum": 1,
-              "type": "integer"
-            },
             "name": "page",
-            "required": false,
-            "type": "array"
+            "type": "integer",
+            "format": "int32"
           },
           {
             "description": "Number of records per page of results.  Max is 2000.",
             "in": "query",
-            "items": {
-              "default": 250,
-              "format": "int32",
-              "maximum": 2000,
-              "minimum": 1,
-              "type": "integer"
-            },
             "name": "page_size",
             "required": false,
-            "type": "array"
+            "type": "integer",
+            "format": "int32"
           },
           {
             "default": "cohort",
@@ -279,29 +267,17 @@
           {
             "description": "Which page (slice) of entire results set should be returned. ",
             "in": "query",
-            "items": {
-              "default": 1,
-              "format": "int32",
-              "minimum": 1,
-              "type": "integer"
-            },
             "name": "page",
-            "required": false,
-            "type": "array"
+            "type": "integer",
+            "format": "int32"
           },
           {
             "description": "Number of records per page of results.  Max is 2000.",
             "in": "query",
-            "items": {
-              "default": 250,
-              "format": "int32",
-              "maximum": 2000,
-              "minimum": 1,
-              "type": "integer"
-            },
             "name": "page_size",
             "required": false,
-            "type": "array"
+            "type": "integer",
+            "format": "int32"
           },
           {
             "default": "cohort",
@@ -417,29 +393,17 @@
           {
             "description": "Which page (slice) of entire results set should be returned. ",
             "in": "query",
-            "items": {
-              "default": 1,
-              "format": "int32",
-              "minimum": 1,
-              "type": "integer"
-            },
             "name": "page",
-            "required": false,
-            "type": "array"
+            "type": "integer",
+            "format": "int32"
           },
           {
             "description": "Number of records per page of results.  Max is 2000.",
             "in": "query",
-            "items": {
-              "default": 250,
-              "format": "int32",
-              "maximum": 2000,
-              "minimum": 1,
-              "type": "integer"
-            },
             "name": "page_size",
             "required": false,
-            "type": "array"
+            "type": "integer",
+            "format": "int32"
           },
           {
             "default": "cohort",
@@ -557,29 +521,17 @@
           {
             "description": "Which page (slice) of entire results set should be returned. ",
             "in": "query",
-            "items": {
-              "default": 1,
-              "format": "int32",
-              "minimum": 1,
-              "type": "integer"
-            },
             "name": "page",
-            "required": false,
-            "type": "array"
+            "type": "integer",
+            "format": "int32"
           },
           {
             "description": "Number of records per page of results.  Max is 2000.",
             "in": "query",
-            "items": {
-              "default": 250,
-              "format": "int32",
-              "maximum": 2000,
-              "minimum": 1,
-              "type": "integer"
-            },
             "name": "page_size",
             "required": false,
-            "type": "array"
+            "type": "integer",
+            "format": "int32"
           },
           {
             "default": "cohort",
@@ -697,29 +649,17 @@
           {
             "description": "Which page (slice) of entire results set should be returned. ",
             "in": "query",
-            "items": {
-              "default": 1,
-              "format": "int32",
-              "minimum": 1,
-              "type": "integer"
-            },
             "name": "page",
-            "required": false,
-            "type": "array"
+            "type": "integer",
+            "format": "int32"
           },
           {
             "description": "Number of records per page of results.  Max is 2000.",
             "in": "query",
-            "items": {
-              "default": 250,
-              "format": "int32",
-              "maximum": 2000,
-              "minimum": 1,
-              "type": "integer"
-            },
             "name": "page_size",
             "required": false,
-            "type": "array"
+            "type": "integer",
+            "format": "int32"
           },
           {
             "default": "cohort",
@@ -843,29 +783,17 @@
           {
             "description": "Which page (slice) of entire results set should be returned. ",
             "in": "query",
-            "items": {
-              "default": 1,
-              "format": "int32",
-              "minimum": 1,
-              "type": "integer"
-            },
             "name": "page",
-            "required": false,
-            "type": "array"
+            "type": "integer",
+            "format": "int32"
           },
           {
             "description": "Number of records per page of results.  Max is 2000.",
             "in": "query",
-            "items": {
-              "default": 250,
-              "format": "int32",
-              "maximum": 2000,
-              "minimum": 1,
-              "type": "integer"
-            },
             "name": "page_size",
             "required": false,
-            "type": "array"
+            "type": "integer",
+            "format": "int32"
           }
         ],
         "responses": {
@@ -985,39 +913,25 @@
           {
             "description": "Comma separated list of which data columns/fields to return.",
             "in": "query",
-            "items": {
-              "type": "string"
-            },
             "name": "column",
             "required": false,
-            "type": "array"
+            "type": "integer",
+            "format": "int32"
           },
           {
             "description": "Which page (slice) of entire results set should be returned. ",
             "in": "query",
-            "items": {
-              "default": 1,
-              "format": "int32",
-              "minimum": 1,
-              "type": "integer"
-            },
             "name": "page",
-            "required": false,
-            "type": "array"
+            "type": "integer",
+            "format": "int32"
           },
           {
             "description": "Number of records per page of results.  Max is 2000.",
             "in": "query",
-            "items": {
-              "default": 250,
-              "format": "int32",
-              "maximum": 2000,
-              "minimum": 1,
-              "type": "integer"
-            },
             "name": "page_size",
             "required": false,
-            "type": "array"
+            "type": "integer",
+            "format": "int32"
           },
           {
             "default": "cohort",
@@ -1158,29 +1072,17 @@
           {
             "description": "Which page (slice) of entire results set should be returned. ",
             "in": "query",
-            "items": {
-              "default": 1,
-              "format": "int32",
-              "minimum": 1,
-              "type": "integer"
-            },
             "name": "page",
-            "required": false,
-            "type": "array"
+            "type": "integer",
+            "format": "int32"
           },
           {
             "description": "Number of records per page of results.  Max is 2000.",
             "in": "query",
-            "items": {
-              "default": 250,
-              "format": "int32",
-              "maximum": 2000,
-              "minimum": 1,
-              "type": "integer"
-            },
             "name": "page_size",
             "required": false,
-            "type": "array"
+            "type": "integer",
+            "format": "int32"
           },
           {
             "default": "rank",
@@ -1400,29 +1302,17 @@
           {
             "description": "Which page (slice) of entire results set should be returned. ",
             "in": "query",
-            "items": {
-              "default": 1,
-              "format": "int32",
-              "minimum": 1,
-              "type": "integer"
-            },
             "name": "page",
-            "required": false,
-            "type": "array"
+            "type": "integer",
+            "format": "int32"
           },
           {
             "description": "Number of records per page of results.  Max is 2000.",
             "in": "query",
-            "items": {
-              "default": 250,
-              "format": "int32",
-              "maximum": 2000,
-              "minimum": 1,
-              "type": "integer"
-            },
             "name": "page_size",
             "required": false,
-            "type": "array"
+            "type": "integer",
+            "format": "int32"
           },
           {
             "default": "date",
@@ -1983,29 +1873,17 @@
           {
             "description": "Which page (slice) of entire results set should be returned. ",
             "in": "query",
-            "items": {
-              "default": 1,
-              "format": "int32",
-              "minimum": 1,
-              "type": "integer"
-            },
             "name": "page",
-            "required": false,
-            "type": "array"
+            "type": "integer",
+            "format": "int32"
           },
           {
             "description": "Number of records per page of results.  Max is 2000.",
             "in": "query",
-            "items": {
-              "default": 250,
-              "format": "int32",
-              "maximum": 2000,
-              "minimum": 1,
-              "type": "integer"
-            },
             "name": "page_size",
             "required": false,
-            "type": "array"
+            "type": "integer",
+            "format": "int32"
           },
           {
             "default": "cohort",
@@ -2573,29 +2451,17 @@
           {
             "description": "Which page (slice) of entire results set should be returned. ",
             "in": "query",
-            "items": {
-              "default": 1,
-              "format": "int32",
-              "minimum": 1,
-              "type": "integer"
-            },
             "name": "page",
-            "required": false,
-            "type": "array"
+            "type": "integer",
+            "format": "int32"
           },
           {
             "description": "Number of records per page of results.  Max is 2000.",
             "in": "query",
-            "items": {
-              "default": 250,
-              "format": "int32",
-              "maximum": 2000,
-              "minimum": 1,
-              "type": "integer"
-            },
             "name": "page_size",
             "required": false,
-            "type": "array"
+            "type": "integer",
+            "format": "int32"
           },
           {
             "default": "cohort",
@@ -3890,15 +3756,9 @@
           {
             "description": "Which page (slice) of entire results set should be returned. ",
             "in": "query",
-            "items": {
-              "default": 1,
-              "format": "int32",
-              "minimum": 1,
-              "type": "integer"
-            },
             "name": "page",
-            "required": false,
-            "type": "array"
+            "type": "integer",
+            "format": "int32"
           },
           {
             "description": "Number of records per page of results.  Max is 2000.",
@@ -4097,29 +3957,17 @@
           {
             "description": "Which page (slice) of entire results set should be returned. ",
             "in": "query",
-            "items": {
-              "default": 1,
-              "format": "int32",
-              "minimum": 1,
-              "type": "integer"
-            },
             "name": "page",
-            "required": false,
-            "type": "array"
+            "type": "integer",
+            "format": "int32"
           },
           {
             "description": "Number of records per page of results.  Max is 2000.",
             "in": "query",
-            "items": {
-              "default": 250,
-              "format": "int32",
-              "maximum": 2000,
-              "minimum": 1,
-              "type": "integer"
-            },
             "name": "page_size",
             "required": false,
-            "type": "array"
+            "type": "integer",
+            "format": "int32"
           },
           {
             "default": "cohort",
@@ -4274,29 +4122,17 @@
           {
             "description": "Which page (slice) of entire results set should be returned. ",
             "in": "query",
-            "items": {
-              "default": 1,
-              "format": "int32",
-              "minimum": 1,
-              "type": "integer"
-            },
             "name": "page",
-            "required": false,
-            "type": "array"
+            "type": "integer",
+            "format": "int32"
           },
           {
             "description": "Number of records per page of results.  Max is 2000.",
             "in": "query",
-            "items": {
-              "default": 250,
-              "format": "int32",
-              "maximum": 2000,
-              "minimum": 1,
-              "type": "integer"
-            },
             "name": "page_size",
             "required": false,
-            "type": "array"
+            "type": "integer",
+            "format": "int32"
           },
           {
             "default": "cohort",
@@ -4453,29 +4289,17 @@
           {
             "description": "Which page (slice) of entire results set should be returned. ",
             "in": "query",
-            "items": {
-              "default": 1,
-              "format": "int32",
-              "minimum": 1,
-              "type": "integer"
-            },
             "name": "page",
-            "required": false,
-            "type": "array"
+            "type": "integer",
+            "format": "int32"
           },
           {
             "description": "Number of records per page of results.  Max is 2000.",
             "in": "query",
-            "items": {
-              "default": 250,
-              "format": "int32",
-              "maximum": 2000,
-              "minimum": 1,
-              "type": "integer"
-            },
             "name": "page_size",
             "required": false,
-            "type": "array"
+            "type": "integer",
+            "format": "int32"
           },
           {
             "default": "cohort",

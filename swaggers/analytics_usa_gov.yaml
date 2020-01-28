@@ -7,7 +7,7 @@ info:
     backgroundColor: '#FFFFFF'
     url: 'https://analytics.usa.gov/images/analytics-favicon.ico'
 host: api.gsa.gov
-basePath: /analytics/dap/v1
+basePath: /analytics/dap/v1.1
 schemes:
   - https
 paths:
