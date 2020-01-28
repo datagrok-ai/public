@@ -43,14 +43,17 @@ a folder with files in it. A package might contain different things:
 
 * JavaScript functions, viewers, widgets, applications.
 * Scripts written in R, Python, JavaScript, or Java 
+* Queries or connections
+* Tables
 
 A simplest JavaScript package consists of the following files:
 
-| file          | description |
-|---------------|-------------|
-| package.json  | metadata    |
-| package.js    | entry point |
-| package.png   | icon        |
+| file          | description    |
+|---------------|----------------|
+| package.json  | metadata       |
+| package.js    | entry point    |
+| detectors.js  | detectors file |
+| package.png   | icon           |
 
 `package.json` contains metadata, such as name, version, and dependencies: 
 
@@ -109,6 +112,14 @@ the semantic type detector function can be registered in the same package.
 While the function is available in the platform's UI, the corresponding JavaScript file and
 its dependencies do not get loaded in the browser until a function is used for the first time. This allows the
 platform to operate on thousands of functions covering different domains without compromising the performance.    
+
+Each package has a version number. All objects inside the package are being deployed according to package version. 
+That means that if version changes, there will be an independent instance of each package asset.  
+Multiple versions of each package can be deployed at one moment, and administrator can switch between them. All users 
+will see only objects that belong to current package version.
+There is a special "debug" version can be deployed for each package. If developer deploys a debug version, it becomes 
+active for current package until developer deletes it or changes his developer key. In this case developer can see objects 
+from his version of package, and changes don't affect other users package representation.  
 
 ## Development
 
