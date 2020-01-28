@@ -5,10 +5,9 @@
 
 Unpivoting transforms data from a short/wide to a tall/skinny format.
 
-![Aggregation](../uploads/gifs/aggregate.gif "Aggregation")
+![](unpivot.gif)
 
 ## Scripting
-
 
 ```
 Unpivot(table, copyColumns, mergeColumns, categoryColumnName, valueColumnName, result)
