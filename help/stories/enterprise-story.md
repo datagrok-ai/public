@@ -124,7 +124,7 @@ In addition, a few commonly used techniques, such as R-Group analysis, similarit
 analysis, are implemented as interactive apps. A number of core viewers are capable of 
 rendering molecules where appropriate.
 
-Cheminformatics functionality is built on top of the Grok core, and rather than being a 
+Cheminformatics functionality is built on top of the platform's core, and rather than being a 
 stand-alone, separate application, it enriches the ecosystem. That means that by adding
 cheminformatics-related functions, existing viewers get the ability to render molecules, 
 new chemical functions are now available for use in data transformations, 
