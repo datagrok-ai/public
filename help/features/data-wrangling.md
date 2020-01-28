@@ -32,6 +32,7 @@ Press Alt+A to open data aggregation tool
 
 ![Aggregation](../uploads/gifs/aggregate.gif "Aggregation")
 
+
 See also:
   * [Macros](console.md) 
  
