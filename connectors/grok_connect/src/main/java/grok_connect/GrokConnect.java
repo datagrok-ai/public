@@ -52,6 +52,7 @@ public class GrokConnect {
             try {
                 FuncCall call = gson.fromJson(request.body(), FuncCall.class);
                 call.setParamValues();
+                System.out.println(call.func.query);
                 DateTime startTime = DateTime.now();
                 DataProvider provider = DataProvider.getByName(call.func.connection.dataSource);
                 DataFrame dataFrame = provider.execute(call);
