@@ -5,8 +5,9 @@ let age = ui.intInput('Age', 30);
 let sex = ui.choiceInput('Sex', 'Male', ['Male', 'Female']);
 let date = ui.dateInput('Birthday', DateTime.fromDate(new Date(1970, 5, 10)));
 let alien = ui.boolInput('Alien', false);
+let friends = ui.multiChoiceInput('Friends', ['Ford', 'Fenchurch'], ['Ford', 'Fenchurch', 'Zaphod', 'Slartibartfast']);
 
-let inputs = [name, age, sex, date, alien];
+let inputs = [name, age, sex, date, alien, friends];
 v.append(ui.inputs(inputs));
 
 v.append(ui.bigButton('POST', () => {
