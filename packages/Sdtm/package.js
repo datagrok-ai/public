@@ -5,7 +5,7 @@ class SDTMPackage extends GrokPackage {
 
         let limit = ui.intInput('Limit', 100);
 
-        let view = View.create();
+        let view = grok.addTableView(emptyTable);
         view.name = 'SDTM:LB:Preview';
         view.description = 'SDTM LB domain viewer';
         view.root.className = 'grok-view grok-table-view sdtm-result';
@@ -16,9 +16,7 @@ class SDTMPackage extends GrokPackage {
         }
 
         function updatePreview(t) {
-            let preview = Grid.create(t);
-            removeChildren(view.root);
-            view.root.appendChild(preview.root);
+            view.dataFrame = t;
             ui.setUpdateIndicator(view.root, false);
         }
 
@@ -108,7 +106,5 @@ class SDTMPackage extends GrokPackage {
             limit.root,
             selectors
         ], 'sdtm-controls,pure-form');
-
-        grok.addView(view);
     }
 }
