@@ -29,13 +29,13 @@ class Property {
 
     get name() { return grok_Property_Get_Name(this.d); }
     set name(s) { grok_Property_Set_Name(this.d, s); }
-
+    
     get propertyType() { return grok_Property_Get_PropertyType(this.d); }
     set propertyType(s) { grok_Property_Set_PropertyType(this.d, s); }
-
+    
     get semType() { return grok_Property_Get_SemType(this.d); }
     set semType(s) { grok_Property_Set_SemType(this.d, s); }
-
+    
     get description() { return grok_Property_Get_Description(this.d); }
     set description(s) { grok_Property_Set_Description(this.d, s); }
 
@@ -131,6 +131,8 @@ class Column {
     setTag(tag, value) { grok_Column_Set_Tag(this.d, tag, value); }
 
     compact() { return grok_Column_Compact(this.d); }
+
+    toList() { return grok_Column_ToList(this.d); }
 
     get categories() { return grok_Column_Categories(this.d); }
     get min() { return grok_Column_Min(this.d); }
@@ -316,7 +318,7 @@ class DataFrame {
     }
 
     groupBy(columnNames = []) { return new GroupByBuilder(grok_DataFrame_GroupBy(this.d, columnNames)); }
-
+    
     _event(event, callback) { return _sub(grok_DataFrame_OnEvent(this.d, event, callback)); }
 
     onValuesChanged(callback) { return this._event('ddt-values-changed', callback); }
@@ -674,10 +676,10 @@ class JsViewer {
         let obj = this;
         let p = Property.create(name, type, () => obj[name], null, value);
         p.set = function(_, x) {
-            //console.log("xo");
-            obj[name] = x;
-            obj.onPropertyChanged(p);
-        };
+              //console.log("xo");
+              obj[name] = x;
+              obj.onPropertyChanged(p);
+            };
 
         this.properties.push(p);
         return p.defaultValue;
@@ -1087,7 +1089,9 @@ class Grok {
     scriptSync(s) { return _wrap(grok_ScriptSync(s), false); }
 
     openTable(id) { return new Promise((resolve, reject) => grok_OpenTable(id, (t) => resolve(new DataFrame(t)))); }
-    query(queryName, queryParameters) { return new Promise((resolve, reject) => grok_Query(queryName, queryParameters, (t) => resolve(new DataFrame(t)))); }
+    query(queryName, queryParameters = null, adHoc = false, pollingInterval = 1000) {
+        return new Promise((resolve, reject) => grok_Query(queryName, queryParameters, adHoc, pollingInterval, (t) => resolve(new DataFrame(t))));
+    }
     callFunc(name, parameters = {}, showProgress = false) { return new Promise((resolve, reject) => grok_CallFunc(name, parameters, (out) => resolve(out), showProgress)); }
     evalFunc(name) { return new Promise((resolve, reject) => grok_EvalFunc(name, (out) => resolve(out))); }
 
@@ -1236,7 +1240,7 @@ function _wrap(d, check = true) {
 
     if (check)
         throw `Not supported type: ${type}`;
-
+    
     return d;
 }
 
@@ -1306,7 +1310,7 @@ class ui {
         for (let i = 0; i < elements.length; i++) {
             var e = elements[i];
             if (e instanceof Viewer)
-                e = e.root;
+               e = e.root;
             fragment.appendChild(e);
         }
         root.appendChild(fragment);
@@ -1350,6 +1354,7 @@ class ui {
     static card(content) { return ui.div([content], 'd4-item-card'); }
 
     static loader() { return grok_UI_Loader(); }
+    static setUpdateIndicator(element, updating = true) { return grok_UI_SetUpdateIndicator(element, updating)};
 
     static button(text, handler, tooltip = null) { return grok_UI_Button(text, handler, tooltip); }
     static bigButton(text, handler, tooltip = null) { return grok_UI_BigButton(text, handler, tooltip); }
@@ -1407,7 +1412,8 @@ class ui {
     static inputs(inputs) { return ui.div(inputs.map((x) => x.root), 'pure-form,pure-form-aligned');}
 
     static intInput(name, value) { return new InputBase(grok_IntInput(name, value)); }
-    static choiceInput(name, value, items) { return new InputBase(grok_ChoiceInput(name, value, items)); }
+    static choiceInput(name, selected, items) { return new InputBase(grok_ChoiceInput(name, selected, items)); }
+    static multiChoiceInput(name, value, items) { return new InputBase(grok_MultiChoiceInput(name, value, items)); }
     static stringInput(name, value) { return new InputBase(grok_StringInput(name, value)); }
     static floatInput(name, value) { return new InputBase(grok_FloatInput(name, value)); }
     static dateInput(name, value) { return new InputBase(grok_DateInput(name, value.d)); }
@@ -1498,19 +1504,19 @@ class UsersDataSource extends HttpDataSource {
 class uit {
 
     static handleResize(element, onChanged) {
-        var width = element.clientWidth;
-        var height = element.clientHeight;
-        let interval = setInterval(() => {
-            console.log('.');
-            let newWidth = element.clientWidth;
-            let newHeight = element.clientHeight;
-            if (newWidth !== width || newHeight !== height) {
-                width = newWidth;
-                height = newHeight;
-                onChanged(width, height);
-            }
-        }, 100);
-        return () => clearInterval(interval);
+       var width = element.clientWidth;
+       var height = element.clientHeight;
+       let interval = setInterval(() => {
+           console.log('.');
+           let newWidth = element.clientWidth;
+           let newHeight = element.clientHeight;
+           if (newWidth !== width || newHeight !== height) {
+               width = newWidth;
+               height = newHeight;
+               onChanged(width, height);
+           }
+       }, 100);
+       return () => clearInterval(interval);
     }
 }
 
@@ -1572,14 +1578,14 @@ class Color {
     static get scatterPlotZoom() { return 0x80626200; }
 
     static get areaSelection() { return Color.lightBlue; }
-    static get rowSelection() { return 0x60dcdca0; }
-    static get colSelection() { return 0x60dcdca0; }
+    static get rowSelection() { return 0x60dcdca0; } 
+    static get colSelection() { return 0x60dcdca0; } 
     static get areaZoom() { return 0x80323232; }
 
     static get gridWarningBackground() { return 0xFFFFB9A7; }
 
     static get success() { return 0xFF3cb173; }
-    static get failure() { return 0xFFeb6767; }
+    static get failure() { return 0xFFeb6767; }    
 }
 
 
