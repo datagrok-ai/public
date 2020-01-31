@@ -121,6 +121,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                         statement.setObject(n + 1, param.value);
                 }
                 statement.setQueryTimeout(timeout);
+                System.out.println(query);
                 resultSet = statement.executeQuery();
             } else {
                 // Put parameters into func
@@ -159,12 +160,14 @@ public abstract class JdbcDataProvider extends DataProvider {
 
                 Statement statement = connection.createStatement();
                 statement.setQueryTimeout(timeout);
+                System.out.println(query);
                 resultSet = statement.executeQuery(query);
             }
         } else {
             // Query without parameters
             Statement statement = connection.createStatement();
             statement.setQueryTimeout(timeout);
+            System.out.println(query);
             resultSet = statement.executeQuery(query);
         }
 
