@@ -16,34 +16,25 @@ public class AthenaDataProvider extends JdbcDataProvider {
             add(new Property(Property.STRING_TYPE, DbCredentials.SERVER));
             add(new Property(Property.INT_TYPE, DbCredentials.PORT));
             add(new Property(Property.STRING_TYPE, DbCredentials.DB, DbCredentials.DB_DESCRIPTION));
-            add(new Property(Property.STRING_TYPE, "s3_staging_dir", "The name of the staging bucket"));
+            add(new Property(Property.STRING_TYPE, "S3OutputLocation",
+                    "The path of the Amazon S3 location where you want to store query results"));
         }};
         descriptor.credentialsTemplate = new ArrayList<Property>() {{
-            add(new Property(Property.STRING_TYPE, DbCredentials.LOGIN));
-            add(new Property(Property.STRING_TYPE, DbCredentials.PASSWORD, new Prop("password")));
+            add(new Property(Property.STRING_TYPE, "AccessKey"));
+            add(new Property(Property.STRING_TYPE, "SecretKey", new Prop("password")));
         }};
     }
 
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
-        Class.forName("com.amazonaws.athena.jdbc.AthenaDriver");
-        return DriverManager.getConnection(getConnectionString(conn), conn.credentials.getLogin(),
-                conn.credentials.getPassword());
+        Class.forName("com.simba.athena.jdbc.Driver");
+        return DriverManager.getConnection(getConnectionString(conn));
     }
 
     public String getConnectionString(DataConnection conn) {
         String port = (conn.getPort() == null) ? "" : ":" + conn.getPort();
-        String uri = "jdbc:awsathena://" + conn.getServer() + port;
-
-        // Add supported parameters
-        String parameters = "";
-        String[] supportedParameters = {"s3_staging_dir"};
-        for (int n = 0; n < supportedParameters.length; n++) {
-            String key = supportedParameters[n];
-            if (conn.parameters.keySet().contains(key)) {
-                uri += (((parameters.equals(""))) ? "?" : "&") + key + "=" + conn.parameters.get(key);
-            }
-        }
-
-        return uri + parameters;
+        return "jdbc:awsathena://" + conn.getServer() + port + ";" +
+                "User=" + conn.credentials.parameters.get("AccessKey") + ";" +
+                "Password=" + conn.credentials.parameters.get("SecretKey") + ";" +
+                "S3OutputLocation=" + conn.parameters.get("S3OutputLocation");
     }
 }
