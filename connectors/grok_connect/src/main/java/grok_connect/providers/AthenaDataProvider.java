@@ -25,6 +25,10 @@ public class AthenaDataProvider extends JdbcDataProvider {
         }};
     }
 
+    public boolean isParametrized() {
+        return false;
+    }
+
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
         Class.forName("com.simba.athena.jdbc.Driver");
         return DriverManager.getConnection(getConnectionString(conn));
@@ -36,5 +40,9 @@ public class AthenaDataProvider extends JdbcDataProvider {
                 "User=" + conn.credentials.parameters.get("AccessKey") + ";" +
                 "Password=" + conn.credentials.parameters.get("SecretKey") + ";" +
                 "S3OutputLocation=" + conn.parameters.get("S3OutputLocation");
+    }
+
+    public String castParamValueToSqlDateTime(FuncParam param) {
+        return "from_iso8601_timestamp('" + param.value.toString() + "')";
     }
 }
