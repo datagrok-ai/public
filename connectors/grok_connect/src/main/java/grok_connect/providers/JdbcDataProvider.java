@@ -135,9 +135,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                         if (param.name.equals(name)) {
                             switch (param.propertyType) {
                                 case Types.DATE_TIME:
-                                    queryBuffer.append("datetime('");
-                                    queryBuffer.append(param.value.toString());
-                                    queryBuffer.append("')");
+                                    queryBuffer.append(castParamValueToSqlDateTime(param));
                                     break;
                                 case Types.BOOL:
                                     queryBuffer.append(((boolean) param.value) ? "1=1" : "1=0");
@@ -456,6 +454,10 @@ public abstract class JdbcDataProvider extends DataProvider {
         queryRun.func.query = sql;
         queryRun.func.connection = conn;
         return execute(queryRun);
+    }
+
+    public String castParamValueToSqlDateTime(FuncParam param) {
+        return "datetime('" + param.value.toString() + "')";
     }
 
     // TODO Convert following code into "List.contains() style
