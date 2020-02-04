@@ -1,0 +1,2 @@
+class SwaggersPackage extends GrokPackage {
+}
