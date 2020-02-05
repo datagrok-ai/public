@@ -28,10 +28,12 @@ var load = ui.iconFA('bars', () => {
         }
     });
 });
+ui.tooltip(load, 'Select layout from storage');
 
 let clear = ui.iconFA('trash-alt', () => {
     grok.dapi.userDataStorage.remove(STORAGE_NAME, null);
 });
+ui.tooltip(clear, 'Clear storage');
 
 let acc = view.toolboxPage.accordion;
 var saveDiv = ui.divH([save, clear]);
