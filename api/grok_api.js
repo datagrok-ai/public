@@ -29,13 +29,13 @@ class Property {
 
     get name() { return grok_Property_Get_Name(this.d); }
     set name(s) { grok_Property_Set_Name(this.d, s); }
-    
+
     get propertyType() { return grok_Property_Get_PropertyType(this.d); }
     set propertyType(s) { grok_Property_Set_PropertyType(this.d, s); }
-    
+
     get semType() { return grok_Property_Get_SemType(this.d); }
     set semType(s) { grok_Property_Set_SemType(this.d, s); }
-    
+
     get description() { return grok_Property_Get_Description(this.d); }
     set description(s) { grok_Property_Set_Description(this.d, s); }
 
@@ -318,7 +318,7 @@ class DataFrame {
     }
 
     groupBy(columnNames = []) { return new GroupByBuilder(grok_DataFrame_GroupBy(this.d, columnNames)); }
-    
+
     _event(event, callback) { return _sub(grok_DataFrame_OnEvent(this.d, event, callback)); }
 
     onValuesChanged(callback) { return this._event('ddt-values-changed', callback); }
@@ -493,6 +493,9 @@ class View {
     get toolbox() { return grok_View_Get_Toolbox(this.d); }
     set toolbox(x) { return grok_View_Set_Toolbox(this.d, x); }
 
+    loadLayout(layout) { return grok_View_Load_Layout(this.d, layout.d);  }
+    saveLayout() { return new ViewLayout(grok_View_Save_Layout(this.d)); }
+
     setRibbonPanels(panels) { grok_View_SetRibbonPanels(this.d, panels); }
 
     addViewer(viewerType, options = null) {
@@ -513,6 +516,8 @@ class TableView extends View {
 
     get dataFrame() { return new DataFrame(grok_View_Get_DataFrame(this.d)); }
     set dataFrame(x) { grok_View_Set_DataFrame(this.d, x.d); }
+
+    get toolboxPage() { return new ToolboxPage(grok_View_Get_ToolboxPage(this.d)); }
 
     histogram      (options = null) { return this.addViewer(VIEWER_HISTOGRAM, options); }
     barChart       (options = null) { return this.addViewer(VIEWER_BAR_CHART, options); }
@@ -554,6 +559,15 @@ class ProjectsView extends DataSourceCardView {
 }
 
 
+class ViewLayout {
+    constructor(d) { this.d = d; }
+
+    static fromJson(json) { return new ViewLayout(grok_ViewLayout_FromJson(json)); }
+
+    toJson() { return grok_ViewLayout_ToJson(this.d); }
+}
+
+
 class Accordion {
     constructor(d) { this.d = d; }
     static create() { return new Accordion(grok_Accordion()); }
@@ -561,7 +575,9 @@ class Accordion {
     get root() { return grok_Accordion_Get_Root(this.d); }
     get panes() { return grok_Accordion_Get_Panes(this.d).map(p => new AccordionPane(p)); }
 
-    addPane(name, getContent, expanded = false) { return grok_Accordion_AddPane(this.d, name, getContent, expanded); }
+    addPane(name, getContent, expanded = false, before = null) {
+        return grok_Accordion_AddPane(this.d, name, getContent, expanded, before !== null ? before.d : null);
+    }
 }
 
 
@@ -573,6 +589,13 @@ class AccordionPane {
 
     get name() { return grok_AccordionPane_Get_Name(this.d); }
     set name(name) { return grok_AccordionPane_Set_Name(this.d, name); }
+}
+
+
+class ToolboxPage {
+    constructor(d) { this.d = d; }
+
+    get accordion() { return new Accordion(grok_ToolboxPage_Get_Accordion(this.d)); }
 }
 
 
@@ -676,10 +699,10 @@ class JsViewer {
         let obj = this;
         let p = Property.create(name, type, () => obj[name], null, value);
         p.set = function(_, x) {
-              //console.log("xo");
-              obj[name] = x;
-              obj.onPropertyChanged(p);
-            };
+            //console.log("xo");
+            obj[name] = x;
+            obj.onPropertyChanged(p);
+        };
 
         this.properties.push(p);
         return p.defaultValue;
@@ -1240,7 +1263,7 @@ function _wrap(d, check = true) {
 
     if (check)
         throw `Not supported type: ${type}`;
-    
+
     return d;
 }
 
@@ -1310,7 +1333,7 @@ class ui {
         for (let i = 0; i < elements.length; i++) {
             var e = elements[i];
             if (e instanceof Viewer)
-               e = e.root;
+                e = e.root;
             fragment.appendChild(e);
         }
         root.appendChild(fragment);
@@ -1436,12 +1459,13 @@ class Dapi {
     get notebooks() { return new HttpDataSource(grok_Dapi_Notebooks(), (a) => new Entity(a)); }
     get models() { return new HttpDataSource(grok_Dapi_Models(), (a) => new Entity(a)); }
     get packages() { return new HttpDataSource(grok_Dapi_Packages(), (a) => new Entity(a)); }
-    get layouts() { return new HttpDataSource(grok_Dapi_Layouts(), (a) => new Entity(a)); }
+    get layouts() { return new HttpDataSource(grok_Dapi_Layouts(), (a) => new ViewLayout(a)); }
     get tables() { return new HttpDataSource(grok_Dapi_Tables(), (a) => new Entity(a)); }
     get users() { return new UsersDataSource(grok_Dapi_Users(), (a) => new User(a)); }
     get groups() { return new HttpDataSource(grok_Dapi_Groups(), (a) => new Entity(a)); }
     get scripts() { return new HttpDataSource(grok_Dapi_Scripts(), (a) => new Entity(a)); }
     get projects() { return new HttpDataSource(grok_Dapi_Projects(), (a) => new Project(a)); }
+    get userDataStorage() { return new UserDataStorage(); }
 }
 
 
@@ -1500,23 +1524,58 @@ class UsersDataSource extends HttpDataSource {
 }
 
 
+class UserDataStorage {
+    constructor() {}
+
+    postValue(name, key, value, currentUser = true) {
+        return new Promise((resolve, reject) =>
+            grok_Dapi_UserDataStorage_PostValue(name, key, value, currentUser, () => resolve()));
+    }
+
+    post(name, data, currentUser = true) {
+        return new Promise((resolve, reject) =>
+            grok_Dapi_UserDataStorage_Post(name, data, currentUser, () => resolve()));
+    }
+
+    put(name, data, currentUser = true) {
+        return new Promise((resolve, reject) =>
+            grok_Dapi_UserDataStorage_Put(name, data, currentUser, () => resolve()));
+    }
+
+    get(name, currentUser = true) {
+        return new Promise((resolve, reject) =>
+            grok_Dapi_UserDataStorage_Get(name, currentUser, (data) => resolve(data)));
+    }
+
+    getValue(name, key, currentUser = true) {
+        return new Promise((resolve, reject) =>
+            grok_Dapi_UserDataStorage_GetValue(name, key, currentUser, (value) => resolve(value)));
+    }
+
+    remove(name, key, currentUser = true) {
+        return new Promise((resolve, reject) =>
+            grok_Dapi_UserDataStorage_Delete(name, key, currentUser, () => resolve()));
+    }
+}
+
+
 /** UI Tools **/
 class uit {
 
     static handleResize(element, onChanged) {
-       var width = element.clientWidth;
-       var height = element.clientHeight;
-       let interval = setInterval(() => {
-           console.log('.');
-           let newWidth = element.clientWidth;
-           let newHeight = element.clientHeight;
-           if (newWidth !== width || newHeight !== height) {
-               width = newWidth;
-               height = newHeight;
-               onChanged(width, height);
-           }
-       }, 100);
-       return () => clearInterval(interval);
+        var width = element.clientWidth;
+        var height = element.clientHeight;
+        let interval = setInterval(() => {
+            console.log('.');
+            let newWidth = element.clientWidth;
+            let newHeight = element.clientHeight;
+            if (newWidth !== width || newHeight !== height) {
+                width = newWidth;
+                height = newHeight;
+                onChanged(width, height);
+            }
+        }, 100);
+        return () => clearInterval(interval);
     }
 }
 
@@ -1578,14 +1637,14 @@ class Color {
     static get scatterPlotZoom() { return 0x80626200; }
 
     static get areaSelection() { return Color.lightBlue; }
-    static get rowSelection() { return 0x60dcdca0; } 
-    static get colSelection() { return 0x60dcdca0; } 
+    static get rowSelection() { return 0x60dcdca0; }
+    static get colSelection() { return 0x60dcdca0; }
     static get areaZoom() { return 0x80323232; }
 
     static get gridWarningBackground() { return 0xFFFFB9A7; }
 
     static get success() { return 0xFF3cb173; }
-    static get failure() { return 0xFFeb6767; }    
+    static get failure() { return 0xFFeb6767; }
 }
 
 
