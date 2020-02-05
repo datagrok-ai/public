@@ -29,13 +29,13 @@ class Property {
 
     get name() { return grok_Property_Get_Name(this.d); }
     set name(s) { grok_Property_Set_Name(this.d, s); }
-
+    
     get propertyType() { return grok_Property_Get_PropertyType(this.d); }
     set propertyType(s) { grok_Property_Set_PropertyType(this.d, s); }
-
+    
     get semType() { return grok_Property_Get_SemType(this.d); }
     set semType(s) { grok_Property_Set_SemType(this.d, s); }
-
+    
     get description() { return grok_Property_Get_Description(this.d); }
     set description(s) { grok_Property_Set_Description(this.d, s); }
 
@@ -318,7 +318,7 @@ class DataFrame {
     }
 
     groupBy(columnNames = []) { return new GroupByBuilder(grok_DataFrame_GroupBy(this.d, columnNames)); }
-
+    
     _event(event, callback) { return _sub(grok_DataFrame_OnEvent(this.d, event, callback)); }
 
     onValuesChanged(callback) { return this._event('ddt-values-changed', callback); }
@@ -699,10 +699,10 @@ class JsViewer {
         let obj = this;
         let p = Property.create(name, type, () => obj[name], null, value);
         p.set = function(_, x) {
-            //console.log("xo");
-            obj[name] = x;
-            obj.onPropertyChanged(p);
-        };
+              //console.log("xo");
+              obj[name] = x;
+              obj.onPropertyChanged(p);
+            };
 
         this.properties.push(p);
         return p.defaultValue;
@@ -1263,7 +1263,7 @@ function _wrap(d, check = true) {
 
     if (check)
         throw `Not supported type: ${type}`;
-
+    
     return d;
 }
 
@@ -1333,7 +1333,7 @@ class ui {
         for (let i = 0; i < elements.length; i++) {
             var e = elements[i];
             if (e instanceof Viewer)
-                e = e.root;
+               e = e.root;
             fragment.appendChild(e);
         }
         root.appendChild(fragment);
@@ -1357,12 +1357,14 @@ class ui {
         return e;
     }
 
-    static iconFA(name, handler) {
+    static iconFA(name, handler, tooltip = null) {
         let i = document.createElement('i');
         i.classList.add('grok-icon');
         i.classList.add('fal');
         i.classList.add(`fa-${name}`);
         i.addEventListener("click", handler);
+        if (tooltip !== null)
+            ui.tooltip(i, tooltip);
         return i;
     }
 
@@ -1563,19 +1565,19 @@ class UserDataStorage {
 class uit {
 
     static handleResize(element, onChanged) {
-        var width = element.clientWidth;
-        var height = element.clientHeight;
-        let interval = setInterval(() => {
-            console.log('.');
-            let newWidth = element.clientWidth;
-            let newHeight = element.clientHeight;
-            if (newWidth !== width || newHeight !== height) {
-                width = newWidth;
-                height = newHeight;
-                onChanged(width, height);
-            }
-        }, 100);
-        return () => clearInterval(interval);
+       var width = element.clientWidth;
+       var height = element.clientHeight;
+       let interval = setInterval(() => {
+           console.log('.');
+           let newWidth = element.clientWidth;
+           let newHeight = element.clientHeight;
+           if (newWidth !== width || newHeight !== height) {
+               width = newWidth;
+               height = newHeight;
+               onChanged(width, height);
+           }
+       }, 100);
+       return () => clearInterval(interval);
     }
 }
 
@@ -1637,14 +1639,14 @@ class Color {
     static get scatterPlotZoom() { return 0x80626200; }
 
     static get areaSelection() { return Color.lightBlue; }
-    static get rowSelection() { return 0x60dcdca0; }
-    static get colSelection() { return 0x60dcdca0; }
+    static get rowSelection() { return 0x60dcdca0; } 
+    static get colSelection() { return 0x60dcdca0; } 
     static get areaZoom() { return 0x80323232; }
 
     static get gridWarningBackground() { return 0xFFFFB9A7; }
 
     static get success() { return 0xFF3cb173; }
-    static get failure() { return 0xFFeb6767; }
+    static get failure() { return 0xFFeb6767; }    
 }
 
 
