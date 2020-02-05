@@ -97,7 +97,7 @@ class UsageAnalysisPackage extends GrokPackage {
             date.root,
             usersSelection
         ]), true);
-        accToolbox.addPane(('Layouts'), () => {
+        accToolbox.addPane('Layouts', () => {
             let link = ui.divText('Summary');
             link.classList.add('d4-link-label');
             return link;
