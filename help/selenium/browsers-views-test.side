@@ -1021,12 +1021,12 @@
       "id": "1da7696d-4e53-49a3-8a27-01c20c49d9d7",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='div-AccessibilityClearinghouseAPI']",
+      "target": "xpath=//div[@name='div-Aact']",
       "targets": [
-        ["css=.grok-gallery-grid-item-wrapper:nth-child(2) > .d4-gallery-card", "css:finder"],
-        ["xpath=//div[@name='div-AccessibilityClearinghouseAPI']", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div[4]/div[2]/div", "xpath:idRelative"],
-        ["xpath=//div[4]/div[2]/div", "xpath:position"]
+        ["css=.grok-gallery-grid-item-wrapper:nth-child(1) > .d4-gallery-card", "css:finder"],
+        ["xpath=//div[@name='div-Aact']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div[4]/div/div", "xpath:idRelative"],
+        ["xpath=//div[3]/div/div/div[4]/div/div", "xpath:position"]
       ],
       "value": ""
     }, {

@@ -343,7 +343,7 @@
       "id": "86f20d98-d6d1-4293-9a82-f07678232f38",
       "comment": "",
       "command": "pause",
-      "target": "2000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {
@@ -502,7 +502,7 @@
       "id": "466f8777-8c58-41c0-85aa-11ff3edb3b13",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {
@@ -794,7 +794,7 @@
       "id": "76010d1c-2f88-468d-b550-70e79ed4351b",
       "comment": "",
       "command": "pause",
-      "target": "2000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {
@@ -895,7 +895,7 @@
     }, {
       "id": "d81d26a5-43cf-44ee-9fd6-b6a16af84305",
       "comment": "",
-      "command": "verifyText",
+      "command": "verifyElementPresent",
       "target": "id=balloon: error",
       "targets": [
         ["id=balloon: error", "id"],
@@ -1038,7 +1038,7 @@
       "id": "84d3efa7-b066-4653-a3ff-520ac41bbd75",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {
@@ -1331,7 +1331,7 @@
       "id": "16bf2b43-0579-4dfa-a1f0-e642ccf84d9a",
       "comment": "",
       "command": "pause",
-      "target": "2000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {
@@ -1607,7 +1607,7 @@
       "id": "b82ccc46-ec2e-41c2-ac4a-d04d265599d8",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {

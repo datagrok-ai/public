@@ -45,7 +45,7 @@
       "id": "eeadb012-eb4a-47fc-a117-9370d7b313f9",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {
@@ -447,7 +447,7 @@
       "id": "293ffbc3-8fce-44be-be09-f58c203ff427",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {
@@ -956,7 +956,7 @@
     }, {
       "id": "d81d26a5-43cf-44ee-9fd6-b6a16af84305",
       "comment": "",
-      "command": "verifyText",
+      "command": "verifyElementPresent",
       "target": "id=balloon: error",
       "targets": [
         ["id=balloon: error", "id"],
@@ -965,7 +965,7 @@
         ["xpath=//div[@id='rootDiv']/div[4]/div", "xpath:idRelative"],
         ["xpath=//div[46]/div[4]/div", "xpath:position"]
       ],
-      "value": "Insufficient privileges to delete"
+      "value": ""
     }, {
       "id": "12db14f0-18e0-46e3-b0ff-c28f1566b3dc",
       "comment": "",
@@ -1106,7 +1106,7 @@
       "id": "aed91ded-560e-4520-80e4-7b3680a9231c",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {
@@ -1406,7 +1406,7 @@
       "id": "4396f811-9973-4a06-91a8-1a9f8eaefb6c",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {
@@ -1684,7 +1684,7 @@
       "id": "35ac2508-56df-4eba-bb85-eec0fe01d9a3",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {
