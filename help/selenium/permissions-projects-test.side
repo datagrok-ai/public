@@ -450,6 +450,13 @@
       "targets": [],
       "value": ""
     }, {
+      "id": "1b921c71-e2fe-4b71-87fd-6c922d7086a3",
+      "comment": "",
+      "command": "pause",
+      "target": "3000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "fff8a707-c90a-4bf1-bb63-1f0da6a9afc3",
       "comment": "",
       "command": "verifyElementNotPresent",
@@ -462,13 +469,6 @@
         ["xpath=//img[@id='error_outline_black']", "xpath:attributes"],
         ["xpath=//img", "xpath:position"]
       ],
-      "value": ""
-    }, {
-      "id": "1b921c71-e2fe-4b71-87fd-6c922d7086a3",
-      "comment": "",
-      "command": "pause",
-      "target": "1500",
-      "targets": [],
       "value": ""
     }, {
       "id": "396f8ca8-c5cb-438b-91ce-6095eb8d46b1",
@@ -593,7 +593,7 @@
       "id": "0ee48f03-2569-4553-be28-118344fe6ee7",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {
@@ -816,10 +816,10 @@
       "id": "da887632-884c-40c9-a50e-06acd2a6c5c2",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-section--Shared-with']",
+      "target": "xpath=//div[@name='div-section--Sharing']",
       "targets": [
         ["css=.d4-accordion-pane:nth-child(12) > .d4-accordion-pane-header", "css:finder"],
-        ["xpath=//div[@name='div-section--Shared-with']", "xpath:attributes"],
+        ["xpath=//div[@name='div-section--Sharing']", "xpath:attributes"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[12]/div", "xpath:idRelative"],
         ["xpath=//div[2]/div/div/div/div/div[12]/div", "xpath:position"]
       ],
@@ -828,7 +828,7 @@
       "id": "f5828dac-c678-488f-9c35-5380a35ca8ee",
       "comment": "",
       "command": "pause",
-      "target": "500",
+      "target": "2000",
       "targets": [],
       "value": ""
     }, {
@@ -942,7 +942,7 @@
       "id": "c6608fa9-b0a7-407c-9e45-d10e55200ccd",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {
@@ -1057,7 +1057,7 @@
     }, {
       "id": "309f8615-b890-4b13-b52f-8926734909ac",
       "comment": "",
-      "command": "verifyText",
+      "command": "verifyElementPresent",
       "target": "id=balloon: error",
       "targets": [
         ["id=balloon: error", "id"],
@@ -1066,7 +1066,7 @@
         ["xpath=//div[@id='rootDiv']/div[4]/div", "xpath:idRelative"],
         ["xpath=//div[46]/div[4]/div", "xpath:position"]
       ],
-      "value": "Insufficient privileges to save"
+      "value": ""
     }, {
       "id": "abc4ae86-1691-4a59-a951-384dda2a667f",
       "comment": "",
@@ -1076,103 +1076,6 @@
       "value": ""
     }, {
       "id": "42d62e21-8bbb-4c35-afbd-19ac632a67dc",
-      "comment": "",
-      "command": "click",
-      "target": "name=button-CANCEL",
-      "targets": [
-        ["name=button-CANCEL", "name"],
-        ["css=.btn:nth-child(2)", "css:finder"],
-        ["xpath=//button[@name='button-CANCEL']", "xpath:attributes"],
-        ["xpath=//button[2]", "xpath:position"],
-        ["xpath=//button[contains(.,'CANCEL')]", "xpath:innerText"]
-      ],
-      "value": ""
-    }, {
-      "id": "e72ec1f6-588b-451c-91be-a92549adc157",
-      "comment": "",
-      "command": "pause",
-      "target": "500",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "2c97fa8b-d072-4dc6-a977-9bd2d305dbc3",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//i[@name='icon-context-arrow-down']",
-      "targets": [
-        ["css=.grok-context-arrow-down", "css:finder"],
-        ["xpath=//i[@name='icon-context-arrow-down']", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div/span/i[2]", "xpath:idRelative"],
-        ["xpath=//span/i[2]", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "c81e7d9e-e676-42dd-96a7-fb348b4538b1",
-      "comment": "",
-      "command": "pause",
-      "target": "500",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "75428fd1-6ee0-4f1a-ba48-e4c638845e86",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@name='div-Delete-Project']",
-      "targets": [
-        ["css=.d4-menu-item-container:nth-child(20) > .d4-menu-item:nth-child(5)", "css:finder"],
-        ["xpath=//div[@name='div-Delete-Project']", "xpath:attributes"],
-        ["xpath=//div[19]/div[5]", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "ea0ee016-6c25-4c10-8745-c7a0b5061d4c",
-      "comment": "",
-      "command": "pause",
-      "target": "500",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "57288b14-d73c-4daa-a215-bab3527bbfa7",
-      "comment": "",
-      "command": "click",
-      "target": "name=button-YES",
-      "targets": [
-        ["name=button-YES", "name"],
-        ["css=.d4-command-bar > .btn:nth-child(1)", "css:finder"],
-        ["xpath=//button[@name='button-YES']", "xpath:attributes"],
-        ["xpath=//div[3]/div/button", "xpath:position"],
-        ["xpath=//button[contains(.,'YES')]", "xpath:innerText"]
-      ],
-      "value": ""
-    }, {
-      "id": "6c7b0929-dd9d-4088-b290-6346aa4a46a7",
-      "comment": "",
-      "command": "pause",
-      "target": "1000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "d81d26a5-43cf-44ee-9fd6-b6a16af84305",
-      "comment": "",
-      "command": "verifyText",
-      "target": "id=balloon: error",
-      "targets": [
-        ["id=balloon: error", "id"],
-        ["css=#balloon\\3A\\ error", "css:finder"],
-        ["xpath=//div[@id='balloon: error']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[4]/div", "xpath:idRelative"],
-        ["xpath=//div[46]/div[4]/div", "xpath:position"]
-      ],
-      "value": "Insufficient privileges to delete"
-    }, {
-      "id": "12db14f0-18e0-46e3-b0ff-c28f1566b3dc",
-      "comment": "",
-      "command": "click",
-      "target": "id=balloon: error",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "3fcb4d34-0db5-4755-893b-6da967a38936",
       "comment": "",
       "command": "click",
       "target": "name=button-CANCEL",
@@ -1297,7 +1200,7 @@
       "id": "76ae3017-b7ec-460d-8882-b449c9c6fe1d",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {
@@ -1591,7 +1494,7 @@
       "id": "c813d1e7-60fc-4d15-854b-b6b6de3f5c8c",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {
@@ -1862,7 +1765,7 @@
       "id": "ddf6c952-e1dd-45ec-a11e-9752fcb49489",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {

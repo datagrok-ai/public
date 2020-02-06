@@ -67,7 +67,7 @@
       "id": "5dc82201-963e-4426-b05c-8dddb86d92b3",
       "comment": "",
       "command": "pause",
-      "target": "2000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {
@@ -261,13 +261,6 @@
       "comment": "",
       "command": "pause",
       "target": "2000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "c5859841-629d-472c-8165-b14bfcef7216",
-      "comment": "",
-      "command": "pause",
-      "target": "500",
       "targets": [],
       "value": ""
     }, {
@@ -547,7 +540,7 @@
       "id": "b998d26d-a3ac-4bf9-90dc-1776c9741672",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {
@@ -737,7 +730,7 @@
       "id": "14a696b6-d95f-4c8f-9169-3f7b88e367bd",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {
@@ -1036,11 +1029,11 @@
       "id": "8ebc2af4-2c27-49b1-9d88-352e8bb0e7f4",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {
-      "id": "3e24472b-81e5-47cc-beb2-72fe91c0cca8",
+      "id": "4d6e6629-90e1-42b7-a18c-e49704fdd9e1",
       "comment": "",
       "command": "click",
       "target": "xpath=//div[@name='div-Tools']",
@@ -1052,7 +1045,7 @@
       ],
       "value": ""
     }, {
-      "id": "933adfad-9232-4b32-a7df-7c86e68b45b1",
+      "id": "a238ddab-9530-4cff-ac1c-db68c5ea9a37",
       "comment": "",
       "command": "click",
       "target": "xpath=//div[@name='div-Tools---Notebooks']",
@@ -1064,7 +1057,7 @@
       ],
       "value": ""
     }, {
-      "id": "130e8036-de57-4e76-bf91-2fbe78c00c27",
+      "id": "dc245611-b630-4eb3-977f-5efcbe566c45",
       "comment": "",
       "command": "click",
       "target": "xpath=//div[@name='div-Tools---Notebooks---Browse-Notebooks']",
@@ -1074,13 +1067,6 @@
         ["xpath=//div[@id='rootDiv']/div/div/div/div[7]/div/div[7]/div/div[2]", "xpath:idRelative"],
         ["xpath=//div[7]/div/div[7]/div/div[2]", "xpath:position"]
       ],
-      "value": ""
-    }, {
-      "id": "76010d1c-2f88-468d-b550-70e79ed4351b",
-      "comment": "",
-      "command": "pause",
-      "target": "1000",
-      "targets": [],
       "value": ""
     }, {
       "id": "6e904ab2-ff17-4f78-b2f6-0aa379b6a3d6",
@@ -1180,7 +1166,7 @@
     }, {
       "id": "d81d26a5-43cf-44ee-9fd6-b6a16af84305",
       "comment": "",
-      "command": "verifyText",
+      "command": "verifyElementPresent",
       "target": "id=balloon: error",
       "targets": [
         ["id=balloon: error", "id"],
@@ -1189,7 +1175,7 @@
         ["xpath=//div[@id='rootDiv']/div[4]/div", "xpath:idRelative"],
         ["xpath=//div[46]/div[4]/div", "xpath:position"]
       ],
-      "value": "Insufficient privileges to delete"
+      "value": ""
     }, {
       "id": "12db14f0-18e0-46e3-b0ff-c28f1566b3dc",
       "comment": "",
@@ -1330,7 +1316,7 @@
       "id": "3cf7cc38-1900-4213-b39d-c499a75a9782",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {
@@ -1630,7 +1616,7 @@
       "id": "f4e69add-42cb-44f6-9317-0b20820a8832",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {
@@ -1956,7 +1942,7 @@
       "id": "0411baf8-6570-4f33-bb7d-cdb90e15b9e3",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {

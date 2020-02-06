@@ -67,7 +67,7 @@
       "id": "5dc82201-963e-4426-b05c-8dddb86d92b3",
       "comment": "",
       "command": "pause",
-      "target": "2000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {
@@ -742,7 +742,7 @@
       "id": "b998d26d-a3ac-4bf9-90dc-1776c9741672",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {
@@ -851,7 +851,7 @@
       "id": "683bc973-9286-4217-9d89-027c6576b625",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {
@@ -1150,7 +1150,7 @@
       "id": "76010d1c-2f88-468d-b550-70e79ed4351b",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {
@@ -1232,7 +1232,7 @@
     }, {
       "id": "d81d26a5-43cf-44ee-9fd6-b6a16af84305",
       "comment": "",
-      "command": "verifyText",
+      "command": "verifyElementPresent",
       "target": "id=balloon: error",
       "targets": [
         ["id=balloon: error", "id"],
@@ -1241,7 +1241,7 @@
         ["xpath=//div[@id='rootDiv']/div[4]/div", "xpath:idRelative"],
         ["xpath=//div[46]/div[4]/div", "xpath:position"]
       ],
-      "value": "Insufficient privileges to delete"
+      "value": ""
     }, {
       "id": "12db14f0-18e0-46e3-b0ff-c28f1566b3dc",
       "comment": "",
@@ -1382,7 +1382,7 @@
       "id": "c11a4f7c-9496-4e27-9c41-f359dfc00151",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {
@@ -1682,7 +1682,7 @@
       "id": "977e14ac-169f-4220-aa92-3065eb8dad1e",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {
@@ -1953,7 +1953,7 @@
       "id": "0d63a244-90ae-482c-a915-8a38dddead01",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {

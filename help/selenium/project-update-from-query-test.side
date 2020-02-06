@@ -299,25 +299,6 @@
       "targets": [],
       "value": ""
     }, {
-      "id": "4277ea9b-46b5-4773-965d-a1aca0cd2563",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@name='div-section--Tables']",
-      "targets": [
-        ["css=div:nth-child(1) > .d4-accordion > .d4-accordion-pane:nth-child(1) > .d4-accordion-pane-header", "css:finder"],
-        ["xpath=//div[@name='div-section--Tables']", "xpath:attributes"],
-        ["xpath=//div[@id='right']/div/div/div/div", "xpath:idRelative"],
-        ["xpath=//div/div/div[2]/div[2]/div/div/div/div", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "b1187ade-0ef3-42a5-a4e0-08da195d5cea",
-      "comment": "",
-      "command": "pause",
-      "target": "1000",
-      "targets": [],
-      "value": ""
-    }, {
       "id": "5d4c384d-df24-47d1-92a1-69f0d02aea38",
       "comment": "",
       "command": "click",
@@ -325,8 +306,8 @@
       "targets": [
         ["css=.fa-sync", "css:finder"],
         ["xpath=//i[@name='icon-sync']", "xpath:attributes"],
-        ["xpath=//div[@id='right']/div/div/div/div[2]/div/div/div/span/i[2]", "xpath:idRelative"],
-        ["xpath=//span/i[2]", "xpath:position"]
+        ["xpath=//div[@id='right']/div/div/div/div[2]/div/div/div/span/div/i", "xpath:idRelative"],
+        ["xpath=//span/div/i", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -463,6 +444,25 @@
       "comment": "",
       "command": "pause",
       "target": "2000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "0163f7fc-c8ba-46bf-9e06-819140e9c8dc",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=(//i[@name='icon-times'])[2]",
+      "targets": [
+        ["css=.d4-reset-input", "css:finder"],
+        ["xpath=(//i[@name='icon-times'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='datasets']/div/div/div[2]/div/i", "xpath:idRelative"],
+        ["xpath=//div/div/div/div/div[2]/div/i", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "fcfe2032-127c-4f90-8f16-fc279a0b0f64",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
       "targets": [],
       "value": ""
     }, {
