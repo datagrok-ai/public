@@ -102,12 +102,12 @@
       "id": "97462d15-7f15-429d-8341-667038db0fc1",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='tree-expander-MariaDB---northwind---Tables']",
+      "target": "xpath=(//div[@name='tree-expander-MariaDB---northwind'])[2]",
       "targets": [
         ["css=.d4-tree-view-group:nth-child(1) .d4-tree-view-group:nth-child(1) .d4-tree-view-tri", "css:finder"],
-        ["xpath=//div[@name='tree-expander-MariaDB---northwind---Tables']", "xpath:attributes"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div[14]/div[2]/div/div[2]/div/div/div", "xpath:idRelative"],
-        ["xpath=//div[14]/div[2]/div/div[2]/div/div/div", "xpath:position"]
+        ["xpath=(//div[@name='tree-expander-MariaDB---northwind'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='data-sources']/div/div[2]/div[19]/div[2]/div/div[2]/div/div/div", "xpath:idRelative"],
+        ["xpath=//div[19]/div[2]/div/div[2]/div/div/div", "xpath:position"]
       ],
       "value": ""
     }, {
