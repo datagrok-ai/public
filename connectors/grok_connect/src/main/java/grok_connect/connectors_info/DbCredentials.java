@@ -12,6 +12,7 @@ public class DbCredentials
     public static final String LOGIN = "login";
     public static final String PASSWORD = "password";
     public static final String PORT = "port";
+    public static final String CACHE_SCHEMA = "cache schema";
 
     public static final String DB_DESCRIPTION = "Database name";
 
@@ -36,6 +37,7 @@ public class DbCredentials
         add(new Property(Property.STRING_TYPE, DbCredentials.SERVER));
         add(new Property(Property.INT_TYPE, DbCredentials.PORT));
         add(new Property(Property.STRING_TYPE, DbCredentials.DB, DbCredentials.DB_DESCRIPTION));
+        add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_SCHEMA));
     }};
 
     public static List<Property> dbCredentialsTemplate = new ArrayList<Property>() {{
