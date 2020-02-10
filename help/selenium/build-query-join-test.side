@@ -102,12 +102,12 @@
       "id": "faf83661-c47b-4bf5-afab-675e5e287f5c",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='tree-expander-PostgreSQL---datagrok---Tables']",
+      "target": "xpath=(//div[@name='tree-expander-PostgreSQL---datagrok'])[2]",
       "targets": [
-        ["css=.d4-tree-view-group:nth-child(3) > .d4-tree-view-group-host .d4-tree-view-tri", "css:finder"],
-        ["xpath=//div[@name='tree-expander-PostgreSQL---Datagrok---Tables']", "xpath:attributes"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div[19]/div[2]/div[3]/div[2]/div/div/div", "xpath:idRelative"],
-        ["xpath=//div[3]/div[2]/div/div/div", "xpath:position"]
+        ["css=.d4-tree-view-group:nth-child(4) .d4-tree-view-group:nth-child(1) .d4-tree-view-tri", "css:finder"],
+        ["xpath=(//div[@name='tree-expander-PostgreSQL---datagrok'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='data-sources']/div/div[2]/div[24]/div[2]/div[4]/div[2]/div/div/div", "xpath:idRelative"],
+        ["xpath=//div[4]/div[2]/div/div/div", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -118,16 +118,42 @@
       "targets": [],
       "value": ""
     }, {
+      "id": "1a536cc8-3c1e-4baf-87af-8052db98ee83",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='tree-expander-PostgreSQL---datagrok---Schemas---public']",
+      "targets": [
+        ["css=.d4-tree-view-group:nth-child(1) .d4-tree-view-group:nth-child(1) .d4-tree-view-tri", "css:finder"],
+        ["xpath=//div[@name='tree-expander-PostgreSQL---datagrok---Schemas---public']", "xpath:attributes"],
+        ["xpath=//div[@id='data-sources']/div/div[2]/div[24]/div[2]/div[4]/div[2]/div/div[2]/div/div/div", "xpath:idRelative"],
+        ["xpath=//div[4]/div[2]/div/div[2]/div/div/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "54a8e219-98ed-426d-b0ff-3d5d8a666208",
+      "comment": "",
+      "command": "pause",
+      "target": "2000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "f5d901e1-791d-4c32-b367-7a5cd3a425ce",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='tree-expander-PostgreSQL---datagrok---Tables---chats']",
+      "target": "xpath=//div[@name='tree-PostgreSQL---datagrok---Schemas---public---chats']",
       "targets": [
-        ["css=.d4-tree-view-group:nth-child(1) .d4-tree-view-group:nth-child(1) .d4-tree-view-tri", "css:finder"],
-        ["xpath=//div[@name='tree-expander-PostgreSQL---Datagrok---Tables---chats']", "xpath:attributes"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div[19]/div[2]/div[3]/div[2]/div/div[2]/div/div/div", "xpath:idRelative"],
-        ["xpath=//div[3]/div[2]/div/div[2]/div/div/div", "xpath:position"]
+        ["css=.d4-tree-view-group:nth-child(1) .d4-tree-view-group .d4-tree-view-group:nth-child(1) > .d4-tree-view-node", "css:finder"],
+        ["xpath=//div[@name='tree-PostgreSQL---datagrok---Schemas---public---chats']", "xpath:attributes"],
+        ["xpath=//div[@id='data-sources']/div/div[2]/div[24]/div[2]/div[4]/div[2]/div/div[2]/div/div[2]/div/div", "xpath:idRelative"],
+        ["xpath=//div[4]/div[2]/div/div[2]/div/div[2]/div/div", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "7f41f007-276b-4f20-b18a-d753a2bf7fd5",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "ea61b256-02c1-4408-a07a-0a2f1e8ba848",

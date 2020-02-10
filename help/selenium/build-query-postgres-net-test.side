@@ -109,19 +109,19 @@
       "id": "97462d15-7f15-429d-8341-667038db0fc1",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='tree-expander-PostgresNet---northwind---Tables']",
+      "target": "xpath=(//div[@name='tree-expander-PostgresNet---northwind'])[2]",
       "targets": [
-        ["css=.d4-tree-view-group:nth-child(1) .d4-tree-view-group:nth-child(1) .d4-tree-view-tri", "css:finder"],
-        ["xpath=//div[@name='tree-expander-PostgresNet---northwind---Tables']", "xpath:attributes"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div[20]/div[2]/div/div[2]/div/div/div", "xpath:idRelative"],
-        ["xpath=//div[20]/div[2]/div/div[2]/div/div/div", "xpath:position"]
+        ["css=.d4-tree-view-group:nth-child(25) .d4-tree-view-group .d4-tree-view-group:nth-child(1) .d4-tree-view-tri", "css:finder"],
+        ["xpath=(//div[@name='tree-expander-PostgresNet---northwind'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='data-sources']/div/div[2]/div[25]/div[2]/div[2]/div[2]/div/div/div", "xpath:idRelative"],
+        ["xpath=//div[25]/div[2]/div[2]/div[2]/div/div/div", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "f92e889b-3286-4606-94f1-24855b08bb6a",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {
@@ -340,7 +340,7 @@
       "id": "ecb53246-6a1e-4e9d-8b51-baa7ff037f29",
       "comment": "",
       "command": "pause",
-      "target": "2000",
+      "target": "4000",
       "targets": [],
       "value": ""
     }, {

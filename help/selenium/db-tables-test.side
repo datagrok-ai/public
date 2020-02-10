@@ -98,20 +98,19 @@
       "id": "3bab5a57-06ea-456d-b822-7df7621a018c",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"tree-expander-MS-SQL---northwind---Tables\"]",
+      "target": "xpath=(//div[@name='tree-expander-MS-SQL---northwind'])[2]",
       "targets": [
-        ["css=div[name=\"tree-expander-MS-SQL---northwind---Tables\"]", "css"],
-        ["css=.d4-tree-view-group:nth-child(13) .d4-tree-view-group .d4-tree-view-group:nth-child(1) .d4-tree-view-tri", "css:finder"],
-        ["xpath=//div[@name='tree-expander-MS-SQL---northwind---Tables']", "xpath:attributes"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div[13]/div[2]/div/div[2]/div/div/div", "xpath:idRelative"],
-        ["xpath=//div[13]/div[2]/div/div[2]/div/div/div", "xpath:position"]
+        ["css=.d4-tree-view-group:nth-child(18) .d4-tree-view-group .d4-tree-view-group:nth-child(1) .d4-tree-view-tri", "css:finder"],
+        ["xpath=(//div[@name='tree-expander-MS-SQL---northwind'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='data-sources']/div/div[2]/div[18]/div[2]/div/div[2]/div/div/div", "xpath:idRelative"],
+        ["xpath=//div[18]/div[2]/div/div[2]/div/div/div", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "903820b2-0316-49c9-87a2-ff5d80594be7",
       "comment": "",
       "command": "pause",
-      "target": "500",
+      "target": "2000",
       "targets": [],
       "value": ""
     }, {
@@ -139,6 +138,13 @@
       ],
       "value": ""
     }, {
+      "id": "cee64647-cc99-4e17-b375-331ce3d4316a",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "8f4970e8-dc71-4fc2-a4b9-44fc91ae3e1c",
       "comment": "",
       "command": "verifyElementNotPresent",
@@ -161,6 +167,13 @@
         ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div", "xpath:idRelative"],
         ["xpath=//div[3]/div/div[2]/div/div/div/div/div[4]/div", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "f9de50ea-9040-4aa4-8771-e84dcf888b5e",
+      "comment": "",
+      "command": "pause",
+      "target": "2000",
+      "targets": [],
       "value": ""
     }, {
       "id": "31237779-6284-4a88-8614-f8d2bb3a4282",
@@ -254,6 +267,13 @@
       ],
       "value": ""
     }, {
+      "id": "bac65de7-1c80-4103-88f8-b2a168da42c5",
+      "comment": "",
+      "command": "pause",
+      "target": "2000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "8a3d40b1-edd0-49e4-9354-98eeb7023382",
       "comment": "",
       "command": "verifyText",
@@ -309,6 +329,13 @@
         ["xpath=//div[@id='data-sources']/div/div[2]/div[13]/div[2]/div/div[2]/div/div[2]/div/div[2]/div[5]", "xpath:idRelative"],
         ["xpath=//div[2]/div/div[2]/div[5]", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "bd6d88b8-25c7-4010-a930-114febecee2e",
+      "comment": "",
+      "command": "pause",
+      "target": "2000",
+      "targets": [],
       "value": ""
     }, {
       "id": "d22b0c50-c0c8-44a0-9b49-eb458facfbbb",
@@ -383,13 +410,12 @@
       "id": "4ba69ad7-9767-4955-844a-1b5cbf768364",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"tree-expander-MariaDB---northwind---Tables\"]",
+      "target": "xpath=(//div[@name='tree-expander-MariaDB---northwind'])[2]",
       "targets": [
-        ["css=div[name=\"tree-expander-MariaDB---northwind---Tables\"]", "css"],
-        ["css=.d4-tree-view-group:nth-child(14) .d4-tree-view-group .d4-tree-view-group:nth-child(1) .d4-tree-view-tri", "css:finder"],
-        ["xpath=//div[@name='tree-expander-MariaDB---northwind---Tables']", "xpath:attributes"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div[14]/div[2]/div/div[2]/div/div/div", "xpath:idRelative"],
-        ["xpath=//div[14]/div[2]/div/div[2]/div/div/div", "xpath:position"]
+        ["css=.d4-tree-view-group:nth-child(19) .d4-tree-view-group .d4-tree-view-group:nth-child(1) .d4-tree-view-tri", "css:finder"],
+        ["xpath=(//div[@name='tree-expander-MariaDB---northwind'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='data-sources']/div/div[2]/div[19]/div[2]/div/div[2]/div/div/div", "xpath:idRelative"],
+        ["xpath=//div[19]/div[2]/div/div[2]/div/div/div", "xpath:position"]
       ],
       "value": ""
     }, {

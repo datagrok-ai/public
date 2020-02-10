@@ -109,11 +109,11 @@
       "id": "97462d15-7f15-429d-8341-667038db0fc1",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='tree-expander-MySQL---northwind---Tables']",
+      "target": "xpath=(//div[@name='tree-expander-MySQL---northwind'])[2]",
       "targets": [
         ["css=.d4-tree-view-group-host > .d4-tree-view-group:nth-child(2) .d4-tree-view-group:nth-child(1) .d4-tree-view-tri", "css:finder"],
-        ["xpath=//div[@name='tree-expander-MySQL---northwind---Tables']", "xpath:attributes"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div[16]/div[2]/div[2]/div[2]/div/div/div", "xpath:idRelative"],
+        ["xpath=(//div[@name='tree-expander-MySQL---northwind'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='data-sources']/div/div[2]/div[21]/div[2]/div[2]/div[2]/div/div/div", "xpath:idRelative"],
         ["xpath=//div[2]/div[2]/div[2]/div/div/div", "xpath:position"]
       ],
       "value": ""
