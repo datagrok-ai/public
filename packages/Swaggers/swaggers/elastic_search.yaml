@@ -1,0 +1,33 @@
+swagger: "2.0"
+info:
+  title: 'Datagrok Elastic Search'
+host: localhost:9200
+basePath: /help/elements/
+schemes:
+  - http
+paths:
+  _search:
+    get:
+      summary: Search query
+      operationId: Search
+      parameters:
+        - name: q
+          in: query
+          type: string
+          required: true
+          description: Query in the Lucene query string syntax
+          default: content:swagger
+        - name: _source
+          in: query
+          type: array
+          description: List of fields to return
+          items:
+            type: string
+      grok-result-parse-options:
+        path: hits/hits
+      responses:
+        '200':
+          description: successful operation
+        '400':
+          description: Invalid status value
+definitions: []
