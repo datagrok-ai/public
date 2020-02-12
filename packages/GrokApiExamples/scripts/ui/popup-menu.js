@@ -11,4 +11,5 @@ let showMenu = () => {
 };
 
 let text = ui.divText('Clickable');
+v.append(text);
 text.addEventListener("click", showMenu);
