@@ -1,5 +1,10 @@
 class SequencePackageDetectors extends GrokPackage {
 
+    //tags: autostart
+    autostartTest() {
+        console.log('sequence autostarted.');
+    }
+
     //tags: semTypeDetector
     //input: column col
     //output: string semType
