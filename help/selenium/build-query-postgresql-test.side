@@ -109,12 +109,12 @@
       "id": "97462d15-7f15-429d-8341-667038db0fc1",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='tree-expander-PostgreSQL---northwind---Tables']",
+      "target": "xpath=(//div[@name='tree-expander-PostgreSQL---northwind'])[2]",
       "targets": [
-        ["css=.d4-tree-view-group:nth-child(4) .d4-tree-view-group:nth-child(1) .d4-tree-view-tri", "css:finder"],
-        ["xpath=//div[@name='tree-expander-PostgreSQL---northwind---Tables']", "xpath:attributes"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div[19]/div[2]/div[4]/div[2]/div/div/div", "xpath:idRelative"],
-        ["xpath=//div[4]/div[2]/div/div/div", "xpath:position"]
+        ["css=.d4-tree-view-group:nth-child(5) .d4-tree-view-group:nth-child(1) .d4-tree-view-tri", "css:finder"],
+        ["xpath=(//div[@name='tree-expander-PostgreSQL---northwind'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='data-sources']/div/div[2]/div[24]/div[2]/div[5]/div[2]/div/div/div", "xpath:idRelative"],
+        ["xpath=//div[5]/div[2]/div/div/div", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -125,15 +125,34 @@
       "targets": [],
       "value": ""
     }, {
+      "id": "4732a649-e345-4e8b-a1fd-bf0c52193658",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='tree-expander-PostgreSQL---northwind---Schemas---public']",
+      "targets": [
+        ["css=.d4-tree-view-group:nth-child(1) .d4-tree-view-group:nth-child(1) .d4-tree-view-tri", "css:finder"],
+        ["xpath=//div[@name='tree-expander-PostgreSQL---northwind---Schemas---public']", "xpath:attributes"],
+        ["xpath=//div[@id='data-sources']/div/div[2]/div[24]/div[2]/div[5]/div[2]/div/div[2]/div/div/div", "xpath:idRelative"],
+        ["xpath=//div[5]/div[2]/div/div[2]/div/div/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "ca8f2fe7-1ad1-429a-8002-2f60cd81b2ea",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "5259ff2d-2c32-4391-befe-f2d4b5b4617c",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='tree-PostgreSQL---northwind---Tables---orders']",
+      "target": "xpath=//div[@name='tree-PostgreSQL---northwind---Schemas---public---orders']",
       "targets": [
-        ["css=.d4-tree-view-group:nth-child(4) .d4-tree-view-group .d4-tree-view-group:nth-child(8) > .d4-tree-view-node", "css:finder"],
-        ["xpath=//div[@name='tree-PostgreSQL---northwind---Tables---orders']", "xpath:attributes"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div[19]/div[2]/div[4]/div[2]/div/div[2]/div[8]/div", "xpath:idRelative"],
-        ["xpath=//div[4]/div[2]/div/div[2]/div[8]/div", "xpath:position"]
+        ["css=.d4-tree-view-group:nth-child(1) .d4-tree-view-group:nth-child(8) > .d4-tree-view-node", "css:finder"],
+        ["xpath=//div[@name='tree-PostgreSQL---northwind---Schemas---public---orders']", "xpath:attributes"],
+        ["xpath=//div[@id='data-sources']/div/div[2]/div[24]/div[2]/div[5]/div[2]/div/div[2]/div/div[2]/div[8]/div", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div[2]/div[8]/div", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -340,7 +359,7 @@
       "id": "ecb53246-6a1e-4e9d-8b51-baa7ff037f29",
       "comment": "",
       "command": "pause",
-      "target": "2000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {
