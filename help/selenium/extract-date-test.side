@@ -118,11 +118,11 @@
       "id": "e5f66a45-6757-4c37-bcbb-b3f243fe73a8",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Extract---year']",
+      "target": "xpath=//div[@name='div-Extract---#year']",
       "targets": [
-        ["css=.d4-menu-item-container:nth-child(10) > .d4-menu-item:nth-child(6) .d4-menu-item:nth-child(1)", "css:finder"],
-        ["xpath=//div[@name='div-Extract---year']", "xpath:attributes"],
-        ["xpath=//div[7]/div[6]/div/div", "xpath:position"]
+        ["css=.d4-menu-popup > .d4-menu-item:nth-child(6) .d4-menu-item:nth-child(8)", "css:finder"],
+        ["xpath=//div[@name='div-Extract---#year']", "xpath:attributes"],
+        ["xpath=//div[9]/div[6]/div/div[8]", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -160,7 +160,7 @@
       "id": "c8636ef8-e031-4707-bb7d-69a0a4ace767",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span-year(STARTED)-(min-1989,-max-1991)",
+      "target": "name=span-#year(STARTED)-(min-1989,-max-1991)",
       "targets": [
         ["css=.d4-entity-markup-row:nth-child(10) label", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div[2]/div/div/span[10]/span/label", "xpath:idRelative"],
@@ -171,7 +171,7 @@
       "id": "c838e080-bd08-4ac8-b4f6-477e4641e4f9",
       "comment": "",
       "command": "click",
-      "target": "xpath=//label[contains(.,'year(STARTED)')]",
+      "target": "name=span-#year(STARTED)-(min-1989,-max-1991)",
       "targets": [
         ["css=.d4-entity-markup-row:nth-child(11) label", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div[2]/div/div/span[11]/span/label", "xpath:idRelative"],
@@ -268,11 +268,11 @@
       "id": "2ceabba4-9267-4005-b815-a9a8e36bf5ac",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Extract---date']",
+      "target": "xpath=//div[@name='div-Extract---month-string']",
       "targets": [
-        ["css=.d4-menu-item-vert:nth-child(6) .d4-menu-item:nth-child(2)", "css:finder"],
-        ["xpath=//div[@name='div-Extract---date']", "xpath:attributes"],
-        ["xpath=//div[11]/div[6]/div/div[2]", "xpath:position"]
+        ["css=.d4-menu-popup > .d4-menu-item:nth-child(6) .d4-menu-item:nth-child(10)", "css:finder"],
+        ["xpath=//div[@name='div-Extract---month-string']", "xpath:attributes"],
+        ["xpath=//div[11]/div[6]/div/div[10]", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -298,7 +298,7 @@
       "id": "0b7ddffb-c17b-4491-9fbb-3a139490c03d",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//label[contains(.,'date(STARTED)')]",
+      "target": "name=span-month-string(STARTED)-(12-categories)",
       "targets": [
         ["css=.d4-entity-markup-row:nth-child(12) label", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div[2]/div/div/span[12]/span/label", "xpath:idRelative"],
@@ -307,42 +307,11 @@
       ],
       "value": ""
     }, {
-      "id": "b638ba29-8d16-41bc-8bef-5106747dfb16",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//label[contains(.,'date(STARTED)')]",
-      "targets": [],
-      "value": ""
-    }, {
       "id": "95444fdd-8711-4b3d-bf22-5b3e69dc54d9",
       "comment": "",
       "command": "pause",
       "target": "1000",
       "targets": [],
-      "value": ""
-    }, {
-      "id": "95275a93-abd3-46b2-a887-070b324ae79b",
-      "comment": "",
-      "command": "verifyElementPresent",
-      "target": "xpath=//span[contains(.,'Sep 11, 1990')]",
-      "targets": [
-        ["css=tr:nth-child(1) > td:nth-child(2) > span", "css:finder"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div[2]/table/tbody/tr/td[2]/span", "xpath:idRelative"],
-        ["xpath=//td[2]/span", "xpath:position"],
-        ["xpath=//span[contains(.,'Sep 11, 1990')]", "xpath:innerText"]
-      ],
-      "value": ""
-    }, {
-      "id": "e4a58217-9d75-4513-84f7-d49e8d1b6240",
-      "comment": "",
-      "command": "verifyElementPresent",
-      "target": "xpath=//span[contains(.,'63075600')]",
-      "targets": [
-        ["css=tr:nth-child(9) > td:nth-child(2) > span", "css:finder"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div[2]/table/tbody/tr[9]/td[2]/span", "xpath:idRelative"],
-        ["xpath=//tr[9]/td[2]/span", "xpath:position"],
-        ["xpath=//span[contains(.,'63075600')]", "xpath:innerText"]
-      ],
       "value": ""
     }, {
       "id": "895ddbd6-c189-495f-8b95-0cf0732069ed",
