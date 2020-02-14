@@ -332,11 +332,12 @@
       "id": "6aad5b7d-9e54-44c9-a991-7002a53ee79c",
       "comment": "",
       "command": "click",
-      "target": "css=.d4-entity-markup-row:nth-child(3) > .d4-link-action",
+      "target": "xpath=//label[contains(.,'Extract Rows')]",
       "targets": [
-        ["css=.d4-entity-markup-row:nth-child(3) > .d4-link-action", "css:finder"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div[2]/div/span[3]/label", "xpath:idRelative"],
-        ["xpath=//span[3]/label", "xpath:position"]
+        ["css=.d4-entity-markup-row:nth-child(4) > .d4-link-action", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div[2]/div/span[4]/label", "xpath:idRelative"],
+        ["xpath=//span[4]/label", "xpath:position"],
+        ["xpath=//label[contains(.,'Extract Rows')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
