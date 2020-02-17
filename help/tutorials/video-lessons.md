@@ -93,9 +93,32 @@ Check out our [YouTube channel](https://www.youtube.com/channel/UCXPHEjOd4gyZ6m6
                          • build multiple predictive models, and assess their performance<br>
                          • build an interactive map for predicting sales<br>
                          • deploy it as an app to all users in our company<br>
-</p>
-    </div>
+    </p>
+  </div>
 </div>
+
+
+<div class="card" style="width:512px;">
+<iframe src="https://www.youtube.com/embed/dlbK2Zo-eng?vq=hd1080&rel=0&color=white&autohide=0" width="512" height="288" frameborder="0"></iframe>
+  <div class="card-body">
+    <h2 class="card-title">Joining tables</h2>
+    <p class="card-text">In this video, we will join two tables by key columns, using different join types.
+                         <a href="https://datagrok.ai/help/dialogs/join-tables"> Learn more </a>
+    </p>
+  </div>
+</div>
+
+
+<div class="card" style="width:512px;">
+<iframe src="https://www.youtube.com/embed/rUHFwO1iQUg?vq=hd1080&rel=0&color=white&autohide=0" width="512" height="288" frameborder="0"></iframe>
+  <div class="card-body">
+    <h2 class="card-title">Comparing tables</h2>
+    <p class="card-text">Compare data snapshots using the Table Comparer tool.
+                         <a href="https://datagrok.ai/help/dialogs/compare-tables"> Learn more </a>
+    </p>
+  </div>
+</div>
+
 
 <div class="card" style="width:512px;">
 <iframe src="https://www.youtube.com/embed/PDcXLMsu6UM?vq=hd1080&rel=0&color=white&autohide=0" width="512" height="288" frameborder="0"></iframe>
