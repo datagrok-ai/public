@@ -484,6 +484,9 @@ class View {
     get name() { return grok_View_Get_Name(this.d); }
     set name(s) { return grok_View_Set_Name(this.d, s); }
 
+    get path() { return grok_View_Get_Path(this.d); }
+    set path(s) { return grok_View_Set_Path(this.d, s); }
+
     get description() { return grok_View_Get_Description(this.d); }
     set description(s) { return grok_View_Set_Description(this.d, s); }
 
