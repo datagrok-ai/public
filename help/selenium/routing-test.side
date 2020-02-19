@@ -81,7 +81,7 @@
       "id": "e1acf8c1-b076-4b19-895d-fba28829388c",
       "comment": "",
       "command": "open",
-      "target": "/p/8e6aa110-0b50-11e9-fab3-fb72d4aa15db/table/demog?selenium=true",
+      "target": "/p/demo.seleniumtestdatap2?selenium=true",
       "targets": [],
       "value": ""
     }, {
@@ -113,13 +113,25 @@
       "targets": [],
       "value": ""
     }, {
+      "id": "0afca167-c9bc-47e8-95a5-a07cfb5fff68",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "xpath=//div[@name='view-handle: Auto']",
+      "targets": [
+        ["css=.tab-handle:nth-child(3)", "css:finder"],
+        ["xpath=//div[@name='view-handle: Auto']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div", "xpath:idRelative"],
+        ["xpath=//div[2]/div[2]/div/div/div/div/div/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
       "id": "2646bb05-c7e4-4b39-8096-7d20e2574d05",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='view-handle: Demog']",
+      "target": "xpath=//div[@name='view-handle: Selling']",
       "targets": [
         ["css=.tab-handle:nth-child(4)", "css:finder"],
-        ["xpath=//div[@name='view-handle: Demog']", "xpath:attributes"],
+        ["xpath=//div[@name='view-handle: Selling']", "xpath:attributes"],
         ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
         ["xpath=//div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
       ],
@@ -128,7 +140,7 @@
       "id": "1226c587-220b-4128-9171-8d0c9b2ed250",
       "comment": "",
       "command": "open",
-      "target": "/p/8e6aa110-0b50-11e9-fab3-fb72d4aa15db/table/demog?selenium=true&mode=presentation",
+      "target": "/p/demo.seleniumtestdatap1/demog?selenium=true&mode=presentation",
       "targets": [],
       "value": ""
     }, {
@@ -353,6 +365,53 @@
         ["xpath=//div[@name='view-handle: Help']", "xpath:attributes"],
         ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div", "xpath:idRelative"],
         ["xpath=//div[4]/div[2]/div[2]/div/div/div/div/div/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "4163ef4e-a138-4d59-b501-bfdc464c1e35",
+      "comment": "",
+      "command": "open",
+      "target": "/help/home?selenium=true",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "798a4c30-d59c-43e1-b388-77135d8f2f48",
+      "comment": "",
+      "command": "open",
+      "target": "/apps/RoutingDemo/cars/Honda?selenium=true",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "ef749cde-a8c8-4811-af76-3b356103efc4",
+      "comment": "",
+      "command": "pause",
+      "target": "5000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "eb9e3788-881a-476b-b290-dc8640768713",
+      "comment": "",
+      "command": "verifyElementNotPresent",
+      "target": "css=i[name=\"icon-exclamation-circle\"]",
+      "targets": [
+        ["id=error_outline_black", "id"],
+        ["name=image-ic_error_outline_black_24dp_1x", "name"],
+        ["css=#error_outline_black", "css"],
+        ["css=#error_outline_black", "css:finder"],
+        ["xpath=//img[@id='error_outline_black']", "xpath:attributes"],
+        ["xpath=//img", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "c2459ef5-a955-4e95-a4da-d6b25b3588f7",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "xpath=//div[@name='view-handle: SDTM:LB:Preview']",
+      "targets": [
+        ["css=.tab-handle:nth-child(3)", "css:finder"],
+        ["xpath=//div[@name='view-handle: SDTM:LB:Preview']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div", "xpath:idRelative"],
+        ["xpath=//div[2]/div[2]/div/div/div/div/div/div", "xpath:position"]
       ],
       "value": ""
     }]
