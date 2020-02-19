@@ -8,7 +8,7 @@
 * CVM (old): 766822877060.dkr.ecr.us-east-2.amazonaws.com/grok_cvm:1.0.31-6261445
 
 ## Addressed issues
-* GrokCon* nect: Denodo integration
+* GrokConnect: Denodo integration
 * GrokConnect: ODBC driver
 * JS API examples: manual master-detail linking
 * Chembl project: moved to public repository
