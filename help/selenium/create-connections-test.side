@@ -967,7 +967,7 @@
       "id": "6cb3f93c-98db-442d-909d-c2da736c08cb",
       "comment": "",
       "command": "open",
-      "target": "/connections",
+      "target": "/connections?selenium=true",
       "targets": [],
       "value": ""
     }, {

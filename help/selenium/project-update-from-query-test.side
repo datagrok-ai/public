@@ -192,12 +192,12 @@
       "id": "3b11b7cc-e41d-4a75-b023-546d6734c133",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-context-arrow-down'])[4]",
+      "target": "xpath=(//i[@name='icon-context-arrow-down'])[2]",
       "targets": [
-        ["css=.d4-accordion-title .grok-icon", "css:finder"],
-        ["xpath=(//i[@name='icon-context-arrow-down'])[4]", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div/span/i", "xpath:idRelative"],
-        ["xpath=//div[3]/div/div[2]/div/div/div/div/div/span/i", "xpath:position"]
+        ["css=.grok-context-arrow-down:nth-child(3)", "css:finder"],
+        ["xpath=(//i[@name='icon-context-arrow-down'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div/span/i[2]", "xpath:idRelative"],
+        ["xpath=//span/i[2]", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -309,12 +309,11 @@
       "id": "5d4c384d-df24-47d1-92a1-69f0d02aea38",
       "comment": "",
       "command": "click",
-      "target": "xpath=//i[@name='icon-sync']",
+      "target": "css=.d4-input-switch",
       "targets": [
-        ["css=.fa-sync", "css:finder"],
-        ["xpath=//i[@name='icon-sync']", "xpath:attributes"],
-        ["xpath=//div[@id='right']/div/div/div/div[2]/div/div/div/span/div/i", "xpath:idRelative"],
-        ["xpath=//span/div/i", "xpath:position"]
+        ["css=.d4-input-switch", "css:finder"],
+        ["xpath=//div[@id='right']/div/div/div/div[2]/div/div/div/span/div/div/label/div", "xpath:idRelative"],
+        ["xpath=//label/div", "xpath:position"]
       ],
       "value": ""
     }, {
