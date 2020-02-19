@@ -95,6 +95,7 @@ where @orderDate(orderDate)
 ```
 
 Patterns summary:
+
 | Type             | Value       | Description/Example      |
 |------------------|-------------|--------------------------| 
 | num, int, double | =           | = 100                    |
@@ -151,6 +152,9 @@ Note that inputs marked as patters allow users to enter expressions like "> 5" f
 "after 2019" for dates, and ""
 
 ![](parameterized-queries.png)
+
+Behind the scenes, Datagrok will parse the free-text query, and then execute a parameterized, safe, 
+provider-specific SQL query on the backend.
 
 See also:
 
