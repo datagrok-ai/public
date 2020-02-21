@@ -64,18 +64,23 @@ public class MySqlDataProvider extends JdbcDataProvider {
         return "jdbc:mysql://" + conn.getServer() + port + "/" + conn.getDb() + "?zeroDateTimeBehavior=convertToNull";
     }
 
+    public String getSchemasSql(String db) {
+        return "SELECT DISTINCT table_schema FROM information_schema.columns ORDER BY table_schema";
+    }
+
     public String getSchemaSql(String db, String schema, String table)
     {
         List<String> filters = new ArrayList<>();
-        filters.add("(table_schema = '" + db + "')");
-        if (db != null)
-            filters.add("(table_catalog = '" + ((schema != null) ? schema : "def") + "')");
-        if (table!= null)
+
+        if (schema != null)
+            filters.add("table_schema = '" + schema + "'");
+
+        if (table != null)
             filters.add("(table_name = '" + table + "')");
 
         String whereClause = String.join(" and \n", filters);
 
         return "SELECT table_schema, table_name, column_name, data_type " +
-                "FROM information_schema.columns WHERE " + whereClause;
+                "FROM information_schema.columns WHERE " + whereClause + " ORDER BY table_name";
     }
 }

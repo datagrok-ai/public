@@ -73,7 +73,8 @@ public class OracleDataProvider extends JdbcDataProvider {
         if (schema != null)
             whereClause = whereClause + " AND (OWNER = '" + schema + "')";
 
-        return "SELECT OWNER as TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, DATA_TYPE FROM ALL_TAB_COLUMNS " + whereClause;
+        return "SELECT OWNER as TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, DATA_TYPE FROM ALL_TAB_COLUMNS " + whereClause +
+                " ORDER BY TABLE_NAME";
     }
 
     public String limitToSql(String query, Integer limit) {
