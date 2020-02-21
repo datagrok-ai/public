@@ -63,6 +63,10 @@ public class MsSqlDataProvider extends JdbcDataProvider {
                 ";user=" + conn.credentials.getLogin() + ";password=" + conn.credentials.getPassword() + ";";
     }
 
+    public String getSchemasSql(String db) {
+        return "SELECT DISTINCT TABLE_SCHEMA FROM INFORMATION_SCHEMA.COLUMNS ORDER BY TABLE_SCHEMA";
+    }
+
     public String getSchemaSql(String db, String schema, String table)
     {
         List<String> filters = new ArrayList<>();
@@ -75,7 +79,7 @@ public class MsSqlDataProvider extends JdbcDataProvider {
         String whereClause = String.join(" AND \n", filters);
 
         return "SELECT TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, DATA_TYPE " +
-                "FROM INFORMATION_SCHEMA.COLUMNS WHERE " + whereClause;
+                "FROM INFORMATION_SCHEMA.COLUMNS WHERE " + whereClause + " ORDER BY TABLE_NAME";
     }
 
     public String limitToSql(String query, Integer limit) {

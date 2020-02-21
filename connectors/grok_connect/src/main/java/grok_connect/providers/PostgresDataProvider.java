@@ -55,7 +55,7 @@ public class PostgresDataProvider extends JdbcDataProvider {
 
     public String getSchemasSql(String db) {
         return "SELECT DISTINCT table_schema FROM information_schema.columns " +
-                "WHERE table_catalog = '" + db + "' AND " + SYS_SCHEMAS_FILTER;
+                "WHERE table_catalog = '" + db + "' AND " + SYS_SCHEMAS_FILTER + " ORDER BY table_schema";
     }
 
     public String getSchemaSql(String db, String schema, String table)
@@ -70,6 +70,7 @@ public class PostgresDataProvider extends JdbcDataProvider {
         String whereClause = String.join(" and \n", filters);
 
         return "SELECT table_schema, table_name, column_name, data_type " +
-                "FROM information_schema.columns WHERE " + SYS_SCHEMAS_FILTER + " AND " + whereClause;
+                "FROM information_schema.columns WHERE " + SYS_SCHEMAS_FILTER + " AND " + whereClause +
+                " ORDER BY table_name";
     }
 }
