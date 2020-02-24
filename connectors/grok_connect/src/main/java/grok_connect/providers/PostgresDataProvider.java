@@ -3,6 +3,7 @@ package grok_connect.providers;
 import java.sql.*;
 import java.util.*;
 import serialization.Types;
+import grok_connect.utils.*;
 import grok_connect.table_query.*;
 import grok_connect.connectors_info.*;
 
@@ -16,6 +17,7 @@ public class PostgresDataProvider extends JdbcDataProvider {
         descriptor.type = "PostgresNet";
         descriptor.description = "Query PostgresNet database";
         descriptor.connectionTemplate = DbCredentials.dbConnectionTemplate;
+        descriptor.connectionTemplate.add(new Property(Property.BOOL_TYPE, DbCredentials.SSL));
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
         descriptor.nameBrackets = "\"";
 
@@ -45,7 +47,12 @@ public class PostgresDataProvider extends JdbcDataProvider {
 
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
         Class.forName("org.postgresql.Driver");
-        return DriverManager.getConnection(getConnectionString(conn), conn.credentials.getLogin(), conn.credentials.getPassword());
+        java.util.Properties properties = new java.util.Properties();
+        properties.setProperty("user", conn.credentials.getLogin());
+        properties.setProperty("password", conn.credentials.getPassword());
+        if (conn.parameters.containsKey(DbCredentials.SSL))
+            properties.setProperty("ssl", (boolean)conn.parameters.get(DbCredentials.SSL) ? "true" : "false");
+        return DriverManager.getConnection(getConnectionString(conn), properties);
     }
 
     public String getConnectionString(DataConnection conn) {
