@@ -12,6 +12,7 @@ public class DbCredentials
     public static final String LOGIN = "login";
     public static final String PASSWORD = "password";
     public static final String PORT = "port";
+    public static final String SSL = "SSL";
     public static final String CACHE_SCHEMA = "cache schema";
     public static final String CACHE_RESULTS = "cache results";
 
