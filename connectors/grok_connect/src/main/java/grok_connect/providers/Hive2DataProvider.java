@@ -1,5 +1,6 @@
 package grok_connect.providers;
 
+import grok_connect.utils.*;
 import grok_connect.connectors_info.*;
 
 
@@ -9,6 +10,7 @@ public class Hive2DataProvider extends HiveDataProvider {
         descriptor.type = "Hive2";
         descriptor.description = "Query Hive2 database";
         descriptor.connectionTemplate = DbCredentials.dbConnectionTemplate;
+        descriptor.connectionTemplate.add(new Property(Property.BOOL_TYPE, DbCredentials.SSL));
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
     }
 

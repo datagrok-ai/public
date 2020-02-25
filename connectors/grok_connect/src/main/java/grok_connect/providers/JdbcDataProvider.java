@@ -510,4 +510,11 @@ public abstract class JdbcDataProvider extends DataProvider {
                 !typeName.equalsIgnoreCase("uuid") &&
                 !typeName.equalsIgnoreCase("set");
     }
+
+    public static java.util.Properties defaultConnectionProperties(DataConnection conn) {
+        java.util.Properties properties = new java.util.Properties();
+        properties.setProperty("user", conn.credentials.getLogin());
+        properties.setProperty("password", conn.credentials.getPassword());
+        return properties;
+    }
 }

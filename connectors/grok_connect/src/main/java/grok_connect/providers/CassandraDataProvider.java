@@ -1,6 +1,7 @@
 package grok_connect.providers;
 
 import java.sql.*;
+import grok_connect.utils.Property;
 import org.apache.log4j.*;
 import grok_connect.connectors_info.*;
 
@@ -11,6 +12,7 @@ public class CassandraDataProvider extends JdbcDataProvider {
         descriptor.type = "Cassandra";
         descriptor.description = "Query Cassandra database";
         descriptor.connectionTemplate = DbCredentials.dbConnectionTemplate;
+        descriptor.connectionTemplate.add(new Property(Property.BOOL_TYPE, DbCredentials.SSL));
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
     }
 
@@ -20,8 +22,12 @@ public class CassandraDataProvider extends JdbcDataProvider {
         Logger logger = Logger.getLogger("com.github.cassandra.jdbc");
         logger.setLevel(Level.ERROR);
 
-        return DriverManager.getConnection(getConnectionString(conn), conn.credentials.getLogin(),
-                conn.credentials.getPassword());
+        java.util.Properties properties = defaultConnectionProperties(conn);
+        if (conn.parameters.containsKey(DbCredentials.SSL) && (boolean)conn.parameters.get(DbCredentials.SSL)) {
+            properties.setProperty("SSLMode", "1");
+            properties.setProperty("UseSslIdentityCheck", "0");
+        }
+        return DriverManager.getConnection(getConnectionString(conn), properties);
     }
 
     public String getConnectionString(DataConnection conn) {

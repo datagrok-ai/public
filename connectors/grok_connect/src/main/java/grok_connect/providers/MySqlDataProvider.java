@@ -2,8 +2,8 @@ package grok_connect.providers;
 
 import java.sql.*;
 import java.util.*;
-
 import serialization.Types;
+import grok_connect.utils.*;
 import grok_connect.table_query.*;
 import grok_connect.connectors_info.*;
 
@@ -14,6 +14,7 @@ public class MySqlDataProvider extends JdbcDataProvider {
         descriptor.type = "MySQL";
         descriptor.description = "Query MySQL database";
         descriptor.connectionTemplate = DbCredentials.dbConnectionTemplate;
+        descriptor.connectionTemplate.add(new Property(Property.BOOL_TYPE, DbCredentials.SSL));
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
         descriptor.canBrowseSchema = true;
         descriptor.nameBrackets = "`";
@@ -56,12 +57,18 @@ public class MySqlDataProvider extends JdbcDataProvider {
 
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
         Class.forName("com.mysql.jdbc.Driver");
-        return DriverManager.getConnection(getConnectionString(conn), conn.credentials.getLogin(), conn.credentials.getPassword());
+        java.util.Properties properties = defaultConnectionProperties(conn);
+        properties.setProperty("zeroDateTimeBehavior", "convertToNull");
+        if (conn.parameters.containsKey(DbCredentials.SSL) && (boolean)conn.parameters.get(DbCredentials.SSL)) {
+            properties.setProperty("useSSL", "true");
+            properties.setProperty("verifyServerCertificate", "false");
+        }
+        return DriverManager.getConnection(getConnectionString(conn), properties);
     }
 
     public String getConnectionString(DataConnection conn) {
         String port = (conn.getPort() == null) ? "" : ":" + conn.getPort();
-        return "jdbc:mysql://" + conn.getServer() + port + "/" + conn.getDb() + "?zeroDateTimeBehavior=convertToNull";
+        return "jdbc:mysql://" + conn.getServer() + port + "/" + conn.getDb();
     }
 
     public String getSchemasSql(String db) {

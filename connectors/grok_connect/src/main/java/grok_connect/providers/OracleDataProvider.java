@@ -3,6 +3,7 @@ package grok_connect.providers;
 import java.sql.*;
 import java.util.*;
 
+import grok_connect.utils.*;
 import serialization.Types;
 import grok_connect.table_query.*;
 import grok_connect.connectors_info.*;
@@ -20,6 +21,7 @@ public class OracleDataProvider extends JdbcDataProvider {
         descriptor.type = "Oracle";
         descriptor.description = "Query Oracle database";
         descriptor.connectionTemplate = DbCredentials.dbConnectionTemplate;
+        descriptor.connectionTemplate.add(new Property(Property.BOOL_TYPE, DbCredentials.SSL));
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
         descriptor.canBrowseSchema = true;
         descriptor.nameBrackets = "\"";
@@ -56,8 +58,14 @@ public class OracleDataProvider extends JdbcDataProvider {
     }
 
     public String getConnectionString(DataConnection conn) {
-        String port = (conn.getPort() == null) ? "" : ":" + conn.getPort();
-        return "jdbc:oracle:thin:@//" + conn.getServer() + port + "/" + conn.getDb();
+        conn.getPort();
+        boolean ssl = (conn.parameters.containsKey(DbCredentials.SSL) && (boolean)conn.parameters.get(DbCredentials.SSL));
+        return "jdbc:oracle:thin:@(DESCRIPTION=" +
+                "(ADDRESS=" +
+                    "(PROTOCOL=" + (ssl ? "tcps" : "tcp") + ")" +
+                    "(HOST=" + conn.getServer() + ")" +
+                    "(PORT=" + conn.getPort() + "))" +
+                "(CONNECT_DATA=(SERVICE_NAME=" + conn.getDb() + ")))";
     }
 
     public String getSchemasSql(String db) {

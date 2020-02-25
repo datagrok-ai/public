@@ -47,11 +47,9 @@ public class PostgresDataProvider extends JdbcDataProvider {
 
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
         Class.forName("org.postgresql.Driver");
-        java.util.Properties properties = new java.util.Properties();
-        properties.setProperty("user", conn.credentials.getLogin());
-        properties.setProperty("password", conn.credentials.getPassword());
-        if (conn.parameters.containsKey(DbCredentials.SSL))
-            properties.setProperty("ssl", (boolean)conn.parameters.get(DbCredentials.SSL) ? "true" : "false");
+        java.util.Properties properties = defaultConnectionProperties(conn);
+        if (conn.parameters.containsKey(DbCredentials.SSL) && (boolean)conn.parameters.get(DbCredentials.SSL))
+            properties.setProperty("ssl", "true");
         return DriverManager.getConnection(getConnectionString(conn), properties);
     }
 
