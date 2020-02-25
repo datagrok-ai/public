@@ -104,3 +104,28 @@ Setup:
 9. Go to the web browser, login to Datagrok using username "admin" and password "SM9ekKEkZuBDp5eD", open Tools | Settings. 
    In sections "Machine Learning" and "Scripting", change all hostnames to the CVM machine hostname. 
   (but leave the part after the hostname intact)
+  
+## Run docker image
+  
+1. Download latest docker image from [dev.datagrok.ai/docker_images](https://dev.datagrok.ai/docker_images)
+2. [Install Docker](https://phoenixnap.com/kb/how-to-install-docker-on-ubuntu-18-04)
+3. Prepare JSON string GROK_START_PARAMETERS:
+ ```
+{
+\"dbServer\": \"host.docker.internal\",     # Postgres database server (use host.docker.internal to connect to localhost)
+\"db\": \"datagrok\",                       # New database name
+\"dbLogin\": \"datagrok\",                  # New user name
+\"dbPassword\": \"SoMeCoMpLeXpAsSwOrD\",    # New user password
+\"dbAdminLogin\": \"postgres\",             # Poatgres admin login
+\"dbAdminPassword\": \"postgres\"           # Postgres admin password
+}                                  
+```  
+4. Prepare local directory to store data: DATA_PATH   
+5. Prepare local directory to store config files: CFG_PATH   
+6. Run Datagrok image in deploy mode. Datagrok will create database automatically. 
+`docker run -it -v GROK_DATA_PATH:/home/grok/data/prod -v GROK_CFG_PATH:/home/grok/cfg -e GROK_PARAMETERS="GROK_START_PARAMETERS" -e GROK_MODE=deploy -p 80:80 IMAGE_NAME`
+7. Wait deploy process to complete
+8. Run Datagrok image in regular mode. You can remove dbAdminLogin and dbAdminPassword parameters.
+`docker run -it -v GROK_DATA_PATH:/home/grok/data/prod -v GROK_CFG_PATH:/home/grok/cfg -e GROK_PARAMETERS="GROK_START_PARAMETERS" -e GROK_MODE=start -p 80:80 IMAGE_NAME`
+
+
