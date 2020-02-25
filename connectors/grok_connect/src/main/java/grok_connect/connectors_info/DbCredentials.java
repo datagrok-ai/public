@@ -15,6 +15,7 @@ public class DbCredentials
     public static final String SSL = "SSL";
     public static final String CACHE_SCHEMA = "cache schema";
     public static final String CACHE_RESULTS = "cache results";
+    public static final String CACHE_DATE = "cache date";
 
     public static final String DB_DESCRIPTION = "Database name";
 
@@ -41,6 +42,7 @@ public class DbCredentials
         add(new Property(Property.STRING_TYPE, DbCredentials.DB, DbCredentials.DB_DESCRIPTION));
         add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_SCHEMA));
         add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_RESULTS));
+        add(new Property(Property.DATETIME_TYPE, DbCredentials.CACHE_DATE, new Prop("", true));
     }};
 
     public static List<Property> dbCredentialsTemplate = new ArrayList<Property>() {{
