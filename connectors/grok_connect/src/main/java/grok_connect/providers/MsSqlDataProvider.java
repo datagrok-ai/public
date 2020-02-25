@@ -2,8 +2,8 @@ package grok_connect.providers;
 
 import java.sql.*;
 import java.util.*;
-
 import serialization.Types;
+import grok_connect.utils.*;
 import grok_connect.table_query.*;
 import grok_connect.connectors_info.*;
 
@@ -15,6 +15,7 @@ public class MsSqlDataProvider extends JdbcDataProvider {
         descriptor.category = "Database";
         descriptor.description = "Query MS SQL database";
         descriptor.connectionTemplate = DbCredentials.dbConnectionTemplate;
+        descriptor.connectionTemplate.add(new Property(Property.BOOL_TYPE, DbCredentials.SSL));
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
         descriptor.canBrowseSchema = true;
         descriptor.limitAtEnd = false;
@@ -59,8 +60,10 @@ public class MsSqlDataProvider extends JdbcDataProvider {
 
     public String getConnectionString(DataConnection conn) {
         String port = (conn.getPort() == null) ? "" : ":" + conn.getPort();
+        boolean ssl = conn.parameters.containsKey(DbCredentials.SSL) && (boolean)conn.parameters.get(DbCredentials.SSL);
         return "jdbc:sqlserver://" + conn.getServer() + port + ";databaseName=" + conn.getDb() +
-                ";user=" + conn.credentials.getLogin() + ";password=" + conn.credentials.getPassword() + ";";
+                ";user=" + conn.credentials.getLogin() + ";password=" + conn.credentials.getPassword() + ";" +
+                (ssl ? "integratedSecurity=true;encrypt=true;trustServerCertificate=true;" : "");
     }
 
     public String getSchemasSql(String db) {
