@@ -4,8 +4,8 @@
 # 2020.02.25 Stable version
 
 ## Latest docker images
-* Datagrok (new): `766822877060.dkr.ecr.us-east-2.amazonaws.com/datagrok:1.0.66-83c6f08` [download](https://dev.datagrok.ai/docker_images/datagrok-1.0.66-83c6f08.tar)
-* CVM (new): `766822877060.dkr.ecr.us-east-2.amazonaws.com/grok_cvm:1.0.31-6261445`
+* Datagrok (new): `766822877060.dkr.ecr.us-east-2.amazonaws.com/datagrok:1.0.69-83c6f08` [download](https://dev.datagrok.ai/docker_images/datagrok-1.0.69-83c6f08.tar)
+* CVM (new): `766822877060.dkr.ecr.us-east-2.amazonaws.com/grok_cvm:1.0.69-83c6f08.tar` [download](https://dev.datagrok.ai/docker_images/grok_cvm-1.0.69-83c6f08.tar)
 
 ## Addressed issues
 * /p/project.smiles/smiles causes "Ambiguous entity" error
@@ -15,18 +15,18 @@
 * Ability to turn off security for current session
 * Ability to use both indexed and online file browsing
 * About section
-* Add some new default python libraries.
+* Add some new default python libraries
 * Added Developers edit permissions on Datagrok-public repository
 * Added options to project
 * After re-publishing package with swaggers, the connections in the web connector are duplicated
 * Amazon connector doesn't work
 * Amazon S3 file browsing doesn't work
-* Annotate db query results with the corresponding db, schema, table, and column names - WIP
+* Annotate db query results with the corresponding db, schema, table, and column names
 * Autostart for functions
 * BoxPlot: p-value setting is not serialized to layout
 * Cache DataQueries results
 * Chem | Solubility Prediction panel does not work
-* Data | Link Tables - WIP
+* Data | Link Tables
 * Data connections: Sparql connections testing does not work correctly
 * Data Query Editor: "+" icon to add results to workspace
 * Data Query: "Error" in the nested parameter (The method 'contains' was called on null)
@@ -70,8 +70,8 @@
 * GrokConnect: Test program
 * Group property panel: move "belongs to" to "details", show administrators
 * Hide chat groups in credentials owner combo
-* Improved "Debugging packages" message.
-* Improved error message formatting when publishing packages.
+* Improved "Debugging packages" message
+* Improved error message formatting when publishing packages
 * Incorrect audit records
 * InputBase: Validators called four times for every check
 * JS API: Parametrized adHoc query does not work
@@ -104,7 +104,7 @@
 * ProjectUploadView: "Sync" switch instead of icon
 * Queries get duplicated when saved
 * Query / View integration
-* Query Pamareters: Wrong style of array parameters in web api queries
+* Query Parameters: Wrong style of array parameters in web api queries
 * Query: Improve parameter editor
 * Query-based info panels
 * Redesign project upload view
@@ -117,7 +117,7 @@
 * Saving package drops connections information
 * Scripting fails with https request with self-signed certificate
 * Select Missing Values: Dialog has fixed size
-* Semantic type detector: text - added a very simplistic detector based on a number of words and max word length.
+* Semantic type detector: text - added a very simplistic detector based on a number of words and max word length
 * Set SSL attribute in datagrok connection on deploy
 * Setting view.path should modify currently shown URL
 * Store users_data_storage in DB
