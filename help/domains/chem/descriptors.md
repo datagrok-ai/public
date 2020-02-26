@@ -7,6 +7,8 @@ The molecular descriptor is the final result of a logic and mathematical procedu
 transforms chemical information encoded within a symbolic representation of a molecule 
 into a useful number or the result of some standardized experiment.
 
+![](descriptors.gif)
+
 ## Available descriptors modules
 
 ### EState.EState_VSA
