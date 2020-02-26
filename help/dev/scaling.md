@@ -9,7 +9,9 @@ able to handle such volumes, but it should do it fast, and without cluttering th
 
 ## Data
 
-By detaching metadata from data, and storing 
+By keeping metadata separately from data, and utilizing scalable storage for both of 
+them (Postgres for metadata, and S3 for data) Datagrok is capable of storing many
+datasets, both in terms of numbers and volume.
 
 ## UI
 
@@ -20,4 +22,4 @@ By detaching metadata from data, and storing
 ### Search
 
 See also:
-* [Performance](performance.md) 
+* [Performance](../concepts/performance.md) 
