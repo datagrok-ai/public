@@ -4,7 +4,7 @@
 # GrokCompute Installation
 
 This document contains instructions for installation of the [GrokCompute](architecture.md#grokcompute),
-platform's advanced computational services. See [Datagrok installation](datagrok-install.md) 
+platform's advanced computational services. See [deployment](deployment.md) 
 for instructions on deploying platform core.  
 
 ## Setup Docker image locally
