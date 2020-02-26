@@ -120,8 +120,8 @@ Setup:
 \"dbAdminPassword\": \"postgres\"           # Postgres admin password
 }                                  
 ```  
-4. Prepare local directory to store data: DATA_PATH   
-5. Prepare local directory to store config files: CFG_PATH   
+4. Prepare local directory to store data: GROK_DATA_PATH   
+5. Prepare local directory to store config files: GROK_CFG_PATH   
 6. Run Datagrok image in deploy mode. Datagrok will create database automatically. 
 `docker run -it -v GROK_DATA_PATH:/home/grok/data/prod -v GROK_CFG_PATH:/home/grok/cfg -e GROK_PARAMETERS="GROK_START_PARAMETERS" -e GROK_MODE=deploy -p 80:80 IMAGE_NAME`
 7. Wait deploy process to complete
