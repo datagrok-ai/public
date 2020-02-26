@@ -23,7 +23,7 @@ There are two ways to specify a scaffold:
 
 ### Visual analysis of R-group decomposition
 
-![R-Group Analysis](../../uploads/chem/r-group-analysis.png "R-Group Analysis")
+![](r-group-analysis.gif)
 
 Related functions:
 

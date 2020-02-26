@@ -14,6 +14,8 @@ These tools can be used together as a collection browser. 'Diverse structures' w
 of compounds present in the dataset; when you click on a molecule representing a class, similar
 molecules will be shown in the 'Similar structures' window.
 
+![](similarity-search.gif)
+
 See also:
 
 * [Descriptors](descriptors.md)
