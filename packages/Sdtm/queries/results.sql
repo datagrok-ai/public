@@ -1,36 +1,54 @@
---name: ResultsPreview
+--name: Results
 --input: string studies {pattern: string}
 --input: string tests {pattern: string}
---input: int limit = 100
+--input: string sex {pattern: string}
+--input: string race {pattern: string}
+--input: string method {pattern: string}
+--input: string limit {pattern: int}
+--connection: clin
 select
-  STUDYID,
-  USUBJID,
-  LBDY,
-  LBTEST,
-  LBORRES
-from
-  LB
+  lb.studyid as studyid,
+  lb.usubjid as usubjid,
+  lbdy,
+  lbtest as test,
+  lbstresn,
+  lbstresu as units,
+  lbmethod as method,
+  sex,
+  race
+from lb
+inner join dm on lb.studyid = dm.studyid and lb.usubjid = dm.usubjid
 where
-  @studies(STUDYID) and @tests(LBTEST)
+  @studies(lb.studyid) and @tests(lbtest) and @method(lbmethod) and @sex(sex) and @race(race)
 group by
-  STUDYID, USUBJID, LBDY, LBTEST, LBORRES
+  lb.studyid, lb.usubjid, lbdy, lbtest, lbstresn, lbmethod, lbstresu, sex, race
 limit @limit
 --end
 
 
---name: Results
+--name: ResultsCount
 --input: string studies {pattern: string}
 --input: string tests {pattern: string}
-select
-  STUDYID,
-  USUBJID,
-  LBDY,
-  LBTEST,
-  LBORRES
-from
-  LB
-where
-  @studies(STUDYID) and @tests(LBTEST)
-group by
-  STUDYID, USUBJID, LBDY, LBTEST, LBORRES
+--input: string sex {pattern: string}
+--input: string race {pattern: string}
+--input: string method {pattern: string}
+--connection: clin
+select count(*) from (
+  select
+    lb.studyid as studyid,
+    lb.usubjid as usubjid,
+    lbdy,
+    lbtest as test,
+    lbstresn,
+    lbstresu as units,
+    lbmethod as method,
+    sex,
+    race
+  from lb
+  inner join dm on lb.studyid = dm.studyid and lb.usubjid = dm.usubjid
+  where
+    @studies(lb.studyid) and @tests(lbtest) and @method(lbmethod) and @sex(sex) and @race(race)
+  group by
+    lb.studyid, lb.usubjid, lbdy, lbtest, lbstresn, lbmethod, lbstresu, sex, race
+) as t
 --end
