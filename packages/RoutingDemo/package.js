@@ -1,4 +1,6 @@
 class RoutingDemoPackage extends GrokPackage {
+
+    //name: Routing Demo
     //tags: app
     startApp(context) {
         let parser = document.createElement('a');
