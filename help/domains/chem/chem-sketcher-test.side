@@ -58,7 +58,7 @@
       "id": "8db3341f-db66-418a-9e49-9ecc5ef71e74",
       "comment": "",
       "command": "pause",
-      "target": "500",
+      "target": "1000",
       "targets": [],
       "value": ""
     }, {
@@ -161,6 +161,13 @@
       ],
       "value": ""
     }, {
+      "id": "7e23e0a8-0d55-470a-9d28-7df9a12e8b2d",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "4141c713-dc35-41c4-85ca-4335aa8e9e72",
       "comment": "",
       "command": "verifyElementPresent",
@@ -178,11 +185,11 @@
       "id": "4de61800-13d1-44ee-b9fe-cce3cc3831d0",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-font-icon-menu'])[3]",
+      "target": "xpath=(//i[@name='icon-font-icon-menu'])[2]",
       "targets": [
         ["css=.d4-input-options", "css:finder"],
-        ["xpath=(//i[@name='icon-font-icon-menu'])[3]", "xpath:attributes"],
-        ["xpath=//div[24]/div[2]/div/div/i", "xpath:position"]
+        ["xpath=(//i[@name='icon-font-icon-menu'])[2]", "xpath:attributes"],
+        ["xpath=//div[5]/div[2]/div/div/i", "xpath:position"]
       ],
       "value": ""
     }, {

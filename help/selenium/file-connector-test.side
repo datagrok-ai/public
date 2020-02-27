@@ -165,18 +165,6 @@
       ],
       "value": "/home/www/master/servergrok/data/demo/northwind"
     }, {
-      "id": "65fe7843-69b1-497a-a340-fa093b4558cb",
-      "comment": "",
-      "command": "click",
-      "target": "name=input-Edit-Connection---Index-Files",
-      "targets": [
-        ["name=input-Edit-Connection---Index-Files", "name"],
-        ["css=.pure-checkbox > #editor", "css:finder"],
-        ["xpath=(//input[@id='editor'])[3]", "xpath:attributes"],
-        ["xpath=//label/input", "xpath:position"]
-      ],
-      "value": ""
-    }, {
       "id": "5b279d72-1da7-48da-a458-d28a2a085c0f",
       "comment": "",
       "command": "click",
@@ -191,26 +179,6 @@
       "value": ""
     }, {
       "id": "6ee2ca29-2fb6-4eb5-84df-79beb5a3846c",
-      "comment": "",
-      "command": "pause",
-      "target": "1000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "24dcc96b-6efd-4d68-8781-f3858fb83d63",
-      "comment": "",
-      "command": "click",
-      "target": "name=button-YES",
-      "targets": [
-        ["name=button-OK", "name"],
-        ["css=.enabled", "css:finder"],
-        ["xpath=//button[@name='button-OK']", "xpath:attributes"],
-        ["xpath=//button", "xpath:position"],
-        ["xpath=//button[contains(.,'OK')]", "xpath:innerText"]
-      ],
-      "value": ""
-    }, {
-      "id": "f8b47619-0468-4c7f-bfd4-5bec1ca5869f",
       "comment": "",
       "command": "pause",
       "target": "1000",
