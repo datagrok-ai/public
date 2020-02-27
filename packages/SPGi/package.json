@@ -4,8 +4,7 @@
   "fullName": "SPGi",
   "description": "SPGi projects views",
   "privileges": {
-    "NXEval": "suggest",
-    "Datagrok": "use"
+    "view": ["NXEval", "Datagrok", "Developers"]
   },
   "sources": [
     "css/spgi.css"

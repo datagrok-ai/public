@@ -1,5 +1,6 @@
 class UsageAnalysisPackage extends GrokPackage {
 
+    //name: Usage Analysis
     //tags: app
     startApp() {
         let acc = null;

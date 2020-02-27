@@ -3,6 +3,8 @@
   "version": "0.1",
   "fullName": "RoutingDemo",
   "description": "Demo package for URI handling and routing",
-  "sources": [
-  ]
+  "privileges": {
+    "view": ["Developers"]
+  },
+  "sources": []
 }
