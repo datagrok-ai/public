@@ -22,7 +22,10 @@ class SDTMPackage extends GrokPackage {
         view.description = 'SDTM LB domain viewer';
         view.root.className = 'grok-view grok-table-view sdtm-result';
 
-        function updatePreview(t) { view.dataFrame = t; }
+        function updatePreview(t) {
+            t.name = 'stdmlb';
+            view.dataFrame = t;
+        }
 
         updatePreview(emptyTable);
         ui.setUpdateIndicator(view.root, true);
