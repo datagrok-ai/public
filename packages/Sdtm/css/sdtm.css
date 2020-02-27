@@ -1,15 +1,19 @@
 .sdtm-view {
 }
 
+.sdtm-controls {
+  margin-left: 0 !important;
+}
+
 .sdtm-view-controls {
-    height: 250px;
+  height: 250px;
 }
 
 .sdtm-view-preview {
 }
 
 .sdtm-selector {
-  height: 36px;
+  height: 24px;
   align-items: center;
   margin-top: 8px;
 }
@@ -19,10 +23,42 @@
 }
 
 .sdtm-selector-host .grok-loader {
-  margin-top: 36px;
+  margin-top: 12px;
+  margin-bottom: 12px;
 }
 
 .sdtm-result .grok-loader {
   margin-top: 12px;
   margin-right: 48px;
+}
+
+.sdtm-count {
+  align-items: center;
+  height: 32px;
+}
+
+.sdtm-count .grok-loader {
+  margin-bottom: 4px;
+}
+
+.sdtm-limit {
+  align-items: center;
+  margin-top: 4px;
+}
+
+.sdtm-limit input[type=checkbox] {
+  margin-top: 6px;
+  margin-right: 6px;
+}
+
+.sdtm-controls .d4-input-text.pure-control-group.d4-input {
+  flex-grow: 1;
+}
+
+.sdtm-controls .d4-input-choice {
+  margin-top: 10px;
+}
+
+.sdtm-controls input#editor.d4-input-editor {
+  flex-grow: 1;
 }
