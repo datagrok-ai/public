@@ -62,7 +62,7 @@ public class PatternMatcher {
         } else if (type.equals("string")) {
             String val = ((String)values.get(0)).toLowerCase();
             if (op.equals(EQUALS))
-                return "(LOWER(" + variable + ") LIKE '" + val + ")";
+                return "(LOWER(" + variable + ") LIKE '" + val + "')";
             else if (op.equals(CONTAINS))    
                 return "(LOWER(" + variable + ") LIKE '%" + val + "%')";
             else if (op.equals(STARTS_WITH))   
