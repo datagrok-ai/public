@@ -1,7 +1,7 @@
-<!-- TITLE: Files Indexer -->
+<!-- TITLE: Indexing File Shares -->
 <!-- SUBTITLE: -->
 
-# Files Indexer
+# Indexing File Shares
 
 For data sources that supports files access dataGrok platform provides files indexing feature. 
 File indexer is Data Job with hourly recurrence, that indexing file system for 
@@ -9,6 +9,6 @@ File indexer is Data Job with hourly recurrence, that indexing file system for
 in data connection. 
 
 See also:
-  * [Data Source](../entities/data-source.md)
-  * [Data Connection](../entities/data-connection.md)
-  * [Data Job](../entities/data-job.md)
+* [Data Source](../entities/data-source.md)
+* [Data Connection](../entities/data-connection.md)
+* [Data Job](../entities/data-job.md)
