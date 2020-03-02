@@ -1,0 +1,4708 @@
+swagger: '2.0'
+info:
+  title: Domino Data Lab API
+  version: ''
+  description: >-
+    Domino has two types of APIs:
+
+
+    1. The **Domino API** that you can use to operate and administer Domino
+    services. These APIs are documented on this page.
+
+
+    2. The **Model API** serves your code as a low-latency web service. You
+    don't need any API design experience
+       to turn your Python or R code into a Model API Endpoint. [Learn more about Model APIs here.](https://support.dominodatalab.com/hc/en-us/articles/115001488023-Model-Manager-Overview-)
+
+    Please note:
+
+
+    * The base URL will depend on your deployment of Domino. Replace
+    `https://api.dominodatalab.com` in
+
+    the examples below with the URL of your Domino deployment. This will be the
+    same as the URL you visit in your browser
+
+    when you use the Domino application.
+
+
+    * To authenticate your requests, include your API Key with the header
+    `X-Domino-Api-Key`. You can find this key on your
+
+    user account page in the Domino application.
+host: try.dominodatalab.com
+basePath: /
+schemes:
+  - https
+paths:
+  '/v1/projects/{username}/{project_name}/runs':
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          examples:
+            application/json:
+              objectType: list
+              uri: ''
+              data:
+                - id: 57dafe43317467e7b0ef5276
+                  projectId: 54c17e92e4b0bc49e27d9398
+                  number: 5
+                  startingUserId: 57a28b28961401f240812caf
+                  queued: 1473969731915
+                  started: 1473969754283
+                  completed: 1473969762970
+                  status: Succeeded
+                  commitId: 1c6e8aa47951e39f9a905f0077af9355c35b712b
+                  executor: 'us-west-2:i-007942020ce7baeb5'
+                  outputCommitId: 73fe9481fe635bada713246c3c739beefa424e8c
+                  title: Run with great R^2 of 1!
+                  isArchived: false
+                  postProcessedTimestamp: 1473969767822
+                  diagnosticStatistics:
+                    isError: false
+                    data:
+                      - key: R^2
+                        value: '1.000'
+                  isCompleted: true
+                  hardwareTierId: gpu
+          schema:
+            type: object
+            properties:
+              objectType:
+                type: string
+                description: The type of object the API returned.
+              uri:
+                type: string
+                description: The URI that responded to your request.
+              data:
+                type: array
+                description: Array of run statuses.
+                items: {}
+      summary: Get a list of runs
+      operationId: Get a list of runs
+      description: ''
+      tags:
+        - Project runs and files
+      parameters:
+        - name: username
+          in: path
+          description: The project owner's username
+          required: true
+          x-example: nick
+          type: string
+        - name: project_name
+          in: path
+          description: The project name
+          required: true
+          x-example: winequality
+          type: string
+      produces:
+        - application/json
+    post:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          examples:
+            application/json:
+              runId: 553af271e4b0364c0f717b24
+              message: >-
+                Run for project <username>/<project_name> started. You can view
+                progress here:
+                https://app.dominodatalab.com/<username>/<project_name/runs/553af271e4b0364c0f717b24
+          schema:
+            type: object
+            properties:
+              runId:
+                type: string
+                description: The unique ID for the run that was just started.
+              message:
+                type: string
+                description: >-
+                  A human-readable message with a full link to view the status
+                  of your run.
+      summary: Start a run
+      operationId: Start a run
+      description: ''
+      tags:
+        - Project runs and files
+      parameters:
+        - name: username
+          in: path
+          description: The project owner's username
+          required: true
+          x-example: nick
+          type: string
+        - name: project_name
+          in: path
+          description: The project name
+          required: true
+          x-example: winequality
+          type: string
+        - name: body
+          in: body
+          schema:
+            type: object
+            properties:
+              command:
+                type: array
+                description: |-
+                  Array of strings making up your command. For example:
+
+                  ```python
+                          ["model.py", "dataset", "--sample", "2000"]
+                  ```
+              isDirect:
+                type: boolean
+                description: >-
+                  A direct command is interpretted as a shell command; Domino
+                  doesn't try to infer a program to match your file type.
+              title:
+                type: string
+                description: An optional title for your run.
+              tier:
+                type: string
+                description: >-
+                  Identifier of the hardware tier to use. This should be the
+                  human-readable name of the hardware tier, such as "Free",
+                  "Small", "Medium" etc.
+              commitId:
+                type: string
+                description: Revision at which to start the run.
+              publishApiEndpoint:
+                type: boolean
+                description: >-
+                  __This field will be deprecated in future versions.__ If true,
+                  the results of a successful run will be deployed to the
+                  project's active API Endpoint, if one exists.
+              datasetConfig:
+                type: string
+                description: >-
+                  Name of Dataset configuration from domino.yaml file; used to
+                  start a run with a specific dataset configuration mounted.
+            required:
+              - command
+              - isDirect
+            example:
+              command:
+                - model.py
+                - dataset
+                - '--sample'
+                - '2000'
+              isDirect: false
+              title: This one should work!
+              tier: gpu
+              commitId: 1c6e8aa47951e39f9a905f0077af9355c35b712b
+              publishApiEndpoint: false
+              datasetConfig: ''''''
+      produces:
+        - application/json
+  '/v1/projects/{username}/{project_name}/runs/{run_id}':
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          examples:
+            application/json:
+              id: 57dafe43317467e7b0ef5276
+              projectId: 54c17e92e4b0bc49e27d9398
+              number: 5
+              startingUserId: 57a28b28961401f240812caf
+              queued: 1473969731915
+              started: 1473969754283
+              completed: 1473969762970
+              status: Succeeded
+              commitId: 1c6e8aa47951e39f9a905f0077af9355c35b712b
+              executor: 'us-west-2:i-007942020ce7baeb5'
+              outputCommitId: 73fe9481fe635bada713246c3c739beefa424e8c
+              title: Run with great R^2 of 1!
+              isArchived: false
+              postProcessedTimestamp: 1473969767822
+              diagnosticStatistics:
+                isError: false
+                data:
+                  - key: R^2
+                    value: '1.000'
+              isCompleted: true
+              hardwareTierId: gpu
+          schema:
+            type: object
+            properties:
+              id:
+                type: string
+                description: The unique ID for the run.
+              projectId:
+                type: string
+                description: The ID of the project.
+              number:
+                type: number
+                description: The auto-increment number associated with the run.
+              startingUserId:
+                type: string
+                description: The ID of the user who started the run.
+              queued:
+                type: number
+                description: Milliseconds epoch time the run was added to the queue.
+              started:
+                type: number
+                description: Milliseconds epoch time the run started executing.
+              completed:
+                type: number
+                description: Milliseconds epoch time the run completed running.
+              status:
+                type: string
+                enum:
+                  - Queued
+                  - Scheduled
+                  - Preparing
+                  - Building
+                  - Pulling
+                  - Running
+                  - Serving
+                  - StopRequested
+                  - StopAndDiscardRequested
+                  - Stopping
+                  - Finishing
+                  - Stopped
+                  - Succeeded
+                  - Failed
+                  - Error
+                description: The status of the run.
+              commitId:
+                type: string
+                description: The commit hash of the project used to create the run.
+              executor:
+                type: string
+                description: >-
+                  The unique ID of the executor (compute node) the run was
+                  executed on.
+              outputCommitId:
+                type: string
+                description: >-
+                  The commit hash of the project post-run (look at files with
+                  this hash for the results).
+              title:
+                type: string
+                description: 'Title of the run, if it was renamed.'
+              isArchived:
+                type: boolean
+                description: >-
+                  Boolean denoting if the run was archived (hidden from the web
+                  interface).
+              postProcessedTimestamp:
+                type: number
+                description: >-
+                  Milliseconds epoch time the run finished processing (this
+                  happens after the run has completed and includes saving the
+                  results back to the main project repo).
+              diagnosticStatistics:
+                type: object
+                properties:
+                  isError:
+                    type: boolean
+                    description: >-
+                      `true` if Domino had trouble parsing the dominostats.json
+                      file.
+                  data:
+                    type: array
+                    items: {}
+                description: >-
+                  Object containing information about the run's [diagnostic
+                  statistics from
+                  dominostats.json](http://support.dominodatalab.com/hc/en-us/articles/204348169-Run-Diagnostic-Statistics).
+              isCompleted:
+                type: boolean
+                description: >-
+                  A boolean to denote if the run has completed or is still run.
+                  See `status` for success/failure status.
+              hardwareTierId:
+                type: string
+                description: The hardware tier the run exectued on
+      summary: Get the status of a run
+      operationId: Get the status of a run
+      description: ''
+      tags:
+        - Project runs and files
+      parameters:
+        - name: username
+          in: path
+          description: The project owner's username.
+          required: true
+          x-example: nick
+          type: string
+        - name: project_name
+          in: path
+          description: The project name.
+          required: true
+          x-example: winequality
+          type: string
+        - name: run_id
+          in: path
+          description: The unique ID for the run.
+          required: true
+          type: string
+      produces:
+        - application/json
+  '/v1/projects/{username}/{project_name}/run/{run_id}/stdout?{previewNumberOfLines}':
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          examples:
+            application/json:
+              setup: Downloading blobs\n0 of 1 transferred...\n
+              stdout: 'Hello, World!\n'
+          schema:
+            type: object
+            properties:
+              setup:
+                type: string
+                description: Logs output during the setup of the run
+              stdout:
+                type: string
+                description: >-
+                  Logs outputted from user code during the run.  Note that this
+                  field also include stderr logs as well.
+      summary: Get run logs
+      operationId: Get run logs
+      description: ''
+      tags:
+        - Project runs and files
+      parameters:
+        - name: username
+          in: path
+          description: The project owner's username
+          required: true
+          x-example: nick
+          type: string
+        - name: project_name
+          in: path
+          description: The project name
+          required: true
+          x-example: winequality
+          type: string
+        - name: run_id
+          in: path
+          description: The unique ID for the run
+          required: true
+          type: string
+        - name: previewNumberOfLines
+          in: path
+          description: Take the last _N_ lines of the log output
+          required: false
+          type: string
+      produces:
+        - application/json
+  '/v1/projects/{username}/{project_name}/files/{commit_id}/{path}':
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          examples: {}
+      summary: Get a list of files in a commit
+      operationId: Get a list of files in a commit
+      description: ''
+      tags:
+        - Project runs and files
+      parameters:
+        - name: username
+          in: path
+          description: The project owner's username.
+          required: true
+          x-example: nick
+          type: string
+        - name: project_name
+          in: path
+          description: The project name.
+          required: true
+          x-example: winequality
+          type: string
+        - name: commit_id
+          in: path
+          description: The commit ID of the revision of the project you want files for.
+          required: true
+          x-example: 8f5622ad68829da47ab9be2660c962a56df6003e
+          type: string
+        - name: path
+          in: path
+          description: The path you want files for.
+          required: true
+          x-example: /
+          type: string
+  '/v1/projects/{username}/{project_name}/blobs/{blob_id}':
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          examples: {}
+      summary: Get the contents of a file
+      operationId: Get the contents of a file
+      description: ''
+      tags:
+        - Project runs and files
+      parameters:
+        - name: username
+          in: path
+          description: The project owner's username.
+          required: true
+          x-example: nick
+          type: string
+        - name: project_name
+          in: path
+          description: The project name.
+          required: true
+          x-example: winequality
+          type: string
+        - name: blob_id
+          in: path
+          description: The unique ID of the blob.
+          required: true
+          x-example: adfjlklasdfhjklah8323hfjkdf
+          type: string
+  '/v1/projects/{username}/{project_name}/{path}':
+    put:
+      responses:
+        '201':
+          description: Created
+          headers:
+            Location:
+              type: string
+            Transfer-Encoding:
+              type: string
+          examples:
+            application/json:
+              path: data/randomNumbers.rdata
+              lastModified: 1475878612000
+              size: 32690
+              key: 5c28ab880e29953e41b91e351f786a833fbf18a5
+              url: >-
+                https://app.dominodatalab.com/v1/projects/marks/quick-start/blobs/5c28ab880e29953e41b91e351f786a833fbf18a5
+          schema:
+            type: object
+            properties:
+              path:
+                type: string
+                description: Path your file was saved to.
+              lastModified:
+                type: number
+                description: Milliseconds epoch time the file was last modified.
+              size:
+                type: number
+                description: 'The size of the file you uploaded, in bytes.'
+              key:
+                type: string
+                description: The blob ID for the file. Used by the `File contents` API.
+              url:
+                type: string
+                description: >-
+                  The full URL to the blob. This can be used to re-download the
+                  file.
+            required:
+              - path
+              - lastModified
+              - size
+              - key
+              - url
+      summary: Upload a file to a project
+      operationId: Upload a file to a project
+      description: ''
+      tags:
+        - Project runs and files
+      parameters:
+        - name: username
+          in: path
+          description: The project owner's username.
+          required: true
+          x-example: nick
+          type: string
+        - name: project_name
+          in: path
+          description: The project name.
+          required: true
+          x-example: winequality
+          type: string
+        - name: path
+          in: path
+          description: >-
+            Where you want the file to be saved. You can include `/` to upload
+            files into directories that exist.
+          required: true
+          x-example: data/randomNumbers.rdata
+          type: string
+      produces:
+        - application/json
+  /v1/search:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          examples: {}
+      summary: Execute a search
+      operationId: Execute a search
+      description: ''
+      tags:
+        - Search
+      parameters:
+        - name: query
+          in: query
+          description: The phrase to search for.
+          required: true
+          x-example: shiny
+          type: string
+        - name: area
+          in: query
+          description: >-
+            The type of object to search. Valid values are `project`, `run`,
+            `file`, and `comment`.
+          required: true
+          x-example: project
+          type: string
+  /v1/environments:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          examples:
+            application/json:
+              objectType: list
+              data:
+                - id: 5a73a6906ece7a7aed984654
+                  name: Wine Quality Environment
+                  visibility: Global
+          schema:
+            type: object
+            properties:
+              objectType:
+                type: string
+                description: The type of object the API returned.
+              data:
+                type: array
+                description: Array of environments.
+                items: {}
+      summary: Get a list of v2 environments
+      operationId: Get a list of v2 environments
+      description: ''
+      tags:
+        - Environments
+      produces:
+        - application/json
+  '/v1/projects/{username}/{project_name}/models':
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          examples:
+            application/json:
+              objectType: list
+              data:
+                - _id: 5a73a6b86278f5c536008832
+                  name: Wine Quality Model
+          schema:
+            type: object
+            properties:
+              objectType:
+                type: string
+                description: The type of object the API returned.
+              data:
+                type: array
+                description: Array of models.
+                items: {}
+      summary: Get a list of models published by a project
+      operationId: Get a list of models published by a project
+      description: |-
+        **This is a beta endpoint available in Domino 2.5+**<br>
+        **Its specification may change in future versions of Domino.**
+      tags:
+        - Models
+      parameters:
+        - name: username
+          in: path
+          description: ''
+          required: true
+          x-example: nick
+          type: string
+        - name: project_name
+          in: path
+          description: The project name.
+          required: true
+          x-example: winequality
+          type: string
+      produces:
+        - application/json
+  /v1/models:
+    post:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          examples:
+            application/json:
+              _id: 5a73a6b86278f5c536008832
+              name: Wine Quality Model
+              description: A model of wine quality
+              isArchived: false
+              replicas: 2
+              metadata:
+                createdBy: 5a73a6b86278f5c536008832
+                created: 78655832
+              collaboratorSettings:
+                UserRef: Owner
+                EveryoneRef: Hidden
+              accessConfiguration:
+                isPublic: false
+                accessTokens: []
+          schema:
+            type: object
+            properties:
+              _id:
+                type: string
+                description: The unique ID for the model.
+              name:
+                type: string
+                description: (required) The name of the model.
+              description:
+                type: string
+                description: Summary of the changes in the new version.
+              isArchived:
+                type: boolean
+                description: Status of model.
+              replicas:
+                type: number
+                description: The number of model instances to start for any model version.
+              metadata:
+                type: object
+                properties:
+                  createdBy:
+                    type: string
+                    description: The unique ID of the user who created the model.
+                  created:
+                    type: number
+                    description: The datetime when the model was created.
+                description: >-
+                  Object containing **createdBy** user ID and **created**
+                  datetime properties.
+              collaboratorSettings:
+                type: object
+                properties:
+                  UserRef:
+                    type: string
+                  EveryoneRef:
+                    type: string
+                description: Object containing **UserRef** and **EveryoneRef** properties.
+              accessConfiguration:
+                type: object
+                properties:
+                  isPublic:
+                    type: boolean
+                  accessTokens:
+                    description: List of access tokens for the model.
+                description: >-
+                  Object containing **isPublic** visibility setting and
+                  **accessTokens**.
+      summary: Publish a new model
+      operationId: Publish a new model
+      description: |-
+        **This is a beta endpoint available in Domino 2.5+**<br>
+        **Its specification may change in future versions of Domino.**
+      tags:
+        - Models
+      parameters:
+        - name: body
+          in: body
+          schema:
+            type: object
+            properties:
+              projectId:
+                type: string
+                description: >-
+                  (required) The unique id of the project the model will be
+                  bound to.
+              file:
+                type: string
+                description: >-
+                  (required) Path to the file containing the model code.
+                  Defaults to the file used in the latest version of the model.
+              function:
+                type: string
+                description: >-
+                  (required) Defaults to the function used in the latest version
+                  of the model.
+              excludeFiles:
+                type: array
+                description: |-
+                  List of file names for the version to exclude. For example:
+
+                  ```python
+                          ["foo.py", "bar.py", "baz.py"]
+                  ```
+              environmentId:
+                type: string
+                description: >-
+                  The unique id of the environment for the model to use.
+                  Defaults to the environment used in the latest version of the
+                  model, or the default project environment in the case of a new
+                  model.
+              name:
+                type: string
+                description: (required) The name of the new model.
+              description:
+                type: string
+                description: (required) Summary of the changes in the new version.
+            example:
+              projectId: 5a73a66cd4632584f7b0ed8d
+              file: predict.R
+              function: predictQuality
+              excludeFiles:
+                - file1.data
+                - file2.data
+                - fileN.data
+              environmentId: 5a73a6906ece7a7aed984654
+              name: Wine Quality Model
+              description: A model of wine quality
+      produces:
+        - application/json
+  '/v1/models/{model_id}/versions':
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          examples:
+            application/json:
+              data:
+                - _id: 5a73a6b86278f5c536008832
+                  modelId:
+                    value: 5a73a72189c5b2635de7ac5d
+                  projectId: 5a73a66cd4632584f7b0ed8d
+                  commitId: 5a73a67e941923efd202c17d
+                  description: A model of wine quality
+                  file: predict.R
+                  function: predictQuality
+                  excludeFiles: []
+                  metadata:
+                    createdBy: 5a73a6b86278f5c536008832
+                    created: 3862360832
+                    number: 2
+                    builds: []
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items: {}
+      summary: Get the latest versions of a model
+      operationId: Get the latest versions of a model
+      description: |-
+        **This is a beta endpoint available in Domino 2.5+**<br>
+        **Its specification may change in future versions of Domino.**
+      tags:
+        - Models
+      parameters:
+        - name: model_id
+          in: path
+          description: The unique id of the model to version.
+          required: true
+          x-example: 5a73a6b86278f5c536008832
+          type: string
+      produces:
+        - application/json
+    post:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          examples:
+            application/json:
+              id: 5a73a72189c5b2635de7ac5d
+              number: 2
+          schema:
+            type: object
+            properties:
+              id:
+                type: string
+                description: The unique ID for the model version.
+              number:
+                type: number
+                description: The new version number.
+      summary: Publish a new model version
+      operationId: Publish a new model version
+      description: |-
+        **This is a beta endpoint available in Domino 2.5+**<br>
+        **Its specification may change in future versions of Domino.**
+      tags:
+        - Models
+      parameters:
+        - name: model_id
+          in: path
+          description: The unique id of the model to version.
+          required: true
+          x-example: 5a73a6b86278f5c536008832
+          type: string
+        - name: body
+          in: body
+          schema:
+            type: object
+            properties:
+              projectId:
+                type: string
+                description: >-
+                  (required) The unique id of the project the model will be
+                  bound to.
+              file:
+                type: string
+                description: >-
+                  (required) Path to the file containing the model code.
+                  Defaults to the file used in the latest version of the model.
+              function:
+                type: string
+                description: >-
+                  (required) Defaults to the function used in the latest version
+                  of the model.
+              excludeFiles:
+                type: array
+                description: |-
+                  List of file names for the version to exclude. For example:
+
+                  ```python
+                          ["foo.py", "bar.py", "baz.py"]
+                  ```
+              environmentId:
+                type: string
+                description: >-
+                  The unique id of the environment for the model to use.
+                  Defaults to the environment used in the latest version of the
+                  model, or the default project environment in the case of a new
+                  model.
+              commitId:
+                type: string
+                description: >-
+                  The unique id of the project commit to use. Defaults to the
+                  latest commit of the project.
+              description:
+                type: string
+                description: Summary of the changes in the new version.
+            example:
+              projectId: 5a73a66cd4632584f7b0ed8d
+              file: predict.R
+              function: predictQuality
+              excludeFiles:
+                - file1.data
+                - file2.data
+                - fileN.data
+              environmentId: 5a73a6906ece7a7aed984654
+              commitId: 5a73a67e941923efd202c17d
+              description: A model of wine quality
+      produces:
+        - application/json
+  /v4/models/buildModelImage:
+    post:
+      responses:
+        '202':
+          description: 'Request accepted, building of model image continues offline'
+          headers: {}
+          examples:
+            application/json:
+              - modelId: '000000000000000000000000'
+                name: ''
+                environmentId: '000000000000000000000000'
+                projectId: '000000000000000000000000'
+                projectName: ''
+                buildStatus: ''
+                modelVersionId: '000000000000000000000000'
+                modelVersionNumber: -100000000
+                description: ''
+          schema:
+            items:
+              $ref: '#/definitions/domino.modelmanager.web.BuildModelImageApiResponse'
+            type: array
+            definitions:
+              domino.modelmanager.web.BuildModelImageApiResponse:
+                properties:
+                  buildStatus:
+                    type: string
+                  description:
+                    type: string
+                  environmentId:
+                    pattern: '^[0-9a-f]{24}$'
+                    type: string
+                  modelId:
+                    pattern: '^[0-9a-f]{24}$'
+                    type: string
+                  modelVersionId:
+                    pattern: '^[0-9a-f]{24}$'
+                    type: string
+                  modelVersionNumber:
+                    format: int32
+                    type: integer
+                  name:
+                    type: string
+                  projectId:
+                    pattern: '^[0-9a-f]{24}$'
+                    type: string
+                  projectName:
+                    type: string
+                required:
+                  - modelId
+                  - name
+                  - environmentId
+                  - projectId
+                  - projectName
+                  - buildStatus
+                  - modelVersionId
+                  - modelVersionNumber
+        '400':
+          description: The server could not understand the request due to malformed syntax
+          headers: {}
+          examples:
+            application/json:
+              message: ''
+          schema:
+            properties:
+              message:
+                description: Error message
+                type: string
+            type: object
+        '401':
+          description: >-
+            The current user cannot perform this operation because they are not
+            logged in
+          headers: {}
+          examples:
+            application/json:
+              message: ''
+          schema:
+            properties:
+              message:
+                description: Error message
+                type: string
+            type: object
+        '403':
+          description: The current user is not authorized to perform this operation
+          headers: {}
+          examples:
+            application/json:
+              message: ''
+          schema:
+            properties:
+              message:
+                description: Error message
+                type: string
+            type: object
+        '500':
+          description: An internal error prevented the server from performing this action
+          headers: {}
+          examples:
+            application/json:
+              message: ''
+          schema:
+            properties:
+              message:
+                description: Error message
+                type: string
+            type: object
+      summary: Build a model image
+      operationId: Build a model image
+      description: ''
+      tags:
+        - Models
+      parameters:
+        - name: Accept
+          in: header
+          description: e.g. application/json
+          required: false
+          x-example: application/json
+          type: string
+        - name: body
+          in: body
+          schema:
+            anyOf:
+              - properties:
+                  description:
+                    type: string
+                  environmentId:
+                    pattern: '^[0-9a-f]{24}$'
+                    type: string
+                  inferenceFunctionFile:
+                    type: string
+                  inferenceFunctionToCall:
+                    type: string
+                  logHttpRequestResponse:
+                    type: boolean
+                  modelId:
+                    pattern: '^[0-9a-f]{24}$'
+                    type: string
+                  modelName:
+                    type: string
+                  projectId:
+                    pattern: '^[0-9a-f]{24}$'
+                    type: string
+                required:
+                  - modelName
+                  - projectId
+                  - inferenceFunctionToCall
+                  - inferenceFunctionFile
+                  - logHttpRequestResponse
+              - properties:
+                  description:
+                    type: string
+                  environmentId:
+                    pattern: '^[0-9a-f]{24}$'
+                    type: string
+                  inferenceFunctionFile:
+                    type: string
+                  inferenceFunctionToCall:
+                    type: string
+                  logHttpRequestResponse:
+                    type: boolean
+                  modelId:
+                    pattern: '^[0-9a-f]{24}$'
+                    type: string
+                  modelName:
+                    type: string
+                  projectId:
+                    pattern: '^[0-9a-f]{24}$'
+                    type: string
+                required:
+                  - modelName
+                  - projectId
+                  - inferenceFunctionToCall
+                  - inferenceFunctionFile
+                  - logHttpRequestResponse
+              - properties:
+                  description:
+                    type: string
+                  environmentId:
+                    pattern: '^[0-9a-f]{24}$'
+                    type: string
+                  inferenceFunctionFile:
+                    type: string
+                  inferenceFunctionToCall:
+                    type: string
+                  logHttpRequestResponse:
+                    type: boolean
+                  modelId:
+                    pattern: '^[0-9a-f]{24}$'
+                    type: string
+                  modelName:
+                    type: string
+                  projectId:
+                    pattern: '^[0-9a-f]{24}$'
+                    type: string
+                required:
+                  - modelName
+                  - projectId
+                  - inferenceFunctionToCall
+                  - inferenceFunctionFile
+                  - logHttpRequestResponse
+              - properties:
+                  description:
+                    type: string
+                  environmentId:
+                    pattern: '^[0-9a-f]{24}$'
+                    type: string
+                  inferenceFunctionFile:
+                    type: string
+                  inferenceFunctionToCall:
+                    type: string
+                  logHttpRequestResponse:
+                    type: boolean
+                  modelId:
+                    pattern: '^[0-9a-f]{24}$'
+                    type: string
+                  modelName:
+                    type: string
+                  projectId:
+                    pattern: '^[0-9a-f]{24}$'
+                    type: string
+                required:
+                  - modelName
+                  - projectId
+                  - inferenceFunctionToCall
+                  - inferenceFunctionFile
+                  - logHttpRequestResponse
+              - properties:
+                  description:
+                    type: string
+                  environmentId:
+                    pattern: '^[0-9a-f]{24}$'
+                    type: string
+                  inferenceFunctionFile:
+                    type: string
+                  inferenceFunctionToCall:
+                    type: string
+                  logHttpRequestResponse:
+                    type: boolean
+                  modelId:
+                    pattern: '^[0-9a-f]{24}$'
+                    type: string
+                  modelName:
+                    type: string
+                  projectId:
+                    pattern: '^[0-9a-f]{24}$'
+                    type: string
+                required:
+                  - modelName
+                  - projectId
+                  - inferenceFunctionToCall
+                  - inferenceFunctionFile
+                  - logHttpRequestResponse
+      produces:
+        - application/json
+  '/v4/models/{exportId}/getExportImageStatus':
+    get:
+      responses:
+        '200':
+          description: success
+          headers: {}
+          examples:
+            application/json:
+              - modelId: '000000000000000000000000'
+                modelVersionId: '000000000000000000000000'
+                exportId: '000000000000000000000000'
+                status: ''
+          schema:
+            items:
+              $ref: >-
+                #/definitions/domino.modelmanager.web.ModelExportStatusApiResponse
+            type: array
+            definitions:
+              domino.modelmanager.web.ModelExportStatusApiResponse:
+                properties:
+                  exportId:
+                    pattern: '^[0-9a-f]{24}$'
+                    type: string
+                  modelId:
+                    pattern: '^[0-9a-f]{24}$'
+                    type: string
+                  modelVersionId:
+                    pattern: '^[0-9a-f]{24}$'
+                    type: string
+                  status:
+                    type: string
+                required:
+                  - modelId
+                  - modelVersionId
+                  - exportId
+                  - status
+        '400':
+          description: The server could not understand the request due to malformed syntax
+          headers: {}
+          examples:
+            application/json:
+              message: ''
+          schema:
+            properties:
+              message:
+                description: Error message
+                type: string
+            type: object
+        '401':
+          description: >-
+            The current user cannot perform this operation because they are not
+            logged in
+          headers: {}
+          examples:
+            application/json:
+              message: ''
+          schema:
+            properties:
+              message:
+                description: Error message
+                type: string
+            type: object
+        '403':
+          description: The current user is not authorized to perform this operation
+          headers: {}
+          examples:
+            application/json:
+              message: ''
+          schema:
+            properties:
+              message:
+                description: Error message
+                type: string
+            type: object
+        '500':
+          description: An internal error prevented the server from performing this action
+          headers: {}
+          examples:
+            application/json:
+              message: ''
+          schema:
+            properties:
+              message:
+                description: Error message
+                type: string
+            type: object
+      summary: Get model image export status
+      operationId: Get model image export status
+      description: ''
+      tags:
+        - Models
+      parameters:
+        - name: exportId
+          in: path
+          description: ''
+          required: true
+          type: string
+        - name: Accept
+          in: header
+          description: e.g. application/json
+          required: false
+          x-example: application/json
+          type: string
+      produces:
+        - application/json
+  '/v4/models/{exportId}/getExportLogs':
+    get:
+      responses:
+        '200':
+          description: success
+          headers: {}
+          examples:
+            application/json:
+              - modelId: '000000000000000000000000'
+                modelVersionId: '000000000000000000000000'
+                exportId: '000000000000000000000000'
+                status: ''
+                logs: ''
+          schema:
+            items:
+              $ref: '#/definitions/domino.modelmanager.web.ModelExportLogsApiResponse'
+            type: array
+            definitions:
+              domino.modelmanager.web.ModelExportLogsApiResponse:
+                properties:
+                  exportId:
+                    pattern: '^[0-9a-f]{24}$'
+                    type: string
+                  logs:
+                    type: string
+                  modelId:
+                    pattern: '^[0-9a-f]{24}$'
+                    type: string
+                  modelVersionId:
+                    pattern: '^[0-9a-f]{24}$'
+                    type: string
+                  status:
+                    type: string
+                required:
+                  - modelId
+                  - modelVersionId
+                  - exportId
+                  - status
+                  - logs
+        '400':
+          description: The server could not understand the request due to malformed syntax
+          headers: {}
+          examples:
+            application/json:
+              message: ''
+          schema:
+            properties:
+              message:
+                description: Error message
+                type: string
+            type: object
+        '401':
+          description: >-
+            The current user cannot perform this operation because they are not
+            logged in
+          headers: {}
+          examples:
+            application/json:
+              message: ''
+          schema:
+            properties:
+              message:
+                description: Error message
+                type: string
+            type: object
+        '403':
+          description: The current user is not authorized to perform this operation
+          headers: {}
+          examples:
+            application/json:
+              message: ''
+          schema:
+            properties:
+              message:
+                description: Error message
+                type: string
+            type: object
+        '500':
+          description: An internal error prevented the server from performing this action
+          headers: {}
+          examples:
+            application/json:
+              message: ''
+          schema:
+            properties:
+              message:
+                description: Error message
+                type: string
+            type: object
+      summary: Get model image export logs
+      operationId: Get model image export logs
+      description: ''
+      tags:
+        - Models
+      parameters:
+        - name: exportId
+          in: path
+          description: ''
+          required: true
+          type: string
+        - name: Accept
+          in: header
+          description: e.g. application/json
+          required: false
+          x-example: application/json
+          type: string
+      produces:
+        - application/json
+  '/v4/models/{modelId}/{modelVersionId}/exportImageToRegistry':
+    post:
+      responses:
+        '202':
+          description: 'Request accepted, exporting of model image continues offline'
+          headers: {}
+          examples:
+            application/json:
+              - modelId: '000000000000000000000000'
+                modelVersionId: '000000000000000000000000'
+                exportId: '000000000000000000000000'
+                status: ''
+          schema:
+            items:
+              $ref: >-
+                #/definitions/domino.modelmanager.web.ModelExportStatusApiResponse
+            type: array
+            definitions:
+              domino.modelmanager.web.ModelExportStatusApiResponse:
+                properties:
+                  exportId:
+                    pattern: '^[0-9a-f]{24}$'
+                    type: string
+                  modelId:
+                    pattern: '^[0-9a-f]{24}$'
+                    type: string
+                  modelVersionId:
+                    pattern: '^[0-9a-f]{24}$'
+                    type: string
+                  status:
+                    type: string
+                required:
+                  - modelId
+                  - modelVersionId
+                  - exportId
+                  - status
+        '400':
+          description: The server could not understand the request due to malformed syntax
+          headers: {}
+          examples:
+            application/json:
+              message: ''
+          schema:
+            properties:
+              message:
+                description: Error message
+                type: string
+            type: object
+        '401':
+          description: >-
+            The current user cannot perform this operation because they are not
+            logged in
+          headers: {}
+          examples:
+            application/json:
+              message: ''
+          schema:
+            properties:
+              message:
+                description: Error message
+                type: string
+            type: object
+        '403':
+          description: The current user is not authorized to perform this operation
+          headers: {}
+          examples:
+            application/json:
+              message: ''
+          schema:
+            properties:
+              message:
+                description: Error message
+                type: string
+            type: object
+        '500':
+          description: An internal error prevented the server from performing this action
+          headers: {}
+          examples:
+            application/json:
+              message: ''
+          schema:
+            properties:
+              message:
+                description: Error message
+                type: string
+            type: object
+      summary: Export model image to external registry
+      operationId: Export model image to external registry
+      description: ''
+      tags:
+        - Models
+      parameters:
+        - name: modelId
+          in: path
+          description: ''
+          required: true
+          type: string
+        - name: modelVersionId
+          in: path
+          description: ''
+          required: true
+          type: string
+        - name: Accept
+          in: header
+          description: e.g. application/json
+          required: false
+          x-example: application/json
+          type: string
+        - name: body
+          in: body
+          schema:
+            anyOf:
+              - properties:
+                  password:
+                    type: string
+                  registryUrl:
+                    type: string
+                  repository:
+                    type: string
+                  tag:
+                    type: string
+                  username:
+                    type: string
+                required:
+                  - registryUrl
+                  - repository
+              - properties:
+                  password:
+                    type: string
+                  registryUrl:
+                    type: string
+                  repository:
+                    type: string
+                  tag:
+                    type: string
+                  username:
+                    type: string
+                required:
+                  - registryUrl
+                  - repository
+              - properties:
+                  password:
+                    type: string
+                  registryUrl:
+                    type: string
+                  repository:
+                    type: string
+                  tag:
+                    type: string
+                  username:
+                    type: string
+                required:
+                  - registryUrl
+                  - repository
+              - properties:
+                  password:
+                    type: string
+                  registryUrl:
+                    type: string
+                  repository:
+                    type: string
+                  tag:
+                    type: string
+                  username:
+                    type: string
+                required:
+                  - registryUrl
+                  - repository
+              - properties:
+                  password:
+                    type: string
+                  registryUrl:
+                    type: string
+                  repository:
+                    type: string
+                  tag:
+                    type: string
+                  username:
+                    type: string
+                required:
+                  - registryUrl
+                  - repository
+      produces:
+        - application/json
+  '/v4/models/{modelId}/{modelVersionId}/getBuildLogs':
+    get:
+      responses:
+        '200':
+          description: success
+          headers: {}
+          examples:
+            application/json:
+              - modelId: '000000000000000000000000'
+                modelVersionId: '000000000000000000000000'
+                status: ''
+                logs: ''
+          schema:
+            items:
+              $ref: '#/definitions/domino.modelmanager.web.ModelBuildLogsApiResponse'
+            type: array
+            definitions:
+              domino.modelmanager.web.ModelBuildLogsApiResponse:
+                properties:
+                  logs:
+                    type: string
+                  modelId:
+                    pattern: '^[0-9a-f]{24}$'
+                    type: string
+                  modelVersionId:
+                    pattern: '^[0-9a-f]{24}$'
+                    type: string
+                  status:
+                    type: string
+                required:
+                  - modelId
+                  - modelVersionId
+                  - status
+                  - logs
+        '400':
+          description: The server could not understand the request due to malformed syntax
+          headers: {}
+          examples:
+            application/json:
+              message: ''
+          schema:
+            properties:
+              message:
+                description: Error message
+                type: string
+            type: object
+        '401':
+          description: >-
+            The current user cannot perform this operation because they are not
+            logged in
+          headers: {}
+          examples:
+            application/json:
+              message: ''
+          schema:
+            properties:
+              message:
+                description: Error message
+                type: string
+            type: object
+        '403':
+          description: The current user is not authorized to perform this operation
+          headers: {}
+          examples:
+            application/json:
+              message: ''
+          schema:
+            properties:
+              message:
+                description: Error message
+                type: string
+            type: object
+        '500':
+          description: An internal error prevented the server from performing this action
+          headers: {}
+          examples:
+            application/json:
+              message: ''
+          schema:
+            properties:
+              message:
+                description: Error message
+                type: string
+            type: object
+      summary: Get model image build logs
+      operationId: Get model image build logs
+      description: ''
+      tags:
+        - Models
+      parameters:
+        - name: modelId
+          in: path
+          description: ''
+          required: true
+          type: string
+        - name: modelVersionId
+          in: path
+          description: ''
+          required: true
+          type: string
+        - name: Accept
+          in: header
+          description: e.g. application/json
+          required: false
+          x-example: application/json
+          type: string
+      produces:
+        - application/json
+  '/v4/models/{modelId}/{modelVersionId}/getBuildStatus':
+    get:
+      responses:
+        '200':
+          description: success
+          headers: {}
+          examples:
+            application/json:
+              - modelId: '000000000000000000000000'
+                modelVersionId: '000000000000000000000000'
+                status: ''
+          schema:
+            items:
+              $ref: >-
+                #/definitions/domino.modelmanager.web.ModelBuildStatusApiResponse
+            type: array
+            definitions:
+              domino.modelmanager.web.ModelBuildStatusApiResponse:
+                properties:
+                  modelId:
+                    pattern: '^[0-9a-f]{24}$'
+                    type: string
+                  modelVersionId:
+                    pattern: '^[0-9a-f]{24}$'
+                    type: string
+                  status:
+                    type: string
+                required:
+                  - modelId
+                  - modelVersionId
+                  - status
+        '400':
+          description: The server could not understand the request due to malformed syntax
+          headers: {}
+          examples:
+            application/json:
+              message: ''
+          schema:
+            properties:
+              message:
+                description: Error message
+                type: string
+            type: object
+        '401':
+          description: >-
+            The current user cannot perform this operation because they are not
+            logged in
+          headers: {}
+          examples:
+            application/json:
+              message: ''
+          schema:
+            properties:
+              message:
+                description: Error message
+                type: string
+            type: object
+        '403':
+          description: The current user is not authorized to perform this operation
+          headers: {}
+          examples:
+            application/json:
+              message: ''
+          schema:
+            properties:
+              message:
+                description: Error message
+                type: string
+            type: object
+        '500':
+          description: An internal error prevented the server from performing this action
+          headers: {}
+          examples:
+            application/json:
+              message: ''
+          schema:
+            properties:
+              message:
+                description: Error message
+                type: string
+            type: object
+      summary: Get model image build status
+      operationId: Get model image build status
+      description: ''
+      tags:
+        - Models
+      parameters:
+        - name: modelId
+          in: path
+          description: ''
+          required: true
+          type: string
+        - name: modelVersionId
+          in: path
+          description: ''
+          required: true
+          type: string
+        - name: Accept
+          in: header
+          description: e.g. application/json
+          required: false
+          x-example: application/json
+          type: string
+      produces:
+        - application/json
+  /v4/users:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          examples:
+            application/json:
+              - firstName: Power
+                lastName: User
+                fullName: Power User
+                userName: poweruser
+                email: power.user@dominodatalab.com
+                avatarUrl: URL
+                id: 5ac42816e4b0e9a0a82bbe8f
+                companyName: Domino Data Lab
+                phoneNumber: 555-123-4567
+          schema:
+            type: array
+            items: {}
+      summary: Get a list of users
+      operationId: Get a list of users
+      description: |-
+        **This is a beta endpoint available in Domino 2.8+**<br>
+        **Its specification may change in future versions of Domino.**
+      tags:
+        - Users v4
+      parameters:
+        - name: userId
+          in: query
+          description: 'Optional, returns only the users who match the IDs in this array.'
+          required: false
+          x-example: 'poweruser,anotheruser'
+          type: array
+        - name: userName
+          in: query
+          description: >-
+            Optional, returns only the single user with the exact provided
+            username.
+          required: false
+          x-example: poweruser
+          type: string
+        - name: query
+          in: query
+          description: 'Optional, returns all usernames that start with this query string.'
+          required: false
+          x-example: p
+          type: string
+      produces:
+        - application/json
+  /v4/users/self:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          examples:
+            application/json:
+              firstName: Power
+              lastName: User
+              fullName: Power User
+              userName: poweruser
+              email: power.user@dominodatalab.com
+              avatarUrl: URL
+              id: 5ac42816e4b0e9a0a82bbe8f
+              companyName: Domino Data Lab
+              phoneNumber: 555-123-4567
+          schema:
+            type: object
+            properties:
+              firstName:
+                type: string
+                description: User's first name.
+              lastName:
+                type: string
+                description: User's last name.
+              fullName:
+                type: string
+                description: User's full name.
+              userName:
+                type: string
+                description: User's username.
+              email:
+                type: string
+                description: User's email address.
+              avatarUrl:
+                type: string
+                description: URL of the user's avatar.
+              id:
+                type: string
+                description: User's unique ID.
+              companyName:
+                type: string
+                description: User's company name.
+              phoneNumber:
+                type: string
+                description: User's phone number.
+      summary: Get current user
+      operationId: Get current user
+      description: |-
+        **This is a beta endpoint available in Domino 2.8+**<br>
+        **Its specification may change in future versions of Domino.**
+      tags:
+        - Users v4
+      produces:
+        - application/json
+  /v4/organizations:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          examples:
+            application/json:
+              - id: 5a73a6906ece7a7aed984654
+                name: goodOrg
+                members:
+                  - id: 5ac42816e4b0e9a0a82bbe8f
+                    role: Member
+                defaultEnvironment: orgEnvironment 3
+                legacyDefaultEnvironment: orgEnvironment 1
+          schema:
+            type: array
+            items: {}
+      summary: Get a list of organizations
+      operationId: Get a list of organizations
+      description: |-
+        **This endpoint requires admin permissions.**<br>
+        **This is a beta endpoint available in Domino 2.8+**<br>
+        **Its specification may change in future versions of Domino.**
+      tags:
+        - Organizations v4
+      parameters:
+        - name: name
+          in: query
+          description: 'Optional, returns only the organization with the specified name.'
+          required: false
+          x-example: goodOrg
+          type: string
+      produces:
+        - application/json
+    post:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          examples:
+            application/json:
+              id: 5a73a6906ece7a7aed984654
+              name: newOrg
+              members:
+                - id: 5ac42816e4b0e9a0a82bbe8f
+                  role: Member
+              defaultEnvironment: orgEnvironment 3
+              legacyDefaultEnvironment: orgEnvironment 1
+          schema:
+            type: object
+            properties:
+              id:
+                type: string
+                description: Organization unique identifier.
+              name:
+                type: string
+                description: Organization name.
+              members:
+                type: array
+                items: {}
+              defaultEnvironment:
+                type: string
+                description: Default v2 environment for the organization.
+              legacyDefaultEnvironment:
+                type: string
+                description: Default legacy environment for the organization.
+      summary: Create a new organization
+      operationId: Create a new organization
+      description: |-
+        **This is a beta endpoint available in Domino 2.8+**<br>
+        **Its specification may change in future versions of Domino.**
+      tags:
+        - Organizations v4
+      parameters:
+        - name: body
+          in: body
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+                description: Name of new organization.
+              email:
+                type: string
+                description: Email address for managing the organization in Domino.
+              members:
+                type: array
+            example:
+              name: string
+              email: string
+              members:
+                - id: string
+                  role: Member
+      produces:
+        - application/json
+  /v4/organizations/self:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          examples:
+            application/json:
+              - id: 5a73a6906ece7a7aed984654
+                name: goodOrg
+                members:
+                  - id: 5ac42816e4b0e9a0a82bbe8f
+                    role: Member
+                defaultEnvironment: orgEnvironment 3
+                legacyDefaultEnvironment: orgEnvironment 1
+          schema:
+            type: array
+            items: {}
+      summary: Get a list of my organizations
+      operationId: Get a list of my organizations
+      description: |-
+        **This is a beta endpoint available in Domino 2.8+**<br>
+        **Its specification may change in future versions of Domino.**
+      tags:
+        - Organizations v4
+      parameters:
+        - name: name
+          in: query
+          description: 'Optional, returns only the organization with the specified name.'
+          required: false
+          x-example: goodOrg
+          type: string
+      produces:
+        - application/json
+  '/v4/organizations/{orgId}':
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          examples:
+            application/json:
+              id: 5a73a6906ece7a7aed984654
+              name: goodOrg
+              members:
+                - id: 5ac42816e4b0e9a0a82bbe8f
+                  role: Member
+              defaultEnvironment: orgEnvironment 3
+              legacyDefaultEnvironment: orgEnvironment 1
+          schema:
+            type: object
+            properties:
+              id:
+                type: string
+                description: Organization unique identifier.
+              name:
+                type: string
+                description: Organization name.
+              members:
+                type: array
+                items: {}
+              defaultEnvironment:
+                type: string
+                description: Default v2 environment for the organization.
+              legacyDefaultEnvironment:
+                type: string
+                description: Default legacy environment for the organization.
+      summary: Get organization by ID
+      operationId: Get organization by ID
+      description: |-
+        **This is a beta endpoint available in Domino 2.8+**<br>
+        **Its specification may change in future versions of Domino.**
+      tags:
+        - Organizations v4
+      parameters:
+        - name: orgId
+          in: path
+          description: Identifier of organization to get.
+          required: true
+          x-example: 5a73a6906ece7a7aed984654
+          type: string
+      produces:
+        - application/json
+  '/v4/organizations/{orgId}/members':
+    put:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          examples:
+            application/json:
+              id: 5a73a6906ece7a7aed984654
+              name: goodOrg
+              members:
+                - id: 5ac42816e4b0e9a0a82bbe8f
+                  role: Member
+              defaultEnvironment: orgEnvironment 3
+              legacyDefaultEnvironment: orgEnvironment 1
+          schema:
+            type: object
+            properties:
+              id:
+                type: string
+                description: Organization unique identifier.
+              name:
+                type: string
+                description: Organization name.
+              members:
+                type: array
+                items: {}
+              defaultEnvironment:
+                type: string
+                description: Default v2 environment for the organization.
+              legacyDefaultEnvironment:
+                type: string
+                description: Default legacy environment for the organization.
+      summary: Change the list of members
+      operationId: Change the list of members
+      description: |-
+        **This is a beta endpoint available in Domino 2.8+**<br>
+        **Its specification may change in future versions of Domino.**
+      tags:
+        - Organizations v4
+      parameters:
+        - name: orgId
+          in: path
+          description: Identifier of organization to modify members of.
+          required: true
+          x-example: 5a73a6906ece7a7aed984654
+          type: string
+        - name: body
+          in: body
+          schema:
+            type: object
+            properties:
+              members:
+                type: array
+                description: >-
+                  Array of objects representing the desired list of members
+                  (Note: the list passed here will replace the existing member
+                  list. The current list can be retrieved by a call to the
+                  [organization-by-id](https://dominodatalab.github.io/api-docs/#/reference/organizations-v4/organizations-by-id/get-organization-by-id)
+                  API).
+            example:
+              members:
+                - id: 5ac42816e4b0e9a0a82bbe8f
+                  role: Member
+      produces:
+        - application/json
+  /v4/projects:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          examples:
+            application/json:
+              - id: 5ac42816e4b0e9a0a82bbe8f
+                name: goodProject
+                description: Doing data science.
+                visibility: Public
+                ownerId: 5ac42816e4b0e9a0a82bbe8f
+                collaboratorIds: []
+                collaborators:
+                  - collaboratorId: 5ac42816e4b0e9a0a82bbe8f
+                    projectRole: Contributor
+                tags:
+                  - id: 5ac42816e4b0e9a0a82bbe8f
+                    name: descriptiveTag
+          schema:
+            type: array
+            items: {}
+      summary: Get a list of user's projects
+      operationId: Get a list of user's projects
+      description: |-
+        **This is a beta endpoint available in Domino 2.9+**<br>
+        **Its specification may change in future versions of Domino.**
+      tags:
+        - Projects v4
+      parameters:
+        - name: name
+          in: query
+          description: >-
+            Optional, returns only the projects belonging to owner, specified by
+            the owner's username.
+          required: false
+          x-example: myProject
+          type: string
+        - name: ownerId
+          in: query
+          description: >-
+            Optional, returns projects belonging to owner, specified by owner's
+            24-character hexidecimal identifier.
+          required: false
+          x-example: 507f191e810c19729de860ea
+          type: string
+      produces:
+        - application/json
+    post:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          examples:
+            application/json:
+              name: goodProject
+              description: Doing data science.
+              visibility: Public
+              ownerId: 5ac42816e4b0e9a0a82bbe8f
+              collaborators:
+                - collaboratorId: 5ac42816e4b0e9a0a82bbe8f
+                  projectRole: Contributor
+              tags:
+                tagNames: []
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+                description: Project name.
+              description:
+                type: string
+                description: Project description.
+              visibility:
+                type: string
+                enum:
+                  - Public
+                  - Searchable
+                  - Private
+                description: Project visibility setting.
+              ownerId:
+                type: string
+                description: ID of project owner.
+              collaborators:
+                type: array
+                description: Objects representing collaborators.
+                items: {}
+              tags:
+                type: object
+                properties:
+                  tagNames:
+                    type: array
+                    description: String text of tags to apply to the project.
+                    items: {}
+                required:
+                  - tagNames
+            required:
+              - name
+              - description
+              - visibility
+              - ownerId
+              - collaborators
+      summary: Create a new project
+      operationId: Create a new project
+      description: |-
+        **This is a beta endpoint available in Domino 2.9+**<br>
+        **Its specification may change in future versions of Domino.**
+      tags:
+        - Projects v4
+      parameters:
+        - name: body
+          in: body
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+                description: Project name.
+              description:
+                type: string
+                description: Project description.
+              visibility:
+                type: string
+                enum:
+                  - Public
+                  - Searchable
+                  - Private
+                description: Project visibility setting.
+              ownerId:
+                type: string
+                description: ID of project owner.
+              collaborators:
+                type: array
+                description: Objects representing collaborators.
+              tags:
+                type: object
+                properties:
+                  tagNames:
+                    type: array
+                    description: String text of tags to apply to the project.
+                required:
+                  - tagNames
+            required:
+              - name
+              - description
+              - visibility
+              - ownerId
+              - collaborators
+            example:
+              name: string
+              description: string
+              visibility: Public
+              ownerId: string
+              collaborators:
+                - collaboratorId: string
+                  projectRole: Contributor
+              tags:
+                tagNames:
+                  - string
+      produces:
+        - application/json
+  '/v4/projects/{projectToForkId}/fork':
+    post:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          examples:
+            application/json:
+              name: forkedProject
+              description: Doing data science.
+              visibility: Public
+              ownerId: 5ac42816e4b0e9a0a82bbe8f
+              collaborators:
+                - collaboratorId: 5ac42816e4b0e9a0a82bbe8f
+                  projectRole: Contributor
+              tags:
+                tagNames: []
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+                description: Name of destination project to fork into.
+              description:
+                type: string
+                description: Project description.
+              visibility:
+                type: string
+                enum:
+                  - Public
+                  - Searchable
+                  - Private
+                description: Project visibility setting.
+              ownerId:
+                type: string
+                description: ID of project owner.
+              collaborators:
+                type: array
+                description: Objects representing collaborators.
+                items: {}
+              tags:
+                type: object
+                properties:
+                  tagNames:
+                    type: array
+                    description: String text of tags to apply to the project.
+                    items: {}
+                required:
+                  - tagNames
+            required:
+              - name
+              - description
+              - visibility
+              - ownerId
+              - collaborators
+      summary: Fork a project
+      operationId: Fork a project
+      description: |-
+        **This is a beta endpoint available in Domino 2.9+**<br>
+        **Its specification may change in future versions of Domino.**
+      tags:
+        - Projects v4
+      parameters:
+        - name: projectToForkId
+          in: path
+          description: ID of the project to fork.
+          required: true
+          x-example: 5a73a6906ece7a7aed984654
+          type: string
+        - name: body
+          in: body
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+                description: Name of destination project to fork into.
+              description:
+                type: string
+                description: Project description.
+              visibility:
+                type: string
+                enum:
+                  - Public
+                  - Searchable
+                  - Private
+                description: Project visibility setting.
+              ownerId:
+                type: string
+                description: ID of project owner.
+              collaborators:
+                type: array
+                description: Objects representing collaborators.
+              tags:
+                type: object
+                properties:
+                  tagNames:
+                    type: array
+                    description: String text of tags to apply to the project.
+                required:
+                  - tagNames
+            required:
+              - name
+              - description
+              - visibility
+              - ownerId
+              - collaborators
+            example:
+              name: string
+              description: string
+              visibility: Public
+              ownerId: string
+              collaborators:
+                - collaboratorId: string
+                  projectRole: Contributor
+      produces:
+        - application/json
+  '/v4/projects/{projectToCopyId}/copy':
+    post:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          examples:
+            application/json:
+              name: copiedProject
+              description: Doing data science.
+              visibility: Public
+              ownerId: 5ac42816e4b0e9a0a82bbe8f
+              collaborators:
+                - collaboratorId: 5ac42816e4b0e9a0a82bbe8f
+                  projectRole: Contributor
+              tags:
+                tagNames: []
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+                description: Name of destination project to copy into.
+              description:
+                type: string
+                description: Project description.
+              visibility:
+                type: string
+                enum:
+                  - Public
+                  - Searchable
+                  - Private
+                description: Project visibility setting.
+              ownerId:
+                type: string
+                description: ID of project owner.
+              collaborators:
+                type: array
+                description: Objects representing collaborators.
+                items: {}
+              tags:
+                type: object
+                properties:
+                  tagNames:
+                    type: array
+                    description: String text of tags to apply to the project.
+                    items: {}
+                required:
+                  - tagNames
+            required:
+              - name
+              - description
+              - visibility
+              - ownerId
+              - collaborators
+      summary: Copy a project
+      operationId: Copy a project
+      description: |-
+        **This is a beta endpoint available in Domino 2.9+**<br>
+        **Its specification may change in future versions of Domino.**
+      tags:
+        - Projects v4
+      parameters:
+        - name: projectToCopyId
+          in: path
+          description: ID of the project to copy.
+          required: true
+          x-example: 5a73a6906ece7a7aed984654
+          type: string
+        - name: body
+          in: body
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+                description: Project name.
+              description:
+                type: string
+                description: Project description.
+              visibility:
+                type: string
+                enum:
+                  - Public
+                  - Searchable
+                  - Private
+                description: Project visibility setting.
+              ownerId:
+                type: string
+                description: ID of project owner.
+              collaborators:
+                type: array
+                description: Objects representing collaborators.
+              tags:
+                type: object
+                properties:
+                  tagNames:
+                    type: array
+                    description: String text of tags to apply to the project.
+            required:
+              - name
+            example:
+              name: string
+              description: string
+              visibility: Public
+              ownerId: string
+              collaborators:
+                - collaboratorId: string
+                  projectRole: Contributor
+      produces:
+        - application/json
+  '/v4/projects/{projectId}':
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          examples:
+            application/json:
+              id: 5ac42816e4b0e9a0a82bbe8f
+              name: goodProject
+              description: Doing data science.
+              visibility: Public
+              ownerId: 5ac42816e4b0e9a0a82bbe8f
+              collaboratorIds: []
+              collaborators:
+                - collaboratorId: 5ac42816e4b0e9a0a82bbe8f
+                  projectRole: Contributor
+              tags:
+                - id: 5ac42816e4b0e9a0a82bbe8f
+                  name: descriptiveTag
+          schema:
+            type: object
+            properties:
+              id:
+                type: string
+                description: Project ID.
+              name:
+                type: string
+                description: Project name.
+              description:
+                type: string
+                description: Project description.
+              visibility:
+                type: string
+                enum:
+                  - Public
+                  - Searchable
+                  - Private
+                description: Project visibility setting.
+              ownerId:
+                type: string
+                description: ID of project owner.
+              collaboratorIds:
+                type: array
+                description: IDs of collaborators.
+                items: {}
+              collaborators:
+                type: array
+                description: Objects representing collaborators.
+                items: {}
+              tags:
+                type: array
+                description: Objects representing project tags.
+                items: {}
+      summary: Get project summary
+      operationId: Get project summary
+      description: |-
+        **This is a beta endpoint available in Domino 2.9+**<br>
+        **Its specification may change in future versions of Domino.**
+      tags:
+        - Projects v4
+      parameters:
+        - name: projectId
+          in: path
+          description: ID of the project to fetch summary for.
+          required: true
+          x-example: 5a73a6906ece7a7aed984654
+          type: string
+      produces:
+        - application/json
+    patch:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          examples: {}
+      summary: Update project description and visibility
+      operationId: Update project description and visibility
+      description: |-
+        **This is a beta endpoint available in Domino 2.9+**<br>
+        **Its specification may change in future versions of Domino.**
+      tags:
+        - Projects v4
+      parameters:
+        - name: projectId
+          in: path
+          description: ID of the project to update description and visibility for.
+          required: true
+          x-example: 5a73a6906ece7a7aed984654
+          type: string
+        - name: body
+          in: body
+          schema:
+            type: object
+            properties:
+              description:
+                type: string
+                description: New description to apply to project.
+              visibility:
+                type: string
+                enum:
+                  - Public
+                  - Searchable
+                  - Private
+                description: Project visibility setting.
+            example:
+              description: string
+              visibility: Public
+  '/v4/projects/{projectId}/tags':
+    post:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          examples:
+            application/json:
+              id: 5a73a6906ece7a7aed984654
+              name: tag1
+          schema:
+            type: object
+            properties:
+              id:
+                type: string
+                description: ID of the tag.
+              name:
+                type: string
+                description: Name of tag applied.
+      summary: Add tags to project
+      operationId: Add tags to project
+      description: |-
+        **This is a beta endpoint available in Domino 2.9+**<br>
+        **Its specification may change in future versions of Domino.**
+      tags:
+        - Projects v4
+      parameters:
+        - name: projectId
+          in: path
+          description: ID of the project to add tags to.
+          required: true
+          x-example: 5a73a6906ece7a7aed984654
+          type: string
+        - name: body
+          in: body
+          schema:
+            type: object
+            properties:
+              tagnames:
+                type: array
+                description: Tag names to apply.
+            example:
+              tagNames:
+                - string
+      produces:
+        - application/json
+  '/v4/projects/{projectId}/tags/{tagId}':
+    delete:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          examples: {}
+      summary: Remove a tag from a project
+      operationId: Remove a tag from a project
+      description: |-
+        **This is a beta endpoint available in Domino 2.9+**<br>
+        **Its specification may change in future versions of Domino.**
+      tags:
+        - Projects v4
+      parameters:
+        - name: projectId
+          in: path
+          description: ID of the project to remove a tag from.
+          required: true
+          x-example: 5a73a6906ece7a7aed984654
+          type: string
+        - name: tagId
+          in: path
+          description: ID of the tag to remove.
+          required: true
+          x-example: 6fn891abd7306ece7a7aed984654
+          type: string
+  '/v4/projects/{projectId}/settings':
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          examples:
+            application/json:
+              defaultEnvironmentId: n67shdg3ece7a7aed984654
+          schema:
+            type: object
+            properties:
+              defaultEnvironmentId:
+                type: string
+                description: ID of the project's default environment
+      summary: Get settings for a project
+      operationId: Get settings for a project
+      description: |-
+        **This is a beta endpoint available in Domino 2.8+**<br>
+        **Its specification may change in future versions of Domino.**
+      tags:
+        - Projects v4
+      parameters:
+        - name: projectId
+          in: path
+          description: ID of the project to fetch settings for.
+          required: true
+          x-example: 5a73a6906ece7a7aed984654
+          type: string
+      produces:
+        - application/json
+    put:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          examples: {}
+      summary: Update project settings
+      operationId: Update project settings
+      description: |-
+        **This is a beta endpoint available in Domino 2.8+**<br>
+        **Its specification may change in future versions of Domino.**
+      tags:
+        - Projects v4
+      parameters:
+        - name: projectId
+          in: path
+          description: ID of the project to fetch settings for.
+          required: true
+          x-example: 5a73a6906ece7a7aed984654
+          type: string
+        - name: body
+          in: body
+          schema:
+            type: object
+            properties:
+              defaultEnvironmentId:
+                type: string
+                description: ID of the environment to use as project default
+            example:
+              defaultEnvironmentId: string
+  '/v4/projects/{projectId}/experiments':
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          examples:
+            application/json:
+              - inputs:
+                  commandToRun:
+                    args: []
+                  title: string
+                  projectId: string
+                  initialization:
+                    commitId: string
+                  experimentEnvironment:
+                    environmentId: string
+                    environmentRevisionId: string
+                  hardwareTierId: string
+                execution:
+                  executionId: string
+                  experimentExecutionTechnology: string
+                states:
+                  - status: IN_PROGRESS
+                    message: string
+                    recordedAt: 0
+                outputs:
+                  results:
+                    commitMessage: string
+                    outputCommitId: string
+                  logs: string
+                  dominoStats: 'collection.immutable.map[string,string]'
+                groups:
+                  - name: string
+                    projectId: string
+                createdAt: 0
+                id: string
+          schema:
+            type: array
+            items: {}
+      summary: Get experiments for a project
+      operationId: Get experiments for a project
+      description: |-
+        **This is a beta endpoint available in Domino 2.8+**<br>
+        **Its specification may change in future versions of Domino.**
+      tags:
+        - Projects v4
+      parameters:
+        - name: projectId
+          in: path
+          description: ID of the project to fetch experiments for.
+          required: true
+          x-example: 5a73a6906ece7a7aed984654
+          type: string
+        - name: createdAfterExperiment
+          in: query
+          description: ''
+          required: false
+          x-example: string
+          type: string
+        - name: createdBeforeExperiment
+          in: query
+          description: ''
+          required: false
+          x-example: string
+          type: string
+        - name: limit
+          in: query
+          description: ''
+          required: false
+          x-example: '0'
+          type: number
+      produces:
+        - application/json
+  '/v4/projects/{projectId}/hardwareTiers':
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          examples:
+            application/json:
+              - hardwareTier:
+                  _id: string
+                  id: string
+                  name: string
+                  cores: 0
+                  memory: 0
+                  runMemoryLimit:
+                    memoryLimitMegabytes: 0
+                    memorySwapLimitMegabytes: 0
+                  isDefault: true
+                  isAllowedDuringTrial: true
+                  isVisible: true
+                  isGlobal: false
+                  centsPerMinute: 0
+                  isFree: false
+                capacity:
+                  currentNumberOfExecutors: 0
+                  maximumNumberOfExecutors: 0
+                  numberOfCurrentlyExecutingRuns: 0
+                  numberOfQueuedRuns: 0
+                  maximumConcurrentRuns: 0
+                  availableCapacityWithoutLaunching: 0
+                  maximumAvailableCapacity: 0
+                  capacityLevel: {}
+          schema:
+            type: array
+            items: {}
+      summary: Get hardware tiers for a project
+      operationId: Get hardware tiers for a project
+      description: |-
+        **This is a beta endpoint available in Domino 2.8+**<br>
+        **Its specification may change in future versions of Domino.**
+      tags:
+        - Projects v4
+      parameters:
+        - name: projectId
+          in: path
+          description: ID of the project to fetch hardware tiers for.
+          required: true
+          x-example: 5a73a6906ece7a7aed984654
+          type: string
+      produces:
+        - application/json
+  '/v4/projects/{projectId}/collaborators':
+    post:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          examples:
+            application/json:
+              collaboratorId: string
+              projectRole: Contributor
+          schema:
+            type: object
+            properties:
+              collaboratorId:
+                type: string
+                description: ID of the user added.
+              projectRole:
+                type: string
+                enum:
+                  - Contributor
+                  - LauncherUser
+                  - ResultsConsumer
+                  - ProjectImporter
+                description: Role permissions granted.
+      summary: Add collaborator to project
+      operationId: Add collaborator to project
+      description: |-
+        **This is a beta endpoint available in Domino 2.8+**<br>
+        **Its specification may change in future versions of Domino.**
+      tags:
+        - Projects v4
+      parameters:
+        - name: projectId
+          in: path
+          description: ID of the project to add a collaborator to.
+          required: true
+          x-example: 5a73a6906ece7a7aed984654
+          type: string
+        - name: body
+          in: body
+          schema:
+            type: object
+            properties:
+              collaboratorId:
+                type: string
+                description: ID of the user to add as a collaborator.
+              projectRole:
+                type: string
+                enum:
+                  - Contributor
+                  - LauncherUser
+                  - ResultsConsumer
+                  - ProjectImporter
+                description: Role permissions to grant the collaborator.
+            example:
+              collaboratorId: string
+              projectRole: Contributor
+      produces:
+        - application/json
+  '/v4/projects/{projectId}/collaborators/{collaboratorId}':
+    delete:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          examples:
+            application/json:
+              collaboratorId: string
+              projectRole: Contributor
+          schema:
+            type: object
+            properties:
+              collaboratorId:
+                type: string
+                description: ID of the user removed.
+              projectRole:
+                type: string
+                enum:
+                  - Contributor
+                  - LauncherUser
+                  - ResultsConsumer
+                  - ProjectImporter
+                description: Role permissions removed from user.
+      summary: Remove collaborator from project
+      operationId: Remove collaborator from project
+      description: |-
+        **This is a beta endpoint available in Domino 2.8+**<br>
+        **Its specification may change in future versions of Domino.**
+      tags:
+        - Projects v4
+      parameters:
+        - name: projectId
+          in: path
+          description: ID of the project to remove a collaborator from.
+          required: true
+          x-example: 5a73a6906ece7a7aed984654
+          type: string
+        - name: collaboratorId
+          in: path
+          description: ID of the collaborator to remove.
+          required: true
+          x-example: 5a73a6906ece7a7aed984654
+          type: string
+      produces:
+        - application/json
+  '/v4/projects/{projectId}/gitRepositories':
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          examples:
+            application/json:
+              - name: repo1
+                uri: 'git@github.com:user/repo1.git'
+                ref:
+                  type: branches
+                  value: master
+          schema:
+            type: array
+            items: {}
+      summary: Get project's Git repositories
+      operationId: Get project's Git repositories
+      description: '**This endpoint is available in Domino 3.4+**<br>'
+      tags:
+        - Projects v4
+      parameters:
+        - name: projectId
+          in: path
+          description: ID of the project to fetch Git repositories from.
+          required: true
+          x-example: 5a73a6906ece7a7aed984654
+          type: string
+      produces:
+        - application/json
+    post:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          examples:
+            application/json:
+              name: repo1
+              uri: 'git@github.com:user/repo1.git'
+              ref:
+                type: branches
+                value: master
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+              uri:
+                type: string
+              ref:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    enum:
+                      - branches
+                      - tags
+                      - head
+                      - commitId
+                      - ref
+                  value:
+                    type: string
+      summary: Add Git repository to project
+      operationId: Add Git repository to project
+      description: '**This endpoint is available in Domino 3.4+**<br>'
+      tags:
+        - Projects v4
+      parameters:
+        - name: projectId
+          in: path
+          description: ID of the project to fetch Git repositories from.
+          required: true
+          x-example: 5a73a6906ece7a7aed984654
+          type: string
+        - name: body
+          in: body
+          schema:
+            $ref: '#/definitions/project Git repository'
+      produces:
+        - application/json
+  '/v4/projects/{projectId}/gitRepositories/{repositoryName}':
+    patch:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          examples: {}
+      summary: Update the reference of a Git repository
+      operationId: Update the reference of a Git repository
+      description: '**This endpoint is available in Domino 3.4+**<br>'
+      tags:
+        - Projects v4
+      parameters:
+        - name: projectId
+          in: path
+          description: ID of the project to fetch Git repositories from.
+          required: true
+          x-example: 5a73a6906ece7a7aed984654
+          type: string
+        - name: repositoryName
+          in: path
+          description: Name of the repository the reference belongs to.
+          required: true
+          x-example: repo1
+          type: string
+        - name: body
+          in: body
+          schema:
+            type: object
+            properties:
+              type:
+                type: string
+                enum:
+                  - branches
+                  - tags
+                  - head
+                  - commitId
+                  - ref
+                description: Type of reference.
+              value:
+                type: string
+                description: Reference value.
+    delete:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          examples: {}
+      summary: Remove Git repository
+      operationId: Remove Git repository
+      description: '**This endpoint is available in Domino 3.4+**<br>'
+      tags:
+        - Projects v4
+      parameters:
+        - name: projectId
+          in: path
+          description: ID of the project to fetch Git repositories from.
+          required: true
+          x-example: 5a73a6906ece7a7aed984654
+          type: string
+        - name: repositoryName
+          in: path
+          description: Name of the repository the reference belongs to.
+          required: true
+          x-example: repo1
+          type: string
+  /dataset:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          examples:
+            application/json:
+              - datasetName: myDataset
+                datasetId: 5d35b6dec9e77c000834d3da
+                projectId: 5ac42816e4b0e9a0a82bbe8f
+          schema:
+            type: array
+            items: {}
+      summary: Get a list of Datasets
+      operationId: Get a list of Datasets
+      description: |-
+        **This is a beta endpoint available in Domino 3.6+**<br>
+        **Its specification may change in future versions of Domino.**
+      tags:
+        - Datasets
+      parameters:
+        - name: projectId
+          in: query
+          description: 'Optional, returns only datasets from the specified project.'
+          required: false
+          x-example: 507f191e810c19729de860ea
+          type: string
+      produces:
+        - application/json
+    post:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          examples:
+            application/json:
+              datasetName: myDataset
+              description: A dataset for my useful data.
+              datasetId: 5d35b6dec9e77c000834d3da
+              projectId: 5ac42816e4b0e9a0a82bbe8f
+              created: 01012019
+              snapshots: []
+              tags: []
+          schema:
+            type: object
+            properties:
+              datasetName:
+                type: string
+              description:
+                type: string
+              datasetId:
+                type: string
+              projectId:
+                type: string
+              created:
+                type: string
+              snapshots:
+                type: array
+                description: Array of snapshot IDs
+                items: {}
+              tags:
+                type: array
+                description: Array of tag name / tag ID pairs
+                items: {}
+      summary: Create a Dataset
+      operationId: Create a Dataset
+      description: |-
+        **This is a beta endpoint available in Domino 3.6+**<br>
+        **Its specification may change in future versions of Domino.**
+      tags:
+        - Datasets
+      parameters:
+        - name: body
+          in: body
+          schema:
+            type: object
+            properties:
+              datasetName:
+                type: string
+              description:
+                type: string
+              projectId:
+                type: string
+            required:
+              - datasetName
+              - projectId
+            example:
+              datasetName: myDataset
+              description: A dataset for my useful data.
+              projectId: 5ac42816e4b0e9a0a82bbe8f
+      produces:
+        - application/json
+  '/dataset/{datasetId}':
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          examples:
+            application/json:
+              datasetName: myDataset
+              description: A dataset for my useful data.
+              datasetId: 5d35b6dec9e77c000834d3da
+              projectId: 5ac42816e4b0e9a0a82bbe8f
+              created: 01012019
+              snapshots: []
+              tags: []
+          schema:
+            type: object
+            properties:
+              datasetName:
+                type: string
+              description:
+                type: string
+              datasetId:
+                type: string
+              projectId:
+                type: string
+              created:
+                type: string
+              snapshots:
+                type: array
+                description: Array of snapshot IDs
+                items: {}
+              tags:
+                type: array
+                description: Array of tag name / tag ID pairs
+                items: {}
+      summary: Get Dataset details
+      operationId: Get Dataset details
+      description: |-
+        **This is a beta endpoint available in Domino 3.6+**<br>
+        **Its specification may change in future versions of Domino.**
+      tags:
+        - Datasets
+      parameters:
+        - name: datasetId
+          in: path
+          description: ID of Dataset to fetch metadata for.
+          required: true
+          x-example: 507f191e810c19729de860ea
+          type: string
+      produces:
+        - application/json
+    patch:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          examples:
+            application/json:
+              datasetName: myDataset
+              description: A dataset for my useful data.
+              datasetId: 5d35b6dec9e77c000834d3da
+              projectId: 5ac42816e4b0e9a0a82bbe8f
+              created: 01012019
+              snapshots: []
+              tags: []
+          schema:
+            type: object
+            properties:
+              datasetName:
+                type: string
+              description:
+                type: string
+              datasetId:
+                type: string
+              projectId:
+                type: string
+              created:
+                type: string
+              snapshots:
+                type: array
+                description: Array of snapshot IDs
+                items: {}
+              tags:
+                type: array
+                description: Array of tag name / tag ID pairs
+                items: {}
+      summary: Update Dataset details
+      operationId: Update Dataset details
+      description: |-
+        **This is a beta endpoint available in Domino 3.6+**<br>
+        **Its specification may change in future versions of Domino.**
+      tags:
+        - Datasets
+      parameters:
+        - name: datasetId
+          in: path
+          description: ID of Dataset to update metadata for.
+          required: true
+          x-example: 507f191e810c19729de860ea
+          type: string
+        - name: body
+          in: body
+          schema:
+            type: object
+            properties:
+              datasetName:
+                type: string
+              description:
+                type: string
+            example:
+              datasetName: myDataset
+              description: A dataset for my useful data.
+      produces:
+        - application/json
+    delete:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          examples: {}
+      summary: Archive Dataset
+      operationId: Archive Dataset
+      description: |-
+        **This is a beta endpoint available in Domino 3.6+**<br>
+        **Its specification may change in future versions of Domino.**
+      tags:
+        - Datasets
+      parameters:
+        - name: datasetId
+          in: path
+          description: ID of Dataset to update metadata for.
+          required: true
+          x-example: 507f191e810c19729de860ea
+          type: string
+  '/dataset/snapshot/{snapshotId}':
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          examples:
+            application/json:
+              snapshotId: 5d35b6cfc9e77c000834d3d6
+              datasetId: 5d35b6dec9e77c000834d3da
+              creatorId: 5ac42816e4b0e9a0a82bbe8f
+              created: 01012019
+              status: Active
+              lastMounted: 01012019
+              origin: CLI Upload
+          schema:
+            type: object
+            properties:
+              snapshotId:
+                type: string
+              datasetId:
+                type: string
+              creatorId:
+                type: string
+              created:
+                type: string
+              status:
+                type: string
+              lastMounted:
+                type: string
+              origin:
+                type: string
+      summary: Get Snapshot details
+      operationId: Get Snapshot details
+      description: |-
+        **This is a beta endpoint available in Domino 3.6+**<br>
+        **Its specification may change in future versions of Domino.**
+      tags:
+        - Datasets
+      parameters:
+        - name: snapshotId
+          in: path
+          description: ID of snapshot to get.
+          required: true
+          x-example: 507f191e810c19729de860ea
+          type: string
+      produces:
+        - application/json
+    patch:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          examples:
+            application/json:
+              snapshotId: 5d35b6cfc9e77c000834d3d6
+              datasetId: 5d35b6dec9e77c000834d3da
+              creatorId: 5ac42816e4b0e9a0a82bbe8f
+              created: 01012019
+              status: Active
+              lastMounted: 01012019
+              origin: CLI Upload
+          schema:
+            type: object
+            properties:
+              snapshotId:
+                type: string
+              datasetId:
+                type: string
+              creatorId:
+                type: string
+              created:
+                type: string
+              status:
+                type: string
+              lastMounted:
+                type: string
+              origin:
+                type: string
+      summary: Update Snapshot details
+      operationId: Update Snapshot details
+      description: |-
+        **This is a beta endpoint available in Domino 3.6+**<br>
+        **Its specification may change in future versions of Domino.**
+      tags:
+        - Datasets
+      parameters:
+        - name: snapshotId
+          in: path
+          description: ID of snapshot to get.
+          required: true
+          x-example: 507f191e810c19729de860ea
+          type: string
+        - name: body
+          in: body
+          schema:
+            $ref: '#/definitions/update snapshot request'
+      produces:
+        - application/json
+    delete:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          examples: {}
+      summary: Archive Snapshot
+      operationId: Archive Snapshot
+      description: |-
+        **This is a beta endpoint available in Domino 3.6+**<br>
+        **Its specification may change in future versions of Domino.**
+      tags:
+        - Datasets
+      parameters:
+        - name: snapshotId
+          in: path
+          description: ID of snapshot to get.
+          required: true
+          x-example: 507f191e810c19729de860ea
+          type: string
+  '/dataset/{datasetId}/tag':
+    post:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          examples:
+            application/json:
+              snapshotId: 5d35b6cfc9e77c000834d3d6
+              datasetId: 5d35b6dec9e77c000834d3da
+              creatorId: 5ac42816e4b0e9a0a82bbe8f
+              created: 01012019
+              status: Active
+              lastMounted: 01012019
+              origin: CLI Upload
+          schema:
+            type: object
+            properties:
+              snapshotId:
+                type: string
+              datasetId:
+                type: string
+              creatorId:
+                type: string
+              created:
+                type: string
+              status:
+                type: string
+              lastMounted:
+                type: string
+              origin:
+                type: string
+      summary: Add tag
+      operationId: Add tag
+      description: |-
+        **This is a beta endpoint available in Domino 3.6+**<br>
+        **Its specification may change in future versions of Domino.**
+      tags:
+        - Datasets
+      parameters:
+        - name: datasetId
+          in: path
+          description: ID of dataset containing the snapshot to tag.
+          required: true
+          x-example: 507f191e810c19729de860ea
+          type: string
+        - name: body
+          in: body
+          schema:
+            $ref: '#/definitions/add tag to dataset request'
+      produces:
+        - application/json
+  '/dataset/{datasetId}/tag/{tagName}':
+    delete:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          examples:
+            application/json:
+              snapshotId: 5d35b6cfc9e77c000834d3d6
+              datasetId: 5d35b6dec9e77c000834d3da
+              creatorId: 5ac42816e4b0e9a0a82bbe8f
+              created: 01012019
+              status: Active
+              lastMounted: 01012019
+              origin: CLI Upload
+          schema:
+            type: object
+            properties:
+              snapshotId:
+                type: string
+              datasetId:
+                type: string
+              creatorId:
+                type: string
+              created:
+                type: string
+              status:
+                type: string
+              lastMounted:
+                type: string
+              origin:
+                type: string
+      summary: Remove tag
+      operationId: Remove tag
+      description: |-
+        **This is a beta endpoint available in Domino 3.6+**<br>
+        **Its specification may change in future versions of Domino.**
+      tags:
+        - Datasets
+      parameters:
+        - name: datasetId
+          in: path
+          description: ID of dataset containing the snapshot with tag to be removed.
+          required: true
+          x-example: 507f191e810c19729de860ea
+          type: string
+        - name: tagName
+          in: path
+          description: Name of tag to remove.
+          required: true
+          x-example: Production
+          type: string
+      produces:
+        - application/json
+  /v4/gateway/runs/getByBatchId:
+    get:
+      responses:
+        '200':
+          description: success
+          headers: {}
+          examples:
+            application/json: {}
+          schema:
+            type: object
+            properties: {}
+        '400':
+          description: Bad Request
+          headers: {}
+          examples: {}
+        '401':
+          description: Unauthorized
+          headers: {}
+          examples: {}
+        '403':
+          description: Forbidden
+          headers: {}
+          examples: {}
+        '500':
+          description: Internal Server Error
+          headers: {}
+          examples: {}
+      summary: listToJson
+      operationId: listToJson
+      description: >-
+        **Only available in Domino 3.0.1+**
+
+
+        This endpoint can be used to batch extract Runs data for import into a
+        3rd party tool.
+      tags:
+        - Gateway
+      parameters:
+        - name: batchId
+          in: query
+          description: Starting id of the batch query
+          required: true
+          type: string
+        - name: limit
+          in: query
+          description: The desired size of the batch to be returned
+          required: false
+          type: number
+      produces:
+        - application/json
+definitions:
+  Project runs: {}
+  Run status:
+    type: object
+    properties:
+      id:
+        type: string
+        description: The unique ID for the run.
+      projectId:
+        type: string
+        description: The ID of the project.
+      number:
+        type: number
+        description: The auto-increment number associated with the run.
+      startingUserId:
+        type: string
+        description: The ID of the user who started the run.
+      queued:
+        type: number
+        description: Milliseconds epoch time the run was added to the queue.
+      started:
+        type: number
+        description: Milliseconds epoch time the run started executing.
+      completed:
+        type: number
+        description: Milliseconds epoch time the run completed running.
+      status:
+        type: string
+        enum:
+          - Queued
+          - Scheduled
+          - Preparing
+          - Building
+          - Pulling
+          - Running
+          - Serving
+          - StopRequested
+          - StopAndDiscardRequested
+          - Stopping
+          - Finishing
+          - Stopped
+          - Succeeded
+          - Failed
+          - Error
+        description: The status of the run.
+      commitId:
+        type: string
+        description: The commit hash of the project used to create the run.
+      executor:
+        type: string
+        description: The unique ID of the executor (compute node) the run was executed on.
+      outputCommitId:
+        type: string
+        description: >-
+          The commit hash of the project post-run (look at files with this hash
+          for the results).
+      title:
+        type: string
+        description: 'Title of the run, if it was renamed.'
+      isArchived:
+        type: boolean
+        description: >-
+          Boolean denoting if the run was archived (hidden from the web
+          interface).
+      postProcessedTimestamp:
+        type: number
+        description: >-
+          Milliseconds epoch time the run finished processing (this happens
+          after the run has completed and includes saving the results back to
+          the main project repo).
+      diagnosticStatistics:
+        type: object
+        properties:
+          isError:
+            type: boolean
+            description: '`true` if Domino had trouble parsing the dominostats.json file.'
+          data:
+            type: array
+            items: {}
+        description: >-
+          Object containing information about the run's [diagnostic statistics
+          from
+          dominostats.json](http://support.dominodatalab.com/hc/en-us/articles/204348169-Run-Diagnostic-Statistics).
+      isCompleted:
+        type: boolean
+        description: >-
+          A boolean to denote if the run has completed or is still run. See
+          `status` for success/failure status.
+      hardwareTierId:
+        type: string
+        description: The hardware tier the run exectued on
+  Run logs: {}
+  Project files: {}
+  File contents: {}
+  File uploads: {}
+  Domino object search: {}
+  Environments: {}
+  Project models: {}
+  Model publishing: {}
+  Model versions: {}
+  Build Model Image: {}
+  Export Model Image Status: {}
+  Export Model Image Logs: {}
+  Export Model Image: {}
+  Build Model Image Logs: {}
+  Build Model Image Status: {}
+  Query users: {}
+  Self: {}
+  All organizations: {}
+  Create organization: {}
+  My organizations: {}
+  Organizations by ID: {}
+  Organization members: {}
+  Get projects: {}
+  Create project: {}
+  Project fork: {}
+  Project copy: {}
+  Project updates: {}
+  Project tags: {}
+  Delete tags: {}
+  Project settings: {}
+  Project experiments: {}
+  Project hardware: {}
+  Project collaborators: {}
+  Remove collaborators: {}
+  Connect Git repositories: {}
+  Manage Git repositories: {}
+  Get or create Datasets: {}
+  Dataset operations: {}
+  Snapshot operations: {}
+  Add tag to Snapshot: {}
+  Remove tag from Snapshot: {}
+  Gateway Runs GetByBatchId: {}
+  Model Base:
+    type: object
+    properties:
+      _id:
+        type: string
+        description: The unique ID for the model.
+      name:
+        type: string
+        description: (required) The name of the model.
+  Create Base:
+    type: object
+    properties:
+      projectId:
+        type: string
+        description: (required) The unique id of the project the model will be bound to.
+      file:
+        type: string
+        description: >-
+          (required) Path to the file containing the model code. Defaults to the
+          file used in the latest version of the model.
+      function:
+        type: string
+        description: >-
+          (required) Defaults to the function used in the latest version of the
+          model.
+      excludeFiles:
+        type: array
+        items: {}
+        description: |-
+          List of file names for the version to exclude. For example:
+
+          ```python
+                  ["foo.py", "bar.py", "baz.py"]
+          ```
+      environmentId:
+        type: string
+        description: >-
+          The unique id of the environment for the model to use. Defaults to the
+          environment used in the latest version of the model, or the default
+          project environment in the case of a new model.
+  Model Response:
+    allOf:
+      - $ref: '#/definitions/Model Base'
+      - type: object
+        properties:
+          description:
+            type: string
+            description: Summary of the changes in the new version.
+          isArchived:
+            type: boolean
+            description: Status of model.
+          replicas:
+            type: number
+            description: The number of model instances to start for any model version.
+          metadata:
+            type: object
+            properties:
+              createdBy:
+                type: string
+                description: The unique ID of the user who created the model.
+              created:
+                type: number
+                description: The datetime when the model was created.
+            description: >-
+              Object containing **createdBy** user ID and **created** datetime
+              properties.
+          collaboratorSettings:
+            type: object
+            properties:
+              UserRef:
+                type: string
+              EveryoneRef:
+                type: string
+            description: Object containing **UserRef** and **EveryoneRef** properties.
+          accessConfiguration:
+            type: object
+            properties:
+              isPublic:
+                type: boolean
+              accessTokens:
+                type: array
+                items: {}
+                description: List of access tokens for the model.
+            description: >-
+              Object containing **isPublic** visibility setting and
+              **accessTokens**.
+  Model Create:
+    allOf:
+      - $ref: '#/definitions/Create Base'
+      - type: object
+        properties:
+          name:
+            type: string
+            description: (required) The name of the new model.
+          description:
+            type: string
+            description: (required) Summary of the changes in the new version.
+  Model Version Create:
+    allOf:
+      - $ref: '#/definitions/Create Base'
+      - type: object
+        properties:
+          commitId:
+            type: string
+            description: >-
+              The unique id of the project commit to use. Defaults to the latest
+              commit of the project.
+          description:
+            type: string
+            description: Summary of the changes in the new version.
+  Model Version Response:
+    type: object
+    properties:
+      id:
+        type: string
+        description: The unique ID for the model version.
+      number:
+        type: number
+        description: The new version number.
+  Model Version List Item:
+    type: object
+    properties:
+      _id:
+        type: string
+        description: The unique ID of the model version.
+      modelId:
+        type: object
+        properties:
+          value:
+            type: string
+            description: The unique id of the model.
+      projectId:
+        type: string
+        description: The unique id of the project the model will be bound to.
+      commitId:
+        type: string
+        description: >-
+          The unique id of the project commit to use. Defaults to the latest
+          commit of the project.
+      description:
+        type: string
+        description: Summary of the changes in the new version.
+      file:
+        type: string
+        description: >-
+          Path to the file containing the model code. Defaults to the file used
+          in the latest version of the model.
+      function:
+        type: string
+        description: Defaults to the function used in the latest version of the model.
+      excludeFiles:
+        type: array
+        items: {}
+        description: |-
+          List of file names for the version to exclude. For example:
+
+          ```python
+                  ["foo.py", "bar.py", "baz.py"]
+          ```
+      metadata:
+        type: object
+        properties:
+          createdBy:
+            type: string
+            description: The unique ID of the user who created the model.
+          created:
+            type: number
+            description: The datetime when the model was created.
+          number:
+            type: number
+            description: The version number.
+          builds:
+            type: array
+            items: {}
+            description: List of builds for the model version.
+  v4 user:
+    type: object
+    properties:
+      firstName:
+        type: string
+        description: User's first name.
+      lastName:
+        type: string
+        description: User's last name.
+      fullName:
+        type: string
+        description: User's full name.
+      userName:
+        type: string
+        description: User's username.
+      email:
+        type: string
+        description: User's email address.
+      avatarUrl:
+        type: string
+        description: URL of the user's avatar.
+      id:
+        type: string
+        description: User's unique ID.
+      companyName:
+        type: string
+        description: User's company name.
+      phoneNumber:
+        type: string
+        description: User's phone number.
+  Environment list item:
+    type: object
+    properties:
+      id:
+        type: string
+        description: The unique ID for the environment.
+      name:
+        type: string
+        description: The environment name.
+      visibility:
+        type: string
+        enum:
+          - Global
+        description: 'One of `Private`, `Organization`, or `Global`.'
+  Organization:
+    type: object
+    properties:
+      id:
+        type: string
+        description: Organization unique identifier.
+      name:
+        type: string
+        description: Organization name.
+      members:
+        type: array
+        items: {}
+      defaultEnvironment:
+        type: string
+        description: Default v2 environment for the organization.
+      legacyDefaultEnvironment:
+        type: string
+        description: Default legacy environment for the organization.
+  Organization member:
+    type: object
+    properties:
+      id:
+        type: string
+        description: User ID.
+      role:
+        type: string
+        enum:
+          - Member
+          - Admin
+  v4 project:
+    type: object
+    properties:
+      id:
+        type: string
+        description: Project ID.
+      name:
+        type: string
+        description: Project name.
+      description:
+        type: string
+        description: Project description.
+      visibility:
+        type: string
+        enum:
+          - Public
+          - Searchable
+          - Private
+        description: Project visibility setting.
+      ownerId:
+        type: string
+        description: ID of project owner.
+      collaboratorIds:
+        type: array
+        items: {}
+        description: IDs of collaborators.
+      collaborators:
+        type: array
+        items: {}
+        description: Objects representing collaborators.
+      tags:
+        type: array
+        items: {}
+        description: Objects representing project tags.
+  v4 new project:
+    type: object
+    required:
+      - name
+      - description
+      - visibility
+      - ownerId
+      - collaborators
+    properties:
+      name:
+        type: string
+        description: Project name.
+      description:
+        type: string
+        description: Project description.
+      visibility:
+        type: string
+        enum:
+          - Public
+          - Searchable
+          - Private
+        description: Project visibility setting.
+      ownerId:
+        type: string
+        description: ID of project owner.
+      collaborators:
+        type: array
+        items: {}
+        description: Objects representing collaborators.
+      tags:
+        type: object
+        required:
+          - tagNames
+        properties:
+          tagNames:
+            type: array
+            items: {}
+            description: String text of tags to apply to the project.
+  v4 project collaborator:
+    type: object
+    properties:
+      collaboratorId:
+        type: string
+        description: User ID of collaborator.
+      projectRole:
+        type: string
+        enum:
+          - Contributor
+          - LauncherUser
+          - ResultsConsumer
+          - ProjectImporter
+        description: Role permissions assigned to collaborator.
+  v4 project tag:
+    type: object
+    properties:
+      id:
+        type: string
+        description: Tag ID.
+      name:
+        type: string
+        description: Tag name.
+  v4 project activity record:
+    type: object
+    properties:
+      person:
+        type: object
+        properties:
+          firstName:
+            type: string
+            description: Person's first name.
+          lastName:
+            type: string
+            description: Person's last name.
+          fullName:
+            type: string
+            description: Person's full name.
+          userName:
+            type: string
+            description: Person's username.
+          email:
+            type: string
+            description: Email associated with person's Domino account.
+          companyName:
+            type: string
+            description: Person's company name.
+          phoneNumber:
+            type: string
+            description: Person's phone number.
+          avatarUrl:
+            type: string
+            description: URL of person's avatar.
+          id:
+            type: string
+            description: Person's Domino user ID.
+      timestamp:
+        type: number
+        description: Time activity occurred.
+      whatHappened:
+        type: string
+        enum:
+          - FILES_CHANGED
+          - EXPERIMENT_STARTED
+          - EXPERIMENT_SUCCEEDED
+          - EXPERIMENT_FAILED
+          - SESSION_STARTED
+          - SESSION_FINISHED
+          - SESSION_FAILED
+        description: What happened?
+      indicator:
+        type: string
+        enum:
+          - SUCCESS
+          - FAILURE
+          - INFO
+        description: Record outcome category.
+      effects:
+        type: array
+        items: {}
+      context:
+        type: array
+        items: {}
+      id:
+        type: string
+        description: Activity record ID.
+  v4 project activity effect:
+    type: object
+    properties:
+      effectType:
+        type: string
+        enum:
+          - PROJECT
+          - EXPERIMENT
+          - SESSION
+          - ADDED_OR_MODIFIED_FILE
+          - DELETED_FILE
+          - COMMIT
+        description: Type of effect.
+      name:
+        type: string
+        description: Name of effect.
+      identifiedBy:
+        type: string
+        description: Name of identifier.
+  v4 project activity context:
+    type: object
+    properties:
+      contextType:
+        type: string
+        description: Type of context.
+      name:
+        type: string
+        description: Name of context.
+      identifiedBy:
+        type: string
+        description: Name of identifier.
+  v4 experiment:
+    type: object
+    properties:
+      inputs:
+        type: object
+        properties:
+          commandToRun:
+            $ref: '#/definitions/v4 experiment commands'
+          title:
+            type: string
+          projectId:
+            type: string
+          initialization:
+            $ref: '#/definitions/v4 experiment initialization'
+          experimentEnvironment:
+            $ref: '#/definitions/v4 experiment environment'
+          hardwareTierId:
+            type: string
+      execution:
+        type: object
+        properties:
+          executionId:
+            type: string
+          experimentExecutionTechnology:
+            type: string
+      states:
+        type: array
+        items: {}
+      outputs:
+        type: object
+        properties:
+          results:
+            $ref: '#/definitions/v4 experiment output results'
+          logs:
+            type: string
+          dominoStats:
+            type: string
+      groups:
+        type: array
+        items: {}
+      createdAt:
+        type: number
+      id:
+        type: string
+  v4 experiment initialization:
+    type: object
+    properties:
+      commitId:
+        type: string
+  v4 experiment commands:
+    type: object
+    properties:
+      args:
+        type: array
+        items: {}
+  v4 experiment output results:
+    type: object
+    properties:
+      commitMessage:
+        type: string
+      outputCommitId:
+        type: string
+  v4 experiment environment:
+    type: object
+    properties:
+      environmentId:
+        type: string
+      environmentRevisionId:
+        type: string
+  v4 experiment state:
+    type: object
+    properties:
+      status:
+        type: string
+        enum:
+          - IN_PROGRESS
+          - SUCCESSFUL
+          - FAILURE
+      message:
+        type: string
+      recordedAt:
+        type: number
+  v4 experiment group:
+    type: object
+    properties:
+      name:
+        type: string
+      projectId:
+        type: string
+  v4 hardware tier with capacity:
+    type: object
+    properties:
+      hardwareTier:
+        $ref: '#/definitions/v4 hardware tier'
+      capacity:
+        $ref: '#/definitions/v4 hardware capacity'
+  v4 hardware tier:
+    type: object
+    properties:
+      _id:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      cores:
+        type: number
+      memory:
+        type: number
+      runMemoryLimit:
+        $ref: '#/definitions/v4 run memory limit'
+      isDefault:
+        type: boolean
+      isAllowedDuringTrial:
+        type: boolean
+      isVisible:
+        type: boolean
+      isGlobal:
+        type: boolean
+      centsPerMinute:
+        type: number
+      isFree:
+        type: boolean
+  v4 run memory limit:
+    type: object
+    properties:
+      memoryLimitMegabytes:
+        type: number
+      memorySwapLimitMegabytes:
+        type: number
+  v4 hardware capacity:
+    type: object
+    properties:
+      currentNumberOfExecutors:
+        type: number
+      maximumNumberOfExecutors:
+        type: number
+      numberOfCurrentlyExecutingRuns:
+        type: number
+      numberOfQueuedRuns:
+        type: number
+      maximumConcurrentRuns:
+        type: number
+      availableCapacityWithoutLaunching:
+        type: number
+      maximumAvailableCapacity:
+        type: number
+      capacityLevel:
+        type: object
+        properties: {}
+  Git ref:
+    type: object
+    properties:
+      type:
+        type: string
+        enum:
+          - branches
+          - tags
+          - head
+          - commitId
+          - ref
+      value:
+        type: string
+  project Git repository:
+    type: object
+    properties:
+      name:
+        type: string
+      uri:
+        type: string
+      ref:
+        $ref: '#/definitions/Git ref'
+  create dataset request:
+    type: object
+    required:
+      - datasetName
+      - projectId
+    properties:
+      datasetName:
+        type: string
+      description:
+        type: string
+      projectId:
+        type: string
+  update dataset request:
+    type: object
+    properties:
+      datasetName:
+        type: string
+      description:
+        type: string
+  add tag to dataset request:
+    type: object
+    required:
+      - snapshotId
+      - tag
+    properties:
+      snapshotId:
+        type: string
+      tag:
+        type: string
+  update snapshot request:
+    type: object
+    properties:
+      status:
+        type: string
+  dataset response:
+    type: object
+    properties:
+      datasetName:
+        type: string
+      datasetId:
+        type: string
+      projectId:
+        type: string
+  dataset details response:
+    type: object
+    properties:
+      datasetName:
+        type: string
+      description:
+        type: string
+      datasetId:
+        type: string
+      projectId:
+        type: string
+      created:
+        type: string
+      snapshots:
+        type: array
+        items: {}
+        description: Array of snapshot IDs
+      tags:
+        type: array
+        items: {}
+        description: Array of tag name / tag ID pairs
+  snapshot response:
+    type: object
+    properties:
+      snapshotId:
+        type: string
+      datasetId:
+        type: string
+  snapshot details response:
+    type: object
+    properties:
+      snapshotId:
+        type: string
+      datasetId:
+        type: string
+      creatorId:
+        type: string
+      created:
+        type: string
+      status:
+        type: string
+      lastMounted:
+        type: string
+      origin:
+        type: string
+  domino.common.gateway.runs.RunsGatewaySummary:
+    type: object
+    required:
+      - batchId
+      - runId
+      - title
+      - command
+      - status
+      - runType
+      - userName
+      - userId
+      - projectOwnerName
+      - projectOwnerId
+      - projectName
+      - projectId
+      - runDurationSec
+      - hardwareTier
+      - hardwareTierCostCurrency
+      - hardwareTierCostAmount
+      - queuedTime
+      - totalCostCurrency
+      - totalCostAmount
+    properties:
+      batchId:
+        type: string
+      runId:
+        type: string
+      title:
+        type: string
+      command:
+        type: string
+      status:
+        type: string
+      runType:
+        type: string
+      userName:
+        type: string
+      userId:
+        type: string
+      projectOwnerName:
+        type: string
+      projectOwnerId:
+        type: string
+      projectName:
+        type: string
+      projectId:
+        type: string
+      runDurationSec:
+        type: number
+      hardwareTier:
+        type: string
+      hardwareTierCostCurrency:
+        type: string
+      hardwareTierCostAmount:
+        type: number
+      queuedTime:
+        type: number
+      startTime:
+        type: number
+      endTime:
+        type: number
+      totalCostCurrency:
+        type: string
+      totalCostAmount:
+        type: number
+  domino.common.gateway.runs.RunsGatewaySequence:
+    type: object
+    properties: {}
+  definitions/domino.api.ErrorResponse:
+    type: object
+    properties:
+      message:
+        type: string
+  definitions/domino.modelmanager.web.BuildModelImageApiRequest:
+    type: object
+    required:
+      - inferenceFunctionFile
+      - inferenceFunctionToCall
+      - logHttpRequestResponse
+      - modelName
+      - projectId
+    properties:
+      description:
+        type: string
+      environmentId:
+        type: string
+      inferenceFunctionFile:
+        type: string
+      inferenceFunctionToCall:
+        type: string
+      logHttpRequestResponse:
+        type: boolean
+      modelId:
+        type: string
+      modelName:
+        type: string
+      projectId:
+        type: string
+  definitions/domino.modelmanager.web.BuildModelImageApiResponse:
+    type: object
+    required:
+      - buildStatus
+      - environmentId
+      - modelId
+      - modelVersionId
+      - modelVersionNumber
+      - name
+      - projectId
+      - projectName
+    properties:
+      buildStatus:
+        type: string
+      description:
+        type: string
+      environmentId:
+        type: string
+      modelId:
+        type: string
+      modelVersionId:
+        type: string
+      modelVersionNumber:
+        type: number
+      name:
+        type: string
+      projectId:
+        type: string
+      projectName:
+        type: string
+  definitions/domino.modelmanager.web.ExportModelImageApiRequest:
+    type: object
+    required:
+      - registryUrl
+      - repository
+    properties:
+      password:
+        type: string
+      registryUrl:
+        type: string
+      repository:
+        type: string
+      tag:
+        type: string
+      username:
+        type: string
+  definitions/domino.modelmanager.web.ModelBuildLogsApiResponse:
+    type: object
+    required:
+      - logs
+      - modelId
+      - modelVersionId
+      - status
+    properties:
+      logs:
+        type: string
+      modelId:
+        type: string
+      modelVersionId:
+        type: string
+      status:
+        type: string
+  definitions/domino.modelmanager.web.ModelBuildStatusApiResponse:
+    type: object
+    required:
+      - modelId
+      - modelVersionId
+      - status
+    properties:
+      modelId:
+        type: string
+      modelVersionId:
+        type: string
+      status:
+        type: string
+  definitions/domino.modelmanager.web.ModelExportLogsApiResponse:
+    type: object
+    required:
+      - exportId
+      - logs
+      - modelId
+      - modelVersionId
+      - status
+    properties:
+      exportId:
+        type: string
+      logs:
+        type: string
+      modelId:
+        type: string
+      modelVersionId:
+        type: string
+      status:
+        type: string
+  definitions/domino.modelmanager.web.ModelExportStatusApiResponse:
+    type: object
+    required:
+      - exportId
+      - modelId
+      - modelVersionId
+      - status
+    properties:
+      exportId:
+        type: string
+      modelId:
+        type: string
+      modelVersionId:
+        type: string
+      status:
+        type: string
+securityDefinitions:
+  api_key:
+    type: apiKey
+    name: X-Domino-Api-Key
+    in: header
+tags:
+  - name: Project runs and files
+    description: These endpoints allow you to interact with your project's runs and files.
+  - name: Search
+    description: >-
+      These endpoints allow you to search for projects, runs, files, and
+      comments.
+  - name: Environments
+    description: These endpoints allow you to interact with your environments.
+  - name: Models
+    description: These endpoints allow you to interact with your project's models.
+  - name: Users v4
+    description: These endpoints provide information about users in your deployment.
+  - name: Organizations v4
+    description: >-
+      These endpoints allow you interact with
+
+      [organizations](https://support.dominodatalab.com/hc/en-us/articles/204857715)
+      in
+
+      your deployment.
+  - name: Projects v4
+    description: >-
+      These endpoints allow you interact with your
+
+      [Domino
+      projects](https://support.dominodatalab.com/hc/en-us/articles/360001055303).
+  - name: Datasets
+    description: >-
+      These endpoints allow you interact with your
+
+      [Domino
+      Datasets](https://support.dominodatalab.com/hc/en-us/articles/360020125052).
+  - name: Gateway
