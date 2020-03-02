@@ -5,13 +5,17 @@
 
 Once you log in on Datagrok, you will see the welcome screen. At the **top**, you will find a toolbar with menus to import data (there are over 30 connectors to the main databases, go to _**File > Connect to Data**_). 
 ![alt text](../uploads/gifs/welcome.gif "Datagrok Welcome Page Menus")
+
 At the **left**, there is a toolbox with info to get started with some useful links, such as: _Wiki, Connect to Data, and even Tutorials_.
+
 ![alt text](../uploads/pictures/welcome_start.JPG "Datagrok Welcome Page")
 
 **Useful Links:** [Tutorials](../tutorials/tutorials.md) · [Scripting Tutorials](../tutorials/scripting.md) · [Function Parameters](../tutorials/func-params-enhancement.md) · [Use Case: Navigation](../tutorials/platform-navigation.md)
 
 At the **right**, you will find the property panel and the contextual help panel, which add useful information based on the selected items and the available features at a given moment.
+
 ![alt text](../uploads/pictures/welcome_property_panel.JPG "Property Panel and Contextual Help Panel")
+
 <!-- Note: add background to image so that it looks centered. -->
 ## Datasets
 
@@ -40,6 +44,7 @@ Panels can be relocated for major convenience by using the _drag and drop_ princ
 
 #### Toolbar
 The toolbar provides the main features that are available at a given moment. A view resides in the center and occupies all available area in the screen. There are some static controls, such as **File > Import File**, and controls that are specific for the active view.
+
 ![alt text](../uploads/pictures/toolbar.JPG "Toolbar")
 
 **Useful Links:** [Workspace](../features/workspace.md) · [Navigation](../features/navigation.md) · [Toolbox](../features/toolbox.md)
@@ -48,14 +53,18 @@ The static menus offer basic functionalities that are common to all the environm
 ![alt text](../uploads/pictures/main_toolbar.JPG "Main Menus")
 #### Ribbons
 The ribbons menu is a quick access icon toolbar located under the static and view-specific menus. Before you import or connect to data, the available options are **Open/Save local file, Connect to Data,** and **Show Workspace**.
+
 ![alt text](../uploads/gifs/ribbons.gif "Ribbons Menu")
+
 However, the quick access ribbons change depending on the available options. For instance, these are the features when you have already imported data to the workspace.
 ![alt text](../uploads/pictures/icon_menu.JPG "Ribbon Toolbar")
 **Useful Links:** [Navigation](../features/navigation.md) · [Toolbox](../features/toolbox.md)
 
 ### Toolbox
 The toolbox, located on the left, contains controls that are specific to the current active view.
+
 ![alt text](../uploads/pictures/toolbox.png "Toolbox")
+
 For more information check [Toolbox](../features/toolbox.md). Below, you can find a review of the toolbox features.
 #### Search
 When data is imported, you can quickly filter and select rows using this feature of the toolbox. 
@@ -78,6 +87,7 @@ For more info on viewers, see [Viewers](../viewers/viewers.md). For detailed inf
 Use this feature to browse within the columns of the imported data quickly. For more information, see [Column Manager](../features/column-manager.md).
 #### Layouts 
 Use this feature to **Save** the current layout of the data, i.e. view and other features. You may receive suggestions in relation to other users who used similar data. 
+
 ![alt text](../uploads/pictures/layouts.JPG "Layouts")
 
 <!-- Note: Consider changing picture -->
@@ -88,7 +98,9 @@ Use this feature to perform key actions on the workspace, such as **Save as CSV,
 ![alt text](../uploads/pictures/actions.JPG "Layouts")
 #### Models 
 Use this powerful feature to train a model for your data. Once you have trained the model, you will be able to make predictions on the same or similar data. 
+
 ![alt text](../uploads/pictures/models.JPG "Models")
+
 **Useful Links:** [Cheminformatics Predictive Modeling](../domains/chem/chem-predictive-modeling.md) · [Use Case Predictive Modeling](../tutorials/predictive-modeling.md) · [Predictive Modeling Info](../plugins/predictive-modeling-info.md)
 #### Tutorials
 * [Use Case: Predictive Modelling](../tutorials/predictive-modeling.md)
