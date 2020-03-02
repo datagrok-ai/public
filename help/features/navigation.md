@@ -23,7 +23,7 @@ Also, need info for Contextual Help
 When you select a **Dataset**, you will see the a similar screen to the following. From left to right, relevant features appear on the [Toolbox](../help/features/toolbox.md), the data is represented in the [Main View](../help/entities/view-layout.md), and additional info on the data shows up on the [Property Panel](../help/features/property-panel.md) and the Contextual Help Panel.
 ![alt text](../uploads/pictures/dataset.JPG "Datagrok Welcome Page")
 
-**Useful Links:** [Viewers](../help/viewers/viewers.md) · [Toolbox](../help/features/toolbox.md) · [Main View](../help/entities/view-layout.md) · [Property Panel](../help/features/property-panel.md)
+**Useful Links:** [Viewers](../viewers/viewers.md) · [Toolbox](../help/features/toolbox.md) · [Main View](../help/entities/view-layout.md) · [Property Panel](../help/features/property-panel.md)
 
 ### Workspace, Panels and Views
 
