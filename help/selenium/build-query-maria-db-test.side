@@ -118,16 +118,42 @@
       "targets": [],
       "value": ""
     }, {
+      "id": "93294039-4a99-4d06-810e-6ddf810b5767",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='tree-expander-MariaDB---northwind---Schemas---Northwind']",
+      "targets": [
+        ["css=.d4-tree-view-group:nth-child(1) .d4-tree-view-group:nth-child(4) .d4-tree-view-tri", "css:finder"],
+        ["xpath=//div[@name='tree-expander-MariaDB---northwind---Schemas---Northwind']", "xpath:attributes"],
+        ["xpath=//div[@id='data-sources']/div/div[2]/div[18]/div[2]/div/div[2]/div/div[2]/div[4]/div/div", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div[2]/div[4]/div/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "55c7f6b3-0031-4f2b-83c8-1b6120f9f09e",
+      "comment": "",
+      "command": "pause",
+      "target": "2000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "5259ff2d-2c32-4391-befe-f2d4b5b4617c",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='tree-MariaDB---northwind---Tables---Orders']",
+      "target": "xpath=//div[@name='tree-MariaDB---northwind---Schemas---Northwind---Orders']",
       "targets": [
-        ["css=.d4-tree-view-group:nth-child(1) .d4-tree-view-group:nth-child(15) > .d4-tree-view-node", "css:finder"],
-        ["xpath=//div[@name='tree-MariaDB---northwind---Tables---Orders']", "xpath:attributes"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div[14]/div[2]/div/div[2]/div/div[2]/div[15]/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div[15]/div", "xpath:position"]
+        ["css=.d4-tree-view-group:nth-child(4) .d4-tree-view-group:nth-child(15) > .d4-tree-view-node", "css:finder"],
+        ["xpath=//div[@name='tree-MariaDB---northwind---Schemas---Northwind---Orders']", "xpath:attributes"],
+        ["xpath=//div[@id='data-sources']/div/div[2]/div[18]/div[2]/div/div[2]/div/div[2]/div[4]/div[2]/div[15]/div", "xpath:idRelative"],
+        ["xpath=//div[4]/div[2]/div[15]/div", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "c4eeebc7-56e0-4294-966f-8a22be348fef",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "ea61b256-02c1-4408-a07a-0a2f1e8ba848",

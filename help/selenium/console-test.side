@@ -167,12 +167,12 @@
       "id": "57510b09-6adf-48b9-b76e-6fa9c4c913a7",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//pre[contains(.,'  result: demog (5850 rows, 10 columns)')]",
+      "target": "xpath=//pre[contains(.,'  result: Project \"Selenium test data p1\"')]",
       "targets": [
-        ["css=.d4-console-result:nth-child(3) > pre", "css:finder"],
-        ["xpath=//div[@id='elementContent']/div/div[2]/div[3]/pre", "xpath:idRelative"],
-        ["xpath=//div[3]/pre", "xpath:position"],
-        ["xpath=//pre[contains(.,'  result: demog (5850 rows, 10 columns)')]", "xpath:innerText"]
+        ["css=.d4-console-result > pre", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div/div[2]/div[2]/pre", "xpath:idRelative"],
+        ["xpath=//div[2]/pre", "xpath:position"],
+        ["xpath=//pre[contains(.,'  result: Project \"Selenium test data p1\"')]", "xpath:innerText"]
       ],
       "value": ""
     }, {

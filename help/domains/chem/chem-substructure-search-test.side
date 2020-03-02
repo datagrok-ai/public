@@ -342,11 +342,11 @@
       "id": "374fcc28-3d76-464e-a9e2-44eb2a2eb66d",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-font-icon-menu'])[3]",
+      "target": "xpath=(//i[@name='icon-font-icon-menu'])[2]",
       "targets": [
         ["css=.d4-input-options", "css:finder"],
-        ["xpath=(//i[@name='icon-font-icon-menu'])[3]", "xpath:attributes"],
-        ["xpath=//div[18]/div[2]/div/div/i", "xpath:position"]
+        ["xpath=(//i[@name='icon-font-icon-menu'])[2]", "xpath:attributes"],
+        ["xpath=//div[6]/div[2]/div/div/i", "xpath:position"]
       ],
       "value": ""
     }, {

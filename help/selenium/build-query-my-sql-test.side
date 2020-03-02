@@ -125,15 +125,34 @@
       "targets": [],
       "value": ""
     }, {
+      "id": "4e033ecb-a600-4164-992f-fa67ea69b7a9",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='tree-expander-MySQL---northwind---Schemas---Northwind']",
+      "targets": [
+        ["css=.d4-tree-view-group:nth-child(1) .d4-tree-view-group:nth-child(4) .d4-tree-view-tri", "css:finder"],
+        ["xpath=//div[@name='tree-expander-MySQL---northwind---Schemas---Northwind']", "xpath:attributes"],
+        ["xpath=//div[@id='data-sources']/div/div[2]/div[20]/div[2]/div[2]/div[2]/div/div[2]/div[4]/div/div", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div[2]/div[4]/div/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "054bbe71-76aa-44d2-a5fa-ce680a5086c8",
+      "comment": "",
+      "command": "pause",
+      "target": "2000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "5259ff2d-2c32-4391-befe-f2d4b5b4617c",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='tree-MySQL---northwind---Tables---Orders']",
+      "target": "xpath=//div[@name='tree-MySQL---northwind---Schemas---Northwind---Orders']",
       "targets": [
-        ["css=.d4-tree-view-group:nth-child(1) .d4-tree-view-group:nth-child(15) > .d4-tree-view-node", "css:finder"],
-        ["xpath=//div[@name='tree-MySQL---northwind---Tables---Orders']", "xpath:attributes"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div[16]/div[2]/div[2]/div[2]/div/div[2]/div[15]/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div[2]/div[15]/div", "xpath:position"]
+        ["css=.d4-tree-view-group:nth-child(4) .d4-tree-view-group:nth-child(15) > .d4-tree-view-node", "css:finder"],
+        ["xpath=//div[@name='tree-MySQL---northwind---Schemas---Northwind---Orders']", "xpath:attributes"],
+        ["xpath=//div[@id='data-sources']/div/div[2]/div[20]/div[2]/div[2]/div[2]/div/div[2]/div[4]/div[2]/div[15]/div", "xpath:idRelative"],
+        ["xpath=//div[4]/div[2]/div[15]/div", "xpath:position"]
       ],
       "value": ""
     }, {
