@@ -205,10 +205,10 @@
       "id": "00f09769-8373-41dc-8ab1-d6101aec20b7",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-font-icon-menu'])[3]",
+      "target": "xpath=(//i[@name='icon-font-icon-menu'])[2]",
       "targets": [
-        ["css=.splitter-container-horizontal > .panel-titlebar > .grok-font-icon-menu", "css:finder"],
-        ["xpath=(//i[@name='icon-font-icon-menu'])[3]", "xpath:attributes"],
+        ["css=.splitter-container-vertical > .panel-titlebar > .grok-font-icon-menu", "css:finder"],
+        ["xpath=(//i[@name='icon-font-icon-menu'])[2]", "xpath:attributes"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div/i", "xpath:idRelative"],
         ["xpath=//div[3]/div/div/div/div/div[3]/div/i", "xpath:position"]
       ],
@@ -265,7 +265,7 @@
       "id": "2ab2638b-6fb0-4b6e-9a16-c44ca5342405",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-font-icon-menu'])[3]",
+      "target": "xpath=(//i[@name='icon-font-icon-menu'])[2]",
       "targets": [
         ["css=.splitter-container-horizontal > .panel-titlebar > .grok-font-icon-menu", "css:finder"],
         ["xpath=(//i[@name='icon-font-icon-menu'])[3]", "xpath:attributes"],
@@ -325,7 +325,7 @@
       "id": "7c068943-9b5d-44e7-bf9b-21f3fde9c446",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-font-icon-menu'])[3]",
+      "target": "xpath=(//i[@name='icon-font-icon-menu'])[2]",
       "targets": [
         ["css=.splitter-container-horizontal > .panel-titlebar > .grok-font-icon-menu", "css:finder"],
         ["xpath=(//i[@name='icon-font-icon-menu'])[3]", "xpath:attributes"],
@@ -385,7 +385,7 @@
       "id": "03dee58b-ac28-4422-a5c4-0488eb15d0fb",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-font-icon-menu'])[3]",
+      "target": "xpath=(//i[@name='icon-font-icon-menu'])[2]",
       "targets": [
         ["css=.splitter-container-horizontal > .panel-titlebar > .grok-font-icon-menu", "css:finder"],
         ["xpath=(//i[@name='icon-font-icon-menu'])[3]", "xpath:attributes"],
@@ -445,7 +445,7 @@
       "id": "7cd0d1b5-390f-40d8-b613-f632f5332272",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-font-icon-menu'])[3]",
+      "target": "xpath=(//i[@name='icon-font-icon-menu'])[2]",
       "targets": [
         ["css=.splitter-container-horizontal > .panel-titlebar > .grok-font-icon-menu", "css:finder"],
         ["xpath=(//i[@name='icon-font-icon-menu'])[3]", "xpath:attributes"],
@@ -505,7 +505,7 @@
       "id": "37e522ec-acdd-450f-9517-177bdbfe529d",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-font-icon-menu'])[3]",
+      "target": "xpath=(//i[@name='icon-font-icon-menu'])[2]",
       "targets": [
         ["css=.splitter-container-horizontal > .panel-titlebar > .grok-font-icon-menu", "css:finder"],
         ["xpath=(//i[@name='icon-font-icon-menu'])[3]", "xpath:attributes"],
@@ -565,7 +565,7 @@
       "id": "db9a2c23-a4b7-43c1-89d6-e1bb6cdc89ae",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-font-icon-menu'])[3]",
+      "target": "xpath=(//i[@name='icon-font-icon-menu'])[2]",
       "targets": [
         ["css=.splitter-container-horizontal > .panel-titlebar > .grok-font-icon-menu", "css:finder"],
         ["xpath=(//i[@name='icon-font-icon-menu'])[3]", "xpath:attributes"],
@@ -625,7 +625,7 @@
       "id": "e6ca1e3a-6f96-47e7-8148-52a003dd264a",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-font-icon-menu'])[3]",
+      "target": "xpath=(//i[@name='icon-font-icon-menu'])[2]",
       "targets": [
         ["css=.splitter-container-horizontal > .panel-titlebar > .grok-font-icon-menu", "css:finder"],
         ["xpath=(//i[@name='icon-font-icon-menu'])[3]", "xpath:attributes"],
@@ -685,7 +685,7 @@
       "id": "6635ee60-8f73-48c3-862c-bac30971d110",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-font-icon-menu'])[3]",
+      "target": "xpath=(//i[@name='icon-font-icon-menu'])[2]",
       "targets": [
         ["css=.splitter-container-horizontal > .panel-titlebar > .grok-font-icon-menu", "css:finder"],
         ["xpath=(//i[@name='icon-font-icon-menu'])[3]", "xpath:attributes"],
@@ -745,7 +745,7 @@
       "id": "4e4f21bd-85af-44b7-892d-8a0ee5014afd",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-font-icon-menu'])[3]",
+      "target": "xpath=(//i[@name='icon-font-icon-menu'])[2]",
       "targets": [
         ["css=.splitter-container-horizontal > .panel-titlebar > .grok-font-icon-menu", "css:finder"],
         ["xpath=(//i[@name='icon-font-icon-menu'])[3]", "xpath:attributes"],
@@ -805,7 +805,7 @@
       "id": "b5c23a62-acf6-45b8-904c-ade68b43aca3",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-font-icon-menu'])[3]",
+      "target": "xpath=(//i[@name='icon-font-icon-menu'])[2]",
       "targets": [
         ["css=.splitter-container-horizontal > .panel-titlebar > .grok-font-icon-menu", "css:finder"],
         ["xpath=(//i[@name='icon-font-icon-menu'])[3]", "xpath:attributes"],
@@ -865,7 +865,7 @@
       "id": "c5946f9c-ac86-4dd5-8a49-98cc9af2900b",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-font-icon-menu'])[3]",
+      "target": "xpath=(//i[@name='icon-font-icon-menu'])[2]",
       "targets": [
         ["css=.splitter-container-horizontal > .panel-titlebar > .grok-font-icon-menu", "css:finder"],
         ["xpath=(//i[@name='icon-font-icon-menu'])[3]", "xpath:attributes"],
@@ -925,7 +925,7 @@
       "id": "9d9871c3-4b60-494a-bd6a-1fa7154e5534",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-font-icon-menu'])[3]",
+      "target": "xpath=(//i[@name='icon-font-icon-menu'])[2]",
       "targets": [
         ["css=.splitter-container-horizontal > .panel-titlebar > .grok-font-icon-menu", "css:finder"],
         ["xpath=(//i[@name='icon-font-icon-menu'])[3]", "xpath:attributes"],
@@ -1147,7 +1147,7 @@
       "id": "ca62814f-569e-4865-a9b6-53a586efc70f",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-font-icon-menu'])[3]",
+      "target": "xpath=(//i[@name='icon-font-icon-menu'])[2]",
       "targets": [
         ["css=.splitter-container-vertical > .panel-titlebar > .grok-font-icon-menu", "css:finder"],
         ["xpath=(//i[@name='icon-font-icon-menu'])[3]", "xpath:attributes"],
