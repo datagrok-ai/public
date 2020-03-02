@@ -58,6 +58,7 @@ The ribbons menu is a quick access icon toolbar located under the static and vie
 
 However, the quick access ribbons change depending on the available options. For instance, these are the features when you have already imported data to the workspace.
 ![alt text](../uploads/pictures/icon_menu.JPG "Ribbon Toolbar")
+
 **Useful Links:** [Navigation](../features/navigation.md) · [Toolbox](../features/toolbox.md)
 
 ### Toolbox
