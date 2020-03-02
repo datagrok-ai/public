@@ -1,5 +1,7 @@
 # Navigation
- Datagrok helps you unlock the full value of your organization's data by empowering any non-technical user to **discover, cleanse, visualize, explore, model data, and share the results** seamlessly. To get started, go to [Datagrok](https://datagrok.ai/) and click on the [![button](../uploads/pictures/button33.JPG "Launch")](https://public.datagrok.ai/?) button.
+ Datagrok helps you unlock the full value of your organization's data by empowering any non-technical user to **discover, cleanse, visualize, explore, model data, and share the results** seamlessly. 
+
+ To get started, go to [Datagrok](https://datagrok.ai/) and click on the [![button](../uploads/pictures/button33.JPG "Launch")](https://public.datagrok.ai/?) button.
 ## Welcome
 <!-- Note: this section should be on https://datagrok.ai/help/views/welcome-view -->
 
