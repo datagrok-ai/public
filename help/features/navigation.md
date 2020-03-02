@@ -102,8 +102,8 @@ For more information, see: [Property Panel](https://datagrok.ai/help/features/pr
 ### Contextual Help Panel
 The contextual help panel shows the additional insight for the specific situation or about the current selected object. 
 
-# (##### Notes)
-# (* Emphasis on data analysis view > table view)
-# (* Website view for data analysis )
-# (* One page about how you navigate on the system, dock &  undock)
-# (* Selecting data in multiple views > navigate back and forth, etc.)
+<!-- ##### Notes -->
+<!-- * Emphasis on data analysis view > table view -->
+<!-- * Website view for data analysis  -->
+<!-- * One page about how you navigate on the system, dock &  undock -->
+<!-- * Selecting data in multiple views > navigate back and forth, etc. -->
