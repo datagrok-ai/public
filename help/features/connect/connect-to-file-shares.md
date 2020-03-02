@@ -32,7 +32,7 @@ Expand the connection node to browse files.
 There are multiple ways to browse file shares. Open `File | Connect to Data...`,
 and expand the corresponding connection under the 'Files' section.
  
-![](connect-to-file-shares-tree.PNG)
+![](connect-to-file-shares-tree.png)
 
 Double-click on CSV file to open it in the platform, or right-click to see
 additional options, such as downloading the content as as ZIP file. 
