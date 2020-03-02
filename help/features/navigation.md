@@ -100,7 +100,7 @@ The main viewer is the central panel where you can separate datasets and graphs 
 ![alt text](../uploads/pictures/main_view.JPG "Main View")
 For more information, see [Viewers](../viewers/viewers.md).
 #### Workspace
-A Workspace is the collection of currently opened projects. The workspaces are separated by tabs in the main view. **Useful Links:** [Workspace](../help/features/workspace.md)
+A Workspace is the collection of currently opened projects. The workspaces are separated by tabs in the main view. **Useful Links:** [Workspace](../features/workspace.md)
 ### Property Panel
 At the right, the property panel displays relevant information on the selected data of the dataset. You can perform some basic actions from this panel, such as _delete, filter, keep, or extract rows_.
 ![alt text](../uploads/pictures/property_panel.JPG "Property Panel")
