@@ -97,11 +97,13 @@ A Workspace is the collection of currently opened projects. The workspaces are s
 ### Property Panel
 At the right, the property panel displays relevant information on the selected data of the dataset. You can perform some basic actions from this panel, such as _delete, filter, keep, or extract rows_.
 ![alt text](../uploads/pictures/property_panel.JPG "Property Panel")
+
 For more information, see: [Property Panel](https://datagrok.ai/help/features/property-panel).
 ### Contextual Help Panel
 The contextual help panel shows the additional insight for the specific situation or about the current selected object. 
-##### Notes
-* Emphasis on data analysis view > table view
-* Website view for data analysis 
-* One page about how you navigate on the system, dock &  undock
-* Selecting data in multiple views > navigate back and forth, etc.
+
+<> ##### Notes
+<> * Emphasis on data analysis view > table view
+<> * Website view for data analysis 
+<> * One page about how you navigate on the system, dock &  undock
+<> * Selecting data in multiple views > navigate back and forth, etc.
