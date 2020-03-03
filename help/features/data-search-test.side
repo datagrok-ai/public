@@ -76,21 +76,33 @@
       "targets": [],
       "value": ""
     }, {
-      "id": "269f6211-8b20-4dd4-8dd2-7d03c784edbc",
+      "id": "afba3f77-373e-43a9-8bbe-6c3f29b95cc7",
       "comment": "",
-      "command": "//click",
-      "target": "xpath=//div[@id='grok-viewers-toolbox']/div[3]/div[2]/div",
+      "command": "click",
+      "target": "xpath=//div[@name='div-section--Search']",
+      "targets": [
+        ["css=.d4-accordion-pane-header-short", "css:finder"],
+        ["xpath=//div[@name='div-section--Search']", "xpath:attributes"],
+        ["xpath=//div[@id='grok-viewers-toolbox']/div[2]/div[2]/div", "xpath:idRelative"],
+        ["xpath=//div/div/div/div[2]/div[2]/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "ea91fa2b-2fac-431c-8f9e-f828b283c31f",
+      "comment": "",
+      "command": "pause",
+      "target": "100",
       "targets": [],
       "value": ""
     }, {
       "id": "a0e4d1b0-9961-4189-ba5b-d02475d28cdb",
       "comment": "",
       "command": "type",
-      "target": "css=input:nth-child(1)",
+      "target": "xpath=(//input[@type='text'])[2]",
       "targets": [
         ["css=input:nth-child(1)", "css:finder"],
         ["xpath=(//input[@type='text'])[2]", "xpath:attributes"],
-        ["xpath=//div[@id='grok-viewers-toolbox']/div[3]/div[2]/div[2]/div/div/input", "xpath:idRelative"],
+        ["xpath=//div[@id='grok-viewers-toolbox']/div[2]/div[2]/div[2]/div/div/input", "xpath:idRelative"],
         ["xpath=//div[2]/div/div/input", "xpath:position"]
       ],
       "value": "50"

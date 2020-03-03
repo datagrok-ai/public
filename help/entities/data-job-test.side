@@ -690,6 +690,90 @@
         ["xpath=//div[2]/i", "xpath:position"]
       ],
       "value": ""
+    }, {
+      "id": "7af7c205-0d03-4a22-9c1c-af3113cd205f",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//span[@name='span-JobBySelenium']",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "324c10a1-bce2-4f1a-b506-941d6b81cba3",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "4b432076-6825-419b-982e-1fbc0bbfb723",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//i[@name='icon-context-arrow-down']",
+      "targets": [
+        ["css=.grok-context-arrow-down", "css:finder"],
+        ["xpath=//i[@name='icon-context-arrow-down']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div/span/i[2]", "xpath:idRelative"],
+        ["xpath=//span/i[2]", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "9666ffc1-c0bd-45ee-b329-b4a6c731cf4a",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "9cdbb80c-ab5a-4fb4-8198-4ff39186683f",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='div-Delete']",
+      "targets": [
+        ["css=.d4-menu-popup > .d4-menu-item:nth-child(3)", "css:finder"],
+        ["xpath=//div[@name='div-Delete']", "xpath:attributes"],
+        ["xpath=//body/div[6]/div[3]", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "fc44374b-f15a-4e74-a76b-0d278202514f",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "7f1c8361-7510-48da-9932-9ad166fde101",
+      "comment": "",
+      "command": "click",
+      "target": "name=button-YES",
+      "targets": [
+        ["name=button-YES", "name"],
+        ["css=.btn:nth-child(1)", "css:finder"],
+        ["xpath=//button[@name='button-YES']", "xpath:attributes"],
+        ["xpath=//div[3]/div/button", "xpath:position"],
+        ["xpath=//button[contains(.,'YES')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "e642aa46-df85-4156-b345-3d357a269d61",
+      "comment": "",
+      "command": "pause",
+      "target": "2000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "2600885c-5167-4a82-8de8-f4a1da35bc1e",
+      "comment": "",
+      "command": "verifyElementNotPresent",
+      "target": "xpath=//span[@name='span-JobBySelenium']",
+      "targets": [
+        ["css=.grok-gallery-grid > .d4-link-label:nth-child(2)", "css:finder"],
+        ["xpath=//span[@name='span-JobBySelenium']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div[4]/span[2]", "xpath:idRelative"],
+        ["xpath=//span[2]", "xpath:position"],
+        ["xpath=//span[contains(.,'Job by Selenium')]", "xpath:innerText"]
+      ],
+      "value": ""
     }]
   }],
   "suites": [{

@@ -350,10 +350,10 @@
       "id": "d03dd9e2-317b-477b-9724-84d83e9a82c3",
       "comment": "",
       "command": "verifyText",
-      "target": "xpath=(//div[@id='info'])[3]",
+      "target": "xpath=(//div[@id='info'])[2]",
       "targets": [
         ["css=.d4-accordion-pane:nth-child(1) #info", "css:finder"],
-        ["xpath=(//div[@id='info'])[3]", "xpath:attributes"],
+        ["xpath=(//div[@id='info'])[2]", "xpath:attributes"],
         ["xpath=//div[@id='right']/div/div/div/div/div[2]", "xpath:idRelative"],
         ["xpath=//div/div/div[2]/div[2]/div/div/div/div/div[2]", "xpath:position"]
       ],
@@ -362,10 +362,10 @@
       "id": "d1f32678-b158-4c53-b10d-b821ffb9ec09",
       "comment": "",
       "command": "verifyText",
-      "target": "xpath=(//div[@id='info'])[4]",
+      "target": "xpath=(//div[@id='info'])[3]",
       "targets": [
-        ["css=.d4-accordion > .d4-accordion-pane:nth-child(2) #info", "css:finder"],
-        ["xpath=(//div[@id='info'])[4]", "xpath:attributes"],
+        ["css=.d4-accordion-pane:nth-child(2) #info", "css:finder"],
+        ["xpath=(//div[@id='info'])[3]", "xpath:attributes"],
         ["xpath=//div[@id='right']/div/div/div[2]/div/div[2]", "xpath:idRelative"],
         ["xpath=//div[2]/div[2]/div/div/div[2]/div/div[2]", "xpath:position"]
       ],

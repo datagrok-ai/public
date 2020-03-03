@@ -1,11 +1,11 @@
 {
   "id": "4b5ebbbb-aab4-437f-9e7b-a5659a18533a",
   "version": "2.0",
-  "name": "split-regexp-test",
+  "name": "split-regex-test",
   "url": "https://dev.datagrok.ai/",
   "tests": [{
     "id": "f3cd043a-6e48-4add-a9a1-c5c17587fc54",
-    "name": "split-regexp-test",
+    "name": "split-regex-test",
     "commands": [{
       "id": "94df53ce-1880-43fc-afd1-4dcab6d68852",
       "comment": "",
@@ -208,11 +208,11 @@
       "id": "174a7d75-e11b-46aa-9b1a-5cb9484b241d",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-context-arrow-down'])[5]",
+      "target": "xpath=(//i[@name='icon-context-arrow-down'])[3]",
       "targets": [
-        ["css=.d4-input-text > .grok-icon", "css:finder"],
-        ["xpath=(//i[@name='icon-context-arrow-down'])[5]", "xpath:attributes"],
-        ["xpath=//div[7]/div[2]/div[2]/i", "xpath:position"]
+        ["css=.grok-context-arrow-down:nth-child(3)", "css:finder"],
+        ["xpath=(//i[@name='icon-context-arrow-down'])[3]", "xpath:attributes"],
+        ["xpath=//div[8]/div[2]/div[2]/i", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -256,11 +256,11 @@
       "id": "17feae3e-5de1-48a2-af43-ce38409324d9",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-context-arrow-down'])[5]",
+      "target": "xpath=(//i[@name='icon-context-arrow-down'])[3]",
       "targets": [
         ["css=.d4-input-text > .grok-icon", "css:finder"],
-        ["xpath=(//i[@name='icon-context-arrow-down'])[5]", "xpath:attributes"],
-        ["xpath=//div[7]/div[2]/div[2]/i", "xpath:position"]
+        ["xpath=(//i[@name='icon-context-arrow-down'])[3]", "xpath:attributes"],
+        ["xpath=//div[9]/div[2]/div[2]/i", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -304,11 +304,11 @@
       "id": "9a9ba678-b4f7-4813-81ae-9573d845762f",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-context-arrow-down'])[4]",
+      "target": "xpath=(//i[@name='icon-context-arrow-down'])[2]",
       "targets": [
-        ["css=.d4-input-text > .grok-icon", "css:finder"],
-        ["xpath=(//i[@name='icon-context-arrow-down'])[4]", "xpath:attributes"],
-        ["xpath=//div[8]/div[2]/div[2]/i", "xpath:position"]
+        ["css=.grok-context-arrow-down:nth-child(3)", "css:finder"],
+        ["xpath=(//i[@name='icon-context-arrow-down'])[2]", "xpath:attributes"],
+        ["xpath=//div[10]/div[2]/div[2]/i", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -352,11 +352,11 @@
       "id": "44395cb5-0433-4118-8f59-248f2f76917a",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-context-arrow-down'])[4]",
+      "target": "xpath=(//i[@name='icon-context-arrow-down'])[2]",
       "targets": [
-        ["css=.d4-input-text > .grok-icon", "css:finder"],
-        ["xpath=(//i[@name='icon-context-arrow-down'])[4]", "xpath:attributes"],
-        ["xpath=//div[10]/div[2]/div[2]/i", "xpath:position"]
+        ["css=.grok-context-arrow-down:nth-child(3)", "css:finder"],
+        ["xpath=(//i[@name='icon-context-arrow-down'])[2]", "xpath:attributes"],
+        ["xpath=//div[11]/div[2]/div[2]/i", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -548,7 +548,7 @@
   }],
   "suites": [{
     "id": "714aa4e8-ce22-4893-85d3-15f3540428a1",
-    "name": "split-regexp-test",
+    "name": "split-regex-test",
     "persistSession": false,
     "parallel": false,
     "timeout": 300,

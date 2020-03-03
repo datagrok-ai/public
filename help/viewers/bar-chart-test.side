@@ -276,10 +276,10 @@
       "id": "c1adcb4e-85e2-4cb7-81af-e7af5b9c03c8",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-font-icon-menu'])[3]",
+      "target": "xpath=//div[@class='panel-titlebar disable-selection']/i[@name='icon-font-icon-menu']",
       "targets": [
         ["css=.splitter-container-horizontal > .panel-titlebar > .grok-font-icon-menu", "css:finder"],
-        ["xpath=(//i[@name='icon-font-icon-menu'])[3]", "xpath:attributes"],
+        ["xpath=//div[@class='panel-titlebar disable-selection']/i[@name='icon-font-icon-menu']", "xpath:attributes"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div/i", "xpath:idRelative"],
         ["xpath=//div[3]/div/div/div/div/div[3]/div/i", "xpath:position"]
       ],
@@ -373,10 +373,10 @@
       "id": "56a258e1-aaf9-44b4-9855-b95648bca6bf",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-font-icon-settings'])[2]",
+      "target": "xpath=//div[@class='panel-titlebar disable-selection']/i[@name='icon-font-icon-settings']",
       "targets": [
         ["css=.splitter-container-horizontal > .panel-titlebar > .grok-font-icon-settings", "css:finder"],
-        ["xpath=(//i[@name='icon-font-icon-settings'])[2]", "xpath:attributes"],
+        ["xpath=//div[@class='panel-titlebar disable-selection']/i[@name='icon-font-icon-settings']", "xpath:attributes"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div/i[3]", "xpath:idRelative"],
         ["xpath=//div[3]/div/i[3]", "xpath:position"]
       ],
@@ -494,10 +494,10 @@
       "id": "fecda970-d124-434e-bd30-af40fd4a5924",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-font-icon-menu'])[3]",
+      "target": "xpath=//div[@class='panel-titlebar disable-selection']/i[@name='icon-font-icon-menu']",
       "targets": [
         ["css=.splitter-container-horizontal > .panel-titlebar > .grok-font-icon-menu", "css:finder"],
-        ["xpath=(//i[@name='icon-font-icon-menu'])[3]", "xpath:attributes"],
+        ["xpath=//div[@class='panel-titlebar disable-selection']/i[@name='icon-font-icon-menu']", "xpath:attributes"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div/i", "xpath:idRelative"],
         ["xpath=//div[3]/div/div/div/div/div[3]/div/i", "xpath:position"]
       ],
@@ -547,10 +547,10 @@
       "id": "79b60f50-7fce-49d8-a2e4-20865497d407",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-font-icon-settings'])[2]",
+      "target": "xpath=//div[@class='panel-titlebar disable-selection']/i[@name='icon-font-icon-settings']",
       "targets": [
         ["css=.splitter-container-horizontal > .panel-titlebar > .grok-font-icon-settings", "css:finder"],
-        ["xpath=(//i[@name='icon-font-icon-settings'])[2]", "xpath:attributes"],
+        ["xpath=//div[@class='panel-titlebar disable-selection']/i[@name='icon-font-icon-settings']", "xpath:attributes"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div/i[3]", "xpath:idRelative"],
         ["xpath=//div[3]/div/i[3]", "xpath:position"]
       ],
