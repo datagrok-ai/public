@@ -218,10 +218,10 @@
       "id": "c8ff44f1-ad47-4f72-b51e-b7021abaee94",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//input[@type='text'])[3]",
+      "target": "xpath=(//input[@type='text'])[2]",
       "targets": [
         ["css=td:nth-child(3) > input", "css:finder"],
-        ["xpath=(//input[@type='text'])[3]", "xpath:attributes"],
+        ["xpath=(//input[@type='text'])[2]", "xpath:attributes"],
         ["xpath=//td[3]/input", "xpath:position"]
       ],
       "value": ""
@@ -229,10 +229,10 @@
       "id": "6f12be8c-a3e1-4409-8cdc-5ba8983e630c",
       "comment": "",
       "command": "type",
-      "target": "xpath=(//input[@type='text'])[3]",
+      "target": "xpath=(//input[@type='text'])[2]",
       "targets": [
         ["css=td:nth-child(3) > input", "css:finder"],
-        ["xpath=(//input[@type='text'])[3]", "xpath:attributes"],
+        ["xpath=(//input[@type='text'])[2]", "xpath:attributes"],
         ["xpath=//td[3]/input", "xpath:position"]
       ],
       "value": ">50"

@@ -257,13 +257,20 @@
       "id": "15895eca-2689-46d5-9ad0-561d2e93d903",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//span[contains(.,'pause')]",
+      "target": "xpath=//span[contains(.,'3')]",
       "targets": [
-        ["css=tr:nth-child(4) > td:nth-child(2) > span", "css:finder"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div[2]/div[2]/table/tbody/tr[4]/td[2]/span", "xpath:idRelative"],
-        ["xpath=//tr[4]/td[2]/span", "xpath:position"],
-        ["xpath=//span[contains(.,'northwind')]", "xpath:innerText"]
+        ["css=tr:nth-child(8) > td:nth-child(2) > span", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[2]/div[2]/table/tbody/tr[8]/td[2]/span", "xpath:idRelative"],
+        ["xpath=//tr[8]/td[2]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'3')]", "xpath:innerText"]
       ],
+      "value": ""
+    }, {
+      "id": "62e3d560-882e-4088-a9c5-2b546986fe5b",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
+      "targets": [],
       "value": ""
     }]
   }],

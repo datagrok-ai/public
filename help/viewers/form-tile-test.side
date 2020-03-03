@@ -237,10 +237,10 @@
       "id": "91adb691-cef6-4864-9545-6f7a57484587",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-font-icon-settings'])[2]",
+      "target": "xpath=//div[@class='panel-titlebar disable-selection']/i[@name='icon-font-icon-settings']",
       "targets": [
         ["css=.panel-titlebar > .grok-font-icon-settings", "css:finder"],
-        ["xpath=(//i[@name='icon-font-icon-settings'])[2]", "xpath:attributes"],
+        ["xpath=//div[@class='panel-titlebar disable-selection']/i[@name='icon-font-icon-settings']", "xpath:attributes"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div/i[3]", "xpath:idRelative"],
         ["xpath=//div[3]/div/i[3]", "xpath:position"]
       ],
@@ -276,10 +276,10 @@
       "id": "9a96b211-db2c-4fcd-8c89-7d5c15c25007",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-font-icon-menu'])[3]",
+      "target": "xpath=//div[@class='panel-titlebar disable-selection']/i[@name='icon-font-icon-menu']",
       "targets": [
         ["css=.panel-titlebar > .grok-font-icon-menu", "css:finder"],
-        ["xpath=(//i[@name='icon-font-icon-menu'])[3]", "xpath:attributes"],
+        ["xpath=//div[@class='panel-titlebar disable-selection']/i[@name='icon-font-icon-menu']", "xpath:attributes"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div/i", "xpath:idRelative"],
         ["xpath=//div[3]/div/div/div/div/div[3]/div/i", "xpath:position"]
       ],
@@ -917,10 +917,10 @@
       "id": "eefaf6eb-e71d-4a72-9e2e-598855755488",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-font-icon-settings'])[2]",
+      "target": "xpath=//div[@class='panel-titlebar disable-selection']/i[@name='icon-font-icon-settings']",
       "targets": [
         ["css=.panel-base:nth-child(1) .grok-font-icon-settings", "css:finder"],
-        ["xpath=(//i[@name='icon-font-icon-settings'])[2]", "xpath:attributes"],
+        ["xpath=//div[@class='panel-titlebar disable-selection']/i[@name='icon-font-icon-settings']", "xpath:attributes"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div/div/i[3]", "xpath:idRelative"],
         ["xpath=//div[3]/div/div/div/div/div[3]/div/div/i[3]", "xpath:position"]
       ],

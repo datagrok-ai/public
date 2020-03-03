@@ -562,14 +562,10 @@
     }, {
       "id": "bc6bf3c8-dfb5-4db3-ba70-bad578741fbc",
       "comment": "",
-      "command": "verifyText",
-      "target": "css=.d4-console-info:nth-child(4) > pre:nth-child(2)",
-      "targets": [
-        ["css=.d4-console-info:nth-child(4) > pre:nth-child(2)", "css:finder"],
-        ["xpath=//div[@id='elementContent']/div/div[2]/div[4]/pre[2]", "xpath:idRelative"],
-        ["xpath=//div[4]/pre[2]", "xpath:position"]
-      ],
-      "value": "RScripts:ARIMAForecasting(\"TSLA\", \"Date\", \"Close\", 4, 3, 3, 25)"
+      "command": "verifyElementPresent",
+      "target": "xpath=//pre[contains(.,'RScripts:ARIMAForecasting(\"TSLA\", \"Date\", \"Close\", 4, 3, 3, 25)')]",
+      "targets": [],
+      "value": ""
     }, {
       "id": "49d20360-baad-42b8-9cd3-14abcdf47e8c",
       "comment": "",

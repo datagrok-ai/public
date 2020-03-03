@@ -205,7 +205,7 @@
       "id": "457ad379-9f35-432d-aed2-818c7f37bedb",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-plus'])[3]",
+      "target": "xpath=//div[@name='div-add-Rows']/i[@name='icon-plus']",
       "targets": [
         ["css=.grok-pivot-column-panel:nth-child(2) .grok-icon", "css:finder"],
         ["xpath=(//i[@name='icon-plus'])[3]", "xpath:attributes"],
@@ -235,7 +235,7 @@
       "id": "aa0cd67c-51b0-47b4-a392-99054a724cf1",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-plus'])[4]",
+      "target": "xpath=//div[@name='div-add-Measures']/i[@name='icon-plus']",
       "targets": [
         ["css=.grok-pivot-column-panel:nth-child(3) .grok-icon", "css:finder"],
         ["xpath=(//i[@name='icon-plus'])[4]", "xpath:attributes"],
@@ -276,7 +276,7 @@
       "id": "14955e35-dc95-4fe4-8953-47841ed3aaa4",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-plus'])[4]",
+      "target": "xpath=//div[@name='div-add-Measures']/i[@name='icon-plus']",
       "targets": [
         ["css=.grok-pivot-column-panel:nth-child(3) .grok-icon", "css:finder"],
         ["xpath=(//i[@name='icon-plus'])[4]", "xpath:attributes"],
@@ -313,7 +313,7 @@
       "id": "b808fd5b-9f39-440f-bb92-9615873b5523",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-plus'])[5]",
+      "target": "xpath=//div[@name='div-add-Filters']/i[@name='icon-plus']",
       "targets": [
         ["css=.grok-pivot-column-panel:nth-child(2) .grok-icon", "css:finder"],
         ["xpath=(//i[@name='icon-plus'])[3]", "xpath:attributes"],
@@ -381,7 +381,7 @@
       "id": "c1baef37-c799-4f1b-985b-dc7240d02828",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-plus'])[5]",
+      "target": "xpath=//div[@name='div-add-Filters']/i[@name='icon-plus']",
       "targets": [
         ["css=.grok-pivot-column-panel:nth-child(4) > .grok-pivot-column-tags-plus > .grok-icon", "css:finder"],
         ["xpath=(//i[@name='icon-plus'])[5]", "xpath:attributes"],

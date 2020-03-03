@@ -211,10 +211,10 @@
       "id": "b0eb8932-89f8-450c-8c36-2ac7a97e9ced",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//input[@type='text'])[3]",
+      "target": "xpath=(//input[@type='text'])[2]",
       "targets": [
-        ["css=.d4-console-input > input", "css:finder"],
-        ["xpath=(//input[@type='text'])[3]", "xpath:attributes"],
+        ["css=input:nth-child(1)", "css:finder"],
+        ["xpath=(//input[@type='text'])[2]", "xpath:attributes"],
         ["xpath=//div[@id='elementContent']/div/div[3]/input", "xpath:idRelative"],
         ["xpath=//div[3]/input", "xpath:position"]
       ],
@@ -223,10 +223,10 @@
       "id": "56a7f6f4-027e-47dd-9816-9f25412ddff2",
       "comment": "",
       "command": "type",
-      "target": "xpath=(//input[@type='text'])[3]",
+      "target": "xpath=(//input[@type='text'])[2]",
       "targets": [
-        ["css=.d4-console-input > input", "css:finder"],
-        ["xpath=(//input[@type='text'])[3]", "xpath:attributes"],
+        ["css=input:nth-child(1)", "css:finder"],
+        ["xpath=(//input[@type='text'])[2]", "xpath:attributes"],
         ["xpath=//div[@id='elementContent']/div/div[3]/input", "xpath:idRelative"],
         ["xpath=//div[3]/input", "xpath:position"]
       ],
@@ -235,10 +235,10 @@
       "id": "e7eb8026-8937-4f85-999b-78c4a4761f33",
       "comment": "",
       "command": "sendKeys",
-      "target": "xpath=(//input[@type='text'])[3]",
+      "target": "css=input:nth-child(1)",
       "targets": [
-        ["css=.d4-console-input > input", "css:finder"],
-        ["xpath=(//input[@type='text'])[3]", "xpath:attributes"],
+        ["css=input:nth-child(1)", "css:finder"],
+        ["xpath=(//input[@type='text'])[2]", "xpath:attributes"],
         ["xpath=//div[@id='elementContent']/div/div[3]/input", "xpath:idRelative"],
         ["xpath=//div[3]/input", "xpath:position"]
       ],
@@ -373,6 +373,13 @@
       ],
       "value": ""
     }, {
+      "id": "86f721a1-7ebd-41cf-af03-ac3bcf38c8c4",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "8a226fd5-00d2-4c5b-af24-a3348ffa6ec6",
       "comment": "",
       "command": "click",
@@ -383,6 +390,13 @@
         ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div[3]/div/div/div[2]/div", "xpath:idRelative"],
         ["xpath=//div[3]/div/div/div[2]/div", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "768e8961-6617-4c87-bb29-0f58f8d37417",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "49cbeb9e-4213-4310-8aff-780e4d5cf78f",
@@ -397,10 +411,24 @@
       ],
       "value": ""
     }, {
+      "id": "090d666d-51a3-4bbe-844a-606bffdbded1",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "f0b32299-91f3-407d-abb4-679180807f49",
       "comment": "",
       "command": "click",
       "target": "css=div[name=\"div-Select---Missing-Values...\"] > div.d4-menu-item-label",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "7c956bb1-ef02-4d91-aa90-46dfaa070056",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
       "targets": [],
       "value": ""
     }, {
@@ -427,6 +455,13 @@
         ["xpath=//button[@name='button-OK']", "xpath:attributes"],
         ["xpath=//button", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "6b04960e-05c4-408a-a1b2-6e0faa6b719a",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "d5115943-b38c-479c-b523-cac579b48a3f",
@@ -517,10 +552,10 @@
       "id": "29c14a59-7948-4ceb-9671-8a5c5d0a5f41",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-context-arrow-down'])[4]",
+      "target": "xpath=(//i[@name='icon-context-arrow-down'])[2]",
       "targets": [
-        ["css=.d4-accordion-title .grok-context-arrow-down", "css:finder"],
-        ["xpath=(//i[@name='icon-context-arrow-down'])[4]", "xpath:attributes"],
+        ["css=.grok-context-arrow-down:nth-child(3)", "css:finder"],
+        ["xpath=(//i[@name='icon-context-arrow-down'])[2]", "xpath:attributes"],
         ["xpath=//div[@id='elementContent']/div/div/div/div/span/i[2]", "xpath:idRelative"],
         ["xpath=//span/i[2]", "xpath:position"]
       ],
@@ -554,18 +589,6 @@
         ["xpath=//i[@name='icon-exclamation-circle']", "xpath:attributes"],
         ["xpath=//div[@id='rootDiv']/div/div[2]/i", "xpath:idRelative"],
         ["xpath=//div[2]/i", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "c46b8b46-2ee3-4874-bd9e-d57c351bc593",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@name='tree-expander-Selenium-test-data-p1']",
-      "targets": [
-        ["css=.d4-tree-view-root > .d4-tree-view-group-host > .d4-tree-view-group:nth-child(2) > .d4-tree-view-node > .d4-tree-view-tri", "css:finder"],
-        ["xpath=//div[@name='tree-expander-Selenium-test-data-p1']", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div/div[2]/div[2]/div/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/div[2]/div[2]/div/div", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -603,12 +626,12 @@
       "id": "5e920c9d-a11c-45e9-a6b7-cc3b8fce2c3c",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-context-arrow-down'])[4]",
+      "target": "xpath=(//i[@name='icon-context-arrow-down'])[2]",
       "targets": [
-        ["css=.d4-accordion-title .grok-icon", "css:finder"],
-        ["xpath=(//i[@name='icon-context-arrow-down'])[4]", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div/span/i[2]", "xpath:idRelative"],
-        ["xpath=//span/i[2]", "xpath:position"]
+        ["css=.grok-context-arrow-down:nth-child(4)", "css:finder"],
+        ["xpath=(//i[@name='icon-context-arrow-down'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div/span/i[3]", "xpath:idRelative"],
+        ["xpath=//span/i[3]", "xpath:position"]
       ],
       "value": ""
     }, {
