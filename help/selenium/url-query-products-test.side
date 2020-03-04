@@ -1,11 +1,11 @@
 {
   "id": "b390008b-1b39-4405-bcfd-6b03f9f4d568",
   "version": "2.0",
-  "name": "ulr-query-test",
+  "name": "url-query-products-test",
   "url": "https://dev.datagrok.ai",
   "tests": [{
     "id": "1e1a7755-4e26-458c-9783-60348afe35cf",
-    "name": "ulr-query-test",
+    "name": "url-query-products-test",
     "commands": [{
       "id": "8ff604b9-81db-4083-8663-4b119b7492f9",
       "comment": "",
@@ -65,7 +65,7 @@
       "id": "8ac69679-1d11-4db7-8b8e-929968c34dfc",
       "comment": "",
       "command": "open",
-      "target": "/q/Demo.TestJobs.PostgreSQL.Orders?selenium=true&employeeId=5&shipVia=%3D+3&freight=10&shipCountry=France&shipCity=starts+with+r&freightLess1000=true&requiredDate=1994-12-31+22%3A00%3A00.000Z&orderDate=after+1%2F1%2F1995",
+      "target": "/q/Demo.TestJobs.PostgreSQL.Products?selenium=true",
       "targets": [],
       "value": ""
     }, {
@@ -76,22 +76,36 @@
       "targets": [],
       "value": ""
     }, {
-      "id": "1ff7bb2f-62ba-469a-a6d3-ca1edb5caf0b",
+      "id": "9b2e59d3-4c6a-401b-ac67-9bc6033aec7e",
+      "comment": "",
+      "command": "verifyElementNotPresent",
+      "target": "xpath=//i[@name='icon-exclamation-circle']",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "90ef7525-ab28-42f8-a058-93f7986cdb39",
       "comment": "",
       "command": "click",
-      "target": "css=.tab-handle:nth-child(3)",
+      "target": "xpath=//div[@name='view-handle: Products']",
       "targets": [
         ["css=.tab-handle:nth-child(3)", "css:finder"],
-        ["xpath=//div[@name='view-handle: Orders']", "xpath:attributes"],
+        ["xpath=//div[@name='view-handle: Products']", "xpath:attributes"],
         ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div", "xpath:idRelative"],
         ["xpath=//div[2]/div[2]/div/div/div/div/div/div", "xpath:position"]
       ],
       "value": ""
     }, {
-      "id": "ce11c380-010d-42df-a98c-0e4bb41a39f8",
+      "id": "3ed48b3e-5234-4046-bf7a-d95820dc6273",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "584f2310-4642-4f6a-b4a2-c99eb8ef9393",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-section--General']",
+      "target": "name=div-section--General",
       "targets": [
         ["css=.grok-entity-prop-panel .d4-accordion-pane:nth-child(2) > .d4-accordion-pane-header", "css:finder"],
         ["xpath=//div[@name='div-section--General']", "xpath:attributes"],
@@ -100,127 +114,62 @@
       ],
       "value": ""
     }, {
-      "id": "3d8416f4-cc0c-4255-8ec8-7a43102f6796",
+      "id": "97b93aad-3d94-4544-8e14-1a50f5876fb1",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "500",
       "targets": [],
       "value": ""
     }, {
-      "id": "1d8eb904-8036-49ee-ad8f-4f0cc14c7739",
+      "id": "c943c459-669d-49bb-be21-e992e35ed6b1",
       "comment": "",
       "command": "verifyElementPresent",
       "target": "xpath=//span[contains(.,'northwind')]",
       "targets": [
-        ["css=tr:nth-child(4) > td:nth-child(2) > span", "css:finder"],
+        ["css=.expanded tr:nth-child(4) > td:nth-child(2) > span", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[2]/div[2]/table/tbody/tr[4]/td[2]/span", "xpath:idRelative"],
         ["xpath=//tr[4]/td[2]/span", "xpath:position"],
         ["xpath=//span[contains(.,'northwind')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
-      "id": "cef1eda7-d405-48d2-bfe3-ba9931da13b2",
+      "id": "7ad58f87-bc69-4c40-a4b4-cc16b6422c99",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span-Orders",
+      "target": "name=span-Products",
       "targets": [
-        ["css=td > .d4-link-label > label", "css:finder"],
+        ["css=tr:nth-child(6) label", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[2]/div[2]/table/tbody/tr[6]/td[2]/span/label", "xpath:idRelative"],
         ["xpath=//td[2]/span/label", "xpath:position"]
       ],
       "value": ""
     }, {
-      "id": "a9e17fd8-06d5-46ac-8e1f-c9b732201e5f",
+      "id": "4f12fda1-41a9-4d28-8f73-59875dd3b395",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//span[contains(.,'France')]",
+      "target": "xpath=//span[contains(.,'northwind')]",
       "targets": [
-        ["css=tr:nth-child(4) > td:nth-child(2) > span", "css:finder"],
+        ["css=.expanded tr:nth-child(4) > td:nth-child(2) > span", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[2]/div[2]/table/tbody/tr[4]/td[2]/span", "xpath:idRelative"],
         ["xpath=//tr[4]/td[2]/span", "xpath:position"],
         ["xpath=//span[contains(.,'northwind')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
-      "id": "90478228-f5fa-4128-9ea6-2225d2f4f9ef",
-      "comment": "",
-      "command": "verifyElementPresent",
-      "target": "xpath=//span[contains(.,'starts with r')]",
-      "targets": [
-        ["css=tr:nth-child(4) > td:nth-child(2) > span", "css:finder"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div[2]/div[2]/table/tbody/tr[4]/td[2]/span", "xpath:idRelative"],
-        ["xpath=//tr[4]/td[2]/span", "xpath:position"],
-        ["xpath=//span[contains(.,'northwind')]", "xpath:innerText"]
-      ],
-      "value": ""
-    }, {
-      "id": "af01c1f8-d602-42f5-abc1-bf68f203c431",
-      "comment": "",
-      "command": "verifyElementPresent",
-      "target": "xpath=//span[contains(.,'Dec 31, 1994')]",
-      "targets": [
-        ["css=tr:nth-child(4) > td:nth-child(2) > span", "css:finder"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div[2]/div[2]/table/tbody/tr[4]/td[2]/span", "xpath:idRelative"],
-        ["xpath=//tr[4]/td[2]/span", "xpath:position"],
-        ["xpath=//span[contains(.,'northwind')]", "xpath:innerText"]
-      ],
-      "value": ""
-    }, {
-      "id": "21e6c133-78bf-45c0-82af-c783891c6ae3",
-      "comment": "",
-      "command": "type",
-      "target": "name=input-Ship-Via",
-      "targets": [
-        ["name=input-Ship-Via", "name"],
-        ["css=.d4-input-text:nth-child(2) > #editor", "css:finder"],
-        ["xpath=(//input[@id='editor'])[2]", "xpath:attributes"],
-        ["xpath=//div[@id='grok-viewers-toolbox']/div[2]/div[2]/div[2]/div/div[2]/input", "xpath:idRelative"],
-        ["xpath=//div[2]/input", "xpath:position"]
-      ],
-      "value": ">1"
-    }, {
-      "id": "d39f329f-16aa-4fe9-986b-39ecd9d34945",
-      "comment": "",
-      "command": "type",
-      "target": "name=input-Order-Date",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "e5ce55c4-bd8e-4dfd-b23f-0bcfb2bbed1e",
-      "comment": "",
-      "command": "type",
-      "target": "name=input-Employee-Id",
-      "targets": [
-        ["id=editor", "id"],
-        ["name=input-Employee-Id", "name"],
-        ["css=.d4-input-int > #editor", "css:finder"],
-        ["xpath=//input[@id='editor']", "xpath:attributes"],
-        ["xpath=//div[@id='grok-viewers-toolbox']/div[2]/div[2]/div[2]/div/div/input", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/input", "xpath:position"]
-      ],
-      "value": "3"
-    }, {
-      "id": "c5c7b04c-fdbf-4c83-8949-576875023131",
-      "comment": "",
-      "command": "type",
-      "target": "name=input-Ship-City",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "a17dab0f-24c0-4210-ac12-73563d8787d2",
+      "id": "cb07c525-88bc-4755-a56f-8f441c4d6529",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "500",
       "targets": [],
       "value": ""
     }, {
-      "id": "b60a58d2-74e7-40e7-a784-226a0e219eb1",
+      "id": "5251b6cc-536c-4c70-9a4e-9919ba7141e3",
       "comment": "",
       "command": "click",
       "target": "name=button-btn-REFRESH",
       "targets": [
         ["name=button-btn-REFRESH", "name"],
-        ["css=.btn:nth-child(10)", "css:finder"],
+        ["css=.btn:nth-child(1)", "css:finder"],
         ["xpath=//button[@name='button-btn-REFRESH']", "xpath:attributes"],
         ["xpath=//div[@id='grok-viewers-toolbox']/div[2]/div[2]/div[2]/div/button", "xpath:idRelative"],
         ["xpath=//div[2]/div/button", "xpath:position"],
@@ -235,38 +184,14 @@
       "targets": [],
       "value": ""
     }, {
-      "id": "911b3a54-cfcd-43f5-809b-7cc3ae8a8e9d",
+      "id": "6bdff1b4-2d67-4cfb-8c51-26b541dae845",
       "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@name='view-handle: Orders']",
-      "targets": [
-        ["css=.tab-handle:nth-child(3)", "css:finder"],
-        ["xpath=//div[@name='view-handle: Orders']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "f5b270c1-7e9f-4821-a938-b0b10a92db9e",
-      "comment": "",
-      "command": "pause",
-      "target": "500",
+      "command": "verifyElementNotPresent",
+      "target": "xpath=//i[@name='icon-exclamation-circle']",
       "targets": [],
       "value": ""
     }, {
-      "id": "15895eca-2689-46d5-9ad0-561d2e93d903",
-      "comment": "",
-      "command": "verifyElementPresent",
-      "target": "xpath=//span[contains(.,'3')]",
-      "targets": [
-        ["css=tr:nth-child(8) > td:nth-child(2) > span", "css:finder"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div[2]/div[2]/table/tbody/tr[8]/td[2]/span", "xpath:idRelative"],
-        ["xpath=//tr[8]/td[2]/span", "xpath:position"],
-        ["xpath=//span[contains(.,'3')]", "xpath:innerText"]
-      ],
-      "value": ""
-    }, {
-      "id": "62e3d560-882e-4088-a9c5-2b546986fe5b",
+      "id": "0f914390-bfb5-4652-9af0-9a0210c9bc1c",
       "comment": "",
       "command": "pause",
       "target": "500",
@@ -276,7 +201,7 @@
   }],
   "suites": [{
     "id": "ec967ec6-1191-47c4-9144-a537f982d65b",
-    "name": "ulr-query-test",
+    "name": "url-query-products-test",
     "persistSession": false,
     "parallel": false,
     "timeout": 600,
