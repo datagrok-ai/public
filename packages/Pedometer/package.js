@@ -15,6 +15,9 @@ class PedometerPackage extends GrokPackage {
         viewer.root.appendChild(ui.divText('Sample rate: ' + sampleRate.toString() + ' Hz'));
 
         this._detectSteps(accel, x, y, z, sampleRate, true, result => {
+            if (accel.columns.contains('steps'))
+                accel.columns.remove('steps');
+
             let steps = accel.columns.add((new DataFrame(result)).col('steps'), true);
             view.lineChart({
                 xColumnName: timeOffset.name,
