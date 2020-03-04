@@ -8,7 +8,7 @@
 #input: column y {semType: Accelerometer-Y} [Y axis]
 #input: column z {semType: Accelerometer-Z} [Z axis]
 #input: double sample_rate = 32 [Sample rate, in Hz]
-#output: dataframe steps {action:join(accel)} [Steps positions]
+#output: dataframe steps {action:replace(accel)} [Steps positions]
 
 import numpy as np
 import pandas as pd
