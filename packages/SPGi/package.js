@@ -27,6 +27,11 @@ class SPGiPackage extends GrokPackage {
             if (view.type === VIEW_TYPE_TABLE_VIEW && view.name === 'Main')
                 this.layoutMain(view);
         }.bind(this));
+
+        grok.onProjectOpened(function (p) {
+            if (p.name.startsWith('BFC'))
+                grok.v = grok.getTableView('Main');
+        });
     }
 
 
