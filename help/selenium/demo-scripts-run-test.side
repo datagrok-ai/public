@@ -169,7 +169,7 @@
       "id": "0bd1294a-c598-4011-9569-4187d53f47eb",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Tools']",
+      "target": "xpath=//div[@name='div-View']",
       "targets": [
         ["css=.d4-menu-item-horz:nth-child(7)", "css:finder"],
         ["xpath=//div[@name='div-Tools']", "xpath:attributes"],
@@ -181,7 +181,7 @@
       "id": "a82d7454-d66e-433c-a940-f0fbe977d8a6",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Tools---Console']",
+      "target": "xpath=//div[@name='div-View---Console']",
       "targets": [
         ["css=.d4-menu-item:nth-child(7) .d4-menu-item:nth-child(9)", "css:finder"],
         ["xpath=//div[@name='div-Tools---Console']", "xpath:attributes"],
