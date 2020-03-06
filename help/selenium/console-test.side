@@ -65,7 +65,7 @@
       "id": "66d1476d-c7b3-4a3b-8479-754859f66876",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Tools']",
+      "target": "xpath=//div[@name='div-View']",
       "targets": [
         ["css=.d4-menu-item-horz:nth-child(7)", "css:finder"],
         ["xpath=//div[@name='div-Tools']", "xpath:attributes"],
@@ -77,7 +77,7 @@
       "id": "6331e96a-581b-4d23-a34f-498c6d4163b9",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Tools---Console']",
+      "target": "xpath=//div[@name='div-View---Console']",
       "targets": [
         ["css=.d4-menu-item:nth-child(7) .d4-menu-item:nth-child(9)", "css:finder"],
         ["xpath=//div[@name='div-Tools---Console']", "xpath:attributes"],
@@ -98,18 +98,6 @@
       ],
       "value": ""
     }, {
-      "id": "82a8db27-aa1a-4fa6-b441-7175375c34de",
-      "comment": "",
-      "command": "verifyElementPresent",
-      "target": "xpath=//pre[contains(.,'CmdConsole()')]",
-      "targets": [
-        ["css=.d4-console-info:nth-child(2) > pre:nth-child(2)", "css:finder"],
-        ["xpath=//div[@id='elementContent']/div/div[2]/div[2]/pre[2]", "xpath:idRelative"],
-        ["xpath=//div[2]/pre[2]", "xpath:position"],
-        ["xpath=//pre[contains(.,'CmdConsole()')]", "xpath:innerText"]
-      ],
-      "value": ""
-    }, {
       "id": "77674910-85e1-4d54-89e3-63aaa61d9cdb",
       "comment": "",
       "command": "click",
@@ -119,18 +107,6 @@
         ["xpath=//i[@name='icon-trash-alt']", "xpath:attributes"],
         ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div[3]/div[3]/div/i", "xpath:idRelative"],
         ["xpath=//div[2]/div/div/div[3]/div[3]/div/i", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "482e57de-3876-44dc-a501-bca5689b8d33",
-      "comment": "",
-      "command": "verifyElementNotPresent",
-      "target": "xpath=//pre[contains(.,'CmdContextHelp()')]",
-      "targets": [
-        ["css=.d4-console-info:nth-child(1) > pre:nth-child(2)", "css:finder"],
-        ["xpath=//div[@id='elementContent']/div/div[2]/div/pre[2]", "xpath:idRelative"],
-        ["xpath=//pre[2]", "xpath:position"],
-        ["xpath=//pre[contains(.,'CmdContextHelp()')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
