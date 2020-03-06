@@ -12,6 +12,8 @@ public class AccessDataProvider extends JdbcDataProvider {
         descriptor.type = "Access";
         descriptor.description = "Query Access database";
         descriptor.connectionTemplate = new ArrayList<Property>() {{
+            add(new Property(Property.STRING_TYPE, DbCredentials.CONNECTION_STRING,
+                    DbCredentials.CONNECTION_STRING_DESCRIPTION, new Prop("textarea")));
             add(new Property(Property.STRING_TYPE, DbCredentials.DB, DbCredentials.DB_DESCRIPTION));
         }};
         descriptor.credentialsTemplate = new ArrayList<Property>() {{
@@ -26,7 +28,7 @@ public class AccessDataProvider extends JdbcDataProvider {
                 conn.credentials.getPassword());
     }
 
-    public String getConnectionString(DataConnection conn) {
+    public String getConnectionStringImpl(DataConnection conn) {
         return "jdbc:ucanaccess://" + conn.getDb();
     }
 }

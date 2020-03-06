@@ -34,4 +34,14 @@ public class DataConnection
     {
         this.connectionString = connectionString;
     }
+
+    public boolean ssl() {
+        return parameters.containsKey(DbCredentials.SSL) && (boolean)parameters.get(DbCredentials.SSL);
+    }
+
+    public boolean hasCustomConnectionString() {
+        return parameters.containsKey(DbCredentials.CONNECTION_STRING) &&
+                parameters.get(DbCredentials.CONNECTION_STRING) != null &&
+                !parameters.get(DbCredentials.CONNECTION_STRING).equals("");
+    }
 }

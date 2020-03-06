@@ -23,6 +23,12 @@ public abstract class JdbcDataProvider extends DataProvider {
     }
 
     public String getConnectionString(DataConnection conn) {
+        return conn.hasCustomConnectionString()
+                ? (String)conn.parameters.get(DbCredentials.CONNECTION_STRING)
+                : getConnectionStringImpl(conn);
+    }
+
+    public String getConnectionStringImpl(DataConnection conn) {
         return conn.connectionString;
     }
 

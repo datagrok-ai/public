@@ -16,7 +16,7 @@ public class PostgresDataProvider extends JdbcDataProvider {
         descriptor = new DataSource();
         descriptor.type = "PostgresNet";
         descriptor.description = "Query PostgresNet database";
-        descriptor.connectionTemplate = DbCredentials.dbConnectionTemplate;
+        descriptor.connectionTemplate = new ArrayList<>(DbCredentials.dbConnectionTemplate);
         descriptor.connectionTemplate.add(new Property(Property.BOOL_TYPE, DbCredentials.SSL));
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
         descriptor.nameBrackets = "\"";
@@ -48,12 +48,12 @@ public class PostgresDataProvider extends JdbcDataProvider {
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
         Class.forName("org.postgresql.Driver");
         java.util.Properties properties = defaultConnectionProperties(conn);
-        if (conn.parameters.containsKey(DbCredentials.SSL) && (boolean)conn.parameters.get(DbCredentials.SSL))
+        if (!conn.hasCustomConnectionString() && conn.ssl())
             properties.setProperty("ssl", "true");
         return DriverManager.getConnection(getConnectionString(conn), properties);
     }
 
-    public String getConnectionString(DataConnection conn) {
+    public String getConnectionStringImpl(DataConnection conn) {
         String port = (conn.getPort() == null) ? "" : ":" + conn.getPort();
         return "jdbc:postgresql://" + conn.getServer() + port + "/" + conn.getDb();
     }

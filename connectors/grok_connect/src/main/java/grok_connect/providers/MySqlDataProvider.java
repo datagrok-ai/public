@@ -13,7 +13,7 @@ public class MySqlDataProvider extends JdbcDataProvider {
         descriptor = new DataSource();
         descriptor.type = "MySQL";
         descriptor.description = "Query MySQL database";
-        descriptor.connectionTemplate = DbCredentials.dbConnectionTemplate;
+        descriptor.connectionTemplate = new ArrayList<>(DbCredentials.dbConnectionTemplate);
         descriptor.connectionTemplate.add(new Property(Property.BOOL_TYPE, DbCredentials.SSL));
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
         descriptor.canBrowseSchema = true;
@@ -58,15 +58,17 @@ public class MySqlDataProvider extends JdbcDataProvider {
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
         Class.forName("com.mysql.jdbc.Driver");
         java.util.Properties properties = defaultConnectionProperties(conn);
-        properties.setProperty("zeroDateTimeBehavior", "convertToNull");
-        if (conn.parameters.containsKey(DbCredentials.SSL) && (boolean)conn.parameters.get(DbCredentials.SSL)) {
-            properties.setProperty("useSSL", "true");
-            properties.setProperty("verifyServerCertificate", "false");
+        if (!conn.hasCustomConnectionString()) {
+            properties.setProperty("zeroDateTimeBehavior", "convertToNull");
+            if (conn.ssl()) {
+                properties.setProperty("useSSL", "true");
+                properties.setProperty("verifyServerCertificate", "false");
+            }
         }
         return DriverManager.getConnection(getConnectionString(conn), properties);
     }
 
-    public String getConnectionString(DataConnection conn) {
+    public String getConnectionStringImpl(DataConnection conn) {
         String port = (conn.getPort() == null) ? "" : ":" + conn.getPort();
         return "jdbc:mysql://" + conn.getServer() + port + "/" + conn.getDb();
     }
