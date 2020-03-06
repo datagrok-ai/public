@@ -18,12 +18,6 @@ public class Property {
     public List<String> choices;
     public Prop info;
 
-    public Property(String propertyType, String name, String description) {
-        this.name = name;
-        this.propertyType = propertyType;
-        this.description = description;
-    }
-
     public Property(String propertyType, String name) {
         this.name = name;
         this.propertyType = propertyType;
@@ -32,6 +26,19 @@ public class Property {
     public Property(String propertyType, String name, Prop info) {
         this.name = name;
         this.propertyType = propertyType;
+        this.info = info;
+    }
+
+    public Property(String propertyType, String name, String description) {
+        this.name = name;
+        this.propertyType = propertyType;
+        this.description = description;
+    }
+
+    public Property(String propertyType, String name, String description, Prop info) {
+        this.name = name;
+        this.propertyType = propertyType;
+        this.description = description;
         this.info = info;
     }
 }

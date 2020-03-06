@@ -12,6 +12,8 @@ public class BigQueryDataProvider extends JdbcDataProvider {
         descriptor.type = "BigQuery";
         descriptor.description = "Query BigQuery database";
         descriptor.connectionTemplate = new ArrayList<Property>() {{
+            add(new Property(Property.STRING_TYPE, DbCredentials.CONNECTION_STRING,
+                    DbCredentials.CONNECTION_STRING_DESCRIPTION, new Prop("textarea")));
             add(new Property(Property.STRING_TYPE, "project_id", "ID of project"));
         }};
         descriptor.credentialsTemplate = new ArrayList<Property>() {{
@@ -26,7 +28,7 @@ public class BigQueryDataProvider extends JdbcDataProvider {
                 conn.credentials.getPassword());
     }
 
-    public String getConnectionString(DataConnection conn) {
+    public String getConnectionStringImpl(DataConnection conn) {
         return "jdbc:BQDriver:" + conn.parameters.get("project_id") + "?withServiceAccount=true";
     }
 }

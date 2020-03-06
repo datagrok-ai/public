@@ -16,6 +16,8 @@ public class AthenaDataProvider extends JdbcDataProvider {
             add(new Property(Property.STRING_TYPE, DbCredentials.SERVER));
             add(new Property(Property.INT_TYPE, DbCredentials.PORT));
             add(new Property(Property.STRING_TYPE, DbCredentials.DB, DbCredentials.DB_DESCRIPTION));
+            add(new Property(Property.STRING_TYPE, DbCredentials.CONNECTION_STRING,
+                    DbCredentials.CONNECTION_STRING_DESCRIPTION, new Prop("textarea")));
             add(new Property(Property.STRING_TYPE, "S3OutputLocation",
                     "The path of the Amazon S3 location where you want to store query results"));
         }};
@@ -31,14 +33,16 @@ public class AthenaDataProvider extends JdbcDataProvider {
 
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
         Class.forName("com.simba.athena.jdbc.Driver");
-        return DriverManager.getConnection(getConnectionString(conn));
+        String connString = getConnectionString(conn);
+        connString = connString.endsWith(";") ? connString : connString + ";";
+        connString += "User=" + conn.credentials.parameters.get("AccessKey") + ";" +
+                "Password=" + conn.credentials.parameters.get("SecretKey");
+        return DriverManager.getConnection(connString);
     }
 
-    public String getConnectionString(DataConnection conn) {
+    public String getConnectionStringImpl(DataConnection conn) {
         String port = (conn.getPort() == null) ? "" : ":" + conn.getPort();
         return "jdbc:awsathena://" + conn.getServer() + port + ";" +
-                "User=" + conn.credentials.parameters.get("AccessKey") + ";" +
-                "Password=" + conn.credentials.parameters.get("SecretKey") + ";" +
                 "S3OutputLocation=" + conn.parameters.get("S3OutputLocation");
     }
 

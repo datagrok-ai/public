@@ -14,7 +14,7 @@ public class MsSqlDataProvider extends JdbcDataProvider {
         descriptor.type = "MS SQL";
         descriptor.category = "Database";
         descriptor.description = "Query MS SQL database";
-        descriptor.connectionTemplate = DbCredentials.dbConnectionTemplate;
+        descriptor.connectionTemplate = new ArrayList<>(DbCredentials.dbConnectionTemplate);
         descriptor.connectionTemplate.add(new Property(Property.BOOL_TYPE, DbCredentials.SSL));
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
         descriptor.canBrowseSchema = true;
@@ -55,15 +55,16 @@ public class MsSqlDataProvider extends JdbcDataProvider {
 
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
         Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-        return DriverManager.getConnection(getConnectionString(conn));
+        String connString = getConnectionString(conn);
+        connString = connString.endsWith(";") ? connString : connString + ";";
+        connString += "user=" + conn.credentials.getLogin() + ";password=" + conn.credentials.getPassword();
+        return DriverManager.getConnection(connString);
     }
 
-    public String getConnectionString(DataConnection conn) {
+    public String getConnectionStringImpl(DataConnection conn) {
         String port = (conn.getPort() == null) ? "" : ":" + conn.getPort();
-        boolean ssl = conn.parameters.containsKey(DbCredentials.SSL) && (boolean)conn.parameters.get(DbCredentials.SSL);
         return "jdbc:sqlserver://" + conn.getServer() + port + ";databaseName=" + conn.getDb() +
-                ";user=" + conn.credentials.getLogin() + ";password=" + conn.credentials.getPassword() + ";" +
-                (ssl ? "integratedSecurity=true;encrypt=true;trustServerCertificate=true;" : "");
+                (conn.ssl() ? "integratedSecurity=true;encrypt=true;trustServerCertificate=true;" : "");
     }
 
     public String getSchemasSql(String db) {

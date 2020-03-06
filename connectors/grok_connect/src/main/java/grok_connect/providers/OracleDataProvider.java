@@ -20,7 +20,7 @@ public class OracleDataProvider extends JdbcDataProvider {
         descriptor = new DataSource();
         descriptor.type = "Oracle";
         descriptor.description = "Query Oracle database";
-        descriptor.connectionTemplate = DbCredentials.dbConnectionTemplate;
+        descriptor.connectionTemplate = new ArrayList<>(DbCredentials.dbConnectionTemplate);
         descriptor.connectionTemplate.add(new Property(Property.BOOL_TYPE, DbCredentials.SSL));
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
         descriptor.canBrowseSchema = true;
@@ -57,12 +57,11 @@ public class OracleDataProvider extends JdbcDataProvider {
         return DriverManager.getConnection(getConnectionString(conn), conn.credentials.getLogin(), conn.credentials.getPassword());
     }
 
-    public String getConnectionString(DataConnection conn) {
+    public String getConnectionStringImpl(DataConnection conn) {
         conn.getPort();
-        boolean ssl = (conn.parameters.containsKey(DbCredentials.SSL) && (boolean)conn.parameters.get(DbCredentials.SSL));
         return "jdbc:oracle:thin:@(DESCRIPTION=" +
                 "(ADDRESS=" +
-                    "(PROTOCOL=" + (ssl ? "tcps" : "tcp") + ")" +
+                    "(PROTOCOL=" + (conn.ssl() ? "tcps" : "tcp") + ")" +
                     "(HOST=" + conn.getServer() + ")" +
                     "(PORT=" + conn.getPort() + "))" +
                 "(CONNECT_DATA=(SERVICE_NAME=" + conn.getDb() + ")))";

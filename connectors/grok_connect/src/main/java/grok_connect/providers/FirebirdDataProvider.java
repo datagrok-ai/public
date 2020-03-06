@@ -18,7 +18,7 @@ public class FirebirdDataProvider extends JdbcDataProvider {
         return DriverManager.getConnection(getConnectionString(conn), conn.credentials.getLogin(), conn.credentials.getPassword());
     }
 
-    public String getConnectionString(DataConnection conn) {
+    public String getConnectionStringImpl(DataConnection conn) {
         String port = (conn.getPort() == null) ? "" : "/" + conn.getPort();
         return "jdbc:firebirdsql:" + conn.getServer() + port + ":" + conn.getDb();
     }

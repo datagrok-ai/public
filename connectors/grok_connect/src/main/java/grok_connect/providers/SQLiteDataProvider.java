@@ -17,6 +17,8 @@ public class SQLiteDataProvider extends JdbcDataProvider {
         descriptor.description = "Query SQLite database";
         descriptor.connectionTemplate = new ArrayList<Property>() {{
             add(new Property(Property.STRING_TYPE, DbCredentials.DB, DbCredentials.DB_DESCRIPTION));
+            add(new Property(Property.STRING_TYPE, DbCredentials.CONNECTION_STRING,
+                    DbCredentials.CONNECTION_STRING_DESCRIPTION, new Prop("textarea")));
         }};
         descriptor.credentialsTemplate = new ArrayList<Property>() {{
             add(new Property(Property.STRING_TYPE, DbCredentials.LOGIN));
@@ -29,7 +31,7 @@ public class SQLiteDataProvider extends JdbcDataProvider {
         return DriverManager.getConnection(getConnectionString(conn), conn.credentials.getLogin(), conn.credentials.getPassword());
     }
 
-    public String getConnectionString(DataConnection conn) {
+    public String getConnectionStringImpl(DataConnection conn) {
         return "jdbc:sqlite:" + conn.getDb();
     }
 }

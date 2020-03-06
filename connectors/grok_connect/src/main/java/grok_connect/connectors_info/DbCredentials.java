@@ -12,12 +12,15 @@ public class DbCredentials
     public static final String LOGIN = "login";
     public static final String PASSWORD = "password";
     public static final String PORT = "port";
+    public static final String CONNECTION_STRING = "conn. string";
     public static final String SSL = "SSL";
     public static final String CACHE_SCHEMA = "cache schema";
     public static final String CACHE_RESULTS = "cache results";
     public static final String CACHE_DATE = "cache date";
 
     public static final String DB_DESCRIPTION = "Database name";
+    public static final String CONNECTION_STRING_DESCRIPTION = "This string will be used for connection. " +
+            "All other parameters will be ignored except 'login' and 'password'";
 
     public String server;
     public String port;
@@ -40,6 +43,8 @@ public class DbCredentials
         add(new Property(Property.STRING_TYPE, DbCredentials.SERVER));
         add(new Property(Property.INT_TYPE, DbCredentials.PORT));
         add(new Property(Property.STRING_TYPE, DbCredentials.DB, DbCredentials.DB_DESCRIPTION));
+        add(new Property(Property.STRING_TYPE, DbCredentials.CONNECTION_STRING,
+                DbCredentials.CONNECTION_STRING_DESCRIPTION, new Prop("textarea")));
         add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_SCHEMA));
         add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_RESULTS));
         add(new Property(Property.DATETIME_TYPE, DbCredentials.CACHE_DATE, new Prop("", true)));
