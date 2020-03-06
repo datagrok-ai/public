@@ -14,7 +14,7 @@ public class ImpalaDataProvider extends JdbcDataProvider {
         descriptor.connectionTemplate = new ArrayList<Property>() {{
             add(new Property(Property.STRING_TYPE, DbCredentials.SERVER));
             add(new Property(Property.STRING_TYPE, DbCredentials.SCHEMA));
-            add(new Property(Property.INT_TYPE, DbCredentials.PORT));
+            add(new Property(Property.INT_TYPE, DbCredentials.PORT, new Prop()));
             add(new Property(Property.STRING_TYPE, DbCredentials.DB, DbCredentials.DB_DESCRIPTION));
             add(new Property(Property.STRING_TYPE, DbCredentials.CONNECTION_STRING,
                     DbCredentials.CONNECTION_STRING_DESCRIPTION, new Prop("textarea")));
