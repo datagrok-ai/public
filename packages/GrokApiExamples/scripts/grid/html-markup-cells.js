@@ -1,6 +1,6 @@
 // HTML-based grid cells with the markup-driven content.
 // For code-driven rendering, check out "html-dynamic-cell.js" sample.
-// See also: https://datagrok.ai/help/features/markup
+// See also: https://datagrok.ai/help/overview/markup
 
 let view = grok.addTableView(grok.testData('demog', 5000));
 let col = view.grid.columns.byName('disease');

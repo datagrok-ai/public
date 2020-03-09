@@ -28,37 +28,37 @@ Don't take our word for this - run the platform right now and see it yourself!
 
 Seamlessly bring together data from the different silos and formats.
 
-* [30+ connectors](entities/data-connection.md) to all major databases
-* 1,000+ services exposed via [OpenAPI](features/open-api.md)
-* Drag-and-drop files to open ([10+ formats](features/importing-data.md)), or browse file shares
-* [Visually explore](features/db-exploration.md) and manage relational databases using [schema browser](features/db-exploration.md#schema-browser)
-  and [visual query](features/db-visual-query.md)
-* Connect to [thousands of public datasets](features/public-datasets.md)
-* Automate via [data preparation pipelines](entities/data-pipeline.md)
+* [30+ connectors](access/data-connection.md) to all major databases
+* 1,000+ services exposed via [OpenAPI](access/open-api.md)
+* Drag-and-drop files to open ([10+ formats](access/importing-data.md)), or browse file shares
+* [Visually explore](access/db-exploration.md) and manage relational databases using [schema browser](access/db-exploration.md#schema-browser)
+  and [visual query](access/db-visual-query.md)
+* Connect to [thousands of public datasets](access/public-datasets.md)
+* Automate via [data preparation pipelines](access/data-pipeline.md)
 
 ## Govern
 
 Manage availability, usability, integrity and security of your data, all in one place.
 
-* Central [metadata](concepts/metadata.md)-annotated [catalogue] of projects, queries, and connections   
-* [FAIR](concepts/fair.md): findable, accessible, interoperable, reusable 
-* [Secure by design](features/security.md)
-* Built-in [data provenance](features/data-provenance.md), [data lineage], [impact analysis],
-  [usage analysis], and [audit](features/audit.md) tools
+* Central [metadata](discover/metadata.md)-annotated [catalogue] of projects, queries, and connections   
+* [FAIR](discover/fair.md): findable, accessible, interoperable, reusable 
+* [Secure by design](govern/security.md)
+* Built-in [data provenance](govern/data-provenance.md), [data lineage], [impact analysis],
+  [usage analysis], and [audit](govern/audit.md) tools
 
 ## Transform
 
-* [Aggregate, join, filter and edit data](features/data-wrangling.md) right in the browser
+* [Aggregate, join, filter and edit data](transform/data-wrangling.md) right in the browser
 * Record and apply macros
-* Use 500+ available [functions](entities/function.md), or write your own in R, Python, or JavaScript
-* Visually edit [pipelines](features/job-editor.md) and [query transformations](features/recipe-editor.md)
+* Use 500+ available [functions](overview/functions/function.md), or write your own in R, Python, or JavaScript
+* Visually edit [pipelines](transform/job-editor.md) and [query transformations](transform/recipe-editor.md)
 
 ## Explore
 
 Our unique technology lets you explore datasets faster and more efficiently than ever, allowing to
 find patterns that were previously impossible to spot, resulting in the acceleration of data-driven decisions.
 
-* [Proprietary in-memory database](concepts/performance.md) technology allows to handle tens of millions of rows in the browser
+* [Proprietary in-memory database](dev/performance.md) technology allows to handle tens of millions of rows in the browser
 * [25+ high-performance interactive viewers](viewers/viewers.md)
 * [Powerful integration with any visualizations available in R, Python, or Julia languages](viewers/scripting-viewer.md)
 * Built into viewers: regression lines, confidence intervals, correlations, statistical tests 
@@ -69,19 +69,19 @@ find patterns that were previously impossible to spot, resulting in the accelera
 
 Turn your data into actionable insights by using state-of-the art machine learning and AI techniques. 
  
-* [Train, assess, apply, share models](plugins/predictive-modeling.md) 
-* Use in [pipelines](features/job-editor.md) 
-* [Seamless integration with Python, R, or any other language](features/scripting.md) 
-* [Jupyter notebooks](plugins/jupyter-notebook.md) 
-* [Statistical Hypothesis Testing](solutions/data-science.md)
-* [Self-learning platform](concepts/self-learning-platform.md): the more you use it, the better it gets 
+* [Train, assess, apply, share models](learn/predictive-modeling.md) 
+* Use in [pipelines](transform/job-editor.md) 
+* [Seamless integration with Python, R, or any other language](compute/scripting.md) 
+* [Jupyter notebooks](compute/jupyter-notebook.md) 
+* [Statistical Hypothesis Testing](learn/data-science.md)
+* [Self-learning platform](learn/self-learning-platform.md): the more you use it, the better it gets 
 
 ## Share 
 
 * Easily share anything with anyone, and collaborate together
 * Innovate through the wisdom of crowds
-* Cross-pollinate knowledge via the knowledge base, [discussions](features/chat.md) and [forums](features/forum.md) 
-* Push ideas to users via [data augmentation](concepts/data-augmentation.md)
+* Cross-pollinate knowledge via the knowledge base, [discussions](collaborate/chat.md) and [forums](collaborate/forum.md) 
+* Push ideas to users via [data augmentation](discover/data-augmentation.md)
 
 ## Apply 
 
@@ -92,9 +92,9 @@ Turn your data into actionable insights by using state-of-the art machine learni
 
 ## Deploy and Integrate 
 
-* Different [hosting options](features/hosting-options.md) 
-* [Roles, groups and privileges](features/security.md) 
-* Flexible [authentication](features/authentication.md) 
-* Create [pipelines](features/job-editor.md), schedule [jobs](entities/data-job.md), and set up [alerts](TODO:write) 
-* [Customizable by IT](features/it-customizations.md)
-* Easy to learn the platform using [interactive help](features/navigation.md#help), [forums](features/forum.md), [tutorials](/tutorials) and [video lessons](tutorials/video-lessons.md).
+* Different [hosting options](dev/admin/hosting-options.md) 
+* [Roles, groups and privileges](govern/security.md) 
+* Flexible [authentication](govern/authentication.md) 
+* Create [pipelines](transform/job-editor.md), schedule [jobs](access/data-job.md), and set up [alerts](TODO:write) 
+* [Customizable by IT](dev/admin/it-customizations.md)
+* Easy to learn the platform using [interactive help](features/navigation.md#help), [forums](collaborate/forum.md), [tutorials](/tutorials) and [video lessons](video-lessons.md).

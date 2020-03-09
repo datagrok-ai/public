@@ -10,7 +10,7 @@
 // table controls the filter in the second table. So, for instance, you can use UP and DOWN
 // keys in the demog-types grid, and you would only see corresponding records in the other table.
 //
-// https://datagrok.ai/help/features/tables-link
+// https://datagrok.ai/help/explore/link-tables
 
 grok.loadDataFrame("/demo/demog.csv").then((demog) =>
     grok.loadDataFrame("/demo/demog-types.csv").then(function (demogTypes) {

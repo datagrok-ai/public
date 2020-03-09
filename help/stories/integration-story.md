@@ -12,7 +12,7 @@ for doing that already; if not, let us know and we'll come up with a solution!
 
 ## Custom Scripts
 
-[Scripting](../features/scripting.md) is an integration mechanism with different languages,
+[Scripting](../compute/scripting.md) is an integration mechanism with different languages,
 mostly used for statistical computing and machine learning. 
 Scripting combines fast interactive visualizations and other features of the Datagrok platform 
 with thousands of statistical packages and visualizations available in 
@@ -24,7 +24,7 @@ Note that other languages, such as Java, C#, or Node.js can be integrated in a s
 ## Custom Data Connectors
 
 Out-of-the box, the platform comes with the data connectors  
-for [20+ popular databases](../entities/data-source.md#databases), and the list is constantly growing.
+for [20+ popular databases](../access/data-source.md#databases), and the list is constantly growing.
 In addition to that, it is possible to develop your own data connectors, and seamlessly integrate them
 into the platform.
 
@@ -44,20 +44,20 @@ A reference Java application is available as a template.
 
 ## OpenAPI
 
-Datagrok integrates with [OpenAPI](../features/open-api.md) really well, automatically mapping
-OpenAPI's [paths](https://swagger.io/docs/specification/basic-structure/) to Grok's [functions](../entities/function.md).
+Datagrok integrates with [OpenAPI](../access/open-api.md) really well, automatically mapping
+OpenAPI's [paths](https://swagger.io/docs/specification/basic-structure/) to Grok's [functions](../overview/functions/function.md).
 This has many benefits:
 * Ability to easily call that web method from:
   * [Console](../features/console.md)
   * Event handler
-  * [Info panel](../concepts/info-panels.md)
+  * [Info panel](../discover/info-panels.md)
 * Audit
 * Data lineage
 
 ## Grok JavaScript API
 
 JavaScript is the lingua franca of the web, and naturally it is a first-class language in the Grok ecosystem. 
-We expose a [JavaScript API](../features/js-integration.md) that allows you to control most of the platform, including
+We expose a [JavaScript API](../dev/js-integration.md) that allows you to control most of the platform, including
 data manipulation, handling platform events, creating custom viewers, controlling window docking,
 customizing the platform, etc.  
 
@@ -72,9 +72,9 @@ A number of command-line utilities for server management. (Work in progress)
 
 ## Client-side settings
 
-[Client-side settings](../dialogs/settings.md) are specific to the user, and are controlled by the user (unless 
+[Client-side settings](../overview/settings.md) are specific to the user, and are controlled by the user (unless 
 organizations's IT policy overrides it).
 
 ## Server-side settings
 
-[Server settings](../dialogs/settings-server.md) are controlled by platform's [administrators](../features/security.md).
+[Server settings](../overview/settings-server.md) are controlled by platform's [administrators](../govern/security.md).
