@@ -1,0 +1,51 @@
+swagger: '2.0'
+info:
+  description: 'Enamine Store'
+  version: "0.1.3"
+  title: Enamine Store
+  x-logo:
+    backgroundColor: '#FFFFFF'
+    url: 'https://www.enaminestore.com/IMG/logo1.png'
+host: www.enaminestore.com
+basePath: /api
+schemes:
+  - https
+paths:
+  /:
+    get:
+      summary: API
+      operationId: API
+      produces:
+        - application/json
+      parameters:
+        - in: query
+          name: code
+          required: true
+          description: 'Compound ID or search query'
+          type: string
+        - in: query
+          name: currency
+          required: true
+          description: 'Currency'
+          type: string
+          enum: [USD, EUR]
+          default: USD
+        - in: query
+          name: sim
+          description: 'Similarity'
+          type: number
+          default: 0.8
+        - in: query
+          name: mode
+          description: >
+            Compound catalog:
+              * `BB` – Building blocks collection
+              * `SCR` – Screening compounds collection
+              * `REAL` – Compounds from REAL database
+          type: string
+          enum: [BB, SCR, REAL]
+securityDefinitions:
+  api_key:
+    type: apiKey
+    name: Authorization
+    in: header
