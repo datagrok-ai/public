@@ -14,7 +14,7 @@ cheminformatics. It understand several popular notations for representing chemic
 such as SMILES and SMARTS. Molecules can be rendered in either 2D or 3D with different visualization options.
 They can be sketched as well. Chemical properties, descriptors, and fingerprints can be extracted.
 Predictive models that accept molecules as an input can be easily trained, assessed, executed, deployed,  
-reused by other scientists, and used in pipelines or in [info panels](../../concepts/info-panels.md).
+reused by other scientists, and used in pipelines or in [info panels](../../discover/info-panels.md).
  
 Several toxicity and drug-likeness prediction models are supported. Substructure and similarity search
 works out-of-the box for imported data, and can be efficiently utilized for querying databases using 
@@ -24,7 +24,7 @@ of molecules, use advanced tools such as [diversity search](diversity-search.md)
 
 ## Importing molecular data
 
-Simply [import the dataset](../../features/importing-data.md) as you normally would - by opening a file, 
+Simply [import the dataset](../../access/importing-data.md) as you normally would - by opening a file, 
 querying a database, connecting to a webservice, or by any other method. The platform is smart enough 
 to automatically recognize chemical structures. 
 
@@ -118,7 +118,7 @@ properties of novel compounds.
 Datagrok enables machine learning predictive models by using chemical 
 [properties, descriptors](#chemical-properties-and-descriptors), 
 and [fingerprints](#fingerprints) as features, and the observed properties as results when 
-[building predictive models](../../solutions/data-science.md#predictive-modeling). This lets scientists
+[building predictive models](../../learn/data-science.md#predictive-modeling). This lets scientists
 build predictive models that can be trained, assessed, executed, reused by other scientists, and used in pipelines.   
 
 See [Cheminformatics predictive modeling](chem-predictive-modeling.md) for
@@ -167,7 +167,7 @@ with an interpretation of how different sub-structure fragments contribute to th
 * [Structural alerts](info-panels/structural-alerts.md)
 
 In addition to these pre-defined info panels, users can develop their own using any
-[scripting language](../../features/scripting.md) supported by the Grok platform. For example, 
+[scripting language](../../compute/scripting.md) supported by the Grok platform. For example, 
 #{x.demo:pythonscripts:GasteigerPartialCharges}. 
  
 ## In-memory substructure search
@@ -219,7 +219,7 @@ See details [here](functions/reactions.md).
 
 ## Functions
 
-The following cheminformatics-related [functions](../../entities/function.md) are exposed:
+The following cheminformatics-related [functions](../../overview/functions/function.md) are exposed:
 
 * #{x.ChemSubstructureSearch}
 * #{x.ChemFindMCS}
@@ -231,7 +231,7 @@ The following cheminformatics-related [functions](../../entities/function.md) ar
 * #{x.ChemSmilesToCanonical}
 * #{x.ChemMapIdentifiers}
 
-Lot of chemical analysis is implemented using [scripting](../../features/scripting.md) functionality:
+Lot of chemical analysis is implemented using [scripting](../../compute/scripting.md) functionality:
 * #{x.demo:pythonscripts:ButinaMoleculesClustering}
 * #{x.demo:pythonscripts:FilterByCatalogs}
 * #{x.demo:pythonscripts:GasteigerPartialCharges}
@@ -297,8 +297,8 @@ See also:
 * [Similarity Search](similarity-search.md)
 * [Fingerprints](fingerprints.md)
 * [Similarity SPE](similarity-spe.md)
-* [Info Panels](../../concepts/info-panels.md)
-* [GrokCompute](../../features/grok-compute.md)
+* [Info Panels](../../discover/info-panels.md)
+* [GrokCompute](../../compute/grok-compute.md)
 
 References:
 * [Machine learning in chemoinformatics and drug discovery](https://www.sciencedirect.com/science/article/pii/S1359644617304695)

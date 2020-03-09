@@ -8,7 +8,7 @@ they are, in no particular order:
 ## Data Science
 
 * [OpenCPU](https://www.opencpu.org/) - integration with R
-* [Jupyter](https://jupyter.org/) - R, Python, Julia [scripting](features/scripting.md), and [notebooks](plugins/jupyter-notebook.md)
+* [Jupyter](https://jupyter.org/) - R, Python, Julia [scripting](compute/scripting.md), and [notebooks](compute/jupyter-notebook.md)
 * [caret](https://github.com/topepo/caret/) - predictive modeling engine
 * [scikit-learn](https://scikit-learn.org/) - predictive modeling engine
 * [H2O](https://github.com/topepo/caret/) - predictive modeling engine

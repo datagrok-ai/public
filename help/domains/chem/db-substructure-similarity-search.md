@@ -20,7 +20,7 @@ used chemical cartridges. We support the following ones:
 2) [JChem cartridge](https://docs.chemaxon.com/display/docs/JChem+Cartridge)  (todo)
 
 Here are some of the examples of substructure and similarity searches against ChEMBL using RDKit cartridge. These
-examples are regular [Grok queries](../../entities/data-query.md), meaning that they can be easily created, 
+examples are regular [Grok queries](../../access/data-query.md), meaning that they can be easily created, 
 managed, and used from within the platform.
 
 Substructure search:
@@ -47,5 +47,5 @@ limit @maxRows
 ```
 
 See also:
-* [Queries](../../entities/data-query.md)
-* [Functions](../../entities/data-query.md)
+* [Queries](../../access/data-query.md)
+* [Functions](../../access/data-query.md)

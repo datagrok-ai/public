@@ -20,7 +20,7 @@ While no single computer is capable of working with datasets of unlimited size, 
 been engineered to efficiently work with as big datasets as possible. It offers two modes:
 
 * **Local data** - the whole dataset is loaded into the browser memory. Due to our proprietary 
-  [in-memory database](../concepts/performance.md#in-memory-database), the platform can efficiently
+  [in-memory database](../dev/performance.md#in-memory-database), the platform can efficiently
   work with billions of rows or millions of columns. This is the preferred way of working with data,
   since it offers interactive visualizations and instant access to all underlying data points.
   Most of the datasets fall into that category.
@@ -28,8 +28,8 @@ been engineered to efficiently work with as big datasets as possible. It offers 
   you still need to work with it. In that case, Datagrok offers a number of solutions that will
   transparently translate the necessary work to be performed on the server side. Here are some
   ot them:
-  * [DB Exploration](../features/db-exploration.md) to explore database schemas    
-  * [DB Visual Query](../features/db-visual-query.md) to aggregate and pivot on the database side     
+  * [DB Exploration](../access/db-exploration.md) to explore database schemas    
+  * [DB Visual Query](../access/db-visual-query.md) to aggregate and pivot on the database side     
         
  
 ## Complexity
@@ -58,7 +58,7 @@ by simply looking at them. Most common reasons for that are:
    Examples: ECG values  
 
 In order to present users with a meaningful interpretation of the dataset, the platform tries to infer
-[true meaning of the raw data](../concepts/semantic-types.md), and then offers a number of visualization 
+[true meaning of the raw data](../discover/semantic-types.md), and then offers a number of visualization 
 and actions that can be applied to either the dataset, or an individual point.
 
 Examples: 
@@ -70,15 +70,15 @@ Examples:
 
 Due to the complexity of the scientific data, having the proper metadata associated with it is pivotal
 in order for computers (as well as people!) to understand it. Datagrok provides a comprehensive 
-[metadata management framework](../concepts/metadata.md). 
+[metadata management framework](../discover/metadata.md). 
  
-We also support [FAIR Principles](../concepts/fair.md) where applicable.
+We also support [FAIR Principles](../discover/fair.md) where applicable.
 
 ## Formats
 
 Scientific data often comes in formats that are not understood by the typical business application. 
 In addition to commonly used data formats such as csv, txt, xsls, xml, and json, Datagrok 
-[supports](../features/importing-data.md#supported-file-types) the following ones: 
+[supports](../access/importing-data.md#supported-file-types) the following ones: 
 
 | Extension     | Description          | 
 |---------------|----------------------|
@@ -94,7 +94,7 @@ In addition to commonly used data formats such as csv, txt, xsls, xml, and json,
 
 ## Reproducibility
 
-* [Jupyter notebooks](../plugins/jupyter-notebook.md)
+* [Jupyter notebooks](../compute/jupyter-notebook.md)
 
 ## Integration
 
