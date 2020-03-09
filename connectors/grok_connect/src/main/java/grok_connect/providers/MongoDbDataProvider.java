@@ -15,7 +15,6 @@ public class MongoDbDataProvider extends JdbcDataProvider {
         descriptor.description = "Query MongoDB database";
         descriptor.connectionTemplate = DbCredentials.dbConnectionTemplate;
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
-        descriptor.queryLanguage = "mongodb";
     }
 
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
