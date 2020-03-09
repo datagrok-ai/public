@@ -13,8 +13,8 @@ schemes:
 paths:
   /:
     get:
-      summary: API
-      operationId: API
+      summary: Search
+      operationId: Search
       produces:
         - application/json
       parameters:
