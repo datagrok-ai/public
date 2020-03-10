@@ -1,3 +1,6 @@
+<!-- TITLE: Navigation -->
+<!-- SUBTITLE: -->
+
 # Navigation
  Datagrok helps you unlock the full value of your organization's data by empowering any non-technical user to **discover, cleanse, visualize, explore, model data, and share the results** seamlessly. 
 
