@@ -22,37 +22,33 @@ class EnamineStorePackage extends GrokPackage {
     storeSearch(smiles, mode) {
         const currency = 'USD';
         let host = ui.divH([ui.loader()]);
-        grok.query('EnamineStore:Search', {
+        grok.callQuery('EnamineStore:Search', {
             'code': `search_${smiles}_${mode}`,
             'currency': currency
-        }, true, 100).then(t => {
+        }, true, 100).then(fc => {
             host.removeChild(host.firstChild);
-            if (t.rowCount === 0)
+            console.log(fc.getParamValue('stringResult'));
+            let data = JSON.parse(fc.getParamValue('stringResult'))['data'];
+            if (data === null) {
                 host.appendChild(ui.divText('No matches'));
-            for (let n = 0; n < t.rowCount; n++) {
-                let smiles = t.get('data/smile', n);
+                return;
+            }
+            for (let comp of data) {
+                let smiles = comp['smile'];
                 let mol = ui.svgMol(smiles, 150, 75);
-                let id = t.get('data/Id', n);
-                let tooltip = ui.tableFromMap({
+                let id = comp['Id'];
+                let props = {
                     'ID': id,
-                    'Name': t.get('data/name', n),
-                    'Formula': t.get('data/formula', n),
-                    'MW': t.get('data/mw', n),
-                    'Availability': t.get('data/availability', n),
-                    'Delivery': t.get('data/deliveryDays', n),
-                });
-                // let packsHost = ui.divV([ui.h3('Packs'), ui.loader()]);
-                // grok.query('EnamineStore:Packs', {'code': id, 'currency': currency}, true, 100).then(t => {
-                //     packsHost.removeChild(packsHost.lastChild);
-                //     let packs = {};
-                //     for (let n = 0; n < t.rowCount; n++)
-                //         packs[`${t.get('amount', n)} ${t.get('measure', n)}`] = `${t.get('price', n)} ${currency}`;
-                //     packsHost.appendChild(ui.tableFromMap(packs));
-                // });
-                // tooltip.appendChild(packsHost);
-                ui.tooltip(mol, tooltip);
+                    'Formula': comp['formula'],
+                    'MW': comp['mw'],
+                    'Availability': comp['availability'],
+                    'Delivery': comp['deliveryDays']
+                };
+                for (let pack of comp['packs'])
+                    props[`${pack['amount']} ${pack['measure']}`] = `${pack['price']} ${currency}`;
+                ui.tooltip(mol, ui.tableFromMap(props));
                 mol.addEventListener('click', function() {
-                    window.open(t.get('data/productUrl', n), '_blank');
+                    window.open(comp['productUrl'], '_blank');
                 });
                 host.appendChild(mol);
             }
