@@ -1,8 +1,9 @@
 {
   "name": "EnamineStore",
-  "version": "0.1",
+  "version": "0.2",
   "fullName": "Enamine Store",
   "description": "Enamine Store API demo",
   "sources": [
+    "css/enamine_store.css"
   ]
 }
