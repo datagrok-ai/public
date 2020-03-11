@@ -96,7 +96,7 @@ class EnamineStorePackage extends GrokPackage {
                 });
                 compsHost.appendChild(mol);
             }
-            headerHost.appendChild(ui.iconFA('squirrel', () =>
+            headerHost.appendChild(ui.iconFA('arrow-square-down', () =>
                 grok.addTableView(EnamineStorePackage.dataToTable(data, `EnamineStore ${panelName}`)), 'Open compounds as table'));
             compsHost.style.overflowY = 'auto';
         }).catch(err => {

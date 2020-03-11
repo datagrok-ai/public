@@ -1,4 +1,4 @@
-Pedometer is a [package](https://datagrok.ai/help/dev/dev#packages) for the [Datagrok](https://datagrok.ai) platform.
+Pedometer is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.
 It showcases the ability to develop plugins that have a scientific computations and a rich UI
 that leverages platform's capabilities. Here are the files of particular interest:
 
