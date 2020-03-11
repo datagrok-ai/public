@@ -1,9 +1,7 @@
 class EnamineStorePackage extends GrokPackage {
 
-
     //tags: app
     startApp(context) {
-        let emptyTable = DataFrame.create();
         let molecule = ui.moleculeInput('', 'c1ccccc1O');
         let searchMode = ui.choiceInput('Mode', 'Similar', ['Exact', 'Similar', 'Substructure']);
         let currency = ui.choiceInput('Currency', 'USD', ['USD', 'EUR']);
@@ -12,24 +10,41 @@ class EnamineStorePackage extends GrokPackage {
         let filtersHost =  ui.div([molecule.root, searchMode.root, currency.root, similarity.root, catalog.root],
             'enamine-store-controls,pure-form');
 
+        let emptyTable = DataFrame.create();
         let view = grok.addTableView(emptyTable);
         view.name = 'Enamine Store';
         view.basePath = '';
         view.description = 'Enamine Store search viewer';
         view.root.className = 'grok-view grok-table-view enamine-store';
 
-        function update(t) {
-            t.name = 'enaminestore';
-            view.dataFrame = t;
+        function update() {
+            ui.setUpdateIndicator(view.root, true);
+            grok.callQuery('EnamineStore:Search', {
+                'code': `search_${molecule.value}_${EnamineStorePackage.searchModeToCommand(searchMode.value)}`,
+                'currency': currency.value,
+                'sim': parseFloat(similarity.value),
+                'mode': catalog.value
+            }, true, 100).then(fc => {
+                let data = JSON.parse(fc.getParamValue('stringResult'))['data'];
+                view.dataFrame = data !== null ? EnamineStorePackage.dataToTable(data, 'enaminestore') : emptyTable;
+                ui.setUpdateIndicator(view.root, false);
+            });
         }
 
-        update(emptyTable)
-        ui.setUpdateIndicator(view.root, true);
+        update();
+
+        molecule.onChanged(() => update());
+        searchMode.onChanged(() => {
+            similarity.enabled = searchMode.value === 'Similar';
+            update();
+        });
+        currency.onChanged(() => update());
+        similarity.onChanged(() => update());
+        catalog.onChanged(() => update());
 
         let acc = view.toolboxPage.accordion;
         acc.addPane('Enamine Store', () => filtersHost, true, acc.panes[0]);
     }
-
 
     //name: Enamine Store
     //description: Enamine Store Samples
@@ -39,25 +54,24 @@ class EnamineStorePackage extends GrokPackage {
     //condition: true
     enamineStore(smiles) {
         let panels = ui.div([
-            this.createSearchPanel('Exact', smiles, 'exact'),
-            this.createSearchPanel('Similar', smiles, 'sim'),
-            this.createSearchPanel('Substructure', smiles, 'sub')
+            this.createSearchPanel('Exact', smiles),
+            this.createSearchPanel('Similar', smiles),
+            this.createSearchPanel('Substructure', smiles)
         ]);
         return new Widget(panels);
     }
 
     //description: Creates search panel
-    createSearchPanel(panelName, smiles, mode) {
+    createSearchPanel(panelName, smiles) {
         const currency = 'USD';
         let headerHost = ui.divH([ui.h2(panelName)], 'enamine-store-panel-header');
         let compsHost = ui.divH([ui.loader()]);
         let panel = ui.divV([headerHost, compsHost], 'enamine-store-panel');
         grok.callQuery('EnamineStore:Search', {
-            'code': `search_${smiles}_${mode}`,
+            'code': `search_${smiles}_${EnamineStorePackage.searchModeToCommand(panelName)}`,
             'currency': currency
         }, true, 100).then(fc => {
             compsHost.removeChild(compsHost.firstChild);
-            console.log(fc.getParamValue('stringResult'));
             let data = JSON.parse(fc.getParamValue('stringResult'))['data'];
             if (data === null) {
                 compsHost.appendChild(ui.divText('No matches'));
@@ -83,17 +97,19 @@ class EnamineStorePackage extends GrokPackage {
                 compsHost.appendChild(mol);
             }
             headerHost.appendChild(ui.iconFA('squirrel', () =>
-                grok.addTableView(this.dataToTable(data, `EnamineStore ${panelName}`)), 'Open compounds as table'));
+                grok.addTableView(EnamineStorePackage.dataToTable(data, `EnamineStore ${panelName}`)), 'Open compounds as table'));
             compsHost.style.overflowY = 'auto';
         }).catch(err => {
             compsHost.removeChild(compsHost.firstChild);
-            compsHost.appendChild(ui.divText('No matches'));
+            let div = ui.divText('No matches');
+            ui.tooltip(div, `${err}`);
+            compsHost.appendChild(div);
         });
         return panel;
     }
 
     // description: Converts JSON data into DataFrame
-    dataToTable(data, name) {
+    static dataToTable(data, name) {
         let columns = [
             Column.fromStrings('smiles', data.map(comp => comp['smile'])),
             Column.fromStrings('ID', data.map(comp => comp['Id'])),
@@ -102,7 +118,7 @@ class EnamineStorePackage extends GrokPackage {
             Column.fromInt32Array('Availability', new Int32Array(data.map(comp => comp['availability']))),
             Column.fromStrings('Delivery', data.map(comp => comp['deliveryDays']))
         ];
-        let currency;
+        let currency = null;
         let packsArrays = new Map();
         for (let n = 0; n < data.length; n++) {
             let packs = data[n]['packs'];
@@ -112,18 +128,24 @@ class EnamineStorePackage extends GrokPackage {
                 if (!packsArrays.has(name))
                     packsArrays.set(name, new Float32Array(data.length));
                 packsArrays.get(name)[n] = pack['price'];
-                if (currency !== null && pack['currencyName'] !== null)
+                if (currency === null && pack['currencyName'] !== null)
                     currency = pack['currencyName'];
             }
         }
         for (let name of packsArrays.keys()) {
             let column = Column.fromFloat32Array(name, packsArrays.get(name));
             column.semType = 'Money';
-            column.setTag('format', `money(${currency === 'USD' ? '$' : currency})`);
+            column.setTag('format', `money(${currency === 'USD' ? '$' : '€'})`);
             columns.push(column);
         }
         let table = DataFrame.fromColumns(columns);
         table.name = name;
         return table;
+    }
+
+    //description: Converts search mode friendly name to command
+    static searchModeToCommand(name) {
+        const dict = {'Exact': 'exact', 'Similar': 'sim', 'Substructure': 'sub'};
+        return dict[name];
     }
 }
