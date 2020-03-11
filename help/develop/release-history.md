@@ -5,7 +5,7 @@
 
 ## Latest docker images
 * Datagrok (new): `766822877060.dkr.ecr.us-east-2.amazonaws.com/datagrok:1.0.69-83c6f08` [download](https://dev.datagrok.ai/docker_images/datagrok-1.0.69-83c6f08.tar)
-* CVM (new): `766822877060.dkr.ecr.us-east-2.amazonaws.com/grok_cvm:1.0.69-83c6f08.tar` [download](https://dev.datagrok.ai/docker_images/grok_cvm-1.0.69-83c6f08.tar)
+* CVM (new): `766822877060.dkr.ecr.us-east-2.amazonaws.com/grok_cvm:1.0.69-83c6f08` [download](https://dev.datagrok.ai/docker_images/grok_cvm-1.0.69-83c6f08.tar)
 
 ## Addressed issues
 * /p/project.smiles/smiles causes "Ambiguous entity" error

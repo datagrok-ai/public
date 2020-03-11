@@ -1,5 +1,36 @@
 class EnamineStorePackage extends GrokPackage {
 
+
+    //tags: app
+    startApp(context) {
+        let emptyTable = DataFrame.create();
+        let molecule = ui.moleculeInput('', 'c1ccccc1O');
+        let searchMode = ui.choiceInput('Mode', 'Similar', ['Exact', 'Similar', 'Substructure']);
+        let currency = ui.choiceInput('Currency', 'USD', ['USD', 'EUR']);
+        let similarity = ui.choiceInput('Similarity', '0.8', ['0.2', '0.4', '0.6', '0.8']);
+        let catalog = ui.choiceInput('Catalog', '', ['', 'BB', 'SCR', 'REAL']);
+        let filtersHost =  ui.div([molecule.root, searchMode.root, currency.root, similarity.root, catalog.root],
+            'enamine-store-controls,pure-form');
+
+        let view = grok.addTableView(emptyTable);
+        view.name = 'Enamine Store';
+        view.basePath = '';
+        view.description = 'Enamine Store search viewer';
+        view.root.className = 'grok-view grok-table-view enamine-store';
+
+        function update(t) {
+            t.name = 'enaminestore';
+            view.dataFrame = t;
+        }
+
+        update(emptyTable)
+        ui.setUpdateIndicator(view.root, true);
+
+        let acc = view.toolboxPage.accordion;
+        acc.addPane('Enamine Store', () => filtersHost, true, acc.panes[0]);
+    }
+
+
     //name: Enamine Store
     //description: Enamine Store Samples
     //tags: panel, widgets
@@ -7,30 +38,29 @@ class EnamineStorePackage extends GrokPackage {
     //output: widget result
     //condition: true
     enamineStore(smiles) {
-        let host = ui.div([
-            ui.h2('Exact'),
-            this.storeSearch(smiles, 'exact'),
-            ui.h2('Similar'),
-            this.storeSearch(smiles, 'sim'),
-            ui.h2('Substructure'),
-            this.storeSearch(smiles, 'sub')
+        let panels = ui.div([
+            this.createSearchPanel('Exact', smiles, 'exact'),
+            this.createSearchPanel('Similar', smiles, 'sim'),
+            this.createSearchPanel('Substructure', smiles, 'sub')
         ]);
-        host.firstChild.style.marginTop = '6px';
-        return new Widget(host);
+        return new Widget(panels);
     }
 
-    storeSearch(smiles, mode) {
+    //description: Creates search panel
+    createSearchPanel(panelName, smiles, mode) {
         const currency = 'USD';
-        let host = ui.divH([ui.loader()]);
+        let headerHost = ui.divH([ui.h2(panelName)], 'enamine-store-panel-header');
+        let compsHost = ui.divH([ui.loader()]);
+        let panel = ui.divV([headerHost, compsHost], 'enamine-store-panel');
         grok.callQuery('EnamineStore:Search', {
             'code': `search_${smiles}_${mode}`,
             'currency': currency
         }, true, 100).then(fc => {
-            host.removeChild(host.firstChild);
+            compsHost.removeChild(compsHost.firstChild);
             console.log(fc.getParamValue('stringResult'));
             let data = JSON.parse(fc.getParamValue('stringResult'))['data'];
             if (data === null) {
-                host.appendChild(ui.divText('No matches'));
+                compsHost.appendChild(ui.divText('No matches'));
                 return;
             }
             for (let comp of data) {
@@ -46,14 +76,54 @@ class EnamineStorePackage extends GrokPackage {
                 };
                 for (let pack of comp['packs'])
                     props[`${pack['amount']} ${pack['measure']}`] = `${pack['price']} ${currency}`;
-                ui.tooltip(mol, ui.tableFromMap(props));
+                ui.tooltip(mol, ui.divV([ui.tableFromMap(props), ui.divText('Click to compound to open it in the store.')]));
                 mol.addEventListener('click', function() {
                     window.open(comp['productUrl'], '_blank');
                 });
-                host.appendChild(mol);
+                compsHost.appendChild(mol);
             }
-            host.style.overflowY = 'auto';
+            headerHost.appendChild(ui.iconFA('squirrel', () =>
+                grok.addTableView(this.dataToTable(data, `EnamineStore ${panelName}`)), 'Open compounds as table'));
+            compsHost.style.overflowY = 'auto';
+        }).catch(err => {
+            compsHost.removeChild(compsHost.firstChild);
+            compsHost.appendChild(ui.divText('No matches'));
         });
-        return host;
+        return panel;
+    }
+
+    // description: Converts JSON data into DataFrame
+    dataToTable(data, name) {
+        let columns = [
+            Column.fromStrings('smiles', data.map(comp => comp['smile'])),
+            Column.fromStrings('ID', data.map(comp => comp['Id'])),
+            Column.fromStrings('Formula', data.map(comp => comp['formula'])),
+            Column.fromFloat32Array('MW', new Float32Array(data.map(comp => comp['mw']))),
+            Column.fromInt32Array('Availability', new Int32Array(data.map(comp => comp['availability']))),
+            Column.fromStrings('Delivery', data.map(comp => comp['deliveryDays']))
+        ];
+        let currency;
+        let packsArrays = new Map();
+        for (let n = 0; n < data.length; n++) {
+            let packs = data[n]['packs'];
+            for (let m = 0; m < packs.length; m++) {
+                let pack = packs[m];
+                let name = `${pack['amount']} ${pack['measure']}`;
+                if (!packsArrays.has(name))
+                    packsArrays.set(name, new Float32Array(data.length));
+                packsArrays.get(name)[n] = pack['price'];
+                if (currency !== null && pack['currencyName'] !== null)
+                    currency = pack['currencyName'];
+            }
+        }
+        for (let name of packsArrays.keys()) {
+            let column = Column.fromFloat32Array(name, packsArrays.get(name));
+            column.semType = 'Money';
+            column.setTag('format', `money(${currency === 'USD' ? '$' : currency})`);
+            columns.push(column);
+        }
+        let table = DataFrame.fromColumns(columns);
+        table.name = name;
+        return table;
     }
 }
