@@ -15,7 +15,7 @@ easily customizable. Here are some of the features that can be controlled by the
     * Role- and group-based privileges
     * Dataset sharing policies
  * [Audit](../../govern/audit.md)
- * Managing [network file shares](../views/file-shares.md)
+ * Managing [network file shares](../../access/file-shares.md)
  * Managing [database connections](../../access/data-connection.md) and [queries](../../access/data-query.md)
  * Data Storage
    * AWS
