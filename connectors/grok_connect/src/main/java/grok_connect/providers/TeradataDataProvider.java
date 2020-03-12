@@ -29,4 +29,20 @@ public class TeradataDataProvider extends JdbcDataProvider {
         String port = (conn.getPort() == null) ? "" : ":" + conn.getPort();
         return "jdbc:teradata://" + conn.getServer() + port + "/" + conn.getDb();
     }
+
+    public String getSchemaSql(String db, String schema, String table)
+    {
+        List<String> filters = new ArrayList<String>() {{
+            add("databaseName = '" + db + "'");
+        }};
+
+        if (table != null)
+            filters.add("tableName = '" + table + "'");
+
+        String whereClause = String.join(" and \n", filters);
+
+        return "SELECT databaseName as table_schema, tableName as table_name, " +
+                "columnName as column_name, ColumnType as data_type " +
+                "FROM DBC.ColumnsV WHERE " + whereClause + " ORDER BY tableName";
+    }
 }
