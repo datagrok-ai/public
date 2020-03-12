@@ -3,7 +3,7 @@
 
 # Install Datagrok on AWS ECS cluster
 
-This document contains instructions for installation of the Datagrok on AWS ECS cluster.
+This document contains instructions to deploy Datagrok on AWS ECS cluster.
 
 ## Prerequisites
 
