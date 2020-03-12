@@ -31,9 +31,9 @@ Server is easy scalable using [Amazon ECS](https://aws.amazon.com/ecs/) or [Kube
 
 ## Installation 
 
-[Compute VM regular installation](../develop/admin/installation-regular.md#setup-compute-virtual-machine)
-[Compute VM Amazon EC2 installation](../develop/admin/installation-amazon-ec2.md#setup-compute-virtual-machine)
-[Compute VM Amazon ECS installation](../develop/admin/installation-amazon-ecs.md#setup-compute-virtual-machine)
+[Compute VM regular deploy](../develop/admin/deploy-regular.md#setup-compute-virtual-machine)
+[Compute VM Amazon EC2 deploy](../develop/admin/deploy-amazon-ec2.md#setup-compute-virtual-machine)
+[Compute VM Amazon ECS deploy](../develop/admin/deploy-amazon-ecs.md#setup-compute-virtual-machine)
 
 
 ## Scalability

@@ -3,7 +3,7 @@
 
 # Install Datagrok on AWS EC2
 
-This document contains instructions for installation of the Datagrok on AWS EC2 instance.
+This document contains instructions to deploy Datagrok on AWS EC2 instance.
 
 ## Prerequisites
 

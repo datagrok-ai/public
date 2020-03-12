@@ -3,7 +3,7 @@
 
 # Install Datagrok on a regular machine
 
-This document contains instructions for installation of the Datagrok on a regular machine without cloud-based hosting.
+This document contains instructions to deploy Datagrok on a regular machine without cloud-based hosting.
 
 ## Prerequisites
 
