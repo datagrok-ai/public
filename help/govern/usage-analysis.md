@@ -25,7 +25,7 @@ for doing so:
   * See all errors across the platform
   * See which actions are causing the errors  
 
-Logs are stored in a [Postgres database](../dev/admin/architecture.md#database) in a form
+Logs are stored in a [Postgres database](../develop/admin/architecture.md#database) in a form
 that allows for easy analysis of event parameters (See the following tables: `events`, `event_types`, 
 `event_parameters`, `event_parameter_values`). Each event is associated with a user session that triggered the event. 
  

@@ -241,6 +241,14 @@ build viewers, plugins, and applications on top of it.
 
 ![](architecture-diagram1.png) 
 
+Datagrok installations consists of two virtual machines:
+* [Datagrok Virtual Machine](#datagrok-virtual-machine)
+* [Grok Compute Virtual Machine](#grok-compute-virtual-machine)
+
+Also it needs [database](#database) and [persistent file storage](#storage)
+Both of the virtual machines can be installed as Docker containers in AWS EC2, AWS ESC or regular host machine.
+
+
 ## Datagrok Virtual Machine
 
 This machine is the heart of the platform, and is required for all activities. 
@@ -338,6 +346,7 @@ By default, Datagrok works with Amazon S3 storage. Also, local file system can b
 if you run Datagrok docker container without AWS or another cloud infrastructure. 
 See [Run docker image](datagrok-install.md#run-docker-image)   
 
+See also: [Compute VM](../../compute/compute-vm.md)
  
 ## Database
 
@@ -415,13 +424,8 @@ ability to easily access internal data, and other features such as integration w
 [authentication](../../govern/authentication.md) methods. One of the most convenient ways of 
 doing that is deploying the platform on the AWS in the Virtual Private Cloud. It is as easy as 
 spinning out Amazon's EC2 machines with our docker images inside your virtual private network. 
-See [Datagrok installation on AWS](datagrok-install.md#aws-bare-ec2-installation), 
-[Datagrok docker container](datagrok-install.md#run-docker-image)
-and [GrokCompute installation on AWS](compute-vm-install.md#aws-installation) for details. 
+See [Datagrok installation on AWS EC2](installation-amazon-ec2.md),
+[Datagrok installation on AWS ECS](installation-amazon-ecs.md),
+[Running Datagrok docker container](installation-regular.md) for details.
 
 See [Enterprise Evaluation FAQ](enterprise-evaluation-faq.md) for more details.
-
-
-See also:
-
-* [Administration](administration.md)

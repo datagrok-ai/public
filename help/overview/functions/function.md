@@ -62,7 +62,7 @@ certain operations, such as
 [training a predictive model](../../learn/predictive-modeling.md),
 [running an R script](../../compute/scripting.md), or
 [computing chemical descriptors](../../domains/chem/cheminformatics.md#chemical-properties-and-descriptors)
-run on a [server](../dev/admin/architecture.md#grokcompute). When such operation executes, the
+run on a [server](../../develop/admin/architecture.md#grok-compute-virtual-machine). When such operation executes, the
 relevant part of the input gets sent to the server, where it gets processed, and the result is sent back
 to the client. Results of the computations reside on the server until either the client retrieves it, 
 or an automatic cleanup happens. Neither inputs nor outputs can be accessed by functions executed
