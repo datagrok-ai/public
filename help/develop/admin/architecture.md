@@ -267,27 +267,26 @@ Enterprises typically prefer on-premise deployment for multiple reasons, such as
 ability to easily access internal data, and other features such as integration with the enterprise 
 [authentication](../../govern/authentication.md) methods. One of the most convenient ways of 
 doing that is deploying the platform on the AWS in the Virtual Private Cloud. It is as easy as 
-spinning out Amazon's EC2 machines with our images inside your virtual private network. Depending on the company's needs, it can 
-be one or more virtual machine. See [Datagrok installation on AWS](datagrok-install.md#aws-installation)
+spinning out Amazon's EC2 machines with our docker images inside your virtual private network. 
+See [Datagrok installation on AWS](datagrok-install.md#aws-bare-ec2-installation)
 and [GrokCompute installation on AWS](compute-vm-install.md#aws-installation) for details. 
 
 See [Enterprise Evaluation FAQ](enterprise-evaluation-faq.md) for more details.
 
-#### Datlas
+#### Datagrok
 
 This machine is the heart of the platform, and is required for all activities that depend on a server. 
 
-* [Datlas](#datlas) - Grok server API. Consists of the core and more than 20 plugins.
-* [Postgres Database](#database)
+* Datlas - Grok server API. Consists of the core and more than 20 plugins.
 * [Elastic Search](#full-text-search)
+* [Credentials Management Service](../../govern/security.md#credentials). Also can be installed as a separate service with separate database.
 * Grok Connect - Java-based connectors to 20+ databases
 * Web application  
-* Landing page  
 * Nginx server
   
-#### GrokCompute
+#### Grok Compute
 
-GrokCompute is used for performing on-server computations. It is used for
+Grok Compute is used for performing on-server computations. It is used for
 scripting, training and applying predictive models, and cheminformatics. You might not need it
 if your use cases do not involve above-mentioned tasks.
 
@@ -299,6 +298,17 @@ our load balancer will take care of dispatching computations.
 * H2O - for [predictive modeling](#predictive-modeling)
 * RDKit
 * OpenCPU
+
+#### Postgres Database
+
+Datagrok can use almost any PostgreSQL database installation: RDS or on-premises instance.
+Datagrok automatically create and populate database in deploy mode, you just need to provide administrator account. 
+
+#### File storage
+
+By default, Datagrok works with Amazon S3 storage. Also, local file system can be used 
+if you run Datagrok docker container without AWS or other cloud infrastructure. 
+See [Run docker image](datagrok-install.md#run-docker-image)   
 
 #### DSTK
 

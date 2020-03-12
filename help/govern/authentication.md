@@ -27,7 +27,7 @@ After logging out this token won't work anymore.
 
 Datagrok does not keep your password anywhere, after your log in.
 
-![Authentication UML Diagram](../uploads/features/login-signup.png "[Authentication UML Diagram")
+![Authentication UML Diagram](../uploads/features/login-signup.png "Authentication UML Diagram")
 [Authentication UML Diagram draw.io](../uploads/features/login-signup.drawio)
 
 See also:
