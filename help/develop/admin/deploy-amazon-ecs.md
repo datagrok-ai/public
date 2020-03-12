@@ -111,11 +111,11 @@ This document contains instructions to deploy Datagrok on AWS ECS cluster.
     - Load Balancer: cvm
 
 Edit settings in the Datagrok (Tools | Settings...):
-* Dev:
-    * OpenCPU: http://CVM_HOSTNAME/ocpu
-    * Jupyter Notebook: http://CVM_HOSTNAME
-    * Jupyter Gateway: http://CVM_HOSTNAME/jupyter
-    * Grok Compute: http://CVM_HOSTNAME/grok_compute
+* Scripting:
+    * OpenCPU, OpenCPU Client: http://CVM_HOSTNAME/ocpu
+    * Jupyter Notebook, Jupyter Notebook: http://CVM_HOSTNAME
+    * Jupyter Gateway, Jupyter Gateway Client: http://CVM_HOSTNAME/jupyter
+    * Grok Compute, Grok Compute Client: http://CVM_HOSTNAME/grok_compute
 * Machine Learning:
     * H2O: http://CVM_HOSTNAME:54321
 

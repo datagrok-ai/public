@@ -43,11 +43,11 @@ Requirements: 4 vCPU and 8GiB RAM
 2. Run CVM image `docker run -it -e GROK_COMPUTE_NUM_CORES=4 -p 5005:5005 -p 8004:8004 -p 8888:8888 -p 8889:8889 -p 54321:54321 <IMAGE_NAME>`
 
 Edit settings in the Datagrok (Tools | Settings...):
-* Dev:
-    * OpenCPU: http://localhost:8004/ocpu
-    * Jupyter Notebook: http://localhost:8889
-    * Jupyter Gateway: http://localhost:8888
-    * Grok Compute: http://localhost:5005
+* Scripting:
+    * OpenCPU, OpenCPU client: http://localhost:8004/ocpu
+    * Jupyter Notebook, Jupyter Notebook Client: http://localhost:8889
+    * Jupyter Gateway, Jupyter Gateway Client: http://localhost:8888
+    * Grok Compute, Grok Compute Client: http://localhost:5005
 * Machine Learning:
     * H2O: http://localhost:54321
 
@@ -55,11 +55,11 @@ ComputeVM also contain Nginx service to reduce number of opened ports. For this 
 only are required: `docker run -it -e GROK_COMPUTE_NUM_CORES=1 -p 80:80 -p 54321:54321 <IMAGE_NAME>`
 
 Settings:
-* Dev:
-    * OpenCPU: http://localhost/ocpu
-    * Jupyter Notebook: http://localhost
-    * Jupyter Gateway: http://localhost/jupyter
-    * Grok Compute: http://localhost/grok_compute
+* Scripting:
+    * OpenCPU, OpenCPU client: http://localhost/ocpu
+    * Jupyter Notebook, Jupyter Notebook Client: http://localhost
+    * Jupyter Gateway, Jupyter Gateway Client: http://localhost/jupyter
+    * Grok Compute, Grok Compute Client: http://localhost/grok_compute
 * Machine Learning:
     * H2O: http://localhost:54321
 

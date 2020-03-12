@@ -42,11 +42,11 @@ This document contains instructions to deploy Datagrok on AWS EC2 instance.
 3. Run CVM image `docker run -it -e GROK_COMPUTE_NUM_CORES=4 -p 80:80 -p 54321:54321 <IMAGE_NAME>`
 
 Edit settings in the Datagrok (Tools | Settings...):
-* Dev:
-    * OpenCPU: http://CVM_HOSTNAME/ocpu
-    * Jupyter Notebook: http://CVM_HOSTNAME
-    * Jupyter Gateway: http://CVM_HOSTNAME/jupyter
-    * Grok Compute: http://CVM_HOSTNAME/grok_compute
+* Scripting:
+    * OpenCPU, OpenCPU Client: http://CVM_HOSTNAME/ocpu
+    * Jupyter Notebook, Jupyter Notebook: http://CVM_HOSTNAME
+    * Jupyter Gateway, Jupyter Gateway: http://CVM_HOSTNAME/jupyter
+    * Grok Compute, Grok Compute: http://CVM_HOSTNAME/grok_compute
 * Machine Learning:
     * H2O: http://CVM_HOSTNAME:54321
 
