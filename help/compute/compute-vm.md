@@ -31,7 +31,9 @@ Server is easy scalable using [Amazon ECS](https://aws.amazon.com/ecs/) or [Kube
 
 ## Installation 
 
-[Compute VM Installation](../dev/admin/compute-vm-install.md)
+[Compute VM regular installation](../develop/admin/installation-regular.md#setup-compute-virtual-machine)
+[Compute VM Amazon EC2 installation](../develop/admin/installation-amazon-ec2.md#setup-compute-virtual-machine)
+[Compute VM Amazon ECS installation](../develop/admin/installation-amazon-ecs.md#setup-compute-virtual-machine)
 
 
 ## Scalability
@@ -47,4 +49,3 @@ At the moment some limitations are exists:
 
 See also:
 * [GrokCompute](grok-compute.md)
-* [Compute VM Installation](../dev/admin/compute-vm-install.md)

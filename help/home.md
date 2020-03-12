@@ -92,9 +92,9 @@ Turn your data into actionable insights by using state-of-the art machine learni
 
 ## Deploy and Integrate 
 
-* Different [hosting options](dev/admin/hosting-options.md) 
+* Different [hosting options](develop/admin/hosting-options.md) 
 * [Roles, groups and privileges](govern/security.md) 
 * Flexible [authentication](govern/authentication.md) 
 * Create [pipelines](transform/job-editor.md), schedule [jobs](access/data-job.md), and set up [alerts](TODO:write) 
-* [Customizable by IT](dev/admin/it-customizations.md)
+* [Customizable by IT](develop/admin/it-customizations.md)
 * Easy to learn the platform using [interactive help](features/navigation.md#help), [forums](collaborate/forum.md), [tutorials](/tutorials) and [video lessons](video-lessons.md).

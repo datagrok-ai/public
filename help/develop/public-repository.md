@@ -21,7 +21,7 @@ All of the packages are globally available to everyone for use from within the D
 although for the [public environment](https://public.datagrok.ai)
 there are some restrictions related to the server compute capacities.
 
-Enterprises with the platform deployed [on-premises](../dev/admin/architecture.md#deployment) 
+Enterprises with the platform deployed [on-premises](../develop/admin/architecture.md#deployment) 
 can also access the public repository.  
 
 ## How to contribute
