@@ -239,15 +239,18 @@ that enables users to ingest, transform, analyze, visualize, model, and share da
 extremely flexible and extensible, and allows to dynamically create new data pipelines, models, and
 build viewers, plugins, and applications on top of it.  
 
-![](architecture-diagram.png) 
+![](architecture-diagram1.png) 
 
-## Datlas
+## Datagrok Virtual Machine
+
+This machine is the heart of the platform, and is required for all activities. 
+
+### Datlas
 
 Grok server (also referred to as "Datlas") is a Dart stand-alone application that creates 
 REST endpoints that client consumes. The same API can also be used by other parties (for instance,
 by the IT department).
 
-* Can be deployed on client’s infrastructure
 * Implemented in Dart, shares a lot of code with the client
 * Exposes REST API
 * Extendable via server plugins
@@ -258,37 +261,36 @@ by the IT department).
 * Customizable storage
 * Supports SSL 
 
-### Deployment
+### Full-text search
 
-Datagrok is a web application, that means that there is no deployment efforts per user once the
-server is set up. Administration tasks could be performed via the web interface as well.
+Datagrok's full-text search (press Alt+Q to search) is backed by the Elastic search. It 
+searches in wiki, forums, and datasets. Read mode: [Elastic Search](#full-text-search)
 
-Enterprises typically prefer on-premise deployment for multiple reasons, such as security,
-ability to easily access internal data, and other features such as integration with the enterprise 
-[authentication](../../govern/authentication.md) methods. One of the most convenient ways of 
-doing that is deploying the platform on the AWS in the Virtual Private Cloud. It is as easy as 
-spinning out Amazon's EC2 machines with our docker images inside your virtual private network. 
-See [Datagrok installation on AWS](datagrok-install.md#aws-bare-ec2-installation)
-and [GrokCompute installation on AWS](compute-vm-install.md#aws-installation) for details. 
+### ORM
 
-See [Enterprise Evaluation FAQ](enterprise-evaluation-faq.md) for more details.
+In order to efficiently work with the database, we have built a custom object-relational mapper library (ORM).
+It takes advantage of our coding conventions, is fit and tuned for our goals, and lets us do the following:
 
-#### Datagrok
+* Rapidly develop new classes and bind them to database tables
+* Use either SQL or API for working with db entities
+* Avoid all boilerplate code for CRUD operations
+* Use the same models on both server-side and client-side
+* Work with property metadata and use it to optimize queries in run-time
+* Free-text filtering (SQL-like language)
+* ORM can extract object fields from database without mapping them to objects
 
-This machine is the heart of the platform, and is required for all activities that depend on a server. 
-
-* Datlas - Grok server API. Consists of the core and more than 20 plugins.
-* [Elastic Search](#full-text-search)
-* [Credentials Management Service](../../govern/security.md#credentials). Also can be installed as a separate service with separate database.
+Also Datagrok Virtual machine components are:
+* [Credentials Management Service](../../govern/security.md#credentials). Can be installed as a separate service with separate database.
 * Grok Connect - Java-based connectors to 20+ databases
 * Web application  
 * Nginx server
   
-#### Grok Compute
+
+## Grok Compute Virtual Machine
 
 Grok Compute is used for performing on-server computations. It is used for
 scripting, training and applying predictive models, and cheminformatics. You might not need it
-if your use cases do not involve above-mentioned tasks.
+if your use cases do not involve below-mentioned tasks.
 
 In order to scale computations, you might want to spin out multiple GrokCompute instances, and 
 our load balancer will take care of dispatching computations. 
@@ -297,28 +299,29 @@ our load balancer will take care of dispatching computations.
 * Jupyter Notebook
 * H2O - for [predictive modeling](#predictive-modeling)
 * RDKit
-* OpenCPU
+* OpenCPU  
 
-#### Postgres Database
+### Scripting
 
-Datagrok can use almost any PostgreSQL database installation: RDS or on-premises instance.
-Datagrok automatically create and populate database in deploy mode, you just need to provide administrator account. 
+Scripting lets you easily invoke scripts written in languages such as R or Python, and expose
+them to the Grok ecosystem as functions. 
 
-#### File storage
+Scripting works by sending code along with data to the Jupyter kernel (that resides on the ComputeVM).
 
-By default, Datagrok works with Amazon S3 storage. Also, local file system can be used 
-if you run Datagrok docker container without AWS or other cloud infrastructure. 
-See [Run docker image](datagrok-install.md#run-docker-image)   
+Also, there is an ability to invoke R scripts using the OpenCPU endpoint (which is also installed on ComputeVM)
 
-#### DSTK
+### Predictive modeling
 
-This is an optional part that is used for geocoding, extracting demographic information
-from geographical coordinates, and converting geo points to political areas (such as country/state/county).
-In the future, it will be merged with the ComputeVM.
+Datagrok utilizes few different backends for predictive modeling, while providing users the
+same look and feel. Training and applying models for either of the backends is performed on
+the GrokCompute.
 
-http://www.datasciencetoolkit.org/
+* [H20](https://h2o.ai)
+* [OpenCPU](https://www.opencpu.org/): Custom R-based models
+* [ChemProp](https://github.com/swansonk14/chemprop): Chemical Property Prediction with Graph Convolutional Networks 
 
-### Storage
+
+## Storage
 
 Most of the metadata associated with users, datasets, algorithms, predictive models, etc. is
 kept in the [relational database](#database). 
@@ -330,9 +333,13 @@ by the company. Datagrok supports the following storages:
 * Network shares
 * S3
 * Google Cloud
-* Dropbox
 
-### Database
+By default, Datagrok works with Amazon S3 storage. Also, local file system can be used 
+if you run Datagrok docker container without AWS or another cloud infrastructure. 
+See [Run docker image](datagrok-install.md#run-docker-image)   
+
+ 
+## Database
 
 Metadata associated with users, datasets, algorithms, predictive models, etc. is kept in a Postgres 
 database. Having the data stored in a relational database brings well-defined relations and data consistency,
@@ -342,6 +349,8 @@ Postgres is free, and can easily be deployed locally for development.
 Also, Postgres data protocol is very popular and is used in a number
 of big data solutions, as well as in cloud databases. If necessary, we can switch to a 
 scalable solution like Aurora or CocroachDB without having to change a lot of code.   
+
+Datagrok Virtual Machine can use single PostgreSQL instance, or Amazon RDS out-of-the-box.
 
 The schema has the following tables:
 
@@ -395,42 +404,23 @@ The schema has the following tables:
 | view_layouts         | View layouts                            | 
 | view_layouts_columns | Columns referenced by layouts (used for layout suggestions) | 
  
-### ORM
 
-In order to efficiently work with the database, we have built a custom object-relational mapper library (ORM).
-It takes advantage of our coding conventions, is fit and tuned for our goals, and lets us do the following:
+## Deployment
 
-* Rapidly develop new classes and bind them to database tables
-* Use either SQL or API for working with db entities
-* Avoid all boilerplate code for CRUD operations
-* Use the same models on both server-side and client-side
-* Work with property metadata and use it to optimize queries in run-time
-* Free-text filtering (SQL-like language)
-* ORM can extract object fields from database without mapping them to objects
+Datagrok is a web application, that means that there is no deployment efforts per user once the
+server is set up. Administration tasks could be performed via the web interface as well.
 
-### Scripting
+Enterprises typically prefer on-premise deployment for multiple reasons, such as security,
+ability to easily access internal data, and other features such as integration with the enterprise 
+[authentication](../../govern/authentication.md) methods. One of the most convenient ways of 
+doing that is deploying the platform on the AWS in the Virtual Private Cloud. It is as easy as 
+spinning out Amazon's EC2 machines with our docker images inside your virtual private network. 
+See [Datagrok installation on AWS](datagrok-install.md#aws-bare-ec2-installation), 
+[Datagrok docker container](datagrok-install.md#run-docker-image)
+and [GrokCompute installation on AWS](compute-vm-install.md#aws-installation) for details. 
 
-Scripting lets you easily invoke scripts written in languages such as R or Python, and expose
-them to the Grok ecosystem as functions. 
+See [Enterprise Evaluation FAQ](enterprise-evaluation-faq.md) for more details.
 
-Scripting works by sending code along with data to the Jupyter kernel (that resides on the ComputeVM).
-
-Also, there is an ability to invoke R scripts using the OpenCPU endpoint (which is also installed on ComputeVM)
-
-### Predictive modeling
-
-Datagrok utilizes few different backends for predictive modeling, while providing users the
-same look and feel. Training and applying models for either of the backends is performed on
-the GrokCompute.
-
-* [H20](https://h2o.ai)
-* [OpenCPU](https://www.opencpu.org/): Custom R-based models
-* [ChemProp](https://github.com/swansonk14/chemprop): Chemical Property Prediction with Graph Convolutional Networks 
-
-### Full-text search
-
-Datagrok's full-text search (press Alt+Q to search) is backed by the Elastic search. It 
-searches in wiki, forums, and datasets.  
 
 See also:
 
