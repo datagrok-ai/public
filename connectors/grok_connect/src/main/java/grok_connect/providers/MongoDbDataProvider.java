@@ -56,7 +56,7 @@ public class MongoDbDataProvider extends JdbcDataProvider {
                         column = new FloatColumn();
                     else if (value instanceof Double) {
                         column = new FloatColumn();
-                        value = new Float((Double) value).floatValue();
+                        value = new Float((Double)value);
                     } else if ((value instanceof Boolean))
                         column = new BoolColumn();
                     else {
@@ -73,15 +73,21 @@ public class MongoDbDataProvider extends JdbcDataProvider {
                 for (Column column : columns) {
                     Object value = collection.get(column.name);
                     String colType = column.getType();
-                    if (colType.equals(Types.FLOAT))
-                        if (value instanceof Double)
-                            column.add((value == null) ? null : new Float((Double) value).floatValue());
-                        else
+                    switch (colType) {
+                        case Types.FLOAT: {
+                            if (value instanceof Double)
+                                column.add(new Float((Double) value));
+                            else
+                                column.add(value);
+                            break;
+                        }
+                        case Types.INT:
+                        case Types.BOOL:
                             column.add(value);
-                    else if (colType.equals(Types.INT) || colType.equals(Types.BOOL))
-                        column.add(value);
-                    else
-                        column.add((value != null) ? value.toString() : "");
+                            break;
+                        default:
+                            column.add((value != null) ? value.toString() : "");
+                    }
                 }
             }
         }

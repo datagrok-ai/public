@@ -8,7 +8,7 @@ import java.util.function.*;
 // Data frame.
 public class DataFrame {
     public String name;
-    public Integer rowCount;
+    public Integer rowCount = 0;
     public List<Column> columns = new ArrayList<>();
     public Map<String, String> tags;
 
