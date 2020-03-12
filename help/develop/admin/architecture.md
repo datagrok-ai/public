@@ -130,7 +130,7 @@ exploratory data analysis, interactive visualizations, and machine learning.
 
 ## Viewers
 
-Just like the in-memory database, our [viewers](../viewers/viewers.md)
+Just like the in-memory database, our [viewers](../../visualize/viewers.md)
  were built from scratch for the purpose of being able to 
 interactively work with millions of data points at once. All of them make heavy use of the in-memory database. 
 The ability to use that engine unlocks unique possibilities for viewers, such as easy data 
@@ -248,7 +248,6 @@ Datagrok installations consists of two virtual machines:
 Also it needs [database](#database) and [persistent file storage](#storage)
 Both of the virtual machines can be installed as Docker containers in AWS EC2, AWS ESC or regular host machine.
 
-
 ## Datagrok Virtual Machine
 
 This machine is the heart of the platform, and is required for all activities. 
@@ -344,7 +343,7 @@ by the company. Datagrok supports the following storages:
 
 By default, Datagrok works with Amazon S3 storage. Also, local file system can be used 
 if you run Datagrok docker container without AWS or another cloud infrastructure. 
-See [Run docker image](datagrok-install.md#run-docker-image)   
+See [Run docker image](installation-regular.md)   
 
 See also: [Compute VM](../../compute/compute-vm.md)
  
