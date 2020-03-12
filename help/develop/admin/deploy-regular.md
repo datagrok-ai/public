@@ -1,7 +1,7 @@
-<!-- TITLE: Install Datagrok on a regular machine -->
+<!-- TITLE: Deploy Datagrok on a regular machine -->
 <!-- SUBTITLE: -->
 
-# Install Datagrok on a regular machine
+# Deploy Datagrok on a regular machine
 
 This document contains instructions to deploy Datagrok on a regular machine without cloud-based hosting.
 

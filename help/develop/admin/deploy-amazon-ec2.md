@@ -1,7 +1,7 @@
-<!-- TITLE: Install Datagrok on AWS EC2 -->
+<!-- TITLE: Deploy Datagrok on AWS EC2 -->
 <!-- SUBTITLE: -->
 
-# Install Datagrok on AWS EC2
+# Deploy Datagrok on AWS EC2
 
 This document contains instructions to deploy Datagrok on AWS EC2 instance.
 
