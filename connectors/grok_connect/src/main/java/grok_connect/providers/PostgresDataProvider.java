@@ -69,7 +69,8 @@ public class PostgresDataProvider extends JdbcDataProvider {
             add("table_schema = '" + ((schema != null) ? schema : "public") + "'");
             add("table_catalog = '" + db + "'");
         }};
-        if (table!= null)
+
+        if (table != null)
             filters.add("table_name = '" + table + "'");
 
         String whereClause = String.join(" and \n", filters);
