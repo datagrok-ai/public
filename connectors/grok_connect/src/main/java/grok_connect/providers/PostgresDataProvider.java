@@ -9,9 +9,6 @@ import grok_connect.connectors_info.*;
 
 
 public class PostgresDataProvider extends JdbcDataProvider {
-    private static final String SYS_SCHEMAS_FILTER =
-            "table_schema != 'pg_catalog' AND table_schema != 'information_schema'";
-
     public PostgresDataProvider() {
         descriptor = new DataSource();
         descriptor.type = "PostgresNet";
@@ -59,24 +56,25 @@ public class PostgresDataProvider extends JdbcDataProvider {
     }
 
     public String getSchemasSql(String db) {
-        return "SELECT DISTINCT table_schema FROM information_schema.columns " +
-                "WHERE table_catalog = '" + db + "' AND " + SYS_SCHEMAS_FILTER + " ORDER BY table_schema";
+        return "SELECT DISTINCT table_schema FROM information_schema.columns ORDER BY table_schema";
     }
 
     public String getSchemaSql(String db, String schema, String table)
     {
         List<String> filters = new ArrayList<String>() {{
             add("table_schema = '" + ((schema != null) ? schema : "public") + "'");
-            add("table_catalog = '" + db + "'");
         }};
+
+        if (db != null && db.length() != 0)
+            filters.add("table_catalog = '" + db + "'");
 
         if (table != null)
             filters.add("table_name = '" + table + "'");
 
-        String whereClause = String.join(" and \n", filters);
+        String whereClause = "WHERE " + String.join(" AND \n", filters);
 
         return "SELECT table_schema, table_name, column_name, data_type " +
-                "FROM information_schema.columns WHERE " + SYS_SCHEMAS_FILTER + " AND " + whereClause +
+                "FROM information_schema.columns " + whereClause +
                 " ORDER BY table_name";
     }
 }
