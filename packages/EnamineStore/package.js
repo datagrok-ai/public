@@ -1,6 +1,7 @@
 class EnamineStorePackage extends GrokPackage {
 
     //tags: app
+    //name: Enamine Store
     startApp(context) {
         let molecule = ui.moleculeInput('', 'c1ccccc1O');
         let searchMode = ui.choiceInput('Mode', 'Similar', ['Exact', 'Similar', 'Substructure']);
@@ -90,7 +91,7 @@ class EnamineStorePackage extends GrokPackage {
                 };
                 for (let pack of comp['packs'])
                     props[`${pack['amount']} ${pack['measure']}`] = `${pack['price']} ${currency}`;
-                ui.tooltip(mol, ui.divV([ui.tableFromMap(props), ui.divText('Click to compound to open it in the store.')]));
+                ui.tooltip(mol, ui.divV([ui.tableFromMap(props), ui.divText('Click to open in the store.')]));
                 mol.addEventListener('click', function() {
                     window.open(comp['productUrl'], '_blank');
                 });
