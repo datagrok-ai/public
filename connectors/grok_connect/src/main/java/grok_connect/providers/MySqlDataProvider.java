@@ -77,19 +77,21 @@ public class MySqlDataProvider extends JdbcDataProvider {
         return "SELECT DISTINCT table_schema FROM information_schema.columns ORDER BY table_schema";
     }
 
-    public String getSchemaSql(String db, String schema, String table)
-    {
+    public String getSchemaSql(String db, String schema, String table) {
         List<String> filters = new ArrayList<>();
 
-        if (schema != null)
-            filters.add("table_schema = '" + schema + "'");
+        if (db == null || db.length() == 0)
+            db = schema;
+
+        if (db != null && db.length() != 0)
+            filters.add("table_schema = '" + db + "'");
 
         if (table != null)
             filters.add("(table_name = '" + table + "')");
 
-        String whereClause = String.join(" and \n", filters);
+        String whereClause = filters.size() != 0 ? "WHERE " + String.join(" AND \n", filters) : "";
 
         return "SELECT table_schema, table_name, column_name, data_type " +
-                "FROM information_schema.columns WHERE " + whereClause + " ORDER BY table_name";
+                "FROM information_schema.columns " + whereClause + " ORDER BY table_name";
     }
 }
