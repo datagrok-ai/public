@@ -103,6 +103,7 @@ public abstract class DataProvider
         add(new MongoDbDataProvider());
         add(new MsSqlDataProvider());
         add(new MySqlDataProvider());
+        add(new Neo4jDataProvider());
         add(new OracleDataProvider());
         add(new PostgresDataProvider());
         add(new RedshiftDataProvider());
