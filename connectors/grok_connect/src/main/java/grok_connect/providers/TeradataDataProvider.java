@@ -31,19 +31,26 @@ public class TeradataDataProvider extends JdbcDataProvider {
         return "jdbc:teradata://" + conn.getServer() + port + "/" + conn.getDb();
     }
 
-    public String getSchemaSql(String db, String schema, String table)
-    {
-        List<String> filters = new ArrayList<String>() {{
-            add("databaseName = '" + db + "'");
-        }};
+    public String getSchemasSql(String db) {
+        return "SELECT DISTINCT databaseName as table_schema FROM DBC.TablesV ORDER BY databaseName";
+    }
+
+    public String getSchemaSql(String db, String schema, String table) {
+        List<String> filters = new ArrayList<>();
+
+        if (db == null || db.length() == 0)
+            db = schema;
+
+        if (db != null && db.length() != 0)
+            filters.add("databaseName = '" + db + "'");
 
         if (table != null)
             filters.add("tableName = '" + table + "'");
 
-        String whereClause = String.join(" and \n", filters);
+        String whereClause = filters.size() != 0 ? "WHERE " + String.join(" and \n", filters) : "";
 
         return "SELECT databaseName as table_schema, tableName as table_name, " +
                 "columnName as column_name, ColumnType as data_type " +
-                "FROM DBC.ColumnsV WHERE " + whereClause + " ORDER BY tableName";
+                "FROM DBC.ColumnsV " + whereClause + " ORDER BY tableName";
     }
 }
