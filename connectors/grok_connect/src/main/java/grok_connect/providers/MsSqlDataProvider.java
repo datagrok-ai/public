@@ -1,8 +1,11 @@
 package grok_connect.providers;
 
+import java.io.*;
 import java.sql.*;
+import java.text.*;
 import java.util.*;
 import serialization.Types;
+import serialization.DataFrame;
 import grok_connect.utils.*;
 import grok_connect.table_query.*;
 import grok_connect.connectors_info.*;
@@ -63,27 +66,43 @@ public class MsSqlDataProvider extends JdbcDataProvider {
 
     public String getConnectionStringImpl(DataConnection conn) {
         String port = (conn.getPort() == null) ? "" : ":" + conn.getPort();
-        return "jdbc:sqlserver://" + conn.getServer() + port + ";databaseName=" + conn.getDb() +
+        String db = conn.getDb();
+        String schema = conn.get("schema");
+        db = (db == null || db.length() == 0) && schema != null ? schema : db;
+        return "jdbc:sqlserver://" + conn.getServer() + port + ";databaseName=" + db +
                 (conn.ssl() ? "integratedSecurity=true;encrypt=true;trustServerCertificate=true;" : "");
     }
 
+    public DataFrame getSchema(DataConnection connection, String schema, String table)
+            throws ClassNotFoundException, SQLException, ParseException, IOException {
+        FuncCall queryRun = new FuncCall();
+        queryRun.func = new DataQuery();
+        queryRun.func.query = getSchemaSql(schema, null, table);
+        queryRun.func.connection = connection;
+
+        return execute(queryRun);
+    }
+
     public String getSchemasSql(String db) {
-        return "SELECT DISTINCT TABLE_SCHEMA FROM INFORMATION_SCHEMA.COLUMNS ORDER BY TABLE_SCHEMA";
+        return "SELECT DISTINCT name FROM sys.databases";
     }
 
     public String getSchemaSql(String db, String schema, String table)
     {
-        List<String> filters = new ArrayList<>();
-        filters.add("(TABLE_SCHEMA = '" + ((schema != null) ? schema : "dbo") + "')");
-        if (db != null)
-            filters.add("(TABLE_CATALOG = '" + db + "')");
-        if (table!= null)
-            filters.add("(TABLE_NAME = '" + table + "')");
+        List<String> filters = new ArrayList<String>() {{
+            add("TABLE_SCHEMA = '" + ((schema != null) ? schema : "dbo") + "'");
+        }};
 
-        String whereClause = String.join(" AND \n", filters);
+        if (db != null && db.length() != 0)
+            filters.add("TABLE_CATALOG = '" + db + "'");
+
+        if (table!= null)
+            filters.add("TABLE_NAME = '" + table + "'");
+
+        String whereClause = "WHERE " + String.join(" AND \n", filters);
 
         return "SELECT TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, DATA_TYPE " +
-                "FROM INFORMATION_SCHEMA.COLUMNS WHERE " + whereClause + " ORDER BY TABLE_NAME";
+                "FROM INFORMATION_SCHEMA.COLUMNS " + whereClause + " ORDER BY TABLE_NAME";
     }
 
     public String limitToSql(String query, Integer limit) {
