@@ -77,7 +77,9 @@ public class MsSqlDataProvider extends JdbcDataProvider {
             throws ClassNotFoundException, SQLException, ParseException, IOException {
         FuncCall queryRun = new FuncCall();
         queryRun.func = new DataQuery();
-        queryRun.func.query = getSchemaSql(schema, null, table);
+        String db = connection.getDb();
+        queryRun.func.query = (db != null && db.length() != 0)
+                ? getSchemaSql(db, schema, table) : getSchemaSql(schema, null, table);
         queryRun.func.connection = connection;
 
         return execute(queryRun);
@@ -87,8 +89,7 @@ public class MsSqlDataProvider extends JdbcDataProvider {
         return "SELECT DISTINCT name FROM sys.databases";
     }
 
-    public String getSchemaSql(String db, String schema, String table)
-    {
+    public String getSchemaSql(String db, String schema, String table) {
         List<String> filters = new ArrayList<String>() {{
             add("TABLE_SCHEMA = '" + ((schema != null) ? schema : "dbo") + "'");
         }};
