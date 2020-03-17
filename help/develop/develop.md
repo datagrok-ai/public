@@ -46,6 +46,8 @@ a folder with files in it. A package might contain different things:
 * Queries or connections
 * Tables
 
+See our [github repository](https://github.com/datagrok-ai/public/tree/master/packages) for examples.
+
 A simplest JavaScript package consists of the following files:
 
 | file          | description    |
@@ -232,3 +234,7 @@ See also:
 ### Videos
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/PDcXLMsu6UM" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
+See also
+
+* [Github repository](https://github.com/datagrok-ai/public/tree/master/packages)
