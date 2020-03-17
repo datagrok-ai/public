@@ -282,27 +282,22 @@
       ],
       "value": ""
     }, {
-      "id": "ab8f12f1-2f92-4a48-8f4b-17d7c7c599ef",
+      "id": "86b2773b-cd52-4633-ba46-d80047dd8708",
       "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@name='tree-expander-Features']",
-      "targets": [
-        ["css=.d4-tree-view-group:nth-child(5) .d4-tree-view-tri", "css:finder"],
-        ["xpath=//div[@name='tree-expander-Features']", "xpath:attributes"],
-        ["xpath=//div[@id='grok-viewers-toolbox']/div[2]/div[2]/div/div[2]/div[5]/div/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div[5]/div/div", "xpath:position"]
-      ],
+      "command": "pause",
+      "target": "500",
+      "targets": [],
       "value": ""
     }, {
       "id": "520c9919-7590-4bf9-9c17-ace247892cff",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='tree-Features---Audit']",
+      "target": "xpath=//div[@name='tree-Govern---Audit']",
       "targets": [
-        ["css=.d4-tree-view-group:nth-child(5) .d4-tree-view-item:nth-child(2)", "css:finder"],
-        ["xpath=//div[@name='tree-Features---Audit']", "xpath:attributes"],
-        ["xpath=//div[@id='grok-viewers-toolbox']/div[2]/div[2]/div/div[2]/div[5]/div[2]/div[2]", "xpath:idRelative"],
-        ["xpath=//div[5]/div[2]/div[2]", "xpath:position"]
+        ["css=.d4-tree-view-group:nth-child(9) .d4-tree-view-item:nth-child(1)", "css:finder"],
+        ["xpath=//div[@name='tree-Govern---Audit']", "xpath:attributes"],
+        ["xpath=//div[@id='grok-viewers-toolbox']/div[2]/div[2]/div/div[2]/div[9]/div[2]/div", "xpath:idRelative"],
+        ["xpath=//div[9]/div[2]/div", "xpath:position"]
       ],
       "value": ""
     }, {

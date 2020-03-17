@@ -326,34 +326,15 @@
       "targets": [],
       "value": ""
     }, {
-      "id": "a505a8a4-2fbc-4cf4-819d-88f91590b4c4",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@name='tree-expander-MariaDB---northwind---Schemas---Northwind']",
-      "targets": [
-        ["css=.d4-tree-view-group:nth-child(1) .d4-tree-view-group:nth-child(4) .d4-tree-view-tri", "css:finder"],
-        ["xpath=//div[@name='tree-expander-MariaDB---northwind---Schemas---Northwind']", "xpath:attributes"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div[18]/div[2]/div/div[2]/div/div[2]/div[4]/div/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div[2]/div[4]/div/div", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "6e1a88cb-4db3-4803-af8d-37b8c237b2cb",
-      "comment": "",
-      "command": "pause",
-      "target": "2000",
-      "targets": [],
-      "value": ""
-    }, {
       "id": "9004f3af-2624-467e-b9a8-1ecff92ff1b9",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='tree-MariaDB---northwind---Schemas---Northwind---Orders']",
+      "target": "xpath=//div[@name='tree-MariaDB---northwind---Tables---Orders']",
       "targets": [
-        ["css=.d4-tree-view-group:nth-child(4) .d4-tree-view-group:nth-child(15) > .d4-tree-view-node", "css:finder"],
-        ["xpath=//div[@name='tree-MariaDB---northwind---Schemas---Northwind---Orders']", "xpath:attributes"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div[18]/div[2]/div/div[2]/div/div[2]/div[4]/div[2]/div[15]/div", "xpath:idRelative"],
-        ["xpath=//div[4]/div[2]/div[15]/div", "xpath:position"]
+        ["css=.d4-tree-view-group:nth-child(1) .d4-tree-view-group:nth-child(15) > .d4-tree-view-node", "css:finder"],
+        ["xpath=//div[@name='tree-MariaDB---northwind---Tables---Orders']", "xpath:attributes"],
+        ["xpath=//div[@id='data-sources']/div/div[2]/div[18]/div[2]/div/div[2]/div/div[2]/div[15]/div", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div[2]/div[15]/div", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -554,34 +535,15 @@
       "targets": [],
       "value": ""
     }, {
-      "id": "1cd81c03-5740-4869-aaf8-210272f16475",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@name='tree-expander-MySQL---northwind---Schemas---Northwind']",
-      "targets": [
-        ["css=.d4-tree-view-group:nth-child(1) .d4-tree-view-group:nth-child(4) .d4-tree-view-tri", "css:finder"],
-        ["xpath=//div[@name='tree-expander-MySQL---northwind---Schemas---Northwind']", "xpath:attributes"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div[20]/div[2]/div[2]/div[2]/div/div[2]/div[4]/div/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div[2]/div[4]/div/div", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "2db5e248-35a8-48d4-a4df-9f3d338e3084",
-      "comment": "",
-      "command": "pause",
-      "target": "2000",
-      "targets": [],
-      "value": ""
-    }, {
       "id": "9004f3af-2624-467e-b9a8-1ecff92ff1b0",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='tree-MySQL---northwind---Schemas---Northwind---Orders']",
+      "target": "xpath=//div[@name='tree-MySQL---northwind---Tables---Orders']",
       "targets": [
-        ["css=.d4-tree-view-group:nth-child(4) .d4-tree-view-group:nth-child(15) > .d4-tree-view-node", "css:finder"],
-        ["xpath=//div[@name='tree-MySQL---northwind---Schemas---Northwind---Orders']", "xpath:attributes"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div[20]/div[2]/div[2]/div[2]/div/div[2]/div[4]/div[2]/div[15]/div", "xpath:idRelative"],
-        ["xpath=//div[4]/div[2]/div[15]/div", "xpath:position"]
+        ["css=.d4-tree-view-group:nth-child(1) .d4-tree-view-group:nth-child(15) > .d4-tree-view-node", "css:finder"],
+        ["xpath=//div[@name='tree-MySQL---northwind---Tables---Orders']", "xpath:attributes"],
+        ["xpath=//div[@id='data-sources']/div/div[2]/div[20]/div[2]/div[2]/div[2]/div/div[2]/div[15]/div", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div[2]/div[15]/div", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -984,33 +946,14 @@
       "targets": [],
       "value": ""
     }, {
-      "id": "d12dd393-6a1c-45af-b633-1ed707266ddc",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@name='tree-expander-PostgreSQL---northwind---Schemas---public']",
-      "targets": [
-        ["css=.d4-tree-view-group:nth-child(5) .d4-tree-view-group .d4-tree-view-group:nth-child(1) .d4-tree-view-tri", "css:finder"],
-        ["xpath=//div[@name='tree-expander-PostgreSQL---northwind---Schemas---public']", "xpath:attributes"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div[24]/div[2]/div[5]/div[2]/div/div[2]/div/div/div", "xpath:idRelative"],
-        ["xpath=//div[5]/div[2]/div/div[2]/div/div/div", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "894d8263-906a-4b84-87c4-ce9a66c7262b",
-      "comment": "",
-      "command": "pause",
-      "target": "2000",
-      "targets": [],
-      "value": ""
-    }, {
       "id": "7c33085a-ecad-4b4a-8f0d-8203f64da32a",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='tree-PostgreSQL---northwind---Schemas---public---orders']",
+      "target": "xpath=//div[@name='tree-PostgreSQL---northwind---Tables---orders']",
       "targets": [
         ["css=.d4-tree-view-group:nth-child(1) .d4-tree-view-group:nth-child(8) > .d4-tree-view-node", "css:finder"],
-        ["xpath=//div[@name='tree-PostgreSQL---northwind---Schemas---public---orders']", "xpath:attributes"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div[24]/div[2]/div[5]/div[2]/div/div[2]/div/div[2]/div[8]/div", "xpath:idRelative"],
+        ["xpath=//div[@name='tree-PostgreSQL---northwind---Tables---orders']", "xpath:attributes"],
+        ["xpath=//div[@id='data-sources']/div/div[2]/div[24]/div[2]/div[5]/div[2]/div/div[2]/div[8]/div", "xpath:idRelative"],
         ["xpath=//div[2]/div/div[2]/div[8]/div", "xpath:position"]
       ],
       "value": ""

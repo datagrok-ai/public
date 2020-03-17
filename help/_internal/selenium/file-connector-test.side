@@ -255,14 +255,19 @@
       "id": "0f067454-3c85-4210-976b-3b4d2037fdfb",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span-FileIndexerForTestConnectionBySeleniumConnection",
-      "targets": [],
+      "target": "name=span-IndexerTestConnectionBySelenium",
+      "targets": [
+        ["css=.d4-current-object > label", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div[4]/span[3]/label", "xpath:idRelative"],
+        ["xpath=//span[3]/label", "xpath:position"],
+        ["xpath=//label[contains(.,'Indexer: test_connection_by_Selenium')]", "xpath:innerText"]
+      ],
       "value": ""
     }, {
       "id": "9869d2cd-9da2-47e7-aa09-11bd150a2f6c",
       "comment": "",
       "command": "click",
-      "target": "name=span-FileIndexerForTestConnectionBySeleniumConnection",
+      "target": "name=span-IndexerTestConnectionBySelenium",
       "targets": [
         ["css=.d4-link-label:nth-child(2) > span", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div[3]/span[2]/span", "xpath:idRelative"],
@@ -551,7 +556,7 @@
       "id": "8c34042f-31f0-4207-bdbc-ab2733682ea6",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='tree-expander-Northwind.xlsx']",
+      "target": "name=tree-Northwind.xlsx",
       "targets": [
         ["css=.d4-tree-view-root:nth-child(1) .d4-tree-view-group:nth-child(1) .d4-tree-view-tri", "css:finder"],
         ["xpath=//div[@name='tree-expander-Northwind.xlsx']", "xpath:attributes"],

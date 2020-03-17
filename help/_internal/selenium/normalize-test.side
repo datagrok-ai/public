@@ -153,12 +153,12 @@
       "id": "a8cbbc8a-dfdc-447a-af23-e41ccbd703be",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//h3[contains(.,'Normalize(table, column, method)')]",
+      "target": "xpath=//h1[contains(.,'Normalize(table, column, method)')]",
       "targets": [
-        ["css=h3", "css:finder"],
-        ["xpath=//div[@id='elementContent']/div/span/h3", "xpath:idRelative"],
-        ["xpath=//h3", "xpath:position"],
-        ["xpath=//h3[contains(.,'Normalize(table, column, method)')]", "xpath:innerText"]
+        ["css=h1", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div/span/h1", "xpath:idRelative"],
+        ["xpath=//h1", "xpath:position"],
+        ["xpath=//h1[contains(.,'Normalize(table, column, method)')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
