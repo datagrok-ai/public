@@ -186,6 +186,9 @@ grok.functions.register({
 | input       | Input parameter                    |
 | output      | Output parameter                   |
 | environment | Environment name                   |
+
+Also it is possible to add custom parameter using "meta." prefix.
+
  
 ### Supported languages
 
