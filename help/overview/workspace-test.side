@@ -187,7 +187,7 @@
       "id": "74237740-7ef0-4c34-9318-3f92f31a6dca",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"div-Tools\"] > div.d4-menu-item-label",
+      "target": "css=div[name=\"div-View\"] > div.d4-menu-item-label",
       "targets": [
         ["css=div[name=\"div-Tools\"] > div.d4-menu-item-label", "css"],
         ["css=.d4-menu-item-hover > .d4-menu-item-label", "css:finder"],
@@ -199,7 +199,7 @@
       "id": "2e433e7b-ed33-43b0-ae4b-4eb8ff90677f",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Tools---Console']",
+      "target": "xpath=//div[@name='div-View---Console']",
       "targets": [
         ["css=.d4-menu-item:nth-child(7) .d4-menu-item:nth-child(9)", "css:finder"],
         ["xpath=//div[@name='div-Tools---Console']", "xpath:attributes"],

@@ -461,7 +461,7 @@
       "id": "0884d64c-7828-4ce0-a3eb-3579f80f551d",
       "comment": "",
       "command": "pause",
-      "target": "10000",
+      "target": "13000",
       "targets": [],
       "value": ""
     }, {
@@ -495,7 +495,7 @@
       "id": "69f7bac6-018b-4bcc-baab-456ae6883f61",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {
@@ -509,6 +509,19 @@
         ["xpath=//div[@id='balloon: info']", "xpath:attributes"],
         ["xpath=//div[@id='rootDiv']/div[4]/div", "xpath:idRelative"],
         ["xpath=//div[11]/div[4]/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "09b37261-4644-47c4-806c-8e607350a14c",
+      "comment": "",
+      "command": "verifyElementNotPresent",
+      "target": "id=balloon: error",
+      "targets": [
+        ["id=balloon: error", "id"],
+        ["css=#balloon\\3A\\ error", "css:finder"],
+        ["xpath=//div[@id='balloon: error']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div[4]/div", "xpath:idRelative"],
+        ["xpath=//div[3]/div[4]/div", "xpath:position"]
       ],
       "value": ""
     }, {

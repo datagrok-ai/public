@@ -387,13 +387,6 @@
       ],
       "value": "project_with_notebook_by_selenium"
     }, {
-      "id": "82e987c2-3b5b-4563-bbb9-a2289be04fe4",
-      "comment": "",
-      "command": "verifyText",
-      "target": "xpath=(//div[@id='info'])[10]",
-      "targets": [],
-      "value": "1"
-    }, {
       "id": "2eebedc4-e2ff-43dd-8973-db0a41a5353c",
       "comment": "",
       "command": "click",

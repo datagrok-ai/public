@@ -545,7 +545,7 @@
       "id": "b8b90f21-7865-43c9-844b-dd7ee31b7536",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"div-Tools\"] > div.d4-menu-item-label",
+      "target": "css=div[name=\"div-View\"] > div.d4-menu-item-label",
       "targets": [
         ["css=div[name=\"div-Tools\"] > div.d4-menu-item-label", "css"],
         ["css=.d4-menu-item-hover > .d4-menu-item-label", "css:finder"],
@@ -556,7 +556,7 @@
       "id": "e92c0ba9-a1a0-4bb5-9643-9823963fba4c",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"div-Tools---Console\"]",
+      "target": "css=div[name=\"div-View---Console\"]",
       "targets": [],
       "value": ""
     }, {
@@ -571,6 +571,13 @@
       "comment": "",
       "command": "open",
       "target": "/datasets?selenium=true&q=",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "63f04a8a-44bc-4354-bd72-89acf722262a",
+      "comment": "",
+      "command": "pause",
+      "target": "2000",
       "targets": [],
       "value": ""
     }, {

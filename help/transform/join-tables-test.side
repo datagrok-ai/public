@@ -255,6 +255,25 @@
       "targets": [],
       "value": ""
     }, {
+      "id": "d3535d16-1c0a-45bc-bf01-deb7089c0bb2",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='view-handle: Auto']",
+      "targets": [
+        ["css=.tab-handle:nth-child(4)", "css:finder"],
+        ["xpath=//div[@name='view-handle: Auto']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
+        ["xpath=//div[4]/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "ffd68121-7577-4f60-92a9-3c299d79d1a6",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "d890254b-19e8-4be0-a575-e57821a63892",
       "comment": "",
       "command": "click",
@@ -413,6 +432,25 @@
       "value": ""
     }, {
       "id": "4cb88e87-977b-460d-8f8c-397f7e212157",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "dbf71df4-b218-4a27-824c-a738a1c8c914",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='view-handle: Auto']",
+      "targets": [
+        ["css=.tab-handle:nth-child(4)", "css:finder"],
+        ["xpath=//div[@name='view-handle: Auto']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
+        ["xpath=//div[4]/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "2667ba79-e057-4c80-86d4-1f078ec5c06d",
       "comment": "",
       "command": "pause",
       "target": "1000",
@@ -636,6 +674,25 @@
       "value": ""
     }, {
       "id": "5eb1e1c6-3e25-4f95-8ebf-d2529e0bfc25",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "88fbdddb-6b06-4dcd-9f15-168c5a32edb2",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='view-handle: Auto']",
+      "targets": [
+        ["css=.tab-handle:nth-child(4)", "css:finder"],
+        ["xpath=//div[@name='view-handle: Auto']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
+        ["xpath=//div[4]/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "ca0a1b04-4719-48d1-a956-bf89219261c7",
       "comment": "",
       "command": "pause",
       "target": "1000",
