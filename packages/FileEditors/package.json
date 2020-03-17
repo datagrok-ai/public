@@ -1,0 +1,10 @@
+{
+  "name": "FileEditors",
+  "version": "0.1",
+  "fullName": "File Editors",
+  "description": "Support for editing end previewing multiple file formats (PDF, SVG)",
+  "sources": [
+    "js/pdf.js",
+    "js/pdf.worker.js"
+  ]
+}
