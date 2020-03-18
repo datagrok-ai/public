@@ -1,6 +1,75 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+
+# 2020.03.13 Stable version
+
+## Latest docker images
+* Datagrok (new): `766822877060.dkr.ecr.us-east-2.amazonaws.com/datagrok:1.0.71-d0b9043` [download](https://dev.datagrok.ai/docker_images/datagrok-1.0.71-d0b9043.tar)
+* CVM (old): `766822877060.dkr.ecr.us-east-2.amazonaws.com/grok_cvm:1.0.69-83c6f08` [download](https://dev.datagrok.ai/docker_images/grok_cvm-1.0.69-83c6f08.tar)
+
+## Addressed issues
+
+* UI: Balloon.error: defaulted autoHide to false
+* DB: Database optimization
+* QA: Extended query cache test
+* GrokConnect: Fixed windows share mounting
+* Data Query: If you edit the query, and run it without saving, the old query is called
+* SPGi: Open Main tab by default
+* Save as Excel: File does not download if there is an open tab with query view
+* Import Excel file larger than 10MB: Balloon with error disappears with time
+* Pedometer: Line chart is not added at restart
+* WebProvider: Add "credentialsTemplate"
+* Sparql: Add "credentialsTemplate"
+* Help: Add to function auto-help parameter options information
+* Ability to use both indexed and online file browsing
+* Modeling: Column errors/warning should be updated after change
+* Visual Query: quoted string not properly terminated
+* Data Query: If all parameters are patterns, "Run" from PP opens dialog
+* Viewers | Embed does not work
+* GrokCvm: "cvm2" crashes sometimes by no free ram memory
+* Table Algorithms Section Improvement
+* Improve pattern validator
+* GrokConnect: Support SSL for all popular providers
+* Parameters and runtime are not updated in "General" tab for the table from the query after changing parameters and refreshing
+* JS Examples view doesn't work
+* Unable to set global permissions
+* Postgres: List<String> parameters binding, uuid explicit conversion
+* Chem | To InChi (To InChi Key): Dialog opens when called for column
+* Chem | Info Panels: Panel hiding does not work
+* Settings View
+* Replace dataFrame should keep xp.tableInfos in consistent state
+* GrokCompute: Too short proxy timeout
+* Settings View improvements (APPLY button, notifications, etc)
+* Execute subqueries in parallel
+* Add date and git path to app and package meta
+* Add author to package.json
+* GrokCompute: Failed environment setup is not handled
+* Visual Queries do not run
+* Query Table: If you change parameters and then click on table tab, then "General" displays the old parameter values
+* Domino integration demo
+* Failed to get project by ID url
+* Ability to specify samba version
+* Algorithms section records duplicated
+* Balloon: copy message to clipboard icon
+* Data Jobs view: Wrong style for function list
+* UI: depending on the current view, hide non-relevant top-level menus
+* ORM: Rename dirName to dir
+* UI: Files View
+* Web Connector: Credentials were not distributed after dev version client and DB deploying
+* EnamineStore integration demo
+* GrokConnect: Add custom connection string feature
+* FileInfo property panel: Preview pane
+* Help: Redesign the wiki structure
+* Ability to specify domain in SMB shares
+* Teradata provider: support for schema
+* Molecules are not rendered in case of view table update
+* Improved semantic type detection
+* Missing Values Imputation: added help reference
+* Modified "files" table "size" column to bigint
+* Renamed "AmazonS3Cloud" to "S3"
+
+
 # 2020.02.25 Stable version
 
 ## Latest docker images
