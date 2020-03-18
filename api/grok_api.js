@@ -96,7 +96,7 @@ class BitSet {
 class Column {
     constructor(d) { this.d = d; }
     static fromStrings(name, list) { return new Column(grok_Column_FromStrings(name, list)); }
-    static fromType(type, [name = null, length = 0]) { return new Column(grok_Column_FromType(type, name, length)); }
+    static fromType(type, name = null, length = 0) { return new Column(grok_Column_FromType(type, name, length)); }
 
     /** [array] will be not be copied and will be used as column's storage */
     static fromInt32Array(name, array, length = null) { return new Column(grok_Column_FromInt32Array(name, array, length)); }
@@ -104,11 +104,11 @@ class Column {
     /** [array] will be not be copied and will be used as column's storage */
     static fromFloat32Array(name, array, length = null) { return new Column(grok_Column_FromFloat32Array(name, array, length)); }
 
-    static int(name, [length = 0]) { return Column.fromType(TYPE_INT, name, length); }
-    static float(name, [length = 0]) { return Column.fromType(TYPE_FLOAT, name, length); }
-    static string(name, [length = 0]) { return Column.fromType(TYPE_STRING, name, length); }
-    static bool(name, [length = 0]) { return Column.fromType(TYPE_BOOL, name, length); }
-    static dateTime(name, [length = 0]) { return Column.fromType(TYPE_DATE_TIME, name, length); }
+    static int(name, length = 0) { return Column.fromType(TYPE_INT, name, length); }
+    static float(name, length = 0) { return Column.fromType(TYPE_FLOAT, name, length); }
+    static string(name, length = 0) { return Column.fromType(TYPE_STRING, name, length); }
+    static bool(name, length = 0) { return Column.fromType(TYPE_BOOL, name, length); }
+    static dateTime(name, length = 0) { return Column.fromType(TYPE_DATE_TIME, name, length); }
 
     get type() { return grok_Column_Get_Type(this.d); }
 
@@ -486,6 +486,9 @@ class View {
 
     get path() { return grok_View_Get_Path(this.d); }
     set path(s) { return grok_View_Set_Path(this.d, s); }
+
+    get basePath() { return grok_View_Get_BasePath(this.d); }
+    set basePath(s) { return grok_View_Set_BasePath(this.d, s); }
 
     get description() { return grok_View_Get_Description(this.d); }
     set description(s) { return grok_View_Set_Description(this.d, s); }
@@ -1020,6 +1023,13 @@ class DateTime {
 }
 
 
+class FuncCall {
+    constructor(d) { this.d = d; }
+
+    getParamValue(name) { return grok_FuncCall_Get_Param_Value(this.d, name); }
+}
+
+
 /** Grok entry point, use it to get access to top-level views, tables, methods, etc. */
 class Grok {
 
@@ -1027,7 +1037,8 @@ class Grok {
     get t() { return new DataFrame(grok_CurrentTable()); }
 
     /** Current view */
-    get v() { return View.fromDart(grok_CurrentView()); }
+    set v(view) { grok_Set_CurrentView(view.d); }
+    get v() { return View.fromDart(grok_Get_CurrentView()); }
 
     /** Current project */
     get project() { return new Project(grok_Project()); }
@@ -1117,6 +1128,9 @@ class Grok {
     openTable(id) { return new Promise((resolve, reject) => grok_OpenTable(id, (t) => resolve(new DataFrame(t)))); }
     query(queryName, queryParameters = null, adHoc = false, pollingInterval = 1000) {
         return new Promise((resolve, reject) => grok_Query(queryName, queryParameters, adHoc, pollingInterval, (t) => resolve(new DataFrame(t))));
+    }
+    callQuery(queryName, queryParameters = null, adHoc = false, pollingInterval = 1000) {
+        return new Promise((resolve, reject) => grok_CallQuery(queryName, queryParameters, adHoc, pollingInterval, (c) => resolve(new FuncCall(c))));
     }
     callFunc(name, parameters = {}, showProgress = false) { return new Promise((resolve, reject) => grok_CallFunc(name, parameters, (out) => resolve(out), showProgress)); }
     evalFunc(name) { return new Promise((resolve, reject) => grok_EvalFunc(name, (out) => resolve(out))); }
@@ -1320,7 +1334,7 @@ let time = function(s, f) {
     console.log(`${s}: ${stop - start}ms`);
     grok.balloon.info(`${s}: ${stop - start}ms`);
     return result;
-}
+};
 
 class ui {
 
@@ -1347,6 +1361,8 @@ class ui {
     static _class(x, s) { x.classList.add(s); return x; }
     static _color(x, s) { x.style.color = s; return x; }
     static _backColor(x, s) { x.style.backgroundColor = s; return x; }
+
+    static canvas() { return document.createElement("CANVAS"); }
 
     static h1(s) { return ui._innerText(ui.e('h1'), s); }
     static h2(s) { let x = ui.e('h2'); x.innerText = s; return x; }
@@ -1408,7 +1424,7 @@ class ui {
     }
 
     static svgMol(smiles, width = 300, height = 200) {
-        let m = OCL.Molecule.fromSmiles('c1(ccc2N=C(C)N(C(=O)c2c1)c3ccc(OC)cc3)NC(=S)Nc4ccccc4');
+        let m = OCL.Molecule.fromSmiles(smiles);
         let root = document.createElement('div');
         root.innerHTML = m.toSVG(width, height);
         return root;
@@ -1430,7 +1446,6 @@ class ui {
         menu.show();
     }
 
-
     static tooltipHide() { grok_Tooltip_Hide(); }
 
     static tooltip(e, x) { grok_Tooltip_SetOn(e, x); return e; }
@@ -1446,6 +1461,7 @@ class ui {
     static floatInput(name, value) { return new InputBase(grok_FloatInput(name, value)); }
     static dateInput(name, value) { return new InputBase(grok_DateInput(name, value.d)); }
     static boolInput(name, value) { return new InputBase(grok_BoolInput(name, value)); }
+    static moleculeInput(name, value) { return new InputBase(grok_MoleculeInput(name, value)); }
 }
 
 
