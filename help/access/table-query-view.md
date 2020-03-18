@@ -22,6 +22,7 @@ See also:
   * [Data Connection](data-connection.md)
   * [Data Query](data-query.md)
   * [Query View](../access/query-view.md)
+  * [DB Visual Query](db-visual-query.md)
   * [Data Job](data-job.md)
   * [Function Call](../overview/functions/function-call.md)
   * [Aggregate Rows](../transform/aggregate-rows.md)
