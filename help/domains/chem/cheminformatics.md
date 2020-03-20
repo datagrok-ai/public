@@ -232,16 +232,16 @@ The following cheminformatics-related [functions](../../overview/functions/funct
 * #{x.ChemMapIdentifiers}
 
 Lot of chemical analysis is implemented using [scripting](../../compute/scripting.md) functionality:
-* #{x.demo:pythonscripts:ButinaMoleculesClustering}
-* #{x.demo:pythonscripts:FilterByCatalogs}
-* #{x.demo:pythonscripts:GasteigerPartialCharges}
-* #{x.demo:pythonscripts:MurckoScaffolds}
-* #{x.demo:pythonscripts:SaltStripper}
-* #{x.demo:pythonscripts:SimilarityMapsUsingFingerprints}
-* #{x.demo:pythonscripts:ChemicalSpaceUsingtSNE}
-* #{x.demo:pythonscripts:TwoComponentReaction}
-* #{x.demo:pythonscripts:ChemicalSpaceUsingUMAP}
-* #{x.demo:pythonscripts:USRCAT}
+* #{x.ChemScripts:ButinaMoleculesClustering}
+* #{x.ChemScripts:FilterByCatalogs}
+* #{x.ChemScripts:GasteigerPartialCharges}
+* #{x.ChemScripts:MurckoScaffolds}
+* #{x.ChemScripts:SaltStripper}
+* #{x.ChemScripts:SimilarityMapsUsingFingerprints}
+* #{x.ChemScripts:ChemicalSpaceUsingtSNE}
+* #{x.ChemScripts:TwoComponentReaction}
+* #{x.ChemScripts:ChemicalSpaceUsingUMAP}
+* #{x.ChemScripts:USRCAT}
 
 # Performance
 
