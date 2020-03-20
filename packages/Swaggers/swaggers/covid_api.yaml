@@ -1,0 +1,52 @@
+swagger: "2.0"
+info:
+  description: "API for current cases and more stuff about COVID-19"
+  title: Covid-19 current cases
+host: corona.lmao.ninja
+basePath: /
+schemes:
+  - https
+paths:
+   /all:
+    get:
+      summary: allCases
+      operationId: All cases
+      produces:
+        - application/json
+      responses:
+         200:
+           description: OK
+   /countries:
+    get:
+      summary: casesByCountries
+      operationId: Cases By Countries
+      produces:
+        - application/json
+      responses:
+         200:
+           description: OK
+   /countries/{country-name}:
+    get:
+      summary: casesInCountry
+      operationId: Cases In Country
+      produces:
+        - application/json
+      parameters:
+        - name: country-name
+          in: path
+          type: string
+          required: true
+          default: "Italy"
+      responses:
+         200:
+           description: OK
+   /states:
+    get:
+      summary: casesInUSA
+      operationId: Cases In USA
+      produces:
+        - application/json
+      responses:
+         200:
+           description: OK
+definitions: []
