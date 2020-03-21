@@ -99,7 +99,7 @@ paths:
    /region/{region}:
     get:
       summary: searchByRegion
-      operationId: Search by region
+      operationId: Search By Region
       description: "Search by region: Africa, Americas, Asia, Europe, Oceania"
       produces:
         - application/json
@@ -121,7 +121,7 @@ paths:
    /regionalbloc/{regionalbloc}:
     get:
       summary: searchByRegionalBloc
-      operationId: Search by Regional Bloc
+      operationId: Search By Regional Bloc
       description: "Search by regional bloc"
       produces:
         - application/json
