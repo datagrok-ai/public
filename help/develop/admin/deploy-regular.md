@@ -45,24 +45,24 @@ Requirements: 4 vCPU and 8GiB RAM
 
 Edit settings in the Datagrok (Tools | Settings...):
 * Scripting:
-    * OpenCPU, OpenCPU client: http://localhost:8004/ocpu
-    * Jupyter Notebook, Jupyter Notebook Client: http://localhost:8889
-    * Jupyter Gateway, Jupyter Gateway Client: http://localhost:8888
-    * Grok Compute, Grok Compute Client: http://localhost:5005
+    * OpenCPU, OpenCPU client: http://CVM_HOST_NAME:8004/ocpu
+    * Jupyter Notebook, Jupyter Notebook Client: http://CVM_HOST_NAME:8889
+    * Jupyter Gateway, Jupyter Gateway Client: http://CVM_HOST_NAME:8888
+    * Grok Compute, Grok Compute Client: http://CVM_HOST_NAME:5005
 * Machine Learning:
-    * H2O: http://localhost:54321
+    * H2O: http://HOST_NAME:54321
 
 ComputeVM also contain Nginx service to reduce number of opened ports. For this case ports 80 and 54321
 only are required: `docker run -it -e GROK_COMPUTE_NUM_CORES=1 -p 80:80 -p 54321:54321 <IMAGE_NAME>`
 
 Settings:
 * Scripting:
-    * OpenCPU, OpenCPU client: http://localhost/ocpu
-    * Jupyter Notebook, Jupyter Notebook Client: http://localhost
-    * Jupyter Gateway, Jupyter Gateway Client: http://localhost/jupyter
-    * Grok Compute, Grok Compute Client: http://localhost/grok_compute
+    * OpenCPU, OpenCPU client: http://CVM_HOST_NAME/ocpu
+    * Jupyter Notebook, Jupyter Notebook Client: http://CVM_HOST_NAME
+    * Jupyter Gateway, Jupyter Gateway Client: http://CVM_HOST_NAME/jupyter
+    * Grok Compute, Grok Compute Client: http://CVM_HOST_NAME/grok_compute
 * Machine Learning:
-    * H2O: http://localhost:54321
+    * H2O: http://CVM_HOST_NAME:54321
 
 See also:
 * [Compute VM](../../compute/compute-vm.md)
