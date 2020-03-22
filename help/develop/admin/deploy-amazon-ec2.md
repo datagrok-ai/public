@@ -23,17 +23,15 @@ This document contains instructions to deploy Datagrok on AWS EC2 instance.
 "amazonStorageKey": "SECRETKEY",                                # S3 credential secret key, Datagrok will resolve EC2 role if empty
 "dbServer": "datagrok-db-1.abc.us-east-2.rds.amazonaws.com",    # RDS endpoint
 "db": "datagrok_docker",                                        # RDS new database name
-"dbLogin": "datagrok_docker",                                   # RDS new user name
-"dbPassword": "SoMeCoMpLeXpAsSwOrD",                            # RDS new user password
+"dbLogin": "datagrok_docker",                                   # RDS new user name, Datagrok will use it to connect to Postgres database
+"dbPassword": "SoMeCoMpLeXpAsSwOrD",                            # RDS new user password, Datagrok will use it to connect to Postgres database
 "dbAdminLogin": "postgres",                                     # RDS admin login
 "dbAdminPassword": "postgres"                                   # RDS admin password
 }
 ```
-4. Run Datagrok image in deploy mode
-`docker run -it -e GROK_PARAMETERS="<GROK_START_PARAMETERS>" -e GROK_MODE=deploy -p 80:80 <IMAGE_NAME>`, wait for deploy process to complete
-5. Run Datagrok image in regular mode
-`docker run -it -e GROK_PARAMETERS="<GROK_START_PARAMETERS>" -e GROK_MODE=start -p 80:80 <IMAGE_NAME>`
-6. Check if Datagrok started successfully: http://localhost, login to Datagrok using username "admin" and password "SM9ekKEkZuBDp5eD"
+4. Run Datagrok image
+`docker run -it -e GROK_PARAMETERS="<GROK_START_PARAMETERS>" -p 80:80 <IMAGE_NAME>`
+5. Check if Datagrok started successfully: http://HOST_NAME, login to Datagrok using username "admin" and password "SM9ekKEkZuBDp5eD"
 
 ## Setup Compute Virtual Machine
 
