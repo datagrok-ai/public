@@ -1,3 +1,4 @@
+
 <!-- TITLE: Deploy Datagrok on a regular machine -->
 <!-- SUBTITLE: -->
 
@@ -8,32 +9,32 @@ This document contains instructions to deploy Datagrok on a regular machine with
 ## Prerequisites
 
 1. [Install Docker](https://phoenixnap.com/kb/how-to-install-docker-on-ubuntu-18-04)
-2. Install PostgreSQL
+2. Install PostgreSQL, allow port 5432 in the firewall
 
 ## Setup Datagrok Virtual Machine
 
 Requirements: 2 vCPU and 4GiB RAM
 
 1. Download latest Datagrok Virtual Machine docker image from [dev.datagrok.ai/docker_images](https://dev.datagrok.ai/docker_images)
-2. Prepare JSON string GROK_START_PARAMETERS:
+2. Import Docker image `docker load -i FILE.tar`
+3. Prepare JSON string GROK_START_PARAMETERS:
  ```
 {
-\"dbServer\": \"host.docker.internal\",     # Postgres database server (use host.docker.internal to connect to localhost)
+\"dbServer\": \"host.docker.internal\",     # Postgres database server, Datagrok will use default 5432 port (use host.docker.internal or 172.17.0.1 to connect to localhost)
 \"db\": \"datagrok\",                       # New database name
-\"dbLogin\": \"datagrok\",                  # New user name
-\"dbPassword\": \"SoMeCoMpLeXpAsSwOrD\",    # New user password
-\"dbAdminLogin\": \"postgres\",             # Poatgres admin login
+\"dbLogin\": \"datagrok\",                  # New DB user name, Datagrok will use it to connect to Postgres database
+\"dbPassword\": \"SoMeCoMpLeXpAsSwOrD\",    # New DB user password, Datagrok will use it to connect to Postgres database
+\"dbAdminLogin\": \"postgres\",             # Postgres admin login
 \"dbAdminPassword\": \"postgres\"           # Postgres admin password
 }
 ```
-3. Prepare local directory to store data: GROK_DATA_PATH
-4. Prepare local directory to store config files: GROK_CFG_PATH
-5. Run Datagrok image in deploy mode. Datagrok will create database automatically.
-`docker run -it -v <GROK_DATA_PATH>:/home/grok/data/prod -v <GROK_CFG_PATH>:/home/grok/cfg -e GROK_PARAMETERS="<GROK_START_PARAMETERS>" -e GROK_MODE=deploy -p 80:80 <IMAGE_NAME>`, will
+4. Prepare local directory to store data: GROK_DATA_PATH, allow access to write to group
+5. Prepare local directory to store config files: GROK_CFG_PATH, allow access to write to group
+6. Run Datagrok image. Datagrok will create database automatically.
+`docker run -it -v <GROK_DATA_PATH>:/home/grok/data/prod -v <GROK_CFG_PATH>:/home/grok/cfg -e GROK_PARAMETERS="<GROK_START_PARAMETERS>" -p 80:80 <IMAGE_NAME>`,
 wait for deploy process to complete
-6. Run Datagrok image in regular mode. You can remove dbAdminLogin and dbAdminPassword parameters.
-`docker run -it -v <GROK_DATA_PATH>:/home/grok/data/prod -v <GROK_CFG_PATH>:/home/grok/cfg -e GROK_PARAMETERS="<GROK_START_PARAMETERS>" -e GROK_MODE=start -p 80:80 <IMAGE_NAME>`
-7. Check if Datagrok started successfully: http://localhost, login to Datagrok using username "admin" and password "SM9ekKEkZuBDp5eD"
+7. Check if Datagrok started successfully: http://HOST_NAME, login to Datagrok using username "admin" and password "SM9ekKEkZuBDp5eD".
+ Do not use "localhost", use 127.0.0.1 or machine name instead. 
 
 ## Setup Compute Virtual Machine
 

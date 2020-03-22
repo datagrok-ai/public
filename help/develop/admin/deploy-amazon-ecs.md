@@ -27,7 +27,6 @@ This document contains instructions to deploy Datagrok on AWS ECS cluster.
         * Port mappings: 80
         * CPU units: 2048
         * Environment variables (remove comments and make single line):
-            - GROK_MODE = deploy
             - GROK_PARAMETERS = see below
  ```GROK_PARAMETERS
 {
@@ -37,8 +36,8 @@ This document contains instructions to deploy Datagrok on AWS ECS cluster.
 "amazonStorageKey": "SECRETKEY",                                # S3 credential secret key, Datagrok will resolve ECS tas if empty
 "dbServer": "datagrok-db-1.abc.us-east-2.rds.amazonaws.com",    # RDS endpoint
 "db": "datagrok_docker",                                        # RDS new database name
-"dbLogin": "datagrok_docker",                                   # RDS new user name
-"dbPassword": "SoMeCoMpLeXpAsSwOrD",                            # RDS new user password
+"dbLogin": "datagrok_docker",                                   # RDS new user name, Datagrok will use it to connect to Postgres database
+"dbPassword": "SoMeCoMpLeXpAsSwOrD",                            # RDS new user password, Datagrok will it use to connect to Postgres database
 "dbAdminLogin": "postgres",                                     # RDS admin login
 "dbAdminPassword": "postgres"# RDS admin password
 }
@@ -61,12 +60,7 @@ This document contains instructions to deploy Datagrok on AWS ECS cluster.
 
     Datagrok starts to deploy database immediately, you can check status by checking running task log
 
-5. Create new revision for task definition
-    - Container Definitions:
-        * Modify environment variable
-            - GROK_MODE = start
-6. Update service, select new task definition
-7. Go to the web browser, login to Datagrok using username "admin" and password "SM9ekKEkZuBDp5eD", open Tools | Settings.
+5. Go to the web browser, login to Datagrok using username "admin" and password "SM9ekKEkZuBDp5eD"
 
 
 ## Setup Compute Virtual Machine
