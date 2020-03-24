@@ -309,18 +309,6 @@
       ],
       "value": ""
     }, {
-      "id": "fa75e42a-95e5-4555-aa62-745de0d40928",
-      "comment": "",
-      "command": "verifyElementPresent",
-      "target": "xpath=//h3[contains(.,'Chem Substructure Search(table, smiles, pattern, isSmarts)')]",
-      "targets": [
-        ["css=h3", "css:finder"],
-        ["xpath=//div[@id='elementContent']/div/span/h3", "xpath:idRelative"],
-        ["xpath=//h3", "xpath:position"],
-        ["xpath=//h3[contains(.,'Chem Substructure Search(table, smiles, pattern, isSmarts)')]", "xpath:innerText"]
-      ],
-      "value": ""
-    }, {
       "id": "1be51800-6df7-4cb5-84d3-795673ee9bdf",
       "comment": "",
       "command": "click",
@@ -510,7 +498,7 @@
       "id": "ac1d00e5-57aa-49c4-9b5e-285c05a20f25",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Tools']",
+      "target": "xpath=//div[@name='div-View']",
       "targets": [
         ["css=.d4-menu-item-horz:nth-child(7)", "css:finder"],
         ["xpath=//div[@name='div-Tools']", "xpath:attributes"],
@@ -522,7 +510,7 @@
       "id": "2899b7bf-332f-4daa-bc77-523ac802c35d",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Tools---Console']",
+      "target": "xpath=//div[@name='div-View---Console']",
       "targets": [
         ["css=.d4-menu-item:nth-child(7) .d4-menu-item:nth-child(9)", "css:finder"],
         ["xpath=//div[@name='div-Tools---Console']", "xpath:attributes"],
