@@ -186,18 +186,6 @@
       ],
       "value": ""
     }, {
-      "id": "3b9cb488-390c-4adb-996c-bd46aa0a1e0c",
-      "comment": "",
-      "command": "verifyElementPresent",
-      "target": "xpath=//h3[contains(.,'Chem Map Identifiers(table, ids, fromSource, toSource)')]",
-      "targets": [
-        ["css=h3", "css:finder"],
-        ["xpath=//div[@id='elementContent']/div/span/h3", "xpath:idRelative"],
-        ["xpath=//h3", "xpath:position"],
-        ["xpath=//h3[contains(.,'Chem Map Identifiers(table, ids, fromSource, toSource)')]", "xpath:innerText"]
-      ],
-      "value": ""
-    }, {
       "id": "734e20d7-f415-4a69-b8b5-443057684cc3",
       "comment": "",
       "command": "executeScript",
