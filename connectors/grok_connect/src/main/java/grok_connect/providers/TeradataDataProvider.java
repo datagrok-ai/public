@@ -53,4 +53,8 @@ public class TeradataDataProvider extends JdbcDataProvider {
                 "columnName as column_name, ColumnType as data_type " +
                 "FROM DBC.ColumnsV " + whereClause + " ORDER BY tableName";
     }
+
+    public String limitToSql(String query, Integer limit) {
+        return query + "sample " + limit.toString();
+    }
 }
