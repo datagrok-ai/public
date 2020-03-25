@@ -62,7 +62,7 @@ def build_summary(sentences, n=5):
     return ' '.join([ranked_sentence[i][1] for i in range(min(n, len(ranked_sentence)))])
 
 
-text = open(file, 'r').readlines()
+text = open(file, 'r').read()
 text = (text.encode('ascii', 'ignore')).decode("utf-8")
 pd.Series(text).str.replace("[^a-zA-Z]", " ")
 sentences = 3 # Number of result sentences
