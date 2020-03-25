@@ -325,41 +325,26 @@
       ],
       "value": ""
     }, {
-      "id": "5f95a7e2-f396-45f5-9025-02125619ad8f",
+      "id": "e3244d45-2387-40f6-bb43-53425bb3c933",
       "comment": "",
-      "command": "select",
-      "target": "name=input-RACE",
-      "targets": [
-        ["name=input-RACE", "name"],
-        ["css=tr:nth-child(1) select", "css:finder"],
-        ["xpath=//select[@name='input-RACE']", "xpath:attributes"],
-        ["xpath=//select", "xpath:position"]
-      ],
-      "value": "label=Copy"
+      "command": "executeScript",
+      "target": "element = document.querySelector('[name=input-RACE]');element.value = 'Copy'; element.dispatchEvent(new Event('change'));",
+      "targets": [],
+      "value": ""
     }, {
-      "id": "18f51f04-7408-4034-bc6f-163ec8948060",
+      "id": "f059fc7c-b869-4d90-a59e-80571c36faaa",
       "comment": "",
-      "command": "select",
-      "target": "name=input-F",
-      "targets": [
-        ["name=input-F", "name"],
-        ["css=tr:nth-child(2) select", "css:finder"],
-        ["xpath=//select[@name='input-F']", "xpath:attributes"],
-        ["xpath=//tr[2]/td[2]/select", "xpath:position"]
-      ],
-      "value": "label=Merge"
+      "command": "executeScript",
+      "target": "element = document.querySelector('[name=input-F]');element.value = 'Merge'; element.dispatchEvent(new Event('change'));",
+      "targets": [],
+      "value": ""
     }, {
-      "id": "05a6ab15-564a-49a2-be18-e28ede9012e1",
+      "id": "7487d3cb-8bbd-4dab-a928-1b470c627842",
       "comment": "",
-      "command": "select",
-      "target": "name=input-M",
-      "targets": [
-        ["name=input-M", "name"],
-        ["css=tr:nth-child(3) select", "css:finder"],
-        ["xpath=//select[@name='input-M']", "xpath:attributes"],
-        ["xpath=//tr[3]/td[2]/select", "xpath:position"]
-      ],
-      "value": "label=Merge"
+      "command": "executeScript",
+      "target": "element = document.querySelector('[name=input-M]');element.value = 'Merge'; element.dispatchEvent(new Event('change'));",
+      "targets": [],
+      "value": ""
     }, {
       "id": "dff3ab87-03a9-499d-85b7-26fb6f2b154f",
       "comment": "",
