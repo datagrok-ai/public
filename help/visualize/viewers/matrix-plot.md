@@ -11,7 +11,7 @@ General:
 |-----------------------|-----------------|
 | Right click           | Context menu    |
 
-![Matrix Plot](../uploads/viewers/matrix-plot.png "Matrix Plot") 
+![Matrix Plot](../../uploads/viewers/matrix-plot.png "Matrix Plot") 
 
 See also: 
   

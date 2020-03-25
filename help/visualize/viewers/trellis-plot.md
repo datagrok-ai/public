@@ -16,7 +16,7 @@ viewer's settings, use the "gear" icon next to it.
 
 ![Trellis Plot](../../uploads/gifs/trellis-plot.gif "Trellis Plot")
 
-![Trellis Plot](../uploads/viewers/trellis-plot.png "Trellis Plot")
+![Trellis Plot](../../uploads/viewers/trellis-plot.png "Trellis Plot")
 
 Trellis Plot automatically picks up element renderers for rendering categories. For instance,
 this is how it looks for chemical structures after performing [R-Group Analysis](../domains/chem/r-group-analysis.md):

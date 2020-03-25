@@ -13,7 +13,7 @@ General:
 |-------------|--------------|
 | Right click | Context menu |
 
-![Box Plot](../uploads/viewers/box-plot.png "Box Plot")
+![Box Plot](../../uploads/viewers/box-plot.png "Box Plot")
 
 ### T-Test
 

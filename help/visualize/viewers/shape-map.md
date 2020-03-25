@@ -17,8 +17,8 @@ and there is an elaborate system in place that understands synonyms and abbrevia
 sometimes it can't map names to the regions. To identify these records, select
 "Select not matching rows" from the popup menu.
 
-![Shape Map](../uploads/viewers/shape-map-pa-counties.png "Shape Map")
-![Shape Map](../uploads/viewers/shape-map-plate.png "Shape Map")
+![Shape Map](../../uploads/viewers/shape-map-pa-counties.png "Shape Map")
+![Shape Map](../../uploads/viewers/shape-map-plate.png "Shape Map")
 
 
 See also:
