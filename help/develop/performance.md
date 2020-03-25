@@ -71,7 +71,7 @@ exploratory data analysis, interactive visualizations, and machine learning.
 
 ## Viewers
 
-Just like the in-memory database, our [viewers](../viewers/viewers.md) were built from scratch for the purpose of being able to 
+Just like the in-memory database, our [viewers](../visualize/viewers.md) were built from scratch for the purpose of being able to 
 interactively work with millions of data points at once. All of them make heavy use of the in-memory database. 
 The ability to use that engine unlocks unique possibilities for viewers, such as easy data 
 aggregations or passing data to web workers for multithreaded rendering. All viewers access 

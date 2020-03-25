@@ -24,7 +24,7 @@ General:
 | Drag column name      | Rearrange columns |
 | Drag column filter    | Filter data     |
 
-![PC Plot](../uploads/gifs/pc-plot.gif "PC Plot")
+![PC Plot](../../uploads/gifs/pc-plot.gif "PC Plot")
 
 See also: 
   

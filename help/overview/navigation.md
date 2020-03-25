@@ -32,7 +32,7 @@ Also, need info for Contextual Help
 When you select a **Dataset**, you will see the a similar screen to the following. From left to right, relevant features appear on the [Toolbox](../overview/toolbox.md), the data is represented in the [Main View](../visualize/view-layout.md), and additional info on the data shows up on the [Property Panel](../features/property-panel.md) and the Contextual Help Panel.
 ![alt text](../uploads/pictures/dataset.JPG "Datagrok Welcome Page")
 
-**Useful Links:** [Viewers](../viewers/viewers.md) · [Toolbox](../overview/toolbox.md) · [Main View](../visualize/view-layout.md) · [Property Panel](../features/property-panel.md)
+**Useful Links:** [Viewers](../visualize/viewers.md) · [Toolbox](../overview/toolbox.md) · [Main View](../visualize/view-layout.md) · [Property Panel](../features/property-panel.md)
 
 ### Workspace, Panels and Views
 
@@ -77,7 +77,7 @@ When data is imported, you can quickly filter and select rows using this feature
 For more information, see: [Search Data](../explore/data-search.md) · [Search Patterns](../explore/data-search-patterns.md) · [Smart Search](../explore/data-search-patterns.md)
 #### Viewers 
 The view is the main element in the workspace. The data is listed and represented on this panel, which is usually located at the center. Use this feature to change the representation (view) of the data. _Please, note that only relevant views are available depending on the imported data._
-For more info on viewers, see [Viewers](../viewers/viewers.md). For detailed info on each viewer, check these entries:
+For more info on viewers, see [Viewers](../visualize/viewers.md). For detailed info on each viewer, check these entries:
 *   [3D Scatter Plot](../viewers/3d-scatter-plot.md)
 *   [Bar Chart](../viewers/bar-chart.md)
 *   [Calendar](../viewers/calendar.md)
@@ -116,7 +116,7 @@ When available, this feature serves to train an algorithm on the dataset to get 
 ### Main View
 The main viewer is the central panel where you can separate datasets and graphs in tabs.
 ![alt text](../uploads/pictures/main_view.JPG "Main View")
-For more information, see [Viewers](../viewers/viewers.md).
+For more information, see [Viewers](../visualize/viewers.md).
 #### Workspace
 A Workspace is the collection of currently opened projects. The workspaces are separated by tabs in the main view. **Useful Links:** [Workspace](../overview/workspace.md)
 ### Property Panel

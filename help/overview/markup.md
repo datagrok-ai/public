@@ -235,7 +235,7 @@ t.stats.<statistics>(<column name>)
 
 ### Chart
 
-Chart markup allows to embed any of [Viewers](../viewers/viewers.md) into page. 
+Chart markup allows to embed any of [Viewers](../visualize/viewers.md) into page. 
 
 Format: 
 ```

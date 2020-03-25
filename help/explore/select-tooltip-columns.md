@@ -32,4 +32,4 @@ tooltip.
 "Reset group tooltip" removes group tooltip.
 
 See also
-* [Viewers](../viewers/viewers.md)
+* [Viewers](../visualize/viewers.md)

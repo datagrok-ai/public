@@ -51,7 +51,7 @@ The implementation is based on the [grid](../viewers/grid.md), so many of the gr
 1. Open ["Aggregate Rows"](../transform/aggregate-rows.md) dialog. Drag columns from ["Column Manager"](column-manager.md) 
    to ["Aggregate Rows"](../transform/aggregate-rows.md) dialog fields
    * ["Aggregate Rows"](../transform/aggregate-rows.md) dialog fields are filled with dragged columns
-   * In the same way, test the ability to drag and drop into all dialogs and [viewers](../viewers/viewers.md) that it supports
+   * In the same way, test the ability to drag and drop into all dialogs and [viewers](../visualize/viewers.md) that it supports
 
 1. Test non-functional features (help, navigation, working with window, etc.)
    * Non-functional modules work correctly and are intuitive   

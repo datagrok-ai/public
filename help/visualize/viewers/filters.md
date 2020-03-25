@@ -15,7 +15,7 @@ General:
 | Up / down         | Filter by that category |
 | Esc               |  Reset filter           |
 
-![Filter](../uploads/gifs/filter.gif "Filter")  
+![Filter](../../uploads/gifs/filter.gif "Filter")  
 
 See also: 
   

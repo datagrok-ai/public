@@ -9,7 +9,7 @@ on science, not infrastructure.
 Out of the box, it provides all tools necessary for 
 [data ingestion](../access/importing-data.md), 
 [transformation](../transform/data-wrangling.md), 
-[visualization](../viewers/viewers.md), 
+[visualization](../visualize/viewers.md), 
 [analysis](../explore/exploratory-data-analysis.md), 
 [modeling](predictive-modeling.md), 
 as well as [deploying models](predictive-modeling.md#deployment) 

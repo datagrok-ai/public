@@ -4,7 +4,7 @@
 # Table View
 
 A default view for the interactive exploration of [tables](table.md) that might contain
-multiple different [viewers](../viewers/viewers.md), all sharing the same row filter and row selection.
+multiple different [viewers](../visualize/viewers.md), all sharing the same row filter and row selection.
 
 ## Selection and filter
 

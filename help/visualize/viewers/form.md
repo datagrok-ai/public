@@ -27,7 +27,7 @@ and presentation modes:
 | >, right or down          | Next row               |
 | Space                     | Toggle selected state  |
 
-![Form](../uploads/gifs/form.gif "form")
+![Form](../../uploads/gifs/form.gif "form")
 
 See also:
 

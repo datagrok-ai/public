@@ -5,7 +5,7 @@
 
 R-Group Analysis is a common function in chemistry. Typically, it involves R-group decomposition, 
 followed by the visual analysis of the obtained R-groups. Grok's chemically-aware 
-[Trellis Plot](../../viewers/trellis-plot.md) is a natural fit for such an analysis. 
+[Trellis Plot](../../visualize/viewers/trellis-plot.md) is a natural fit for such an analysis. 
 
 R-group decomposition is a special kind of substructure search that aims at finding a 
 central structure (scaffold), and identify its ligands at certain attachment positions. 
@@ -13,7 +13,7 @@ The query molecule consists of the scaffold and ligand attachment points represe
 
 `Chem | R-Group Analysis...` guides users through the steps of specifying the 
 common core (scaffold) for the specified molecular column, executing R-group decomposition, and 
-visually analyzing the results in the [Trellis Plot](../../viewers/trellis-plot.md).
+visually analyzing the results in the [Trellis Plot](../../visualize/viewers/trellis-plot.md).
 
 ### Specifying common core
 

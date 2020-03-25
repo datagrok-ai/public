@@ -14,7 +14,7 @@ that you can split data by one column per dimension.
 To change the inner viewer type, click on the viewer icon in the left top corner. To edit inner
 viewer's settings, use the "gear" icon next to it.
 
-![Trellis Plot](../uploads/gifs/trellis-plot.gif "Trellis Plot")
+![Trellis Plot](../../uploads/gifs/trellis-plot.gif "Trellis Plot")
 
 ![Trellis Plot](../uploads/viewers/trellis-plot.png "Trellis Plot")
 

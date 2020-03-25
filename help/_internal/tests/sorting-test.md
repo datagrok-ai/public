@@ -83,4 +83,4 @@ Repeat steps 3-17 using the column context menu.
    
 See also:
   * [Table](../entities/table.md)
-  * [Viewers Test](../viewers/viewers-test.md)
+  * [Viewers Test](../../visualize/viewers/viewers-test.md)

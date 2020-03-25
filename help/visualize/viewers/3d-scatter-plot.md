@@ -18,7 +18,7 @@ Controls:
 | Click                     | Make current           |
 
 
-![3D Scatter Plot](../uploads/gifs/3d-scatter-plot.gif "3D scatter plot") 
+![3D Scatter Plot](../../uploads/gifs/3d-scatter-plot.gif "3D scatter plot") 
 
 See also:
  

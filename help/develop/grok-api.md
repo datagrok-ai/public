@@ -53,9 +53,9 @@ grok.dockElement(e, 'JS', 'left', 0.5);
 
 ## Pre-defined viewers
 
-[Viewers](../viewers/viewers.md) are very important components of the Datagrok platform. Grok API 
+[Viewers](../visualize/viewers.md) are very important components of the Datagrok platform. Grok API 
 exposes functionality for manipulating pre-defined viewers 
-(such as [scatter plot](../viewers/scatter-plot.md) or [histogram](../viewers/histogram.md)), as
+(such as [scatter plot](../visualize/viewers/scatter-plot.md) or [histogram](../visualize/viewers/histogram.md)), as
 well as for developing custom viewers.
 
 Add a new viewer and set up its properties:

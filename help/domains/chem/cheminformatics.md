@@ -173,7 +173,7 @@ In addition to these pre-defined info panels, users can develop their own using 
 ## In-memory substructure search
 
 To search for molecules within the table that contain specified substructure, click on the molecule column,
-and press Ctrl+F. To add a substructure filter to [column filters](../../viewers/filters.md), click on the
+and press Ctrl+F. To add a substructure filter to [column filters](../../visualize/viewers/filters.md), click on the
 '☰' icon on top of the filters, and select the molecular column under the 'Add column filter' submenu.
 
 ## Most common substructure
@@ -189,7 +189,7 @@ it from the [console](), use `chem:findMCS(tableName, columnName)` command.
 
 [R-Group Analysis](r-group-analysis.md) is a common function in chemistry. Typically, it involves R-group decomposition, 
 followed by the visual analysis of the obtained R-groups. Grok's chemically-aware 
-[Trellis Plot](../../viewers/trellis-plot.md) is a natural fit for such an analysis. 
+[Trellis Plot](../../visualize/viewers/trellis-plot.md) is a natural fit for such an analysis. 
 
 ![R-Group Analysis](../../uploads/chem/r-group-analysis.png "R-Group Analysis"){:height="100px" width="60px"}
 

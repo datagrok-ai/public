@@ -7,7 +7,7 @@ Visualizes rows as a collection of forms that are positioned as tiles.
 
 To edit the form, right-click and select "Edit form...". 
 
-![Tile viewer](../uploads/gifs/tile-viewer.gif "Tile Viewer")
+![Tile viewer](../../uploads/gifs/tile-viewer.gif "Tile Viewer")
 
 See also:
 

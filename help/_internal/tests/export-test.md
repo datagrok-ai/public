@@ -111,11 +111,11 @@ Also possible to save entire project in *d42* format or in ZIP-archive that will
 
 1. Check correctness of export with new column by repeating steps **2-35**.
 
-1. Add new viewer to table layout ([Viewers](../viewers/viewers.md))
+1. Add new viewer to table layout ([Viewers](../../visualize/viewers.md))
 
 1. Check correctness of export with added viewer by repeating steps **2-35**.
 
-1. Apply filter for table ([Filters](../viewers/filters.md))
+1. Apply filter for table ([Filters](../../visualize/viewers/filters.md))
 
 1. Check correctness of export with filtering by repeating steps **2-35**.
 
