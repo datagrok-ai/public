@@ -18,6 +18,9 @@ public class Neo4jDataProvider extends JdbcDataProvider {
 
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
         Class.forName("org.neo4j.jdbc.Driver");
+        Class.forName("org.neo4j.jdbc.bolt.BoltDriver");
+        Class.forName("org.neo4j.jdbc.boltrouting.BoltRoutingNeo4jDriver");
+        Class.forName("org.neo4j.jdbc.http.HttpDriver");
         java.util.Properties properties = defaultConnectionProperties(conn);
         String connString = getConnectionString(conn);
         if (!conn.hasCustomConnectionString() && !conn.ssl())
