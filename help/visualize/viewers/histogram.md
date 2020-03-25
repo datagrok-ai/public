@@ -15,7 +15,7 @@ General:
 | Bin: shift+click | Select bin         |
 | Shift+Mouse drag | Select bins         |
 
-![Histogram](../uploads/gifs/histogram.gif "Histogram")
+![Histogram](../../uploads/gifs/histogram.gif "Histogram")
 
 See also: 
   

@@ -15,7 +15,7 @@ General:
 | Ctrl +                | Zoom in         |
 | Shift+drag axes       | Select segments |
 
-![Line Chart](../uploads/gifs/line-chart.gif "Line chart")
+![Line Chart](../../uploads/gifs/line-chart.gif "Line chart")
 
 See also: 
   

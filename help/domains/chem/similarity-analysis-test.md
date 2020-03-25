@@ -21,7 +21,7 @@
 1. Click on *"Re-Run* button
    * Similarity analysis is performed
    * Columns "x" and "y" with coordinates are added to table
-   * [Scatter Plot](../viewers/scatter-plot.md) added to table layout
+   * [Scatter Plot](../visualize/viewers/scatter-plot.md) added to table layout
    * Special column "~ RDKFingerprint" added to table
 
 See also:

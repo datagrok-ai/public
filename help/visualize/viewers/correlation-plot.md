@@ -16,7 +16,7 @@ General:
 | Header double-click | Sort column  |
 
 
-![Correlation Plot](../uploads/gifs/correlation-plot.gif "correlation plot")
+![Correlation Plot](../../uploads/gifs/correlation-plot.gif "correlation plot")
 
 
 See also: 

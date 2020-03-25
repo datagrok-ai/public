@@ -3,7 +3,7 @@
 
 # View Layout
 
-View Layout contains relative positions of [viewers](../viewers/viewers.md) in a [table view](../overview/table-view.md),
+View Layout contains relative positions of [viewers](../visualize/viewers.md) in a [table view](../overview/table-view.md),
 along with the viewers' properties. By separating layouts from the actual data displayed, we now can
 save current layout (**View | Layout | Save to Gallery**) and later apply it to a different dataset
 (**View | Layout | Open Gallery**). 
@@ -13,7 +13,7 @@ and choose **Clone**.
 
 # Viewer Layout
 
-Similarly to view layout, it is possible to reuse the settings of individual [viewers](../viewers/viewers.md).   
+Similarly to view layout, it is possible to reuse the settings of individual [viewers](../visualize/viewers.md).   
 Under the 'Viewer' menu (either right-click on the viewer, or click on the 'hamburger' menu on the top left),
 you will find the following layout-specific commands:
 * Clone

@@ -30,7 +30,7 @@ General:
 
 Hit 'R' to toggle regression line.
 
-![Scatter plot](../uploads/gifs/scatter-plot.gif "scatter plot")
+![Scatter plot](../../uploads/gifs/scatter-plot.gif "scatter plot")
 
 See also:
  

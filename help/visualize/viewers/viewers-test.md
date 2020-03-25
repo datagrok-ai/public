@@ -23,11 +23,11 @@ List of viewers available for testing:
 * [Network Diagram](../viewers/snetwork-diagram.md)
 * [Parallel Coordinates Plot](../viewers/spc-plot.md)
 * [Pie Chart](../viewers/spie-chart.md)
-* [Scripting Viewer](../viewers/scripting-viewer.md)
+* [Scripting Viewer](../visualize/viewers/scripting-viewer.md)
 * [Statistics](../viewers/sstatistics.md)
 * [Markup Viewer](../viewers/smarkup-viewer.md)
 * [Word Cloud](../viewers/sword-cloud.md)
-* [Scripting Viewer](../viewers/scripting-viewer.md)
+* [Scripting Viewer](../visualize/viewers/scripting-viewer.md)
 
 Approaches to testing, Testing scenarios, test items in general are similar for all viewers. Categories of testing scenarios common to all viewers were identified:
 
@@ -56,7 +56,7 @@ Here we look at the correspondence of the chosen viewer type, correctness of con
    * Property search
    * Change the property values of the "Data" item
    * Change the property values of the "Appearance" item
-   * For [Scripting Viewer](../viewers/scripting-viewer.md):
+   * For [Scripting Viewer](../visualize/viewers/scripting-viewer.md):
        * Edit script in **Appearance | Script** 
 
 1. Context menu

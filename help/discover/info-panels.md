@@ -91,7 +91,7 @@ Oftentimes, it is beneficial to show users an interactive plot, pre-customized
 based on the structure of the table that is currently open.
 
 See the following info panel (viewer-scatter.grok) in action 
-by opening (project:demog). It creates a [Scatter Plot](../viewers/scatter-plot.md),
+by opening (project:demog). It creates a [Scatter Plot](../visualize/viewers/scatter-plot.md),
 sets the axes to the pre-defined columns, and adds a regression line.
 
 ```

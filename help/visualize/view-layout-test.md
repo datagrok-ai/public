@@ -3,7 +3,7 @@
 
 # Tests: View Layout
 
-[View Layout](view-layout.md) contains relative positions of [viewers](../viewers/viewers.md) in a [table view](../overview/table-view.md),
+[View Layout](view-layout.md) contains relative positions of [viewers](../visualize/viewers.md) in a [table view](../overview/table-view.md),
 along with the viewers' properties. By separating layouts from the actual data displayed, we now can
 save current layout (**View | Layout | Save to Gallery**) and later apply it to a different dataset
 (**View | Layout | Open Gallery**). 
@@ -21,7 +21,7 @@ and choose **Clone**.
 
 1. Remove view *"demog copy"* from [Workspace](../overview/workspace.md)
 
-1. Add each one available [Viewer](../viewers/viewers.md) for *"demog"* table 
+1. Add each one available [Viewer](../visualize/viewers.md) for *"demog"* table 
 
 1. Change style properties for added viewers. (Colors of viewer elements, size, scale, font, etc.)
 

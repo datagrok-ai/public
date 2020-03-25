@@ -6,7 +6,7 @@
 A Heat Map is a graphical representation of table where each cell value is represented as color.
 It is based on [grid](grid.md), so all of the grid's features are applicable to the heat map as well.
 
-![Heat Map](../uploads/gifs/heat-map.gif "Heat Map")
+![Heat Map](../../uploads/gifs/heat-map.gif "Heat Map")
 
 See also:
 * [Grid](grid.md)

@@ -39,7 +39,7 @@ The suggestion mechanism is quite powerful, but oftentimes you know exactly how 
 To get the external data on demand, use an extensive collection of 
 [data connectors](../access/data-connection.md). Use parameterized queries to retrieve external data for each 
 record (or do it on demand whenever the current record changes), and visualize the results with 
-[Markup Viewer](../viewers/markup.md) for complex data, or [Form](../viewers/form.md) for scalars.
+[Markup Viewer](../visualize/viewers/markup.md) for complex data, or [Form](../visualize/viewers/form.md) for scalars.
 
 ## Info panels
 [Info panels](info-panels.md) provide additional information about the 

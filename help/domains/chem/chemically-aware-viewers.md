@@ -7,7 +7,7 @@ Many of the view
 
 ## Grid
 
-Molecules in the [grid](../../viewers/grid.md)
+Molecules in the [grid](../../visualize/viewers/grid.md)
 
 ![Grid](../../uploads/viewers/grid-molecules.png "Grid: molecules")
 
@@ -17,19 +17,19 @@ Molecules in the [grid](../../viewers/grid.md)
 
 ## Bar chart
 
-Molecules in [bar chart](../../viewers/bar-chart.md)
+Molecules in [bar chart](../../visualize/viewers/bar-chart.md)
 
 ![Bar chart](../../uploads/viewers/bar-chart-molecules.png "Bar chart: molecules")
 
 ## Trellis plot
 
-R-group analysis done using [trellis plot](../../viewers/trellis-plot.md).
+R-group analysis done using [trellis plot](../../visualize/viewers/trellis-plot.md).
 
 ![Trellis plot](../../uploads/viewers/trellis-plot-molecules.png "Trellis plot: molecules")
    
 ## Form
 
-Molecules in the [form](../../viewers/form.md).
+Molecules in the [form](../../visualize/viewers/form.md).
 
 ![Form](../../uploads/viewers/form-molecules.png "Form: molecules")
 
@@ -43,4 +43,4 @@ Molecules in the [form](../../viewers/form.md).
  
    
 See also:
-  * [Viewers](../../viewers/viewers.md)
+  * [Viewers](../../visualize/viewers.md)

@@ -63,7 +63,7 @@ view their properties and manage them.
 
 1. Open [project](project.md) "Test" (by double clicking or from context menu)
    * [Project](project.md) "Test" is open
-   * All [project](project.md) views were opened, all created [viewers](../viewers/viewers.md) on them opened correctly and in full
+   * All [project](project.md) views were opened, all created [viewers](../visualize/viewers.md) on them opened correctly and in full
 
 1. Open **View | Workspace**  ( ``` Alt + W ```)
    * In it there is a tree of the [project](project.md) "Test" and the default project "[Scratchpad](scratchpad.md)"

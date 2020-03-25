@@ -58,9 +58,9 @@ Manage availability, usability, integrity and security of your data, all in one 
 Our unique technology lets you explore datasets faster and more efficiently than ever, allowing to
 find patterns that were previously impossible to spot, resulting in the acceleration of data-driven decisions.
 
-* [Proprietary in-memory database](dev/performance.md) technology allows to handle tens of millions of rows in the browser
-* [25+ high-performance interactive viewers](viewers/viewers.md)
-* [Powerful integration with any visualizations available in R, Python, or Julia languages](viewers/scripting-viewer.md)
+* [Proprietary in-memory database](develop/performance.md) technology allows to handle tens of millions of rows in the browser
+* [25+ high-performance interactive viewers](visualize/viewers.md)
+* [Powerful integration with any visualizations available in R, Python, or Julia languages](visualize/viewers/scripting-viewer.md)
 * Built into viewers: regression lines, confidence intervals, correlations, statistical tests 
 * Automatic detection of outliers, missing values, wrong data types
 * Publish dashboards 
@@ -97,4 +97,4 @@ Turn your data into actionable insights by using state-of-the art machine learni
 * Flexible [authentication](govern/authentication.md) 
 * Create [pipelines](transform/job-editor.md), schedule [jobs](access/data-job.md), and set up [alerts](TODO:write) 
 * [Customizable by IT](develop/admin/it-customizations.md)
-* Easy to learn the platform using [interactive help](features/navigation.md#help), [forums](collaborate/forum.md), [tutorials](/tutorials) and [video lessons](video-lessons.md).
+* Easy to learn the platform using [interactive help](overview/navigation.md#help), [forums](collaborate/forum.md), [tutorials](_internal/tutorials) and [video lessons](video-lessons.md).
