@@ -73,7 +73,7 @@ the row. This feature is useful for quick visual profiling of values.
 In the following picture, each inline viewer visualizes the values of five
 numerical columns, which allows for quick visual comparison between rows.
 
-![Summary columns](../uploads/viewers/grid-summary-columns.png "Summary columns")
+![Summary columns](../../uploads/viewers/grid-summary-columns.png "Summary columns")
 
 The following summary column types are available:
 * Sparkline
@@ -89,14 +89,14 @@ To add a summary column: **Menu | Add | Summary Columns**
 An HTML (or Markdown) template that renders row values can be embedded
 in each row. 
 
-![Forms](../uploads/viewers/grid-form.png "Forms")
+![Forms](../../uploads/viewers/grid-form.png "Forms")
 
 To add a default form: **Menu | Add | Forms | Default**
 To add a custom form: **Menu | Add | Forms | Custom...**
 
 ### Custom cell renderers
 
-![Molecules](../uploads/viewers/grid-molecules.png "Molecule renderer")
+![Molecules](../../uploads/viewers/grid-molecules.png "Molecule renderer")
 
 
 See also: 

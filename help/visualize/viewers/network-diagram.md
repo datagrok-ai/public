@@ -13,7 +13,7 @@ General:
 |-----------------------|-----------------|
 | Right click           | Context menu    |
 
-![Network Diagram](../uploads/viewers/network-diagram.png "Network Diagram")
+![Network Diagram](../../uploads/viewers/network-diagram.png "Network Diagram")
 
 See also: 
   

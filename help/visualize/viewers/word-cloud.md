@@ -26,7 +26,7 @@ General:
 | Right click           | Context menu    |
 
 
-![Word Cloud](../uploads/viewers/word-cloud.png "Word Cloud")
+![Word Cloud](../../uploads/viewers/word-cloud.png "Word Cloud")
 
 See also: 
   

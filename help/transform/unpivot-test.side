@@ -325,62 +325,38 @@
       ],
       "value": ""
     }, {
-      "id": "d035bec0-6b7d-46a1-b2cd-4e1f6638c7a6",
-      "comment": "",
-      "command": "click",
-      "target": "css=tr:nth-child(1) select",
-      "targets": [
-        ["css=tr:nth-child(1) select", "css:finder"],
-        ["xpath=//select", "xpath:position"]
-      ],
-      "value": ""
-    }, {
       "id": "5f95a7e2-f396-45f5-9025-02125619ad8f",
       "comment": "",
       "command": "select",
-      "target": "xpath=//select",
+      "target": "name=input-RACE",
       "targets": [
+        ["name=input-RACE", "name"],
         ["css=tr:nth-child(1) select", "css:finder"],
+        ["xpath=//select[@name='input-RACE']", "xpath:attributes"],
         ["xpath=//select", "xpath:position"]
       ],
       "value": "label=Copy"
     }, {
-      "id": "ccfdbe50-1416-4f3f-91a3-00a9fa3be969",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//tr[2]/td[2]/select",
-      "targets": [
-        ["css=tr:nth-child(2) select", "css:finder"],
-        ["xpath=//tr[2]/td[2]/select", "xpath:position"]
-      ],
-      "value": ""
-    }, {
       "id": "18f51f04-7408-4034-bc6f-163ec8948060",
       "comment": "",
       "command": "select",
-      "target": "css=tr:nth-child(2) select",
+      "target": "name=input-F",
       "targets": [
+        ["name=input-F", "name"],
         ["css=tr:nth-child(2) select", "css:finder"],
+        ["xpath=//select[@name='input-F']", "xpath:attributes"],
         ["xpath=//tr[2]/td[2]/select", "xpath:position"]
       ],
       "value": "label=Merge"
     }, {
-      "id": "4dd3da40-8a8d-44ae-9d34-dd84b0820f1a",
-      "comment": "",
-      "command": "click",
-      "target": "css=tr:nth-child(3) select",
-      "targets": [
-        ["css=tr:nth-child(3) select", "css:finder"],
-        ["xpath=//tr[3]/td[2]/select", "xpath:position"]
-      ],
-      "value": ""
-    }, {
       "id": "05a6ab15-564a-49a2-be18-e28ede9012e1",
       "comment": "",
       "command": "select",
-      "target": "xpath=//tr[3]/td[2]/select",
+      "target": "name=input-M",
       "targets": [
+        ["name=input-M", "name"],
         ["css=tr:nth-child(3) select", "css:finder"],
+        ["xpath=//select[@name='input-M']", "xpath:attributes"],
         ["xpath=//tr[3]/td[2]/select", "xpath:position"]
       ],
       "value": "label=Merge"

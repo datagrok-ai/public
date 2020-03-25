@@ -14,7 +14,7 @@ they represent.
 | Alt+drag        | Zoom   |
 
 
-![Bar Chart](../uploads/viewers/bar-chart.png "Bar Chart") 
+![Bar Chart](../../uploads/viewers/bar-chart.png "Bar Chart") 
 
 See also: 
   

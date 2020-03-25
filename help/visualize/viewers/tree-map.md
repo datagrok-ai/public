@@ -13,7 +13,7 @@ General:
 |-----------------------|-----------------|
 | Right click           | Context menu    |
 
-![Tree Map](../uploads/viewers/tree-map.png "Tree Map")  
+![Tree Map](../../uploads/viewers/tree-map.png "Tree Map")  
 
 See also: 
   

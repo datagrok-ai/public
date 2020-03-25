@@ -15,7 +15,7 @@ contain longitude and latitude coordinates, you might want to extract coordinate
 one of the [geographical functions](/functions?q=%23geo), 
 such as #{cmd(AddressToCoordinates)}.
 
-![Google Map](../uploads/viewers/google-map.png "Google Map")
+![Google Map](../../uploads/viewers/google-map.png "Google Map")
 
 ![Map big data](google-map-city-perf.gif "Map big data")
    
