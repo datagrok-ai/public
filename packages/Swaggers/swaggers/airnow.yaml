@@ -13,8 +13,8 @@ schemes:
 paths:
   /forecast/zipCode/:
     get:
-      summary: forecastByZipCode
-      operationId: Forecast By Zip Code
+      summary: Forecast By Zip Code
+      operationId: forecastByZipCode
       produces:
         - text/csv
         - application/xml
@@ -35,8 +35,8 @@ paths:
           description: Invalid status value
   /forecast/latLong/:
     get:
-      summary: forecastByLatitudeAndLongitude
-      operationId: Forecast by Latitude and Longitude
+      summary: Forecast by Latitude and Longitude
+      operationId: forecastByLatitudeAndLongitude
       produces:
         - text/csv
         - application/xml
@@ -58,8 +58,8 @@ paths:
           description: Invalid status value
   /observation/zipCode/current/:
     get:
-      summary: currentObservationByZipCode
-      operationId: Current Observation By ZipCode
+      summary: Current Observation By ZipCode
+      operationId: currentObservationByZipCode
       produces:
         - text/csv
         - application/xml
@@ -79,8 +79,8 @@ paths:
           description: Invalid status value
   /observation/latLong/current/:
     get:
-      summary: currentObservationByLatitudeAndLongitude
-      operationId: Current Observation By Latitude and Longitude
+      summary: Current Observation By Latitude and Longitude
+      operationId: currentObservationByLatitudeAndLongitude
       produces:
         - text/csv
         - application/xml
@@ -101,8 +101,8 @@ paths:
           description: Invalid status value
   /observation/zipCode/historical/:
     get:
-      summary: historicalObservationByZipCode
-      operationId: Historical Observation By Zip Code
+      summary: Historical Observation By Zip Code
+      operationId: historicalObservationByZipCode
       produces:
         - text/csv
         - application/xml
@@ -129,8 +129,8 @@ paths:
           description: Invalid status value
   /observation/latLong/historical/:
     get:
-      summary: historicalObservationByLatitudeAndLongitude
-      operationId: Historical Observation By Latitude and Longitude
+      summary: Historical Observation By Latitude and Longitude
+      operationId: historicalObservationByLatitudeAndLongitude
       produces:
         - text/csv
         - application/xml
@@ -158,8 +158,8 @@ paths:
           description: Invalid status value
   /data/:
     get:
-      summary: observationsByMonitoringSite
-      operationId: Observations by Monitoring Site
+      summary: Observations by Monitoring Site
+      operationId: observationsByMonitoringSite
       produces:
         - text/csv
         - application/xml
@@ -248,8 +248,8 @@ paths:
           description: Invalid status value
   /kml/PM25/:
     get:
-      summary: contourPM2.5KMLService
-      operationId: Contour PM2.5 KML Service
+      summary: Contour PM2.5 KML Service
+      operationId: contourPM2.5KMLService
       produces:
         - application/vnd.google-earth.kml
       parameters:
@@ -287,8 +287,8 @@ paths:
           description: Invalid status value
   /kml/Ozone/:
     get:
-      summary: contourOzoneKMLService
-      operationId: Contour Ozone KML Service
+      summary: Contour Ozone KML Service
+      operationId: contourOzoneKMLService
       produces:
         - application/vnd.google-earth.kml
       parameters:
@@ -326,8 +326,8 @@ paths:
           description: Invalid status value
   /kml/Combined/:
     get:
-      summary: contourCombinedKMLService
-      operationId: Contour Combined KML Service
+      summary: Contour Combined KML Service
+      operationId: contourCombinedKMLService
       produces:
         - application/vnd.google-earth.kml
       parameters:

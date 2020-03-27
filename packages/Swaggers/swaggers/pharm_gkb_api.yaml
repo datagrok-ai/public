@@ -9,7 +9,7 @@ schemes:
 paths:
    /data/label:
     get:
-      summary: queryDrugLabels
+      operationId: queryDrugLabels
       operationId: Query Drug Labels
       description: "Query Drug Labels"
       produces:
@@ -61,7 +61,7 @@ paths:
            description: OK
    /data/guideline:
     get:
-      summary: queryDosingGudielines
+      operationId: queryDosingGudielines
       operationId: Query a Dosing Gudielines
       description: "Query a Dosing Gudielines"
       produces:
@@ -102,7 +102,7 @@ paths:
            description: OK
    /data/ontologyTerm:
     get:
-      summary: queryOntologyTerms
+      operationId: queryOntologyTerms
       operationId: Query Ontology Terms
       description: "Query Ontology Terms"
       produces:

@@ -9,7 +9,7 @@ schemes:
 paths:
    /genes/{rgdId}:
     get:
-      summary: getInChromosome
+      operationId: getInChromosome
       operationId: Get a gene record by RGD ID
       description: "Get a gene record by RGD ID"
       produces:
@@ -26,7 +26,7 @@ paths:
            description: OK
    /strains/all:
     get:
-      summary: getAllActiveStrains
+      operationId: getAllActiveStrains
       operationId: Get all active strains in RGD
       description: "Return all active strains in RGD"
       produces:
@@ -36,7 +36,7 @@ paths:
            description: OK
    /maps/{speciesTypeKey}:
     get:
-      summary: getListOfAssemblies
+      operationId: getListOfAssemblies
       operationId: Get the list of assemblies
       description: "Return a list of assemblies"
       produces:
@@ -53,7 +53,7 @@ paths:
            description: OK
    /lookup/geneTypes:
     get:
-      summary: getListOfGeneTypes
+      operationId: getListOfGeneTypes
       operationId: Get a list of gene types avialable in RGD
       description: "Returns a list of gene types avialable in RGD"
       produces:

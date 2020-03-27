@@ -9,7 +9,7 @@ schemes:
 paths:
    /all:
     get:
-      summary: allCases
+      operationId: allCases
       operationId: All cases
       produces:
         - application/json
@@ -18,7 +18,7 @@ paths:
            description: OK
    /countries:
     get:
-      summary: casesByCountries
+      operationId: casesByCountries
       operationId: Cases By Countries
       produces:
         - application/json
@@ -27,7 +27,7 @@ paths:
            description: OK
    /countries/{country-name}:
     get:
-      summary: casesInCountry
+      operationId: casesInCountry
       operationId: Cases In Country
       produces:
         - application/json
@@ -42,7 +42,7 @@ paths:
            description: OK
    /states:
     get:
-      summary: casesInUSA
+      operationId: casesInUSA
       operationId: Cases In USA
       produces:
         - application/json

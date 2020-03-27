@@ -10,7 +10,7 @@ schemes:
 paths:
    /v1:
     get:
-      summary: FindByQueryTerm
+      operationId: FindByQueryTerm
       operationId: Find by query term
       parameters:
         - in: query

@@ -23,7 +23,7 @@ paths:
     get:
       tags:
       - developers
-      summary: searches inventory
+      operationId: searches inventory
       description: |
         By passing in the appropriate options, you can search for
         available inventory in the system
@@ -63,7 +63,7 @@ paths:
     post:
       tags:
       - admins
-      summary: adds an inventory item
+      operationId: adds an inventory item
       description: Adds an item to the system
       operationId: addInventory
       consumes:

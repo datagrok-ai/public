@@ -18,7 +18,7 @@
   "paths": {
     "/activity": {
       "get": {
-        "operationId": "activity",
+        "test": "activity",
         "parameters": [
           {
             "description": "Filter activities for that particular organization",
@@ -66,7 +66,7 @@
     },
     "/datasets/": {
       "get": {
-        "operationId": "list_datasets",
+        "test": "list_datasets",
         "parameters": [
           {
             "description": "The field (and direction) on which sorting apply",
@@ -206,7 +206,7 @@
         ]
       },
       "post": {
-        "operationId": "create_dataset",
+        "test": "create_dataset",
         "parameters": [
           {
             "in": "body",
@@ -236,7 +236,7 @@
     },
     "/datasets/badges/": {
       "get": {
-        "operationId": "available_dataset_badges",
+        "test": "available_dataset_badges",
         "responses": {
           "200": {
             "description": "Success"
@@ -250,7 +250,7 @@
     },
     "/datasets/checkurl/": {
       "get": {
-        "operationId": "checkurl",
+        "test": "checkurl",
         "parameters": [
           {
             "description": "The URL to check",
@@ -280,7 +280,7 @@
     },
     "/datasets/community_resources/": {
       "get": {
-        "operationId": "list_community_resources",
+        "test": "list_community_resources",
         "parameters": [
           {
             "default": "-created",
@@ -336,7 +336,7 @@
         ]
       },
       "post": {
-        "operationId": "create_community_resource",
+        "test": "create_community_resource",
         "parameters": [
           {
             "in": "body",
@@ -363,7 +363,7 @@
     },
     "/datasets/community_resources/{community}/": {
       "delete": {
-        "operationId": "delete_community_resource",
+        "test": "delete_community_resource",
         "parameters": [
           {
             "description": "The community resource unique identifier",
@@ -393,7 +393,7 @@
         ]
       },
       "get": {
-        "operationId": "retrieve_community_resource",
+        "test": "retrieve_community_resource",
         "parameters": [
           {
             "description": "The community resource unique identifier",
@@ -423,7 +423,7 @@
         ]
       },
       "put": {
-        "operationId": "update_community_resource",
+        "test": "update_community_resource",
         "parameters": [
           {
             "in": "body",
@@ -463,7 +463,7 @@
     },
     "/datasets/community_resources/{community}/upload/": {
       "post": {
-        "operationId": "upload_community_resource",
+        "test": "upload_community_resource",
         "parameters": [
           {
             "description": "The community resource unique identifier",
@@ -495,7 +495,7 @@
     },
     "/datasets/frequencies/": {
       "get": {
-        "operationId": "list_frequencies",
+        "test": "list_frequencies",
         "responses": {
           "200": {
             "description": "Success",
@@ -515,7 +515,7 @@
     },
     "/datasets/full/": {
       "get": {
-        "operationId": "list_datasets_full",
+        "test": "list_datasets_full",
         "parameters": [
           {
             "description": "The field (and direction) on which sorting apply",
@@ -656,7 +656,7 @@
     },
     "/datasets/licenses/": {
       "get": {
-        "operationId": "list_licenses",
+        "test": "list_licenses",
         "responses": {
           "200": {
             "description": "Success",
@@ -676,7 +676,7 @@
     },
     "/datasets/suggest/": {
       "get": {
-        "operationId": "suggest_datasets",
+        "test": "suggest_datasets",
         "parameters": [
           {
             "description": "The string to autocomplete/suggest",
@@ -712,7 +712,7 @@
     },
     "/datasets/suggest/formats/": {
       "get": {
-        "operationId": "suggest_formats",
+        "test": "suggest_formats",
         "parameters": [
           {
             "description": "The string to autocomplete/suggest",
@@ -742,7 +742,7 @@
     },
     "/datasets/{dataset}/": {
       "delete": {
-        "operationId": "delete_dataset",
+        "test": "delete_dataset",
         "parameters": [
           {
             "description": "The dataset ID or slug",
@@ -769,7 +769,7 @@
         ]
       },
       "get": {
-        "operationId": "get_dataset",
+        "test": "get_dataset",
         "parameters": [
           {
             "description": "The dataset ID or slug",
@@ -799,7 +799,7 @@
         ]
       },
       "put": {
-        "operationId": "update_dataset",
+        "test": "update_dataset",
         "parameters": [
           {
             "in": "body",
@@ -842,7 +842,7 @@
     },
     "/datasets/{dataset}/badges/": {
       "post": {
-        "operationId": "add_dataset_badge",
+        "test": "add_dataset_badge",
         "parameters": [
           {
             "in": "body",
@@ -876,7 +876,7 @@
     },
     "/datasets/{dataset}/badges/{badge_kind}/": {
       "delete": {
-        "operationId": "delete_dataset_badge",
+        "test": "delete_dataset_badge",
         "parameters": [
           {
             "in": "path",
@@ -905,7 +905,7 @@
     },
     "/datasets/{dataset}/featured/": {
       "delete": {
-        "operationId": "unfeature_reuse",
+        "test": "unfeature_reuse",
         "parameters": [
           {
             "description": "The dataset ID or slug",
@@ -929,7 +929,7 @@
         ]
       },
       "post": {
-        "operationId": "feature_dataset",
+        "test": "feature_dataset",
         "parameters": [
           {
             "description": "The dataset ID or slug",
@@ -955,7 +955,7 @@
     },
     "/datasets/{dataset}/full/": {
       "get": {
-        "operationId": "get_dataset_full",
+        "test": "get_dataset_full",
         "parameters": [
           {
             "description": "The dataset ID or slug",
@@ -987,7 +987,7 @@
     },
     "/datasets/{dataset}/resources/": {
       "post": {
-        "operationId": "create_resource",
+        "test": "create_resource",
         "parameters": [
           {
             "in": "body",
@@ -1019,7 +1019,7 @@
         ]
       },
       "put": {
-        "operationId": "update_resources",
+        "test": "update_resources",
         "parameters": [
           {
             "in": "body",
@@ -1056,7 +1056,7 @@
     },
     "/datasets/{dataset}/resources/{rid}/": {
       "delete": {
-        "operationId": "delete_resource",
+        "test": "delete_resource",
         "parameters": [
           {
             "description": "The resource unique identifier",
@@ -1084,7 +1084,7 @@
         ]
       },
       "put": {
-        "operationId": "update_resource",
+        "test": "update_resource",
         "parameters": [
           {
             "description": "The resource unique identifier",
@@ -1125,7 +1125,7 @@
     },
     "/datasets/{dataset}/resources/{rid}/upload/": {
       "post": {
-        "operationId": "upload_dataset_resource",
+        "test": "upload_dataset_resource",
         "parameters": [
           {
             "description": "The resource unique identifier",
@@ -1161,7 +1161,7 @@
         "consumes": [
           "multipart/form-data"
         ],
-        "operationId": "upload_dataset_resources",
+        "test": "upload_dataset_resources",
         "parameters": [
           {
             "in": "formData",
@@ -1196,7 +1196,7 @@
         "consumes": [
           "multipart/form-data"
         ],
-        "operationId": "upload_community_resources",
+        "test": "upload_community_resources",
         "parameters": [
           {
             "in": "formData",
@@ -1229,7 +1229,7 @@
     "/datasets/{id}/followers/": {
       "delete": {
         "description": "Returns the number of followers left after the operation",
-        "operationId": "unfollow",
+        "test": "unfollow",
         "parameters": [
           {
             "in": "path",
@@ -1249,7 +1249,7 @@
         ]
       },
       "get": {
-        "operationId": "list_followers",
+        "test": "list_followers",
         "parameters": [
           {
             "in": "path",
@@ -1287,7 +1287,7 @@
       },
       "post": {
         "description": "Returns the number of followers left after the operation",
-        "operationId": "follow",
+        "test": "follow",
         "parameters": [
           {
             "in": "path",
@@ -1309,7 +1309,7 @@
     },
     "/discussions/": {
       "get": {
-        "operationId": "list_discussions",
+        "test": "list_discussions",
         "parameters": [
           {
             "default": "-created",
@@ -1362,7 +1362,7 @@
         ]
       },
       "post": {
-        "operationId": "create_discussion",
+        "test": "create_discussion",
         "parameters": [
           {
             "in": "body",
@@ -1389,7 +1389,7 @@
     },
     "/discussions/{id}/": {
       "delete": {
-        "operationId": "delete_discussion",
+        "test": "delete_discussion",
         "parameters": [
           {
             "in": "path",
@@ -1415,7 +1415,7 @@
         ]
       },
       "get": {
-        "operationId": "get_discussion",
+        "test": "get_discussion",
         "parameters": [
           {
             "in": "path",
@@ -1438,7 +1438,7 @@
         ]
       },
       "post": {
-        "operationId": "comment_discussion",
+        "test": "comment_discussion",
         "parameters": [
           {
             "in": "path",
@@ -1474,7 +1474,7 @@
     },
     "/harvest/backends": {
       "get": {
-        "operationId": "harvest_backends",
+        "test": "harvest_backends",
         "responses": {
           "200": {
             "description": "Success",
@@ -1491,7 +1491,7 @@
     },
     "/harvest/job/{ident}/": {
       "get": {
-        "operationId": "get_harvest_job",
+        "test": "get_harvest_job",
         "parameters": [
           {
             "in": "path",
@@ -1530,7 +1530,7 @@
     },
     "/harvest/job_status": {
       "get": {
-        "operationId": "get_list_harvester_api",
+        "test": "get_list_harvester_api",
         "responses": {
           "200": {
             "description": "Success",
@@ -1550,7 +1550,7 @@
     },
     "/harvest/source/{ident}": {
       "delete": {
-        "operationId": "delete_harvest_source",
+        "test": "delete_harvest_source",
         "parameters": [
           {
             "description": "A source ID or slug",
@@ -1573,7 +1573,7 @@
         ]
       },
       "get": {
-        "operationId": "get_harvest_source",
+        "test": "get_harvest_source",
         "parameters": [
           {
             "description": "A source ID or slug",
@@ -1599,7 +1599,7 @@
     },
     "/harvest/source/{ident}/jobs/": {
       "get": {
-        "operationId": "list_harvest_jobs",
+        "test": "list_harvest_jobs",
         "parameters": [
           {
             "in": "path",
@@ -1638,7 +1638,7 @@
     },
     "/harvest/source/{ident}/preview": {
       "get": {
-        "operationId": "preview_harvest_source",
+        "test": "preview_harvest_source",
         "parameters": [
           {
             "description": "A source ID or slug",
@@ -1664,7 +1664,7 @@
     },
     "/harvest/source/{ident}/validate": {
       "post": {
-        "operationId": "validate_harvest_source",
+        "test": "validate_harvest_source",
         "parameters": [
           {
             "description": "A source ID or slug",
@@ -1698,7 +1698,7 @@
     },
     "/harvest/sources/": {
       "get": {
-        "operationId": "list_harvest_sources",
+        "test": "list_harvest_sources",
         "parameters": [
           {
             "description": "The organization or user ID to filter on",
@@ -1724,7 +1724,7 @@
         ]
       },
       "post": {
-        "operationId": "create_harvest_source",
+        "test": "create_harvest_source",
         "parameters": [
           {
             "in": "body",
@@ -1751,7 +1751,7 @@
     },
     "/issues/": {
       "get": {
-        "operationId": "list_issues",
+        "test": "list_issues",
         "parameters": [
           {
             "default": "-created",
@@ -1804,7 +1804,7 @@
         ]
       },
       "post": {
-        "operationId": "create_issue",
+        "test": "create_issue",
         "parameters": [
           {
             "in": "body",
@@ -1831,7 +1831,7 @@
     },
     "/issues/{id}/": {
       "get": {
-        "operationId": "get_issue",
+        "test": "get_issue",
         "parameters": [
           {
             "in": "path",
@@ -1854,7 +1854,7 @@
         ]
       },
       "post": {
-        "operationId": "comment_issue",
+        "test": "comment_issue",
         "parameters": [
           {
             "in": "path",
@@ -1890,7 +1890,7 @@
     },
     "/me/": {
       "get": {
-        "operationId": "get_me",
+        "test": "get_me",
         "responses": {
           "200": {
             "description": "Success",
@@ -1905,7 +1905,7 @@
         ]
       },
       "put": {
-        "operationId": "update_me",
+        "test": "update_me",
         "responses": {
           "200": {
             "description": "Success",
@@ -1925,7 +1925,7 @@
     },
     "/me/apikey": {
       "delete": {
-        "operationId": "clear_apikey",
+        "test": "clear_apikey",
         "responses": {
           "204": {
             "description": "API Key deleted/cleared"
@@ -1937,7 +1937,7 @@
         ]
       },
       "post": {
-        "operationId": "generate_apikey",
+        "test": "generate_apikey",
         "responses": {
           "200": {
             "description": "Success",
@@ -1960,7 +1960,7 @@
         "consumes": [
           "multipart/form-data"
         ],
-        "operationId": "my_avatar",
+        "test": "my_avatar",
         "parameters": [
           {
             "in": "formData",
@@ -1989,7 +1989,7 @@
     },
     "/me/datasets/": {
       "get": {
-        "operationId": "my_datasets",
+        "test": "my_datasets",
         "responses": {
           "200": {
             "description": "Success",
@@ -2009,7 +2009,7 @@
     },
     "/me/metrics/": {
       "get": {
-        "operationId": "my_metrics",
+        "test": "my_metrics",
         "responses": {
           "200": {
             "description": "Success",
@@ -2029,7 +2029,7 @@
     },
     "/me/org_community_resources/": {
       "get": {
-        "operationId": "my_org_community_resources",
+        "test": "my_org_community_resources",
         "parameters": [
           {
             "description": "The string to filter items",
@@ -2057,7 +2057,7 @@
     },
     "/me/org_datasets/": {
       "get": {
-        "operationId": "my_org_datasets",
+        "test": "my_org_datasets",
         "parameters": [
           {
             "description": "The string to filter items",
@@ -2085,7 +2085,7 @@
     },
     "/me/org_discussions/": {
       "get": {
-        "operationId": "my_org_discussions",
+        "test": "my_org_discussions",
         "parameters": [
           {
             "description": "The string to filter items",
@@ -2113,7 +2113,7 @@
     },
     "/me/org_issues/": {
       "get": {
-        "operationId": "my_org_issues",
+        "test": "my_org_issues",
         "parameters": [
           {
             "description": "The string to filter items",
@@ -2141,7 +2141,7 @@
     },
     "/me/org_reuses/": {
       "get": {
-        "operationId": "my_org_reuses",
+        "test": "my_org_reuses",
         "parameters": [
           {
             "description": "The string to filter items",
@@ -2169,7 +2169,7 @@
     },
     "/me/reuses/": {
       "get": {
-        "operationId": "my_reuses",
+        "test": "my_reuses",
         "responses": {
           "200": {
             "description": "Success",
@@ -2190,7 +2190,7 @@
     "/metrics/{id}": {
       "get": {
         "description": "If day is set, start and end will be ignored",
-        "operationId": "metrics_for",
+        "test": "metrics_for",
         "parameters": [
           {
             "description": "Start of the period to fetch",
@@ -2244,7 +2244,7 @@
     },
     "/notifications/": {
       "get": {
-        "operationId": "get_notifications",
+        "test": "get_notifications",
         "responses": {
           "200": {
             "description": "Success",
@@ -2265,7 +2265,7 @@
     "/oembeds/": {
       "get": {
         "description": "See: http://oembed.com/\n\n        The `references` are composed by a keyword (`kind`) followed by\n        the `id` each of those separated by commas.\n        E.g: dataset-5369992aa3a729239d205183,territory-fr-town-75056-comptes\n\n        Only datasets and territories are supported for now.",
-        "operationId": "oembeds",
+        "test": "oembeds",
         "parameters": [
           {
             "description": "References of the resources to embed.",
@@ -2288,7 +2288,7 @@
     },
     "/organizations/": {
       "get": {
-        "operationId": "list_organizations",
+        "test": "list_organizations",
         "parameters": [
           {
             "description": "The field (and direction) on which sorting apply",
@@ -2386,7 +2386,7 @@
         ]
       },
       "post": {
-        "operationId": "create_organization",
+        "test": "create_organization",
         "parameters": [
           {
             "in": "body",
@@ -2416,7 +2416,7 @@
     },
     "/organizations/badges/": {
       "get": {
-        "operationId": "available_organization_badges",
+        "test": "available_organization_badges",
         "responses": {
           "200": {
             "description": "Success"
@@ -2430,7 +2430,7 @@
     },
     "/organizations/suggest/": {
       "get": {
-        "operationId": "suggest_organizations",
+        "test": "suggest_organizations",
         "parameters": [
           {
             "description": "The string to autocomplete/suggest",
@@ -2467,7 +2467,7 @@
     "/organizations/{id}/followers/": {
       "delete": {
         "description": "Returns the number of followers left after the operation",
-        "operationId": "unfollow",
+        "test": "unfollow",
         "parameters": [
           {
             "in": "path",
@@ -2487,7 +2487,7 @@
         ]
       },
       "get": {
-        "operationId": "list_followers",
+        "test": "list_followers",
         "parameters": [
           {
             "in": "path",
@@ -2525,7 +2525,7 @@
       },
       "post": {
         "description": "Returns the number of followers left after the operation",
-        "operationId": "follow",
+        "test": "follow",
         "parameters": [
           {
             "in": "path",
@@ -2547,7 +2547,7 @@
     },
     "/organizations/{org}/": {
       "delete": {
-        "operationId": "delete_organization",
+        "test": "delete_organization",
         "parameters": [
           {
             "description": "The organization ID or slug",
@@ -2574,7 +2574,7 @@
         ]
       },
       "get": {
-        "operationId": "get_organization",
+        "test": "get_organization",
         "parameters": [
           {
             "description": "The organization ID or slug",
@@ -2604,7 +2604,7 @@
         ]
       },
       "put": {
-        "operationId": "update_organization",
+        "test": "update_organization",
         "parameters": [
           {
             "description": "The organization ID or slug",
@@ -2647,7 +2647,7 @@
     },
     "/organizations/{org}/badges/": {
       "post": {
-        "operationId": "add_organization_badge",
+        "test": "add_organization_badge",
         "parameters": [
           {
             "description": "The organization ID or slug",
@@ -2681,7 +2681,7 @@
     },
     "/organizations/{org}/badges/{badge_kind}/": {
       "delete": {
-        "operationId": "delete_organization_badge",
+        "test": "delete_organization_badge",
         "parameters": [
           {
             "in": "path",
@@ -2710,7 +2710,7 @@
     },
     "/organizations/{org}/datasets/": {
       "get": {
-        "operationId": "list_organization_datasets",
+        "test": "list_organization_datasets",
         "parameters": [
           {
             "in": "path",
@@ -2738,7 +2738,7 @@
     },
     "/organizations/{org}/discussions/": {
       "get": {
-        "operationId": "list_organization_discussions",
+        "test": "list_organization_discussions",
         "parameters": [
           {
             "in": "path",
@@ -2766,7 +2766,7 @@
     },
     "/organizations/{org}/issues/": {
       "get": {
-        "operationId": "list_organization_issues",
+        "test": "list_organization_issues",
         "parameters": [
           {
             "in": "path",
@@ -2797,7 +2797,7 @@
         "consumes": [
           "multipart/form-data"
         ],
-        "operationId": "organization_logo",
+        "test": "organization_logo",
         "parameters": [
           {
             "description": "The organization ID or slug",
@@ -2834,7 +2834,7 @@
         "consumes": [
           "multipart/form-data"
         ],
-        "operationId": "resize_organization_logo",
+        "test": "resize_organization_logo",
         "parameters": [
           {
             "description": "The organization ID or slug",
@@ -2870,7 +2870,7 @@
     },
     "/organizations/{org}/member/{user}": {
       "delete": {
-        "operationId": "delete_organization_member",
+        "test": "delete_organization_member",
         "parameters": [
           {
             "description": "The organization ID or slug",
@@ -2897,7 +2897,7 @@
         ]
       },
       "post": {
-        "operationId": "create_organization_member",
+        "test": "create_organization_member",
         "parameters": [
           {
             "description": "The organization ID or slug",
@@ -2944,7 +2944,7 @@
         ]
       },
       "put": {
-        "operationId": "update_organization_member",
+        "test": "update_organization_member",
         "parameters": [
           {
             "description": "The organization ID or slug",
@@ -2987,7 +2987,7 @@
     },
     "/organizations/{org}/membership/": {
       "get": {
-        "operationId": "list_membership_requests",
+        "test": "list_membership_requests",
         "parameters": [
           {
             "description": "If provided, only return requests ith a given status",
@@ -3023,7 +3023,7 @@
         ]
       },
       "post": {
-        "operationId": "post_membership_request_api",
+        "test": "post_membership_request_api",
         "parameters": [
           {
             "description": "The organization ID or slug",
@@ -3049,7 +3049,7 @@
     },
     "/organizations/{org}/membership/{id}/accept/": {
       "post": {
-        "operationId": "accept_membership",
+        "test": "accept_membership",
         "parameters": [
           {
             "description": "The organization ID or slug",
@@ -3081,7 +3081,7 @@
     },
     "/organizations/{org}/membership/{id}/refuse/": {
       "post": {
-        "operationId": "refuse_membership",
+        "test": "refuse_membership",
         "parameters": [
           {
             "description": "The refusal reason",
@@ -3124,7 +3124,7 @@
     },
     "/organizations/{org}/reuses/": {
       "get": {
-        "operationId": "list_organization_reuses",
+        "test": "list_organization_reuses",
         "parameters": [
           {
             "in": "path",
@@ -3152,7 +3152,7 @@
     },
     "/posts/": {
       "get": {
-        "operationId": "list_posts",
+        "test": "list_posts",
         "parameters": [
           {
             "default": 1,
@@ -3183,7 +3183,7 @@
         ]
       },
       "post": {
-        "operationId": "create_post",
+        "test": "create_post",
         "parameters": [
           {
             "in": "body",
@@ -3213,7 +3213,7 @@
     },
     "/posts/{post}/": {
       "delete": {
-        "operationId": "delete_post",
+        "test": "delete_post",
         "parameters": [
           {
             "description": "The post ID or slug",
@@ -3243,7 +3243,7 @@
         ]
       },
       "get": {
-        "operationId": "get_post",
+        "test": "get_post",
         "parameters": [
           {
             "description": "The post ID or slug",
@@ -3270,7 +3270,7 @@
         ]
       },
       "put": {
-        "operationId": "update_post",
+        "test": "update_post",
         "parameters": [
           {
             "description": "The post ID or slug",
@@ -3313,7 +3313,7 @@
         "consumes": [
           "multipart/form-data"
         ],
-        "operationId": "post_image",
+        "test": "post_image",
         "parameters": [
           {
             "in": "path",
@@ -3349,7 +3349,7 @@
         "consumes": [
           "multipart/form-data"
         ],
-        "operationId": "resize_post_image",
+        "test": "resize_post_image",
         "parameters": [
           {
             "in": "path",
@@ -3384,7 +3384,7 @@
     },
     "/reuses/": {
       "get": {
-        "operationId": "list_reuses",
+        "test": "list_reuses",
         "parameters": [
           {
             "description": "The field (and direction) on which sorting apply",
@@ -3511,7 +3511,7 @@
         ]
       },
       "post": {
-        "operationId": "create_reuse",
+        "test": "create_reuse",
         "parameters": [
           {
             "in": "body",
@@ -3541,7 +3541,7 @@
     },
     "/reuses/badges/": {
       "get": {
-        "operationId": "available_reuse_badges",
+        "test": "available_reuse_badges",
         "responses": {
           "200": {
             "description": "Success"
@@ -3555,7 +3555,7 @@
     },
     "/reuses/suggest/": {
       "get": {
-        "operationId": "suggest_reuses",
+        "test": "suggest_reuses",
         "parameters": [
           {
             "description": "The string to autocomplete/suggest",
@@ -3591,7 +3591,7 @@
     },
     "/reuses/types/": {
       "get": {
-        "operationId": "reuse_types",
+        "test": "reuse_types",
         "responses": {
           "200": {
             "description": "Success",
@@ -3612,7 +3612,7 @@
     "/reuses/{id}/followers/": {
       "delete": {
         "description": "Returns the number of followers left after the operation",
-        "operationId": "unfollow",
+        "test": "unfollow",
         "parameters": [
           {
             "in": "path",
@@ -3632,7 +3632,7 @@
         ]
       },
       "get": {
-        "operationId": "list_followers",
+        "test": "list_followers",
         "parameters": [
           {
             "in": "path",
@@ -3670,7 +3670,7 @@
       },
       "post": {
         "description": "Returns the number of followers left after the operation",
-        "operationId": "follow",
+        "test": "follow",
         "parameters": [
           {
             "in": "path",
@@ -3692,7 +3692,7 @@
     },
     "/reuses/{reuse}/": {
       "delete": {
-        "operationId": "delete_reuse",
+        "test": "delete_reuse",
         "parameters": [
           {
             "description": "The reuse ID or slug",
@@ -3719,7 +3719,7 @@
         ]
       },
       "get": {
-        "operationId": "get_reuse",
+        "test": "get_reuse",
         "parameters": [
           {
             "description": "The reuse ID or slug",
@@ -3749,7 +3749,7 @@
         ]
       },
       "put": {
-        "operationId": "update_reuse",
+        "test": "update_reuse",
         "parameters": [
           {
             "description": "The reuse ID or slug",
@@ -3792,7 +3792,7 @@
     },
     "/reuses/{reuse}/badges/": {
       "post": {
-        "operationId": "add_reuse_badge",
+        "test": "add_reuse_badge",
         "parameters": [
           {
             "description": "The reuse ID or slug",
@@ -3826,7 +3826,7 @@
     },
     "/reuses/{reuse}/badges/{badge_kind}/": {
       "delete": {
-        "operationId": "delete_reuse_badge",
+        "test": "delete_reuse_badge",
         "parameters": [
           {
             "in": "path",
@@ -3855,7 +3855,7 @@
     },
     "/reuses/{reuse}/datasets/": {
       "post": {
-        "operationId": "reuse_add_dataset",
+        "test": "reuse_add_dataset",
         "parameters": [
           {
             "description": "The reuse ID or slug",
@@ -3895,7 +3895,7 @@
     },
     "/reuses/{reuse}/featured/": {
       "delete": {
-        "operationId": "unfeature_reuse",
+        "test": "unfeature_reuse",
         "parameters": [
           {
             "description": "The reuse ID or slug",
@@ -3919,7 +3919,7 @@
         ]
       },
       "post": {
-        "operationId": "feature_reuse",
+        "test": "feature_reuse",
         "parameters": [
           {
             "description": "The reuse ID or slug",
@@ -3948,7 +3948,7 @@
         "consumes": [
           "multipart/form-data"
         ],
-        "operationId": "reuse_image",
+        "test": "reuse_image",
         "parameters": [
           {
             "description": "The reuse ID or slug",
@@ -3984,7 +3984,7 @@
     },
     "/site/": {
       "get": {
-        "operationId": "get_site",
+        "test": "get_site",
         "responses": {
           "200": {
             "description": "Success",
@@ -4001,7 +4001,7 @@
     },
     "/site/home/datasets/": {
       "get": {
-        "operationId": "get_home_datasets",
+        "test": "get_home_datasets",
         "responses": {
           "200": {
             "description": "Success",
@@ -4019,7 +4019,7 @@
         ]
       },
       "put": {
-        "operationId": "set_home_datasets",
+        "test": "set_home_datasets",
         "parameters": [
           {
             "description": "Dataset IDs to put in homepage",
@@ -4053,7 +4053,7 @@
     },
     "/site/home/reuses/": {
       "get": {
-        "operationId": "get_home_reuses",
+        "test": "get_home_reuses",
         "responses": {
           "200": {
             "description": "Success",
@@ -4071,7 +4071,7 @@
         ]
       },
       "put": {
-        "operationId": "set_home_reuses",
+        "test": "set_home_reuses",
         "parameters": [
           {
             "description": "Reuse IDs to put in homepage",
@@ -4105,7 +4105,7 @@
     },
     "/spatial/coverage/{level}": {
       "get": {
-        "operationId": "spatial_coverage",
+        "test": "spatial_coverage",
         "parameters": [
           {
             "in": "path",
@@ -4133,7 +4133,7 @@
     },
     "/spatial/granularities": {
       "get": {
-        "operationId": "spatial_granularities",
+        "test": "spatial_granularities",
         "responses": {
           "200": {
             "description": "Success",
@@ -4153,7 +4153,7 @@
     },
     "/spatial/levels": {
       "get": {
-        "operationId": "spatial_levels",
+        "test": "spatial_levels",
         "responses": {
           "200": {
             "description": "Success",
@@ -4173,7 +4173,7 @@
     },
     "/spatial/zone/{id}": {
       "get": {
-        "operationId": "spatial_zone",
+        "test": "spatial_zone",
         "parameters": [
           {
             "description": "A zone identifier",
@@ -4199,7 +4199,7 @@
     },
     "/spatial/zones/suggest": {
       "get": {
-        "operationId": "suggest_zones",
+        "test": "suggest_zones",
         "parameters": [
           {
             "description": "The string to autocomplete/suggest",
@@ -4235,7 +4235,7 @@
     },
     "/spatial/zones/{ids}": {
       "get": {
-        "operationId": "spatial_zones",
+        "test": "spatial_zones",
         "parameters": [
           {
             "description": "A zone identifiers list (comma separated)",
@@ -4261,7 +4261,7 @@
     },
     "/tags/suggest/": {
       "get": {
-        "operationId": "suggest_tags",
+        "test": "suggest_tags",
         "parameters": [
           {
             "description": "The string to autocomplete/suggest",
@@ -4291,7 +4291,7 @@
     },
     "/territory/suggest/": {
       "get": {
-        "operationId": "suggest_territory",
+        "test": "suggest_territory",
         "parameters": [
           {
             "description": "The string to autocomplete/suggest",
@@ -4319,7 +4319,7 @@
     },
     "/topics/": {
       "get": {
-        "operationId": "list_topics",
+        "test": "list_topics",
         "parameters": [
           {
             "default": 1,
@@ -4350,7 +4350,7 @@
         ]
       },
       "post": {
-        "operationId": "create_topic",
+        "test": "create_topic",
         "parameters": [
           {
             "in": "body",
@@ -4380,7 +4380,7 @@
     },
     "/topics/{topic}/": {
       "delete": {
-        "operationId": "delete_topic",
+        "test": "delete_topic",
         "parameters": [
           {
             "description": "The topic ID or slug",
@@ -4410,7 +4410,7 @@
         ]
       },
       "get": {
-        "operationId": "get_topic",
+        "test": "get_topic",
         "parameters": [
           {
             "description": "The topic ID or slug",
@@ -4437,7 +4437,7 @@
         ]
       },
       "put": {
-        "operationId": "update_topic",
+        "test": "update_topic",
         "parameters": [
           {
             "description": "The topic ID or slug",
@@ -4477,7 +4477,7 @@
     },
     "/transfer/": {
       "get": {
-        "operationId": "list_transfers",
+        "test": "list_transfers",
         "responses": {
           "200": {
             "description": "Success",
@@ -4495,7 +4495,7 @@
         ]
       },
       "post": {
-        "operationId": "request_transfer",
+        "test": "request_transfer",
         "parameters": [
           {
             "in": "body",
@@ -4522,7 +4522,7 @@
     },
     "/transfer/{id}/": {
       "get": {
-        "operationId": "get_transfer",
+        "test": "get_transfer",
         "parameters": [
           {
             "in": "path",
@@ -4545,7 +4545,7 @@
         ]
       },
       "post": {
-        "operationId": "respond_to_transfer",
+        "test": "respond_to_transfer",
         "parameters": [
           {
             "in": "path",
@@ -4578,7 +4578,7 @@
     },
     "/users/": {
       "get": {
-        "operationId": "list_users",
+        "test": "list_users",
         "parameters": [
           {
             "description": "The field (and direction) on which sorting apply",
@@ -4666,7 +4666,7 @@
         ]
       },
       "post": {
-        "operationId": "create_user",
+        "test": "create_user",
         "responses": {
           "200": {
             "description": "Success",
@@ -4686,7 +4686,7 @@
     },
     "/users/suggest/": {
       "get": {
-        "operationId": "suggest_users",
+        "test": "suggest_users",
         "parameters": [
           {
             "description": "The string to autocomplete/suggest",
@@ -4723,7 +4723,7 @@
     "/users/{id}/followers/": {
       "delete": {
         "description": "Returns the number of followers left after the operation",
-        "operationId": "unfollow",
+        "test": "unfollow",
         "parameters": [
           {
             "in": "path",
@@ -4743,7 +4743,7 @@
         ]
       },
       "get": {
-        "operationId": "list_followers",
+        "test": "list_followers",
         "parameters": [
           {
             "in": "path",
@@ -4780,7 +4780,7 @@
         ]
       },
       "post": {
-        "operationId": "post_follow_user_api",
+        "test": "post_follow_user_api",
         "parameters": [
           {
             "in": "path",
@@ -4802,7 +4802,7 @@
     },
     "/users/{user}/": {
       "delete": {
-        "operationId": "delete_user_api",
+        "test": "delete_user_api",
         "parameters": [
           {
             "in": "path",
@@ -4831,7 +4831,7 @@
         ]
       },
       "get": {
-        "operationId": "get_user",
+        "test": "get_user",
         "parameters": [
           {
             "in": "path",
@@ -4857,7 +4857,7 @@
         ]
       },
       "put": {
-        "operationId": "update_user",
+        "test": "update_user",
         "parameters": [
           {
             "in": "path",
@@ -4896,7 +4896,7 @@
     },
     "/workers/jobs/": {
       "get": {
-        "operationId": "list_jobs",
+        "test": "list_jobs",
         "responses": {
           "200": {
             "description": "Success",
@@ -4914,7 +4914,7 @@
         ]
       },
       "post": {
-        "operationId": "post_jobs_api",
+        "test": "post_jobs_api",
         "parameters": [
           {
             "in": "body",
@@ -4941,7 +4941,7 @@
     },
     "/workers/jobs/schedulables": {
       "get": {
-        "operationId": "get_jobs_reference_api",
+        "test": "get_jobs_reference_api",
         "responses": {
           "200": {
             "description": "Success",
@@ -4961,7 +4961,7 @@
     },
     "/workers/jobs/{id}": {
       "delete": {
-        "operationId": "delete_job_api",
+        "test": "delete_job_api",
         "parameters": [
           {
             "description": "A job ID",
@@ -4982,7 +4982,7 @@
         ]
       },
       "get": {
-        "operationId": "get_job_api",
+        "test": "get_job_api",
         "parameters": [
           {
             "description": "A job ID",
@@ -5006,7 +5006,7 @@
         ]
       },
       "put": {
-        "operationId": "put_job_api",
+        "test": "put_job_api",
         "parameters": [
           {
             "description": "A job ID",
@@ -5032,7 +5032,7 @@
     },
     "/workers/tasks/{id}": {
       "get": {
-        "operationId": "get_task_api",
+        "test": "get_task_api",
         "parameters": [
           {
             "in": "path",

@@ -13,7 +13,7 @@ schemes:
 paths:
   /search.json:
     get:
-      summary: jobsSearch
+      operationId: jobsSearch
       operationId: jobsSearch
       description: 'Federal, state, and local government agencies are hiring and have thousands of job openings across the country, posted on USAJobs.gov and local government jobs sites.'
       parameters:

@@ -8,7 +8,7 @@ schemes:
 paths:
    /all:
     get:
-      summary: allCountries
+      operationId: allCountries
       description: "Returns dataset with information on all countries"
       operationId: All Countries
       produces:
@@ -18,7 +18,7 @@ paths:
            description: OK
    /name/{name}:
     get:
-      summary: searchByCountryName
+      operationId: searchByCountryName
       operationId: Search By Country Name
       description: "Search by country name. It can be the native name or partial name"
       produces:
@@ -34,7 +34,7 @@ paths:
            description: OK
    /currency/{currency}:
     get:
-      summary: searchByCurrency
+      operationId: searchByCurrency
       operationId: Search By Currency
       description: "Search by ISO 4217 currency code"
       produces:
@@ -50,7 +50,7 @@ paths:
            description: OK
    /lang/{et}:
     get:
-      summary: searchByLanguage
+      operationId: searchByLanguage
       operationId: Search By Language
       description: "Search by ISO 639-1 language code"
       produces:
@@ -66,7 +66,7 @@ paths:
            description: OK
    /capital/{capital}:
     get:
-      summary: searchByCapitalCity
+      operationId: searchByCapitalCity
       operationId: Search By Capital City
       description: "Search by capital city"
       produces:
@@ -82,7 +82,7 @@ paths:
            description: OK
    /callingcode/{callingcode}:
     get:
-      summary: searchByCallingCode
+      operationId: searchByCallingCode
       operationId: Search By Calling Code
       description: "Search by calling code"
       produces:
@@ -98,7 +98,7 @@ paths:
            description: OK
    /region/{region}:
     get:
-      summary: searchByRegion
+      operationId: searchByRegion
       operationId: Search By Region
       description: "Search by region: Africa, Americas, Asia, Europe, Oceania"
       produces:
@@ -120,7 +120,7 @@ paths:
            description: OK
    /regionalbloc/{regionalbloc}:
     get:
-      summary: searchByRegionalBloc
+      operationId: searchByRegionalBloc
       operationId: Search By Regional Bloc
       description: "Search by regional bloc"
       produces:

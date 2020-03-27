@@ -31,7 +31,7 @@ paths:
     post:
       tags:
         - pet
-      summary: Add a new pet to the store
+      operationId: Add a new pet to the store
       description: ''
       operationId: addPet
       consumes:
@@ -57,7 +57,7 @@ paths:
     put:
       tags:
         - pet
-      summary: Update an existing pet
+      operationId: Update an existing pet
       description: ''
       operationId: updatePet
       consumes:
@@ -88,7 +88,7 @@ paths:
     get:
       tags:
         - pet
-      summary: Finds Pets by status
+      operationId: Finds Pets by status
       description: Multiple status values can be provided with comma separated strings
       operationId: findPetsByStatus
       produces:
@@ -125,7 +125,7 @@ paths:
     get:
       tags:
         - pet
-      summary: Finds Pets by tags
+      operationId: Finds Pets by tags
       description: 'Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.'
       operationId: findPetsByTags
       produces:
@@ -158,7 +158,7 @@ paths:
     get:
       tags:
         - pet
-      summary: Find pet by ID
+      operationId: Find pet by ID
       description: Returns a single pet
       operationId: getPetById
       produces:
@@ -185,7 +185,7 @@ paths:
     post:
       tags:
         - pet
-      summary: Updates a pet in the store with form data
+      operationId: Updates a pet in the store with form data
       description: ''
       operationId: updatePetWithForm
       consumes:
@@ -220,7 +220,7 @@ paths:
     delete:
       tags:
         - pet
-      summary: Deletes a pet
+      operationId: Deletes a pet
       description: ''
       operationId: deletePet
       produces:
@@ -248,7 +248,7 @@ paths:
     post:
       tags:
         - pet
-      summary: uploads an image
+      operationId: uploads an image
       description: ''
       operationId: uploadFile
       consumes:
@@ -285,7 +285,7 @@ paths:
     get:
       tags:
         - store
-      summary: Returns pet inventories by status
+      operationId: Returns pet inventories by status
       description: Returns a map of status codes to quantities
       operationId: getInventory
       produces:
@@ -305,7 +305,7 @@ paths:
     post:
       tags:
         - store
-      summary: Place an order for a pet
+      operationId: Place an order for a pet
       description: ''
       operationId: placeOrder
       produces:
@@ -329,7 +329,7 @@ paths:
     get:
       tags:
         - store
-      summary: Find purchase order by ID
+      operationId: Find purchase order by ID
       description: 'For valid response try integer IDs with value <= 5 or > 10. Other values will generated exceptions'
       operationId: getOrderById
       produces:
@@ -356,7 +356,7 @@ paths:
     delete:
       tags:
         - store
-      summary: Delete purchase order by ID
+      operationId: Delete purchase order by ID
       description: For valid response try integer IDs with value < 1000. Anything above 1000 or nonintegers will generate API errors
       operationId: deleteOrder
       produces:
@@ -377,7 +377,7 @@ paths:
     post:
       tags:
         - user
-      summary: Create user
+      operationId: Create user
       description: This can only be done by the logged in user.
       operationId: createUser
       produces:
@@ -397,7 +397,7 @@ paths:
     post:
       tags:
         - user
-      summary: Creates list of users with given input array
+      operationId: Creates list of users with given input array
       description: ''
       operationId: createUsersWithArrayInput
       produces:
@@ -419,7 +419,7 @@ paths:
     post:
       tags:
         - user
-      summary: Creates list of users with given input array
+      operationId: Creates list of users with given input array
       description: ''
       operationId: createUsersWithListInput
       produces:
@@ -441,7 +441,7 @@ paths:
     get:
       tags:
         - user
-      summary: Logs user into the system
+      operationId: Logs user into the system
       description: ''
       operationId: loginUser
       produces:
@@ -478,7 +478,7 @@ paths:
     get:
       tags:
         - user
-      summary: Logs out current logged in user session
+      operationId: Logs out current logged in user session
       description: ''
       operationId: logoutUser
       produces:
@@ -492,7 +492,7 @@ paths:
     get:
       tags:
         - user
-      summary: Get user by user name
+      operationId: Get user by user name
       description: ''
       operationId: getUserByName
       produces:
@@ -516,7 +516,7 @@ paths:
     put:
       tags:
         - user
-      summary: Updated user
+      operationId: Updated user
       description: This can only be done by the logged in user.
       operationId: updateUser
       produces:
@@ -542,7 +542,7 @@ paths:
     delete:
       tags:
         - user
-      summary: Delete user
+      operationId: Delete user
       description: This can only be done by the logged in user.
       operationId: deleteUser
       produces:

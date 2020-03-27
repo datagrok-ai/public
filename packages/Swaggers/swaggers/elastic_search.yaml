@@ -8,7 +8,7 @@ schemes:
 paths:
   _search:
     get:
-      summary: Search query
+      operationId: Search query
       operationId: Search
       parameters:
         - name: q

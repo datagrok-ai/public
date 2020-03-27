@@ -17,7 +17,7 @@
           "Abstract_Retrieval"
         ],
         "description": "<strong>Abstract retrieval via DOI exposes interfaces associated with Scopus Abstract API.</strong><br/> API key in this example was setup with authorized CORS domains.",
-        "operationId": "AbstractRetrieval",
+        "test": "AbstractRetrieval",
         "parameters": [
           {
             "default": "10.1016/S0014-5793(01)03313-0",
@@ -73,7 +73,7 @@
         "tags": [
           "Abstract_Retrieval"
         ],
-        "operationId": "AbstractRetrievalEID",
+        "test": "AbstractRetrievalEID",
         "parameters": [
           {
             "default": "2-s2.0-0037070197",
@@ -130,7 +130,7 @@
           "Abstract_Retrieval"
         ],
         "description": "<strong>Abstract retrieval via PII exposes interfaces associated with Scopus Abstract API.</strong><br/> API key in this example was setup with authorized CORS domains.",
-        "operationId": "AbstractRetrievalPII",
+        "test": "AbstractRetrievalPII",
         "parameters": [
           {
             "default": "S0014579301033130",
@@ -187,7 +187,7 @@
           "Abstract_Retrieval"
         ],
         "description": "<strong>Abstract retrieval via Medline/Pubmed ID exposes interfaces associated with Scopus Abstract API.</strong><br/> API key in this example was setup with authorized CORS domains.",
-        "operationId": "AbstractRetrievalPubmedID",
+        "test": "AbstractRetrievalPubmedID",
         "parameters": [
           {
             "default": "11852050",
@@ -245,7 +245,7 @@
           "Abstract_Retrieval"
         ],
         "description": "<strong>Abstract retrieval vi PUI exposes interfaces associated with Scopus Abstract API.</strong><br/> API key in this example was setup with authorized CORS domains.",
-        "operationId": "AbstractRetrievalPUI",
+        "test": "AbstractRetrievalPUI",
         "parameters": [
           {
             "default": "34164449",
@@ -303,7 +303,7 @@
           "Abstract_Retrieval"
         ],
         "description": "<strong>Abstract retrieval via Scopus ID exposes interfaces associated with Scopus Abstract API.</strong><br/> API key in this example was setup with authorized CORS domains.",
-        "operationId": "AbstractRetrievalScopusID",
+        "test": "AbstractRetrievalScopusID",
         "parameters": [
           {
             "default": "0037070197",
@@ -361,7 +361,7 @@
           "Affiliation_Retrieval"
         ],
         "description": "<strong>Affiliation retrieval via affiliation_id exposes interfaces associated with Scopus Affiliation Retrieval API.</strong><br/> API key in this example was setup with authorized CORS domains.",
-        "operationId": "AffiliationRetrieval",
+        "test": "AffiliationRetrieval",
         "parameters": [
           {
             "default": "60016849",
@@ -417,7 +417,7 @@
           "Affiliation_Retrieval"
         ],
         "description": "<strong>Affiliation retrieval via EID exposes interfaces associated with Scopus Affiliation Retrieval API.</strong><br/> API key in this example was setup with authorized CORS domains.",
-        "operationId": "AffiliationRetrievalEID",
+        "test": "AffiliationRetrievalEID",
         "parameters": [
           {
             "default": "10-s2.0-60016849",
@@ -473,7 +473,7 @@
           "Article_Entitlement_Retrieval"
         ],
         "description": "<strong>Article entitlement retrieval via DOI exposes interfaces associated with Article entitlement retrieval API. Multiple DOI values can be submitted by including them as a comma-delimited list.</strong><br/> API key in this example was setup with authorized CORS domains.",
-        "operationId": "ArticleEntitlementRetrievalDOI",
+        "test": "ArticleEntitlementRetrievalDOI",
         "parameters": [
           {
             "default": "10.1016/S0014-5793(01)03313-0",
@@ -526,7 +526,7 @@
           "Article_Entitlement_Retrieval"
         ],
         "description": "<strong>Article entitlement retrieval via EID exposes interfaces associated with Article entitlement retrieval API. Multiple EID values can be submitted by including them as a comma-delimited list.</strong><br/> API key in this example was setup with authorized CORS domains.",
-        "operationId": "ArticleEntitlementRetrievalEID",
+        "test": "ArticleEntitlementRetrievalEID",
         "parameters": [
           {
             "default": "2-s2.0-0037070197",
@@ -579,7 +579,7 @@
           "Article_Entitlement_Retrieval"
         ],
         "description": "<strong>Article entitlement retrieval via PII exposes interfaces associated with Article entitlement retrieval API. Multiple PII values can be submitted by including them as a comma-delimited list.</strong><br/> API key in this example was setup with authorized CORS domains.",
-        "operationId": "ArticleEntitlementRetrievalPII",
+        "test": "ArticleEntitlementRetrievalPII",
         "parameters": [
           {
             "default": "S0014579301033130",
@@ -635,7 +635,7 @@
           "Article_Entitlement_Retrieval"
         ],
         "description": "<strong>Article entitlement retrieval via Medline/Pubmed ID exposes interfaces associated with Article entitlement retrieval API. Multiple Medline/Pubmed ID values can be submitted by including them as a comma-delimited list.</strong><br/> API key in this example was setup with authorized CORS domains.",
-        "operationId": "ArticleEntitlementRetrievalPubMed",
+        "test": "ArticleEntitlementRetrievalPubMed",
         "parameters": [
           {
             "default": "11852050",
@@ -691,7 +691,7 @@
           "Article_Entitlement_Retrieval"
         ],
         "description": "<strong>Article entitlement retrieval via Scopus ID exposes interfaces associated with Article entitlement retrieval API. Multiple Scopus ID values can be submitted by including them as a comma-delimited list.</strong><br/> API key in this example was setup with authorized CORS domains.",
-        "operationId": "ArticleEntitlementRetrievalScopusID",
+        "test": "ArticleEntitlementRetrievalScopusID",
         "parameters": [
           {
             "default": "0037070197",
@@ -747,7 +747,7 @@
           "Article_Retrieval"
         ],
         "description": "<strong>Article retrieval via DOI exposes interfaces associated with Article Retrieval API.</strong><br/> API key in this example was setup with authorized CORS domains.",
-        "operationId": "ArticleRetrievalDOI",
+        "test": "ArticleRetrievalDOI",
         "parameters": [
           {
             "default": "10.1016/j.ijcard.2017.02.078",
@@ -808,7 +808,7 @@
           "Article_Retrieval"
         ],
         "description": "<strong>Article retrieval via EID exposes interfaces associated with Article Retrieval API.</strong><br/> API key in this example was setup with authorized CORS domains.",
-        "operationId": "ArticleRetrievalEID",
+        "test": "ArticleRetrievalEID",
         "parameters": [
           {
             "default": "1-s2.0-S0167527317311075",
@@ -868,7 +868,7 @@
           "Article_Retrieval"
         ],
         "description": "<strong>Article retrieval via PII exposes interfaces associated with Article Retrieval API.</strong><br/> API key in this example was setup with authorized CORS domains.",
-        "operationId": "ArticleRetrievalPII",
+        "test": "ArticleRetrievalPII",
         "parameters": [
           {
             "default": "S0167527317311075",
@@ -928,7 +928,7 @@
           "Article_Retrieval"
         ],
         "description": "<strong>Article retrieval via Medline/Pubmed ID exposes interfaces associated with Article Retrieval API.</strong><br/> API key in this example was setup with authorized CORS domains.",
-        "operationId": "ArticleRetrievalPubMedID",
+        "test": "ArticleRetrievalPubMedID",
         "parameters": [
           {
             "default": "28274577",
@@ -988,7 +988,7 @@
           "Article_Retrieval"
         ],
         "description": "<strong>Article retrieval via Medline/Pubmed ID exposes interfaces associated with Article Retrieval API.</strong><br/> API key in this example was setup with authorized CORS domains.",
-        "operationId": "ArticleRetrievalScopusID",
+        "test": "ArticleRetrievalScopusID",
         "parameters": [
           {
             "default": "85014215458",
@@ -1048,7 +1048,7 @@
           "Author_Retrieval"
         ],
         "description": "<strong>Author retrieval via profile EID exposes interfaces associated with Scopus Author profile.</strong><br/> API key in this example was setup with authorized CORS domains.",
-        "operationId": "AuthorRetrievalEID",
+        "test": "AuthorRetrievalEID",
         "parameters": [
           {
             "default": "9-s2.0-22988279600",
@@ -1104,7 +1104,7 @@
           "Author_Retrieval"
         ],
         "description": "<strong>Author retrieval exposes interfaces associated with Scopus Author profile.</strong><br/> API key in this example was setup with authorized CORS domains.",
-        "operationId": "AuthorRetrievalid",
+        "test": "AuthorRetrievalid",
         "parameters": [
           {
             "default": "22988279600",
@@ -1160,7 +1160,7 @@
         ],
         "summary": "Engineering Village Retrieval API",
         "description": "This represents arecord retrieval from the Engineering Village databases.",
-        "operationId": "fetchRecordUsingGET",
+        "test": "fetchRecordUsingGET",
         "consumes": [
           "application/json"
         ],
@@ -1219,7 +1219,7 @@
           "Object_Retrieval"
         ],
         "description": "<strong>Object retrieval API to retrieve object references associated with a full text article by DOI.</strong><br/> API key in this example was setup with authorized CORS domains.",
-        "operationId": "ObjectRetrievalDOI",
+        "test": "ObjectRetrievalDOI",
         "parameters": [
           {
             "default": "10.1016/S0014-5793(01)03313-0",
@@ -1277,7 +1277,7 @@
           "Object_Retrieval"
         ],
         "description": "<strong>Object retrieval API to retrieve individual object or object metadata associated with a full text article by DOI.</strong><br/> API key in this example was setup with authorized CORS domains.",
-        "operationId": "ObjectRetrievalDOI",
+        "test": "ObjectRetrievalDOI",
         "parameters": [
           {
             "default": "10.1016/S0014-5793(01)03313-0",

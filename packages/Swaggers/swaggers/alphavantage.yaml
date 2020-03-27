@@ -13,7 +13,7 @@ schemes:
 paths:
    /query:
     get:
-      summary: alphaVantage
+      operationId: alphaVantage
       operationId: Alpha Vantage API
       parameters:
         - in: query

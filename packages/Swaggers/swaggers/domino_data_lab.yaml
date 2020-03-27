@@ -80,7 +80,7 @@ paths:
                 type: array
                 description: Array of run statuses.
                 items: {}
-      summary: Get a list of runs
+      operationId: Get a list of runs
       operationId: Get a list of runs
       description: ''
       tags:
@@ -123,7 +123,7 @@ paths:
                 description: >-
                   A human-readable message with a full link to view the status
                   of your run.
-      summary: Start a run
+      operationId: Start a run
       operationId: Start a run
       description: ''
       tags:
@@ -321,7 +321,7 @@ paths:
               hardwareTierId:
                 type: string
                 description: The hardware tier the run exectued on
-      summary: Get the status of a run
+      operationId: Get the status of a run
       operationId: Get the status of a run
       description: ''
       tags:
@@ -367,7 +367,7 @@ paths:
                 description: >-
                   Logs outputted from user code during the run.  Note that this
                   field also include stderr logs as well.
-      summary: Get run logs
+      operationId: Get run logs
       operationId: Get run logs
       description: ''
       tags:
@@ -404,7 +404,7 @@ paths:
           description: OK
           headers: {}
           examples: {}
-      summary: Get a list of files in a commit
+      operationId: Get a list of files in a commit
       operationId: Get a list of files in a commit
       description: ''
       tags:
@@ -441,7 +441,7 @@ paths:
           description: OK
           headers: {}
           examples: {}
-      summary: Get the contents of a file
+      operationId: Get the contents of a file
       operationId: Get the contents of a file
       description: ''
       tags:
@@ -509,7 +509,7 @@ paths:
               - size
               - key
               - url
-      summary: Upload a file to a project
+      operationId: Upload a file to a project
       operationId: Upload a file to a project
       description: ''
       tags:
@@ -544,7 +544,7 @@ paths:
           description: OK
           headers: {}
           examples: {}
-      summary: Execute a search
+      operationId: Execute a search
       operationId: Execute a search
       description: ''
       tags:
@@ -587,7 +587,7 @@ paths:
                 type: array
                 description: Array of environments.
                 items: {}
-      summary: Get a list of v2 environments
+      operationId: Get a list of v2 environments
       operationId: Get a list of v2 environments
       description: ''
       tags:
@@ -616,7 +616,7 @@ paths:
                 type: array
                 description: Array of models.
                 items: {}
-      summary: Get a list of models published by a project
+      operationId: Get a list of models published by a project
       operationId: Get a list of models published by a project
       description: |-
         **This is a beta endpoint available in Domino 2.5+**<br>
@@ -708,7 +708,7 @@ paths:
                 description: >-
                   Object containing **isPublic** visibility setting and
                   **accessTokens**.
-      summary: Publish a new model
+      operationId: Publish a new model
       operationId: Publish a new model
       description: |-
         **This is a beta endpoint available in Domino 2.5+**<br>
@@ -799,7 +799,7 @@ paths:
               data:
                 type: array
                 items: {}
-      summary: Get the latest versions of a model
+      operationId: Get the latest versions of a model
       operationId: Get the latest versions of a model
       description: |-
         **This is a beta endpoint available in Domino 2.5+**<br>
@@ -833,7 +833,7 @@ paths:
               number:
                 type: number
                 description: The new version number.
-      summary: Publish a new model version
+      operationId: Publish a new model version
       operationId: Publish a new model version
       description: |-
         **This is a beta endpoint available in Domino 2.5+**<br>
@@ -1009,7 +1009,7 @@ paths:
                 description: Error message
                 type: string
             type: object
-      summary: Build a model image
+      operationId: Build a model image
       operationId: Build a model image
       description: ''
       tags:
@@ -1243,7 +1243,7 @@ paths:
                 description: Error message
                 type: string
             type: object
-      summary: Get model image export status
+      operationId: Get model image export status
       operationId: Get model image export status
       description: ''
       tags:
@@ -1351,7 +1351,7 @@ paths:
                 description: Error message
                 type: string
             type: object
-      summary: Get model image export logs
+      operationId: Get model image export logs
       operationId: Get model image export logs
       description: ''
       tags:
@@ -1456,7 +1456,7 @@ paths:
                 description: Error message
                 type: string
             type: object
-      summary: Export model image to external registry
+      operationId: Export model image to external registry
       operationId: Export model image to external registry
       description: ''
       tags:
@@ -1638,7 +1638,7 @@ paths:
                 description: Error message
                 type: string
             type: object
-      summary: Get model image build logs
+      operationId: Get model image build logs
       operationId: Get model image build logs
       description: ''
       tags:
@@ -1743,7 +1743,7 @@ paths:
                 description: Error message
                 type: string
             type: object
-      summary: Get model image build status
+      operationId: Get model image build status
       operationId: Get model image build status
       description: ''
       tags:
@@ -1787,7 +1787,7 @@ paths:
           schema:
             type: array
             items: {}
-      summary: Get a list of users
+      operationId: Get a list of users
       operationId: Get a list of users
       description: |-
         **This is a beta endpoint available in Domino 2.8+**<br>
@@ -1864,7 +1864,7 @@ paths:
               phoneNumber:
                 type: string
                 description: User's phone number.
-      summary: Get current user
+      operationId: Get current user
       operationId: Get current user
       description: |-
         **This is a beta endpoint available in Domino 2.8+**<br>
@@ -1891,7 +1891,7 @@ paths:
           schema:
             type: array
             items: {}
-      summary: Get a list of organizations
+      operationId: Get a list of organizations
       operationId: Get a list of organizations
       description: |-
         **This endpoint requires admin permissions.**<br>
@@ -1940,7 +1940,7 @@ paths:
               legacyDefaultEnvironment:
                 type: string
                 description: Default legacy environment for the organization.
-      summary: Create a new organization
+      operationId: Create a new organization
       operationId: Create a new organization
       description: |-
         **This is a beta endpoint available in Domino 2.8+**<br>
@@ -1987,7 +1987,7 @@ paths:
           schema:
             type: array
             items: {}
-      summary: Get a list of my organizations
+      operationId: Get a list of my organizations
       operationId: Get a list of my organizations
       description: |-
         **This is a beta endpoint available in Domino 2.8+**<br>
@@ -2036,7 +2036,7 @@ paths:
               legacyDefaultEnvironment:
                 type: string
                 description: Default legacy environment for the organization.
-      summary: Get organization by ID
+      operationId: Get organization by ID
       operationId: Get organization by ID
       description: |-
         **This is a beta endpoint available in Domino 2.8+**<br>
@@ -2085,7 +2085,7 @@ paths:
               legacyDefaultEnvironment:
                 type: string
                 description: Default legacy environment for the organization.
-      summary: Change the list of members
+      operationId: Change the list of members
       operationId: Change the list of members
       description: |-
         **This is a beta endpoint available in Domino 2.8+**<br>
@@ -2141,7 +2141,7 @@ paths:
           schema:
             type: array
             items: {}
-      summary: Get a list of user's projects
+      operationId: Get a list of user's projects
       operationId: Get a list of user's projects
       description: |-
         **This is a beta endpoint available in Domino 2.9+**<br>
@@ -2221,7 +2221,7 @@ paths:
               - visibility
               - ownerId
               - collaborators
-      summary: Create a new project
+      operationId: Create a new project
       operationId: Create a new project
       description: |-
         **This is a beta endpoint available in Domino 2.9+**<br>
@@ -2335,7 +2335,7 @@ paths:
               - visibility
               - ownerId
               - collaborators
-      summary: Fork a project
+      operationId: Fork a project
       operationId: Fork a project
       description: |-
         **This is a beta endpoint available in Domino 2.9+**<br>
@@ -2452,7 +2452,7 @@ paths:
               - visibility
               - ownerId
               - collaborators
-      summary: Copy a project
+      operationId: Copy a project
       operationId: Copy a project
       description: |-
         **This is a beta endpoint available in Domino 2.9+**<br>
@@ -2562,7 +2562,7 @@ paths:
                 type: array
                 description: Objects representing project tags.
                 items: {}
-      summary: Get project summary
+      operationId: Get project summary
       operationId: Get project summary
       description: |-
         **This is a beta endpoint available in Domino 2.9+**<br>
@@ -2584,7 +2584,7 @@ paths:
           description: OK
           headers: {}
           examples: {}
-      summary: Update project description and visibility
+      operationId: Update project description and visibility
       operationId: Update project description and visibility
       description: |-
         **This is a beta endpoint available in Domino 2.9+**<br>
@@ -2635,7 +2635,7 @@ paths:
               name:
                 type: string
                 description: Name of tag applied.
-      summary: Add tags to project
+      operationId: Add tags to project
       operationId: Add tags to project
       description: |-
         **This is a beta endpoint available in Domino 2.9+**<br>
@@ -2669,7 +2669,7 @@ paths:
           description: OK
           headers: {}
           examples: {}
-      summary: Remove a tag from a project
+      operationId: Remove a tag from a project
       operationId: Remove a tag from a project
       description: |-
         **This is a beta endpoint available in Domino 2.9+**<br>
@@ -2704,7 +2704,7 @@ paths:
               defaultEnvironmentId:
                 type: string
                 description: ID of the project's default environment
-      summary: Get settings for a project
+      operationId: Get settings for a project
       operationId: Get settings for a project
       description: |-
         **This is a beta endpoint available in Domino 2.8+**<br>
@@ -2726,7 +2726,7 @@ paths:
           description: OK
           headers: {}
           examples: {}
-      summary: Update project settings
+      operationId: Update project settings
       operationId: Update project settings
       description: |-
         **This is a beta endpoint available in Domino 2.8+**<br>
@@ -2790,7 +2790,7 @@ paths:
           schema:
             type: array
             items: {}
-      summary: Get experiments for a project
+      operationId: Get experiments for a project
       operationId: Get experiments for a project
       description: |-
         **This is a beta endpoint available in Domino 2.8+**<br>
@@ -2859,7 +2859,7 @@ paths:
           schema:
             type: array
             items: {}
-      summary: Get hardware tiers for a project
+      operationId: Get hardware tiers for a project
       operationId: Get hardware tiers for a project
       description: |-
         **This is a beta endpoint available in Domino 2.8+**<br>
@@ -2899,7 +2899,7 @@ paths:
                   - ResultsConsumer
                   - ProjectImporter
                 description: Role permissions granted.
-      summary: Add collaborator to project
+      operationId: Add collaborator to project
       operationId: Add collaborator to project
       description: |-
         **This is a beta endpoint available in Domino 2.8+**<br>
@@ -2958,7 +2958,7 @@ paths:
                   - ResultsConsumer
                   - ProjectImporter
                 description: Role permissions removed from user.
-      summary: Remove collaborator from project
+      operationId: Remove collaborator from project
       operationId: Remove collaborator from project
       description: |-
         **This is a beta endpoint available in Domino 2.8+**<br>
@@ -2996,7 +2996,7 @@ paths:
           schema:
             type: array
             items: {}
-      summary: Get project's Git repositories
+      operationId: Get project's Git repositories
       operationId: Get project's Git repositories
       description: '**This endpoint is available in Domino 3.4+**<br>'
       tags:
@@ -3042,7 +3042,7 @@ paths:
                       - ref
                   value:
                     type: string
-      summary: Add Git repository to project
+      operationId: Add Git repository to project
       operationId: Add Git repository to project
       description: '**This endpoint is available in Domino 3.4+**<br>'
       tags:
@@ -3067,7 +3067,7 @@ paths:
           description: OK
           headers: {}
           examples: {}
-      summary: Update the reference of a Git repository
+      operationId: Update the reference of a Git repository
       operationId: Update the reference of a Git repository
       description: '**This endpoint is available in Domino 3.4+**<br>'
       tags:
@@ -3108,7 +3108,7 @@ paths:
           description: OK
           headers: {}
           examples: {}
-      summary: Remove Git repository
+      operationId: Remove Git repository
       operationId: Remove Git repository
       description: '**This endpoint is available in Domino 3.4+**<br>'
       tags:
@@ -3140,7 +3140,7 @@ paths:
           schema:
             type: array
             items: {}
-      summary: Get a list of Datasets
+      operationId: Get a list of Datasets
       operationId: Get a list of Datasets
       description: |-
         **This is a beta endpoint available in Domino 3.6+**<br>
@@ -3191,7 +3191,7 @@ paths:
                 type: array
                 description: Array of tag name / tag ID pairs
                 items: {}
-      summary: Create a Dataset
+      operationId: Create a Dataset
       operationId: Create a Dataset
       description: |-
         **This is a beta endpoint available in Domino 3.6+**<br>
@@ -3255,7 +3255,7 @@ paths:
                 type: array
                 description: Array of tag name / tag ID pairs
                 items: {}
-      summary: Get Dataset details
+      operationId: Get Dataset details
       operationId: Get Dataset details
       description: |-
         **This is a beta endpoint available in Domino 3.6+**<br>
@@ -3306,7 +3306,7 @@ paths:
                 type: array
                 description: Array of tag name / tag ID pairs
                 items: {}
-      summary: Update Dataset details
+      operationId: Update Dataset details
       operationId: Update Dataset details
       description: |-
         **This is a beta endpoint available in Domino 3.6+**<br>
@@ -3340,7 +3340,7 @@ paths:
           description: OK
           headers: {}
           examples: {}
-      summary: Archive Dataset
+      operationId: Archive Dataset
       operationId: Archive Dataset
       description: |-
         **This is a beta endpoint available in Domino 3.6+**<br>
@@ -3386,7 +3386,7 @@ paths:
                 type: string
               origin:
                 type: string
-      summary: Get Snapshot details
+      operationId: Get Snapshot details
       operationId: Get Snapshot details
       description: |-
         **This is a beta endpoint available in Domino 3.6+**<br>
@@ -3433,7 +3433,7 @@ paths:
                 type: string
               origin:
                 type: string
-      summary: Update Snapshot details
+      operationId: Update Snapshot details
       operationId: Update Snapshot details
       description: |-
         **This is a beta endpoint available in Domino 3.6+**<br>
@@ -3459,7 +3459,7 @@ paths:
           description: OK
           headers: {}
           examples: {}
-      summary: Archive Snapshot
+      operationId: Archive Snapshot
       operationId: Archive Snapshot
       description: |-
         **This is a beta endpoint available in Domino 3.6+**<br>
@@ -3505,7 +3505,7 @@ paths:
                 type: string
               origin:
                 type: string
-      summary: Add tag
+      operationId: Add tag
       operationId: Add tag
       description: |-
         **This is a beta endpoint available in Domino 3.6+**<br>
@@ -3557,7 +3557,7 @@ paths:
                 type: string
               origin:
                 type: string
-      summary: Remove tag
+      operationId: Remove tag
       operationId: Remove tag
       description: |-
         **This is a beta endpoint available in Domino 3.6+**<br>
@@ -3606,7 +3606,7 @@ paths:
           description: Internal Server Error
           headers: {}
           examples: {}
-      summary: listToJson
+      operationId: listToJson
       operationId: listToJson
       description: >-
         **Only available in Domino 3.0.1+**
@@ -4459,7 +4459,7 @@ definitions:
         type: string
       origin:
         type: string
-  domino.common.gateway.runs.RunsGatewaySummary:
+  domino.common.gateway.runs.RunsGatewayoperationId:
     type: object
     required:
       - batchId

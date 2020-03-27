@@ -10,7 +10,7 @@ schemes:
 paths:
   /{source}/list.json:
     get:
-      summary: CPSCViolationsAndNEISSDataSearch
+      operationId: CPSCViolationsAndNEISSDataSearch
       operationId: CPSC Violations And NEISS Data Search
       produces: application.json
       parameters:
