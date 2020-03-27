@@ -23,7 +23,7 @@
           "trials"
         ],
         "description": "Returns trials based on a search query. By default, it'll search in all of a trial's attributes.\n- `q` is a [ElasticSearch query string](https://www.elastic.co/guide/en/elasticsearch/reference/2.3/query-dsl-query-string-query.html#query-string-syntax) (e.g. `public_title:(depressive OR depression)`)\n- `page` can take a value between `1` and `100`\n- `per_page` can take a value between `10` and `100`",
-        "test": "searchTrials",
+        "summary": "searchTrials",
         "parameters": [
           {
             "name": "q",
@@ -72,7 +72,7 @@
           "search"
         ],
         "description": "Autocomplete search feature for supported database entities (`location`). It has the same options as a regular `search` operation, with an extra **required** `in` parameter indicating the entity type to search.",
-        "test": "autocomplete",
+        "summary": "autocomplete",
         "parameters": [
           {
             "name": "in",
@@ -131,7 +131,7 @@
           "search"
         ],
         "description": "Search the FDA documents",
-        "test": "searchFDADocuments",
+        "summary": "searchFDADocuments",
         "parameters": [
           {
             "name": "q",
@@ -186,7 +186,7 @@
           "trials"
         ],
         "description": "Returns a trial's details and related entities (e.g. `conditions`).",
-        "test": "getTrial",
+        "summary": "getTrial",
         "parameters": [
           {
             "name": "id",
@@ -221,7 +221,7 @@
           "publications"
         ],
         "description": "Returns publication details",
-        "test": "getPublication",
+        "summary": "getPublication",
         "parameters": [
           {
             "name": "id",
@@ -256,7 +256,7 @@
           "conditions"
         ],
         "description": "Returns condition details",
-        "test": "getCondition",
+        "summary": "getCondition",
         "parameters": [
           {
             "name": "id",
@@ -291,7 +291,7 @@
           "organisations"
         ],
         "description": "Returns organisation details",
-        "test": "getOrganisation",
+        "summary": "getOrganisation",
         "parameters": [
           {
             "name": "id",
@@ -326,7 +326,7 @@
           "trials"
         ],
         "description": "Returns a trial's raw records from its sources",
-        "test": "getRecords",
+        "summary": "getRecords",
         "parameters": [
           {
             "name": "id",
@@ -355,7 +355,7 @@
           "trials"
         ],
         "description": "Returns a trial's raw record from its sources",
-        "test": "getRecord",
+        "summary": "getRecord",
         "parameters": [
           {
             "name": "trialId",
@@ -391,7 +391,7 @@
           "persons"
         ],
         "description": "Returns person details",
-        "test": "getPerson",
+        "summary": "getPerson",
         "parameters": [
           {
             "name": "id",
@@ -426,7 +426,7 @@
           "interventions"
         ],
         "description": "Returns intervention details",
-        "test": "getIntervention",
+        "summary": "getIntervention",
         "parameters": [
           {
             "name": "id",
@@ -461,7 +461,7 @@
           "sources"
         ],
         "description": "Returns list of sources",
-        "test": "list",
+        "summary": "list",
         "responses": {
           "200": {
             "description": "Success",
@@ -484,7 +484,7 @@
           "fda_applications"
         ],
         "description": "Returns FDA applications",
-        "test": "listFDAApplications",
+        "summary": "listFDAApplications",
         "parameters": [
           {
             "name": "page",
@@ -526,7 +526,7 @@
           "fda_applications"
         ],
         "description": "Returns an FDA application details",
-        "test": "getFDAApplication",
+        "summary": "getFDAApplication",
         "parameters": [
           {
             "name": "id",
@@ -561,7 +561,7 @@
           "documents"
         ],
         "description": "Returns documents",
-        "test": "listDocuments",
+        "summary": "listDocuments",
         "parameters": [
           {
             "name": "page",
@@ -603,7 +603,7 @@
           "documents"
         ],
         "description": "Returns details of a document",
-        "test": "getDocument",
+        "summary": "getDocument",
         "parameters": [
           {
             "name": "id",
@@ -638,7 +638,7 @@
           "document_categories"
         ],
         "description": "Returns document categories",
-        "test": "listDocumentCategories",
+        "summary": "listDocumentCategories",
         "responses": {
           "200": {
             "description": "Success",

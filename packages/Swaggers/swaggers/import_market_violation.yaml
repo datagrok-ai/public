@@ -11,7 +11,7 @@ paths:
   /{source}/list.json:
     get:
       operationId: CPSCViolationsAndNEISSDataSearch
-      operationId: CPSC Violations And NEISS Data Search
+      summary: CPSC Violations And NEISS Data Search
       produces: application.json
       parameters:
         - name: source

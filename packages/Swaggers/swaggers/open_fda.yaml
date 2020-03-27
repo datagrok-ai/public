@@ -11,7 +11,7 @@ paths:
   /drug/enforcement.json:
     get:
       operationId: drugRecallEnforcementReports
-      operationId: Drugs | Recall Enforcement Reports
+      summary: Drugs | Recall Enforcement Reports
       produces: application.json
       parameters:
         - $ref: '#/parameters/Limit'
@@ -41,7 +41,7 @@ paths:
   /drug/label.json:
     get:
       operationId: drugProductLabeling
-      operationId: Drugs | Product Labeling
+      summary: Drugs | Product Labeling
       produces: application.json
       parameters:
         - $ref: '#/parameters/Limit'
@@ -61,7 +61,7 @@ paths:
   /drug/event.json:
     get:
       operationId: drugAdverseEvents
-      operationId: Drugs | Adverse Events
+      summary: Drugs | Adverse Events
       produces: application.json
       parameters:
         - $ref: '#/parameters/Limit'
@@ -81,7 +81,7 @@ paths:
   /device/510k.json:
     get:
       operationId: device510K
-      operationId: Device | 510(k)
+      summary: Device | 510(k)
       produces: application.json
       parameters:
         - $ref: '#/parameters/Limit'
@@ -101,7 +101,7 @@ paths:
   /device/enforcement.json:
     get:
       operationId: deviceRecallEnforcementReports
-      operationId: Device | Recall Enforcement Reports
+      summary: Device | Recall Enforcement Reports
       produces: application.json
       parameters:
         - $ref: '#/parameters/Limit'
@@ -121,7 +121,7 @@ paths:
   /device/event.json:
     get:
       operationId: deviceAdverseEvents
-      operationId: Device | Adverse Events
+      summary: Device | Adverse Events
       produces: application.json
       parameters:
         - $ref: '#/parameters/Limit'
@@ -141,7 +141,7 @@ paths:
   /device/pma.json:
     get:
       operationId: devicePreMarketApproval
-      operationId: Device | Pre-Market Approval
+      summary: Device | Pre-Market Approval
       produces: application.json
       parameters:
         - $ref: '#/parameters/Limit'
@@ -161,7 +161,7 @@ paths:
   /device/recall.json:
     get:
       operationId: deviceRecalls
-      operationId: Device | Recalls
+      summary: Device | Recalls
       produces: application.json
       parameters:
         - $ref: '#/parameters/Limit'
@@ -181,7 +181,7 @@ paths:
   /device/registrationlisting.json:
     get:
       operationId: deviceRegistrationsAndListings
-      operationId: Device | Registrations And Listings
+      summary: Device | Registrations And Listings
       produces: application.json
       parameters:
         - $ref: '#/parameters/Limit'
@@ -201,7 +201,7 @@ paths:
   /device/udi.json:
     get:
       operationId: deviceUniqueDeviceIdentifier
-      operationId: Device | Unique Device Identifier
+      summary: Device | Unique Device Identifier
       produces: application.json
       parameters:
         - $ref: '#/parameters/Limit'
@@ -221,7 +221,7 @@ paths:
   /food/enforcement.json:
     get:
       operationId: foodRecallEnforcementReports
-      operationId: Device | Recall Enforcement Reports
+      summary: Device | Recall Enforcement Reports
       produces: application.json
       parameters:
         - $ref: '#/parameters/Limit'
@@ -241,7 +241,7 @@ paths:
   /food/event.json:
     get:
       operationId: foodAdverseReport
-      operationId: Food | Adverse Report
+      summary: Food | Adverse Report
       produces: application.json
       parameters:
         - $ref: '#/parameters/Limit'
@@ -261,7 +261,7 @@ paths:
   /other/nsde.json:
     get:
       operationId: NSDE
-      operationId: NSDE
+      summary: NSDE
       produces: application.json
       parameters:
         - $ref: '#/parameters/Limit'

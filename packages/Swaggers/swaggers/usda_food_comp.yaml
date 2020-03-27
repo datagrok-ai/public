@@ -14,7 +14,7 @@ paths:
   /reports/:
     get:
       operationId: foodReport
-      operationId: Food Report
+      summary: Food Report
       description: 'A Food Report is a list of nutrients and their values in various portions for a specific food.'
       parameters:
         - name: ndbno
@@ -52,7 +52,7 @@ paths:
   /list:
     get:
       operationId: foodList
-      operationId: Food List
+      summary: Food List
       description: 'You may request a list of foods, nutrients or food groups.'
       parameters:
         - name: lt
@@ -107,7 +107,7 @@ paths:
   /nutrients/:
     get:
       operationId: nutrientReport
-      operationId: Nutrient Report
+      summary: Nutrient Report
       description: 'A Nutrient Report is a list of foods and their nutrient values for a set of specified nutrients. This API request provides similar functionality to the Nutrients List component of the NDB search application.'
       parameters:
         - name: fg
@@ -170,7 +170,7 @@ paths:
   /search/:
     get:
       operationId: foodSearch
-      operationId: Food Search
+      summary: Food Search
       description: 'A search request sends keyword queries and returns lists of foods which contain one or more of the keywords in the food description, scientific name, or commerical name fields. Search requests are a good way to locate NDB numbers (NDBno) for the reports API as well as for general discovery.'
       parameters:
         - name: q

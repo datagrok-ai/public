@@ -23,7 +23,7 @@ paths:
   /categories/:
     get:
       operationId: Lists all the product categories
-      operationId: getShopCategories
+      summary: getShopCategories
       tags:
         - categories
       responses:
@@ -35,7 +35,7 @@ paths:
   '/categories/{id}':
     get:
       operationId: Get a category by id
-      operationId: getShopCategoriesId
+      summary: getShopCategoriesId
       parameters:
         - type: string
           description: Id of a category
@@ -53,7 +53,7 @@ paths:
   '/customers/{id}':
     get:
       operationId: Get a customer by id
-      operationId: getShopCustomersId
+      summary: getShopCustomersId
       parameters:
         - type: integer
           description: Id of a customer
@@ -70,7 +70,7 @@ paths:
             type: object
     put:
       operationId: Replace a customer by new data
-      operationId: putShopCustomersId
+      summary: putShopCustomersId
       parameters:
         - type: integer
           description: Id of a customer
@@ -92,7 +92,7 @@ paths:
             type: object
     patch:
       operationId: Update a customer
-      operationId: patchShopCustomersId
+      summary: patchShopCustomersId
       parameters:
         - type: integer
           description: Id of a customer
@@ -114,7 +114,7 @@ paths:
             type: object
     delete:
       operationId: Delete a customer
-      operationId: deleteShopCustomersId
+      summary: deleteShopCustomersId
       parameters:
         - type: integer
           description: Id of a customer
@@ -131,7 +131,7 @@ paths:
   /customers/:
     get:
       operationId: Lists all the customers
-      operationId: getShopCustomers
+      summary: getShopCustomers
       tags:
         - customers
       responses:
@@ -142,7 +142,7 @@ paths:
             type: object
     post:
       operationId: Create a customer
-      operationId: postShopCustomers
+      summary: postShopCustomers
       parameters:
         - in: body
           name: body
@@ -160,7 +160,7 @@ paths:
   '/orders/{id}':
     get:
       operationId: Get an order by id
-      operationId: getShopOrdersId
+      summary: getShopOrdersId
       parameters:
         - type: integer
           description: Id of an order
@@ -177,7 +177,7 @@ paths:
             type: object
     delete:
       operationId: Delete an order
-      operationId: deleteShopOrdersId
+      summary: deleteShopOrdersId
       parameters:
         - type: integer
           description: Id of an order
@@ -194,7 +194,7 @@ paths:
   /orders/:
     get:
       operationId: Lists all the orders
-      operationId: getShopOrders
+      summary: getShopOrders
       parameters:
         - type: string
           description: State of the order
@@ -216,7 +216,7 @@ paths:
   '/products/{id}':
     get:
       operationId: Get a product by id
-      operationId: getShopProductsId
+      summary: getShopProductsId
       parameters:
         - type: integer
           description: Id of a product
@@ -233,7 +233,7 @@ paths:
             type: object
     put:
       operationId: Replace a product by new data
-      operationId: putShopProductsId
+      summary: putShopProductsId
       parameters:
         - type: integer
           description: Id of a product
@@ -255,7 +255,7 @@ paths:
             type: object
     patch:
       operationId: Update one or more properties of a product
-      operationId: patchShopProductsId
+      summary: patchShopProductsId
       parameters:
         - type: integer
           description: Id of a product
@@ -277,7 +277,7 @@ paths:
             type: object
     delete:
       operationId: Delete a product
-      operationId: deleteShopProductsId
+      summary: deleteShopProductsId
       parameters:
         - type: integer
           description: Id of a product
@@ -294,7 +294,7 @@ paths:
   /products/:
     get:
       operationId: Lists all the products
-      operationId: getShopProducts
+      summary: getShopProducts
       tags:
         - products
       responses:
@@ -305,7 +305,7 @@ paths:
             type: object
     post:
       operationId: Create a product
-      operationId: postShopProducts
+      summary: postShopProducts
       parameters:
         - in: body
           name: body
@@ -322,7 +322,7 @@ paths:
   '/vendors/{id}':
     get:
       operationId: Get a vendor by id
-      operationId: getShopVendorsId
+      summary: getShopVendorsId
       parameters:
         - type: integer
           description: Id of a vendor
@@ -339,7 +339,7 @@ paths:
             type: object
     put:
       operationId: Replace a vendor by new data
-      operationId: putShopVendorsId
+      summary: putShopVendorsId
       parameters:
         - type: integer
           description: Id of a vendor
@@ -355,7 +355,7 @@ paths:
           description: Successful
     patch:
       operationId: Update a vendor
-      operationId: patchShopVendorsId
+      summary: patchShopVendorsId
       parameters:
         - type: integer
           description: Id of a vendor
@@ -371,7 +371,7 @@ paths:
           description: Successful
     delete:
       operationId: Delete a vendor
-      operationId: deleteShopVendorsId
+      summary: deleteShopVendorsId
       parameters:
         - type: integer
           description: Id of a vendor
@@ -388,7 +388,7 @@ paths:
   /vendors/:
     get:
       operationId: Lists all the vendors
-      operationId: getShopVendors
+      summary: getShopVendors
       tags:
         - vendors
       responses:
@@ -399,7 +399,7 @@ paths:
             type: object
     post:
       operationId: Create a vendor
-      operationId: postShopVendors
+      summary: postShopVendors
       parameters:
         - in: body
           name: body
@@ -417,7 +417,7 @@ paths:
   '/products/{id}/photo':
     get:
       operationId: Get a photo of a product
-      operationId: getShopProductsIdPhoto
+      summary: getShopProductsIdPhoto
       parameters:
         - type: integer
           description: Id of a product
@@ -433,7 +433,7 @@ paths:
           description: Successful
     put:
       operationId: Add or update the photo of a product
-      operationId: putShopProductsIdPhoto
+      summary: putShopProductsIdPhoto
       description: Length of the image is limited to 512 KBytes.
       parameters:
         - type: integer
@@ -459,7 +459,7 @@ paths:
   '/customers/{id}/orders/':
     get:
       operationId: Get the orders of a customer
-      operationId: getShopCustomersIdOrders
+      summary: getShopCustomersIdOrders
       parameters:
         - type: integer
           description: Id of a customer
@@ -476,7 +476,7 @@ paths:
             type: object
     post:
       operationId: Create an order for a customer
-      operationId: postShopCustomersIdOrders
+      summary: postShopCustomersIdOrders
       parameters:
         - type: integer
           description: Id of a customer
@@ -494,7 +494,7 @@ paths:
   '/orders/{id}/items/':
     get:
       operationId: Get the items of an order
-      operationId: getShopOrdersIdItems
+      summary: getShopOrdersIdItems
       parameters:
         - type: integer
           description: Id of an order
@@ -511,7 +511,7 @@ paths:
             type: object
     post:
       operationId: Add an item to an order
-      operationId: postShopOrdersIdItems
+      summary: postShopOrdersIdItems
       parameters:
         - type: integer
           description: Id of an order
@@ -534,7 +534,7 @@ paths:
   '/orders/{oid}/items/{iid}':
     get:
       operationId: Get an item of an order
-      operationId: getShopOrdersOidItemsIid
+      summary: getShopOrdersOidItemsIid
       parameters:
         - type: integer
           description: Id of an order
@@ -556,7 +556,7 @@ paths:
             type: object
     delete:
       operationId: Delete an item of an order
-      operationId: deleteShopOrdersOidItemsIid
+      summary: deleteShopOrdersOidItemsIid
       parameters:
         - type: integer
           description: Id of an order
@@ -578,7 +578,7 @@ paths:
   '/vendors/{id}/products/':
     get:
       operationId: Get the products of a vendor
-      operationId: getShopVendorsIdProducts
+      summary: getShopVendorsIdProducts
       parameters:
         - type: integer
           description: Id of a vendor
@@ -594,7 +594,7 @@ paths:
           description: Successful
     post:
       operationId: Add a product to a vendor
-      operationId: postShopVendorsIdProducts
+      summary: postShopVendorsIdProducts
       parameters:
         - type: integer
           description: Id of a vendor
@@ -616,7 +616,7 @@ paths:
   '/orders/{id}/actions/purchase':
     post:
       operationId: Purchase an order
-      operationId: postShopOrdersIdActionsPurchase
+      summary: postShopOrdersIdActionsPurchase
       parameters:
         - type: integer
           description: Id of an order
@@ -633,7 +633,7 @@ paths:
   '/orders/{id}/actions/cancel':
     post:
       operationId: Cancel an order
-      operationId: postShopOrdersIdActionsCancel
+      summary: postShopOrdersIdActionsCancel
       parameters:
         - type: integer
           description: Id of an order

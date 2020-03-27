@@ -10,7 +10,7 @@ paths:
    /all:
     get:
       operationId: allCases
-      operationId: All cases
+      summary: All cases
       produces:
         - application/json
       responses:
@@ -19,7 +19,7 @@ paths:
    /countries:
     get:
       operationId: casesByCountries
-      operationId: Cases By Countries
+      summary: Cases By Countries
       produces:
         - application/json
       responses:
@@ -28,7 +28,7 @@ paths:
    /countries/{country-name}:
     get:
       operationId: casesInCountry
-      operationId: Cases In Country
+      summary: Cases In Country
       produces:
         - application/json
       parameters:
@@ -43,7 +43,7 @@ paths:
    /states:
     get:
       operationId: casesInUSA
-      operationId: Cases In USA
+      summary: Cases In USA
       produces:
         - application/json
       responses:

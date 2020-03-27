@@ -14,7 +14,7 @@ paths:
   /blogs:
     get:
       operationId: blogsSearch
-      operationId: Blogs Search
+      summary: Blogs Search
       description: 'Provides blog content entries and fields'
       parameters:
         - $ref: '#/parameters/Range'
@@ -30,7 +30,7 @@ paths:
   /news:
     get:
       operationId: newsSearch
-      operationId: News Search
+      summary: News Search
       description: 'Provides newsroom content entries and fields'
       parameters:
         - $ref: '#/parameters/Range'
@@ -46,7 +46,7 @@ paths:
   /image:
     get:
       operationId: imageSearch
-      operationId: Image Search
+      summary: Image Search
       description: 'Provides image content with fields'
       parameters:
         - $ref: '#/parameters/Range'

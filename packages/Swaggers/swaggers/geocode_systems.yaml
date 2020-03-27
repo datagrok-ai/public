@@ -571,7 +571,7 @@ paths:
   /repository/entry/show:
     get:
       description: 'API to call: View GPS QC'
-      operationId: gps.teqc.qc
+      summary: gps.teqc.qc
       parameters:
         - default: gps.teqc.qc
           description: Output type  -don't change
@@ -594,7 +594,7 @@ paths:
   /repository/search/type/2017_boulder_election_expenditures:
     get:
       description: API to search for entries of type 2017 Boulder Election Expenditures
-      operationId: search_2017_boulder_election_expenditures
+      summary: search_2017_boulder_election_expenditures
       parameters:
         - description: Search text
           in: query
@@ -751,7 +751,7 @@ paths:
   /repository/search/type/any:
     get:
       description: API to search for entries of type Any file type
-      operationId: search_any
+      summary: search_any
       parameters:
         - description: Search text
           in: query
@@ -862,7 +862,7 @@ paths:
   /repository/search/type/beforeafter:
     get:
       description: API to search for entries of type Before and After Images
-      operationId: search_beforeafter
+      summary: search_beforeafter
       parameters:
         - description: Search text
           in: query
@@ -973,7 +973,7 @@ paths:
   /repository/search/type/biblio:
     get:
       description: API to search for entries of type Bibliographic Entry
-      operationId: search_biblio
+      summary: search_biblio
       parameters:
         - description: Search text
           in: query
@@ -1109,7 +1109,7 @@ paths:
   /repository/search/type/bio_dicom:
     get:
       description: API to search for entries of type DICOM File
-      operationId: search_bio_dicom
+      summary: search_bio_dicom
       parameters:
         - description: Search text
           in: query
@@ -1217,10 +1217,10 @@ paths:
       operationId: Search API for 'DICOM File' entry type
       tags:
         - type/bio_dicom
-  /repository/search/type/bio_dicom_operationId:
+  /repository/search/type/bio_dicom_summary:
     get:
       description: API to search for entries of type DICOM Test File
-      operationId: search_bio_dicom_test
+      summary: search_bio_dicom_test
       parameters:
         - description: Search text
           in: query
@@ -1341,7 +1341,7 @@ paths:
   /repository/search/type/bio_fasta:
     get:
       description: API to search for entries of type FASTA File
-      operationId: search_bio_fasta
+      summary: search_bio_fasta
       parameters:
         - description: Search text
           in: query
@@ -1452,7 +1452,7 @@ paths:
   /repository/search/type/bio_fastq:
     get:
       description: API to search for entries of type FASTQ File
-      operationId: search_bio_fastq
+      summary: search_bio_fastq
       parameters:
         - description: Search text
           in: query
@@ -1563,7 +1563,7 @@ paths:
   /repository/search/type/bio_hmmer_index:
     get:
       description: API to search for entries of type HMMER Index File
-      operationId: search_bio_hmmer_index
+      summary: search_bio_hmmer_index
       parameters:
         - description: Search text
           in: query
@@ -1674,7 +1674,7 @@ paths:
   /repository/search/type/bio_ome_tiff:
     get:
       description: API to search for entries of type OME TIFF File
-      operationId: search_bio_ome_tiff
+      summary: search_bio_ome_tiff
       parameters:
         - description: Search text
           in: query
@@ -1785,7 +1785,7 @@ paths:
   /repository/search/type/bio_ontology_assay:
     get:
       description: API to search for entries of type Assay
-      operationId: search_bio_ontology_assay
+      summary: search_bio_ontology_assay
       parameters:
         - description: Search text
           in: query
@@ -1896,7 +1896,7 @@ paths:
   /repository/search/type/bio_ontology_cohort:
     get:
       description: API to search for entries of type Cohort
-      operationId: search_bio_ontology_cohort
+      summary: search_bio_ontology_cohort
       parameters:
         - description: Search text
           in: query
@@ -2007,7 +2007,7 @@ paths:
   /repository/search/type/bio_ontology_person:
     get:
       description: API to search for entries of type Person
-      operationId: search_bio_ontology_person
+      summary: search_bio_ontology_person
       parameters:
         - description: Search text
           in: query
@@ -2123,7 +2123,7 @@ paths:
   /repository/search/type/bio_ontology_sample:
     get:
       description: API to search for entries of type Sample
-      operationId: search_bio_ontology_sample
+      summary: search_bio_ontology_sample
       parameters:
         - description: Search text
           in: query
@@ -2234,7 +2234,7 @@ paths:
   /repository/search/type/bio_ontology_series:
     get:
       description: API to search for entries of type Series
-      operationId: search_bio_ontology_series
+      summary: search_bio_ontology_series
       parameters:
         - description: Search text
           in: query
@@ -2345,7 +2345,7 @@ paths:
   /repository/search/type/bio_ontology_study:
     get:
       description: API to search for entries of type Study
-      operationId: search_bio_ontology_study
+      summary: search_bio_ontology_study
       parameters:
         - description: Search text
           in: query
@@ -2456,7 +2456,7 @@ paths:
   /repository/search/type/bio_sam:
     get:
       description: API to search for entries of type SAM Data
-      operationId: search_bio_sam
+      summary: search_bio_sam
       parameters:
         - description: Search text
           in: query
@@ -2567,7 +2567,7 @@ paths:
   /repository/search/type/bio_sf_pdb:
     get:
       description: API to search for entries of type PDB Protein File
-      operationId: search_bio_sf_pdb
+      summary: search_bio_sf_pdb
       parameters:
         - description: Search text
           in: query
@@ -2678,7 +2678,7 @@ paths:
   /repository/search/type/bio_sra:
     get:
       description: API to search for entries of type Sequence Read Archive
-      operationId: search_bio_sra
+      summary: search_bio_sra
       parameters:
         - description: Search text
           in: query
@@ -2789,7 +2789,7 @@ paths:
   /repository/search/type/bio_stockholm:
     get:
       description: API to search for entries of type Stockholm File
-      operationId: search_bio_stockholm
+      summary: search_bio_stockholm
       parameters:
         - description: Search text
           in: query
@@ -2900,7 +2900,7 @@ paths:
   /repository/search/type/bio_taxonomy:
     get:
       description: API to search for entries of type Taxonomic Entry
-      operationId: search_bio_taxonomy
+      summary: search_bio_taxonomy
       parameters:
         - description: Search text
           in: query
@@ -3036,7 +3036,7 @@ paths:
   /repository/search/type/blogentry:
     get:
       description: API to search for entries of type Weblog Entry
-      operationId: search_blogentry
+      summary: search_blogentry
       parameters:
         - description: Search text
           in: query
@@ -3152,7 +3152,7 @@ paths:
   /repository/search/type/bolder_rental_housing:
     get:
       description: API to search for entries of type Boulder Rental Housing
-      operationId: search_bolder_rental_housing
+      summary: search_bolder_rental_housing
       parameters:
         - description: Search text
           in: query
@@ -3369,7 +3369,7 @@ paths:
   /repository/search/type/bookmarks:
     get:
       description: API to search for entries of type Bookmarks
-      operationId: search_bookmarks
+      summary: search_bookmarks
       parameters:
         - description: Search text
           in: query
@@ -3500,7 +3500,7 @@ paths:
   /repository/search/type/boulder_2017_election_contributions:
     get:
       description: API to search for entries of type Boulder 2017 Election Contributions
-      operationId: search_boulder_2017_election_contributions
+      summary: search_boulder_2017_election_contributions
       parameters:
         - description: Search text
           in: query
@@ -3684,7 +3684,7 @@ paths:
   /repository/search/type/boulder_consulting_services:
     get:
       description: API to search for entries of type Boulder Consulting Services Database
-      operationId: search_boulder_consulting_services
+      summary: search_boulder_consulting_services
       parameters:
         - description: Search text
           in: query
@@ -3851,7 +3851,7 @@ paths:
   /repository/search/type/boulder_county_voter_details:
     get:
       description: API to search for entries of type Boulder County Voter Details
-      operationId: search_boulder_county_voter_details
+      summary: search_boulder_county_voter_details
       parameters:
         - description: Search text
           in: query
@@ -4057,7 +4057,7 @@ paths:
   /repository/search/type/boulder_crimes:
     get:
       description: API to search for entries of type Boulder Crime Reports
-      operationId: search_boulder_crimes
+      summary: search_boulder_crimes
       parameters:
         - description: Search text
           in: query
@@ -4188,7 +4188,7 @@ paths:
   /repository/search/type/calendar:
     get:
       description: API to search for entries of type Calendar
-      operationId: search_calendar
+      summary: search_calendar
       parameters:
         - description: Search text
           in: query
@@ -4299,7 +4299,7 @@ paths:
   /repository/search/type/cataloglink:
     get:
       description: API to search for entries of type Catalog Link
-      operationId: search_cataloglink
+      summary: search_cataloglink
       parameters:
         - description: Search text
           in: query
@@ -4410,7 +4410,7 @@ paths:
   /repository/search/type/cdm_grid:
     get:
       description: API to search for entries of type Gridded Data File
-      operationId: search_cdm_grid
+      summary: search_cdm_grid
       parameters:
         - description: Search text
           in: query
@@ -4521,7 +4521,7 @@ paths:
   /repository/search/type/community_case:
     get:
       description: API to search for entries of type Development Review Case
-      operationId: search_community_case
+      summary: search_community_case
       parameters:
         - description: Search text
           in: query
@@ -4652,7 +4652,7 @@ paths:
   /repository/search/type/community_resource:
     get:
       description: API to search for entries of type Facility
-      operationId: search_community_resource
+      summary: search_community_resource
       parameters:
         - description: Search text
           in: query
@@ -4788,7 +4788,7 @@ paths:
   /repository/search/type/construction_permits:
     get:
       description: API to search for entries of type Construction Permits
-      operationId: search_construction_permits
+      summary: search_construction_permits
       parameters:
         - description: Search text
           in: query
@@ -5051,7 +5051,7 @@ paths:
   /repository/search/type/contact:
     get:
       description: API to search for entries of type Contact List
-      operationId: search_contact
+      summary: search_contact
       parameters:
         - description: Search text
           in: query
@@ -5177,7 +5177,7 @@ paths:
   /repository/search/type/db_co_indicators:
     get:
       description: API to search for entries of type Colorado Health Indicators
-      operationId: search_db_co_indicators
+      summary: search_db_co_indicators
       parameters:
         - description: Search text
           in: query
@@ -5324,7 +5324,7 @@ paths:
   /repository/search/type/earth_satellite_landsat:
     get:
       description: API to search for entries of type Landsat Satellite Data
-      operationId: search_earth_satellite_landsat
+      summary: search_earth_satellite_landsat
       parameters:
         - description: Search text
           in: query
@@ -5465,7 +5465,7 @@ paths:
   /repository/search/type/earth_wrf_namelist:
     get:
       description: API to search for entries of type WRF Namelist File
-      operationId: search_earth_wrf_namelist
+      summary: search_earth_wrf_namelist
       parameters:
         - description: Search text
           in: query
@@ -5576,7 +5576,7 @@ paths:
   /repository/search/type/exercise:
     get:
       description: API to search for entries of type Exercise
-      operationId: search_exercise
+      summary: search_exercise
       parameters:
         - description: Search text
           in: query
@@ -5697,7 +5697,7 @@ paths:
   /repository/search/type/faq:
     get:
       description: API to search for entries of type FAQ
-      operationId: search_faq
+      summary: search_faq
       parameters:
         - description: Search text
           in: query
@@ -5808,7 +5808,7 @@ paths:
   /repository/search/type/feed:
     get:
       description: API to search for entries of type RSS/ATOM Feed
-      operationId: search_feed
+      summary: search_feed
       parameters:
         - description: Search text
           in: query
@@ -5919,7 +5919,7 @@ paths:
   /repository/search/type/file:
     get:
       description: API to search for entries of type File
-      operationId: search_file
+      summary: search_file
       parameters:
         - description: Search text
           in: query
@@ -6030,7 +6030,7 @@ paths:
   /repository/search/type/fits_data:
     get:
       description: API to search for entries of type FITS Data File
-      operationId: search_fits_data
+      summary: search_fits_data
       parameters:
         - description: Search text
           in: query
@@ -6156,7 +6156,7 @@ paths:
   /repository/search/type/frames:
     get:
       description: API to search for entries of type IFrames
-      operationId: search_frames
+      summary: search_frames
       parameters:
         - description: Search text
           in: query
@@ -6267,7 +6267,7 @@ paths:
   /repository/search/type/ftp:
     get:
       description: API to search for entries of type Remote FTP File View
-      operationId: search_ftp
+      summary: search_ftp
       parameters:
         - description: Search text
           in: query
@@ -6378,7 +6378,7 @@ paths:
   /repository/search/type/gadgets_clock:
     get:
       description: API to search for entries of type Clock
-      operationId: search_gadgets_clock
+      summary: search_gadgets_clock
       parameters:
         - description: Search text
           in: query
@@ -6489,7 +6489,7 @@ paths:
   /repository/search/type/gadgets_countdown:
     get:
       description: API to search for entries of type Countdown
-      operationId: search_gadgets_countdown
+      summary: search_gadgets_countdown
       parameters:
         - description: Search text
           in: query
@@ -6600,7 +6600,7 @@ paths:
   /repository/search/type/gadgets_stock:
     get:
       description: API to search for entries of type Stock Ticker
-      operationId: search_gadgets_stock
+      summary: search_gadgets_stock
       parameters:
         - description: Search text
           in: query
@@ -6711,7 +6711,7 @@ paths:
   /repository/search/type/gadgets_weather:
     get:
       description: API to search for entries of type Weather
-      operationId: search_gadgets_weather
+      summary: search_gadgets_weather
       parameters:
         - description: Search text
           in: query
@@ -6822,7 +6822,7 @@ paths:
   /repository/search/type/gazeteer_census_tracts:
     get:
       description: API to search for entries of type Census Tracts
-      operationId: search_gazeteer_census_tracts
+      summary: search_gazeteer_census_tracts
       parameters:
         - description: Search text
           in: query
@@ -6980,7 +6980,7 @@ paths:
   /repository/search/type/gazeteer_counties:
     get:
       description: API to search for entries of type Census Gazeteer Counties
-      operationId: search_gazeteer_counties
+      summary: search_gazeteer_counties
       parameters:
         - description: Search text
           in: query
@@ -7133,7 +7133,7 @@ paths:
   /repository/search/type/gdata_docs:
     get:
       description: API to search for entries of type Google Docs View
-      operationId: search_gdata_docs
+      summary: search_gdata_docs
       parameters:
         - description: Search text
           in: query
@@ -7244,7 +7244,7 @@ paths:
   /repository/search/type/gdata_photos:
     get:
       description: API to search for entries of type Google Web Albums View
-      operationId: search_gdata_photos
+      summary: search_gdata_photos
       parameters:
         - description: Search text
           in: query
@@ -7355,7 +7355,7 @@ paths:
   /repository/search/type/geo_geotiff:
     get:
       description: API to search for entries of type GeoTIFF
-      operationId: search_geo_geotiff
+      summary: search_geo_geotiff
       parameters:
         - description: Search text
           in: query
@@ -7466,7 +7466,7 @@ paths:
   /repository/search/type/geo_gpx:
     get:
       description: API to search for entries of type GPX GPS File
-      operationId: search_geo_gpx
+      summary: search_geo_gpx
       parameters:
         - description: Search text
           in: query
@@ -7613,7 +7613,7 @@ paths:
   /repository/search/type/geo_hdf5:
     get:
       description: API to search for entries of type HDF5 File
-      operationId: search_geo_hdf5
+      summary: search_geo_hdf5
       parameters:
         - description: Search text
           in: query
@@ -7724,7 +7724,7 @@ paths:
   /repository/search/type/geo_kml:
     get:
       description: API to search for entries of type KML/KMZ File
-      operationId: search_geo_kml
+      summary: search_geo_kml
       parameters:
         - description: Search text
           in: query
@@ -7835,7 +7835,7 @@ paths:
   /repository/search/type/geo_shapefile:
     get:
       description: API to search for entries of type Shapefile
-      operationId: search_geo_shapefile
+      summary: search_geo_shapefile
       parameters:
         - description: Search text
           in: query
@@ -7946,7 +7946,7 @@ paths:
   /repository/search/type/glossary:
     get:
       description: API to search for entries of type Glossary
-      operationId: search_glossary
+      summary: search_glossary
       parameters:
         - description: Search text
           in: query
@@ -8057,7 +8057,7 @@ paths:
   /repository/search/type/gridaggregation:
     get:
       description: API to search for entries of type Grid Aggregation
-      operationId: search_gridaggregation
+      summary: search_gridaggregation
       parameters:
         - description: Search text
           in: query
@@ -8168,7 +8168,7 @@ paths:
   /repository/search/type/group:
     get:
       description: API to search for entries of type Folder
-      operationId: search_group
+      summary: search_group
       parameters:
         - description: Search text
           in: query
@@ -8279,7 +8279,7 @@ paths:
   /repository/search/type/hipchat_group:
     get:
       description: API to search for entries of type HipChat Group
-      operationId: search_hipchat_group
+      summary: search_hipchat_group
       parameters:
         - description: Search text
           in: query
@@ -8390,7 +8390,7 @@ paths:
   /repository/search/type/homepage:
     get:
       description: API to search for entries of type Home Page
-      operationId: search_homepage
+      summary: search_homepage
       parameters:
         - description: Search text
           in: query
@@ -8501,7 +8501,7 @@ paths:
   /repository/search/type/incident:
     get:
       description: API to search for entries of type Incident
-      operationId: search_incident
+      summary: search_incident
       parameters:
         - description: Search text
           in: query
@@ -8627,7 +8627,7 @@ paths:
   /repository/search/type/incident_basement:
     get:
       description: API to search for entries of type Basement Flooding
-      operationId: search_incident_basement
+      summary: search_incident_basement
       parameters:
         - description: Search text
           in: query
@@ -8763,7 +8763,7 @@ paths:
   /repository/search/type/investigation_case:
     get:
       description: API to search for entries of type Investigation
-      operationId: search_investigation_case
+      summary: search_investigation_case
       parameters:
         - description: Search text
           in: query
@@ -8874,7 +8874,7 @@ paths:
   /repository/search/type/investigation_cellphonelog:
     get:
       description: API to search for entries of type Cell Phone Log
-      operationId: search_investigation_cellphonelog
+      summary: search_investigation_cellphonelog
       parameters:
         - description: Search text
           in: query
@@ -9051,7 +9051,7 @@ paths:
   /repository/search/type/investigation_event:
     get:
       description: API to search for entries of type Event
-      operationId: search_investigation_event
+      summary: search_investigation_event
       parameters:
         - description: Search text
           in: query
@@ -9162,7 +9162,7 @@ paths:
   /repository/search/type/investigation_oldphonelog:
     get:
       description: API to search for entries of type Old Phone Log
-      operationId: search_investigation_oldphonelog
+      summary: search_investigation_oldphonelog
       parameters:
         - description: Search text
           in: query
@@ -9328,7 +9328,7 @@ paths:
   /repository/search/type/investigation_person:
     get:
       description: API to search for entries of type Person
-      operationId: search_investigation_person
+      summary: search_investigation_person
       parameters:
         - description: Search text
           in: query
@@ -9439,7 +9439,7 @@ paths:
   /repository/search/type/investigation_thing:
     get:
       description: API to search for entries of type Thing
-      operationId: search_investigation_thing
+      summary: search_investigation_thing
       parameters:
         - description: Search text
           in: query
@@ -9550,7 +9550,7 @@ paths:
   /repository/search/type/latlonimage:
     get:
       description: API to search for entries of type WMS Image
-      operationId: search_latlonimage
+      summary: search_latlonimage
       parameters:
         - description: Search text
           in: query
@@ -9661,7 +9661,7 @@ paths:
   /repository/search/type/lidar_collection:
     get:
       description: API to search for entries of type LiDAR Collection
-      operationId: search_lidar_collection
+      summary: search_lidar_collection
       parameters:
         - description: Search text
           in: query
@@ -9772,7 +9772,7 @@ paths:
   /repository/search/type/lidar_glas:
     get:
       description: API to search for entries of type GLAS Lidar Data
-      operationId: search_lidar_glas
+      summary: search_lidar_glas
       parameters:
         - description: Search text
           in: query
@@ -9883,7 +9883,7 @@ paths:
   /repository/search/type/lidar_las:
     get:
       description: API to search for entries of type LAS Lidar Data
-      operationId: search_lidar_las
+      summary: search_lidar_las
       parameters:
         - description: Search text
           in: query
@@ -9994,7 +9994,7 @@ paths:
   /repository/search/type/lidar_lvis:
     get:
       description: API to search for entries of type LVIS Lidar Data
-      operationId: search_lidar_lvis
+      summary: search_lidar_lvis
       parameters:
         - description: Search text
           in: query
@@ -10105,7 +10105,7 @@ paths:
   /repository/search/type/link:
     get:
       description: API to search for entries of type Link
-      operationId: search_link
+      summary: search_link
       parameters:
         - description: Search text
           in: query
@@ -10216,7 +10216,7 @@ paths:
   /repository/search/type/localfiles:
     get:
       description: API to search for entries of type Server Side Files
-      operationId: search_localfiles
+      summary: search_localfiles
       parameters:
         - description: Search text
           in: query
@@ -10327,7 +10327,7 @@ paths:
   /repository/search/type/locations:
     get:
       description: API to search for entries of type Locations
-      operationId: search_locations
+      summary: search_locations
       parameters:
         - description: Search text
           in: query
@@ -10453,7 +10453,7 @@ paths:
   /repository/search/type/map_googlemap:
     get:
       description: API to search for entries of type Google Map URL
-      operationId: search_map_googlemap
+      summary: search_map_googlemap
       parameters:
         - description: Search text
           in: query
@@ -10564,7 +10564,7 @@ paths:
   /repository/search/type/media_audiofile:
     get:
       description: API to search for entries of type Audio File
-      operationId: search_media_audiofile
+      summary: search_media_audiofile
       parameters:
         - description: Search text
           in: query
@@ -10675,7 +10675,7 @@ paths:
   /repository/search/type/media_imageloop:
     get:
       description: API to search for entries of type Image Loop
-      operationId: search_media_imageloop
+      summary: search_media_imageloop
       parameters:
         - description: Search text
           in: query
@@ -10786,7 +10786,7 @@ paths:
   /repository/search/type/media_photoalbum:
     get:
       description: API to search for entries of type Photo Album
-      operationId: search_media_photoalbum
+      summary: search_media_photoalbum
       parameters:
         - description: Search text
           in: query
@@ -10897,7 +10897,7 @@ paths:
   /repository/search/type/media_video_channel:
     get:
       description: API to search for entries of type Video Channel
-      operationId: search_media_video_channel
+      summary: search_media_video_channel
       parameters:
         - description: Search text
           in: query
@@ -11008,7 +11008,7 @@ paths:
   /repository/search/type/media_video_quicktime:
     get:
       description: API to search for entries of type Quicktime Video
-      operationId: search_media_video_quicktime
+      summary: search_media_video_quicktime
       parameters:
         - description: Search text
           in: query
@@ -11119,7 +11119,7 @@ paths:
   /repository/search/type/media_youtubevideo:
     get:
       description: API to search for entries of type YouTube Video
-      operationId: search_media_youtubevideo
+      summary: search_media_youtubevideo
       parameters:
         - description: Search text
           in: query
@@ -11230,7 +11230,7 @@ paths:
   /repository/search/type/multisearch:
     get:
       description: API to search for entries of type Multiple Search
-      operationId: search_multisearch
+      summary: search_multisearch
       parameters:
         - description: Search text
           in: query
@@ -11341,7 +11341,7 @@ paths:
   /repository/search/type/nga_tracks:
     get:
       description: API to search for entries of type NGA Tracks
-      operationId: search_nga_tracks
+      summary: search_nga_tracks
       parameters:
         - description: Search text
           in: query
@@ -11467,7 +11467,7 @@ paths:
   /repository/search/type/notes:
     get:
       description: API to search for entries of type Notes
-      operationId: search_notes
+      summary: search_notes
       parameters:
         - description: Search text
           in: query
@@ -11578,7 +11578,7 @@ paths:
   /repository/search/type/notes_note:
     get:
       description: API to search for entries of type Note
-      operationId: search_notes_note
+      summary: search_notes_note
       parameters:
         - description: Search text
           in: query
@@ -11689,7 +11689,7 @@ paths:
   /repository/search/type/opendaplink:
     get:
       description: API to search for entries of type OPeNDAP Link
-      operationId: search_opendaplink
+      summary: search_opendaplink
       parameters:
         - description: Search text
           in: query
@@ -11800,7 +11800,7 @@ paths:
   /repository/search/type/owl.class:
     get:
       description: API to search for entries of type OWL Class
-      operationId: search_owl.class
+      summary: search_owl.class
       parameters:
         - description: Search text
           in: query
@@ -11911,7 +11911,7 @@ paths:
   /repository/search/type/owl.ontology:
     get:
       description: API to search for entries of type OWL Ontology
-      operationId: search_owl.ontology
+      summary: search_owl.ontology
       parameters:
         - description: Search text
           in: query
@@ -12022,7 +12022,7 @@ paths:
   /repository/search/type/pasteitentry:
     get:
       description: API to search for entries of type Paste Text Entry
-      operationId: search_pasteitentry
+      summary: search_pasteitentry
       parameters:
         - description: Search text
           in: query
@@ -12133,7 +12133,7 @@ paths:
   /repository/search/type/point_text:
     get:
       description: API to search for entries of type Text Point Data
-      operationId: search_point_text
+      summary: search_point_text
       parameters:
         - description: Search text
           in: query
@@ -12244,7 +12244,7 @@ paths:
   /repository/search/type/poll:
     get:
       description: API to search for entries of type Poll
-      operationId: search_poll
+      summary: search_poll
       parameters:
         - description: Search text
           in: query
@@ -12355,7 +12355,7 @@ paths:
   /repository/search/type/project_campaign:
     get:
       description: API to search for entries of type Campaign
-      operationId: search_project_campaign
+      summary: search_project_campaign
       parameters:
         - description: Search text
           in: query
@@ -12466,7 +12466,7 @@ paths:
   /repository/search/type/project_casestudy:
     get:
       description: API to search for entries of type Case Study
-      operationId: search_project_casestudy
+      summary: search_project_casestudy
       parameters:
         - description: Search text
           in: query
@@ -12587,7 +12587,7 @@ paths:
   /repository/search/type/project_contribution:
     get:
       description: API to search for entries of type Research Contribution
-      operationId: search_project_contribution
+      summary: search_project_contribution
       parameters:
         - description: Search text
           in: query
@@ -12698,7 +12698,7 @@ paths:
   /repository/search/type/project_dataformat:
     get:
       description: API to search for entries of type Data Format
-      operationId: search_project_dataformat
+      summary: search_project_dataformat
       parameters:
         - description: Search text
           in: query
@@ -12819,7 +12819,7 @@ paths:
   /repository/search/type/project_dataset:
     get:
       description: API to search for entries of type Dataset
-      operationId: search_project_dataset
+      summary: search_project_dataset
       parameters:
         - description: Search text
           in: query
@@ -12945,7 +12945,7 @@ paths:
   /repository/search/type/project_deployment:
     get:
       description: API to search for entries of type Deployment
-      operationId: search_project_deployment
+      summary: search_project_deployment
       parameters:
         - description: Search text
           in: query
@@ -13056,7 +13056,7 @@ paths:
   /repository/search/type/project_experiment:
     get:
       description: API to search for entries of type Experiment
-      operationId: search_project_experiment
+      summary: search_project_experiment
       parameters:
         - description: Search text
           in: query
@@ -13167,7 +13167,7 @@ paths:
   /repository/search/type/project_fieldnote:
     get:
       description: API to search for entries of type Field Note
-      operationId: search_project_fieldnote
+      summary: search_project_fieldnote
       parameters:
         - description: Search text
           in: query
@@ -13278,7 +13278,7 @@ paths:
   /repository/search/type/project_gps_controlpoints:
     get:
       description: API to search for entries of type Control Points File
-      operationId: search_project_gps_controlpoints
+      summary: search_project_gps_controlpoints
       parameters:
         - description: Search text
           in: query
@@ -13389,7 +13389,7 @@ paths:
   /repository/search/type/project_gps_raw:
     get:
       description: API to search for entries of type Raw GPS File
-      operationId: search_project_gps_raw
+      summary: search_project_gps_raw
       parameters:
         - description: Search text
           in: query
@@ -13500,7 +13500,7 @@ paths:
   /repository/search/type/project_gps_rinex:
     get:
       description: API to search for entries of type RINEX File
-      operationId: search_project_gps_rinex
+      summary: search_project_gps_rinex
       parameters:
         - description: Search text
           in: query
@@ -13611,7 +13611,7 @@ paths:
   /repository/search/type/project_instrument:
     get:
       description: API to search for entries of type Instrument Data Collection
-      operationId: search_project_instrument
+      summary: search_project_instrument
       parameters:
         - description: Search text
           in: query
@@ -13722,7 +13722,7 @@ paths:
   /repository/search/type/project_learning_resource:
     get:
       description: API to search for entries of type Teaching Resource
-      operationId: search_project_learning_resource
+      summary: search_project_learning_resource
       parameters:
         - description: Search text
           in: query
@@ -13843,7 +13843,7 @@ paths:
   /repository/search/type/project_meeting:
     get:
       description: API to search for entries of type Meeting
-      operationId: search_project_meeting
+      summary: search_project_meeting
       parameters:
         - description: Search text
           in: query
@@ -13969,7 +13969,7 @@ paths:
   /repository/search/type/project_organization:
     get:
       description: API to search for entries of type Organization
-      operationId: search_project_organization
+      summary: search_project_organization
       parameters:
         - description: Search text
           in: query
@@ -14090,7 +14090,7 @@ paths:
   /repository/search/type/project_program:
     get:
       description: API to search for entries of type Program
-      operationId: search_project_program
+      summary: search_project_program
       parameters:
         - description: Search text
           in: query
@@ -14201,7 +14201,7 @@ paths:
   /repository/search/type/project_project:
     get:
       description: API to search for entries of type Project
-      operationId: search_project_project
+      summary: search_project_project
       parameters:
         - description: Search text
           in: query
@@ -14312,7 +14312,7 @@ paths:
   /repository/search/type/project_service:
     get:
       description: API to search for entries of type Data Access Service
-      operationId: search_project_service
+      summary: search_project_service
       parameters:
         - description: Search text
           in: query
@@ -14433,7 +14433,7 @@ paths:
   /repository/search/type/project_site:
     get:
       description: API to search for entries of type Site
-      operationId: search_project_site
+      summary: search_project_site
       parameters:
         - description: Search text
           in: query
@@ -14579,7 +14579,7 @@ paths:
   /repository/search/type/project_softwarepackage:
     get:
       description: API to search for entries of type Software Tool
-      operationId: search_project_softwarepackage
+      summary: search_project_softwarepackage
       parameters:
         - description: Search text
           in: query
@@ -14725,7 +14725,7 @@ paths:
   /repository/search/type/project_standard_name:
     get:
       description: API to search for entries of type Standard Parameter Name
-      operationId: search_project_standard_name
+      summary: search_project_standard_name
       parameters:
         - description: Search text
           in: query
@@ -14846,7 +14846,7 @@ paths:
   /repository/search/type/project_surveylocation:
     get:
       description: API to search for entries of type Survey Location
-      operationId: search_project_surveylocation
+      summary: search_project_surveylocation
       parameters:
         - description: Search text
           in: query
@@ -14957,7 +14957,7 @@ paths:
   /repository/search/type/project_term:
     get:
       description: API to search for entries of type Vocabulary Term
-      operationId: search_project_term
+      summary: search_project_term
       parameters:
         - description: Search text
           in: query
@@ -15073,7 +15073,7 @@ paths:
   /repository/search/type/project_visit:
     get:
       description: API to search for entries of type Site Visit
-      operationId: search_project_visit
+      summary: search_project_visit
       parameters:
         - description: Search text
           in: query
@@ -15184,7 +15184,7 @@ paths:
   /repository/search/type/project_vocabulary:
     get:
       description: API to search for entries of type Vocabulary
-      operationId: search_project_vocabulary
+      summary: search_project_vocabulary
       parameters:
         - description: Search text
           in: query
@@ -15295,7 +15295,7 @@ paths:
   /repository/search/type/property_sales:
     get:
       description: API to search for entries of type Property Sales
-      operationId: search_property_sales
+      summary: search_property_sales
       parameters:
         - description: Search text
           in: query
@@ -15467,7 +15467,7 @@ paths:
   /repository/search/type/propertydb:
     get:
       description: API to search for entries of type Property Database
-      operationId: search_propertydb
+      summary: search_propertydb
       parameters:
         - description: Search text
           in: query
@@ -15640,7 +15640,7 @@ paths:
   /repository/search/type/python_notebook:
     get:
       description: API to search for entries of type IPython Notebook file
-      operationId: search_python_notebook
+      summary: search_python_notebook
       parameters:
         - description: Search text
           in: query
@@ -15751,7 +15751,7 @@ paths:
   /repository/search/type/registrations:
     get:
       description: API to search for entries of type Registrations
-      operationId: search_registrations
+      summary: search_registrations
       parameters:
         - description: Search text
           in: query
@@ -15922,7 +15922,7 @@ paths:
   /repository/search/type/slack_team:
     get:
       description: API to search for entries of type Slack Team
-      operationId: search_slack_team
+      summary: search_slack_team
       parameters:
         - description: Search text
           in: query
@@ -16033,7 +16033,7 @@ paths:
   /repository/search/type/statusboard:
     get:
       description: API to search for entries of type Status Board
-      operationId: search_statusboard
+      summary: search_statusboard
       parameters:
         - description: Search text
           in: query
@@ -16154,7 +16154,7 @@ paths:
   /repository/search/type/tasks:
     get:
       description: API to search for entries of type Tasks
-      operationId: search_tasks
+      summary: search_tasks
       parameters:
         - description: Search text
           in: query
@@ -16301,7 +16301,7 @@ paths:
   /repository/search/type/tmdbmovies:
     get:
       description: API to search for entries of type Tmdb Movies
-      operationId: search_tmdbmovies
+      summary: search_tmdbmovies
       parameters:
         - description: Search text
           in: query
@@ -16518,7 +16518,7 @@ paths:
   /repository/search/type/todo:
     get:
       description: API to search for entries of type Todo
-      operationId: search_todo
+      summary: search_todo
       parameters:
         - description: Search text
           in: query
@@ -16644,7 +16644,7 @@ paths:
   /repository/search/type/trip_event:
     get:
       description: API to search for entries of type Event
-      operationId: search_trip_event
+      summary: search_trip_event
       parameters:
         - description: Search text
           in: query
@@ -16755,7 +16755,7 @@ paths:
   /repository/search/type/trip_flight:
     get:
       description: API to search for entries of type Flight Leg
-      operationId: search_trip_flight
+      summary: search_trip_flight
       parameters:
         - description: Search text
           in: query
@@ -16866,7 +16866,7 @@ paths:
   /repository/search/type/trip_hotel:
     get:
       description: API to search for entries of type Lodging
-      operationId: search_trip_hotel
+      summary: search_trip_hotel
       parameters:
         - description: Search text
           in: query
@@ -16977,7 +16977,7 @@ paths:
   /repository/search/type/trip_report:
     get:
       description: API to search for entries of type Trip Report
-      operationId: search_trip_report
+      summary: search_trip_report
       parameters:
         - description: Search text
           in: query
@@ -17088,7 +17088,7 @@ paths:
   /repository/search/type/trip_trip:
     get:
       description: API to search for entries of type Trip
-      operationId: search_trip_trip
+      summary: search_trip_trip
       parameters:
         - description: Search text
           in: query
@@ -17199,7 +17199,7 @@ paths:
   /repository/search/type/type_artists_space:
     get:
       description: API to search for entries of type Artists Space
-      operationId: search_type_artists_space
+      summary: search_type_artists_space
       parameters:
         - description: Search text
           in: query
@@ -17330,7 +17330,7 @@ paths:
   /repository/search/type/type_awc_metar:
     get:
       description: API to search for entries of type AWC Weather Observations
-      operationId: search_type_awc_metar
+      summary: search_type_awc_metar
       parameters:
         - description: Search text
           in: query
@@ -17446,7 +17446,7 @@ paths:
   /repository/search/type/type_awhere_farm:
     get:
       description: API to search for entries of type aWhere Farm
-      operationId: search_type_awhere_farm
+      summary: search_type_awhere_farm
       parameters:
         - description: Search text
           in: query
@@ -17557,7 +17557,7 @@ paths:
   /repository/search/type/type_awhere_field:
     get:
       description: API to search for entries of type aWhere Field
-      operationId: search_type_awhere_field
+      summary: search_type_awhere_field
       parameters:
         - description: Search text
           in: query
@@ -17668,7 +17668,7 @@ paths:
   /repository/search/type/type_biz_stockseries:
     get:
       description: API to search for entries of type Stock Ticker Data
-      operationId: search_type_biz_stockseries
+      summary: search_type_biz_stockseries
       parameters:
         - description: Search text
           in: query
@@ -17779,7 +17779,7 @@ paths:
   /repository/search/type/type_census_acs:
     get:
       description: API to search for entries of type US Census ACS Data
-      operationId: search_type_census_acs
+      summary: search_type_census_acs
       parameters:
         - description: Search text
           in: query
@@ -17910,7 +17910,7 @@ paths:
   /repository/search/type/type_db_table:
     get:
       description: API to search for entries of type Database Table
-      operationId: search_type_db_table
+      summary: search_type_db_table
       parameters:
         - description: Search text
           in: query
@@ -18021,7 +18021,7 @@ paths:
   /repository/search/type/type_document_csv:
     get:
       description: API to search for entries of type CSV File
-      operationId: search_type_document_csv
+      summary: search_type_document_csv
       parameters:
         - description: Search text
           in: query
@@ -18132,7 +18132,7 @@ paths:
   /repository/search/type/type_document_doc:
     get:
       description: API to search for entries of type Microsoft Word File
-      operationId: search_type_document_doc
+      summary: search_type_document_doc
       parameters:
         - description: Search text
           in: query
@@ -18243,7 +18243,7 @@ paths:
   /repository/search/type/type_document_html:
     get:
       description: API to search for entries of type HTML File
-      operationId: search_type_document_html
+      summary: search_type_document_html
       parameters:
         - description: Search text
           in: query
@@ -18354,7 +18354,7 @@ paths:
   /repository/search/type/type_document_pdf:
     get:
       description: API to search for entries of type PDF File
-      operationId: search_type_document_pdf
+      summary: search_type_document_pdf
       parameters:
         - description: Search text
           in: query
@@ -18465,7 +18465,7 @@ paths:
   /repository/search/type/type_document_ppt:
     get:
       description: API to search for entries of type Microsoft Powerpoint File
-      operationId: search_type_document_ppt
+      summary: search_type_document_ppt
       parameters:
         - description: Search text
           in: query
@@ -18576,7 +18576,7 @@ paths:
   /repository/search/type/type_document_xls:
     get:
       description: API to search for entries of type Microsoft Excel File
-      operationId: search_type_document_xls
+      summary: search_type_document_xls
       parameters:
         - description: Search text
           in: query
@@ -18687,7 +18687,7 @@ paths:
   /repository/search/type/type_drilsdown_casestudy:
     get:
       description: API to search for entries of type Drilsdown Case Study
-      operationId: search_type_drilsdown_casestudy
+      summary: search_type_drilsdown_casestudy
       parameters:
         - description: Search text
           in: query
@@ -18798,7 +18798,7 @@ paths:
   /repository/search/type/type_edgar_filing:
     get:
       description: API to search for entries of type SEC EDGAR Filing
-      operationId: search_type_edgar_filing
+      summary: search_type_edgar_filing
       parameters:
         - description: Search text
           in: query
@@ -18939,7 +18939,7 @@ paths:
   /repository/search/type/type_eia_category:
     get:
       description: API to search for entries of type EIA Category
-      operationId: search_type_eia_category
+      summary: search_type_eia_category
       parameters:
         - description: Search text
           in: query
@@ -19050,7 +19050,7 @@ paths:
   /repository/search/type/type_eia_series:
     get:
       description: API to search for entries of type EIA Series
-      operationId: search_type_eia_series
+      summary: search_type_eia_series
       parameters:
         - description: Search text
           in: query
@@ -19161,7 +19161,7 @@ paths:
   /repository/search/type/type_esri_featureserver:
     get:
       description: API to search for entries of type ESRI Feature Server
-      operationId: search_type_esri_featureserver
+      summary: search_type_esri_featureserver
       parameters:
         - description: Search text
           in: query
@@ -19272,7 +19272,7 @@ paths:
   /repository/search/type/type_esri_geometryserver:
     get:
       description: API to search for entries of type ESRI Geometry Server
-      operationId: search_type_esri_geometryserver
+      summary: search_type_esri_geometryserver
       parameters:
         - description: Search text
           in: query
@@ -19383,7 +19383,7 @@ paths:
   /repository/search/type/type_esri_gpserver:
     get:
       description: API to search for entries of type ESRI GP Server
-      operationId: search_type_esri_gpserver
+      summary: search_type_esri_gpserver
       parameters:
         - description: Search text
           in: query
@@ -19494,7 +19494,7 @@ paths:
   /repository/search/type/type_esri_imageserver:
     get:
       description: API to search for entries of type ESRI Image Server
-      operationId: search_type_esri_imageserver
+      summary: search_type_esri_imageserver
       parameters:
         - description: Search text
           in: query
@@ -19605,7 +19605,7 @@ paths:
   /repository/search/type/type_esri_layer:
     get:
       description: API to search for entries of type ESRI Layer
-      operationId: search_type_esri_layer
+      summary: search_type_esri_layer
       parameters:
         - description: Search text
           in: query
@@ -19721,7 +19721,7 @@ paths:
   /repository/search/type/type_esri_mapserver:
     get:
       description: API to search for entries of type ESRI Map Server
-      operationId: search_type_esri_mapserver
+      summary: search_type_esri_mapserver
       parameters:
         - description: Search text
           in: query
@@ -19832,7 +19832,7 @@ paths:
   /repository/search/type/type_esri_restfolder:
     get:
       description: API to search for entries of type ESRI Services Folder
-      operationId: search_type_esri_restfolder
+      summary: search_type_esri_restfolder
       parameters:
         - description: Search text
           in: query
@@ -19943,7 +19943,7 @@ paths:
   /repository/search/type/type_esri_restserver:
     get:
       description: API to search for entries of type ESRI Web Server
-      operationId: search_type_esri_restserver
+      summary: search_type_esri_restserver
       parameters:
         - description: Search text
           in: query
@@ -20054,7 +20054,7 @@ paths:
   /repository/search/type/type_esri_restservice:
     get:
       description: API to search for entries of type ESRI Rest Service
-      operationId: search_type_esri_restservice
+      summary: search_type_esri_restservice
       parameters:
         - description: Search text
           in: query
@@ -20165,7 +20165,7 @@ paths:
   /repository/search/type/type_fred_category:
     get:
       description: API to search for entries of type FRED Category
-      operationId: search_type_fred_category
+      summary: search_type_fred_category
       parameters:
         - description: Search text
           in: query
@@ -20276,7 +20276,7 @@ paths:
   /repository/search/type/type_fred_series:
     get:
       description: API to search for entries of type FRED Series
-      operationId: search_type_fred_series
+      summary: search_type_fred_series
       parameters:
         - description: Search text
           in: query
@@ -20387,7 +20387,7 @@ paths:
   /repository/search/type/type_gtfs_agency:
     get:
       description: API to search for entries of type Transit Agency
-      operationId: search_type_gtfs_agency
+      summary: search_type_gtfs_agency
       parameters:
         - description: Search text
           in: query
@@ -20498,7 +20498,7 @@ paths:
   /repository/search/type/type_gtfs_route:
     get:
       description: API to search for entries of type Transit Route
-      operationId: search_type_gtfs_route
+      summary: search_type_gtfs_route
       parameters:
         - description: Search text
           in: query
@@ -20619,7 +20619,7 @@ paths:
   /repository/search/type/type_gtfs_routes:
     get:
       description: API to search for entries of type Transit Route Collection
-      operationId: search_type_gtfs_routes
+      summary: search_type_gtfs_routes
       parameters:
         - description: Search text
           in: query
@@ -20730,7 +20730,7 @@ paths:
   /repository/search/type/type_gtfs_stop:
     get:
       description: API to search for entries of type Transit Stop
-      operationId: search_type_gtfs_stop
+      summary: search_type_gtfs_stop
       parameters:
         - description: Search text
           in: query
@@ -20866,7 +20866,7 @@ paths:
   /repository/search/type/type_gtfs_stops:
     get:
       description: API to search for entries of type Transit Stop Collection
-      operationId: search_type_gtfs_stops
+      summary: search_type_gtfs_stops
       parameters:
         - description: Search text
           in: query
@@ -20977,7 +20977,7 @@ paths:
   /repository/search/type/type_gtfs_trip:
     get:
       description: API to search for entries of type Transit Trip
-      operationId: search_type_gtfs_trip
+      summary: search_type_gtfs_trip
       parameters:
         - description: Search text
           in: query
@@ -21108,7 +21108,7 @@ paths:
   /repository/search/type/type_hazarddata:
     get:
       description: API to search for entries of type Hazard Data
-      operationId: search_type_hazarddata
+      summary: search_type_hazarddata
       parameters:
         - description: Search text
           in: query
@@ -21224,7 +21224,7 @@ paths:
   /repository/search/type/type_hydro_colorado:
     get:
       description: API to search for entries of type Colorado DNR Stream Gage
-      operationId: search_type_hydro_colorado
+      summary: search_type_hydro_colorado
       parameters:
         - description: Search text
           in: query
@@ -21340,7 +21340,7 @@ paths:
   /repository/search/type/type_idv_bundle:
     get:
       description: API to search for entries of type IDV Bundle
-      operationId: search_type_idv_bundle
+      summary: search_type_idv_bundle
       parameters:
         - description: Search text
           in: query
@@ -21451,7 +21451,7 @@ paths:
   /repository/search/type/type_image:
     get:
       description: API to search for entries of type Image
-      operationId: search_type_image
+      summary: search_type_image
       parameters:
         - description: Search text
           in: query
@@ -21562,7 +21562,7 @@ paths:
   /repository/search/type/type_image_airport:
     get:
       description: API to search for entries of type Airport Image
-      operationId: search_type_image_airport
+      summary: search_type_image_airport
       parameters:
         - description: Search text
           in: query
@@ -21673,7 +21673,7 @@ paths:
   /repository/search/type/type_mb:
     get:
       description: API to search for entries of type MB Bathymetry
-      operationId: search_type_mb
+      summary: search_type_mb
       parameters:
         - description: Search text
           in: query
@@ -21784,7 +21784,7 @@ paths:
   /repository/search/type/type_mb_collection:
     get:
       description: API to search for entries of type Bathymetry Collection
-      operationId: search_type_mb_collection
+      summary: search_type_mb_collection
       parameters:
         - description: Search text
           in: query
@@ -21895,7 +21895,7 @@ paths:
   /repository/search/type/type_mb_point_basic:
     get:
       description: API to search for entries of type Basic MB point file
-      operationId: search_type_mb_point_basic
+      summary: search_type_mb_point_basic
       parameters:
         - description: Search text
           in: query
@@ -22006,7 +22006,7 @@ paths:
   /repository/search/type/type_metameta_collection:
     get:
       description: 'API to search for entries of type Data Dictionary: Metadata Collection'
-      operationId: search_type_metameta_collection
+      summary: search_type_metameta_collection
       parameters:
         - description: Search text
           in: query
@@ -22117,7 +22117,7 @@ paths:
   /repository/search/type/type_metameta_dictionary:
     get:
       description: 'API to search for entries of type Data Dictionary: Metadata Dictionary'
-      operationId: search_type_metameta_dictionary
+      summary: search_type_metameta_dictionary
       parameters:
         - description: Search text
           in: query
@@ -22268,7 +22268,7 @@ paths:
   /repository/search/type/type_metameta_field:
     get:
       description: 'API to search for entries of type Data Dictionary: Metadata Field'
-      operationId: search_type_metameta_field
+      summary: search_type_metameta_field
       parameters:
         - description: Search text
           in: query
@@ -22419,7 +22419,7 @@ paths:
   /repository/search/type/type_nist_constant:
     get:
       description: API to search for entries of type CODATA Fundamental Physical Constants
-      operationId: search_type_nist_constant
+      summary: search_type_nist_constant
       parameters:
         - description: Search text
           in: query
@@ -22535,7 +22535,7 @@ paths:
   /repository/search/type/type_nist_energy:
     get:
       description: API to search for entries of type NIST Ionization Energy Data
-      operationId: search_type_nist_energy
+      summary: search_type_nist_energy
       parameters:
         - description: Search text
           in: query
@@ -22661,7 +22661,7 @@ paths:
   /repository/search/type/type_nist_isotope:
     get:
       description: API to search for entries of type NIST Isotope
-      operationId: search_type_nist_isotope
+      summary: search_type_nist_isotope
       parameters:
         - description: Search text
           in: query
@@ -22772,7 +22772,7 @@ paths:
   /repository/search/type/type_nist_janaffile:
     get:
       description: API to search for entries of type NIST JANAF Thermochemical Table
-      operationId: search_type_nist_janaffile
+      summary: search_type_nist_janaffile
       parameters:
         - description: Search text
           in: query
@@ -22883,7 +22883,7 @@ paths:
   /repository/search/type/type_nitf:
     get:
       description: API to search for entries of type NITF File
-      operationId: search_type_nitf
+      summary: search_type_nitf
       parameters:
         - description: Search text
           in: query
@@ -22994,7 +22994,7 @@ paths:
   /repository/search/type/type_point_ameriflux_level2:
     get:
       description: API to search for entries of type Ameriflux Level 2 CSV File
-      operationId: search_type_point_ameriflux_level2
+      summary: search_type_point_ameriflux_level2
       parameters:
         - description: Search text
           in: query
@@ -23120,7 +23120,7 @@ paths:
   /repository/search/type/type_point_amrc_final:
     get:
       description: API to search for entries of type AMRC Final QC Data
-      operationId: search_type_point_amrc_final
+      summary: search_type_point_amrc_final
       parameters:
         - description: Search text
           in: query
@@ -23246,7 +23246,7 @@ paths:
   /repository/search/type/type_point_amrc_freewave:
     get:
       description: API to search for entries of type AMRC Freewave  Data
-      operationId: search_type_point_amrc_freewave
+      summary: search_type_point_amrc_freewave
       parameters:
         - description: Search text
           in: query
@@ -23377,7 +23377,7 @@ paths:
   /repository/search/type/type_point_collection:
     get:
       description: API to search for entries of type Point Data Collection
-      operationId: search_type_point_collection
+      summary: search_type_point_collection
       parameters:
         - description: Search text
           in: query
@@ -23488,7 +23488,7 @@ paths:
   /repository/search/type/type_point_czo:
     get:
       description: API to search for entries of type CZO Display File Format
-      operationId: search_type_point_czo
+      summary: search_type_point_czo
       parameters:
         - description: Search text
           in: query
@@ -23599,7 +23599,7 @@ paths:
   /repository/search/type/type_point_gcnet:
     get:
       description: API to search for entries of type GC-Net Point Data
-      operationId: search_type_point_gcnet
+      summary: search_type_point_gcnet
       parameters:
         - description: Search text
           in: query
@@ -23710,7 +23710,7 @@ paths:
   /repository/search/type/type_point_geomag_iaga2002:
     get:
       description: API to search for entries of type IAGA 2002 Geomagnetism Data
-      operationId: search_type_point_geomag_iaga2002
+      summary: search_type_point_geomag_iaga2002
       parameters:
         - description: Search text
           in: query
@@ -23851,7 +23851,7 @@ paths:
   /repository/search/type/type_point_hydro_waterml:
     get:
       description: API to search for entries of type WaterML
-      operationId: search_type_point_hydro_waterml
+      summary: search_type_point_hydro_waterml
       parameters:
         - description: Search text
           in: query
@@ -23972,7 +23972,7 @@ paths:
   /repository/search/type/type_point_icebridge_atm_icessn:
     get:
       description: API to search for entries of type ATM Ice SSN Data
-      operationId: search_type_point_icebridge_atm_icessn
+      summary: search_type_point_icebridge_atm_icessn
       parameters:
         - description: Search text
           in: query
@@ -24083,7 +24083,7 @@ paths:
   /repository/search/type/type_point_icebridge_atm_qfit:
     get:
       description: API to search for entries of type ATM QFIT Data
-      operationId: search_type_point_icebridge_atm_qfit
+      summary: search_type_point_icebridge_atm_qfit
       parameters:
         - description: Search text
           in: query
@@ -24194,7 +24194,7 @@ paths:
   /repository/search/type/type_point_icebridge_mccords_irmcr2:
     get:
       description: API to search for entries of type McCords Irmcr2 Data
-      operationId: search_type_point_icebridge_mccords_irmcr2
+      summary: search_type_point_icebridge_mccords_irmcr2
       parameters:
         - description: Search text
           in: query
@@ -24305,7 +24305,7 @@ paths:
   /repository/search/type/type_point_icebridge_mccords_irmcr3:
     get:
       description: API to search for entries of type McCords Irmcr3 Data
-      operationId: search_type_point_icebridge_mccords_irmcr3
+      summary: search_type_point_icebridge_mccords_irmcr3
       parameters:
         - description: Search text
           in: query
@@ -24416,7 +24416,7 @@ paths:
   /repository/search/type/type_point_icebridge_paris:
     get:
       description: API to search for entries of type Paris Data
-      operationId: search_type_point_icebridge_paris
+      summary: search_type_point_icebridge_paris
       parameters:
         - description: Search text
           in: query
@@ -24527,7 +24527,7 @@ paths:
   /repository/search/type/type_point_idv:
     get:
       description: API to search for entries of type IDV Point File
-      operationId: search_type_point_idv
+      summary: search_type_point_idv
       parameters:
         - description: Search text
           in: query
@@ -24638,7 +24638,7 @@ paths:
   /repository/search/type/type_point_ncdc_climate:
     get:
       description: API to search for entries of type NC  DC Climate Data
-      operationId: search_type_point_ncdc_climate
+      summary: search_type_point_ncdc_climate
       parameters:
         - description: Search text
           in: query
@@ -24749,7 +24749,7 @@ paths:
   /repository/search/type/type_point_netcdf:
     get:
       description: API to search for entries of type NetCDF Point File
-      operationId: search_type_point_netcdf
+      summary: search_type_point_netcdf
       parameters:
         - description: Search text
           in: query
@@ -24860,7 +24860,7 @@ paths:
   /repository/search/type/type_point_noaa_carbon:
     get:
       description: API to search for entries of type NOAA Carbon Measurements
-      operationId: search_type_point_noaa_carbon
+      summary: search_type_point_noaa_carbon
       parameters:
         - description: Search text
           in: query
@@ -24996,7 +24996,7 @@ paths:
   /repository/search/type/type_point_noaa_flask_event:
     get:
       description: API to search for entries of type NOAA Flask Event Measurements
-      operationId: search_type_point_noaa_flask_event
+      summary: search_type_point_noaa_flask_event
       parameters:
         - description: Search text
           in: query
@@ -25132,7 +25132,7 @@ paths:
   /repository/search/type/type_point_noaa_flask_month:
     get:
       description: API to search for entries of type NOAA Flask Month Measurements
-      operationId: search_type_point_noaa_flask_month
+      summary: search_type_point_noaa_flask_month
       parameters:
         - description: Search text
           in: query
@@ -25268,7 +25268,7 @@ paths:
   /repository/search/type/type_point_noaa_madis:
     get:
       description: API to search for entries of type NOAA MADIS Point Data
-      operationId: search_type_point_noaa_madis
+      summary: search_type_point_noaa_madis
       parameters:
         - description: Search text
           in: query
@@ -25379,7 +25379,7 @@ paths:
   /repository/search/type/type_point_noaa_tower:
     get:
       description: API to search for entries of type NOAA Tower Network
-      operationId: search_type_point_noaa_tower
+      summary: search_type_point_noaa_tower
       parameters:
         - description: Search text
           in: query
@@ -25495,7 +25495,7 @@ paths:
   /repository/search/type/type_point_ocean_cnv:
     get:
       description: API to search for entries of type SeaBird CNV Data
-      operationId: search_type_point_ocean_cnv
+      summary: search_type_point_ocean_cnv
       parameters:
         - description: Search text
           in: query
@@ -25606,7 +25606,7 @@ paths:
   /repository/search/type/type_point_ocean_csv_sado_TTS:
     get:
       description: API to search for entries of type SADO TTS Data
-      operationId: search_type_point_ocean_csv_sado_TTS
+      summary: search_type_point_ocean_csv_sado_TTS
       parameters:
         - description: Search text
           in: query
@@ -25717,7 +25717,7 @@ paths:
   /repository/search/type/type_point_ocean_csv_sado_meteo:
     get:
       description: API to search for entries of type SADO Meteo Data
-      operationId: search_type_point_ocean_csv_sado_meteo
+      summary: search_type_point_ocean_csv_sado_meteo
       parameters:
         - description: Search text
           in: query
@@ -25828,7 +25828,7 @@ paths:
   /repository/search/type/type_point_ocean_csv_sado_position:
     get:
       description: API to search for entries of type SADO Position Data
-      operationId: search_type_point_ocean_csv_sado_position
+      summary: search_type_point_ocean_csv_sado_position
       parameters:
         - description: Search text
           in: query
@@ -25939,7 +25939,7 @@ paths:
   /repository/search/type/type_point_ocean_netcdf_glider:
     get:
       description: API to search for entries of type NetCDF Glider Data
-      operationId: search_type_point_ocean_netcdf_glider
+      summary: search_type_point_ocean_netcdf_glider
       parameters:
         - description: Search text
           in: query
@@ -26055,7 +26055,7 @@ paths:
   /repository/search/type/type_point_ocean_netcdf_track:
     get:
       description: API to search for entries of type NetCDF Track Data
-      operationId: search_type_point_ocean_netcdf_track
+      summary: search_type_point_ocean_netcdf_track
       parameters:
         - description: Search text
           in: query
@@ -26171,7 +26171,7 @@ paths:
   /repository/search/type/type_point_ocean_ooi_dmgx:
     get:
       description: API to search for entries of type OOI Data
-      operationId: search_type_point_ocean_ooi_dmgx
+      summary: search_type_point_ocean_ooi_dmgx
       parameters:
         - description: Search text
           in: query
@@ -26282,7 +26282,7 @@ paths:
   /repository/search/type/type_point_pbo_position_time_series:
     get:
       description: API to search for entries of type PBO Position Time Series
-      operationId: search_type_point_pbo_position_time_series
+      summary: search_type_point_pbo_position_time_series
       parameters:
         - description: Search text
           in: query
@@ -26418,7 +26418,7 @@ paths:
   /repository/search/type/type_point_snotel:
     get:
       description: API to search for entries of type SNOTEL Snow Data
-      operationId: search_type_point_snotel
+      summary: search_type_point_snotel
       parameters:
         - description: Search text
           in: query
@@ -26559,7 +26559,7 @@ paths:
   /repository/search/type/type_point_wsbb_ggp:
     get:
       description: API to search for entries of type Global Geodynamics GGP Format
-      operationId: search_type_point_wsbb_ggp
+      summary: search_type_point_wsbb_ggp
       parameters:
         - description: Search text
           in: query
@@ -26685,7 +26685,7 @@ paths:
   /repository/search/type/type_psd_monthly_climate_index:
     get:
       description: API to search for entries of type NOAA-ESRL-PSD Monthly Climate Index
-      operationId: search_type_psd_monthly_climate_index
+      summary: search_type_psd_monthly_climate_index
       parameters:
         - description: Search text
           in: query
@@ -26801,7 +26801,7 @@ paths:
   /repository/search/type/type_quandl_series:
     get:
       description: API to search for entries of type QUANDL Series
-      operationId: search_type_quandl_series
+      summary: search_type_quandl_series
       parameters:
         - description: Search text
           in: query
@@ -26912,7 +26912,7 @@ paths:
   /repository/search/type/type_resilience_assessment:
     get:
       description: API to search for entries of type Resiliency Assessment
-      operationId: search_type_resilience_assessment
+      summary: search_type_resilience_assessment
       parameters:
         - description: Search text
           in: query
@@ -27058,7 +27058,7 @@ paths:
   /repository/search/type/type_resilience_project:
     get:
       description: API to search for entries of type Resiliency Project
-      operationId: search_type_resilience_project
+      summary: search_type_resilience_project
       parameters:
         - description: Search text
           in: query
@@ -27184,7 +27184,7 @@ paths:
   /repository/search/type/type_reuters_document:
     get:
       description: API to search for entries of type Reuters Document
-      operationId: search_type_reuters_document
+      summary: search_type_reuters_document
       parameters:
         - description: Search text
           in: query
@@ -27295,7 +27295,7 @@ paths:
   /repository/search/type/type_service_group:
     get:
       description: API to search for entries of type Service Group
-      operationId: search_type_service_group
+      summary: search_type_service_group
       parameters:
         - description: Search text
           in: query
@@ -27406,7 +27406,7 @@ paths:
   /repository/search/type/type_service_link:
     get:
       description: API to search for entries of type Service Link
-      operationId: search_type_service_link
+      summary: search_type_service_link
       parameters:
         - description: Search text
           in: query
@@ -27517,7 +27517,7 @@ paths:
   /repository/search/type/type_socrata_series:
     get:
       description: API to search for entries of type SOCRATA Series
-      operationId: search_type_socrata_series
+      summary: search_type_socrata_series
       parameters:
         - description: Search text
           in: query
@@ -27628,7 +27628,7 @@ paths:
   /repository/search/type/type_urbaninstitute_employment:
     get:
       description: API to search for entries of type MetroTrends Employment Data
-      operationId: search_type_urbaninstitute_employment
+      summary: search_type_urbaninstitute_employment
       parameters:
         - description: Search text
           in: query
@@ -27744,7 +27744,7 @@ paths:
   /repository/search/type/type_usda_arms_crop:
     get:
       description: API to search for entries of type USDA ARMS Crop Data
-      operationId: search_type_usda_arms_crop
+      summary: search_type_usda_arms_crop
       parameters:
         - description: Search text
           in: query
@@ -27870,7 +27870,7 @@ paths:
   /repository/search/type/type_usda_arms_finance:
     get:
       description: API to search for entries of type USDA ARMS Finance Data
-      operationId: search_type_usda_arms_finance
+      summary: search_type_usda_arms_finance
       parameters:
         - description: Search text
           in: query
@@ -27996,7 +27996,7 @@ paths:
   /repository/search/type/type_usda_nass:
     get:
       description: API to search for entries of type USDA NASS Data
-      operationId: search_type_usda_nass
+      summary: search_type_usda_nass
       parameters:
         - description: Search text
           in: query
@@ -28122,7 +28122,7 @@ paths:
   /repository/search/type/type_virtual:
     get:
       description: API to search for entries of type Virtual Group
-      operationId: search_type_virtual
+      summary: search_type_virtual
       parameters:
         - description: Search text
           in: query
@@ -28233,7 +28233,7 @@ paths:
   /repository/search/type/type_wms_capabilities:
     get:
       description: API to search for entries of type WMS Capabilities
-      operationId: search_type_wms_capabilities
+      summary: search_type_wms_capabilities
       parameters:
         - description: Search text
           in: query
@@ -28344,7 +28344,7 @@ paths:
   /repository/search/type/type_wms_layer:
     get:
       description: API to search for entries of type WMS Layer
-      operationId: search_type_wms_layer
+      summary: search_type_wms_layer
       parameters:
         - description: Search text
           in: query
@@ -28455,7 +28455,7 @@ paths:
   /repository/search/type/ufo_sightings:
     get:
       description: API to search for entries of type Ufo Sightings
-      operationId: search_ufo_sightings
+      summary: search_ufo_sightings
       parameters:
         - description: Search text
           in: query
@@ -28624,7 +28624,7 @@ paths:
   /repository/search/type/vote_yesno:
     get:
       description: API to search for entries of type Simple Yes-No Vote
-      operationId: search_vote_yesno
+      summary: search_vote_yesno
       parameters:
         - description: Search text
           in: query
@@ -28740,7 +28740,7 @@ paths:
   /repository/search/type/weblog:
     get:
       description: API to search for entries of type Weblog
-      operationId: search_weblog
+      summary: search_weblog
       parameters:
         - description: Search text
           in: query
@@ -28851,7 +28851,7 @@ paths:
   /repository/search/type/wikipage:
     get:
       description: API to search for entries of type Wiki Page
-      operationId: search_wikipage
+      summary: search_wikipage
       parameters:
         - description: Search text
           in: query
