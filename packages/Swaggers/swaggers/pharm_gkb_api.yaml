@@ -10,7 +10,7 @@ paths:
    /data/label:
     get:
       operationId: queryDrugLabels
-      operationId: Query Drug Labels
+      summary: Query Drug Labels
       description: "Query Drug Labels"
       produces:
         - application/json
@@ -62,7 +62,7 @@ paths:
    /data/guideline:
     get:
       operationId: queryDosingGudielines
-      operationId: Query a Dosing Gudielines
+      summary: Query a Dosing Gudielines
       description: "Query a Dosing Gudielines"
       produces:
         - application/json
@@ -103,7 +103,7 @@ paths:
    /data/ontologyTerm:
     get:
       operationId: queryOntologyTerms
-      operationId: Query Ontology Terms
+      summary: Query Ontology Terms
       description: "Query Ontology Terms"
       produces:
         - application/json

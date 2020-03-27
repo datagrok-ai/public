@@ -10,7 +10,7 @@ paths:
     get:
       operationId: allCountries
       description: "Returns dataset with information on all countries"
-      operationId: All Countries
+      summary: All Countries
       produces:
         - application/json
       responses:
@@ -19,7 +19,7 @@ paths:
    /name/{name}:
     get:
       operationId: searchByCountryName
-      operationId: Search By Country Name
+      summary: Search By Country Name
       description: "Search by country name. It can be the native name or partial name"
       produces:
         - application/json
@@ -35,7 +35,7 @@ paths:
    /currency/{currency}:
     get:
       operationId: searchByCurrency
-      operationId: Search By Currency
+      summary: Search By Currency
       description: "Search by ISO 4217 currency code"
       produces:
         - application/json
@@ -51,7 +51,7 @@ paths:
    /lang/{et}:
     get:
       operationId: searchByLanguage
-      operationId: Search By Language
+      summary: Search By Language
       description: "Search by ISO 639-1 language code"
       produces:
         - application/json
@@ -67,7 +67,7 @@ paths:
    /capital/{capital}:
     get:
       operationId: searchByCapitalCity
-      operationId: Search By Capital City
+      summary: Search By Capital City
       description: "Search by capital city"
       produces:
         - application/json
@@ -83,7 +83,7 @@ paths:
    /callingcode/{callingcode}:
     get:
       operationId: searchByCallingCode
-      operationId: Search By Calling Code
+      summary: Search By Calling Code
       description: "Search by calling code"
       produces:
         - application/json
@@ -99,7 +99,7 @@ paths:
    /region/{region}:
     get:
       operationId: searchByRegion
-      operationId: Search By Region
+      summary: Search By Region
       description: "Search by region: Africa, Americas, Asia, Europe, Oceania"
       produces:
         - application/json
@@ -121,7 +121,7 @@ paths:
    /regionalbloc/{regionalbloc}:
     get:
       operationId: searchByRegionalBloc
-      operationId: Search By Regional Bloc
+      summary: Search By Regional Bloc
       description: "Search by regional bloc"
       produces:
         - application/json

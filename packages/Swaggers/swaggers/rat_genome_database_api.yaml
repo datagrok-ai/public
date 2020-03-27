@@ -10,7 +10,7 @@ paths:
    /genes/{rgdId}:
     get:
       operationId: getInChromosome
-      operationId: Get a gene record by RGD ID
+      summary: Get a gene record by RGD ID
       description: "Get a gene record by RGD ID"
       produces:
         - application/json
@@ -27,7 +27,7 @@ paths:
    /strains/all:
     get:
       operationId: getAllActiveStrains
-      operationId: Get all active strains in RGD
+      summary: Get all active strains in RGD
       description: "Return all active strains in RGD"
       produces:
         - application/json
@@ -37,7 +37,7 @@ paths:
    /maps/{speciesTypeKey}:
     get:
       operationId: getListOfAssemblies
-      operationId: Get the list of assemblies
+      summary: Get the list of assemblies
       description: "Return a list of assemblies"
       produces:
         - application/json
@@ -54,7 +54,7 @@ paths:
    /lookup/geneTypes:
     get:
       operationId: getListOfGeneTypes
-      operationId: Get a list of gene types avialable in RGD
+      summary: Get a list of gene types avialable in RGD
       description: "Returns a list of gene types avialable in RGD"
       produces:
         - application/json

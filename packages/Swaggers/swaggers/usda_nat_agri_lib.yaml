@@ -14,7 +14,7 @@ paths:
   /search/:
     get:
       operationId: APIModuleSearch
-      operationId: API Module - Search
+      summary: API Module - Search
       description: Use this module to search the publications and related information we hold in the PubAg repository.
       parameters:
         - name: query
@@ -46,7 +46,7 @@ paths:
   /articles/{id}:
     get:
       operationId: APIModuleArticle
-      operationId: API Module - Article
+      summary: API Module - Article
       description: Use this module to request an article metadata and related information.
       parameters:
         - name: id

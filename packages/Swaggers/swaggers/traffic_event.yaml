@@ -86,7 +86,7 @@ paths:
       description: >-
         Allows to view a list of the active traffic events on the Ville de
         Montreal territory and surroundings
-      operationId: allEvents
+      summary: allEvents
       produces:
         - application/json
       parameters:
@@ -126,7 +126,7 @@ paths:
         - events
       operationId: Returns a specific active event
       description: 'Allows to view a specific traffic event '
-      operationId: selectEvent
+      summary: selectEvent
       produces:
         - application/json
       parameters:

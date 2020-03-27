@@ -14,7 +14,7 @@ paths:
   /mbk-highschool-dropout:
     get:
       operationId: highSchoolDropoutRates
-      operationId: High School Dropout Rates
+      summary: High School Dropout Rates
       description: 'Percentage of 18- to 24-year-olds who have not completed high school by sex and race/ethnicity, 2000–2014.'
       parameters:
         - $ref: '#/parameters/PerPage'
@@ -29,7 +29,7 @@ paths:
   /mbk-college-enrollment:
     get:
       operationId: collegeEnrollmentRates
-      operationId: College Enrollment Rates
+      summary: College Enrollment Rates
       description: 'Percentage of 18- to 24-year-olds enrolled in 2- and 4-year colleges by sex and race/ethnicity, 2000–2014.'
       parameters:
         - $ref: '#/parameters/PerPage'
@@ -44,7 +44,7 @@ paths:
   /mbk-bachelors-or-higher:
     get:
       operationId: collegeGraduationRates
-      operationId: College Graduation Rates
+      summary: College Graduation Rates
       description: 'Percentage of 18- to 24-year-olds who have completed a bachelor’s or higher degree by sex and race/ethnicity, 2000–2014.'
       parameters:
         - $ref: '#/parameters/PerPage'
@@ -59,7 +59,7 @@ paths:
   /mbk-disconnected-youth:
     get:
       operationId: ratesOfDisconnectedYouth
-      operationId: Rates of Disconnected Youth
+      summary: Rates of Disconnected Youth
       description: 'Percentage of 18- to 24-year-olds who were neither enrolled in school nor working by sex and race/ethnicity, 2000–2014 (so-called disconnected youth).'
       parameters:
         - $ref: '#/parameters/PerPage'
@@ -74,7 +74,7 @@ paths:
   /mbk-labor-force-participation:
     get:
       operationId: laborForceParticipationRates
-      operationId: Labor Force Participation Rates
+      summary: Labor Force Participation Rates
       description: 'Labor force participation rates for young adults ages 18–24 by age, sex, and race/ethnicity, 1980–2013 annual averages.'
       parameters:
         - $ref: '#/parameters/PerPage'
@@ -89,7 +89,7 @@ paths:
   /mbk-imprisonment:
     get:
       operationId: imprisonmentRates
-      operationId: Imprisonment Rates
+      summary: Imprisonment Rates
       description: 'Imprisonment rates of 18- to 24-year-olds sentenced to more than 1 year under the jurisdiction of state correctional authorities per 100,000 by sex and race/ethnicity, 2000–2012.'
       parameters:
         - $ref: '#/parameters/PerPage'

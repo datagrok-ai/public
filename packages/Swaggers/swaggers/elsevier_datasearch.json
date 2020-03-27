@@ -39,7 +39,7 @@
           "previews"
         ],
         "summary": "Fetch an asset preview",
-        "test": "get preview",
+        "summary": "get preview",
         "consumes": [
           "application/json"
         ],
@@ -84,7 +84,7 @@
           "search"
         ],
         "summary": "Term(s) search on the assets of a given container",
-        "test": "get assets",
+        "summary": "get assets",
         "consumes": [
           "application/json"
         ],
@@ -151,7 +151,7 @@
           "search"
         ],
         "summary": "Run a search on DataSearch",
-        "test": "search",
+        "summary": "search",
         "consumes": [
           "application/json"
         ],
@@ -413,7 +413,7 @@
           "typeAhead"
         ],
         "summary": "Give query suggestions to datasearch users",
-        "test": "suggest",
+        "summary": "suggest",
         "consumes": [
           "application/json"
         ],

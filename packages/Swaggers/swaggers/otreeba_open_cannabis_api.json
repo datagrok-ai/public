@@ -32,7 +32,7 @@
                 ],
                 "summary": "Get a list of all current seed companies.",
                 "description": "Returns a paginated list of seed companies.",
-                "test": "getSeedCompanies",
+                "summary": "getSeedCompanies",
                 "produces": [
                     "application/json"
                 ],
@@ -103,7 +103,7 @@
                 ],
                 "summary": "Find seed company by Open Cannabis Product Code (OCPC).",
                 "description": "Returns a single seed company.",
-                "test": "getSeedCompanyByOcpc",
+                "summary": "getSeedCompanyByOcpc",
                 "produces": [
                     "application/json"
                 ],
@@ -142,7 +142,7 @@
                 ],
                 "summary": "Find strains for a seed company by Open Cannabis Product Code (OCPC).",
                 "description": "Returns a paginated list of strains for a single seed company.",
-                "test": "getSeedCompanyStrainsByOcpc",
+                "summary": "getSeedCompanyStrainsByOcpc",
                 "produces": [
                     "application/json"
                 ],
@@ -211,7 +211,7 @@
                 ],
                 "summary": "Get a list of all current edibles.",
                 "description": "Returns a paginated list of edibles.",
-                "test": "getEdibles",
+                "summary": "getEdibles",
                 "produces": [
                     "application/json"
                 ],
@@ -282,7 +282,7 @@
                 ],
                 "summary": "Find edible by Open Cannabis Product Code (OCPC).",
                 "description": "Returns a single edible.",
-                "test": "getEdibleByOcpc",
+                "summary": "getEdibleByOcpc",
                 "produces": [
                     "application/json"
                 ],
@@ -321,7 +321,7 @@
                 ],
                 "summary": "Get a list of all current extracts.",
                 "description": "Returns a paginated list of extracts.",
-                "test": "getExtracts",
+                "summary": "getExtracts",
                 "produces": [
                     "application/json"
                 ],
@@ -392,7 +392,7 @@
                 ],
                 "summary": "Find extract by Open Cannabis Product Code (OCPC).",
                 "description": "Returns a single extract.",
-                "test": "getExtractByOcpc",
+                "summary": "getExtractByOcpc",
                 "produces": [
                     "application/json"
                 ],
@@ -431,7 +431,7 @@
                 ],
                 "summary": "Get a list of all current flowers.",
                 "description": "Returns a paginated list of flowers.",
-                "test": "getFlowers",
+                "summary": "getFlowers",
                 "produces": [
                     "application/json"
                 ],
@@ -502,7 +502,7 @@
                 ],
                 "summary": "Find flower by Open Cannabis Product Code (OCPC).",
                 "description": "Returns a single flower.",
-                "test": "getFlowerByOcpc",
+                "summary": "getFlowerByOcpc",
                 "produces": [
                     "application/json"
                 ],
@@ -541,7 +541,7 @@
                 ],
                 "summary": "Get a list of all current brands.",
                 "description": "Returns a paginated list of brands.",
-                "test": "getBrands",
+                "summary": "getBrands",
                 "produces": [
                     "application/json"
                 ],
@@ -612,7 +612,7 @@
                 ],
                 "summary": "Find brand by Open Cannabis Product Code (OCPC).",
                 "description": "Returns a single brand.",
-                "test": "getBrandByOcpc",
+                "summary": "getBrandByOcpc",
                 "produces": [
                     "application/json"
                 ],
@@ -651,7 +651,7 @@
                 ],
                 "summary": "Get a list of all current flowers for the given brand.",
                 "description": "Returns a paginated list of flowers.",
-                "test": "getBrandFlowers",
+                "summary": "getBrandFlowers",
                 "produces": [
                     "application/json"
                 ],
@@ -729,7 +729,7 @@
                 ],
                 "summary": "Get a list of all current extracts for the given brand.",
                 "description": "Returns a paginated list of extracts.",
-                "test": "getBrandExtracts",
+                "summary": "getBrandExtracts",
                 "produces": [
                     "application/json"
                 ],
@@ -807,7 +807,7 @@
                 ],
                 "summary": "Get a list of all current edibles for the given brand.",
                 "description": "Returns a paginated list of edibles.",
-                "test": "getBrandEdibles",
+                "summary": "getBrandEdibles",
                 "produces": [
                     "application/json"
                 ],
@@ -885,7 +885,7 @@
                 ],
                 "summary": "Get a list of all current products for the given brand.",
                 "description": "Returns a paginated list of products.",
-                "test": "getBrandProducts",
+                "summary": "getBrandProducts",
                 "produces": [
                     "application/json"
                 ],
@@ -963,7 +963,7 @@
                 ],
                 "summary": "Get a list of all current products.",
                 "description": "Returns a paginated list of products.",
-                "test": "getProducts",
+                "summary": "getProducts",
                 "produces": [
                     "application/json"
                 ],
@@ -1035,7 +1035,7 @@
                 ],
                 "summary": "Find product by Open Cannabis Product Code (OCPC).",
                 "description": "Returns a single product.",
-                "test": "getProductByOcpc",
+                "summary": "getProductByOcpc",
                 "produces": [
                     "application/json"
                 ],
@@ -1074,7 +1074,7 @@
                 ],
                 "summary": "Get a list of all current strains.",
                 "description": "Returns a paginated list of strains.",
-                "test": "getStrains",
+                "summary": "getStrains",
                 "produces": [
                     "application/json"
                 ],
@@ -1145,7 +1145,7 @@
                 ],
                 "summary": "Find strain by Open Cannabis Product Code (OCPC).",
                 "description": "Returns a single strain.",
-                "test": "getStrainByOcpc",
+                "summary": "getStrainByOcpc",
                 "produces": [
                     "application/json"
                 ],
@@ -1184,7 +1184,7 @@
                 ],
                 "summary": "Get a list of all current studies.",
                 "description": "Returns a paginated list of studies.",
-                "test": "getStudies",
+                "summary": "getStudies",
                 "produces": [
                     "application/json"
                 ],
@@ -1255,7 +1255,7 @@
                 ],
                 "summary": "Get a list of all current conditions for studies.",
                 "description": "Returns a list of all current conditions for studies.",
-                "test": "getStudiesConditions",
+                "summary": "getStudiesConditions",
                 "produces": [
                     "application/json"
                 ],
@@ -1306,7 +1306,7 @@
                 ],
                 "summary": "Find study by DOI, PubMed ID, or slug.",
                 "description": "Returns a single study.",
-                "test": "getStudyByIdentifier",
+                "summary": "getStudyByIdentifier",
                 "produces": [
                     "application/json"
                 ],
@@ -1358,7 +1358,7 @@
                 ],
                 "summary": "Get a list of all current studies for a given condition.",
                 "description": "Returns a paginated list of studies.",
-                "test": "getStudiesByCondition",
+                "summary": "getStudiesByCondition",
                 "produces": [
                     "application/json"
                 ],

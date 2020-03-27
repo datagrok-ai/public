@@ -10,7 +10,7 @@ paths:
    /{sequence}/json/chromosome/{chromosome}:
     get:
       operationId: getInChromosome
-      operationId: Get all TFs in a TF chromosome
+      summary: Get all TFs in a TF chromosome
       description: "Browse all TFs in a chromosome (specified by options)"
       produces:
         - application/json
@@ -46,7 +46,7 @@ paths:
    /{sequence}/json/family/{family}:
     get:
       operationId: getInFamily
-      operationId: Get all TFs in a TF family
+      summary: Get all TFs in a TF family
       description: "Browse all TFs in a TF family (specified by options)"
       produces:
         - application/json
@@ -121,7 +121,7 @@ paths:
    /{sequence}/json/localization/{localization}:
     get:
       operationId: getInCompartment
-      operationId: Get all TFs in a compartment
+      summary: Get all TFs in a compartment
       description: "Browse all TFs in a compartment (specified by options)"
       produces:
         - application/json

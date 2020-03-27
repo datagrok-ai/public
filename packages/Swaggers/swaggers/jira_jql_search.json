@@ -21,7 +21,7 @@
       "get": {
         "summary": "Search for issues using JQL (GET)",
         "description": "Searches for issues using <a href=\"https://confluence.atlassian.com/x/egORLQ\">JQL</a>.\n <p>\n If the JQL query expression is too large to be encoded as a query parameter, use the\n <a href=\"#api-api-2-search-post\">POST</a> version of this resource.\n <p>\n <b><a href=\"#permissions\">Permissions</a> required:</b>\n Permission to access Jira.",
-        "test": "Jira JQL Search",
+        "summary": "Jira JQL Search",
         "schemes": [],
         "consumes": [
           "application/json"
@@ -139,7 +139,7 @@
       "post": {
         "summary": "Jira Create Issue",
         "description": "Creates an issue or, where the option to create sub-tasks is enabled in Jira, a sub-task. A transition may be\n applied, to move the issue or sub-task to a workflow step other than the default start step, and issue properties\n set.\n <p>\n The content of the issue or sub-task is defined using <code>update</code> and <code>fields</code>. The fields\n that can be set in the issue or sub-task are determined using the <a href=\"#api-api-2-issue-createmeta-get\">\n Get create issue metadata</a>. These are the same fields that appear on the issue's create screen.\n <p>\n Creating a sub-task differs from creating an issue as follows:\n <ul>\n <li><code>issueType</code> must be set to a sub-task issue type (use <a href=\"#api-api-2-issue-createmeta-get\">\n Get create issue metadata</a> to find sub-task issue types).</li>\n <li><code>parent</code> the must contain the ID or key of the parent issue.</li>\n </ul>\n <b><a href=\"#permissions\">Permissions</a> required:</b>\n <em>Browse projects</em> and <em>Create issues</em> <a href=\"https://confluence.atlassian.com/x/yodKLg\">project\n permissions</a> for the project in which the issue or sub-task is created. ",
-        "test": "Jira Create Issue",
+        "summary": "Jira Create Issue",
         "schemes": [],
         "consumes": [
           "application/json"

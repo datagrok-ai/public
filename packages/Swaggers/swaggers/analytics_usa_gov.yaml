@@ -14,7 +14,7 @@ paths:
   /reports/{report_Name}/data:
     get:
       operationId: queryingReports
-      operationId: Querying reports
+      summary: Querying reports
       produces: application.json
       parameters:
         - $ref: '#/parameters/Report_Name'
@@ -26,7 +26,7 @@ paths:
   /agencies/{agency_Name}/reports/{report_Name}/data:
     get:
       operationId: filteringBasedOnAgencies
-      operationId: Filtering based on agencies
+      summary: Filtering based on agencies
       produces: application.json
       parameters:
         - $ref: '#/parameters/Report_Name'

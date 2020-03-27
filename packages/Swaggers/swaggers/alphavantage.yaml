@@ -14,7 +14,7 @@ paths:
    /query:
     get:
       operationId: alphaVantage
-      operationId: Alpha Vantage API
+      summary: Alpha Vantage API
       parameters:
         - in: query
           name: function

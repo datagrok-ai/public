@@ -27,7 +27,7 @@ paths:
       description: |
         By passing in the appropriate options, you can search for
         available inventory in the system
-      operationId: searchInventory
+      summary: searchInventory
       produces:
       - application/json
       parameters:
@@ -65,7 +65,7 @@ paths:
       - admins
       operationId: adds an inventory item
       description: Adds an item to the system
-      operationId: addInventory
+      summary: addInventory
       consumes:
       - application/json
       produces:

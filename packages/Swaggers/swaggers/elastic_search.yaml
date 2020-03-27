@@ -9,7 +9,7 @@ paths:
   _search:
     get:
       operationId: Search query
-      operationId: Search
+      summary: Search
       parameters:
         - name: q
           in: query
