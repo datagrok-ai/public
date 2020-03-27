@@ -82,7 +82,7 @@ paths:
     get:
       tags:
         - events
-      summary: Lists all active traffic events
+      operationId: Lists all active traffic events
       description: >-
         Allows to view a list of the active traffic events on the Ville de
         Montreal territory and surroundings
@@ -124,7 +124,7 @@ paths:
     get:
       tags:
         - events
-      summary: Returns a specific active event
+      operationId: Returns a specific active event
       description: 'Allows to view a specific traffic event '
       operationId: selectEvent
       produces:

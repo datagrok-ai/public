@@ -10,8 +10,8 @@ schemes:
 paths:
   /disabilityTypes:
     get:
-      summary: disabilityTypes
-      operationId: Disability Types
+      operationId: disabilityTypes
+      summary: Disability Types
       description: 'Returns a list of disabilities along with the disability type name, id, short description and long description..'
       parameters:
         - $ref: '#/parameters/Format'
@@ -22,8 +22,8 @@ paths:
           description: Invalid status value
   /product/products:
     get:
-      summary: products
-      operationId: Products
+      operationId: products
+      summary: Products
       description: "Returns a list of mobile devices as well as the original source of the data. The features, manufacturers, and regions API's can be used to provide optional parameter inputs."
       parameters:
         - $ref: '#/parameters/Category'
@@ -40,8 +40,8 @@ paths:
           description: Invalid status value
   /product/productFeatures:
     get:
-      summary: productFeatures
-      operationId: Product Features
+      operationId: productFeatures
+      summary: Product Features
       description: 'Returns a list of accessibility features (with name and description) that are supported by a particular device as well as the source for the original data.'
       parameters:
         - name: productID
@@ -57,8 +57,8 @@ paths:
           description: Invalid status value
   /featureGroups:
     get:
-      summary: featureGroups
-      operationId: Feature Groups
+      operationId: featureGroups
+      summary: Feature Groups
       description: 'Returns a list of accessibility features (with name and description) that may be supported by various products. Can be used with the Products (Mobile Devices) API to provide optional parameters for feat.'
       parameters:
         - name: disabilityId
@@ -74,8 +74,8 @@ paths:
           description: Invalid status value
   /product/regions:
     get:
-      summary: regions
-      operationId: Regions
+      operationId: regions
+      summary: Regions
       description: 'Returns a list of regions where various products may be available. Can be used with the Products (Mobile Devices) API to provide optional parameter inputs for region).'
       parameters:
         - $ref: '#/parameters/Format'
@@ -88,8 +88,8 @@ paths:
           description: Invalid status value
   /product/searchProducts:
     get:
-      summary: searchProducts
-      operationId: Search Products
+      operationId: searchProducts
+      summary: Search Products
       description: 'Returns a list of mobile devices based on a search query (manufacturer, brand, or model) as well as the original source of the data.'
       parameters:
         - $ref: '#/parameters/Format'
@@ -103,8 +103,8 @@ paths:
           description: Invalid status value
   /product/makerBrandModel:
     get:
-      summary: makerBrandModel
-      operationId: Maker Brand Model
+      operationId: makerBrandModel
+      summary: Maker Brand Model
       description: 'Returns a list of mobile devices (manufacturer or brand and model number) as the user types a search query.'
       parameters:
         - $ref: '#/parameters/Format'
@@ -117,8 +117,8 @@ paths:
           description: Invalid status value
   /apps:
     get:
-      summary: apps
-      operationId: Apps
+      operationId: apps
+      summary: Apps
       description: 'Returns a list of accessible apps and assistive technologies as well as the original source of the data.'
       parameters:
         - $ref: '#/parameters/Format'
@@ -132,8 +132,8 @@ paths:
           description: Invalid status value
   /contacts:
     get:
-      summary: contacts
-      operationId: Contacts
+      operationId: contacts
+      summary: Contacts
       description: 'Returns a variety of convenience contact information as well as the original source of the data for Service Providers, Equipment Manufacturers, Schools and Universities, and National and International Organizations. The list of contacts can be grouped by state..'
       parameters:
         - name: entityType
@@ -180,8 +180,8 @@ paths:
           description: Invalid status value
   /states:
     get:
-      summary: states
-      operationId: States
+      operationId: states
+      summary: States
       description: 'Returns a list of states by which the convenience contacts can be grouped.'
       parameters:
         - name: entityType
@@ -201,8 +201,8 @@ paths:
           description: Invalid status value
   /events:
     get:
-      summary: events
-      operationId: Events
+      operationId: events
+      summary: Events
       description: 'Returns a list of upcoming and past Disability Related Events.'
       parameters:
         - name: date
@@ -238,8 +238,8 @@ paths:
           description: Invalid status value
   /fedContacts:
     get:
-      summary: fedContacts
-      operationId: Fed Contacts
+      operationId: fedContacts
+      summary: Fed Contacts
       description: 'Returns a list of Federal Agencies that provide accessibility related services or information.'
       parameters:
         - name: disabilityId

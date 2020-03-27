@@ -13,7 +13,7 @@ schemes:
 paths:
   /mbk-highschool-dropout:
     get:
-      summary: highSchoolDropoutRates
+      operationId: highSchoolDropoutRates
       operationId: High School Dropout Rates
       description: 'Percentage of 18- to 24-year-olds who have not completed high school by sex and race/ethnicity, 2000–2014.'
       parameters:
@@ -28,7 +28,7 @@ paths:
           description: Invalid status value
   /mbk-college-enrollment:
     get:
-      summary: collegeEnrollmentRates
+      operationId: collegeEnrollmentRates
       operationId: College Enrollment Rates
       description: 'Percentage of 18- to 24-year-olds enrolled in 2- and 4-year colleges by sex and race/ethnicity, 2000–2014.'
       parameters:
@@ -43,7 +43,7 @@ paths:
           description: Invalid status value
   /mbk-bachelors-or-higher:
     get:
-      summary: collegeGraduationRates
+      operationId: collegeGraduationRates
       operationId: College Graduation Rates
       description: 'Percentage of 18- to 24-year-olds who have completed a bachelor’s or higher degree by sex and race/ethnicity, 2000–2014.'
       parameters:
@@ -58,7 +58,7 @@ paths:
           description: Invalid status value
   /mbk-disconnected-youth:
     get:
-      summary: ratesOfDisconnectedYouth
+      operationId: ratesOfDisconnectedYouth
       operationId: Rates of Disconnected Youth
       description: 'Percentage of 18- to 24-year-olds who were neither enrolled in school nor working by sex and race/ethnicity, 2000–2014 (so-called disconnected youth).'
       parameters:
@@ -73,7 +73,7 @@ paths:
           description: Invalid status value
   /mbk-labor-force-participation:
     get:
-      summary: laborForceParticipationRates
+      operationId: laborForceParticipationRates
       operationId: Labor Force Participation Rates
       description: 'Labor force participation rates for young adults ages 18–24 by age, sex, and race/ethnicity, 1980–2013 annual averages.'
       parameters:
@@ -88,7 +88,7 @@ paths:
           description: Invalid status value
   /mbk-imprisonment:
     get:
-      summary: imprisonmentRates
+      operationId: imprisonmentRates
       operationId: Imprisonment Rates
       description: 'Imprisonment rates of 18- to 24-year-olds sentenced to more than 1 year under the jurisdiction of state correctional authorities per 100,000 by sex and race/ethnicity, 2000–2012.'
       parameters:

@@ -13,7 +13,7 @@ schemes:
 paths:
   /weather:
     get:
-      summary: currentWeatherDataByCityName
+      operationId: currentWeatherDataByCityName
       operationId: Current Weather Data By City Name
       parameters:
          - $ref: '#/parameters/cityName'
@@ -22,7 +22,7 @@ paths:
           description: OK
   /box/city:
     get:
-      summary: citiesWithinRectangleZone
+      operationId: citiesWithinRectangleZone
       operationId: Cities Within a Rectangle Zone
       decription: Returns the data from cities within the defined rectangle specified by the geographic coordinates.
       parameters:
@@ -40,7 +40,7 @@ paths:
           description: OK
   /find:
     get:
-      summary: citiesInCycle
+      operationId: citiesInCycle
       operationId: Cities In Cycle
       description: Returns data from cities laid within definite circle that is specified by center point ('lat', 'lon') and expected number of cities ('cnt') around this point. The default number of cities is 10, the maximum is 50.
       parameters:
@@ -58,7 +58,7 @@ paths:
           description: OK
   /forecast:
     get:
-      summary: forecastByCityName5Day3Hour
+      operationId: forecastByCityName5Day3Hour
       operationId: 5 day/3 hour Forecast By City Name
       parameters:
         - $ref: '#/parameters/cityName'
@@ -67,7 +67,7 @@ paths:
           description: OK
   /uvi:
     get:
-      summary: callCurrentUVDataForOneLocationByGeographicCoordinates
+      operationId: callCurrentUVDataForOneLocationByGeographicCoordinates
       operationId: Call Current UV Data For One Location By Geographic Coordinates
       parameters:
         - $ref: '#/parameters/lat'
@@ -77,7 +77,7 @@ paths:
           description: OK
   /uvi/forecast:
     get:
-      summary: callForecastUVDataForOneLocationByGeographicCoordinates
+      operationId: callForecastUVDataForOneLocationByGeographicCoordinates
       operationId: Call Forecast UV Data For One Location By Geographic Coordinates
       parameters:
         - $ref: '#/parameters/lat'
@@ -93,7 +93,7 @@ paths:
           description: OK
   /uvi/history:
     get:
-      summary: callHistoricalUVDataForOneLocation
+      operationId: callHistoricalUVDataForOneLocation
       operationId: Call Historical UV Data For One Location
       parameters:
         - $ref: '#/parameters/lat'

@@ -10,7 +10,7 @@ schemes:
 paths:
   /drug/enforcement.json:
     get:
-      summary: drugRecallEnforcementReports
+      operationId: drugRecallEnforcementReports
       operationId: Drugs | Recall Enforcement Reports
       produces: application.json
       parameters:
@@ -40,7 +40,7 @@ paths:
           description: Invalid status value
   /drug/label.json:
     get:
-      summary: drugProductLabeling
+      operationId: drugProductLabeling
       operationId: Drugs | Product Labeling
       produces: application.json
       parameters:
@@ -60,7 +60,7 @@ paths:
           description: Invalid status value
   /drug/event.json:
     get:
-      summary: drugAdverseEvents
+      operationId: drugAdverseEvents
       operationId: Drugs | Adverse Events
       produces: application.json
       parameters:
@@ -80,7 +80,7 @@ paths:
           description: Invalid status value
   /device/510k.json:
     get:
-      summary: device510K
+      operationId: device510K
       operationId: Device | 510(k)
       produces: application.json
       parameters:
@@ -100,7 +100,7 @@ paths:
           description: Invalid status value
   /device/enforcement.json:
     get:
-      summary: deviceRecallEnforcementReports
+      operationId: deviceRecallEnforcementReports
       operationId: Device | Recall Enforcement Reports
       produces: application.json
       parameters:
@@ -120,7 +120,7 @@ paths:
           description: Invalid status value
   /device/event.json:
     get:
-      summary: deviceAdverseEvents
+      operationId: deviceAdverseEvents
       operationId: Device | Adverse Events
       produces: application.json
       parameters:
@@ -140,7 +140,7 @@ paths:
           description: Invalid status value
   /device/pma.json:
     get:
-      summary: devicePreMarketApproval
+      operationId: devicePreMarketApproval
       operationId: Device | Pre-Market Approval
       produces: application.json
       parameters:
@@ -160,7 +160,7 @@ paths:
           description: Invalid status value
   /device/recall.json:
     get:
-      summary: deviceRecalls
+      operationId: deviceRecalls
       operationId: Device | Recalls
       produces: application.json
       parameters:
@@ -180,7 +180,7 @@ paths:
           description: Invalid status value
   /device/registrationlisting.json:
     get:
-      summary: deviceRegistrationsAndListings
+      operationId: deviceRegistrationsAndListings
       operationId: Device | Registrations And Listings
       produces: application.json
       parameters:
@@ -200,7 +200,7 @@ paths:
           description: Invalid status value
   /device/udi.json:
     get:
-      summary: deviceUniqueDeviceIdentifier
+      operationId: deviceUniqueDeviceIdentifier
       operationId: Device | Unique Device Identifier
       produces: application.json
       parameters:
@@ -220,7 +220,7 @@ paths:
           description: Invalid status value
   /food/enforcement.json:
     get:
-      summary: foodRecallEnforcementReports
+      operationId: foodRecallEnforcementReports
       operationId: Device | Recall Enforcement Reports
       produces: application.json
       parameters:
@@ -240,7 +240,7 @@ paths:
           description: Invalid status value
   /food/event.json:
     get:
-      summary: foodAdverseReport
+      operationId: foodAdverseReport
       operationId: Food | Adverse Report
       produces: application.json
       parameters:
@@ -260,7 +260,7 @@ paths:
           description: Invalid status value
   /other/nsde.json:
     get:
-      summary: NSDE
+      operationId: NSDE
       operationId: NSDE
       produces: application.json
       parameters:

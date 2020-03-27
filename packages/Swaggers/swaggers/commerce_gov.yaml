@@ -13,7 +13,7 @@ schemes:
 paths:
   /blogs:
     get:
-      summary: blogsSearch
+      operationId: blogsSearch
       operationId: Blogs Search
       description: 'Provides blog content entries and fields'
       parameters:
@@ -29,7 +29,7 @@ paths:
           description: Invalid status value
   /news:
     get:
-      summary: newsSearch
+      operationId: newsSearch
       operationId: News Search
       description: 'Provides newsroom content entries and fields'
       parameters:
@@ -45,7 +45,7 @@ paths:
           description: Invalid status value
   /image:
     get:
-      summary: imageSearch
+      operationId: imageSearch
       operationId: Image Search
       description: 'Provides image content with fields'
       parameters:

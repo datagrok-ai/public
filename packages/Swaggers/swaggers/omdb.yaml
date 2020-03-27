@@ -121,7 +121,7 @@ paths:
           schema:
             $ref: '#/definitions/combinedResult'
       security: []
-      summary: OMDb Search
+      operationId: OMDb Search
 definitions:
   combinedResult:
     properties:

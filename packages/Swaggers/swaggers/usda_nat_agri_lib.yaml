@@ -13,7 +13,7 @@ schemes:
 paths:
   /search/:
     get:
-      summary: APIModuleSearch
+      operationId: APIModuleSearch
       operationId: API Module - Search
       description: Use this module to search the publications and related information we hold in the PubAg repository.
       parameters:
@@ -45,7 +45,7 @@ paths:
           description: Invalid status value
   /articles/{id}:
     get:
-      summary: APIModuleArticle
+      operationId: APIModuleArticle
       operationId: API Module - Article
       description: Use this module to request an article metadata and related information.
       parameters:
