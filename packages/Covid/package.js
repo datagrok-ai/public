@@ -1,0 +1,2 @@
+class CovidPackage extends GrokPackage {
+}
