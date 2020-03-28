@@ -1,0 +1,1 @@
+Package contains queries for data from open sources on the current situation in the world with coronavirus
