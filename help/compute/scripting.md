@@ -222,6 +222,7 @@ Also it is possible to add custom parameter using "meta." prefix.
 *   **column** \- column from selected table
 *   **column_list** \- list of columns from selected table
 *   **datetime** \- datetime
+*   **file** \- file, variable in script contains path to file
 
 **name** - parameter name that will be used in script. Optional for graphical output.
   
