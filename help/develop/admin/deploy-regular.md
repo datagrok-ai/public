@@ -31,7 +31,7 @@ Requirements: 2 vCPU and 4GiB RAM
 4. Prepare local directory to store data: GROK_DATA_PATH, allow access to write to group
 5. Prepare local directory to store config files: GROK_CFG_PATH, allow access to write to group
 6. Run Datagrok image. Datagrok will create database automatically.
-`docker run -it -v <GROK_DATA_PATH>:/home/grok/data/prod -v <GROK_CFG_PATH>:/home/grok/cfg -e GROK_PARAMETERS="<GROK_START_PARAMETERS>" -p 80:80 <IMAGE_NAME>`,
+`docker run -it -v <GROK_DATA_PATH>:/home/grok/data -v <GROK_CFG_PATH>:/home/grok/cfg -e GROK_PARAMETERS="<GROK_START_PARAMETERS>" -p 80:80 <IMAGE_NAME>`,
 wait for deploy process to complete
 7. Check if Datagrok started successfully: http://HOST_NAME, login to Datagrok using username "admin" and password "SM9ekKEkZuBDp5eD".
  Do not use "localhost", use 127.0.0.1 or machine name instead. 
