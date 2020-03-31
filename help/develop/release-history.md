@@ -1,6 +1,65 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2020.03.30 Stable Version
+
+
+## Latest docker images
+* Datagrok (new): `766822877060.dkr.ecr.us-east-2.amazonaws.com/datagrok-1.0.72-23064a3` [download](https://dev.datagrok.ai/docker_images/datagrok-1.0.72-23064a3.tar)
+* CVM (new): `766822877060.dkr.ecr.us-east-2.amazonaws.com/grok_cvm-1.0.72-23064a3` [download](https://dev.datagrok.ai/docker_images/grok_cvm-1.0.72-23064a3.tar)
+
+## Addressed issues
+
+* Auto GrokMode 
+* Fixed long web api response issue
+* PP: Actions tab: added both ParamCommands and Funcs to suggestions. Harmonizing handling of special function types - WIP
+* ObjectView: ability to select all / none / invert
+* Parsing ~500MB smiles file failed
+* Files View, routing, file editors
+* FileInfo property panel: Preview pane
+* WebQuery: Avoid opening "variables" dialog
+* Web connections: Extra scroll bar in the dialog, if there are no credentials
+* GrokConnect: Neo4j support
+* ORM: Ability to save objects as array
+* JDBC providers: Exception after opening "Tables" tab in the tree
+* MS SQL | Visual query does not work
+* "Open file" file scripting feature
+* Public version: AddressToCoordinates does not work
+* Scripting: Custom meta parameters do not work
+* Help: "pca.md" not found when open Tools | Data Science | Principal Component Analysis...
+* Admin | View Layouts does not open
+* Class 'ColumnInfo' has no instance getter 'tagsKeys'. Receiver: Instance of 'ColumnInfo' error in suggestions section
+* Help: "query-buider.md" not found when open "Build Query..."
+* Context help not displayed after opening "Visual query ..."
+* Athena | northwind | Orders deployed to dev-setup with error in query text
+* Help: Corresponding page does not appear when you click on the application in Admin | Apps
+* Chem: Wrong R groups order and column names
+* File editors: support for pictures
+* File Editors: preview not working for files with spaces in the name
+* File Editors: support built-in file handlers
+* Help: Links to help pages on datagrok.ai/cheminformatics do not work
+* Upload: Table synchronization does not work with web queries
+* Unable to add View to a project
+* File preview: zero height
+* Improve TagsMixin.tags performance
+* TreeMap: add context menu
+* TreeMap: size-coding
+* TreeMap: improve cell text rendering (multiline text, clipping)
+* Toolbox: Viewers pane: '...' icon to show the rest of available viewers
+* Info Panels: After updating browser page unblocked panels are still blocked
+* Connectors: Teradata: table browsing doesn't work
+* Unable to save repository
+* Do not show multiple "Client is outdated message"
+* Show error on login form when server is unavailable
+* Selenium mode: Add name to "Unpivot" dialog selectors
+* FilesView: Show directory size from index
+* GrokConnect: Neo4j does not work for http and bolt+routing protocols
+* Add New Column: replace +-Infinity with None
+* Swagger: Import without servers
+* Phaedra demo
+* WebQuery from URL does not work
+* Ability to select port with Docker
+* Db Exception on signup: insert or update on table "projects" violates foreign key constraint "projects_author_id_fkey"
 
 # 2020.03.13 Stable version
 
