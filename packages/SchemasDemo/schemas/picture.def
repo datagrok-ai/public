@@ -1,0 +1,25 @@
+Picture
+  make: string
+  year: int
+
+{
+  "name": "auto",
+  "properties": [
+    {
+      "name": "make",
+      "type": "string"
+    },
+    {
+      "name": "year",
+      "type": "int"
+    },
+    {
+      "name": "make",
+      "type": "string"
+    },
+    {
+      "name": "hasTags",
+      "type": "bool"
+    }
+  ]
+}

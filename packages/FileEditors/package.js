@@ -1,6 +1,6 @@
 class FileEditorsPackage extends GrokPackage {
 
-    //tags: file-viewer, file-viewer-pdf
+    //tags: fileViewer, fileViewer-pdf
     //input: string url {semType: url}
     //output: view v
     viewPdf(url) {
@@ -42,7 +42,7 @@ class FileEditorsPackage extends GrokPackage {
         return view;
     }
 
-    //tags: file-viewer, file-viewer-pdf
+    //tags: fileViewer, fileViewer-pdf
     //input: string url {semType: url}
     testPdf(url) {
         return url;

@@ -1,0 +1,19 @@
+{
+  "name": "picture",
+  "properties": [
+    {
+      "name": "width",
+      "type": "string"
+    },
+    {
+      "name": "width",
+      "type": "int",
+      "unit": "pixels"
+    },
+    {
+      "name": "height",
+      "type": "int",
+      "unit": "pixels",
+    }
+  ]
+}
