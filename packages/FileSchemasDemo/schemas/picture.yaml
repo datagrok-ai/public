@@ -1,0 +1,5 @@
+picture:
+  properties:
+    width: int { unit:pixels, quality:length }
+    height: int { unit:pixels }
+    date: datetime ` Time when the shot was taken

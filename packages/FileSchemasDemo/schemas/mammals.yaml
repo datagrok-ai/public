@@ -1,0 +1,4 @@
+mammal:
+  properties:
+    color: string
+    isCat: bool

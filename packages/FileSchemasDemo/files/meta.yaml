@@ -1,0 +1,9 @@
+description: A folder with pictures for demonstrating the usage of metadata
+
+meta:
+  /:
+    - picture
+  /animals:
+    - mammals
+  /cars:
+    - auto
