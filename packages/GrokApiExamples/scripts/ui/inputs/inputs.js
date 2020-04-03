@@ -8,8 +8,11 @@ let alien = ui.boolInput('Alien', false);
 let friends = ui.multiChoiceInput('Friends', ['Ford', 'Fenchurch'], ['Ford', 'Fenchurch', 'Zaphod', 'Slartibartfast']);
 
 let inputs = [name, age, sex, date, alien, friends];
-v.append(ui.inputs(inputs));
+let container = ui.div();
+v.append(container);
+container.append(ui.inputs(inputs));
 
-v.append(ui.bigButton('POST', () => {
-    grok.balloon.info(inputs.map((i) => `${i.caption}: ${i.stringValue}`).join('<br>'));
-}));
+container
+    .append(ui.bigButton('POST', () => {
+        grok.balloon.info(inputs.map((i) => `${i.caption}: ${i.stringValue}`).join('<br>'));
+    }));
