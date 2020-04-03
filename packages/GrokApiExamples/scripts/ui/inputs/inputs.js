@@ -10,9 +10,8 @@ let friends = ui.multiChoiceInput('Friends', ['Ford', 'Fenchurch'], ['Ford', 'Fe
 let inputs = [name, age, sex, date, alien, friends];
 let container = ui.div();
 v.append(container);
-container.append(ui.inputs(inputs));
+container.appendChild(ui.inputs(inputs));
 
-container
-    .append(ui.bigButton('POST', () => {
-        grok.balloon.info(inputs.map((i) => `${i.caption}: ${i.stringValue}`).join('<br>'));
-    }));
+container.appendChild(ui.bigButton('POST', () => {
+    grok.balloon.info(inputs.map((i) => `${i.caption}: ${i.stringValue}`).join('<br>'));
+}));
