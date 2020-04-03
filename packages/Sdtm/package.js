@@ -35,25 +35,22 @@ class SDTMPackage extends GrokPackage {
             host.appendChild(ui.loader());
             grok.query(query, queryParameters, true, 100).then(t => {
                 let items = t.getCol(itemsColumn).toList();
-                let input = TagEditor.create();
+                let input = ui.columnsInput(caption, DataFrame.fromColumns(items.map(item => Column.string(item))));
                 if (values.length !== 0) {
+                    let _values = [];
                     for (let value of values)
                         if (items.includes(value))
-                            input.addTag(value);
+                            _values.push(value);
+                    input.stringValue = _values.join(',');
                 }
-                let add = ui.divH([ui.span([caption]),
-                    ui.iconFA('plus', () => {
-                        Menu.popup().items(items, (item) => input.addTag(item)).show();
-                    })], 'sdtm-selector');
                 SDTMPackage.removeChildren(host);
-                host.appendChild(add);
                 host.appendChild(input.root);
 
                 input.onChanged(() => {
-                    updateHandler(input.tags);
+                    updateHandler(input.stringValue.split(','));
                 });
 
-                updateHandler(input.tags);
+                updateHandler(input.stringValue.split(','));
             });
             return host;
         }
