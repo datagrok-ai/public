@@ -27,6 +27,10 @@
   margin-bottom: 12px;
 }
 
+.sdtm-selector-host {
+  margin-top: 12px;
+}
+
 .sdtm-result .grok-loader {
   margin-top: 12px;
   margin-right: 48px;
@@ -61,4 +65,8 @@
 
 .sdtm-controls input#editor.d4-input-editor {
   flex-grow: 1;
+}
+
+.sdtm-controls .d4-input-columns #column-names {
+  max-width: 100px;
 }
