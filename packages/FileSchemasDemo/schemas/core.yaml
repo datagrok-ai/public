@@ -1,5 +1,7 @@
 entity:
   properties:
-    descrition: string
+    kind: string
+    description: string
+    domain: string
     dateCreated: datetime
     dateModified: datetime
