@@ -1,8 +1,8 @@
 #name: Detect Car Plate Numbers
 #description: Detect car plate numbers
 #language: python
-#input: file file { condition: file.schema == auto }
-#output: bool hasNumbers { set: file.auto:hasTags }
+#input: file file { condition: entity:domain == "auto" }
+#output: bool hasNumbers { file[auto:hasTags] }
 #tags: demo, files, panel, ml, opencv
 #condition: file.size < 1e6 && (file.name.endsWith("jpg") || file.name.endsWith("jpeg"))
 
