@@ -1,6 +1,41 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2020.04.07 Stable Version
+
+
+## Latest docker images
+* Datagrok (new): `766822877060.dkr.ecr.us-east-2.amazonaws.com/datagrok-1.0.73-9f58f01` [download](https://dev.datagrok.ai/docker_images/datagrok-1.0.73-9f58f01.tar)
+* CVM (old): `766822877060.dkr.ecr.us-east-2.amazonaws.com/grok_cvm-1.0.72-23064a3` [download](https://dev.datagrok.ai/docker_images/grok_cvm-1.0.72-23064a3.tar)
+
+## Addressed issues
+
+* Simplified UX
+* Entities parameters 
+* OpenTextView
+* Files View Url to connection not handled
+* DataSourcesView
+* Ability to turn off new UI for selenium mode
+* Added 'JS' view under Help (new location to be determined)
+* WebConnector: Query with not required path param fails
+* SSO Support for Community
+* Web connector: Result table of the query is called "result" instead of the query name
+* Handle Javascript output parameters
+* Correct dapi.root resolution
+* GrokApi: Add column and columns inputs
+* Phaedra demo
+* Unable to publish package
+* Ability to override default drag-and-drop behavior for files
+* Deploy fails
+* Files: uploading files to shares
+* FilesClient: Improve client-side API for working with file shares
+* Files View should automatically open last visited folder
+* Add 'Web Services' view
+* Files View: 'new file share' command
+* Upload: If data sync is enabled, then re-saving project with synchronization turned off does not turn it off
+* SetValues works incorrectly with optional parameters
+
+
 # 2020.03.30 Stable Version
 
 
