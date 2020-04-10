@@ -208,10 +208,10 @@
       "id": "174a7d75-e11b-46aa-9b1a-5cb9484b241d",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-context-arrow-down'])[3]",
+      "target": "xpath=(//i[@name='icon-context-arrow-down'])[2]",
       "targets": [
         ["css=.grok-context-arrow-down:nth-child(3)", "css:finder"],
-        ["xpath=(//i[@name='icon-context-arrow-down'])[3]", "xpath:attributes"],
+        ["xpath=(//i[@name='icon-context-arrow-down'])[2]", "xpath:attributes"],
         ["xpath=//div[8]/div[2]/div[2]/i", "xpath:position"]
       ],
       "value": ""
@@ -256,7 +256,7 @@
       "id": "17feae3e-5de1-48a2-af43-ce38409324d9",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-context-arrow-down'])[3]",
+      "target": "xpath=(//i[@name='icon-context-arrow-down'])[2]",
       "targets": [
         ["css=.d4-input-text > .grok-icon", "css:finder"],
         ["xpath=(//i[@name='icon-context-arrow-down'])[3]", "xpath:attributes"],
@@ -304,11 +304,11 @@
       "id": "9a9ba678-b4f7-4813-81ae-9573d845762f",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-context-arrow-down'])[2]",
+      "target": "xpath=//i[@name='icon-context-arrow-down']",
       "targets": [
-        ["css=.grok-context-arrow-down:nth-child(3)", "css:finder"],
-        ["xpath=(//i[@name='icon-context-arrow-down'])[2]", "xpath:attributes"],
-        ["xpath=//div[10]/div[2]/div[2]/i", "xpath:position"]
+        ["css=.grok-context-arrow-down", "css:finder"],
+        ["xpath=//i[@name='icon-context-arrow-down']", "xpath:attributes"],
+        ["xpath=//div[9]/div[2]/div[2]/i", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -352,7 +352,7 @@
       "id": "44395cb5-0433-4118-8f59-248f2f76917a",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-context-arrow-down'])[2]",
+      "target": "xpath=(//i[@name='icon-context-arrow-down'])",
       "targets": [
         ["css=.grok-context-arrow-down:nth-child(3)", "css:finder"],
         ["xpath=(//i[@name='icon-context-arrow-down'])[2]", "xpath:attributes"],
