@@ -62,6 +62,25 @@
       "targets": [],
       "value": ""
     }, {
+      "id": "e7f12c42-bfd5-4adc-b6f6-d6a6abf5c544",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='Menu']",
+      "targets": [
+        ["css=.d4-tab-header:nth-child(7)", "css:finder"],
+        ["xpath=//div[@name='Menu']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div[7]", "xpath:idRelative"],
+        ["xpath=//div[7]", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "b430ecff-849c-471f-b754-d93078b640bb",
+      "comment": "",
+      "command": "pause",
+      "target": "2000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "c12a9553-b698-4342-99c1-9867e881ae28",
       "comment": "",
       "command": "click",
