@@ -110,31 +110,31 @@
       "id": "79fe68e9-d6fb-41b1-baa7-4f7fe3752077",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Data']",
+      "target": "xpath=(//div[@name='div-Data'])[2]",
       "targets": [
-        ["css=.d4-menu-item-horz:nth-child(6)", "css:finder"],
-        ["xpath=//div[@name='div-Data']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[6]", "xpath:idRelative"],
-        ["xpath=//body/div[4]/div/div/div/div[6]", "xpath:position"]
+        ["css=.d4-menu-item-hover:nth-child(5)", "css:finder"],
+        ["xpath=(//div[@name='div-Data'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "a224be7b-bdff-4b70-8105-80085e494f64",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Data---Anonymize...']",
+      "target": "xpath=(//div[@name='div-Data---Anonymize...'])[2]",
       "targets": [
-        ["css=.d4-menu-item:nth-child(6) .d4-menu-item:nth-child(9)", "css:finder"],
-        ["xpath=//div[@name='div-Data---Anonymize...']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[6]/div/div[9]", "xpath:idRelative"],
-        ["xpath=//div[6]/div/div[9]", "xpath:position"]
+        ["css=.d4-menu-item:nth-child(3) .d4-menu-item:nth-child(5) .d4-menu-item:nth-child(10)", "css:finder"],
+        ["xpath=(//div[@name='div-Data---Anonymize...'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]/div/div/div[10]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div[5]/div/div/div[10]", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "3ba9fed7-c512-4d29-baa4-651e26fa5701",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {
@@ -165,13 +165,9 @@
     }, {
       "id": "411a8fcf-54d3-45a0-bbab-ab9ee42f46c7",
       "comment": "",
-      "command": "clickAt",
-      "target": "css=.d4-dialog-contents canvas:nth-child(4)",
-      "targets": [
-        ["css=.d4-dialog-contents canvas:nth-child(4)", "css:finder"],
-        ["xpath=(//div[@id='Heat map']/canvas[2])[2]", "xpath:idRelative"],
-        ["xpath=//div[2]/canvas[2]", "xpath:position"]
-      ],
+      "command": "executeScript",
+      "target": "let element = document.querySelector(\".d4-dialog .dlg-anonymize-data div[name=viewer-Grid] canvas:nth-child(4)\"); let event = new MouseEvent(\"mousedown\", {     bubbles: true,     cancelable: false,     view: window,      clientX: element.getBoundingClientRect().x+143,     clientY: element.getBoundingClientRect().y+100});  element.dispatchEvent(event);",
+      "targets": [],
       "value": ""
     }, {
       "id": "37ba3b4f-46b4-41cb-9532-1c9ace94832d",
@@ -208,24 +204,24 @@
       "id": "e7d1e38f-9191-4841-88b6-d20706afc702",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Data']",
+      "target": "xpath=(//div[@name='div-Data'])[2]",
       "targets": [
-        ["css=.d4-menu-item-horz:nth-child(6)", "css:finder"],
-        ["xpath=//div[@name='div-Data']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[6]", "xpath:idRelative"],
-        ["xpath=//body/div[4]/div/div/div/div[6]", "xpath:position"]
+        ["css=.d4-menu-item-hover:nth-child(5)", "css:finder"],
+        ["xpath=(//div[@name='div-Data'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "5644486e-1124-4832-ba91-42efe8c41d17",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Data---Anonymize...']",
+      "target": "xpath=(//div[@name='div-Data---Anonymize...'])[2]",
       "targets": [
-        ["css=.d4-menu-item:nth-child(6) .d4-menu-item:nth-child(9)", "css:finder"],
-        ["xpath=//div[@name='div-Data---Anonymize...']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[6]/div/div[9]", "xpath:idRelative"],
-        ["xpath=//div[6]/div/div[9]", "xpath:position"]
+        ["css=.d4-menu-item:nth-child(3) .d4-menu-item:nth-child(5) .d4-menu-item:nth-child(10)", "css:finder"],
+        ["xpath=(//div[@name='div-Data---Anonymize...'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]/div/div/div[10]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div[5]/div/div/div[10]", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -265,6 +261,101 @@
         ["xpath=//i[@name='icon-exclamation-triangle']", "xpath:attributes"],
         ["xpath=//i", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "d44f4087-c283-44c1-b49b-5df113512cf5",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//span[@name='span-view-name']",
+      "targets": [
+        ["css=.d4-ribbon-name", "css:finder"],
+        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "33ff1a5d-4e34-4340-bb02-77dd0cf4f3d8",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "0abb2534-ae6b-471a-bacb-b364da3a7f82",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=(//div[@name='div-section--Columns'])[2]",
+      "targets": [
+        ["css=.d4-accordion:nth-child(1) > .d4-accordion-pane:nth-child(5) > .d4-accordion-pane-header", "css:finder"],
+        ["xpath=(//div[@name='div-section--Columns'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[5]/div", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div[5]/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "bfcab1f0-c35e-4143-b68b-4d721f658754",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "23ca7bbd-fb54-4e52-baa1-a35040fbccf2",
+      "comment": "",
+      "command": "click",
+      "target": "name=span-SEX-(2-categories)",
+      "targets": [
+        ["css=div:nth-child(1) > .d4-flex-col > .d4-entity-markup-row:nth-child(3)", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[5]/div[2]/div/div/span[3]", "xpath:idRelative"],
+        ["xpath=//span[3]", "xpath:position"],
+        ["xpath=//span[contains(.,'SEX')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "b1308649-aef5-44e9-a707-035fd88256a8",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "96f82889-3012-4bf2-bfe1-c1c5e6b0e51f",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='div-section--Stats']",
+      "targets": [
+        ["css=.d4-accordion:nth-child(1) > .d4-accordion-pane:nth-child(4) > .d4-accordion-pane-header", "css:finder"],
+        ["xpath=//div[@name='div-section--Stats']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div[4]/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "c18ae7ef-cd0b-4f4e-9741-0d00ab46753e",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "74074546-19a9-49ba-a392-e4b83d886c4a",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "xpath=//span[contains(.,'SEX 0')]",
+      "targets": [
+        ["css=.d4-pane-stats tr:nth-child(1) > td:nth-child(2) > span", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div[2]/table/tbody/tr/td[2]/span", "xpath:idRelative"],
+        ["xpath=//div[2]/table/tbody/tr/td[2]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'SEX 0')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "a81098ae-8bf0-43c6-bcc9-f2342b02c62c",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
+      "targets": [],
       "value": ""
     }]
   }],

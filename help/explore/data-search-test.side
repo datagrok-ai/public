@@ -98,7 +98,7 @@
       "id": "a0e4d1b0-9961-4189-ba5b-d02475d28cdb",
       "comment": "",
       "command": "type",
-      "target": "xpath=(//input[@type='text'])[2]",
+      "target": "xpath=(//input[@type='text'])",
       "targets": [
         ["css=input:nth-child(1)", "css:finder"],
         ["xpath=(//input[@type='text'])[2]", "xpath:attributes"],

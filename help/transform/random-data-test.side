@@ -108,35 +108,36 @@
       "id": "3344bb8f-c205-4868-ad75-16bb9a707b41",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"div-Tools\"] > div.d4-menu-item-label",
+      "target": "xpath=(//div[@name='div-Data'])[2]",
       "targets": [
-        ["css=div[name=\"div-Tools\"] > div.d4-menu-item-label", "css"],
-        ["css=.d4-menu-item-hover > .d4-menu-item-label", "css:finder"],
-        ["xpath=//body/div[2]/div/div[7]/div[3]", "xpath:position"]
+        ["css=.d4-menu-item-hover:nth-child(5)", "css:finder"],
+        ["xpath=(//div[@name='div-Data'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "dac0d804-09b5-409d-9a8b-042272fe58ad",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"div-Tools---Data-Science\"]",
+      "target": "xpath=//div[@name='div-Data---Data-Science']",
       "targets": [
-        ["css=div[name=\"div-Tools---Data-Science\"]", "css"],
-        ["css=.d4-menu-item-hover:nth-child(2)", "css:finder"],
-        ["xpath=//div[@name='div-Tools---Data-Science']", "xpath:attributes"],
-        ["xpath=//div[7]/div/div[2]", "xpath:position"]
+        ["css=.d4-menu-item-hover:nth-child(11)", "css:finder"],
+        ["xpath=//div[@name='div-Data---Data-Science']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]/div/div/div[11]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div[5]/div/div/div[11]", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "aa03e263-3b37-44aa-aa56-a65a8dcc109c",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Tools---Data-Science---Random-Data...']",
+      "target": "xpath=//div[@name='div-Data---Data-Science---Random-Data...']",
       "targets": [
-        ["css=.d4-menu-item-vert:nth-child(2) .d4-menu-item:nth-child(4)", "css:finder"],
-        ["xpath=//div[@name='div-Tools---Data-Science---Random-Data...']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[7]/div/div[2]/div/div[4]", "xpath:idRelative"],
-        ["xpath=//div[7]/div/div[2]/div/div[4]", "xpath:position"]
+        ["css=.d4-menu-item-vert:nth-child(11) .d4-menu-item:nth-child(5)", "css:finder"],
+        ["xpath=//div[@name='div-Data---Data-Science---Random-Data...']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]/div/div/div[11]/div/div/div[5]", "xpath:idRelative"],
+        ["xpath=//div[5]/div/div/div[11]/div/div/div[5]", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -306,30 +307,36 @@
       "id": "03da0f6d-6de3-4c9d-ac50-948cf540e257",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"div-Tools\"] > div.d4-menu-item-label",
+      "target": "xpath=(//div[@name='div-Data'])[2]",
       "targets": [
-        ["xpath=//body/div/div/div[7]/div[3]", "xpath:position"]
+        ["css=.d4-menu-item-hover:nth-child(5)", "css:finder"],
+        ["xpath=(//div[@name='div-Data'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "9115a12a-dc96-4fea-82e5-88927ffc5014",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"div-Tools---Data-Science\"]",
+      "target": "xpath=//div[@name='div-Data---Data-Science']",
       "targets": [
-        ["xpath=//div[7]/div/div[2]/div[3]", "xpath:position"]
+        ["css=.d4-menu-item-hover:nth-child(11)", "css:finder"],
+        ["xpath=//div[@name='div-Data---Data-Science']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]/div/div/div[11]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div[5]/div/div/div[11]", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "a06181dd-55ae-4b25-be60-4fe6e230281b",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Tools---Data-Science---Random-Data...']",
+      "target": "xpath=//div[@name='div-Data---Data-Science---Random-Data...']",
       "targets": [
-        ["css=.d4-menu-item-vert:nth-child(2) .d4-menu-item:nth-child(4)", "css:finder"],
-        ["xpath=//div[@name='div-Tools---Data-Science---Random-Data...']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[7]/div/div[2]/div/div[4]", "xpath:idRelative"],
-        ["xpath=//div[7]/div/div[2]/div/div[4]", "xpath:position"]
+        ["css=.d4-menu-item-vert:nth-child(11) .d4-menu-item:nth-child(5)", "css:finder"],
+        ["xpath=//div[@name='div-Data---Data-Science---Random-Data...']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]/div/div/div[11]/div/div/div[5]", "xpath:idRelative"],
+        ["xpath=//div[5]/div/div/div[11]/div/div/div[5]", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -372,23 +379,27 @@
       "id": "62797e8d-ffaa-437b-a31c-ea0646504e4d",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"div-View\"] > div.d4-menu-item-label",
+      "target": "xpath=//i[@name='icon-window']",
       "targets": [
-        ["css=div[name=\"div-Tools\"] > div.d4-menu-item-label", "css"],
-        ["css=.d4-menu-item-hover > .d4-menu-item-label", "css:finder"],
-        ["xpath=//body/div[2]/div/div[7]/div[3]", "xpath:position"]
+        ["css=.fa-window", "css:finder"],
+        ["xpath=//i[@name='icon-window']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div[8]/i", "xpath:idRelative"],
+        ["xpath=//div[8]/i", "xpath:position"]
       ],
       "value": ""
     }, {
-      "id": "78e38d00-afba-49df-9ba1-2432a05cbb9e",
+      "id": "c8f5356a-9bf2-4ebf-bf5f-2b845394e31e",
       "comment": "",
-      "command": "click",
-      "target": "css=div[name=\"div-View---Console\"] > div.d4-menu-item-label",
-      "targets": [
-        ["css=div[name=\"div-Tools---Console\"] > div.d4-menu-item-label", "css"],
-        ["css=.d4-menu-item:nth-child(7) .d4-menu-item:nth-child(10) > .d4-menu-item-label", "css:finder"],
-        ["xpath=//div[7]/div/div[10]/div[2]", "xpath:position"]
-      ],
+      "command": "executeScript",
+      "target": "let element = window; let event = new KeyboardEvent(\"keydown\", {keyCode: 192}); element.dispatchEvent(event);",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "ff356bd8-18f6-4699-a7f5-3a8cd7953452",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "23e005fd-c381-41d6-8bbc-23bab33df548",
@@ -432,7 +443,7 @@
       "id": "5fdaced3-417c-42ee-ab69-60751286425a",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "2000",
       "targets": [],
       "value": ""
     }, {

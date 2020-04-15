@@ -110,19 +110,25 @@
       "id": "e0b96c75-86f9-4fd9-8cc5-984e852cfd40",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"div-Select\"] > div.d4-menu-item-label",
+      "target": "xpath=(//div[@name='div-Select'])[2]",
       "targets": [
-        ["css=div[name=\"div-Select\"] > div.d4-menu-item-label", "css"],
-        ["css=.d4-menu-item-hover > .d4-menu-item-label", "css:finder"],
-        ["xpath=//body/div/div/div[3]/div[3]", "xpath:position"]
+        ["css=.d4-menu-item-hover:nth-child(4)", "css:finder"],
+        ["xpath=(//div[@name='div-Select'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[4]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/div[2]/div/div/div[4]", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "48780d89-c925-4550-9d2b-130e731c48ca",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"div-Select---Missing-Values...\"] > div.d4-menu-item-label",
-      "targets": [],
+      "target": "xpath=(//div[@name='div-Select---Missing-Values...'])[2]",
+      "targets": [
+        ["css=.d4-menu-item:nth-child(3) .d4-menu-item:nth-child(4) .d4-menu-item:nth-child(13)", "css:finder"],
+        ["xpath=(//div[@name='div-Select---Missing-Values...'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[4]/div/div/div[13]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div[4]/div/div/div[13]", "xpath:position"]
+      ],
       "value": ""
     }, {
       "id": "f2b522c5-0990-41a8-b238-3002dc78a5e4",
@@ -178,11 +184,12 @@
       "id": "6e3cb8f0-95e8-400e-9c25-b9925a288605",
       "comment": "",
       "command": "click",
-      "target": "css=.d4-entity-markup-row:nth-child(1) > .d4-link-action",
+      "target": "xpath=//label[contains(.,'Delete Rows')]",
       "targets": [
         ["css=.d4-entity-markup-row:nth-child(1) > .d4-link-action", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div[2]/div/span/label", "xpath:idRelative"],
-        ["xpath=//div[3]/div[2]/div/span/label", "xpath:position"]
+        ["xpath=//span/label", "xpath:position"],
+        ["xpath=//label[contains(.,'Delete Rows')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
@@ -200,18 +207,19 @@
       "id": "3caf216c-bdb6-445e-afee-ed294552ffc7",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"div-Tools\"] > div.d4-menu-item-label",
+      "target": "xpath=(//div[@name='div-Data'])[2]",
       "targets": [
-        ["css=div[name=\"div-Tools\"] > div.d4-menu-item-label", "css"],
-        ["css=.d4-menu-item-hover > .d4-menu-item-label", "css:finder"],
-        ["xpath=//body/div/div/div[7]/div[3]", "xpath:position"]
+        ["css=.d4-menu-item-hover:nth-child(5)", "css:finder"],
+        ["xpath=(//div[@name='div-Data'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "c522f0dc-0926-426f-b9ab-8425b7add4f2",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"div-Tools---Data-Science\"] > div.d4-menu-item-label",
+      "target": "css=div[name=\"div-Data---Data-Science\"] > div.d4-menu-item-label",
       "targets": [
         ["css=div[name=\"div-Tools---Data-Science\"] > div.d4-menu-item-label", "css"],
         ["css=.d4-menu-item-hover:nth-child(2) > .d4-menu-item-label", "css:finder"],
@@ -222,7 +230,7 @@
       "id": "9a8c043e-3481-4b69-ba10-c43e7c7bc6fc",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"div-Tools---Data-Science---Cluster...\"]",
+      "target": "css=div[name=\"div-Data---Data-Science---Cluster...\"]",
       "targets": [],
       "value": ""
     }, {
@@ -346,7 +354,7 @@
       "id": "49d27ff5-2422-40ba-bacc-f559852d90d2",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "css=#center > canvas",
+      "target": "name=viewer-Scatter-plot",
       "targets": [
         ["css=#center > canvas", "css"],
         ["css=#center > canvas:nth-child(1)", "css:finder"],
@@ -386,10 +394,10 @@
       ],
       "value": ""
     }, {
-      "id": "d284eef7-3394-47e0-9268-31ff5115d8a7",
+      "id": "096d89b4-b9cb-4d52-9bf8-45332c3455f4",
       "comment": "",
       "command": "verifyElementNotPresent",
-      "target": "css=#center > canvas",
+      "target": "name=viewer-Scatter-plot",
       "targets": [
         ["css=#center > canvas", "css"],
         ["css=#center > canvas:nth-child(1)", "css:finder"],
@@ -401,18 +409,19 @@
       "id": "9504d650-1157-45b1-b584-f0805a2b0552",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"div-Tools\"] > div.d4-menu-item-label",
+      "target": "xpath=(//div[@name='div-Data'])[2]",
       "targets": [
-        ["css=div[name=\"div-Tools\"] > div.d4-menu-item-label", "css"],
-        ["css=.d4-menu-item-hover > .d4-menu-item-label", "css:finder"],
-        ["xpath=//body/div/div/div[7]/div[3]", "xpath:position"]
+        ["css=.d4-menu-item-hover:nth-child(5)", "css:finder"],
+        ["xpath=(//div[@name='div-Data'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "543289ea-a50f-47b9-bc77-a014da080562",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"div-Tools---Data-Science\"] > div.d4-menu-item-label",
+      "target": "css=div[name=\"div-Data---Data-Science\"] > div.d4-menu-item-label",
       "targets": [
         ["css=div[name=\"div-Tools---Data-Science\"] > div.d4-menu-item-label", "css"],
         ["css=.d4-menu-item-hover:nth-child(2) > .d4-menu-item-label", "css:finder"],
@@ -423,7 +432,7 @@
       "id": "51c91d13-7070-4bb7-ab54-8642f305d9af",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"div-Tools---Data-Science---Cluster...\"]",
+      "target": "css=div[name=\"div-Data---Data-Science---Cluster...\"]",
       "targets": [],
       "value": ""
     }, {
@@ -488,12 +497,12 @@
       "id": "106cb5fa-3715-49e8-a141-26d014a5722b",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='view-handle: Demog']",
+      "target": "xpath=//span[@name='span-view-name']",
       "targets": [
-        ["xpath=//div[@name='view-handle: Demog']", "css"],
-        ["css=.tab-handle:nth-child(4) > .tab-handle-text", "css:finder"],
-        ["xpath=//div[@id='dock_manager']/div/div/div/div/div[2]/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div[2]/div", "xpath:position"]
+        ["css=.d4-ribbon-name", "css:finder"],
+        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -511,30 +520,32 @@
     }, {
       "id": "483fc602-6a18-4201-bd41-ce37dc9c17e0",
       "comment": "",
-      "command": "verifyText",
-      "target": "xpath=//div[@id='elementContent']/div/div/div/div[2]/div[2]/table/tbody/tr[2]/td[2]/span",
+      "command": "verifyElementPresent",
+      "target": "xpath=//span[contains(.,'11')]",
       "targets": [
         ["css=tr:nth-child(2) > td:nth-child(2) > span", "css:finder"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div[2]/div[2]/table/tbody/tr[2]/td[2]/span", "xpath:idRelative"],
-        ["xpath=//tr[2]/td[2]/span", "xpath:position"]
+        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div[2]/table/tbody/tr[2]/td[2]/span", "xpath:idRelative"],
+        ["xpath=//tr[2]/td[2]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'11')]", "xpath:innerText"]
       ],
-      "value": "11"
+      "value": ""
     }, {
       "id": "3745ec22-5481-4720-89c5-186a495f51ad",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"div-Tools\"] > div.d4-menu-item-label",
+      "target": "xpath=(//div[@name='div-Data'])[2]",
       "targets": [
-        ["css=div[name=\"div-Tools\"] > div.d4-menu-item-label", "css"],
-        ["css=.d4-menu-item-hover > .d4-menu-item-label", "css:finder"],
-        ["xpath=//body/div[2]/div/div[7]/div[3]", "xpath:position"]
+        ["css=.d4-menu-item-hover:nth-child(5)", "css:finder"],
+        ["xpath=(//div[@name='div-Data'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "12670112-6e98-41e6-b666-b1058f81a75e",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"div-Tools---Data-Science\"] > div.d4-menu-item-label",
+      "target": "css=div[name=\"div-Data---Data-Science\"] > div.d4-menu-item-label",
       "targets": [
         ["css=div[name=\"div-Tools---Data-Science\"] > div.d4-menu-item-label", "css"],
         ["css=.d4-menu-item-hover:nth-child(2) > .d4-menu-item-label", "css:finder"],
@@ -545,7 +556,7 @@
       "id": "b7e6906b-21fb-41d1-9820-d5c82577b2d8",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"div-Tools---Data-Science---Cluster...\"]",
+      "target": "css=div[name=\"div-Data---Data-Science---Cluster...\"]",
       "targets": [],
       "value": ""
     }, {

@@ -118,34 +118,15 @@
       "targets": [],
       "value": ""
     }, {
-      "id": "1a536cc8-3c1e-4baf-87af-8052db98ee83",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@name='tree-expander-PostgreSQL---datagrok---Schemas---public']",
-      "targets": [
-        ["css=.d4-tree-view-group:nth-child(1) .d4-tree-view-group:nth-child(1) .d4-tree-view-tri", "css:finder"],
-        ["xpath=//div[@name='tree-expander-PostgreSQL---datagrok---Schemas---public']", "xpath:attributes"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div[24]/div[2]/div[4]/div[2]/div/div[2]/div/div/div", "xpath:idRelative"],
-        ["xpath=//div[4]/div[2]/div/div[2]/div/div/div", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "54a8e219-98ed-426d-b0ff-3d5d8a666208",
-      "comment": "",
-      "command": "pause",
-      "target": "2000",
-      "targets": [],
-      "value": ""
-    }, {
       "id": "f5d901e1-791d-4c32-b367-7a5cd3a425ce",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='tree-PostgreSQL---datagrok---Schemas---public---chats']",
+      "target": "xpath=//div[@name='tree-PostgreSQL---datagrok---Tables---chats']",
       "targets": [
-        ["css=.d4-tree-view-group:nth-child(1) .d4-tree-view-group .d4-tree-view-group:nth-child(1) > .d4-tree-view-node", "css:finder"],
-        ["xpath=//div[@name='tree-PostgreSQL---datagrok---Schemas---public---chats']", "xpath:attributes"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div[24]/div[2]/div[4]/div[2]/div/div[2]/div/div[2]/div/div", "xpath:idRelative"],
-        ["xpath=//div[4]/div[2]/div/div[2]/div/div[2]/div/div", "xpath:position"]
+        ["css=.d4-tree-view-group-host > .d4-tree-view-group:nth-child(1) .d4-tree-view-group:nth-child(1) > .d4-tree-view-node", "css:finder"],
+        ["xpath=//div[@name='tree-PostgreSQL---datagrok---Tables---chats']", "xpath:attributes"],
+        ["xpath=//div[@id='data-sources']/div/div[2]/div[24]/div[2]/div[4]/div[2]/div/div[2]/div/div", "xpath:idRelative"],
+        ["xpath=//div[4]/div[2]/div/div[2]/div/div", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -327,17 +308,6 @@
       "targets": [],
       "value": ""
     }, {
-      "id": "d0e21370-721b-4091-964d-2b18058f0ffb",
-      "comment": "",
-      "command": "click",
-      "target": "css=.tab-handle:nth-child(4) > .tab-handle-close-button",
-      "targets": [
-        ["css=.tab-handle:nth-child(4) > .tab-handle-text", "css:finder"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[2]/div", "xpath:position"]
-      ],
-      "value": ""
-    }, {
       "id": "60687c53-a208-43c8-8a4c-f414cb3aada7",
       "comment": "",
       "command": "pause",
@@ -395,6 +365,56 @@
         ["xpath=//i[@name='icon-exclamation-circle']", "xpath:attributes"],
         ["xpath=//div[@id='rootDiv']/div/div[2]/i", "xpath:idRelative"],
         ["xpath=//div[2]/i", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "39a44f29-271e-4619-8163-9bd1f3a8b9a8",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//span[@name='span-view-name']",
+      "targets": [
+        ["css=.d4-ribbon-name", "css:finder"],
+        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "4e116c78-ec33-4de6-b8ac-9bd72470bc39",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "b2665897-e262-4c77-9859-ffa75a7c6383",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='div-section--General']",
+      "targets": [
+        ["css=.d4-accordion-pane:nth-child(3) > .expanded:nth-child(1)", "css:finder"],
+        ["xpath=//div[@name='div-section--General']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div", "xpath:idRelative"],
+        ["xpath=//div[3]/div/div[2]/div/div/div/div/div[3]/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "f5924883-2932-4f10-b4fa-9e3bd973cc83",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "d019e9e3-9f5e-45cf-b1f6-a28061c863cd",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "xpath=//span[contains(.,'13')]",
+      "targets": [
+        ["css=.d4-pane-general tr:nth-child(2) > td:nth-child(2) > span", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div[2]/table/tbody/tr[2]/td[2]/span", "xpath:idRelative"],
+        ["xpath=//tr[2]/td[2]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'13')]", "xpath:innerText"]
       ],
       "value": ""
     }]

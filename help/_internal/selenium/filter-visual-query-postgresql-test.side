@@ -684,16 +684,34 @@
       "target": "1000",
       "targets": [],
       "value": ""
-    }, {
-      "id": "0ad37dcd-20f3-4e2a-832f-4be954f8125d",
+    },{
+      "id": "f3742284-265c-4a5b-9e75-9aa31f80053e",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='view-handle: Welcome']",
+      "target": "xpath=//i[@name='icon-home']",
       "targets": [
-        ["css=.tab-handle:nth-child(3)", "css:finder"],
-        ["xpath=//div[@name='view-handle: Welcome']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div", "xpath:position"]
+        ["css=.fa-home:nth-child(1)", "css:finder"],
+        ["xpath=//i[@name='icon-home']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div/i", "xpath:idRelative"],
+        ["xpath=//i", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "881a6eca-e3c1-4567-a344-e0a0a706cbf4",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "69836ef0-293d-42be-989e-6ca90b5d81b6",
+      "comment": "",
+      "command": "click",
+      "target": "css=.d4-toggle-button:nth-child(2)",
+      "targets": [
+        ["css=.d4-toggle-button:nth-child(2)", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[2]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div[2]", "xpath:position"]
       ],
       "value": ""
     }, {
