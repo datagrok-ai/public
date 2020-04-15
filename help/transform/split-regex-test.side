@@ -130,24 +130,24 @@
       "id": "971e46ad-612f-4c0f-9f57-4e4a3c6dca86",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Data']",
+      "target": "xpath=(//div[@name='div-Data'])[2]",
       "targets": [
-        ["css=.d4-menu-item-horz:nth-child(6)", "css:finder"],
-        ["xpath=//div[@name='div-Data']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[6]", "xpath:idRelative"],
-        ["xpath=//body/div[5]/div/div/div/div[6]", "xpath:position"]
+        ["css=.d4-menu-item-hover:nth-child(5)", "css:finder"],
+        ["xpath=(//div[@name='div-Data'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "ffaf47c9-c2f2-4584-a9aa-da19a7095fa3",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Data---Split-Column-by-RegExp...']",
+      "target": "xpath=(//div[@name='div-Data---Split-Column-by-RegExp...'])[2]",
       "targets": [
-        ["css=.d4-menu-item-horz:nth-child(6) .d4-menu-item:nth-child(5)", "css:finder"],
-        ["xpath=//div[@name='div-Data---Split-Column-by-RegExp...']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[6]/div/div[5]", "xpath:idRelative"],
-        ["xpath=//div[6]/div/div[5]", "xpath:position"]
+        ["css=.d4-menu-item:nth-child(3) .d4-menu-item:nth-child(5) .d4-menu-item:nth-child(9)", "css:finder"],
+        ["xpath=(//div[@name='div-Data---Split-Column-by-RegExp...'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]/div/div/div[9]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div[5]/div/div/div[9]", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -439,12 +439,12 @@
       "id": "5f4a4db6-f943-4ff4-8246-fe8e3fc6f5b5",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='view-handle: Demog']",
+      "target": "xpath=//span[@name='span-view-name']",
       "targets": [
-        ["css=.tab-handle:nth-child(4)", "css:finder"],
-        ["xpath=//div[@name='view-handle: Demog']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
+        ["css=.d4-ribbon-name", "css:finder"],
+        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -502,26 +502,16 @@
     }, {
       "id": "696f0564-58cd-42e5-833a-dc0532e01984",
       "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@name='div-View']",
-      "targets": [
-        ["css=.d4-menu-item-horz:nth-child(5)", "css:finder"],
-        ["xpath=//div[@name='div-View']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[5]", "xpath:idRelative"],
-        ["xpath=//body/div[4]/div/div/div/div[5]", "xpath:position"]
-      ],
+      "command": "executeScript",
+      "target": "let element = window; let event = new KeyboardEvent(\"keydown\", {keyCode: 192}); element.dispatchEvent(event);",
+      "targets": [],
       "value": ""
     }, {
-      "id": "9085cadb-54d1-4286-b92f-45f8ba588b49",
+      "id": "3950a428-72a2-4876-955d-8b8bc5b8fe84",
       "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@name='div-View---Console']",
-      "targets": [
-        ["css=.d4-menu-item:nth-child(7) > .d4-menu-item-container > .d4-menu-item:nth-child(8)", "css:finder"],
-        ["xpath=//div[@name='div-Tools---Console']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[7]/div/div[8]", "xpath:idRelative"],
-        ["xpath=//div[7]/div/div[8]", "xpath:position"]
-      ],
+      "command": "pause",
+      "target": "500",
+      "targets": [],
       "value": ""
     }, {
       "id": "8c661836-dc06-416d-8b14-9d50abd26ac6",

@@ -113,22 +113,24 @@
       "id": "1b6ea5af-506f-45bb-9f60-a310f26fdd5e",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"div-Select\"] > div.d4-menu-item-label",
+      "target": "xpath=(//div[@name='div-Select'])[2]",
       "targets": [
-        ["css=div[name=\"div-Select\"] > div.d4-menu-item-label", "css"],
-        ["css=.d4-menu-item-hover > .d4-menu-item-label", "css:finder"],
-        ["xpath=//body/div/div/div[3]/div[3]", "xpath:position"]
+        ["css=.d4-menu-item-hover:nth-child(4)", "css:finder"],
+        ["xpath=(//div[@name='div-Select'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[4]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/div[2]/div/div/div[4]", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "c8585b58-dfdf-491f-85ac-57693d524b14",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"div-Select---Missing-Values...\"] > div.d4-menu-item-label",
+      "target": "xpath=(//div[@name='div-Select---Missing-Values...'])[2]",
       "targets": [
-        ["css=div[name=\"div-Select---Missing-Values...\"] > div.d4-menu-item-label", "css"],
-        ["css=.d4-menu-item:nth-child(3) .d4-menu-item:nth-child(11) > .d4-menu-item-label", "css:finder"],
-        ["xpath=//div[9]/div[2]", "xpath:position"]
+        ["css=.d4-menu-item:nth-child(3) .d4-menu-item:nth-child(4) .d4-menu-item:nth-child(13)", "css:finder"],
+        ["xpath=(//div[@name='div-Select---Missing-Values...'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[4]/div/div/div[13]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div[4]/div/div/div[13]", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -181,47 +183,48 @@
       "id": "d4d2a590-44a2-4feb-ac63-c7f0ccd90e33",
       "comment": "",
       "command": "click",
-      "target": "css=label.d4-link-action",
+      "target": "xpath=//label[contains(.,'Delete Rows')]",
       "targets": [
-        ["css=label.d4-link-action", "css"],
         ["css=.d4-entity-markup-row:nth-child(1) > .d4-link-action", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div[2]/div/span/label", "xpath:idRelative"],
-        ["xpath=//div[3]/div[2]/div/span/label", "xpath:position"]
+        ["xpath=//span/label", "xpath:position"],
+        ["xpath=//label[contains(.,'Delete Rows')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
       "id": "6629c63a-df1a-4090-82d9-398938185272",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"div-Tools\"] > div.d4-menu-item-label",
+      "target": "xpath=(//div[@name='div-Data'])[2]",
       "targets": [
-        ["css=div[name=\"div-Tools\"] > div.d4-menu-item-label", "css"],
-        ["css=.d4-menu-item-hover > .d4-menu-item-label", "css:finder"],
-        ["xpath=//body/div/div/div[7]/div[3]", "xpath:position"]
+        ["css=.d4-menu-item-hover:nth-child(5)", "css:finder"],
+        ["xpath=(//div[@name='div-Data'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "b5cad90f-0667-4c3c-99ce-7b610ad0954d",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"div-Tools---Data-Science\"] > div.d4-menu-item-label",
+      "target": "xpath=//div[@name='div-Data---Data-Science']",
       "targets": [
-        ["css=div[name=\"div-Tools---Data-Science\"] > div.d4-menu-item-label", "css"],
-        ["css=.d4-menu-item-hover:nth-child(2) > .d4-menu-item-label", "css:finder"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[7]/div/div[2]/div[3]", "xpath:idRelative"],
-        ["xpath=//div[7]/div/div[2]/div[3]", "xpath:position"]
+        ["css=.d4-menu-item-hover:nth-child(11)", "css:finder"],
+        ["xpath=//div[@name='div-Data---Data-Science']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]/div/div/div[11]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div[5]/div/div/div[11]", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "f07db5a8-4a58-446a-8594-124e9548cd73",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Tools---Data-Science---Multivariate-Analysis-(PLS)...']",
+      "target": "xpath=//div[@name='div-Data---Data-Science---Multivariate-Analysis-(PLS)...']",
       "targets": [
-        ["css=.d4-menu-item-vert:nth-child(2) .d4-menu-item:nth-child(5)", "css:finder"],
-        ["xpath=//div[@name='div-Tools---Data-Science---Multivariate-Analysis-(PLS)...']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[7]/div/div[2]/div/div[5]", "xpath:idRelative"],
-        ["xpath=//div[7]/div/div[2]/div/div[5]", "xpath:position"]
+        ["css=.d4-menu-item-vert:nth-child(11) .d4-menu-item:nth-child(6)", "css:finder"],
+        ["xpath=//div[@name='div-Data---Data-Science---Multivariate-Analysis-(PLS)...']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]/div/div/div[11]/div/div/div[6]", "xpath:idRelative"],
+        ["xpath=//div[5]/div/div/div[11]/div/div/div[6]", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -314,39 +317,53 @@
       "targets": [],
       "value": ""
     }, {
+      "id": "9570d7af-3804-4113-9051-fc005cf34098",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "name=viewer-Bar-chart",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "14db9687-b964-4c5f-8bed-9540c32fea4c",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "name=viewer-Scatter-plot",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "df8ac226-4675-498a-9c8f-7b35db248997",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Tools']",
+      "target": "xpath=(//div[@name='div-Data'])[2]",
       "targets": [
-        ["css=.d4-menu-item-horz:nth-child(7)", "css:finder"],
-        ["xpath=//div[@name='div-Tools']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[7]", "xpath:idRelative"],
-        ["xpath=//div[4]/div/div/div/div[7]", "xpath:position"]
+        ["css=.d4-menu-item-hover:nth-child(5)", "css:finder"],
+        ["xpath=(//div[@name='div-Data'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "ae771dc0-6e61-4dd7-b730-0c56bb92ca83",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Tools---Data-Science']",
+      "target": "xpath=//div[@name='div-Data---Data-Science']",
       "targets": [
-        ["css=.d4-menu-item-hover:nth-child(2)", "css:finder"],
-        ["xpath=//div[@name='div-Tools---Data-Science']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[7]/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[7]/div/div[2]", "xpath:position"]
+        ["css=.d4-menu-item-hover:nth-child(11)", "css:finder"],
+        ["xpath=//div[@name='div-Data---Data-Science']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]/div/div/div[11]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div[5]/div/div/div[11]", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "e3a21d0e-c186-4856-8f67-d93f167944ff",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Tools---Data-Science---Multivariate-Analysis-(PLS)...']",
+      "target": "xpath=//div[@name='div-Data---Data-Science---Multivariate-Analysis-(PLS)...']",
       "targets": [
-        ["css=.d4-menu-item-vert:nth-child(2) .d4-menu-item:nth-child(5)", "css:finder"],
-        ["xpath=//div[@name='div-Tools---Data-Science---Multivariate-Analysis-(PLS)...']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[7]/div/div[2]/div/div[5]", "xpath:idRelative"],
-        ["xpath=//div[7]/div/div[2]/div/div[5]", "xpath:position"]
+        ["css=.d4-menu-item-vert:nth-child(11) .d4-menu-item:nth-child(6)", "css:finder"],
+        ["xpath=//div[@name='div-Data---Data-Science---Multivariate-Analysis-(PLS)...']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]/div/div/div[11]/div/div/div[6]", "xpath:idRelative"],
+        ["xpath=//div[5]/div/div/div[11]/div/div/div[6]", "xpath:position"]
       ],
       "value": ""
     }, {

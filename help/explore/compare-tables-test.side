@@ -103,22 +103,24 @@
       "id": "f4a6b4d0-bc2d-40d4-a862-77017de110b1",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"div-Data\"] > div.d4-menu-item-label",
+      "target": "xpath=(//div[@name='div-Data'])[2]",
       "targets": [
-        ["css=div[name=\"div-Data\"] > div.d4-menu-item-label", "css"],
-        ["css=.d4-menu-item-hover > .d4-menu-item-label", "css:finder"],
-        ["xpath=//body/div/div/div[6]/div[3]", "xpath:position"]
+        ["css=.d4-menu-item-hover:nth-child(5)", "css:finder"],
+        ["xpath=(//div[@name='div-Data'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "31a14ba8-08cc-4bac-9f21-8c89c8cfe279",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"div-Data---Compare-Tables...\"] > div.d4-menu-item-label",
+      "target": "xpath=(//div[@name='div-Data---Compare-Tables...'])[2]",
       "targets": [
-        ["css=div[name=\"div-Data---Compare-Tables...\"] > div.d4-menu-item-label", "css"],
-        ["css=.d4-menu-item:nth-child(6) .d4-menu-item:nth-child(3) > .d4-menu-item-label", "css:finder"],
-        ["xpath=//div[6]/div/div[3]/div[2]", "xpath:position"]
+        ["css=.d4-menu-item:nth-child(3) .d4-menu-item:nth-child(5) .d4-menu-item:nth-child(7)", "css:finder"],
+        ["xpath=(//div[@name='div-Data---Compare-Tables...'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]/div/div/div[7]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div[5]/div/div/div[7]", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -216,12 +218,12 @@
       "id": "121bf663-d077-4b85-8d65-f26f00a731a6",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"view-handle: diff\"] > div.tab-handle-text",
+      "target": "xpath=//span[@name='span-view-name']",
       "targets": [
-        ["css=div[name=\"view-handle: diff\"] > div.tab-handle-text", "css"],
-        ["css=.tab-handle:nth-child(6) > .tab-handle-text", "css:finder"],
-        ["xpath=//div[@id='dock_manager']/div/div/div/div/div[4]/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div[4]/div", "xpath:position"]
+        ["css=.d4-ribbon-name", "css:finder"],
+        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -332,12 +334,12 @@
       "id": "264e5ee1-4fb3-4c6c-94ad-4dcd046a4472",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"view-handle: diff\"] > div.tab-handle-text",
+      "target": "xpath=//span[@name='span-view-name']",
       "targets": [
-        ["css=div[name=\"view-handle: diff\"] > div.tab-handle-text", "css"],
-        ["css=.tab-handle:nth-child(6) > .tab-handle-text", "css:finder"],
-        ["xpath=//div[@id='dock_manager']/div/div/div/div/div[4]/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div[4]/div", "xpath:position"]
+        ["css=.d4-ribbon-name", "css:finder"],
+        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -376,19 +378,25 @@
       "id": "d18469a8-6673-4970-91ee-65659dd864e1",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"div-Data\"] > div.d4-menu-item-label",
+      "target": "xpath=(//div[@name='div-Data'])[2]",
       "targets": [
-        ["css=div[name=\"div-Data\"] > div.d4-menu-item-label", "css"],
-        ["css=.d4-menu-item-hover > .d4-menu-item-label", "css:finder"],
-        ["xpath=//body/div/div/div[6]/div[3]", "xpath:position"]
+        ["css=.d4-menu-item-hover:nth-child(5)", "css:finder"],
+        ["xpath=(//div[@name='div-Data'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "f6397373-31a4-4479-a292-9cea57d0f236",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"div-Data---Compare-Tables...\"] > div.d4-menu-item-label",
-      "targets": [],
+      "target": "xpath=(//div[@name='div-Data---Compare-Tables...'])[2]",
+      "targets": [
+        ["css=.d4-menu-item:nth-child(3) .d4-menu-item:nth-child(5) .d4-menu-item:nth-child(7)", "css:finder"],
+        ["xpath=(//div[@name='div-Data---Compare-Tables...'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]/div/div/div[7]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div[5]/div/div/div[7]", "xpath:position"]
+      ],
       "value": ""
     }, {
       "id": "ffe75cbc-2d6a-46ad-be1d-78b51644040a",

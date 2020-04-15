@@ -366,24 +366,12 @@
       "id": "2c1ec5bf-e075-473d-b775-626ee313757e",
       "comment": "",
       "command": "click",
-      "target": "css=div.tab-handle-text",
+      "target": "xpath=//span[@name='span-view-name']",
       "targets": [
-        ["css=div.tab-handle-text", "css"],
-        ["css=.tab-handle:nth-child(2) > .tab-handle-text", "css:finder"],
-        ["xpath=//div[@id='dock_manager']/div/div/div/div/div/div", "xpath:idRelative"],
-        ["xpath=//div/div[2]/div/div/div/div/div/div", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "27100c45-fa9b-4feb-881f-b53fa60f3ba4",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@name='view-handle: Demog']",
-      "targets": [
-        ["xpath=//div[@name='view-handle: Demog']", "css"],
-        ["css=.tab-handle:nth-child(3) > .tab-handle-text", "css:finder"],
-        ["xpath=//div[@id='dock_manager']/div/div/div/div/div[2]/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div[2]/div", "xpath:position"]
+        ["css=.d4-ribbon-name", "css:finder"],
+        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
       ],
       "value": ""
     }, {

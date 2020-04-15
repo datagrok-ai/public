@@ -79,20 +79,25 @@
       "id": "da69c1b8-789e-4b40-b198-7c23ce5230f9",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"div-Data\"] > div.d4-menu-item-label",
+      "target": "xpath=(//div[@name='div-Data'])[2]",
       "targets": [
-        ["css=div[name=\"div-Data\"] > div.d4-menu-item-label", "css"],
-        ["css=.d4-menu-item-hover > .d4-menu-item-label", "css:finder"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[6]/div[3]", "xpath:idRelative"],
-        ["xpath=//body/div/div/div/div/div[6]/div[3]", "xpath:position"]
+        ["css=.d4-menu-item-hover:nth-child(5)", "css:finder"],
+        ["xpath=(//div[@name='div-Data'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "548d2b9a-3066-4692-8e18-53f347f422b1",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"div-Data---Join-Tables...\"] > div.d4-menu-item-label",
-      "targets": [],
+      "target": "xpath=(//div[@name='div-Data---Join-Tables...'])[2]",
+      "targets": [
+        ["css=.d4-menu-item:nth-child(3) .d4-menu-item:nth-child(5) > .d4-menu-item-container-fixed > .d4-menu-item-container > .d4-menu-item:nth-child(4)", "css:finder"],
+        ["xpath=(//div[@name='div-Data---Join-Tables...'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]/div/div/div[4]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]/div/div/div[4]", "xpath:position"]
+      ],
       "value": ""
     }, {
       "id": "9fb2263e-f9a0-457b-8fba-27fdbac6ef59",
@@ -181,12 +186,12 @@
       "id": "6a7aa209-0bb7-45ae-9f35-bce186c8bc75",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"view-handle: Auto+Selling\"] > div.tab-handle-text",
+      "target": "xpath=//span[@name='span-view-name']",
       "targets": [
-        ["css=div[name=\"view-handle: Auto+Selling\"] > div.tab-handle-text", "css"],
-        ["css=.tab-handle:nth-child(6) > .tab-handle-text", "css:finder"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[4]/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[4]/div", "xpath:position"]
+        ["css=.d4-ribbon-name", "css:finder"],
+        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -255,19 +260,31 @@
       "targets": [],
       "value": ""
     }, {
-      "id": "d3535d16-1c0a-45bc-bf01-deb7089c0bb2",
+      "id": "e6dbcad8-7bf8-4b78-9c6f-7ca8602d9be8",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='view-handle: Auto']",
+      "target": "xpath=//div[@name='Tables']",
       "targets": [
-        ["css=.tab-handle:nth-child(4)", "css:finder"],
-        ["xpath=//div[@name='view-handle: Auto']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[4]/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
+        ["css=.d4-tab-header:nth-child(5)", "css:finder"],
+        ["xpath=//div[@name='Tables']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div[5]", "xpath:idRelative"],
+        ["xpath=//div/div[5]", "xpath:position"]
       ],
       "value": ""
     }, {
-      "id": "ffd68121-7577-4f60-92a9-3c299d79d1a6",
+      "id": "62406d25-6c29-4127-877c-76330e418af3",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//span[contains(.,'Auto')]",
+      "targets": [
+        ["css=.d4-toggle-button:nth-child(1) > span", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/span", "xpath:position"],
+        ["xpath=//span[contains(.,'Auto')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "06cfa1cf-2d7f-48f3-a59f-d9eddaaf1f37",
       "comment": "",
       "command": "pause",
       "target": "1000",
@@ -277,20 +294,25 @@
       "id": "d890254b-19e8-4be0-a575-e57821a63892",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"div-Data\"] > div.d4-menu-item-label",
+      "target": "xpath=(//div[@name='div-Data'])[2]",
       "targets": [
-        ["css=div[name=\"div-Data\"] > div.d4-menu-item-label", "css"],
-        ["css=.d4-menu-item-hover > .d4-menu-item-label", "css:finder"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[6]/div[3]", "xpath:idRelative"],
-        ["xpath=//body/div/div/div/div/div[6]/div[3]", "xpath:position"]
+        ["css=.d4-menu-item-hover:nth-child(5)", "css:finder"],
+        ["xpath=(//div[@name='div-Data'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "4cb06792-44cd-432d-8d36-cbc32b3aa799",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"div-Data---Join-Tables...\"] > div.d4-menu-item-label",
-      "targets": [],
+      "target": "xpath=(//div[@name='div-Data---Join-Tables...'])[2]",
+      "targets": [
+        ["css=.d4-menu-item:nth-child(3) .d4-menu-item:nth-child(5) > .d4-menu-item-container-fixed > .d4-menu-item-container > .d4-menu-item:nth-child(4)", "css:finder"],
+        ["xpath=(//div[@name='div-Data---Join-Tables...'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]/div/div/div[4]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]/div/div/div[4]", "xpath:position"]
+      ],
       "value": ""
     }, {
       "id": "92848b51-7bef-43f9-9667-704b9e95e1cf",
@@ -388,12 +410,12 @@
       "id": "8b478332-5027-40c6-a7f4-8496a03473b0",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"view-handle: Auto+Selling\"] > div.tab-handle-text",
+      "target": "xpath=//span[@name='span-view-name']",
       "targets": [
-        ["css=div[name=\"view-handle: Auto+Selling\"] > div.tab-handle-text", "css"],
-        ["css=.tab-handle:nth-child(6) > .tab-handle-text", "css:finder"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[4]/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[4]/div", "xpath:position"]
+        ["css=.d4-ribbon-name", "css:finder"],
+        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -438,15 +460,27 @@
       "targets": [],
       "value": ""
     }, {
-      "id": "dbf71df4-b218-4a27-824c-a738a1c8c914",
+      "id": "457e77f1-9d3b-4226-a4d7-1ec781352561",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='view-handle: Auto']",
+      "target": "xpath=//div[@name='Tables']",
       "targets": [
-        ["css=.tab-handle:nth-child(4)", "css:finder"],
-        ["xpath=//div[@name='view-handle: Auto']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[4]/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
+        ["css=.d4-tab-header:nth-child(5)", "css:finder"],
+        ["xpath=//div[@name='Tables']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div[5]", "xpath:idRelative"],
+        ["xpath=//div/div[5]", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "b5dcce82-e44e-4d7b-bede-307a8a26f04b",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//span[contains(.,'Auto')]",
+      "targets": [
+        ["css=.d4-toggle-button:nth-child(1) > span", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/span", "xpath:position"],
+        ["xpath=//span[contains(.,'Auto')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
@@ -460,20 +494,25 @@
       "id": "76a7b9f7-6161-4d8f-9ec6-e99b2ea32854",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"div-Data\"] > div.d4-menu-item-label",
+      "target": "xpath=(//div[@name='div-Data'])[2]",
       "targets": [
-        ["css=div[name=\"div-Data\"] > div.d4-menu-item-label", "css"],
-        ["css=.d4-menu-item-hover > .d4-menu-item-label", "css:finder"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[6]/div[3]", "xpath:idRelative"],
-        ["xpath=//body/div/div/div/div/div[6]/div[3]", "xpath:position"]
+        ["css=.d4-menu-item-hover:nth-child(5)", "css:finder"],
+        ["xpath=(//div[@name='div-Data'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "2c200677-1102-4053-8aa2-015492a7b9c3",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"div-Data---Join-Tables...\"] > div.d4-menu-item-label",
-      "targets": [],
+      "target": "xpath=(//div[@name='div-Data---Join-Tables...'])[2]",
+      "targets": [
+        ["css=.d4-menu-item:nth-child(3) .d4-menu-item:nth-child(5) > .d4-menu-item-container-fixed > .d4-menu-item-container > .d4-menu-item:nth-child(4)", "css:finder"],
+        ["xpath=(//div[@name='div-Data---Join-Tables...'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]/div/div/div[4]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]/div/div/div[4]", "xpath:position"]
+      ],
       "value": ""
     }, {
       "id": "bf2a0f3f-1b33-4562-b99e-3c20e71477d7",
@@ -571,12 +610,12 @@
       "id": "04c69769-a80a-4c83-8415-68d9d38bd98f",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"view-handle: Auto+Selling\"] > div.tab-handle-text",
+      "target": "xpath=//span[@name='span-view-name']",
       "targets": [
-        ["css=div[name=\"view-handle: Auto+Selling\"] > div.tab-handle-text", "css"],
-        ["css=.tab-handle:nth-child(6) > .tab-handle-text", "css:finder"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[4]/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[4]/div", "xpath:position"]
+        ["css=.d4-ribbon-name", "css:finder"],
+        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -602,15 +641,15 @@
       ],
       "value": "4"
     }, {
-      "id": "a7449b1b-696f-413f-bead-cbb99fdad5e5",
+      "id": "37946efa-2ea6-4130-b940-bd431a00a64c",
       "comment": "",
       "command": "click",
-      "target": "css=.d4-accordion:nth-child(1) > .d4-accordion-pane:nth-child(3) > .d4-accordion-pane-header",
+      "target": "xpath=(//div[@name='div-section--Columns'])[2]",
       "targets": [
-        ["css=.d4-accordion:nth-child(1) > .d4-accordion-pane:nth-child(3) > .d4-accordion-pane-header", "css:finder"],
-        ["xpath=(//div[@name='div-section--name'])[8]", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div", "xpath:idRelative"],
-        ["xpath=//div[3]/div/div[2]/div/div/div/div/div[3]/div", "xpath:position"]
+        ["css=.d4-accordion-pane:nth-child(5) > .expanded:nth-child(1)", "css:finder"],
+        ["xpath=(//div[@name='div-section--Columns'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[5]/div", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div[5]/div", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -652,12 +691,12 @@
       "id": "f3dccad5-ddd7-49ae-a94a-40cb6380894c",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"view-handle: Auto+Selling\"] > div.tab-handle-text",
+      "target": "xpath=//span[@name='span-view-name']",
       "targets": [
-        ["css=div[name=\"view-handle: Auto+Selling\"] > div.tab-handle-text", "css"],
-        ["css=.tab-handle:nth-child(6) > .tab-handle-text", "css:finder"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[4]/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[4]/div", "xpath:position"]
+        ["css=.d4-ribbon-name", "css:finder"],
+        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -683,12 +722,24 @@
       "id": "88fbdddb-6b06-4dcd-9f15-168c5a32edb2",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='view-handle: Auto']",
+      "target": "xpath=//div[@name='Tables']",
       "targets": [
-        ["css=.tab-handle:nth-child(4)", "css:finder"],
-        ["xpath=//div[@name='view-handle: Auto']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[4]/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
+        ["css=.d4-tab-header:nth-child(5)", "css:finder"],
+        ["xpath=//div[@name='Tables']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div[5]", "xpath:idRelative"],
+        ["xpath=//div/div[5]", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "e6795306-b2e8-4156-b9a7-fc00fcf582be",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//span[contains(.,'Auto')]",
+      "targets": [
+        ["css=.d4-toggle-button:nth-child(1) > span", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/span", "xpath:position"],
+        ["xpath=//span[contains(.,'Auto')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
@@ -702,20 +753,25 @@
       "id": "e0e41047-18dd-4995-b6cd-810ff98cd45a",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"div-Data\"] > div.d4-menu-item-label",
+      "target": "xpath=(//div[@name='div-Data'])[2]",
       "targets": [
-        ["css=div[name=\"div-Data\"] > div.d4-menu-item-label", "css"],
-        ["css=.d4-menu-item-hover > .d4-menu-item-label", "css:finder"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[6]/div[3]", "xpath:idRelative"],
-        ["xpath=//body/div/div/div/div/div[6]/div[3]", "xpath:position"]
+        ["css=.d4-menu-item-hover:nth-child(5)", "css:finder"],
+        ["xpath=(//div[@name='div-Data'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "73efbeef-af77-4616-9870-2c7eea15bb1b",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"div-Data---Join-Tables...\"] > div.d4-menu-item-label",
-      "targets": [],
+      "target": "xpath=(//div[@name='div-Data---Join-Tables...'])[2]",
+      "targets": [
+        ["css=.d4-menu-item:nth-child(3) .d4-menu-item:nth-child(5) > .d4-menu-item-container-fixed > .d4-menu-item-container > .d4-menu-item:nth-child(4)", "css:finder"],
+        ["xpath=(//div[@name='div-Data---Join-Tables...'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]/div/div/div[4]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]/div/div/div[4]", "xpath:position"]
+      ],
       "value": ""
     }, {
       "id": "b471262e-6c02-4a99-b8e7-e0f34501ef35",
@@ -813,12 +869,12 @@
       "id": "d4079f46-f78f-4162-9108-1621cb75df2b",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"view-handle: Auto+Selling\"] > div.tab-handle-text",
+      "target": "xpath=//span[@name='span-view-name']",
       "targets": [
-        ["css=div[name=\"view-handle: Auto+Selling\"] > div.tab-handle-text", "css"],
-        ["css=.tab-handle:nth-child(6) > .tab-handle-text", "css:finder"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[4]/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[4]/div", "xpath:position"]
+        ["css=.d4-ribbon-name", "css:finder"],
+        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
       ],
       "value": ""
     }, {

@@ -398,25 +398,43 @@
     }, {
       "id": "3e3c43db-298e-4b06-81a6-fb3e571d8008",
       "comment": "",
-      "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='view-handle: Products']",
+      "command": "verifyText",
+      "target": "xpath=//span[@name='span-view-name']",
       "targets": [
-        ["css=.tab-handle:nth-child(4)", "css:finder"],
-        ["xpath=//div[@name='view-handle: Products']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
+        ["css=.d4-ribbon-name", "css:finder"],
+        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
       ],
-      "value": ""
+      "value": "Products"
     }, {
       "id": "f3742284-265c-4a5b-9e75-9aa31f80053e",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='view-handle: Welcome']",
+      "target": "xpath=//i[@name='icon-home']",
       "targets": [
-        ["css=.tab-handle:nth-child(3)", "css:finder"],
-        ["xpath=//div[@name='view-handle: Welcome']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div", "xpath:position"]
+        ["css=.fa-home:nth-child(1)", "css:finder"],
+        ["xpath=//i[@name='icon-home']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div/i", "xpath:idRelative"],
+        ["xpath=//i", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "881a6eca-e3c1-4567-a344-e0a0a706cbf4",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "69836ef0-293d-42be-989e-6ca90b5d81b6",
+      "comment": "",
+      "command": "click",
+      "target": "css=.d4-toggle-button:nth-child(2)",
+      "targets": [
+        ["css=.d4-toggle-button:nth-child(2)", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[2]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div[2]", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -495,7 +513,7 @@
       "id": "69f7bac6-018b-4bcc-baab-456ae6883f61",
       "comment": "",
       "command": "pause",
-      "target": "3000",
+      "target": "4000",
       "targets": [],
       "value": ""
     }, {
@@ -538,17 +556,17 @@
       ],
       "value": ""
     }, {
-      "id": "983f9c4c-e0eb-415b-b6e7-187a2f4426d3",
+      "id": "1ca5032d-6ec3-438b-9df3-d917ee99b706",
       "comment": "",
-      "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='view-handle: Orders']",
+      "command": "verifyText",
+      "target": "xpath=//span[@name='span-view-name']",
       "targets": [
-        ["css=.tab-handle:nth-child(5)", "css:finder"],
-        ["xpath=//div[@name='view-handle: Orders']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[3]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/div[3]", "xpath:position"]
+        ["css=.d4-ribbon-name", "css:finder"],
+        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
       ],
-      "value": ""
+      "value": "Orders"
     }]
   }],
   "suites": [{

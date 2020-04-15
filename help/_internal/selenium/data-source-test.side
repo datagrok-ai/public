@@ -232,15 +232,33 @@
       ],
       "value": ""
     }, {
-      "id": "0dd2afda-d16a-4217-8eec-c067dd7466a1",
+      "id": "f3742284-265c-4a5b-9e75-9aa31f80053e",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='view-handle: Welcome']",
+      "target": "xpath=//i[@name='icon-home']",
       "targets": [
-        ["css=.tab-handle:nth-child(3)", "css:finder"],
-        ["xpath=//div[@name='view-handle: Welcome']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div", "xpath:position"]
+        ["css=.fa-home:nth-child(1)", "css:finder"],
+        ["xpath=//i[@name='icon-home']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div/i", "xpath:idRelative"],
+        ["xpath=//i", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "881a6eca-e3c1-4567-a344-e0a0a706cbf4",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "69836ef0-293d-42be-989e-6ca90b5d81b6",
+      "comment": "",
+      "command": "click",
+      "target": "css=.d4-toggle-button:nth-child(2)",
+      "targets": [
+        ["css=.d4-toggle-button:nth-child(2)", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[2]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div[2]", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -281,15 +299,15 @@
     }, {
       "id": "3450721b-274a-4495-9d51-9d610e96e259",
       "comment": "",
-      "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='view-handle: Connections']",
+      "command": "verifyText",
+      "target": "xpath=//span[@name='span-view-name']",
       "targets": [
-        ["css=.tab-handle-selected", "css:finder"],
-        ["xpath=//div[@name='view-handle: Connections']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[3]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/div[3]", "xpath:position"]
+        ["css=.d4-ribbon-name", "css:finder"],
+        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
       ],
-      "value": ""
+      "value": "Connections"
     }, {
       "id": "b3bd85f8-2168-4ea6-a6d8-b82fb59c81a7",
       "comment": "",
