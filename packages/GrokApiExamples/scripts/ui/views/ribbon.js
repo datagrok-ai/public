@@ -13,6 +13,11 @@ v.setRibbonPanels([
     [ui.divText('Custom panel')]
 ]);
 
+// ribbon menu
+v.ribbonMenu = Menu.create()
+    .group('Custom')
+    .item('Foo!', () => grok.balloon.info('Foo clicked'));
+
 // accordion
 var acc = ui.accordion();
 acc.addPane('header 1', () => ui.divText('Dynamic content'));
