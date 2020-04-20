@@ -42,3 +42,7 @@ acc.addPane('Layouts demo', () => {
         saveDiv
     ], 'pure-form,pure-form-aligned');
 }, true, acc.panes[0]);
+
+view.setRibbonPanels([[
+    ui.iconFA('broom', () => view.resetLayout()),
+]]);
