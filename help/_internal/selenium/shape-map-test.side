@@ -17,7 +17,7 @@
       "id": "2e74e989-5df1-447f-bf7b-163871b24921",
       "comment": "",
       "command": "type",
-      "target": "xpath=//div[@id='signup-login-fields']/div/div/input",
+      "target": "xpath=//div[@id='signup-login-fields button']/div/div/input",
       "targets": [
         ["id=password", "id"],
         ["css=#password", "css:finder"],
@@ -30,7 +30,7 @@
       "id": "d9132049-31ef-45e7-bd38-43ed931a9bc2",
       "comment": "",
       "command": "type",
-      "target": "xpath=//div[@id='signup-login-fields']/div/div[2]/input",
+      "target": "xpath=//div[@id='signup-login-fields button']/div/div[2]/input",
       "targets": [
         ["id=password", "id"],
         ["css=#password", "css:finder"],
@@ -43,7 +43,7 @@
       "id": "c06f8d03-321e-40fa-bf29-25ec098103fc",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@id='signup-login-fields']/div[2]/button",
+      "target": "xpath=//div[@id='signup-login-fields button']/div[2]/button",
       "targets": [
         ["linkText=LOGIN", "linkText"],
         ["css=a", "css:finder"],
@@ -256,6 +256,25 @@
         ["xpath=//div[@id='rootDiv']/div/div[2]/i", "xpath:idRelative"],
         ["xpath=//div[2]/i", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "71458ccc-c35d-4c0b-a514-c0548c369bcb",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//i[@name='icon-bars']",
+      "targets": [
+        ["css=.fa-bars", "css:finder"],
+        ["xpath=//i[@name='icon-bars']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div[7]/i", "xpath:idRelative"],
+        ["xpath=//div[7]/i", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "de62c8b9-4939-416d-b05d-d8e2bd21a384",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "d4f91e64-5429-493d-90e4-7fb093685ead",
@@ -624,7 +643,7 @@
       "id": "869c4a97-9f26-4b2e-b733-0acadd2a2fbf",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "2000",
       "targets": [],
       "value": ""
     }, {

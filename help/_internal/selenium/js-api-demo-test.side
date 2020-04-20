@@ -17,7 +17,7 @@
       "id": "2522eda8-3850-48b1-902c-86d61d71e68f",
       "comment": "",
       "command": "type",
-      "target": "xpath=//div[@id='signup-login-fields']/div/div/input",
+      "target": "xpath=//div[@id='signup-login-fields button']/div/div/input",
       "targets": [
         ["id=login", "id"],
         ["css=#login", "css"],
@@ -31,7 +31,7 @@
       "id": "1e7b204d-abdc-4f88-8d3a-e04e15ae0d4a",
       "comment": "",
       "command": "type",
-      "target": "xpath=//div[@id='signup-login-fields']/div/div[2]/input",
+      "target": "xpath=//div[@id='signup-login-fields button']/div/div[2]/input",
       "targets": [
         ["id=password", "id"],
         ["css=#password", "css"],
@@ -45,7 +45,7 @@
       "id": "84c1d054-5ef2-4182-8aaf-1104aeee2db6",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@id='signup-login-fields']/div[2]/button",
+      "target": "xpath=//div[@id='signup-login-fields button']/div[2]/button",
       "targets": [
         ["linkText=LOGIN", "linkText"],
         ["css=a", "css"],
@@ -81,35 +81,24 @@
       "id": "8447b276-e48e-4758-9a76-f716489bda66",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Tools']",
+      "target": "xpath=//i[@name='icon-question-circle']",
       "targets": [
-        ["css=.d4-menu-item-horz:nth-child(7)", "css:finder"],
-        ["xpath=//div[@name='div-Tools']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[7]", "xpath:idRelative"],
-        ["xpath=//div[3]/div/div/div/div[7]", "xpath:position"]
+        ["css=.fa-question-circle", "css:finder"],
+        ["xpath=//i[@name='icon-question-circle']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div[11]/i", "xpath:idRelative"],
+        ["xpath=//div[11]/i", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "f69a4bdb-d7ec-415c-9b55-7bbb390ac194",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Tools---Scripting']",
+      "target": "xpath=//span[contains(.,'JavaScript API Examples')]",
       "targets": [
-        ["css=.d4-menu-item-hover:nth-child(6)", "css:finder"],
-        ["xpath=//div[@name='div-Tools---Scripting']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[7]/div/div[6]", "xpath:idRelative"],
-        ["xpath=//div[7]/div/div[6]", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "83391ec1-0655-4962-85d5-44c6937ed13b",
-      "comment": "",
-      "command": "click",
-      "target": "name=div-Tools---Scripting---JavaScript",
-      "targets": [
-        ["css=.d4-editor", "css:finder"],
-        ["xpath=//div[@id='elementContent']/div/div/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div[3]/div/div/div/div", "xpath:position"]
+        ["css=.d4-toggle-button:nth-child(4) > span", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[4]/span", "xpath:idRelative"],
+        ["xpath=//div[4]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'JavaScript API Examples')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
@@ -147,7 +136,7 @@
       "id": "8b321cd8-ca19-4c0e-803a-ad544d0efe05",
       "comment": "",
       "command": "doubleClick",
-      "target": "xpath=//div[@name='tree-demo---demo']",
+      "target": "xpath=//div[@name='tree-demo---demo.js']",
       "targets": [
         ["css=.d4-tree-view-item:nth-child(1)", "css:finder"],
         ["xpath=//div[@name='tree-demo---demo']", "xpath:attributes"],
@@ -258,7 +247,7 @@
       "id": "c82a712f-69b2-4109-b06b-8ff8e575da65",
       "comment": "",
       "command": "doubleClick",
-      "target": "xpath=//div[@name='tree-demo---stock-broker']",
+      "target": "xpath=//div[@name='tree-demo---stock-broker.js']",
       "targets": [
         ["css=.d4-tree-view-item:nth-child(2)", "css:finder"],
         ["xpath=//div[@name='tree-demo---stock-broker']", "xpath:attributes"],

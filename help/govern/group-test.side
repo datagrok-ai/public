@@ -17,7 +17,7 @@
       "id": "1da11e7c-d1c1-446a-bb61-1c24b83593ac",
       "comment": "",
       "command": "type",
-      "target": "xpath=//div[@id='signup-login-fields']/div/div/input",
+      "target": "xpath=//div[@id='signup-login-fields button']/div/div/input",
       "targets": [
         ["id=login", "id"],
         ["css=#login", "css:finder"],
@@ -30,7 +30,7 @@
       "id": "fc83a234-8131-4acd-ae47-bb537251f596",
       "comment": "",
       "command": "type",
-      "target": "xpath=//div[@id='signup-login-fields']/div/div[2]/input",
+      "target": "xpath=//div[@id='signup-login-fields button']/div/div[2]/input",
       "targets": [
         ["id=password", "id"],
         ["css=#password", "css:finder"],
@@ -43,7 +43,7 @@
       "id": "0d1bdad1-c192-4cbe-9aa9-28443783d9d0",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@id='signup-login-fields']/div[2]/button",
+      "target": "xpath=//div[@id='signup-login-fields button']/div[2]/button",
       "targets": [
         ["linkText=LOGIN", "linkText"],
         ["css=a", "css:finder"],

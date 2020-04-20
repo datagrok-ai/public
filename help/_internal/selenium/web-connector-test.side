@@ -17,11 +17,11 @@
       "id": "2e74e989-5df1-447f-bf7b-163871b24921",
       "comment": "",
       "command": "type",
-      "target": "xpath=//div[@id='signup-login-fields']/div/div/input",
+      "target": "xpath=//div[@id='signup-login-fields button']/div/div/input",
       "targets": [
         ["css=#signup-login-fields .signup-field:nth-child(1) > input", "css:finder"],
         ["xpath=(//input[@type='text'])[4]", "xpath:attributes"],
-        ["xpath=//div[@id='signup-login-fields']/div/div/input", "xpath:idRelative"],
+        ["xpath=//div[@id='signup-login-fields button']/div/div/input", "xpath:idRelative"],
         ["xpath=//div[3]/div/div/input", "xpath:position"]
       ],
       "value": "selenium"
@@ -29,11 +29,11 @@
       "id": "d9132049-31ef-45e7-bd38-43ed931a9bc2",
       "comment": "",
       "command": "type",
-      "target": "xpath=//div[@id='signup-login-fields']/div/div[2]/input",
+      "target": "xpath=//div[@id='signup-login-fields button']/div/div[2]/input",
       "targets": [
         ["css=#signup-login-fields .signup-field:nth-child(2) > input", "css:finder"],
         ["xpath=(//input[@type='password'])[3]", "xpath:attributes"],
-        ["xpath=//div[@id='signup-login-fields']/div/div[2]/input", "xpath:idRelative"],
+        ["xpath=//div[@id='signup-login-fields button']/div/div[2]/input", "xpath:idRelative"],
         ["xpath=//div[3]/div/div[2]/input", "xpath:position"]
       ],
       "value": "selenium"
@@ -41,10 +41,10 @@
       "id": "c06f8d03-321e-40fa-bf29-25ec098103fc",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@id='signup-login-fields']/div[2]/button",
+      "target": "xpath=//div[@id='signup-login-fields button']/div[2]/button",
       "targets": [
         ["css=#signup-login-fields button", "css:finder"],
-        ["xpath=//div[@id='signup-login-fields']/div[2]/button", "xpath:idRelative"],
+        ["xpath=//div[@id='signup-login-fields button']/div[2]/button", "xpath:idRelative"],
         ["xpath=//div[3]/div[2]/button", "xpath:position"]
       ],
       "value": ""
@@ -99,7 +99,7 @@
         ["xpath=//span/h1", "xpath:position"],
         ["xpath=//h1[contains(.,'Web')]", "xpath:innerText"]
       ],
-      "value": "test_connection_by_Selenium"
+      "value": ""
     }, {
       "id": "af54d518-3121-4bf4-89e6-7b959cce529a",
       "comment": "",
@@ -252,15 +252,10 @@
     }, {
       "id": "f47b7bb7-9f69-4ced-a469-3a63e5ae00f4",
       "comment": "",
-      "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='view-handle: result']",
-      "targets": [
-        ["css=.tab-handle:nth-child(4)", "css:finder"],
-        ["xpath=//div[@name='view-handle: result']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
-      ],
-      "value": ""
+      "command": "verifyText",
+      "target": "xpath=//span[@name='span-view-name']",
+      "targets": [],
+      "value": "5 day/3 hour Forecast By City Name"
     }, {
       "id": "ae315172-0a51-4895-9635-d328f97c0060",
       "comment": "",

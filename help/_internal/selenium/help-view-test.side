@@ -17,7 +17,7 @@
       "id": "c18da00d-3b7e-4aa8-a93e-bd56351365dd",
       "comment": "",
       "command": "type",
-      "target": "xpath=//div[@id='signup-login-fields']/div/div/input",
+      "target": "xpath=//div[@id='signup-login-fields button']/div/div/input",
       "targets": [
         ["id=login", "id"],
         ["css=#login", "css:finder"],
@@ -30,7 +30,7 @@
       "id": "98efc8ba-8670-454f-bd8f-9688a1cb6fb8",
       "comment": "",
       "command": "type",
-      "target": "xpath=//div[@id='signup-login-fields']/div/div[2]/input",
+      "target": "xpath=//div[@id='signup-login-fields button']/div/div[2]/input",
       "targets": [
         ["id=password", "id"],
         ["css=#password", "css:finder"],
@@ -43,7 +43,7 @@
       "id": "2881d185-a5d5-4f80-8c57-30f147375d58",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@id='signup-login-fields']/div[2]/button",
+      "target": "xpath=//div[@id='signup-login-fields button']/div[2]/button",
       "targets": [
         ["linkText=LOGIN", "linkText"],
         ["css=a", "css:finder"],
@@ -65,24 +65,24 @@
       "id": "8464a05a-b1ee-44f8-8e1b-7763670115c2",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Help']",
+      "target": "xpath=//i[@name='icon-question-circle']",
       "targets": [
-        ["css=.d4-menu-item-horz:nth-child(10)", "css:finder"],
-        ["xpath=//div[@name='div-Help']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[10]", "xpath:idRelative"],
-        ["xpath=//div[3]/div/div/div/div[10]", "xpath:position"]
+        ["css=.fa-question-circle", "css:finder"],
+        ["xpath=//i[@name='icon-question-circle']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div[11]/i", "xpath:idRelative"],
+        ["xpath=//div[11]/i", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "e61fd126-834b-47ac-b0be-6ddd66fb046e",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Help---Wiki']",
+      "target": "xpath=//span[contains(.,'Help')]",
       "targets": [
-        ["css=.d4-menu-item:nth-child(7) > .d4-menu-item-container > .d4-menu-item:nth-child(5)", "css:finder"],
-        ["xpath=//div[@name='div-Tools---Settings...']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[7]/div/div[5]", "xpath:idRelative"],
-        ["xpath=//div[7]/div/div[5]", "xpath:position"]
+        ["css=.d4-toggle-button:nth-child(1) > span", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/span", "xpath:position"],
+        ["xpath=//span[contains(.,'Help')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
@@ -252,10 +252,10 @@
       "id": "b6928357-29ff-4236-a70f-7a56b6ac2d3b",
       "comment": "",
       "command": "click",
-      "target": "xpath=//i[@name='icon-home']",
+      "target": "xpath=(//i[@name='icon-home'])[2]",
       "targets": [
         ["css=.grok-summary-header > .fa-home", "css:finder"],
-        ["xpath=//i[@name='icon-home']", "xpath:attributes"],
+        ["xpath=(//i[@name='icon-home'])[2]", "xpath:attributes"],
         ["xpath=//div[@id='elementContent']/div/div/div/i[3]", "xpath:idRelative"],
         ["xpath=//i[3]", "xpath:position"]
       ],
@@ -322,73 +322,10 @@
       ],
       "value": ""
     }, {
-      "id": "2de363dd-d49e-4845-b656-adf598607131",
-      "comment": "",
-      "command": "click",
-      "target": "css=.tab-handle-selected > .tab-handle-close-button",
-      "targets": [
-        ["css=.tab-handle-selected > .tab-handle-text", "css:finder"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]/div", "xpath:idRelative"],
-        ["xpath=//div[12]/div[2]/div[2]/div/div/div/div/div/div[2]/div", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "cdd12927-daee-44ec-ade8-87dea86c053f",
-      "comment": "",
-      "command": "pause",
-      "target": "500",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "bc88a093-2e94-48b7-a8b6-cd5c01091e87",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@name='div-Chem']",
-      "targets": [
-        ["css=.d4-menu-group:nth-child(13)", "css:finder"],
-        ["xpath=//div[@name='div-Chem']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[11]", "xpath:idRelative"],
-        ["xpath=//div[15]/div/div/div/div[11]", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "c2df3b72-6d02-43d2-a276-7011fa381336",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@name='div-Chem---Help']",
-      "targets": [
-        ["css=.d4-menu-item:nth-child(7) > .d4-menu-item-container > .d4-menu-item:nth-child(5)", "css:finder"],
-        ["xpath=//div[@name='div-Tools---Settings...']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[7]/div/div[5]", "xpath:idRelative"],
-        ["xpath=//div[7]/div/div[5]", "xpath:position"]
-      ],
-      "value": ""
-    }, {
       "id": "07245158-5b44-49d8-a7d1-c6bd4dcdbbc9",
       "comment": "",
       "command": "pause",
       "target": "500",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "ac3a9a90-e0d2-4ab6-95dc-572f7cf4cb7d",
-      "comment": "",
-      "command": "verifyElementPresent",
-      "target": "xpath=//h1[@id='cheminformatics']",
-      "targets": [
-        ["id=cheminformatics", "id"],
-        ["css=#cheminformatics", "css:finder"],
-        ["xpath=//h1[@id='cheminformatics']", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div/div[2]/span/h1", "xpath:idRelative"],
-        ["xpath=//h1", "xpath:position"],
-        ["xpath=//h1[contains(.,'Cheminformatics')]", "xpath:innerText"]
-      ],
-      "value": ""
-    }, {
-      "id": "a8e17806-63bd-4936-be7e-ca45d6b581b7",
-      "comment": "",
-      "command": "verifyElementNotPresent",
-      "target": "xpath=//i[@name='icon-exclamation-circle']",
       "targets": [],
       "value": ""
     }]
