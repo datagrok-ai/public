@@ -24,12 +24,12 @@
       "id": "76504988-9da6-4a3f-ba87-79e07bd2df9e",
       "comment": "",
       "command": "type",
-      "target": "xpath=//div[@id='signup-login-fields button']/div/div/input",
+      "target": "xpath=//div[@id='signup-login-fields']/div/div/input",
       "targets": [
         ["css=#signup-login-fields > div.signup-inner-box-form > div.signup-field > input[type=\"text\"]", "css"],
         ["css=#signup-login-fields .signup-field:nth-child(1) > input", "css:finder"],
         ["xpath=(//input[@type='text'])[6]", "xpath:attributes"],
-        ["xpath=//form[@id='signup-login-fields button']/div/div/input", "xpath:idRelative"],
+        ["xpath=//form[@id='signup-login-fields']/div/div/input", "xpath:idRelative"],
         ["xpath=//form[2]/div/div/input", "xpath:position"]
       ],
       "value": "test"
@@ -37,11 +37,11 @@
       "id": "6e7950ba-aa63-4742-9bc0-c5f0b81b8684",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@id='signup-login-fields button']/div[2]/button",
+      "target": "xpath=//div[@id='signup-login-fields']/div[2]/button",
       "targets": [
         ["css=#signup-login-fields > div.signup-inner-box-right.signup-buttons > button", "css"],
         ["css=#signup-login-fields button", "css:finder"],
-        ["xpath=//div[@id='signup-login-fields button']/div[2]/button", "xpath:idRelative"],
+        ["xpath=//div[@id='signup-login-fields']/div[2]/button", "xpath:idRelative"],
         ["xpath=//div[3]/div[2]/button", "xpath:position"]
       ],
       "value": ""
@@ -56,10 +56,10 @@
       "id": "1548acb7-c5de-404b-98de-b69b5643efce",
       "comment": "",
       "command": "verifyText",
-      "target": "xpath=//div[@id='signup-login-fields button']/div/label",
+      "target": "xpath=//div[@id='signup-login-fields']/div/label",
       "targets": [
         ["css=.signup-status:nth-child(4)", "css:finder"],
-        ["xpath=//div[@id='signup-login-fields button']/div/label", "xpath:idRelative"],
+        ["xpath=//div[@id='signup-login-fields']/div/label", "xpath:idRelative"],
         ["xpath=//div[3]/div/label", "xpath:position"],
         ["xpath=//label[contains(.,'Login failed')]", "xpath:innerText"]
       ],
@@ -68,12 +68,12 @@
       "id": "45a6bf6d-bf3b-4e81-92db-da1f3f3d67a7",
       "comment": "",
       "command": "type",
-      "target": "xpath=//div[@id='signup-login-fields button']/div/div[2]/input",
+      "target": "xpath=//div[@id='signup-login-fields']/div/div[2]/input",
       "targets": [
         ["css=#signup-login-fields > div.signup-inner-box-form > div.signup-field > input[type=\"password\"]", "css"],
         ["css=#signup-login-fields .signup-field:nth-child(2) > input", "css:finder"],
         ["xpath=(//input[@type='password'])[3]", "xpath:attributes"],
-        ["xpath=//div[@id='signup-login-fields button']/div/div[2]/input", "xpath:idRelative"],
+        ["xpath=//div[@id='signup-login-fields']/div/div[2]/input", "xpath:idRelative"],
         ["xpath=//div[3]/div/div[2]/input", "xpath:position"]
       ],
       "value": "test"
@@ -81,11 +81,11 @@
       "id": "e85954fe-6c38-4760-aebc-4b0e8080dfc3",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@id='signup-login-fields button']/div[2]/button",
+      "target": "xpath=//div[@id='signup-login-fields']/div[2]/button",
       "targets": [
         ["css=#signup-login-fields > div.signup-inner-box-right.signup-buttons > button", "css"],
         ["css=#signup-login-fields button", "css:finder"],
-        ["xpath=//div[@id='signup-login-fields button']/div[2]/button", "xpath:idRelative"],
+        ["xpath=//div[@id='signup-login-fields']/div[2]/button", "xpath:idRelative"],
         ["xpath=//div[3]/div[2]/button", "xpath:position"]
       ],
       "value": ""
@@ -100,12 +100,12 @@
       "id": "e99da3e4-30db-4384-8b2b-4eda78683ea8",
       "comment": "",
       "command": "type",
-      "target": "xpath=//div[@id='signup-login-fields button']/div/div/input",
+      "target": "xpath=//div[@id='signup-login-fields']/div/div/input",
       "targets": [
         ["css=#signup-login-fields > div.signup-inner-box-form > div.signup-field > input[type=\"text\"]", "css"],
         ["css=#signup-login-fields .signup-field:nth-child(1) > input", "css:finder"],
         ["xpath=(//input[@type='text'])[6]", "xpath:attributes"],
-        ["xpath=//div[@id='signup-login-fields button']/div/div/input", "xpath:idRelative"],
+        ["xpath=//div[@id='signup-login-fields']/div/div/input", "xpath:idRelative"],
         ["xpath=//div[3]/div/div/input", "xpath:position"]
       ],
       "value": "selenium"
@@ -113,12 +113,12 @@
       "id": "43b57a72-de0f-49d8-a74a-3f185fdf7fc1",
       "comment": "",
       "command": "type",
-      "target": "xpath=//div[@id='signup-login-fields button']/div/div[2]/input",
+      "target": "xpath=//div[@id='signup-login-fields']/div/div[2]/input",
       "targets": [
         ["css=#signup-login-fields > div.signup-inner-box-form > div.signup-field > input[type=\"password\"]", "css"],
         ["css=#signup-login-fields .signup-field:nth-child(2) > input", "css:finder"],
         ["xpath=(//input[@type='password'])[3]", "xpath:attributes"],
-        ["xpath=//div[@id='signup-login-fields button']/div/div[2]/input", "xpath:idRelative"],
+        ["xpath=//div[@id='signup-login-fields']/div/div[2]/input", "xpath:idRelative"],
         ["xpath=//div[3]/div/div[2]/input", "xpath:position"]
       ],
       "value": "selenium"
@@ -126,11 +126,11 @@
       "id": "72c978cf-63aa-45a1-9b3c-8ec58be54344",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@id='signup-login-fields button']/div[2]/button",
+      "target": "xpath=//div[@id='signup-login-fields']/div[2]/button",
       "targets": [
         ["css=#signup-login-fields > div.signup-inner-box-right.signup-buttons > button", "css"],
         ["css=#signup-login-fields button", "css:finder"],
-        ["xpath=//div[@id='signup-login-fields button']/div[2]/button", "xpath:idRelative"],
+        ["xpath=//div[@id='signup-login-fields']/div[2]/button", "xpath:idRelative"],
         ["xpath=//div[3]/div[2]/button", "xpath:position"]
       ],
       "value": ""

@@ -17,7 +17,7 @@
       "id": "2f6150a8-d0fa-4376-aeff-c32b1f91638c",
       "comment": "",
       "command": "type",
-      "target": "xpath=//div[@id='signup-login-fields button']/div/div/input",
+      "target": "xpath=//div[@id='signup-login-fields']/div/div/input",
       "targets": [
         ["id=login", "id"],
         ["css=#login", "css"],
@@ -31,7 +31,7 @@
       "id": "b75f7b47-797d-4798-b7a7-2089512a0ac8",
       "comment": "",
       "command": "type",
-      "target": "xpath=//div[@id='signup-login-fields button']/div/div[2]/input",
+      "target": "xpath=//div[@id='signup-login-fields']/div/div[2]/input",
       "targets": [
         ["id=password", "id"],
         ["css=#password", "css"],
@@ -45,7 +45,7 @@
       "id": "85c63622-91ab-4125-a907-56cf026fbd27",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@id='signup-login-fields button']/div[2]/button",
+      "target": "xpath=//div[@id='signup-login-fields']/div[2]/button",
       "targets": [
         ["linkText=LOGIN", "linkText"],
         ["css=a", "css"],
@@ -686,20 +686,25 @@
       "id": "c5cafe9f-9e03-4dc8-9a05-a31327019ec8",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"div-Admin\"] > div.d4-menu-item-label",
+      "target": "xpath=//i[@name='icon-wrench']",
       "targets": [
-        ["css=div[name=\"div-Admin\"] > div.d4-menu-item-label", "css"],
-        ["css=.d4-menu-item-hover > .d4-menu-item-label", "css:finder"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[9]/div[3]", "xpath:idRelative"],
-        ["xpath=//body/div/div/div/div/div[9]/div[3]", "xpath:position"]
+        ["css=.fa-wrench", "css:finder"],
+        ["xpath=//i[@name='icon-wrench']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div[4]/i", "xpath:idRelative"],
+        ["xpath=//div[4]/i", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "7a9e0431-f519-40c9-84cf-96982e1e3ce2",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"div-Admin---Data-Connections\"] > div.d4-menu-item-label",
-      "targets": [],
+      "target": "xpath=//span[contains(.,'Connections')]",
+      "targets": [
+        ["css=.d4-toggle-button:nth-child(3) > span", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[3]/span", "xpath:idRelative"],
+        ["xpath=//div[3]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'Connections')]", "xpath:innerText"]
+      ],
       "value": ""
     }, {
       "id": "54054108-5f9a-4492-8f56-2ee2d9c574bb",
@@ -974,7 +979,7 @@
       "id": "37bbc2f2-7511-436e-a887-e3e8c770e756",
       "comment": "",
       "command": "pause",
-      "target": "1500",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {

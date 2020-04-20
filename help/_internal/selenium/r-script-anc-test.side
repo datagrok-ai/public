@@ -17,7 +17,7 @@
       "id": "84c276a3-d0c0-451e-a6c2-4e7a241806ae",
       "comment": "",
       "command": "type",
-      "target": "xpath=//div[@id='signup-login-fields button']/div/div/input",
+      "target": "xpath=//div[@id='signup-login-fields']/div/div/input",
       "targets": [
         ["id=login", "id"],
         ["css=#login", "css"],
@@ -31,7 +31,7 @@
       "id": "d57bbffa-fbea-4286-8503-5fd57206edd9",
       "comment": "",
       "command": "type",
-      "target": "xpath=//div[@id='signup-login-fields button']/div/div[2]/input",
+      "target": "xpath=//div[@id='signup-login-fields']/div/div[2]/input",
       "targets": [
         ["id=password", "id"],
         ["css=#password", "css"],
@@ -45,7 +45,7 @@
       "id": "1dc17e58-5acd-441a-b1ec-d363c70af102",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@id='signup-login-fields button']/div[2]/button",
+      "target": "xpath=//div[@id='signup-login-fields']/div[2]/button",
       "targets": [
         ["linkText=LOGIN", "linkText"],
         ["css=a", "css"],
@@ -75,6 +75,25 @@
         ["xpath=//div[@id='rootDiv']/div/div[2]/i", "xpath:idRelative"],
         ["xpath=//div[2]/i", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "bc7bf311-d521-4a0c-8524-a98693db3d8e",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//i[@name='icon-bars']",
+      "targets": [
+        ["css=.fa-bars", "css:finder"],
+        ["xpath=//i[@name='icon-bars']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div[7]/i", "xpath:idRelative"],
+        ["xpath=//div[7]/i", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "d2f696e2-b9f6-40ea-83a5-135b9a4222d7",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "a91be2ca-2e02-4ad0-9505-8a87bcd4c2de",
