@@ -17,7 +17,7 @@
       "id": "2522eda8-3850-48b1-902c-86d61d71e68f",
       "comment": "",
       "command": "type",
-      "target": "xpath=//div[@id='signup-login-fields']/div/div/input",
+      "target": "xpath=//div[@id='signup-login-fields button']/div/div/input",
       "targets": [
         ["id=login", "id"],
         ["css=#login", "css"],
@@ -31,7 +31,7 @@
       "id": "1e7b204d-abdc-4f88-8d3a-e04e15ae0d4a",
       "comment": "",
       "command": "type",
-      "target": "xpath=//div[@id='signup-login-fields']/div/div[2]/input",
+      "target": "xpath=//div[@id='signup-login-fields button']/div/div[2]/input",
       "targets": [
         ["id=password", "id"],
         ["css=#password", "css"],
@@ -45,7 +45,7 @@
       "id": "84c1d054-5ef2-4182-8aaf-1104aeee2db6",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@id='signup-login-fields']/div[2]/button",
+      "target": "xpath=//div[@id='signup-login-fields button']/div[2]/button",
       "targets": [
         ["linkText=LOGIN", "linkText"],
         ["css=a", "css"],
@@ -81,35 +81,24 @@
       "id": "8447b276-e48e-4758-9a76-f716489bda66",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Tools']",
+      "target": "xpath=//i[@name='icon-question-circle']",
       "targets": [
-        ["css=.d4-menu-item-horz:nth-child(7)", "css:finder"],
-        ["xpath=//div[@name='div-Tools']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[7]", "xpath:idRelative"],
-        ["xpath=//div[3]/div/div/div/div[7]", "xpath:position"]
+        ["css=.fa-question-circle", "css:finder"],
+        ["xpath=//i[@name='icon-question-circle']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div[11]/i", "xpath:idRelative"],
+        ["xpath=//div[11]/i", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "f69a4bdb-d7ec-415c-9b55-7bbb390ac194",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Tools---Scripting']",
+      "target": "xpath=//span[contains(.,'JavaScript API Examples')]",
       "targets": [
-        ["css=.d4-menu-item-hover:nth-child(6)", "css:finder"],
-        ["xpath=//div[@name='div-Tools---Scripting']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[7]/div/div[6]", "xpath:idRelative"],
-        ["xpath=//div[7]/div/div[6]", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "83391ec1-0655-4962-85d5-44c6937ed13b",
-      "comment": "",
-      "command": "click",
-      "target": "name=div-Tools---Scripting---JavaScript",
-      "targets": [
-        ["css=.d4-editor", "css:finder"],
-        ["xpath=//div[@id='elementContent']/div/div/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div[3]/div/div/div/div", "xpath:position"]
+        ["css=.d4-toggle-button:nth-child(4) > span", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[4]/span", "xpath:idRelative"],
+        ["xpath=//div[4]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'JavaScript API Examples')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
@@ -147,12 +136,12 @@
       "id": "8b321cd8-ca19-4c0e-803a-ad544d0efe05",
       "comment": "",
       "command": "doubleClick",
-      "target": "xpath=//div[@name='tree-data-access---load-csv']",
+      "target": "xpath=//div[@name='tree-data-access---load-csv.js']",
       "targets": [
-        ["css=.d4-tree-view-node-selected", "css:finder"],
-        ["xpath=//div[@name='tree-data-access---load-csv']", "xpath:attributes"],
-        ["xpath=//div[@id='grok-viewers-toolbox']/div/div[3]/div[2]/div/div[2]/div/div[2]/div[2]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div[2]/div/div[2]/div[2]", "xpath:position"]
+        ["css=.d4-tree-view-item:nth-child(3)", "css:finder"],
+        ["xpath=//div[@name='tree-data-access---load-csv.js']", "xpath:attributes"],
+        ["xpath=//div[@id='grok-viewers-toolbox']/div/div[3]/div[2]/div/div[2]/div/div[2]/div[3]", "xpath:idRelative"],
+        ["xpath=//div[2]/div[3]", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -184,15 +173,15 @@
     }, {
       "id": "f4cb14b4-bb07-44f1-8a29-874d855bb7d2",
       "comment": "",
-      "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='view-handle: Table']",
+      "command": "verifyText",
+      "target": "xpath=//span[@name='span-view-name']",
       "targets": [
-        ["css=.tab-handle:nth-child(5)", "css:finder"],
-        ["xpath=//div[@name='view-handle: Table']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[3]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/div[3]", "xpath:position"]
+        ["css=.d4-ribbon-name", "css:finder"],
+        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
       ],
-      "value": ""
+      "value": "Table"
     }, {
       "id": "48db0cc4-95a3-4916-bb67-b72bef872921",
       "comment": "",
@@ -208,27 +197,34 @@
       ],
       "value": ""
     }, {
-      "id": "7b5229eb-c688-4a64-8904-b97f9cecca8b",
+      "id": "bf498b5a-d64c-4527-96cc-a23357f11a6f",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='view-handle: load-csv']",
+      "target": "xpath=(//i[@name='icon-times'])[3]",
       "targets": [
-        ["css=.tab-handle:nth-child(4)", "css:finder"],
-        ["xpath=//div[@name='view-handle: load-csv']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
+        ["css=.fa-times:nth-child(4)", "css:finder"],
+        ["xpath=(//i[@name='icon-times'])[3]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/i", "xpath:idRelative"],
+        ["xpath=//div[3]/div[2]/div/div/div/div/div/div/i", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "3a2d7fb3-b4f0-405f-80a0-eed5fbee1288",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "eab2a8fa-a016-4192-a1f9-e0fdf8a5ce0b",
       "comment": "",
       "command": "doubleClick",
-      "target": "xpath=//div[@name='tree-data-access---open-table-by-id']",
+      "target": "xpath=//div[@name='tree-data-access---open-table-by-id.js']",
       "targets": [
-        ["css=.d4-tree-view-item:nth-child(3)", "css:finder"],
-        ["xpath=//div[@name='tree-data-access---open-table-by-id']", "xpath:attributes"],
-        ["xpath=//div[@id='grok-viewers-toolbox']/div/div[3]/div[2]/div/div[2]/div/div[2]/div[3]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div[2]/div/div[2]/div[3]", "xpath:position"]
+        ["css=.d4-tree-view-item:nth-child(4)", "css:finder"],
+        ["xpath=//div[@name='tree-data-access---open-table-by-id.js']", "xpath:attributes"],
+        ["xpath=//div[@id='grok-viewers-toolbox']/div/div[3]/div[2]/div/div[2]/div/div[2]/div[4]", "xpath:idRelative"],
+        ["xpath=//div[2]/div[4]", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -272,6 +268,13 @@
       ],
       "value": ""
     }, {
+      "id": "ea2ded27-b84b-4260-aa83-6506194769fa",
+      "comment": "",
+      "command": "verifyText",
+      "target": "id=balloon: info",
+      "targets": [],
+      "value": "us_locations_with_sales"
+    }, {
       "id": "771b0c2d-7b60-4a1a-b20b-c23dd6706b75",
       "comment": "",
       "command": "click",
@@ -282,12 +285,12 @@
       "id": "489d8286-dbaf-461d-8e92-b3ffa864fe34",
       "comment": "",
       "command": "doubleClick",
-      "target": "xpath=//div[@name='tree-data-access---parameterized-query']",
+      "target": "xpath=//div[@name='tree-data-access---parameterized-query.js']",
       "targets": [
-        ["css=.d4-tree-view-item:nth-child(4)", "css:finder"],
-        ["xpath=//div[@name='tree-data-access---parameterized-query']", "xpath:attributes"],
-        ["xpath=//div[@id='grok-viewers-toolbox']/div/div[3]/div[2]/div/div[2]/div/div[2]/div[4]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div[2]/div[4]", "xpath:position"]
+        ["css=.d4-tree-view-item:nth-child(5)", "css:finder"],
+        ["xpath=//div[@name='tree-data-access---parameterized-query.js']", "xpath:attributes"],
+        ["xpath=//div[@id='grok-viewers-toolbox']/div/div[3]/div[2]/div/div[2]/div/div[2]/div[5]", "xpath:idRelative"],
+        ["xpath=//div[2]/div[5]", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -367,10 +370,10 @@
       "id": "0593992e-9ed3-4891-8f5a-ae2d276b0eee",
       "comment": "",
       "command": "doubleClick",
-      "target": "xpath=//div[@name='tree-data-access---external---stock-prices']",
+      "target": "xpath=//div[@name='tree-data-access---external---stock-prices.js']",
       "targets": [
         ["css=.d4-tree-view-item:nth-child(1)", "css:finder"],
-        ["xpath=//div[@name='tree-data-access---external---stock-prices']", "xpath:attributes"],
+        ["xpath=//div[@name='tree-data-access---external---stock-prices.js']", "xpath:attributes"],
         ["xpath=//div[@id='grok-viewers-toolbox']/div/div[3]/div[2]/div/div[2]/div/div[2]/div/div[2]/div", "xpath:idRelative"],
         ["xpath=//div[2]/div/div[2]/div/div[2]/div/div[2]/div", "xpath:position"]
       ],

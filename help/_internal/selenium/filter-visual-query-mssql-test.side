@@ -17,11 +17,11 @@
       "id": "2e74e989-5df1-447f-bf7b-163871b24921",
       "comment": "",
       "command": "type",
-      "target": "xpath=//div[@id='signup-login-fields']/div/div/input",
+      "target": "xpath=//div[@id='signup-login-fields button']/div/div/input",
       "targets": [
         ["css=#signup-login-fields .signup-field:nth-child(1) > input", "css:finder"],
         ["xpath=(//input[@type='text'])[4]", "xpath:attributes"],
-        ["xpath=//div[@id='signup-login-fields']/div/div/input", "xpath:idRelative"],
+        ["xpath=//div[@id='signup-login-fields button']/div/div/input", "xpath:idRelative"],
         ["xpath=//div[3]/div/div/input", "xpath:position"]
       ],
       "value": "selenium"
@@ -29,11 +29,11 @@
       "id": "d9132049-31ef-45e7-bd38-43ed931a9bc2",
       "comment": "",
       "command": "type",
-      "target": "xpath=//div[@id='signup-login-fields']/div/div[2]/input",
+      "target": "xpath=//div[@id='signup-login-fields button']/div/div[2]/input",
       "targets": [
         ["css=#signup-login-fields .signup-field:nth-child(2) > input", "css:finder"],
         ["xpath=(//input[@type='password'])[3]", "xpath:attributes"],
-        ["xpath=//div[@id='signup-login-fields']/div/div[2]/input", "xpath:idRelative"],
+        ["xpath=//div[@id='signup-login-fields button']/div/div[2]/input", "xpath:idRelative"],
         ["xpath=//div[3]/div/div[2]/input", "xpath:position"]
       ],
       "value": "selenium"
@@ -41,10 +41,10 @@
       "id": "c06f8d03-321e-40fa-bf29-25ec098103fc",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@id='signup-login-fields']/div[2]/button",
+      "target": "xpath=//div[@id='signup-login-fields button']/div[2]/button",
       "targets": [
         ["css=#signup-login-fields button", "css:finder"],
-        ["xpath=//div[@id='signup-login-fields']/div[2]/button", "xpath:idRelative"],
+        ["xpath=//div[@id='signup-login-fields button']/div[2]/button", "xpath:idRelative"],
         ["xpath=//div[3]/div[2]/button", "xpath:position"]
       ],
       "value": ""
@@ -498,24 +498,12 @@
       "id": "594d6cb2-c175-484f-8f99-5b78ca04897e",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-File']",
+      "target": "xpath=(//i[@name='icon-times'])[3]",
       "targets": [
-        ["css=.d4-menu-item-container > .d4-menu-item-hover", "css:finder"],
-        ["xpath=//div[@name='div-File']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div", "xpath:idRelative"],
-        ["xpath=//div[26]/div/div/div/div", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "76869495-714a-41c0-a042-2e37e286e64b",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@name='div-File---Close-All']",
-      "targets": [
-        ["css=.d4-menu-item-horz:nth-child(1) > .d4-vert-menu > .d4-menu-item:nth-child(7)", "css:finder"],
-        ["xpath=//div[@name='div-File---Close-All']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div/div/div[7]", "xpath:idRelative"],
-        ["xpath=//div[27]/div/div/div/div/div/div[7]", "xpath:position"]
+        ["css=.fa-times:nth-child(5)", "css:finder"],
+        ["xpath=(//i[@name='icon-times'])[3]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/i", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/i", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -604,25 +592,20 @@
     }, {
       "id": "3316d234-f856-4569-ba74-3675822b47b2",
       "comment": "",
-      "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='view-handle: Products']",
-      "targets": [
-        ["css=.tab-handle:nth-child(4)", "css:finder"],
-        ["xpath=//div[@name='view-handle: Products']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
-      ],
-      "value": ""
+      "command": "verifyText",
+      "target": "xpath=//span[@name='span-view-name']",
+      "targets": [],
+      "value": "Products"
     }, {
       "id": "076dd469-1606-4c2c-85b4-a2f1a18d3832",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='view-handle: Products']",
+      "target": "xpath=//span[@name='span-view-name']",
       "targets": [
-        ["css=.tab-handle:nth-child(4)", "css:finder"],
-        ["xpath=//div[@name='view-handle: Products']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
+        ["css=.d4-ribbon-name", "css:finder"],
+        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -672,7 +655,7 @@
       "target": "1000",
       "targets": [],
       "value": ""
-    },{
+    }, {
       "id": "f3742284-265c-4a5b-9e75-9aa31f80053e",
       "comment": "",
       "command": "click",
@@ -695,11 +678,12 @@
       "id": "69836ef0-293d-42be-989e-6ca90b5d81b6",
       "comment": "",
       "command": "click",
-      "target": "css=.d4-toggle-button:nth-child(2)",
+      "target": "xpath=//span[contains(.,'Welcome')]",
       "targets": [
-        ["css=.d4-toggle-button:nth-child(2)", "css:finder"],
-        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div[2]", "xpath:position"]
+        ["css=.d4-toggle-button:nth-child(2) > span", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[2]/span", "xpath:idRelative"],
+        ["xpath=//div[2]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'Welcome')]", "xpath:innerText"]
       ],
       "value": ""
     }, {

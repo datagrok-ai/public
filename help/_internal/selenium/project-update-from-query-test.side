@@ -17,7 +17,7 @@
       "id": "2e74e989-5df1-447f-bf7b-163871b24921",
       "comment": "",
       "command": "type",
-      "target": "xpath=//div[@id='signup-login-fields']/div/div/input",
+      "target": "xpath=//div[@id='signup-login-fields button']/div/div/input",
       "targets": [
         ["id=password", "id"],
         ["css=#password", "css:finder"],
@@ -30,7 +30,7 @@
       "id": "d9132049-31ef-45e7-bd38-43ed931a9bc2",
       "comment": "",
       "command": "type",
-      "target": "xpath=//div[@id='signup-login-fields']/div/div[2]/input",
+      "target": "xpath=//div[@id='signup-login-fields button']/div/div[2]/input",
       "targets": [
         ["id=password", "id"],
         ["css=#password", "css:finder"],
@@ -43,7 +43,7 @@
       "id": "c06f8d03-321e-40fa-bf29-25ec098103fc",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@id='signup-login-fields']/div[2]/button",
+      "target": "xpath=//div[@id='signup-login-fields button']/div[2]/button",
       "targets": [
         ["linkText=LOGIN", "linkText"],
         ["css=a", "css:finder"],
@@ -173,12 +173,12 @@
       "id": "d8512560-9930-4432-90ed-5727f5b230fe",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='view-handle: Products']",
+      "target": "xpath=//span[@name='span-view-name']",
       "targets": [
-        ["css=.tab-handle:nth-child(4)", "css:finder"],
-        ["xpath=//div[@name='view-handle: Products']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
+        ["css=.d4-ribbon-name", "css:finder"],
+        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -192,10 +192,10 @@
       "id": "3b11b7cc-e41d-4a75-b023-546d6734c133",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-context-arrow-down'])[2]",
+      "target": "xpath=//i[@name='icon-context-arrow-down']",
       "targets": [
         ["css=.grok-context-arrow-down:nth-child(3)", "css:finder"],
-        ["xpath=(//i[@name='icon-context-arrow-down'])[2]", "xpath:attributes"],
+        ["xpath=//i[@name='icon-context-arrow-down']", "xpath:attributes"],
         ["xpath=//div[@id='elementContent']/div/div/div/div/span/i[2]", "xpath:idRelative"],
         ["xpath=//span/i[2]", "xpath:position"]
       ],

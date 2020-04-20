@@ -17,7 +17,7 @@
       "id": "84c276a3-d0c0-451e-a6c2-4e7a241806ae",
       "comment": "",
       "command": "type",
-      "target": "xpath=//div[@id='signup-login-fields']/div/div/input",
+      "target": "xpath=//div[@id='signup-login-fields button']/div/div/input",
       "targets": [
         ["id=login", "id"],
         ["css=#login", "css"],
@@ -31,7 +31,7 @@
       "id": "d57bbffa-fbea-4286-8503-5fd57206edd9",
       "comment": "",
       "command": "type",
-      "target": "xpath=//div[@id='signup-login-fields']/div/div[2]/input",
+      "target": "xpath=//div[@id='signup-login-fields button']/div/div[2]/input",
       "targets": [
         ["id=password", "id"],
         ["css=#password", "css"],
@@ -45,7 +45,7 @@
       "id": "1dc17e58-5acd-441a-b1ec-d363c70af102",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@id='signup-login-fields']/div[2]/button",
+      "target": "xpath=//div[@id='signup-login-fields button']/div[2]/button",
       "targets": [
         ["linkText=LOGIN", "linkText"],
         ["css=a", "css"],
@@ -74,6 +74,18 @@
         ["xpath=//i[@name='icon-exclamation-circle']", "xpath:attributes"],
         ["xpath=//div[@id='rootDiv']/div/div[2]/i", "xpath:idRelative"],
         ["xpath=//div[2]/i", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "2353a1e5-cfb5-4738-9760-0b9ca8a5e9e6",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//i[@name='icon-bars']",
+      "targets": [
+        ["css=.fa-bars", "css:finder"],
+        ["xpath=//i[@name='icon-bars']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div[7]/i", "xpath:idRelative"],
+        ["xpath=//div[7]/i", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -218,7 +230,7 @@
         ["xpath=//textarea[@id='editor']", "xpath:attributes"],
         ["xpath=//textarea", "xpath:position"]
       ],
-      "value": "Demo:PythonScripts:PythonDup(GetCurrentRowField(\"sex\"))"
+      "value": "PythonScripts:PythonDup(GetCurrentRowField(\"sex\"))"
     }, {
       "id": "6f82bcb7-026c-4452-9b7b-a1d082618fb4",
       "comment": "",
