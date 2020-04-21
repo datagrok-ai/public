@@ -302,15 +302,15 @@
     }, {
       "id": "7a5e359d-f3f6-4e6f-8242-18e32a9fb6dd",
       "comment": "",
-      "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='view-handle: Orders']",
+      "command": "verifyText",
+      "target": "xpath=//span[@name='span-view-name']",
       "targets": [
-        ["css=.tab-handle:nth-child(4)", "css:finder"],
-        ["xpath=//div[@name='view-handle: Orders']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
+        ["css=.d4-ribbon-name", "css:finder"],
+        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
       ],
-      "value": ""
+      "value": "Orders"
     }, {
       "id": "1fb4c992-02bd-4ba4-a675-292cb281f84a",
       "comment": "",
@@ -321,14 +321,9 @@
     }, {
       "id": "45073376-deb4-448f-bca9-632359c875a8",
       "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@name='div-File']",
-      "targets": [
-        ["css=.d4-menu-item-container > .d4-menu-item-hover", "css:finder"],
-        ["xpath=//div[@name='div-File']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div", "xpath:idRelative"],
-        ["xpath=//div[18]/div/div/div/div", "xpath:position"]
-      ],
+      "command": "executeScript",
+      "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
+      "targets": [],
       "value": ""
     }, {
       "id": "39fcd652-477f-44f7-97c7-88634498fc9d",
@@ -341,12 +336,11 @@
       "id": "b1af5c12-e5c6-48b5-965d-c1b03dc4729e",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-File---Close-All']",
+      "target": "xpath=//div[@name='div-Close-All']",
       "targets": [
-        ["css=.d4-menu-item-horz:nth-child(1) > .d4-vert-menu > .d4-menu-item:nth-child(7)", "css:finder"],
-        ["xpath=//div[@name='div-File---Close-All']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div/div/div[7]", "xpath:idRelative"],
-        ["xpath=//div[20]/div/div/div/div/div/div[7]", "xpath:position"]
+        ["css=.d4-menu-popup > .d4-menu-item", "css:finder"],
+        ["xpath=//div[@name='div-Close-All']", "xpath:attributes"],
+        ["xpath=//body/div[7]/div[2]", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -575,17 +569,17 @@
       ],
       "value": ""
     }, {
-      "id": "442fbbd2-c518-47db-b70f-77cd8f834ef4",
+      "id": "b76ba800-0abd-4883-b151-8b1f5a09a70e",
       "comment": "",
-      "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='view-handle: Orders']",
+      "command": "verifyText",
+      "target": "xpath=//span[@name='span-view-name']",
       "targets": [
-        ["css=.tab-handle:nth-child(4)", "css:finder"],
-        ["xpath=//div[@name='view-handle: Orders']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
+        ["css=.d4-ribbon-name", "css:finder"],
+        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
       ],
-      "value": ""
+      "value": "Orders"
     }, {
       "id": "7a937a71-d862-4179-b88f-edab99d8b4ba",
       "comment": "",
@@ -594,16 +588,11 @@
       "targets": [],
       "value": ""
     }, {
-      "id": "0d69ef4c-8606-4ee9-a936-bf11e44de96a",
+      "id": "771d7674-9c75-430f-8de0-ffd076d63809",
       "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@name='div-File']",
-      "targets": [
-        ["css=.d4-menu-item-container > .d4-menu-item-hover", "css:finder"],
-        ["xpath=//div[@name='div-File']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div", "xpath:idRelative"],
-        ["xpath=//div[18]/div/div/div/div", "xpath:position"]
-      ],
+      "command": "executeScript",
+      "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
+      "targets": [],
       "value": ""
     }, {
       "id": "10c0def3-5100-44c3-9481-c85cb090d822",
@@ -616,12 +605,11 @@
       "id": "43d091cb-c592-4b71-915a-298eced9a89a",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-File---Close-All']",
+      "target": "xpath=//div[@name='div-Close-All']",
       "targets": [
-        ["css=.d4-menu-item-horz:nth-child(1) > .d4-vert-menu > .d4-menu-item:nth-child(7)", "css:finder"],
-        ["xpath=//div[@name='div-File---Close-All']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div/div/div[7]", "xpath:idRelative"],
-        ["xpath=//div[20]/div/div/div/div/div/div[7]", "xpath:position"]
+        ["css=.d4-menu-popup > .d4-menu-item", "css:finder"],
+        ["xpath=//div[@name='div-Close-All']", "xpath:attributes"],
+        ["xpath=//body/div[8]/div[2]", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -769,15 +757,15 @@
     }, {
       "id": "afbd0118-37e6-4a22-b952-525ec95071e7",
       "comment": "",
-      "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='view-handle: Big Cities in @continent']",
+      "command": "verifyText",
+      "target": "xpath=//span[@name='span-view-name']",
       "targets": [
-        ["css=.tab-handle:nth-child(4)", "css:finder"],
-        ["xpath=//div[@name='view-handle: Big Cities in @continent']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
+        ["css=.d4-ribbon-name", "css:finder"],
+        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
       ],
-      "value": ""
+      "value": "Big Cities in @continent"
     }, {
       "id": "e9d98838-3823-4cc4-b97d-3b5d5e88fed4",
       "comment": "",
@@ -786,16 +774,11 @@
       "targets": [],
       "value": ""
     }, {
-      "id": "6592c015-2857-4f79-ae3f-feb975d0ec95",
+      "id": "9929316f-4a92-401a-8233-96296e06da33",
       "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@name='div-File']",
-      "targets": [
-        ["css=.d4-menu-item-container > .d4-menu-item-hover", "css:finder"],
-        ["xpath=//div[@name='div-File']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div", "xpath:idRelative"],
-        ["xpath=//div[18]/div/div/div/div", "xpath:position"]
-      ],
+      "command": "executeScript",
+      "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
+      "targets": [],
       "value": ""
     }, {
       "id": "1d47b5f4-a977-4593-a793-1ec2a9aa9db8",
@@ -808,12 +791,11 @@
       "id": "295b16d3-3006-43e4-8134-5b39e7572765",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-File---Close-All']",
+      "target": "xpath=//div[@name='div-Close-All']",
       "targets": [
-        ["css=.d4-menu-item-horz:nth-child(1) > .d4-vert-menu > .d4-menu-item:nth-child(7)", "css:finder"],
-        ["xpath=//div[@name='div-File---Close-All']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div/div/div[7]", "xpath:idRelative"],
-        ["xpath=//div[20]/div/div/div/div/div/div[7]", "xpath:position"]
+        ["css=.d4-menu-popup > .d4-menu-item", "css:finder"],
+        ["xpath=//div[@name='div-Close-All']", "xpath:attributes"],
+        ["xpath=//body/div[10]/div[2]", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -954,15 +936,15 @@
     }, {
       "id": "7536807c-5aeb-456b-81e4-6b6f2b50762b",
       "comment": "",
-      "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='view-handle: result']",
+      "command": "verifyText",
+      "target": "xpath=//span[@name='span-view-name']",
       "targets": [
-        ["css=.tab-handle:nth-child(4)", "css:finder"],
-        ["xpath=//div[@name='view-handle: result']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
+        ["css=.d4-ribbon-name", "css:finder"],
+        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
       ],
-      "value": ""
+      "value": "5 day/3 hour Forecast By City Name"
     }, {
       "id": "86109895-b528-4db0-83ec-72bc23f3fd81",
       "comment": "",
