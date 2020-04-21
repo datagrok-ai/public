@@ -111,25 +111,6 @@
       ],
       "value": ""
     }, {
-      "id": "0b0b0d43-332b-4cf8-9695-e0f4fcf4a458",
-      "comment": "",
-      "command": "pause",
-      "target": "1000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "bc0ef32a-32ee-4380-b126-5ed2e746507b",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@name='tree-expander-PostgreSQL---northwind---Schemas---public']",
-      "targets": [
-        ["css=.d4-tree-view-group:nth-child(1) .d4-tree-view-group:nth-child(1) .d4-tree-view-tri", "css:finder"],
-        ["xpath=//div[@name='tree-expander-PostgreSQL---northwind---Schemas---public']", "xpath:attributes"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div[24]/div[2]/div[5]/div[2]/div/div[2]/div/div/div", "xpath:idRelative"],
-        ["xpath=//div[5]/div[2]/div/div[2]/div/div/div", "xpath:position"]
-      ],
-      "value": ""
-    }, {
       "id": "87017660-a83a-4707-aeb5-4a6c4a1e5308",
       "comment": "",
       "command": "pause",
@@ -140,12 +121,12 @@
       "id": "5bc94d6c-d75a-469b-bf67-a1bb549cb76c",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='tree-PostgreSQL---northwind---Schemas---public---orders']",
+      "target": "xpath=//div[@name='tree-PostgreSQL---northwind---Tables---orders']",
       "targets": [
-        ["css=.d4-tree-view-group:nth-child(1) .d4-tree-view-group:nth-child(8) > .d4-tree-view-node", "css:finder"],
-        ["xpath=//div[@name='tree-PostgreSQL---northwind---Schemas---public---orders']", "xpath:attributes"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div[24]/div[2]/div[5]/div[2]/div/div[2]/div/div[2]/div[8]/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div[2]/div[8]/div", "xpath:position"]
+        ["css=.d4-tree-view-group:nth-child(5) .d4-tree-view-group .d4-tree-view-group:nth-child(8) > .d4-tree-view-node", "css:finder"],
+        ["xpath=//div[@name='tree-PostgreSQL---northwind---Tables---orders']", "xpath:attributes"],
+        ["xpath=//div[@id='data-sources']/div/div[2]/div[24]/div[2]/div[5]/div[2]/div/div[2]/div[8]/div", "xpath:idRelative"],
+        ["xpath=//div[5]/div[2]/div/div[2]/div[8]/div", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -510,24 +491,12 @@
       "id": "594d6cb2-c175-484f-8f99-5b78ca04897e",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-File']",
+      "target": "xpath=(//i[@name='icon-times'])[3]",
       "targets": [
-        ["css=.d4-menu-item-container > .d4-menu-item-hover", "css:finder"],
-        ["xpath=//div[@name='div-File']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div", "xpath:idRelative"],
-        ["xpath=//div[26]/div/div/div/div", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "76869495-714a-41c0-a042-2e37e286e64b",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@name='div-File---Close-All']",
-      "targets": [
-        ["css=.d4-menu-item-horz:nth-child(1) > .d4-vert-menu > .d4-menu-item:nth-child(7)", "css:finder"],
-        ["xpath=//div[@name='div-File---Close-All']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div/div/div[7]", "xpath:idRelative"],
-        ["xpath=//div[27]/div/div/div/div/div/div[7]", "xpath:position"]
+        ["css=.fa-times:nth-child(5)", "css:finder"],
+        ["xpath=(//i[@name='icon-times'])[3]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/i", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/i", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -629,12 +598,12 @@
       "id": "076dd469-1606-4c2c-85b4-a2f1a18d3832",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='view-handle: orders']",
+      "target": "xpath=//span[@name='span-view-name']",
       "targets": [
-        ["css=.tab-handle:nth-child(4)", "css:finder"],
-        ["xpath=//div[@name='view-handle: orders']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
+        ["css=.d4-ribbon-name", "css:finder"],
+        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -684,7 +653,7 @@
       "target": "1000",
       "targets": [],
       "value": ""
-    },{
+    }, {
       "id": "f3742284-265c-4a5b-9e75-9aa31f80053e",
       "comment": "",
       "command": "click",
@@ -707,11 +676,12 @@
       "id": "69836ef0-293d-42be-989e-6ca90b5d81b6",
       "comment": "",
       "command": "click",
-      "target": "css=.d4-toggle-button:nth-child(2)",
+      "target": "xpath=//span[contains(.,'Welcome')]",
       "targets": [
-        ["css=.d4-toggle-button:nth-child(2)", "css:finder"],
-        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div[2]", "xpath:position"]
+        ["css=.d4-current > span", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[2]/span", "xpath:idRelative"],
+        ["xpath=//div[2]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'Welcome')]", "xpath:innerText"]
       ],
       "value": ""
     }, {

@@ -58,31 +58,31 @@
       "id": "ab8f2726-12a0-40e3-ac90-4730f3344006",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "2000",
       "targets": [],
       "value": ""
     }, {
       "id": "c5bb972c-c2dd-4fe3-b6f9-e1a6a8d070d4",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Admin']",
+      "target": "xpath=//i[@name='icon-wrench']",
       "targets": [
-        ["css=.d4-menu-group:nth-child(9)", "css:finder"],
-        ["xpath=//div[@name='div-Admin']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[9]", "xpath:idRelative"],
-        ["xpath=//div[3]/div/div/div/div[9]", "xpath:position"]
+        ["css=.fa-wrench", "css:finder"],
+        ["xpath=//i[@name='icon-wrench']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div[4]/i", "xpath:idRelative"],
+        ["xpath=//div[4]/i", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "6533bdd3-4720-4522-8d7c-0f3900d3ffee",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Admin---Repositories']",
+      "target": "xpath=//span[contains(.,'Repositories')]",
       "targets": [
-        ["css=.d4-menu-item:nth-child(8) .d4-menu-item:nth-child(15)", "css:finder"],
-        ["xpath=//div[@name='div-Admin---Repositories']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[8]/div/div[15]", "xpath:idRelative"],
-        ["xpath=//div[8]/div/div[15]", "xpath:position"]
+        ["css=.d4-toggle-button:nth-child(6) > span", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[6]/span", "xpath:idRelative"],
+        ["xpath=//div[6]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'Repositories')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
@@ -327,7 +327,7 @@
       "id": "1cb1c297-e75e-45c9-9b0b-4b4a3d46fd10",
       "comment": "",
       "command": "open",
-      "target": "/package_repositories?selenium=true&q=",
+      "target": "/repositories?selenium=true&q=",
       "targets": [],
       "value": ""
     }, {
@@ -367,6 +367,13 @@
         ["xpath=//div/div/div/div[2]/div/span", "xpath:position"],
         ["xpath=//span[contains(.,'DG Repository by Selenium')]", "xpath:innerText"]
       ],
+      "value": ""
+    }, {
+      "id": "47b997e6-6e02-4d19-ab97-095afaa11597",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "9eb8372a-7e19-43eb-a22d-1d75003aa205",
@@ -560,31 +567,50 @@
       "id": "18d86732-577f-40f8-9bb9-7590aecc058e",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Admin']",
+      "target": "xpath=//i[@name='icon-wrench']",
       "targets": [
-        ["css=.d4-menu-item-horz:nth-child(8)", "css:finder"],
-        ["xpath=//div[@name='div-Admin']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[8]", "xpath:idRelative"],
-        ["xpath=//div[8]/div/div/div/div[8]", "xpath:position"]
+        ["css=.fa-wrench", "css:finder"],
+        ["xpath=//i[@name='icon-wrench']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div[4]/i", "xpath:idRelative"],
+        ["xpath=//div[4]/i", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "b348788b-3984-476b-a1aa-de469223b5c5",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Admin---Packages']",
+      "target": "xpath=//span[contains(.,'Packages')]",
       "targets": [
-        ["css=.d4-menu-item:nth-child(8) .d4-menu-item:nth-child(14)", "css:finder"],
-        ["xpath=//div[@name='div-Admin---Packages']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[8]/div/div[14]", "xpath:idRelative"],
-        ["xpath=//div[8]/div/div[14]", "xpath:position"]
+        ["css=.d4-toggle-button:nth-child(5) > span", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[5]/span", "xpath:idRelative"],
+        ["xpath=//div[5]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'Packages')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
       "id": "fd70e6ee-916b-49f9-8b8a-07df4cbf8226",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "2000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "e9b90727-7b43-42a5-b745-f451c200357e",
+      "comment": "",
+      "command": "type",
+      "target": "css=.type-ahead-input",
+      "targets": [
+        ["css=.type-ahead-input", "css:finder"],
+        ["xpath=(//input[@type='text'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div[2]/div/input", "xpath:idRelative"],
+        ["xpath=//div[2]/div/input", "xpath:position"]
+      ],
+      "value": "test"
+    }, {
+      "id": "37ba1d6c-63fe-49c1-8e35-7307c98ecc98",
+      "comment": "",
+      "command": "pause",
+      "target": "2000",
       "targets": [],
       "value": ""
     }, {
@@ -665,36 +691,24 @@
       "id": "539504d2-dc96-441e-8afc-a015f3a436d1",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Tools']",
+      "target": "xpath=//i[@name='icon-function']",
       "targets": [
-        ["css=.d4-menu-item-horz:nth-child(7)", "css:finder"],
-        ["xpath=//div[@name='div-Tools']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[7]", "xpath:idRelative"],
-        ["xpath=//body/div[4]/div/div/div/div[7]", "xpath:position"]
+        ["css=.fa-function", "css:finder"],
+        ["xpath=//i[@name='icon-function']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div[3]/i", "xpath:idRelative"],
+        ["xpath=//div[3]/i", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "06474600-3e98-4b12-9493-7b38e0f1e271",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Tools---Scripting']",
+      "target": "xpath=//span[contains(.,'Scripts')]",
       "targets": [
-        ["css=.d4-menu-item-hover:nth-child(6)", "css:finder"],
-        ["xpath=//div[@name='div-Tools---Scripting']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[7]/div/div[6]", "xpath:idRelative"],
-        ["xpath=//div[7]/div/div[6]", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "ca30a119-d40f-4509-a0b5-a3ecf2594047",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@name='div-Tools---Scripting---Browse-Scripts']",
-      "targets": [
-        ["css=.d4-menu-item:nth-child(7) .d4-menu-item:nth-child(6) .d4-menu-item:nth-child(1)", "css:finder"],
-        ["xpath=//div[@name='div-Tools---Scripting---Browse-Scripts']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[7]/div/div[6]/div/div", "xpath:idRelative"],
-        ["xpath=//div[7]/div/div[6]/div/div", "xpath:position"]
+        ["css=.d4-toggle-button:nth-child(3) > span", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[3]/span", "xpath:idRelative"],
+        ["xpath=//div[3]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'Scripts')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
@@ -808,24 +822,24 @@
       "id": "bf26652c-a7ec-4801-b890-54e49d8ce590",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Admin']",
+      "target": "xpath=//i[@name='icon-wrench']",
       "targets": [
-        ["css=.d4-menu-item-horz:nth-child(8)", "css:finder"],
-        ["xpath=//div[@name='div-Admin']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[8]", "xpath:idRelative"],
-        ["xpath=//div[13]/div/div/div/div[8]", "xpath:position"]
+        ["css=.fa-wrench", "css:finder"],
+        ["xpath=//i[@name='icon-wrench']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div[4]/i", "xpath:idRelative"],
+        ["xpath=//div[4]/i", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "801627c3-60b2-42e9-b9b9-39db027c5e92",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Admin---Repositories']",
+      "target": "xpath=//span[contains(.,'Repositories')]",
       "targets": [
-        ["css=.d4-menu-item:nth-child(8) .d4-menu-item:nth-child(15)", "css:finder"],
-        ["xpath=//div[@name='div-Admin---Repositories']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[8]/div/div[15]", "xpath:idRelative"],
-        ["xpath=//div[8]/div/div[15]", "xpath:position"]
+        ["css=.d4-toggle-button:nth-child(6) > span", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[6]/span", "xpath:idRelative"],
+        ["xpath=//div[6]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'Repositories')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
@@ -943,28 +957,47 @@
       "id": "35fadd0d-b4b1-49ad-a58d-58190df6b331",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Admin']",
+      "target": "xpath=//i[@name='icon-wrench']",
       "targets": [
-        ["css=.d4-menu-item-horz:nth-child(8)", "css:finder"],
-        ["xpath=//div[@name='div-Admin']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[8]", "xpath:idRelative"],
-        ["xpath=//div[3]/div/div/div/div[8]", "xpath:position"]
+        ["css=.fa-wrench", "css:finder"],
+        ["xpath=//i[@name='icon-wrench']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div[4]/i", "xpath:idRelative"],
+        ["xpath=//div[4]/i", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "8f49fd1a-6c73-4aa9-8d14-5e1f05396544",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Admin---Packages']",
+      "target": "xpath=//span[contains(.,'Packages')]",
       "targets": [
-        ["css=.d4-menu-item:nth-child(8) .d4-menu-item:nth-child(14)", "css:finder"],
-        ["xpath=//div[@name='div-Admin---Packages']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[8]/div/div[14]", "xpath:idRelative"],
-        ["xpath=//div[8]/div/div[14]", "xpath:position"]
+        ["css=.d4-toggle-button:nth-child(5) > span", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[5]/span", "xpath:idRelative"],
+        ["xpath=//div[5]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'Packages')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
       "id": "c0f69c88-a3bc-421a-afca-e29a07fc1e29",
+      "comment": "",
+      "command": "pause",
+      "target": "2000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "a05ca2fa-6619-4510-bdc3-0968bb49862e",
+      "comment": "",
+      "command": "type",
+      "target": "css=.type-ahead-input",
+      "targets": [
+        ["css=.type-ahead-input", "css:finder"],
+        ["xpath=(//input[@type='text'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div[2]/div/input", "xpath:idRelative"],
+        ["xpath=//div[2]/div/input", "xpath:position"]
+      ],
+      "value": "test"
+    }, {
+      "id": "955721d6-31e6-44bc-ac5a-6f661c246cb2",
       "comment": "",
       "command": "pause",
       "target": "2000",
