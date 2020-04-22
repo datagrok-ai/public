@@ -7,7 +7,7 @@ basePath: /
 schemes:
   - https
 paths:
-   /all:
+   /v2/all:
     get:
       operationId: allCases
       summary: All cases
@@ -16,7 +16,7 @@ paths:
       responses:
          200:
            description: OK
-   /countries:
+   /v2/countries:
     get:
       operationId: casesByCountries
       summary: Cases By Countries
@@ -25,7 +25,7 @@ paths:
       responses:
          200:
            description: OK
-   /countries/{country-name}:
+   /v2/countries/{country-name}:
     get:
       operationId: casesInCountry
       summary: Cases In Country
@@ -40,7 +40,7 @@ paths:
       responses:
          200:
            description: OK
-   /states:
+   /v2/states:
     get:
       operationId: casesInUSA
       summary: Cases In USA
