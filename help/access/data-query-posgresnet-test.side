@@ -563,23 +563,62 @@
       ],
       "value": ""
     }, {
-      "id": "51a36960-e0de-4cde-8eb0-4d8d6f123b82",
+      "id": "cc99e838-f77a-4350-a2ef-afb2bded941a",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "da0dd2f1-e189-48d6-b7c3-b6669512847d",
       "comment": "",
       "command": "click",
-      "target": "name=div-TestQueryBySeleniumPostresNet",
+      "target": "xpath=//span[@name='span-Northwind']",
+      "targets": [
+        ["css=tr:nth-child(1) .d4-link-label", "css:finder"],
+        ["xpath=//span[@name='span-Northwind']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div[4]/div/div/div/table/tbody/tr/td[2]/span", "xpath:idRelative"],
+        ["xpath=//td[2]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'northwind')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "74f0833f-9548-41a3-bdb1-b3f35f2b5840",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "0b131a78-057a-4ae8-b5d1-8fb6bea13b5a",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='div-section--Queries']",
+      "targets": [
+        ["css=.d4-accordion-pane:nth-child(3) > .d4-accordion-pane-header", "css:finder"],
+        ["xpath=//div[@name='div-section--Queries']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div", "xpath:idRelative"],
+        ["xpath=//div[3]/div/div[2]/div/div/div/div/div[3]/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "d10a4ff5-81be-4cfd-bacd-06ab749172d5",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "b5ffae9c-dd9f-46a6-b03f-958c3116be3c",
+      "comment": "",
+      "command": "click",
+      "target": "name=span-TestQueryBySeleniumPostresNet",
       "targets": [
         ["css=.d4-flex-col tr:nth-child(1) > td:nth-child(2)", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div[4]/div/div/div/table/tbody/tr/td[2]", "xpath:idRelative"],
         ["xpath=//td[2]", "xpath:position"],
         ["xpath=//td[contains(.,'northwind')]", "xpath:innerText"]
       ],
-      "value": ""
-    }, {
-      "id": "84294d87-a97d-4feb-af64-89e16d37a5fa",
-      "comment": "",
-      "command": "pause",
-      "target": "500",
-      "targets": [],
       "value": ""
     }, {
       "id": "dad0363b-174d-4ca9-b572-88afe82012da",
@@ -815,14 +854,40 @@
       "id": "24233ae8-ef76-4804-88a1-a366e5066261",
       "comment": "",
       "command": "click",
-      "target": "name=div-TestQueryBySeleniumPostresNet",
+      "target": "xpath=//span[@name='span-Northwind']",
       "targets": [
-        ["css=span[name=\"span-Test_Query_By_Selenium_PostresNet\"]", "css"],
-        ["css=tr:nth-child(1) .markup", "css:finder"],
-        ["xpath=//span[@name='span-Test_Query_By_Selenium_PostresNet']", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div[2]/div/div/table/tbody/tr/td/span", "xpath:idRelative"],
-        ["xpath=//div[3]/div[2]/div/div/table/tbody/tr/td/span", "xpath:position"]
+        ["css=.d4-flex-col tr:nth-child(1) .d4-link-label", "css:finder"],
+        ["xpath=//span[@name='span-Northwind']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div[4]/div/div/div/table/tbody/tr/td[2]/span", "xpath:idRelative"],
+        ["xpath=//td[2]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'northwind')]", "xpath:innerText"]
       ],
+      "value": ""
+    }, {
+      "id": "0195ec80-1b12-4ab6-ae1b-bd6420804094",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "458e4929-a451-407b-962b-5535fd0819e6",
+      "comment": "",
+      "command": "click",
+      "target": "name=span-TestQueryBySeleniumPostresNet",
+      "targets": [
+        ["css=.d4-flex-col tr:nth-child(1) > td:nth-child(2)", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div/div[4]/div/div/div/table/tbody/tr/td[2]", "xpath:idRelative"],
+        ["xpath=//td[2]", "xpath:position"],
+        ["xpath=//td[contains(.,'northwind')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "85347a75-6e26-4458-952e-41f048ac92e8",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "3c725ca0-d666-45a7-b559-38e61edeefd5",
@@ -848,6 +913,13 @@
         ["xpath=//div[@name='div-Delete']", "xpath:attributes"],
         ["xpath=//div[7]/div[7]", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "0aaa3772-513f-4533-b81a-54cdbf3bc6bf",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "fb179e49-5630-4d4e-ab0a-253a385979ef",

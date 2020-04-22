@@ -77,24 +77,24 @@
       "id": "0be464aa-9e51-4800-99be-3b1777f29108",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Admin']",
+      "target": "xpath=//i[@name='icon-function']",
       "targets": [
-        ["css=.d4-menu-group:nth-child(9)", "css:finder"],
-        ["xpath=//div[@name='div-Admin']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[9]", "xpath:idRelative"],
-        ["xpath=//div[3]/div/div/div/div[9]", "xpath:position"]
+        ["css=.fa-function", "css:finder"],
+        ["xpath=//i[@name='icon-function']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div[3]/i", "xpath:idRelative"],
+        ["xpath=//div[3]/i", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "f50894bd-2893-437e-b6e2-b8247cd10e39",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Admin---Apps']",
+      "target": "xpath=//span[contains(.,'Apps')]",
       "targets": [
-        ["css=.d4-menu-item:nth-child(8) .d4-menu-item:nth-child(3)", "css:finder"],
-        ["xpath=//div[@name='div-Admin---Apps']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[8]/div/div[3]", "xpath:idRelative"],
-        ["xpath=//div[8]/div/div[3]", "xpath:position"]
+        ["css=.d4-toggle-button:nth-child(1) > span", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/span", "xpath:position"],
+        ["xpath=//span[contains(.,'Apps')]", "xpath:innerText"]
       ],
       "value": ""
     }, {

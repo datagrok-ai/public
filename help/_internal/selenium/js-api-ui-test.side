@@ -60,7 +60,7 @@
       "id": "5dc82201-963e-4426-b05c-8dddb86d92b3",
       "comment": "",
       "command": "pause",
-      "target": "2000",
+      "target": "4000",
       "targets": [],
       "value": ""
     }, {
@@ -232,12 +232,12 @@
       "id": "08913ee5-b427-4767-b019-158f035f6c94",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='view-handle: accordion']",
+      "target": "xpath=(//i[@name='icon-times'])[3]",
       "targets": [
-        ["css=.tab-handle:nth-child(4)", "css:finder"],
-        ["xpath=//div[@name='view-handle: accordion']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
+        ["css=.d4-ribbon > .grok-icon", "css:finder"],
+        ["xpath=(//i[@name='icon-times'])[3]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/i", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/i", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -251,7 +251,7 @@
       "id": "0bb4b1a8-ae69-43d9-818d-74580c787dfd",
       "comment": "",
       "command": "doubleClick",
-      "target": "xpath=//div[@name='tree-ui---dialogs']",
+      "target": "xpath=//div[@name='tree-ui---dialogs.js']",
       "targets": [
         ["css=.d4-tree-view-item:nth-child(7)", "css:finder"],
         ["xpath=//div[@name='tree-ui---dialogs']", "xpath:attributes"],
@@ -373,7 +373,7 @@
       "id": "5e5f0526-559d-4f45-97e6-38733b20b9b9",
       "comment": "",
       "command": "doubleClick",
-      "target": "xpath=//div[@name='tree-ui---html-tables']",
+      "target": "xpath=//div[@name='tree-ui---html-tables.js']",
       "targets": [
         ["css=.d4-tree-view-item:nth-child(9)", "css:finder"],
         ["xpath=//div[@name='tree-ui---html-tables']", "xpath:attributes"],
@@ -424,15 +424,15 @@
     }, {
       "id": "a92fc175-d9fd-466c-893e-0ed361ec0b17",
       "comment": "",
-      "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='view-handle: tables']",
+      "command": "verifyText",
+      "target": "xpath=//span[@name='span-view-name']",
       "targets": [
-        ["css=.tab-handle-selected", "css:finder"],
-        ["xpath=//div[@name='view-handle: tables']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[5]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/div[5]", "xpath:position"]
+        ["css=.d4-ribbon-name", "css:finder"],
+        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
       ],
-      "value": ""
+      "value": "tables"
     }, {
       "id": "ca357b4e-6572-4f3d-9a9d-92f11c17fddb",
       "comment": "",
@@ -461,26 +461,26 @@
       "id": "cda9ee0c-c8a3-493b-933c-d5c9358ea8f8",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='view-handle: html-tables']",
+      "target": "xpath=(//i[@name='icon-times'])[3]",
       "targets": [
-        ["css=.tab-handle:nth-child(4)", "css:finder"],
-        ["xpath=//div[@name='view-handle: html-tables']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
+        ["css=.d4-ribbon > .grok-icon", "css:finder"],
+        ["xpath=(//i[@name='icon-times'])[3]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/i", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/i", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "c04ba290-ec81-4192-a0d9-96ed35a20431",
       "comment": "",
       "command": "pause",
-      "target": "6000",
+      "target": "1000",
       "targets": [],
       "value": ""
     }, {
       "id": "304258d9-d4af-4828-b293-db6c6525c179",
       "comment": "",
       "command": "doubleClick",
-      "target": "xpath=//div[@name='tree-ui---menu']",
+      "target": "xpath=//div[@name='tree-ui---menu.js']",
       "targets": [
         ["css=.d4-tree-view-item:nth-child(10)", "css:finder"],
         ["xpath=//div[@name='tree-ui---menu']", "xpath:attributes"],
@@ -527,6 +527,25 @@
         ["xpath=//img[@id='error_outline_black']", "xpath:attributes"],
         ["xpath=//img", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "78a40a70-6b87-4611-bead-a496622ce6b2",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//i[@name='icon-bars']",
+      "targets": [
+        ["css=.fa-bars", "css:finder"],
+        ["xpath=//i[@name='icon-bars']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div[7]/i", "xpath:idRelative"],
+        ["xpath=//div[7]/i", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "1dbff74e-0a15-4b2b-80d6-c9e4293551ef",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "6a280be7-4570-4c98-b4f0-f93111a8f09e",
@@ -580,10 +599,29 @@
       "targets": [],
       "value": "Foo clicked"
     }, {
+      "id": "3d397e62-b736-44b2-b903-7f347a5530ad",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//i[@name='icon-bars']",
+      "targets": [
+        ["css=.fa-bars", "css:finder"],
+        ["xpath=//i[@name='icon-bars']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div[7]/i", "xpath:idRelative"],
+        ["xpath=//div[7]/i", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "6c5d76d8-64c2-4428-986f-4a1e05178fcc",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "bd32787d-980e-49e3-bc01-9082c62b3293",
       "comment": "",
       "command": "doubleClick",
-      "target": "xpath=//div[@name='tree-ui---tooltips']",
+      "target": "xpath=//div[@name='tree-ui---tooltips.js']",
       "targets": [
         ["css=.d4-tree-view-item:nth-child(11)", "css:finder"],
         ["xpath=//div[@name='tree-ui---tooltips']", "xpath:attributes"],
@@ -634,25 +672,25 @@
     }, {
       "id": "682b7a60-da1a-4994-b0bc-d02ed4b073e3",
       "comment": "",
-      "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='view-handle: Tooltips demo']",
+      "command": "verifyText",
+      "target": "xpath=//span[@name='span-view-name']",
       "targets": [
-        ["css=.tab-handle-selected", "css:finder"],
-        ["xpath=//div[@name='view-handle: Tooltips demo']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[6]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/div[6]", "xpath:position"]
+        ["css=.d4-ribbon-name", "css:finder"],
+        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
       ],
-      "value": ""
+      "value": "Tooltips demo"
     }, {
       "id": "18a368e3-ab84-462a-99de-d0e1a495e57a",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='view-handle: tooltips']",
+      "target": "css=.d4-ribbon > .grok-icon",
       "targets": [
-        ["css=.tab-handle:nth-child(4)", "css:finder"],
-        ["xpath=//div[@name='view-handle: tooltips']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
+        ["css=.d4-ribbon > .grok-icon", "css:finder"],
+        ["xpath=(//i[@name='icon-times'])[3]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/i", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/i", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -666,7 +704,7 @@
       "id": "598ef778-2049-4203-aa05-4ee489c128b7",
       "comment": "",
       "command": "doubleClick",
-      "target": "xpath=//div[@name='tree-ui---ui']",
+      "target": "xpath=//div[@name='tree-ui---ui.js']",
       "targets": [
         ["css=.d4-tree-view-item:nth-child(12)", "css:finder"],
         ["xpath=//div[@name='tree-ui---ui']", "xpath:attributes"],
@@ -717,15 +755,15 @@
     }, {
       "id": "14f4949f-eb9d-4d43-9d08-1036c50f0511",
       "comment": "",
-      "command": "verifyElementPresent",
-      "target": "xpath=(//div[@name='view-handle: tables'])[2]",
+      "command": "verifyText",
+      "target": "xpath=//span[@name='span-view-name']",
       "targets": [
-        ["css=.tab-handle-selected", "css:finder"],
-        ["xpath=(//div[@name='view-handle: tables'])[2]", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[7]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/div[7]", "xpath:position"]
+        ["css=.d4-ribbon-name", "css:finder"],
+        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
       ],
-      "value": ""
+      "value": "tables"
     }, {
       "id": "550b2258-b0b1-4b41-8854-9951ce10ddd6",
       "comment": "",
@@ -761,12 +799,12 @@
       "id": "a5067fa5-f2d4-4129-a990-18e7f1ce31e5",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='view-handle: ui']",
+      "target": "xpath=(//i[@name='icon-times'])[3]",
       "targets": [
-        ["css=.tab-handle:nth-child(4)", "css:finder"],
-        ["xpath=//div[@name='view-handle: ui']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
+        ["css=.d4-ribbon > .grok-icon", "css:finder"],
+        ["xpath=(//i[@name='icon-times'])[3]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/i", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/i", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -780,7 +818,7 @@
       "id": "bcab6846-a481-4132-8871-b089ff6b6a07",
       "comment": "",
       "command": "doubleClick",
-      "target": "xpath=//div[@name='tree-ui---virtual-view']",
+      "target": "xpath=//div[@name='tree-ui---virtual-view.js']",
       "targets": [
         ["css=.d4-tree-view-item:nth-child(13)", "css:finder"],
         ["xpath=//div[@name='tree-ui---virtual-view']", "xpath:attributes"],
@@ -831,15 +869,10 @@
     }, {
       "id": "069fd72e-e6ae-4587-b86a-dbcbf80017b5",
       "comment": "",
-      "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='view-handle: virtual view']",
-      "targets": [
-        ["css=.tab-handle-selected", "css:finder"],
-        ["xpath=//div[@name='view-handle: virtual view']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[8]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/div[8]", "xpath:position"]
-      ],
-      "value": ""
+      "command": "verifyText",
+      "target": "xpath=//span[@name='span-view-name']",
+      "targets": [],
+      "value": "virtual view"
     }, {
       "id": "7b182671-bb37-4855-a019-502c15ac2e4b",
       "comment": "",
@@ -862,12 +895,12 @@
       "id": "b6cdc0dd-ccd8-4a8f-8801-f073409551fd",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='view-handle: virtual-view']",
+      "target": "xpath=(//i[@name='icon-times'])[3]",
       "targets": [
-        ["css=.tab-handle:nth-child(4)", "css:finder"],
-        ["xpath=//div[@name='view-handle: virtual-view']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
+        ["css=.d4-ribbon > .grok-icon", "css:finder"],
+        ["xpath=(//i[@name='icon-times'])[3]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/i", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/i", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -900,7 +933,7 @@
       "id": "19612c2c-bc2c-465c-a05c-55314e348fc1",
       "comment": "",
       "command": "doubleClick",
-      "target": "name=tree-ui---meta---meta",
+      "target": "name=tree-ui---meta---meta.js",
       "targets": [
         ["css=.d4-tree-view-group:nth-child(11) .d4-tree-view-group:nth-child(4) > .d4-tree-view-group-host", "css:finder"],
         ["xpath=//div[@id='grok-viewers-toolbox']/div/div[3]/div[2]/div/div[2]/div[11]/div[2]/div[4]/div[2]", "xpath:idRelative"],
@@ -943,15 +976,15 @@
     }, {
       "id": "2317c701-434d-49e6-9097-f91343035636",
       "comment": "",
-      "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='view-handle: view']",
+      "command": "verifyText",
+      "target": "xpath=//span[@name='span-view-name']",
       "targets": [
-        ["css=.tab-handle-selected", "css:finder"],
-        ["xpath=//div[@name='view-handle: view']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
+        ["css=.d4-ribbon-name", "css:finder"],
+        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
       ],
-      "value": ""
+      "value": "view"
     }, {
       "id": "1786a2eb-595e-4fcd-a127-b89445acd88f",
       "comment": "",

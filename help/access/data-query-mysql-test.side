@@ -571,6 +571,57 @@
       "targets": [],
       "value": ""
     }, {
+      "id": "828026c3-18be-447f-b5a3-82d7179aaadc",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//span[@name='span-Northwind']",
+      "targets": [
+        ["css=tr:nth-child(1) .d4-link-label", "css:finder"],
+        ["xpath=//span[@name='span-Northwind']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div[4]/div/div/div/table/tbody/tr/td[2]/span", "xpath:idRelative"],
+        ["xpath=//td[2]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'northwind')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "d5123712-e48f-427c-bf74-c3f5205d3909",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "1a3fc9a2-f140-433d-85c4-efc081bb42e1",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='div-section--Queries']",
+      "targets": [
+        ["css=.d4-accordion-pane:nth-child(3) > .d4-accordion-pane-header", "css:finder"],
+        ["xpath=//div[@name='div-section--Queries']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div", "xpath:idRelative"],
+        ["xpath=//div[3]/div/div[2]/div/div/div/div/div[3]/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "4c4e7ff6-0199-4e95-a6d5-3b2791c0fa42",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "f325a221-6268-4ce6-a490-dc2b5b72d878",
+      "comment": "",
+      "command": "click",
+      "target": "name=span-TestQueryBySeleniumMySql",
+      "targets": [
+        ["css=.d4-entity-markup-row:nth-child(1)", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div[2]/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[3]/div[2]/div/div/div/span", "xpath:position"],
+        ["xpath=//span[contains(.,'Test_Query_By_Selenium_MySql')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
       "id": "4ed73d31-fadd-42f3-8fcf-07b1f4ff1de8",
       "comment": "",
       "command": "click",
@@ -809,12 +860,13 @@
       "id": "fa66613c-040e-4ef0-8e3c-4d4eead0478b",
       "comment": "",
       "command": "click",
-      "target": "name=div-TestQueryBySeleniumMySql",
+      "target": "xpath=//span[@name='span-Northwind']",
       "targets": [
-        ["css=.d4-flex-col tr:nth-child(1) > td:nth-child(2)", "css:finder"],
-        ["xpath=//div[@id='elementContent']/div/div[4]/div/div/div/table/tbody/tr/td[2]", "xpath:idRelative"],
-        ["xpath=//td[2]", "xpath:position"],
-        ["xpath=//td[contains(.,'northwind')]", "xpath:innerText"]
+        ["css=.d4-current-object", "css:finder"],
+        ["xpath=//span[@name='span-Northwind']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div[4]/div/div/div/table/tbody/tr/td[2]/span", "xpath:idRelative"],
+        ["xpath=//td[2]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'northwind')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
@@ -823,6 +875,19 @@
       "command": "pause",
       "target": "500",
       "targets": [],
+      "value": ""
+    }, {
+      "id": "75763a9e-fa05-4432-b05c-b2e6eaa82f70",
+      "comment": "",
+      "command": "click",
+      "target": "name=span-TestQueryBySeleniumMySql",
+      "targets": [
+        ["css=.d4-current-object", "css:finder"],
+        ["xpath=//span[@name='span-Northwind']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div[4]/div/div/div/table/tbody/tr/td[2]/span", "xpath:idRelative"],
+        ["xpath=//td[2]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'northwind')]", "xpath:innerText"]
+      ],
       "value": ""
     }, {
       "id": "3c725ca0-d666-45a7-b559-38e61edeefd5",
