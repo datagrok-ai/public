@@ -77,24 +77,24 @@
       "id": "0be464aa-9e51-4800-99be-3b1777f29108",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Admin']",
+      "target": "xpath=//i[@name='icon-folder-open']",
       "targets": [
-        ["css=.d4-menu-group:nth-child(9)", "css:finder"],
-        ["xpath=//div[@name='div-Admin']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[9]", "xpath:idRelative"],
-        ["xpath=//div[3]/div/div/div/div[9]", "xpath:position"]
+        ["css=.fa-folder-open", "css:finder"],
+        ["xpath=//i[@name='icon-folder-open']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div[2]/i", "xpath:idRelative"],
+        ["xpath=//div[2]/i", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "f50894bd-2893-437e-b6e2-b8247cd10e39",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Admin---Files']",
+      "target": "xpath=//span[contains(.,'Files')]",
       "targets": [
-        ["css=.d4-menu-item:nth-child(8) .d4-menu-item:nth-child(13)", "css:finder"],
-        ["xpath=//div[@name='div-Admin---Files']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[8]/div/div[13]", "xpath:idRelative"],
-        ["xpath=//div[8]/div/div[13]", "xpath:position"]
+        ["css=.d4-toggle-button:nth-child(1) > span", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/span", "xpath:position"],
+        ["xpath=//span[contains(.,'Files')]", "xpath:innerText"]
       ],
       "value": ""
     }, {

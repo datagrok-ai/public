@@ -77,6 +77,25 @@
       ],
       "value": ""
     }, {
+      "id": "68fca674-045f-4fda-b09b-29891352266b",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//i[@name='icon-bars']",
+      "targets": [
+        ["css=.fa-bars", "css:finder"],
+        ["xpath=//i[@name='icon-bars']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div[7]/i", "xpath:idRelative"],
+        ["xpath=//div[7]/i", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "2def09bc-056b-4d6a-bf6b-e0145002d5b1",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "a91be2ca-2e02-4ad0-9505-8a87bcd4c2de",
       "comment": "",
       "command": "click",
@@ -218,7 +237,7 @@
         ["xpath=//textarea[@id='editor']", "xpath:attributes"],
         ["xpath=//textarea", "xpath:position"]
       ],
-      "value": "Demo:JuliaScripts:JuliaDup(GetCurrentRowField(\"sex\"))"
+      "value": "JuliaScripts:JuliaDup(GetCurrentRowField(\"sex\"))"
     }, {
       "id": "6f82bcb7-026c-4452-9b7b-a1d082618fb4",
       "comment": "",
