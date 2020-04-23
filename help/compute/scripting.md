@@ -68,7 +68,8 @@ or [created manually](https://docs.conda.io/projects/conda/en/latest/user-guide/
 Configurations are stored in the same repository with the script, in the folder called `environments`
 located under the repository root. Here is an 
 [example of such configuration](https://github.com/datagrok-ai/public/tree/master/environments)
-for the [Datagrok public repository](https://github.com/datagrok-ai/public).  
+for the [Datagrok public repository](https://github.com/datagrok-ai/public). Also, a package can define
+its own configurations as well ([see examples](https://github.com/datagrok-ai/public/tree/master/packages/PythonScripts)).
 
 If the `#environment` tag in the script header is not specified, the script uses the configuration
 defined in the `default.yaml`.  
