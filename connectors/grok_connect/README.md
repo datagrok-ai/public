@@ -21,7 +21,7 @@ Java-based data connectors
 | hsqldb                 | http://hsqldb.org/web/hsqlLicense.html, (based on BSD License) |
 | mockito-core           | MIT License                             |
 | cassandra-thrift       | Apache 2.0                              |
-| postgresql             | BSD 2-clause "Simplified" License       |
+| postgresql             | BSD 2-Clause       |
 | mysql                  | Product License - MySQL Connector/J 5.1, GPLv2 |
 | ucanaccess             | Apache 2.0                              |
 | mariadb-java-client    | LGPL                                    |
