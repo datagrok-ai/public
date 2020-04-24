@@ -81,35 +81,24 @@
       "id": "8447b276-e48e-4758-9a76-f716489bda66",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Tools']",
+      "target": "css=.fa-question-circle",
       "targets": [
-        ["css=.d4-menu-item-horz:nth-child(7)", "css:finder"],
-        ["xpath=//div[@name='div-Tools']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[7]", "xpath:idRelative"],
-        ["xpath=//div[3]/div/div/div/div[7]", "xpath:position"]
+        ["css=.fa-question-circle", "css:finder"],
+        ["xpath=//i[@name='icon-question-circle']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div[12]/i", "xpath:idRelative"],
+        ["xpath=//div[12]/i", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "f69a4bdb-d7ec-415c-9b55-7bbb390ac194",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Tools---Scripting']",
+      "target": "xpath=//span[contains(.,'JavaScript API Examples')]",
       "targets": [
-        ["css=.d4-menu-item-hover:nth-child(6)", "css:finder"],
-        ["xpath=//div[@name='div-Tools---Scripting']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[7]/div/div[6]", "xpath:idRelative"],
-        ["xpath=//div[7]/div/div[6]", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "83391ec1-0655-4962-85d5-44c6937ed13b",
-      "comment": "",
-      "command": "click",
-      "target": "name=div-Tools---Scripting---JavaScript",
-      "targets": [
-        ["css=.d4-editor", "css:finder"],
-        ["xpath=//div[@id='elementContent']/div/div/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div[3]/div/div/div/div", "xpath:position"]
+        ["css=.d4-toggle-button:nth-child(4) > span", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[4]/span", "xpath:idRelative"],
+        ["xpath=//div[4]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'JavaScript API Examples')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
@@ -130,6 +119,13 @@
         ["xpath=//div[@id='grok-viewers-toolbox']/div/div[3]/div", "xpath:idRelative"],
         ["xpath=//div[2]/div/div/div/div/div[3]/div", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "aea34988-6776-408c-a02f-d654fba386bc",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "ca8b1180-d063-4c77-ad5a-3b83f14a0e18",
@@ -166,7 +162,7 @@
       "id": "8b321cd8-ca19-4c0e-803a-ad544d0efe05",
       "comment": "",
       "command": "doubleClick",
-      "target": "name=tree-domains---bio---bioinformatics",
+      "target": "name=tree-domains---bio---bioinformatics.js",
       "targets": [
         ["css=.d4-tree-view-group:nth-child(4) .d4-tree-view-group:nth-child(1) .d4-tree-view-item-label", "css:finder"],
         ["xpath=//div[@id='grok-viewers-toolbox']/div/div[3]/div[2]/div/div[2]/div[4]/div[2]/div/div[2]/div/div", "xpath:idRelative"],
@@ -236,7 +232,7 @@
       "id": "0bb4b1a8-ae69-43d9-818d-74580c787dfd",
       "comment": "",
       "command": "doubleClick",
-      "target": "xpath=//div[@name='tree-domains---chem---descriptors']",
+      "target": "xpath=//div[@name='tree-domains---chem---descriptors.js']",
       "targets": [
         ["css=.d4-tree-view-group:nth-child(2) .d4-tree-view-item:nth-child(1)", "css:finder"],
         ["xpath=//div[@name='tree-domains---chem---descriptors']", "xpath:attributes"],
@@ -287,21 +283,26 @@
     }, {
       "id": "249c9e11-95e5-44d8-9329-e453f787011e",
       "comment": "",
-      "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='view-handle: Table']",
+      "command": "verifyText",
+      "target": "xpath=//span[@name='span-view-name']",
       "targets": [
-        ["css=.tab-handle:nth-child(5)", "css:finder"],
-        ["xpath=//div[@name='view-handle: Table']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[3]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/div[3]", "xpath:position"]
+        ["css=.d4-ribbon-name", "css:finder"],
+        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
       ],
-      "value": ""
+      "value": "Table"
     }, {
       "id": "1861e63f-ccb2-448d-9b92-d5e9234f9d68",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='view-handle: Table']",
-      "targets": [],
+      "target": "xpath=//span[@name='span-view-name']",
+      "targets": [
+        ["css=.d4-ribbon-name", "css:finder"],
+        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
+      ],
       "value": ""
     }, {
       "id": "80e606c7-cb1a-418f-94a4-718cf06cede6",
@@ -431,19 +432,19 @@
       "id": "8b56be9c-3c43-49dc-aeec-c2b812541c29",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='view-handle: descriptors']",
+      "target": "xpath=(//i[@name='icon-times'])[3]",
       "targets": [
-        ["css=.tab-handle:nth-child(4)", "css:finder"],
-        ["xpath=//div[@name='view-handle: descriptors']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
+        ["css=.fa-times:nth-child(4)", "css:finder"],
+        ["xpath=(//i[@name='icon-times'])[3]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/i", "xpath:idRelative"],
+        ["xpath=//div[3]/div[2]/div/div/div/div/div/div/i", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "b22defd5-7449-4fab-88e8-f3cb3fea4274",
       "comment": "",
       "command": "doubleClick",
-      "target": "xpath=//div[@name='tree-domains---chem---diversity-search']",
+      "target": "xpath=//div[@name='tree-domains---chem---diversity-search.js']",
       "targets": [
         ["css=.d4-tree-view-item:nth-child(2)", "css:finder"],
         ["xpath=//div[@name='tree-domains---chem---diversity-search']", "xpath:attributes"],
@@ -494,21 +495,26 @@
     }, {
       "id": "e0b55f84-23ae-46bd-a6e6-f09ba62665be",
       "comment": "",
-      "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='view-handle: Table (2)']",
+      "command": "verifyText",
+      "target": "xpath=//span[@name='span-view-name']",
       "targets": [
-        ["css=.tab-handle:nth-child(6)", "css:finder"],
-        ["xpath=//div[@name='view-handle: Table (2)']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[4]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/div[4]", "xpath:position"]
+        ["css=.d4-ribbon-name", "css:finder"],
+        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
       ],
-      "value": ""
+      "value": "Table (2)"
     }, {
       "id": "576301c1-8e2e-4581-b10c-e1bdfcc30f41",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='view-handle: Table (2)']",
-      "targets": [],
+      "target": "xpath=//span[@name='span-view-name']",
+      "targets": [
+        ["css=.d4-ribbon-name", "css:finder"],
+        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
+      ],
       "value": ""
     }, {
       "id": "15cee9b5-49f4-4188-a185-6943ce89aac3",
@@ -532,19 +538,19 @@
       "id": "2df988a8-0d68-4385-b7bc-b00ac4c8bc3a",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='view-handle: diversity-search']",
+      "target": "xpath=(//i[@name='icon-times'])[4]",
       "targets": [
-        ["css=.tab-handle:nth-child(4)", "css:finder"],
-        ["xpath=//div[@name='view-handle: diversity-search']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
+        ["css=.fa-times:nth-child(4)", "css:finder"],
+        ["xpath=(//i[@name='icon-times'])[4]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/i", "xpath:idRelative"],
+        ["xpath=//div[3]/div[2]/div/div/div/div/div/div/i", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "5e5f0526-559d-4f45-97e6-38733b20b9b9",
       "comment": "",
       "command": "doubleClick",
-      "target": "xpath=//div[@name='tree-domains---chem---mcs']",
+      "target": "xpath=//div[@name='tree-domains---chem---mcs.js']",
       "targets": [
         ["css=.d4-tree-view-item:nth-child(3)", "css:finder"],
         ["xpath=//div[@name='tree-domains---chem---mcs']", "xpath:attributes"],
@@ -616,7 +622,7 @@
       "id": "a6fd3be7-a245-4f15-8790-6c213d581856",
       "comment": "",
       "command": "doubleClick",
-      "target": "xpath=//div[@name='tree-domains---chem---mol-atoms-bonds']",
+      "target": "xpath=//div[@name='tree-domains---chem---mol-atoms-bonds.js']",
       "targets": [
         ["css=.d4-tree-view-item:nth-child(4)", "css:finder"],
         ["xpath=//div[@name='tree-domains---chem---mol-atoms-bonds']", "xpath:attributes"],
@@ -667,46 +673,97 @@
     }, {
       "id": "a77b9422-165d-4dcb-969c-34a835b15640",
       "comment": "",
-      "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='view-handle: Table (4)']",
+      "command": "verifyText",
+      "target": "xpath=//span[@name='span-view-name']",
       "targets": [
-        ["css=.tab-handle:nth-child(9)", "css:finder"],
-        ["xpath=//div[@name='view-handle: Table (4)']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[7]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/div[7]", "xpath:position"]
+        ["css=.d4-ribbon-name", "css:finder"],
+        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
       ],
-      "value": ""
+      "value": "Table (4)"
     }, {
-      "id": "b0472f1a-1ef9-4e2c-8bfe-cc16941428ef",
-      "comment": "",
-      "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='view-handle: Table (3)']",
-      "targets": [
-        ["css=.tab-handle:nth-child(8)", "css:finder"],
-        ["xpath=//div[@name='view-handle: Table (3)']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[6]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/div[6]", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "c6591b36-75e9-4a10-b6af-0a6468ad4b31",
-      "comment": "",
-      "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='view-handle: atoms']",
-      "targets": [
-        ["css=.tab-handle:nth-child(7)", "css:finder"],
-        ["xpath=//div[@name='view-handle: atoms']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[5]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/div[5]", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "416c70ca-c934-4aac-9d70-4896be6f4a7d",
+      "id": "776f715d-b159-41bc-b9cb-e0d6fd8e1517",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='view-handle: Table (4)']",
+      "target": "xpath=(//i[@name='icon-times'])[6]",
+      "targets": [
+        ["css=.fa-times:nth-child(4)", "css:finder"],
+        ["xpath=(//i[@name='icon-times'])[6]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/i", "xpath:idRelative"],
+        ["xpath=//div[3]/div[2]/div/div/div/div/div/div/i", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "2f1741f8-80b6-4ea0-9f48-96d167c5f698",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
       "targets": [],
       "value": ""
+    }, {
+      "id": "e995d1ea-3c27-4901-8d3d-2d937566ca64",
+      "comment": "",
+      "command": "verifyText",
+      "target": "xpath=//span[@name='span-view-name']",
+      "targets": [
+        ["css=.d4-ribbon-name", "css:finder"],
+        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
+      ],
+      "value": "Table (3)"
+    }, {
+      "id": "97682176-4c03-466d-8d68-92740a4d0135",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=(//i[@name='icon-times'])[6]",
+      "targets": [
+        ["css=.fa-times:nth-child(4)", "css:finder"],
+        ["xpath=(//i[@name='icon-times'])[6]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/i", "xpath:idRelative"],
+        ["xpath=//div[3]/div[2]/div/div/div/div/div/div/i", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "00f0e077-4a97-483c-86d5-3d6545b32118",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "c20d2a59-2887-4bb5-b9fa-8f6e70e7e7b0",
+      "comment": "",
+      "command": "verifyText",
+      "target": "xpath=//span[@name='span-view-name']",
+      "targets": [
+        ["css=.d4-ribbon-name", "css:finder"],
+        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
+      ],
+      "value": "atoms"
+    }, {
+      "id": "88704447-163d-4f2b-b109-18e5b7bf269f",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "id=mol1:Atom:23",
+      "targets": [
+        ["id=mol1:Atom:23", "id"],
+        ["css=#mol1\\3A Atom\\3A 23", "css:finder"]
+      ],
+      "value": "atoms"
+    }, {
+      "id": "34d1d7b6-605d-4052-b489-adb225198d7e",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "id=mol1:Atom:4",
+      "targets": [
+        ["id=mol1:Atom:4", "id"],
+        ["css=#mol1\\3A Atom\\3A 4", "css:finder"]
+      ],
+      "value": "atoms"
     }, {
       "id": "0a7f8e26-3be5-46c9-9b9f-c7ff319623d5",
       "comment": "",
@@ -715,103 +772,15 @@
       "targets": [],
       "value": ""
     }, {
-      "id": "5e39ef0d-e692-4af9-9d16-e8682b4a325d",
-      "comment": "",
-      "command": "verifyElementPresent",
-      "target": "xpath=//span[contains(.,'33')]",
-      "targets": [
-        ["css=tr:nth-child(1) > td:nth-child(2) > span", "css:finder"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div[2]/div[2]/table/tbody/tr/td[2]/span", "xpath:idRelative"],
-        ["xpath=//td[2]/span", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "07f27056-5f11-480d-9341-792d84927e73",
-      "comment": "",
-      "command": "verifyElementPresent",
-      "target": "xpath=//span[contains(.,'19')]",
-      "targets": [
-        ["css=tr:nth-child(1) > td:nth-child(2) > span", "css:finder"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div[2]/div[2]/table/tbody/tr/td[2]/span", "xpath:idRelative"],
-        ["xpath=//td[2]/span", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "f8b203a8-4fcd-4c2d-9ef2-5d8af5a857f2",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@name='view-handle: Table (3)']",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "d8bd18dd-a699-4b20-894d-51b6c1dfcde4",
-      "comment": "",
-      "command": "pause",
-      "target": "1000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "de25b747-e2ab-4df3-9e2e-002903659065",
-      "comment": "",
-      "command": "verifyElementPresent",
-      "target": "xpath=//span[contains(.,'30')]",
-      "targets": [
-        ["css=tr:nth-child(1) > td:nth-child(2) > span", "css:finder"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div[2]/div[2]/table/tbody/tr/td[2]/span", "xpath:idRelative"],
-        ["xpath=//td[2]/span", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "95c47043-4105-4cb3-9fff-b14acabb9f9b",
-      "comment": "",
-      "command": "verifyElementPresent",
-      "target": "xpath=//span[contains(.,'42')]",
-      "targets": [
-        ["css=tr:nth-child(1) > td:nth-child(2) > span", "css:finder"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div[2]/div[2]/table/tbody/tr/td[2]/span", "xpath:idRelative"],
-        ["xpath=//td[2]/span", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "5355488f-9f0f-4c4b-b315-faa570bea471",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@name='view-handle: atoms']",
-      "targets": [
-        ["css=.tab-handle:nth-child(7)", "css:finder"],
-        ["xpath=//div[@name='view-handle: atoms']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[5]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/div[5]", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "47be86ce-91e5-4853-bb2d-28777d820a5e",
-      "comment": "",
-      "command": "pause",
-      "target": "1000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "96cea67b-f033-4d5c-8327-93e47c6258c6",
-      "comment": "",
-      "command": "verifyElementPresent",
-      "target": "//*[@id=\"mol1\"]",
-      "targets": [
-        ["css=.grok-view > div", "css:finder"],
-        ["xpath=//div[@id='elementContent']/div/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div[3]/div/div/div", "xpath:position"]
-      ],
-      "value": ""
-    }, {
       "id": "5e022c44-dd09-4586-be5f-be65530368c7",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='view-handle: mol-atoms-bonds']",
+      "target": "xpath=(//i[@name='icon-times'])[3]",
       "targets": [
-        ["css=.tab-handle:nth-child(4)", "css:finder"],
-        ["xpath=//div[@name='view-handle: mol-atoms-bonds']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
+        ["css=.d4-ribbon > .grok-icon", "css:finder"],
+        ["xpath=(//i[@name='icon-times'])[3]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/i", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/i", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -825,7 +794,7 @@
       "id": "304258d9-d4af-4828-b293-db6c6525c179",
       "comment": "",
       "command": "doubleClick",
-      "target": "xpath=//div[@name='tree-domains---chem---mol-panel']",
+      "target": "xpath=//div[@name='tree-domains---chem---mol-panel.js']",
       "targets": [
         ["css=.d4-tree-view-item:nth-child(5)", "css:finder"],
         ["xpath=//div[@name='tree-domains---chem---mol-panel']", "xpath:attributes"],
@@ -877,7 +846,7 @@
       "id": "bd32787d-980e-49e3-bc01-9082c62b3293",
       "comment": "",
       "command": "doubleClick",
-      "target": "xpath=//div[@name='tree-domains---chem---mol-rendering']",
+      "target": "xpath=//div[@name='tree-domains---chem---mol-rendering.js']",
       "targets": [
         ["css=.d4-tree-view-item:nth-child(6)", "css:finder"],
         ["xpath=//div[@name='tree-domains---chem---mol-rendering']", "xpath:attributes"],
@@ -928,15 +897,15 @@
     }, {
       "id": "682b7a60-da1a-4994-b0bc-d02ed4b073e3",
       "comment": "",
-      "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='view-handle: chem rendering']",
+      "command": "verifyText",
+      "target": "xpath=//span[@name='span-view-name']",
       "targets": [
-        ["css=.tab-handle-selected", "css:finder"],
-        ["xpath=//div[@name='view-handle: chem rendering']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[8]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/div[8]", "xpath:position"]
+        ["css=.d4-ribbon-name", "css:finder"],
+        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
       ],
-      "value": ""
+      "value": "chem rendering"
     }, {
       "id": "6770cf77-58bd-4065-8db9-e0035e420fc9",
       "comment": "",
@@ -969,12 +938,12 @@
       "id": "18a368e3-ab84-462a-99de-d0e1a495e57a",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='view-handle: mol-rendering']",
+      "target": "xpath=(//i[@name='icon-times'])[3]",
       "targets": [
-        ["css=.tab-handle:nth-child(4)", "css:finder"],
-        ["xpath=//div[@name='view-handle: mol-rendering']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
+        ["css=.d4-ribbon > .grok-icon", "css:finder"],
+        ["xpath=(//i[@name='icon-times'])[3]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/i", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/i", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -988,7 +957,7 @@
       "id": "598ef778-2049-4203-aa05-4ee489c128b7",
       "comment": "",
       "command": "doubleClick",
-      "target": "xpath=//div[@name='tree-domains---chem---r-group']",
+      "target": "xpath=//div[@name='tree-domains---chem---r-group.js']",
       "targets": [
         ["css=.d4-tree-view-item:nth-child(7)", "css:finder"],
         ["xpath=//div[@name='tree-domains---chem---r-group']", "xpath:attributes"],
@@ -1039,21 +1008,26 @@
     }, {
       "id": "14f4949f-eb9d-4d43-9d08-1036c50f0511",
       "comment": "",
-      "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='view-handle: Table (5)']",
+      "command": "verifyText",
+      "target": "css=.d4-ribbon-name",
       "targets": [
-        ["css=.tab-handle:nth-child(11)", "css:finder"],
-        ["xpath=//div[@name='view-handle: Table (5)']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[9]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/div[9]", "xpath:position"]
+        ["css=.d4-ribbon-name", "css:finder"],
+        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
       ],
-      "value": ""
+      "value": "Table (5)"
     }, {
       "id": "550b2258-b0b1-4b41-8854-9951ce10ddd6",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='view-handle: Table (5)']",
-      "targets": [],
+      "target": "xpath=//span[@name='span-view-name']",
+      "targets": [
+        ["css=.d4-ribbon-name", "css:finder"],
+        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
+      ],
       "value": ""
     }, {
       "id": "259efe24-d5f2-4171-a251-98850f3252e6",
@@ -1081,12 +1055,12 @@
       "id": "a5067fa5-f2d4-4129-a990-18e7f1ce31e5",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='view-handle: r-group']",
+      "target": "xpath=(//i[@name='icon-times'])[7]",
       "targets": [
-        ["css=.tab-handle:nth-child(4)", "css:finder"],
-        ["xpath=//div[@name='view-handle: r-group']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
+        ["css=.fa-times:nth-child(4)", "css:finder"],
+        ["xpath=(//i[@name='icon-times'])[7]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/i", "xpath:idRelative"],
+        ["xpath=//div[3]/div[2]/div/div/div/div/div/div/i", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -1100,7 +1074,7 @@
       "id": "bcab6846-a481-4132-8871-b089ff6b6a07",
       "comment": "",
       "command": "doubleClick",
-      "target": "xpath=//div[@name='tree-domains---chem---similarity-search']",
+      "target": "xpath=//div[@name='tree-domains---chem---similarity-search.js']",
       "targets": [
         ["css=.d4-tree-view-item:nth-child(8)", "css:finder"],
         ["xpath=//div[@name='tree-domains---chem---similarity-search']", "xpath:attributes"],
@@ -1151,15 +1125,15 @@
     }, {
       "id": "069fd72e-e6ae-4587-b86a-dbcbf80017b5",
       "comment": "",
-      "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='view-handle: Table (6)']",
+      "command": "verifyText",
+      "target": "xpath=//span[@name='span-view-name']",
       "targets": [
-        ["css=.tab-handle:nth-child(12)", "css:finder"],
-        ["xpath=//div[@name='view-handle: Table (6)']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[10]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/div[10]", "xpath:position"]
+        ["css=.d4-ribbon-name", "css:finder"],
+        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
       ],
-      "value": ""
+      "value": "Table (6)"
     }, {
       "id": "fc19cbdd-cf2f-4ecd-8c08-af77d351d607",
       "comment": "",
@@ -1171,12 +1145,12 @@
       "id": "7b182671-bb37-4855-a019-502c15ac2e4b",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='view-handle: Table (6)']",
+      "target": "xpath=//span[@name='span-view-name']",
       "targets": [
-        ["css=.tab-handle:nth-child(12)", "css:finder"],
-        ["xpath=//div[@name='view-handle: Table (6)']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[10]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/div[10]", "xpath:position"]
+        ["css=.d4-ribbon-name", "css:finder"],
+        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -1217,12 +1191,12 @@
       "id": "5973e252-6f0c-4d51-8fa2-5e7624dd3bbc",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='view-handle: similarity-search']",
+      "target": "xpath=(//i[@name='icon-times'])[8]",
       "targets": [
-        ["css=.tab-handle:nth-child(4)", "css:finder"],
-        ["xpath=//div[@name='view-handle: similarity-search']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
+        ["css=.fa-times:nth-child(4)", "css:finder"],
+        ["xpath=(//i[@name='icon-times'])[8]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/i", "xpath:idRelative"],
+        ["xpath=//div[3]/div[2]/div/div/div/div/div/div/i", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -1236,7 +1210,7 @@
       "id": "8d8b7d7c-903b-4c23-a17b-3809c55abd1a",
       "comment": "",
       "command": "doubleClick",
-      "target": "xpath=//div[@name='tree-domains---chem---substructure-search']",
+      "target": "xpath=//div[@name='tree-domains---chem---substructure-search.js']",
       "targets": [
         ["css=.d4-tree-view-item:nth-child(9)", "css:finder"],
         ["xpath=//div[@name='tree-domains---chem---substructure-search']", "xpath:attributes"],
@@ -1267,7 +1241,7 @@
       "id": "2e9789fc-cc59-4e5a-b7f7-a563b6cc4696",
       "comment": "",
       "command": "pause",
-      "target": "2000",
+      "target": "4000",
       "targets": [],
       "value": ""
     }, {
@@ -1285,17 +1259,17 @@
       ],
       "value": ""
     }, {
-      "id": "a4bd107c-72b6-4e3a-a6c9-dad8ee5c9f41",
+      "id": "2d6de014-29e7-4932-babc-398bc6486bdb",
       "comment": "",
-      "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='view-handle: Table (7)']",
+      "command": "verifyText",
+      "target": "xpath=//span[@name='span-view-name']",
       "targets": [
-        ["css=.tab-handle:nth-child(13)", "css:finder"],
-        ["xpath=//div[@name='view-handle: Table (7)']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[11]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/div[11]", "xpath:position"]
+        ["css=.d4-ribbon-name", "css:finder"],
+        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
       ],
-      "value": ""
+      "value": "Table (7)"
     }]
   }],
   "suites": [{

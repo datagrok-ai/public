@@ -562,17 +562,56 @@
       ],
       "value": ""
     }, {
-      "id": "baa7ecae-f70a-4b81-8728-c8e4e1acc599",
+      "id": "06eab6cf-2a81-4aad-bdcf-1f5669bfc1a0",
       "comment": "",
       "command": "click",
-      "target": "name=div-TestQueryBySeleniumTeradata",
+      "target": "xpath=//span[@name='span-Northwind']",
+      "targets": [
+        ["css=.d4-flex-col tr:nth-child(1) .d4-link-label", "css:finder"],
+        ["xpath=//span[@name='span-Northwind']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div[4]/div/div/div/table/tbody/tr/td[2]/span", "xpath:idRelative"],
+        ["xpath=//td[2]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'northwind')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "9446c4c4-3757-4c34-932b-621dec5a06e9",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "186ba3d6-c9ea-4f15-84f4-5411ce40c508",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='div-section--Queries']",
+      "targets": [
+        ["css=.d4-accordion-pane:nth-child(3) > .d4-accordion-pane-header", "css:finder"],
+        ["xpath=//div[@name='div-section--Queries']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div", "xpath:idRelative"],
+        ["xpath=//div[3]/div/div[2]/div/div/div/div/div[3]/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "671602bd-7cb4-48af-8d1c-6861af5d0d22",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "b0408274-b386-4e01-925e-a6056af368a1",
+      "comment": "",
+      "command": "click",
+      "target": "name=span-TestQueryBySeleniumTeradata",
       "targets": [],
       "value": ""
     }, {
       "id": "dad0363b-174d-4ca9-b572-88afe82012da",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "500",
       "targets": [],
       "value": ""
     }, {
