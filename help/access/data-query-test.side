@@ -564,28 +564,28 @@
       ],
       "value": ""
     }, {
-      "id": "17165c9a-a3da-417e-a359-1a9542ffc66f",
+      "id": "51a36960-e0de-4cde-8eb0-4d8d6f123b82",
       "comment": "",
       "command": "click",
-      "target": "name=div-TestQueryBySelenium",
+      "target": "name=span-Northwind",
       "targets": [],
       "value": ""
     }, {
-      "id": "51a36960-e0de-4cde-8eb0-4d8d6f123b82",
+      "id": "ae10136d-44f2-4dc6-8c36-c218f8c199d1",
       "comment": "",
-      "command": "//click",
-      "target": "name=span-Northwind",
+      "command": "pause",
+      "target": "500",
       "targets": [],
       "value": ""
     }, {
       "id": "cb94bc5d-c47d-4f9e-804b-4459cd9bae98",
       "comment": "",
-      "command": "//click",
+      "command": "click",
       "target": "xpath=//div[@name='div-section--Queries']",
       "targets": [],
       "value": ""
     }, {
-      "id": "84294d87-a97d-4feb-af64-89e16d37a5fa",
+      "id": "fe56c43a-cdc7-490f-b6a6-5d15c4e28374",
       "comment": "",
       "command": "pause",
       "target": "500",
@@ -594,15 +594,29 @@
     }, {
       "id": "7d76c4ac-d0a1-4ee2-b165-a524371eca7c",
       "comment": "",
-      "command": "//click",
+      "command": "click",
       "target": "xpath=//i[@name='icon-ellipsis-h']",
       "targets": [],
       "value": ""
     }, {
-      "id": "4ed73d31-fadd-42f3-8fcf-07b1f4ff1de8",
+      "id": "4c54cfbf-b002-41db-be19-74bbf3029d3e",
       "comment": "",
-      "command": "//click",
-      "target": "name=div-TestQueryBySelenium",
+      "command": "pause",
+      "target": "500",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "17165c9a-a3da-417e-a359-1a9542ffc66f",
+      "comment": "",
+      "command": "click",
+      "target": "name=span-TestQueryBySelenium",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "08f67b1d-cab2-4bba-a50f-b5f54643542f",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
       "targets": [],
       "value": ""
     }, {

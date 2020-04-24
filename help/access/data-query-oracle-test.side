@@ -608,14 +608,14 @@
       "id": "84294d87-a97d-4feb-af64-89e16d37a5fa",
       "comment": "",
       "command": "pause",
-      "target": "500",
+      "target": "1000",
       "targets": [],
       "value": ""
     }, {
       "id": "4ed73d31-fadd-42f3-8fcf-07b1f4ff1de8",
       "comment": "",
       "command": "click",
-      "target": "name=div-TestQueryBySeleniumOracle",
+      "target": "name=span-TestQueryBySeleniumOracle",
       "targets": [
         ["css=span[name=\"span-Test_Query_By_Selenium_Oracle\"]", "css"],
         ["css=tr:nth-child(1) .markup", "css:finder"],

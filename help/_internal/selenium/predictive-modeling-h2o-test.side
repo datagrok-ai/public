@@ -443,6 +443,103 @@
       "targets": [],
       "value": ""
     }, {
+      "id": "00d5595c-f20c-47e5-9deb-028fe4027bf1",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//span[@name='span-view-name']",
+      "targets": [
+        ["css=.d4-ribbon-name", "css:finder"],
+        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[3]/div[2]/div/div/div/div/div/div/span", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "6cd28162-d7ed-4f21-b09a-4e9670fe9340",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "ae3daed3-2e46-485a-9d13-65c0a14870b2",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=(//div[@name='div-section--Actions'])[3]",
+      "targets": [
+        ["css=.d4-accordion-pane:nth-child(5) > .expanded:nth-child(1)", "css:finder"],
+        ["xpath=(//div[@name='div-section--Actions'])[3]", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[5]/div", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div[5]/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "3a9bd900-252d-40ea-bbd8-b5e9f02d506a",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "3671d07e-ee41-49a2-986f-00bebea4d4e7",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//label[contains(.,'Rename...')]",
+      "targets": [
+        ["css=.d4-entity-markup-row:nth-child(6) > .d4-link-action", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[5]/div[2]/div/span[6]/label", "xpath:idRelative"],
+        ["xpath=//span[6]/label", "xpath:position"],
+        ["xpath=//label[contains(.,'Rename...')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "31ed5d5a-2f49-4621-a36f-c8980a8ace3e",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "599cdf9b-2f94-498b-899f-c38eb51e81c5",
+      "comment": "",
+      "command": "type",
+      "target": "id=editor",
+      "targets": [
+        ["id=editor", "id"],
+        ["name=input-Rename-table---New-name-", "name"],
+        ["css=#editor", "css:finder"],
+        ["xpath=//input[@id='editor']", "xpath:attributes"],
+        ["xpath=//div[2]/div/input", "xpath:position"]
+      ],
+      "value": "train_table"
+    }, {
+      "id": "e7fac4bc-30c2-4df0-ad55-b11e7b4bca71",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "494129ce-9afa-4c0c-863c-81956e07fa30",
+      "comment": "",
+      "command": "click",
+      "target": "name=button-OK",
+      "targets": [
+        ["name=button-OK", "name"],
+        ["css=.enabled", "css:finder"],
+        ["xpath=//button[@name='button-OK']", "xpath:attributes"],
+        ["xpath=//div[3]/div/button", "xpath:position"],
+        ["xpath=//button[contains(.,'OK')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "d12def55-1a5f-4dbb-9519-606cd1e4f94d",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "5594cd92-53c9-4e90-8472-67f6e860758c",
       "comment": "",
       "command": "click",
@@ -575,7 +672,7 @@
         ["xpath=//div[@id='elementContent']/div/div/div[2]/div/div[4]/select", "xpath:idRelative"],
         ["xpath=//div[4]/select", "xpath:position"]
       ],
-      "value": "demog"
+      "value": "train_table"
     }, {
       "id": "00cf110f-60ec-4049-bdac-1b57202f63f9",
       "comment": "",
@@ -729,6 +826,20 @@
       "value": ""
     }, {
       "id": "a09b3068-aad8-4b50-81d9-b45558cec272",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "5a6947eb-b067-4011-aefe-2c0d60d5ef27",
+      "comment": "",
+      "command": "executeScript",
+      "target": "document.querySelector('button[name=button-TRAIN]').dispatchEvent(new Event('input'))",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "845fb4c4-ff3a-476b-99a6-b2a72dde9da5",
       "comment": "",
       "command": "pause",
       "target": "1000",

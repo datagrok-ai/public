@@ -199,12 +199,12 @@
       "id": "b0dd7b50-6a0f-4e51-a462-e26aeb073bb4",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Admin']",
+      "target": "xpath=//i[@name='icon-wrench']",
       "targets": [
-        ["css=.d4-menu-item-horz:nth-child(8)", "css:finder"],
-        ["xpath=//div[@name='div-Admin']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[8]", "xpath:idRelative"],
-        ["xpath=//div[6]/div/div/div/div[8]", "xpath:position"]
+        ["css=.fa-wrench", "css:finder"],
+        ["xpath=//i[@name='icon-wrench']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div[4]/i", "xpath:idRelative"],
+        ["xpath=//div[4]/i", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -218,12 +218,12 @@
       "id": "ce68cdb5-72e0-4d90-84b4-ab4cee237680",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Admin---View-Layouts']",
+      "target": "xpath=//span[contains(.,'Layouts')]",
       "targets": [
-        ["css=.d4-menu-item:nth-child(8) .d4-menu-item:nth-child(5)", "css:finder"],
-        ["xpath=//div[@name='div-Admin---View-Layouts']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[8]/div/div[5]", "xpath:idRelative"],
-        ["xpath=//div[8]/div/div[5]", "xpath:position"]
+        ["css=.d4-toggle-button:nth-child(7) > span", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[7]/span", "xpath:idRelative"],
+        ["xpath=//div[7]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'Layouts')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
@@ -371,14 +371,9 @@
     }, {
       "id": "26f89d37-9c9b-49a5-a0ca-bf761805ec23",
       "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@name='div-File']",
-      "targets": [
-        ["css=.d4-menu-item-container > .d4-menu-item-hover", "css:finder"],
-        ["xpath=//div[@name='div-File']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div", "xpath:idRelative"],
-        ["xpath=//div[13]/div/div/div/div", "xpath:position"]
-      ],
+      "command": "executeScript",
+      "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
+      "targets": [],
       "value": ""
     }, {
       "id": "4cd7453d-188b-4466-a0b8-0a3c6ec84285",
@@ -391,12 +386,11 @@
       "id": "49c7feea-3e47-471a-980f-6d30332a5ba0",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-File---Close-All']",
+      "target": "xpath=//div[@name='div-Close-All']",
       "targets": [
-        ["css=.d4-menu-item-horz:nth-child(1) > .d4-vert-menu > .d4-menu-item:nth-child(7)", "css:finder"],
-        ["xpath=//div[@name='div-File---Close-All']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div/div/div[7]", "xpath:idRelative"],
-        ["xpath=//div[14]/div/div/div/div/div/div[7]", "xpath:position"]
+        ["css=.d4-menu-popup > .d4-menu-item", "css:finder"],
+        ["xpath=//div[@name='div-Close-All']", "xpath:attributes"],
+        ["xpath=//body/div[8]/div[2]", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -559,16 +553,11 @@
       "targets": [],
       "value": ""
     }, {
-      "id": "e5cc602c-5d6d-4d88-815f-67874a89f49b",
+      "id": "afd1ce80-19c9-4149-910a-8e96a49b7a75",
       "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@name='div-File']",
-      "targets": [
-        ["css=.d4-menu-item-container > .d4-menu-item-hover", "css:finder"],
-        ["xpath=//div[@name='div-File']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div", "xpath:idRelative"],
-        ["xpath=//div[13]/div/div/div/div", "xpath:position"]
-      ],
+      "command": "executeScript",
+      "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
+      "targets": [],
       "value": ""
     }, {
       "id": "d630335a-ae57-453b-b6d9-5873a8dbd7bb",
@@ -578,15 +567,14 @@
       "targets": [],
       "value": ""
     }, {
-      "id": "a4117e14-5ae1-400e-99b2-a73dcb3bbf2a",
+      "id": "4e6f2950-9e38-40ab-b7bf-e813776304e3",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-File---Close-All']",
+      "target": "xpath=//div[@name='div-Close-All']",
       "targets": [
-        ["css=.d4-menu-item-horz:nth-child(1) > .d4-vert-menu > .d4-menu-item:nth-child(7)", "css:finder"],
-        ["xpath=//div[@name='div-File---Close-All']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div/div/div[7]", "xpath:idRelative"],
-        ["xpath=//div[14]/div/div/div/div/div/div[7]", "xpath:position"]
+        ["css=.d4-menu-popup > .d4-menu-item", "css:finder"],
+        ["xpath=//div[@name='div-Close-All']", "xpath:attributes"],
+        ["xpath=//body/div[8]/div[2]", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -600,12 +588,12 @@
       "id": "d4c2c0f2-947e-49f7-85d0-2c7188a0b0ed",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Admin']",
+      "target": "xpath=//i[@name='icon-wrench']",
       "targets": [
-        ["css=.d4-menu-item-horz:nth-child(8)", "css:finder"],
-        ["xpath=//div[@name='div-Admin']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[8]", "xpath:idRelative"],
-        ["xpath=//div[6]/div/div/div/div[8]", "xpath:position"]
+        ["css=.fa-wrench", "css:finder"],
+        ["xpath=//i[@name='icon-wrench']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div[4]/i", "xpath:idRelative"],
+        ["xpath=//div[4]/i", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -619,12 +607,12 @@
       "id": "a4d40cef-6455-4923-885c-1e1b14999d6f",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Admin---View-Layouts']",
+      "target": "xpath=//span[contains(.,'Layouts')]",
       "targets": [
-        ["css=.d4-menu-item:nth-child(8) .d4-menu-item:nth-child(5)", "css:finder"],
-        ["xpath=//div[@name='div-Admin---View-Layouts']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[8]/div/div[5]", "xpath:idRelative"],
-        ["xpath=//div[8]/div/div[5]", "xpath:position"]
+        ["css=.d4-toggle-button:nth-child(7) > span", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[7]/span", "xpath:idRelative"],
+        ["xpath=//div[7]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'Layouts')]", "xpath:innerText"]
       ],
       "value": ""
     }, {

@@ -67,14 +67,39 @@
       "id": "a5076b43-1ebb-4876-a04a-c64de81a508a",
       "comment": "",
       "command": "click",
-      "target": "xpath=//label[@name='label-Connect-to-data...']",
+      "target": "xpath=//i[@name='icon-folder-open']",
       "targets": [
-        ["xpath=//label[@name='label-Connect-to-data...']", "css"],
-        ["css=.selected", "css:finder"],
-        ["xpath=//label[@name='label-Connect-to-data...']", "xpath:attributes"],
-        ["xpath=//div[@id='start']/label[7]", "xpath:idRelative"],
-        ["xpath=//label[7]", "xpath:position"]
+        ["css=.fa-folder-open", "css:finder"],
+        ["xpath=//i[@name='icon-folder-open']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div[2]/i", "xpath:idRelative"],
+        ["xpath=//div[2]/i", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "6306f102-528e-4276-ac0d-a70d4e379ec1",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "dda00739-760a-4eaa-9297-a02928fa235e",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//span[contains(.,'Databases')]",
+      "targets": [
+        ["css=.d4-toggle-button:nth-child(2) > span", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[2]/span", "xpath:idRelative"],
+        ["xpath=//div[2]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'Databases')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "2e8f2f2a-cd03-404f-996c-7bcd70b22da5",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "143f1446-1bc1-4b97-8cc3-3bee36311261",
@@ -619,18 +644,6 @@
         ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div[2]/div/div/div/span", "xpath:idRelative"],
         ["xpath=//div[3]/div[2]/div/div/div/span", "xpath:position"],
         ["xpath=//span[contains(.,'Test_Query_By_Selenium_MySql')]", "xpath:innerText"]
-      ],
-      "value": ""
-    }, {
-      "id": "4ed73d31-fadd-42f3-8fcf-07b1f4ff1de8",
-      "comment": "",
-      "command": "click",
-      "target": "name=div-TestQueryBySeleniumMySql",
-      "targets": [
-        ["css=.d4-flex-col tr:nth-child(1) > td:nth-child(2)", "css:finder"],
-        ["xpath=//div[@id='elementContent']/div/div[4]/div/div/div/table/tbody/tr/td[2]", "xpath:idRelative"],
-        ["xpath=//td[2]", "xpath:position"],
-        ["xpath=//td[contains(.,'northwind')]", "xpath:innerText"]
       ],
       "value": ""
     }, {

@@ -67,24 +67,24 @@
       "id": "6e728336-59c2-4bf4-8c23-75adced015cd",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Tools']",
+      "target": "css=.fa-function",
       "targets": [
-        ["css=.d4-menu-item-horz:nth-child(7)", "css:finder"],
-        ["xpath=//div[@name='div-Tools']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[7]", "xpath:idRelative"],
-        ["xpath=//div[3]/div/div/div/div[7]", "xpath:position"]
+        ["css=.fa-function", "css:finder"],
+        ["xpath=//i[@name='icon-function']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div[3]/i", "xpath:idRelative"],
+        ["xpath=//div[3]/i", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "4e01cbaa-68e7-4b6a-8c52-edb59f18b3ba",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Tools---Scripting']",
+      "target": "css=.d4-toggle-button:nth-child(3) > span",
       "targets": [
-        ["css=.d4-vert-menu > .d4-menu-item-hover", "css:finder"],
-        ["xpath=//div[@name='div-Tools---Scripting']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[7]/div/div[7]", "xpath:idRelative"],
-        ["xpath=//div[7]/div/div[7]", "xpath:position"]
+        ["css=.d4-toggle-button:nth-child(3) > span", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[3]/span", "xpath:idRelative"],
+        ["xpath=//div[3]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'Scripts')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
