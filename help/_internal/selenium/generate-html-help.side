@@ -63,15 +63,33 @@
       "targets": [],
       "value": ""
     }, {
+      "id": "32e343a3-b3e8-4052-a870-83f207de3447",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//i[@name='icon-window']",
+      "targets": [
+        ["css=.fa-window", "css:finder"],
+        ["xpath=//i[@name='icon-window']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div[7]/i", "xpath:idRelative"],
+        ["xpath=//div[7]/i", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "fa9926ab-3131-4bf0-9d26-80d702a0bb1f",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "44e9e9d5-0a7d-41cc-bea5-0bf676747cfc",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='Menu']",
+      "target": "name=div-window-switch",
       "targets": [
-        ["css=.d4-tab-header:nth-child(7)", "css:finder"],
-        ["xpath=//div[@name='Menu']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div[7]", "xpath:idRelative"],
-        ["xpath=//div[7]", "xpath:position"]
+        ["css=.d4-toggle-button:nth-child(1) .d4-input-switch", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[2]/div/div/div", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div[2]/div/div/div", "xpath:position"]
       ],
       "value": ""
     }, {
