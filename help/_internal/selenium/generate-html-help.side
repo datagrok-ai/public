@@ -85,7 +85,7 @@
       "id": "44e9e9d5-0a7d-41cc-bea5-0bf676747cfc",
       "comment": "",
       "command": "click",
-      "target": "name=div-window-switch",
+      "target": "name=div-window-switch-Menu",
       "targets": [
         ["css=.d4-toggle-button:nth-child(1) .d4-input-switch", "css:finder"],
         ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[2]/div/div/div", "xpath:idRelative"],
