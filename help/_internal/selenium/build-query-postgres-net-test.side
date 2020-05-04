@@ -262,10 +262,10 @@
       "id": "adc1ff83-10b6-42b5-a138-1bd8c70bf5e9",
       "comment": "",
       "command": "verifyText",
-      "target": "xpath=//span[@name='span-view-name']",
+      "target": "xpath=//div[@name='div-view-name']",
       "targets": [
         ["css=.d4-ribbon-name:nth-child(2)", "css:finder"],
-        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@name='div-view-name']", "xpath:attributes"],
         ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span[2]", "xpath:idRelative"],
         ["xpath=//span[2]", "xpath:position"]
       ],

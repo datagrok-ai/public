@@ -10,7 +10,7 @@
       "id": "05090056-dc83-4471-b3c6-436cd8fd33de",
       "comment": "",
       "command": "open",
-      "target": "/datasets?selenium=true&q=",
+      "target": "/projects?selenium=true&q=selenium",
       "targets": [],
       "value": ""
     }, {
@@ -120,6 +120,13 @@
       ],
       "value": ""
     }, {
+      "id": "a1aafac5-532f-43e1-b784-fd968f939e9e",
+      "comment": "",
+      "command": "pause",
+      "target": "2000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "eb0995cf-d68e-4d5f-a34f-c4d21aaef7b8",
       "comment": "",
       "command": "verifyElementPresent",
@@ -196,10 +203,10 @@
       "id": "05abbb9c-1cbb-481a-bcda-2b3691a1a4eb",
       "comment": "",
       "command": "click",
-      "target": "xpath=//span[@name='span-view-name']",
+      "target": "xpath=//div[@name='div-view-name']",
       "targets": [
         ["css=.d4-ribbon-name", "css:finder"],
-        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@name='div-view-name']", "xpath:attributes"],
         ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
         ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
       ],
@@ -258,12 +265,12 @@
       "id": "ae4e8bc1-9193-4835-92d5-e79605146089",
       "comment": "",
       "command": "click",
-      "target": "css=.d4-menu-item:nth-child(3) .d4-menu-item:nth-child(5) .d4-menu-item:nth-child(8)",
+      "target": "xpath=(//div[@name='div-Data---Split-Column...'])[2]",
       "targets": [
-        ["css=.d4-menu-item:nth-child(3) .d4-menu-item:nth-child(5) .d4-menu-item:nth-child(8)", "css:finder"],
+        ["css=.d4-menu-item:nth-child(4) .d4-menu-item:nth-child(5) .d4-menu-item:nth-child(8)", "css:finder"],
         ["xpath=(//div[@name='div-Data---Split-Column...'])[2]", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div[3]/div/div/div/div[2]/div/div/div[5]/div/div/div[8]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div[5]/div/div/div[8]", "xpath:position"]
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[4]/div/div/div[5]/div/div/div[8]", "xpath:idRelative"],
+        ["xpath=//div[4]/div/div/div[5]/div/div/div[8]", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -328,10 +335,10 @@
       "id": "14d51d8f-bbba-4575-ace0-be29e08732a1",
       "comment": "",
       "command": "click",
-      "target": "xpath=//span[@name='span-view-name']",
+      "target": "xpath=//div[@name='div-view-name']",
       "targets": [
         ["css=.d4-ribbon-name", "css:finder"],
-        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@name='div-view-name']", "xpath:attributes"],
         ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div[3]/div/div/div/span", "xpath:idRelative"],
         ["xpath=//div[3]/div/div/div/span", "xpath:position"]
       ],

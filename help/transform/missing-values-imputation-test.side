@@ -10,7 +10,7 @@
       "id": "dcbb2946-79c5-4e3d-9518-9b5762f9ca2a",
       "comment": "",
       "command": "open",
-      "target": "/datasets?selenium=true&q=",
+      "target": "/projects?selenium=true&q=selenium",
       "targets": [],
       "value": ""
     }, {
@@ -184,36 +184,24 @@
       "id": "17c25901-e6e0-4bd1-bdf8-4be2c277e346",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//div[@name='div-Data'])[2]",
+      "target": "xpath=//div[@name='div-ML']",
       "targets": [
-        ["css=.d4-menu-item-hover:nth-child(5)", "css:finder"],
-        ["xpath=(//div[@name='div-Data'])[2]", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]", "xpath:position"]
+        ["css=.d4-menu-item-hover:nth-child(6)", "css:finder"],
+        ["xpath=//div[@name='div-ML']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[4]/div/div/div[6]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/div[4]/div/div/div[6]", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "f1985d79-48e2-4c14-b4ee-db4582ab2dcd",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Data---Data-Science']",
+      "target": "xpath=//div[@name='div-ML---Missing-Values-Imputation...']",
       "targets": [
-        ["css=.d4-menu-item-hover:nth-child(11)", "css:finder"],
-        ["xpath=//div[@name='div-Data---Data-Science']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]/div/div/div[11]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div[5]/div/div/div[11]", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "0043fca5-c937-4095-9760-6c21563b81a5",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@name='div-Data---Data-Science---Missing-Values-Imputation...']",
-      "targets": [
-        ["css=.d4-menu-item-vert:nth-child(11) .d4-menu-item:nth-child(3)", "css:finder"],
-        ["xpath=//div[@name='div-Data---Data-Science---Missing-Values-Imputation...']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]/div/div/div[11]/div/div/div[3]", "xpath:idRelative"],
-        ["xpath=//div[5]/div/div/div[11]/div/div/div[3]", "xpath:position"]
+        ["css=.d4-menu-item:nth-child(4) > .d4-menu-item-container-fixed > .d4-menu-item-container > .d4-menu-item:nth-child(6) > .d4-menu-item-container-fixed > .d4-menu-item-container > .d4-menu-item:nth-child(3)", "css:finder"],
+        ["xpath=//div[@name='div-ML---Missing-Values-Imputation...']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[4]/div/div/div[6]/div/div/div[3]", "xpath:idRelative"],
+        ["xpath=//div[4]/div/div/div[6]/div/div/div[3]", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -483,36 +471,24 @@
       "id": "5b206012-b7a7-42c0-a1ac-5b58b88a65bf",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//div[@name='div-Data'])[2]",
+      "target": "xpath=//div[@name='div-ML']",
       "targets": [
-        ["css=.d4-menu-item-hover:nth-child(5)", "css:finder"],
-        ["xpath=(//div[@name='div-Data'])[2]", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]", "xpath:position"]
+        ["css=.d4-menu-item-hover:nth-child(6)", "css:finder"],
+        ["xpath=//div[@name='div-ML']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[4]/div/div/div[6]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/div[4]/div/div/div[6]", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "d8768e43-cb33-4d27-a545-738e0a0c1ddb",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Data---Data-Science']",
+      "target": "xpath=//div[@name='div-ML---Missing-Values-Imputation...']",
       "targets": [
-        ["css=.d4-menu-item-hover:nth-child(11)", "css:finder"],
-        ["xpath=//div[@name='div-Data---Data-Science']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]/div/div/div[11]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div[5]/div/div/div[11]", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "02d4925f-5929-4ffd-9508-509b40cec386",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@name='div-Data---Data-Science---Missing-Values-Imputation...']",
-      "targets": [
-        ["css=.d4-menu-item-vert:nth-child(11) .d4-menu-item:nth-child(3)", "css:finder"],
-        ["xpath=//div[@name='div-Data---Data-Science---Missing-Values-Imputation...']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]/div/div/div[11]/div/div/div[3]", "xpath:idRelative"],
-        ["xpath=//div[5]/div/div/div[11]/div/div/div[3]", "xpath:position"]
+        ["css=.d4-menu-item:nth-child(4) > .d4-menu-item-container-fixed > .d4-menu-item-container > .d4-menu-item:nth-child(6) > .d4-menu-item-container-fixed > .d4-menu-item-container > .d4-menu-item:nth-child(3)", "css:finder"],
+        ["xpath=//div[@name='div-ML---Missing-Values-Imputation...']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[4]/div/div/div[6]/div/div/div[3]", "xpath:idRelative"],
+        ["xpath=//div[4]/div/div/div[6]/div/div/div[3]", "xpath:position"]
       ],
       "value": ""
     }, {

@@ -10,7 +10,7 @@
       "id": "0d24324a-34e0-4ecc-8e72-412d09214a95",
       "comment": "",
       "command": "open",
-      "target": "/datasets?selenium=true&q=",
+      "target": "/projects?selenium=true&q=selenium",
       "targets": [],
       "value": ""
     }, {
@@ -195,7 +195,7 @@
       "id": "6629c63a-df1a-4090-82d9-398938185272",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//div[@name='div-Data'])[2]",
+      "target": "xpath=(//div[@name='div-ML'])",
       "targets": [
         ["css=.d4-menu-item-hover:nth-child(5)", "css:finder"],
         ["xpath=(//div[@name='div-Data'])[2]", "xpath:attributes"],
@@ -207,24 +207,12 @@
       "id": "b5cad90f-0667-4c3c-99ce-7b610ad0954d",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Data---Data-Science']",
+      "target": "xpath=//div[@name='div-ML---Multivariate-Analysis-(PLS)...']",
       "targets": [
-        ["css=.d4-menu-item-hover:nth-child(11)", "css:finder"],
-        ["xpath=//div[@name='div-Data---Data-Science']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]/div/div/div[11]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div[5]/div/div/div[11]", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "f07db5a8-4a58-446a-8594-124e9548cd73",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@name='div-Data---Data-Science---Multivariate-Analysis-(PLS)...']",
-      "targets": [
-        ["css=.d4-menu-item-vert:nth-child(11) .d4-menu-item:nth-child(6)", "css:finder"],
-        ["xpath=//div[@name='div-Data---Data-Science---Multivariate-Analysis-(PLS)...']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]/div/div/div[11]/div/div/div[6]", "xpath:idRelative"],
-        ["xpath=//div[5]/div/div/div[11]/div/div/div[6]", "xpath:position"]
+        ["css=.d4-menu-item:nth-child(4) .d4-menu-item:nth-child(6) .d4-menu-item:nth-child(6)", "css:finder"],
+        ["xpath=//div[@name='div-ML---Multivariate-Analysis-(PLS)...']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[4]/div/div/div[6]/div/div/div[6]", "xpath:idRelative"],
+        ["xpath=//div[4]/div/div/div[6]/div/div/div[6]", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -334,7 +322,7 @@
       "id": "df8ac226-4675-498a-9c8f-7b35db248997",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//div[@name='div-Data'])[2]",
+      "target": "xpath=(//div[@name='div-ML'])",
       "targets": [
         ["css=.d4-menu-item-hover:nth-child(5)", "css:finder"],
         ["xpath=(//div[@name='div-Data'])[2]", "xpath:attributes"],
@@ -343,27 +331,15 @@
       ],
       "value": ""
     }, {
-      "id": "ae771dc0-6e61-4dd7-b730-0c56bb92ca83",
+      "id": "a78fd638-bb0e-46de-adf5-01dcc4f62664",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Data---Data-Science']",
+      "target": "xpath=//div[@name='div-ML---Multivariate-Analysis-(PLS)...']",
       "targets": [
-        ["css=.d4-menu-item-hover:nth-child(11)", "css:finder"],
-        ["xpath=//div[@name='div-Data---Data-Science']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]/div/div/div[11]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div[5]/div/div/div[11]", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "e3a21d0e-c186-4856-8f67-d93f167944ff",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@name='div-Data---Data-Science---Multivariate-Analysis-(PLS)...']",
-      "targets": [
-        ["css=.d4-menu-item-vert:nth-child(11) .d4-menu-item:nth-child(6)", "css:finder"],
-        ["xpath=//div[@name='div-Data---Data-Science---Multivariate-Analysis-(PLS)...']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]/div/div/div[11]/div/div/div[6]", "xpath:idRelative"],
-        ["xpath=//div[5]/div/div/div[11]/div/div/div[6]", "xpath:position"]
+        ["css=.d4-menu-item:nth-child(4) .d4-menu-item:nth-child(6) .d4-menu-item:nth-child(6)", "css:finder"],
+        ["xpath=//div[@name='div-ML---Multivariate-Analysis-(PLS)...']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[4]/div/div/div[6]/div/div/div[6]", "xpath:idRelative"],
+        ["xpath=//div[4]/div/div/div[6]/div/div/div[6]", "xpath:position"]
       ],
       "value": ""
     }, {
