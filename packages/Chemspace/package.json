@@ -1,0 +1,9 @@
+{
+  "name": "Chemspace",
+  "version": "0.2",
+  "fullName": "Chemspace",
+  "description": "Chemspace API demo",
+  "sources": [
+    "css/chemspace.css"
+  ]
+}
