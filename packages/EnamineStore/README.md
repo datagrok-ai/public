@@ -23,4 +23,3 @@ selected molecule. To make a molecule current, either click on it in a table, or
 Click on a molecule in the 'Enanime Store' panel to open the corresponding page on enaminestore.com.
 
 ![Info-panel](images/info_panel.png)
-
