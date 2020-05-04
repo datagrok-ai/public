@@ -28,3 +28,5 @@ plot(time, signal, type="l", col="blue", ylab="Amplitude", xlab="Time, s",
      ylim=c(min(signal, filtered), max(signal, filtered)))
 lines(time, filtered, type="l", col="red")
 grid(10, 10)
+
+filtered = data.frame(filtered)
