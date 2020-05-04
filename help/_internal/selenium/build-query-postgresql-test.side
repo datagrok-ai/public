@@ -262,10 +262,10 @@
       "id": "adc1ff83-10b6-42b5-a138-1bd8c70bf5e9",
       "comment": "",
       "command": "verifyText",
-      "target": "xpath=//span[@name='span-view-name']",
+      "target": "xpath=//div[@name='div-view-name']",
       "targets": [
         ["css=.d4-ribbon-name:nth-child(2)", "css:finder"],
-        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@name='div-view-name']", "xpath:attributes"],
         ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span[2]", "xpath:idRelative"],
         ["xpath=//span[2]", "xpath:position"]
       ],
@@ -348,10 +348,10 @@
       "id": "1f3f5769-fb04-4aa5-8475-a558a5b087ad",
       "comment": "",
       "command": "verifyText",
-      "target": "xpath=//span[@name='span-view-name']",
+      "target": "xpath=//div[@name='div-view-name']",
       "targets": [
         ["css=.d4-ribbon-name", "css:finder"],
-        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@name='div-view-name']", "xpath:attributes"],
         ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
         ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
       ],

@@ -253,7 +253,7 @@
       "id": "f47b7bb7-9f69-4ced-a469-3a63e5ae00f4",
       "comment": "",
       "command": "verifyText",
-      "target": "xpath=//span[@name='span-view-name']",
+      "target": "xpath=//div[@name='div-view-name']",
       "targets": [],
       "value": "5 day/3 hour Forecast By City Name"
     }, {
