@@ -18,6 +18,6 @@ train <- sample(1:nrow(table), floor(nrow(table) * perc))
 formula <- as.formula(paste(predict, " ~ ."))
 model <- lda(formula, table, subset=train)
 prediction <- predict(model, newdata=table)
-predicted <- prediction$class
+predicted <- data.frame(prediction$class)
 
 plot(model)
