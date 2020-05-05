@@ -8,7 +8,7 @@ Pretty much anything that can be executed within the platform is a function. Her
 of the different types of functions:
 
 * [Querying](../../access/data-query.md) external Postgres database
-* Executing a [JavaScript function](../dev/dev.md) in the browser that uses Grok API for integration purposes 
+* Executing a [JavaScript function](../develop/develop.md) in the browser that uses Grok API for integration purposes 
 * Calculating Sin(PI)
 * Deleting a column from the table
 * Sending an email

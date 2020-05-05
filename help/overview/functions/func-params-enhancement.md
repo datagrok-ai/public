@@ -57,7 +57,7 @@ Here is the modified script:
 #input: double saltiness {validators: ["jsSaltinessRange"]}
 ```
 
-Next step is registering functions. To do that, we are going to use [JS integration](../../dev/js-integration.md).  
+Next step is registering functions. To do that, we are going to use [JS integration](../../develop/js-integration.md).  
 
 Let's open JS editor: 
   * Tools | Scripting | JavaScript

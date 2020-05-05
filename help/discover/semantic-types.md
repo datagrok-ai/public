@@ -47,7 +47,7 @@ Out-of-the-box, the following semantic types are automatically detected based on
 
 Datagrok has been designed to be as extensible as possible, so naturally it is possible
 to define your own custom semantic types, along with the type auto-detection functions,
-renderers, comparers, and so on. To do that, check out [JavaScript API](../dev/dev.md). 
+renderers, comparers, and so on. To do that, check out [JavaScript API](../develop/develop.md). 
 
 See also:
 * [Metadata](metadata.md)

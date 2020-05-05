@@ -1,6 +1,6 @@
 # Datagrok package repository
 
-This is a public repository for [packages](https://datagrok.ai/help/dev/dev#packages) 
+This is a public repository for [packages](https://datagrok.ai/help/develop/develop#packages) 
 available for the [Datagrok™](https://datagrok.ai) platform, 
 curated by the Datagrok team. It contains different scientific methods integrated with the platform, 
 as well as custom viewers, application, and functions.
@@ -36,4 +36,4 @@ Here are some of the best practices for developing and publishing Datagrok plugi
 
 See also:
 * [Datagrok overview](https://datagrok.ai/)
-* [JavaScript development](https://datagrok.ai/help/dev/dev)
+* [JavaScript development](https://datagrok.ai/help/develop/develop)

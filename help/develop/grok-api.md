@@ -5,7 +5,7 @@
 
 [Grok JS API](api/grok_api.js.html) allows to control all aspects of the Datagrok platform. The API
 can be used from either ad-hoc scripts (`Tools | Scripting | JavaScript`), 
-or from [packages](dev.md#packages). 
+or from [packages](develop.md#packages). 
 
 This document covers the following areas:
 * [Data manipulation](#data-manipulation)
@@ -136,4 +136,4 @@ fastaFileHandler(content) {
 ```
 
 See also:
-* [JavaScript development](dev.md) 
+* [JavaScript development](develop.md) 

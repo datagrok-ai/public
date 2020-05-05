@@ -31,7 +31,7 @@ right-click on the name, and select "Details". User profile contains several pan
 
 **Summary** pane contains important messages retrieved from the [audit](../govern/audit.md).
 Additionally, there are links for  changing your password, 
-obtaining [developer key](../dev/dev.md#publishing), API key, and logging out of the platform.  
+obtaining [developer key](../develop/develop.md#publishing), API key, and logging out of the platform.  
 
 **Chats** pane contains chats that you have participated in.
 
