@@ -10,7 +10,7 @@
       "id": "cbad45da-58f3-405c-9886-391010a724f1",
       "comment": "",
       "command": "open",
-      "target": "/datasets?selenium=true&q=",
+      "target": "/projects?selenium=true&q=selenium",
       "targets": [],
       "value": ""
     }, {
@@ -89,23 +89,22 @@
       "targets": [],
       "value": ""
     }, {
-      "id": "a2532473-05b8-49ad-936e-cb2ef74b3ae9",
+      "id": "3867a135-1ace-48f9-8ff7-b3c5433617ce",
       "comment": "",
       "command": "click",
-      "target": "css=i[name=\"icon-show-workspace\"]",
+      "target": "xpath=//div[@name='Projects']",
       "targets": [
-        ["css=i[name=\"icon-show-workspace\"]", "css"],
-        ["css=.svg-show-workspace", "css:finder"],
-        ["xpath=//i[@name='icon-show-workspace']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[3]/div[4]/i", "xpath:idRelative"],
-        ["xpath=//div[4]/i", "xpath:position"]
+        ["css=.d4-tab-header:nth-child(7)", "css:finder"],
+        ["xpath=//div[@name='Projects']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div[7]", "xpath:idRelative"],
+        ["xpath=//div/div[7]", "xpath:position"]
       ],
       "value": ""
     }, {
-      "id": "fc8daa6d-0409-4540-b5f6-36a6e35fdd58",
+      "id": "f2240616-35d5-4749-bb54-2a10465e6757",
       "comment": "",
       "command": "pause",
-      "target": "1500",
+      "target": "1000",
       "targets": [],
       "value": ""
     }, {
@@ -122,89 +121,45 @@
       ],
       "value": ""
     }, {
-      "id": "9e62c289-af02-4bc5-bdd9-a3da642bfd0b",
-      "comment": "",
-      "command": "verifyElementPresent",
-      "target": "id=workspace",
-      "targets": [
-        ["id=workspace", "id"],
-        ["css=#workspace", "css"],
-        ["css=#workspace", "css:finder"],
-        ["xpath=//h1[@id='workspace']", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/span/h1", "xpath:idRelative"],
-        ["xpath=//h1", "xpath:position"]
-      ],
-      "value": ""
-    }, {
       "id": "8cd66b30-33c4-47ea-a5bf-8447bb0cc9f8",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='tree-Selenium-test-data-p1']",
+      "target": "name=span-Demog",
       "targets": [
-        ["css=.d4-tree-view-root > .d4-tree-view-group-host > .d4-tree-view-group:nth-child(2) > .d4-tree-view-node", "css:finder"],
-        ["xpath=//div[@name='tree-Selenium-test-data-p1']", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div/div[2]/div[2]/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/div[2]/div[2]/div", "xpath:position"]
+        ["css=.d4-workspace-item:nth-child(3)", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[2]/div", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div[2]/div", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "aa4a27f1-534d-444a-9992-4732ed70880c",
       "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@name='tree-expander-Selenium-test-data-p1']",
-      "targets": [
-        ["css=.d4-tree-view-root > .d4-tree-view-group-host > .d4-tree-view-group:nth-child(2) > .d4-tree-view-node > .d4-tree-view-tri", "css:finder"],
-        ["xpath=//div[@name='tree-expander-Selenium-test-data-p1']", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div/div[2]/div[2]/div/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/div[2]/div[2]/div/div", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "23ce774f-8c0c-4594-b764-e230021f6981",
-      "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='tree-Selenium-test-data-p1---Tables-(1)---demog']",
-      "targets": [
-        ["css=.d4-tree-view-group:nth-child(2) .d4-tree-view-group .d4-tree-view-group > .d4-tree-view-node", "css:finder"],
-        ["xpath=//div[@name='tree-Selenium-test-data-p1---Tables-(1)---demog']", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div/div[2]/div[2]/div[2]/div/div[2]/div/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div[2]/div/div", "xpath:position"]
-      ],
+      "target": "name=span-demog",
+      "targets": [],
       "value": ""
     }, {
-      "id": "d823d023-c890-4053-b9aa-783c17bf6759",
-      "comment": "",
-      "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='tree-Selenium-test-data-p1---Views-(1)---Demog']",
-      "targets": [
-        ["css=.d4-tree-view-item", "css:finder"],
-        ["xpath=//div[@name='tree-Selenium-test-data-p1---Views-(1)---Demog']", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div/div[2]/div[2]/div[2]/div[2]/div[2]/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div[2]/div[2]/div[2]/div", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "74237740-7ef0-4c34-9318-3f92f31a6dca",
+      "id": "d04b5529-a9e6-46f4-97bb-0d65c2267041",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"div-View\"] > div.d4-menu-item-label",
+      "target": "xpath=//i[@name='icon-window']",
       "targets": [
-        ["css=div[name=\"div-Tools\"] > div.d4-menu-item-label", "css"],
-        ["css=.d4-menu-item-hover > .d4-menu-item-label", "css:finder"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[7]/div[3]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div[7]/div[3]", "xpath:position"]
+        ["css=.fa-window", "css:finder"],
+        ["xpath=//i[@name='icon-window']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div[8]/i", "xpath:idRelative"],
+        ["xpath=//div[8]/i", "xpath:position"]
       ],
       "value": ""
     }, {
-      "id": "2e433e7b-ed33-43b0-ae4b-4eb8ff90677f",
+      "id": "607adb31-b169-435f-8d9a-0eee4ea2e299",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-View---Console']",
+      "target": "xpath=//div[@name='div-window-switch-Console']",
       "targets": [
-        ["css=.d4-menu-item:nth-child(7) .d4-menu-item:nth-child(9)", "css:finder"],
-        ["xpath=//div[@name='div-Tools---Console']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[7]/div/div[9]", "xpath:idRelative"],
-        ["xpath=//div[7]/div/div[9]", "xpath:position"]
+        ["css=.d4-toggle-button:nth-child(7) > .d4-input-bool-switch", "css:finder"],
+        ["xpath=//div[@name='div-window-switch-Console']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[2]/div[7]/div", "xpath:idRelative"],
+        ["xpath=//div[2]/div[7]/div", "xpath:position"]
       ],
       "value": ""
     }, {
