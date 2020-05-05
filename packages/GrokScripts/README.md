@@ -6,7 +6,7 @@ Use it to transform data, automate workflows, run queries, evaluate numerical ex
 
 # Info-panel
 
-Separately, here are [samples](/scripts/info_panels) of using [Grok script](https://datagrok.ai/help/overview/grok-script) to create [Info Panels](https://datagrok.ai/help/discover/info-panels).
+Separately, here are [samples](https://github.com/datagrok-ai/public/tree/master/packages/GrokScripts/scripts/info_panels) of using [Grok script](https://datagrok.ai/help/overview/grok-script) to create [Info Panels](https://datagrok.ai/help/discover/info-panels).
 
 [Info Panels](https://datagrok.ai/help/discover/info-panels) provide additional information about the current context (which can be a table, a column, or pretty much any other [object](https://datagrok.ai/help/overview/objects) in [Datagrok](https://datagrok.ai/) platform). 
 Info panels are meant to be easily developed by the users of the platform, and shared with other users. You can use all features of the Grok platform, such as scripting, data querying and transformation pipeline, user-defined functions, markup, viewers, predictive models.
