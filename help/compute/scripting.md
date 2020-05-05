@@ -322,7 +322,7 @@ You can use these fields to filter scripts with [smart search](../overview/smart
 
 See also:
 
-  * [Grok Scripting](../features/grok-script.md)
+  * [Grok Scripting](../overview/grok-script.md)
   * [R](https://www.r-project.org/about.html)
   * [Python](https://www.python.org)
   * [Julia](https://julialang.org)
