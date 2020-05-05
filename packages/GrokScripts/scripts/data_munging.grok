@@ -1,7 +1,7 @@
 #name: GrokDataTest
 #language: grok
 #tags: demo
-#output: double result [Sin(x)]
+#output: double result
 
 result = TestData("cars")
 DeleteColumns(result, ["model", "cylinders"])
