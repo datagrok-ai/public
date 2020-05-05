@@ -30,5 +30,6 @@ plot.showRegressionLine = true
 
 This example is an [Info Panel](https://datagrok.ai/help/discover/info-panels) written in a [Grok script](https://datagrok.ai/help/overview/grok-script).
 Definition of [Info Panel](https://datagrok.ai/help/discover/info-panels) is determined by the special tag ```#panel``` in script header.
+
 User will see this [panel](https://datagrok.ai/help/discover/info-panels), which shows a [scatter plot](https://datagrok.ai/help/visualize/viewers/scatter-plot), after opening a table with the name *"demog"*, in which there will be columns *height*, *weight*, *age* and *sex*.
 [Panel](https://datagrok.ai/help/discover/info-panels) display conditions are defined in the [script](https://datagrok.ai/help/overview/grok-script) header.
