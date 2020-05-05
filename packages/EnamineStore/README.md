@@ -24,3 +24,10 @@ Click on a molecule in the 'Enanime Store' panel to open the corresponding page 
 
 ![Info-panel](images/info_panel.png)
 
+
+See also: 
+  * [Grok API](https://datagrok.ai/help/develop/grok-api)
+  * [Packages](https://datagrok.ai/help/develop/develop#packages)
+  * [Web Connectors](https://datagrok.ai/help/access/connectors/web)
+  * [OpenAPI/Swagger](https://swagger.io/)
+  * [Info Panels](https://datagrok.ai/help/discover/info-panels)
