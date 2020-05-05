@@ -8,7 +8,7 @@ Here are the files of particular interest:
 * [swaggers/covid-19.yaml](https://github.com/datagrok-ai/public/blob/master/packages/Covid/swaggers/covid-19.yaml)
   : swagger file for [Covid-19 Time Series](https://data.humdata.org/) data source
   
-* [swaggers/covid_api.yaml](hhttps://github.com/datagrok-ai/public/blob/master/packages/Covid/swaggers/covid_api.yaml)
+* [swaggers/covid_api.yaml](https://github.com/datagrok-ai/public/blob/master/packages/Covid/swaggers/covid_api.yaml)
   : swagger file for [Covid-19 current cases](https://corona.lmao.ninja/) data source
 
 
