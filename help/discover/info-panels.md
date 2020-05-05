@@ -5,7 +5,7 @@
 
 Info panels provide additional information about the 
 current context (which can be a table, a column, or pretty much
-any other [object](../entities/entities.md)). Info panels are meant to be 
+any other [object](../overview/objects.md)). Info panels are meant to be 
 easily developed by the users of the platform, and shared with other users. 
 You can use all features of the Grok platform, such as scripting, data 
 querying and transformation pipeline, user-defined functions,
