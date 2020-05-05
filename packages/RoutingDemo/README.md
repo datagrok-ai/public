@@ -8,7 +8,6 @@ Here is file of particular interest:
   
 
 See also: 
-  * [SDTM](https://en.wikipedia.org/wiki/SDTM)
   * [Grok API](https://datagrok.ai/help/develop/grok-api)
   * [Packages](https://datagrok.ai/help/develop/develop#packages)
   * [Application](https://datagrok.ai/help/develop/develop#applications)
