@@ -211,7 +211,7 @@ above-mentioned groups to be productive.
   of the working code using [Grok API](grok-api.md) that can be copy-and-pasted into the existing solution.
   The samples are also cross-linked with the [help](https://datagrok.ai/help) system. 
 * [Grok API](grok-api.md) provides complete control over the platform. 
-  [JSDoc documentation](https://datagrok.ai/help/dev/api/index.html) is available.
+  [JSDoc documentation](https://datagrok.ai/help/develop/api/index.html) is available.
 * [Platform help](https://datagrok.ai/help/) explains the functionality from the user's point of view. Where
   appropriate, it is hyper-linked to samples and demo projects. In the near future, we plan to turn it
   into the community wiki, where users would be contributing to the content. The same web pages
