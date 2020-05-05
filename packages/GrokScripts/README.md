@@ -42,4 +42,4 @@ Detailed information about [scripting](https://datagrok.ai/help/compute/scriptin
 * [Info Panels](https://datagrok.ai/help/discover/info-panels)
 * [Functions](https://datagrok.ai/help/overview/functions/function)
 
-Also join our [community](https://community.datagrok.ai/) where you can ask your questions.
+Also join our [community](https://community.datagrok.ai/) where you can ask your questions, suggest improvements, or create discussions with other users.
