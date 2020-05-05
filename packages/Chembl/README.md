@@ -2,6 +2,7 @@ Chembl is a [package](https://datagrok.ai/help/develop/develop#packages) for the
 It showcases the ability to access data from external data bases ([Chembl](https://www.ebi.ac.uk/chembl/) and 
 [UniChem](https://www.ebi.ac.uk/unichem/)) and detect custom 
 [semantic types](https://datagrok.ai/help/discover/semantic-types).
+
 Here are the directories of particular interest:
 
 * [connections](https://github.com/datagrok-ai/public/tree/master/packages/Chembl/connections)

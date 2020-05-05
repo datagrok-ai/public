@@ -1,6 +1,8 @@
 Pedometer is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.
 It showcases the ability to develop plugins that have a scientific computations and a rich UI
-that leverages platform's capabilities. Here are the files of particular interest:
+that leverages platform's capabilities. 
+
+Here are the files of particular interest:
 
 * [scripts/detect_steps.py](https://github.com/datagrok-ai/packages/blob/master/Pedometer/scripts/detect_steps.py)
   : a Python function that detects steps based on raw accelerometer data
