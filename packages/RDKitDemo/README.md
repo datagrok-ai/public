@@ -3,4 +3,6 @@ with the [RDKit](https://www.rdkit.org) library. It works completely on the clie
 by using the WebAssembly technology.
 
 See also: 
-* [Introducing new RDKit JavaScript wrappers](http://rdkit.blogspot.com/2019/11/introducing-new-rdkit-javascript.html)
+  * [Introducing new RDKit JavaScript wrappers](http://rdkit.blogspot.com/2019/11/introducing-new-rdkit-javascript.html)
+  * [Webassembly](https://webassembly.org/)
+  

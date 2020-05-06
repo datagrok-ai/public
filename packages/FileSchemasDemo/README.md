@@ -61,3 +61,4 @@ clicks on images in the "cars" folder,
 
 See also:
 * Community: [File Management](https://community.datagrok.ai/t/new-feature-file-share-browser/17/6)
+* [Files](https://datagrok.ai/help/access/connectors/files)
