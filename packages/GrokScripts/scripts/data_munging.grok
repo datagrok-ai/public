@@ -4,5 +4,5 @@
 #output: double result
 
 result = TestData("cars")
-DeleteColumns(result, ["model", "cylinders"])
+DeleteColumns(result, Named(["model", "cylinders"]))
 DeleteRows(result, CellEquals("make", "BMW"))
