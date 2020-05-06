@@ -1,5 +1,6 @@
 ChemScripts is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.
-It demonstrates the Scripting functionality for [Cheminformatics](https://datagrok.ai/help/domains/chem/cheminformatics). 
+It demonstrates the [scripting](https://datagrok.ai/help/compute/scripting) functionality for 
+[Cheminformatics](https://datagrok.ai/help/domains/chem/cheminformatics). 
 
 Here are the files of particular interest:
 
