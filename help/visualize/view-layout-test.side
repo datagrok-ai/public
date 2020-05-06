@@ -10,7 +10,7 @@
       "id": "8ff604b9-81db-4083-8663-4b119b7492f9",
       "comment": "",
       "command": "open",
-      "target": "/datasets?selenium=true&q=",
+      "target": "/projects?selenium=true&q=selenium",
       "targets": [],
       "value": ""
     }, {
@@ -395,6 +395,44 @@
       "value": ""
     }, {
       "id": "416450a8-8b24-4435-8fbb-f15dfeda9345",
+      "comment": "",
+      "command": "pause",
+      "target": "2000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "7193dd29-f962-480e-acf8-2921f3a75a5f",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//i[@name='icon-folder-open']",
+      "targets": [
+        ["css=.fa-folder-open", "css:finder"],
+        ["xpath=//i[@name='icon-folder-open']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div/i", "xpath:idRelative"],
+        ["xpath=//i", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "9b2a71e3-7fa2-42b7-aed6-011f6f5e16c0",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "e594cbd5-bc55-41f5-9cd4-24e84d094c63",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//span[contains(.,'Projects')]",
+      "targets": [
+        ["css=.d4-toggle-button:nth-child(5) > span", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[5]/span", "xpath:idRelative"],
+        ["xpath=//div[5]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'Projects')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "ed9aa9d1-a56f-4d10-b418-56d9b243b6f6",
       "comment": "",
       "command": "pause",
       "target": "2000",
