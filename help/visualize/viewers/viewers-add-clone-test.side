@@ -10,7 +10,7 @@
       "id": "d711e6cb-db8b-49cb-bc39-cd64e78329e3",
       "comment": "",
       "command": "open",
-      "target": "/datasets?selenium=true&q=demog",
+      "target": "/projects?selenium=true&q=seleniumdemog",
       "targets": [],
       "value": ""
     }, {
