@@ -1,7 +1,7 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
-# 2020.04.07 Stable Version
+# 2020.05.06 Stable Version
 
 * HTTP ports changed. Datagrok is now listening on 8080 port and CVM port is 8090
 
