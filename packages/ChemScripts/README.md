@@ -24,5 +24,6 @@ See also:
   * [Packages](https://datagrok.ai/help/develop/develop#packages)
   * [Scripting](https://datagrok.ai/help/compute/scripting)
   * [Cheminformatics](https://datagrok.ai/help/domains/chem/cheminformatics)
+  * [Cheminformatics JS API](https://datagrok.ai/help/develop/cheminformatics-development)
   * [RDKit](https://www.rdkit.org/)
   
