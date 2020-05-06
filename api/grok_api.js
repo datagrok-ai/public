@@ -1,10 +1,4 @@
 //import { fromEventPattern } from 'rxjs';
-
-/** Obsolete and will be removed soon; use "grok". */
-gr = new Grok();
-
-grok = new Grok();
-
 /** Grok entry point, use it to get access to top-level views, tables, methods, etc. */
 class Grok {
 
@@ -155,5 +149,12 @@ class Utils {
         return res;
     }
 }
+
+
+/** Obsolete and will be removed soon; use "grok". */
+gr = new Grok();
+
+grok = new Grok();
+
 
 
