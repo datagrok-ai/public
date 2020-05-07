@@ -28,7 +28,7 @@ name as the query parameter.
 
 See also:
 
-  * [Edit Query](edit-query.md)
+  * [Data Query](data-query.md)
   * [Queries using SODA](https://dev.socrata.com/docs/queries)
   * [Data Pipeline](data-pipeline.md)
   * [Data Source](data-source.md)

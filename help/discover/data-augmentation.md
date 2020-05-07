@@ -43,7 +43,7 @@ record (or do it on demand whenever the current record changes), and visualize t
 
 ## Info panels
 [Info panels](info-panels.md) provide additional information about the 
-current context (which can be a table, a column, or any other [object](../entities/entities.md)). 
+current context (which can be a table, a column, or any other [object](../overview/objects.md)). 
 Info panels are meant to be 
 easily developed by the users of the platform, and shared with other users. 
 You can use all features of the Grok platform, such as scripting, data 
@@ -56,7 +56,7 @@ predicted toxicity properties, predicted solubility, and a visualization of the 
 these results get calculated or rendered dynamically. These info panels can be implemented externally
 as scripts; for instance, here is the 
 [source code](https://github.com/datagrok-ai/public/blob/master/packages/ChemScripts/scripts/python/gasteiger_charges.py)
-of the "Gasteiger Partial Charges" panel.  See [public repository](../dev/public-repository.md) for details
+of the "Gasteiger Partial Charges" panel.  See [public repository](../develop/public-repository.md) for details
 on how to contribute to the public repository of scientific functions.
 
 ![](../uploads/gifs/chem-model-augment.gif)
@@ -65,4 +65,4 @@ See also:
 * [Info panels](info-panels.md)
 * [Self-learning platform]()
 * [Predictive modeling](../learn/predictive-modeling.md)
-* [Public repository](../dev/public-repository.md)
+* [Public repository](../develop/public-repository.md)

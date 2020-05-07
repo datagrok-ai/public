@@ -21,8 +21,8 @@ seamless and fast. Multiple interactive tools exist for the
 [data cleanup and preparation](../transform/data-wrangling.md). A rich set 
 of [high-performance](../develop/performance.md), interactive [viewers](../visualize/viewers.md) 
 let you filter and visualize data in any possible way; some of them directly support 
-EDA-related features such as [regression lines](../viewers/scatter-plot.md#regression-line), 
-or [hypothesis testing](../viewers/box-plot.md#t-test). A number of pre-defined statistical
+EDA-related features such as [regression lines](../visualize/viewers/scatter-plot.md#regression-line), 
+or [hypothesis testing](../visualize/viewers/box-plot.md#t-test). A number of pre-defined statistical
 [functions](../overview/functions/function.md) can be used for calculations. If that is not
 enough, new functions can be developed in [R, Python, or Julia](../compute/scripting.md). 
 

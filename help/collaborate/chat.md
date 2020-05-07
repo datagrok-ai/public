@@ -5,7 +5,7 @@
 
 Use [markdown](../features/markdown.md) for rich formatting.
 
-To reference an [object](../entities/entities.md) (such as a user, project, table) in
+To reference an [object](../overview/objects.md) (such as a user, project, table) in
 a message, drag-and-drop into the message area.
 
 Shortcuts:

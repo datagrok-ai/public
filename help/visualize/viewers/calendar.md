@@ -16,7 +16,7 @@ General:
 | Click on month       | Filter by month       |
 | Click on week        | Filter by week        |
 
-![Calendar](../../../uploads/viewers/calendar.png "Calendar") 
+![Calendar](../../uploads/viewers/calendar.png "Calendar") 
 
 See also: 
   

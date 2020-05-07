@@ -3,7 +3,7 @@
 
 # Markup Viewer
 
-Use this viewer to host any text, arbitrary HTML content, or [markdown-formatted text](../features/markdown.md). In most casees,
+Use this viewer to host any text, arbitrary HTML content, or [markdown-formatted text](../../overview/markdown.md). In most casees,
 the viewer will auto-detect content type. Use the "mode" property to explicitly specify it.
 
 Properties:
@@ -12,7 +12,7 @@ Properties:
 |---------------------|---------|
 | Content             |     |
 | Mode                | Text, Html, Markdown, or Auto |
-| Markup Enabled      | When true, the rendered HTML is processed by the [Markup](../features/markup.md) engine |
+| Markup Enabled      | When true, the rendered HTML is processed by the [Markup](../../overview/markup.md) engine |
 
 Context menu:
 
@@ -31,5 +31,5 @@ See also:
   
   * [Viewers](../viewers.md)
   * [Table View](../../overview/table-view.md)
-  * [Flex View](../views/flex-view.md)
+  * [Flex View](../../overview/flex-view.md)
   * [JS API: Markup](https://public.datagrok.ai/js/samples/ui/viewers/markup)

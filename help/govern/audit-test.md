@@ -5,11 +5,11 @@
 
 Audit system is intended to store all meaningful user activity for future analysis. 
 
-All of the changes made to the different [entities](../entities/entities.md) are tracked and can be analyzed using activity sections.
+All of the changes made to the different [entities](../overview/objects.md) are tracked and can be analyzed using activity sections.
 All events are joined to user session. Changes made to the entities are connected with corresponding entities.
 Audit records can be posted both from client and server.
 
-The implementation is based on the [grid](../viewers/grid.md), so many of the grid's features apply.
+The implementation is based on the [grid](../visualize/viewers/grid.md), so many of the grid's features apply.
 
 ## Data Connection
 
@@ -22,9 +22,9 @@ The implementation is based on the [grid](../viewers/grid.md), so many of the gr
 
 1. Enter "Test_Server" to "Server" field and save changed
  
-1. Open *"audit-test-connection"* on [Property Panel](../features/property-panel.md)    
+1. Open *"audit-test-connection"* on [Property Panel](../overview/property-panel.md)    
 
-1. Expand "Activity" tab on [Property Panel](../features/property-panel.md)
+1. Expand "Activity" tab on [Property Panel](../overview/property-panel.md)
    * There is history from previous steps
    * "created" and "edited" actions arranged in chronological order with indication of user
    
@@ -56,9 +56,9 @@ The implementation is based on the [grid](../viewers/grid.md), so many of the gr
 1. Run *"audit-test-query"* query
    * Query completed
    
-1. Open *"audit-test-query"* on [Property Panel](../features/property-panel.md)    
+1. Open *"audit-test-query"* on [Property Panel](../overview/property-panel.md)    
 
-1. Expand "Activity" tab on [Property Panel](../features/property-panel.md)
+1. Expand "Activity" tab on [Property Panel](../overview/property-panel.md)
    * There is history from previous steps
    * "created", "edited", "transformations edited", "started" actions arranged in chronological order with indication of user
    
@@ -85,9 +85,9 @@ The implementation is based on the [grid](../viewers/grid.md), so many of the gr
 
 1. Save job changes
 
-1. Open *"audit-test-job"* on [Property Panel](../features/property-panel.md)    
+1. Open *"audit-test-job"* on [Property Panel](../overview/property-panel.md)    
 
-1. Expand "Activity" tab on [Property Panel](../features/property-panel.md)
+1. Expand "Activity" tab on [Property Panel](../overview/property-panel.md)
    * There is history from previous steps
    * "created", "started", "edited" actions arranged in chronological order with indication of user
    
@@ -117,9 +117,9 @@ The implementation is based on the [grid](../viewers/grid.md), so many of the gr
 1. Run *"audit-test-script"* with default parameters   
    *  Script completed
    
-1. Open *"audit-test-script"* on [Property Panel](../features/property-panel.md)    
+1. Open *"audit-test-script"* on [Property Panel](../overview/property-panel.md)    
 
-1. Expand "Activity" tab on [Property Panel](../features/property-panel.md)
+1. Expand "Activity" tab on [Property Panel](../overview/property-panel.md)
    * There is history from previous steps
    * "created", "edited" and "started" actions arranged in chronological order with indication of user
    
@@ -154,9 +154,9 @@ The implementation is based on the [grid](../viewers/grid.md), so many of the gr
 1. Apply *"audit-test-model"* model to "demog" table
    * Applying complete
    
-1. Open *"audit-test-model"* on [Property Panel](../features/property-panel.md)    
+1. Open *"audit-test-model"* on [Property Panel](../overview/property-panel.md)    
 
-1. Expand "Activity" tab on [Property Panel](../features/property-panel.md)
+1. Expand "Activity" tab on [Property Panel](../overview/property-panel.md)
    * There is history from previous steps
    * "created", "edited" and "ran" actions arranged in chronological order with indication of user
    
@@ -180,9 +180,9 @@ The implementation is based on the [grid](../viewers/grid.md), so many of the gr
 1. Apply *"audit-test-notebook"* to "demog" table
    * Applying complete
    
-1. Open *"audit-test-notebook"* on [Property Panel](../features/property-panel.md)    
+1. Open *"audit-test-notebook"* on [Property Panel](../overview/property-panel.md)    
 
-1. Expand "Activity" tab on [Property Panel](../features/property-panel.md)
+1. Expand "Activity" tab on [Property Panel](../overview/property-panel.md)
    * There is history from previous steps
    * "created", "edited" and "ran" actions arranged in chronological order with indication of user
    
@@ -211,9 +211,9 @@ The implementation is based on the [grid](../viewers/grid.md), so many of the gr
 
 1. Open *"Datasets..."* on "Welcome" view
 
-1. Open *"audit-test-project"* on [Property Panel](../features/property-panel.md)    
+1. Open *"audit-test-project"* on [Property Panel](../overview/property-panel.md)    
 
-1. Expand "Activity" tab on [Property Panel](../features/property-panel.md)
+1. Expand "Activity" tab on [Property Panel](../overview/property-panel.md)
    * There is history from previous steps
    * "created", "shared", "edited" and "open" actions arranged in chronological order with indication of user
    
@@ -226,9 +226,9 @@ The implementation is based on the [grid](../viewers/grid.md), so many of the gr
 
 1. Use **Tools | Data science | Missing Values Imputation** for impute data to null rows
 
-1. Add [Scatter-Plot](../viewers/scatter-plot.md) viewer from **Add** menu
+1. Add [Scatter-Plot](../visualize/viewers/scatter-plot.md) viewer from **Add** menu
 
-1. Open [Find and Replace](../transform/find-and-replace.md) from menu **Edit**
+1. Open [Find and Replace](../transform/find-and-replace.md.md) from menu **Edit**
 
 1. Replace ```M``` value of *"SEX"* to ```"Men"```
    * ```M``` value of *"SEX"* ​​replaced by ```"Men"```
@@ -242,7 +242,7 @@ The implementation is based on the [grid](../viewers/grid.md), so many of the gr
 1. Open **Tools| Console** 
    * *"Console"* is open 
    
-1. Call function ```eq("test","test")``` in [Console](../features/console.md)
+1. Call function ```eq("test","test")``` in [Console](../overview/console.md)
    * Functions returned ```true```
    * result added to Variables
    

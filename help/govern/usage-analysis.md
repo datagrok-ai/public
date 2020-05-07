@@ -42,7 +42,7 @@ multiple purposes:
 
 A reasonable default set of client-based actions gets logged. For instance, we log opening a file and its name, 
 but not content. We do not log less important things like "rows selected", although there are ways to 
-override the default behavior. This could done by writing a script using the [JS API](../dev/grok-api.md),
+override the default behavior. This could done by writing a script using the [JS API](../develop/grok-api.md),
 and logging the event in the event handler. This [sample](https://public.datagrok.ai/js/samples/ui/ui-events) 
 demonstrates how to do it.
 

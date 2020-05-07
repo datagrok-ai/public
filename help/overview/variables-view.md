@@ -7,11 +7,11 @@ Alt+V opens variables view, which contains all variables available in the curren
 context, and allows to manipulate them.
 
 There are many ways for an object to appear as a variable:
-* Direct assignment like `x = 5` in [console](../features/console.md)
-* [Drag-and-drop](../features/drag-and-drop.md) an object to console
-* [Drag-and-drop](../features/drag-and-drop.md) an object to a dashboard (this creates a shadow variable)
+* Direct assignment like `x = 5` in [console](../overview/console.md)
+* [Drag-and-drop](../overview/drag-and-drop.md) an object to console
+* [Drag-and-drop](../overview/drag-and-drop.md) an object to a dashboard (this creates a shadow variable)
 
 It is also possible to drag objects out of the variables view.
 
 See also:
-* [Console](../features/console.md)
+* [Console](../overview/console.md)

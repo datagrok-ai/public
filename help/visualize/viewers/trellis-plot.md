@@ -19,13 +19,13 @@ viewer's settings, use the "gear" icon next to it.
 ![Trellis Plot](../../uploads/viewers/trellis-plot.png "Trellis Plot")
 
 Trellis Plot automatically picks up element renderers for rendering categories. For instance,
-this is how it looks for chemical structures after performing [R-Group Analysis](../domains/chem/r-group-analysis.md):
+this is how it looks for chemical structures after performing [R-Group Analysis](../../domains/chem/r-group-analysis.md):
 
-![R-Group Analysis](../uploads/chem/r-group-analysis.png "R-Group Analysis")
+![R-Group Analysis](../../uploads/chem/r-group-analysis.png "R-Group Analysis")
 
 See also: 
   
   * [Viewers](../viewers.md)
   * [Table View](../../overview/table-view.md)
-  * [R-Group Analysis](../domains/chem/r-group-analysis.md)
+  * [R-Group Analysis](../../domains/chem/r-group-analysis.md)
   * [JS API: Trellis Plot](https://public.datagrok.ai/js/samples/ui/viewers/trellis-plot)

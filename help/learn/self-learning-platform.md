@@ -10,7 +10,7 @@ unlocks the capability for the system to learn, based on the observed user's beh
 
 Think about Netflix's movie recommendation engine, but instead of dealing with just two 
 entities (users and movies) and one relation (user's score for the movie) we have a much more
-complex case. We got dozen of different [entity types](../entities/entities.md) 
+complex case. We got dozen of different [entity types](../overview/objects.md) 
 (such as <query>, <viewer>, <algorithm>, etc), connected with different relations 
 (such as '<query> <ran_by> <user>', '<dataset> <produced_by> <query') and restricted by 
 different constraints. 

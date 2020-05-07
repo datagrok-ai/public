@@ -82,16 +82,34 @@
       "targets": [],
       "value": ""
     }, {
+      "id": "5cc09970-e3fc-4892-8f2f-3b88749c6963",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//i[@name='icon-folder-open']",
+      "targets": [
+        ["css=.fa-folder-open", "css:finder"],
+        ["xpath=//i[@name='icon-folder-open']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div/i", "xpath:idRelative"],
+        ["xpath=//i", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "a1e3630c-004f-4912-bf74-7d2688f45c51",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "94f0aeb0-049a-4169-9e06-7d6d83b40601",
       "comment": "",
       "command": "click",
-      "target": "xpath=//label[@name='label-Connect-to-data...']",
+      "target": "xpath=//span[contains(.,'Databases')]",
       "targets": [
-        ["xpath=//label[@name='label-Connect-to-data...']", "css"],
-        ["css=#start > .d4-link-label:nth-child(8)", "css:finder"],
-        ["xpath=//label[@name='label-Connect-to-data...']", "xpath:attributes"],
-        ["xpath=//div[@id='start']/label[7]", "xpath:idRelative"],
-        ["xpath=//label[7]", "xpath:position"]
+        ["css=.d4-toggle-button:nth-child(2) > span", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[2]/span", "xpath:idRelative"],
+        ["xpath=//div[2]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'Databases')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
@@ -145,7 +163,7 @@
       "id": "a60b542a-1342-4990-8e61-10eac96acb6c",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"tree-PostgreSQL---northwind---products\"] > div.d4-tree-view-group-label",
+      "target": "css=div[name=\"tree-PostgreSQL---northwind---Products\"] > div.d4-tree-view-group-label",
       "targets": [
         ["css=div[name=\"tree-PostgreSQL---northwind---products\"] > div.d4-tree-view-group-label", "css"],
         ["css=.d4-tree-view-group:nth-child(3) .d4-tree-view-group:nth-child(7) .d4-tree-view-group-label", "css:finder"],
@@ -231,15 +249,15 @@
     }, {
       "id": "43386939-a6dd-40f1-b5cc-3084cb876f03",
       "comment": "",
-      "command": "verifyElementPresent",
-      "target": "css=div[name=\"view-handle: products\"] > div.tab-handle-text",
+      "command": "verifyText",
+      "target": "xpath=//div[@name='div-view-name']",
       "targets": [
-        ["css=div[name=\"view-handle: products\"] > div.tab-handle-text", "css"],
-        ["css=.tab-handle:nth-child(4) > .tab-handle-text", "css:finder"],
-        ["xpath=//div[@id='dock_manager']/div/div/div/div/div[2]/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div[2]/div", "xpath:position"]
+        ["css=.d4-ribbon-name", "css:finder"],
+        ["xpath=//div[@name='div-view-name']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]", "xpath:idRelative"],
+        ["xpath=//div[3]/div[2]/div/div/div/div/div/div/div[2]", "xpath:position"]
       ],
-      "value": ""
+      "value": "Products"
     }, {
       "id": "791f7624-26ce-43fc-a23e-ae461653f350",
       "comment": "",
@@ -265,6 +283,18 @@
       "command": "pause",
       "target": "2000",
       "targets": [],
+      "value": ""
+    }, {
+      "id": "b0e97abf-4dd6-446b-a95e-853e3442fc78",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//i[@name='icon-share-alt']",
+      "targets": [
+        ["css=.fa-share-alt", "css:finder"],
+        ["xpath=//i[@name='icon-share-alt']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div[7]/i", "xpath:idRelative"],
+        ["xpath=//div[7]/i", "xpath:position"]
+      ],
       "value": ""
     }, {
       "id": "c93e1923-5b31-4d2d-abf7-061cd0e92634",
@@ -480,7 +510,7 @@
       "id": "64dbbdca-af66-45b8-982b-c0fbdce883f2",
       "comment": "",
       "command": "open",
-      "target": "/datasets?selenium=true&q=",
+      "target": "/projects?selenium=true&q=selenium",
       "targets": [],
       "value": ""
     }, {
@@ -616,10 +646,10 @@
       "targets": [],
       "value": ""
     }, {
-      "id": "78084e83-9a3c-46d1-8582-c969ad386bb1",
+      "id": "ae3a2aa5-7784-4efe-a76e-1a5e24b11ff3",
       "comment": "",
       "command": "open",
-      "target": "/datasets?selenium=true&q=",
+      "target": "/projects?selenium=true&q=selenium",
       "targets": [],
       "value": ""
     }, {

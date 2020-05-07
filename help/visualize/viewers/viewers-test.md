@@ -7,26 +7,26 @@ A [viewer](../viewers.md) is a visual component associated with a table.
 
 List of viewers available for testing:
 
-* [Scatter Plot](../viewers/scatter-plot.md)
-* [Histogram](../viewers/shistogram.md)
-* [Line Chart](../viewers/sline-chart.md)
-* [Bar chart](../viewers/sbar-chart.md)
-* [Box plot](../viewers/sbox-plot.md)
-* [Filters](../viewers/sfilters.md)
-* [Trellis Plot](../viewers/strellis-plot.md)
-* [Tree Map](../viewers/stree-map.md)
-* [Calendar](../viewers/scalendar.md)
-* [Google Map](../viewers/sgoogle-map.md)
-* [Grid](../viewers/sgrid.md)
-* [3D Scatter Plot](../viewers/3d-scatter-plot.md)
-* [Matrix Plot](../viewers/smatrix-plot.md)
-* [Network Diagram](../viewers/snetwork-diagram.md)
-* [Parallel Coordinates Plot](../viewers/spc-plot.md)
-* [Pie Chart](../viewers/spie-chart.md)
+* [Scatter Plot](../visualize/viewers/scatter-plot.md)
+* [Histogram](../visualize/viewers/shistogram.md)
+* [Line Chart](../visualize/viewers/sline-chart.md)
+* [Bar chart](../visualize/viewers/sbar-chart.md)
+* [Box plot](../visualize/viewers/sbox-plot.md)
+* [Filters](../visualize/viewers/sfilters.md)
+* [Trellis Plot](../visualize/viewers/strellis-plot.md)
+* [Tree Map](../visualize/viewers/stree-map.md)
+* [Calendar](../visualize/viewers/scalendar.md)
+* [Google Map](../visualize/viewers/sgoogle-map.md)
+* [Grid](../visualize/viewers/sgrid.md)
+* [3D Scatter Plot](../visualize/viewers/3d-scatter-plot.md)
+* [Matrix Plot](../visualize/viewers/smatrix-plot.md)
+* [Network Diagram](../visualize/viewers/snetwork-diagram.md)
+* [Parallel Coordinates Plot](../visualize/viewers/spc-plot.md)
+* [Pie Chart](../visualize/viewers/spie-chart.md)
 * [Scripting Viewer](../visualize/viewers/scripting-viewer.md)
-* [Statistics](../viewers/sstatistics.md)
-* [Markup Viewer](../viewers/smarkup-viewer.md)
-* [Word Cloud](../viewers/sword-cloud.md)
+* [Statistics](../visualize/viewers/sstatistics.md)
+* [Markup Viewer](../visualize/viewers/smarkup-viewer.md)
+* [Word Cloud](../visualize/viewers/sword-cloud.md)
 * [Scripting Viewer](../visualize/viewers/scripting-viewer.md)
 
 Approaches to testing, Testing scenarios, test items in general are similar for all viewers. Categories of testing scenarios common to all viewers were identified:
@@ -102,53 +102,53 @@ Here we look at the correspondence of the chosen viewer type, correctness of con
    * Help switched to "Scatter Plot" page
    * *"Weight"* column for X axis and *"Height"* column for Y axis are automatically established
    
-1. Select *"Age"* column in "Size" selector on [Scatter Plot](../viewers/scatter-plot.md)
-   * Points on [Scatter Plot](../viewers/scatter-plot.md) displayed in different sizes depending on values ​​of *"Age"* column
+1. Select *"Age"* column in "Size" selector on [Scatter Plot](../visualize/viewers/scatter-plot.md)
+   * Points on [Scatter Plot](../visualize/viewers/scatter-plot.md) displayed in different sizes depending on values ​​of *"Age"* column
    * Under "Size" selector only columns with numerical types are represented
    
-1. Drag *"Sex"* column from grid to "Color" selector on [Scatter Plot](../viewers/scatter-plot.md)
-   * Points on [Scatter Plot](../viewers/scatter-plot.md) displayed in different sizes depending on values ​​of *"Age"* column
-   * When dragging column, "Colort" selector on [Scatter Plot](../viewers/scatter-plot.md) is highlighted
+1. Drag *"Sex"* column from grid to "Color" selector on [Scatter Plot](../visualize/viewers/scatter-plot.md)
+   * Points on [Scatter Plot](../visualize/viewers/scatter-plot.md) displayed in different sizes depending on values ​​of *"Age"* column
+   * When dragging column, "Colort" selector on [Scatter Plot](../visualize/viewers/scatter-plot.md) is highlighted
 
 1. Delete *"Height" column" form *"demog"* table
-   * Y axis on [Scatter Plot](../viewers/scatter-plot.md) switched to another suitable column
+   * Y axis on [Scatter Plot](../visualize/viewers/scatter-plot.md) switched to another suitable column
 
 1. Delete *"Sex"* column" form *"demog"* table 
-   * Color mapping off on [Scatter Plot](../viewers/scatter-plot.md)
+   * Color mapping off on [Scatter Plot](../visualize/viewers/scatter-plot.md)
    
-1. Open properties for [Scatter Plot](../viewers/scatter-plot.md)
-   *  Viewer properties are displayed on [Property Panel](../features/property-panel.md)
+1. Open properties for [Scatter Plot](../visualize/viewers/scatter-plot.md)
+   *  Viewer properties are displayed on [Property Panel](../../overview/property-panel.md)
    
-1. Check performance and impact of changing properties on [Scatter Plot](../viewers/scatter-plot.md)
-   * Data and appearance display properties changing the for  [Scatter Plot](../viewers/scatter-plot.md) affects expected
-   * After changing appearance properties the [Scatter Plot](../viewers/scatter-plot.md) does not displayed "default"
+1. Check performance and impact of changing properties on [Scatter Plot](../visualize/viewers/scatter-plot.md)
+   * Data and appearance display properties changing the for  [Scatter Plot](../visualize/viewers/scatter-plot.md) affects expected
+   * After changing appearance properties the [Scatter Plot](../visualize/viewers/scatter-plot.md) does not displayed "default"
    
-1. Pick up customized style of [Scatter Plot](../viewers/scatter-plot.md) as default from **Context menu | Style | Set as default**
+1. Pick up customized style of [Scatter Plot](../visualize/viewers/scatter-plot.md) as default from **Context menu | Style | Set as default**
 
-1. Add one more [Scatter Plot](../viewers/scatter-plot.md) on layout
-   * New [Scatter Plot](../viewers/scatter-plot.md) has data and appearance settings as configured in step 8
+1. Add one more [Scatter Plot](../visualize/viewers/scatter-plot.md) on layout
+   * New [Scatter Plot](../visualize/viewers/scatter-plot.md) has data and appearance settings as configured in step 8
 
-1. Delete [Scatter Plot](../viewers/scatter-plot.md) from previous step
+1. Delete [Scatter Plot](../visualize/viewers/scatter-plot.md) from previous step
 
-1. Reset view of [Scatter Plot](../viewers/scatter-plot.md) from it's context menu
-   * [Scatter Plot](../viewers/scatter-plot.md) style is now "default"
+1. Reset view of [Scatter Plot](../visualize/viewers/scatter-plot.md) from it's context menu
+   * [Scatter Plot](../visualize/viewers/scatter-plot.md) style is now "default"
    
-1. Use  mouse wheel to zoom [Scatter Plot](../viewers/scatter-plot.md) area
-   * When scrolling wheel "away from you", [Scatter Plot](../viewers/scatter-plot.md) area zooming to current padding of the cursor
+1. Use  mouse wheel to zoom [Scatter Plot](../visualize/viewers/scatter-plot.md) area
+   * When scrolling wheel "away from you", [Scatter Plot](../visualize/viewers/scatter-plot.md) area zooming to current padding of the cursor
    
-1. Select [Scatter Plot](../viewers/scatter-plot.md) area with ```Alt``` pressed   
-   * Selected area is displayed on [Scatter Plot](../viewers/scatter-plot.md) 
+1. Select [Scatter Plot](../visualize/viewers/scatter-plot.md) area with ```Alt``` pressed   
+   * Selected area is displayed on [Scatter Plot](../visualize/viewers/scatter-plot.md) 
    
-1. Double click on [Scatter Plot](../viewers/scatter-plot.md) area   
-   * [Scatter Plot](../viewers/scatter-plot.md) area  scale returned to default
+1. Double click on [Scatter Plot](../visualize/viewers/scatter-plot.md) area   
+   * [Scatter Plot](../visualize/viewers/scatter-plot.md) area  scale returned to default
    
-1. Use [Scatter Plot](../viewers/scatter-plot.md) for tooltip of other viewers. Select **Context menu | Tooltip | Use as group tooltip**  
+1. Use [Scatter Plot](../visualize/viewers/scatter-plot.md) for tooltip of other viewers. Select **Context menu | Tooltip | Use as group tooltip**  
 
-1. Add [Histogram](../viewers/histogram.md) viewer to layout
-   * When hovering over histogram group tooltip is displayed, which shows [Scatter Plot](../viewers/scatter-plot.md) that corresponds to group
+1. Add [Histogram](../visualize/viewers/histogram.md) viewer to layout
+   * When hovering over histogram group tooltip is displayed, which shows [Scatter Plot](../visualize/viewers/scatter-plot.md) that corresponds to group
    
 1. Delete all columns from *"demog"* table 
-   * Nothing is shown on [Scatter Plot](../viewers/scatter-plot.md) view  
+   * Nothing is shown on [Scatter Plot](../visualize/viewers/scatter-plot.md) view  
    * No errors and crashes 
 
 See also:
