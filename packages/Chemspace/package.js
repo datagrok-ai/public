@@ -21,10 +21,15 @@ class ChemspacePackage extends GrokPackage {
 
         function update() {
             ui.setUpdateIndicator(view.root, true);
-            ChemspacePackage.queryMultipart('search/advanced/1/sim', molecule.value, token).then(t => {
+
+            function setDataFrame(t) {
                 view.dataFrame = t;
                 ui.setUpdateIndicator(view.root, false);
-            });
+            }
+
+            ChemspacePackage.queryMultipart('search/advanced/1/sim', molecule.value, token)
+                .then(t => setDataFrame(t))
+                .catch(err => setDataFrame(emptyTable));
 
             // grok.callQuery('Chemspace:Search', {
             //     'code': `search_${molecule.value}_${ChemspacePackage.searchModeToCommand(searchMode.value)}`,
@@ -173,13 +178,14 @@ class ChemspacePackage extends GrokPackage {
             xhr.onload = function () {
                 if (this.status >= 200 && this.status < 300) {
                     let list = JSON.parse(xhr.responseText)['items'];
-                    resolve(list.length > 0 ? DataFrame.fromJson(JSON.stringify(list)) : DataFrame.create());
+                    if (list.length > 0)
+                        resolve(DataFrame.fromJson(JSON.stringify(list)));
+                    else
+                        reject();
                 } else
-                    reject({status: this.status, statusText: xhr.statusText});
+                    reject();
             };
-            xhr.onerror = function () {
-                reject({status: this.status, statusText: xhr.statusText});
-            };
+            xhr.onerror = () => reject();
             xhr.send(formData);
         });
     }
