@@ -5,7 +5,7 @@
 
 Datagrok has built-in authorization system, based on user groups permissions. 
 A permissions is an action that can be applied to an entity type. 
-Each [entity](../entities/entities.md) has list of permissions, which define it's visibility and behaviour.
+Each [entity](../overview/objects.md) has list of permissions, which define it's visibility and behaviour.
 Most of entities have permissions to:
 
 * View - User or group can see the entity
@@ -21,7 +21,7 @@ Permission can be set to a group, or to a user, using "personal" user group, whi
 Groups can be nested, so all of group members get permission, that were set to a parent group.
 
 See also:
- * [Entities](../entities/entities.md) 
- * [Groups](../entities/group.md)
+ * [Entities](../overview/objects.md) 
+ * [Groups](../govern/group.md)
  * [Authentication](authentication.md) 
  * [Security](security.md)

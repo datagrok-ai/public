@@ -92,13 +92,13 @@ The following ones are available under the **Viewer** submenu:
 
 |                 |                 |
 |-----------------|-----------------|
-| Properties      | Show viewer properties in the [property panel](../features/property-panel.md) |
+| Properties      | Show viewer properties in the [property panel](../overview/property-panel.md) |
 | Clone           | Create a copy of the viewer |
 | Full Screen     | Show in full screen. **Alt+F** |
 | Close           | Close the viewer |
 | Use in Trellis  | Add a [trellis plot](viewers/trellis-plot.md), using this viewer as a renderer |
 | Save to Gallery | Saves this viewer to a [gallery](view-layout.md#layout-suggestions) |
-| Copy Markup     | Copy viewer settings to the clipboard. It can be pasted as a [Markup](../features/markup.md) |
+| Copy Markup     | Copy viewer settings to the clipboard. It can be pasted as a [Markup](../overview/markup.md) |
 | Embed           | Create HTML code that can be embedded in an external website |
 
 Style-related commands reside under the **Style** submenu:

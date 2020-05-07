@@ -11,7 +11,7 @@ Substructure Search Performs substructure pattern search in list of SMILES.
 
 1. Click on *"smiles"* column 
 
-1. Open *"Substructure Search"* dialog in *"Active"* tab on [Property Panel](../features/property-panel.md) 
+1. Open *"Substructure Search"* dialog in *"Active"* tab on [Property Panel](../overview/property-panel.md) 
    (or use context menu for *"smiles"* column, **Chem | Substructure Search**)
    * *"Substructure Search"* dialog is open
 

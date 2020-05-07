@@ -48,7 +48,7 @@ Datagrok integrates with [OpenAPI](../access/open-api.md) really well, automatic
 OpenAPI's [paths](https://swagger.io/docs/specification/basic-structure/) to Grok's [functions](../overview/functions/function.md).
 This has many benefits:
 * Ability to easily call that web method from:
-  * [Console](../features/console.md)
+  * [Console](../overview/console.md)
   * Event handler
   * [Info panel](../discover/info-panels.md)
 * Audit

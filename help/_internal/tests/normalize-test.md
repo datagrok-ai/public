@@ -10,7 +10,7 @@ Performs numerical column normalization (min-max, z-scores)
 
 1. Open "demog" table 
 
-1. Open "Normalize..." dialog for *"Age"* column (from it's context menu or from "Actions" tab on [Property Panel](../features/property-panel.md))
+1. Open "Normalize..." dialog for *"Age"* column (from it's context menu or from "Actions" tab on [Property Panel](../overview/property-panel.md))
    * "Normalize" dialog is open
 
 1. Select categorical columns for *Column* field (*"Sex"*, *"Control"*, *"Started"*)
@@ -21,7 +21,7 @@ Performs numerical column normalization (min-max, z-scores)
 1. Select *"Age"* in *Column* field and leave default method (min-max) and execute dialog
    * *"Age"* column values ​​are normalized by min-max method
    
-1. Open "Normalize..." dialog for *"Height"* column (from it's context menu or from "Actions" tab on [Property Panel](../features/property-panel.md))
+1. Open "Normalize..." dialog for *"Height"* column (from it's context menu or from "Actions" tab on [Property Panel](../overview/property-panel.md))
    * "Normalize" dialog is open   
    
 1. Select "z-scores" for *Method* field and execute dialog

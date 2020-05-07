@@ -53,8 +53,8 @@ Many viewers, such as
 
 Chemical intelligence tools are natively integrated into the platform, so in most cases the 
 appropriate functionality is automatically presented based on the user actions and context.
-For instance, when user clicks on a molecule, it becomes a [current object](../../features/navigation.md#current-object), 
-and its properties are shown in the [property panel](../../features/property-panel.md). To see chemically-related actions
+For instance, when user clicks on a molecule, it becomes a [current object](../../overview/navigation.md#current-object), 
+and its properties are shown in the [property panel](../../overview/property-panel.md). To see chemically-related actions
 applicable for the specified column, right-click on the column, and look under
 `Current column | Chem` and `Current column | Extract`. Alternatively, click on the column of 
 interest, and expand the 'Actions' section in the property panel. 

@@ -34,22 +34,22 @@ The system allows you to create parameterized and non-parameterized [queries](da
    * You can change the view, use sort and search
    * The list shows the status of run and start time
 
-1. Run [query](data-query.md) from different places (context menu, [Property Panel](../features/property-panel.md), by double-clicking)
+1. Run [query](data-query.md) from different places (context menu, [Property Panel](../overview/property-panel.md), by double-clicking)
 
 1. Find in the list [queries](data-query.md) from the previous paragraphs
    * Queries are present in the list 
    * The run time is correct
    * Queries with errors are marked with color coding
 
-1. Open the "Details" tab in [Property Panel](../features/property-panel.md)
+1. Open the "Details" tab in [Property Panel](../overview/property-panel.md)
    * "Details" tab is open
    * The correct information for all fields is displayed (Author, Created, Updated, Connection, Tags, Params – for parameterized queries)
 
-1. Open the "Query" tab in [Property Panel](../features/property-panel.md)
+1. Open the "Query" tab in [Property Panel](../overview/property-panel.md)
    * "Query" tab is open
    * Display current text of query
 
-1. Open the "Activity" tab in [Property Panel](../features/property-panel.md)
+1. Open the "Activity" tab in [Property Panel](../overview/property-panel.md)
    * "Activity" tab is open
    * Display information about tables that were created after the query was executed.
       
@@ -57,7 +57,7 @@ The system allows you to create parameterized and non-parameterized [queries](da
    * Look on "Activity" tab
    * New record about actually query is added here
 
-1. Open the "Usage" tab in [Property Panel](../features/property-panel.md)
+1. Open the "Usage" tab in [Property Panel](../overview/property-panel.md)
    * "Usage" tab is open. Display query runs statistics.
 
 1. Delete "Test" [query](data-query.md) 
@@ -68,7 +68,7 @@ The system allows you to create parameterized and non-parameterized [queries](da
    * New parameterized [query](data-query.md) created
    * Check this in "Data Queries" in menu "Admin"
 
-1. Open the "Run" tab in [Property Panel](../features/property-panel.md) for "Test_param" [query](data-query.md)
+1. Open the "Run" tab in [Property Panel](../overview/property-panel.md) for "Test_param" [query](data-query.md)
    * "Run" tab is open, there are fields for entering parameters
 
 1. Run parameterized [query](data-query.md) with correct parameters

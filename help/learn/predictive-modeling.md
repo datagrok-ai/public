@@ -74,7 +74,7 @@ Example for R Caret engine:
   * Apply model
   
 Also apply model available through "Models Browser" (**Tools** | **Predictive modeling** | **Browse Models**) 
-or as suggested models in table properties in [Toolbox](../overview/toolbox.md) or [Property Panel](../features/property-panel.md). 
+or as suggested models in table properties in [Toolbox](../overview/toolbox.md) or [Property Panel](../overview/property-panel.md). 
 
 ## Outputs
 
@@ -132,5 +132,4 @@ See also:
 * [H2O](http://h2o.ai/)
 * [Receiver operating characteristic (ROC)](https://en.wikipedia.org/wiki/Receiver_operating_characteristic)
 * [Confusion matrix](https://en.wikipedia.org/wiki/Confusion_matrix)
-* Samples
-  * https://datagrok.ai/js/samples/domains/data-science/predictive-model
+* [Samples](https://public.datagrok.ai/js/samples/domains/data-science/predictive-model)

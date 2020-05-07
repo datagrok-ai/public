@@ -14,7 +14,7 @@ of a molecule.
 
 1. Click on *"smiles"* column
 
-1. Open *"Fingerprints"* dialog in *"Active"* tab on [Property Panel](../features/property-panel.md) 
+1. Open *"Fingerprints"* dialog in *"Active"* tab on [Property Panel](../overview/property-panel.md) 
    (or use context menu for *"smiles"* column, **Chem | Fingerprintss...**)
    * *"Fingerprints"* dialog is open
    * Help switched to "Fingerprints" page

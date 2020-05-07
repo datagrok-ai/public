@@ -17,7 +17,7 @@ Datagrok allows to create, edit, import, link and apply Notebooks into tables.
 Creating a new Notebook is very easy. There some ways to do this:
 1. Click "Tools | Notebooks | New Notebook"
 2. Run #{x.CmdNewNotebook} from console
-3. Select one or more tables and click on [Property Panel](../features/property-panel.md) "Actions | Open in Notebooks"
+3. Select one or more tables and click on [Property Panel](../overview/property-panel.md) "Actions | Open in Notebooks"
 Note: to link the Notebook with table(s) you should use way "3".
 
 ## Notebooks Browser

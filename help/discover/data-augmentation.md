@@ -43,7 +43,7 @@ record (or do it on demand whenever the current record changes), and visualize t
 
 ## Info panels
 [Info panels](info-panels.md) provide additional information about the 
-current context (which can be a table, a column, or any other [object](../entities/entities.md)). 
+current context (which can be a table, a column, or any other [object](../overview/objects.md)). 
 Info panels are meant to be 
 easily developed by the users of the platform, and shared with other users. 
 You can use all features of the Grok platform, such as scripting, data 

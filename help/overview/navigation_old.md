@@ -27,8 +27,8 @@ Shortcuts
 ## Current object
 
 Whenever user clicks on most objects in the platform, such as a viewer, view, command, or any
-of the [40+ types of objects](../entities/entities.md) supported by the platform, this object becomes
-what we call "current object". Its properties are shown in the [property panel](../features/property-panel.md),
+of the [40+ types of objects](../overview/objects.md) supported by the platform, this object becomes
+what we call "current object". Its properties are shown in the [property panel](../overview/property-panel.md),
 and interactive help is displayed as well.  
 
 To access current object from the console, use 'o' variable.
@@ -48,7 +48,7 @@ are some of commonly used drag-and drop operations:
 
 Drag-and-dropping columns is an intuitive way to choose columns on viewers, or perform operations on
 them. A number of controls can be used as a source of drag-and-drop: 
-[Grid](../viewers/grid.md), [Column Manager](../explore/column-manager.md), [Table Manager](../overview/table-manager.md)  
+[Grid](../visualize/viewers/grid.md), [Column Manager](../explore/column-manager.md), [Table Manager](../overview/table-manager.md)  
 Most of the viewers, and a lot of dialogs accept columns that are being dragged. 
 
 ## Help

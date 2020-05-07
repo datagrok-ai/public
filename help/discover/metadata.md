@@ -3,7 +3,7 @@
 
 # Metadata
 
-Any [entity](../entities/entities.md) can be annotated with metadata, which can be used for searching. 
+Any [entity](../overview/objects.md) can be annotated with metadata, which can be used for searching. 
 In Datagrok, there are three kinds of metadata: tags, parameters, and properties.
 
 ## Tags
@@ -25,7 +25,7 @@ To search for entities with the specified parameters, use the `<paramName> <op> 
 ## Properties
 
 Properties are somewhat similar to parameters, however they might contain nested properties; also, they 
-are not directly editable. Some properties are common for all [entities](../entities/entities.md), others
+are not directly editable. Some properties are common for all [entities](../overview/objects.md), others
 are specific to the entity type.
 
 Common properties:
@@ -44,4 +44,4 @@ Search criteria can be combined using 'and' or 'or' operands:
 
 See also
 * [Search](../overview/smart-search.md)
-* [Entities](../entities/entities.md)
+* [Entities](../overview/objects.md)

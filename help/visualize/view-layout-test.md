@@ -54,9 +54,9 @@ and choose **Clone**.
 1. Clear *"demog"* view from menu **View | Layout | Clear** or **View | Reset** from context menu to *demog* tab or use keyboard ```Ctrl + Shift + R```
    * *"demog"* table is in its original form is presented on *"demog"* view
   
-1. Add [Scatter Plot](../viewers/scatter-plot.md) on *"demog"* view
+1. Add [Scatter Plot](../visualize/viewers/scatter-plot.md) on *"demog"* view
 
-1. Change Scatter Plot](../viewers/scatter-plot) style settings. (Colors of viewer elements, size, scale, font, etc.)
+1. Change Scatter Plot](../visualize/viewers/scatter-plot) style settings. (Colors of viewer elements, size, scale, font, etc.)
 
 1. Swap columns *Age* and *Sex* in table
 
@@ -78,7 +78,7 @@ and choose **Clone**.
    * In Layouts Gallery there is saved view from step 19
    
 1. Apply layout from step 19 to *"demog"* view
-   * [Scatter Plot](../viewers/scatter-plot.md) with style settings added to *"demog"* view
+   * [Scatter Plot](../visualize/viewers/scatter-plot.md) with style settings added to *"demog"* view
    * Row and columns order changes to *"demog"* view.
    
 1. Delete layout from step 19 from Layouts Gallery from its context menu   

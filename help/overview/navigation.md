@@ -29,10 +29,10 @@ Need to expand https://datagrok.ai/help/overview/toolbox
 Also, need info for Contextual Help
 -->
 
-When you select a **Dataset**, you will see the a similar screen to the following. From left to right, relevant features appear on the [Toolbox](../overview/toolbox.md), the data is represented in the [Main View](../visualize/view-layout.md), and additional info on the data shows up on the [Property Panel](../features/property-panel.md) and the Contextual Help Panel.
+When you select a **Dataset**, you will see the a similar screen to the following. From left to right, relevant features appear on the [Toolbox](../overview/toolbox.md), the data is represented in the [Main View](../visualize/view-layout.md), and additional info on the data shows up on the [Property Panel](../overview/property-panel.md) and the Contextual Help Panel.
 ![alt text](../uploads/pictures/dataset.JPG "Datagrok Welcome Page")
 
-**Useful Links:** [Viewers](../visualize/viewers.md) · [Toolbox](../overview/toolbox.md) · [Main View](../visualize/view-layout.md) · [Property Panel](../features/property-panel.md)
+**Useful Links:** [Viewers](../visualize/viewers.md) · [Toolbox](../overview/toolbox.md) · [Main View](../visualize/view-layout.md) · [Property Panel](../overview/property-panel.md)
 
 ### Workspace, Panels and Views
 
@@ -52,7 +52,7 @@ The toolbar provides the main features that are available at a given moment. A v
 
 ![alt text](../uploads/pictures/toolbar.JPG "Toolbar")
 
-**Useful Links:** [Workspace](../overview/workspace.md) · [Navigation](../features/navigation.md) · [Toolbox](../overview/toolbox.md)
+**Useful Links:** [Workspace](../overview/workspace.md) · [Navigation](../overview/navigation.md) · [Toolbox](../overview/toolbox.md)
 #### Main Menus
 The static menus offer basic functionalities that are common to all the environments. Moreover, some view specific menus appear when data is imported. At any moment, only the usable features appear as clickable.
 ![alt text](../uploads/pictures/main_toolbar.JPG "Main Menus")
@@ -64,7 +64,7 @@ The ribbons menu is a quick access icon toolbar located under the static and vie
 However, the quick access ribbons change depending on the available options. For instance, these are the features when you have already imported data to the workspace.
 ![alt text](../uploads/pictures/icon_menu.JPG "Ribbon Toolbar")
 
-**Useful Links:** [Navigation](../features/navigation.md) · [Toolbox](../overview/toolbox.md)
+**Useful Links:** [Navigation](../overview/navigation.md) · [Toolbox](../overview/toolbox.md)
 
 ### Toolbox
 The toolbox, located on the left, contains controls that are specific to the current active view.
@@ -78,14 +78,14 @@ For more information, see: [Search Data](../explore/data-search.md) · [Search P
 #### Viewers 
 The view is the main element in the workspace. The data is listed and represented on this panel, which is usually located at the center. Use this feature to change the representation (view) of the data. _Please, note that only relevant views are available depending on the imported data._
 For more info on viewers, see [Viewers](../visualize/viewers.md). For detailed info on each viewer, check these entries:
-*   [3D Scatter Plot](../viewers/3d-scatter-plot.md)
-*   [Bar Chart](../viewers/bar-chart.md)
-*   [Calendar](../viewers/calendar.md)
-*   [Filters](../viewers/filters.md)
-*   [Histogram](../viewers/histogram.md)
-*   [Pie Chart](../viewers/pie-chart.md)
-*   [Statistics](../viewers/statistics.md)
-*   [Viewers Host](../viewers/viewer-host.md)
+*   [3D Scatter Plot](../visualize/viewers/3d-scatter-plot.md)
+*   [Bar Chart](../visualize/viewers/bar-chart.md)
+*   [Calendar](../visualize/viewers/calendar.md)
+*   [Filters](../visualize/viewers/filters.md)
+*   [Histogram](../visualize/viewers/histogram.md)
+*   [Pie Chart](../visualize/viewers/pie-chart.md)
+*   [Statistics](../visualize/viewers/statistics.md)
+*   [Viewers Host](../visualize/viewers/viewer-host.md)
 
 <!-- Note: need to add more info in the viewer posts. -->
 
@@ -123,7 +123,7 @@ A Workspace is the collection of currently opened projects. The workspaces are s
 At the right, the property panel displays relevant information on the selected data of the dataset. You can perform some basic actions from this panel, such as _delete, filter, keep, or extract rows_.
 ![alt text](../uploads/pictures/property_panel.JPG "Property Panel")
 
-For more information, see: [Property Panel](../features/property-panel.md).
+For more information, see: [Property Panel](../overview/property-panel.md).
 ### Contextual Help Panel
 The contextual help panel shows the additional insight for the specific situation or about the current selected object. 
 

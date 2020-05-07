@@ -66,8 +66,8 @@ queries and data jobs, or can be executed separately. You can also share [Transf
    
 1. Close [Transformations Editor](../features/recipe-editor).md view, go to "Connect to data" view
 
-1. Select *stores in @state* query. (*PostgreSQL* provider, *starbucks* connection) in [Property Panel](../features/property-panel.md)
-   * "transformation" tab of [Property Panel](../features/property-panel.md) shows the script created earlier (**)
+1. Select *stores in @state* query. (*PostgreSQL* provider, *starbucks* connection) in [Property Panel](../overview/property-panel.md)
+   * "transformation" tab of [Property Panel](../overview/property-panel.md) shows the script created earlier (**)
 
 1. Run *stores in @state* query with value ```NY``` for @state parameter
    * Table contains *"Address"*, *"latitude"* and *"longitude"* columns described in query transformation

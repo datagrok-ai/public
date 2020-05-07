@@ -15,7 +15,7 @@ File shares are often used for storing and exchanging data, and Datagrok provide
 1. Expand demo connection in Source tree
    * There is files and directories from ```.../data/demo```
 
-1. Select "northwind" folder for the [Property Panle](../features/property-panel.md)
+1. Select "northwind" folder for the [Property Panle](../overview/property-panel.md)
    * "Details" tab shows file location relative to connection, size, date of creation and modification
    * In "Actions" tab folder can be downloaded locally as zip-archive
 
@@ -25,7 +25,7 @@ File shares are often used for storing and exchanging data, and Datagrok provide
 1. Expand "northwind" folder in Source tree
    * There is structured list of files and folders inside "northwind" folder
 
-1. Select "Northwind.xslx" file for the [Property Panle](../features/property-panel.md)
+1. Select "Northwind.xslx" file for the [Property Panle](../overview/property-panel.md)
    * "Details" tab shows file location relative to connection, size, date of creation and modification
    * In "Actions" tab file can be downloaded locally, downloaded as zip-archive or opened in [Workspace](../overview/workspace.md)
 
@@ -43,7 +43,7 @@ File shares are often used for storing and exchanging data, and Datagrok provide
    * There is list of sheets inside file
    * Each sheet presented as separate table
    
-1. Select "Categories" sheet for the [Property Panle](../features/property-panel.md)
+1. Select "Categories" sheet for the [Property Panle](../overview/property-panel.md)
    * "Details" tab shows number of rows and columns
    * In "Actions" tab sheet can be opened as separate table in [Workspace](../overview/workspace.md) 
 
@@ -52,7 +52,7 @@ File shares are often used for storing and exchanging data, and Datagrok provide
    
 1. Expand "Categories" sheet in Source tree
    * There is list of columns in "Categories" table
-   * You can find columns data type selecting it on [Property Panle](../features/property-panel.md)
+   * You can find columns data type selecting it on [Property Panle](../overview/property-panel.md)
    
 ## Connection creating
 
