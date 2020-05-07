@@ -212,4 +212,4 @@ See also:
 * [Data Augmentation](data-augmentation.md) 
 * [Scripting](../compute/scripting.md)
 * [Semantic Types](semantic-types.md)
-* [Cheminformatics: info panels](../domains/chem/cheminformatics#info-panels)
+* [Cheminformatics: info panels](../domains/chem/cheminformatics.md#info-panels)

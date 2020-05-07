@@ -228,7 +228,7 @@ The implementation is based on the [grid](../visualize/viewers/grid.md), so many
 
 1. Add [Scatter-Plot](../visualize/viewers/scatter-plot.md) viewer from **Add** menu
 
-1. Open [Find and Replace](../transform/find-and-replace.md) from menu **Edit**
+1. Open [Find and Replace](../transform/find-and-replace.md.md) from menu **Edit**
 
 1. Replace ```M``` value of *"SEX"* to ```"Men"```
    * ```M``` value of *"SEX"* ​​replaced by ```"Men"```

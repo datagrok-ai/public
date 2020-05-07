@@ -11,7 +11,7 @@ adding [views](grok-api.md#views) or [viewers](grok-api.md#pre-defined-viewers),
 [developing custom viewers](grok-api.md#custom-viewers),
 [registering functions](grok-api.md#registering-functions),
 training and applying [predictive models](../learn/predictive-modeling.md), 
-and even [building custom apps](app_development.md).
+and even [building custom apps](app.md).
 
 There are two options to run custom JavaScript code. For ad-hoc scripts, use the built-in
 JavaScript editor (`Tools | Scripting | JavaScript`). For reusable functions, viewers, 

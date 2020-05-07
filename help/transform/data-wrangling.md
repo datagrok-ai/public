@@ -14,7 +14,7 @@ a new dataset. Here are some of the commonly used routines:
 * [Anonymize Data](anonymize-data.md)
 * [Categorize Data](categorize-data.md)
 * [Batch Data Editor](batch-edit.md)
-* [Change Type](change-type.md)
+* [Change Type](change-column-type.md)
 * [Aggregate Rows](aggregate-rows.md)
 * [Compare Tables](../explore/compare-tables.md)
 * [Extract RegExp](extract-regexp.md)
