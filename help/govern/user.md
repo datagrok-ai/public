@@ -37,7 +37,7 @@ obtaining [developer key](../develop/develop.md#publishing), API key, and loggin
 
 **Activity** pane lists user actions recorded in the platform, with the most recent actions on top. 
 It uses [audit](../govern/audit.md) as a data source. Note that the activity is interactive, i.e. 
-by clicking on highlighted entities their properties will appear in the [property panel](../features/property-panel.md). 
+by clicking on highlighted entities their properties will appear in the [property panel](../overview/property-panel.md). 
 
 **Favorites** contains your favorite objects. To add something to favorites, click on it, and 
 then click on the "star" icon on the right in the property panel. Not every object can be added to favorites,

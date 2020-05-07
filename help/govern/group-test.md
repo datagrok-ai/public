@@ -3,35 +3,35 @@
 
 # Tests: Group Management
 
-User [group](../entities/group.md) allow you to flexible configure user rights. [Users](user.md) can request membership 
-in [groups](../entities/group.md), start chat with other members, view [group](../entities/group.md) members and etc.
+User [group](../govern/group.md) allow you to flexible configure user rights. [Users](user.md) can request membership 
+in [groups](../govern/group.md), start chat with other members, view [group](../govern/group.md) members and etc.
 
 ## Testing scenarios
 
 1. Open ```Groups``` from ```Admin``` menu
 
 1. Click on ```New group``` button
-   * "Create new [group](../entities/group.md)" dialog is open
+   * "Create new [group](../govern/group.md)" dialog is open
 
 1. Click ```OK``` (without filling fields)
    * Warning "Group name is empty"
-   * New [group](../entities/group.md) was not created    
+   * New [group](../govern/group.md) was not created    
      
 1. Enter "test" in "Name" field and then click ```OK```
-   * New [group](../entities/group.md) was created with name "test"
+   * New [group](../govern/group.md) was created with name "test"
 
-1. Open "Edit" dialog for "test" [group](../entities/group.md). (From contex menu or from "Actions" tab on [Property Panel](../features/property-panel.md))
-   * Editing dialog is open. Here you can change name and description of [group](../entities/group.md)
+1. Open "Edit" dialog for "test" [group](../govern/group.md). (From contex menu or from "Actions" tab on [Property Panel](../overview/property-panel.md))
+   * Editing dialog is open. Here you can change name and description of [group](../govern/group.md)
 
-1. Open "Edit members" dialog for "test" [group](../entities/group.md). (From contex menu or from "Actions" tab on [Property Panel](../features/property-panel.md))
+1. Open "Edit members" dialog for "test" [group](../govern/group.md). (From contex menu or from "Actions" tab on [Property Panel](../overview/property-panel.md))
    * "Edit members" dialog is open
-   * In list of [group](../entities/group.md) members only current user (who created [group](../entities/group.md)) with admin role
+   * In list of [group](../govern/group.md) members only current user (who created [group](../govern/group.md)) with admin role
 
 1. Click on "admin" label near the username
    * User role is switched to "user" and display accordingly
    
 1. Click ```Save``` button 
-   * Warning "[group](../entities/group.md) should have at least one admin"  
+   * Warning "[group](../govern/group.md) should have at least one admin"  
    
 1. Switch role back to "Admin"
 
@@ -57,20 +57,20 @@ in [groups](../entities/group.md), start chat with other members, view [group](.
 1. Click on delete user icon next to self user name ( ```X``` ) in "Edit members" dialog, then click ```SAVE``` button
    * You left the group "test"
 
-1. Request membership in "test" [group](group.md). (From contex menu or from "Actions" tab on [Property Panel](../features/property-panel.md))
+1. Request membership in "test" [group](group.md). (From contex menu or from "Actions" tab on [Property Panel](../overview/property-panel.md))
    * Balloon with information about successful request
    * All admins and members of nested groups with admin role received a notification about request
    * User's notification displays this request with current status (```?``` - pending request, ```x``` - rejected request, ```✓``` - request accepted)
 
 1. Open "Edit memberships" dialog for "test" [group](group.md). (From contex menu or from "Actions" tab 
-   on [Property Panel](../features/property-panel.md), it is necessary to do from user with admin role in this group)
+   on [Property Panel](../overview/property-panel.md), it is necessary to do from user with admin role in this group)
    * "Edit memberships" dialog is open
    * In this dialog you can request membership of current group in other groups
    * Management in this dialog is similar to others, but carried out from the position of nested group
 
-1. Open "Chat" for "test" [group](group.md). (From contex menu or from "Actions" tab on [Property Panel](../features/property-panel.md))
+1. Open "Chat" for "test" [group](group.md). (From contex menu or from "Actions" tab on [Property Panel](../overview/property-panel.md))
 
-1. Delete "test" [group](group.md) (From contex menu or from "Actions" tab on [Property Panel](../features/property-panel.md)) 
+1. Delete "test" [group](group.md) (From contex menu or from "Actions" tab on [Property Panel](../overview/property-panel.md)) 
    
 See also:
    * [Group](group.md)

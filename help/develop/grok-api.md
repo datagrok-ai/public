@@ -3,7 +3,7 @@
 
 # JavaScript API
 
-[Grok JS API](api/index.html) allows to control all aspects of the Datagrok platform. The API
+[Grok JS API](grok-api.md) allows to control all aspects of the Datagrok platform. The API
 can be used from either ad-hoc scripts (`Tools | Scripting | JavaScript`), 
 or from [packages](develop.md#packages). 
 
@@ -37,7 +37,7 @@ Each [DataFrame](api/DataFrame.html) is associated with two [bitsets](api/BitSet
 
 ## Views
 
-Control [views](../features/navigation.md) via the following methods:
+Control [views](../overview/navigation.md) via the following methods:
 
 ```javascript
 grok.addTableView(table);

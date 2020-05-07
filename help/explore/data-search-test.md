@@ -32,7 +32,7 @@ Dataset should be in focus
 
 1. Enter *"50"* in the [search](data-search.md) field. Choose "Filter matching" item from search 
    menu (˅) or press ```Alt + F``` on keyboard
-   * All rows in which the values found are selected are added to [filter](../viewers/filters.md)
+   * All rows in which the values found are selected are added to [filter](../visualize/viewers/filters.md)
 
 1. Clear the [search](../features/data-search) field. Choose "Auto-select" item from [search](data-search.md) 
    menu (˅) and then enter *"50"* in the [search](data-search.md) field
@@ -41,7 +41,7 @@ Dataset should be in focus
 1. Clear the [search](data-search.md) field. Choose "Auto-filter" item from 
    [search](data-search.md) menu (˅) and then enter *"50"* in the [search](data-search.md) field
    * After entering a value in the [search](data-search.md) field, rows with the found cells are added to 
-     [filter](../viewers/filters.md) automatically
+     [filter](../visualize/viewers/filters.md) automatically
 
 1. Use search [patterns](data-search-patterns.md)  for numerical values (*">"*, *"<"*. *"<="*, *">="*, *"range"*)
    * Numerical values ​​found correspond to the entered [pattern](data-search-patterns.md)

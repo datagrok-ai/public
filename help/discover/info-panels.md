@@ -60,7 +60,7 @@ To specify the condition in the script, use the 'table' variable in the followin
 ### Context condition
 
 Info panels always accept strictly one parameter. It can be a column, a table, a table 
-cell, or any other [object](../entities/entities.md). A condition might perform checks
+cell, or any other [object](../overview/objects.md). A condition might perform checks
 against that object by using the parameter name ("x" in the example below):
 
 ```

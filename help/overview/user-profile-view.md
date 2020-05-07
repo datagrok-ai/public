@@ -14,7 +14,7 @@ System usage (# of private/public projects, total data size, upcoming charges, e
 
 User's activity, with the most recent actions on top. Uses [audit](../govern/audit.md) as a data source. Note 
  that the activity is interactive, i.e. by clicking on highlighted entities their properties will appear in the
- [property panel](../features/property-panel.md).
+ [property panel](../overview/property-panel.md).
 
 ## Notifications 
 

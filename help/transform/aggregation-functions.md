@@ -4,7 +4,7 @@
 # Aggregation Functions
 
 The same set of aggregation functions is used across the whole platform in different context 
-(["Aggregate Rows" dialog](aggregate-rows.md), transformations, [markup](../features/markup.md)) 
+(["Aggregate Rows" dialog](aggregate-rows.md), transformations, [markup](../overview/markup.md)) 
 
 ## Common
 | Function | Description|

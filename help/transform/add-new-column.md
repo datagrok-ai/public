@@ -73,4 +73,4 @@ See also:
 
   * [Grok Scripting](../features/grok-script.md)
   * [Function](../overview/functions/function.md)
-  * [Column selectors](../viewers/column-selectors.md)
+  * [Column selectors](../visualize/viewers/column-selectors.md)

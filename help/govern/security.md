@@ -3,15 +3,15 @@
 
 # Security Overview
 
-Datagrok uses a flexible mechanism for setting up privileges and access rights for all [entities](../entities/entities.md),
+Datagrok uses a flexible mechanism for setting up privileges and access rights for all [entities](../overview/objects.md),
 largely based on [RBAC](https://en.wikipedia.org/wiki/Role-based_access_control). 
-It lets you define [user groups](../entities/group.md), and associate them 
+It lets you define [user groups](../govern/group.md), and associate them 
 with permissions for different entities. Permissions sets are different for each entity type, so for instance a 
 "package" entity has "publish" and "edit" privileges, while "query" entity has "execute" and "edit" privileges.
 In order to be able to fully control access to external resources, groups can also be associated with the 
 [credentials](#credentials) used for accessing these resorces.  
 
-Every entity has associated permissions that can be granted to a [user](user.md) or to a [group](../entities/group.md).
+Every entity has associated permissions that can be granted to a [user](user.md) or to a [group](../govern/group.md).
 Groups have hierarchical structure, so every group or user can be added to another group.
 For convenience, 'personal' group gets automatically created for every user in a system.
 
@@ -26,7 +26,7 @@ against the specified entity in the current context.
 
 When an entity is created, by default only the author can access it. In order to share it with other
 users, permissions need to be granted. Typically, you would do it by right-clicking on an entity and
-choosing "Share", which will open the [share dialog](../collaborate/share-object.md).
+choosing "Share", which will open the [share dialog](../collaborate/sharing.md).
 
 ## Privileges
 
@@ -71,7 +71,7 @@ Datagrok platform should be set up to take advantage of it.
 [Credentials retrieving process diagram.drawio](../uploads/security/credentials-fetch-diagram.drawio)
 
 See also:
- * [Entities](../entities/entities.md) 
+ * [Entities](../overview/objects.md) 
  * [Groups](group.md) 
  * [Authentication](authentication.md) 
  * [Authorization](authorization.md)

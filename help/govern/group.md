@@ -33,7 +33,7 @@ Each user has a personal security group, which called by the name of the user, s
 
 User can request a membership in a group, and, it should be approved or declined by group admin.
 A [user group](group.md) might have a number of rules associated with it. A rule applies to all members 
-of the group and grants a privilege to a list of [entities](../entities/entities.md) of the specified type that pass a 
+of the group and grants a privilege to a list of [entities](../overview/objects.md) of the specified type that pass a 
 [specified filter](#defining-entities-for-a-rule.md). You can think of a group with defined privileges as a 'role'. 
  
 ## Defining entities for a rule
@@ -79,7 +79,6 @@ You can use these fields to filter groups with [smart search](../overview/smart-
 
 See also:
 
-  * [Groups View](../views/groups-view.md)
   * [Security](security.md)
   * [Group members editor](edit-group-members.md)
   * [Group memberships editor](edit-group-memberships.md)

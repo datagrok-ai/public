@@ -9,5 +9,5 @@ for the currently active view.
 To turn it on or off: `View | Toolbox (Alt+X)`. 
 
 See also:
-  * [Navigation](../features/navigation.md)
-  * [Property panel](../features/property-panel.md)
+  * [Navigation](../overview/navigation.md)
+  * [Property panel](../overview/property-panel.md)

@@ -10,9 +10,9 @@ share documents that contain live code, equations, visualizations and narrative 
 
 1. Open "smiles_coordinates.csv" table
 
-1. Select "smiles_coordinates.csv" table on [Property Panel](../features/property-panel.md)
+1. Select "smiles_coordinates.csv" table on [Property Panel](../overview/property-panel.md)
 
-1. Click "Open in Jupyter" in "Actions" tab on [Property Panel](../features/property-panel.md)
+1. Click "Open in Jupyter" in "Actions" tab on [Property Panel](../overview/property-panel.md)
    * "smiles_coordinates.csv" table open in Jupyter
    * Jupyter Notebook open in new tab
    
@@ -69,8 +69,8 @@ share documents that contain live code, equations, visualizations and narrative 
    * Actions "Open", "Edit", "Delete", "Save as JSON", "Rename" are available from context menu
    * Notebook can be applied to "smiles_cordinates" table from context menu
    
-1. Choose "Chemical Space Using tSNE" notebook for [Properties Panel](../features/property-panel.md)
-   * Tabs "Details", "Projects", "Activity", "Actions" and "Chats" are present on [Properties Panel](../features/property-panel.md)
+1. Choose "Chemical Space Using tSNE" notebook for [Properties Panel](../overview/property-panel.md)
+   * Tabs "Details", "Projects", "Activity", "Actions" and "Chats" are present on [Properties Panel](../overview/property-panel.md)
 
 1. Click on "Created by me" filter on [Toolbox](../overview/toolbox.md) 
    * Only notebooks created by current user are displayed in browser

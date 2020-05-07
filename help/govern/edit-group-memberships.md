@@ -12,12 +12,12 @@ Click on "user" word to change.
 Administrator privileges allows to edit group name or to add or remove users from this group.
 
 You can't join a group until you don't have administrative privilege on this group, but you can 
-[request a membership](../entities/group.md#membership)
+[request a membership](../govern/group.md#membership)
 You can't leave group or revoke your own administrative privileges until you are the only administrator in this group.
 
 See also:
 
-  * [Groups](../entities/group.md)
+  * [Groups](../govern/group.md)
   * [Users](user.md)
   * [Group members editor](edit-group-members.md)
   * [Security](security.md)
