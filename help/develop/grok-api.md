@@ -3,9 +3,9 @@
 
 # JavaScript API
 
-[Grok JS API](api/grok_api.js.html) allows to control all aspects of the Datagrok platform. The API
+[Grok JS API](grok-api.md) allows to control all aspects of the Datagrok platform. The API
 can be used from either ad-hoc scripts (`Tools | Scripting | JavaScript`), 
-or from [packages](dev.md#packages). 
+or from [packages](develop.md#packages). 
 
 This document covers the following areas:
 * [Data manipulation](#data-manipulation)
@@ -37,7 +37,7 @@ Each [DataFrame](api/DataFrame.html) is associated with two [bitsets](api/BitSet
 
 ## Views
 
-Control [views](../features/navigation.md) via the following methods:
+Control [views](../overview/navigation.md) via the following methods:
 
 ```javascript
 grok.addTableView(table);
@@ -120,7 +120,7 @@ Internally, JavaScript-based application are also functions that are annotated a
 
 ## Custom file handlers
 
-If custom file format support is required, just add function to [application](app_development.md) with 
+If custom file format support is required, just add function to [application](app.md) with 
 "file-handler" tag in Grok. Input can be string or list of bytes, output is list of 
 [tables](../overview/table.md). Extensions are specified in "meta.ext" option and separated with comma. 
 
@@ -136,4 +136,4 @@ fastaFileHandler(content) {
 ```
 
 See also:
-* [JavaScript development](dev.md) 
+* [JavaScript development](develop.md) 

@@ -46,4 +46,4 @@ Goal: Based on the restaurant sales data, analyze how time of day affects sales.
 See also:
 
  * [Line Chart](../../visualize/viewers/line-chart.md) 
- * [Viewers](../visualize/viewers.md)
+ * [Viewers](../../visualize/viewers.md)

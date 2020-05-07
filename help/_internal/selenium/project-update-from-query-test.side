@@ -173,10 +173,10 @@
       "id": "d8512560-9930-4432-90ed-5727f5b230fe",
       "comment": "",
       "command": "click",
-      "target": "xpath=//span[@name='span-view-name']",
+      "target": "xpath=//div[@name='div-view-name']",
       "targets": [
         ["css=.d4-ribbon-name", "css:finder"],
-        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@name='div-view-name']", "xpath:attributes"],
         ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
         ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
       ],

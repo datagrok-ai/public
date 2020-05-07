@@ -11,7 +11,7 @@ adding [views](grok-api.md#views) or [viewers](grok-api.md#pre-defined-viewers),
 [developing custom viewers](grok-api.md#custom-viewers),
 [registering functions](grok-api.md#registering-functions),
 training and applying [predictive models](../learn/predictive-modeling.md), 
-and even [building custom apps](app_development.md).
+and even [building custom apps](app.md).
 
 There are two options to run custom JavaScript code. For ad-hoc scripts, use the built-in
 JavaScript editor (`Tools | Scripting | JavaScript`). For reusable functions, viewers, 
@@ -211,7 +211,7 @@ above-mentioned groups to be productive.
   of the working code using [Grok API](grok-api.md) that can be copy-and-pasted into the existing solution.
   The samples are also cross-linked with the [help](https://datagrok.ai/help) system. 
 * [Grok API](grok-api.md) provides complete control over the platform. 
-  [JSDoc documentation](https://datagrok.ai/help/dev/api/index.html) is available.
+  [JSDoc documentation](https://datagrok.ai/help/develop/api/index.html) is available.
 * [Platform help](https://datagrok.ai/help/) explains the functionality from the user's point of view. Where
   appropriate, it is hyper-linked to samples and demo projects. In the near future, we plan to turn it
   into the community wiki, where users would be contributing to the content. The same web pages

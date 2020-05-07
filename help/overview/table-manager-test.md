@@ -7,7 +7,7 @@
 navigate between tables, select them, or perform batch actions. It also allows to view metadata on
 multiple tables in a tabular format.
 
-The implementation is based on the [grid](../viewers/grid.md), so many of the grid's features apply.
+The implementation is based on the [grid](../visualize/viewers/grid.md), so many of the grid's features apply.
 
 ## Testing scenarios
 
@@ -17,7 +17,7 @@ The implementation is based on the [grid](../viewers/grid.md), so many of the gr
 
 1. Click on first [table](table.md) in ["Table Manager"](table-manager.md) then click on second table
    * When selecting a [table](table.md) from the ["Table Manager"](table-manager.md), tab with the selected table opens
-   * Selected [table](table.md) in ["Table Manager"](table-manager.md) is displayed on [Property Panel](../features/property-panel.md)
+   * Selected [table](table.md) in ["Table Manager"](table-manager.md) is displayed on [Property Panel](../overview/property-panel.md)
    
 1. Call context menu for [table](table.md) in ["Table Manager"](table-manager.md)
    * Submenu is displayed that refers to selected [table](table.md) (tittle like table name), as well 
@@ -32,7 +32,7 @@ The implementation is based on the [grid](../viewers/grid.md), so many of the gr
    
 1. With ```Shift``` held down, select all three tables from ["Table Manager"](table-manager.md)
    * In context menu, submenu appears whose actions apply to all selected tables (tittle is "3 tables")
-   * [Property Panel](../features/property-panel.md) displays actions related to all selected tables
+   * [Property Panel](../overview/property-panel.md) displays actions related to all selected tables
    
 1. Expand "Show" submenu from the context menu
    * Submenu "Show" shows tables attributes to be added to ["Table Manager"](table-manager.md)

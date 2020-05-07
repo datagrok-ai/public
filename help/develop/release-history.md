@@ -1,6 +1,128 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2020.05.06 Stable Version
+
+* HTTP ports changed. Datagrok is now listening on 8080 port and CVM port is 8090
+
+## Latest docker images
+* Datagrok (new): `766822877060.dkr.ecr.us-east-2.amazonaws.com/datagrok:1.0.75-e7d5cbd` [download](https://dev.datagrok.ai/docker_images/datagrok-1.0.75-e7d5cbd.tar)
+* CVM (new): `766822877060.dkr.ecr.us-east-2.amazonaws.com/grok_cvm:1.0.75-e7d5cbd` [download](https://dev.datagrok.ai/docker_images/grok_cvm-1.0.75-e7d5cbd.tar)
+
+## Addressed issues
+
+* Navigation: a second Files View is created when you browse files, open a file, and press Back
+* Simplified UX - Keep views under corresponding list views
+* Home View 
+* Double-click on the "Open" icon on a toolbox to open a local file
+* GrokCvm: Reduce image size
+* Markup rendering: override links to /help to open help pages within the platform
+* TileViewer: Remove does not work on macOS
+* Harmonized UI: Table View: "save as" combo popup
+* Markup: ability to omit ".md" when referencing help pages
+* Viewers forget name after deserialization
+* Viewers forget name after deserialization
+* GrokApi: View Menu
+* OpenAPI: Hardcoded "Content-Type" for queries without body
+* Notebooks: Add "Apply to" as function
+* Notebook: Renaming does not influence to Notebook name resolving
+* GrokApi: DataFrame "currentCol" and "currentCell"
+* ScriptingViewer: Viewer continues handling events after dataframe was closed
+* Editing SQL queries: tags are not recognized
+* ScriptingViewer: Viewer continues handling events after dataframe was closed
+* Query-driven info panels do not show up
+* Files: API for uploading, renaming, moving, and deleting
+* File Shares: abilty to delete, move, rename files, and create new folders - delete, move and rename
+* File Browser: ability to sort by name, size, author, created, modified
+* Events for client-originated file operations
+* File browser: move files by drag-and-drop
+* CSS support for drag-and-drop
+* Support for drag-and-dropping multiple objects
+* GrokApi: Reset layout for TableView
+* Notebook: Download as PDF, HTML buttons
+* JS API: use Rx.js for eventing
+* FilesClient: Improve client-side API for working with file shares
+* Docker: Datagrok and CVM without sudo
+* UI: Toolbar button misplaced
+* UI: Emply views list
+* Files View: Folders disappear after dragging more then 1 element
+* Check DB connection before creating data folder
+* UI: context menus
+* Moved ClinBrowser methods to the ClinBrowserPlugin class.
+* Side Bar: Scrollbar does not appear in "Windows" section if many views are open
+* Deprecate OpenCPU
+* Bind query, script and notebook to View.entity in corresponding views
+* Files View
+* Clicking on profile on sidebar opens two profile views
+* UI: two separators on the toolbar
+* File Browser: Connections in tree are not updated after deletion or renaming
+* File preview displayed incorrectly on PP
+* Inspector: integrate event viewer with the property panel
+* Inspector: integrate event viewer with the JS Editor (create code for intercepting and inspecting the event)
+* DB deployment: Error when deploying swaggers on dev server
+* User personal folder
+* New UI: "favorites" pane
+* Drag-and-drop: ability to custom-style drop zones with CSS
+* Favorites pane: context menu for removing individual items and for removing all items
+* Selenium: Add attributes "name" to controls in the "Windows" section
+* Unable to create new S3 bucket (UI defaults to a regular file share)
+* Data | Categorize is not available in new UI
+* UI: Do not collapse toggle buttons list if there are less then 4 items or toolbox is able to fit
+* UI: Convert menu button to pane switch
+* A drop-down for quickly switching between views
+* File Browser: Files are not displayed in the browser 
+* New UI: renamed Home to Datagrok, and moved it under Help.
+* Display "exception" icon in the new UI
+* Exception not displayed as element in UI
+* Set proper tab active on sidebar on load
+* User Activity harmonization
+* Horizontal scroll appears on the toolbox
+* Layout gallery causes an exception
+* Error when retrieving one row from Oracle with empty string value
+* Teradata: "Orders" query does not work
+* JS Examples: stock-prices.js does not work
+* Web connections: Adding a query is available from UI
+* JS Examples: stock-prices.js does not work
+* Scripting: Hash Blob input and use as cache ID to avoid resending data to CVM
+* Source Tree: Empty context menu for "Tables" and DB columns
+* Swagger: Add manual filling of "host" and "schemes" sections for v2.0 as were added for 3.0
+* UI: Workspace
+* GrokCvm: Reduce image size
+* Change type string -> double select by default "extract numbers"
+* Saved Visual Query: Name of the resulting table should match the query name
+* Forbid to change file connection root
+* File indexer doesn't work with windows shares
+* Files View makes few list requests after receiving an exception
+* Notebooks: Optimize PDF conversion
+* Optimize Windows-shares connector
+* New UI: "ML" top-level menu
+* Refactor Accordion and TabControl, introduce common subclasses, and expose both to JS API
+* Add 'Favorites' drop down to the Property Panel header
+* Multivariate Analysis does not work
+* Missing Values Imputation does not work
+* OpenAPI: String list parameter escaping issue
+* Prevent browser caching for html files
+* "Time series" test dataset
+* EntityView: view name is empty
+* Bar chart: Alt + Clicking on an empty space throws an exception
+* Bar Chart: Starting alt-zooming on a bar selects it
+* Bar Chart: mouse wheel for vertical scroll
+* Modelling: Chemprop does not work
+* ChemSpace integration
+* Scripts: "Test" script on R: Exception after execution
+* Scripts: R samples: "IIR Filter" does not work
+* S3 file shares: the first letter of the file name disappears in some cases
+* Scripts: R samples: "LDA" does not work
+* Scripts: R samples: "Contour Plot" does not work
+* Notebooks: New Notebook throws an exception
+* Semantic Type Detectors: latitude/longitude
+* Optimize upload utility
+* Help: Internal links treated as external
+* Split grok_api.js
+* Fix invited users namespace permission
+* Share to unregistered user is broken
+* Move CVM to 8090 port.
+
 # 2020.04.07 Stable Version
 
 

@@ -68,7 +68,7 @@ citizen in the platform (i.e., it can be used from console, gets registered
 in help, gets an optional audit trail associated with the invocations, etc)
 
 The code below registers two functions, "jsConcat" and "jsWidget". To test
-jsConcat, enter "jsConcat(42, 33)" in the [Console](../features/console.md). 
+jsConcat, enter "jsConcat(42, 33)" in the [Console](../overview/console.md). 
 To test jsWidget, create a new Dashboard, and click on "Widget" under "Widgets".
 
 For asynchronous JS functions, set flag "isAsync" to "true", see "jsSuggestCountryName" example.

@@ -39,20 +39,13 @@ testX <- testData[, -grep(trainYCol, colnames(dataset))]
 
 # Setup for cross validation
 set.seed(73)
-ctrl <- trainControl(method="repeatedcv",
-                     repeats=5,
-                     summaryFunction=multiClassSummary,
-                     classProbs=TRUE,
-                     savePredictions=TRUE)
+ctrl <- trainControl(method="repeatedcv", repeats=5, summaryFunction=multiClassSummary,
+    classProbs=TRUE, savePredictions=TRUE)
 
 # Train SVM model
 set.seed(73)
-svm.model <- train(x=trainX,
-                   y=trainY,
-                   method="svmLinear",
-                   preProcess=c("center","scale"),
-                   metric="ROC",
-                   trControl=ctrl)
+svm.model <- caret::train(x=trainX, y=trainY, method="svmLinear",
+    preProcess=c("center","scale"), metric="ROC", trControl=ctrl)
 
 # Apply model
 set.seed(73)

@@ -10,7 +10,7 @@
       "id": "8ff604b9-81db-4083-8663-4b119b7492f9",
       "comment": "",
       "command": "open",
-      "target": "/datasets?selenium=true&q=",
+      "target": "/projects?selenium=true&q=selenium",
       "targets": [],
       "value": ""
     }, {
@@ -2894,7 +2894,7 @@
       "id": "6b210140-00ed-4ea9-8284-635913034c82",
       "comment": "",
       "command": "open",
-      "target": "/datasets?selenium=true&q=serialization",
+      "target": "/projects?selenium=true&q=seleniumserialization",
       "targets": [],
       "value": ""
     }, {

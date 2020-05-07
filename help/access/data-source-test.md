@@ -21,16 +21,16 @@ or basically anything that is capable of providing the data.
    * "Connections browser" is open with in queries belonging to selected connection
    * Patten "dataSource = {data_source_name}" is entered in browser search bar      
 
-1. Open a list of [connections](data-connection.md) on [Property Panel](../features/property-panel.md)
+1. Open a list of [connections](data-connection.md) on [Property Panel](../overview/property-panel.md)
   
 1. Open a list of [Jobs](data-job.md) on Property Panel
    
-1. Open a list of Job Runs on [Property Panel](../features/property-panel.md)
+1. Open a list of Job Runs on [Property Panel](../overview/property-panel.md)
    * Job Runs list is open. Display start time, status and name of Job
 
-1. Open a list of [Queries](data-query.md) on [Property Panel](../features/property-panel.md)
+1. Open a list of [Queries](data-query.md) on [Property Panel](../overview/property-panel.md)
  
-1. Open a list of Query Runs on [Property Panel](../features/property-panel.md)
+1. Open a list of Query Runs on [Property Panel](../overview/property-panel.md)
    * Query Runs list is open. Display start time, status and name
 
 See also:

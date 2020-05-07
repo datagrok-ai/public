@@ -45,7 +45,7 @@ over 20 different data sources, and the list is quickly growing!
 * Teradata
 * Vertica
 * Redis
-* Linked Data ([SPARQL](connect/sparql.md))
+* Linked Data ([SPARQL](../access/sparql-query.md))
 * Scripts (Dart, JavaScript, C#)
 * SAP
 * SAS

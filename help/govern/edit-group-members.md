@@ -16,7 +16,7 @@ You can't revoke your own administrative privileges.
 
 See also:
 
-  * [Groups](../entities/group.md)
+  * [Groups](../govern/group.md)
   * [Users](user.md)
   * [Group memberships editor](edit-group-memberships.md)
   * [Security](security.md)

@@ -303,10 +303,10 @@
       "id": "7a5e359d-f3f6-4e6f-8242-18e32a9fb6dd",
       "comment": "",
       "command": "verifyText",
-      "target": "xpath=//span[@name='span-view-name']",
+      "target": "xpath=//div[@name='div-view-name']",
       "targets": [
         ["css=.d4-ribbon-name", "css:finder"],
-        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@name='div-view-name']", "xpath:attributes"],
         ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
         ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
       ],
@@ -572,10 +572,10 @@
       "id": "b76ba800-0abd-4883-b151-8b1f5a09a70e",
       "comment": "",
       "command": "verifyText",
-      "target": "xpath=//span[@name='span-view-name']",
+      "target": "xpath=//div[@name='div-view-name']",
       "targets": [
         ["css=.d4-ribbon-name", "css:finder"],
-        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@name='div-view-name']", "xpath:attributes"],
         ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
         ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
       ],
@@ -758,10 +758,10 @@
       "id": "afbd0118-37e6-4a22-b952-525ec95071e7",
       "comment": "",
       "command": "verifyText",
-      "target": "xpath=//span[@name='span-view-name']",
+      "target": "xpath=//div[@name='div-view-name']",
       "targets": [
         ["css=.d4-ribbon-name", "css:finder"],
-        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@name='div-view-name']", "xpath:attributes"],
         ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
         ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
       ],
@@ -937,10 +937,10 @@
       "id": "7536807c-5aeb-456b-81e4-6b6f2b50762b",
       "comment": "",
       "command": "verifyText",
-      "target": "xpath=//span[@name='span-view-name']",
+      "target": "xpath=//div[@name='div-view-name']",
       "targets": [
         ["css=.d4-ribbon-name", "css:finder"],
-        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@name='div-view-name']", "xpath:attributes"],
         ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
         ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
       ],

@@ -75,4 +75,4 @@ contains the structure that gets rendered as SVG using the RDKit library.
 
 See also:
 * [Cheminformatics](../domains/chem/cheminformatics.md)
-* [JavaScript Development](dev.md)
+* [JavaScript Development](develop.md)

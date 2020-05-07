@@ -277,4 +277,4 @@ Chart types:
 
 See also: 
 
-  * [Markup Viewer](../viewers/markup.md)
+  * [Markup Viewer](../visualize/viewers/markup.md)

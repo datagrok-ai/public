@@ -79,10 +79,10 @@
       "id": "1ff7bb2f-62ba-469a-a6d3-ca1edb5caf0b",
       "comment": "",
       "command": "click",
-      "target": "xpath=//span[@name='span-view-name']",
+      "target": "xpath=//div[@name='div-view-name']",
       "targets": [
         ["css=.d4-ribbon-name", "css:finder"],
-        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@name='div-view-name']", "xpath:attributes"],
         ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
         ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
       ],
@@ -238,10 +238,10 @@
       "id": "911b3a54-cfcd-43f5-809b-7cc3ae8a8e9d",
       "comment": "",
       "command": "click",
-      "target": "xpath=//span[@name='span-view-name']",
+      "target": "xpath=//div[@name='div-view-name']",
       "targets": [
         ["css=.d4-ribbon-name", "css:finder"],
-        ["xpath=//span[@name='span-view-name']", "xpath:attributes"],
+        ["xpath=//div[@name='div-view-name']", "xpath:attributes"],
         ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
         ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
       ],

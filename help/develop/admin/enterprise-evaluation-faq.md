@@ -26,12 +26,12 @@
         * [local files](https://datagrok.ai/img/slides/access-file-formats.mp4) 
         * datastore files
     * [Embedding a Datagrok visualization into a custom web application](https://datagrok.ai/embed_test.html)
-    * [Embedding a custom visualization into Datagrok](../visualize/viewers/markup.md) 
+    * [Embedding a custom visualization into Datagrok](../../visualize/viewers/markup.md) 
 
 * Developer experience
     * [Debug environment when developing customizations](https://youtu.be/PDcXLMsu6UM)  
-    * [Devops process including deployment of packages, their dependencies and versioning](../dev.md)  
-    * [Concurrent work by team of developers](../dev.md#development)  
+    * [Devops process including deployment of packages, their dependencies and versioning](../develop.md)  
+    * [Concurrent work by team of developers](../develop.md#development)  
 
 * Scalability and Performance
     * Maximum dataset sizes

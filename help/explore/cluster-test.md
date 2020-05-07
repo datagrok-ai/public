@@ -19,10 +19,10 @@
 
 1. Set the value of field "Show scatter plot" as true
    * Column "clusters" was added to "demog" table
-   * Viewer "[Scatter Plot](../viewers/scatter-plot.md)" was created where [clusters](cluster-data.md) are marked with color
+   * Viewer "[Scatter Plot](../visualize/viewers/scatter-plot.md)" was created where [clusters](cluster-data.md) are marked with color
 
 1. Click on "Cancel" button in "Cluster" dialog
-   * Column "clusters" and [scatter plot](../viewers/scatter-plot) disappeared
+   * Column "clusters" and [scatter plot](../visualize/viewers/scatter-plot) disappeared
    
 1. Add  all available columns to field "Features"
 
@@ -35,5 +35,5 @@
    
 See also:
   * [Cluster data](cluster-data.md)
-  * [Scatter plot](../viewers/scatter-plot.md)
+  * [Scatter plot](../visualize/viewers/scatter-plot.md)
   * [Cluster](cluster-test.side)

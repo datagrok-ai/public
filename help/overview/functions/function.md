@@ -8,7 +8,7 @@ Pretty much anything that can be executed within the platform is a function. Her
 of the different types of functions:
 
 * [Querying](../../access/data-query.md) external Postgres database
-* Executing a [JavaScript function](../dev/dev.md) in the browser that uses Grok API for integration purposes 
+* Executing a [JavaScript function](../../develop/develop.md) in the browser that uses Grok API for integration purposes 
 * Calculating Sin(PI)
 * Deleting a column from the table
 * Sending an email
@@ -21,11 +21,11 @@ execute on the server and others in the browser, some of them perform scientific
 show UI elements. Yet, they all share the same mechanism and therefore have the same features:
 
 * Scriptable - each function call is represented as a string, which can be executed 
-  from [console](../features/console.md), or as part of a bigger script 
+  from [console](../../overview/console.md), or as part of a bigger script 
 * Findable - open `Help | Functions` to search 
 * Introspectable - programmatically find out function parameter's metadata 
 * Secure - A function can have privileges associated with it. For instance, you might want the 
-  "ApproveExpense" function be available only to people belonging to the "Managers" [group](group.md).
+  "ApproveExpense" function be available only to people belonging to the "Managers" [group](../../govern/group.md).
 * Auditable - find out who and when executed a particular function, and which parameters were used
 * Ability to get a table with all parameters used for a particular function 
 * Runnable - dynamically generated UI for editing parameter values 
@@ -38,7 +38,7 @@ show UI elements. Yet, they all share the same mechanism and therefore have the 
 
 Interactive visual data munging is a powerful feature. Every transformation that is triggered visually
 (such as by clicking "Delete selected rows" icon) is backed by a corresponding function. By printing 
-function call in the [console](../features/console.md)), we get macro recording capability - and unlike 
+function call in the [console](../../overview/console.md)), we get macro recording capability - and unlike 
 Excel, there is no need to start recording, simply open `View | Console` to see what had been 
 executed.
 
@@ -49,7 +49,7 @@ written something useful that other people would benefit from, share it with you
 When enabled, a history of all changes made to the table is saved automatically, so that
 users will later be able to figure out how that particular table was produced, or to 
 reproduce the process on a new table with the structure similar to the original one.
-To access it, open table's 'History' pane on the [property panel](../features/property-panel.md). 
+To access it, open table's 'History' pane on the [property panel](../../overview/property-panel.md). 
 
 ## Data flow
 
@@ -93,5 +93,5 @@ You can use these fields to filter functions with [smart search](../smart-search
 
 See also
 
-* [Console](../features/console.md)
+* [Console](../../overview/console.md)
 * [Scripting](../../compute/scripting.md)

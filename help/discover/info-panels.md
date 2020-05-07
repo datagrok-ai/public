@@ -5,7 +5,7 @@
 
 Info panels provide additional information about the 
 current context (which can be a table, a column, or pretty much
-any other [object](../entities/entities.md)). Info panels are meant to be 
+any other [object](../overview/objects.md)). Info panels are meant to be 
 easily developed by the users of the platform, and shared with other users. 
 You can use all features of the Grok platform, such as scripting, data 
 querying and transformation pipeline, user-defined functions,
@@ -60,7 +60,7 @@ To specify the condition in the script, use the 'table' variable in the followin
 ### Context condition
 
 Info panels always accept strictly one parameter. It can be a column, a table, a table 
-cell, or any other [object](../entities/entities.md). A condition might perform checks
+cell, or any other [object](../overview/objects.md). A condition might perform checks
 against that object by using the parameter name ("x" in the example below):
 
 ```
@@ -212,4 +212,4 @@ See also:
 * [Data Augmentation](data-augmentation.md) 
 * [Scripting](../compute/scripting.md)
 * [Semantic Types](semantic-types.md)
-* [Cheminformatics: info panels](../domains/chem/cheminformatics#info-panels)
+* [Cheminformatics: info panels](../domains/chem/cheminformatics.md#info-panels)

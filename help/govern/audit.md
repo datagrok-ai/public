@@ -5,7 +5,7 @@
 
 Audit system is intended to store all users activity for future analysis. 
 
-All of the changes made to the different [entities](../entities/entities.md), is tracked and can be analyzed using activity sections.
+All of the changes made to the different [entities](../overview/objects.md), is tracked and can be analyzed using activity sections.
 All events are joined to user session. Changes, made to the entities, are connected with corresponding entities.
 Audit records can be posted both from client and server process.
 

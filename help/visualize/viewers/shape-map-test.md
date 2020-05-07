@@ -12,7 +12,7 @@ or EEG electrodes).
 
 1. Open "ua_population" dataset
 
-1. Add [Shape Map](../viewers/shape-map.md) viewer 
+1. Add [Shape Map](../visualize/viewers/shape-map.md) viewer 
    * Viewer added
    * Map of Ukraine regions is drawn on viewer
      
@@ -28,7 +28,7 @@ or EEG electrodes).
 1. Change display color (from viewer context menu or from "hamburger" menu) 
    * Color changes according to the selected palette
    
-1. Test common features for viewers ([viewers-test](../viewers/viewers-test.md))   
+1. Test common features for viewers ([viewers-test](../visualize/viewers/viewers-test.md))   
    
 See also:
- * [Shape Map](../viewers/shape-map.md)  
+ * [Shape Map](../visualize/viewers/shape-map.md)  

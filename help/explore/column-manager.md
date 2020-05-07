@@ -8,7 +8,7 @@ columns in the currently open tables. Use it to navigate between columns, select
 It also allows to view metadata on multiple columns in a tabular format, as well as other column
 properties, such as statistics.
 
-The implementation is based on the [grid](../viewers/grid.md), so many of the grid's features apply.
+The implementation is based on the [grid](../visualize/viewers/grid.md), so many of the grid's features apply.
 
 Usage:
 
@@ -26,4 +26,4 @@ choice to apply commands to either current table, or all selected tables.
 
 See also:
 
-* [Grid](../viewers/grid.md)
+* [Grid](../visualize/viewers/grid.md)
