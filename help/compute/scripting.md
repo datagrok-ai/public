@@ -36,7 +36,7 @@ Use [Console](../overview/console.md) to execute it. Simply type "RSquare(3)":
 ```
 
 The syntax for invoking the scripts is the same, regardless of the language used. In the same way, you can
-call Grok Functions. See [Grok Scripting](../features/grok-script.md) for more details.
+call Grok Functions. See [Grok Scripting](../overview/grok-script.md) for more details.
 
 ## Running a script
 

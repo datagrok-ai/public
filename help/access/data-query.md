@@ -18,7 +18,7 @@ Queries can be parameterized. In the following example, the we are introducing '
 SELECT * FROM Orders WHERE (employeeId = @employeeId)
 ```
 
-For more details, see [Parameterized queries](connect/parameterized-queries.md) section.
+For more details, see [Parameterized queries](connectors/parameterized-queries.md) section.
 
 ## Access control
 
@@ -55,11 +55,11 @@ You can use these fields to filter queries with [smart search](../overview/smart
 
 See also:
 
-  * [Edit Data Query](../dialogs/edit-query.md)
+  * [Query View](data-query-view.md)
   * [Data Pipeline](data-pipeline.md)
   * [Data Source](data-source.md)
   * [Data Connection](data-connection.md)
   * [Data Job](data-job.md)
   * [Function Call](../overview/functions/function-call.md)
-  * [Parameterized queries](connect/parameterized-queries.md)
+  * [Parameterized queries](connectors/parameterized-queries.md)
   * [Query Builder](query-builder.md)

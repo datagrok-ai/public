@@ -43,4 +43,4 @@ author.joined > -5d
 ```
 
 See also:
-* [Find and Replace](../transform/find-and-replace)
+* [Find and Replace](../transform/find-and-replace.md)
