@@ -4,52 +4,50 @@ class ChemspacePackage extends GrokPackage {
     //name: Chemspace
     async startApp(context) {
         let token = await ChemspacePackage.getApiToken();
-        ChemspacePackage.queryMultipart(token).then(t => {
-            gr.addTableView(t);
-        })
 
-        // let molecule = ui.moleculeInput('', 'c1ccccc1O');
-        // let searchMode = ui.choiceInput('Mode', 'Similar', ['Exact', 'Similar', 'Substructure']);
-        // let currency = ui.choiceInput('Currency', 'USD', ['USD', 'EUR']);
-        // let similarity = ui.choiceInput('Similarity', '0.8', ['0.2', '0.4', '0.6', '0.8']);
-        // let catalog = ui.choiceInput('Catalog', '', ['', 'BB', 'SCR', 'REAL']);
-        // let filtersHost =  ui.div([molecule.root, searchMode.root, currency.root, similarity.root, catalog.root],
-        //     'chemspace-controls,pure-form');
-        //
-        // let emptyTable = DataFrame.create();
-        // let view = grok.addTableView(emptyTable);
-        // view.name = 'Chemspace';
-        // view.basePath = '';
-        // view.description = 'Chemspace search viewer';
-        // view.root.className = 'grok-view grok-table-view chemspace';
-        //
-        // function update() {
-        //     ui.setUpdateIndicator(view.root, true);
-        //     grok.callQuery('Chemspace:Search', {
-        //         'code': `search_${molecule.value}_${ChemspacePackage.searchModeToCommand(searchMode.value)}`,
-        //         'currency': currency.value,
-        //         'sim': parseFloat(similarity.value),
-        //         'mode': catalog.value
-        //     }, true, 100).then(fc => {
-        //         let data = JSON.parse(fc.getParamValue('stringResult'))['data'];
-        //         view.dataFrame = data !== null ? ChemspacePackage.dataToTable(data, 'chemspace') : emptyTable;
-        //         ui.setUpdateIndicator(view.root, false);
-        //     });
-        // }
-        //
-        // update();
-        //
-        // molecule.onChanged(() => update());
-        // searchMode.onChanged(() => {
-        //     similarity.enabled = searchMode.value === 'Similar';
-        //     update();
-        // });
-        // currency.onChanged(() => update());
-        // similarity.onChanged(() => update());
-        // catalog.onChanged(() => update());
-        //
-        // let acc = view.toolboxPage.accordion;
-        // acc.addPane('Chemspace', () => filtersHost, true, acc.panes[0]);
+        let molecule = ui.moleculeInput('', 'c1ccccc1O');
+        let searchMode = ui.choiceInput('Mode', 'Similar', ['Exact', 'Similar', 'Substructure']);
+        let similarity = ui.choiceInput('Similarity', '0.8', ['0.2', '0.4', '0.6', '0.8']);
+        let catalog = ui.choiceInput('Catalog', '', ['BB', 'SCR', 'REAL']);
+        let filtersHost =  ui.div([molecule.root, searchMode.root, similarity.root, catalog.root],
+            'chemspace-controls,pure-form');
+
+        let emptyTable = DataFrame.create();
+        let view = grok.addTableView(emptyTable);
+        view.name = 'Chemspace';
+        view.basePath = '';
+        view.description = 'Chemspace search viewer';
+        view.root.className = 'grok-view grok-table-view chemspace';
+
+        function update() {
+            ui.setUpdateIndicator(view.root, true);
+            ChemspacePackage.queryMultipart('search/advanced/1/sim', molecule.value, token).then(t => {
+                view.dataFrame = t;
+                ui.setUpdateIndicator(view.root, false);
+            });
+
+            // grok.callQuery('Chemspace:Search', {
+            //     'code': `search_${molecule.value}_${ChemspacePackage.searchModeToCommand(searchMode.value)}`,
+            //     'currency': currency.value,
+            //     'sim': parseFloat(similarity.value),
+            //     'mode': catalog.value
+            // }, true, 100).then(fc => {
+            //
+            // });
+        }
+
+        update();
+
+        molecule.onChanged(() => update());
+        searchMode.onChanged(() => {
+            similarity.enabled = searchMode.value === 'Similar';
+            update();
+        });
+        similarity.onChanged(() => update());
+        catalog.onChanged(() => update());
+
+        let acc = view.toolboxPage.accordion;
+        acc.addPane('Chemspace', () => filtersHost, true, acc.panes[0]);
     }
 
     //name: Chemspace
@@ -162,19 +160,21 @@ class ChemspacePackage extends GrokPackage {
     }
 
     //description: Perform query with multipart form data
-    static queryMultipart(token) {
+    static queryMultipart(path, smiles, token) {
         // TODO: Deprecate after WebQuery 'multipart/form-data' support
         return new Promise(function (resolve, reject) {
             let host = 'https://api.chem-space.com';
-            let formData = new FormData('SMILES=СOc1ccc(cc1)-c1nnc(SC)o1');
             let xhr = new XMLHttpRequest();
+            let formData = new FormData();
+            formData.append('SMILES', smiles);
+            xhr.open('POST', `${host}/v2/${path}`);
             xhr.setRequestHeader('Authorization', `Bearer ${token}`);
             xhr.setRequestHeader('Accept', 'application/json; version=2.6');
-            xhr.open('POST', `${host}/v2/search/smiles`);
             xhr.onload = function () {
-                if (this.status >= 200 && this.status < 300)
-                    resolve(DataFrame.fromJson(xhr.responseText));
-                else
+                if (this.status >= 200 && this.status < 300) {
+                    let list = JSON.parse(xhr.responseText)['items'];
+                    resolve(list.length > 0 ? DataFrame.fromJson(JSON.stringify(list)) : DataFrame.create());
+                } else
                     reject({status: this.status, statusText: xhr.statusText});
             };
             xhr.onerror = function () {
@@ -182,6 +182,5 @@ class ChemspacePackage extends GrokPackage {
             };
             xhr.send(formData);
         });
-
     }
 }
