@@ -71,6 +71,6 @@ For example to get "1/1/2019" date, to solve this set datetime type and use quot
 
 See also:
 
-  * [Grok Scripting](../features/grok-script.md)
+  * [Grok Scripting](../overview/grok-script.md)
   * [Function](../overview/functions/function.md)
   * [Column selectors](../visualize/viewers/column-selectors.md)
