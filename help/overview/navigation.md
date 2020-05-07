@@ -4,7 +4,7 @@
 # Navigation
  Datagrok helps you unlock the full value of your organization's data by empowering any non-technical user to **discover, cleanse, visualize, explore, model data, and share the results** seamlessly. 
 
- To get started, go to [Datagrok](https://datagrok.ai/) and click on the [![button](../uploads/pictures/button33.JPG "Launch")](https://public.datagrok.ai/?) button.
+ To get started, go to [Datagrok](https://datagrok.ai/) and click on the [![button](../uploads/pictures/button33.jpg "Launch")](https://public.datagrok.ai/?) button.
 ## Welcome
 <!-- Note: this section should be on https://datagrok.ai/help/overview/welcome-view -->
 
@@ -13,13 +13,13 @@ Once you log in on Datagrok, you will see the welcome screen. At the **top**, yo
 
 At the **left**, there is a toolbox with info to get started with some useful links, such as: _Wiki, Connect to Data, and even Tutorials_.
 
-![alt text](../uploads/pictures/welcome_start.JPG "Datagrok Welcome Page")
+![alt text](../uploads/pictures/welcome_start.jpg "Datagrok Welcome Page")
 
 **Useful Links:** [Tutorials](../_internal/tutorials/tutorials.md) · [Scripting Tutorials](../_internal/tutorials/scripting.md) · [Function Parameters](../overview/functions/func-params-enhancement.md) · [Use Case: Navigation](../_internal/tutorials/platform-navigation.md)
 
 At the **right**, you will find the property panel and the contextual help panel, which add useful information based on the selected items and the available features at a given moment.
 
-![alt text](../uploads/pictures/welcome_property_panel.JPG "Property Panel and Contextual Help Panel")
+![alt text](../uploads/pictures/welcome_property_panel.jpg "Property Panel and Contextual Help Panel")
 
 <!-- Note: add background to image so that it looks centered. -->
 ## Datasets
@@ -30,7 +30,7 @@ Also, need info for Contextual Help
 -->
 
 When you select a **Dataset**, you will see the a similar screen to the following. From left to right, relevant features appear on the [Toolbox](../overview/toolbox.md), the data is represented in the [Main View](../visualize/view-layout.md), and additional info on the data shows up on the [Property Panel](../overview/property-panel.md) and the Contextual Help Panel.
-![alt text](../uploads/pictures/dataset.JPG "Datagrok Welcome Page")
+![alt text](../uploads/pictures/dataset.jpg "Datagrok Welcome Page")
 
 **Useful Links:** [Viewers](../visualize/viewers.md) · [Toolbox](../overview/toolbox.md) · [Main View](../visualize/view-layout.md) · [Property Panel](../overview/property-panel.md)
 
@@ -50,19 +50,19 @@ Panels can be relocated for major convenience by using the _drag and drop_ princ
 #### Toolbar
 The toolbar provides the main features that are available at a given moment. A view resides in the center and occupies all available area in the screen. There are some static controls, such as **File > Import File**, and controls that are specific for the active view.
 
-![alt text](../uploads/pictures/toolbar.JPG "Toolbar")
+![alt text](../uploads/pictures/toolbar.jpg "Toolbar")
 
 **Useful Links:** [Workspace](../overview/workspace.md) · [Navigation](../overview/navigation.md) · [Toolbox](../overview/toolbox.md)
 #### Main Menus
 The static menus offer basic functionalities that are common to all the environments. Moreover, some view specific menus appear when data is imported. At any moment, only the usable features appear as clickable.
-![alt text](../uploads/pictures/main_toolbar.JPG "Main Menus")
+![alt text](../uploads/pictures/main_toolbar.jpg "Main Menus")
 #### Ribbons
 The ribbons menu is a quick access icon toolbar located under the static and view-specific menus. Before you import or connect to data, the available options are **Open/Save local file, Connect to Data,** and **Show Workspace**.
 
 ![alt text](../uploads/gifs/ribbons.gif "Ribbons Menu")
 
 However, the quick access ribbons change depending on the available options. For instance, these are the features when you have already imported data to the workspace.
-![alt text](../uploads/pictures/icon_menu.JPG "Ribbon Toolbar")
+![alt text](../uploads/pictures/icon_menu.jpg "Ribbon Toolbar")
 
 **Useful Links:** [Navigation](../overview/navigation.md) · [Toolbox](../overview/toolbox.md)
 
@@ -94,18 +94,18 @@ Use this feature to browse within the columns of the imported data quickly. For 
 #### Layouts 
 Use this feature to **Save** the current layout of the data, i.e. view and other features. You may receive suggestions in relation to other users who used similar data. 
 
-![alt text](../uploads/pictures/layouts.JPG "Layouts")
+![alt text](../uploads/pictures/layouts.jpg "Layouts")
 
 <!-- Note: Consider changing picture -->
 
 Whenever you save a view layout, you will be able to repeat the representations for the same data or a new dataset easily. You can also use this feature to browse within your saved layouts to try different views for the data in seconds. For more information, see [View Layout](../visualize/view-layout.md).
 #### Actions
 Use this feature to perform key actions on the workspace, such as **Save as CSV, Save as Project, Clone, etc.** 
-![alt text](../uploads/pictures/actions.JPG "Layouts")
+![alt text](../uploads/pictures/actions.jpg "Layouts")
 #### Models 
 Use this powerful feature to train a model for your data. Once you have trained the model, you will be able to make predictions on the same or similar data. 
 
-![alt text](../uploads/pictures/models.JPG "Models")
+![alt text](../uploads/pictures/models.jpg "Models")
 
 **Useful Links:** [Cheminformatics Predictive Modeling](../domains/chem/chem-predictive-modeling.md) · [Use Case Predictive Modeling](../_internal/tutorials/predictive-modeling.md) · [Predictive Modeling Info](../learn/predictive-modeling-info.md)
 #### Tutorials
@@ -115,19 +115,19 @@ When available, this feature serves to train an algorithm on the dataset to get 
 
 ### Main View
 The main viewer is the central panel where you can separate datasets and graphs in tabs.
-![alt text](../uploads/pictures/main_view.JPG "Main View")
+![alt text](../uploads/pictures/main_view.jpg "Main View")
 For more information, see [Viewers](../visualize/viewers.md).
 #### Workspace
 A Workspace is the collection of currently opened projects. The workspaces are separated by tabs in the main view. **Useful Links:** [Workspace](../overview/workspace.md)
 ### Property Panel
 At the right, the property panel displays relevant information on the selected data of the dataset. You can perform some basic actions from this panel, such as _delete, filter, keep, or extract rows_.
-![alt text](../uploads/pictures/property_panel.JPG "Property Panel")
+![alt text](../uploads/pictures/property_panel.jpg "Property Panel")
 
 For more information, see: [Property Panel](../overview/property-panel.md).
 ### Contextual Help Panel
 The contextual help panel shows the additional insight for the specific situation or about the current selected object. 
 
-![alt text](../uploads/pictures/contextual_help_panel.JPG "Contextual Help Panel")
+![alt text](../uploads/pictures/contextual_help_panel.jpg "Contextual Help Panel")
 
 See also:
  * [Workspace](../overview/workspace.md) 

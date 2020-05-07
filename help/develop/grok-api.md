@@ -120,7 +120,7 @@ Internally, JavaScript-based application are also functions that are annotated a
 
 ## Custom file handlers
 
-If custom file format support is required, just add function to [application](app_development.md) with 
+If custom file format support is required, just add function to [application](app.md) with 
 "file-handler" tag in Grok. Input can be string or list of bytes, output is list of 
 [tables](../overview/table.md). Extensions are specified in "meta.ext" option and separated with comma. 
 

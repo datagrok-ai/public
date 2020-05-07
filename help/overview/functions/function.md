@@ -21,11 +21,11 @@ execute on the server and others in the browser, some of them perform scientific
 show UI elements. Yet, they all share the same mechanism and therefore have the same features:
 
 * Scriptable - each function call is represented as a string, which can be executed 
-  from [console](../overview/console.md), or as part of a bigger script 
+  from [console](../../overview/console.md), or as part of a bigger script 
 * Findable - open `Help | Functions` to search 
 * Introspectable - programmatically find out function parameter's metadata 
 * Secure - A function can have privileges associated with it. For instance, you might want the 
-  "ApproveExpense" function be available only to people belonging to the "Managers" [group](group.md).
+  "ApproveExpense" function be available only to people belonging to the "Managers" [group](../../govern/group.md).
 * Auditable - find out who and when executed a particular function, and which parameters were used
 * Ability to get a table with all parameters used for a particular function 
 * Runnable - dynamically generated UI for editing parameter values 
@@ -38,7 +38,7 @@ show UI elements. Yet, they all share the same mechanism and therefore have the 
 
 Interactive visual data munging is a powerful feature. Every transformation that is triggered visually
 (such as by clicking "Delete selected rows" icon) is backed by a corresponding function. By printing 
-function call in the [console](../overview/console.md)), we get macro recording capability - and unlike 
+function call in the [console](../../overview/console.md)), we get macro recording capability - and unlike 
 Excel, there is no need to start recording, simply open `View | Console` to see what had been 
 executed.
 
