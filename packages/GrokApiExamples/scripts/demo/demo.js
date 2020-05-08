@@ -4,8 +4,8 @@ demog.columns.remove('sex');
 foo = demog.columns.addNew('foo', 'int');
 demog.rows.removeAt(1, 3);
 demog.rows.insertAt(2, 2);
-demog.rows.addNew(['Spiderman', 'studyX', 'NYC', 32, 'Spider', 'Net', new Date(2020), 180, 80, 666]);
-demog.rows.addNew().subj = 'Iron Man';
+demog.rows.addNew([555, 'studyX', 'NYC', 32, 'Spider', 'Net', 180, 80, 666]);
+demog.rows.addNew().subj = 999;
 
 // alternative ways of setting values
 foo.set(1, 777);
