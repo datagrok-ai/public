@@ -1,15 +1,20 @@
 class ChemspacePackage extends GrokPackage {
 
+    static token = null;
+
     //tags: app
     //name: Chemspace
     async startApp(context) {
+        const catalogToParam = {'BB': 'smarts/bb', 'SCR': 'smarts/sc', 'REAL': 'advanced/1'};
+        const modeToParam = {'Similar': 'sim', 'Substructure': 'sub'};
+
         let token = await ChemspacePackage.getApiToken();
 
         let molecule = ui.moleculeInput('', 'c1ccccc1O');
-        let searchMode = ui.choiceInput('Mode', 'Similar', ['Exact', 'Similar', 'Substructure']);
-        let similarity = ui.choiceInput('Similarity', '0.8', ['0.2', '0.4', '0.6', '0.8']);
-        let catalog = ui.choiceInput('Catalog', '', ['BB', 'SCR', 'REAL']);
-        let filtersHost =  ui.div([molecule.root, searchMode.root, similarity.root, catalog.root],
+        let mode = ui.choiceInput('Mode', 'Similar', ['Similar', 'Substructure']);
+        let similarity = ui.choiceInput('Similarity', '0.6', ['0.2', '0.4', '0.6', '0.8']);
+        let catalog = ui.choiceInput('Catalog', 'SCR', ['BB', 'SCR', 'REAL']);
+        let filtersHost =  ui.div([molecule.root, mode.root, similarity.root, catalog.root],
             'chemspace-controls,pure-form');
 
         let emptyTable = DataFrame.create();
@@ -24,28 +29,32 @@ class ChemspacePackage extends GrokPackage {
 
             function setDataFrame(t) {
                 view.dataFrame = t;
+                let order = ['smiles', 'CS-id', 'id', 'similarity', 'iupac_name', 'molformula', 'mw',
+                    'molweight', 'cas', 'hac', 'logp', 'rotb', 'hba', 'hbd',
+                    'ring_count', 'fsp3', 'tpsa', 'mfcd', 'price_category', 'vendor_id', 'link'
+                ];
+                if (t.rowCount > 0) {
+                    let names = t.columns.names();
+                    order = order.filter(o => names.includes(o));
+                    view.grid.columns.setOrder(order);
+                }
                 ui.setUpdateIndicator(view.root, false);
             }
 
-            ChemspacePackage.queryMultipart('search/advanced/1/sim', molecule.value, token)
+            ChemspacePackage
+                .queryMultipart(`search/${catalogToParam[catalog.value]}/${modeToParam[mode.value]}`,
+                    molecule.value,
+                    mode.value === 'Similar' ? {'simThreshold' : parseFloat(similarity.value) * 100} : null,
+                    token)
                 .then(t => setDataFrame(t))
                 .catch(err => setDataFrame(emptyTable));
-
-            // grok.callQuery('Chemspace:Search', {
-            //     'code': `search_${molecule.value}_${ChemspacePackage.searchModeToCommand(searchMode.value)}`,
-            //     'currency': currency.value,
-            //     'sim': parseFloat(similarity.value),
-            //     'mode': catalog.value
-            // }, true, 100).then(fc => {
-            //
-            // });
         }
 
         update();
 
         molecule.onChanged(() => update());
-        searchMode.onChanged(() => {
-            similarity.enabled = searchMode.value === 'Similar';
+        mode.onChanged(() => {
+            similarity.enabled = mode.value === 'Similar';
             update();
         });
         similarity.onChanged(() => update());
@@ -55,124 +64,93 @@ class ChemspacePackage extends GrokPackage {
         acc.addPane('Chemspace', () => filtersHost, true, acc.panes[0]);
     }
 
-    //name: Chemspace
+    //name: Chemspace Samples
     //description: Chemspace Samples
     //tags: panel, widgets
     //input: string smiles {semType: Molecule}
     //output: widget result
     //condition: true
-    chemspacePanel(smiles) {
-        let panels = ui.div([
-            this.createSearchPanel('Exact', smiles),
-            this.createSearchPanel('Similar', smiles),
-            this.createSearchPanel('Substructure', smiles)
-        ]);
+    chemspaceSamplesPanel(smiles) {
+        let panels = ui.div();
+        ChemspacePackage.getApiToken().then(() => {
+            panels.appendChild(this.createSearchPanel('Similar', smiles));
+            panels.appendChild(this.createSearchPanel('Substructure', smiles));
+        });
         return new Widget(panels);
     }
 
     //description: Creates search panel
     createSearchPanel(panelName, smiles) {
-        const currency = 'USD';
+        const searchModeToCommand = {'Similar': 'smarts/bb/sim', 'Substructure': 'smarts/bb/sub'};
+
         let headerHost = ui.divH([ui.h2(panelName)], 'chemspace-panel-header');
         let compsHost = ui.divH([ui.loader()]);
         let panel = ui.divV([headerHost, compsHost], 'chemspace-panel');
-        grok.callQuery('EnamineStore:Search', {
-            'code': `search_${smiles}_${ChemspacePackage.searchModeToCommand(panelName)}`,
-            'currency': currency
-        }, true, 100).then(fc => {
-            compsHost.removeChild(compsHost.firstChild);
-            let data = JSON.parse(fc.getParamValue('stringResult'))['data'];
-            if (data === null) {
-                compsHost.appendChild(ui.divText('No matches'));
-                return;
-            }
-            for (let comp of data) {
-                let smiles = comp['smile'];
-                let mol = ui.svgMol(smiles, 150, 75);
-                let id = comp['Id'];
-                let props = {
-                    'ID': id,
-                    'Formula': comp['formula'],
-                    'MW': comp['mw'],
-                    'Availability': comp['availability'],
-                    'Delivery': comp['deliveryDays']
-                };
-                for (let pack of comp['packs'])
-                    props[`${pack['amount']} ${pack['measure']}`] = `${pack['price']} ${currency}`;
-                ui.tooltip(mol, ui.divV([ui.tableFromMap(props), ui.divText('Click to open in the store.')]));
-                mol.addEventListener('click', function() {
-                    window.open(comp['productUrl'], '_blank');
-                });
-                compsHost.appendChild(mol);
-            }
-            headerHost.appendChild(ui.iconFA('arrow-square-down', () =>
-                grok.addTableView(ChemspacePackage.dataToTable(data, `EnamineStore ${panelName}`)), 'Open compounds as table'));
-            compsHost.style.overflowY = 'auto';
-        }).catch(err => {
-            compsHost.removeChild(compsHost.firstChild);
-            let div = ui.divText('No matches');
-            ui.tooltip(div, `${err}`);
-            compsHost.appendChild(div);
-        });
+
+        ChemspacePackage
+            .queryMultipart(`search/${searchModeToCommand[panelName]}`, smiles,
+                panelName === 'Similar' ? {'simThreshold': 40} : null, ChemspacePackage.token)
+            .then(t => {
+                compsHost.removeChild(compsHost.firstChild);
+                if (t.rowCount === 0) {
+                    compsHost.appendChild(ui.divText('No matches'));
+                    return;
+                }
+
+                function getTooltip(n) {
+                    let props = {
+                        'ID': t.get('CS-id', n),
+                        'IUPAC': t.get('iupac_name', n),
+                        'Formula': t.get('molformula', n),
+                        'MW': t.get('molweight', n)
+                    };
+                    return ui.divV([ui.tableFromMap(props), ui.divText('Click to open in the store.')]);
+                }
+
+                for (let n = 0; n < Math.min(t.rowCount, 20); n++) {
+                    let smiles = t.get('smiles', n);
+                    let mol = ui.svgMol(smiles, 150, 75);
+                    ui.tooltip(mol, () => getTooltip(n));
+                    mol.addEventListener('click', function () {
+                        window.open(t.get('link', n), '_blank');
+                    });
+                    compsHost.appendChild(mol);
+                }
+                headerHost.appendChild(ui.iconFA('arrow-square-down', () => {
+                    t.name = `Chemspace ${panelName}`;
+                    grok.addTableView(t);
+                }, 'Open compounds as table'));
+                compsHost.style.overflowY = 'auto';
+            })
+            .catch(err => {
+                compsHost.removeChild(compsHost.firstChild);
+                let div = ui.divText('No matches');
+                ui.tooltip(div, `${err}`);
+                compsHost.appendChild(div);
+            });
+
         return panel;
-    }
-
-    // description: Converts JSON data into DataFrame
-    static dataToTable(data, name) {
-        let columns = [
-            Column.fromStrings('smiles', data.map(comp => comp['smile'])),
-            Column.fromStrings('ID', data.map(comp => comp['Id'])),
-            Column.fromStrings('Formula', data.map(comp => comp['formula'])),
-            Column.fromFloat32Array('MW', new Float32Array(data.map(comp => comp['mw']))),
-            Column.fromInt32Array('Availability', new Int32Array(data.map(comp => comp['availability']))),
-            Column.fromStrings('Delivery', data.map(comp => comp['deliveryDays']))
-        ];
-        let currency = null;
-        let packsArrays = new Map();
-        for (let n = 0; n < data.length; n++) {
-            let packs = data[n]['packs'];
-            for (let m = 0; m < packs.length; m++) {
-                let pack = packs[m];
-                let name = `${pack['amount']} ${pack['measure']}`;
-                if (!packsArrays.has(name))
-                    packsArrays.set(name, new Float32Array(data.length));
-                packsArrays.get(name)[n] = pack['price'];
-                if (currency === null && pack['currencyName'] !== null)
-                    currency = pack['currencyName'];
-            }
-        }
-        for (let name of packsArrays.keys()) {
-            let column = Column.fromFloat32Array(name, packsArrays.get(name));
-            column.semType = 'Money';
-            column.setTag('format', `money(${currency === 'USD' ? '$' : '€'})`);
-            columns.push(column);
-        }
-        let table = DataFrame.fromColumns(columns);
-        table.name = name;
-        return table;
-    }
-
-    //description: Converts search mode friendly name to command
-    static searchModeToCommand(name) {
-        const dict = {'Exact': 'exact', 'Similar': 'sim', 'Substructure': 'sub'};
-        return dict[name];
     }
 
     //description: Gets access token
     static async getApiToken() {
-        let t = await grok.query('Chemspace:AuthToken', null, true, 100);
-        return t.get('access_token', 0);
+        if (ChemspacePackage.token === null) {
+            let t = await grok.query('Chemspace:AuthToken', null, true, 100);
+            ChemspacePackage.token = t.get('access_token', 0);
+        }
+        return ChemspacePackage.token;
     }
 
     //description: Perform query with multipart form data
-    static queryMultipart(path, smiles, token) {
+    static queryMultipart(path, smiles, params, token) {
         // TODO: Deprecate after WebQuery 'multipart/form-data' support
         return new Promise(function (resolve, reject) {
             let host = 'https://api.chem-space.com';
             let xhr = new XMLHttpRequest();
             let formData = new FormData();
             formData.append('SMILES', smiles);
-            xhr.open('POST', `${host}/v2/${path}`);
+            let queryParams = params !== null ? `?${Object.keys(params).map(key => key + '=' + params[key]).join('&')}` : '';
+            xhr.open('POST', `${host}/v2/${path}${queryParams}`);
             xhr.setRequestHeader('Authorization', `Bearer ${token}`);
             xhr.setRequestHeader('Accept', 'application/json; version=2.6');
             xhr.onload = function () {
