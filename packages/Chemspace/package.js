@@ -1,5 +1,6 @@
 class ChemspacePackage extends GrokPackage {
 
+    static host = 'https://api.chem-space.com';
     static token = null;
 
     //tags: app
@@ -132,6 +133,71 @@ class ChemspacePackage extends GrokPackage {
         return panel;
     }
 
+    //name: Chemspace Prices
+    //description: Chemspace Prices
+    //tags: panel, widgets
+    //input: string id {semType: chemspace-id}
+    //output: widget result
+    //condition: true
+    chemspacePricesPanel(id) {
+        let panel = ui.div([ui.loader()]);
+        ChemspacePackage.getApiToken().then(() => {
+            let xhr = new XMLHttpRequest();
+            xhr.open('GET', `${ChemspacePackage.host}/v2/cs-id/${id}/prices`);
+            xhr.setRequestHeader('Authorization', `Bearer ${ChemspacePackage.token}`);
+            xhr.setRequestHeader('Accept', 'application/json; version=2.6');
+            function onError() {
+                while (panel.firstChild)
+                    panel.removeChild(root.firstChild);
+                panel.appendChild(ui.divText('Not found'));
+            }
+            xhr.onload = function () {
+                if (this.status >= 200 && this.status < 300) {
+                    let map = JSON.parse(xhr.responseText);
+                    let t = ChemspacePackage.pricesDataToTable(map['items']);
+                    let grid = Grid.create(t);
+                    grid.root.style.width = '400px';
+                    grid.root.style.height = '300px';
+                    while (panel.firstChild)
+                        panel.removeChild(panel.firstChild);
+                    panel.appendChild(ui.div([grid.root]));
+                    let button = ui.bigButton('ORDER', () => window.open(map['link'], '_blank'));
+                    button.style.marginTop = '6px';
+                    panel.appendChild(button);
+                } else
+                    onError();
+            };
+            xhr.onerror = () => onError();
+            xhr.send();
+        });
+
+        return new Widget(panel);
+    }
+
+    // description: Converts prices JSON items into DataFrame
+    static pricesDataToTable(items) {
+        let table = DataFrame.fromJson(JSON.stringify(items));
+        table.columns.remove('vendor_code');
+        let packsArrays = new Map();
+        for (let n = 0; n < items.length; n++) {
+            let packs = items[n]['prices'];
+            for (let m = 0; m < packs.length; m++) {
+                let pack = packs[m];
+                let name = `${pack['pack_g']} g`;
+                if (!packsArrays.has(name))
+                    packsArrays.set(name, new Array(items.length));
+                packsArrays.get(name)[n] = pack['price_usd'];
+            }
+        }
+        for (let name of Array.from(packsArrays.keys()).sort()) {
+            let column = Column.fromList(TYPE_FLOAT, name, packsArrays.get(name));
+            column.semType = 'Money';
+            column.setTag('format', 'money($)');
+            table.columns.add(column);
+        }
+        return table;
+    }
+
     //description: Gets access token
     static async getApiToken() {
         if (ChemspacePackage.token === null) {
@@ -145,12 +211,11 @@ class ChemspacePackage extends GrokPackage {
     static queryMultipart(path, smiles, params, token) {
         // TODO: Deprecate after WebQuery 'multipart/form-data' support
         return new Promise(function (resolve, reject) {
-            let host = 'https://api.chem-space.com';
             let xhr = new XMLHttpRequest();
             let formData = new FormData();
             formData.append('SMILES', smiles);
             let queryParams = params !== null ? `?${Object.keys(params).map(key => key + '=' + params[key]).join('&')}` : '';
-            xhr.open('POST', `${host}/v2/${path}${queryParams}`);
+            xhr.open('POST', `${ChemspacePackage.host}/v2/${path}${queryParams}`);
             xhr.setRequestHeader('Authorization', `Bearer ${token}`);
             xhr.setRequestHeader('Accept', 'application/json; version=2.6');
             xhr.onload = function () {
