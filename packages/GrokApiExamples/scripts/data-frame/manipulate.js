@@ -5,7 +5,7 @@ demog.columns.remove('sex');
 foo = demog.columns.addNew('foo', 'int');
 demog.rows.removeAt(1, 3);
 demog.rows.insertAt(2, 2);
-demog.rows.addNew([777, 'studyX', 'NYC', 32, 'Spider', 'Net', new Date(2020), 180, 80, 666]);
+demog.rows.addNew([777, 'studyX', 'NYC', 32, 'Spider', 'Net', 180, 80, 666]);
 demog.rows.addNew().site = 'NY';
 
 // alternative ways of setting values
