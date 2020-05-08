@@ -1,0 +1,24 @@
+.chemspace-panel {
+  margin-bottom: 12px;
+}
+
+.chemspace-panel-header {
+  align-items: center;
+}
+
+.chemspace-panel-header h2 {
+  margin-right: 6px;
+}
+
+.chemspace .grok-loader {
+  margin-top: 12px;
+  margin-right: 48px;
+}
+
+.chemspace-controls {
+  margin-left: 0 !important;
+}
+
+.chemspace-controls .d4-input-molecule-canvas {
+  width: 195px;
+}
