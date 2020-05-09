@@ -6,4 +6,4 @@ See also:
   * [Grok API](https://datagrok.ai/help/develop/grok-api)
   * [Packages](https://datagrok.ai/help/develop/develop#packages)
 
-![](../../help/develop/how-to/leaflet-viewer.png)
+![](../../help/develop/how-to/leaflet-heat.png)
