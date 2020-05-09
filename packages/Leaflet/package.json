@@ -2,10 +2,11 @@
   "name": "Leaflet",
   "version": "0.1",
   "fullName": "Leaflet",
-  "description": "Interactive map with a number of extensions",
+  "description": "Interactive map with a number of extensions that uses Leaflet.js",
   "sources": [
     "leaflet/leaflet.css",
     "leaflet/leaflet.js",
+    "leaflet/leaflet.canvas-markers.js",
     "leaflet/leaflet_viewer.js"
   ]
 }
