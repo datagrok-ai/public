@@ -9,6 +9,7 @@ class LeafletViewer extends JsViewer {
         this.markerSize = this.int('markerSize', 10);
 
         this.layers = [];
+        this.coordinates = [];
     }
 
     init() {
@@ -29,9 +30,10 @@ class LeafletViewer extends JsViewer {
         this.latitude = this.table.columns.bySemType(SEMTYPE_LATITUDE);
         this.longitude = this.table.columns.bySemType(SEMTYPE_LONGITUDE);
 
-        this.table.selection.onChanged(() => this.render());
-        this.table.filter.onChanged(() => this.render());
-        this.render();
+        this.subs.push(this.table.selection.onChanged(() => this.render()));
+        this.subs.push(this.table.filter.onChanged(() => this.render()));
+
+        this.render(true);
     }
 
     onPropertyChanged(prop) {
@@ -40,23 +42,31 @@ class LeafletViewer extends JsViewer {
 
     onSizeChanged(w, h) { this.map.invalidateSize(); }
 
-    render() {
+    render(fit = false) {
         for (const layer of this.layers)
             this.map.removeLayer(layer);
+        this.layers.length = 0;
 
+        this.getCoordinates();
         this.renderHeat();
+
+        if (fit)
+            this.map.fitBounds(this.coordinates);
+    }
+
+    getCoordinates() {
+        this.coordinates.length = 0;
+        for (let i = 0; i < this.table.rowCount; i++)
+            if (this.table.filter.get(i))
+                this.coordinates.push([this.latitude.get(i), this.longitude.get(i)]);
     }
 
     renderHeat() {
-        let coordinates = [];
-        for (let i = 0; i < this.table.rowCount; i++)
-            coordinates.push([this.latitude.get(i), this.longitude.get(i)]);
-
-        this.layers.push(L.heatLayer(coordinates, {radius: this.markerSize}).addTo(this.map));
+        this.layers.push(L.heatLayer(this.coordinates, {radius: this.markerSize}).addTo(this.map));
     }
 
     renderMarkers() {
-        var markerOptions = {
+        let markerOptions = {
             radius: this.markerSize,
             fillColor: "#ff7800",
             color: "#000",
@@ -67,7 +77,8 @@ class LeafletViewer extends JsViewer {
 
         let markers = [];
         for (let i = 0; i < this.table.rowCount; i++)
-            markers.push(L.circleMarker([this.latitude.get(i), this.longitude.get(i)], markerOptions));
+            if (this.table.filter.get(i))
+                markers.push(L.circleMarker([this.latitude.get(i), this.longitude.get(i)], markerOptions));
 
         const group = L.featureGroup(markers).addTo(this.map);
         this.map.fitBounds(group.getBounds());
