@@ -1,6 +1,8 @@
 Leaflet is a [package](https://datagrok.ai/help/develop/develop#packages) 
-that adds a geographical map as new viewer by integrating with the awesome
+that adds a set of GIS visualizations by integrating with the awesome
 [Leaflet.js](https://leafletjs.com/) library.  
+
+[Community discussion](https://community.datagrok.ai/t/teaser-leaflet-js-based-map/133)
 
 See also: 
   * [Grok API](https://datagrok.ai/help/develop/grok-api)
