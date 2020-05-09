@@ -6,7 +6,7 @@
   "sources": [
     "leaflet/leaflet.css",
     "leaflet/leaflet.js",
-    "leaflet/leaflet.canvas-markers.js",
+    "leaflet/leaflet-heat.js",
     "leaflet/leaflet_viewer.js"
   ]
 }

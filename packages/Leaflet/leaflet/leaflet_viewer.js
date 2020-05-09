@@ -6,6 +6,9 @@ class LeafletViewer extends JsViewer {
         // properties
         this.latitude = this.string('latitudeColumnName');
         this.longitude = this.string('longitudeColumnName');
+        this.markerSize = this.int('markerSize', 10);
+
+        this.layers = [];
     }
 
     init() {
@@ -13,7 +16,7 @@ class LeafletViewer extends JsViewer {
         this.root.appendChild(mapDiv);
         this.map = L.map(mapDiv).setView([51.505, -0.09], 13);
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        this.tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(this.map);
     }
@@ -31,9 +34,30 @@ class LeafletViewer extends JsViewer {
         this.render();
     }
 
+    onPropertyChanged(prop) {
+        this.render();
+    }
+
+    onSizeChanged(w, h) { this.map.invalidateSize(); }
+
     render() {
+        for (const layer of this.layers)
+            this.map.removeLayer(layer);
+
+        this.renderHeat();
+    }
+
+    renderHeat() {
+        let coordinates = [];
+        for (let i = 0; i < this.table.rowCount; i++)
+            coordinates.push([this.latitude.get(i), this.longitude.get(i)]);
+
+        this.layers.push(L.heatLayer(coordinates, {radius: this.markerSize}).addTo(this.map));
+    }
+
+    renderMarkers() {
         var markerOptions = {
-            radius: 8,
+            radius: this.markerSize,
             fillColor: "#ff7800",
             color: "#000",
             weight: 1,
