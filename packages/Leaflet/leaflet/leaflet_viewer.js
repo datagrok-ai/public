@@ -16,10 +16,6 @@ class LeafletViewer extends JsViewer {
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(this.map);
-
-        // L.marker([51.5, -0.09]).addTo(this.map)
-        //     .bindPopup('A pretty CSS3 popup.<br> Easily customizable.')
-        //     .openPopup();
     }
 
     onFrameAttached(dataFrameHandle) {
@@ -36,9 +32,18 @@ class LeafletViewer extends JsViewer {
     }
 
     render() {
+        var markerOptions = {
+            radius: 8,
+            fillColor: "#ff7800",
+            color: "#000",
+            weight: 1,
+            opacity: 1,
+            fillOpacity: 0.8
+        };
+
         let markers = [];
         for (let i = 0; i < this.table.rowCount; i++)
-            markers.push(L.marker([this.latitude.get(i), this.longitude.get(i)]));
+            markers.push(L.circleMarker([this.latitude.get(i), this.longitude.get(i)], markerOptions));
 
         const group = L.featureGroup(markers).addTo(this.map);
         this.map.fitBounds(group.getBounds());
