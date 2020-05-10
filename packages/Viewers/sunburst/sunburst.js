@@ -33,8 +33,8 @@ class SunburstViewer extends JsViewer {
         this.table = new DataFrame(dataFrameHandle);
         this.init();
 
-        this.table.selection.onChanged(() => this.render());
-        this.table.filter.onChanged(() => this.render());
+        this.subs.push(this.table.selection.onChanged.subscribe((_) => this.render()));
+        this.subs.push(this.table.filter.onChanged.subscribe((_) => this.render()));
         this.render();
     }
 
