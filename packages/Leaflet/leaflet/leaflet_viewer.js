@@ -1,12 +1,15 @@
 class LeafletViewer extends JsViewer {
-
     constructor() {
         super();
 
         // properties
         this.latitude = this.string('latitudeColumnName');
         this.longitude = this.string('longitudeColumnName');
+        this.renderType = this.string('renderType', 'heat map');
         this.markerSize = this.int('markerSize', 10);
+        this.markerOpacity = this.float('markerOpacity', 0.8);
+
+        this.getProperty('renderType').choices = ['markers', 'heat map'];
 
         this.layers = [];
         this.coordinates = [];
@@ -48,7 +51,11 @@ class LeafletViewer extends JsViewer {
         this.layers.length = 0;
 
         this.getCoordinates();
-        this.renderHeat();
+
+        if (this.renderType === 'heat map')
+            this.renderHeat();
+        else if (this.renderType === 'markers')
+            this.renderMarkers();
 
         if (fit)
             this.map.fitBounds(this.coordinates);
@@ -62,10 +69,6 @@ class LeafletViewer extends JsViewer {
 
         for (let i = 0; i < indexes.length; i++)
             this.coordinates.push([lat[indexes[i]], lon[indexes[i]]]);
-
-        // for (let i = 0; i < this.table.rowCount; i++)
-        //     if (this.table.filter.get(i))
-        //         this.coordinates.push([this.latitude.get(i), this.longitude.get(i)]);
     }
 
     renderHeat() {
@@ -79,15 +82,12 @@ class LeafletViewer extends JsViewer {
             color: "#000",
             weight: 1,
             opacity: 1,
-            fillOpacity: 0.8
+            fillOpacity: this.markerOpacity
         };
 
         let markers = [];
-        for (let i = 0; i < this.table.rowCount; i++)
-            if (this.table.filter.get(i))
-                markers.push(L.circleMarker([this.latitude.get(i), this.longitude.get(i)], markerOptions));
-
-        const group = L.featureGroup(markers).addTo(this.map);
-        this.map.fitBounds(group.getBounds());
+        for (let i = 0; i < this.coordinates.length; i++)
+            markers.push(L.circleMarker(this.coordinates[i], markerOptions));
+        this.layers.push(L.featureGroup(markers).addTo(this.map));
     }
 }
