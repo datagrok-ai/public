@@ -22,8 +22,8 @@ class JsDemoViewer extends JsViewer {
 
     onFrameAttached(dataFrameHandle) {
         this.dataFrame = new DataFrame(dataFrameHandle);
-        this.dataFrame.selection.onChanged(() => this.render());
-        this.dataFrame.filter.onChanged(() => this.render());
+        this.subs.push(this.dataFrame.selection.onChanged.subscribe((_) => this.render()));
+        this.subs.push(this.dataFrame.filter.onChanged.subscribe((_) => this.render()));
 
         this.render();
     }
