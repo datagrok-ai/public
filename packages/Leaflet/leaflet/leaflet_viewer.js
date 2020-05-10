@@ -30,8 +30,8 @@ class LeafletViewer extends JsViewer {
         this.latitude = this.table.columns.bySemType(SEMTYPE_LATITUDE);
         this.longitude = this.table.columns.bySemType(SEMTYPE_LONGITUDE);
 
-        this.subs.push(debounce(this.table.selection.onChanged).subscribe((_) => this.render()));
-        this.subs.push(debounce(this.table.filter.onChanged).subscribe((_) => this.render()));
+        this.subs.push(debounce(this.table.selection.onChanged, 50).subscribe((_) => this.render()));
+        this.subs.push(debounce(this.table.filter.onChanged, 50).subscribe((_) => this.render()));
 
         this.render(true);
     }
@@ -56,9 +56,16 @@ class LeafletViewer extends JsViewer {
 
     getCoordinates() {
         this.coordinates.length = 0;
-        for (let i = 0; i < this.table.rowCount; i++)
-            if (this.table.filter.get(i))
-                this.coordinates.push([this.latitude.get(i), this.longitude.get(i)]);
+        let indexes = this.table.filter.getSelectedIndexes();
+        let lat = this.latitude.getRawData();
+        let lon = this.longitude.getRawData();
+
+        for (let i = 0; i < indexes.length; i++)
+            this.coordinates.push([lat[indexes[i]], lon[indexes[i]]]);
+
+        // for (let i = 0; i < this.table.rowCount; i++)
+        //     if (this.table.filter.get(i))
+        //         this.coordinates.push([this.latitude.get(i), this.longitude.get(i)]);
     }
 
     renderHeat() {

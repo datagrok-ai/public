@@ -12,13 +12,29 @@ let bitsetIteration = measure(function() {
         table.filter.get(i);
 });
 
+let bitsetIterationFast = measure(function() {
+    let indexes = table.filter.getSelectedIndexes();
+    var count = 0;
+    for (let i = 0; i < indexes.length; i++)
+        count++;
+    console.log(`${count}`);
+});
+
 let valuesIteration = measure(function() {
     let col = table.columns.byIndex(0);
     for (let i = 0; i < table.rowCount; i++)
         col.get(i);
 });
 
+let valuesIterationFast = measure(function() {
+    var sum = 0;
+    let data = col.getRawData();
+    for (let i = 0; i < data.length; i++)
+        sum += data[i];
+});
+
 ui.dialog()
     .add(`bitset: ${bitsetIteration}`)
+    .add(`bitset fast: ${bitsetIterationFast}`)
     .add(`values: ${valuesIteration}`)
     .show();
