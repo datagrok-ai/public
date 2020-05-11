@@ -10,7 +10,7 @@
       "id": "8ff604b9-81db-4083-8663-4b119b7492f9",
       "comment": "",
       "command": "open",
-      "target": "/datasets?selenium=true&q=",
+      "target": "/?selenium=true&q=",
       "targets": [],
       "value": ""
     }, {
@@ -220,6 +220,63 @@
       "targets": [],
       "value": ""
     }, {
+      "id": "c04298c7-9212-4227-88d2-21f86ea66fe3",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//i[@name='icon-folder-open']",
+      "targets": [
+        ["css=.fa-folder-open", "css:finder"],
+        ["xpath=//i[@name='icon-folder-open']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div/i", "xpath:idRelative"],
+        ["xpath=//i", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "32c56070-d257-4de8-b1e7-38fe94306673",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "b1e132aa-3107-4bf0-b159-32cbc6174845",
+      "comment": "",
+      "command": "doubleClick",
+      "target": "xpath=//span[contains(.,'Projects')]",
+      "targets": [
+        ["css=.d4-toggle-button:nth-child(5) > span", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[5]/span", "xpath:idRelative"],
+        ["xpath=//div[5]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'Projects')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "b3edbb7d-1128-4dcb-a6b9-0fea69bde7ab",
+      "comment": "",
+      "command": "pause",
+      "target": "3000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "d372a756-af3f-461a-9709-29cb24e5eac0",
+      "comment": "",
+      "command": "type",
+      "target": "css=.type-ahead-input",
+      "targets": [
+        ["css=.type-ahead-input", "css:finder"],
+        ["xpath=(//input[@type='text'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div[2]/div/input", "xpath:idRelative"],
+        ["xpath=//div[2]/div/input", "xpath:position"]
+      ],
+      "value": "selenium"
+    }, {
+      "id": "7da7de03-a9fd-43d9-b6c6-26ee4d41a939",
+      "comment": "",
+      "command": "pause",
+      "target": "3000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "2a946920-a810-4b98-b0a0-26f743450ec7",
       "comment": "",
       "command": "doubleClick",
@@ -299,7 +356,7 @@
       "id": "ae6c5ea1-d039-49b8-a0bf-e45060f80b0d",
       "comment": "",
       "command": "pause",
-      "target": "5000",
+      "target": "7000",
       "targets": [],
       "value": ""
     }, {
@@ -319,7 +376,7 @@
       "id": "a4460a53-8574-40b4-ac8e-90361a764c43",
       "comment": "",
       "command": "pause",
-      "target": "5000",
+      "target": "8000",
       "targets": [],
       "value": ""
     }, {

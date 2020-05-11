@@ -10,7 +10,7 @@
       "id": "23ec79b9-8f48-4df8-b1f8-d68826cd2507",
       "comment": "",
       "command": "open",
-      "target": "/datasets?selenium=true&q=",
+      "target": "/projects?selenium=true&q=selenium",
       "targets": [],
       "value": ""
     }, {

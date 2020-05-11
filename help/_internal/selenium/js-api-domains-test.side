@@ -10,7 +10,7 @@
       "id": "e9bf33b8-479e-4ea1-a29a-0f77f3f6ee90",
       "comment": "",
       "command": "open",
-      "target": "/datasets?selenium=true&q=",
+      "target": "/?selenium=true&q=",
       "targets": [],
       "value": ""
     }, {
@@ -81,7 +81,7 @@
       "id": "8447b276-e48e-4758-9a76-f716489bda66",
       "comment": "",
       "command": "click",
-      "target": "css=.fa-question-circle",
+      "target": "xpath=//i[@name='icon-question-circle']",
       "targets": [
         ["css=.fa-question-circle", "css:finder"],
         ["xpath=//i[@name='icon-question-circle']", "xpath:attributes"],

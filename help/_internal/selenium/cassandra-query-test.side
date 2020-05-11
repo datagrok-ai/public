@@ -10,7 +10,7 @@
       "id": "e9bf33b8-479e-4ea1-a29a-0f77f3f6ee90",
       "comment": "",
       "command": "open",
-      "target": "/datasets?selenium=true&q=",
+      "target": "/?selenium=true&q=",
       "targets": [],
       "value": ""
     }, {
@@ -64,17 +64,42 @@
       "targets": [],
       "value": ""
     }, {
+      "id": "e27792ff-bd73-4f42-a3c5-d9476378b568",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//i[@name='icon-folder-open']",
+      "targets": [
+        ["css=.fa-folder-open", "css:finder"],
+        ["xpath=//i[@name='icon-folder-open']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div/i", "xpath:idRelative"],
+        ["xpath=//i", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "17ea550d-e1e4-4506-8d36-c2a63215e888",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "a5076b43-1ebb-4876-a04a-c64de81a508a",
       "comment": "",
       "command": "click",
-      "target": "xpath=//label[@name='label-Connect-to-data...']",
+      "target": "xpath=//span[contains(.,'Databases')]",
       "targets": [
-        ["xpath=//label[@name='label-Connect-to-data...']", "css"],
-        ["css=.selected", "css:finder"],
-        ["xpath=//label[@name='label-Connect-to-data...']", "xpath:attributes"],
-        ["xpath=//div[@id='start']/label[7]", "xpath:idRelative"],
-        ["xpath=//label[7]", "xpath:position"]
+        ["css=.d4-toggle-button:nth-child(2) > span", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[2]/span", "xpath:idRelative"],
+        ["xpath=//div[2]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'Databases')]", "xpath:innerText"]
       ],
+      "value": ""
+    }, {
+      "id": "410697e3-3255-465e-82b5-eeaa52fdc8e6",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "143f1446-1bc1-4b97-8cc3-3bee36311261",
@@ -432,7 +457,7 @@
       "id": "d32c2ee3-6656-4132-a60d-ed96cfc13163",
       "comment": "",
       "command": "verifyText",
-      "target": "css=.d4-ribbon-name",
+      "target": "xpath=//div[@name='div-view-name']",
       "targets": [
         ["css=.d4-ribbon-name", "css:finder"],
         ["xpath=//div[@name='div-view-name']", "xpath:attributes"],
@@ -569,10 +594,59 @@
       ],
       "value": ""
     }, {
+      "id": "b8f89157-9256-491f-a110-b329d400b981",
+      "comment": "",
+      "command": "click",
+      "target": "name=span-Movielens",
+      "targets": [
+        ["css=tr:nth-child(1) .d4-link-label > span", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div[4]/div/div/div/table/tbody/tr/td[2]/span/span", "xpath:idRelative"],
+        ["xpath=//span/span", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "eab78c19-13a2-435f-aa63-afde68a3307d",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "07e918eb-0ec3-4ffd-a02f-9a9de16dfa23",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='div-section--Queries']",
+      "targets": [
+        ["css=.d4-accordion-pane:nth-child(3) > .d4-accordion-pane-header", "css:finder"],
+        ["xpath=//div[@name='div-section--Queries']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div", "xpath:idRelative"],
+        ["xpath=//div[3]/div/div[2]/div/div/div/div/div[3]/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "514db1c4-6e7e-452d-8021-203739ef21c5",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "1a545b80-ff30-409e-95a9-90d5bfafec70",
       "comment": "",
       "command": "click",
-      "target": "name=div-TestQueryBySeleniumCassandra",
+      "target": "name=span-TestQueryBySeleniumCassandra",
+      "targets": [
+        ["css=.d4-entity-markup-row:nth-child(1)", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div[2]/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[3]/div[2]/div/div/div/span", "xpath:position"],
+        ["xpath=//span[contains(.,'Test_Query_By_Selenium_Cassandra')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "032f9db7-b724-4b0e-bd49-b19c0842202d",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
       "targets": [],
       "value": ""
     }, {
