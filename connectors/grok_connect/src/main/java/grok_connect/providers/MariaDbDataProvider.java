@@ -11,10 +11,6 @@ public class MariaDbDataProvider extends MySqlDataProvider {
         super();
         descriptor.type = "MariaDB";
         descriptor.description = "Query MariaDB database";
-        descriptor.connectionTemplate = new ArrayList<>(DbCredentials.dbConnectionTemplate);
-        descriptor.connectionTemplate.add(new Property(Property.BOOL_TYPE, DbCredentials.SSL));
-        descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
-        descriptor.canBrowseSchema = true;
     }
 
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
