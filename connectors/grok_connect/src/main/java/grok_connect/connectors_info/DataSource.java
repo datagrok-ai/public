@@ -4,6 +4,7 @@ import java.util.*;
 import com.google.gson.annotations.*;
 import grok_connect.utils.*;
 import grok_connect.table_query.*;
+import serialization.Types;
 
 
 public class DataSource
@@ -24,6 +25,15 @@ public class DataSource
     public List<Property> credentialsTemplate;
     public List<Property> queryTemplate;
 
-    public List<AggrFunctionInfo> aggregations;
+    public List<AggrFunctionInfo> aggregations = new ArrayList<AggrFunctionInfo>() {{
+        add(new AggrFunctionInfo(Stats.AVG, "avg(#)", Types.dataFrameNumericTypes));
+        add(new AggrFunctionInfo(Stats.MIN, "min(#)", Types.dataFrameNumericTypes));
+        add(new AggrFunctionInfo(Stats.MAX, "max(#)", Types.dataFrameNumericTypes));
+        add(new AggrFunctionInfo(Stats.SUM, "sum(#)", Types.dataFrameNumericTypes));
+        add(new AggrFunctionInfo(Stats.TOTAL_COUNT, "count(*)", Types.dataFrameColumnTypes));
+        add(new AggrFunctionInfo(Stats.VALUE_COUNT, "count(#)", Types.dataFrameColumnTypes));
+        add(new AggrFunctionInfo(Stats.MISSING_VALUE_COUNT, "count(*) - count(#)", Types.dataFrameColumnTypes));
+    }};
+
     public Map<String, String> typesMap;
 }

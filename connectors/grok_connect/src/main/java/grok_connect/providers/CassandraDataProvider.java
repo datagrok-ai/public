@@ -15,6 +15,7 @@ public class CassandraDataProvider extends JdbcDataProvider {
         descriptor.connectionTemplate = new ArrayList<>(DbCredentials.dbConnectionTemplate);
         descriptor.connectionTemplate.add(new Property(Property.BOOL_TYPE, DbCredentials.SSL));
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
+        descriptor.aggregations = null;
     }
 
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
