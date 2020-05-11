@@ -35,8 +35,8 @@ class PedometerPackage extends GrokPackage {
                 return count;
             }
 
-            accel.onFilterChanged((_) => filtered.innerText = 'Filtered steps: ' + countSteps(accel.filter));
-            accel.onSelectionChanged((_) => selected.innerText = 'Selected steps: ' + countSteps(accel.selection));
+            this.subs.push(accel.onFilterChanged.subscribe((_) => filtered.innerText = 'Filtered steps: ' + countSteps(accel.filter)));
+            this.subs.push(accel.onSelectionChanged.subscribe((_) => selected.innerText = 'Selected steps: ' + countSteps(accel.selection)));
         });
     }
 

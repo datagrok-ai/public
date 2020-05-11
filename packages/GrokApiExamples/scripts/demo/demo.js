@@ -33,7 +33,7 @@ markup = view.addViewer('markup');
 markup.options({'content': text});
 
 // events
-demog.onCurrentRowChanged((_) => grok.balloon.info('current row changed'));
+demog.onCurrentRowChanged.subscribe((_) => grok.balloon.info('current row changed'));
 grok.onEvent('d4-current-view-changed', (_) => grok.balloon.info('view changed'));
 
 // registering functions
