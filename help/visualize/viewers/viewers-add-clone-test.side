@@ -10,7 +10,7 @@
       "id": "d711e6cb-db8b-49cb-bc39-cd64e78329e3",
       "comment": "",
       "command": "open",
-      "target": "/projects?selenium=true&q=seleniumdemog",
+      "target": "/projects?selenium=true&q=demog",
       "targets": [],
       "value": ""
     }, {
@@ -65,6 +65,25 @@
       "value": ""
     }, {
       "id": "f1c0ecf0-232b-4bd3-a4ba-dd39a281e5d1",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "847455c5-4687-45c0-853c-91dbafc0df4b",
+      "comment": "",
+      "command": "doubleClick",
+      "target": "xpath=//i[@name='icon-window']",
+      "targets": [
+        ["css=.fa-window", "css:finder"],
+        ["xpath=//i[@name='icon-window']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div[8]/i", "xpath:idRelative"],
+        ["xpath=//div[8]/i", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "9ad17697-5841-45bc-b94d-e63a6bef769a",
       "comment": "",
       "command": "pause",
       "target": "1000",

@@ -10,7 +10,7 @@
       "id": "8ff604b9-81db-4083-8663-4b119b7492f9",
       "comment": "",
       "command": "open",
-      "target": "/datasets?selenium=true&q=",
+      "target": "/?selenium=true",
       "targets": [],
       "value": ""
     }, {
@@ -56,19 +56,38 @@
       "targets": [],
       "value": ""
     }, {
-      "id": "3a9abedd-ad0c-402c-8915-477b76ed0a5d",
+      "id": "cbd9c7ca-8d60-46c7-aeb8-9a96c604cecf",
       "comment": "",
       "command": "click",
-      "target": "xpath=//label[@name='label-Connect-to-data...']",
+      "target": "xpath=//i[@name='icon-folder-open']",
       "targets": [
-        ["css=.d4-link-label:nth-child(7)", "css:finder"],
-        ["xpath=//div[@id='start']/label[6]", "xpath:idRelative"],
-        ["xpath=//label[6]", "xpath:position"],
-        ["xpath=//label[@name='label-Connect-to-data...']", "xpath:innerText"]
+        ["css=.fa-folder-open", "css:finder"],
+        ["xpath=//i[@name='icon-folder-open']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div/i", "xpath:idRelative"],
+        ["xpath=//i", "xpath:position"]
       ],
       "value": ""
     }, {
-      "id": "8c35be8e-d3e7-48f3-8950-a4295fe386de",
+      "id": "51aa01d0-3fc4-4514-a689-11010a41cbbd",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "c83b3f1e-3edf-4320-aaf4-b9e05879ed19",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//span[contains(.,'Databases')]",
+      "targets": [
+        ["css=.d4-toggle-button:nth-child(2) > span", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[2]/span", "xpath:idRelative"],
+        ["xpath=//div[2]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'Databases')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "0047e424-8e74-4be7-b22d-3de49608c535",
       "comment": "",
       "command": "pause",
       "target": "1000",
@@ -520,6 +539,37 @@
       "targets": [],
       "value": ""
     }, {
+      "id": "d06d600f-f17c-4c90-a850-ec854c2903cd",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//i[@name='icon-folder-open']",
+      "targets": [
+        ["css=.fa-folder-open", "css:finder"],
+        ["xpath=//i[@name='icon-folder-open']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div/i", "xpath:idRelative"],
+        ["xpath=//i", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "c3db86d7-aab2-4640-8917-84123a569214",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "cfeb5795-a1c8-4bff-a1af-cf144ab3162a",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//span[contains(.,'Databases')]",
+      "targets": [
+        ["css=.d4-toggle-button:nth-child(2) > span", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[2]/span", "xpath:idRelative"],
+        ["xpath=//div[2]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'Databases')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
       "id": "cd0ca9c2-e2a3-4f65-b4d0-912032df6c53",
       "comment": "",
       "command": "verifyElementPresent",
@@ -601,7 +651,7 @@
       "command": "verifyText",
       "target": "xpath=//div[@name='div-view-name']",
       "targets": [],
-      "value": "orders"
+      "value": "visual-query-filters-test"
     }, {
       "id": "076dd469-1606-4c2c-85b4-a2f1a18d3832",
       "comment": "",
@@ -665,12 +715,12 @@
       "id": "f3742284-265c-4a5b-9e75-9aa31f80053e",
       "comment": "",
       "command": "click",
-      "target": "xpath=//i[@name='icon-home']",
+      "target": "xpath=//i[@name='icon-window']",
       "targets": [
-        ["css=.fa-home:nth-child(1)", "css:finder"],
-        ["xpath=//i[@name='icon-home']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/i", "xpath:idRelative"],
-        ["xpath=//i", "xpath:position"]
+        ["css=.fa-window", "css:finder"],
+        ["xpath=//i[@name='icon-window']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div[8]/i", "xpath:idRelative"],
+        ["xpath=//div[8]/i", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -684,11 +734,12 @@
       "id": "69836ef0-293d-42be-989e-6ca90b5d81b6",
       "comment": "",
       "command": "click",
-      "target": "css=.d4-toggle-button:nth-child(2)",
+      "target": "xpath=//span[contains(.,'Databases')]",
       "targets": [
-        ["css=.d4-toggle-button:nth-child(2)", "css:finder"],
-        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div[2]", "xpath:position"]
+        ["css=.d4-flex-col:nth-child(1) > .d4-toggle-button:nth-child(3) > span", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div/div[3]/span", "xpath:idRelative"],
+        ["xpath=//div[3]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'Databases')]", "xpath:innerText"]
       ],
       "value": ""
     }, {

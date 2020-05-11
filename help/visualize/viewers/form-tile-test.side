@@ -335,15 +335,14 @@
     }, {
       "id": "00e6e431-23de-4fc5-b02e-465eef0e2294",
       "comment": "",
-      "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='view-handle: Summary']",
+      "command": "verifyText",
+      "target": "name=div-view-name",
       "targets": [
-        ["css=.tab-handle-selected", "css:finder"],
-        ["xpath=//div[@name='view-handle: Summary']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[3]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/div[3]", "xpath:position"]
+        ["css=.d4-ribbon-name > span:nth-child(1)", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/span", "xpath:idRelative"],
+        ["xpath=//div[2]/span", "xpath:position"]
       ],
-      "value": ""
+      "value": "Summary"
     }, {
       "id": "a04523dc-f921-4e79-9efd-e3fa37a84ed1",
       "comment": "",
@@ -732,12 +731,11 @@
       "id": "0b389af0-e50d-495b-b2cd-f9bbeec38c4e",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='view-handle: products']",
+      "target": "name=div-view-name",
       "targets": [
-        ["css=.tab-handle:nth-child(4)", "css:finder"],
-        ["xpath=//div[@name='view-handle: products']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
+        ["css=.d4-ribbon-name > span:nth-child(1)", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/span", "xpath:idRelative"],
+        ["xpath=//div[2]/span", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -800,6 +798,25 @@
       "value": ""
     }, {
       "id": "e772ca80-02c3-457b-bfd0-91fc0d20a201",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "bfc22c9f-faf3-4196-a68f-470c62c7dbc1",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//i[@name='icon-share-alt']",
+      "targets": [
+        ["css=.fa-share-alt", "css:finder"],
+        ["xpath=//i[@name='icon-share-alt']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div[7]/i", "xpath:idRelative"],
+        ["xpath=//div[7]/i", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "46d52ea7-d8e4-48a4-900f-f417593779e7",
       "comment": "",
       "command": "pause",
       "target": "500",
@@ -882,7 +899,7 @@
       "id": "26f099cf-029a-4afa-8578-de5b44645b66",
       "comment": "",
       "command": "open",
-      "target": "/projects?selenium=true&q=selenium",
+      "target": "/projects?selenium=true&q=Form",
       "targets": [],
       "value": ""
     }, {
@@ -998,25 +1015,26 @@
     }, {
       "id": "1656be12-678b-4114-97e1-d08aac15fe52",
       "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@name='div-File']",
-      "targets": [
-        ["css=.d4-menu-item-container > .d4-menu-item-hover", "css:finder"],
-        ["xpath=//div[@name='div-File']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div", "xpath:idRelative"],
-        ["xpath=//div[12]/div/div/div/div", "xpath:position"]
-      ],
+      "command": "executeScript",
+      "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "90dbe0b8-1261-430a-9082-d5393ff6d140",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "81038885-ffc0-42c3-869c-176cb66fd923",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-File---Close-All']",
+      "target": "xpath=//div[@name='div-Close-All']",
       "targets": [
-        ["css=.d4-menu-item-horz:nth-child(1) > .d4-vert-menu > .d4-menu-item:nth-child(7)", "css:finder"],
-        ["xpath=//div[@name='div-File---Close-All']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div/div/div[7]", "xpath:idRelative"],
-        ["xpath=//div[15]/div/div/div/div/div/div[7]", "xpath:position"]
+        ["css=.d4-menu-popup > .d4-menu-item", "css:finder"],
+        ["xpath=//div[@name='div-Close-All']", "xpath:attributes"],
+        ["xpath=//body/div[6]/div[2]", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -1030,7 +1048,7 @@
       "id": "27bdd54b-30db-4602-95d9-d7b7d248fea8",
       "comment": "",
       "command": "open",
-      "target": "/projects?selenium=true&q=selenium",
+      "target": "/projects?selenium=true&q=form",
       "targets": [],
       "value": ""
     }, {
@@ -1045,7 +1063,11 @@
       "comment": "",
       "command": "click",
       "target": "name=div-FormTileTest",
-      "targets": [],
+      "targets": [
+        ["css=.grok-gallery-grid-item-wrapper:nth-child(2)", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div[4]/div[2]", "xpath:idRelative"],
+        ["xpath=//div/div/div/div[3]/div/div/div/div/div/div/div/div[4]/div[2]", "xpath:position"]
+      ],
       "value": ""
     }, {
       "id": "c1b16513-d69e-4592-ad08-905aa76a4fa7",
@@ -1065,6 +1087,13 @@
         ["xpath=//div[@id='elementContent']/div/div/div/div/span/i[3]", "xpath:idRelative"],
         ["xpath=//span/i[3]", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "a689a1b8-b356-4f4b-9213-fe14cd7f6497",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "dbc6282a-4a81-44ba-8bb5-d52d1c1b17f6",
@@ -1094,11 +1123,11 @@
       "id": "ad12b526-bacd-4fa5-bc85-d16cc0a87528",
       "comment": "",
       "command": "pause",
-      "target": "2000",
+      "target": "4000",
       "targets": [],
       "value": ""
     }, {
-      "id": "936d5509-af3b-40a7-80b1-19221a3b76e0",
+      "id": "ec3e627c-ed0e-47d2-8307-a4c6a24f59f7",
       "comment": "",
       "command": "verifyElementNotPresent",
       "target": "name=div-FormTileTest",
