@@ -1,0 +1,10 @@
+{
+  "name": "CLI",
+  "version": "0.1",
+  "fullName": "CLI",
+  "description": "Package contains CLI tools integration",
+  "sources": [
+    "bin/str-tool-linux",
+    "bin/str-tool-macos"
+  ]
+}
