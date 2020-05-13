@@ -35,6 +35,7 @@ int main(int argc, char *argv[])
   FILE *fi = fopen(input, "r");
   FILE *fo = fopen(output, "w");
   char *line = NULL;
+  long row_count = 0;
   size_t buf_len = 0;
   ssize_t line_len;
 
@@ -48,8 +49,11 @@ int main(int argc, char *argv[])
       fprintf(fo, "%f\n", log((double)line_len));
     else
       fprintf(fo, "%zu\n", line_len);
+    if (++row_count % 1000 == 0)
+      printf("%zu rows\n", row_count);
   }
 
+  printf("Done\n");
   fclose(fi);
   fclose(fo);
 
