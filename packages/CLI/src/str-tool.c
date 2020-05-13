@@ -5,7 +5,7 @@
 
 
 void print_help() {
-  fprintf(stderr, "Usage: \n  -i [input file path] -o [output file path]  -l )\n");
+  fprintf(stderr, "Usage: \n  -i [input file path] -o [output file path]  (-l)\n");
   exit(EXIT_FAILURE);
 }
 
