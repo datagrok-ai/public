@@ -60,21 +60,46 @@
       "id": "5dc82201-963e-4426-b05c-8dddb86d92b3",
       "comment": "",
       "command": "pause",
-      "target": "2000",
+      "target": "4000",
       "targets": [],
       "value": ""
     }, {
       "id": "a5076b43-1ebb-4876-a04a-c64de81a508a",
       "comment": "",
       "command": "click",
-      "target": "xpath=//label[@name='label-Connect-to-data...']",
+      "target": "xpath=//i[@name='icon-folder-open']",
       "targets": [
-        ["xpath=//label[@name='label-Connect-to-data...']", "css"],
-        ["css=.selected", "css:finder"],
-        ["xpath=//label[@name='label-Connect-to-data...']", "xpath:attributes"],
-        ["xpath=//div[@id='start']/label[7]", "xpath:idRelative"],
-        ["xpath=//label[7]", "xpath:position"]
+        ["css=.fa-folder-open", "css:finder"],
+        ["xpath=//i[@name='icon-folder-open']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div/i", "xpath:idRelative"],
+        ["xpath=//i", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "f50bbfc3-55f9-440f-aa44-80bf22acda4e",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "1edba3e1-fd73-4cd5-9e90-d8a32e268d4c",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//span[contains(.,'Databases')]",
+      "targets": [
+        ["css=.d4-toggle-button:nth-child(2) > span", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[2]/span", "xpath:idRelative"],
+        ["xpath=//div[2]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'Databases')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "322ec188-997f-4aa9-870c-aa8b6ab5755d",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "143f1446-1bc1-4b97-8cc3-3bee36311261",

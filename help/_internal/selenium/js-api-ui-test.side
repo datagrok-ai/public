@@ -10,7 +10,7 @@
       "id": "e9bf33b8-479e-4ea1-a29a-0f77f3f6ee90",
       "comment": "",
       "command": "open",
-      "target": "/datasets?selenium=true&q=",
+      "target": "/?selenium=true",
       "targets": [],
       "value": ""
     }, {
@@ -531,13 +531,13 @@
     }, {
       "id": "78a40a70-6b87-4611-bead-a496622ce6b2",
       "comment": "",
-      "command": "click",
-      "target": "xpath=//i[@name='icon-bars']",
+      "command": "doubleClick",
+      "target": "xpath=//i[@name='icon-window']",
       "targets": [
-        ["css=.fa-bars", "css:finder"],
-        ["xpath=//i[@name='icon-bars']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div[7]/i", "xpath:idRelative"],
-        ["xpath=//div[7]/i", "xpath:position"]
+        ["css=.fa-window", "css:finder"],
+        ["xpath=//i[@name='icon-window']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div[8]/i", "xpath:idRelative"],
+        ["xpath=//div[8]/i", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -599,19 +599,38 @@
       "targets": [],
       "value": "Foo clicked"
     }, {
-      "id": "3d397e62-b736-44b2-b903-7f347a5530ad",
+      "id": "263f34af-db8a-4c1c-a7fe-00eac3cd4f5d",
       "comment": "",
-      "command": "click",
-      "target": "xpath=//i[@name='icon-bars']",
+      "command": "doubleClick",
+      "target": "xpath=//i[@name='icon-window']",
       "targets": [
-        ["css=.fa-bars", "css:finder"],
-        ["xpath=//i[@name='icon-bars']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div[7]/i", "xpath:idRelative"],
-        ["xpath=//div[7]/i", "xpath:position"]
+        ["css=.fa-window", "css:finder"],
+        ["xpath=//i[@name='icon-window']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div[8]/i", "xpath:idRelative"],
+        ["xpath=//div[8]/i", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "6c5d76d8-64c2-4428-986f-4a1e05178fcc",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "2076fb6d-17a8-4120-b0f3-59b2b12be310",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//span[contains(.,'menu')]",
+      "targets": [
+        ["css=.d4-current > span", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div/div[2]/span", "xpath:idRelative"],
+        ["xpath=//div[2]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'menu')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "d45bcdc2-5632-458a-b27a-834a58d602d5",
       "comment": "",
       "command": "pause",
       "target": "1000",

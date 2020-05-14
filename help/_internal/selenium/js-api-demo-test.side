@@ -10,7 +10,7 @@
       "id": "e9bf33b8-479e-4ea1-a29a-0f77f3f6ee90",
       "comment": "",
       "command": "open",
-      "target": "/datasets?selenium=true&q=",
+      "target": "/?selenium=true",
       "targets": [],
       "value": ""
     }, {
@@ -60,7 +60,7 @@
       "id": "5dc82201-963e-4426-b05c-8dddb86d92b3",
       "comment": "",
       "command": "pause",
-      "target": "2000",
+      "target": "4000",
       "targets": [],
       "value": ""
     }, {
@@ -216,12 +216,12 @@
       "id": "f72ece41-1f06-4562-8eee-f7ef1c934be2",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='view-handle: demo']",
+      "target": "xpath=(//i[@name='icon-times'])[3]",
       "targets": [
-        ["css=.tab-handle:nth-child(4)", "css:finder"],
-        ["xpath=//div[@name='view-handle: demo']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
+        ["css=.fa-times:nth-child(5)", "css:finder"],
+        ["xpath=(//i[@name='icon-times'])[3]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/i", "xpath:idRelative"],
+        ["xpath=//div[3]/div[2]/div/div/div/div/div/div/i", "xpath:position"]
       ],
       "value": ""
     }, {

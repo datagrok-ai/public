@@ -10,7 +10,7 @@
       "id": "8ff604b9-81db-4083-8663-4b119b7492f9",
       "comment": "",
       "command": "open",
-      "target": "/datasets?selenium=true&q=",
+      "target": "/?selenium=true",
       "targets": [],
       "value": ""
     }, {
@@ -52,20 +52,46 @@
       "id": "ab8f2726-12a0-40e3-ac90-4730f3344006",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {
       "id": "3a9abedd-ad0c-402c-8915-477b76ed0a5d",
       "comment": "",
       "command": "click",
-      "target": "xpath=//label[@name='label-Connect-to-data...']",
+      "target": "xpath=//i[@name='icon-folder-open']",
       "targets": [
-        ["css=.d4-link-label:nth-child(7)", "css:finder"],
-        ["xpath=//div[@id='start']/label[6]", "xpath:idRelative"],
-        ["xpath=//label[6]", "xpath:position"],
-        ["xpath=//label[@name='label-Connect-to-data...']", "xpath:innerText"]
+        ["css=.fa-folder-open", "css:finder"],
+        ["xpath=//i[@name='icon-folder-open']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div/i", "xpath:idRelative"],
+        ["xpath=//i", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "49aa3ba1-9550-4fa8-8f17-8768b02fa601",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "b9fd357d-3063-47fc-902b-045a3fd39d23",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//span[contains(.,'Databases')]",
+      "targets": [
+        ["css=.d4-toggle-button:nth-child(2) > span", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[2]/span", "xpath:idRelative"],
+        ["xpath=//div[2]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'Databases')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "c8c0c7b4-ef6d-468e-bc7b-151cbffc2c5d",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "f526b826-10ec-41fc-be9d-decf8d2d604f",
@@ -593,7 +619,7 @@
         ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
         ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
       ],
-      "value": "PRODUCTS"
+      "value": "visual-query-filters-test"
     }, {
       "id": "076dd469-1606-4c2c-85b4-a2f1a18d3832",
       "comment": "",
@@ -657,35 +683,16 @@
       "id": "f3742284-265c-4a5b-9e75-9aa31f80053e",
       "comment": "",
       "command": "click",
-      "target": "xpath=//i[@name='icon-home']",
+      "target": "xpath=(//i[@name='icon-times'])[3]",
       "targets": [
-        ["css=.fa-home:nth-child(1)", "css:finder"],
-        ["xpath=//i[@name='icon-home']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/i", "xpath:idRelative"],
-        ["xpath=//i", "xpath:position"]
+        ["css=.fa-times:nth-child(5)", "css:finder"],
+        ["xpath=(//i[@name='icon-times'])[3]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/i", "xpath:idRelative"],
+        ["xpath=//div[3]/div[2]/div/div/div/div/div/div/i", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "881a6eca-e3c1-4567-a344-e0a0a706cbf4",
-      "comment": "",
-      "command": "pause",
-      "target": "500",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "69836ef0-293d-42be-989e-6ca90b5d81b6",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//span[contains(.,'Welcome')]",
-      "targets": [
-        ["css=.d4-current > span", "css:finder"],
-        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[2]/span", "xpath:idRelative"],
-        ["xpath=//div[2]/span", "xpath:position"],
-        ["xpath=//span[contains(.,'Welcome')]", "xpath:innerText"]
-      ],
-      "value": ""
-    }, {
-      "id": "77b4d63b-af34-4446-8bbf-663c1a0195bd",
       "comment": "",
       "command": "pause",
       "target": "1000",
