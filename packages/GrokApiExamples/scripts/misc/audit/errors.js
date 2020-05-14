@@ -1,4 +1,4 @@
 let view = grok.newView('Usage');
 
-grok.query('ErrorsOnDate', {'date': 'today'})
+grok.query('UsageAnalysis:ErrorsOnDate', {'date': 'today'})
   .then(t => view.append(Viewer.grid(t)));
