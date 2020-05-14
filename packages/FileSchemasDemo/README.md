@@ -38,7 +38,7 @@ queries, datasets, and other objects.
 #input: file file { condition: entity:domain == "auto" }
 #output: bool hasNumbers { set: file.auto:hasTags }
 #tags: demo, files, panel, ml, opencv
-#condition: file.size < 1e6 && (file.name.endsWith("jpg") || file.name.endsWith("jpeg"))
+#condition: file.isFile && file.size < 1e6 && (file.name.endsWith("jpg") || file.name.endsWith("jpeg"))
 
 import cv2
 
