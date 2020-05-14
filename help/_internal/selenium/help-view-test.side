@@ -10,7 +10,7 @@
       "id": "99901746-1540-4c56-9581-6d8352e96a1b",
       "comment": "",
       "command": "open",
-      "target": "/datasets?selenium=true&q=",
+      "target": "/?selenium=true",
       "targets": [],
       "value": ""
     }, {
@@ -58,7 +58,7 @@
       "id": "cd69d835-4413-4367-a353-af11bba85dab",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "4000",
       "targets": [],
       "value": ""
     }, {
@@ -130,6 +130,13 @@
       ],
       "value": ""
     }, {
+      "id": "4f345198-3eda-4c9f-9957-682ec0a9d175",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "d253f124-515c-4de4-926e-873ce254a1a1",
       "comment": "",
       "command": "click",
@@ -146,7 +153,7 @@
       "id": "d86a709c-930f-48af-8966-79c60a2ddb33",
       "comment": "",
       "command": "pause",
-      "target": "500",
+      "target": "1000",
       "targets": [],
       "value": ""
     }, {
@@ -162,6 +169,13 @@
         ["xpath=//h1", "xpath:position"],
         ["xpath=//h1[contains(.,'User')]", "xpath:innerText"]
       ],
+      "value": ""
+    }, {
+      "id": "95935c5f-c39f-4eaf-8602-c45d1c04f11e",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "ff545a6c-758d-447b-9920-3454dc6e3cd2",
@@ -180,6 +194,13 @@
       "comment": "",
       "command": "verifyElementNotPresent",
       "target": "xpath=//i[@name='icon-exclamation-circle']",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "274ac20d-a03b-4240-b51e-081cba17e887",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
       "targets": [],
       "value": ""
     }, {
@@ -216,6 +237,13 @@
       ],
       "value": ""
     }, {
+      "id": "a349b903-9bc7-4026-8427-8dfd849a9019",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "4f5925d5-3177-4b29-b04d-12e53dfa5d47",
       "comment": "",
       "command": "click",
@@ -247,6 +275,13 @@
         ["xpath=//h1", "xpath:position"],
         ["xpath=//h1[contains(.,'User')]", "xpath:innerText"]
       ],
+      "value": ""
+    }, {
+      "id": "58fb35cc-cf0d-4c41-92e8-5c2f086ba518",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "b6928357-29ff-4236-a70f-7a56b6ac2d3b",
@@ -286,6 +321,13 @@
       "comment": "",
       "command": "pause",
       "target": "500",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "268c8014-3e2f-40d4-8c8f-ae1a5384475d",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
       "targets": [],
       "value": ""
     }, {
