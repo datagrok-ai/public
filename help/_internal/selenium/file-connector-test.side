@@ -59,28 +59,54 @@
       "id": "3a9abedd-ad0c-402c-8915-477b76ed0a5d",
       "comment": "",
       "command": "click",
-      "target": "xpath=//label[@name='label-Connect-to-data...']",
+      "target": "xpath=//i[@name='icon-folder-open']",
       "targets": [
-        ["css=.d4-link-label:nth-child(7)", "css:finder"],
-        ["xpath=//div[@id='start']/label[6]", "xpath:idRelative"],
-        ["xpath=//label[6]", "xpath:position"],
-        ["xpath=//label[@name='label-Connect-to-data...']", "xpath:innerText"]
+        ["css=.fa-folder-open", "css:finder"],
+        ["xpath=//i[@name='icon-folder-open']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div/i", "xpath:idRelative"],
+        ["xpath=//i", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "0ac52395-06cd-49d3-addc-111ceed305cf",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "32896f50-c984-4159-a91e-919fd65621b3",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='tree-Files']",
+      "target": "xpath=//span[contains(.,'Databases')]",
       "targets": [
-        ["css=.d4-tree-view-node-selected", "css:finder"],
-        ["xpath=//div[@name='tree-Files']", "xpath:attributes"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div[7]/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div[7]/div", "xpath:position"]
+        ["css=.d4-toggle-button:nth-child(2) > span", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[2]/span", "xpath:idRelative"],
+        ["xpath=//div[2]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'Databases')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
       "id": "62a7a9bd-6130-4927-9bbd-06ff6aaf71e3",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "80b7e685-b2d2-4439-a636-000b4b2707f2",
+      "comment": "",
+      "command": "click",
+      "target": "name=tree-Files",
+      "targets": [
+        ["css=.d4-toggle-button:nth-child(2) > span", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[2]/span", "xpath:idRelative"],
+        ["xpath=//div[2]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'Databases')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "f305094e-5153-4a10-8402-a5099f47ad2f",
       "comment": "",
       "command": "pause",
       "target": "500",
@@ -165,6 +191,18 @@
       ],
       "value": "/home/www/master/servergrok/data/demo/northwind"
     }, {
+      "id": "72142819-a6cf-4008-a2a0-8529a27a1d1a",
+      "comment": "",
+      "command": "click",
+      "target": "name=input-Edit-Connection---Index-files",
+      "targets": [
+        ["name=input-Edit-Connection---Index-files", "name"],
+        ["css=.pure-checkbox > #editor", "css:finder"],
+        ["xpath=(//input[@id='editor'])[4]", "xpath:attributes"],
+        ["xpath=//label/input", "xpath:position"]
+      ],
+      "value": "/home/www/master/servergrok/data/demo/northwind"
+    }, {
       "id": "5b279d72-1da7-48da-a458-d28a2a085c0f",
       "comment": "",
       "command": "click",
@@ -224,31 +262,38 @@
       "id": "5b231d64-76d1-450b-903a-7b970827473c",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Admin']",
+      "target": "xpath=//i[@name='icon-wrench']",
       "targets": [
-        ["css=.d4-menu-group:nth-child(9)", "css:finder"],
-        ["xpath=//div[@name='div-Admin']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[9]", "xpath:idRelative"],
-        ["xpath=//div[10]/div/div/div/div[9]", "xpath:position"]
+        ["css=.fa-wrench", "css:finder"],
+        ["xpath=//i[@name='icon-wrench']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div[3]/i", "xpath:idRelative"],
+        ["xpath=//div[3]/i", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "a886ce82-27d5-461b-8780-fac5707fb717",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "44071185-f9d0-4d5e-9088-107c8d05a5b1",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Admin---Data-Jobs']",
+      "target": "xpath=//span[contains(.,'Jobs')]",
       "targets": [
-        ["css=.d4-menu-item:nth-child(9) .d4-menu-item:nth-child(12)", "css:finder"],
-        ["xpath=//div[@name='div-Admin---Data-Jobs']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[9]/div/div[12]", "xpath:idRelative"],
-        ["xpath=//div[9]/div/div[12]", "xpath:position"]
+        ["css=.d4-toggle-button:nth-child(4) > span", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[4]/span", "xpath:idRelative"],
+        ["xpath=//div[4]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'Jobs')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
       "id": "d85eb7c7-9f67-420d-aa6f-fe7d44759079",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "2000",
       "targets": [],
       "value": ""
     }, {
@@ -327,12 +372,24 @@
       "id": "fdaacdef-51df-4888-a1e5-968fb4d82122",
       "comment": "",
       "command": "click",
-      "target": "xpath=//i[@name='icon-connect-to-data']",
+      "target": "xpath=//i[@name='icon-window']",
       "targets": [
-        ["css=.svg-connect-to-data", "css:finder"],
-        ["xpath=//i[@name='icon-connect-to-data']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[3]/div[3]/div/i", "xpath:idRelative"],
-        ["xpath=//div[3]/div/i", "xpath:position"]
+        ["css=.fa-window", "css:finder"],
+        ["xpath=//i[@name='icon-window']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div[8]/i", "xpath:idRelative"],
+        ["xpath=//div[8]/i", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "ebbff36d-1914-4319-a7df-5c24d63a1042",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//span[contains(.,'Databases')]",
+      "targets": [
+        ["css=.d4-flex-col:nth-child(1) > .d4-toggle-button:nth-child(2) > span", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div/div[2]/span", "xpath:idRelative"],
+        ["xpath=//div[2]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'Databases')]", "xpath:innerText"]
       ],
       "value": ""
     }, {

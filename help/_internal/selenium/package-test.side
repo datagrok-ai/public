@@ -10,7 +10,7 @@
       "id": "8ff604b9-81db-4083-8663-4b119b7492f9",
       "comment": "",
       "command": "open",
-      "target": "/datasets?selenium=true&q=",
+      "target": "/?selenium=true",
       "targets": [],
       "value": ""
     }, {
@@ -381,7 +381,7 @@
       "id": "c157e1a1-8dd1-4768-a68d-2f7535953a2b",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-BootstrapDemo']",
+      "target": "name=div-Covid",
       "targets": [
         ["css=.d4-current > .d4-gallery-card", "css:finder"],
         ["xpath=//div[@name='div-BootstrapDemo']", "xpath:attributes"],

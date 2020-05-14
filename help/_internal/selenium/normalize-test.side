@@ -10,7 +10,7 @@
       "id": "94df53ce-1880-43fc-afd1-4dcab6d68852",
       "comment": "",
       "command": "open",
-      "target": "/datasets?selenium=true&q=",
+      "target": "/projects?selenium=true&q=selenium",
       "targets": [],
       "value": ""
     }, {
@@ -60,7 +60,7 @@
       "id": "dd261679-c0ce-425f-ab99-13c4f189b8a2",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {
