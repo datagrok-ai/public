@@ -6,7 +6,6 @@ let view = grok.addTableView(grok.testData('demog', 5000));
 // see available format strings below
 view.grid.col('age').format = 'compact simple currency';
 view.grid.col('weight').format = '#.0000';
-view.grid.col('start date').format = 'yyyy-MM-dd';
 
 // NUMBER FORMATS:
 // The usual formats, such as "0.000" or "#.0000"
