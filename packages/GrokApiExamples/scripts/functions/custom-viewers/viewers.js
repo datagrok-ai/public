@@ -29,7 +29,6 @@ class JsDemoViewer extends JsViewer {
     }
 
     render() {
-
         this.root.innerHTML =
             `${this.dataFrame.toString()}<br>
             Column: ${this.valueColumnName}<br>
