@@ -12,23 +12,23 @@
 //
 // https://datagrok.ai/help/explore/link-tables
 
-grok.loadDataFrame('https://public.datagrok.ai/demo//demog.csv').then((demog) =>
-    grok.loadDataFrame('https://public.datagrok.ai/demo//demog-types.csv').then(function (demogTypes) {
+grok.loadDataFrame('https://public.datagrok.ai/demo/demog.csv').then((demog) =>
+    grok.loadDataFrame('https://public.datagrok.ai/demo/demog-types.csv').then(function (demogTypes) {
         grok.addTableView(demog);
         grok.addTableView(demogTypes);
         grok.linkTables(demogTypes, demog,
             ['sex', 'race'], ['sex', 'race'],
-            [CURRENT_ROW_TO_FILTER, MOUSE_OVER_ROW_TO_SELECTION]);
+            [SYNC_TYPE.CURRENT_ROW_TO_FILTER, SYNC_TYPE.MOUSE_OVER_ROW_TO_SELECTION]);
     }));
 
 // Link types:
-//
-//   CURRENT_ROW_TO_ROW
-//   CURRENT_ROW_TO_SELECTION
-//   CURRENT_ROW_TO_FILTER
-//   MOUSE_OVER_ROW_TO_SELECTION
-//   MOUSE_OVER_ROW_TO_FILTER
-//   FILTER_TO_FILTER
-//   FILTER_TO_SELECTION
-//   SELECTION_TO_FILTER
-//   SELECTION_TO_SELECTION
+//   From SYNC_TYPE enum:
+//     CURRENT_ROW_TO_ROW
+//     CURRENT_ROW_TO_SELECTION
+//     CURRENT_ROW_TO_FILTER
+//     MOUSE_OVER_ROW_TO_SELECTION
+//     MOUSE_OVER_ROW_TO_FILTER
+//     FILTER_TO_FILTER
+//     FILTER_TO_SELECTION
+//     SELECTION_TO_FILTER
+//     SELECTION_TO_SELECTION
