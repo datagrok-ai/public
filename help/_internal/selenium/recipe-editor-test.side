@@ -10,7 +10,7 @@
       "id": "2c58a7c3-2ed0-4941-bc01-72fe3a252549",
       "comment": "",
       "command": "open",
-      "target": "/datasets?selenium=true",
+      "target": "/?selenium=true",
       "targets": [],
       "value": ""
     }, {
@@ -60,21 +60,46 @@
       "id": "96b30234-e37a-4c88-be47-68ed4b8d0ce3",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {
       "id": "2cddc14c-bea7-4356-b6bd-1137e527dbc9",
       "comment": "",
       "command": "click",
-      "target": "xpath=//label[@name='label-Connect-to-data...']",
+      "target": "xpath=//i[@name='icon-folder-open']",
       "targets": [
-        ["xpath=//label[@name='label-Connect-to-data...']", "css"],
-        ["css=.d4-link-label:nth-child(8)", "css:finder"],
-        ["xpath=//label[@name='label-Connect-to-data...']", "xpath:attributes"],
-        ["xpath=//div[@id='start']/label[7]", "xpath:idRelative"],
-        ["xpath=//label[7]", "xpath:position"]
+        ["css=.fa-folder-open", "css:finder"],
+        ["xpath=//i[@name='icon-folder-open']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div/i", "xpath:idRelative"],
+        ["xpath=//i", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "f091c4db-27bc-4dd5-a69b-4c1b4e6886ae",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "02fd7ecf-2443-45e6-bb5d-8a8fe4faf319",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//span[contains(.,'Databases')]",
+      "targets": [
+        ["css=.d4-toggle-button:nth-child(2) > span", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[2]/span", "xpath:idRelative"],
+        ["xpath=//div[2]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'Databases')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "36edd43a-793f-40cc-8ca0-e092cf30e9f7",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "9cf1a084-a901-495e-bbe6-8869b31f3f93",
@@ -159,7 +184,7 @@
       "id": "95e989a0-4bac-4bec-bad7-f811f3a4f0ce",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {
@@ -180,7 +205,7 @@
       "id": "18e820d5-1bcd-4958-957b-2293aeee847d",
       "comment": "",
       "command": "pause",
-      "target": "3000",
+      "target": "5000",
       "targets": [],
       "value": ""
     }, {

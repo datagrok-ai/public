@@ -10,7 +10,7 @@
       "id": "dba6ffcf-d1e2-48d5-80d7-bdd98d66cdaa",
       "comment": "",
       "command": "open",
-      "target": "/datasets?selenium=true&q=",
+      "target": "/?selenium=true",
       "targets": [],
       "value": ""
     }, {
@@ -57,17 +57,49 @@
       ],
       "value": ""
     }, {
+      "id": "515e0fa2-c976-4ee5-9c74-97972bc13941",
+      "comment": "",
+      "command": "pause",
+      "target": "2000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "df99a74c-050c-4e2d-a120-c475a5d8a587",
       "comment": "",
       "command": "click",
-      "target": "xpath=//label[@name='label-Connect-to-data...']",
+      "target": "xpath=//i[@name='icon-folder-open']",
       "targets": [
-        ["xpath=//label[@name='label-Connect-to-data...']", "css"],
-        ["css=.d4-link-label:nth-child(8)", "css:finder"],
-        ["xpath=//label[@name='label-Connect-to-data...']", "xpath:attributes"],
-        ["xpath=//div[@id='start']/label[7]", "xpath:idRelative"],
-        ["xpath=//label[7]", "xpath:position"]
+        ["css=.fa-folder-open", "css:finder"],
+        ["xpath=//i[@name='icon-folder-open']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div/i", "xpath:idRelative"],
+        ["xpath=//i", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "64e00a91-29cf-490c-8ff9-d88b6af6cae3",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "b5f37032-8e74-4e79-9db9-8c2947a5b485",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//span[contains(.,'Databases')]",
+      "targets": [
+        ["css=.d4-toggle-button:nth-child(2) > span", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[2]/span", "xpath:idRelative"],
+        ["xpath=//div[2]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'Databases')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "5ba71393-c323-4a3f-8462-edcfda1eb80c",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "5b711ffd-c6ec-44eb-90b8-2064ed9a1364",
@@ -979,7 +1011,7 @@
       "id": "37bbc2f2-7511-436e-a887-e3e8c770e756",
       "comment": "",
       "command": "pause",
-      "target": "3000",
+      "target": "5000",
       "targets": [],
       "value": ""
     }, {

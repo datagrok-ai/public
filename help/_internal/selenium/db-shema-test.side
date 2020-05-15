@@ -10,7 +10,7 @@
       "id": "94df53ce-1880-43fc-afd1-4dcab6d68852",
       "comment": "",
       "command": "open",
-      "target": "/datasets?selenium=true&q=",
+      "target": "/?selenium=true",
       "targets": [],
       "value": ""
     }, {
@@ -79,21 +79,46 @@
       "id": "cfe50028-b347-4562-a692-fe86c4d23fbc",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {
       "id": "dce77354-be0c-4f1a-ad93-7ed46aa415d3",
       "comment": "",
       "command": "click",
-      "target": "xpath=//label[@name='label-Connect-to-data...']",
+      "target": "xpath=//i[@name='icon-folder-open']",
       "targets": [
-        ["css=.d4-link-label:nth-child(7)", "css:finder"],
-        ["xpath=//label[@name='label-Connect-to-data...']", "xpath:attributes"],
-        ["xpath=//div[@id='start']/label[6]", "xpath:idRelative"],
-        ["xpath=//label[6]", "xpath:position"],
-        ["xpath=//label[contains(.,'Connect to data...')]", "xpath:innerText"]
+        ["css=.fa-folder-open", "css:finder"],
+        ["xpath=//i[@name='icon-folder-open']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div/i", "xpath:idRelative"],
+        ["xpath=//i", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "9c1aea00-adba-443e-a88a-d3de608c011f",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "d4bb423a-c26e-48df-b624-75fa2602b04a",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//span[contains(.,'Databases')]",
+      "targets": [
+        ["css=.d4-toggle-button:nth-child(2) > span", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[2]/span", "xpath:idRelative"],
+        ["xpath=//div[2]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'Databases')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "fed1a793-f0c4-4cb9-9d04-17c02db1780b",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "21621f61-3e82-416b-95fe-cfb8a9203f76",
@@ -372,11 +397,12 @@
       "id": "69836ef0-293d-42be-989e-6ca90b5d81b6",
       "comment": "",
       "command": "click",
-      "target": "css=.d4-toggle-button:nth-child(2)",
+      "target": "xpath=(//i[@name='icon-times'])[3]",
       "targets": [
-        ["css=.d4-toggle-button:nth-child(2)", "css:finder"],
-        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div[2]", "xpath:position"]
+        ["css=.d4-ribbon > .grok-icon", "css:finder"],
+        ["xpath=(//i[@name='icon-times'])[3]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/i", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/i", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -529,12 +555,12 @@
       "id": "91c1ac74-2907-49b2-82bf-2c094a6da1c6",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='view-handle: Welcome']",
+      "target": "xpath=(//i[@name='icon-times'])[3]",
       "targets": [
-        ["css=.tab-handle:nth-child(3)", "css:finder"],
-        ["xpath=//div[@name='view-handle: Welcome']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div", "xpath:position"]
+        ["css=.d4-ribbon > .grok-icon", "css:finder"],
+        ["xpath=(//i[@name='icon-times'])[3]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/i", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/i", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -722,12 +748,12 @@
       "id": "77959a85-9de5-4612-a470-a513f2cb005a",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='view-handle: Welcome']",
+      "target": "xpath=(//i[@name='icon-times'])[3]",
       "targets": [
-        ["css=.tab-handle:nth-child(3)", "css:finder"],
-        ["xpath=//div[@name='view-handle: Welcome']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div", "xpath:position"]
+        ["css=.d4-ribbon > .grok-icon", "css:finder"],
+        ["xpath=(//i[@name='icon-times'])[3]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/i", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/i", "xpath:position"]
       ],
       "value": ""
     }, {
