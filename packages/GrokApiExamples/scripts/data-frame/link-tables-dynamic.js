@@ -7,14 +7,14 @@ TSLA
 MSFT`);
 grok.addTableView(tickers);
 
-var detailsView;
+let detailsView = null;
 
-tickers.onCurrentRowChanged(function (_) {
+tickers.onCurrentRowChanged.subscribe((_) => {
     grok.loadDataFrame(`https://www.quandl.com/api/v1/datasets/WIKI/${tickers.currentRow.ticker}.csv`)
         .then(function(t) {
-           if (detailsView == null)
-               detailsView = grok.addTableView(t);
-           else
-               detailsView.dataFrame = t;
+            if (detailsView === null)
+                detailsView = grok.addTableView(t);
+            else
+                detailsView.dataFrame = t;
         });
 });
