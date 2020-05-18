@@ -10,7 +10,7 @@
       "id": "8ff604b9-81db-4083-8663-4b119b7492f9",
       "comment": "",
       "command": "open",
-      "target": "/datasets?selenium=true&q=",
+      "target": "/repositories?selenium=true&q=",
       "targets": [],
       "value": ""
     }, {
@@ -58,38 +58,7 @@
       "id": "ab8f2726-12a0-40e3-ac90-4730f3344006",
       "comment": "",
       "command": "pause",
-      "target": "2000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "c5bb972c-c2dd-4fe3-b6f9-e1a6a8d070d4",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//i[@name='icon-wrench']",
-      "targets": [
-        ["css=.fa-wrench", "css:finder"],
-        ["xpath=//i[@name='icon-wrench']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div[4]/i", "xpath:idRelative"],
-        ["xpath=//div[4]/i", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "6533bdd3-4720-4522-8d7c-0f3900d3ffee",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//span[contains(.,'Repositories')]",
-      "targets": [
-        ["css=.d4-toggle-button:nth-child(6) > span", "css:finder"],
-        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[6]/span", "xpath:idRelative"],
-        ["xpath=//div[6]/span", "xpath:position"],
-        ["xpath=//span[contains(.,'Repositories')]", "xpath:innerText"]
-      ],
-      "value": ""
-    }, {
-      "id": "2f62b26d-cd48-4760-bfe2-cf322fe22230",
-      "comment": "",
-      "command": "pause",
-      "target": "1500",
+      "target": "4000",
       "targets": [],
       "value": ""
     }, {
@@ -722,11 +691,11 @@
       "id": "f9eb2f14-2996-4e1b-aec3-ca998c34ef6d",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//input[@type='text'])[2]",
+      "target": "css=.type-ahead-input",
       "targets": [
         ["css=.type-ahead-input", "css:finder"],
         ["xpath=(//input[@type='text'])[2]", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div/div[2]/div/input", "xpath:idRelative"],
+        ["xpath=//div[@id='elementContent']/div/div[2]/div/input", "xpath:idRelative"],
         ["xpath=//div[2]/div/input", "xpath:position"]
       ],
       "value": ""

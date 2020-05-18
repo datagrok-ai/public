@@ -10,7 +10,7 @@
       "id": "8ff604b9-81db-4083-8663-4b119b7492f9",
       "comment": "",
       "command": "open",
-      "target": "/datasets?selenium=true&q=",
+      "target": "/files/?selenium=true",
       "targets": [],
       "value": ""
     }, {
@@ -60,63 +60,6 @@
       "command": "pause",
       "target": "5000",
       "targets": [],
-      "value": ""
-    }, {
-      "id": "e00f4506-4124-46ae-af8d-e27d53fa06da",
-      "comment": "",
-      "command": "verifyElementNotPresent",
-      "target": "xpath=//i[@name='icon-exclamation-circle']",
-      "targets": [
-        ["css=.fa-exclamation-circle", "css:finder"],
-        ["xpath=//i[@name='icon-exclamation-circle']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[2]/i", "xpath:idRelative"],
-        ["xpath=//div[2]/i", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "0be464aa-9e51-4800-99be-3b1777f29108",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//i[@name='icon-folder-open']",
-      "targets": [
-        ["css=.fa-folder-open", "css:finder"],
-        ["xpath=//i[@name='icon-folder-open']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div[2]/i", "xpath:idRelative"],
-        ["xpath=//div[2]/i", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "f50894bd-2893-437e-b6e2-b8247cd10e39",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//span[contains(.,'Files')]",
-      "targets": [
-        ["css=.d4-toggle-button:nth-child(1) > span", "css:finder"],
-        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div/span", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/span", "xpath:position"],
-        ["xpath=//span[contains(.,'Files')]", "xpath:innerText"]
-      ],
-      "value": ""
-    }, {
-      "id": "0dba5c2e-800a-4e05-9162-3c5a5e099de6",
-      "comment": "",
-      "command": "pause",
-      "target": "1000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "ccefa6d6-f9af-4185-9bac-04040bb355a3",
-      "comment": "",
-      "command": "verifyElementPresent",
-      "target": "xpath=//h1[contains(.,'Connecting to file shares')]",
-      "targets": [
-        ["id=connecting-to-file-shares", "id"],
-        ["css=#connecting-to-file-shares", "css:finder"],
-        ["xpath=//h1[@id='connecting-to-file-shares']", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/span/h1", "xpath:idRelative"],
-        ["xpath=//h1", "xpath:position"],
-        ["xpath=//h1[contains(.,'Connecting to file shares')]", "xpath:innerText"]
-      ],
       "value": ""
     }, {
       "id": "488420f5-d357-47bd-ad65-515cb7e20466",
@@ -868,19 +811,19 @@
       "id": "ceff3511-04e9-4377-b660-858ae1fd1e81",
       "comment": "",
       "command": "pause",
-      "target": "10000",
+      "target": "20000",
       "targets": [],
       "value": ""
     }, {
-      "id": "a7f87cc4-63d2-4cb9-8b84-78c26d11ca20",
+      "id": "9e06a6dd-7ab5-48fb-85ed-de29275990a9",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//span[contains(.,'In particular, JIT compilers have slower startup times, because when the program starts running the JIT compiler has to do analysis and compilation before the code can be executed. The typical way to fix a race condition is to protect the shared resource using a lock that prevents other threads from executing, but locks themselves can cause jank, or even more serious problems (including deadlock and starvation). Finally, the article Why we chose Flutter and how its changed our company for the better is from a company that moved their large enterprise application to Dart on all three platforms (iOS, Android, and web).')]",
+      "target": "xpath=//td[2]/span",
       "targets": [
         ["css=.d4-flex-col td:nth-child(2) > span", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[7]/div[2]/div/div[2]/div/table/tbody/tr/td[2]/span", "xpath:idRelative"],
         ["xpath=//td[2]/span", "xpath:position"],
-        ["xpath=//span[contains(.,'In particular, JIT compilers have slower startup times, because when the program starts running the JIT compiler has to do analysis and compilation before the code can be executed. The typical way to fix a race condition is to protect the shared resource using a lock that prevents other threads from executing, but locks themselves can cause jank, or even more serious problems (including deadlock and starvation). Finally, the article Why we chose Flutter and how its changed our company for the better is from a company that moved their large enterprise application to Dart on all three platforms (iOS, Android, and web).')]", "xpath:innerText"]
+        ["xpath=//span[contains(.,'That is why this coding language developed a feature known as Java objects that allows a programmer to reuse common codes whenever applicable instead of rewriting the same code over and over again. SEE ALSO: How to supercharge innovation with a Dev Day\\n\\nProgramming is adaptable, strong, and stable\\nBecause you can run Java both on computers and mobile devices, its true to say that the languages dialect is universally adaptable. In conclusion\\nIf you ever need help with Java programming, there are companies that offer outsourcing services to all types of organizations.')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
@@ -899,14 +842,14 @@
       "id": "40c4c980-cc39-43de-beb2-aa525cffcb6a",
       "comment": "",
       "command": "pause",
-      "target": "10000",
+      "target": "20000",
       "targets": [],
       "value": ""
     }, {
       "id": "4a01ef25-bd78-43ed-a16a-934294a265fd",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//span[contains(.,'That is why this coding language developed a feature known as Java objects that allows a programmer to reuse common codes whenever applicable instead of rewriting the same code over and over again. SEE ALSO: How to supercharge innovation with a Dev Day\\n\\nProgramming is adaptable, strong, and stable\\nBecause you can run Java both on computers and mobile devices, its true to say that the languages dialect is universally adaptable. In conclusion\\nIf you ever need help with Java programming, there are companies that offer outsourcing services to all types of organizations.')]",
+      "target": "xpath=//td[2]/span",
       "targets": [
         ["css=.d4-flex-col td:nth-child(2) > span", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[7]/div[2]/div/div[2]/div/table/tbody/tr/td[2]/span", "xpath:idRelative"],
@@ -930,19 +873,19 @@
       "id": "9f64013f-2613-44bb-ba56-2d7adbff7574",
       "comment": "",
       "command": "pause",
-      "target": "10000",
+      "target": "20000",
       "targets": [],
       "value": ""
     }, {
-      "id": "296db8f9-49ed-47ff-98a4-325cd813251f",
+      "id": "c654ee6b-90c0-4583-8e44-d5994098f617",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//span[contains(.,'When choosing any programming language to develop any type of application, there are several tens or hundreds of factors that you should consider, and speed is surely one of them. For this purpose, it must abstract the details of the computer from you: memory management, pointers, Hence, it is slower than lower-level language like C;\\nPython is interpreted and not compiled: Sure, this statement is a gross simplification but its somehow correct. In short, the amount of time you can save in the development process will possibly be more and cost-effective than whatever performance and execution speed in the application you get.')]",
+      "target": "xpath=//td[2]/span",
       "targets": [
         ["css=.d4-flex-col td:nth-child(2) > span", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[7]/div[2]/div/div[2]/div/table/tbody/tr/td[2]/span", "xpath:idRelative"],
         ["xpath=//td[2]/span", "xpath:position"],
-        ["xpath=//span[contains(.,'When choosing any programming language to develop any type of application, there are several tens or hundreds of factors that you should consider, and speed is surely one of them. For this purpose, it must abstract the details of the computer from you: memory management, pointers, Hence, it is slower than lower-level language like C;\\nPython is interpreted and not compiled: Sure, this statement is a gross simplification but its somehow correct. In short, the amount of time you can save in the development process will possibly be more and cost-effective than whatever performance and execution speed in the application you get.')]", "xpath:innerText"]
+        ["xpath=//span[contains(.,'That is why this coding language developed a feature known as Java objects that allows a programmer to reuse common codes whenever applicable instead of rewriting the same code over and over again. SEE ALSO: How to supercharge innovation with a Dev Day\\n\\nProgramming is adaptable, strong, and stable\\nBecause you can run Java both on computers and mobile devices, its true to say that the languages dialect is universally adaptable. In conclusion\\nIf you ever need help with Java programming, there are companies that offer outsourcing services to all types of organizations.')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
