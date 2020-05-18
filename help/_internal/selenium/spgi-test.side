@@ -10,7 +10,7 @@
       "id": "8ff604b9-81db-4083-8663-4b119b7492f9",
       "comment": "",
       "command": "open",
-      "target": "/datasets?selenium=true&q=",
+      "target": "/?selenium=true",
       "targets": [],
       "value": ""
     }, {
@@ -184,119 +184,120 @@
       "id": "decdd048-7a4a-48ab-a06e-a858ffc9d75b",
       "comment": "",
       "command": "click",
-      "target": "css=.tab-handle:nth-child(4) > .tab-handle-close-button",
+      "target": "xpath=//i[@name='icon-table']",
       "targets": [
-        ["css=.tab-handle:nth-child(4) > .tab-handle-text", "css:finder"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[2]/div", "xpath:position"]
+        ["css=.fa-table", "css:finder"],
+        ["xpath=//i[@name='icon-table']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div[4]/i", "xpath:idRelative"],
+        ["xpath=//div[4]/i", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "9c3e300d-e18d-4f30-bd41-3e097b54e2cd",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='view-handle: Main']",
+      "target": "xpath=//div[@name='div-SupData-(2556-rows,-3-columns)']",
       "targets": [
-        ["css=.tab-handle:nth-child(6)", "css:finder"],
-        ["xpath=//div[@name='view-handle: Main']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[4]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/div[4]", "xpath:position"]
+        ["css=.d4-toggle-button:nth-child(1)", "css:finder"],
+        ["xpath=//div[@name='div-SupData-(2556-rows,-3-columns)']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "f9ad117b-3dc3-45ba-bd7b-0c2120bd01a4",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='view-handle: Main Tiles']",
+      "target": "xpath=//div[@name='div-InVivo-Experiment-(530-rows,-53-columns)']",
       "targets": [
-        ["css=.tab-handle:nth-child(8)", "css:finder"],
-        ["xpath=//div[@name='view-handle: Main Tiles']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[6]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/div[6]", "xpath:position"]
+        ["css=.d4-toggle-button:nth-child(2)", "css:finder"],
+        ["xpath=//div[@name='div-InVivo-Experiment-(530-rows,-53-columns)']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[2]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div[2]", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "49363900-376e-42ca-8fdc-a48dd17a483a",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='view-handle: Project']",
+      "target": "xpath=//div[@name='div-PK-Time-Concentration-(10336-rows,-23-columns)']",
       "targets": [
-        ["css=.tab-handle:nth-child(9)", "css:finder"],
-        ["xpath=//div[@name='view-handle: Project']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[7]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/div[7]", "xpath:position"]
+        ["css=.d4-toggle-button:nth-child(3)", "css:finder"],
+        ["xpath=//div[@name='div-PK-Time-Concentration-(10336-rows,-23-columns)']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[3]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div[3]", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "30f8ef71-edaf-446a-b67b-369d5f1cccfc",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='view-handle: Heat Map']",
+      "target": "xpath=//div[@name='div-Availability-(13068-rows,-9-columns)']",
       "targets": [
-        ["css=.tab-handle:nth-child(7)", "css:finder"],
-        ["xpath=//div[@name='view-handle: Heat Map']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[5]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/div[5]", "xpath:position"]
+        ["css=.d4-toggle-button:nth-child(4)", "css:finder"],
+        ["xpath=//div[@name='div-Availability-(13068-rows,-9-columns)']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[4]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div[4]", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "1309b8b9-f5e8-4523-a391-01e5c690bb09",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='view-handle: SupData']",
+      "target": "xpath=//div[@name='div-Chronos-(25171-rows,-9-columns)']",
       "targets": [
-        ["css=.tab-handle:nth-child(5)", "css:finder"],
-        ["xpath=//div[@name='view-handle: SupData']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[3]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/div[3]", "xpath:position"]
+        ["css=.d4-toggle-button:nth-child(5)", "css:finder"],
+        ["xpath=//div[@name='div-Chronos-(25171-rows,-9-columns)']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[5]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div[5]", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "f79d7b7c-b201-4ec4-aa4a-0ef4bbdb9d4c",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='view-handle: Chronos']",
+      "target": "xpath=//div[@name='div-Main-(3884-rows,-257-columns)']",
       "targets": [
-        ["css=.tab-handle:nth-child(10)", "css:finder"],
-        ["xpath=//div[@name='view-handle: Chronos']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[8]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/div[8]", "xpath:position"]
+        ["css=.d4-toggle-button:nth-child(6)", "css:finder"],
+        ["xpath=//div[@name='div-Main-(3884-rows,-257-columns)']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[6]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div[6]", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "1461e650-1191-4602-a7f3-6e8672fd9144",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='view-handle: PK_Time_Concentration']",
+      "target": "xpath=(//div[@name='div-Main-(3884-rows,-257-columns)'])[2]",
       "targets": [
-        ["css=.tab-handle:nth-child(11)", "css:finder"],
-        ["xpath=//div[@name='view-handle: PK_Time_Concentration']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[9]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/div[9]", "xpath:position"]
+        ["css=.d4-toggle-button:nth-child(7)", "css:finder"],
+        ["xpath=(//div[@name='div-Main-(3884-rows,-257-columns)'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[7]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div[7]", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "85ad0485-7ba5-40d6-99f0-717b0f9db8b8",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='view-handle: Availability']",
+      "target": "xpath=(//div[@name='div-Main-(3884-rows,-257-columns)'])[3]",
       "targets": [
-        ["css=.tab-handle:nth-child(12)", "css:finder"],
-        ["xpath=//div[@name='view-handle: Availability']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[10]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/div[10]", "xpath:position"]
+        ["css=.d4-toggle-button:nth-child(8)", "css:finder"],
+        ["xpath=(//div[@name='div-Main-(3884-rows,-257-columns)'])[3]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[8]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div[8]", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "65b0beca-f6a8-418a-8d56-e2c6374b3294",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='view-handle: InVivo_Experiment']",
+      "target": "xpath=(//div[@name='div-Main-(3884-rows,-257-columns)'])[4]",
       "targets": [
-        ["css=.tab-handle:nth-child(13)", "css:finder"],
-        ["xpath=//div[@name='view-handle: InVivo_Experiment']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[11]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/div[11]", "xpath:position"]
+        ["css=.d4-toggle-button:nth-child(9)", "css:finder"],
+        ["xpath=(//div[@name='div-Main-(3884-rows,-257-columns)'])[4]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[9]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div[9]", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -315,8 +316,13 @@
       "id": "011eec28-4ad8-4709-a80a-cbb2ee713d01",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='view-handle: Main']",
-      "targets": [],
+      "target": "xpath=//div[@name='div-Main-(3884-rows,-257-columns)']",
+      "targets": [
+        ["css=.d4-toggle-button:nth-child(6)", "css:finder"],
+        ["xpath=//div[@name='div-Main-(3884-rows,-257-columns)']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[6]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div[6]", "xpath:position"]
+      ],
       "value": ""
     }, {
       "id": "41ebe60d-7868-4dd4-9384-a8b7dbfc6208",
@@ -383,8 +389,13 @@
       "id": "4fb42f30-5cae-4234-9c74-d18816f0af7a",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='view-handle: Heat Map']",
-      "targets": [],
+      "target": "xpath=(//div[@name='div-Main-(3884-rows,-257-columns)'])[2]",
+      "targets": [
+        ["css=.d4-toggle-button:nth-child(7)", "css:finder"],
+        ["xpath=(//div[@name='div-Main-(3884-rows,-257-columns)'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[7]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div[7]", "xpath:position"]
+      ],
       "value": ""
     }, {
       "id": "526cf23e-8e6b-42b7-b5ea-978439e3a4e7",
@@ -411,8 +422,13 @@
       "id": "95047902-10c6-4ea1-a488-16f147cbf7ae",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='view-handle: Main Tiles']",
-      "targets": [],
+      "target": "xpath=(//div[@name='div-Main-(3884-rows,-257-columns)'])[4]",
+      "targets": [
+        ["css=.d4-toggle-button:nth-child(9)", "css:finder"],
+        ["xpath=(//div[@name='div-Main-(3884-rows,-257-columns)'])[4]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[9]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div[9]", "xpath:position"]
+      ],
       "value": ""
     }, {
       "id": "06601f00-1982-4883-8b21-4f7100362fac",
@@ -439,8 +455,13 @@
       "id": "33f052e1-34f3-4a46-bfc1-d475d8444cf3",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='view-handle: Project']",
-      "targets": [],
+      "target": "xpath=(//div[@name='div-Main-(3884-rows,-257-columns)'])[3]",
+      "targets": [
+        ["css=.d4-toggle-button:nth-child(8)", "css:finder"],
+        ["xpath=(//div[@name='div-Main-(3884-rows,-257-columns)'])[3]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[8]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div[8]", "xpath:position"]
+      ],
       "value": ""
     }, {
       "id": "aa1a4c58-4f01-40b1-82ec-232ef6d4ef4f",

@@ -10,7 +10,7 @@
       "id": "cbad45da-58f3-405c-9886-391010a724f1",
       "comment": "",
       "command": "open",
-      "target": "/datasets?selenium=true&q=",
+      "target": "/?selenium=true",
       "targets": [],
       "value": ""
     }, {
@@ -60,7 +60,7 @@
       "id": "f7fcb3c2-fd0e-43a7-bb16-0a28d7d5b298",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {
@@ -79,13 +79,13 @@
     }, {
       "id": "d90c4407-935b-4f3f-b292-683733bd1eb0",
       "comment": "",
-      "command": "click",
-      "target": "xpath=//i[@name='icon-bars']",
+      "command": "doubleClick",
+      "target": "xpath=//i[@name='icon-window']",
       "targets": [
-        ["css=.fa-bars", "css:finder"],
-        ["xpath=//i[@name='icon-bars']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div[7]/i", "xpath:idRelative"],
-        ["xpath=//div[7]/i", "xpath:position"]
+        ["css=.fa-window", "css:finder"],
+        ["xpath=//i[@name='icon-window']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div[8]/i", "xpath:idRelative"],
+        ["xpath=//div[8]/i", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -146,13 +146,12 @@
       "id": "e8db284d-15e0-498d-81fe-4ce9bf05ef94",
       "comment": "",
       "command": "type",
-      "target": "id=editor",
+      "target": "name=input-Open-test-dataset---rows",
       "targets": [
-        ["id=editor", "id"],
-        ["name=input-Open test dataset---rows", "name"],
+        ["name=input-Open-test-dataset---rows", "name"],
         ["css=.d4-input-int:nth-child(1) > #editor", "css:finder"],
-        ["xpath=//input[@id='editor']", "xpath:attributes"],
-        ["xpath=//div[2]/div/input", "xpath:position"]
+        ["xpath=(//input[@id='editor'])[9]", "xpath:attributes"],
+        ["xpath=//div[6]/div[2]/div/input", "xpath:position"]
       ],
       "value": "10"
     }, {
