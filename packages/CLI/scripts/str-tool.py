@@ -4,7 +4,7 @@
 #tags: demo, cli
 #require: str-tool-linux
 #input: dataframe data [Input data table]
-#input: column input {type:categorical} [Impute data table columns]
+#input: column input {type:categorical} [Input column]
 #input: bool do_log = false [Use LOG weights]
 #output: dataframe output {action:join(data)} [Output data]
 #output: string stdout [STDOUT content]
@@ -15,11 +15,9 @@ from subprocess import Popen, PIPE
 
 working_dir = tempfile.mkdtemp()
 
-input_path = os.path.join(working_dir, 'input.csv')
-output_path = os.path.join(working_dir, 'output.csv')
-data.to_csv(input_path, index=False)
+data.to_csv(os.path.join(working_dir, 'input.csv'), index=False)
 
-params = [os.path.join(utils_dir, 'str-tool-linux'), '-i', input_path, '-o', output_path]
+params = [os.path.join(utils_dir, 'str-tool-linux'), '-i', 'input.csv', '-o', 'output.csv']
 if do_log:
     params.append('-l')
 
@@ -27,4 +25,4 @@ process = Popen(params, cwd=working_dir, stdout=PIPE, stderr=PIPE)
 stdout, stderr = process.communicate()
 
 if process.returncode == 0:
-    output = pd.read_csv(output_path)
+    output = pd.read_csv(os.path.join(working_dir, 'output.csv'))
