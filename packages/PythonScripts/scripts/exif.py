@@ -20,7 +20,6 @@ if info:
                 exif[ExifTags.TAGS[key]] = info[key]
             except:
                 pass
-
 else:
     info = img.info
     for key in info.keys():
