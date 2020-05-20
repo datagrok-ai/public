@@ -1,4 +1,4 @@
-class SequencePackageDetectors extends GrokPackage {
+class SequencePackageDetectors extends grok.Package {
 
     //tags: autostart
     autostartTest() {

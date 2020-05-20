@@ -1,18 +1,18 @@
-class SPGiPackage extends GrokPackage {
+class SPGiPackage extends grok.Package {
 
     //tags: app
     startApp(context) {
-        let view = View.create();
+        let view = grok.View.create();
         view.name = 'SPGi';
         view.description = 'SPGi projects view';
 
-        let projectsView = ProjectsView.create({});
+        let projectsView = grok.ProjectsView.create({});
         projectsView.permanentFilter = '#spgi';
         projectsView.searchValue = '';
-        let header = ui.e('div', 'spgi-view-header');
-        let content = ui.e('div', 'spgi-view-content');
+        let header = grok.ui.e('div', 'spgi-view-header');
+        let content = grok.ui.e('div', 'spgi-view-content');
 
-        let title = ui.divText("SPGi Dashboard");
+        let title = grok.ui.divText("SPGi Dashboard");
         title.classList.add('spgi-view-title');
         header.appendChild(title);
         header.style.backgroundImage = `url(${this.webRoot}images/background.png)`;
@@ -24,13 +24,13 @@ class SPGiPackage extends GrokPackage {
         grok.addView(view);
 
         grok.onViewAdded(function (view) {
-            if (view.type === VIEW_TYPE_TABLE_VIEW && view.name === 'Main')
+            if (view.type === grok.VIEW_TYPE_TABLE_VIEW && view.name === 'Main')
                 this.layoutMain(view);
         }.bind(this));
 
         grok.onProjectOpened(function (p) {
             if (p.name.startsWith('BFC'))
-                grok.v = grok.getTableView('Main');
+                grok.xp.v = grok.getTableView('Main');
         });
     }
 
@@ -82,11 +82,11 @@ class SPGiPackage extends GrokPackage {
             let col = table.columns.byName(name);
 
             if (name.endsWith('Date')) {
-                if (col.type === TYPE_DATE_TIME)
+                if (col.type === grok.TYPE_DATE_TIME)
                     col.setTag('format', 'M/d/yyyy');
             }
 
-            if (col.type === TYPE_STRING)
+            if (col.type === grok.TYPE_STRING)
                 for (let r = 0; r < col.length; r++)
                     col.set(r, col.get(r).replace(/\\n/g, ' ').trim());
         });
@@ -97,7 +97,7 @@ class SPGiPackage extends GrokPackage {
 
     //description: Prepares all opened tables
     prepareAll() {
-        for (let table of grok.tables)
+        for (let table of grok.xp.tables)
             this.prepare(table);
     }
 
@@ -139,7 +139,7 @@ class SPGiPackage extends GrokPackage {
             'Cellular assay 1 Date',
             'Cellular assay 1 Curve ID'
         ]);
-        table.setTag(TAGS_TOOLTIP, 'Structure\nUnique_Identifier\nauthor\nstatus');
+        table.setTag(grok.TAGS_TOOLTIP, 'Structure\nUnique_Identifier\nauthor\nstatus');
 
         this.formatsMap = new Map();
         if (grok.tableByName('SupData').d !== null) {
@@ -209,7 +209,7 @@ class SPGiPackage extends GrokPackage {
     //condition: t.tags.contains("spgi")
     samplesAvailability(smiles) {
         let table = grok.tableByName('Availability');
-        let noInfo = new Widget(ui.divText('Information not available'));
+        let noInfo = new grok.Widget(grok.ui.divText('Information not available'));
         if (table.d === null)
             return noInfo;
         let selection = table.selection.clone();
@@ -237,11 +237,11 @@ class SPGiPackage extends GrokPackage {
         available.columns.remove('Amount');
         unit.name = 'Amount';
         available.selection.setAll(false);
-        let grid = Grid.create(available);
+        let grid = grok.Grid.create(available);
         grid.root.style.width = '400px';
         grid.root.style.height = '125px';
-        let button = ui.bigButton('ORDER');
+        let button = grok.ui.bigButton('ORDER');
         button.style.marginBottom = '6px';
-        return new Widget(ui.div([button, ui.div([grid.root])]));
+        return new grok.Widget(grok.ui.div([button, grok.ui.div([grid.root])]));
     }
 }

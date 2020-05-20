@@ -1,5 +1,3 @@
-class JuliaScriptsPackage extends GrokPackage {
+class JuliaScriptsPackage extends grok.Package {
 
-    // Guaranteed to get called exactly once before the execution of any function below
-    init() { console.log('Julia Scripts package initialized.'); }
 }

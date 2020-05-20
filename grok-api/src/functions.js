@@ -1,5 +1,6 @@
-
 /** Grok functions */
+import {paramsToJs} from "./utils";
+
 export class Functions {
     register(func) { grok_RegisterFunc(func); }
     registerParamFunc(name, type, run, check = null, description = null) { grok_RegisterParamFunc(name, type, run, check, description); }

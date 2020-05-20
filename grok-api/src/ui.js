@@ -234,7 +234,8 @@ export class Menu {
 /** Balloon-style visual notifications. */
 export class Balloon {
     /** Shows information message (green background) */
-    static info(s) { grok_Balloon(s, 'info'); }
+    static info(s) {
+        grok_Balloon(s, 'info'); }
 
     /** Shows information message (red background) */
     static error(s) { grok_Balloon(s, 'error'); }

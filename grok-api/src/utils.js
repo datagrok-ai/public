@@ -14,10 +14,10 @@ import {GridCellRenderArgs} from "./grid";
 import {EventData} from "./events";
 import {TableView, View} from "./view";
 
-function _toJs(d) { return _wrap(d, false); }
+export function _toJs(d) { return _wrap(d, false); }
 
 /** Instantiates the corresponding JS handler for the Dart object [d]. */
-function _wrap(d, check = true) {
+export function _wrap(d, check = true) {
     let type = grok_GetType(d);
     switch (type) {
         case TYPE_DATA_FRAME: return new DataFrame(d);
@@ -39,19 +39,19 @@ function _wrap(d, check = true) {
     return d;
 }
 
-function _toDart(x) {
+export function _toDart(x) {
     return (typeof x.d !== 'undefined') ? x.d : x;
 }
 
-function _toJson(x) {
+export function _toJson(x) {
     return x === null ? null : JSON.stringify(x);
 }
 
-function _jsThen(promise, f) {
+export function _jsThen(promise, f) {
     promise.then(f);
 }
 
-function paramsToJs(params) {
+export function paramsToJs(params) {
     let result = [];
     for (let i = 0; i < params.length; i++) {
         let type = grok_GetType(params[i]);
@@ -64,9 +64,9 @@ function paramsToJs(params) {
     return result;
 }
 
-window.onerror = function (message, url, lineNumber, columnNumber, errorObject) {
+/*window.onerror = function (message, url, lineNumber, columnNumber, errorObject) {
     return grok_Error(message, url, lineNumber, columnNumber, errorObject);
-};
+};*/
 
 let time = function(s, f) {
     let start = new Date();

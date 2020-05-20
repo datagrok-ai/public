@@ -1,2 +1,2 @@
-class ChemblPackage extends GrokPackage {
+class ChemblPackage extends grok.Package {
 }

@@ -1,5 +1,3 @@
-class ChemScriptsPackage extends GrokPackage {
+class ChemScriptsPackage extends grok.Package {
 
-    // Guaranteed to get called exactly once before the execution of any function below
-    init() { console.log('Chem Scripts package initialized.'); }
 }

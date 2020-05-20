@@ -1,4 +1,4 @@
-class SDTMPackageDetectors extends GrokPackage {
+class SDTMPackageDetectors extends grok.Package {
     //tags: semTypeDetector
     //input: column col
     //output: string semType
