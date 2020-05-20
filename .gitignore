@@ -10,3 +10,9 @@
 /connectors/serialization/target/
 dependency-reduced-pom.xml
 *.class
+
+# NPM modules
+node_modules/
+
+# dist
+/grok-api/dist
