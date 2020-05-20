@@ -6,8 +6,9 @@
 *.iml
 
 # Java files
-/connectors/grok_connect/target/
-/connectors/serialization/target/
+/connectors/grok_connect/target
+/connectors/serialization/target
+/packages/Tika/src/target
 dependency-reduced-pom.xml
 *.class
 
