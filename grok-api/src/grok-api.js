@@ -186,3 +186,4 @@ export function onProjectOpened(f) { return grok_OnEvent('grok-project-opened', 
 export function onProjectClosed(f) { return grok_OnEvent('grok-project-closed', (a) => f(new Project(a))); }
 export function onProjectModified(f) { return grok_OnEvent('grok-project-modified', (a) => f(new Project(a))); }
 
+window.ui = ui;
