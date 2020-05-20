@@ -1,4 +1,3 @@
-import {dapi} from "./grok-api.js";
 import {Viewer} from "./viewer";
 
 export class ui {
@@ -235,10 +234,7 @@ export class Menu {
 /** Balloon-style visual notifications. */
 export class Balloon {
     /** Shows information message (green background) */
-    static async info(s) {
-        let a = await dapi.queries.by(1).list();
-        grok_Balloon(s, 'info');
-    }
+    static info(s) { grok_Balloon(s, 'info'); }
 
     /** Shows information message (red background) */
     static error(s) { grok_Balloon(s, 'error'); }
