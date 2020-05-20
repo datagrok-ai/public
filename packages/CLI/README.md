@@ -10,7 +10,7 @@ Here are the files and directories of particular interest:
   : [Python](https://www.python.org/) wrapper for "str-tool" CLI tool using [Scripting](https://datagrok.ai/help/compute/scripting)
   
 * [bin](https://github.com/datagrok-ai/public/blob/master/packages/CLI/bin)
-  : directory with "str-tool" CLI tool binaries for Linux and macOS
+  : directory with "str-tool" CLI tool binaries for Linux
 
 
 See also: 
