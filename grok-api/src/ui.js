@@ -1,3 +1,6 @@
+import {dapi} from "./grok-api.js";
+import {Viewer} from "./viewer";
+
 export class ui {
 
     static e (s, cl = null) {
@@ -10,7 +13,7 @@ export class ui {
     static appendAll(root, elements) {
         let fragment = document.createDocumentFragment();
         for (let i = 0; i < elements.length; i++) {
-            var e = elements[i];
+            let e = elements[i];
             if (e instanceof Viewer)
                 e = e.root;
             fragment.appendChild(e);
@@ -232,7 +235,10 @@ export class Menu {
 /** Balloon-style visual notifications. */
 export class Balloon {
     /** Shows information message (green background) */
-    static info(s) { grok_Balloon(s, 'info'); }
+    static async info(s) {
+        let a = await dapi.queries.by(1).list();
+        grok_Balloon(s, 'info');
+    }
 
     /** Shows information message (red background) */
     static error(s) { grok_Balloon(s, 'error'); }
