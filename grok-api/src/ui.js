@@ -1,3 +1,5 @@
+import {Viewer} from "./viewer";
+
 export class ui {
 
     static e (s, cl = null) {
@@ -10,7 +12,7 @@ export class ui {
     static appendAll(root, elements) {
         let fragment = document.createDocumentFragment();
         for (let i = 0; i < elements.length; i++) {
-            var e = elements[i];
+            let e = elements[i];
             if (e instanceof Viewer)
                 e = e.root;
             fragment.appendChild(e);
