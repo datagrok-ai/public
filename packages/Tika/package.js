@@ -1,0 +1,2 @@
+class TikaPackage extends GrokPackage {
+}
