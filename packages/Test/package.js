@@ -1,4 +1,4 @@
-class TestPackage extends GrokPackage {
+class TestPackage extends grok.Package {
 
     //description: test code
     test() {

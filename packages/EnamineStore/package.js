@@ -1,4 +1,4 @@
-class EnamineStorePackage extends GrokPackage {
+class EnamineStorePackage extends grok.Package {
 
     //tags: app
     //name: Enamine Store

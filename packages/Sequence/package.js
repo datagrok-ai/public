@@ -1,4 +1,4 @@
-class SequencePackage extends GrokPackage {
+class SequencePackage extends grok.Package {
 
     //description: Returns a string containing the Amino Acid sequence represented by the nucleotide sequence
     //tags: converter

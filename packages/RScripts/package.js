@@ -1,5 +1,3 @@
-class RScriptsPackage extends GrokPackage {
+class RScriptsPackage extends grok.Package {
 
-    // Guaranteed to get called exactly once before the execution of any function below
-    init() { console.log('R Scripts package initialized.'); }
 }

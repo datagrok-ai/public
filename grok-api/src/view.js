@@ -25,8 +25,9 @@ import {
     VIEWER_SCATTER_PLOT_3D,
     VIEWER_SHAPE_MAP, VIEWER_STATISTICS, VIEWER_TILE_VIEWER, VIEWER_TREE_MAP, VIEWER_TRELLIS_PLOT, VIEWER_WORD_CLOUD
 } from "./const";
-import {DataFrame} from "./dataframe";
-import {ToolboxPage} from "./ui";
+import {DataFrame} from "./dataframe.js";
+import {ToolboxPage} from "./ui.js";
+import {ui} from "./ui";
 
 export class View {
     constructor(d) { this.d = d; }
@@ -128,19 +129,19 @@ export class TableView extends View {
 }
 
 
-class DataSourceCardView extends View {
+export class DataSourceCardView extends View {
     set searchValue(s) { return grok_DataSourceCardView_Set_SearchValue(this.d, s); }
     get permanentFilter() { return grok_DataSourceCardView_Get_PermanentFilter(this.d); }
     set permanentFilter(s) { return grok_DataSourceCardView_Set_PermanentFilter(this.d, s); }
 }
 
 
-class ProjectsView extends DataSourceCardView {
+export class ProjectsView extends DataSourceCardView {
     static create(params) { return new ProjectsView(grok_ProjectsView(params)); }
 }
 
 
-class ViewLayout {
+export class ViewLayout {
     constructor(d) { this.d = d; }
 
     static fromJson(json) { return new ViewLayout(grok_ViewLayout_FromJson(json)); }
@@ -149,7 +150,7 @@ class ViewLayout {
 }
 
 
-class VirtualView {
+export class VirtualView {
     constructor(d) { this.d = d; }
 
     static create() { return new VirtualView(grok_VirtualItemView()); }

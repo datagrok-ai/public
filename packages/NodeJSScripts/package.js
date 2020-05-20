@@ -1,5 +1,3 @@
-class NodeJsScriptsPackage extends GrokPackage {
+class NodeJsScriptsPackage extends grok.Package {
 
-    // Guaranteed to get called exactly once before the execution of any function below
-    init() { console.log('NodeJS Scripts package initialized.'); }
 }

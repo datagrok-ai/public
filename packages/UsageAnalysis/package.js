@@ -1,4 +1,4 @@
-class UsageAnalysisPackage extends GrokPackage {
+class UsageAnalysisPackage extends grok.Package {
 
     //name: Usage Analysis
     //tags: app

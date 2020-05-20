@@ -1,4 +1,4 @@
-class PedometerPackage extends GrokPackage {
+class PedometerPackage extends grok.Package {
 
     //input: dataframe accel [Accelerometry data table]
     //input: column x {semType: Accelerometer-X} [X axis]

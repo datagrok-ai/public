@@ -1,4 +1,4 @@
-class LeafletPackage extends GrokPackage {
+class LeafletPackage extends grok.Package {
 
     //name: Leaflet
     //description: Leaflet map

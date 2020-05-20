@@ -1,4 +1,4 @@
-class ViewersPackage extends GrokPackage {
+class ViewersPackage extends grok.Package {
 
     //name: Sankey
     //description: creates a sankey viewer

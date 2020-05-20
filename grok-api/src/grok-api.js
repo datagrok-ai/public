@@ -100,6 +100,8 @@ export function dockElement(e, title = null, dockStyle = 'fill', ratio = 0.5) { 
 
 export function tableByName(s) { return new DataFrame(grok_TableByName(s)); }
 
+export * from './utils.js';
+
 /**
  * Creates a generic dataset with the defined number of rows and columns.
  * [dataset] allowed values:
@@ -185,5 +187,3 @@ export function onProjectSaved(f) { return grok_OnEvent('grok-project-saved', (a
 export function onProjectOpened(f) { return grok_OnEvent('grok-project-opened', (a) => f(new Project(a))); }
 export function onProjectClosed(f) { return grok_OnEvent('grok-project-closed', (a) => f(new Project(a))); }
 export function onProjectModified(f) { return grok_OnEvent('grok-project-modified', (a) => f(new Project(a))); }
-
-window.ui = ui;

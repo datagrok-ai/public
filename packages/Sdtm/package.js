@@ -1,4 +1,4 @@
-class SDTMPackage extends GrokPackage {
+class SDTMPackage extends grok.Package {
     //tags: app
     startApp(context) {
         let parser = document.createElement('a');

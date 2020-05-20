@@ -1,4 +1,4 @@
-class RoutingDemoPackage extends GrokPackage {
+class RoutingDemoPackage extends grok.Package {
 
     //name: Routing Demo
     //tags: app
