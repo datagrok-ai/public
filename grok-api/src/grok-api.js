@@ -2,7 +2,7 @@ import {GrokPackage, DataConnection, Project} from "./entities.js";
 import {ui, Balloon} from "./ui.js";
 import {Dapi} from "./dapi.js";
 import {DataFrame} from "./dataframe.js";
-import {View} from "./view";
+import {TableView, View} from "./view";
 import {User} from "./entities";
 import {TabControl} from "./ui";
 import {Functions} from "./functions";
