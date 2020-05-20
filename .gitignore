@@ -13,6 +13,7 @@ dependency-reduced-pom.xml
 
 # NPM modules
 node_modules/
+package-lock.json
 
 # dist
 /grok-api/dist
