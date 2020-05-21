@@ -79,7 +79,7 @@ The following code defines a new viewer by subclassing JsViewer. The viewer list
 of filter and selection in the attached table, and updates numbers of filtered/selected rows accordingly.
 
 ```javascript
-class JsDemoViewer extends JsViewer {
+class JsDemoViewer extends grok.JsViewer {
     onFrameAttached(dataFrameHandle) {
         this.dataFrame = new DataFrame(dataFrameHandle);
         subs.push(this.dataFrame.selection.onChanged.subscribe((_) => this.render()));

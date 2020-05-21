@@ -90,7 +90,7 @@ grok.functions.register({
         }
         window.setTimeout(update, 1000);
 
-        return new JsWidget(e);
+        return new ui.Widget(e);
     }});
 
 grok.functions.register({
