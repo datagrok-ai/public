@@ -209,7 +209,7 @@ class SPGiPackage extends grok.Package {
     //condition: t.tags.contains("spgi")
     samplesAvailability(smiles) {
         let table = grok.tableByName('Availability');
-        let noInfo = new grok.Widget(grok.ui.divText('Information not available'));
+        let noInfo = new ui.Widget(ui.divText('Information not available'));
         if (table.d === null)
             return noInfo;
         let selection = table.selection.clone();
@@ -240,8 +240,8 @@ class SPGiPackage extends grok.Package {
         let grid = grok.Grid.create(available);
         grid.root.style.width = '400px';
         grid.root.style.height = '125px';
-        let button = grok.ui.bigButton('ORDER');
+        let button = ui.bigButton('ORDER');
         button.style.marginBottom = '6px';
-        return new grok.Widget(grok.ui.div([button, grok.ui.div([grid.root])]));
+        return new ui.Widget(ui.div([button, ui.div([grid.root])]));
     }
 }

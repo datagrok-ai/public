@@ -12,13 +12,13 @@ class UsageAnalysisPackage extends grok.Package {
         date.root.classList.add('usage-analysis-date', 'pure-form');
         date.addPatternMenu('datetime');
 
-        let users = TagEditor.create();
+        let users = grok.TagEditor.create();
         users.acceptsDragDrop = (x) => x instanceof User;
         users.doDrop = (user) => users.addTag(user.login);
 
         let addUser = ui.div([ui.iconFA('plus', () => {
             grok.dapi.users.order('login').list().then((allUsers) => {
-                Menu.popup()
+                ui.Menu.popup()
                     .items(allUsers.map(u => u.login), (item) => users.addTag(item))
                     .show();
             });
@@ -162,7 +162,7 @@ class UsageAnalysisPackage extends grok.Package {
                 }),
                 'updateHistory': false,
             }).then((t) => {
-                grok.balloon.info('Created');
+                grok.shell.info('Created');
             });
         });
         button.style.marginTop = '12px';
@@ -170,6 +170,6 @@ class UsageAnalysisPackage extends grok.Package {
         root.appendChild(ui.inputs([summary, description]));
         root.appendChild(button);
 
-        return new Widget(root);
+        return new ui.Widget(root);
     }
 }

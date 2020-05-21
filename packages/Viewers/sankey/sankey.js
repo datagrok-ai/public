@@ -1,4 +1,4 @@
-class SankeyViewer extends JsViewer {
+class SankeyViewer extends grok.JsViewer {
   init() {
     this.root.className = 'sankey';
 
@@ -145,7 +145,7 @@ class SankeyViewer extends JsViewer {
   }
 
   onFrameAttached(dataFrameHandle) {
-    this.table = new DataFrame(dataFrameHandle);
+    this.table = new grok.DataFrame(dataFrameHandle);
     this.options = {source: 'source', target: 'target', value: 'value'};
     this.init();
 

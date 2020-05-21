@@ -1,4 +1,4 @@
-class GlobeViewer extends JsViewer {
+class GlobeViewer extends grok.JsViewer {
 
     constructor(webRoot) {
         super();
@@ -26,7 +26,7 @@ class GlobeViewer extends JsViewer {
     onFrameAttached(dataFrameHandle) {
         this.options = {lat: 'Latitude', lon: 'Longitude', mag: 'Magnitude'};
 
-        this.table = new DataFrame(dataFrameHandle);
+        this.table = new grok.DataFrame(dataFrameHandle);
         this.init();
 
         this.subs.push(this.table.selection.onChanged.subscribe((_) => this.render()));
