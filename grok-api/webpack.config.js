@@ -1,9 +1,9 @@
 const path = require('path');
 
 module.exports = {
-    mode: 'production',
-    entry: {'grok': './src/grok.js', 'ui': './src/ui.js'},
-    //devtool: 'inline-source-map',
+    mode: 'development',
+    entry: {'grok': './grok.js', 'ui': './ui.js', 'DG': './dg.js'},
+    devtool: 'inline-source-map',
     module: {
         rules: [
             {

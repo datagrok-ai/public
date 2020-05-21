@@ -1,5 +1,5 @@
 import * as rxjs from 'rxjs';
-import {AGG} from "./const";
+import {AGG, TYPE} from "./const";
 import {observeStream} from "./events";
 /**
  * DataFrame is a high-performance, easy to use tabular structure with
@@ -233,27 +233,27 @@ export class Column {
     /** Creates an integer column with the specified name and length.
      * @param {string} name
      * @param {number} length */
-    static int(name, length = 0) { return Column.fromType(TYPE_INT, name, length); }
+    static int(name, length = 0) { return Column.fromType(TYPE.INT, name, length); }
 
     /** Creates a floating point column with the specified name and length.
      * @param {string} name
      * @param {number} length */
-    static float(name, length = 0) { return Column.fromType(TYPE_FLOAT, name, length); }
+    static float(name, length = 0) { return Column.fromType(TYPE.FLOAT, name, length); }
 
     /** Creates a string column with the specified name and length.
      * @param {string} name
      * @param {number} length */
-    static string(name, length = 0) { return Column.fromType(TYPE_STRING, name, length); }
+    static string(name, length = 0) { return Column.fromType(TYPE.STRING, name, length); }
 
     /** Creates a boolean column with the specified name and length.
      * @param {string} name
      * @param {number} length */
-    static bool(name, length = 0) { return Column.fromType(TYPE_BOOL, name, length); }
+    static bool(name, length = 0) { return Column.fromType(TYPE.BOOL, name, length); }
 
     /** Creates a datetime column with the specified name and length.
      * @param {string} name
      * @param {number} length */
-    static dateTime(name, length = 0) { return Column.fromType(TYPE_DATE_TIME, name, length); }
+    static dateTime(name, length = 0) { return Column.fromType(TYPE.DATE_TIME, name, length); }
 
     /** Column data type. */
     get type() { return grok_Column_Get_Type(this.d); }

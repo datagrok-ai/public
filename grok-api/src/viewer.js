@@ -1,8 +1,8 @@
 /** A viewer that is typically docked inside a [TableView]. */
-import {TYPE_BOOL, TYPE_FLOAT, TYPE_INT, TYPE_STRING, VIEWER_BAR_CHART} from "./const";
-import * as ui from "./ui.js";
+import {TYPE, VIEWER} from "./const";
+import * as ui from "./../ui.js";
 import {Property} from "./entities";
-
+import {_toJson} from "./utils";
 
 export class Viewer {
     constructor(d) { this.d = d; }
@@ -19,7 +19,7 @@ export class Viewer {
 
     static grid        (t, options = null) { return new Viewer(grok_Viewer_Grid(t.d, _toJson(options))); }
     static histogram   (t, options = null) { return new Viewer(grok_Viewer_Histogram(t.d, _toJson(options))); }
-    static barChart    (t, options = null) { return Viewer.fromType(VIEWER_BAR_CHART, t, options);  }
+    static barChart    (t, options = null) { return Viewer.fromType(VIEWER.BAR_CHART, t, options);  }
     static boxPlot     (t, options = null) { return new Viewer(grok_Viewer_BoxPlot(t.d, _toJson(options)));  }
     static filters     (t, options = null) { return new Viewer(grok_Viewer_Filters(t.d, _toJson(options))); }
     static scatterPlot (t, options = null) { return new Viewer(grok_Viewer_ScatterPlot(t.d, _toJson(options))); }
@@ -87,11 +87,11 @@ export class JsViewer {
     }
 
     /** @returns {Column} */
-    column(name) { return this._prop(`${name}ColumnName`, TYPE_STRING); }
+    column(name) { return this._prop(`${name}ColumnName`, TYPE.STRING); }
 
-    int(name, value = null) { return this._prop(name, TYPE_INT, value); }
-    float(name, value = null) { return this._prop(name, TYPE_FLOAT, value); }
-    string(name, value = null) { return this._prop(name, TYPE_STRING, value); }
-    bool(name, value = null) { return this._prop(name, TYPE_BOOL, value); }
-    dateTime(name, value = null) { return this._prop(name, TYPE_DATE_TIME, value); }
+    int(name, value = null) { return this._prop(name, TYPE.INT, value); }
+    float(name, value = null) { return this._prop(name, TYPE.FLOAT, value); }
+    string(name, value = null) { return this._prop(name, TYPE.STRING, value); }
+    bool(name, value = null) { return this._prop(name, TYPE.BOOL, value); }
+    dateTime(name, value = null) { return this._prop(name, TYPE.DATE_TIME, value); }
 }

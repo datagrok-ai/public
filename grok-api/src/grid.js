@@ -2,6 +2,7 @@ import {EventData} from "./events.js";
 import {Viewer} from "./viewer.js";
 import {Column} from './dataframe.js';
 import {Cell} from "./dataframe";
+import {factories} from './wrappers';
 
 /** Represents a grid cell */
 export class GridCell {
@@ -61,6 +62,7 @@ export class GridCellRenderArgs extends EventData {
     get bounds() { return grok_GridCellRenderArgs_Get_Bounds(this.d); }
 }
 
+factories["GridCellRenderArgs"] = function(d) {return new GridCellRenderArgs(d)}
 
 /** Represents a grid column */
 export class GridColumn {
