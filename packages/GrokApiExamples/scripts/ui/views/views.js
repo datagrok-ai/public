@@ -1,11 +1,20 @@
-// Creating custom ribbons
+// Creating custom ribbons and toolboxes
 
-let v = grok.newView('toolbox demo', [ui.divText('See custom, view-specific elements on top below the menu.')]);
+let v = grok.newView('Custom View', [
+    ui.divText('See custom, view-specific elements in the ribbon.')
+]);
+
+v.append(ui.button('Close', () => v.close()));
 
 v.setRibbonPanels([
     [
         ui.iconFA('search', () => grok.balloon.info("clicked")),
         ui.iconFA('plus', () => grok.balloon.info("plus"))
     ],
-    [ui.divText('Custom panel')]
+    [ ui.divText('Custom panel') ]
 ]);
+
+let acc = ui.accordion();
+acc.addPane('header 1', () => ui.divText('Dynamic content'));
+acc.addPane('header 2', () => ui.divText('More dynamic content'));
+v.toolbox = acc.root;
