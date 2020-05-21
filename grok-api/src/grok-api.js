@@ -1,19 +1,17 @@
-import {GrokPackage, DataConnection, Project} from "./entities.js";
-import {ui, Balloon} from "./ui.js";
+import {Package, DataConnection, Project} from "./entities.js";
+import * as ui from "./ui.js";
 import {Dapi} from "./dapi.js";
 import {DataFrame} from "./dataframe.js";
 import {TableView, View} from "./view";
 import {User} from "./entities";
 import {TabControl} from "./ui";
 import {Functions} from "./functions";
-import * as rxjs from "rxjs";
-import * as rxjsOperators from "rxjs/operators";
 import {Events} from "./events";
 
 //import { fromEventPattern } from 'rxjs';
 /** Grok entry point, use it to get access to top-level views, tables, methods, etc. */
 
-export class Xplorer {
+export class Shell {
 
     get t() { return new DataFrame(grok_CurrentTable()); }
 
@@ -33,19 +31,23 @@ export class Xplorer {
     /** Current user */
     get user() { return new User(grok_User()); }
 
+    /** Current object */
+    get o() { return _wrap(grok_Get_CurrentObject(), false); }
+    set o(x) { grok_Set_CurrentObject(_toDart(x)); }
+
     get sidebar() { return new TabControl(grok_Get_Sidebar()); }
 
-    /** Presentaion mode **/
-    get presentationMode() { return grok_Get_PresentationMode(); }
-    set presentationMode(x) { return grok_Set_PresentationMode(x); }
+    get topMenu() { return new Menu(grok_Get_TopMenu()); }
 
+}
+
+export class Settings {
     /** Hide dock tabs in presentaion mode **/
     get hideTabsInPresentationMode() { return grok_Get_HideTabsInPresentationMode(); }
     set hideTabsInPresentationMode(x) { return grok_Set_HideTabsInPresentationMode(x); }
-
-    get topMenu() { return new Menu(grok_Get_TopMenu()); }
-    get currentObject() { return _wrap(grok_Get_CurrentObject(), false); }
-    set currentObject(x) { grok_Set_CurrentObject(_toDart(x)); }
+    /** Presentaion mode **/
+    get presentationMode() { return grok_Get_PresentationMode(); }
+    set presentationMode(x) { return grok_Set_PresentationMode(x); }
 }
 
 export class Utils {
@@ -72,7 +74,6 @@ export * from './events.js';
 export * from './functions.js';
 export * from './grid.js';
 export * from './ml.js';
-export * from './ui.js';
 export * from './utils.js';
 export * from './view.js';
 export * from './viewer.js';
@@ -80,21 +81,17 @@ export * from './viewer.js';
 export * from "rxjs";
 export * from "rxjs/operators";
 
-//export let grok = new Grok();
-/*
-window.grok = grok;
-window.ui = ui;
-window.GrokPackage = GrokPackage;*/
-
 export let functions = new Functions();
 
 export let events = new Events();
 
 export let dapi = new Dapi();
 
-export let xp = new Xplorer();
+export let shell = new Shell();
 
-export function info(s) { Balloon.info(s); }
+export let settings = new Settings();
+
+export function info(s) { ui.Balloon.info(s); }
 
 export function dockElement(e, title = null, dockStyle = 'fill', ratio = 0.5) { grok_DockElement(e, title, dockStyle, ratio); }
 

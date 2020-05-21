@@ -1,6 +1,6 @@
 /** A viewer that is typically docked inside a [TableView]. */
 import {TYPE_BOOL, TYPE_FLOAT, TYPE_INT, TYPE_STRING, VIEWER_BAR_CHART} from "./const";
-import {ui} from "./ui";
+import * as ui from "./ui.js";
 import {Property} from "./entities";
 
 
@@ -54,7 +54,7 @@ class JsViewer {
 
         this.subs = [];  // stream subscriptions - will be canceled when the viewer is detached
 
-        uit.handleResize(this.root, (w, h) => this.onSizeChanged(w, h));
+        ui.tools.handleResize(this.root, (w, h) => this.onSizeChanged(w, h));
     }
 
     onFrameAttached(dataFrameHandle) {}
@@ -62,7 +62,7 @@ class JsViewer {
     onSizeChanged(width, height) {}
 
     detach() {
-        Balloon.info("Detached");
+        ui.Balloon.info("Detached");
         this.subs.forEach((sub) => sub.unsubscribe());
     }
 
