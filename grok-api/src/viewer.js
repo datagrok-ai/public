@@ -25,7 +25,7 @@ export class Viewer {
     static scatterPlot (t, options = null) { return new Viewer(grok_Viewer_ScatterPlot(t.d, _toJson(options))); }
 }
 
-class JsLookAndFeel {
+export class JsLookAndFeel {
     constructor() {
         return new Proxy(this, {
             set(target, name, value) {
@@ -43,7 +43,7 @@ class JsLookAndFeel {
 
 
 /** JavaScript implementation of the grok viewer */
-class JsViewer {
+export class JsViewer {
 
     constructor() {
         this.root = ui.div();

@@ -39,6 +39,13 @@ export class Shell {
 
     get topMenu() { return new Menu(grok_Get_TopMenu()); }
 
+    info(s) { ui.Balloon.info(s); }
+
+    error(s) { ui.Balloon.error(s); }
+
+    dockElement(e, title = null, dockStyle = 'fill', ratio = 0.5) { grok_DockElement(e, title, dockStyle, ratio); }
+
+    route(url) { return View.fromDart(grok_Route(url)); }
 }
 
 export class Settings {
@@ -50,7 +57,7 @@ export class Settings {
     set presentationMode(x) { return grok_Set_PresentationMode(x); }
 }
 
-export class Utils {
+export class utils {
     static *range(length) {
         for (let i = 0; i < length; i++)
             yield i;
@@ -91,12 +98,6 @@ export let shell = new Shell();
 
 export let settings = new Settings();
 
-export function info(s) { ui.Balloon.info(s); }
-
-export function dockElement(e, title = null, dockStyle = 'fill', ratio = 0.5) { grok_DockElement(e, title, dockStyle, ratio); }
-
-export function tableByName(s) { return new DataFrame(grok_TableByName(s)); }
-
 export * from './utils.js';
 
 /**
@@ -128,7 +129,7 @@ export function addView(v) { grok_AddView(v.d); }
 export function addTableView(t, dockStyle = 'fill', width = null) { return new TableView(grok_AddTableView(t.d, dockStyle, width)); }
 export function getTableView(name) { return new TableView(grok_GetTableView(name)); }
 export function closeAll() { grok_CloseAll(); }
-export function route(url) { return View.fromDart(grok_Route(url)); }
+export function tableByName(s) { return new DataFrame(grok_TableByName(s)); }
 
 /** @returns {DataFrame} */
 export function parseCsv(csv) { return new DataFrame(grok_ParseCsv(csv)); }

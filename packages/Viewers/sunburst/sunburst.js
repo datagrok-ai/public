@@ -1,4 +1,4 @@
-class SunburstViewer extends JsViewer {
+class SunburstViewer extends grok.JsViewer {
     init() {
         let data = {
             name: "root",
@@ -30,7 +30,7 @@ class SunburstViewer extends JsViewer {
             };
         }
 
-        this.table = new DataFrame(dataFrameHandle);
+        this.table = new grok.DataFrame(dataFrameHandle);
         this.init();
 
         this.subs.push(this.table.selection.onChanged.subscribe((_) => this.render()));

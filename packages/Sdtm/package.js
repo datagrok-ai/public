@@ -6,9 +6,9 @@ class SDTMPackage extends grok.Package {
         let pathSegments = parser.pathname.split('/');
         let urlLayout = (pathSegments.length > 3) ? decodeURI(pathSegments[3]) : null;
 
-        let emptyTable = DataFrame.create();
+        let emptyTable = grok.DataFrame.create();
 
-        var loadingLayout = false;
+        let loadingLayout = false;
         let preview = ui.boolInput('', true);
         let limit = ui.intInput('Limit', 1000);
         let analysis = ui.div([], 'pure-form,pure-form-aligned');
@@ -35,7 +35,7 @@ class SDTMPackage extends grok.Package {
             host.appendChild(ui.loader());
             grok.query(query, queryParameters, true, 100).then(t => {
                 let items = t.getCol(itemsColumn).toList();
-                let input = ui.columnsInput(caption, DataFrame.fromColumns(items.map(item => Column.string(item))));
+                let input = ui.columnsInput(caption, grok.DataFrame.fromColumns(items.map(item => grok.Column.string(item))));
                 if (values.length !== 0) {
                     let _values = [];
                     for (let value of values)
@@ -164,7 +164,7 @@ class SDTMPackage extends grok.Package {
         const STORAGE_NAME = 'sdtm-demo';
         let currentUserStorage = false;
 
-        var nameInput = ui.stringInput('', 'Default');
+        let nameInput = ui.stringInput('', 'Default');
         nameInput.captionLabel.style.width = '0';
 
         function saveToStorage() {
@@ -205,12 +205,12 @@ class SDTMPackage extends grok.Package {
 
         let save = ui.button('Save', saveToStorage);
 
-        var load = ui.iconFA('bars', () => {
+        let load = ui.iconFA('bars', () => {
             grok.dapi.userDataStorage.get(STORAGE_NAME, currentUserStorage).then((layouts) => {
                 if (layouts !== null && Object.keys(layouts).length === 0)
-                    grok.balloon.info('Storage is empty. Save some analysis to the storage');
+                    ui.Balloon.info('Storage is empty. Save some analysis to the storage');
                 else {
-                    let menu = Menu.popup();
+                    let menu = ui.Menu.popup();
                     for (let layout of Object.keys(layouts)) {
                         menu.item(layout, () => {
                             loadFromStorage(layout, layouts[layout]);
@@ -225,7 +225,7 @@ class SDTMPackage extends grok.Package {
         let remove = ui.iconFA('trash-alt', () => {
             if (nameInput.value !== '') {
                 grok.dapi.userDataStorage.remove(STORAGE_NAME, nameInput.value, currentUserStorage);
-                grok.balloon.info(`Analysis ${nameInput.value} is removed`);
+                ui.Balloon.info(`Analysis ${nameInput.value} is removed`);
                 nameInput.value = 'Default';
             }
         }, 'Remove analysis from storage');
@@ -273,7 +273,7 @@ class SDTMPackage extends grok.Package {
     //input: string subj {semType: Subject}
     //output: widget result
     medicalHistorySubject(subj) {
-        return this.getMedicalHistory(grok.v.dataFrame.currentRow.studyid, subj);
+        return this.getMedicalHistory(grok.shell.v.dataFrame.currentRow.studyid, subj);
     }
 
     //description: Gets medical history widget
@@ -283,13 +283,13 @@ class SDTMPackage extends grok.Package {
             'study': study,
             'subj': subj
         }, true, 100).then(mi => {
-            let grid = Grid.create(mi);
+            let grid = grok.Grid.create(mi);
             grid.root.style.width = '350px';
             grid.root.style.height = '400px';
             SDTMPackage.removeChildren(host);
             host.appendChild(grid.root);
         });
-        return new Widget(host);
+        return new ui.Widget(host);
     }
 
     //description: Removes all children from node
