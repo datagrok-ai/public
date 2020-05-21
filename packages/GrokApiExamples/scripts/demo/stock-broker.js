@@ -8,13 +8,13 @@ var tickers = new Map([
     ['NFLX', 200]
 ]);
 
-var df = DataFrame.create(0);
+var df = grok.DataFrame.create(0);
 df.name = 'stocks';
-df.columns.addNew('symbol', TYPE_STRING);
-df.columns.addNew('time', TYPE_DATE_TIME);
-df.columns.addNew('price', TYPE_FLOAT);
-df.columns.addNew('volume', TYPE_FLOAT);
-df.columns.addNew('up', TYPE_STRING);
+df.columns.addNew('symbol', grok.TYPE_STRING);
+df.columns.addNew('time', grok.TYPE_DATE_TIME);
+df.columns.addNew('price', grok.TYPE_FLOAT);
+df.columns.addNew('volume', grok.TYPE_FLOAT);
+df.columns.addNew('up', grok.TYPE_STRING);
 
 var addMilliseconds = function (time, ms) {
     time.setMilliseconds(time.getMilliseconds() + ms);

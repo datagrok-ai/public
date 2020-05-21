@@ -2,7 +2,7 @@
 //
 // https://datagrok.ai/help/domains/chem/descriptors
 
-chem.descriptors(grok.testData('molecules', 100), 'smiles', ['MolWt', 'Lipinski'])
+grok.chem.descriptors(grok.testData('molecules', 100), 'smiles', ['MolWt', 'Lipinski'])
     .then(function (table) {
         grok.addTableView(table);
     });

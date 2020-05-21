@@ -85,7 +85,7 @@ for (let i = 0; i < m.getAllBonds(); i++) {
     bond.atom2 = m.getBondAtom(1,i);
 }
 
-v.append(ui.svgMol(smiles));
+v.append(grok.chem.svgMol(smiles));
 
-grok.addTableView(DataFrame.fromObjects(atoms));
-grok.addTableView(DataFrame.fromObjects(bonds));
+grok.addTableView(grok.DataFrame.fromObjects(atoms));
+grok.addTableView(grok.DataFrame.fromObjects(bonds));

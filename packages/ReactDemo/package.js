@@ -5,7 +5,7 @@ class ReactDemoPackage extends grok.Package {
     //input: string smiles {semType: Molecule}
     //output: widget result
     testInfoPanel(smiles) {
-        return Widget.react(React.createElement(Hello, {toWhat: smiles}, null));
+        return ui.Widget.react(React.createElement(Hello, {toWhat: smiles}, null));
     }
 
     //name: TestDialog

@@ -1,6 +1,6 @@
 // Creating a DataFrame from a CSV string
 
-let table = DataFrame.fromCsv(
+let table = grok.DataFrame.fromCsv(
 `make, model,    cylinders, volume, price
 Honda, Civic,    4,         1.4,    15000
 Honda, Accord,   6,         1.8,    20000

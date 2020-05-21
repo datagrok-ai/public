@@ -1,6 +1,6 @@
 // Creating a DataFrame from a JSON string
 
-let table = DataFrame.fromJson(`[
+let table = grok.DataFrame.fromJson(`[
   {
     "name": "Roger Federer",
     "height": 185,

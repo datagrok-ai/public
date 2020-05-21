@@ -199,7 +199,7 @@ class SDTMPackage extends grok.Package {
             addFilters(false);
             loadingLayout = false;
             queryUpdateResult(() => {
-                view.loadLayout(ViewLayout.fromJson(parameters['layout']));
+                view.loadLayout(grok.ViewLayout.fromJson(parameters['layout']));
             });
         }
 
@@ -264,7 +264,7 @@ class SDTMPackage extends grok.Package {
     //input: string study {semType: Study}
     //output: widget result
     medicalHistoryStudy(study) {
-        return this.getMedicalHistory(study, grok.v.dataFrame.currentRow.usubjid);
+        return this.getMedicalHistory(study, grok.shell.v.dataFrame.currentRow.usubjid);
     }
 
     //name: Medical History

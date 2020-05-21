@@ -96,4 +96,15 @@ export class chem {
     static descriptors(table, column, descriptors) {
         return new Promise((resolve, reject) => grok_Chem_Descriptors(table.d, column, descriptors, () => resolve(table)));
     }
+
+    static svgMol(smiles, width = 300, height = 200) {
+        let root = document.createElement('div');
+        import('openchemlib/full.js').then((OCL) => {
+            let m = OCL.Molecule.fromSmiles(smiles);
+            root.innerHTML = m.toSVG(width, height);
+        });
+        return root;
+    }
+
+
 }

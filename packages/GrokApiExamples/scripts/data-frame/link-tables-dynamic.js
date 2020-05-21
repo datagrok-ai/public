@@ -1,6 +1,6 @@
 // Master-detail table linking feature with dynamic data loading (see also link-tables.js).
 
-let tickers = DataFrame.fromCsv(
+let tickers = grok.DataFrame.fromCsv(
 `ticker
 AAPL
 TSLA

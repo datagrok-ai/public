@@ -4,7 +4,7 @@ class FileEditorsPackage extends grok.Package {
     //input: string url {semType: url}
     //output: view v
     viewPdf(url) {
-        let view = View.create();
+        let view = grok.View.create();
         let canvas = ui.canvas();
         canvas.style.width = '100%';
         canvas.style.height = '100%';

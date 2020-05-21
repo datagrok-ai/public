@@ -16,7 +16,7 @@ let storageButton = ui.iconFA('database', () => {
         if (entities !== null && Object.keys(entities).length === 0)
             grok.balloon.info('Storage is empty. Try to post something to the storage');
         else {
-            let menu = Menu.popup();
+            let menu = ui.Menu.popup();
             for (let time of Object.keys(entities)) {
                 let values = JSON.parse(entities[time]);
                 menu.item(values.map(v => `${v.caption}: ${v.value}`).join(', '), () => {

@@ -1,3 +1,3 @@
 // Main sidebar
 
-grok.sidebar.addPane('FIRST', () => ui.divText('A panel'), ui.iconFA('smile'));
+grok.shell.sidebar.addPane('FIRST', () => ui.divText('A panel'), ui.iconFA('smile'));
