@@ -9,7 +9,7 @@ import {
 } from "./const";
 import {Column, DataFrame} from "./dataframe";
 import {Project, Property, SemanticValue, User} from "./entities";
-import {Balloon, Menu} from "./ui";
+import * as ui from "./ui.js";
 import {GridCellRenderArgs} from "./grid";
 import {EventData} from "./events";
 import {TableView, View} from "./view";
@@ -73,6 +73,6 @@ let time = function(s, f) {
     let result = f();
     let stop = new Date();
     console.log(`${s}: ${stop - start}ms`);
-    Balloon.info(`${s}: ${stop - start}ms`);
+    ui.Balloon.info(`${s}: ${stop - start}ms`);
     return result;
 };

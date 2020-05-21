@@ -1,19 +1,14 @@
 const path = require('path');
-const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 
 module.exports = {
     mode: 'production',
-    entry: {'grok-api': './src/grok-api.js'},
-    //  devtool: 'inline-source-map',
-    devServer: {
-        contentBase: './dist',
-        hot: true,
-    },
+    entry: {'grok': './src/grok-api.js', 'ui': './src/ui.js'},
+    //devtool: 'inline-source-map',
     module: {
         rules: [
             {
                 test: /\.m?js$/,
-                exclude: /(node_modules|bower_components)/,
+                exclude: /node_modules/,
                 use: {
                     loader: 'babel-loader',
                     options: {
@@ -28,10 +23,22 @@ module.exports = {
             }
         ]
     },
+    externals: {"openchemlib/full.js": "OCL"},
     plugins: [],
+    optimization: {
+        splitChunks: {
+            cacheGroups: {
+                vendor: {
+                    chunks: 'initial',
+                    name: 'common',
+                    enforce: true
+                },
+            }
+        }
+    },
     output: {
-        filename: '[name].js',
-        library: 'grok',
+        filename: 'grok-api-[name].js',
+        library: '[name]',
         libraryTarget: 'var',
         path: path.resolve(__dirname, '../../xamgle/web/js/api'),
     },

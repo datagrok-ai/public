@@ -27,7 +27,7 @@ import {
 } from "./const";
 import {DataFrame} from "./dataframe.js";
 import {ToolboxPage} from "./ui.js";
-import {ui} from "./ui";
+import * as ui from "./ui";
 
 export class View {
     constructor(d) { this.d = d; }

@@ -1,15 +1,20 @@
+import * as OCL from 'openchemlib/full.js';
 import {Viewer} from "./viewer";
+import {VirtualView} from "./view";
 
-export class ui {
+export function test() {
 
-    static e (s, cl = null) {
+
+}
+
+    export function e (s, cl = null) {
         let x = document.createElement(s);
         if (cl !== null)
-            ui._class(x, cl);
+            _class(x, cl);
         return x;
     }
 
-    static appendAll(root, elements) {
+export function appendAll(root, elements) {
         let fragment = document.createDocumentFragment();
         for (let i = 0; i < elements.length; i++) {
             let e = elements[i];
@@ -21,82 +26,82 @@ export class ui {
         return root;
     }
 
-    static _innerText(x, s) { x.innerText = s; return x; }
-    static _class(x, s) { x.classList.add(s); return x; }
-    static _color(x, s) { x.style.color = s; return x; }
-    static _backColor(x, s) { x.style.backgroundColor = s; return x; }
+export function _innerText(x, s) { x.innerText = s; return x; }
+export function _class(x, s) { x.classList.add(s); return x; }
+export function _color(x, s) { x.style.color = s; return x; }
+export function _backColor(x, s) { x.style.backgroundColor = s; return x; }
 
-    static canvas() { return document.createElement("CANVAS"); }
+export function canvas() { return document.createElement("CANVAS"); }
 
-    static h1(s) { return ui._innerText(ui.e('h1'), s); }
-    static h2(s) { let x = ui.e('h2'); x.innerText = s; return x; }
-    static h3(s) { let x = ui.e('h3'); x.innerText = s; return x; }
+export function h1(s) { return _innerText(ui.e('h1'), s); }
+export function h2(s) { let x = e('h2'); x.innerText = s; return x; }
+export function h3(s) { let x = e('h3'); x.innerText = s; return x; }
 
-    static accordion() { return Accordion.create(); }
-    static tabControl(vertical = false) { return TabControl.create(vertical); }
+export function accordion() { return Accordion.create(); }
+export function tabControl(vertical = false) { return TabControl.create(vertical); }
 
-    static divText(s) {
+export function divText(s) {
         let e = document.createElement('div');
         e.innerText = s;
         return e;
     }
 
-    static iconFA(name, handler, tooltip = null) {
+export function iconFA(name, handler, tooltip = null) {
         let i = document.createElement('i');
         i.classList.add('grok-icon');
         i.classList.add('fal');
         i.classList.add(`fa-${name}`);
         i.addEventListener("click", handler);
         if (tooltip !== null)
-            ui.tooltip(i, tooltip);
+            tooltip(i, tooltip);
         return i;
     }
 
-    static render(x) { return grok_UI_Render(x); }
-    static renderCard(x) { return grok_UI_RenderCard(x); }
-    static span(x) { return grok_UI_Span(x); }
+export function render(x) { return grok_UI_Render(x); }
+export function renderCard(x) { return grok_UI_RenderCard(x); }
+export function span(x) { return grok_UI_Span(x); }
 
-    static div(items = [], className = null) { return grok_UI_Div(items, className); }
-    static divV(items, className = null) { return grok_UI_DivV(items, className); }
-    static divH(items, className = null) { return grok_UI_DivH(items, className); }
+export function div(items = [], className = null) { return grok_UI_Div(items, className); }
+export function divV(items, className = null) { return grok_UI_DivV(items, className); }
+export function divH(items, className = null) { return grok_UI_DivH(items, className); }
 
-    static card(content) { return ui.div([content], 'd4-item-card'); }
+export function card(content) { return ui.div([content], 'd4-item-card'); }
 
-    static loader() { return grok_UI_Loader(); }
-    static setUpdateIndicator(element, updating = true) { return grok_UI_SetUpdateIndicator(element, updating)};
+export function loader() { return grok_UI_Loader(); }
+export function setUpdateIndicator(element, updating = true) { return grok_UI_SetUpdateIndicator(element, updating)};
 
-    static button(text, handler, tooltip = null) { return grok_UI_Button(text, handler, tooltip); }
-    static bigButton(text, handler, tooltip = null) { return grok_UI_BigButton(text, handler, tooltip); }
+export function button(text, handler, tooltip = null) { return grok_UI_Button(text, handler, tooltip); }
+export function bigButton(text, handler, tooltip = null) { return grok_UI_BigButton(text, handler, tooltip); }
 
     /** Creates a visual table based on [map]. */
-    static tableFromMap(map) { return grok_UI_TableFromMap(map); }
+    export function tableFromMap(map) { return grok_UI_TableFromMap(map); }
 
     /** Creates a visual element representing list of [items]. */
-    static list(items) { return grok_UI_List(Array.from(items).map(_toDart)); }
+    export function list(items) { return grok_UI_List(Array.from(items).map(_toDart)); }
 
     /** Creates a [Dialog].
      * @returns {Dialog} */
-    static dialog(title = '') { return Dialog.create(title); }
+    export function dialog(title = '') { return Dialog.create(title); }
 
     /** Binds [item] with the [element]. It enables selecting it as a current object, drag-and-drop,
      * tooltip, and popup menu.
      * Returns [element]. */
-    static bind(item, element) { return grok_UI_Bind(item, element); }
+    export function bind(item, element) { return grok_UI_Bind(item, element); }
 
-    static virtualView(length, renderer) {
+export function virtualView(length, renderer) {
         let view = VirtualView.create();
         view.setData(length, renderer);
         return view.root;
     }
 
-    static svgMol(smiles, width = 300, height = 200) {
+export function svgMol(smiles, width = 300, height = 200) {
         let m = OCL.Molecule.fromSmiles(smiles);
         let root = document.createElement('div');
         root.innerHTML = m.toSVG(width, height);
         return root;
     }
 
-    static popupMenu(items) {
+export function popupMenu(items) {
         function populate(menu, item) {
             for (let key of Object.keys(item)) {
                 let value = item[key];
@@ -112,25 +117,25 @@ export class ui {
         menu.show();
     }
 
-    static tooltipHide() { grok_Tooltip_Hide(); }
+export function tooltipHide() { grok_Tooltip_Hide(); }
 
-    static tooltip(e, x) { grok_Tooltip_SetOn(e, x); return e; }
+export function tooltip(e, x) { grok_Tooltip_SetOn(e, x); return e; }
 
-    static tooltipShow(content, x, y) { grok_Tooltip_Show(content, x, y); }
+export function tooltipShow(content, x, y) { grok_Tooltip_Show(content, x, y); }
 
-    static inputs(inputs) { return ui.div(inputs.map((x) => x.root), 'pure-form,pure-form-aligned');}
+export function inputs(inputs) { return div(inputs.map((x) => x.root), 'pure-form,pure-form-aligned');}
 
-    static intInput(name, value) { return new InputBase(grok_IntInput(name, value)); }
-    static choiceInput(name, selected, items) { return new InputBase(grok_ChoiceInput(name, selected, items)); }
-    static multiChoiceInput(name, value, items) { return new InputBase(grok_MultiChoiceInput(name, value, items)); }
-    static stringInput(name, value) { return new InputBase(grok_StringInput(name, value)); }
-    static floatInput(name, value) { return new InputBase(grok_FloatInput(name, value)); }
-    static dateInput(name, value) { return new InputBase(grok_DateInput(name, value.d)); }
-    static boolInput(name, value) { return new InputBase(grok_BoolInput(name, value)); }
-    static moleculeInput(name, value) { return new InputBase(grok_MoleculeInput(name, value)); }
-    static columnInput(name, table, value) { return new InputBase(grok_ColumnInput(name, table.d, value.d)); }
-    static columnsInput(name, table) { return new InputBase(grok_ColumnsInput(name, table.d)); }
-}
+export function intInput(name, value) { return new InputBase(grok_IntInput(name, value)); }
+export function choiceInput(name, selected, items) { return new InputBase(grok_ChoiceInput(name, selected, items)); }
+export function multiChoiceInput(name, value, items) { return new InputBase(grok_MultiChoiceInput(name, value, items)); }
+export function stringInput(name, value) { return new InputBase(grok_StringInput(name, value)); }
+export function floatInput(name, value) { return new InputBase(grok_FloatInput(name, value)); }
+export function dateInput(name, value) { return new InputBase(grok_DateInput(name, value.d)); }
+export function boolInput(name, value) { return new InputBase(grok_BoolInput(name, value)); }
+export function moleculeInput(name, value) { return new InputBase(grok_MoleculeInput(name, value)); }
+export function columnInput(name, table, value) { return new InputBase(grok_ColumnInput(name, table.d, value.d)); }
+export function columnsInput(name, table) { return new InputBase(grok_ColumnsInput(name, table.d)); }
+
 
 export class Widget {
     constructor(root) { this.root = root; }
@@ -325,11 +330,11 @@ export class TagElement {
 
 
 /** UI Tools **/
-export class uit {
+export class tools {
 
     static handleResize(element, onChanged) {
-        var width = element.clientWidth;
-        var height = element.clientHeight;
+        let width = element.clientWidth;
+        let height = element.clientHeight;
         let interval = setInterval(() => {
             let newWidth = element.clientWidth;
             let newHeight = element.clientHeight;
