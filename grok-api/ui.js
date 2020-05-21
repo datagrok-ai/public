@@ -1,5 +1,5 @@
-import {Viewer} from "./viewer";
-import {VirtualView} from "./view";
+import {Viewer} from "./src/viewer";
+import {VirtualView} from "./src/view";
 
 export function e (s, cl = null) {
         let x = document.createElement(s);

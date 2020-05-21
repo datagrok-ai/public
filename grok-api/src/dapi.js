@@ -1,4 +1,5 @@
 import {Credentials, DataConnection, DataQuery, Entity, Project, User} from "./entities";
+import {ViewLayout} from "./view";
 
 export class Dapi {
     constructor() {}

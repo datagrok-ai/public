@@ -1,5 +1,5 @@
-import * as ui from "./ui.js";
-
+import * as ui from "./../ui.js";
+import {Functions} from "./functions";
 
 /** Grok User */
 export class User {
@@ -97,7 +97,7 @@ export class JsEntityMeta {
     static register(meta) { grok_Meta_Register(meta); }
 
     registerParamFunc(name, run) {
-        grok.functions.registerParamFunc(name, this.type, run, this.isApplicable);
+        new Functions().registerParamFunc(name, this.type, run, this.isApplicable);
     }
 }
 
@@ -142,9 +142,9 @@ export class Property {
     set choices(x) { return grok_Property_Set_Choices(this.d, x); }
 
     static create(name, type, getter, setter, defaultValue = null) { return new Property(grok_Property(name, type, getter, setter, defaultValue)); }
-    static int(name, getter, setter, defaultValue) { return Property.create(name, TYPE_INT, getter, setter, defaultValue); }
-    static float(name, getter, setter, defaultValue) { return Property.create(name, TYPE_FLOAT, getter, setter, defaultValue); }
-    static string(name, getter, setter, defaultValue) { return Property.create(name, TYPE_STRING, getter, setter, defaultValue); }
+    static int(name, getter, setter, defaultValue) { return Property.create(name, TYPE.INT, getter, setter, defaultValue); }
+    static float(name, getter, setter, defaultValue) { return Property.create(name, TYPE.FLOAT, getter, setter, defaultValue); }
+    static string(name, getter, setter, defaultValue) { return Property.create(name, TYPE.STRING, getter, setter, defaultValue); }
 }
 
 export class SemanticValue {

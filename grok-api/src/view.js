@@ -3,38 +3,17 @@
  * See [TableView], [SketchView], etc
  */
 import {
-    VIEW_TYPE_TABLE_VIEW,
-    VIEWER_BAR_CHART,
-    VIEWER_BOX_PLOT,
-    VIEWER_CALENDAR,
-    VIEWER_CORR_PLOT,
-    VIEWER_DENSITY_PLOT,
-    VIEWER_FILTERS,
-    VIEWER_FORM,
-    VIEWER_GLOBE,
-    VIEWER_GOOGLE_MAP,
-    VIEWER_HEAT_MAP,
-    VIEWER_HISTOGRAM,
-    VIEWER_LINE_CHART,
-    VIEWER_MARKUP,
-    VIEWER_MATRIX_PLOT,
-    VIEWER_NETWORK_DIAGRAM,
-    VIEWER_PC_PLOT,
-    VIEWER_PIE_CHART,
-    VIEWER_SCATTER_PLOT,
-    VIEWER_SCATTER_PLOT_3D,
-    VIEWER_SHAPE_MAP, VIEWER_STATISTICS, VIEWER_TILE_VIEWER, VIEWER_TREE_MAP, VIEWER_TRELLIS_PLOT, VIEWER_WORD_CLOUD
+    VIEW_TYPE, VIEWER,
 } from "./const";
 import {DataFrame} from "./dataframe.js";
-import {ToolboxPage} from "./ui.js";
-import * as ui from "./ui";
+import * as ui from "./../ui";
 
 export class View {
     constructor(d) { this.d = d; }
 
     static fromDart(d) {
         let type = grok_View_Get_Type(d);
-        if (type === VIEW_TYPE_TABLE_VIEW)
+        if (type === VIEW_TYPE.TABLE_VIEW)
             return new TableView(d);
         else
             return new View(d);
@@ -96,31 +75,31 @@ export class TableView extends View {
 
     get toolboxPage() { return new ToolboxPage(grok_View_Get_ToolboxPage(this.d)); }
 
-    histogram      (options = null) { return this.addViewer(VIEWER_HISTOGRAM, options); }
-    barChart       (options = null) { return this.addViewer(VIEWER_BAR_CHART, options); }
-    boxPlot        (options = null) { return this.addViewer(VIEWER_BOX_PLOT, options); }
-    calendar       (options = null) { return this.addViewer(VIEWER_CALENDAR, options); }
-    corrPlot       (options = null) { return this.addViewer(VIEWER_CORR_PLOT, options); }
-    densityPlot    (options = null) { return this.addViewer(VIEWER_DENSITY_PLOT, options); }
-    filters        (options = null) { return this.addViewer(VIEWER_FILTERS, options); }
-    form           (options = null) { return this.addViewer(VIEWER_FORM, options); }
-    globe          (options = null) { return this.addViewer(VIEWER_GLOBE, options); }
-    googleMap      (options = null) { return this.addViewer(VIEWER_GOOGLE_MAP, options); }
-    heatMap        (options = null) { return this.addViewer(VIEWER_HEAT_MAP, options); }
-    lineChart      (options = null) { return this.addViewer(VIEWER_LINE_CHART, options); }
-    shapeMap       (options = null) { return this.addViewer(VIEWER_SHAPE_MAP, options); }
-    markup         (options = null) { return this.addViewer(VIEWER_MARKUP, options); }
-    matrixPlot     (options = null) { return this.addViewer(VIEWER_MATRIX_PLOT, options); }
-    networkDiagram (options = null) { return this.addViewer(VIEWER_NETWORK_DIAGRAM, options); }
-    pcPlot         (options = null) { return this.addViewer(VIEWER_PC_PLOT, options); }
-    pieChart       (options = null) { return this.addViewer(VIEWER_PIE_CHART, options); }
-    scatterPlot    (options = null) { return this.addViewer(VIEWER_SCATTER_PLOT, options); }
-    scatterPlot3d  (options = null) { return this.addViewer(VIEWER_SCATTER_PLOT_3D, options); }
-    statistics     (options = null) { return this.addViewer(VIEWER_STATISTICS, options); }
-    tileViewer     (options = null) { return this.addViewer(VIEWER_TILE_VIEWER, options); }
-    treeMap        (options = null) { return this.addViewer(VIEWER_TREE_MAP, options); }
-    trellisPlot    (options = null) { return this.addViewer(VIEWER_TRELLIS_PLOT, options); }
-    wordCloud      (options = null) { return this.addViewer(VIEWER_WORD_CLOUD, options); }
+    histogram      (options = null) { return this.addViewer(VIEWER.HISTOGRAM, options); }
+    barChart       (options = null) { return this.addViewer(VIEWER.BAR_CHART, options); }
+    boxPlot        (options = null) { return this.addViewer(VIEWER.BOX_PLOT, options); }
+    calendar       (options = null) { return this.addViewer(VIEWER.CALENDAR, options); }
+    corrPlot       (options = null) { return this.addViewer(VIEWER.CORR_PLOT, options); }
+    densityPlot    (options = null) { return this.addViewer(VIEWER.DENSITY_PLOT, options); }
+    filters        (options = null) { return this.addViewer(VIEWER.FILTERS, options); }
+    form           (options = null) { return this.addViewer(VIEWER.FORM, options); }
+    globe          (options = null) { return this.addViewer(VIEWER.GLOBE, options); }
+    googleMap      (options = null) { return this.addViewer(VIEWER.GOOGLE_MAP, options); }
+    heatMap        (options = null) { return this.addViewer(VIEWER.HEAT_MAP, options); }
+    lineChart      (options = null) { return this.addViewer(VIEWER.LINE_CHART, options); }
+    shapeMap       (options = null) { return this.addViewer(VIEWER.SHAPE_MAP, options); }
+    markup         (options = null) { return this.addViewer(VIEWER.MARKUP, options); }
+    matrixPlot     (options = null) { return this.addViewer(VIEWER.MATRIX_PLOT, options); }
+    networkDiagram (options = null) { return this.addViewer(VIEWER.NETWORK_DIAGRAM, options); }
+    pcPlot         (options = null) { return this.addViewer(VIEWER.PC_PLOT, options); }
+    pieChart       (options = null) { return this.addViewer(VIEWER.PIE_CHART, options); }
+    scatterPlot    (options = null) { return this.addViewer(VIEWER.SCATTER_PLOT, options); }
+    scatterPlot3d  (options = null) { return this.addViewer(VIEWER.SCATTER_PLOT_3D, options); }
+    statistics     (options = null) { return this.addViewer(VIEWER.STATISTICS, options); }
+    tileViewer     (options = null) { return this.addViewer(VIEWER.TILE_VIEWER, options); }
+    treeMap        (options = null) { return this.addViewer(VIEWER.TREE_MAP, options); }
+    trellisPlot    (options = null) { return this.addViewer(VIEWER.TRELLIS_PLOT, options); }
+    wordCloud      (options = null) { return this.addViewer(VIEWER.WORD_CLOUD, options); }
 
     resetLayout() { grok_View_ResetLayout(this.d); }
 
