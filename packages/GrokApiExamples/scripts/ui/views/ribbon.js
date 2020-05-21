@@ -1,6 +1,6 @@
 // Creating custom views
 
-let v = View.create();
+let v = grok.View.create();
 v.name = 'JS View';
 v.root.appendChild(ui.divText('Custom body'));
 
@@ -14,7 +14,7 @@ v.setRibbonPanels([
 ]);
 
 // ribbon menu
-v.ribbonMenu = Menu.create()
+v.ribbonMenu = ui.Menu.create()
     .group('Custom')
     .item('Foo!', () => grok.balloon.info('Foo clicked'));
 

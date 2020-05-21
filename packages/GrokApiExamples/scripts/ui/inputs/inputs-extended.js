@@ -1,15 +1,15 @@
-let name = Property.string('Name', null, null, '');
-let age = Property.int('Age', null, null, 30);
-let height = Property.float('Height', null, null, 175.5);
+let name = grok.Property.string('Name', null, null, '');
+let age = grok.Property.int('Age', null, null, 30);
+let height = grok.Property.float('Height', null, null, 175.5);
 var properties = [name, age, height];
 
 let v = grok.newView('demo: inputs extended');
 
-var inputHeight = InputBase.forProperty(height);
+var inputHeight = ui.InputBase.forProperty(height);
 inputHeight.format = 'two digits after comma';
 var inputs = [
-    InputBase.forProperty(name),
-    InputBase.forProperty(age),
+    ui.InputBase.forProperty(name),
+    ui.InputBase.forProperty(age),
     inputHeight
 ];
 let content = ui.div();

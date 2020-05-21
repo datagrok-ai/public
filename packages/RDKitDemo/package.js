@@ -26,7 +26,7 @@ class RDKitDemoPackage extends grok.Package {
     //output: widget result
     rdkitInfoPanel(smiles) {
         var mol = Module.get_mol(smiles);
-        return new Widget(ui.divV([
+        return new ui.Widget(ui.divV([
             this._svgDiv(mol),
             ui.divText(`${this.getCLogP(smiles)}`)
         ]));

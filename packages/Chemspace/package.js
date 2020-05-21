@@ -77,7 +77,7 @@ class ChemspacePackage extends grok.Package {
             panels.appendChild(this.createSearchPanel('Similar', smiles));
             panels.appendChild(this.createSearchPanel('Substructure', smiles));
         });
-        return new grok.Widget(panels);
+        return new ui.Widget(panels);
     }
 
     //description: Creates search panel
@@ -110,7 +110,7 @@ class ChemspacePackage extends grok.Package {
 
                 for (let n = 0; n < Math.min(t.rowCount, 20); n++) {
                     let smiles = t.get('smiles', n);
-                    let mol = ui.svgMol(smiles, 150, 75);
+                    let mol = grok.chem.svgMol(smiles, 150, 75);
                     ui.tooltip(mol, () => getTooltip(n));
                     mol.addEventListener('click', function () {
                         window.open(t.get('link', n), '_blank');
@@ -171,7 +171,7 @@ class ChemspacePackage extends grok.Package {
             xhr.send();
         });
 
-        return new Widget(panel);
+        return new ui.Widget(panel);
     }
 
     // description: Converts prices JSON items into DataFrame
@@ -190,7 +190,7 @@ class ChemspacePackage extends grok.Package {
             }
         }
         for (let name of Array.from(packsArrays.keys()).sort()) {
-            let column = grok.Column.fromList(TYPE_FLOAT, name, packsArrays.get(name));
+            let column = grok.Column.fromList(grok.TYPE_FLOAT, name, packsArrays.get(name));
             column.semType = 'Money';
             column.setTag('format', 'money($)');
             table.columns.add(column);

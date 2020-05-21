@@ -17,10 +17,10 @@ var load = ui.iconFA('bars', () => {
         if (layouts !== null && Object.keys(layouts).length === 0)
             grok.balloon.info('Storage is empty. Save some layouts to the storage');
         else {
-            let menu = Menu.popup();
+            let menu = ui.Menu.popup();
             for (let layout of Object.keys(layouts)) {
                 menu.item(layout, () => {
-                    view.loadLayout(ViewLayout.fromJson(layouts[layout]));
+                    view.loadLayout(grok.ViewLayout.fromJson(layouts[layout]));
                     nameInput.stringValue = layout;
                 });
             }

@@ -1,13 +1,7 @@
-import * as OCL from 'openchemlib/full.js';
 import {Viewer} from "./viewer";
 import {VirtualView} from "./view";
 
-export function test() {
-
-
-}
-
-    export function e (s, cl = null) {
+export function e (s, cl = null) {
         let x = document.createElement(s);
         if (cl !== null)
             _class(x, cl);
@@ -92,13 +86,6 @@ export function virtualView(length, renderer) {
         let view = VirtualView.create();
         view.setData(length, renderer);
         return view.root;
-    }
-
-export function svgMol(smiles, width = 300, height = 200) {
-        let m = OCL.Molecule.fromSmiles(smiles);
-        let root = document.createElement('div');
-        root.innerHTML = m.toSVG(width, height);
-        return root;
     }
 
 export function popupMenu(items) {
@@ -239,11 +226,11 @@ export class Menu {
 /** Balloon-style visual notifications. */
 export class Balloon {
     /** Shows information message (green background) */
-    static info(s) {
+    info(s) {
         grok_Balloon(s, 'info'); }
 
     /** Shows information message (red background) */
-    static error(s) { grok_Balloon(s, 'error'); }
+    error(s) { grok_Balloon(s, 'error'); }
 }
 
 

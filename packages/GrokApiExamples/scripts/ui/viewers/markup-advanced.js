@@ -5,7 +5,7 @@ let user = grok.user;
 let table = grok.testData('demog', 10000);
 let view = grok.addTableView(table);
 
-let sp = Viewer.scatterPlot(table, {
+let sp = grok.Viewer.scatterPlot(table, {
     xColumnName: 'age',
     yColumnName: 'weight',
     markerDefaultSize: 5,
@@ -14,16 +14,16 @@ let sp = Viewer.scatterPlot(table, {
     legendVisibilityMode: 'Never'
 });
 
-let hist = Viewer.histogram(table, {
+let hist = grok.Viewer.histogram(table, {
     valueColumnName: 'weight'
 });
 
-let boxPlot = Viewer.boxPlot(table, {
+let boxPlot = grok.Viewer.boxPlot(table, {
     valueColumnName: 'weight',
     categoryColumnName: 'race'
 });
 
-let filter = Viewer.filters(table, {
+let filter = grok.Viewer.filters(table, {
     columnNames: ['race']
 });
 

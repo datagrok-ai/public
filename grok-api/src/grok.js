@@ -1,10 +1,10 @@
-import {Package, DataConnection, Project} from "./entities.js";
+import {Project} from "./entities.js";
 import * as ui from "./ui.js";
 import {Dapi} from "./dapi.js";
 import {DataFrame} from "./dataframe.js";
 import {TableView, View} from "./view";
 import {User} from "./entities";
-import {TabControl} from "./ui";
+import {Balloon, TabControl} from "./ui";
 import {Functions} from "./functions";
 import {Events} from "./events";
 
@@ -38,10 +38,6 @@ export class Shell {
     get sidebar() { return new TabControl(grok_Get_Sidebar()); }
 
     get topMenu() { return new Menu(grok_Get_TopMenu()); }
-
-    info(s) { ui.Balloon.info(s); }
-
-    error(s) { ui.Balloon.error(s); }
 
     dockElement(e, title = null, dockStyle = 'fill', ratio = 0.5) { grok_DockElement(e, title, dockStyle, ratio); }
 
@@ -97,6 +93,8 @@ export let dapi = new Dapi();
 export let shell = new Shell();
 
 export let settings = new Settings();
+
+export let balloon = new Balloon();
 
 export * from './utils.js';
 

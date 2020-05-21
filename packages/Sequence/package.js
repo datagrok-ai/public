@@ -52,7 +52,7 @@ class SequencePackage extends grok.Package {
                 });
         }, 1000);
 
-        return new Widget(e);
+        return new ui.Widget(e);
     }
 
     //description: Protein viewer widget based on the pdb_id
@@ -70,7 +70,7 @@ class SequencePackage extends grok.Package {
             stage.loadFile(`rcsb://${pdbId}`, { defaultRepresentation: true });
         }, 1000);
 
-        return new Widget(e);
+        return new ui.Widget(e);
     }
 
     //name: Sequence
@@ -106,18 +106,18 @@ class SequencePackage extends grok.Package {
             index = regex.lastIndex + 1;
         }
         sequences.push(content.substring(index));
-        return [DataFrame.fromColumns([
-            Column.fromStrings('description', descriptions).d,
-            Column.fromStrings('sequence', sequences).d
+        return [grok.DataFrame.fromColumns([
+            grok.Column.fromStrings('description', descriptions).d,
+            grok.Column.fromStrings('sequence', sequences).d
         ]).d];
     }
 }
 
 _seq = new SequencePackage(null);
 
-class SequenceViewer extends JsViewer {
+class SequenceViewer extends grok.JsViewer {
     onFrameAttached(dataFrameHandle) {
-        this.dataFrame = new DataFrame(dataFrameHandle);
+        this.dataFrame = new grok.DataFrame(dataFrameHandle);
         let seqCol = this.dataFrame.columns.toList().find((c) => c.semType == 'nucleotides');
         let fasta = _seq.toFasta(Array.from(seqCol.values()), null);
         let seqs = msa.io.fasta.parse(fasta);
@@ -141,7 +141,7 @@ class SequenceViewer extends JsViewer {
 // This viewer does the following:
 // * defines two properties, "question" and "answer". Properties are persistable and editable.
 // * listens to changes in properties, attached table's selection and filter, and updates accordingly.
-class SeqDemoViewer extends JsViewer {
+class SeqDemoViewer extends grok.JsViewer {
 
     constructor() {
         super();
@@ -152,7 +152,7 @@ class SeqDemoViewer extends JsViewer {
 
 
     onFrameAttached(dataFrameHandle) {
-        this.dataFrame = new DataFrame(dataFrameHandle);
+        this.dataFrame = new grok.DataFrame(dataFrameHandle);
         this.dataFrame.selection.onChanged(() => this.render());
         this.dataFrame.filter.onChanged(() => this.render());
 

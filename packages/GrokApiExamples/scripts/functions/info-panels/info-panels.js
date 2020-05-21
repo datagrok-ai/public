@@ -7,5 +7,5 @@
 grok.functions.register({
     signature: 'widget molWidget(String/Molecule smiles)',
     tags: 'panel',
-    run: (smiles) => new Widget(ui.divText(`mol panel: ${smiles}`))
+    run: (smiles) => new ui.Widget(ui.divText(`mol panel: ${smiles}`))
 });

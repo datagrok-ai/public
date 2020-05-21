@@ -11,7 +11,7 @@ class EnamineStorePackage extends grok.Package {
         let filtersHost =  ui.div([molecule.root, searchMode.root, currency.root, similarity.root, catalog.root],
             'enamine-store-controls,pure-form');
 
-        let emptyTable = DataFrame.create();
+        let emptyTable = grok.DataFrame.create();
         let view = grok.addTableView(emptyTable);
         view.name = 'Enamine Store';
         view.basePath = '';
@@ -59,7 +59,7 @@ class EnamineStorePackage extends grok.Package {
             this.createSearchPanel('Similar', smiles),
             this.createSearchPanel('Substructure', smiles)
         ]);
-        return new Widget(panels);
+        return new ui.Widget(panels);
     }
 
     //description: Creates search panel
@@ -80,7 +80,7 @@ class EnamineStorePackage extends grok.Package {
             }
             for (let comp of data) {
                 let smiles = comp['smile'];
-                let mol = ui.svgMol(smiles, 150, 75);
+                let mol = grok.chem.svgMol(smiles, 150, 75);
                 let id = comp['Id'];
                 let props = {
                     'ID': id,
@@ -112,12 +112,12 @@ class EnamineStorePackage extends grok.Package {
     // description: Converts JSON data into DataFrame
     static dataToTable(data, name) {
         let columns = [
-            Column.fromStrings('smiles', data.map(comp => comp['smile'])),
-            Column.fromStrings('ID', data.map(comp => comp['Id'])),
-            Column.fromStrings('Formula', data.map(comp => comp['formula'])),
-            Column.fromFloat32Array('MW', new Float32Array(data.map(comp => comp['mw']))),
-            Column.fromInt32Array('Availability', new Int32Array(data.map(comp => comp['availability']))),
-            Column.fromStrings('Delivery', data.map(comp => comp['deliveryDays']))
+            grok.Column.fromStrings('smiles', data.map(comp => comp['smile'])),
+            grok.Column.fromStrings('ID', data.map(comp => comp['Id'])),
+            grok.Column.fromStrings('Formula', data.map(comp => comp['formula'])),
+            grok.Column.fromFloat32Array('MW', new Float32Array(data.map(comp => comp['mw']))),
+            grok.Column.fromInt32Array('Availability', new Int32Array(data.map(comp => comp['availability']))),
+            grok.Column.fromStrings('Delivery', data.map(comp => comp['deliveryDays']))
         ];
         let currency = null;
         let packsArrays = new Map();
@@ -134,12 +134,12 @@ class EnamineStorePackage extends grok.Package {
             }
         }
         for (let name of packsArrays.keys()) {
-            let column = Column.fromFloat32Array(name, packsArrays.get(name));
+            let column = grok.Column.fromFloat32Array(name, packsArrays.get(name));
             column.semType = 'Money';
             column.setTag('format', `money(${currency === 'USD' ? '$' : '€'})`);
             columns.push(column);
         }
-        let table = DataFrame.fromColumns(columns);
+        let table = grok.DataFrame.fromColumns(columns);
         table.name = name;
         return table;
     }

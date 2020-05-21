@@ -7,7 +7,7 @@ class Fruit {
 }
 
 // Defines the way Datagrok handles entities of the specified type
-class FruitMeta extends JsEntityMeta {
+class FruitMeta extends grok.JsEntityMeta {
     get type() { return 'fruit' }
 
     // Checks whether this meta class is the handler for [x]
@@ -24,7 +24,7 @@ class FruitMeta extends JsEntityMeta {
 }
 
 // Register meta class with the platform
-JsEntityMeta.register(new FruitMeta());
+grok.JsEntityMeta.register(new FruitMeta());
 
 grok.newView().append(ui.div([
     ui.renderCard(new Fruit('apple')),

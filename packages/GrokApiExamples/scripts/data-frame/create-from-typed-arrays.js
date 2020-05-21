@@ -12,9 +12,9 @@ for (let i = 0; i < len; i++)
 for (let i = 0; i < len; i++)
     floats[i] = i / 10;
 
-let table = DataFrame.fromColumns([
-   Column.fromInt32Array('ints', ints),
-   Column.fromFloat32Array('floats', floats)
+let table = grok.DataFrame.fromColumns([
+    grok.Column.fromInt32Array('ints', ints),
+    grok.Column.fromFloat32Array('floats', floats)
 ]);
 
 grok.addTableView(table);

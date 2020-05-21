@@ -1,7 +1,7 @@
 // This viewer does the following:
 // * defines two properties, "question" and "answer". Properties are persistable and editable.
 // * listens to changes in properties, attached table's selection and filter, and updates accordingly.
-class JsDemoViewer extends JsViewer {
+class JsDemoViewer extends grok.JsViewer {
 
     constructor() {
         super();
@@ -12,7 +12,7 @@ class JsDemoViewer extends JsViewer {
 
         // Properties that represent columns should be strings with the 'ColumnName' postfix
         this.valueColumnName = this.string('valueColumnName', null);
-        this.registerCleanup(uit.handleResize(this.root, (w, h) => this.render()));
+        this.registerCleanup(ui.tools.handleResize(this.root, (w, h) => this.render()));
     }
 
     // override to handle property changes
@@ -21,7 +21,7 @@ class JsDemoViewer extends JsViewer {
     }
 
     onFrameAttached(dataFrameHandle) {
-        this.dataFrame = new DataFrame(dataFrameHandle);
+        this.dataFrame = new grok.DataFrame(dataFrameHandle);
         this.subs.push(this.dataFrame.selection.onChanged.subscribe((_) => this.render()));
         this.subs.push(this.dataFrame.filter.onChanged.subscribe((_) => this.render()));
 
