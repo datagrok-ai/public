@@ -25,7 +25,7 @@ opening = cv.morphologyEx(thresh, cv.MORPH_OPEN, kernel, iterations=2)
 # Sure background and foreground areas
 sure_bg = cv.dilate(opening, kernel, iterations=3)
 dist_transform = cv.distanceTransform(opening, cv.DIST_L2, 5)
-_, sure_fg = cv.threshold(dist_transform, 0.3 * dist_transform.max(), 255, 0)
+_, sure_fg = cv.threshold(dist_transform, np.median(dist_transform), 255, 0)
 
 # Finding unknown region
 sure_fg = np.uint8(sure_fg)
@@ -36,11 +36,15 @@ _, markers = cv.connectedComponents(sure_fg)
 markers = markers + 1
 markers[unknown == 255] = 0
 markers = cv.watershed(img, markers)
+markers[0, :] = 0; markers[:, 0] = 0; markers[-1, :] = 0; markers[:, -1] = 0
 img[markers == -1] = [255, 0, 255]
+_, m2 = cv.threshold(markers.astype(np.uint8), 0, 255, cv.THRESH_BINARY | cv.THRESH_OTSU)
+contours, hierarchy = cv.findContours(m2, cv.RETR_LIST, cv.CHAIN_APPROX_NONE)
+for c in contours:
+    cv.drawContours(img, c, -1, (255, 0, 255), 3)
 
 segmented = plt.imshow(img)
-plt.margins(0, 0)
-plt.tight_layout(pad=0.05)
+plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
 plt.axis('off')
 plt.show()
 
