@@ -1,11 +1,13 @@
-// Docking an arbitrary element in the platform
+// Different options to dock windows
 
 // dock to the right of the root
-grok.shell.dockManager.dock(ui.divText('element 1'), 'right', null, 'Title');
+let node1 = grok.shell.dockManager.dock(ui.divText('first'), 'right', null, 'First');
 
-// dock to the right of the document container
-grok.shell.dockManager.dock(ui.divText('element 2'), 'right', grok.shell.dockManager.documentContainer, 'Title');
+// to the bottom of the previously created node
+let node2 = grok.shell.dockManager.dock(ui.divText('second'), 'down', node1, 'Second');
 
-// floating window
-grok.shell.dockManager.dock(ui.divText('Floating'), 'right')
-    .container.undock();
+// inside node 2 (tab group will be created)
+let node3 = grok.shell.dockManager.dock(ui.divText('third'), 'fill', node2, 'Third');
+
+// to the bottom of the current document
+grok.shell.dockManager.dock(ui.divText('bottom'), 'down', grok.shell.v.dockNode, 'Bottom');
