@@ -8,7 +8,7 @@ import {
 import {DataFrame} from "./dataframe.js";
 import * as ui from "./../ui";
 import {Viewer} from "./viewer";
-import {DockManager} from "./docking";
+import {DockNode, DockManager} from "./docking";
 
 export class View {
     constructor(d) { this.d = d; }
@@ -43,6 +43,7 @@ export class View {
     set description(s) { return grok_View_Set_Description(this.d, s); }
 
     get viewType() { return grok_View_Get_Type(this.d); }
+
     get table() { return new DataFrame(grok_View_Get_Table(this.d)); }
 
     get toolbox() { return grok_View_Get_Toolbox(this.d); }
@@ -56,12 +57,21 @@ export class View {
 
     setRibbonPanels(panels) { grok_View_SetRibbonPanels(this.d, panels); }
 
+    /** Adds a viewer of the specified type.
+     * @param {string} viewerType
+     * @returns {Viewer} */
     addViewer(viewerType, options = null) {
         let v = new Viewer(grok_View_AddViewer(this.d, viewerType));
         if (options !== null)
             v.options(options);
         return v;
     }
+
+    /** A dock node for this view.
+     *  Use `grok.shell.dockManager` to manipulate it; {@link dockManager} is for controlling
+     *  widows that reside inside this view.
+     *  @returns {DockNode} */
+    get dockNode() { return new DockNode(grok_View_Get_DockNode(this.d)); }
 
     /** @returns {DockManager} - only for DockView descendants (TableView, Users, etc) */
     get dockManager() { return new DockManager(grok_View_Get_DockManager(this.d)); }
