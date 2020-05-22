@@ -1,4 +1,4 @@
-class LeafletPackage extends grok.Package {
+class LeafletPackage extends DG.Package {
 
     //name: Leaflet
     //description: Leaflet map
@@ -12,6 +12,6 @@ class LeafletPackage extends grok.Package {
     //input: column long { semType: longitude }
     //input: column lat { semType: latitude }
     showOnMap(long, lat) {
-        grok.balloon.info('map it!');
+        grok.shell.balloon.info('map it!');
     }
 }

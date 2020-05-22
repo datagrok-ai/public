@@ -1,3 +1,3 @@
-class SchemasDemoPackage extends grok.Package {
+class SchemasDemoPackage extends DG.Package {
 
 }

@@ -2,7 +2,7 @@
 
 var STORAGE_NAME = 'user-data-storage-demo';
 
-let v = grok.newView('demo: user data storage');
+let v = grok.shell.newView('demo: user data storage');
 
 let age = ui.intInput('Age', 30);
 let sex = ui.choiceInput('Sex', 'Male', ['Male', 'Female']);
@@ -14,7 +14,7 @@ v.append(ui.inputs(inputs));
 let storageButton = ui.iconFA('database', () => {
     grok.dapi.userDataStorage.get(STORAGE_NAME).then((entities) => {
         if (entities !== null && Object.keys(entities).length === 0)
-            grok.balloon.info('Storage is empty. Try to post something to the storage');
+            grok.shell.balloon.info('Storage is empty. Try to post something to the storage');
         else {
             let menu = ui.Menu.popup();
             for (let time of Object.keys(entities)) {
@@ -31,7 +31,7 @@ let storageButton = ui.iconFA('database', () => {
 storageButton.style.margin = '8px 24px 0 24px';
 
 let postButton = ui.button('Post to storage', () => {
-    grok.balloon.info(inputs.map((i) => `${i.caption}: ${i.stringValue}`).join('<br>'));
+    grok.shell.balloon.info(inputs.map((i) => `${i.caption}: ${i.stringValue}`).join('<br>'));
     grok.dapi.userDataStorage.postValue(STORAGE_NAME, new Date().toLocaleString(),
         JSON.stringify(inputs.map(i => { return {caption: i.caption, value: i.save()}; })));
 });

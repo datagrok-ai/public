@@ -12,13 +12,13 @@
 //
 // https://datagrok.ai/help/explore/link-tables
 
-grok.loadDataFrame('https://public.datagrok.ai/demo/demog.csv').then((demog) =>
-    grok.loadDataFrame('https://public.datagrok.ai/demo/demog-types.csv').then(function (demogTypes) {
-        grok.addTableView(demog);
-        grok.addTableView(demogTypes);
-        grok.linkTables(demogTypes, demog,
+grok.data.loadDataFrame('https://public.datagrok.ai/demo/demog.csv').then((demog) =>
+    grok.data.loadDataFrame('https://public.datagrok.ai/demo/demog-types.csv').then(function (demogTypes) {
+        grok.shell.addTableView(demog);
+        grok.shell.addTableView(demogTypes);
+        grok.data.linkTables(demogTypes, demog,
             ['sex', 'race'], ['sex', 'race'],
-            [grok.SYNC_TYPE.CURRENT_ROW_TO_FILTER, grok.SYNC_TYPE.MOUSE_OVER_ROW_TO_SELECTION]);
+            [DG.enum.SYNC_TYPE.CURRENT_ROW_TO_FILTER, DG.enum.SYNC_TYPE.MOUSE_OVER_ROW_TO_SELECTION]);
     }));
 
 // Link types:

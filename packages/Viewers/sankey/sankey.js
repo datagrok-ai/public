@@ -145,7 +145,7 @@ class SankeyViewer extends grok.JsViewer {
   }
 
   onFrameAttached(dataFrameHandle) {
-    this.table = new grok.DataFrame(dataFrameHandle);
+    this.table = new DG.DataFrame(dataFrameHandle);
     this.options = {source: 'source', target: 'target', value: 'value'};
     this.init();
 

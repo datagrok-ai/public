@@ -16,15 +16,15 @@ function translate(seq) {
         'TTC':'F', 'TTT':'F', 'TTA':'L', 'TTG':'L',
         'TAC':'Y', 'TAT':'Y', 'TAA':'_', 'TAG':'_',
         'TGC':'C', 'TGT':'C', 'TGA':'_', 'TGG':'W'
-    }
-    let protein =""
-    if (seq.length%3 == 0) {
+    };
+    let protein ="";
+    if (seq.length % 3 === 0) {
         for (let i = 0; i < seq.length; i += 3) {
-            const codon = seq.substring(i, i+3).toUpperCase()
+            const codon = seq.substring(i, i + 3).toUpperCase();
             protein += table[codon]
         }
     }
-    return protein
+    return protein;
 }
 
 grok.functions.register({

@@ -1,5 +1,5 @@
 // table manipulation
-demog = grok.testData('demog', 5000);
+demog = grok.data.testData('demog', 5000);
 demog.columns.remove('sex');
 foo = demog.columns.addNew('foo', 'int');
 demog.rows.removeAt(1, 3);
@@ -18,7 +18,7 @@ demog.selection.set(5, false);
 demog.selection.findNext(0, false);
 
 // views
-view = grok.addTableView(demog);
+view = grok.shell.addTableView(demog);
 
 // viewers
 hist = view.addViewer('histogram');
@@ -33,8 +33,8 @@ markup = view.addViewer('markup');
 markup.options({'content': text});
 
 // events
-demog.onCurrentRowChanged.subscribe((_) => grok.balloon.info('current row changed'));
-grok.onEvent('d4-current-view-changed', (_) => grok.balloon.info('view changed'));
+demog.onCurrentRowChanged.subscribe((_) => grok.shell.balloon.info('current row changed'));
+grok.onEvent('d4-current-view-changed', (_) => grok.shell.balloon.info('view changed'));
 
 // registering functions
 grok.functions.register({
@@ -47,4 +47,4 @@ grok.functions.register({
     run: (foo, bar) => `${foo}_${bar}`
 });
 
-grok.balloon.info('Script executed.');
+grok.shell.balloon.info('Script executed.');

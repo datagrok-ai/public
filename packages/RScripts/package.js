@@ -1,3 +1,3 @@
-class RScriptsPackage extends grok.Package {
+class RScriptsPackage extends DG.Package {
 
 }

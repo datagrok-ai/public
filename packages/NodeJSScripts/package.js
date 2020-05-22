@@ -1,3 +1,3 @@
-class NodeJsScriptsPackage extends grok.Package {
+class NodeJsScriptsPackage extends DG.Package {
 
 }

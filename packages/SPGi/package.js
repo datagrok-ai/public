@@ -1,4 +1,4 @@
-class SPGiPackage extends grok.Package {
+class SPGiPackage extends DG.Package {
 
     //tags: app
     startApp(context) {

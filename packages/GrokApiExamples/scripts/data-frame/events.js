@@ -1,9 +1,9 @@
 // Demonstrates handling of Grok-originated events
 
-demog = grok.testData('demog', 5000);
-view = grok.addTableView(demog);
+demog = grok.data.testData('demog', 5000);
+view = grok.shell.addTableView(demog);
 
-function info(s) { grok.balloon.info(s); }
+function info(s) { grok.shell.balloon.info(s); }
 
 demog.onValuesChanged.subscribe((_) => info('ddt-values-changed'));
 demog.onCurrentRowChanged.subscribe((_) => info('ddt-current-row-changed'));

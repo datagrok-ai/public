@@ -1,4 +1,4 @@
-let v = grok.newView('demo: inputs');
+let v = grok.shell.newView('demo: inputs');
 
 let name = ui.stringInput('Name', 'Arthur Dent');
 let age = ui.intInput('Age', 30);
@@ -13,5 +13,5 @@ v.append(container);
 container.appendChild(ui.inputs(inputs));
 
 container.appendChild(ui.bigButton('POST', () => {
-    grok.balloon.info(inputs.map((i) => `${i.caption}: ${i.stringValue}`).join('<br>'));
+    grok.shell.balloon.info(inputs.map((i) => `${i.caption}: ${i.stringValue}`).join('<br>'));
 }));

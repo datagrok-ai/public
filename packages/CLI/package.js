@@ -1,2 +1,2 @@
-class CliPackage extends grok.Package {
+class CliPackage extends DG.Package {
 }

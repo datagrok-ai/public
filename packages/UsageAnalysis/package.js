@@ -1,10 +1,10 @@
-class UsageAnalysisPackage extends grok.Package {
+class UsageAnalysisPackage extends DG.Package {
 
     //name: Usage Analysis
     //tags: app
     startApp() {
         let acc = null;
-        let view = grok.newView('Usage');
+        let view = grok.shell.newView('Usage');
         let results = ui.div();
         let panesExpanded = {};
 
@@ -43,7 +43,7 @@ class UsageAnalysisPackage extends grok.Package {
                         queryName += 'AndUsers';
                         params['users'] = selectedUsers;
                     }
-                    grok.query('UsageAnalysis:' + queryName, params).then((t) => {
+                    grok.data.query('UsageAnalysis:' + queryName, params).then((t) => {
                         if (paneName === 'Errors')
                             grok.detectSemanticTypes(t);
                         host.removeChild(host.firstChild);
@@ -59,7 +59,7 @@ class UsageAnalysisPackage extends grok.Package {
             acc.addPane('Unique users', () => {
                 let host = ui.div();
                 host.appendChild(ui.loader());
-                grok.query('UsageAnalysis:UniqueUsersByDate', {'date': date.value})
+                grok.data.query('UsageAnalysis:UniqueUsersByDate', {'date': date.value})
                     .then(t => {
                         let ids = Array.from(t.getCol('id').values());
                         grok.dapi.getEntities(ids).then((users) => {
@@ -147,7 +147,7 @@ class UsageAnalysisPackage extends grok.Package {
         let description = ui.stringInput('Description', msg);
 
         let button = ui.bigButton('CREATE', () => {
-            grok.query('Vnerozin:JiraCreateIssue', {
+            grok.data.query('Vnerozin:JiraCreateIssue', {
                 'createRequest': JSON.stringify({
                     "fields": {
                         "project": {

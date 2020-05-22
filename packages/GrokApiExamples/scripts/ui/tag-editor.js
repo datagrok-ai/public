@@ -1,4 +1,4 @@
-let v = grok.newView('demo: tag editor');
+let v = grok.shell.newView('demo: tag editor');
 
 let editor = ui.TagEditor.create();
 editor.addTag('demo');

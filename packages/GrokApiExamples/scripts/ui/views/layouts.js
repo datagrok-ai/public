@@ -2,7 +2,7 @@
 
 var STORAGE_NAME = 'layouts-demo';
 
-var view = grok.addTableView(grok.testData('demog', 1000));
+var view = grok.shell.addTableView(grok.data.testData('demog', 1000));
 view.name = 'layouts demo';
 
 var nameInput = ui.stringInput('', 'Default');
@@ -15,7 +15,7 @@ let save = ui.button('Save', () => {
 var load = ui.iconFA('bars', () => {
     grok.dapi.userDataStorage.get(STORAGE_NAME).then((layouts) => {
         if (layouts !== null && Object.keys(layouts).length === 0)
-            grok.balloon.info('Storage is empty. Save some layouts to the storage');
+            grok.shell.balloon.info('Storage is empty. Save some layouts to the storage');
         else {
             let menu = ui.Menu.popup();
             for (let layout of Object.keys(layouts)) {

@@ -19,14 +19,14 @@ class FruitMeta extends grok.JsEntityMeta {
     renderProperties(x) { return ui.divText(`Properties for ${x.name}`); }
 
     init() {
-        this.registerParamFunc('Eat', (fruit) => { grok.balloon.info(`Ate ${fruit.name}`); } );
+        this.registerParamFunc('Eat', (fruit) => { grok.shell.balloon.info(`Ate ${fruit.name}`); } );
     }
 }
 
 // Register meta class with the platform
 grok.JsEntityMeta.register(new FruitMeta());
 
-grok.newView().append(ui.div([
+grok.shell.newView().append(ui.div([
     ui.renderCard(new Fruit('apple')),
     ui.renderCard(new Fruit('banana')),
 ]));

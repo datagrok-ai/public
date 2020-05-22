@@ -1,2 +1,2 @@
-class CovidPackage extends grok.Package {
+class CovidPackage extends DG.Package {
 }

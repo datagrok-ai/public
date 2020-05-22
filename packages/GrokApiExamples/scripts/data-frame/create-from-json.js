@@ -1,6 +1,6 @@
 // Creating a DataFrame from a JSON string
 
-let table = grok.DataFrame.fromJson(`[
+let table = DG.DataFrame.fromJson(`[
   {
     "name": "Roger Federer",
     "height": 185,
@@ -13,4 +13,4 @@ let table = grok.DataFrame.fromJson(`[
   }
 ]`);
 
-grok.addTableView(table);
+grok.shell.addTableView(table);

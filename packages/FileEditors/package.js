@@ -1,4 +1,4 @@
-class FileEditorsPackage extends grok.Package {
+class FileEditorsPackage extends DG.Package {
 
     //tags: fileViewer, fileViewer-pdf
     //input: string url {semType: url}

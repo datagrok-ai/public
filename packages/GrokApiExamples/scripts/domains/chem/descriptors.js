@@ -2,9 +2,9 @@
 //
 // https://datagrok.ai/help/domains/chem/descriptors
 
-grok.chem.descriptors(grok.testData('molecules', 100), 'smiles', ['MolWt', 'Lipinski'])
+grok.chem.descriptors(grok.data.testData('molecules', 100), 'smiles', ['MolWt', 'Lipinski'])
     .then(function (table) {
-        grok.addTableView(table);
+        grok.shell.addTableView(table);
     });
 
 // In 'descriptors' parameter groups or descriptors can be specified.

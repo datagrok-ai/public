@@ -1,6 +1,6 @@
 // gets #demo project list and shows them in the view
 
-let view = grok.newView('projects');
+let view = grok.shell.newView('projects');
 grok.dapi.projects
     .filter('#demo')
     .list()

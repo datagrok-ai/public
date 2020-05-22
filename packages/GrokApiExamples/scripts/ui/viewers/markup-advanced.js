@@ -2,8 +2,8 @@
 
 let user = grok.user;
 
-let table = grok.testData('demog', 10000);
-let view = grok.addTableView(table);
+let table = grok.data.testData('demog', 10000);
+let view = grok.shell.addTableView(table);
 
 let sp = grok.Viewer.scatterPlot(table, {
     xColumnName: 'age',

@@ -1,4 +1,4 @@
-class ReactDemoPackage extends grok.Package {
+class ReactDemoPackage extends DG.Package {
 
     //name: ReactInfoPanel
     //tags: panel, widgets
