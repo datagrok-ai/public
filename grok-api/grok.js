@@ -1,5 +1,4 @@
 import {Project} from "./src/entities";
-import * as ui from "./ui.js";
 import * as _chem from './src/chem';
 import * as _ml from './src/ml';
 import {Dapi} from "./src/dapi";
@@ -9,6 +8,7 @@ import {User} from "./src/entities";
 import {Functions} from "./src/functions";
 import {Events} from "./src/events";
 import {_toDart, _wrap} from "./src/wrappers";
+import {Balloon, Menu, TabControl} from "./src/ui_classes";
 
 
 /** Grok entry point, use it to get access to top-level views, tables, methods, etc. */
@@ -37,11 +37,11 @@ class Shell {
     get o() { return _wrap(grok_Get_CurrentObject(), false); }
     set o(x) { grok_Set_CurrentObject(_toDart(x)); }
 
-    get sidebar() { return new ui.TabControl(grok_Get_Sidebar()); }
+    get sidebar() { return new TabControl(grok_Get_Sidebar()); }
 
-    get topMenu() { return new ui.Menu(grok_Get_TopMenu()); }
+    get topMenu() { return new Menu(grok_Get_TopMenu()); }
 
-    get balloon() { return new ui.Balloon(); }
+    get balloon() { return new Balloon(); }
 
     dockElement(e, title = null, dockStyle = 'fill', ratio = 0.5) { grok_DockElement(e, title, dockStyle, ratio); }
 

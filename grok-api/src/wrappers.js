@@ -4,6 +4,7 @@ import {Project, Property, SemanticValue, User} from "./entities";
 import * as ui from "../ui";
 import {EventData} from "./events";
 import {TableView, View} from "./view";
+import {Menu} from "./ui_classes";
 
 export let factories = {};
 
@@ -19,7 +20,7 @@ export function _wrap(d, check = true) {
         case TYPE.PROJECT: return new Project(d);
         case TYPE.USER: return new User(d);
         case TYPE.SEMANTIC_VALUE: return new SemanticValue(d);
-        case TYPE.MENU: return new ui.Menu(d);
+        case TYPE.MENU: return new Menu(d);
         case TYPE.GRID_CELL_RENDER_ARGS: return factories["GridCellRenderArgs"](d);
         case TYPE.EVENT_DATA: return new EventData(d);
         case TYPE.VIEW: return new View(d);
