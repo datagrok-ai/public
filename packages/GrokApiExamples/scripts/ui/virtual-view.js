@@ -1,8 +1,8 @@
 // View creates DOM elements only when necessary.
 
-let data = grok.testData('demog', 100000);
+let data = grok.data.testData('demog', 100000);
 
-grok.newView('virtual view', [
+grok.shell.newView('virtual view', [
     ui.virtualView(data.rowCount, (i) => ui.card(ui.tableFromMap({
         id: data.row(i).subj,
         age: data.row(i).age,

@@ -7,8 +7,8 @@ v.root.appendChild(ui.divText('Custom body'));
 // ribbons
 v.setRibbonPanels([
     [
-        ui.iconFA('search', () => grok.balloon.info("clicked")),
-        ui.iconFA('plus', () => grok.balloon.info("plus"))
+        ui.iconFA('search', () => grok.shell.balloon.info("clicked")),
+        ui.iconFA('plus', () => grok.shell.balloon.info("plus"))
     ],
     [ui.divText('Custom panel')]
 ]);
@@ -16,7 +16,7 @@ v.setRibbonPanels([
 // ribbon menu
 v.ribbonMenu = ui.Menu.create()
     .group('Custom')
-    .item('Foo!', () => grok.balloon.info('Foo clicked'));
+    .item('Foo!', () => grok.shell.balloon.info('Foo clicked'));
 
 // accordion
 var acc = ui.accordion();

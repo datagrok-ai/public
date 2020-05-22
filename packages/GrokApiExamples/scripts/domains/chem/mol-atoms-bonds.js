@@ -3,7 +3,7 @@
 // Original example: http://www.cheminfo.org/Chemistry/Cheminformatics/OpenChemLib_js/index.html
 // For more details, visit https://github.com/cheminfo/openchemlib-js
 
-let v = grok.newView('atoms');
+let v = grok.shell.newView('atoms');
 let smiles = 'c1(ccc2N=C(C)N(C(=O)c2c1)c3ccc(OC)cc3)NC(=S)Nc4ccccc4';
 let m = OCL.Molecule.fromSmiles(smiles);
 let result = {};
@@ -87,5 +87,5 @@ for (let i = 0; i < m.getAllBonds(); i++) {
 
 v.append(grok.chem.svgMol(smiles));
 
-grok.addTableView(grok.DataFrame.fromObjects(atoms));
-grok.addTableView(grok.DataFrame.fromObjects(bonds));
+grok.shell.addTableView(DG.DataFrame.fromObjects(atoms));
+grok.shell.addTableView(DG.DataFrame.fromObjects(bonds));

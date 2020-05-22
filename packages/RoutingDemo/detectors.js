@@ -1,3 +1,3 @@
-class RoutingDemoPackageDetectors extends grok.Package {
+class RoutingDemoPackageDetectors extends DG.Package {
 
 }

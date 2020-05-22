@@ -1,4 +1,4 @@
-let view = grok.newView('Usage');
+let view = grok.shell.newView('Usage');
 
-grok.query('UsageAnalysis:EventsSummaryOnDate', {'date': 'today'})
+grok.data.query('UsageAnalysis:EventsSummaryOnDate', {'date': 'today'})
   .then(t => view.append(Viewer.barChart(t)));

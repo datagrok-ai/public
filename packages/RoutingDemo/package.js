@@ -1,4 +1,4 @@
-class RoutingDemoPackage extends grok.Package {
+class RoutingDemoPackage extends DG.Package {
 
     //name: Routing Demo
     //tags: app
@@ -7,8 +7,8 @@ class RoutingDemoPackage extends grok.Package {
         parser.href = window.location;
         let pathSegments = parser.pathname.split('/');
 
-        let t = grok.testData("cars");
-        let view = grok.addTableView(t);
+        let t = grok.data.testData("cars");
+        let view = grok.shell.addTableView(t);
         view.name = 'SDTM:LB:Preview';
         view.description = 'SDTM LB domain viewer';
         view.basePath = '/cars';

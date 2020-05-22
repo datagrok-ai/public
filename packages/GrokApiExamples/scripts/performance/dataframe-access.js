@@ -1,4 +1,4 @@
-let table = grok.testData('random walk', 100000, 2);
+let table = grok.data.testData('random walk', 100000, 2);
 
 measure = function (f) {
     let t0 = performance.now();

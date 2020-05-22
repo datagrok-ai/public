@@ -1,6 +1,7 @@
 /**
  * @typedef {string} AggregationType
- * @typedef {string} SyncType 
+ * @typedef {string} SyncType
+ * @typedef {string} JoinType
  **/
 
 /** @enum {AggregationType} */
@@ -44,10 +45,13 @@ export const INT_NULL = -2147483648;
 export const FLOAT_NULL = 2.6789344063684636e-34;
 export const DATE_TIME_NULL = -62135578800000000.0;
 
-export const JOIN_TYPE_INNER = 'inner';
-export const JOIN_TYPE_OUTER = 'outer';
-export const JOIN_TYPE_LEFT = 'left';
-export const JOIN_TYPE_RIGHT = 'right';
+/** @enum {JoinType} */
+export const JOIN_TYPE = {
+    INNER: 'inner',
+    OUTER: 'outer',
+    LEFT: 'left',
+    RIGHT: 'right'
+}
 
 /** @enum {Type} */
 export const TYPE = {

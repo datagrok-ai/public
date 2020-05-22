@@ -1,3 +1,3 @@
-class JuliaScriptsPackage extends grok.Package {
+class JuliaScriptsPackage extends DG.Package {
 
 }

@@ -1,6 +1,6 @@
 // TabControl
 
-let v = grok.newView('Tabs');
+let v = grok.shell.newView('Tabs');
 
 v.root.appendChild(ui.h1('Horizontal'));
 let tabs = ui.tabControl();

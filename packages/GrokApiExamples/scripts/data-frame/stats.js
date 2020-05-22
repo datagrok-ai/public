@@ -1,9 +1,8 @@
 // Column statistics
+let demog = grok.data.testData('demog', 5000);
+let view = grok.shell.newView('stats');
 
-var demog = grok.testData('demog', 5000);
-var view = grok.newView('stats');
-
-for (var col of demog.columns.toList()) {
+for (let col of demog.columns.toList()) {
     view.append(ui.tableFromMap({
         name: col.name,
         totalCount: col.stats.totalCount,

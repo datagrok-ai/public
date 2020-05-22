@@ -67,20 +67,20 @@ export function setUpdateIndicator(element, updating = true) { return grok_UI_Se
 export function button(text, handler, tooltip = null) { return grok_UI_Button(text, handler, tooltip); }
 export function bigButton(text, handler, tooltip = null) { return grok_UI_BigButton(text, handler, tooltip); }
 
-    /** Creates a visual table based on [map]. */
-    export function tableFromMap(map) { return grok_UI_TableFromMap(map); }
+/** Creates a visual table based on [map]. */
+export function tableFromMap(map) { return grok_UI_TableFromMap(map); }
 
-    /** Creates a visual element representing list of [items]. */
-    export function list(items) { return grok_UI_List(Array.from(items).map(_toDart)); }
+/** Creates a visual element representing list of [items]. */
+export function list(items) { return grok_UI_List(Array.from(items).map(_toDart)); }
 
-    /** Creates a [Dialog].
-     * @returns {Dialog} */
-    export function dialog(title = '') { return Dialog.create(title); }
+/** Creates a [Dialog].
+ * @returns {Dialog} */
+export function dialog(title = '') { return Dialog.create(title); }
 
-    /** Binds [item] with the [element]. It enables selecting it as a current object, drag-and-drop,
-     * tooltip, and popup menu.
-     * Returns [element]. */
-    export function bind(item, element) { return grok_UI_Bind(item, element); }
+/** Binds [item] with the [element]. It enables selecting it as a current object, drag-and-drop,
+ * tooltip, and popup menu.
+ * Returns [element]. */
+export function bind(item, element) { return grok_UI_Bind(item, element); }
 
 export function virtualView(length, renderer) {
         let view = VirtualView.create();

@@ -1,3 +1,3 @@
-class PythonScriptsPackage extends grok.Package {
+class PythonScriptsPackage extends DG.Package {
 
 }

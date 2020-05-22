@@ -1,4 +1,4 @@
-class PedometerPackageDetectors extends grok.Package {
+class PedometerPackageDetectors extends DG.Package {
 
     //tags: semTypeDetector
     //input: column col

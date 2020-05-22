@@ -1,4 +1,4 @@
-class ChemspacePackageDetectors extends grok.Package {
+class ChemspacePackageDetectors extends DG.Package {
 
     //tags: semTypeDetector
     //input: column col

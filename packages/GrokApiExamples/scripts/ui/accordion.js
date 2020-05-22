@@ -1,6 +1,6 @@
 // Creating custom views
 
-let v = grok.newView('accordion');
+let v = grok.shell.newView('accordion');
 
 v.root.appendChild(ui.h1('UI Toolkit'));
 
@@ -31,16 +31,16 @@ acc.addPane('dialogs', () => ui.button('OPEN', () => {
     ui.dialog('Vogon Announcement')
       .add(ui.h1(''))
       .add(ui.span(['People of Earth, your attention, please… ']))
-      .onOK(() => { grok.balloon.info('OK!'); })
+      .onOK(() => { grok.shell.balloon.info('OK!'); })
       .show();
 }));
 
 acc.addPane('menus', () => ui.button('SHOW', () => {
     ui.popupMenu({
-        'About': () => grok.balloon.info('About'),
+        'About': () => grok.shell.balloon.info('About'),
         'File': {
-            'Open': () => grok.balloon.info('Open'),
-            'Close': () => grok.balloon.info('Close'),
+            'Open': () => grok.shell.balloon.info('Open'),
+            'Close': () => grok.shell.balloon.info('Close'),
         }
     });
 }));

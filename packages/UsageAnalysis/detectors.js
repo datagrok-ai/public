@@ -1,4 +1,4 @@
-class UsageAnalysisPackageDetectors extends grok.Package {
+class UsageAnalysisPackageDetectors extends DG.Package {
 
     //tags: semTypeDetector
     //input: column col

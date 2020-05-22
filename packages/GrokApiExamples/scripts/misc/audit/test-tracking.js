@@ -1,4 +1,4 @@
-let view = grok.newView('Usage');
+let view = grok.shell.newView('Usage');
 
-grok.query('TestTrack:ManualActivityByDate', {'date': 'today'})
+grok.data.query('TestTrack:ManualActivityByDate', {'date': 'today'})
   .then(t => view.append(Viewer.grid(t)));

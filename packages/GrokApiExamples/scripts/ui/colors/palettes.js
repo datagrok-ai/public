@@ -1,6 +1,6 @@
 // Categorical and continuous color palettes
 
-let v = grok.newView('palettes');
+let v = grok.shell.newView('palettes');
 
 function getBlock(c) {
     let block = ui.divText(ui.Color.toRgb(c));

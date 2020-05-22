@@ -1,4 +1,4 @@
-class SDTMPackage extends grok.Package {
+class SDTMPackage extends DG.Package {
     //tags: app
     startApp(context) {
         let parser = document.createElement('a');
@@ -6,7 +6,7 @@ class SDTMPackage extends grok.Package {
         let pathSegments = parser.pathname.split('/');
         let urlLayout = (pathSegments.length > 3) ? decodeURI(pathSegments[3]) : null;
 
-        let emptyTable = grok.DataFrame.create();
+        let emptyTable = DG.DataFrame.create();
 
         let loadingLayout = false;
         let preview = ui.boolInput('', true);
@@ -16,7 +16,7 @@ class SDTMPackage extends grok.Package {
         let count = ui.divH([ui.divText('Count:'), ui.loader()], 'sdtm-count');
         filtersHost.appendChild(count);
 
-        let view = grok.addTableView(emptyTable);
+        let view = grok.shell.addTableView(emptyTable);
         view.name = 'SDTM:LB';
         view.basePath = '';
         view.description = 'SDTM LB domain viewer';
@@ -33,9 +33,9 @@ class SDTMPackage extends grok.Package {
         function selector(query, queryParameters, itemsColumn, caption, values, updateHandler) {
             let host = ui.divV([], 'sdtm-selector-host');
             host.appendChild(ui.loader());
-            grok.query(query, queryParameters, true, 100).then(t => {
+            grok.data.query(query, queryParameters, true, 100).then(t => {
                 let items = t.getCol(itemsColumn).toList();
-                let input = ui.columnsInput(caption, grok.DataFrame.fromColumns(items.map(item => grok.Column.string(item))));
+                let input = ui.columnsInput(caption, DG.DataFrame.fromColumns(items.map(item => DG.Column.string(item))));
                 if (values.length !== 0) {
                     let _values = [];
                     for (let value of values)
@@ -88,7 +88,7 @@ class SDTMPackage extends grok.Package {
                 'limit': preview.value ? limit.value : null
             };
 
-            grok.query('SDTM:Results', params, true, 100).then(t => {
+            grok.data.query('SDTM:Results', params, true, 100).then(t => {
                 updatePreview(aggregate(t));
                 ui.setUpdateIndicator(view.root, false);
                 handler();
@@ -97,7 +97,7 @@ class SDTMPackage extends grok.Package {
             SDTMPackage.removeChildren(count);
             count.appendChild(ui.divText('Count:'));
             count.appendChild(ui.loader());
-            grok.query('SDTM:ResultsCount', params, true, 100).then(t => {
+            grok.data.query('SDTM:ResultsCount', params, true, 100).then(t => {
                 SDTMPackage.removeChildren(count);
                 count.appendChild(ui.divText(`Count: ${t.col('count').get(0)}`));
             });
@@ -178,7 +178,7 @@ class SDTMPackage extends grok.Package {
             };
             let layout = nameInput.value;
             grok.dapi.userDataStorage.postValue(STORAGE_NAME, layout, JSON.stringify(parameters), currentUserStorage);
-            grok.balloon.info(`Analysis "${layout}" is saved`);
+            grok.shell.balloon.info(`Analysis "${layout}" is saved`);
             view.path = `/${layout}`;
         }
 
@@ -233,7 +233,7 @@ class SDTMPackage extends grok.Package {
         /*
         let clear = ui.iconFA('trash-alt', () => {
             grok.dapi.userDataStorage.remove(STORAGE_NAME, null, currentUserStorage);
-            grok.balloon.info('Storage is cleared');
+            grok.shell.balloon.info('Storage is cleared');
         }, 'Clear analysis storage');
         */
 
@@ -279,7 +279,7 @@ class SDTMPackage extends grok.Package {
     //description: Gets medical history widget
     getMedicalHistory(study, subj) {
         let host = ui.div([ui.loader()]);
-        grok.query('SDTM:MedicalHistory', {
+        grok.data.query('SDTM:MedicalHistory', {
             'study': study,
             'subj': subj
         }, true, 100).then(mi => {

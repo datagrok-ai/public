@@ -1,12 +1,12 @@
-let view = grok.newView('Usage');
+let view = grok.shell.newView('Usage');
 
 var last = new Date();
 last.setHours(last.getHours() - 5);
 
 var timer = setInterval(function() {
-    grok.query('UsageAnalysis:EventsOnDate', {'date': ('after ' + last.toLocaleString().replace(',', ''))})
+    grok.data.query('UsageAnalysis:EventsOnDate', {'date': ('after ' + last.toLocaleString().replace(',', ''))})
         .then((t) => {
-            grok.addTableView(t);
+            grok.shell.addTableView(t);
         });
 }, 5000);
 

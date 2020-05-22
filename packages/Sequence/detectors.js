@@ -1,4 +1,4 @@
-class SequencePackageDetectors extends grok.Package {
+class SequencePackageDetectors extends DG.Package {
 
     //tags: autostart
     autostartTest() {
@@ -41,5 +41,4 @@ class SequencePackageDetectors extends grok.Package {
     dup(s) {
         return s + '_' + s + ' (sequence)';
     }
-
 }

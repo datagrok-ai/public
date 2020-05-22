@@ -1,3 +1,3 @@
-class ChemScriptsPackage extends grok.Package {
+class ChemScriptsPackage extends DG.Package {
 
 }

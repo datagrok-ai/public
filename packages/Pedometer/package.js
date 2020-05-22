@@ -1,4 +1,4 @@
-class PedometerPackage extends grok.Package {
+class PedometerPackage extends DG.Package {
 
     //input: dataframe accel [Accelerometry data table]
     //input: column x {semType: Accelerometer-X} [X axis]
@@ -18,7 +18,7 @@ class PedometerPackage extends grok.Package {
             if (accel.columns.contains('steps'))
                 accel.columns.remove('steps');
 
-            let steps = accel.columns.add((new grok.DataFrame(result)).col('steps'), true);
+            let steps = accel.columns.add((new DG.DataFrame(result)).col('steps'), true);
             view.lineChart({
                 xColumnName: timeOffset.name,
                 yColumnNames: [x.name, y.name, z.name, steps.name]
@@ -56,7 +56,7 @@ class PedometerPackage extends grok.Package {
         let root = ui.div();
 
         this._detectSteps(accel, x, y, z, sampleRate, false, result => {
-            let steps = new grok.DataFrame(result).col('steps').stats.sum;
+            let steps = new DG.DataFrame(result).col('steps').stats.sum;
             while (root.firstChild)
                 root.removeChild(root.firstChild);
             root.appendChild(ui.divText(steps.toString() + ' steps'));

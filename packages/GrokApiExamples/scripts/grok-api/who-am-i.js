@@ -1,6 +1,6 @@
 // prints current user name and picture
 
-var view = grok.newView('User', []);
+var view = grok.shell.newView('User', []);
 grok.dapi.users.current().then(function(user) {
     var p = user.picture;
     var d = ui.div([ui.h1(user.firstName + ' ' + user.lastName), p]);

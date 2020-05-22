@@ -30,7 +30,7 @@ class SunburstViewer extends grok.JsViewer {
             };
         }
 
-        this.table = new grok.DataFrame(dataFrameHandle);
+        this.table = new DG.DataFrame(dataFrameHandle);
         this.init();
 
         this.subs.push(this.table.selection.onChanged.subscribe((_) => this.render()));

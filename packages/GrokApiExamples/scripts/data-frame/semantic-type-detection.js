@@ -10,6 +10,6 @@ demog.onSemanticTypeDetecting.subscribe((args) => {
     demog.col('smiles').semType = 'bananas';
     args.preventDefault();
 });
-demog.onSemanticTypeDetected.subscribe((_) => { grok.info(demog.col('smiles').semType); });
+demog.onSemanticTypeDetected.subscribe((_) => { grok.shell.balloon.info(demog.col('smiles').semType); });
 
-grok.addTableView(demog);
+grok.shell.addTableView(demog);

@@ -1,4 +1,4 @@
-class RDKitDemoPackage extends grok.Package {
+class RDKitDemoPackage extends DG.Package {
 
     /** Guaranteed to be executed exactly once before the execution of any function below */
     async init() {

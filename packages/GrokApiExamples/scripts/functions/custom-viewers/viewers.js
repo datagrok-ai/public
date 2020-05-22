@@ -17,11 +17,11 @@ class JsDemoViewer extends grok.JsViewer {
 
     // override to handle property changes
     onPropertyChanged(prop) {
-        grok.balloon.info(`${prop.name}: ${prop.get(this)}`);
+        grok.shell.balloon.info(`${prop.name}: ${prop.get(this)}`);
     }
 
     onFrameAttached(dataFrameHandle) {
-        this.dataFrame = new grok.DataFrame(dataFrameHandle);
+        this.dataFrame = new DG.DataFrame(dataFrameHandle);
         this.subs.push(this.dataFrame.selection.onChanged.subscribe((_) => this.render()));
         this.subs.push(this.dataFrame.filter.onChanged.subscribe((_) => this.render()));
 
@@ -47,6 +47,6 @@ class JsDemoViewer extends grok.JsViewer {
 grok.registerViewer('JsDemoViewer', 'JavaScript-based viewer', () => new JsDemoViewer());
 
 // Add viewer to a table view
-demog = grok.testData('demog', 5000);
-view = grok.addTableView(demog);
+demog = grok.data.testData('demog', 5000);
+view = grok.shell.addTableView(demog);
 hist = view.addViewer('JsDemoViewer');

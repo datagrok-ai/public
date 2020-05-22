@@ -1,4 +1,4 @@
-class ChemspacePackage extends grok.Package {
+class ChemspacePackage extends DG.Package {
 
     static host = 'https://api.chem-space.com';
     static token = null;
@@ -18,8 +18,8 @@ class ChemspacePackage extends grok.Package {
         let filtersHost =  ui.div([molecule.root, mode.root, similarity.root, catalog.root],
             'chemspace-controls,pure-form');
 
-        let emptyTable = grok.DataFrame.create();
-        let view = grok.addTableView(emptyTable);
+        let emptyTable = DG.DataFrame.create();
+        let view = grok.shell.addTableView(emptyTable);
         view.name = 'Chemspace';
         view.basePath = '';
         view.description = 'Chemspace search viewer';
@@ -119,7 +119,7 @@ class ChemspacePackage extends grok.Package {
                 }
                 headerHost.appendChild(ui.iconFA('arrow-square-down', () => {
                     t.name = `Chemspace ${panelName}`;
-                    grok.addTableView(t);
+                    grok.shell.addTableView(t);
                 }, 'Open compounds as table'));
                 compsHost.style.overflowY = 'auto';
             })
@@ -155,7 +155,7 @@ class ChemspacePackage extends grok.Package {
                 if (this.status >= 200 && this.status < 300) {
                     let map = JSON.parse(xhr.responseText);
                     let t = ChemspacePackage.pricesDataToTable(map['items']);
-                    let grid = grok.Grid.create(t);
+                    let grid = DG.Grid.create(t);
                     grid.root.style.width = '400px';
                     grid.root.style.height = '300px';
                     while (panel.firstChild)
@@ -176,7 +176,7 @@ class ChemspacePackage extends grok.Package {
 
     // description: Converts prices JSON items into DataFrame
     static pricesDataToTable(items) {
-        let table = grok.DataFrame.fromJson(JSON.stringify(items));
+        let table = DG.DataFrame.fromJson(JSON.stringify(items));
         table.columns.remove('vendor_code');
         let packsArrays = new Map();
         for (let n = 0; n < items.length; n++) {
@@ -190,7 +190,7 @@ class ChemspacePackage extends grok.Package {
             }
         }
         for (let name of Array.from(packsArrays.keys()).sort()) {
-            let column = grok.Column.fromList(grok.TYPE_FLOAT, name, packsArrays.get(name));
+            let column = DG.Column.fromList(DG.enums.TYPE.FLOAT, name, packsArrays.get(name));
             column.semType = 'Money';
             column.setTag('format', 'money($)');
             table.columns.add(column);
@@ -201,7 +201,7 @@ class ChemspacePackage extends grok.Package {
     //description: Gets access token
     static async getApiToken() {
         if (ChemspacePackage.token === null) {
-            let t = await grok.query('Chemspace:AuthToken', null, true, 100);
+            let t = await grok.data.query('Chemspace:AuthToken', null, true, 100);
             ChemspacePackage.token = t.get('access_token', 0);
         }
         return ChemspacePackage.token;
@@ -222,7 +222,7 @@ class ChemspacePackage extends grok.Package {
                 if (this.status >= 200 && this.status < 300) {
                     let list = JSON.parse(xhr.responseText)['items'];
                     if (list.length > 0)
-                        resolve(grok.DataFrame.fromJson(JSON.stringify(list)));
+                        resolve(DG.DataFrame.fromJson(JSON.stringify(list)));
                     else
                         reject();
                 } else

@@ -1,2 +1,2 @@
-class SwaggersPackage extends grok.Package {
+class SwaggersPackage extends DG.Package {
 }

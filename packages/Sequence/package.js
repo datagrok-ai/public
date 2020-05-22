@@ -1,11 +1,11 @@
-class SequencePackage extends grok.Package {
+class SequencePackage extends DG.Package {
 
     //description: Returns a string containing the Amino Acid sequence represented by the nucleotide sequence
     //tags: converter
     //input: string nucleotides {semType: nucleotides}
     //output: string aminoacids {semType: aminoacids}
     nucleotidesToAminoacids(nucleotides) {
-      var seq = new Nt.Seq();
+      let seq = new Nt.Seq();
       seq.read(nucleotides);
       return seq.translate();
     }
@@ -14,7 +14,7 @@ class SequencePackage extends grok.Package {
     toFasta(sequences, labels) {
         var result = '';
         for (var i = 0; i < sequences.length; i++) {
-            let label = labels == null ? `seq${i}` : labels[i];
+            let label = labels === null ? `seq${i}` : labels[i];
             result += `>${label}\n${sequences[i]}\n`;
         }
         return result;
@@ -24,7 +24,7 @@ class SequencePackage extends grok.Package {
     //input: string nucleotides {semType: nucleotides}
     //output: string result {semType: nucleotides}
     complement(nucleotides) {
-        var seq = new Nt.Seq();
+        let seq = new Nt.Seq();
         seq.read(nucleotides);
         return seq.complement().sequence();
     }
@@ -66,7 +66,7 @@ class SequencePackage extends grok.Package {
         e.style.width = '500px';
 
         setTimeout(function() {
-            var stage = new NGL.Stage('pdb77', { backgroundColor: 'white' });
+            let stage = new NGL.Stage('pdb77', { backgroundColor: 'white' });
             stage.loadFile(`rcsb://${pdbId}`, { defaultRepresentation: true });
         }, 1000);
 
@@ -106,9 +106,9 @@ class SequencePackage extends grok.Package {
             index = regex.lastIndex + 1;
         }
         sequences.push(content.substring(index));
-        return [grok.DataFrame.fromColumns([
-            grok.Column.fromStrings('description', descriptions).d,
-            grok.Column.fromStrings('sequence', sequences).d
+        return [DG.DataFrame.fromColumns([
+            DG.Column.fromStrings('description', descriptions).d,
+            DG.Column.fromStrings('sequence', sequences).d
         ]).d];
     }
 }
@@ -117,7 +117,7 @@ _seq = new SequencePackage(null);
 
 class SequenceViewer extends grok.JsViewer {
     onFrameAttached(dataFrameHandle) {
-        this.dataFrame = new grok.DataFrame(dataFrameHandle);
+        this.dataFrame = new DG.DataFrame(dataFrameHandle);
         let seqCol = this.dataFrame.columns.toList().find((c) => c.semType == 'nucleotides');
         let fasta = _seq.toFasta(Array.from(seqCol.values()), null);
         let seqs = msa.io.fasta.parse(fasta);
@@ -152,7 +152,7 @@ class SeqDemoViewer extends grok.JsViewer {
 
 
     onFrameAttached(dataFrameHandle) {
-        this.dataFrame = new grok.DataFrame(dataFrameHandle);
+        this.dataFrame = new DG.DataFrame(dataFrameHandle);
         this.dataFrame.selection.onChanged(() => this.render());
         this.dataFrame.filter.onChanged(() => this.render());
 
