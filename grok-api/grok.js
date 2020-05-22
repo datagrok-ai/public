@@ -41,7 +41,11 @@ class Shell {
 
     get topMenu() { return new Menu(grok_Get_TopMenu()); }
 
-    get balloon() { return new Balloon(); }
+    /** Shows information message (green background) */
+    info(s) { grok_Balloon(s, 'info'); }
+
+    /** Shows information message (red background) */
+    error(s) { grok_Balloon(s, 'error'); }
 
     dockElement(e, title = null, dockStyle = 'fill', ratio = 0.5) { grok_DockElement(e, title, dockStyle, ratio); }
 
