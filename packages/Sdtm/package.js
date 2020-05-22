@@ -178,7 +178,7 @@ class SDTMPackage extends DG.Package {
             };
             let layout = nameInput.value;
             grok.dapi.userDataStorage.postValue(STORAGE_NAME, layout, JSON.stringify(parameters), currentUserStorage);
-            grok.shell.balloon.info(`Analysis "${layout}" is saved`);
+            grok.shell.info(`Analysis "${layout}" is saved`);
             view.path = `/${layout}`;
         }
 
@@ -199,7 +199,7 @@ class SDTMPackage extends DG.Package {
             addFilters(false);
             loadingLayout = false;
             queryUpdateResult(() => {
-                view.loadLayout(grok.ViewLayout.fromJson(parameters['layout']));
+                view.loadLayout(DG.ViewLayout.fromJson(parameters['layout']));
             });
         }
 
@@ -210,7 +210,7 @@ class SDTMPackage extends DG.Package {
                 if (layouts !== null && Object.keys(layouts).length === 0)
                     ui.Balloon.info('Storage is empty. Save some analysis to the storage');
                 else {
-                    let menu = ui.Menu.popup();
+                    let menu = DG.Menu.popup();
                     for (let layout of Object.keys(layouts)) {
                         menu.item(layout, () => {
                             loadFromStorage(layout, layouts[layout]);
@@ -233,7 +233,7 @@ class SDTMPackage extends DG.Package {
         /*
         let clear = ui.iconFA('trash-alt', () => {
             grok.dapi.userDataStorage.remove(STORAGE_NAME, null, currentUserStorage);
-            grok.shell.balloon.info('Storage is cleared');
+            grok.shell.info('Storage is cleared');
         }, 'Clear analysis storage');
         */
 
@@ -289,7 +289,7 @@ class SDTMPackage extends DG.Package {
             SDTMPackage.removeChildren(host);
             host.appendChild(grid.root);
         });
-        return new ui.Widget(host);
+        return new DG.Widget(host);
     }
 
     //description: Removes all children from node

@@ -7,7 +7,7 @@ col.width = 200;
 col.cellType = 'html';
 
 view.grid.onCellPrepare(function (gc) {
-    if (gc.isTableCell && gc.gridColumn.name == 'disease') {
+    if (gc.isTableCell && gc.gridColumn.name === 'disease') {
         //debugger;
         gc.style.element = ui.divV([
             ui.h1(gc.tableRow.subj),

@@ -1,15 +1,15 @@
-let name = grok.Property.string('Name', null, null, '');
-let age = grok.Property.int('Age', null, null, 30);
-let height = grok.Property.float('Height', null, null, 175.5);
-var properties = [name, age, height];
+let name = DG.Property.string('Name', null, null, '');
+let age = DG.Property.int('Age', null, null, 30);
+let height = DG.Property.float('Height', null, null, 175.5);
+let properties = [name, age, height];
 
 let v = grok.shell.newView('demo: inputs extended');
 
-var inputHeight = ui.InputBase.forProperty(height);
+let inputHeight = DG.InputBase.forProperty(height);
 inputHeight.format = 'two digits after comma';
-var inputs = [
-    ui.InputBase.forProperty(name),
-    ui.InputBase.forProperty(age),
+let inputs = [
+    DG.InputBase.forProperty(name),
+    DG.InputBase.forProperty(age),
     inputHeight
 ];
 let content = ui.div();
@@ -29,14 +29,14 @@ for (let n = 0; n < inputs.length; n++) {
     });
 }
 
-var reset = function () {
-    for (var input of inputs)
+function reset() {
+    for (let input of inputs)
         input.value = properties.find((property) => property.name === input.caption).defaultValue;
 }
 reset();
 
 content.appendChild(ui.bigButton('Post', function () {
-    grok.shell.balloon.info(inputs.map((input) => `${input.caption}: ${input.stringValue}`).join('<br>'));
+    grok.shell.info(inputs.map((input) => `${input.caption}: ${input.stringValue}`).join('<br>'));
 }));
 content.appendChild(ui.bigButton('Toggle enabled', function () {
     for (let input of inputs)
@@ -45,4 +45,4 @@ content.appendChild(ui.bigButton('Toggle enabled', function () {
 content.appendChild(ui.bigButton('Reset', reset));
 
 v.root.appendChild(content);
-grok.addView(v);
+grok.shell.addView(v);

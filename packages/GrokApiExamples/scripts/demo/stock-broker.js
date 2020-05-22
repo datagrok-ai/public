@@ -10,11 +10,11 @@ let tickers = new Map([
 
 let df = DG.DataFrame.create(0);
 df.name = 'stocks';
-df.columns.addNew('symbol', grok.TYPE_STRING);
-df.columns.addNew('time', grok.TYPE_DATE_TIME);
-df.columns.addNew('price', grok.TYPE_FLOAT);
-df.columns.addNew('volume', grok.TYPE_FLOAT);
-df.columns.addNew('up', grok.TYPE_STRING);
+df.columns.addNew('symbol', DG.enums.TYPE.STRING);
+df.columns.addNew('time', DG.enums.TYPE.DATE_TIME);
+df.columns.addNew('price', DG.enums.TYPE.FLOAT);
+df.columns.addNew('volume', DG.enums.TYPE.FLOAT);
+df.columns.addNew('up', DG.enums.TYPE.STRING);
 
 let addMilliseconds = function (time, ms) {
     time.setMilliseconds(time.getMilliseconds() + ms);
@@ -29,7 +29,7 @@ let next = function (symbol) {
     return v;
 };
 let upDown = () => Math.random() > 0.5 ? '▲' : '▼';
-let getValues = (symbol, time) => [symbol, DateTime.fromDate(time).d, next(symbol), Math.round(Math.random() * 10000), upDown()];
+let getValues = (symbol, time) => [symbol, DG.DateTime.fromDate(time).d, next(symbol), Math.round(Math.random() * 10000), upDown()];
 
 let addTick = function (time) {
     for (let symbol of tickers.keys())

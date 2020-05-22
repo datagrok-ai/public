@@ -2,7 +2,7 @@
 //
 // https://datagrok.ai/help/dialogs/random-data
 
-var t = grok.data.testData('demog', 1000);
+let t = grok.data.testData('demog', 1000);
 
 async function generate() {
     await grok.ml.randomData(t, 'normal', {sd: 3.0, mean: 1.0}, 77);

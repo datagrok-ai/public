@@ -31,5 +31,5 @@ grok.functions.register({
         }
         window.setTimeout(update, 1000);
 
-        return new ui.Widget(e);
+        return new DG.Widget(e);
     }});

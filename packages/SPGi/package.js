@@ -2,7 +2,7 @@ class SPGiPackage extends DG.Package {
 
     //tags: app
     startApp(context) {
-        let view = grok.View.create();
+        let view = DG.View.create();
         view.name = 'SPGi';
         view.description = 'SPGi projects view';
 
@@ -21,7 +21,7 @@ class SPGiPackage extends DG.Package {
         view.root.appendChild(content);
         view.root.classList.add('d4-flex-col');
         view.root.classList.add('grok-app-view');
-        grok.addView(view);
+        grok.shell.addView(view);
 
         grok.onViewAdded(function (view) {
             if (view.type === grok.VIEW_TYPE_TABLE_VIEW && view.name === 'Main')
@@ -209,7 +209,7 @@ class SPGiPackage extends DG.Package {
     //condition: t.tags.contains("spgi")
     samplesAvailability(smiles) {
         let table = grok.tableByName('Availability');
-        let noInfo = new ui.Widget(ui.divText('Information not available'));
+        let noInfo = new DG.Widget(ui.divText('Information not available'));
         if (table.d === null)
             return noInfo;
         let selection = table.selection.clone();
@@ -242,6 +242,6 @@ class SPGiPackage extends DG.Package {
         grid.root.style.height = '125px';
         let button = ui.bigButton('ORDER');
         button.style.marginBottom = '6px';
-        return new ui.Widget(ui.div([button, ui.div([grid.root])]));
+        return new DG.Widget(ui.div([button, ui.div([grid.root])]));
     }
 }

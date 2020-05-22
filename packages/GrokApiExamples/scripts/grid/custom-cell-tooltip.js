@@ -2,7 +2,7 @@
 
 let view = grok.shell.addTableView(grok.data.testData('demog', 5000));
 view.grid.onCellTooltip(function (cell, x, y) {
-    if (cell.isTableCell && cell.tableColumn.name == 'age') {
+    if (cell.isTableCell && cell.tableColumn.name === 'age') {
         ui.tooltipShow(ui.divV([
             ui.h1('Custom tooltip'),
             ui.divText(cell.tableRow.race)

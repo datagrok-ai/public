@@ -20,7 +20,7 @@ a5,b0,9,9
 a6,b5,10,10`);
 t2.name = 't2';
 
-let tj = grok.data.joinTables(t1, t2, ['id1', 'id2'], ['id3', 'id4'], ['v1', 'v2'], ['v3', 'v4'], DG.enum.JOIN_TYPE.INNER, false);
+let tj = grok.data.joinTables(t1, t2, ['id1', 'id2'], ['id3', 'id4'], ['v1', 'v2'], ['v3', 'v4'], DG.enums.JOIN_TYPE.INNER, false);
 
 grok.shell.addTableView(t1);
 grok.shell.addTableView(t2);

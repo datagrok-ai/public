@@ -18,7 +18,7 @@ class UsageAnalysisPackage extends DG.Package {
 
         let addUser = ui.div([ui.iconFA('plus', () => {
             grok.dapi.users.order('login').list().then((allUsers) => {
-                ui.Menu.popup()
+                DG.Menu.popup()
                     .items(allUsers.map(u => u.login), (item) => users.addTag(item))
                     .show();
             });
@@ -70,11 +70,11 @@ class UsageAnalysisPackage extends DG.Package {
                 return host;
             });
 
-            addPane('Usage', 'EventsOnDate', (t) => Viewer.scatterPlot(t, {'color': 'user'}).root);
-            addPane('Errors', 'ErrorsOnDate', (t) => Viewer.grid(t).root);
-            addPane('Event Types', 'EventsSummaryOnDate', (t) => Viewer.barChart(t).root);
-            addPane('Error Types', 'ErrorsSummaryOnDate', (t) => Viewer.barChart(t).root);
-            addPane('Test Tracking', 'ManualActivityByDate', (t) => Viewer.grid(t).root, false);
+            addPane('Usage', 'EventsOnDate', (t) => DG.Viewer.scatterPlot(t, {'color': 'user'}).root);
+            addPane('Errors', 'ErrorsOnDate', (t) => DG.Viewer.grid(t).root);
+            addPane('Event Types', 'EventsSummaryOnDate', (t) => DG.Viewer.barChart(t).root);
+            addPane('Error Types', 'ErrorsSummaryOnDate', (t) => DG.Viewer.barChart(t).root);
+            addPane('Test Tracking', 'ManualActivityByDate', (t) => DG.Viewer.grid(t).root, false);
 
             results.appendChild(acc.root);
         }
@@ -170,6 +170,6 @@ class UsageAnalysisPackage extends DG.Package {
         root.appendChild(ui.inputs([summary, description]));
         root.appendChild(button);
 
-        return new ui.Widget(root);
+        return new DG.Widget(root);
     }
 }
