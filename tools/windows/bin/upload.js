@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 const { spawn } = require("child_process");
 
-var argv = require('minimist')(process.argv.slice(2));
+let argv = require('minimist')(process.argv.slice(2));
 
-var mode = argv['_'][1];
-var host = argv['_'][0];
+let mode = argv['_'][1];
+let host = argv['_'][0];
 
 if (mode !== 'debug' && mode !=='deploy')
     throw 'Unknown mode: ' + mode;
