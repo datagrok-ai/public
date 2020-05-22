@@ -3,6 +3,7 @@ import {TYPE, VIEWER} from "./const";
 import * as ui from "./../ui.js";
 import {Property} from "./entities";
 import {_toJson} from "./utils";
+import {Balloon} from "./ui_classes";
 
 export class Viewer {
     constructor(d) { this.d = d; }
@@ -62,7 +63,7 @@ export class JsViewer {
     onSizeChanged(width, height) {}
 
     detach() {
-        ui.Balloon.info("Detached");
+        Balloon.info("Detached");
         this.subs.forEach((sub) => sub.unsubscribe());
     }
 

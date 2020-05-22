@@ -2,7 +2,7 @@
  * @typedef {string} SimilarityMetric
  **/
 
-import {DataFrame} from "./dataframe";
+import {BitSet, DataFrame} from "./dataframe";
 import {SIMILARITY_METRIC} from "./const";
 
 /** Cheminformatics-related routines */

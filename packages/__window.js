@@ -8,4 +8,4 @@ window.grok = _grok;
 window.DG = _dg;
 window.ui = _ui;
 window.rxjs = _rxjs;
-window.rxjsOperators = _rxjsOperators;
+window.rxjs.operators = _rxjsOperators;

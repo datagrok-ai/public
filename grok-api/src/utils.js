@@ -1,5 +1,5 @@
 import {TYPE, TYPES_SCALAR} from "./const";
-import * as ui from "./../ui.js";
+import {Balloon} from "./ui_classes";
 
 export function _jsThen(promise, f) {
     promise.then(f);
@@ -31,6 +31,6 @@ let time = function(s, f) {
     let result = f();
     let stop = new Date();
     console.log(`${s}: ${stop - start}ms`);
-    ui.Balloon.info(`${s}: ${stop - start}ms`);
+    Balloon.info(`${s}: ${stop - start}ms`);
     return result;
 };

@@ -7,6 +7,7 @@ import {
 } from "./const";
 import {DataFrame} from "./dataframe.js";
 import * as ui from "./../ui";
+import {Viewer} from "./viewer";
 
 export class View {
     constructor(d) { this.d = d; }

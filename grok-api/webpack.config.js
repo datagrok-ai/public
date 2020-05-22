@@ -28,12 +28,6 @@ module.exports = {
     optimization: {
         splitChunks: {
             cacheGroups: {
-                rxjs: {
-                    chunks: 'initial',
-                    name: 'rxjs',
-                    enforce: true,
-                    test: "rxjs"
-                },
                 api: {
                     chunks: 'initial',
                     name: 'common',
