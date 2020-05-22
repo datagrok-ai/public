@@ -1,7 +1,7 @@
 // This viewer does the following:
 // * defines two properties, "question" and "answer". Properties are persistable and editable.
 // * listens to changes in properties, attached table's selection and filter, and updates accordingly.
-class JsDemoViewer extends grok.JsViewer {
+class JsDemoViewer extends DG.JsViewer {
 
     constructor() {
         super();
@@ -17,7 +17,7 @@ class JsDemoViewer extends grok.JsViewer {
 
     // override to handle property changes
     onPropertyChanged(prop) {
-        grok.shell.balloon.info(`${prop.name}: ${prop.get(this)}`);
+        grok.shell.info(`${prop.name}: ${prop.get(this)}`);
     }
 
     onFrameAttached(dataFrameHandle) {
@@ -44,7 +44,7 @@ class JsDemoViewer extends grok.JsViewer {
 // * Add viewer from Add | JsDemoViewer, or from the toolbar 'viewers' popup
 // * Persist viewer as part of the layout
 // * Common viewer operations under the "Viewer" popup menu, such as cloning, embedding, etc
-grok.registerViewer('JsDemoViewer', 'JavaScript-based viewer', () => new JsDemoViewer());
+grok.shell.registerViewer('JsDemoViewer', 'JavaScript-based viewer', () => new JsDemoViewer());
 
 // Add viewer to a table view
 demog = grok.data.testData('demog', 5000);

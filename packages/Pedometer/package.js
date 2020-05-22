@@ -64,7 +64,7 @@ class PedometerPackage extends DG.Package {
 
         root.appendChild(ui.loader());
 
-        return new ui.Widget(root);
+        return new DG.Widget(root);
     }
 
     _estimateSampleRate(timeOffset) {
@@ -72,7 +72,7 @@ class PedometerPackage extends DG.Package {
     }
 
     _detectSteps(accel, x, y, z, sampleRate, showProgress, callback) {
-        grok.callFunc('Pedometer:DetectSteps', {
+        grok.functions.callFunc('Pedometer:DetectSteps', {
             "accel": accel.d,
             "x": x.name,
             "y": y.name,

@@ -52,7 +52,7 @@ class SequencePackage extends DG.Package {
                 });
         }, 1000);
 
-        return new ui.Widget(e);
+        return new DG.Widget(e);
     }
 
     //description: Protein viewer widget based on the pdb_id
@@ -70,7 +70,7 @@ class SequencePackage extends DG.Package {
             stage.loadFile(`rcsb://${pdbId}`, { defaultRepresentation: true });
         }, 1000);
 
-        return new ui.Widget(e);
+        return new DG.Widget(e);
     }
 
     //name: Sequence
@@ -115,7 +115,7 @@ class SequencePackage extends DG.Package {
 
 _seq = new SequencePackage(null);
 
-class SequenceViewer extends grok.JsViewer {
+class SequenceViewer extends DG.JsViewer {
     onFrameAttached(dataFrameHandle) {
         this.dataFrame = new DG.DataFrame(dataFrameHandle);
         let seqCol = this.dataFrame.columns.toList().find((c) => c.semType == 'nucleotides');
@@ -141,7 +141,7 @@ class SequenceViewer extends grok.JsViewer {
 // This viewer does the following:
 // * defines two properties, "question" and "answer". Properties are persistable and editable.
 // * listens to changes in properties, attached table's selection and filter, and updates accordingly.
-class SeqDemoViewer extends grok.JsViewer {
+class SeqDemoViewer extends DG.JsViewer {
 
     constructor() {
         super();

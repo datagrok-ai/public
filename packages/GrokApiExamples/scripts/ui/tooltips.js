@@ -6,4 +6,3 @@ v.root.appendChild(ui.divV([
     ui.tooltip(ui.span(['Element']), ui.span([ui.iconFA('search'), 'DOM Element'])),
     ui.tooltip(ui.span(['Dynamic string']), () => ui.span([ui.iconFA('search'), `Function that returns DOM element. Time: ${new Date()}`])),
 ]));
-// String tooltip

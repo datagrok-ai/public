@@ -49,7 +49,7 @@ import {SIMILARITY_METRIC} from "./const";
      * Performs R-group analysis.
      * @async
      * @param {DataFrame} table - Table.
-     * @param {Column} column - Column with SMILES to analyze.
+     * @param {string} column - Column name with SMILES to analyze.
      * @param {string} core - Core in the SMILES format.
      * @returns {Promise<DataFrame>}
      * */
@@ -71,7 +71,7 @@ import {SIMILARITY_METRIC} from "./const";
      * Calculates specified descriptors for the molecular column.
      * @async
      * @param {DataFrame} table - Table.
-     * @param {Column} column - Column with SMILES to calculate descriptors for.
+     * @param {string} column - Column name with SMILES to calculate descriptors for.
      * @param {string[]} descriptors - RDKit descriptors to calculate.
      * @returns {Promise<DataFrame>}
      * */

@@ -1,4 +1,4 @@
-class SunburstViewer extends grok.JsViewer {
+class SunburstViewer extends DG.JsViewer {
     init() {
         let data = {
             name: "root",

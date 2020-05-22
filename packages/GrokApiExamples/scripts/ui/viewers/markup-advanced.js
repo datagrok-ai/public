@@ -1,11 +1,11 @@
 // https://datagrok.ai/help/viewers/markup-viewer
 
-let user = grok.user;
+let user = grok.shell.user;
 
 let table = grok.data.testData('demog', 10000);
 let view = grok.shell.addTableView(table);
 
-let sp = grok.Viewer.scatterPlot(table, {
+let sp = DG.Viewer.scatterPlot(table, {
     xColumnName: 'age',
     yColumnName: 'weight',
     markerDefaultSize: 5,
@@ -14,16 +14,16 @@ let sp = grok.Viewer.scatterPlot(table, {
     legendVisibilityMode: 'Never'
 });
 
-let hist = grok.Viewer.histogram(table, {
+let hist = DG.Viewer.histogram(table, {
     valueColumnName: 'weight'
 });
 
-let boxPlot = grok.Viewer.boxPlot(table, {
+let boxPlot = DG.Viewer.boxPlot(table, {
     valueColumnName: 'weight',
     categoryColumnName: 'race'
 });
 
-let filter = grok.Viewer.filters(table, {
+let filter = DG.Viewer.filters(table, {
     columnNames: ['race']
 });
 
@@ -50,7 +50,7 @@ Use the standard HTML markup to add elements, or <i>style the document</i>.
 <h3>Metadata</h3>
 <p> Access metadata, including names and tags for tables and columns.</p>
 Name: <span>#{t.name}</span> <br>
-Tags: Description: <span>#{t.tags[${TAGS_DESCRIPTION}]}</span> <br>
+Tags: Description: <span>#{t.tags[${DG.enums.TAGS_DESCRIPTION}]}</span> <br>
 
 <h3> Counts </h3>
 <p> Try filtering out rows to see that the values are synchronized: </p>

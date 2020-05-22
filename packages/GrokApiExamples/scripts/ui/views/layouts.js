@@ -1,26 +1,26 @@
 // Layouts save, apply and serialization into user data storage
 
-var STORAGE_NAME = 'layouts-demo';
+const STORAGE_NAME = 'layouts-demo';
 
-var view = grok.shell.addTableView(grok.data.testData('demog', 1000));
+let view = grok.shell.addTableView(grok.data.testData('demog', 1000));
 view.name = 'layouts demo';
 
-var nameInput = ui.stringInput('', 'Default');
+let nameInput = ui.stringInput('', 'Default');
 nameInput.captionLabel.style.width = '0';
 
 let save = ui.button('Save', () => {
     grok.dapi.userDataStorage.postValue(STORAGE_NAME, nameInput.value, view.saveLayout().toJson());
 });
 
-var load = ui.iconFA('bars', () => {
+let load = ui.iconFA('bars', () => {
     grok.dapi.userDataStorage.get(STORAGE_NAME).then((layouts) => {
         if (layouts !== null && Object.keys(layouts).length === 0)
-            grok.shell.balloon.info('Storage is empty. Save some layouts to the storage');
+            grok.shell.info('Storage is empty. Save some layouts to the storage');
         else {
-            let menu = ui.Menu.popup();
+            let menu = DG.Menu.popup();
             for (let layout of Object.keys(layouts)) {
                 menu.item(layout, () => {
-                    view.loadLayout(grok.ViewLayout.fromJson(layouts[layout]));
+                    view.loadLayout(DG.ViewLayout.fromJson(layouts[layout]));
                     nameInput.stringValue = layout;
                 });
             }
@@ -34,7 +34,7 @@ let clear = ui.iconFA('trash-alt', () => {
 }, 'Clear storage');
 
 let acc = view.toolboxPage.accordion;
-var saveDiv = ui.divH([save, clear]);
+let saveDiv = ui.divH([save, clear]);
 saveDiv.style.marginLeft = '12px';
 acc.addPane('Layouts demo', () => {
     return ui.div([

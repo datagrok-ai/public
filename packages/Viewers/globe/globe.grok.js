@@ -1,4 +1,4 @@
-class GlobeViewer extends grok.JsViewer {
+class GlobeViewer extends DG.JsViewer {
 
     constructor(webRoot) {
         super();

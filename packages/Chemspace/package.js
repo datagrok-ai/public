@@ -77,7 +77,7 @@ class ChemspacePackage extends DG.Package {
             panels.appendChild(this.createSearchPanel('Similar', smiles));
             panels.appendChild(this.createSearchPanel('Substructure', smiles));
         });
-        return new ui.Widget(panels);
+        return new DG.Widget(panels);
     }
 
     //description: Creates search panel
@@ -171,7 +171,7 @@ class ChemspacePackage extends DG.Package {
             xhr.send();
         });
 
-        return new ui.Widget(panel);
+        return new DG.Widget(panel);
     }
 
     // description: Converts prices JSON items into DataFrame

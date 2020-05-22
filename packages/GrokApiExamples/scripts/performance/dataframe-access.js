@@ -27,7 +27,7 @@ let valuesIteration = measure(function() {
 });
 
 let valuesIterationFast = measure(function() {
-    var sum = 0;
+    let sum = 0;
     let data = col.getRawData();
     for (let i = 0; i < data.length; i++)
         sum += data[i];

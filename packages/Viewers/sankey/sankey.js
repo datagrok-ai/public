@@ -1,4 +1,4 @@
-class SankeyViewer extends grok.JsViewer {
+class SankeyViewer extends DG.JsViewer {
   init() {
     this.root.className = 'sankey';
 

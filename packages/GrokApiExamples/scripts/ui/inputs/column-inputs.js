@@ -10,5 +10,5 @@ v.append(container);
 container.appendChild(ui.inputs(inputs));
 
 container.appendChild(ui.bigButton('Build', () => {
-    grok.shell.balloon.info(inputs.map((i) => `${i.caption}: ${i.stringValue}`).join('<br>'));
+    grok.shell.info(inputs.map((i) => `${i.caption}: ${i.stringValue}`).join('<br>'));
 }));

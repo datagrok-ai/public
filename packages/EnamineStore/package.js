@@ -59,7 +59,7 @@ class EnamineStorePackage extends DG.Package {
             this.createSearchPanel('Similar', smiles),
             this.createSearchPanel('Substructure', smiles)
         ]);
-        return new ui.Widget(panels);
+        return new DG.Widget(panels);
     }
 
     //description: Creates search panel
@@ -68,7 +68,7 @@ class EnamineStorePackage extends DG.Package {
         let headerHost = ui.divH([ui.h2(panelName)], 'enamine-store-panel-header');
         let compsHost = ui.divH([ui.loader()]);
         let panel = ui.divV([headerHost, compsHost], 'enamine-store-panel');
-        grok.callQuery('EnamineStore:Search', {
+        grok.functions.callQuery('EnamineStore:Search', {
             'code': `search_${smiles}_${EnamineStorePackage.searchModeToCommand(panelName)}`,
             'currency': currency
         }, true, 100).then(fc => {

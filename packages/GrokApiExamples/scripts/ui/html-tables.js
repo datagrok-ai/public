@@ -3,8 +3,8 @@
 
 grok.shell.newView('tables', [
     ui.tableFromMap({
-        user: grok.user.toMarkup(),
-        project: grok.project.toMarkup(),
+        user: grok.shell.user.toMarkup(),
+        project: grok.shell.project.toMarkup(),
         time: new Date(),
     })
 ]);

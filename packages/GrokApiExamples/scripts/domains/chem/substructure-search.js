@@ -6,4 +6,3 @@ grok.data.loadDataFrame('https://public.datagrok.ai/demo/sar_small.csv')
             t.selection.copyFrom(bs);
             grok.shell.addTableView(t);
         }));
-
