@@ -12,6 +12,7 @@ export * from './src/utils.js';
 export * from './src/ui_classes.js';
 export * from './src/view.js';
 export * from './src/viewer.js';
+export * from './src/docking.js';
 
 export let chem = _chem;
 export let enums = _enums;

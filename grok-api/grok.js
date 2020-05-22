@@ -7,6 +7,7 @@ import {TableView, View} from "./src/view";
 import {User} from "./src/entities";
 import {Functions} from "./src/functions";
 import {Events} from "./src/events";
+import {DockManager} from "./src/docking";
 import {_toDart, _wrap} from "./src/wrappers";
 import {Balloon, Menu, TabControl} from "./src/ui_classes";
 
@@ -53,7 +54,6 @@ class Shell {
 
     get settings() { return new Settings(); }
 
-
     addView(v) { grok_AddView(v.d); }
 
     newView(name = 'view', children = []) {
@@ -70,6 +70,11 @@ class Shell {
     tableByName(s) { return new DataFrame(grok_TableByName(s)); }
     getVar(name) {return _toJs(grok_GetVar(name)); }
     setVar(name, value) {return grok_SetVar(name, _toDart(value)); }
+
+    /** @returns {DockManager} */
+    get dockManager() {
+        return new DockManager(grok_Get_DockManager());
+    }
 }
 
 class Scripts {
