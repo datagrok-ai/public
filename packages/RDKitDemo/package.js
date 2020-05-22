@@ -7,8 +7,7 @@ class RDKitDemoPackage extends DG.Package {
 
     _svgDiv(mol) {
         let root = ui.div();
-        var svg = mol.get_svg();
-        root.innerHTML = svg;
+        root.innerHTML = mol.get_svg();
         return root;
     }
 
@@ -16,7 +15,7 @@ class RDKitDemoPackage extends DG.Package {
     //input: string smiles {semType: Molecule}
     //output: double cLogP
     getCLogP(smiles) {
-        var mol = Module.get_mol(smiles);
+        let mol = Module.get_mol(smiles);
         return JSON.parse(mol.get_descriptors()).CrippenClogP;
     }
 
@@ -25,7 +24,7 @@ class RDKitDemoPackage extends DG.Package {
     //input: string smiles {semType: Molecule}
     //output: widget result
     rdkitInfoPanel(smiles) {
-        var mol = Module.get_mol(smiles);
+        let mol = Module.get_mol(smiles);
         return new DG.Widget(ui.divV([
             this._svgDiv(mol),
             ui.divText(`${this.getCLogP(smiles)}`)
