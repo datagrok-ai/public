@@ -1,6 +1,7 @@
 import {Project} from "./src/entities";
 import * as ui from "./ui.js";
 import * as _chem from './src/chem';
+import * as _ml from './src/ml';
 import {Dapi} from "./src/dapi";
 import {DataFrame} from "./src/dataframe";
 import {TableView, View} from "./src/view";
@@ -151,6 +152,8 @@ export let shell = new Shell();
 export let data = new Data();
 
 export let chem = _chem;
+
+export let ml = _ml.ml;
 
 
 
