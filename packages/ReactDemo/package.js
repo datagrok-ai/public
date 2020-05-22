@@ -10,7 +10,7 @@ class ReactDemoPackage extends DG.Package {
 
     //name: TestDialog
     testDialog() {
-        var reactHost = ui.div();
+        let reactHost = ui.div();
         ReactDOM.render(React.createElement(Hello, {toWhat: 'World'}, null), reactHost);
 
         ui.dialog('React custom components')

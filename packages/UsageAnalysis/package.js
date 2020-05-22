@@ -12,7 +12,7 @@ class UsageAnalysisPackage extends DG.Package {
         date.root.classList.add('usage-analysis-date', 'pure-form');
         date.addPatternMenu('datetime');
 
-        let users = grok.TagEditor.create();
+        let users = DG.TagEditor.create();
         users.acceptsDragDrop = (x) => x instanceof User;
         users.doDrop = (user) => users.addTag(user.login);
 
@@ -45,7 +45,7 @@ class UsageAnalysisPackage extends DG.Package {
                     }
                     grok.data.query('UsageAnalysis:' + queryName, params).then((t) => {
                         if (paneName === 'Errors')
-                            grok.detectSemanticTypes(t);
+                            grok.shell.detectSemanticTypes(t);
                         host.removeChild(host.firstChild);
                         host.appendChild(f(t));
                     });
@@ -114,7 +114,7 @@ class UsageAnalysisPackage extends DG.Package {
         grok.scriptSync('SplitByRegExp("events", "event_info_json", "\\\"NumStructures\\\"\\: (\\d*)\\,")');
         grok.scriptSync('Aggregate("events", pivots = [], aggregations = ["sum(r)"], groupByFields = ["date(utc_timestamp)"])');
 
-        var t = grok.getTableView('result').table;
+        var t = grok.shell.getTableView('result').table;
         var r = t.cols.byName('sum(r)');
         var col = t.cols.addNew('sum', 'int');
         var sum = 0;

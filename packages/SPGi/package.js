@@ -6,13 +6,13 @@ class SPGiPackage extends DG.Package {
         view.name = 'SPGi';
         view.description = 'SPGi projects view';
 
-        let projectsView = grok.ProjectsView.create({});
+        let projectsView = DG.ProjectsView.create({});
         projectsView.permanentFilter = '#spgi';
         projectsView.searchValue = '';
-        let header = grok.ui.e('div', 'spgi-view-header');
-        let content = grok.ui.e('div', 'spgi-view-content');
+        let header = ui.e('div', 'spgi-view-header');
+        let content = ui.e('div', 'spgi-view-content');
 
-        let title = grok.ui.divText("SPGi Dashboard");
+        let title = ui.divText("SPGi Dashboard");
         title.classList.add('spgi-view-title');
         header.appendChild(title);
         header.style.backgroundImage = `url(${this.webRoot}images/background.png)`;
@@ -23,14 +23,14 @@ class SPGiPackage extends DG.Package {
         view.root.classList.add('grok-app-view');
         grok.shell.addView(view);
 
-        grok.onViewAdded(function (view) {
-            if (view.type === grok.VIEW_TYPE_TABLE_VIEW && view.name === 'Main')
+        grok.events.onViewAdded.subscribe((view) => {
+            if (view.type === DG.enums.VIEW_TYPE.TABLE_VIEW && view.name === 'Main')
                 this.layoutMain(view);
-        }.bind(this));
+        }).bind(this);
 
-        grok.onProjectOpened(function (p) {
+        grok.events.onProjectOpened.subscribe((p) => {
             if (p.name.startsWith('BFC'))
-                grok.xp.v = grok.getTableView('Main');
+                grok.shell.v = grok.shell.getTableView('Main');
         });
     }
 
@@ -82,11 +82,11 @@ class SPGiPackage extends DG.Package {
             let col = table.columns.byName(name);
 
             if (name.endsWith('Date')) {
-                if (col.type === grok.TYPE_DATE_TIME)
+                if (col.type === DG.enums.TYPE.DATE_TIME)
                     col.setTag('format', 'M/d/yyyy');
             }
 
-            if (col.type === grok.TYPE_STRING)
+            if (col.type === DG.enums.TYPE.STRING)
                 for (let r = 0; r < col.length; r++)
                     col.set(r, col.get(r).replace(/\\n/g, ' ').trim());
         });
@@ -97,7 +97,7 @@ class SPGiPackage extends DG.Package {
 
     //description: Prepares all opened tables
     prepareAll() {
-        for (let table of grok.xp.tables)
+        for (let table of grok.shell.tables)
             this.prepare(table);
     }
 
@@ -139,14 +139,14 @@ class SPGiPackage extends DG.Package {
             'Cellular assay 1 Date',
             'Cellular assay 1 Curve ID'
         ]);
-        table.setTag(grok.TAGS_TOOLTIP, 'Structure\nUnique_Identifier\nauthor\nstatus');
+        table.setTag(DG.enums.TAGS_TOOLTIP, 'Structure\nUnique_Identifier\nauthor\nstatus');
 
         this.formatsMap = new Map();
-        if (grok.tableByName('SupData').d !== null) {
-            let table = grok.tableByName('SupData');
+        if (grok.shell.tableByName('SupData').d !== null) {
+            let table = grok.shell.tableByName('SupData');
             for (let n = 0; n < table.rowCount; n++)
                 if (table.get('Property Name', n) === 'STDF DartConditionalFormatting') {
-                    let format = JSON.parse(table.get('Property Value', n)).conditionalFormatting;
+                    let format = JSON.parse(table.get('Property Value', n))['conditionalFormatting'];
                     for (let option of format)
                         option.bgColor = parseInt(`ff${option.bgColor.substr(1)}`, 16);
                     this.formatsMap.set(table.get('Column Name', n), format);
@@ -208,7 +208,7 @@ class SPGiPackage extends DG.Package {
     //output: widget result
     //condition: t.tags.contains("spgi")
     samplesAvailability(smiles) {
-        let table = grok.tableByName('Availability');
+        let table = grok.shell.tableByName('Availability');
         let noInfo = new DG.Widget(ui.divText('Information not available'));
         if (table.d === null)
             return noInfo;
@@ -237,7 +237,7 @@ class SPGiPackage extends DG.Package {
         available.columns.remove('Amount');
         unit.name = 'Amount';
         available.selection.setAll(false);
-        let grid = grok.Grid.create(available);
+        let grid = DG.Grid.create(available);
         grid.root.style.width = '400px';
         grid.root.style.height = '125px';
         let button = ui.bigButton('ORDER');

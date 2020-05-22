@@ -1,2 +1,2 @@
-class TikaPackage extends GrokPackage {
+class TikaPackage extends DG.Package {
 }

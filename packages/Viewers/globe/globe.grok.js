@@ -6,12 +6,12 @@ class GlobeViewer extends DG.JsViewer {
     }
 
     init() {
-        var globe = new DAT.Globe(this.root, {imgDir: this.webRoot});
-        var latCol = this.table.getCol(this.options.lat);
-        var lonCol = this.table.getCol(this.options.lon);
-        var magCol = this.table.getCol(this.options.mag);
-        var points = [];
-        for (var i = 0; i < this.table.rowCount; i++) {
+        let globe = new DAT.Globe(this.root, {imgDir: this.webRoot});
+        let latCol = this.table.getCol(this.options.lat);
+        let lonCol = this.table.getCol(this.options.lon);
+        let magCol = this.table.getCol(this.options.mag);
+        let points = [];
+        for (let i = 0; i < this.table.rowCount; i++) {
             points.push(latCol.get(i));
             points.push(lonCol.get(i));
             points.push(magCol.get(i));
@@ -34,6 +34,5 @@ class GlobeViewer extends DG.JsViewer {
         this.render();
     }
 
-    render() {
-    }
+    render() {}
 }

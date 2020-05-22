@@ -4,7 +4,7 @@ class PedometerPackageDetectors extends DG.Package {
     //input: column col
     //output: string semType
     detectAccel(col) {
-        if ((col.type === grok.TYPE_FLOAT || col.type === grok.TYPE_INT) && col.name.startsWith('accel_') && col.name.length === 7) {
+        if ((col.type === DG.enums.TYPE.FLOAT || col.type === DG.enums.TYPE.INT) && col.name.startsWith('accel_') && col.name.length === 7) {
             col.semType = 'Accelerometer-' + col.name.substring(6).toUpperCase();
             return col.semType;
         }
@@ -16,7 +16,7 @@ class PedometerPackageDetectors extends DG.Package {
     //input: column col
     //output: string semType
     detectTimeOffset(col) {
-        if (col.type === grok.TYPE_FLOAT && col.name === 'time_offset') {
+        if (col.type === DG.enums.TYPE.FLOAT && col.name === 'time_offset') {
             col.semType = 'Time-Offset';
             return col.semType;
         }

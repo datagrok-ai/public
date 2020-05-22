@@ -26,15 +26,15 @@ class LeafletViewer extends JsViewer {
     }
 
     onFrameAttached(dataFrameHandle) {
-        this.table = new DataFrame(dataFrameHandle);
+        this.table = new DG.DataFrame(dataFrameHandle);
         console.log('foo');
         this.init();
 
-        this.latitude = this.table.columns.bySemType(SEMTYPE_LATITUDE);
-        this.longitude = this.table.columns.bySemType(SEMTYPE_LONGITUDE);
+        this.latitude = this.table.columns.bySemType(DG.enums.SEMTYPE.LATITUDE);
+        this.longitude = this.table.columns.bySemType(DG.enums.SEMTYPE.LONGITUDE);
 
-        this.subs.push(debounce(this.table.selection.onChanged, 50).subscribe((_) => this.render()));
-        this.subs.push(debounce(this.table.filter.onChanged, 50).subscribe((_) => this.render()));
+        this.subs.push(DG.debounce(this.table.selection.onChanged, 50).subscribe((_) => this.render()));
+        this.subs.push(DG.debounce(this.table.filter.onChanged, 50).subscribe((_) => this.render()));
 
         this.render(true);
     }

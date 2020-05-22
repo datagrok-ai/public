@@ -62,8 +62,8 @@ class SDTMPackage extends DG.Package {
         let methodParam = [];
 
         function aggregate(t) {
-            grok.setVar('table', t);
-            return grok.scriptSync('Aggregate(table, ' +
+            grok.shell.setVar('table', t);
+            return grok.scripts.scriptSync('Aggregate(table, ' +
                 'pivots = ["test"], ' +
                 'aggregations = ["avg(lbstresn)"], ' +
                 'groupByFields = ["studyid", "usubjid", "lbdy", "method", "units", "race", "sex"])');
@@ -208,7 +208,7 @@ class SDTMPackage extends DG.Package {
         let load = ui.iconFA('bars', () => {
             grok.dapi.userDataStorage.get(STORAGE_NAME, currentUserStorage).then((layouts) => {
                 if (layouts !== null && Object.keys(layouts).length === 0)
-                    ui.Balloon.info('Storage is empty. Save some analysis to the storage');
+                    grok.shell.info('Storage is empty. Save some analysis to the storage');
                 else {
                     let menu = DG.Menu.popup();
                     for (let layout of Object.keys(layouts)) {
@@ -225,7 +225,7 @@ class SDTMPackage extends DG.Package {
         let remove = ui.iconFA('trash-alt', () => {
             if (nameInput.value !== '') {
                 grok.dapi.userDataStorage.remove(STORAGE_NAME, nameInput.value, currentUserStorage);
-                ui.Balloon.info(`Analysis ${nameInput.value} is removed`);
+                grok.shell.info(`Analysis ${nameInput.value} is removed`);
                 nameInput.value = 'Default';
             }
         }, 'Remove analysis from storage');
@@ -283,7 +283,7 @@ class SDTMPackage extends DG.Package {
             'study': study,
             'subj': subj
         }, true, 100).then(mi => {
-            let grid = grok.Grid.create(mi);
+            let grid = DG.Grid.create(mi);
             grid.root.style.width = '350px';
             grid.root.style.height = '400px';
             SDTMPackage.removeChildren(host);

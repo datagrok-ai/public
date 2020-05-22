@@ -6,7 +6,7 @@ class PedometerPackage extends DG.Package {
     //input: column z {semType: Accelerometer-Z} [Z axis]
     //input: column timeOffset {semType: Time-Offset} [Time offset column]
     pedometer(accel, x, y, z, timeOffset) {
-        let view = grok.getTableView(accel.name);
+        let view = grok.shell.getTableView(accel.name);
 
         let viewer = view.markup();
         while (viewer.root.firstChild)
@@ -72,7 +72,7 @@ class PedometerPackage extends DG.Package {
     }
 
     _detectSteps(accel, x, y, z, sampleRate, showProgress, callback) {
-        grok.functions.callFunc('Pedometer:DetectSteps', {
+        grok.functions.call('Pedometer:DetectSteps', {
             "accel": accel.d,
             "x": x.name,
             "y": y.name,

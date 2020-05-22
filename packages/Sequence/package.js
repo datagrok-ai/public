@@ -10,10 +10,9 @@ class SequencePackage extends DG.Package {
       return seq.translate();
     }
 
-
     toFasta(sequences, labels) {
-        var result = '';
-        for (var i = 0; i < sequences.length; i++) {
+        let result = '';
+        for (let i = 0; i < sequences.length; i++) {
             let label = labels === null ? `seq${i}` : labels[i];
             result += `>${label}\n${sequences[i]}\n`;
         }
@@ -28,7 +27,6 @@ class SequencePackage extends DG.Package {
         seq.read(nucleotides);
         return seq.complement().sequence();
     }
-
 
     //description: returns a sequence widget
     //input: string nucleotides {semType: nucleotides}
@@ -118,7 +116,7 @@ _seq = new SequencePackage(null);
 class SequenceViewer extends DG.JsViewer {
     onFrameAttached(dataFrameHandle) {
         this.dataFrame = new DG.DataFrame(dataFrameHandle);
-        let seqCol = this.dataFrame.columns.toList().find((c) => c.semType == 'nucleotides');
+        let seqCol = this.dataFrame.columns.toList().find((c) => c.semType === 'nucleotides');
         let fasta = _seq.toFasta(Array.from(seqCol.values()), null);
         let seqs = msa.io.fasta.parse(fasta);
 

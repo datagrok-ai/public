@@ -13,7 +13,7 @@ class TestPackage extends DG.Package {
     //name: AsyncTest
     //output: string userInfo
     async asyncTest() {
-        var userInfo = await fetch('https://api.github.com/users/skalkin');
+        let userInfo = await fetch('https://api.github.com/users/skalkin');
         return userInfo;
     }
 }
