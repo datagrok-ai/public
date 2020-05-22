@@ -8,6 +8,7 @@ import {
 import {DataFrame} from "./dataframe.js";
 import * as ui from "./../ui";
 import {Viewer} from "./viewer";
+import {DockManager} from "./docking";
 
 export class View {
     constructor(d) { this.d = d; }
@@ -61,6 +62,9 @@ export class View {
             v.options(options);
         return v;
     }
+
+    /** @returns {DockManager} - only for DockView descendants (TableView, Users, etc) */
+    get dockManager() { return new DockManager(grok_View_Get_DockManager(this.d)); }
 
     close() { grok_View_Close(this.d); }
 }

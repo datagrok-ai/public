@@ -1,7 +1,11 @@
 // Docking an arbitrary element in the platform
 
-grok.shell.dockManager.dock(ui.divText('My element'), DOCK_TYPE.RIGHT);
+// dock to the right of the root
+grok.shell.dockManager.dock(ui.divText('element 1'), 'right', null, 'Title');
 
-// let e = document.createElement('DIV');
-// e.innerText = 'This element has been created in JavaScript';
-// grok.shell.dockElement(e, 'JS', 'left', 0.5);
+// dock to the right of the document container
+grok.shell.dockManager.dock(ui.divText('element 2'), 'right', grok.shell.dockManager.documentContainer, 'Title');
+
+// floating window
+grok.shell.dockManager.dock(ui.divText('Floating'), 'right')
+    .container.undock();

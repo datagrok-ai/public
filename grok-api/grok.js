@@ -63,6 +63,7 @@ class Shell {
         this.addView(view);
         return view;
     }
+
     addTableView(t, dockStyle = 'fill', width = null) { return new TableView(grok_AddTableView(t.d, dockStyle, width)); }
     getTableView(name) { return new TableView(grok_GetTableView(name)); }
     closeAll() { grok_CloseAll(); }
