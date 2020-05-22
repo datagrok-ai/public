@@ -32,7 +32,7 @@ export class DockContainer {
 
     /** Undocks a panel and converts it into a floating dialog window
      *  It is assumed that only leaf nodes (panels) can be undocked */
-    undock() { grok_DockContainer_Undock(this.d); }
+    float() { grok_DockContainer_Float(this.d); }
 
     /** Removes a dock container from the dock layout hierarcy
      *  @returns {DockNode} - the node that was removed from the dock tree */
@@ -66,14 +66,14 @@ export class DockManager {
         return new DockNode(grok_DockManager_Dock(this.d, refNode == null ? null : refNode.d, element, dockType, title, ratio));
     }
 
-    /**
-     * Docks the element relative to the reference node.
-     * @param {DockType} dockType - Dock type (left | right | top | bottom | fill).
-     * @param {number} ratio - Ratio of the area to take (relative to the reference node).
-     * @param {string=} title - Name of the resulting column. Default value is agg(colName).
-     * @returns {DockNode}
-     * */
-    dockDialog(element, dockType, refNode, title = '') {
-        return new DockNode(grok_DockManager_DockDialog(this.d, refNode == null ? null : refNode.d, element, dockType, title));
-    }
+    // /**
+    //  * Docks the element relative to the reference node.
+    //  * @param {DockType} dockType - Dock type (left | right | top | bottom | fill).
+    //  * @param {number} ratio - Ratio of the area to take (relative to the reference node).
+    //  * @param {string=} title - Name of the resulting column. Default value is agg(colName).
+    //  * @returns {DockNode}
+    //  * */
+    // dockDialog(element, dockType, refNode, title = '') {
+    //     return new DockNode(grok_DockManager_DockDialog(this.d, refNode == null ? null : refNode.d, element, dockType, title));
+    // }
 }

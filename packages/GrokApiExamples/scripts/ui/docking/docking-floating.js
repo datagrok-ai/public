@@ -1,2 +1,2 @@
-// floating window
-grok.shell.dockManager.dock(ui.divText('Floating')).container.undock();
+// floating dockable windows
+grok.shell.dockManager.dock(ui.divText("I'm floating!")).container.float();
