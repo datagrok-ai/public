@@ -1,9 +1,9 @@
 const path = require('path');
 
 module.exports = {
-    mode: 'development',
+    mode: 'production',
     entry: {'grok': './grok.js', 'ui': './ui.js', 'DG': './dg.js'},
-    devtool: 'inline-source-map',
+    //devtool: 'inline-source-map',
     module: {
         rules: [
             {
@@ -23,16 +23,22 @@ module.exports = {
             }
         ]
     },
-    externals: {"openchemlib/full.js": "OCL"},
+    externals: {"openchemlib/full.js": "OCL", "rxjs": "rxjs", "rxjs/operators": "rxjs.operators"},
     plugins: [],
     optimization: {
         splitChunks: {
             cacheGroups: {
-                vendor: {
+                rxjs: {
+                    chunks: 'initial',
+                    name: 'rxjs',
+                    enforce: true,
+                    test: "rxjs"
+                },
+                api: {
                     chunks: 'initial',
                     name: 'common',
                     enforce: true
-                },
+                }
             }
         }
     },
