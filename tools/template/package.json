@@ -1,0 +1,14 @@
+{
+  "name": "#{PACKAGE_NAME_LOWERCASE}",
+  "fullName": "#{PACKAGE_NAME}",
+  "version": "0.0.1",
+  "description": "",
+  "dependencies": {
+    "datagrok-api": "latest"
+  },
+  "scripts": {
+    "upload-debug": "datagrok-upload #{REMOTE_URL} debug",
+    "upload-deploy": "datagrok-upload #{REMOTE_URL} deploy",
+    "build": "webpack"
+  }
+}

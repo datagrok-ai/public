@@ -1,9 +1,0 @@
-{
-  "name": "datagrok-tools-macos",
-  "version": "1.0.0",
-  "description": "Utility to upload and publish package to Datagrok",
-  "dependencies": {
-    "minimist": "^1.2.5"
-  },
-  "bin": "./bin/upload.js"
-}

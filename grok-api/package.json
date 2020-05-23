@@ -1,6 +1,6 @@
 {
   "name": "datagrok-api",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "",
   "dependencies": {
     "rxjs": "^6.5.5",
