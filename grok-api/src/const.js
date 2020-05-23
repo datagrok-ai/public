@@ -148,7 +148,13 @@ export const STATS = {
 
 /////// Tags
 
-export const TAGS_DESCRIPTION = 'description';
+export const TAGS = {
+    LAYOUT_ID: '.layout.id',  // when set in a column tag, it gets used for layout column matching
+    DESCRIPTION: 'description',
+    TOOLTIP: '.tooltip',
+    CHOICES: '.choices',
+    AUTO_CHOICES: '.auto-choices',
+}
 
 export const TAGS_TOOLTIP = '.tooltip';
 
