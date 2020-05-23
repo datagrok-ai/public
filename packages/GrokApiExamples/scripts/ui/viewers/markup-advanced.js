@@ -50,7 +50,7 @@ Use the standard HTML markup to add elements, or <i>style the document</i>.
 <h3>Metadata</h3>
 <p> Access metadata, including names and tags for tables and columns.</p>
 Name: <span>#{t.name}</span> <br>
-Tags: Description: <span>#{t.tags[${DG.enums.TAGS_DESCRIPTION}]}</span> <br>
+Tags: Description: <span>#{t.tags[${DG.enums.TAGS.DESCRIPTION}]}</span> <br>
 
 <h3> Counts </h3>
 <p> Try filtering out rows to see that the values are synchronized: </p>

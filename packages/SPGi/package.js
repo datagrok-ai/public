@@ -139,7 +139,7 @@ class SPGiPackage extends DG.Package {
             'Cellular assay 1 Date',
             'Cellular assay 1 Curve ID'
         ]);
-        table.setTag(DG.enums.TAGS_TOOLTIP, 'Structure\nUnique_Identifier\nauthor\nstatus');
+        table.setTag(DG.enums.TAGS.TOOLTIP, 'Structure\nUnique_Identifier\nauthor\nstatus');
 
         this.formatsMap = new Map();
         if (grok.shell.tableByName('SupData').d !== null) {
