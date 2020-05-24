@@ -149,7 +149,7 @@ export const STATS = {
 /////// Tags
 
 export const TAGS = {
-    LAYOUT_ID: '.layout.id',  // when set in a column tag, it gets used for layout column matching
+    LAYOUT_ID: 'layout-id',  // when set in a column tag, it gets used for layout column matching
     DESCRIPTION: 'description',
     TOOLTIP: '.tooltip',
     CHOICES: '.choices',
