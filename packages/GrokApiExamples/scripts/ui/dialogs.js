@@ -1,7 +1,7 @@
 // Creating custom dialogs
 
-ui.dialog('Vogon Announcement')
-  .add(ui.h1(''))
+ui.dialog('Windows')
+  .add(ui.)
   .add(ui.span(['People of Earth, your attention, please… ']))
   .onOK(() => { grok.shell.info('OK!'); })
   .show();

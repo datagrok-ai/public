@@ -20,10 +20,14 @@ Semantic types are used in several ways:
   used for automatic suggestions of applicable functions.
 * **Predictive models.** Just like functions, semantic type annotations are used to determine
   whether or not a model is applicable to the dataset.  
+
+Semantic type is stored in the [column tags](tags.md#semantic-type). It could be either detected automatically
+by column semantic type detectors, or set manually.
                
 ## Manually setting semantic types
 
-Open column properties, edit 'Semantics' field.
+Open column properties (click on a column and press F2, or right-click and select Properties), 
+see 'Semantics' field.
 
 ## Automatic semantic type detection
 
