@@ -27,7 +27,8 @@ Open **Help | Functions** to see a list of available [functions](functions/funct
 Grok script supports all common features and operators, such as:
 
 ### Variables
-You can assign a variable and use it later
+
+Assigning a variable:
 
 ```
 x = 5 

@@ -126,6 +126,32 @@ Applicable to tables, columnms, and other entities.
 Id of the [data connection](../access/data-connection.md) that was used to populate the table.
 Applicable to tables. 
 
+# .history
+
+History of all modifications applied to that table.
+Applies to tables.
+
+# .script
+
+[Grok script](../overview/grok-script.md) that was used to create a table. It could represent getting a data
+via a [database query](../access/data-query.md), from a web service, from a file share, or using any
+other [function](../overview/functions/function.md) that returns a [table](../overview/table.md).
+
+If this tag is present in a table, a "data sync" option appears next to this table in the 
+"Upload table" dialog. If the option is checked, the table will not be uploaded to the server. Instead,
+the script will get re-executed when user opens this project next time.  
+
+Applies to tables. 
+
+# chem-descriptor
+
+A [molecular descriptor](../domains/chem/descriptors.md) used for calculating the values of that column.
+
+# chem-fingerprinter
+
+A [molecular fingerprinter](../domains/chem/fingerprints.md) used for calculating the values of that column.
+
+
 
 See also:
 * [Metadata](metadata.md)
