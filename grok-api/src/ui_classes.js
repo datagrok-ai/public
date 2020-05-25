@@ -1,4 +1,5 @@
 import {_wrap} from "./wrappers";
+import {_sub} from "./events";
 
 export class Widget {
     constructor(root) { this.root = root; }
