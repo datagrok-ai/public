@@ -21,6 +21,7 @@ Table of contents
 
 * [Getting Started](#getting-started)
 * [Packages](#packages)
+* [Buildable Packages](#buildable-packages)
 * [Development](#development)
 * [Publishing](#publishing)
 * [Documentation](#documentation)
@@ -35,6 +36,9 @@ Here are the typical steps for creating and debugging applications on the Datagr
 2. Setup development environment (see [video](https://www.youtube.com/watch?v=PDcXLMsu6UM))
 3. Debug using [upload-debug.cmd](#publishing) pre-run step
 4. Publish using [upload-deploy.cmd](#publishing) 
+
+If you want to build an advanced package, using WepPack builder, or use Babel, React, 
+or some other advanced Javascript Frameworks or packages, please, proceed to [Buildable Packages](#buildable-packages) section. 
 
 ## Packages
 
@@ -122,6 +126,42 @@ will see only objects that belong to current package version.
 There is a special "debug" version can be deployed for each package. If developer deploys a debug version, it becomes 
 active for current package until developer deletes it or changes his developer key. In this case developer can see objects 
 from his version of package, and changes don't affect other users package representation.  
+
+
+## Buildable Packages
+
+To get started, you need NodeJS and NPM installed. Also, install WebPack to be able to build package locally
+and debug it using WebPack Dev Server.
+
+To get a package template:
+1. Create an empty folder
+2. Run `npm install datagrok-tools -g`. It's a tool to help you to build and deploy your package.
+3. Run `datagrok-init`. Enter package name, remote Datagrok server URI (including /api) and your developer key.
+This will drop to yor package all necessary files. You'll be able to change all of this in the future.
+4. Run `npm install`. This will install packages according to package.json dependencies list. For the first time, 
+there are only the `datagrok-api` package, and you are free to add new dependencies as usual.
+
+Take a look at the `src/package.js` file:
+```js
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+import * as DG from "datagrok-api/dg";
+
+export let _package = new DG.Package();
+
+//name test
+//input: string s
+export function test(s) {
+    grok.shell.info(_package.webRoot);
+}
+```
+Note, that there are already Datagrok API modules imported. They are also set as external modules, so Webpack 
+doesn't include them to the output.
+You are completely free to include any other libraries or packages, as they are all will be build in the single bundle file.
+To debug package run `npm run upload-debug`. This will upload package to the server in debug mode, just for your account.
+To deploy package for all users run `npm run upload-deploy`. Also, package could be deployed from git, or another source. 
+
+To change Datagrok server - edit scripts section in the `package.json` file and add new dev key to the `upload.keys.json`. 
 
 ## Development
 
