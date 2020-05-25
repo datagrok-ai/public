@@ -1,6 +1,6 @@
 
 import * as _chem from './src/chem.js';
-import * as _enums from './src/const.js';
+export * from './src/const.js';
 export * from './src/events.js';
 export * from './src/dapi.js';
 export * from './src/dataframe.js';
@@ -16,6 +16,5 @@ export * from './src/docking.js';
 export * from './src/wrappers';
 
 export let chem = _chem;
-export let enums = _enums;
 
 

@@ -190,7 +190,7 @@ class ChemspacePackage extends DG.Package {
             }
         }
         for (let name of Array.from(packsArrays.keys()).sort()) {
-            let column = DG.Column.fromList(DG.enums.TYPE.FLOAT, name, packsArrays.get(name));
+            let column = DG.Column.fromList(DG.TYPE.FLOAT, name, packsArrays.get(name));
             column.semType = 'Money';
             column.setTag('format', 'money($)');
             table.columns.add(column);

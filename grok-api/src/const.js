@@ -4,7 +4,7 @@
  * @typedef {string} JoinType
  **/
 
-/** @enum {AggregationType} */
+/** @enum {AGG} */
 export const AGG = {
     KEY: "key",      // Special case: to be used in the 'group by' statement.
     PIVOT: "pivot",  // Special case: to be used as a pivot.
@@ -28,7 +28,7 @@ export const AGG = {
     SELECTED_ROWS_COUNT: "#selected"
 };
 
-/** @enum {SyncType} */
+/** @enum {SYNC_TYPE} */
 export const SYNC_TYPE = {
     CURRENT_ROW_TO_ROW: 'row to row',
     CURRENT_ROW_TO_SELECTION: 'row to selection',
@@ -45,7 +45,7 @@ export const INT_NULL = -2147483648;
 export const FLOAT_NULL = 2.6789344063684636e-34;
 export const DATE_TIME_NULL = -62135578800000000.0;
 
-/** @enum {JoinType} */
+/** @enum {JOIN_TYPE} */
 export const JOIN_TYPE = {
     INNER: 'inner',
     OUTER: 'outer',
@@ -53,7 +53,7 @@ export const JOIN_TYPE = {
     RIGHT: 'right'
 }
 
-/** @enum {Type} */
+/** @enum {TYPE} */
 export const TYPE = {
     INT : 'int',
     BIG_INT : 'bigint',
@@ -98,7 +98,7 @@ export const TYPES_SCALAR = new Set([TYPE.INT, TYPE.BIG_INT, TYPE.FLOAT, TYPE.NU
 export const VIEW_TYPE = { TABLE_VIEW : 'TableView'};
 
 /////// Semantic typesSEMTYPE_
-/** @enum {Semtype} */
+/** @enum {SEMTYPE} */
 export const SEMTYPE = {
     EMAIL : 'Email Address',
     URL : 'URL',
@@ -126,7 +126,7 @@ export const SEMTYPE = {
 
 /////// Stats
 
-/** @enum {Stats} */
+/** @enum {STATS} */
 export const STATS = {
     TOTAL_COUNT: "count",
     VALUE_COUNT: "values",
@@ -148,27 +148,22 @@ export const STATS = {
 
 /////// Tags
 
+/** @enum {TAGS} */
 export const TAGS = {
     LAYOUT_ID: 'layout-id',  // when set in a column tag, it gets used for layout column matching
     DESCRIPTION: 'description',
     TOOLTIP: '.tooltip',
+    /** JSON-encoded list of strings to be used in a cell editor. Applicable for string columns only. */
     CHOICES: '.choices',
+    /** When set to 'true', switches the cell editor to a combo box that only allows to choose values
+     from a list of already existing values in the column.
+     Applicable for string columns only.
+     See also [TAGS_CHOICES]. */
     AUTO_CHOICES: '.auto-choices',
 }
 
-export const TAGS_TOOLTIP = '.tooltip';
-
-/** JSON-encoded list of strings to be used in a cell editor. Applicable for string columns only. */
-export const TAGS_CHOICES = '.choices';
-
-/** When set to 'true', switches the cell editor to a combo box that only allows to choose values
- from a list of already existing values in the column.
- Applicable for string columns only.
- See also [TAGS_CHOICES]. */
-export const TAGS_AUTO_CHOICES = '.auto-choices';
-
 ////// Viewers
-/** @enum {Viewer} */
+/** @enum {VIEWER} */
 export const VIEWER = {
     HISTOGRAM : 'Histogram',
     BAR_CHART : 'Bar chart',
@@ -198,7 +193,7 @@ export const VIEWER = {
     WORD_CLOUD : 'Word cloud'
 }
 
-/** @enum {SimilarityMetric} */
+/** @enum {SIMILARITY_METRIC} */
 export const SIMILARITY_METRIC = {
     TANIMOTO : 'tanimoto',
     DICE : 'dice',

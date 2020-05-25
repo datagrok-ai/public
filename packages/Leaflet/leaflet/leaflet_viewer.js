@@ -30,8 +30,8 @@ class LeafletViewer extends JsViewer {
         console.log('foo');
         this.init();
 
-        this.latitude = this.table.columns.bySemType(DG.enums.SEMTYPE.LATITUDE);
-        this.longitude = this.table.columns.bySemType(DG.enums.SEMTYPE.LONGITUDE);
+        this.latitude = this.table.columns.bySemType(DG.SEMTYPE.LATITUDE);
+        this.longitude = this.table.columns.bySemType(DG.SEMTYPE.LONGITUDE);
 
         this.subs.push(DG.debounce(this.table.selection.onChanged, 50).subscribe((_) => this.render()));
         this.subs.push(DG.debounce(this.table.filter.onChanged, 50).subscribe((_) => this.render()));

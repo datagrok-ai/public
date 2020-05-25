@@ -10,11 +10,11 @@ let tickers = new Map([
 
 let df = DG.DataFrame.create(0);
 df.name = 'stocks';
-df.columns.addNew('symbol', DG.enums.TYPE.STRING);
-df.columns.addNew('time', DG.enums.TYPE.DATE_TIME);
-df.columns.addNew('price', DG.enums.TYPE.FLOAT);
-df.columns.addNew('volume', DG.enums.TYPE.FLOAT);
-df.columns.addNew('up', DG.enums.TYPE.STRING);
+df.columns.addNew('symbol', DG.TYPE.STRING);
+df.columns.addNew('time', DG.TYPE.DATE_TIME);
+df.columns.addNew('price', DG.TYPE.FLOAT);
+df.columns.addNew('volume', DG.TYPE.FLOAT);
+df.columns.addNew('up', DG.TYPE.STRING);
 
 let addMilliseconds = function (time, ms) {
     time.setMilliseconds(time.getMilliseconds() + ms);
