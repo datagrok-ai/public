@@ -3,6 +3,7 @@ import {Viewer} from "./viewer.js";
 import {Column} from './dataframe.js';
 import {Cell} from "./dataframe";
 import {factories} from './wrappers';
+import {__obs, _sub} from "./events";
 
 /** Represents a grid cell */
 export class GridCell {

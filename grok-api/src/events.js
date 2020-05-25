@@ -8,7 +8,7 @@ export function debounce(observable, milliseconds = 100) {
     return observable.pipe(rxjsOperators.debounceTime(milliseconds));
 }
 
-function __obs(eventId, object = null) {
+export function __obs(eventId, object = null) {
     console.log(`${eventId} initialized.`);
 
     if (object == null) {
@@ -109,5 +109,5 @@ export class EventBus {
 
 }
 
-function _sub(d) { return new StreamSubscription(d); }
+export function _sub(d) { return new StreamSubscription(d); }
 
