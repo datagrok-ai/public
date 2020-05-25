@@ -26,7 +26,7 @@ class SPGiPackage extends DG.Package {
         grok.events.onViewAdded.subscribe((view) => {
             if (view.type === DG.enums.VIEW_TYPE.TABLE_VIEW && view.name === 'Main')
                 this.layoutMain(view);
-        }).bind(this);
+        });
 
         grok.events.onProjectOpened.subscribe((p) => {
             if (p.name.startsWith('BFC'))
