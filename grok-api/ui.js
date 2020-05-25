@@ -1,6 +1,6 @@
 import {Viewer} from "./src/viewer";
 import {VirtualView} from "./src/view";
-import {Accordion, Dialog, Menu, TabControl} from "./src/ui_classes";
+import {Accordion, Dialog, InputBase, Menu, TabControl} from "./src/ui_classes";
 
 export function e (s, cl = null) {
         let x = document.createElement(s);
