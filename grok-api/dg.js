@@ -13,6 +13,7 @@ export * from './src/ui_classes.js';
 export * from './src/view.js';
 export * from './src/viewer.js';
 export * from './src/docking.js';
+export * from './src/wrappers';
 
 export let chem = _chem;
 export let enums = _enums;
