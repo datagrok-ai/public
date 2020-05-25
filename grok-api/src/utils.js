@@ -1,5 +1,6 @@
 import {TYPE, TYPES_SCALAR} from "./const";
 import {Balloon} from "./ui_classes";
+import {_wrap} from "./wrappers";
 
 export function _jsThen(promise, f) {
     promise.then(f);
