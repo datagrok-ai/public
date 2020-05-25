@@ -1,6 +1,6 @@
 import * as rxjs from 'rxjs';
 import {AGG, TYPE} from "./const";
-import {observeStream} from "./events";
+import {__obs, observeStream} from "./events";
 /**
  * DataFrame is a high-performance, easy to use tabular structure with
  * strongly-typed columns of different types.
@@ -21,7 +21,7 @@ export class DataFrame {
     /** Constructs {@link DataFrame} from a comma-separated values string
      * @param {string} csv - The content of the comma-separated values file.
      * @returns {DataFrame} */
-    static fromCsv(csv) { return grok.parseCsv(csv); }
+    static fromCsv(csv) { return grok.data.parseCsv(csv); }
 
     /** Constructs {@link DataFrame} from the specified JSON string.
      * @param {string} json - JSON document.

@@ -24,7 +24,7 @@ class SPGiPackage extends DG.Package {
         grok.shell.addView(view);
 
         grok.events.onViewAdded.subscribe((view) => {
-            if (view.type === DG.enums.VIEW_TYPE.TABLE_VIEW && view.name === 'Main')
+            if (view.type === DG.VIEW_TYPE.TABLE_VIEW && view.name === 'Main')
                 this.layoutMain(view);
         });
 
@@ -82,11 +82,11 @@ class SPGiPackage extends DG.Package {
             let col = table.columns.byName(name);
 
             if (name.endsWith('Date')) {
-                if (col.type === DG.enums.TYPE.DATE_TIME)
+                if (col.type === DG.TYPE.DATE_TIME)
                     col.setTag('format', 'M/d/yyyy');
             }
 
-            if (col.type === DG.enums.TYPE.STRING)
+            if (col.type === DG.TYPE.STRING)
                 for (let r = 0; r < col.length; r++)
                     col.set(r, col.get(r).replace(/\\n/g, ' ').trim());
         });
@@ -139,7 +139,7 @@ class SPGiPackage extends DG.Package {
             'Cellular assay 1 Date',
             'Cellular assay 1 Curve ID'
         ]);
-        table.setTag(DG.enums.TAGS.TOOLTIP, 'Structure\nUnique_Identifier\nauthor\nstatus');
+        table.setTag(DG.TAGS.TOOLTIP, 'Structure\nUnique_Identifier\nauthor\nstatus');
 
         this.formatsMap = new Map();
         if (grok.shell.tableByName('SupData').d !== null) {

@@ -18,7 +18,7 @@ grok.data.loadDataFrame('https://public.datagrok.ai/demo/demog.csv').then((demog
         grok.shell.addTableView(demogTypes);
         grok.data.linkTables(demogTypes, demog,
             ['sex', 'race'], ['sex', 'race'],
-            [DG.enums.SYNC_TYPE.CURRENT_ROW_TO_FILTER, DG.enums.SYNC_TYPE.MOUSE_OVER_ROW_TO_SELECTION]);
+            [DG.SYNC_TYPE.CURRENT_ROW_TO_FILTER, DG.SYNC_TYPE.MOUSE_OVER_ROW_TO_SELECTION]);
     }));
 
 // Link types:
