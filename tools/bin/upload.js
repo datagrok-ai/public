@@ -6,8 +6,10 @@ let argv = require('minimist')(process.argv.slice(2));
 let mode = argv['_'][1];
 let host = argv['_'][0];
 
-if (mode !== 'debug' && mode !=='deploy')
-    throw 'Unknown mode: ' + mode;
+if (mode !== 'debug' && mode !=='deploy') {
+    console.log('Mode must be either debug or deploy');
+    return;
+}
 
 let subfolder = `${__dirname}\\win\\`;
 if (process.platform === "darwin")
