@@ -64,7 +64,6 @@ export const TYPE = {
     STRING_LIST : 'string_list',
     DATE_TIME : 'datetime',
     OBJECT : 'object',
-    PROJECT : 'project',
     DATA_FRAME : 'dataframe',
     DATA_FRAME_LIST : 'dataframe_list',
     CELL : 'cell',
@@ -89,6 +88,7 @@ export const TYPE = {
     TABLE_VIEW : 'TableView',
     USER : 'User',
     MENU : 'Menu',
+    PROJECT : 'Project',
     SEMANTIC_VALUE : 'semantic_value',
     EVENT_DATA : 'event_data'
 }

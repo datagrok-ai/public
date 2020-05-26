@@ -52,12 +52,12 @@ export class Events {
     get onViewRemoved () { return __obs('grok-view-removed'); }
     get onViewRenamed () { return __obs('grok-view-renamed'); }
 
-    get onCurrentProjectChanged () { return __obs('grok-current-project-changed', (a) => f(new Project(a))); }
-    get onProjectUploaded () { return __obs('grok-project-uploaded', (a) => f(new Project(a))); }
-    get onProjectSaved () { return __obs('grok-project-saved', (a) => f(new Project(a))); }
-    get onProjectOpened () { return __obs('grok-project-opened', (a) => f(new Project(a))); }
-    get onProjectClosed () { return __obs('grok-project-closed', (a) => f(new Project(a))); }
-    get onProjectModified () { return __obs('grok-project-modified', (a) => f(new Project(a))); }
+    get onCurrentProjectChanged () { return __obs('grok-current-project-changed'); }
+    get onProjectUploaded () { return __obs('grok-project-uploaded'); }
+    get onProjectSaved () { return __obs('grok-project-saved'); }
+    get onProjectOpened () { return __obs('grok-project-opened'); }
+    get onProjectClosed () { return __obs('grok-project-closed'); }
+    get onProjectModified () { return __obs('grok-project-modified'); }
 }
 
 
