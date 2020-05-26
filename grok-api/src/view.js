@@ -83,7 +83,7 @@ export class View {
 export class TableView extends View {
     constructor(d) { super(d); }
 
-    get grid() { return new Grid(grok_View_Get_Grid(this.d)); }
+    get grid() { return new DG.Grid(grok_View_Get_Grid(this.d)); }
 
     get dataFrame() { return new DataFrame(grok_View_Get_DataFrame(this.d)); }
     set dataFrame(x) { grok_View_Set_DataFrame(this.d, x.d); }
