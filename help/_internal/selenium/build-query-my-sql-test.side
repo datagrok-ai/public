@@ -58,7 +58,7 @@
       "id": "ab8f2726-12a0-40e3-ac90-4730f3344006",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {
@@ -327,10 +327,10 @@
       "id": "d0e21370-721b-4091-964d-2b18058f0ffb",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-times'])[3]",
+      "target": "xpath=(//i[@name='icon-times'])[2]",
       "targets": [
         ["css=.fa-times:nth-child(5)", "css:finder"],
-        ["xpath=(//i[@name='icon-times'])[3]", "xpath:attributes"],
+        ["xpath=(//i[@name='icon-times'])[2]", "xpath:attributes"],
         ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/i", "xpath:idRelative"],
         ["xpath=//div[2]/div/div/div/div/div/div/i", "xpath:position"]
       ],

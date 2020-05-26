@@ -10,7 +10,7 @@
       "id": "e9bf33b8-479e-4ea1-a29a-0f77f3f6ee90",
       "comment": "",
       "command": "open",
-      "target": "/datasets?selenium=true&q=",
+      "target": "/?selenium=true",
       "targets": [],
       "value": ""
     }, {
@@ -60,7 +60,7 @@
       "id": "5dc82201-963e-4426-b05c-8dddb86d92b3",
       "comment": "",
       "command": "pause",
-      "target": "2000",
+      "target": "4000",
       "targets": [],
       "value": ""
     }, {
@@ -86,6 +86,13 @@
         ["xpath=//div[2]/span", "xpath:position"],
         ["xpath=//span[contains(.,'Databases')]", "xpath:innerText"]
       ],
+      "value": ""
+    }, {
+      "id": "e3984d07-7754-4eef-aa7c-f1a024e894ff",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "143f1446-1bc1-4b97-8cc3-3bee36311261",
@@ -271,7 +278,7 @@
       "id": "553e7a5b-1e24-4d63-9148-c5480ec70348",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-times'])[3]",
+      "target": "xpath=(//i[@name='icon-times'])[2]",
       "targets": [
         ["css=.fa-times:nth-child(5)", "css:finder"],
         ["xpath=(//i[@name='icon-times'])[3]", "xpath:attributes"],

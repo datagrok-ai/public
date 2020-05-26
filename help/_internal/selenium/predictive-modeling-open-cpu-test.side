@@ -57,6 +57,13 @@
       ],
       "value": ""
     }, {
+      "id": "171a946c-d17d-4270-9ac3-a11fb4f3e04f",
+      "comment": "",
+      "command": "pause",
+      "target": "4000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "39dbf734-626b-4b0a-ba44-0a7022b83437",
       "comment": "",
       "command": "doubleClick",
@@ -715,13 +722,9 @@
     }, {
       "id": "34b7850a-2156-4f40-b0f0-bee31f3de9bc",
       "comment": "",
-      "command": "click",
-      "target": "css=canvas:nth-child(4)",
-      "targets": [
-        ["css=canvas:nth-child(4)", "css:finder"],
-        ["xpath=//div[@id='Heat map']/canvas[2]", "xpath:idRelative"],
-        ["xpath=//canvas[2]", "xpath:position"]
-      ],
+      "command": "executeScript",
+      "target": "element = document.querySelector(\"div[name=viewer-Grid] canvas:nth-child(4)\"); event = new MouseEvent(\"click\", {     bubbles: true,     cancelable: false,     view: window,     button: 2,     buttons: 0,     clientX: element.getBoundingClientRect().x+20,     clientY: element.getBoundingClientRect().y+40}); element.dispatchEvent(event); ",
+      "targets": [],
       "value": ""
     }, {
       "id": "2035da2c-9e4e-4c51-abf3-371474f9d422",
@@ -904,12 +907,24 @@
       "id": "7fbdc124-a0d0-4e69-8d91-d4ca84769325",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-section--Models']",
+      "target": "xpath=//div[@name='div-ML']",
       "targets": [
-        ["css=.d4-accordion:nth-child(2) > .d4-accordion-pane:nth-child(6) > .d4-accordion-pane-header", "css:finder"],
-        ["xpath=//div[@name='div-section--Models']", "xpath:attributes"],
-        ["xpath=//div[@id='grok-viewers-toolbox']/div[2]/div[6]/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div[6]/div", "xpath:position"]
+        ["css=.d4-menu-item-hover:nth-child(6)", "css:finder"],
+        ["xpath=//div[@name='div-ML']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[4]/div/div/div[6]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/div[4]/div/div/div[6]", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "d934f4f0-08d3-4e70-9350-35154e2686f3",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='div-ML---Apply-Model...']",
+      "targets": [
+        ["css=.d4-menu-item:nth-child(4) .d4-menu-item:nth-child(6) .d4-menu-item:nth-child(10)", "css:finder"],
+        ["xpath=//div[@name='div-ML---Apply-Model...']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[4]/div/div/div[6]/div/div/div[10]", "xpath:idRelative"],
+        ["xpath=//div[4]/div/div/div[6]/div/div/div[10]", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -920,50 +935,24 @@
       "targets": [],
       "value": ""
     }, {
-      "id": "0e8a2fdd-f8f1-40a3-9c5c-fbb2f6929594",
+      "id": "1685ce94-62e1-4061-8c4c-8e25b3006341",
       "comment": "",
       "command": "click",
-      "target": "name=span-RCaretSvmLinearBySelenium",
+      "target": "name=button-OK",
       "targets": [
-        ["css=.grok-context-arrow-down:nth-child(4)", "css:finder"],
-        ["xpath=//i[@name='RCaretSvmLinearBySelenium']", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div/span/i[3]", "xpath:idRelative"],
-        ["xpath=//span/i[3]", "xpath:position"]
+        ["name=button-OK", "name"],
+        ["css=.enabled", "css:finder"],
+        ["xpath=//button[@name='button-OK']", "xpath:attributes"],
+        ["xpath=//div[6]/div[3]/div/button", "xpath:position"],
+        ["xpath=//button[contains(.,'OK')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
-      "id": "bdc9fb32-4a1a-46ee-b631-d4bd419f1cb1",
+      "id": "ac55886f-e299-4e6e-9bd0-a7a5b65b8578",
       "comment": "",
-      "command": "click",
-      "target": "xpath=//i[@name='RCaretSvmLinearBySelenium']",
-      "targets": [
-        ["css=.grok-context-arrow-down:nth-child(4)", "css:finder"],
-        ["xpath=//i[@name='RCaretSvmLinearBySelenium']", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div/span/i[3]", "xpath:idRelative"],
-        ["xpath=//span/i[3]", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "3a9bf8eb-55a1-4a48-b1d5-42a3f86e5f4b",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@name='div-Apply-to']",
-      "targets": [
-        ["css=.d4-menu-item-hover", "css:finder"],
-        ["xpath=//div[@name='div-Apply-to']", "xpath:attributes"],
-        ["xpath=//body/div[6]/div[2]", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "b88b94c4-541a-4718-a610-f0796880d9ab",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@name='div-Apply-to---demog-(2549-rows,-9-columns)']",
-      "targets": [
-        ["css=.d4-menu-item-container:nth-child(8) > .d4-menu-item:nth-child(2) .d4-menu-item", "css:finder"],
-        ["xpath=//div[@name='div-Apply-to---demog-(2549-rows,-9-columns)']", "xpath:attributes"],
-        ["xpath=//div[7]/div[2]/div/div/div[2]", "xpath:position"]
-      ],
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "5cd5e5ef-a27a-427a-9841-40309420929f",
@@ -1089,7 +1078,7 @@
       ],
       "value": ""
     }, {
-      "id": "4dcdd779-d2fd-4eac-877a-2adb4fb2c320",
+      "id": "1e7b137f-7b67-473d-9fb2-704bbbf051e6",
       "comment": "",
       "command": "click",
       "target": "xpath=//i[@name='RCaretSvmLinearBySelenium']",
@@ -1174,17 +1163,11 @@
       "targets": [],
       "value": ""
     }, {
-      "id": "ed427e89-e37c-48a9-a821-ec3d741b85aa",
+      "id": "f05b201a-f876-41b9-9c6d-ed2c4061b6f0",
       "comment": "",
       "command": "verifyElementNotPresent",
-      "target": "xpath=//div[@name='div-R Caret svm Linear by Selenium']",
-      "targets": [
-        ["css=div[name=\"div-Instance of 'PredictiveModelInfo'\"]", "css"],
-        ["css=.d4-gallery-card", "css:finder"],
-        ["xpath=//div[@name=\"div-Instance of 'PredictiveModelInfo'\"]", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div[3]/div", "xpath:idRelative"],
-        ["xpath=//div[3]/div/div/div[3]/div", "xpath:position"]
-      ],
+      "target": "xpath=//div[@name='div-RCaretSvmLinearBySelenium']",
+      "targets": [],
       "value": ""
     }]
   }],
