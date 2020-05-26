@@ -8,7 +8,7 @@ import {User} from "./src/entities";
 import {Functions} from "./src/functions";
 import {Events} from "./src/events";
 import {DockManager} from "./src/docking";
-import {_toDart, _wrap} from "./src/wrappers";
+import {toDart, toJs} from "./src/wrappers";
 import {Menu, TabControl} from "./src/ui_classes";
 
 
@@ -41,8 +41,8 @@ class Shell {
     get user() { return new User(grok_User()); }
 
     /** Current object (rendered in the property panel) */
-    get o() { return _wrap(grok_Get_CurrentObject(), false); }
-    set o(x) { grok_Set_CurrentObject(_toDart(x)); }
+    get o() { return toJs(grok_Get_CurrentObject(), false); }
+    set o(x) { grok_Set_CurrentObject(toJs(x)); }
 
     /** Sidebar.
      *  @returns {TabControl} */
@@ -85,7 +85,7 @@ class Shell {
     registerViewer(name, description, createViewer) { grok_RegisterViewer(name, description, createViewer); }
     tableByName(s) { return new DataFrame(grok_TableByName(s)); }
     getVar(name) {return _toJs(grok_GetVar(name)); }
-    setVar(name, value) {return grok_SetVar(name, _toDart(value)); }
+    setVar(name, value) {return grok_SetVar(name, toDart(value)); }
 
     /** @returns {DockManager} */
     get dockManager() {
@@ -95,10 +95,10 @@ class Shell {
 
 class Scripts {
     script(s) {
-        return new Promise((resolve, reject) => grok_Script(s, (t) => resolve(_wrap(t, false))));
+        return new Promise((resolve, reject) => grok_Script(s, (t) => resolve(toJs(t, false))));
     }
 
-    scriptSync(s) { return _wrap(grok_ScriptSync(s), false); }
+    scriptSync(s) { return toJs(grok_ScriptSync(s), false); }
 }
 
 class Data {
@@ -114,14 +114,14 @@ class Data {
     testData(dataset, rows = 10000, columns = 3) { return new DataFrame(grok_TestData(dataset, rows, columns)); }
 
     getDemoTable(path) {
-        return new Promise((resolve, reject) => grok_GetDemoTable(path, (t) => resolve(_wrap(t))));
+        return new Promise((resolve, reject) => grok_GetDemoTable(path, (t) => resolve(toJs(t))));
     }
 
     /** @returns {DataFrame} */
     parseCsv(csv) { return new DataFrame(grok_ParseCsv(csv)); }
 
     loadDataFrame(csvUrl) {
-        return new Promise((resolve, reject) => grok_LoadDataFrame(csvUrl, (t) => resolve(_wrap(t, false))));
+        return new Promise((resolve, reject) => grok_LoadDataFrame(csvUrl, (t) => resolve(toJs(t, false))));
     }
 
     linkTables(t1, t2, keyColumns1, keyColumns2, linkTypes) { grok_LinkTables(t1.d, t2.d, keyColumns1, keyColumns2, linkTypes); };

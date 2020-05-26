@@ -1,4 +1,4 @@
-import {_wrap} from "./wrappers";
+import {toJs} from "./wrappers";
 import {_sub} from "./events";
 
 export class Widget {
@@ -178,8 +178,8 @@ export class TagEditor {
     removeTag(tag) { grok_TagEditor_RemoveTag(this.d, tag); }
     clearTags() { grok_TagEditor_ClearTags(this.d); }
 
-    set acceptsDragDrop(predicate) { grok_TagEditor_Set_AcceptsDragDrop(this.d, (x) => predicate(_wrap(x, false))); };
-    set doDrop(action) { grok_TagEditor_Set_DoDrop(this.d, (x) => action(_wrap(x, false))); }
+    set acceptsDragDrop(predicate) { grok_TagEditor_Set_AcceptsDragDrop(this.d, (x) => predicate(toJs(x, false))); };
+    set doDrop(action) { grok_TagEditor_Set_DoDrop(this.d, (x) => action(toJs(x, false))); }
 
     onChanged(callback) { return _sub(grok_TagEditor_OnChanged(this.d, callback)); }
 }

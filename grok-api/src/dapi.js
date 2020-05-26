@@ -1,13 +1,13 @@
 import {Credentials, DataConnection, DataQuery, Entity, Project, User} from "./entities";
 import {ViewLayout} from "./view";
-import {_wrap} from "./wrappers";
+import {toJs} from "./wrappers";
 
 export class Dapi {
     constructor() {}
 
     getEntities(ids) {
         return new Promise((resolve, reject) => grok_Dapi_Entities_GetEntities(ids, (q) => {
-            return resolve(q[0].map(_wrap));
+            return resolve(q[0].map(toJs));
         }));
     }
 

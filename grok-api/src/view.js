@@ -10,6 +10,7 @@ import * as ui from "./../ui";
 import {Viewer} from "./viewer";
 import {DockNode, DockManager} from "./docking";
 import {Grid} from "./grid";
+import {ToolboxPage} from "./ui_classes";
 
 export class View {
     constructor(d) { this.d = d; }
@@ -59,7 +60,7 @@ export class View {
     setRibbonPanels(panels) { grok_View_SetRibbonPanels(this.d, panels); }
 
     /** Adds a viewer of the specified type.
-     * @param {string} viewerType
+     * @param {VIEWER|VIEWER} viewerType
      * @returns {Viewer} */
     addViewer(viewerType, options = null) {
         let v = new Viewer(grok_View_AddViewer(this.d, viewerType));

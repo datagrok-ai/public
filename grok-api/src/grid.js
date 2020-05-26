@@ -1,9 +1,7 @@
-import {EventData} from "./events.js";
 import {Viewer} from "./viewer.js";
 import {Column} from './dataframe.js';
 import {Cell} from "./dataframe";
-import {factories} from './wrappers';
-import {__obs, _sub} from "./events";
+import {__obs, _sub, EventData} from "./events";
 
 /** Represents a grid cell */
 export class GridCell {
@@ -49,21 +47,6 @@ export class GridCell {
     /** @returns {GridCellStyle} Style to use for rendering. */
     get style() { return new GridCellStyle(grok_GridCell_Get_Style(this.d)); }
 }
-
-/** Grid cell rendering args. */
-export class GridCellRenderArgs extends EventData {
-    constructor(d) { super(d); }
-
-    /** @returns {CanvasRenderingContext2D} */
-    get g() { return grok_GridCellRenderArgs_Get_G(this.d); }
-
-    get cell() { return new GridCell(grok_GridCellRenderArgs_Get_Cell(this.d)); }
-
-    /** @returns {Rect} */
-    get bounds() { return grok_GridCellRenderArgs_Get_Bounds(this.d); }
-}
-
-factories["GridCellRenderArgs"] = function(d) {return new GridCellRenderArgs(d)}
 
 /** Represents a grid column */
 export class GridColumn {
@@ -191,4 +174,17 @@ export class GridCellStyle {
 
     get element() { return grok_GridCellStyle_Get_Element(this.d); }
     set element(x) { return grok_GridCellStyle_Set_Element(this.d, x); }
+}
+
+/** Grid cell rendering args. */
+export class GridCellRenderArgs extends EventData {
+    constructor(d) { super(d); }
+
+    /** @returns {CanvasRenderingContext2D} */
+    get g() { return grok_GridCellRenderArgs_Get_G(this.d); }
+
+    get cell() { return new GridCell(grok_GridCellRenderArgs_Get_Cell(this.d)); }
+
+    /** @returns {Rect} */
+    get bounds() { return grok_GridCellRenderArgs_Get_Bounds(this.d); }
 }

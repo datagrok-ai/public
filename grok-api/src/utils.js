@@ -1,6 +1,4 @@
-import {TYPE, TYPES_SCALAR} from "./const";
 import {Balloon} from "./ui_classes";
-import {_wrap} from "./wrappers";
 
 export function _jsThen(promise, f) {
     promise.then(f);
@@ -8,19 +6,6 @@ export function _jsThen(promise, f) {
 
 export function _toJson(x) {
     return x === null ? null : JSON.stringify(x);
-}
-
-export function paramsToJs(params) {
-    let result = [];
-    for (let i = 0; i < params.length; i++) {
-        let type = grok_GetType(params[i]);
-        if (type !== null && !TYPES_SCALAR.has(type))
-            result.push(_wrap(params[i]));
-        else
-            result.push(params[i]);
-    }
-
-    return result;
 }
 
 /*window.onerror = function (message, url, lineNumber, columnNumber, errorObject) {
