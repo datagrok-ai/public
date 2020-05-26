@@ -1,8 +1,6 @@
 import * as rxjs from "rxjs";
 import * as rxjsOperators from "rxjs/operators";
-
-import {Project} from "./entities";
-import {_toJs} from "./wrappers";
+import {toJs} from "./wrappers";
 
 export function debounce(observable, milliseconds = 100) {
     return observable.pipe(rxjsOperators.debounceTime(milliseconds));
@@ -13,14 +11,14 @@ export function __obs(eventId, object = null) {
 
     if (object == null) {
         let observable = rxjs.fromEventPattern(
-            function(handler) { return grok_OnEvent(eventId, function (x) { handler(_toJs(x)); }); },
+            function(handler) { return grok_OnEvent(eventId, function (x) { handler(toJs(x)); }); },
             function(handler, d) { new StreamSubscription(d).cancel(); }
         );
         return observable;
     }
     else {
         let o2 = rxjs.fromEventPattern(
-            function(handler) { return grok_OnObjectEvent(object, eventId, function (x) { handler(_toJs(x)); }); },
+            function(handler) { return grok_OnObjectEvent(object, eventId, function (x) { handler(toJs(x)); }); },
             function(handler, d) { new StreamSubscription(d).cancel(); }
         );
         return o2;
@@ -30,7 +28,7 @@ export function __obs(eventId, object = null) {
 
 export function observeStream(dartStream) {
     let observable = rxjs.fromEventPattern(
-        function(handler) { return grok_Stream_Listen(dartStream, function (x) { handler(_toJs(x)); }); },
+        function(handler) { return grok_Stream_Listen(dartStream, function (x) { handler(toJs(x)); }); },
         function(handler, d) { new StreamSubscription(d).cancel(); }
     );
     return observable;
@@ -70,7 +68,7 @@ export class Stream {
 
     toObservable() {
         let observable = rxjs.fromEventPattern(
-            function(handler) { return grok_OnEvent(eventId, function (x) { handler(_toJs(x)); }); },
+            function(handler) { return grok_OnEvent(eventId, function (x) { handler(toJs(x)); }); },
             function(handler, streamSubscription) { streamSubscription.cancel(); }
         );
         return observable;
@@ -98,7 +96,7 @@ export class EventData {
         let x = grok_EventData_Get_Args(this.d);
         let result = {};
         for (const property in x)
-            result[property] = _toJs(x[property]);
+            result[property] = toJs(x[property]);
         return result;
     }
 
@@ -110,4 +108,3 @@ export class EventBus {
 }
 
 export function _sub(d) { return new StreamSubscription(d); }
-

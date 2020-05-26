@@ -1,5 +1,5 @@
 /** Grok functions */
-import {paramsToJs} from "./utils";
+import {paramsToJs} from "./wrappers";
 
 export class Functions {
     register(func) { grok_RegisterFunc(func); }
