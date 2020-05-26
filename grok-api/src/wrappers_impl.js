@@ -3,7 +3,7 @@ import {Project, Property, SemanticValue, User} from "./entities";
 import {EventData} from "./events";
 import {Menu} from "./ui_classes";
 import {TableView, View} from "./view";
-import {TYPES_SCALAR} from "./const";
+import {TYPE, TYPES_SCALAR} from "./const";
 import {impl} from "./wrappers";
 import {GridCellRenderArgs} from "./grid";
 
