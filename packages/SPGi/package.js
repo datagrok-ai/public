@@ -30,7 +30,8 @@ class SPGiPackage extends DG.Package {
 
         grok.events.onProjectOpened.subscribe((p) => {
             if (p.name.startsWith('BFC'))
-                grok.shell.v = grok.shell.getTableView('Main');
+                setTimeout(() => { grok.shell.v = grok.shell.getTableView('Main'); }, 100);
+            // Note: "setTimeout" is required since events "onProjectOpened" and "onCurrentViewChanged" are on the same event bus
         });
     }
 
