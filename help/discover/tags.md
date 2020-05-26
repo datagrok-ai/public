@@ -48,8 +48,8 @@ to recalculate. Note that changing the `formula` tag does not cause recalculatio
 
 ## layout_id
 
-Used for matching layout columns with table columns when a layout is applied.
-Applicable to columns.  
+Applicable to columns. Used for matching layout columns with table columns when a layout is applied.
+See [layout suggestions](../visualize/view-layout.md#layout-suggestions) for details.
  
 ## .tooltip
 
