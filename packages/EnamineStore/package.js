@@ -68,7 +68,7 @@ class EnamineStorePackage extends DG.Package {
         let headerHost = ui.divH([ui.h2(panelName)], 'enamine-store-panel-header');
         let compsHost = ui.divH([ui.loader()]);
         let panel = ui.divV([headerHost, compsHost], 'enamine-store-panel');
-        grok.functions.callQuery('EnamineStore:Search', {
+        grok.data.callQuery('EnamineStore:Search', {
             'code': `search_${smiles}_${EnamineStorePackage.searchModeToCommand(panelName)}`,
             'currency': currency
         }, true, 100).then(fc => {
