@@ -57,6 +57,13 @@
       ],
       "value": ""
     }, {
+      "id": "03df049a-b078-460e-8efd-f2a940994e49",
+      "comment": "",
+      "command": "pause",
+      "target": "4000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "39dbf734-626b-4b0a-ba44-0a7022b83437",
       "comment": "",
       "command": "doubleClick",
@@ -943,10 +950,10 @@
       "id": "9626bf1a-c129-4799-b9be-ab40c76555fb",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-ML---Apply...']",
+      "target": "xpath=//div[@name='div-ML---Apply-Model...']",
       "targets": [
         ["css=.d4-menu-item:nth-child(4) .d4-menu-item:nth-child(6) .d4-menu-item:nth-child(10)", "css:finder"],
-        ["xpath=//div[@name='div-ML---Apply...']", "xpath:attributes"],
+        ["xpath=//div[@name='div-ML---Apply-Model...']", "xpath:attributes"],
         ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[4]/div/div/div[6]/div/div/div[10]", "xpath:idRelative"],
         ["xpath=//div[4]/div/div/div[6]/div/div/div[10]", "xpath:position"]
       ],
@@ -1203,7 +1210,7 @@
       "id": "2735fb8c-15a7-4ad0-a1e0-02d9de3ffd3e",
       "comment": "",
       "command": "open",
-      "target": "/models?q=Selenium",
+      "target": "/models?selenium=true&q=Selenium",
       "targets": [],
       "value": ""
     }, {

@@ -286,7 +286,7 @@
       "id": "553e7a5b-1e24-4d63-9148-c5480ec70348",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-times'])[3]",
+      "target": "xpath=(//i[@name='icon-times'])[2]",
       "targets": [
         ["css=.fa-times:nth-child(5)", "css:finder"],
         ["xpath=(//i[@name='icon-times'])[3]", "xpath:attributes"],
@@ -453,6 +453,18 @@
       "comment": "",
       "command": "verifyText",
       "target": "xpath=//div[@name='div-view-name']",
+      "targets": [
+        ["css=.d4-ribbon-name", "css:finder"],
+        ["xpath=//div[@name='div-view-name']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
+      ],
+      "value": "Test_Query_By_Selenium_MySql"
+    }, {
+      "id": "0b7a1e5b-44b0-4ad1-b337-b89eaa7e0962",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "name=span-Test-Query-By-Selenium-MySql",
       "targets": [
         ["css=.d4-ribbon-name", "css:finder"],
         ["xpath=//div[@name='div-view-name']", "xpath:attributes"],

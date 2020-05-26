@@ -485,7 +485,7 @@
       "id": "78cceedd-6257-436f-a5ff-af0d6e2a8e3f",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {
@@ -723,7 +723,7 @@
       "id": "915c462b-df84-4494-8259-6a970b1b660e",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "2000",
       "targets": [],
       "value": ""
     }, {
