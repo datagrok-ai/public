@@ -5,7 +5,7 @@ import {Dapi} from "./src/dapi";
 import {DataFrame} from "./src/dataframe";
 import {TableView, View} from "./src/view";
 import {User} from "./src/entities";
-import {Functions} from "./src/functions";
+import {FuncCall, Functions} from "./src/functions";
 import {Events} from "./src/events";
 import {DockManager} from "./src/docking";
 import {toDart, toJs} from "./src/wrappers";
