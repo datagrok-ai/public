@@ -1,4 +1,4 @@
-class LeafletViewer extends JsViewer {
+class LeafletViewer extends DG.JsViewer {
     constructor() {
         super();
 
