@@ -45,11 +45,6 @@ layout column gets mapped to the table column, which are evaluated in the follow
 2. Both columns have the same [layout-id](../discover/tags.md#layout-id) 
 3. Both columns have the same [semantic-type](../discover/tags.md#semantic-type) 
  
-Columns get mapped in the following way
-in this order:
-1) 
-
-
 See also:
 * [Table view](../overview/table-view.md)
 * [Self-learning platform](../learn/self-learning-platform.md)
