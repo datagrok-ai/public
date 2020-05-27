@@ -20,7 +20,7 @@ class EnamineStorePackage extends DG.Package {
 
         function update() {
             ui.setUpdateIndicator(view.root, true);
-            grok.functions.callQuery('EnamineStore:Search', {
+            grok.data.callQuery('EnamineStore:Search', {
                 'code': `search_${molecule.value}_${EnamineStorePackage.searchModeToCommand(searchMode.value)}`,
                 'currency': currency.value,
                 'sim': parseFloat(similarity.value),
