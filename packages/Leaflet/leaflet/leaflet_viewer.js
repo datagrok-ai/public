@@ -43,7 +43,15 @@ class LeafletViewer extends DG.JsViewer {
         this.render();
     }
 
-    onSizeChanged(w, h) { this.map.invalidateSize(); }
+    onSizeChanged(w, h) {
+        if (w !== 0 && h !== 0)
+            this.map.invalidateSize();
+    }
+
+    detach() {
+        this.map.remove();
+        this.subs.forEach((sub) => sub.unsubscribe());
+    }
 
     render(fit = false) {
         for (const layer of this.layers)
