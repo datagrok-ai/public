@@ -1,6 +1,121 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2020.05.27 Stable version
+
+* JavaScript API changed. Use `datagrok-api` NPM package as a code reference.
+
+Now API have 3 entry points: 
+* `DG` contains complete API code
+* `grok` is the main entry point to start using API for most of the tasks
+* `ui` is for constructing UI
+
+Here is how code changes:
+```
+grok.t => grok.shell.t
+grok.v => grok.shell.v
+grok.tables => grok.shell.tables
+grok.presentationMode => grok.shell.presentationMode
+grok.parseCsv => grok.data.parseCsv
+GrokPackage => DG.Package
+TYPE_FLOAT => DG.TYPE.FLOAT
+```
+
+Please, refer to the [JavaScript examples](https://public.datagrok.ai/js) to migrate your code.
+See also:
+* [Developing packages](https://datagrok.ai/help/develop/develop) 
+
+## Latest docker images
+* Datagrok (new): `766822877060.dkr.ecr.us-east-2.amazonaws.com/datagrok:1.0.77-c1d42b4` [download](https://dev.datagrok.ai/docker_images/datagrok-1.0.77-c1d42b4.tar)
+* CVM (new): `766822877060.dkr.ecr.us-east-2.amazonaws.com/grok_cvm:1.0.77-c1d42b4` [download](https://dev.datagrok.ai/docker_images/grok_cvm-1.0.77-c1d42b4.tar)
+
+## Addressed issues
+
+* Scripting/Notebooks: change "localhost" on docker to right datlas address
+* JS API: provide JSDoc-style comments for all properties and methods
+* Optimize upload utility
+* Unable to load JS example by URL
+* Models trained on Caret server do not apply to the table
+* Ability to download grok API
+* Swagger queries deleted on second package upload
+* ChemSpace integration
+* JS API: manipulate.js sample does not work
+* Provide a registry for canvas-based grid renderers
+* JS API: Grid: canvas-based event-driven rendering
+* JS API: convert all event management to streams / RxJS
+* JS API: expose internal storage buffers
+* JS API: support Property.choices
+* Ability to get function progress from server
+* Convert repository publish command to function
+* Check database connection before start
+* Amazon S3 Storage, optimize directory listing
+* Connection Tree: Exception is thrown if you expand broken DB-connection
+* GrokConnect: Add default aggregations for SQL-based providers
+* Package upload utility: Upload doesn't affect sources list
+* Retired EventSource in favor of EventBusProvider.
+* Ability to autorefresh file from share on project open
+* Generic view persistence mechanism
+* Models on h2o server do not train (on dev setup)
+* Modeling: AUC estimation failed on Caret
+* Files View: null reference error
+* Command-line utilities demo
+* File Editors: support "sas" format
+* File Browser: preview for empty folders does not work
+* Check if DB is populated before deploy
+* File Shares: indexing doesn't work
+* Tune DataSourceCardView elements limit
+* DataSourceCardView: Refresh button
+* Wrong UTF8 handling in UUID generation library
+* Proper exceptions in minified code
+* File Browser: show URL for the currently selected file
+* Swagger: Support request content type
+* Home folder shows path
+* When adding new file connector -- wrong connector opens
+* Entity search: "matches" operator
+* Entity search: support for units
+* Files: Errors in browser console after clicking on the "texts" folder from the "demo" connection
+* JS API: Examples from the "misc/audit" directory do not work
+* File Browser: double-clicking on a folder does not open it in certain cases
+* File Browser: Index search shows deleted files
+* File Browser: filter examples
+* File Browser: Confused AuthorMixin.createdOn and created
+* File Browser: double-clicking on a .doc file throws an error
+* Source maps don't work when URL Hash is present in script URLs
+* File Browser: error in the "Sharing" panel
+* JS Examples: "predictive-model.js" samples does not work
+* JS API samples: viewers.js: Exception is thrown after closing the view of the script result
+* File: show file name in the tooltip
+* Package PP: make URL clickable
+* Predictive Models: Some models do not train on Caret server (demog, race(weight, height, age)
+* Add the "name" attribute for span with the table name (for the first, if there are several)
+* JS: Event "d4-current-view-changed" is fired twice the first time a new view is changed
+* JS Examples: "link-tables.js" samples does not work (tables are not linked)
+* JS Examples: Exception after running the "events.js" sample
+* Markup Viewer: If error was made in the text, then further editing does not apply
+* Selenium: Add “name” attributes to file export items
+* Ability to override semantic type detection
+* TableView: show 'Chem' top menu when table contains molecules
+* Allow to modify calculated columns
+* TableView: add "Tooltip..." and "Reset filter" menu items to the new UI
+* SPGi App: Exception is thrown after opening project
+* Scripting: File metadata extractors
+* String->int converter doesn't convert negative values
+* Project upload doesn't upload table data
+* Modeling: H2O does not work on HTTPS
+* Data Sync: Ambiguous entity name error
+* Plugin development environment
+* Tika integration
+* Demo: Cell imaging segmentation
+* JS API samples: manipulating views
+* JS API: docking
+* Property panel: ability to inspect JS objects
+* Layouts: matching by column id if it is present
+* Tables view added from DB Table | Build Query is duplicated in the "Open" section under "Databases"
+* Demo: Image classification
+* Files: Exception in the panels "EXIF" and "Tika" for some pictures
+* MVA: Layout is broken
+
+
 # 2020.05.06 Stable Version
 
 * HTTP ports changed. Datagrok is now listening on 8080 port and CVM port is 8090
