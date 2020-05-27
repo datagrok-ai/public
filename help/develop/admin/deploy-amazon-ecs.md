@@ -24,7 +24,7 @@ This document contains instructions to deploy Datagrok on AWS ECS cluster.
         * Container name: datagrok
         * Image: datagrok:latest
         * Memory Limits (MiB): Soft Limit: 2048
-        * Port mappings: 80
+        * Port mappings: 8080
         * CPU units: 2048
         * Environment variables (remove comments and make single line):
             - GROK_PARAMETERS = see below
@@ -78,7 +78,7 @@ This document contains instructions to deploy Datagrok on AWS ECS cluster.
         * Container name: grok_cvm
         * Image: grok_cvm:1.0.X-XXXXXXX
         * Memory Limits (MiB): Soft Limit: 4096
-        * Port mappings: 80 and 54321
+        * Port mappings: 8080 and 54321
         * CPU units: 4096
         * Environment variables:
             - GROK_COMPUTE_NUM_CORES = 4
@@ -92,7 +92,7 @@ This document contains instructions to deploy Datagrok on AWS ECS cluster.
     - Load Balancers | Create Load Balancer
     - Application Load Balancer | Create
     - Name: cvm
-    - Listeners for ports: 5005, 8004, 8888, 8889, 54321 or (80 and 54321)
+    - Listeners for ports: 8080 and 54321
     - Availability Zones: add all available zones
 5. Create service:
     - Launch type: EC2
@@ -106,12 +106,8 @@ This document contains instructions to deploy Datagrok on AWS ECS cluster.
 
 Edit settings in the Datagrok (Tools | Settings...):
 * Scripting:
-    * OpenCPU, OpenCPU Client: http://CVM_HOSTNAME/ocpu
-    * Jupyter Notebook, Jupyter Notebook: http://CVM_HOSTNAME
-    * Jupyter Gateway, Jupyter Gateway Client: http://CVM_HOSTNAME/jupyter
-    * Grok Compute, Grok Compute Client: http://CVM_HOSTNAME/grok_compute
-* Machine Learning:
-    * H2O: http://CVM_HOSTNAME:54321
+    * CVM Url, CVM Url Client: http://CVM_URL:8080
+    * API Url: http://DATAGROK_URL/api
 
 See also:
 * [Compute VM](../../compute/compute-vm.md)
