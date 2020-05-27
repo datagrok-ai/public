@@ -756,8 +756,8 @@
     }, {
       "id": "afbd0118-37e6-4a22-b952-525ec95071e7",
       "comment": "",
-      "command": "verifyText",
-      "target": "xpath=//div[@name='div-view-name']",
+      "command": "verifyElementPresent",
+      "target": "name=span-Big-Cities-in-@continent",
       "targets": [
         ["css=.d4-ribbon-name", "css:finder"],
         ["xpath=//div[@name='div-view-name']", "xpath:attributes"],
@@ -929,15 +929,10 @@
     }, {
       "id": "7536807c-5aeb-456b-81e4-6b6f2b50762b",
       "comment": "",
-      "command": "verifyText",
-      "target": "xpath=//div[@name='div-view-name']",
-      "targets": [
-        ["css=.d4-ribbon-name", "css:finder"],
-        ["xpath=//div[@name='div-view-name']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
-      ],
-      "value": "5 day/3 hour Forecast By City Name"
+      "command": "verifyElementPresent",
+      "target": "name=span-5-day/3-hour-Forecast-By-City-Name",
+      "targets": [],
+      "value": ""
     }, {
       "id": "86109895-b528-4db0-83ec-72bc23f3fd81",
       "comment": "",

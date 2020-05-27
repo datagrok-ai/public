@@ -517,7 +517,7 @@
       "id": "594d6cb2-c175-484f-8f99-5b78ca04897e",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-times'])[3]",
+      "target": "xpath=(//i[@name='icon-times'])[2]",
       "targets": [
         ["css=.fa-times:nth-child(5)", "css:finder"],
         ["xpath=(//i[@name='icon-times'])[3]", "xpath:attributes"],

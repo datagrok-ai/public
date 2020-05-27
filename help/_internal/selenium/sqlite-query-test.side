@@ -10,7 +10,7 @@
       "id": "e9bf33b8-479e-4ea1-a29a-0f77f3f6ee90",
       "comment": "",
       "command": "open",
-      "target": "/datasets?selenium=true&q=",
+      "target": "/?selenium=true",
       "targets": [],
       "value": ""
     }, {
@@ -284,7 +284,7 @@
       "id": "553e7a5b-1e24-4d63-9148-c5480ec70348",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-times'])[3]",
+      "target": "xpath=(//i[@name='icon-times'])[2]",
       "targets": [
         ["css=.fa-times:nth-child(5)", "css:finder"],
         ["xpath=(//i[@name='icon-times'])[3]", "xpath:attributes"],

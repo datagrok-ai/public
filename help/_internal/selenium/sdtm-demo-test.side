@@ -10,7 +10,7 @@
       "id": "8ff604b9-81db-4083-8663-4b119b7492f9",
       "comment": "",
       "command": "open",
-      "target": "/datasets?selenium=true&q=",
+      "target": "/apps?selenium=true",
       "targets": [],
       "value": ""
     }, {
@@ -74,49 +74,11 @@
       ],
       "value": ""
     }, {
-      "id": "0be464aa-9e51-4800-99be-3b1777f29108",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//i[@name='icon-function']",
-      "targets": [
-        ["css=.fa-function", "css:finder"],
-        ["xpath=//i[@name='icon-function']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div[3]/i", "xpath:idRelative"],
-        ["xpath=//div[3]/i", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "f50894bd-2893-437e-b6e2-b8247cd10e39",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//span[contains(.,'Apps')]",
-      "targets": [
-        ["css=.d4-toggle-button:nth-child(1) > span", "css:finder"],
-        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div/span", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/span", "xpath:position"],
-        ["xpath=//span[contains(.,'Apps')]", "xpath:innerText"]
-      ],
-      "value": ""
-    }, {
       "id": "0dba5c2e-800a-4e05-9162-3c5a5e099de6",
       "comment": "",
       "command": "pause",
       "target": "1000",
       "targets": [],
-      "value": ""
-    }, {
-      "id": "ccefa6d6-f9af-4185-9bac-04040bb355a3",
-      "comment": "",
-      "command": "verifyElementPresent",
-      "target": "id=grok-app",
-      "targets": [
-        ["id=grok-app", "id"],
-        ["css=#grok-app", "css:finder"],
-        ["xpath=//h1[@id='grok-app']", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/span/h1", "xpath:idRelative"],
-        ["xpath=//span/h1", "xpath:position"],
-        ["xpath=//h1[contains(.,'Grok App')]", "xpath:innerText"]
-      ],
       "value": ""
     }, {
       "id": "488420f5-d357-47bd-ad65-515cb7e20466",
