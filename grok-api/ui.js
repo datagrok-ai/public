@@ -41,14 +41,14 @@ export function divText(s) {
         return e;
     }
 
-export function iconFA(name, handler, tooltip = null) {
+export function iconFA(name, handler, tooltipMsg = null) {
         let i = document.createElement('i');
         i.classList.add('grok-icon');
         i.classList.add('fal');
         i.classList.add(`fa-${name}`);
         i.addEventListener("click", handler);
-        if (tooltip !== null)
-            tooltip(i, tooltip);
+        if (tooltipMsg !== null)
+            tooltip(i, tooltipMsg);
         return i;
     }
 
