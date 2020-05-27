@@ -41,28 +41,13 @@ wait for deploy process to complete
 Requirements: 4 vCPU and 8GiB RAM
 
 1. Download latest Compute Virtual Machine docker image from [dev.datagrok.ai/docker_images](https://dev.datagrok.ai/docker_images)
-2. Run CVM image `docker run -it -e GROK_COMPUTE_NUM_CORES=4 -p 5005:5005 -p 8004:8004 -p 8888:8888 -p 8889:8889 -p 54321:54321 <IMAGE_NAME>`
+2. Run CVM image `docker run -it -e GROK_COMPUTE_NUM_CORES=4 -p 8080:8080 -p 54321:54321 <IMAGE_NAME>`
 
 Edit settings in the Datagrok (Tools | Settings...):
 * Scripting:
-    * OpenCPU, OpenCPU client: http://CVM_HOST_NAME:8004/ocpu
-    * Jupyter Notebook, Jupyter Notebook Client: http://CVM_HOST_NAME:8889
-    * Jupyter Gateway, Jupyter Gateway Client: http://CVM_HOST_NAME:8888
-    * Grok Compute, Grok Compute Client: http://CVM_HOST_NAME:5005
-* Machine Learning:
-    * H2O: http://HOST_NAME:54321
-
-ComputeVM also contain Nginx service to reduce number of opened ports. For this case ports 80 and 54321
-only are required: `docker run -it -e GROK_COMPUTE_NUM_CORES=1 -p 80:80 -p 54321:54321 <IMAGE_NAME>`
-
-Settings:
-* Scripting:
-    * OpenCPU, OpenCPU client: http://CVM_HOST_NAME/ocpu
-    * Jupyter Notebook, Jupyter Notebook Client: http://CVM_HOST_NAME
-    * Jupyter Gateway, Jupyter Gateway Client: http://CVM_HOST_NAME/jupyter
-    * Grok Compute, Grok Compute Client: http://CVM_HOST_NAME/grok_compute
-* Machine Learning:
-    * H2O: http://CVM_HOST_NAME:54321
+    * CVM: http://CVM_DOCKER_URL:8080
+    * CVM Client: http://CVM_URL:8080
+    * API Url: http://DATAGROK_DOCKER_URL/api
 
 See also:
 * [Compute VM](../../compute/compute-vm.md)

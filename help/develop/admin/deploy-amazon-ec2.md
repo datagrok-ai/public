@@ -30,23 +30,19 @@ This document contains instructions to deploy Datagrok on AWS EC2 instance.
 }
 ```
 4. Run Datagrok image
-`docker run -it -e GROK_PARAMETERS="<GROK_START_PARAMETERS>" -p 80:80 <IMAGE_NAME>`
+`docker run -it -e GROK_PARAMETERS="<GROK_START_PARAMETERS>" -p 8080:8080 <IMAGE_NAME>`
 5. Check if Datagrok started successfully: http://HOST_NAME, login to Datagrok using username "admin" and password "SM9ekKEkZuBDp5eD"
 
 ## Setup Compute Virtual Machine
 
 1. Copy latest Compute Virtual Machine docker image URL from [dev.datagrok.ai/docker_images](https://dev.datagrok.ai/docker_images)
 2. Download Datagrok image `wget IMAGE_URL`, load image to docker `docker load < <IMAGE_NAME>`
-3. Run CVM image `docker run -it -e GROK_COMPUTE_NUM_CORES=4 -p 80:80 -p 54321:54321 <IMAGE_NAME>`
+3. Run CVM image `docker run -it -e GROK_COMPUTE_NUM_CORES=4 -p 8080:8080 -p 54321:54321 <IMAGE_NAME>`
 
 Edit settings in the Datagrok (Tools | Settings...):
 * Scripting:
-    * OpenCPU, OpenCPU Client: http://CVM_HOSTNAME/ocpu
-    * Jupyter Notebook, Jupyter Notebook: http://CVM_HOSTNAME
-    * Jupyter Gateway, Jupyter Gateway: http://CVM_HOSTNAME/jupyter
-    * Grok Compute, Grok Compute: http://CVM_HOSTNAME/grok_compute
-* Machine Learning:
-    * H2O: http://CVM_HOSTNAME:54321
+    * CVM Url, CVM Url Client: http://CVM_URL:8080
+    * API Url: http://DATAGROK_URL/api
 
 See also:
 * [Compute VM](../../compute/compute-vm.md)
