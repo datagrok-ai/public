@@ -378,26 +378,7 @@
       "id": "330c3fc2-1627-454f-97e4-02a520e14b8a",
       "comment": "",
       "command": "pause",
-      "target": "4000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "8106c2c0-1bba-4f4c-ae6d-a96f5299970d",
-      "comment": "",
-      "command": "verifyElementPresent",
-      "target": "id=balloon: info",
-      "targets": [
-        ["css=.d4-entity-markup-row:nth-child(1) > .d4-link-label label", "css:finder"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div[2]/div/div/div/span/span/span/label", "xpath:idRelative"],
-        ["xpath=//span/span/span/label", "xpath:position"],
-        ["xpath=//label[contains(.,'BootstrapDemo')]", "xpath:innerText"]
-      ],
-      "value": ""
-    }, {
-      "id": "9481c32f-0ea9-4012-b2a0-7599f2766484",
-      "comment": "",
-      "command": "click",
-      "target": "id=balloon: info",
+      "target": "15000",
       "targets": [],
       "value": ""
     }, {

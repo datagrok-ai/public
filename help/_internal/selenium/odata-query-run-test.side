@@ -143,6 +143,37 @@
       "targets": [],
       "value": ""
     }, {
+      "id": "eff3001d-8070-4c80-b8e9-24be8e422d9f",
+      "comment": "",
+      "command": "click",
+      "target": "id=balloon: info",
+      "targets": [
+        ["id=balloon: info", "id"],
+        ["xpath=//div[@id='balloon: info']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div[3]/div", "xpath:idRelative"],
+        ["xpath=//body/div[3]/div[3]/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "bd6d0c0e-f5ce-4584-b3e7-a62194055afd",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "72ae3b1a-5076-4142-bc45-671cfa23f26c",
+      "comment": "",
+      "command": "click",
+      "target": "id=balloon: info",
+      "targets": [
+        ["id=balloon: info", "id"],
+        ["xpath=//div[@id='balloon: info']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div[3]/div", "xpath:idRelative"],
+        ["xpath=//body/div[3]/div[3]/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
       "id": "a60088f3-a34c-49a4-a721-42b9189182a3",
       "comment": "",
       "command": "verifyText",
