@@ -2,18 +2,12 @@ package grok_connect.utils;
 
 import com.google.gson.*;
 import java.lang.reflect.*;
+import java.util.List;
 
 
 public class PropertyAdapter implements JsonSerializer<Property> {
 
-    private Gson gson = new GsonBuilder().create();
-
-    private void addNullableSubClass(JsonObject obj, Object sub, String name) {
-        if (sub != null)
-            obj.add(name, gson.toJsonTree(sub, sub.getClass()));
-        else
-            obj.add(name, null);
-    }
+    private final Gson gson = new GsonBuilder().create();
 
     @Override
     public JsonElement serialize(Property src, Type typeOfSrc, JsonSerializationContext context) {
@@ -21,13 +15,12 @@ public class PropertyAdapter implements JsonSerializer<Property> {
 
         obj.addProperty("#type", "Property");
         obj.addProperty("name", src.name);
-        obj.addProperty("propertyType",
-                src.propertyType + (src.propertySubType == null ? "" : "<" + src.propertySubType + ">"));
+        obj.addProperty("propertyType", src.propertyType + (src.propertySubType == null ? "" : "<" + src.propertySubType + ">"));
         obj.addProperty("propertySubType", src.propertySubType);
         obj.addProperty("description", src.description);
 
-        addNullableSubClass(obj, src.choices, "choices");
-        addNullableSubClass(obj, src.info, "info");
+        obj.add("choices", src.choices != null ? gson.toJsonTree(src.choices, List.class) : null);
+        obj.add("info", src.info != null ? gson.toJsonTree(src.info, Prop.class) : null);
 
         return obj;
     }
