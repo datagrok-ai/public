@@ -3,7 +3,9 @@
 
 # 2020.05.27 Stable version
 
-* JavaScript API changed. Use `datagrok-api` NPM package as a code reference.
+## What's new
+
+### JavaScript API changed. Use `datagrok-api` NPM package as a code reference.
 
 Now API have 3 entry points: 
 * `DG` contains complete API code
@@ -24,6 +26,22 @@ TYPE_FLOAT => DG.TYPE.FLOAT
 Please, refer to the [JavaScript examples](https://public.datagrok.ai/js) to migrate your code.
 See also:
 * [Developing packages](https://datagrok.ai/help/develop/develop) 
+
+### New scripting demos
+
+  * [image classification](https://github.com/datagrok-ai/public/blob/master/packages/PythonScripts/scripts/image_classification.py)
+  * [cell imaging segmentation](https://github.com/datagrok-ai/public/blob/master/packages/PythonScripts/scripts/cell_imaging_segmentation.py)
+
+###File metadata extractors
+
+  * [Tika](https://github.com/datagrok-ai/public/tree/master/packages/Tika)
+  * [EXIF](https://github.com/datagrok-ai/public/blob/master/packages/PythonScripts/scripts/exif.py)
+  
+### First class support of Command Line Interface tools for Linux in scripting:
+  * [CLI](https://github.com/datagrok-ai/public/tree/master/packages/CLI)
+  * [Tika](https://github.com/datagrok-ai/public/tree/master/packages/Tika)
+  
+### [ChemSpace integration](https://github.com/datagrok-ai/public/tree/master/packages/Chemspace)
 
 ## Latest docker images
 * Datagrok (new): `766822877060.dkr.ecr.us-east-2.amazonaws.com/datagrok:1.0.77-c1d42b4` [download](https://dev.datagrok.ai/docker_images/datagrok-1.0.77-c1d42b4.tar)
