@@ -1,6 +1,5 @@
 package grok_connect;
 
-import grok_connect.table_query.TableQuery;
 import spark.*;
 import java.io.*;
 import java.util.*;
@@ -13,13 +12,14 @@ import serialization.*;
 import org.restlet.data.Status;
 import javax.ws.rs.core.MediaType;
 import grok_connect.utils.*;
+import grok_connect.table_query.*;
 import grok_connect.connectors_info.*;
 
 
 public class GrokConnect {
     public static void main(String[] args) {
         int port = 1234;
-        String uri = "http://localhost:" + Integer.toString(port);
+        String uri = "http://localhost:" + port;
 
         try {
             BasicConfigurator.configure();
@@ -97,6 +97,7 @@ public class GrokConnect {
         post("/test", (request, response) -> {
             DataConnection connection = gson.fromJson(request.body(), DataConnection.class);
             DataProvider provider = DataProvider.getByName(connection.dataSource);
+            response.type(MediaType.TEXT_PLAIN);
             return provider.testConnection(connection);
         });
 
@@ -158,6 +159,7 @@ public class GrokConnect {
             List<DataSource> dataSources = new ArrayList<>();
             for (DataProvider provider : DataProvider.Providers)
                 dataSources.add(provider.descriptor);
+            response.type(MediaType.APPLICATION_JSON);
             return gson.toJson(dataSources);
         });
 
@@ -170,9 +172,10 @@ public class GrokConnect {
             GrokConnect s = new GrokConnect();
             System.out.println(s.getClass().getPackage().getSpecificationVersion());
             System.out.println(s.getClass().getPackage().getImplementationVersion());
+            response.type(MediaType.APPLICATION_JSON);
             return "{\n" +
-                    "    'name': 'GrokConnect server',\n" +
-                    "    'version': '1.0.3'\n" +
+                    "    \"name\": \"GrokConnect server\",\n" +
+                    "    \"version\": \"1.0.3\"\n" +
                     "}";
         });
     }
@@ -188,7 +191,7 @@ public class GrokConnect {
     }
 
     private static void buildExceptionResponse(Response response, Map<String, String> exception) {
-        response.type(MediaType.TEXT_HTML);
+        response.type(MediaType.TEXT_PLAIN);
         response.body(exception.get("errorMessage") + "\n" + exception.get("errorStackTrace"));
         response.status(Status.SERVER_ERROR_INTERNAL.getCode());
     }
