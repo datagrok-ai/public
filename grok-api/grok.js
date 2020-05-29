@@ -151,7 +151,7 @@ class Data {
 
 
 class Settings {
-    /** Hide dock tabs in presentaion mode **/
+    /** Hide dock tabs in presentation mode **/
     get hideTabsInPresentationMode() { return grok_Get_HideTabsInPresentationMode(); }
     set hideTabsInPresentationMode(x) { return grok_Set_HideTabsInPresentationMode(x); }
 
@@ -162,8 +162,23 @@ class Settings {
 
 
 class Windows {
-    get sidebar() { return grok_Windows_Get_Sidebar(); }
-    set sidebar(x) { return grok_Windows_Get_Sidebar(x); }
+    get showSidebar() { return grok_Windows_Get_ShowSidebar(); }
+    set showSidebar(x) { return grok_Windows_Set_ShowSidebar(x); }
+
+    get showHelp() { return grok_Windows_Get_ShowSidebar(); }
+    set showHelp(x) { return grok_Windows_Set_ShowSidebar(x); }
+
+    get showProperties() { return grok_Windows_Get_ShowProperties(); }
+    set showProperties(x) { return grok_Windows_Set_ShowProperties(x); }
+
+    get showVariables() { return grok_Windows_Get_ShowVariables(); }
+    set showVariables(x) { return grok_Windows_Set_ShowVariables(x); }
+
+    get showTables() { return grok_Windows_Get_ShowTables(); }
+    set showTables(x) { return grok_Windows_Set_ShowTables(x); }
+
+    get showColumns() { return grok_Windows_Get_ShowColumns(); }
+    set showColumns(x) { return grok_Windows_Set_ShowColumns(x); }
 }
 
 

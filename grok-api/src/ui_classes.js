@@ -1,4 +1,4 @@
-import {toJs} from "./wrappers";
+import {toDart, toJs} from "./wrappers";
 import {_sub} from "./events";
 
 export class Widget {
@@ -82,7 +82,7 @@ export class Dialog {
     show() { grok_Dialog_Show(this.d); return this; }
 
     /** @returns {Dialog} */
-    add(x) { grok_Dialog_Add(this.d, x); return this; }
+    add(x) { grok_Dialog_Add(this.d, toDart(x)); return this; }
 }
 
 
@@ -113,7 +113,11 @@ export class Balloon {
 
 /// Input control for Property.
 export class InputBase {
-    constructor(d) { this.d = d; }
+    constructor(d, onChanged = null) {
+        this.d = d;
+        if (onChanged != null)
+            this.onChanged((_) => onChanged(this.value));
+    }
 
     get root() { return grok_InputBase_Get_Root(this.d); };
     get caption() { return grok_InputBase_Get_Caption(this.d); };
