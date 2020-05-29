@@ -120,8 +120,6 @@ export class EventBus {
 
     constructor() {
         this._streams = new Map();
-        this.subject = new rxjs.Subject();
-
     }
 
     onEvent(type) {
