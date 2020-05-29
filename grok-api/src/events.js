@@ -1,6 +1,6 @@
 import * as rxjs from "rxjs";
 import * as rxjsOperators from "rxjs/operators";
-import {toDart, toJs} from "./wrappers";
+import {toJs} from "./wrappers";
 
 export function debounce(observable, milliseconds = 100) {
     return observable.pipe(rxjsOperators.debounceTime(milliseconds));
@@ -36,17 +36,19 @@ export function observeStream(dartStream) {
 
 
 export class Events {
+
+    constructor() {
+        this.customEventBus = new EventBus();
+    }
+
     onEvent(eventId) { return __obs(eventId); }
 
     onCustomEvent(eventId) {
-        return rxjs.fromEventPattern(
-            function(handler) { return grok_OnCustomEvent(eventId, function (x) { handler(x); }); },
-            function(handler, d) { new StreamSubscription(d).cancel(); }
-        );
+        return this.customEventBus.onEvent(eventId);
     }
 
     fireCustomEvent(eventId, arg) {
-        return grok_FireCustomEvent(eventId, arg);
+        return this.customEventBus.fire(eventId, arg);
     }
 
     get onCurrentViewChanged () { return __obs('d4-current-view-changed'); }
@@ -115,6 +117,39 @@ export class EventData {
 
 /** Central event hub. */
 export class EventBus {
+
+    constructor() {
+        this._streams = new Map();
+        this.subject = new rxjs.Subject();
+
+    }
+
+    onEvent(type) {
+        let subject = this._getSubject(type);
+
+        return new rxjs.Observable(function subscribe(observer) {
+            subject.subscribe({
+                next: (v) => observer.next(v),
+                error: (err) => observer.error(err),
+                complete: () => observer.complete()
+            });
+        });
+    }
+
+    _getSubject(type) {
+        if (!this._streams.has(type)) {
+            let s = new rxjs.Subject();
+            this._streams.set(type, s);
+            return s;
+        }
+
+        return this._streams.get(type);
+    }
+
+    fire(type, data) {
+        let subject = this._getSubject(type);
+        subject.next(data);
+    }
 
 }
 
