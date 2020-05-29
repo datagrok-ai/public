@@ -8,5 +8,5 @@ using SQL queries via JDBC driver .
 
 See also:
 
-  * [Data Connection](data-connection.md)
+  * [Data Connection](../data-connection.md)
   * [Vertica](https://www.vertica.com/overview/)

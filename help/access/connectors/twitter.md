@@ -8,5 +8,5 @@ search key and geocode parameters and return results in tabular form.
 
 See also:
 
-  * [Data Connection](data-connection.md)
+  * [Data Connection](../data-connection.md)
   * [Twitter](https://twitter.com/)
