@@ -58,7 +58,7 @@ structure, they should be located in separate folders.
         * To change CSV delimiter adjust "serialization.format" and "field.delim" parameters
         * To skip header line add "skip.header.line.count" parameter
 
-* Create [Data Connection](data-connection.md) in the Datagrok platforms.
+* Create [Data Connection](../data-connection.md) in the Datagrok platforms.
     For example:
       - Name: northwind
       - Server: athena.us-east-2.amazonaws.com
@@ -72,7 +72,7 @@ structure, they should be located in separate folders.
       * Server has following format: "athena.<region>.amazonaws.com"
       * Do not forget "/" at "S3 Output Location" parameter end 
       
-* Create [Data Query](data-query.md) under new connection:
+* Create [Data Query](../data-query.md) under new connection:
     For example:
       
     ```sql
@@ -86,6 +86,6 @@ structure, they should be located in separate folders.
 See also:
 
   * [Data Connection](../data-connection.md)
-  * [Data Query](data-query.md)
+  * [Data Query](../data-query.md)
   * [Amazon Athena](https://docs.aws.amazon.com/athena/latest/ug/what-is.html)
  

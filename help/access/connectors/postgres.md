@@ -7,6 +7,6 @@ using SQL queries via JDBC driver .
 
 See also:
 
-* [Data Connection](data-connection.md)
+* [Data Connection](../data-connection.md)
 * [PostgreSQL](https://www.postgresql.org/) 
 * [Wikipedia](https://en.wikipedia.org/wiki/PostgreSQL)
