@@ -60,7 +60,6 @@ You can use these fields to filter jobs using [smart search](../overview/smart-s
 See also:
 
   * [Data Pipeline](data-pipeline.md)
-  * [Data Source](data-source.md)
   * [Data Connection](data-connection.md)
   * [Data Query](data-query.md)
   * [Function Call](../overview/functions/function-call.md)

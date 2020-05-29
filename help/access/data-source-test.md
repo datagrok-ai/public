@@ -5,9 +5,6 @@
 
 [User](../govern/user.md) in system can connect to data from different sources. 
 
-[Data source](data-source.md) can represent a database, an Excel file, a CSV file, a web service, 
-or basically anything that is capable of providing the data.
-
 ## Testing scenarios
 
 1. Call the context menu of the data source
@@ -37,4 +34,3 @@ See also:
  * [Data Connections test](../tests/data-connection-test.md)
  * [Data Job test](../tests/data-job-test.md)
  * [Data Queries test](../tests/data-query-test.md)
- * [Data Sourse](data-source.md)

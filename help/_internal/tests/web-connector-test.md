@@ -42,7 +42,6 @@ Web connector allows ability to connect to API services that provide external so
 
 
 See also:
- * [Data Source](../entities/data-source.md)  
  * [Data connection](../entities/data-connection.md)
  * [Data connection Test](../entities/data-connection-test.md)
  * [Data query](../entities/data-query.md)

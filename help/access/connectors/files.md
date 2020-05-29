@@ -21,10 +21,27 @@ that were created in the last month that have at least two columns, one of them 
 molecules and another named "activity". It is also possible to perform such a search
 across all (or specified) data providers (including relational databases, etc) at once.   
 
+## Supported tabular formats
+
+* CSV
+* TXT
+* XLSX (Excel)
+* JSON
+* XML
+* KXL
+* GROK
+* RDS
+* RDA
+* SAS7BDAT
+* HDF5
+* NETCDF
+* MAT
+* EDF
+* ZIP archives containing files of supported types
+
 ![Files Browser](files-browser.gif "Files Browser")
 
 See also:
 
-  * [Data Source](data-source.md)
-  * [Data Connection](data-connection.md)
+  * [Data Connection](../data-connection.md)
   * [Files Indexer](../../access/files-indexer.md)

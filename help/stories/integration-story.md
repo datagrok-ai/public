@@ -24,7 +24,7 @@ Note that other languages, such as Java, C#, or Node.js can be integrated in a s
 ## Custom Data Connectors
 
 Out-of-the box, the platform comes with the data connectors  
-for [20+ popular databases](../access/data-source.md#databases), and the list is constantly growing.
+for [30+ popular databases](../access/data-connection.md#connectors), and the list is constantly growing.
 In addition to that, it is possible to develop your own data connectors, and seamlessly integrate them
 into the platform.
 

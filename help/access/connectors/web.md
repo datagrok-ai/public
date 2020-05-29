@@ -8,7 +8,6 @@ Provides access to data sources via REST API based on
 
 See also:
 
-  * [Data Source](data-source.md)
   * [Data Connection](data-connection.md)
   * [Swagger](https://swagger.io/)
   * [OpenAPI](https://swagger.io/docs/specification/about/)

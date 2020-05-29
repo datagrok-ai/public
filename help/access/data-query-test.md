@@ -3,7 +3,8 @@
 
 # Tests: Data Query
 
-[Data query](data-query.md) defines which data should be extracted from the [data source](data-source.md).
+[Data query](data-query.md) defines which data should be extracted from the 
+[data source](data-connection.md#connectors).
 For databases, that would typically be the SQL query; for Excel file, that would be sheet name, etc.
 The system allows you to create parameterized and non-parameterized [queries](data-query.md).
 

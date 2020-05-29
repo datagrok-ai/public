@@ -4,11 +4,9 @@
 # Oracle
 
 Provides access to [Oracle Database](https://www.oracle.com/database/) database
-using SQL queries via JDBC driver on [Grok Connect](data-source.md) server. 
+using SQL queries via the JDBC driver. 
 
 See also:
-
-  * [Data Source](data-source.md)
-  * [Data Connection](data-connection.md)
-  * [Oracle Database](https://www.oracle.com/database/)
-  * [Oracle Database Wiki](https://en.wikipedia.org/wiki/Oracle_Database)
+* [Data Connection](data-connection.md)
+* [Oracle Database](https://www.oracle.com/database/)
+* [Oracle Database Wiki](https://en.wikipedia.org/wiki/Oracle_Database)

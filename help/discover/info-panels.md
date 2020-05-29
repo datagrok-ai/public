@@ -11,11 +11,8 @@ You can use all features of the Grok platform, such as scripting, data
 querying and transformation pipeline, user-defined functions,
 markup, viewers, predictive models.
 
-Info panels are essentially scripts written in any language supported
-by the platform. However, in order to use Grok entities or interact
-with the UI, you might want to write it using GrokScript. GrokScript
-has seamless integration with other scripting languages via @Functions,
-so it is a universal solution.
+Info panels could be developed in any language supported
+by the platform. 
 
 ## What gets shown and when?
 

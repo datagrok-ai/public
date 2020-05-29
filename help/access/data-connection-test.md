@@ -3,9 +3,7 @@
 
 # Tests: Data Connection
 
-[Data connection](data-connection.md) defines a way to connect to a particular [Data Source](data-source.md)
-
-Data connection defines a way to connect to a particular data source
+[Data connection](data-connection.md) defines a way to connect to a particular data source.
 
 ## Testing scenarios
 
