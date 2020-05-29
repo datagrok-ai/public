@@ -119,7 +119,9 @@ export function multiChoiceInput(name, value, items) { return new InputBase(grok
 export function stringInput(name, value) { return new InputBase(grok_StringInput(name, value)); }
 export function floatInput(name, value) { return new InputBase(grok_FloatInput(name, value)); }
 export function dateInput(name, value) { return new InputBase(grok_DateInput(name, value.d)); }
-export function boolInput(name, value) { return new InputBase(grok_BoolInput(name, value)); }
+export function boolInput(name, value, callback = null) {
+    return new InputBase(grok_BoolInput(name, value), callback);
+}
 export function moleculeInput(name, value) { return new InputBase(grok_MoleculeInput(name, value)); }
 export function columnInput(name, table, value) { return new InputBase(grok_ColumnInput(name, table.d, value.d)); }
 export function columnsInput(name, table) { return new InputBase(grok_ColumnsInput(name, table.d)); }
