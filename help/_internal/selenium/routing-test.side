@@ -88,7 +88,7 @@
       "id": "031538ae-e43b-4c59-88b5-02b75e4c7948",
       "comment": "",
       "command": "pause",
-      "target": "3000",
+      "target": "5000",
       "targets": [],
       "value": ""
     }, {
@@ -147,7 +147,7 @@
       "id": "c1a82020-c063-48e3-bdb0-ee9e25cdbb7e",
       "comment": "",
       "command": "pause",
-      "target": "3000",
+      "target": "5000",
       "targets": [],
       "value": ""
     }, {
@@ -208,14 +208,21 @@
       "id": "7110ee16-0f7f-411d-9ffe-aa1fdd836a68",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='view-handle: Demog']",
-      "targets": [
-        ["css=.tab-handle:nth-child(4)", "css:finder"],
-        ["xpath=//div[@name='view-handle: Demog']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
-      ],
+      "target": "name=span-Demog",
+      "targets": [],
       "value": ""
+    }, {
+      "id": "4a4dade5-476b-42fc-916b-a1b3a0e09b96",
+      "comment": "",
+      "command": "verifyText",
+      "target": "xpath=//span[@name='span-Demog']",
+      "targets": [
+        ["css=.d4-ribbon-name > span:nth-child(1)", "css:finder"],
+        ["xpath=//span[@name='span-Demog']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/span", "xpath:idRelative"],
+        ["xpath=//div[2]/span", "xpath:position"]
+      ],
+      "value": "Demog"
     }, {
       "id": "d881c620-f665-45bd-b96a-6ca3a1a6b3bf",
       "comment": "",
@@ -227,7 +234,14 @@
       "id": "db7e27d1-3753-4ba0-9135-55dbbf90413b",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "5000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "b52c7d1c-1f67-4e32-9f2e-c742f3720883",
+      "comment": "",
+      "command": "pause",
+      "target": "2000",
       "targets": [],
       "value": ""
     }, {
@@ -245,17 +259,10 @@
       ],
       "value": ""
     }, {
-      "id": "b52c7d1c-1f67-4e32-9f2e-c742f3720883",
-      "comment": "",
-      "command": "pause",
-      "target": "2000",
-      "targets": [],
-      "value": ""
-    }, {
       "id": "d500bfe1-572b-40b7-b081-eb20b6aa2842",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='view-handle: menu']",
+      "target": "name=span-menu",
       "targets": [
         ["css=.tab-handle", "css:finder"],
         ["xpath=//div[@name='view-handle: SPGi']", "xpath:attributes"],
@@ -274,7 +281,7 @@
       "id": "93c7d5ab-4fe9-4cc9-ad24-f87b87b9eed5",
       "comment": "",
       "command": "pause",
-      "target": "3000",
+      "target": "5000",
       "targets": [],
       "value": ""
     }, {
@@ -295,7 +302,7 @@
       "id": "f96e2da9-f83b-4212-b691-a700a059db9e",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "css=.spgi-view-title",
+      "target": "name=span-SPGi",
       "targets": [
         ["css=.spgi-view-title", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div/div", "xpath:idRelative"],
@@ -324,7 +331,7 @@
       "id": "5a5425ac-e5b6-4728-8426-694d90dc5151",
       "comment": "",
       "command": "pause",
-      "target": "3000",
+      "target": "5000",
       "targets": [],
       "value": ""
     }, {
@@ -359,7 +366,7 @@
       "id": "3f2f1b4f-489c-42fb-a7ca-76bd4923521f",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='view-handle: Help']",
+      "target": "name=span-Help",
       "targets": [
         ["css=.tab-handle", "css:finder"],
         ["xpath=//div[@name='view-handle: Help']", "xpath:attributes"],
@@ -406,7 +413,7 @@
       "id": "c2459ef5-a955-4e95-a4da-d6b25b3588f7",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='view-handle: SDTM:LB:Preview']",
+      "target": "name=span-SDTM-LB-Preview",
       "targets": [
         ["css=.tab-handle:nth-child(3)", "css:finder"],
         ["xpath=//div[@name='view-handle: SDTM:LB:Preview']", "xpath:attributes"],
