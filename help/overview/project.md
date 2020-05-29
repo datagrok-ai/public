@@ -4,32 +4,50 @@
 # Project
 
 Project is a collection of entities along with the applied visualizations.
-Projects are used to group and share data and other assets with other users.
+Projects are used to group and share data and other assets with other users. One of the most
+common applications of projects are dashboards that consist of tables (with either
+static or dynamic data), and visualizations applied to them.
 
 ## Uploading a project
 
 Creating a project is easy. After getting the data of interest in the scratchpad project in [workspace](workspace.md),
-click _upload_ in the toolbar, and choose who you want to share the project with.
+click on the `UPLOAD` button. After the project gets uploaded to the server, a separate 
+window pops us asking you whom to share the project with. By default, it is only accessible by you,
+you have to share it in order for others to use it.
 
-Or, if you are editing an existing project, click _save_ to save your changes.
+Or, if you are editing an existing project, click `SAVE` to save your changes.
 
-Use _share_ button in the top right corner or context menu to edit permissions to access your project.
-Sharing a project you automatically share all entities and data inside.
+Use `Share` context action to edit access permissions. Sharing a project will 
+automatically share all entities and data inside.
+
+### Dynamic data
+
+Whenever a table is created by executing a [function](../overview/functions) 
+(such as a [database query](../access/data-query.md)), this information gets stored 
+with the table as a "generation script". This serves multiple purposes:
+* Provides lineage regarding
+* On-demand data refreshing (Table toolbox, "Query" panel, `REFRESH` button)
+* Enables publishing dashboards with the dynamic data
+  
+In the "Upload project" dialog, a "Data sync" option appears next to the tables
+that have a generation script defined. This option determines whether the data  
+should be stored as a static snapshot, or as a generation script.
+In the latter case, the function will be re-executed whenever the project is opened.     
 
 ## Filtering
 
-You can use these fields to filter projects with [smart search](smart-search.md):
+The following fields could be used to filter projects with [smart search](smart-search.md):
 
-|              | Description                                 |
+| Field        | Description                                 |
 |--------------|---------------------------------------------|
 | name         |                                             |
 | description  |                                             |
 | createdOn    |                                             |
 | updatedOn    |                                             |
-| author       | [User](../govern/user.md) object                      |
-| starredBy    | [User](../govern/user.md) object                      |
-| commentedBy  | [User](../govern/user.md) object                      |
-| usedBy       | [User](../govern/user.md) object                      |
+| author       | [User](../govern/user.md) object            |
+| starredBy    | [User](../govern/user.md) object            |
+| commentedBy  | [User](../govern/user.md) object            |
+| usedBy       | [User](../govern/user.md) object            |
 
 See also:
 
