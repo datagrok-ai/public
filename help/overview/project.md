@@ -25,7 +25,7 @@ automatically share all entities and data inside.
 Whenever a table is created by executing a [function](../overview/functions) 
 (such as a [database query](../access/data-query.md)), this information gets stored 
 with the table as a "generation script". This serves multiple purposes:
-* Provides lineage regarding
+* Provides data lineage
 * On-demand data refreshing (Table toolbox, "Query" panel, `REFRESH` button)
 * Enables publishing dashboards with the dynamic data
   
