@@ -11,7 +11,7 @@ export function __obs(eventId, object = null) {
 
     if (object == null) {
         let observable = rxjs.fromEventPattern(
-            function(handler) { return grok_OnEvent(eventId, function (x, w) { handler(w ? toJs(x) : x); }); },
+            function(handler) { return grok_OnEvent(eventId, function (x) { handler(toJs(x)); }); },
             function(handler, d) { new StreamSubscription(d).cancel(); }
         );
         return observable;
@@ -37,8 +37,16 @@ export function observeStream(dartStream) {
 
 export class Events {
     onEvent(eventId) { return __obs(eventId); }
-    fireEvent(eventId, arg) {
-        return grok_FireEvent(eventId, arg);
+
+    onCustomEvent(eventId) {
+        return rxjs.fromEventPattern(
+            function(handler) { return grok_OnCustomEvent(eventId, function (x) { handler(x); }); },
+            function(handler, d) { new StreamSubscription(d).cancel(); }
+        );
+    }
+
+    fireCustomEvent(eventId, arg) {
+        return grok_FireCustomEvent(eventId, arg);
     }
 
     get onCurrentViewChanged () { return __obs('d4-current-view-changed'); }
@@ -71,7 +79,7 @@ export class Stream {
 
     toObservable() {
         let observable = rxjs.fromEventPattern(
-            function(handler) { return grok_OnEvent(eventId, function (x, w) { handler(w ? toJs(x) : x); }); },
+            function(handler) { return grok_OnEvent(eventId, function (x) { handler(w ? toJs(x) : x); }); },
             function(handler, streamSubscription) { streamSubscription.cancel(); }
         );
         return observable;
