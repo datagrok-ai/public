@@ -58,7 +58,26 @@
       "id": "ab8f2726-12a0-40e3-ac90-4730f3344006",
       "comment": "",
       "command": "pause",
-      "target": "2000",
+      "target": "4000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "a4ef6ff3-a94d-4d89-bf5a-3df181c41cbd",
+      "comment": "",
+      "command": "doubleClick",
+      "target": "xpath=//i[@name='icon-window']",
+      "targets": [
+        ["css=.fa-window", "css:finder"],
+        ["xpath=//i[@name='icon-window']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div[8]/i", "xpath:idRelative"],
+        ["xpath=//div[8]/i", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "8483b235-7415-41d5-be5c-abc7fbbdc158",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
       "targets": [],
       "value": ""
     }, {
@@ -153,11 +172,11 @@
       "id": "88a82997-1cab-4512-9540-c8f38109d1c2",
       "comment": "",
       "command": "click",
-      "target": "css=td",
+      "target": "xpath=//span[contains(.,'selenium2')]",
       "targets": [
-        ["css=td", "css:finder"],
-        ["xpath=//td", "xpath:position"],
-        ["xpath=//td[contains(.,'selenium2')]", "xpath:innerText"]
+        ["css=.user-selector-user-row:nth-child(1) > .user-selector-user-name", "css:finder"],
+        ["xpath=//td/div/span", "xpath:position"],
+        ["xpath=//span[contains(.,'selenium2')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
@@ -206,14 +225,14 @@
       "targets": [],
       "value": ""
     }, {
-      "id": "dd0fa093-dfab-4f8a-afc0-fbc23b48dce2",
+      "id": "55024692-ee35-48b6-bb48-06b1a21ea1b3",
       "comment": "",
       "command": "click",
-      "target": "css=td",
+      "target": "xpath=//span[contains(.,'selenium2')]",
       "targets": [
-        ["css=td", "css:finder"],
-        ["xpath=//td", "xpath:position"],
-        ["xpath=//td[contains(.,'selenium2')]", "xpath:innerText"]
+        ["css=.user-selector-user-row:nth-child(1) > .user-selector-user-name", "css:finder"],
+        ["xpath=//td/div/span", "xpath:position"],
+        ["xpath=//span[contains(.,'selenium2')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
@@ -227,9 +246,8 @@
       "id": "572231ed-5b27-454b-9a6c-ea5062377ab5",
       "comment": "",
       "command": "click",
-      "target": "id=editor",
+      "target": "xpath=//select[@id='editor']",
       "targets": [
-        ["id=editor", "id"],
         ["css=.grok-permissions-action > #editor", "css:finder"],
         ["xpath=//select[@id='editor']", "xpath:attributes"],
         ["xpath=//select", "xpath:position"]
@@ -239,8 +257,12 @@
       "id": "60df373f-9e6a-4ee4-a646-16d22fba03aa",
       "comment": "",
       "command": "select",
-      "target": "id=editor",
-      "targets": [],
+      "target": "xpath=//select[@id='editor']",
+      "targets": [
+        ["css=.grok-permissions-action > #editor", "css:finder"],
+        ["xpath=//select[@id='editor']", "xpath:attributes"],
+        ["xpath=//select", "xpath:position"]
+      ],
       "value": "label=EditUser"
     }, {
       "id": "1ac09977-7e24-47bd-aee1-74a526e48ea2",
@@ -282,14 +304,14 @@
       "targets": [],
       "value": ""
     }, {
-      "id": "babd9171-b0b3-4772-97f3-1990952b8377",
+      "id": "aa23a528-78e8-4468-860a-edd5e0a4a6d3",
       "comment": "",
       "command": "click",
-      "target": "css=td",
+      "target": "xpath=//span[contains(.,'selenium2')]",
       "targets": [
-        ["css=td", "css:finder"],
-        ["xpath=//td", "xpath:position"],
-        ["xpath=//td[contains(.,'selenium2')]", "xpath:innerText"]
+        ["css=.user-selector-user-row:nth-child(1) > .user-selector-user-name", "css:finder"],
+        ["xpath=//td/div/span", "xpath:position"],
+        ["xpath=//span[contains(.,'selenium2')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
@@ -346,14 +368,14 @@
       "targets": [],
       "value": ""
     }, {
-      "id": "698cfd79-2efb-47ac-9fd3-9f01b538175a",
+      "id": "712ff5d2-d285-45ff-b993-2a0eae2a6cbd",
       "comment": "",
       "command": "click",
-      "target": "css=td",
+      "target": "xpath=//span[contains(.,'selenium2')]",
       "targets": [
-        ["css=td", "css:finder"],
-        ["xpath=//td", "xpath:position"],
-        ["xpath=//td[contains(.,'selenium2')]", "xpath:innerText"]
+        ["css=.user-selector-user-row:nth-child(1) > .user-selector-user-name", "css:finder"],
+        ["xpath=//td/div/span", "xpath:position"],
+        ["xpath=//span[contains(.,'selenium2')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
@@ -410,14 +432,14 @@
       "targets": [],
       "value": ""
     }, {
-      "id": "e03be006-89f5-499c-9ca6-e2276c0e0754",
+      "id": "f25d1dc3-1278-4e43-a594-013d71bf91df",
       "comment": "",
       "command": "click",
-      "target": "css=td",
+      "target": "xpath=//span[contains(.,'selenium2')]",
       "targets": [
-        ["css=td", "css:finder"],
-        ["xpath=//td", "xpath:position"],
-        ["xpath=//td[contains(.,'selenium2')]", "xpath:innerText"]
+        ["css=.user-selector-user-row:nth-child(1) > .user-selector-user-name", "css:finder"],
+        ["xpath=//td/div/span", "xpath:position"],
+        ["xpath=//span[contains(.,'selenium2')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
@@ -474,14 +496,14 @@
       "targets": [],
       "value": ""
     }, {
-      "id": "4dffcb8d-7caf-4603-9da9-f8d8dc01309d",
+      "id": "e388aa50-1b7f-4df1-afaf-03c080bb5002",
       "comment": "",
       "command": "click",
-      "target": "css=td",
+      "target": "xpath=//span[contains(.,'selenium2')]",
       "targets": [
-        ["css=td", "css:finder"],
-        ["xpath=//td", "xpath:position"],
-        ["xpath=//td[contains(.,'selenium2')]", "xpath:innerText"]
+        ["css=.user-selector-user-row:nth-child(1) > .user-selector-user-name", "css:finder"],
+        ["xpath=//td/div/span", "xpath:position"],
+        ["xpath=//span[contains(.,'selenium2')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
@@ -538,14 +560,14 @@
       "targets": [],
       "value": ""
     }, {
-      "id": "26c135b7-19c0-4399-a5b5-03c682db2658",
+      "id": "44e8e85c-3c7c-4ee0-ab04-637791d54a9d",
       "comment": "",
       "command": "click",
-      "target": "css=td",
+      "target": "xpath=//span[contains(.,'selenium2')]",
       "targets": [
-        ["css=td", "css:finder"],
-        ["xpath=//td", "xpath:position"],
-        ["xpath=//td[contains(.,'selenium2')]", "xpath:innerText"]
+        ["css=.user-selector-user-row:nth-child(1) > .user-selector-user-name", "css:finder"],
+        ["xpath=//td/div/span", "xpath:position"],
+        ["xpath=//span[contains(.,'selenium2')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
@@ -602,14 +624,14 @@
       "targets": [],
       "value": ""
     }, {
-      "id": "e415da1d-11c3-41cb-b2ab-eb853c7a8d04",
+      "id": "65e966f0-4836-466e-8193-c5f1b30437e0",
       "comment": "",
       "command": "click",
-      "target": "css=td",
+      "target": "xpath=//span[contains(.,'selenium2')]",
       "targets": [
-        ["css=td", "css:finder"],
-        ["xpath=//td", "xpath:position"],
-        ["xpath=//td[contains(.,'selenium2')]", "xpath:innerText"]
+        ["css=.user-selector-user-row:nth-child(1) > .user-selector-user-name", "css:finder"],
+        ["xpath=//td/div/span", "xpath:position"],
+        ["xpath=//span[contains(.,'selenium2')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
@@ -666,14 +688,14 @@
       "targets": [],
       "value": ""
     }, {
-      "id": "c187f8e0-d910-4410-92c1-99b31423311a",
+      "id": "9218b6b0-682b-46f1-bea6-ac91fec9196d",
       "comment": "",
       "command": "click",
-      "target": "css=td",
+      "target": "xpath=//span[contains(.,'selenium2')]",
       "targets": [
-        ["css=td", "css:finder"],
-        ["xpath=//td", "xpath:position"],
-        ["xpath=//td[contains(.,'selenium2')]", "xpath:innerText"]
+        ["css=.user-selector-user-row:nth-child(1) > .user-selector-user-name", "css:finder"],
+        ["xpath=//td/div/span", "xpath:position"],
+        ["xpath=//span[contains(.,'selenium2')]", "xpath:innerText"]
       ],
       "value": ""
     }, {

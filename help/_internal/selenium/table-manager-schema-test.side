@@ -299,7 +299,7 @@
       "id": "e3d2d604-1bfc-4fcd-b3b0-28f9a693524b",
       "comment": "",
       "command": "executeScript",
-      "target": "element = document.querySelector(\"#Heat// map > canvas:nth-child(4)\");  event = new MouseEvent(\"click\", {     bubbles: true,     cancelable: false,     view: window,     button: 2,     buttons: 0,     clientX: element.getBoundingClientRect().x+30,     clientY: element.getBoundingClientRect().y+100}); element.dispatchEvent(event);",
+      "target": "element = document.querySelector(\".splitter-container-vertical:nth-child(3) .panel-content div[name=viewer-Grid] canvas:nth-child(4)\");  event = new MouseEvent(\"click\", {     bubbles: true,     cancelable: false,     view: window,     button: 2,     buttons: 0,     clientX: element.getBoundingClientRect().x+30,     clientY: element.getBoundingClientRect().y+100}); element.dispatchEvent(event);",
       "targets": [],
       "value": ""
     }, {
@@ -308,17 +308,6 @@
       "command": "pause",
       "target": "1000",
       "targets": [],
-      "value": ""
-    }, {
-      "id": "4f20fccd-c4d7-4da4-a0e1-5acc61c8ffd7",
-      "comment": "",
-      "command": "verifyElementPresent",
-      "target": "css=#Heat\\ map > canvas:nth-child(4)",
-      "targets": [
-        ["css=#Heat\\ map > canvas:nth-child(4)", "css:finder"],
-        ["xpath=//div[@id='Heat map']/canvas[2]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/canvas[2]", "xpath:position"]
-      ],
       "value": ""
     }, {
       "id": "6fc81737-90cb-413e-8d7b-a5e65c5de404",
@@ -336,7 +325,7 @@
       "id": "7aa736d5-2fc4-471a-bac7-345e7e8c8c1b",
       "comment": "",
       "command": "executeScript",
-      "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea > div.layout-dockarea > div > div > div:nth-child(1) > div:nth-child(3) > div.panel-content div[name=viewer-Grid] canvas:nth-child(4)\"); event = new MouseEvent(\"contextmenu\", {     bubbles: true,     cancelable: false,     view: window,     button: 2,     buttons: 0,     clientX: element.getBoundingClientRect().x+30,     clientY: element.getBoundingClientRect().y+100}); element.dispatchEvent(event);",
+      "target": "element = document.querySelector(\".splitter-container-vertical:nth-child(3) .panel-content div[name=viewer-Grid] canvas:nth-child(4)\"); event = new MouseEvent(\"contextmenu\", {     bubbles: true,     cancelable: false,     view: window,     button: 2,     buttons: 0,     clientX: element.getBoundingClientRect().x+30,     clientY: element.getBoundingClientRect().y+100}); element.dispatchEvent(event);",
       "targets": [],
       "value": ""
     }, {
@@ -391,7 +380,7 @@
       "id": "abdf1a2a-4a00-40ed-90a9-f9add8c06235",
       "comment": "",
       "command": "executeScript",
-      "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea > div.layout-dockarea > div > div > div:nth-child(1) > div:nth-child(3) > div.panel-content div[name=viewer-Grid] canvas:nth-child(4)\"); event = new MouseEvent(\"contextmenu\", {     bubbles: true,     cancelable: false,     view: window,     button: 2,     buttons: 0,     clientX: element.getBoundingClientRect().x+30,     clientY: element.getBoundingClientRect().y+100}); element.dispatchEvent(event);",
+      "target": "element = document.querySelector(\".splitter-container-vertical:nth-child(3) .panel-content div[name=viewer-Grid]\"); event = new MouseEvent(\"contextmenu\", {     bubbles: true,     cancelable: false,     view: window,     button: 2,     buttons: 0,     clientX: element.getBoundingClientRect().x+30,     clientY: element.getBoundingClientRect().y+100}); element.dispatchEvent(event);",
       "targets": [],
       "value": ""
     }, {
@@ -440,6 +429,25 @@
         ["xpath=//i[@name='icon-exclamation-triangle']", "xpath:attributes"],
         ["xpath=//i", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "5bb1a213-b98b-46c0-b67e-75e0a38ef90a",
+      "comment": "",
+      "command": "doubleClick",
+      "target": "xpath=//i[@name='icon-window']",
+      "targets": [
+        ["css=.fa-window", "css:finder"],
+        ["xpath=//i[@name='icon-window']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div[8]/i", "xpath:idRelative"],
+        ["xpath=//div[8]/i", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "adc894ff-e84e-47f8-861e-0a3eea344ca0",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "d0e51299-37e4-468d-bc39-4e3f3c3ccb84",
