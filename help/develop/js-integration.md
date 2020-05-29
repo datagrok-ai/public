@@ -9,8 +9,8 @@ It is written in an object-oriented style and is easy to use.
 
 Access the platform via the global 'gr' variable. The API is self-explanatory, let's take a look at the following example:
 ```javascript
-let demog = grok.testData('demog', 5000);       // create test table
-let view = grok.addTableView(demog);            // add it as a view
+let demog = grok.data.testData('demog', 5000);       // create test table
+let view = grok.shell.addTableView(demog);            // add it as a view
 let hist = view.addViewer('histogram');       // add histogram to that view
 hist.options({'valueColumnName': 'weight'});  // customize the histogram
 ``` 
@@ -33,7 +33,7 @@ capabilities of the JavaScript integration.
 ```javascript
 // Table manipulations
 
-demog = grok.testData('demog', 5000);
+demog = grok.data.testData('demog', 5000);
 demog.cols.remove('sex');
 foo = demog.cols.addNew('foo', 'int');
 demog.rows.removeAt(1, 3);
@@ -57,8 +57,8 @@ demog.selection.findNext(0, false);
 ```javascript
 // An example of using Dart's future as JavaScript's promises
 
-grok.openTable("8352e030-5970-11e9-b8a0-4f392518d7b3")
-  .then(t => grok.balloon.info(t.name));
+grok.shell.openTable("8352e030-5970-11e9-b8a0-4f392518d7b3")
+  .then(t => grok.shell.info(t.name));
 ```
 
 #### Registering JavaScript functions
@@ -109,39 +109,39 @@ Demonstrates subscribing to platform events.
 
 ```javascript
 
-   demog = grok.testData('demog', 5000);
-   view = grok.addTableView(demog);
+   demog = grok.data.testData('demog', 5000);
+   view = grok.shell.addTableView(demog);
    
-   function info(s) { grok.balloon.info(s); }
+   function info(s) { grok.shell.info(s); }
    
-   demog.onValuesChanged((_) => info('ddt-values-changed'));
-   demog.onCurrentRowChanged((_) => info('ddt-current-row-changed'));
-   demog.onMouseOverRowChanged((_) => info('ddt-mouse-over-row-changed'));
-   demog.onCurrentColChanged((_) => info('ddt-current-col-changed'));
-   demog.onMouseOverColChanged((_) => info('ddt-mouse-over-col-changed'));
-   demog.onCurrentCellChanged((_) => info('ddt-current-cell-changed'));
-   demog.onMouseOverRowGroupChanged((_) => info('ddt-mouse-over-row-group-changed'));
-   demog.onNameChanged((_) => info('ddt-table-name-changed'));
-   demog.onMetadataChanged((_) => info('ddt-table-metadata-changed'));
-   demog.onColumnNameChanged((_) => info('ddt-table-column-name-changed'));
-   demog.onColumnSelectionChanged((_) => info('ddt-column-selection-changed'));
-   demog.onColumnsChanged((_) => info('ddt-columns-changed'));
-   demog.onColumnsAdded((_) => info('ddt-columns-added'));
-   demog.onColumnsRemoved((_) => info('ddt-columns-removed'));
-   demog.onRowsRemoved((_) => info('ddt-rows-removed'));
-   demog.onDataChanged((_) => info('ddt-data-changed'));
-   demog.onFilterChanged((_) => info('ddt-filter-changed'));
-   demog.onSelectionChanged((_) => info('ddt-selection-changed'));
+   demog.onValuesChanged.subscribe((_) => info('ddt-values-changed'));
+   demog.onCurrentRowChanged.subscribe((_) => info('ddt-current-row-changed'));
+   demog.onMouseOverRowChanged.subscribe((_) => info('ddt-mouse-over-row-changed'));
+   demog.onCurrentColChanged.subscribe((_) => info('ddt-current-col-changed'));
+   demog.onMouseOverColChanged.subscribe((_) => info('ddt-mouse-over-col-changed'));
+   demog.onCurrentCellChanged.subscribe((_) => info('ddt-current-cell-changed'));
+   demog.onMouseOverRowGroupChanged.subscribe((_) => info('ddt-mouse-over-row-group-changed'));
+   demog.onNameChanged.subscribe((_) => info('ddt-table-name-changed'));
+   demog.onMetadataChanged.subscribe((_) => info('ddt-table-metadata-changed'));
+   demog.onColumnNameChanged.subscribe((_) => info('ddt-table-column-name-changed'));
+   demog.onColumnSelectionChanged.subscribe((_) => info('ddt-column-selection-changed'));
+   demog.onColumnsChanged.subscribe((_) => info('ddt-columns-changed'));
+   demog.onColumnsAdded.subscribe((_) => info('ddt-columns-added'));
+   demog.onColumnsRemoved.subscribe((_) => info('ddt-columns-removed'));
+   demog.onRowsRemoved.subscribe((_) => info('ddt-rows-removed'));
+   demog.onDataChanged.subscribe((_) => info('ddt-data-changed'));
+   demog.onFilterChanged.subscribe((_) => info('ddt-filter-changed'));
+   demog.onSelectionChanged.subscribe((_) => info('ddt-selection-changed'));
    
-   grok.onProjectClosed(p => info(`${p.name}: closed`));
-   grok.onProjectModified(p => info(`${p.name}: modified`));
-   grok.onProjectOpened(p => info(`${p.name}: opened`));
-   grok.onProjectSaved(p => info(`${p.name}: saved`));
-   grok.onProjectUploaded(p => info(`${p.name}: uploaded`));
+   grok.events.onProjectClosed.subscribe(p => info(`${p.name}: closed`));
+   grok.events.onProjectModified.subscribe(p => info(`${p.name}: modified`));
+   grok.events.onProjectOpened.subscribe(p => info(`${p.name}: opened`));
+   grok.events.onProjectSaved.subscribe(p => info(`${p.name}: saved`));
+   grok.events.onProjectUploaded.subscribe(p => info(`${p.name}: uploaded`));
    
-   grok.onCurrentProjectChanged(p => info(`Current project changed: ${grok.project.name}`));
+   grok.events.onCurrentProjectChanged.subscribe(p => info(`Current project changed: ${grok.shell.project.name}`));
    
-   grok.onEvent('d4-current-view-changed', (_) => info('view changed'));
+   grok.events.onEvent.subscribe('d4-current-view-changed', (_) => info('view changed'));
 ```
 
 #### Creating custom viewers
@@ -158,13 +158,13 @@ Barry,Alice,2
 Elvis,Sarah,2
 Elvis,Alice,2
 Sarah,Alice,4`;
-let table = grok.parseCsv(csv);
+let table = grok.data.parseCsv(csv);
 
 let viewer = new SankeyViewer();
 viewer.table = table;
 viewer.options = {source: 'source', target: 'target', value: 'value'};
 viewer.init();
-grok.dockElement(viewer.root, 'Sankey Chart', 'left', 0.5);
+grok.shell.dockElement(viewer.root, 'Sankey Chart', 'left', 0.5);
 ```
 
 #### Docking
@@ -174,5 +174,5 @@ Docking an arbitrary element
 ```javascript
 let e = document.createElement('DIV');
 e.innerText = 'This element has been created in JavaScript';
-grok.dockElement(e, 'JS', 'left', 0.5);
+grok.shell.dockElement(e, 'JS', 'left', 0.5);
 ```
