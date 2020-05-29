@@ -31,7 +31,6 @@ See also:
   * [Data Query](data-query.md)
   * [Queries using SODA](https://dev.socrata.com/docs/queries)
   * [Data Pipeline](data-pipeline.md)
-  * [Data Source](data-source.md)
   * [Data Connection](data-connection.md)
   * [Data Query](data-query.md)
   * [Data Job](data-job.md)

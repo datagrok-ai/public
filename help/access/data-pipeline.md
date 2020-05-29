@@ -12,7 +12,7 @@ as well as the ability to cancel running jobs.
 
 ## Concepts
 
-Datagrok offers 30+ connectors to different [data sources](data-source.md). They include all
+Datagrok offers [30+ connectors](data-connection.md#connectors) to different data sources. They include all
 popular databases, as well as other queryable data sources, such as Twitter or Facebook. To view
 a list of data sources currently available to you, run **File | Connect to Data...**.
 
@@ -61,7 +61,6 @@ details.
 See also:
 
   * [Data Pipeline](data-pipeline.md)
-  * [Data Source](data-source.md)
   * [Data Connection](data-connection.md)
   * [Data Query](data-query.md)
   * [Data Job](data-job.md)

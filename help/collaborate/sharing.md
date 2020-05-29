@@ -10,7 +10,6 @@ shared, you are essentially granting a privilege (typically, 'view' or 'edit') t
 List of shareable objects
 
 * [Project](../overview/project.md)
-* [Data Source](../access/data-source.md)
 * [Data Connection](../access/data-connection.md)
 * [Data Query](../access/data-query.md)
 * [Data Job](../access/data-job.md)

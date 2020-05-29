@@ -4,7 +4,7 @@
 # Athena
 
 Provides access to [Amazon Athena](https://docs.aws.amazon.com/athena/latest/ug/what-is.html) service
-using SQL queries via JDBC driver on [Grok Connect](data-source.md) server. 
+using SQL queries via JDBC driver . 
 
 ## Link CSVs from S3 with Athena
 
@@ -85,8 +85,7 @@ structure, they should be located in separate folders.
        
 See also:
 
-  * [Data Source](data-source.md)
-  * [Data Connection](data-connection.md)
+  * [Data Connection](../data-connection.md)
   * [Data Query](data-query.md)
   * [Amazon Athena](https://docs.aws.amazon.com/athena/latest/ug/what-is.html)
  

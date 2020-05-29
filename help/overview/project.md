@@ -36,7 +36,6 @@ See also:
   * [Create Project](create-project.md)
   * [Project Gallery](project-gallery.md)
   * [Data Pipeline](../access/data-pipeline.md)
-  * [Data Source](../access/data-source.md)
   * [Data Connection](../access/data-connection.md)
   * [Data Query](../access/data-query.md)
   * [Data Job](../access/data-job.md)

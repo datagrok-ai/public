@@ -3,8 +3,8 @@
 
 # Oracle
 
-Provides access to [Vertica](https://www.vertica.com/overview/) database
-using SQL queries via JDBC driver . 
+Provides access to [Virtuoso](https://virtuoso.openlinksw.com/) data
+virtualization platform via the JDBC driver. 
 
 See also:
 

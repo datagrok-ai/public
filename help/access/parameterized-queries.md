@@ -22,7 +22,7 @@ select * from products where name == '@productName'
 
 ## Syntax
 
-The syntax for defining query parameters is based on [Scripting](../../compute/scripting.md), 
+The syntax for defining query parameters is based on [Scripting](../compute/scripting.md), 
 with some additions specific to queries.
 
 ### Header parameters
@@ -53,7 +53,7 @@ Comments style can be used '#' for Sparql.
 
 ### Options
 
-Options for supported data typed are described in [Scripting](../../compute/scripting.md) section. 
+Options for supported data typed are described in [Scripting](../compute/scripting.md) section. 
 
 | Option      | Description                              |
 |-------------|------------------------------------------|
@@ -81,7 +81,7 @@ SELECT DISTINCT shipCountry FROM Orders WHERE shipCountry LIKE '%' || @sub || '%
 
 Sometime, we want to give users the possibility to enter the filtering criteria as 
 a free text. On a server side, this query would be parsed and safely transformed to a proper
-SQL clause. Check out [search Patterns](../../explore/data-search-patterns.md) for more details.
+SQL clause. Check out [search Patterns](../explore/data-search-patterns.md) for more details.
 
 In this case, the input type has to be `string`, since the user will be entering 
 free-text query, and the actual data type should be put in the `pattern` option. Then,
@@ -158,7 +158,7 @@ provider-specific SQL query on the backend.
 
 See also:
 
-  * [Data Query](../data-query.md)
-  * [Search Patterns](../../explore/data-search-patterns.md)
+  * [Data Query](data-query.md)
+  * [Search Patterns](../explore/data-search-patterns.md)
   * [Function](../function.md)
-  * [Scripting](../../compute/scripting.md)
+  * [Scripting](../compute/scripting.md)

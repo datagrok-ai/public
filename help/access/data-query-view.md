@@ -20,7 +20,6 @@ To run query press F5, results will appear at the bottom of the screen. Save que
 See also:
 
   * [Data Pipeline](data-pipeline.md)
-  * [Data Source](data-source.md)
   * [Data Connection](data-connection.md)
   * [Data Query](data-query.md)
   * [Data Job](data-job.md)

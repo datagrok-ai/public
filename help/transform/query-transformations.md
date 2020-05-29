@@ -25,7 +25,6 @@ You can add steps manually and switch between steps to view results of each step
 See also:
 
   * [Data Pipeline](../access/data-pipeline.md)
-  * [Data Source](../access/data-source.md)
   * [Data Connection](../access/data-connection.md)
   * [Data Query](../access/data-query.md)
   * [Data Job](../access/data-job.md)

@@ -18,7 +18,6 @@ Save and use this query as a regular data query.
 See also:
 
   * [Data Pipeline](data-pipeline.md)
-  * [Data Source](data-source.md)
   * [Data Connection](data-connection.md)
   * [Data Query](data-query.md)
   * [Query View](../access/query-view.md)

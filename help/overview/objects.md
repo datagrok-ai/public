@@ -9,7 +9,6 @@ them. We call these objects 'entities'. Here they are:
 * [Function](functions/function.md)
 * [Function Call](functions/function-call.md)
 * [Data Pipeline](../access/data-pipeline.md)
-* [Data Source](../access/data-source.md)
 * [Data Connection](../access/data-connection.md)
 * [Data Query](../access/data-query.md)
 * [Data Job](../access/data-job.md)

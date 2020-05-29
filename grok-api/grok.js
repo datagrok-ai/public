@@ -15,6 +15,11 @@ import {Menu, TabControl} from "./src/ui_classes";
 /** Grok entry point, use it to get access to top-level views, tables, methods, etc. */
 class Shell {
 
+    constructor() {
+        this.windows = new Windows();
+        this.settings = new Settings();
+    }
+
     /** Current table, or null.
      *  @returns {DataFrame} */
     get t() { return new DataFrame(grok_CurrentTable()); }
@@ -66,8 +71,6 @@ class Shell {
      *  @param {string} url
      *  @returns {View} */
     route(url) { return View.fromDart(grok_Route(url)); }
-
-    get settings() { return new Settings(); }
 
     addView(v) { grok_AddView(v.d); }
 
@@ -158,6 +161,12 @@ class Settings {
 }
 
 
+class Windows {
+    get sidebar() { return grok_Windows_Get_Sidebar(); }
+    set sidebar(x) { return grok_Windows_Get_Sidebar(x); }
+}
+
+
 export class utils {
     static *range(length) {
         for (let i = 0; i < length; i++)
@@ -188,8 +197,3 @@ export let data = new Data();
 export let chem = _chem;
 
 export let ml = _ml.ml;
-
-
-
-
-
