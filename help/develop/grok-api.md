@@ -40,7 +40,7 @@ Each [DataFrame](api/DataFrame.html) is associated with two [bitsets](api/BitSet
 Control [views](../overview/navigation.md) via the following methods:
 
 ```javascript
-grok.addTableView(table);
+grok.shell.addTableView(table);
 ```
 
 Dock an arbitrary visual element in a platform:
@@ -48,7 +48,7 @@ Dock an arbitrary visual element in a platform:
 ```javascript
 let e = document.createElement('DIV');
 e.innerText = 'This element has been created in JavaScript';
-grok.dockElement(e, 'JS', 'left', 0.5);
+grok.shell.dockElement(e, 'JS', 'left', 0.5);
 ```
 
 ## Pre-defined viewers
@@ -96,7 +96,7 @@ class JsDemoViewer extends grok.JsViewer {
     }
 }
 
-grok.registerViewer('JsDemoViewer', 'JavaScript-based viewer', () => new JsDemoViewer());
+grok.shell.registerViewer('JsDemoViewer', 'JavaScript-based viewer', () => new JsDemoViewer());
 ```
 
 ## Registering functions

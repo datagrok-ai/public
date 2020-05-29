@@ -90,7 +90,7 @@ Below is an example of a package consisting of a single function `complement` th
 sequence for the specified nucleotide sequence:
 
 ```js
-class SequencePackage extends GrokPackage {
+class SequencePackage extends DG.Package {
     
     //description: returns complementary sequence
     //tags: bioinformatics, converter
