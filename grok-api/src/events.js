@@ -1,6 +1,6 @@
 import * as rxjs from "rxjs";
 import * as rxjsOperators from "rxjs/operators";
-import {toJs} from "./wrappers";
+import {toDart, toJs} from "./wrappers";
 
 export function debounce(observable, milliseconds = 100) {
     return observable.pipe(rxjsOperators.debounceTime(milliseconds));
@@ -11,7 +11,7 @@ export function __obs(eventId, object = null) {
 
     if (object == null) {
         let observable = rxjs.fromEventPattern(
-            function(handler) { return grok_OnEvent(eventId, function (x) { handler(toJs(x)); }); },
+            function(handler) { return grok_OnEvent(eventId, function (x, w) { handler(w ? toJs(x) : x); }); },
             function(handler, d) { new StreamSubscription(d).cancel(); }
         );
         return observable;
@@ -37,6 +37,9 @@ export function observeStream(dartStream) {
 
 export class Events {
     onEvent(eventId) { return __obs(eventId); }
+    fireEvent(eventId, arg) {
+        return grok_FireEvent(eventId, arg);
+    }
 
     get onCurrentViewChanged () { return __obs('d4-current-view-changed'); }
     get onCurrentCellChanged () { return __obs('d4-current-cell-changed'); }
@@ -68,7 +71,7 @@ export class Stream {
 
     toObservable() {
         let observable = rxjs.fromEventPattern(
-            function(handler) { return grok_OnEvent(eventId, function (x) { handler(toJs(x)); }); },
+            function(handler) { return grok_OnEvent(eventId, function (x, w) { handler(w ? toJs(x) : x); }); },
             function(handler, streamSubscription) { streamSubscription.cancel(); }
         );
         return observable;
