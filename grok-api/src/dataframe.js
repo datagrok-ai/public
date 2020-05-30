@@ -1,5 +1,5 @@
 import * as rxjs from 'rxjs';
-import {AGG, TYPE} from "./const";
+import {AGG, TYPE, COLUMN_TYPE} from "./const";
 import {__obs, observeStream} from "./events";
 /**
  * DataFrame is a high-performance, easy to use tabular structure with
@@ -234,6 +234,8 @@ export class Column {
     /** [array] will be not be copied and will be used as column's storage */
     static fromFloat32Array(name, array, length = null) { return new Column(grok_Column_FromFloat32Array(name, array, length)); }
 
+    /** Creates a {@link Column} from the list of values.
+     * @ */
     static fromList(type, name, list) { return new Column(grok_Column_FromList(type, name, list)); }
 
     /** Creates an integer column with the specified name and length.
@@ -302,23 +304,41 @@ export class Column {
      * @returns {boolean} */
     isNone(i) { return grok_Column_IsNone(this.d, i); }
 
+    /** Gets the value of the specified tag.
+     *  @param {string} tag
+     *  @returns {string} */
     getTag(tag) { return grok_Column_Get_Tag(this.d, tag); }
+
+    /** Sets a tag to the specified value.
+     * @param {string} tag - Key.
+     * @param {string} value - Value. */
     setTag(tag, value) { grok_Column_Set_Tag(this.d, tag, value); }
 
+    /** Compacts the internal column representation.
+     *  Currently, it only affects string columns where values were modified. */
     compact() { return grok_Column_Compact(this.d); }
 
+    /** Copies column values to an array.
+     *  @ returns {Array} */
     toList() { return grok_Column_ToList(this.d); }
 
     /** Returns all unique strings in a sorted order. Applicable to string column only.
      * @returns {string[]} */
     get categories() { return grok_Column_Categories(this.d); }
 
+    /** Column's minimum value. The result is cached.
+     * @returns {number} */
     get min() { return grok_Column_Min(this.d); }
 
+    /** Column's maximum value. The result is cached.
+     * @returns {number} */
     get max() { return grok_Column_Max(this.d); }
 
+    /** Basic descriptive statistics. The result is cached.
+     * @returns {Stats} */
     get stats() { return Stats.fromColumn(this); }
 
+    /** An iterator over all values in this column. */
     *values() {
         for (let i = 0; i < this.length; i++) {
             yield this.get(i);
@@ -351,11 +371,30 @@ export class ColumnList {
      * @returns {string[]} */
     names() { return grok_ColumnList_Names(this.d); }
 
+    /** Creates an array of columns.
+     * @returns {ColumnList[]}*/
     toList() { return this.names().map(name => this.byName(name)); }
+
+    /** Adds a column, and optionally notifies the parent dataframe.
+     * @param {Column} column
+     * @param {boolean} notify
+     * @returns {Column} */
     add(column, notify = false) { grok_ColumnList_Add(this.d, column.d, notify); return column; }
+
+    /** Adds an empty column of the specified type.
+     * @param {string} name
+     * @param {ColumnType} type
+     * @returns {Column} */
     addNew(name, type) { return new Column(grok_ColumnList_AddNew(this.d, name, type)); }
-    remove(name) { grok_ColumnList_Remove(this.d, name); }
-    contains(name) { return grok_ColumnList_Contains(this.d, name); }
+
+    /** Removes column by name (case-insensitive).
+     * @param {string} columnName
+     * @returns {ColumnList} */
+    remove(columnName) { grok_ColumnList_Remove(this.d, columnName); return this; }
+
+    /** Checks wheter this list contains a column with the specified name. The check is case-insensitive.
+     * @returns {boolean} */
+    contains(columnName) { return grok_ColumnList_Contains(this.d, columnName); }
 }
 
 /**
@@ -401,17 +440,35 @@ export class RowList {
 export class Cell {
     constructor(d) { this.d = d; }
 
+    /** Corresponding table.
+     * @returns {DataFrame} */
     get dataFrame() { return new DataFrame(grok_Cell_Get_DataFrame(this.d)); }
+
+    /** Corresponding row.
+     * @returns {Row} */
     get row() { return new Row(this.dataFrame, this.rowIndex); }
+
+    /** Index of the corresponding row.
+     * @returns {number} */
     get rowIndex() { return grok_Cell_Get_RowIndex(this.d); }
+
+    /** Corresponding column.
+     * @returns {Column} */
     get column() { return new Column(grok_Cell_Get_Column(this.d)); }
+
+    /** Cell value.
+     * @returns {object} */
     get value() { return grok_Cell_Get_Value(this.d); }
 }
 
-/** Represents basic descriptive statistics calculated for a {Column}. */
+/** Represents basic descriptive statistics calculated for a {Column}.
+ *  See samples: {@link https://public.datagrok.ai/js/samples/data-frame/stats} */
 export class Stats {
     constructor(d) { this.d = d; }
 
+    /** Calculates statistics for the specified column.
+     * @param {Column} col
+     * @returns {Stats} */
     static fromColumn(col) { return new Stats(grok_Stats_FromColumn(col.d)); }
 
     /** Total number of values (including missing values). */
@@ -423,17 +480,40 @@ export class Stats {
     /** Number of non-empty values. */
     get valueCount() { return grok_Stats_Get_ValueCount(this.d); }
 
+    /** @returns {number} - minimum */
     get min() { return grok_Stats_Get_Min(this.d); }
+
+    /** @returns {number} - maximum */
     get max() { return grok_Stats_Get_Max(this.d); }
+
+    /** @returns {number} - sum */
     get sum() { return grok_Stats_Get_Sum(this.d); }
+
+    /** @returns {number} - average */
     get avg() { return grok_Stats_Get_Avg(this.d); }
+
+    /** @returns {number} - standard deviation */
     get stdev() { return grok_Stats_Get_Stdev(this.d); }
+
+    /** @returns {number} - variance */
     get variance() { return grok_Stats_Get_Variance(this.d); }
+
+    /** @returns {number} - skewness */
     get skew() { return grok_Stats_Get_Skew(this.d); }
+
+    /** @returns {number} - kurtosis */
     get kurt() { return grok_Stats_Get_Kurt(this.d); }
+
+    /** @returns {number} - median value */
     get med() { return grok_Stats_Get_Med(this.d); }
+
+    /** @returns {number} - first quartile */
     get q1() { return grok_Stats_Get_Q1(this.d); }
+
+    /** @returns {number} - second quartile */
     get q2() { return grok_Stats_Get_Q2(this.d); }
+
+    /** @returns {number} - third quartile */
     get q3() { return grok_Stats_Get_Q3(this.d); }
 }
 
@@ -476,6 +556,7 @@ export class GroupByBuilder {
 
 /** Efficient bit storage and manipulation. */
 export class BitSet {
+
     /** Creates a {BitSet} from the specified Dart object. */
     constructor(d) { this.d = d; }
 
@@ -500,21 +581,25 @@ export class BitSet {
      *  @returns {BitSet} */
     clone() { return new BitSet(grok_BitSet_Clone(this.d)); }
 
-    /** Inverts a bitset */
-    invert() { grok_BitSet_Invert(this.d); }
+    /** Inverts a bitset.
+     * @returns {BitSet} */
+    invert() { grok_BitSet_Invert(this.d); return this; }
 
     /** Sets all bits to x
-     * @param {boolean} x */
-    setAll(x) { grok_BitSet_SetAll(this.d, x); }
+     * @param {boolean} x
+     * @returns {BitSet} */
+    setAll(x) { grok_BitSet_SetAll(this.d, x); return this; }
 
-    /** Finds the first index of value x, going forward from i-th position */
+    /** Finds the first index of value x, going forward from i-th position.
+     * @param {number} i - index
+     * @param {boolean} x
+     * @returns {number} */
     findNext(i, x) { return grok_BitSet_FindNext(this.d, i, x); }
 
     /** Finds the first index of value x, going forward from i-th position, or -1 if not found.
      * @param {number} i - Index to start searching from.
      * @param {boolean} x - Value to search for.
-     * @returns {number}
-     * */
+     * @returns {number} */
     findPrev(i, x) { return grok_BitSet_FindPrev(this.d, i, x); }
 
     /** Gets i-th bit
@@ -532,8 +617,8 @@ export class BitSet {
 
     /** Copies the content from the other {BitSet}.
      * @param {BitSet} b - BitSet to copy from.
-     * */
-    copyFrom(b) { grok_BitSet_CopyFrom(this.d, b.d); }
+     * @returns {BitSet} */
+    copyFrom(b) { grok_BitSet_CopyFrom(this.d, b.d); return this; }
 
     /** @returns {Observable} - fires when the bitset gets changed. */
     get onChanged() { return observeStream(grok_BitSet_Changed(this.d)); }

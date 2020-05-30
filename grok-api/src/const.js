@@ -2,6 +2,7 @@
  * @typedef {string} AggregationType
  * @typedef {string} SyncType
  * @typedef {string} JoinType
+ * @typedef {string} ColumnType
  **/
 
 /** @enum {AGG} */
@@ -53,6 +54,16 @@ export const JOIN_TYPE = {
     RIGHT: 'right'
 }
 
+/** @enum {ColumnType} */
+export const COLUMN_TYPE = {
+    STRING : 'string',
+    INT : 'int',
+    FLOAT : 'double',
+    BOOL : 'bool',
+    DATE_TIME : 'datetime',
+    BIG_INT : 'bigint'
+}
+
 /** @enum {TYPE} */
 export const TYPE = {
     INT : 'int',
@@ -95,7 +106,9 @@ export const TYPE = {
 
 export const TYPES_SCALAR = new Set([TYPE.INT, TYPE.BIG_INT, TYPE.FLOAT, TYPE.NUM, TYPE.BOOL, TYPE.STRING]);
 
-export const VIEW_TYPE = { TABLE_VIEW : 'TableView'};
+export const VIEW_TYPE = {
+    TABLE_VIEW : 'TableView'
+};
 
 /////// Semantic typesSEMTYPE_
 /** @enum {SEMTYPE} */

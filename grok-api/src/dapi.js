@@ -42,6 +42,9 @@ export class HttpDataSource {
         this.entityToJs = instance;
     }
 
+    /** Returns all entities that satisfy the filtering criteria (see {@link filter}).
+     *  See examples: @{link https://public.datagrok.ai/js/samples/grok-api/projects-list}
+     *  @returns Promise<object[]>  */
     list() {
         let s = this.entityToJs;
         return new Promise((resolve, reject) => grok_DataSource_List(this.s, (q) => resolve(q.map(s))));
@@ -76,8 +79,12 @@ export class HttpDataSource {
         return this;
     }
 
-    order(name, desc = false) {
-        this.s = grok_DataSource_Order(this.s, name, desc);
+    /** Instructs data source to return results in the specified order.
+     * @param {string} fieldName
+     * @param {boolean} desc
+     * @returns {HttpDataSource} */
+    order(fieldName, desc = false) {
+        this.s = grok_DataSource_Order(this.s, fieldName, desc);
         return this;
     }
 }
