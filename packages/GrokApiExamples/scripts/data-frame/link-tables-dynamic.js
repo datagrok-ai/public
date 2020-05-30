@@ -10,7 +10,7 @@ grok.shell.addTableView(tickers);
 let detailsView = null;
 
 tickers.onCurrentRowChanged.subscribe((_) => {
-    grok.data.loadDataFrame(`https://www.quandl.com/api/v1/datasets/WIKI/${tickers.currentRow.ticker}.csv`)
+    grok.data.loadTable(`https://www.quandl.com/api/v1/datasets/WIKI/${tickers.currentRow.ticker}.csv`)
         .then(function(t) {
             if (detailsView === null)
                 detailsView = grok.shell.addTableView(t);

@@ -149,7 +149,7 @@ class Data {
      * @param {string} csvUrl
      * @returns {Promise<DataFrame>}
      * */
-    loadDataFrame(csvUrl) {
+    loadTable(csvUrl) {
         return new Promise((resolve, reject) => grok_LoadDataFrame(csvUrl, (t) => resolve(toJs(t, false))));
     }
 
