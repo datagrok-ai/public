@@ -1,4 +1,4 @@
-//name: time_series_covid19_recovered_global_narrow
+//name: recovered_narrow
 //description: Data converted from wide to narrow form (Date and Value columns) with HXL hashtags added
 //tags: covid-19
 //language: javascript
