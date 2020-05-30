@@ -8,6 +8,7 @@ import {SIMILARITY_METRIC} from "./const";
 /** Cheminformatics-related routines */
     /**
      * Returns molecules similar to the reference one.
+     * See example: @{link https://public.datagrok.ai/js/samples/domains/chem/similarity-search}
      * @async
      * @param {Column} column - Molecule column to search in.
      * @param {string} molecule - Reference molecule in SMILES format.
@@ -23,6 +24,7 @@ import {SIMILARITY_METRIC} from "./const";
 
     /**
      * Returns the specified number of most diverse molecules in the column.
+     * See example: @{link https://datagrok.ai/help/domains/chem/diversity-search}
      * @async
      * @param {Column} column - Column with molecules in which to search.
      * @param {SimilarityMetric} metric - Metric to use.
@@ -35,6 +37,7 @@ import {SIMILARITY_METRIC} from "./const";
 
     /**
      * Searches for a molecular pattern in a given column, returning a bitset with hits.
+     * See example: @{link substructure-search}
      * @async
      * @param {Column} column - Column with molecules to search.
      * @param {string} pattern - Pattern, either SMARTS or SMILES.
@@ -47,6 +50,7 @@ import {SIMILARITY_METRIC} from "./const";
 
     /**
      * Performs R-group analysis.
+     * See example: @{link https://public.datagrok.ai/js/samples/domains/chem/descriptors}
      * @async
      * @param {DataFrame} table - Table.
      * @param {string} column - Column name with SMILES to analyze.
@@ -59,6 +63,7 @@ import {SIMILARITY_METRIC} from "./const";
 
     /**
      * Finds Most Common Substructure in the specified column.
+     * See example: @{link https://public.datagrok.ai/js/samples/domains/chem/mcs}
      * @async
      * @param {Column} column - Column with SMILES to analyze.
      * @returns {Promise<string>}
@@ -69,6 +74,8 @@ import {SIMILARITY_METRIC} from "./const";
 
     /**
      * Calculates specified descriptors for the molecular column.
+     * See example: @{link https://public.datagrok.ai/js/samples/domains/chem/descriptors}
+     *
      * @async
      * @param {DataFrame} table - Table.
      * @param {string} column - Column name with SMILES to calculate descriptors for.
@@ -79,6 +86,14 @@ import {SIMILARITY_METRIC} from "./const";
         return new Promise((resolve, reject) => grok_Chem_Descriptors(table.d, column, descriptors, () => resolve(table)));
     }
 
+    /**
+     * Renders a molecule to SVG
+     * https://public.datagrok.ai/js/samples/domains/chem/mol-rendering
+     * @param {string} smiles
+     * @param {number} width
+     * @param {number} height
+     * @returns {HTMLDivElement}
+     * */
     export function svgMol(smiles, width = 300, height = 200) {
         let root = document.createElement('div');
         import('openchemlib/full.js').then((OCL) => {

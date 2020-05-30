@@ -6,9 +6,13 @@ import {__obs, observeStream} from "./events";
  * strongly-typed columns of different types.
  *
  * In the API, the terms "Table" and "DataFrame" are used interchangeably.
+ * See usage samples: https://public.datagrok.ai/js/samples/data-frame/manipulate
  */
 export class DataFrame {
-    constructor(d) { this.d = d; }
+
+    constructor(d) {
+        this.d = d;
+    }
 
     /** Creates a {@link DataFrame} with the specified number of rows and no columns.
      * @param {number} rowCount
