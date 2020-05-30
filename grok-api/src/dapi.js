@@ -2,6 +2,11 @@ import {Credentials, DataConnection, DataQuery, Entity, Project, User} from "./e
 import {ViewLayout} from "./view";
 import {toJs} from "./wrappers";
 
+/**
+ * Exposes Datagrok's server-side functionality.
+ *
+ * See examples: @{link https://public.datagrok.ai/js/samples/grok-api/projects-list}
+ * */
 export class Dapi {
     constructor() {}
 
@@ -28,19 +33,26 @@ export class Dapi {
 }
 
 
+/**
+ * Common functionality for handling collections of entities stored on the server.
+ */
 export class HttpDataSource {
     constructor(s, instance) {
         this.s = s;
-        this.instance = instance;
+        this.entityToJs = instance;
     }
 
     list() {
-        let s = this.instance;
+        let s = this.entityToJs;
         return new Promise((resolve, reject) => grok_DataSource_List(this.s, (q) => resolve(q.map(s))));
     }
 
+    /** Returns an entity with the specified id.
+     *  Throws an exception if an entity does not exist, or is not accessible in the current context.
+     *  @param {string} id - GUID of the corresponding object
+     *  @returns {object} - entity. */
     find(id) {
-        let s = this.instance;
+        let s = this.entityToJs;
         return new Promise((resolve, reject) => grok_DataSource_Find(this.s, id, (q) => resolve(s(q[0]))));
     }
 
@@ -77,7 +89,7 @@ export class UsersDataSource extends HttpDataSource {
     }
 
     current() {
-        let s = this.instance;
+        let s = this.entityToJs;
         return new Promise((resolve, reject) => grok_UsersDataSource_Current(this.s, (q) => resolve(s(q[0]))));
     }
 }
@@ -89,7 +101,7 @@ export class CredentialsDataSource extends HttpDataSource {
     }
 
     forEntity(e) {
-        let s = this.instance;
+        let s = this.entityToJs;
         return new Promise((resolve, reject) => grok_CredentialsDataSource_ForEnrity(this.s, e.d, (c) => resolve(s(c[0]))));
     }
 }
