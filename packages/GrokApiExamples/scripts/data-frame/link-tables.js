@@ -12,8 +12,8 @@
 //
 // https://datagrok.ai/help/explore/link-tables
 
-grok.data.loadDataFrame('https://public.datagrok.ai/demo/demog.csv').then((demog) =>
-    grok.data.loadDataFrame('https://public.datagrok.ai/demo/demog-types.csv').then((demogTypes) => {
+grok.data.loadTable('https://public.datagrok.ai/demo/demog.csv').then((demog) =>
+    grok.data.loadTable('https://public.datagrok.ai/demo/demog-types.csv').then((demogTypes) => {
         grok.shell.addTableView(demog);
         grok.shell.addTableView(demogTypes);
         grok.data.linkTables(demogTypes, demog,

@@ -4,6 +4,8 @@ import {__obs, observeStream} from "./events";
 /**
  * DataFrame is a high-performance, easy to use tabular structure with
  * strongly-typed columns of different types.
+ *
+ * In the API, the terms "Table" and "DataFrame" are used interchangeably.
  */
 export class DataFrame {
     constructor(d) { this.d = d; }
