@@ -23,6 +23,7 @@ export class DockNode {
 };
 
 
+/** Represents a dockable window. */
 export class DockContainer {
     constructor(d) { this.d = d; }
 
@@ -40,7 +41,16 @@ export class DockContainer {
 }
 
 
-/** Window docking manager */
+/**
+ * Window docking manager.
+ *
+ * Dock manager manages all the dock panels in a hierarchy, similar to visual studio.
+ * It owns a Html Div element inside which all panels are docked
+ * Initially the document manager takes up the central space and acts as the root node
+ *
+ * See @{link https://github.com/coderespawn/dock-spawn} for details.
+ * See @{}
+ * */
 export class DockManager {
     constructor(d) { this.d = d; }
 
