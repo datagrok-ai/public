@@ -1,29 +1,49 @@
 import * as ui from "./../ui.js";
 import {Functions} from "./functions";
 
-/** Grok User */
+/**
+ * Represents a user of the Datagrok platform.
+ * */
 export class User {
     constructor(d) { this.d = d; }
+
     static fromId(id) { return new User(grok_User_From_Id(id)); }
+
     static current() { return new User(grok_User()); }
 
+    /** @type {string} */
     get firstName() { return grok_User_Get_FirstName(this.d); }
+
+    /** @type {string} */
     get lastName() { return grok_User_Get_LastName(this.d); }
+
+    /** @type {string} */
     get email() { return grok_User_Get_Email(this.d); }
+
+    /** @type {string} */
     get picture() { return grok_User_Get_Picture(this.d); }
+
+    /** @type {string} */
     get login() { return grok_User_Get_Login(this.d); }
 
     toMarkup() { return grok_User_ToMarkup(this.d); }
 }
 
 
+/**
+ * Base class for system objects stored in the database in a structured manner.
+ *
+ *
+ * */
 export class Entity {
     constructor(d) { this.d = d;}
 
     get id() { return grok_Entity_Get_Id([this.d]); }
     set id(x) { return grok_Entity_Set_Id([this.d], x); }
+
     get name() { return grok_Entity_Get_Name([this.d]); }
     set name(x) { return grok_Entity_Set_Name([this.d], x); }
+
     get path() { return grok_Entity_Path([this.d]); }
 }
 
@@ -56,7 +76,7 @@ export class DataConnection extends Entity {
 }
 
 
-/** Represents a credentials */
+/** Represents connection credentials */
 export class Credentials extends Entity {
     constructor(d) { super(d); }
 
@@ -64,6 +84,9 @@ export class Credentials extends Entity {
 }
 
 
+/**
+ * Represents a package, which is a unit of distribution of content in the Datagrok platform.
+ */
 export class Package {
     constructor(webRoot) {
         this.webRoot = webRoot;
@@ -75,12 +98,27 @@ export class Package {
 }
 
 
+/**
+ * Override this class, and {@link register} an instance to integrate the platform with custom
+ * types and objects.
+ *
+ * Samples: {@see https://public.datagrok.ai/js/samples/ui/meta/meta}
+ */
 export class JsEntityMeta {
+
+    /** Type of the object that this meta handles. */
     get type() { throw 'Not defined.'; }
 
+    /**
+     * Override this method to check whether this meta class should handle the specified object.
+     * @param x - specified object.
+     * @returns {boolean}
+     * */
     isApplicable(x) { throw 'Not defined.'; }
 
-    /** String representation of the [item], by default item.toString(). */
+    /** String representation of the [item], by default item.toString().
+     * @param x - item
+     * @returns {string} */
     getCaption(x) { return `${x}`; };
 
     renderIcon(x) { return ui.divText(this.getCaption(x)); }
@@ -96,18 +134,33 @@ export class JsEntityMeta {
 
     static register(meta) { grok_Meta_Register(meta); }
 
+    /**
+     * Registers a function that takes applicable objects an the only argument.
+     * It will be suggested to run in the context menu for that object, and
+     * also in the "Actions" pane on the property panel.
+     *
+     * Samples: {@see https://public.datagrok.ai/js/samples/ui/docking/docking}
+     *
+     * @param {string} name - function name
+     * @param run - a function that takes exactly one parameter
+     * */
     registerParamFunc(name, run) {
         new Functions().registerParamFunc(name, this.type, run, this.isApplicable);
     }
 }
 
 
-/** Strongly-typed property associated with an object.
- *  Used for reflection, serialization, UI generation, and other introspection-dependent tasks. */
+/**
+ * Strongly-typed property associated with an object.
+ * Used for reflection, serialization, UI generation, and other introspection-dependent tasks.
+ *
+ * Samples:
+ */
 export class Property {
     constructor(d) { this.d = d; }
 
-    /** Property getter */
+    /** Property getter is a function that acccepts one parameter (item)
+     * and returns the property value. */
     get get() { return grok_Property_Get_Get(this.d); }
     set get(x) { return grok_Property_Set_Get(this.d, x); }
 
@@ -115,15 +168,18 @@ export class Property {
     get set() { return grok_Property_Get_Set(this.d); }
     set set(x) { return grok_Property_Set_Set(this.d, x); }
 
-    /** Property name */
+    /** Property name
+     *  @type {string} */
     get name() { return grok_Property_Get_Name(this.d); }
     set name(s) { grok_Property_Set_Name(this.d, s); }
 
-    /** Property type */
+    /** Property type
+     *  @type {string} */
     get propertyType() { return grok_Property_Get_PropertyType(this.d); }
     set propertyType(s) { grok_Property_Set_PropertyType(this.d, s); }
 
-    /** Semantic type */
+    /** Semantic type
+     *  @type {string} */
     get semType() { return grok_Property_Get_SemType(this.d); }
     set semType(s) { grok_Property_Set_SemType(this.d, s); }
 

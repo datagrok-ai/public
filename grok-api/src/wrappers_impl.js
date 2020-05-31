@@ -14,7 +14,7 @@ export function paramsToJs(params) {
     for (let i = 0; i < params.length; i++) {
         let type = grok_GetType(params[i]);
         if (type !== null && !TYPES_SCALAR.has(type))
-            result.push(this.toJs(params[i]));
+            result.push(toJs(params[i]));
         else
             result.push(params[i]);
     }
@@ -29,7 +29,7 @@ export function paramsToJs(params) {
  * @param {boolean} check -
  * @returns JavaScript wrapper for the Dart object
  * */
-export function toJs(d, check = true) {
+export function toJs(d, check = false) {
     let type = grok_GetType(d);
     switch (type) {
         case TYPE.DATA_FRAME:
