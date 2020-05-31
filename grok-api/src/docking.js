@@ -12,23 +12,39 @@ export const DOCK_TYPE = {
 };
 
 
+/**
+ * Represents a dockable window.
+ * See also {@link DockContainer}, {@link DockNode}.
+ * Samples: {@see https://public.datagrok.ai/js/samples/ui/docking/docking}
+ * */
 export class DockNode {
     constructor(d) { this.d = d; }
 
     /** @returns {DockContainer} */
     get container() { return new DockContainer(grok_DockNode_Get_Container(this.d)); }
 
+    /** Detaches this node from parent. */
     detachFromParent() { return grok_DockNode_DetachFromParent(this.d); }
+
+    /** Removes a child node.
+     * @param {DockNode} childNode */
     removeChild(childNode) { return grok_DockNode_RemoveChild(this.d, childNode); }
 };
 
 
-/** Represents a dockable window. */
+/**
+ * Represents a dockable window.
+ * See also {@link DockContainer}, {@link DockNode}.
+ * Samples: {@see https://public.datagrok.ai/js/samples/ui/docking/docking}
+ * */
 export class DockContainer {
     constructor(d) { this.d = d; }
 
+    /** Container element.
+     * @returns {HTMLDivElement} */
     get containerElement() { return grok_DockContainer_Get_ContainerElement(this.d); }
 
+    /** Destroys and detaches the container. */
     destroy() { grok_DockContainer_Destroy(this.d); }
 
     /** Undocks a panel and converts it into a floating dialog window
@@ -48,9 +64,9 @@ export class DockContainer {
  * It owns a Html Div element inside which all panels are docked
  * Initially the document manager takes up the central space and acts as the root node
  *
- * See @{link https://github.com/coderespawn/dock-spawn} for details.
- * See @{}
- * */
+ * Samples: {@see https://public.datagrok.ai/js/samples/ui/docking/docking}
+ * Learn more: {@see https://github.com/coderespawn/dock-spawn} for details.
+ */
 export class DockManager {
     constructor(d) { this.d = d; }
 

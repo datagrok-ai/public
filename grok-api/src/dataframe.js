@@ -1,6 +1,7 @@
 import * as rxjs from 'rxjs';
 import {AGG, TYPE, COLUMN_TYPE} from "./const";
 import {__obs, observeStream} from "./events";
+
 /**
  * DataFrame is a high-performance, easy to use tabular structure with
  * strongly-typed columns of different types.
@@ -379,7 +380,10 @@ export class ColumnList {
      * @param {Column} column
      * @param {boolean} notify
      * @returns {Column} */
-    add(column, notify = false) { grok_ColumnList_Add(this.d, column.d, notify); return column; }
+    add(column, notify = false) {
+        grok_ColumnList_Add(this.d, column.d, notify);
+        return column;
+    }
 
     /** Adds an empty column of the specified type.
      * @param {string} name
@@ -410,19 +414,25 @@ export class RowList {
      * @param {number} idx
      * @param {number} [count=1] - Number of rows to remove.
      * @param notify - Whether a change notification should be fired. */
-    removeAt(idx, count = 1, notify = true) { grok_RowList_RemoveAt(this.d, idx, count, notify); }
+    removeAt(idx, count = 1, notify = true) {
+        grok_RowList_RemoveAt(this.d, idx, count, notify);
+    }
 
     /** Inserts empty rows at the specified position
      * @param {number} idx
      * @param {number} [count=1] - Number of rows to insert.
      * @param notify - Whether a change notification should be fired. */
-    insertAt(idx, count = 1, notify = true) { grok_RowList_InsertAt(this.d, idx, count, notify); }
+    insertAt(idx, count = 1, notify = true) {
+        grok_RowList_InsertAt(this.d, idx, count, notify);
+    }
 
     /** Appends a new row with the specified values
      * @param values - List of values (length and types should match columns)
      * @param notify - Whether a change notification should be fired.
      * @returns {Row} */
-    addNew(values = null, notify = true) { return new Row(this.table, grok_RowList_AddNew(this.d, values, notify));}
+    addNew(values = null, notify = true) {
+        return new Row(this.table, grok_RowList_AddNew(this.d, values, notify));
+    }
 
     /** Iterates over all rows. */
     *iterator() {
@@ -433,7 +443,9 @@ export class RowList {
     /** Sets values for the specified row.
      * @param {number} idx - Row index.
      * @param values - List of values (length and types should match columns) */
-    setValues(idx, values) { grok_RowList_SetValues(this.d, idx, values); }
+    setValues(idx, values) {
+        grok_RowList_SetValues(this.d, idx, values);
+    }
 }
 
 /** Represents a table cell. */
@@ -517,14 +529,28 @@ export class Stats {
     get q3() { return grok_Stats_Get_Q3(this.d); }
 }
 
-/** Fluid API for building an aggregation query against a {@link DataFrame}. */
+/**
+ * Fluid API for building an aggregation query against a {@link DataFrame}.
+ * Build a query by calling the following methods: {@link key}, {@link pivot}, {@link count},
+ * {@link uniqueCount}, {@link missingValueCount}, {@link valueCount}, {@link min}, {@link max}, {@link sum},
+ * {@link avg}, {@link stdev}, {@link variance}, {@link q1}, {@link q2}, {@link q3}.
+ *
+ * When the query is constructured, execute it by calling {@link aggregate}, which will
+ * produce a {@link DataFrame}.
+ *
+ * See samples: {@see https://public.datagrok.ai/js/samples/data-frame/aggregation}
+ *
+ * @example
+ * let avgAgesByRaceAndSex = demographicsTable
+ *   .groupBy(['race', 'sex'])
+ *   .avg('age')
+ *   .aggregate();
+ */
 export class GroupByBuilder {
     constructor(d) { this.d = d; }
 
-    /**
-     * Performs the aggregation
-     * @returns {DataFrame}
-     * */
+    /** Performs the aggregation
+     *  @returns {DataFrame} */
     aggregate() { return new DataFrame(grok_GroupByBuilder_Aggregate(this.d)); }
 
     /**
@@ -532,29 +558,132 @@ export class GroupByBuilder {
      * @param {AggregationType} agg - Aggregation type.
      * @param {string} colName - Column name.
      * @param {string=} resultColName - Name of the resulting column. Default value is agg(colName).
-     * @returns {DataFrame}
+     * @returns {GroupByBuilder}
      * */
-    add(agg, colName, resultColName = null) { grok_GroupByBuilder_Add(this.d, agg, colName, resultColName); return this; }
+    add(agg, colName, resultColName = null) {
+        grok_GroupByBuilder_Add(this.d, agg, colName, resultColName);
+        return this;
+    }
 
-    key(col, resultColName = null) { this.add(AGG.KEY, col, resultColName); return this; }
-    pivot(col, resultColName = null) { this.add(AGG.PIVOT, col, resultColName); return this; }
-    count(col, resultColName = null) { this.add(AGG.TOTAL_COUNT, col, resultColName); return this; }
-    uniqueCount(col, resultColName = null) { this.add(AGG.UNIQUE_COUNT, col, resultColName); return this; }
-    missingValueCount(col, resultColName = null) { this.add(AGG.MISSING_VALUE_COUNT, col, resultColName); return this; }
-    valueCount(col, resultColName = null) { this.add(AGG.VALUE_COUNT, col, resultColName); return this; }
-    min(col, resultColName = null) { this.add(AGG.MIN, col, resultColName); return this; }
-    max(col, resultColName = null) { this.add(AGG.MAX, col, resultColName); return this; }
-    sum(col, resultColName = null) { this.add(AGG.SUM, col, resultColName); return this; }
-    med(col, resultColName = null) { this.add(AGG.MED, col, resultColName); return this; }
-    avg(col, resultColName = null) { this.add(AGG.AVG, col, resultColName); return this; }
-    stdev(col, resultColName = null) { this.add(AGG.STDEV, col, resultColName); return this; }
-    variance(col, resultColName = null) { this.add(AGG.VARIANCE, col, resultColName); return this; }
-    q1(col, resultColName = null) { this.add(AGG.Q1, col, resultColName); return this; }
-    q2(col, resultColName = null) { this.add(AGG.Q2, col, resultColName); return this; }
-    q3(col, resultColName = null) { this.add(AGG.Q3, col, resultColName); return this; }
+    /** Adds a key column to group values on. Call {@link aggregate} when the query is constructed.
+     * @param {string} srcColName - column name in the source table
+     * @param {string} [resultColName] - column name in the resulting DataFrame
+     * @returns {GroupByBuilder} */
+    key(srcColName, resultColName = null) { return this.add(AGG.KEY, srcColName, resultColName); }
+
+    /** Adds a column to pivot values on. Call {@link aggregate} when the query is constructed.
+     * @param {string} srcColName - column name in the source table
+     * @param {string} [resultColName] - column name in the resulting DataFrame
+     * @returns {GroupByBuilder} */
+    pivot(srcColName, resultColName = null) { return this.add(AGG.PIVOT, srcColName, resultColName); }
+
+    /** Adds an aggregation that counts rows, including these will null values.
+     * See also {@link count}, {@link valueCount}, {@link uniqueCount}, {@link missingValueCount}
+     * Call {@link aggregate} when the query is constructed.
+     * @param {string} srcColName - column name in the source table
+     * @param {string} [resultColName] - column name in the resulting DataFrame
+     * @returns {GroupByBuilder} */
+    count(resultColName = 'count') { return this.add(AGG.TOTAL_COUNT, null, resultColName); }
+
+    /** Adds an aggregation that counts number of unique values in the specified column.
+     * See also {@link count}, {@link valueCount}, {@link missingValueCount}
+     * Call {@link aggregate} when the query is constructed.
+     * @param {string} srcColName - column name in the source table
+     * @param {string} [resultColName] - column name in the resulting DataFrame
+     * @returns {GroupByBuilder} */
+    uniqueCount(srcColName, resultColName = null) { return this.add(AGG.UNIQUE_COUNT, srcColName, resultColName); }
+
+    /** Adds an aggregation that counts number of missing values in the speficied column.
+     * See also {@link count}, {@link valueCount}, {@link uniqueCount}, {@link missingValueCount}
+     * Call {@link aggregate} when the query is constructed.
+     * @param {string} srcColName - column name in the source table
+     * @param {string} [resultColName] - column name in the resulting DataFrame
+     * @returns {GroupByBuilder} */
+    missingValueCount(srcColName, resultColName = null) { return this.add(AGG.MISSING_VALUE_COUNT, srcColName, resultColName); }
+
+    /** Adds an aggregation that counts rows, including these will null values.
+     * See also {@link count}, {@link valueCount}, {@link uniqueCount}, {@link missingValueCount}
+     * Call {@link aggregate} when the query is constructed.
+     * @param {string} srcColName - column name in the source table
+     * @param {string} [resultColName] - column name in the resulting DataFrame
+     * @returns {GroupByBuilder} */
+    valueCount(srcColName, resultColName = null) { return this.add(AGG.VALUE_COUNT, srcColName, resultColName); }
+
+    /** Adds an aggregation that calculates minimum value for the specified column.
+     * Call {@link aggregate} when the query is constructed.
+     * @param {string} srcColName - column name in the source table
+     * @param {string} [resultColName] - column name in the resulting DataFrame
+     * @returns {GroupByBuilder} */
+    min(srcColName, resultColName = null) { return this.add(AGG.MIN, srcColName, resultColName); }
+
+    /** Adds an aggregation that calculates maximum value for the specified column.
+     * Call {@link aggregate} when the query is constructed.
+     * @param {string} srcColName - column name in the source table
+     * @param {string} [resultColName] - column name in the resulting DataFrame
+     * @returns {GroupByBuilder} */
+    max(srcColName, resultColName = null) { return this.add(AGG.MAX, srcColName, resultColName); }
+
+    /** Adds an aggregation that calculates sum of the values for the specified column.
+     * Call {@link aggregate} when the query is constructed.
+     * @param {string} srcColName - column name in the source table
+     * @param {string} [resultColName] - column name in the resulting DataFrame
+     * @returns {GroupByBuilder} */
+    sum(srcColName, resultColName = null) { return this.add(AGG.SUM, srcColName, resultColName); }
+
+    /** Adds an aggregation that calculates median value for the specified column.
+     * Call {@link aggregate} when the query is constructed.
+     * @param {string} srcColName - column name in the source table
+     * @param {string} [resultColName] - column name in the resulting DataFrame
+     * @returns {GroupByBuilder} */
+    med(srcColName, resultColName = null) { return this.add(AGG.MED, srcColName, resultColName); }
+
+    /** Adds an aggregation that calculates average value for the specified column.
+     * Call {@link aggregate} when the query is constructed.
+     * @param {string} srcColName - column name in the source table
+     * @param {string} [resultColName] - column name in the resulting DataFrame
+     * @returns {GroupByBuilder} */
+    avg(srcColName, resultColName = null) { return this.add(AGG.AVG, srcColName, resultColName); }
+
+    /** Adds an aggregation that calculates standard deviation for the specified column.
+     * Call {@link aggregate} when the query is constructed.
+     * @param {string} srcColName - column name in the source table
+     * @param {string} [resultColName] - column name in the resulting DataFrame
+     * @returns {GroupByBuilder} */
+    stdev(srcColName, resultColName = null) { return this.add(AGG.STDEV, srcColName, resultColName); }
+
+    /** Adds an aggregation that calculates varians for the specified column.
+     * Call {@link aggregate} when the query is constructed.
+     * @param {string} srcColName - column name in the source table
+     * @param {string} [resultColName] - column name in the resulting DataFrame
+     * @returns {GroupByBuilder} */
+    variance(srcColName, resultColName = null) { return this.add(AGG.VARIANCE, srcColName, resultColName); }
+
+    /** Adds an aggregation that calculates first quartile for the specified column.
+     * Call {@link aggregate} when the query is constructed.
+     * @param {string} srcColName - column name in the source table
+     * @param {string} [resultColName] - column name in the resulting DataFrame
+     * @returns {GroupByBuilder} */
+    q1(srcColName, resultColName = null) { return this.add(AGG.Q1, srcColName, resultColName); }
+
+    /** Adds an aggregation that calculates second quartile for the specified column.
+     * Call {@link aggregate} when the query is constructed.
+     * @param {string} srcColName - column name in the source table
+     * @param {string} [resultColName] - column name in the resulting DataFrame
+     * @returns {GroupByBuilder} */
+    q2(srcColName, resultColName = null) { return this.add(AGG.Q2, srcColName, resultColName); }
+
+    /** Adds an aggregation that calculates third quartile for the specified column.
+     * Call {@link aggregate} when the query is constructed.
+     * @param {string} srcColName - column name in the source table
+     * @param {string} [resultColName] - column name in the resulting DataFrame
+     * @returns {GroupByBuilder} */
+    q3(srcColName, resultColName = null) { return this.add(AGG.Q3, srcColName, resultColName); }
 }
 
-/** Efficient bit storage and manipulation. */
+/**
+ * Efficient bit storage and manipulation.
+ * See samples: {@see https://public.datagrok.ai/js/samples/data-frame/aggregation}
+ */
 export class BitSet {
 
     /** Creates a {BitSet} from the specified Dart object. */

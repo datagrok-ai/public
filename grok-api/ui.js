@@ -126,8 +126,6 @@ export function moleculeInput(name, value) { return new InputBase(grok_MoleculeI
 export function columnInput(name, table, value) { return new InputBase(grok_ColumnInput(name, table.d, value.d)); }
 export function columnsInput(name, table) { return new InputBase(grok_ColumnsInput(name, table.d)); }
 
-
-
 /** UI Tools **/
 export class tools {
 
