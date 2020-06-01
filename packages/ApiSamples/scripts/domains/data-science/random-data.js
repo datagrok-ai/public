@@ -1,6 +1,6 @@
 // An example of using random data generator.
 //
-// https://datagrok.ai/help/dialogs/random-data
+// https://datagrok.ai/help/transform/random-data
 
 let t = grok.data.testData('demog', 1000);
 
