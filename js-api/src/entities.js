@@ -1,5 +1,5 @@
 import * as ui from "./../ui.js";
-import {Functions} from "./functions";
+import {Func, Functions} from "./functions";
 
 /**
  * Represents a user of the Datagrok platform.
@@ -68,12 +68,17 @@ export class Project extends Entity {
 
 
 /** Represents a data query */
-export class DataQuery extends Entity {
+export class DataQuery extends Func {
     constructor(d) { super(d); }
 
     get query() { return grok_Query_Query([this.d]); }
 }
 
+/** Represents a data job */
+export class DataJob extends Entity {
+    constructor(d) { super(d); }
+
+}
 
 /** Represents a data connection */
 export class DataConnection extends Entity {
@@ -82,6 +87,30 @@ export class DataConnection extends Entity {
     get parameters() { return grok_DataConnection_Parameters([this.d]); }
 }
 
+/** Represents a predictive model */
+export class Model extends Entity {
+    constructor(d) { super(d); }
+}
+
+/** Represents a Jupyter notebook */
+export class Notebook extends Entity {
+    constructor(d) { super(d); }
+}
+
+/** Represents a Table metadata */
+export class TableInfo extends Entity {
+    constructor(d) { super(d); }
+}
+
+/** Represents a User Group */
+export class Group extends Entity {
+    constructor(d) { super(d); }
+}
+
+/** Represents a Script */
+export class Script extends Func {
+    constructor(d) { super(d); }
+}
 
 /** Represents connection credentials */
 export class Credentials extends Entity {
