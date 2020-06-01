@@ -4,7 +4,7 @@
 # BigQuery
 
 Provides access to [Google BigQuery](https://cloud.google.com/bigquery/) database
-using SQL queries via JDBC driver . 
+using SQL queries via JDBC driver. 
 
 See also:
 
