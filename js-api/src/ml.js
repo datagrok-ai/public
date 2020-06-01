@@ -28,7 +28,7 @@ export function applyModel(name, table, columnNamesMap = {}, showProgress = true
  * @returns {DataFrame}
  * */
 export async function missingValuesImputation(table, impute, data, nearestNeighbours) {
-    return await grok_ML_MissingValuesImputation(table.d, impute, data, nearestNeighbours);
+    return new DataFrame(await grok_ML_MissingValuesImputation(table.d, impute, data, nearestNeighbours));
 }
 
 /** Clusters data.
@@ -40,7 +40,7 @@ export async function missingValuesImputation(table, impute, data, nearestNeighb
  * @returns {DataFrame}
  * */
 export async function cluster(table, features, clusters) {
-    return await grok_ML_Cluster(table.d, features, clusters);
+    return new DataFrame(await grok_ML_Cluster(table.d, features, clusters));
 }
 
 /** Principal component analysis.
@@ -54,7 +54,7 @@ export async function cluster(table, features, clusters) {
  * @returns {DataFrame}
  * */
 export async function pca(table, features, components, center, scale) {
-    return await grok_ML_PCA(table.d, features, components, center, scale);
+    return new DataFrame(await grok_ML_PCA(table.d, features, components, center, scale));
 }
 
 /** Creates a table with random values from the specified distribution.
@@ -68,5 +68,5 @@ export async function pca(table, features, components, center, scale) {
  * @returns {DataFrame}
  * */
 export async function randomData(table, distribution, params, seed) {
-    return await grok_ML_RandomData(table.d, distribution, params, seed);
+    return new DataFrame(await grok_ML_RandomData(table.d, distribution, params, seed));
 }
