@@ -6,6 +6,6 @@ It showcases the ability to create custom routing inside [application](https://d
   
 
 See also: 
-  * [Grok API](https://datagrok.ai/help/develop/grok-api)
+  * [Grok API](https://datagrok.ai/help/develop/js-api)
   * [Packages](https://datagrok.ai/help/develop/develop#packages)
   * [Application](https://datagrok.ai/help/develop/develop#applications)

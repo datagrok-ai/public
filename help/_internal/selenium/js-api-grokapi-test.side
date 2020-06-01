@@ -135,10 +135,10 @@
       "id": "ca8b1180-d063-4c77-ad5a-3b83f14a0e18",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='tree-expander-grok-api']",
+      "target": "xpath=//div[@name='tree-expander-dapi']",
       "targets": [
         ["css=.d4-tree-view-group:nth-child(7) .d4-tree-view-tri", "css:finder"],
-        ["xpath=//div[@name='tree-expander-grok-api']", "xpath:attributes"],
+        ["xpath=//div[@name='tree-expander-dapi']", "xpath:attributes"],
         ["xpath=//div[@id='grok-viewers-toolbox']/div/div[3]/div[2]/div/div[2]/div[7]/div/div", "xpath:idRelative"],
         ["xpath=//div[2]/div[7]/div/div", "xpath:position"]
       ],
@@ -147,10 +147,10 @@
       "id": "8b321cd8-ca19-4c0e-803a-ad544d0efe05",
       "comment": "",
       "command": "doubleClick",
-      "target": "xpath=//div[@name='tree-grok-api---projects-list']",
+      "target": "xpath=//div[@name='tree-dapi---projects-list']",
       "targets": [
         ["css=.d4-tree-view-item:nth-child(1)", "css:finder"],
-        ["xpath=//div[@name='tree-grok-api---projects-list']", "xpath:attributes"],
+        ["xpath=//div[@name='tree-dapi---projects-list']", "xpath:attributes"],
         ["xpath=//div[@id='grok-viewers-toolbox']/div/div[3]/div[2]/div/div[2]/div[7]/div[2]/div", "xpath:idRelative"],
         ["xpath=//div[7]/div[2]/div", "xpath:position"]
       ],
@@ -266,10 +266,10 @@
       "id": "296e70c6-fbeb-4824-b97b-05e6407c149b",
       "comment": "",
       "command": "doubleClick",
-      "target": "xpath=//div[@name='tree-grok-api---who-am-i']",
+      "target": "xpath=//div[@name='tree-dapi---who-am-i']",
       "targets": [
         ["css=.d4-tree-view-item:nth-child(2)", "css:finder"],
-        ["xpath=//div[@name='tree-grok-api---who-am-i']", "xpath:attributes"],
+        ["xpath=//div[@name='tree-dapi---who-am-i']", "xpath:attributes"],
         ["xpath=//div[@id='grok-viewers-toolbox']/div/div[3]/div[2]/div/div[2]/div[7]/div[2]/div[2]", "xpath:idRelative"],
         ["xpath=//div[7]/div[2]/div[2]", "xpath:position"]
       ],

@@ -11,7 +11,7 @@ Here are the directories of particular interest:
   : directory with SQL data queries
 
 See also: 
-  * [Grok API](https://datagrok.ai/help/develop/grok-api)
+  * [Grok API](https://datagrok.ai/help/develop/js-api)
   * [Packages](https://datagrok.ai/help/develop/develop#packages)
   * [Data Connection](https://datagrok.ai/help/access/data-connection)
   * [Data Query](https://datagrok.ai/help/access/data-query)

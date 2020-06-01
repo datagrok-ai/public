@@ -37,7 +37,7 @@ module.exports = {
         }
     },
     output: {
-        filename: 'grok-api-[name].js',
+        filename: 'js-api-[name].js',
         library: '[name]',
         libraryTarget: 'var',
         path: path.resolve(__dirname, '../../xamgle/web/js/api'),

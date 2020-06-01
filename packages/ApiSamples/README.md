@@ -1,5 +1,5 @@
 ApiSamples is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.
-It contains various examples of [Grok API](https://datagrok.ai/help/develop/grok-api)
+It contains various examples of [Grok API](https://datagrok.ai/help/develop/js-api)
 
 Here are the directories of particular interest:
 
@@ -23,5 +23,5 @@ Here are the directories of particular interest:
   : directory with ui manipulation examples
 
 See also: 
-  * [Grok API](https://datagrok.ai/help/develop/grok-api)
+  * [Grok API](https://datagrok.ai/help/develop/js-api)
   * [Packages](https://datagrok.ai/help/develop/develop#packages)

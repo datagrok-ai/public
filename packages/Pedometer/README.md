@@ -47,7 +47,7 @@ pedometer(accel, x, y, z, timeOffset)
 ``` 
 
 See also: 
-  * [Grok API](https://datagrok.ai/help/develop/grok-api)
+  * [Grok API](https://datagrok.ai/help/develop/js-api)
   * [Packages](https://datagrok.ai/help/develop/develop#packages)
   * [Scripting](https://datagrok.ai/help/compute/scripting)
   * [Info Panels](https://datagrok.ai/help/discover/info-panels)

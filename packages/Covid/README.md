@@ -13,7 +13,7 @@ Here are the files of particular interest:
 
 
 See also: 
-  * [Grok API](https://datagrok.ai/help/develop/grok-api)
+  * [Grok API](https://datagrok.ai/help/develop/js-api)
   * [Packages](https://datagrok.ai/help/develop/develop#packages)
   * [Web Connectors](https://datagrok.ai/help/access/connectors/web)
   * [OpenAPI/Swagger](https://swagger.io/)
