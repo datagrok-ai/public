@@ -14,34 +14,43 @@ anything that is capable of providing the data. We currently support over 20 dif
 connectors, and the list is quickly growing. Most of our data connectors are open-sourced and could be found on 
 [GitHub](https://github.com/datagrok-ai/public/tree/master/connectors) (MIT license).
 
-| Name                                 | Type       |
-|--------------------------------------|------------|
-| [Access](connectors/access.md)       | JDBC       |
-| [Athena](connectors/athena.md)       | JDBC       |
-| [BigQuery](connectors/bigquery.md)   | JDBC       |
-| [Cassandra](connectors/cassandra.md) | JDBC       |
-| [DB2](connectors/db2.md)             |            |
-| [DropBox](connectors/dropbox.md)     |            |
-| [Files](connectors/files.md)         |            |
-| [Firebird](connectors/firebird.md)   | JDBC       |
-| [HBase](connectors/hbase.md)         | JDBC       |
-| [Hive](connectors/hive.md)           | JDBC       |
-| [Hive2](connectors/hive2.md)         | JDBC       |
-| [MariaDB](connectors/mariadb.md)     | JDBC       |
-| [MS SQL](connectors/mongodb.md)      | JDBC       |
-| [MongoDB](connectors/mssql.md)       | JDBC       |
-| [MySql](connectors/mysql.md)         | JDBC       |
-| [Neo4j](connectors/neo4j.md)         | JDBC       |
-| [OData](connectors/odata.md)         |            |
-| [Oracle](connectors/oracle.md)       | JDBC       |
-| [Postgres](connectors/postgres.md)   | JDBC       |
-| [Redshift](connectors/postgres.md)   | JDBC       |
-| [Socrata](connectors/socrata.md)     |            |
-| [Sparql](connectors/sparql.md)       |            |
-| [SQLite](connectors/sqlite.md)       | JDBC       |
-| [Teradata](connectors/teradata.md)   | JDBC       |
-| [Vertica](connectors/vertica.md)     | JDBC       |
-| [Virtuoso](connectors/virtuoso.md)   | JDBC       |
+| Name                                     | Type  |
+|------------------------------------------|-------|
+| [Access](connectors/access.md)           | JDBC  |
+| [Athena](connectors/athena.md)           | JDBC  |
+| [BigQuery](connectors/bigquery.md)       | JDBC  |
+| [Cassandra](connectors/cassandra.md)     | JDBC  |
+| [DB2](connectors/db2.md)                 | JDBC  |
+| [Denodo](connectors/denodo.md)           | JDBC  |
+| [DropBox](connectors/dropbox.md)         | Files |
+| [Files](connectors/files.md)             | Files |
+| [Firebird](connectors/firebird.md)       | JDBC  |
+| [Git](connectors/git.md)                 | Files |
+| [GitHub](connectors/github.md)           | Files |
+| [GoogleCloud](connectors/googlecloud.md) | Files |
+| [HBase](connectors/hbase.md)             | JDBC  |
+| [Hive](connectors/hive.md)               | JDBC  |
+| [Hive2](connectors/hive2.md)             | JDBC  |
+| [Impala](connectors/impala.md)           | JDBC  |
+| [MariaDB](connectors/mariadb.md)         | JDBC  |
+| [MongoDB](connectors/mssql.md)           | JDBC  |
+| [MS SQL](connectors/mongodb.md)          | JDBC  |
+| [MySql](connectors/mysql.md)             | JDBC  |
+| [Neo4j](connectors/neo4j.md)             | JDBC  |
+| [OData](connectors/odata.md)             |       |
+| [Oracle](connectors/oracle.md)           | JDBC  |
+| [Postgres](connectors/postgres.md)       | JDBC  |
+| [Redshift](connectors/postgres.md)       | JDBC  |
+| [S3](connectors/s3.md)                   | Files |
+| [Socrata](connectors/socrata.md)         |       |
+| [Sparql](connectors/sparql.md)           |       |
+| [SQLite](connectors/sqlite.md)           | JDBC  |
+| [Teradata](connectors/teradata.md)       | JDBC  |
+| [Twitter](connectors/twitter.md)         |       |
+| [Vertica](connectors/vertica.md)         | JDBC  |
+| [Virtuoso](connectors/virtuoso.md)       | JDBC  |
+| [Web](connectors/web.md)                 |       |
+
 
 ## Creating a new connection
 
@@ -88,11 +97,16 @@ You can use these fields to filter connections with [smart search](../overview/s
 | description |                                             |
 | createdOn   |                                             |
 | updatedOn   |                                             |
-| author      | [User](../govern/user.md) object                      |
-| starredBy   | [User](../govern/user.md) object                      |
-| commentedBy | [User](../govern/user.md) object                      |
-| usedBy      | [User](../govern/user.md) object                      |
+| author      | [User](../govern/user.md) object            |
+| starredBy   | [User](../govern/user.md) object            |
+| commentedBy | [User](../govern/user.md) object            |
+| usedBy      | [User](../govern/user.md) object            |
 
+## JDBC connection
+
+For some cases connection may require custom JDBC connection string. For this case JDBC-based data connection has 
+parameter "Conn. string". If it filled, it will be used for connection, all other parameters will be ignored except 
+'login' and 'password'.  
 
 See also:
 
