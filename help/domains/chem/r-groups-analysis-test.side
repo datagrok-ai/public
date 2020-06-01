@@ -10,7 +10,7 @@
       "id": "7f1f8c20-37fc-43ca-afb3-632f633a7cdc",
       "comment": "",
       "command": "open",
-      "target": "/datasets?selenium=true&q=",
+      "target": "/projects?selenium=true&q=sar",
       "targets": [],
       "value": ""
     }, {
@@ -43,29 +43,10 @@
       ],
       "value": ""
     }, {
-      "id": "a3529598-b669-41d3-82f4-020059e51c2f",
-      "comment": "",
-      "command": "pause",
-      "target": "500",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "a501afad-1b15-4429-b145-dea181794a84",
-      "comment": "",
-      "command": "type",
-      "target": "xpath=(//input[@type='text'])[2]",
-      "targets": [
-        ["css=.type-ahead-input", "css:finder"],
-        ["xpath=(//input[@type='text'])[2]", "xpath:attributes"],
-        ["xpath=//div[@id='datasets']/div/div/div/div/input", "xpath:idRelative"],
-        ["xpath=//div/div/div/div/div/input", "xpath:position"]
-      ],
-      "value": "sar"
-    }, {
       "id": "069f8ac1-4db8-4858-9be7-79adf161e189",
       "comment": "",
       "command": "pause",
-      "target": "3000",
+      "target": "4000",
       "targets": [],
       "value": ""
     }, {
@@ -98,24 +79,24 @@
       "id": "bec3923d-f21a-400a-aff3-6d5896e3a45c",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Chem']",
+      "target": "xpath=(//div[@name='div-Chem'])[2]",
       "targets": [
-        ["css=.d4-menu-group:nth-child(13)", "css:finder"],
-        ["xpath=//div[@name='div-Chem']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[11]", "xpath:idRelative"],
-        ["xpath=//div[4]/div/div/div/div[11]", "xpath:position"]
+        ["css=.d4-menu-item-hover:nth-child(7)", "css:finder"],
+        ["xpath=(//div[@name='div-Chem'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[4]/div/div/div[7]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/div[4]/div/div/div[7]", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "1749d447-ee22-4ab6-b1b3-ef04ec44c04c",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Chem---R-Group-Analysis...']",
+      "target": "xpath=(//div[@name='div-Chem---R-Group-Analysis...'])[2]",
       "targets": [
-        ["css=.d4-menu-item:nth-child(13) .d4-menu-item:nth-child(4)", "css:finder"],
-        ["xpath=//div[@name='div-Chem---R-Group-Analysis...']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[11]/div/div[4]", "xpath:idRelative"],
-        ["xpath=//div[11]/div/div[4]", "xpath:position"]
+        ["css=.d4-menu-item:nth-child(4) .d4-menu-item:nth-child(7) .d4-menu-item:nth-child(6)", "css:finder"],
+        ["xpath=(//div[@name='div-Chem---R-Group-Analysis...'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[4]/div/div/div[7]/div/div/div[6]", "xpath:idRelative"],
+        ["xpath=//div[4]/div/div/div[7]/div/div/div[6]", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -236,12 +217,12 @@
       "id": "855ffb50-db88-4fa0-b7e3-13ccaa5a3c44",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='view-handle: sar_small']",
+      "target": "xpath=//span[@name='span-sar-small']",
       "targets": [
-        ["css=.tab-handle:nth-child(4)", "css:finder"],
-        ["xpath=//div[@name='view-handle: sar_small']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
+        ["css=.d4-ribbon-name > span:nth-child(1)", "css:finder"],
+        ["xpath=//span[@name='span-sar-small']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/span", "xpath:idRelative"],
+        ["xpath=//div[2]/span", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -322,24 +303,24 @@
       "id": "03f9e8bf-aa19-49d7-8729-070978db7783",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Chem']",
+      "target": "xpath=(//div[@name='div-Chem'])[2]",
       "targets": [
-        ["css=.d4-menu-group:nth-child(13)", "css:finder"],
-        ["xpath=//div[@name='div-Chem']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[11]", "xpath:idRelative"],
-        ["xpath=//div[4]/div/div/div/div[11]", "xpath:position"]
+        ["css=.d4-menu-item-hover:nth-child(7)", "css:finder"],
+        ["xpath=(//div[@name='div-Chem'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[4]/div/div/div[7]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/div[4]/div/div/div[7]", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "8a547ce4-eb0c-4b18-a339-8b726e276d8e",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Chem---R-Group-Analysis...']",
+      "target": "xpath=(//div[@name='div-Chem---R-Group-Analysis...'])[2]",
       "targets": [
-        ["css=.d4-menu-item:nth-child(13) .d4-menu-item:nth-child(4)", "css:finder"],
-        ["xpath=//div[@name='div-Chem---R-Group-Analysis...']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[11]/div/div[4]", "xpath:idRelative"],
-        ["xpath=//div[11]/div/div[4]", "xpath:position"]
+        ["css=.d4-menu-item:nth-child(4) .d4-menu-item:nth-child(7) .d4-menu-item:nth-child(6)", "css:finder"],
+        ["xpath=(//div[@name='div-Chem---R-Group-Analysis...'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[4]/div/div/div[7]/div/div/div[6]", "xpath:idRelative"],
+        ["xpath=//div[4]/div/div/div[7]/div/div/div[6]", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -415,12 +396,12 @@
       "id": "1cebfef7-1ee7-4d55-834a-e8ab82124088",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='view-handle: sar_small']",
+      "target": "xpath=//span[@name='span-sar-small']",
       "targets": [
-        ["css=.tab-handle:nth-child(4)", "css:finder"],
-        ["xpath=//div[@name='view-handle: sar_small']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
+        ["css=.d4-ribbon-name > span:nth-child(1)", "css:finder"],
+        ["xpath=//span[@name='span-sar-small']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/span", "xpath:idRelative"],
+        ["xpath=//div[2]/span", "xpath:position"]
       ],
       "value": ""
     }, {

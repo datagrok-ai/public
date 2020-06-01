@@ -10,7 +10,7 @@
       "id": "94df53ce-1880-43fc-afd1-4dcab6d68852",
       "comment": "",
       "command": "open",
-      "target": "/datasets?selenium=true&q=",
+      "target": "/projects?selenium=true&q=smiles",
       "targets": [],
       "value": ""
     }, {
@@ -67,26 +67,7 @@
       "id": "cfe50028-b347-4562-a692-fe86c4d23fbc",
       "comment": "",
       "command": "pause",
-      "target": "1000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "0f1ba132-fd58-4878-9d26-e40f8892b24e",
-      "comment": "",
-      "command": "type",
-      "target": "xpath=(//input[@type='text'])[2]",
-      "targets": [
-        ["css=.type-ahead-input", "css:finder"],
-        ["xpath=(//input[@type='text'])[2]", "xpath:attributes"],
-        ["xpath=//div[@id='datasets']/div/div/div/div/input", "xpath:idRelative"],
-        ["xpath=//div/div/div/div/div/input", "xpath:position"]
-      ],
-      "value": "smiles"
-    }, {
-      "id": "125ab046-e564-40ee-a24d-19b9ecca6c23",
-      "comment": "",
-      "command": "pause",
-      "target": "2000",
+      "target": "4000",
       "targets": [],
       "value": ""
     }, {
@@ -111,12 +92,12 @@
       "id": "5a2b8e06-ce43-49d1-a116-68ed3aad2c24",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='view-handle: smiles']",
+      "target": "xpath=//span[@name='span-smiles']",
       "targets": [
-        ["css=.tab-handle:nth-child(4)", "css:finder"],
-        ["xpath=//div[@name='view-handle: smiles']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
+        ["css=.d4-ribbon-name > span:nth-child(1)", "css:finder"],
+        ["xpath=//span[@name='span-smiles']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/span", "xpath:idRelative"],
+        ["xpath=//div[2]/span", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -236,12 +217,12 @@
       "id": "f7e06023-472a-41a3-aee6-477f5fc398c0",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='view-handle: smiles']",
+      "target": "xpath=//span[@name='span-smiles']",
       "targets": [
-        ["css=.tab-handle:nth-child(4)", "css:finder"],
-        ["xpath=//div[@name='view-handle: smiles']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
+        ["css=.d4-ribbon-name > span:nth-child(1)", "css:finder"],
+        ["xpath=//span[@name='span-smiles']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/span", "xpath:idRelative"],
+        ["xpath=//div[2]/span", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -325,12 +306,12 @@
       "id": "fd0dc2ca-5b02-4342-ac4d-6c385eff55e8",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='view-handle: smiles']",
+      "target": "xpath=//span[@name='span-smiles']",
       "targets": [
-        ["css=.tab-handle:nth-child(4)", "css:finder"],
-        ["xpath=//div[@name='view-handle: smiles']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
+        ["css=.d4-ribbon-name > span:nth-child(1)", "css:finder"],
+        ["xpath=//span[@name='span-smiles']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/span", "xpath:idRelative"],
+        ["xpath=//div[2]/span", "xpath:position"]
       ],
       "value": ""
     }, {

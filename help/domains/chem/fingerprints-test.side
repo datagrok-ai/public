@@ -10,7 +10,7 @@
       "id": "dc7ec831-69b3-4c85-8c7c-20bb47cc9ffe",
       "comment": "",
       "command": "open",
-      "target": "/datasets?selenium=true&q=",
+      "target": "/projects?selenium=true&q=smiles",
       "targets": [],
       "value": ""
     }, {
@@ -65,26 +65,7 @@
       "id": "4ac2eccc-d033-47c0-a40b-7ca707c39a55",
       "comment": "",
       "command": "pause",
-      "target": "1000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "29b91928-92e5-4128-885e-b2ad01907e14",
-      "comment": "",
-      "command": "type",
-      "target": "xpath=(//input[@type='text'])[2]",
-      "targets": [
-        ["css=.type-ahead-input", "css:finder"],
-        ["xpath=(//input[@type='text'])[2]", "xpath:attributes"],
-        ["xpath=//div[@id='datasets']/div/div/div/div/input", "xpath:idRelative"],
-        ["xpath=//div/div/div/div/div/input", "xpath:position"]
-      ],
-      "value": "smiles"
-    }, {
-      "id": "f9341e92-15ef-4684-a73c-b1d4838c8757",
-      "comment": "",
-      "command": "pause",
-      "target": "2000",
+      "target": "4000",
       "targets": [],
       "value": ""
     }, {
@@ -105,12 +86,12 @@
       "id": "8c068a2d-de88-4488-989b-62995ac8b98b",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='view-handle: smiles']",
+      "target": "xpath=//span[@name='span-smiles']",
       "targets": [
-        ["css=.tab-handle:nth-child(4)", "css:finder"],
-        ["xpath=//div[@name='view-handle: smiles']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
+        ["css=.d4-ribbon-name > span:nth-child(1)", "css:finder"],
+        ["xpath=//span[@name='span-smiles']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/span", "xpath:idRelative"],
+        ["xpath=//div[2]/span", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -195,7 +176,7 @@
       "command": "select",
       "target": "id=editor",
       "targets": [],
-      "value": "label=TopologicalTorsion"
+      "value": "label=Morgan/Circular"
     }, {
       "id": "d1ea00d6-43fa-4c64-a076-68442f5c28ff",
       "comment": "",
@@ -567,12 +548,12 @@
       "id": "a75af156-e913-40e3-9c89-3c9b46a28d4c",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='view-handle: smiles']",
+      "target": "xpath=//span[@name='span-smiles']",
       "targets": [
-        ["css=.tab-handle:nth-child(4)", "css:finder"],
-        ["xpath=//div[@name='view-handle: smiles']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
+        ["css=.d4-ribbon-name > span:nth-child(1)", "css:finder"],
+        ["xpath=//span[@name='span-smiles']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/span", "xpath:idRelative"],
+        ["xpath=//div[2]/span", "xpath:position"]
       ],
       "value": ""
     }, {

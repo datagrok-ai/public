@@ -10,7 +10,7 @@
       "id": "e9bf33b8-479e-4ea1-a29a-0f77f3f6ee90",
       "comment": "",
       "command": "open",
-      "target": "/datasets?selenium=true&q=",
+      "target": "/?selenium=true",
       "targets": [],
       "value": ""
     }, {
@@ -60,20 +60,38 @@
       "id": "5dc82201-963e-4426-b05c-8dddb86d92b3",
       "comment": "",
       "command": "pause",
-      "target": "2000",
+      "target": "4000",
       "targets": [],
       "value": ""
     }, {
       "id": "a5076b43-1ebb-4876-a04a-c64de81a508a",
       "comment": "",
       "command": "click",
-      "target": "xpath=//label[@name='label-Connect-to-data...']",
+      "target": "xpath=//i[@name='icon-folder-open']",
       "targets": [
-        ["xpath=//label[@name='label-Connect-to-data...']", "css"],
-        ["css=.selected", "css:finder"],
-        ["xpath=//label[@name='label-Connect-to-data...']", "xpath:attributes"],
-        ["xpath=//div[@id='start']/label[7]", "xpath:idRelative"],
-        ["xpath=//label[7]", "xpath:position"]
+        ["css=.fa-folder-open", "css:finder"],
+        ["xpath=//i[@name='icon-folder-open']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div/i", "xpath:idRelative"],
+        ["xpath=//i", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "2c95eb9a-2816-4974-b0f3-404e75214d9f",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "64640eaf-b891-4356-a13a-6e45e7a9b2fd",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//span[contains(.,'Databases')]",
+      "targets": [
+        ["css=.d4-toggle-button:nth-child(2) > span", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[2]/span", "xpath:idRelative"],
+        ["xpath=//div[2]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'Databases')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
@@ -438,8 +456,8 @@
     }, {
       "id": "d32c2ee3-6656-4132-a60d-ed96cfc13163",
       "comment": "",
-      "command": "verifyText",
-      "target": "xpath=//div[@name='div-view-name']",
+      "command": "verifyElementPresent",
+      "target": "name=span-Test-Query-By-Selenium-MongoDB",
       "targets": [
         ["css=.d4-ribbon-name", "css:finder"],
         ["xpath=//div[@name='div-view-name']", "xpath:attributes"],
@@ -579,15 +597,72 @@
       "id": "f6d1b664-8091-4446-b9d7-9b59bb158474",
       "comment": "",
       "command": "click",
-      "target": "name=div-TestQueryBySeleniumMongoDB",
-      "targets": [],
+      "target": "name=span-Northwind",
+      "targets": [
+        ["css=.d4-flex-col > .d4-table label", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div[4]/div/div/div/table/tbody/tr/td[2]/span/span/label", "xpath:idRelative"],
+        ["xpath=//span/label", "xpath:position"],
+        ["xpath=//label[contains(.,'northwind')]", "xpath:innerText"]
+      ],
       "value": ""
     }, {
       "id": "dad0363b-174d-4ca9-b572-88afe82012da",
       "comment": "",
       "command": "pause",
-      "target": "2000",
+      "target": "1000",
       "targets": [],
+      "value": ""
+    }, {
+      "id": "91c1a138-b9a9-4880-a93d-2a2e6bd8c8fc",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='div-section--Queries']",
+      "targets": [
+        ["css=.d4-accordion-pane:nth-child(3) > .d4-accordion-pane-header", "css:finder"],
+        ["xpath=//div[@name='div-section--Queries']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div", "xpath:idRelative"],
+        ["xpath=//div[3]/div/div[2]/div/div/div/div/div[3]/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "8e5ff0c1-a0ab-4b8c-a53b-f1119468959d",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "6918c151-ef3c-4274-b08e-2c2f68f6eacf",
+      "comment": "",
+      "command": "click",
+      "target": "name=span-TestQueryBySeleniumMongoDB",
+      "targets": [
+        ["css=i[name=\"icon-context-arrow-down\"]", "css"],
+        ["css=.d4-accordion-title .grok-context-arrow-down", "css:finder"],
+        ["xpath=//i[@name='icon-context-arrow-down']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div/span/i[2]", "xpath:idRelative"],
+        ["xpath=//span/i[2]", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "05cb9bfe-a2f3-4843-8c23-cbc7d3d58e35",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "3d237c3a-fd61-4d81-89cf-953d62f34712",
+      "comment": "",
+      "command": "click",
+      "target": "css=i[name=\"icon-context-arrow-down\"]",
+      "targets": [
+        ["css=i[name=\"icon-context-arrow-down\"]", "css"],
+        ["css=.d4-accordion-title .grok-context-arrow-down", "css:finder"],
+        ["xpath=//i[@name='icon-context-arrow-down']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div/span/i[2]", "xpath:idRelative"],
+        ["xpath=//span/i[2]", "xpath:position"]
+      ],
       "value": ""
     }, {
       "id": "3c725ca0-d666-45a7-b559-38e61edeefd5",
