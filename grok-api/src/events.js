@@ -35,40 +35,49 @@ export function observeStream(dartStream) {
 }
 
 
+/** Global platform events. */
 export class Events {
 
     constructor() {
         this.customEventBus = new EventBus();
     }
 
+    /** Observes platform events with the specified eventId.
+     * @returns {Observable} */
     onEvent(eventId) { return __obs(eventId); }
 
+    /** Observes custom events with the specified eventId.
+     * @returns {Observable} */
     onCustomEvent(eventId) {
         return this.customEventBus.onEvent(eventId);
     }
 
-    fireCustomEvent(eventId, arg) {
-        return this.customEventBus.fire(eventId, arg);
+    /** Observes events with the specified eventId.
+     * @param {string} eventId
+     * @param args - event arguments*/
+    fireCustomEvent(eventId, args) {
+        return this.customEventBus.fire(eventId, args);
     }
 
-    get onCurrentViewChanged () { return __obs('d4-current-view-changed'); }
-    get onCurrentCellChanged () { return __obs('d4-current-cell-changed'); }
-    get onTableAdded () { return __obs('d4-table-added'); }
-    get onTableRemoved () { return __obs('d4-table-removed'); }
-    get onQueryStarted () { return __obs('d4-query-started'); }
-    get onQueryFinished () { return __obs('d4-query-finished'); }
+    /** @returns {Observable} */ get onCurrentViewChanged () { return __obs('d4-current-view-changed'); }
 
-    get onViewChanged () { return __obs('grok-view-changed'); }
-    get onViewAdded () { return __obs('grok-view-added'); }
-    get onViewRemoved () { return __obs('grok-view-removed'); }
-    get onViewRenamed () { return __obs('grok-view-renamed'); }
+    /** @returns {Observable} */ get onCurrentCellChanged () { return __obs('d4-current-cell-changed'); }
+    /** @returns {Observable} */ get onTableAdded () { return __obs('d4-table-added'); }
+    /** @returns {Observable} */ get onTableRemoved () { return __obs('d4-table-removed'); }
+    /** @returns {Observable} */ get onQueryStarted () { return __obs('d4-query-started'); }
+    /** @returns {Observable} */ get onQueryFinished () { return __obs('d4-query-finished'); }
 
-    get onCurrentProjectChanged () { return __obs('grok-current-project-changed'); }
-    get onProjectUploaded () { return __obs('grok-project-uploaded'); }
-    get onProjectSaved () { return __obs('grok-project-saved'); }
-    get onProjectOpened () { return __obs('grok-project-opened'); }
-    get onProjectClosed () { return __obs('grok-project-closed'); }
-    get onProjectModified () { return __obs('grok-project-modified'); }
+    /** @returns {Observable} */ get onViewChanged () { return __obs('grok-view-changed'); }
+    /** @returns {Observable} */ get onViewAdded () { return __obs('grok-view-added'); }
+    /** @returns {Observable} */ get onViewRemoved () { return __obs('grok-view-removed'); }
+    /** @returns {Observable} */ get onViewRenamed () { return __obs('grok-view-renamed'); }
+
+    /** @returns {Observable} */ get onCurrentProjectChanged () { return __obs('grok-current-project-changed'); }
+    /** @returns {Observable} */ get onProjectUploaded () { return __obs('grok-project-uploaded'); }
+    /** @returns {Observable} */ get onProjectSaved () { return __obs('grok-project-saved'); }
+    /** @returns {Observable} */ get onProjectOpened () { return __obs('grok-project-opened'); }
+    /** @returns {Observable} */ get onProjectClosed () { return __obs('grok-project-closed'); }
+    /** @returns {Observable} */ get onProjectModified () { return __obs('grok-project-modified'); }
 }
 
 

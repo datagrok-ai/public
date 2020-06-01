@@ -19,7 +19,7 @@ via [Scripting](../compute/scripting.md).
 
 ## Grok JS API
 
-For convenience, some of the commonly used functions are exposed via the [JS API](grok-api.md).
+For convenience, some of the commonly used functions are exposed via the [JS API](js-api.md).
 Use `grok.chem` instance to invoke the following methods (most of them are asynchronous, since
 behind the scenes they use server-side assist):
 
@@ -32,7 +32,7 @@ mcs(column);
 descriptors(table, column, descriptors);
 ```
 
-Examples (see on [github](https://github.com/datagrok-ai/public/tree/master/packages/GrokApiExamples/scripts/domains/chem))
+Examples (see on [github](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples/scripts/domains/chem))
 * [Calculating descriptors](https://public.datagrok.ai/js/samples/domains/chem/descriptors)
 * [Substructure search](https://public.datagrok.ai/js/samples/domains/chem/substructure-search)
 * [Similarity search](https://public.datagrok.ai/js/samples/domains/chem/similarity-search)

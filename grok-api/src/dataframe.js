@@ -121,17 +121,17 @@ export class DataFrame {
     }
 
     /** Current row
-     * @returns {Row} */
+     * @type {Row} */
     get currentRow() { return new Row(this, grok_DataFrame_Get_CurrentRowIdx(this.d)); }
     set currentRow(idx) { grok_DataFrame_Set_CurrentRowIdx(this.d, idx); }
 
     /** Current column
-     * @returns {Column} */
+     * @type {Column} */
     get currentCol() { return new Column(grok_DataFrame_Get_CurrentCol(this.d)); }
     set currentCol(col) { grok_DataFrame_Set_CurrentCol(this.d, col.d); }
 
     /** Current cell
-     * @returns {Cell} */
+     * @type {Cell} */
     get currentCell() { return new Cell(grok_DataFrame_Get_CurrentCell(this.d)); }
     set currentCell(cell) { grok_DataFrame_Set_CurrentCell(this.d, cell.d); }
 

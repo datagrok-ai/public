@@ -1,6 +1,6 @@
-/** Machine learning-related routines */
 import {DataFrame} from "./dataframe";
 
+/** Machine learning-related routines */
 export class ml {
     /** Applies predictive modesl to the specified table. */
     static applyModel(name, table, columnNamesMap, showProgress) {

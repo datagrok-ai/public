@@ -8,7 +8,7 @@
 | [EnamineStore](https://github.com/datagrok-ai/public/tree/master/packages/EnamineStore) | [Web Connectors](https://datagrok.ai/help/access/connectors/web), [Swagger/OpenAPI](https://swagger.io/), [Info Panels](https://datagrok.ai/help/discover/info-panels) |
 | [FileEditors](https://github.com/datagrok-ai/public/tree/master/packages/FileEditors) | |
 | [FileSchemasDemo](https://github.com/datagrok-ai/public/tree/master/packages/FileSchemasDemo) | [File Management](https://community.datagrok.ai/t/new-feature-file-share-browser/17/6), [Files](https://datagrok.ai/help/access/connectors/files) |
-| [GrokApiExamples](https://github.com/datagrok-ai/public/tree/master/packages/GrokApiExamples) | [Grok API](https://datagrok.ai/help/develop/grok-api) |
+| [ApiSamples](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples) | [Grok API](https://datagrok.ai/help/develop/grok-api) |
 | [GrokScripts](https://github.com/datagrok-ai/public/tree/master/packages/GrokScripts) | [Scripting](https://datagrok.ai/help/compute/scripting) |
 | [JuliaScripts](https://github.com/datagrok-ai/public/tree/master/packages/JuliaScripts) | [Scripting](https://datagrok.ai/help/compute/scripting) |
 | [Leaflet](https://github.com/datagrok-ai/public/tree/master/packages/Leaflet) | |

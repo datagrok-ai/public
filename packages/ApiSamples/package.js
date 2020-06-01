@@ -1,4 +1,4 @@
-class GrokApiExamplesPackage extends DG.Package {
+class ApiSamplesPackage extends DG.Package {
 
     //description: test
     test() {

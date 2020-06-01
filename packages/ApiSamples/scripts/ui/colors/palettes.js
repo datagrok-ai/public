@@ -13,5 +13,5 @@ v.appendAll([
     ui.h1('Categorical palette with contrast text color'),
     ui.div(DG.Color.categoricalPalette.map(getBlock)),
     ui.h1('Category colors (looping over the palette)'),
-    ui.div(grok.utils.identity(30).map(DG.Color.getCategoricalColor).map(getBlock))
+    ui.div(identity(30).map(DG.Color.getCategoricalColor).map(getBlock))
 ]);

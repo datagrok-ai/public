@@ -20,7 +20,7 @@
     * Calling web services from client and server with proper auth and integrate that data with Datagrok api
     * Interacting with Datagrok 
         * [server api](#server-api)
-        * [client api](../grok-api.md)
+        * [client api](../js-api.md)
     * Connecting to common data sources
         * [relational databases](https://youtu.be/YJmSvh3_uCM)
         * [local files](https://datagrok.ai/img/slides/access-file-formats.mp4) 
