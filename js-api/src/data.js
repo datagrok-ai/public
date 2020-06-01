@@ -2,7 +2,43 @@ import {DataFrame} from "./dataframe";
 import {toJs} from "./wrappers";
 import {FuncCall} from "./functions";
 
+/** Provides convenient access to demo datasets. */
+export class DemoDatasets {
+
+    /**
+     * Creates a generic dataset with the defined number of rows and columns.
+     * [dataset] allowed values:
+     * "wells" - experimental plate wells: barcode, row, col, pos, volume, concentration, role
+     * "demog" - clinical study demographics data: subj, study, site, sex, race, disease, start date
+     * "biosensor": wearable sensor data: time, x, y, z, temp, eda
+     * "random walk": random walk data for the specified number of dimensions
+     *
+     * @returns {DataFrame} */
+    getDemoTable(dataset, rows = 10000, columns = 3) {
+        return new DataFrame(grok_TestData(dataset, rows, columns));
+    }
+
+    /** Wearable sensor data: time, x, y, z, temp, eda
+     * @returns {DataFrame}*/
+    biosensor(rows = 10000) { return getDemoTable('biosensor', rows); }
+
+
+    /** Returns a demo dataset with the specified path (relative to the demo root)
+     * @example
+     * grok.data.getDemoTable("sensors/eeg.csv").then((t) => grok.shell.addTableView(t));
+     * @returns {Promise<DataFrame>}*/
+    loadDemoTable(path) {
+        return new Promise((resolve, reject) => grok_GetDemoTable(path, (t) => resolve(toJs(t))));
+    }
+}
+
+/** Creating, loading, querying, manipulating, joining tables. */
 export class Data {
+
+    constructor() {
+        this.demo = new DemoDatasets();
+    }
+
     /**
      * Creates a generic dataset with the defined number of rows and columns.
      * [dataset] allowed values:
