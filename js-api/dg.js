@@ -1,5 +1,5 @@
 import * as _chem from './src/chem.js';
-export * as _utils from './src/utils.js';
+import * as _utils from './src/utils.js';
 
 export * from './src/const.js';
 export * from './src/events.js';
