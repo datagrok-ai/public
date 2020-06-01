@@ -1,4 +1,5 @@
 import {paramsToJs, toJs} from "./wrappers";
+import {Entity} from "./entities";
 
 /** Grok functions */
 export class Functions {
@@ -12,6 +13,11 @@ export class Functions {
     }
 
     scriptSync(s) { return toJs(grok_ScriptSync(s), false); }
+}
+
+
+export class Func extends Entity {
+    constructor(d) {super(d)}
 }
 
 export class FuncCall {
