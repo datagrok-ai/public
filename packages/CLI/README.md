@@ -14,7 +14,7 @@ Here are the files and directories of particular interest:
 
 
 See also: 
-  * [Grok API](https://datagrok.ai/help/develop/grok-api)
+  * [Grok API](https://datagrok.ai/help/develop/js-api)
   * [Packages](https://datagrok.ai/help/develop/develop#packages)
   * [Scripting](https://datagrok.ai/help/compute/scripting)
   * [Python](https://www.python.org/)

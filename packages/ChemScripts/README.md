@@ -20,7 +20,7 @@ Here are the files of particular interest:
 | [solubility_prediction.grok](https://github.com/datagrok-ai/public/blob/master/packages/ChemScripts/scripts/grok/solubility_prediction.grok) | [Solubility Prediction](https://datagrok.ai/help/domains/chem/functions/solubility-prediction) |
 
 See also: 
-  * [Grok API](https://datagrok.ai/help/develop/grok-api)
+  * [Grok API](https://datagrok.ai/help/develop/js-api)
   * [Packages](https://datagrok.ai/help/develop/develop#packages)
   * [Scripting](https://datagrok.ai/help/compute/scripting)
   * [Cheminformatics](https://datagrok.ai/help/domains/chem/cheminformatics)

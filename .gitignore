@@ -17,7 +17,7 @@ node_modules/
 package-lock.json
 
 # dist
-/grok-api/dist
+/js-api/dist
 
 # JSDoc
-/grok-api/docs
+/js-api/docs
