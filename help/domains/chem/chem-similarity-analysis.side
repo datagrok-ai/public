@@ -10,7 +10,7 @@
       "id": "8ff604b9-81db-4083-8663-4b119b7492f9",
       "comment": "",
       "command": "open",
-      "target": "/datasets?selenium=true&q=",
+      "target": "/projects?selenium=true&q=smiles",
       "targets": [],
       "value": ""
     }, {
@@ -55,41 +55,10 @@
       ],
       "value": ""
     }, {
-      "id": "ab8f2726-12a0-40e3-ac90-4730f3344006",
-      "comment": "",
-      "command": "pause",
-      "target": "1000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "2ef9903c-48b4-4c81-9e0c-c781d218ce0c",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=(//input[@type='text'])[2]",
-      "targets": [
-        ["css=.type-ahead-input", "css:finder"],
-        ["xpath=(//input[@type='text'])[2]", "xpath:attributes"],
-        ["xpath=//div[@id='datasets']/div/div/div/div/input", "xpath:idRelative"],
-        ["xpath=//div/div/div/div/div/input", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "a3e36083-9f64-4f7e-85dd-462cbe63302a",
-      "comment": "",
-      "command": "type",
-      "target": "xpath=(//input[@type='text'])[2]",
-      "targets": [
-        ["css=.type-ahead-input", "css:finder"],
-        ["xpath=(//input[@type='text'])[2]", "xpath:attributes"],
-        ["xpath=//div[@id='datasets']/div/div/div/div/input", "xpath:idRelative"],
-        ["xpath=//div/div/div/div/div/input", "xpath:position"]
-      ],
-      "value": "smiles"
-    }, {
       "id": "ad49834c-6132-4c69-8cf9-4b3ce26127fb",
       "comment": "",
       "command": "pause",
-      "target": "3000",
+      "target": "4000",
       "targets": [],
       "value": ""
     }, {
@@ -110,24 +79,24 @@
       "id": "19b55804-95e3-4192-bf4e-0b8fcd9c6aeb",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Chem']",
+      "target": "xpath=(//div[@name='div-Chem'])[2]",
       "targets": [
-        ["css=.d4-menu-group:nth-child(13)", "css:finder"],
-        ["xpath=//div[@name='div-Chem']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[11]", "xpath:idRelative"],
-        ["xpath=//div[6]/div/div/div/div[11]", "xpath:position"]
+        ["css=.d4-menu-item-hover:nth-child(7)", "css:finder"],
+        ["xpath=(//div[@name='div-Chem'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[4]/div/div/div[7]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/div[4]/div/div/div[7]", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "ff203a87-992f-4ad4-b45c-30946352a121",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Chem---Similarity-Analysis...']",
+      "target": "xpath=(//div[@name='div-Chem---Similarity-Analysis...'])[2]",
       "targets": [
-        ["css=.d4-menu-item:nth-child(13) .d4-menu-item:nth-child(1)", "css:finder"],
-        ["xpath=//div[@name='div-Chem---Similarity-Analysis...']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[11]/div/div", "xpath:idRelative"],
-        ["xpath=//div[11]/div/div", "xpath:position"]
+        ["css=.d4-menu-item:nth-child(4) .d4-menu-item:nth-child(7) .d4-menu-item:nth-child(5)", "css:finder"],
+        ["xpath=(//div[@name='div-Chem---Similarity-Analysis...'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[4]/div/div/div[7]/div/div/div[5]", "xpath:idRelative"],
+        ["xpath=//div[4]/div/div/div[7]/div/div/div[5]", "xpath:position"]
       ],
       "value": ""
     }, {

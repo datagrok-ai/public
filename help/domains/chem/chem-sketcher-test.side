@@ -10,7 +10,7 @@
       "id": "7589609b-fc13-4c9d-9733-b7d9722a4803",
       "comment": "",
       "command": "open",
-      "target": "/datasets?selenium=true&q=",
+      "target": "/projects?selenium=true&q=smiles",
       "targets": [],
       "value": ""
     }, {
@@ -58,26 +58,7 @@
       "id": "8db3341f-db66-418a-9e49-9ecc5ef71e74",
       "comment": "",
       "command": "pause",
-      "target": "1000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "c65d384f-a722-4e94-a483-ce782923af86",
-      "comment": "",
-      "command": "type",
-      "target": "xpath=(//input[@type='text'])[2]",
-      "targets": [
-        ["css=.type-ahead-input", "css:finder"],
-        ["xpath=(//input[@type='text'])[2]", "xpath:attributes"],
-        ["xpath=//div[@id='datasets']/div/div/div/div/input", "xpath:idRelative"],
-        ["xpath=//div/div/div/div/div/input", "xpath:position"]
-      ],
-      "value": "smiles"
-    }, {
-      "id": "f6987bb4-3bff-4295-8388-7f58c6de614f",
-      "comment": "",
-      "command": "pause",
-      "target": "2000",
+      "target": "4000",
       "targets": [],
       "value": ""
     }, {
@@ -140,24 +121,24 @@
       "id": "6b20c94e-9a33-434e-97f0-b116af050464",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Chem']",
+      "target": "xpath=(//div[@name='div-Chem'])[2]",
       "targets": [
-        ["css=.d4-menu-group:nth-child(13)", "css:finder"],
-        ["xpath=//div[@name='div-Chem']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[11]", "xpath:idRelative"],
-        ["xpath=//div[19]/div/div/div/div[11]", "xpath:position"]
+        ["css=.d4-menu-item-hover:nth-child(7)", "css:finder"],
+        ["xpath=(//div[@name='div-Chem'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[4]/div/div/div[7]", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/div[4]/div/div/div[7]", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "068ea066-8fc0-4f7f-b4f6-8da0b716504c",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Chem---Sketcher']",
+      "target": "xpath=(//div[@name='div-Chem---Sketcher'])[2]",
       "targets": [
-        ["css=.d4-menu-item:nth-child(13) .d4-menu-item:nth-child(5)", "css:finder"],
-        ["xpath=//div[@name='div-Chem---Sketcher']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div[11]/div/div[5]", "xpath:idRelative"],
-        ["xpath=//div[11]/div/div[5]", "xpath:position"]
+        ["css=.d4-menu-item:nth-child(4) > .d4-menu-item-container-fixed > .d4-menu-item-container > .d4-menu-item:nth-child(7) .d4-menu-item:nth-child(4)", "css:finder"],
+        ["xpath=(//div[@name='div-Chem---Sketcher'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[4]/div/div/div[7]/div/div/div[4]", "xpath:idRelative"],
+        ["xpath=//div[4]/div/div/div[7]/div/div/div[4]", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -203,10 +184,10 @@
       "id": "b80457b4-ad31-4e37-81a6-a3222af65ea3",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[3]/div/canvas",
+      "target": "css=.d4-flex-row > canvas",
       "targets": [
-        ["css=.d4-menu-item-hover canvas", "css:finder"],
-        ["xpath=//div[3]/div/canvas", "xpath:position"]
+        ["css=.d4-flex-row > canvas", "css:finder"],
+        ["xpath=//div[4]/div/canvas", "xpath:position"]
       ],
       "value": ""
     }, {

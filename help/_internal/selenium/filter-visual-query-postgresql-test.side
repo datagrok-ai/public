@@ -10,7 +10,7 @@
       "id": "8ff604b9-81db-4083-8663-4b119b7492f9",
       "comment": "",
       "command": "open",
-      "target": "/datasets?selenium=true&q=",
+      "target": "/?selenium=true",
       "targets": [],
       "value": ""
     }, {
@@ -52,19 +52,38 @@
       "id": "ab8f2726-12a0-40e3-ac90-4730f3344006",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "4000",
       "targets": [],
       "value": ""
     }, {
       "id": "3a9abedd-ad0c-402c-8915-477b76ed0a5d",
       "comment": "",
       "command": "click",
-      "target": "xpath=//label[@name='label-Connect-to-data...']",
+      "target": "xpath=//i[@name='icon-folder-open']",
       "targets": [
-        ["css=.d4-link-label:nth-child(7)", "css:finder"],
-        ["xpath=//div[@id='start']/label[6]", "xpath:idRelative"],
-        ["xpath=//label[6]", "xpath:position"],
-        ["xpath=//label[@name='label-Connect-to-data...']", "xpath:innerText"]
+        ["css=.fa-folder-open", "css:finder"],
+        ["xpath=//i[@name='icon-folder-open']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div/i", "xpath:idRelative"],
+        ["xpath=//i", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "3d46b027-d0ec-4c90-bb80-dfe71e9c5420",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "512c47fc-990d-4c3a-9574-159e7a8e1129",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//span[contains(.,'Databases')]",
+      "targets": [
+        ["css=.d4-toggle-button:nth-child(2) > span", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[2]/span", "xpath:idRelative"],
+        ["xpath=//div[2]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'Databases')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
@@ -491,10 +510,10 @@
       "id": "594d6cb2-c175-484f-8f99-5b78ca04897e",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-times'])[3]",
+      "target": "xpath=(//i[@name='icon-times'])[2]",
       "targets": [
         ["css=.fa-times:nth-child(5)", "css:finder"],
-        ["xpath=(//i[@name='icon-times'])[3]", "xpath:attributes"],
+        ["xpath=(//i[@name='icon-times'])[2]", "xpath:attributes"],
         ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/i", "xpath:idRelative"],
         ["xpath=//div[2]/div/div/div/div/div/div/i", "xpath:position"]
       ],
@@ -586,12 +605,12 @@
       "id": "3316d234-f856-4569-ba74-3675822b47b2",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='view-handle: orders']",
+      "target": "xpath=//span[@name='span-visual-query-filters-test']",
       "targets": [
-        ["css=.tab-handle:nth-child(4)", "css:finder"],
-        ["xpath=//div[@name='view-handle: orders']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
+        ["css=.d4-ribbon-name > span:nth-child(1)", "css:finder"],
+        ["xpath=//span[@name='span-visual-query-filters-test']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/span", "xpath:idRelative"],
+        ["xpath=//div[2]/span", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -676,12 +695,12 @@
       "id": "69836ef0-293d-42be-989e-6ca90b5d81b6",
       "comment": "",
       "command": "click",
-      "target": "xpath=//span[contains(.,'Welcome')]",
+      "target": "xpath=(//i[@name='icon-times'])[3]",
       "targets": [
-        ["css=.d4-current > span", "css:finder"],
-        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[2]/span", "xpath:idRelative"],
-        ["xpath=//div[2]/span", "xpath:position"],
-        ["xpath=//span[contains(.,'Welcome')]", "xpath:innerText"]
+        ["css=.fa-times:nth-child(5)", "css:finder"],
+        ["xpath=(//i[@name='icon-times'])[3]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/i", "xpath:idRelative"],
+        ["xpath=//div[3]/div[2]/div/div/div/div/div/div/i", "xpath:position"]
       ],
       "value": ""
     }, {
