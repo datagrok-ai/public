@@ -3,7 +3,7 @@
 
 # JavaScript API
 
-[Grok JS API](grok-api.md) allows to control all aspects of the Datagrok platform. The API
+[Grok JS API](js-api.md) allows to control all aspects of the Datagrok platform. The API
 can be used from either ad-hoc scripts (`Tools | Scripting | JavaScript`), 
 or from [packages](develop.md#packages). 
 

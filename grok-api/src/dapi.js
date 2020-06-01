@@ -5,7 +5,7 @@ import {toJs} from "./wrappers";
 /**
  * Exposes Datagrok's server-side functionality.
  *
- * See examples: @{link https://public.datagrok.ai/js/samples/grok-api/projects-list}
+ * See examples: {@link https://public.datagrok.ai/js/samples/grok-api/projects-list}
  * */
 export class Dapi {
     constructor() {}
@@ -43,7 +43,7 @@ export class HttpDataSource {
     }
 
     /** Returns all entities that satisfy the filtering criteria (see {@link filter}).
-     *  See examples: @{link https://public.datagrok.ai/js/samples/grok-api/projects-list}
+     *  See examples: {@link https://public.datagrok.ai/js/samples/grok-api/projects-list}
      *  @returns Promise<object[]>  */
     list() {
         let s = this.entityToJs;

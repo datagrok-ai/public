@@ -63,7 +63,7 @@ class SDTMPackage extends DG.Package {
 
         function aggregate(t) {
             grok.shell.setVar('table', t);
-            return grok.scripts.scriptSync('Aggregate(table, ' +
+            return grok.functions.scriptSync('Aggregate(table, ' +
                 'pivots = ["test"], ' +
                 'aggregations = ["avg(lbstresn)"], ' +
                 'groupByFields = ["studyid", "usubjid", "lbdy", "method", "units", "race", "sex"])');

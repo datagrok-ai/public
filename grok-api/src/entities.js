@@ -11,21 +11,28 @@ export class User {
 
     static current() { return new User(grok_User()); }
 
-    /** @type {string} */
+    /** First name
+     * @type {string} */
     get firstName() { return grok_User_Get_FirstName(this.d); }
 
-    /** @type {string} */
+    /** Last name
+     * @type {string} */
     get lastName() { return grok_User_Get_LastName(this.d); }
 
-    /** @type {string} */
+    /** Email
+     * @type {string} */
     get email() { return grok_User_Get_Email(this.d); }
 
-    /** @type {string} */
+    /** Picture URL
+     * @type {string} */
     get picture() { return grok_User_Get_Picture(this.d); }
 
-    /** @type {string} */
+    /** Login
+     *  @type {string} */
     get login() { return grok_User_Get_Login(this.d); }
 
+    /**
+     *  */
     toMarkup() { return grok_User_ToMarkup(this.d); }
 }
 

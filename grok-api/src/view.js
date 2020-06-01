@@ -1,7 +1,3 @@
-/**
- * A view is typically docked in the main document area of the Grok platform.
- * See [TableView], [SketchView], etc
- */
 import {
     VIEW_TYPE, VIEWER,
 } from "./const";
@@ -12,6 +8,10 @@ import {DockNode, DockManager} from "./docking";
 import {Grid} from "./grid";
 import {ToolboxPage} from "./ui_classes";
 
+/**
+ * A view is typically docked in the main document area of the Grok platform.
+ * See [TableView], [SketchView], etc
+ */
 export class View {
     constructor(d) { this.d = d; }
 
@@ -60,7 +60,7 @@ export class View {
     setRibbonPanels(panels) { grok_View_SetRibbonPanels(this.d, panels); }
 
     /** Adds a viewer of the specified type.
-     * @param {VIEWER|VIEWER} viewerType
+     * @param {VIEWER} viewerType
      * @returns {Viewer} */
     addViewer(viewerType, options = null) {
         let v = new Viewer(grok_View_AddViewer(this.d, viewerType));
