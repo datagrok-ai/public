@@ -180,6 +180,16 @@ export class Windows {
     get showSidebar() { return grok_Windows_Get_ShowSidebar(); }
     set showSidebar(x) { return grok_Windows_Set_ShowSidebar(x); }
 
+    /** Controls the visibility of the toolbox.
+     * @type {boolean} */
+    get showToolbox() { return grok_Windows_Get_ShowToolbox(); }
+    set showToolbox(x) { return grok_Windows_Set_ShowToolbox(x); }
+
+    /** Controls the visibility of the console.
+     * @type {boolean} */
+    get showConsole() { return grok_Windows_Get_ShowConsole(); }
+    set showConsole(x) { return grok_Windows_Set_ShowConsole(x); }
+
     /** Controls the visibility of the help window.
      * @type {boolean} */
     get showHelp() { return grok_Windows_Get_ShowSidebar(); }
