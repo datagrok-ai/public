@@ -35,8 +35,8 @@ export class View {
     append(item) { return ui.appendAll(this.root, [item]); }
 
     /** Appends multiple elements this view. Use {@link appendAll} for appending multiple elements.
-     * @param {HTMLElement} item */
-    appendAll(x) { return ui.appendAll(this.root, x); }
+     * @param {object[]} items */
+    appendAll(items) { return ui.appendAll(this.root, items); }
 
     /** View type
      * @type {string} */
@@ -269,8 +269,24 @@ export class TableView extends View {
 }
 
 
+/** Base view for working with collection of objects that reside on the server.
+ *  Typically, results are filtered by applying AND operation between two
+ *  filters: {@link permanentFilter} (which is programmatically and is not visible)
+ *  and {@link searchValue} entered by user.
+ *
+ *  More details on the smart search syntax: @{link https://datagrok.ai/help/overview/smart-search}
+ *
+ * @extends {View} */
 export class DataSourceCardView extends View {
+
+    /** User-specified {@link https://datagrok.ai/help/overview/smart-search | filter expression}.
+     * @type {string} */
+    get searchValue() { return grok_DataSourceCardView_Get_SearchValue(this.d); }
     set searchValue(s) { return grok_DataSourceCardView_Set_SearchValue(this.d, s); }
+
+    /** Programmatically defined invisible
+     * {@link https://datagrok.ai/help/overview/smart-search | filter expression}.
+     *  @type {string} */
     get permanentFilter() { return grok_DataSourceCardView_Get_PermanentFilter(this.d); }
     set permanentFilter(s) { return grok_DataSourceCardView_Set_PermanentFilter(this.d, s); }
 }
