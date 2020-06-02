@@ -25,16 +25,15 @@ class LeafletViewer extends DG.JsViewer {
         }).addTo(this.map);
     }
 
-    onFrameAttached(dataFrameHandle) {
-        this.table = new DG.DataFrame(dataFrameHandle);
+    onTableAttached() {
         console.log('foo');
         this.init();
 
-        this.latitude = this.table.columns.bySemType(DG.SEMTYPE.LATITUDE);
-        this.longitude = this.table.columns.bySemType(DG.SEMTYPE.LONGITUDE);
+        this.latitude = this.dataFrame.columns.bySemType(DG.SEMTYPE.LATITUDE);
+        this.longitude = this.dataFrame.columns.bySemType(DG.SEMTYPE.LONGITUDE);
 
-        this.subs.push(DG.debounce(this.table.selection.onChanged, 50).subscribe((_) => this.render()));
-        this.subs.push(DG.debounce(this.table.filter.onChanged, 50).subscribe((_) => this.render()));
+        this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
+        this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()));
 
         this.render(true);
     }
@@ -71,7 +70,7 @@ class LeafletViewer extends DG.JsViewer {
 
     getCoordinates() {
         this.coordinates.length = 0;
-        let indexes = this.table.filter.getSelectedIndexes();
+        let indexes = this.dataFrame.filter.getSelectedIndexes();
         let lat = this.latitude.getRawData();
         let lon = this.longitude.getRawData();
 

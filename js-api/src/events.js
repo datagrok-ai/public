@@ -105,15 +105,23 @@ export class StreamSubscription {
     cancel() { grok_Subscription_Cancel(this.d); }
 }
 
+/** Event arguments. {@see args} contains event details.
+ *  Sample: {@link https://public.datagrok.ai/js/samples/events/global-events}*/
 export class EventData {
-    constructor(d) {
-        this.d = d;
-    }
 
+    constructor(d) { this.d = d; }
+
+    /** @type {UIEvent} */
     get causedBy() { return grok_EventData_Get_CausedBy(this.d); }
+
+    /** Whether the default event handling is prevented. See also {@link preventDefault}
+     * @returns {boolean} */
     get isDefaultPrevented() { return grok_EventData_Get_IsDefaultPrevented(this.d); }
+
+    /** Prevents default handling. See also {@link isDefaultPrevented} */
     preventDefault() { grok_EventData_PreventDefault(this.d); }
 
+    /** Event details. */
     get args() {
         let x = grok_EventData_Get_Args(this.d);
         let result = {};
@@ -121,7 +129,6 @@ export class EventData {
             result[property] = toJs(x[property]);
         return result;
     }
-
 }
 
 /** Central event hub. */

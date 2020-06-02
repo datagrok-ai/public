@@ -30,11 +30,10 @@ class SunburstViewer extends DG.JsViewer {
             };
         }
 
-        this.table = new DG.DataFrame(dataFrameHandle);
         this.init();
 
-        this.subs.push(this.table.selection.onChanged.subscribe((_) => this.render()));
-        this.subs.push(this.table.filter.onChanged.subscribe((_) => this.render()));
+        this.subs.push(this.dataFrame.selection.onChanged.subscribe((_) => this.render()));
+        this.subs.push(this.dataFrame.filter.onChanged.subscribe((_) => this.render()));
         this.render();
     }
 

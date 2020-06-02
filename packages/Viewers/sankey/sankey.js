@@ -34,14 +34,14 @@ class SankeyViewer extends DG.JsViewer {
 
 
     // transform data into the sankey format
-    var sourceCol = this.table.getCol(this.options.source);
-    var targetCol = this.table.getCol(this.options.target);
-    var valueCol = this.table.getCol(this.options.value);
+    var sourceCol = this.dataFrame.getCol(this.options.source);
+    var targetCol = this.dataFrame.getCol(this.options.target);
+    var valueCol = this.dataFrame.getCol(this.options.value);
     let nodes = [...new Set(sourceCol.categories.concat(targetCol.categories))]
       .map((x, i) => ({node: i, name: x}));
 
     var links = [];
-    for (let i = 0; i < this.table.rowCount; i++)
+    for (let i = 0; i < this.dataFrame.rowCount; i++)
       links.push({
         source: nodes.findIndex(node => node.name === sourceCol.get(i)),
         target: nodes.findIndex(node => node.name === targetCol.get(i)),
@@ -144,13 +144,12 @@ class SankeyViewer extends DG.JsViewer {
     }
   }
 
-  onFrameAttached(dataFrameHandle) {
-    this.table = new DG.DataFrame(dataFrameHandle);
+  onTableAttached() {
     this.options = {source: 'source', target: 'target', value: 'value'};
     this.init();
 
-    this.subs.push(this.table.selection.onChanged.subscribe((_) => this.render()));
-    this.subs.push(this.table.filter.onChanged.subscribe((_) => this.render()));
+    this.subs.push(this.dataFrame.selection.onChanged.subscribe((_) => this.render()));
+    this.subs.push(this.dataFrame.filter.onChanged.subscribe((_) => this.render()));
     this.render();
   }
 
