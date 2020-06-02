@@ -7,10 +7,22 @@ import {Balloon} from "./ui_classes";
 
 /**
  * Represents a {@link https://datagrok.ai/help/visualize/viewers | viewer}.
- *
  * See also {@link https://datagrok.ai/help/develop/js-api#pre-defined-viewers}
- * */
+ *
+ * Use Viewer to control the viewers. To develop a custom viewer, {@see JsViewer}.
+ *
+ * @example
+ * let view = grok.shell.addTableView(grok.data.testData('demog', 5000));
+ * view.scatterPlot({
+     x: 'height',
+     y: 'weight',
+     size: 'age',
+     color: 'race',
+   });
+ **/
 export class Viewer {
+
+    /** @constructs Viewer*/
     constructor(d) { this.d = d; }
 
     /** Creates a new viewer of the specified type.
@@ -69,23 +81,36 @@ export class JsLookAndFeel {
 }
 
 
-/** JavaScript implementation of the grok viewer */
+/** Subclass JsViewer to implement a DataFrame-bound Datagrok viewer in JavaScript.
+ *  See an example on github: {@link https://github.com/datagrok-ai/public/tree/master/packages/Leaflet}
+ *  */
 export class JsViewer {
 
+    /** @constructs JsViewer */
     constructor() {
         this.root = ui.div();
+
         /** @type {Property[]}*/
         this.properties = [];
+
         this.dataFrameHandle = null;
+
+        /** @type {DataFrame} */
         this.dataFrame = null;
 
+        /** @type {StreamSubscription[]} */
         this.subs = [];  // stream subscriptions - will be canceled when the viewer is detached
 
         ui.tools.handleResize(this.root, (w, h) => this.onSizeChanged(w, h));
     }
 
+    /** Gets called when a table is attached to the viewer.
+     * @param {DataFrame} dataFrameHandle;
+     * */
     onFrameAttached(dataFrameHandle) {}
+
     onPropertyChanged(property) {}
+
     onSizeChanged(width, height) {}
 
     detach() {
