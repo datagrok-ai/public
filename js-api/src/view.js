@@ -275,9 +275,13 @@ export class TableView extends View {
  *
  *  More details on the smart search syntax: @{link https://datagrok.ai/help/overview/smart-search}
  *
- * @extends {View} */
+ * @extends View */
 export class DataSourceCardView extends View {
 
+    /** @constructs DataSourceCardView*/
+    constructor() {
+        super();
+    }
     /** User-specified {@link https://datagrok.ai/help/overview/smart-search | filter expression}.
      * @type {string} */
     get searchValue() { return grok_DataSourceCardView_Get_SearchValue(this.d); }
