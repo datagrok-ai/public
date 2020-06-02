@@ -79,12 +79,12 @@ export class View {
 
     /** Loads previously saved view layout. Only applicable to certain views, such as TableView.
      *  See also {@link saveLayout}
-     *  @param {string} layout */
+     *  @param {ViewLayout} layout */
     loadLayout(layout) { return grok_View_Load_Layout(this.d, layout.d);  }
 
     /** Saves view layout as a string. Only applicable to certain views, such as TableView.
      *  See also {@link loadLayout}
-     *  @returns {string} */
+     *  @returns {ViewLayout} */
     saveLayout() { return new ViewLayout(grok_View_Save_Layout(this.d)); }
 
     /** Sets custom view panels on the ribbon
