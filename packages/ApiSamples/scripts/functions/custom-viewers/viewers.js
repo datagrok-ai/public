@@ -20,8 +20,7 @@ class JsDemoViewer extends DG.JsViewer {
         grok.shell.info(`${prop.name}: ${prop.get(this)}`);
     }
 
-    onFrameAttached(dataFrameHandle) {
-        this.dataFrame = new DG.DataFrame(dataFrameHandle);
+    onTableAttached() {
         this.subs.push(this.dataFrame.selection.onChanged.subscribe((_) => this.render()));
         this.subs.push(this.dataFrame.filter.onChanged.subscribe((_) => this.render()));
 

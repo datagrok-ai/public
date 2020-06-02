@@ -1,17 +1,23 @@
 class GlobeViewer extends DG.JsViewer {
 
-    constructor(webRoot) {
+    constructor() {
         super();
-        this.webRoot = webRoot;
+
+        // properties
+        this.latitude = this.string('latitudeColumnName');
+        this.longitude = this.string('longitudeColumnName');
+        this.magnitude = this.float('magnitude');
     }
 
     init() {
         let globe = new DAT.Globe(this.root, {imgDir: this.webRoot});
-        let latCol = this.table.getCol(this.options.lat);
-        let lonCol = this.table.getCol(this.options.lon);
-        let magCol = this.table.getCol(this.options.mag);
+
+        let latCol = this.dataFrame.columns.bySemType(DG.SEMTYPE.LATITUDE);
+        let lonCol = this.dataFrame.columns.bySemType(DG.SEMTYPE.LONGITUDE);
+        let magCol = this.dataFrame.getCol(this.options.magnitude);
+
         let points = [];
-        for (let i = 0; i < this.table.rowCount; i++) {
+        for (let i = 0; i < this.dataFrame.rowCount; i++) {
             points.push(latCol.get(i));
             points.push(lonCol.get(i));
             points.push(magCol.get(i));
@@ -23,14 +29,10 @@ class GlobeViewer extends DG.JsViewer {
         globe.animate();
     }
 
-    onFrameAttached(dataFrameHandle) {
-        this.options = {lat: 'Latitude', lon: 'Longitude', mag: 'Magnitude'};
-
-        this.table = new DG.DataFrame(dataFrameHandle);
+    onTableAttached() {
         this.init();
-
-        this.subs.push(this.table.selection.onChanged.subscribe((_) => this.render()));
-        this.subs.push(this.table.filter.onChanged.subscribe((_) => this.render()));
+        this.subs.push(this.dataFrame.selection.onChanged.subscribe((_) => this.render()));
+        this.subs.push(this.dataFrame.filter.onChanged.subscribe((_) => this.render()));
         this.render();
     }
 
