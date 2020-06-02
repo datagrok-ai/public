@@ -58,8 +58,19 @@ export function iconFA(name, handler, tooltipMsg = null) {
         return i;
     }
 
+/** Renders object to html element.
+ * @param {object} x
+ * @returns Element. */
 export function render(x) { return grok_UI_Render(x); }
+
+/** Renders object to html card.
+ * @param {object} x
+ * @returns Element. */
 export function renderCard(x) { return grok_UI_RenderCard(x); }
+
+/** Renders span
+ * @param {string} x
+ * @returns Element. */
 export function span(x) { return grok_UI_Span(x); }
 
 export function div(items = [], className = null) { return grok_UI_Div(items, className); }
@@ -86,7 +97,7 @@ export function dialog(title = '') { return Dialog.create(title); }
 
 /** Binds [item] with the [element]. It enables selecting it as a current object, drag-and-drop,
  * tooltip, and popup menu.
- * Returns [element]. */
+ * @returns Element. */
 export function bind(item, element) { return grok_UI_Bind(item, element); }
 
 export function virtualView(length, renderer) {
