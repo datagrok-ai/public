@@ -93,6 +93,8 @@ export class Dapi {
  * Can be extended with specific methods. (i.e. {@link UsersDataSource})
  */
 export class HttpDataSource {
+
+    /** @constructs HttpDataSource */
     constructor(s, instance) {
         this.s = s;
         this.entityToJs = instance;
@@ -176,6 +178,7 @@ export class HttpDataSource {
  * @extends HttpDataSource
  * */
 export class UsersDataSource extends HttpDataSource {
+    /** @constructs UsersDataSource*/
     constructor(s, instance) {
         super(s, instance);
     }
@@ -196,6 +199,7 @@ export class UsersDataSource extends HttpDataSource {
  * @extends HttpDataSource
  * */
 export class CredentialsDataSource extends HttpDataSource {
+    /** @constructs CredentialsDataSource*/
     constructor(s, instance) {
         super(s, instance);
     }

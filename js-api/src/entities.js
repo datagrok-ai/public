@@ -2,11 +2,36 @@ import * as ui from "./../ui.js";
 import {Functions} from "./functions";
 
 
+/** @class
+ * Base class for system objects stored in the database in a structured manner.
+ * Contains base properties: id, name and path
+ *
+ * */
+export class Entity {
+    /** @constructs Entity*/
+    constructor(d) { this.d = d;}
+
+    /** Entity ID (GUID)
+     *  @type {string} */
+    get id() { return grok_Entity_Get_Id([this.d]); }
+    set id(x) { return grok_Entity_Set_Id([this.d], x); }
+
+    /** Entity name
+     *  @type {string} */
+    get name() { return grok_Entity_Get_Name([this.d]); }
+    set name(x) { return grok_Entity_Set_Name([this.d], x); }
+
+    /** Entity path
+     *  @type {string} */
+    get path() { return grok_Entity_Path([this.d]); }
+}
+
 /**
  * Represents a user of the Datagrok platform.
  * @extends Entity
  * */
-export class User extends Entity{
+export class User extends Entity {
+    /** @constructs User*/
     constructor(d) { super(d); }
 
     static fromId(id) { return new User(grok_User_From_Id(id)); }
@@ -38,35 +63,12 @@ export class User extends Entity{
     toMarkup() { return grok_User_ToMarkup(this.d); }
 }
 
-
-/**
- * Base class for system objects stored in the database in a structured manner.
- * Contains base properties: id, name and path
- *
- * */
-export class Entity {
-    constructor(d) { this.d = d;}
-
-    /** Entity ID (GUID)
-     *  @type {string} */
-    get id() { return grok_Entity_Get_Id([this.d]); }
-    set id(x) { return grok_Entity_Set_Id([this.d], x); }
-
-    /** Entity name
-     *  @type {string} */
-    get name() { return grok_Entity_Get_Name([this.d]); }
-    set name(x) { return grok_Entity_Set_Name([this.d], x); }
-
-    /** Entity path
-     *  @type {string} */
-    get path() { return grok_Entity_Path([this.d]); }
-}
-
 /** Represents a function
  * @extends Entity
  * {@link https://datagrok.ai/help/overview/functions/function*}
  * */
 export class Func extends Entity {
+    /** @constructs Func*/
     constructor(d) {super(d)}
 
     /** Returns {@link FuncCall} object in a stand-by state
@@ -97,6 +99,7 @@ export class Project extends Entity {
  * {@link https://datagrok.ai/help/access/data-query*}
  * */
 export class DataQuery extends Func {
+    /** @constructs DataQuery*/
     constructor(d) { super(d); }
 
     /** Query text
@@ -108,14 +111,15 @@ export class DataQuery extends Func {
  * @extends Func
  * {@link https://datagrok.ai/help/access/data-job}*/
 export class DataJob extends Func {
+    /** @constructs DataJob*/
     constructor(d) { super(d); }
-
 }
 
 /** Represents a data connection
  * @extends Entity
  * {@link https://datagrok.ai/help/access/data-connection}*/
 export class DataConnection extends Entity {
+    /** @constructs DataConnection*/
     constructor(d) { super(d); }
 
     /** Collection of parameters: server, database, endpoint, etc.
@@ -128,26 +132,35 @@ export class DataConnection extends Entity {
  * {@link https://datagrok.ai/help/learn/predictive-modeling-info*}
  * */
 export class Model extends Entity {
+    /** @constructs Model*/
     constructor(d) { super(d); }
 }
 
-/** Represents a Jupyter notebook */
+/** @extends Entity
+ * Represents a Jupyter notebook */
 export class Notebook extends Entity {
+    /** @constructs Notebook*/
     constructor(d) { super(d); }
 }
 
-/** Represents a Table metadata */
+/** @extends Entity
+ * Represents a Table metadata */
 export class TableInfo extends Entity {
+    /** @constructs TableInfo*/
     constructor(d) { super(d); }
 }
 
-/** Represents a User Group */
+/** @extends Entity
+ * Represents a User Group */
 export class Group extends Entity {
+    /** @constructs Group*/
     constructor(d) { super(d); }
 }
 
-/** Represents a Script */
+/** @extends Func
+ * Represents a Script */
 export class Script extends Func {
+    /** @constructs Script*/
     constructor(d) { super(d); }
 }
 
