@@ -47,7 +47,6 @@ export const SYNC_TYPE = {
 
 export const INT_NULL = -2147483648;
 export const FLOAT_NULL = 2.6789344063684636e-34;
-export const DATE_TIME_NULL = -62135578800000000.0;
 
 /** @enum {JoinType} */
 export const JOIN_TYPE = {

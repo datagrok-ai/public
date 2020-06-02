@@ -98,7 +98,7 @@ export function render(x) { return grok_UI_Render(x); }
 export function renderCard(x) { return grok_UI_RenderCard(x); }
 
 /** Renders span
- * @param {string | string[]} x
+ * @param {object[]} x
  * @returns {HtmlElement}. */
 export function span(x) { return grok_UI_Span(x); }
 

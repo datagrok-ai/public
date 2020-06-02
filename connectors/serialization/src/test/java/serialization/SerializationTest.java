@@ -19,7 +19,7 @@ public class SerializationTest {
         columns.add(new IntColumn(new Integer[] {1, 2, 3, 4}));
         columns.add(new StringColumn(new String[] {"A", "B", "C", "D"}));
         columns.add(new BoolColumn(new Boolean[] {true, false, true, false}));
-        columns.add(new DateTimeColumn(new Double[] {1099511627776000.0, 2099511627777000.0, -62135607600000000.0, -62135607600000000.0}));
+        columns.add(new DateTimeColumn(new Double[] {1099511627776000.0, 2099511627777000.0, FloatColumn.None, FloatColumn.None}));
         columns.add(new BigIntColumn(new String[] {"1234567890", "2345678901", "3456789012", "4567890123"}));
 
         columns.get(0).name = "double";
