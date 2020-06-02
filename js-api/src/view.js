@@ -11,6 +11,7 @@ import {Menu, ToolboxPage} from "./ui_classes";
  * See [TableView], [SketchView], etc
  */
 export class View {
+    /** @constructs View */
     constructor(d) { this.d = d; }
 
     static fromDart(d) {
@@ -113,14 +114,14 @@ export class View {
 }
 
 /**
- * @extends {View}
- *
  * A {@link View} that is associated with a {@link DataFrame} and exposes
  * exploratory data analysis functionality. This view gets opened whenever
  * a new table is added to the workspace when a user drag-and-drops a CSV file,
  * or opens a table in any other way.
+ * @extends View
  */
 export class TableView extends View {
+    /** @constructs TableView */
     constructor(d) { super(d); }
 
     /** @type {Grid} */
