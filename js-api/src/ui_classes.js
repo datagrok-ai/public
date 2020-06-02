@@ -103,8 +103,7 @@ export class Menu {
 /** Balloon-style visual notifications. */
 export class Balloon {
     /** Shows information message (green background) */
-    info(s) {
-        grok_Balloon(s, 'info'); }
+    info(s) { grok_Balloon(s, 'info'); }
 
     /** Shows information message (red background) */
     error(s) { grok_Balloon(s, 'error'); }
