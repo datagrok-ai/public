@@ -16,7 +16,7 @@ import {toJs} from "./wrappers";
 /**
  * Exposes Datagrok's server-side functionality.
  *
- * See examples: {@link https://public.datagrok.ai/js/samples/js-api/projects-list}
+ * See examples: {@link https://public.datagrok.ai/js/samples/dapi/projects-list}
  * */
 export class Dapi {
     constructor() {}
@@ -101,7 +101,7 @@ export class HttpDataSource {
     }
 
     /** Returns all entities that satisfy the filtering criteria (see {@link filter}).
-     *  See examples: {@link https://public.datagrok.ai/js/samples/js-api/projects-list}
+     *  See examples: {@link https://public.datagrok.ai/js/samples/dapi/projects-list}
      *  Smart filter: {@link https://datagrok.ai/help/overview/smart-search}
      *  @param {Object} options
      *  @param {int} options.pageSize
@@ -109,7 +109,7 @@ export class HttpDataSource {
      *  @param {string} options.order
      *  @param {string} options.filter
      *  @returns Promise<object[]>  */
-    list({options}) {
+    list(options= {}) {
         if (options.pageSize !== undefined)
             this.by(options.pageSize);
         if (options.pageNumber !== undefined)
@@ -143,7 +143,7 @@ export class HttpDataSource {
 
     /** Returns next page of all entities that satisfy the filtering criteria (see {@link filter}).
      *  Works only if pageSize was set during previous list() call
-     *  See examples: {@link https://public.datagrok.ai/js/samples/js-api/projects-list}
+     *  See examples: {@link https://public.datagrok.ai/js/samples/dapi/projects-list}
      *  @returns Promise<object[]>  */
     nextPage() {
         this.s = grok_DataSource_NextPage(this.s);
@@ -152,7 +152,7 @@ export class HttpDataSource {
 
     /** Applies filter to current request.
      *  Also can be set with {@link list} method "options" parameter
-     *  See examples: {@link https://public.datagrok.ai/js/samples/js-api/projects-list}
+     *  See example: {@link https://public.datagrok.ai/js/samples/dapi/projects-list}
      *  Smart filter: {@link https://datagrok.ai/help/overview/smart-search}
      *  @param {string} w
      *  @returns HttpDataSource  */
@@ -175,6 +175,7 @@ export class HttpDataSource {
 /**
  * Functionality for handling Users collection from server and working with Users remote endpoint
  * Allows to load current user and list of all Datagrok users with filtering and pagination
+ * See example: {@link https://public.datagrok.ai/js/samples/dapi/who-am-i}
  * @extends HttpDataSource
  * */
 export class UsersDataSource extends HttpDataSource {
