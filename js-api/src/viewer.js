@@ -3,7 +3,7 @@ import {TYPE, VIEWER} from "./const";
 import * as ui from "./../ui.js";
 import {Property} from "./entities";
 import {_toJson} from "./utils";
-import {Balloon} from "./ui_classes";
+import {Balloon} from "./widgets";
 
 /**
  * Represents a {@link https://datagrok.ai/help/visualize/viewers | viewer}.

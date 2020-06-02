@@ -4,7 +4,7 @@ import * as ui from "./../ui";
 import {Viewer} from "./viewer";
 import {DockNode, DockManager} from "./docking";
 import {Grid} from "./grid";
-import {Menu, ToolboxPage} from "./ui_classes";
+import {Menu, ToolboxPage} from "./widgets";
 
 /**
  * A view is typically docked in the main document area of the Grok platform.

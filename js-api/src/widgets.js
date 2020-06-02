@@ -37,11 +37,13 @@ class DartWidget extends Widget {
  * Accordion control with collapsible/expandable panes.
  * Samples: {@link https://public.datagrok.ai/js/samples/ui/accordion}
  * */
-export class Accordion {
-    constructor(d) { this.d = d; }
+export class Accordion extends DartWidget {
+
+    /** @constructs Accordion */
+    constructor(d) { super(d); }
+
     static create() { return new Accordion(grok_Accordion()); }
 
-    get root() { return grok_TabControlBase_Get_Root(this.d); }
     get panes() { return grok_TabControlBase_Get_Panes(this.d).map(p => new AccordionPane(p)); }
     getPane(name) { return new AccordionPane(grok_TabControlBase_GetPane(this.d, name)); }
 

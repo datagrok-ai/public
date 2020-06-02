@@ -2,7 +2,7 @@ import {DataFrame} from "./dataframe";
 import {TableView, View} from "./view";
 import {Project, User} from "./entities";
 import {toDart, toJs} from "./wrappers";
-import {Menu, TabControl} from "./ui_classes";
+import {Menu, TabControl} from "./widgets";
 import {DockManager} from "./docking";
 
 /**

@@ -12,7 +12,7 @@ import {Accordion, Dialog, InputBase, Menu, TabControl} from "./src/widgets";
  * @param {string} tagName The name of an element.
  * @param {string | null} className
  */
-export function e(tagName, className = null) {
+export function element(tagName, className = null) {
         let x = document.createElement(tagName);
         if (className !== null)
             _class(x, className);
