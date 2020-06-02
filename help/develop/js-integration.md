@@ -12,7 +12,7 @@ Access the platform via the global 'gr' variable. The API is self-explanatory, l
 let demog = grok.data.testData('demog', 5000);       // create test table
 let view = grok.shell.addTableView(demog);            // add it as a view
 let hist = view.addViewer('histogram');       // add histogram to that view
-hist.options({'valueColumnName': 'weight'});  // customize the histogram
+hist.setOptions({'valueColumnName': 'weight'});  // customize the histogram
 ``` 
 
 ## Executing scripts

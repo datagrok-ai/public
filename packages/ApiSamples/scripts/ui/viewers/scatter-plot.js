@@ -2,9 +2,14 @@
 
 let view = grok.shell.addTableView(grok.data.testData('demog', 5000));
 
-view.scatterPlot({
+let plot = view.scatterPlot({
     x: 'height',
     y: 'weight',
     size: 'age',
     color: 'race',
+});
+
+plot.setOptions({
+    showRegressionLine: true,
+    markerType: 'square'
 });
