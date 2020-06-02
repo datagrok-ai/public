@@ -1,4 +1,4 @@
-import {Balloon} from "./ui_classes";
+import {Balloon} from "./widgets";
 
 export function _jsThen(promise, f) {
     promise.then(f);

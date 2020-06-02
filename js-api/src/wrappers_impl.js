@@ -1,7 +1,7 @@
 import {Column, DataFrame} from "./dataframe";
 import {Project, Property, SemanticValue, User} from "./entities";
 import {EventData} from "./events";
-import {Menu} from "./ui_classes";
+import {Menu} from "./widgets";
 import {TableView, View} from "./view";
 import {TYPE, TYPES_SCALAR} from "./const";
 import {GridCellRenderArgs} from "./grid";
