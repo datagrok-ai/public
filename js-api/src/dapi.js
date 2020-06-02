@@ -104,6 +104,7 @@ export class HttpDataSource {
      *  @param {Object} options
      *  @param {int} options.pageSize
      *  @param {int} options.pageNumber
+     *  @param {string} options.order
      *  @param {string} options.filter
      *  @returns Promise<object[]>  */
     list({options}) {
@@ -113,6 +114,8 @@ export class HttpDataSource {
             this.page(options.pageNumber);
         if (options.filter !== undefined)
             this.filter(options.filter);
+        if (options.order !== undefined)
+            this.order(options.order);
         let s = this.entityToJs;
         return new Promise((resolve, reject) => grok_DataSource_List(this.s, (q) => resolve(q.map(s))));
     }
@@ -146,6 +149,7 @@ export class HttpDataSource {
     }
 
     /** Applies filter to current request.
+     *  Also can be set with {@link list} method "options" parameter
      *  See examples: {@link https://public.datagrok.ai/js/samples/js-api/projects-list}
      *  Smart filter: {@link https://datagrok.ai/help/overview/smart-search}
      *  @param {string} w
@@ -186,7 +190,9 @@ export class UsersDataSource extends HttpDataSource {
 
 
 /**
- * Functionality for handling Credentials collection from server and working with Credentials remote endpoint
+ * Functionality for handling credentials collection from server and working with credentials remote endpoint
+ * Allows to manage {@link Credentials}
+ * See also: {@link https://datagrok.ai/help/govern/security}
  * @extends HttpDataSource
  * */
 export class CredentialsDataSource extends HttpDataSource {
