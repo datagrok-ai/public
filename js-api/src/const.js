@@ -3,9 +3,11 @@
  * @typedef {string} SyncType
  * @typedef {string} JoinType
  * @typedef {string} ColumnType
+ * @typedef {string} ViewerType
+ * @typedef {string} ObjectType
  **/
 
-/** @enum {AGG} */
+/** @enum {AggregationType} */
 export const AGG = {
     KEY: "key",      // Special case: to be used in the 'group by' statement.
     PIVOT: "pivot",  // Special case: to be used as a pivot.
@@ -29,7 +31,7 @@ export const AGG = {
     SELECTED_ROWS_COUNT: "#selected"
 };
 
-/** @enum {SYNC_TYPE} */
+/** @enum {SyncType} */
 export const SYNC_TYPE = {
     CURRENT_ROW_TO_ROW: 'row to row',
     CURRENT_ROW_TO_SELECTION: 'row to selection',
@@ -45,7 +47,7 @@ export const SYNC_TYPE = {
 export const INT_NULL = -2147483648;
 export const FLOAT_NULL = 2.6789344063684636e-34;
 
-/** @enum {JOIN_TYPE} */
+/** @enum {JoinType} */
 export const JOIN_TYPE = {
     INNER: 'inner',
     OUTER: 'outer',
