@@ -9,6 +9,12 @@ export function e (s, cl = null) {
         return x;
     }
 
+/** Appends multiple elements to root, and returns root.
+ *  An element could be either {@link HtmlElement} or {@link Viewer}.
+ *
+ * @param {HtmlElement} root
+ * @param {object[]} elements
+ * @returns {HtmlElement} */
 export function appendAll(root, elements) {
         let fragment = document.createDocumentFragment();
         for (let i = 0; i < elements.length; i++) {
