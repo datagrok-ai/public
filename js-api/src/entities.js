@@ -4,9 +4,10 @@ import {Functions} from "./functions";
 
 /**
  * Represents a user of the Datagrok platform.
+ * @extends Entity
  * */
-export class User {
-    constructor(d) { this.d = d; }
+export class User extends Entity{
+    constructor(d) { super(d); }
 
     static fromId(id) { return new User(grok_User_From_Id(id)); }
 
@@ -40,58 +41,92 @@ export class User {
 
 /**
  * Base class for system objects stored in the database in a structured manner.
- *
+ * Contains base properties: id, name and path
  *
  * */
 export class Entity {
     constructor(d) { this.d = d;}
 
+    /** Entity ID (GUID)
+     *  @type {string} */
     get id() { return grok_Entity_Get_Id([this.d]); }
     set id(x) { return grok_Entity_Set_Id([this.d], x); }
 
+    /** Entity name
+     *  @type {string} */
     get name() { return grok_Entity_Get_Name([this.d]); }
     set name(x) { return grok_Entity_Set_Name([this.d], x); }
 
+    /** Entity path
+     *  @type {string} */
     get path() { return grok_Entity_Path([this.d]); }
 }
 
+/** Represents a function
+ * @extends Entity
+ * {@link https://datagrok.ai/help/overview/functions/function*}
+ * */
 export class Func extends Entity {
     constructor(d) {super(d)}
+
+    /** Returns {@link FuncCall} object in a stand-by state
+     * @param {object} parameters
+     * @returns {FuncCall} */
+    prepare(parameters = {}) { return grok_Func_Prepare(this.d, parameters); };
 }
 
 /** Represents a project */
 export class Project extends Entity {
     constructor(d) { super(d); }
 
+    /** Entity name
+     *  @type {string} */
     get description() { return grok_Project_Description(this.d); }
+    /** Entity name
+     *  @type {string} */
     get isDirty() { return grok_Project_IsDirty(this.d); }
+    /** Entity name
+     *  @type {string} */
     get isEmpty() { return grok_Project_IsEmpty(this.d); }
 
     toMarkup() { return grok_Project_ToMarkup(this.d); }
 }
 
-
-/** Represents a data query */
+/** Represents a data query
+ * @extends Func
+ * {@link https://datagrok.ai/help/access/data-query*}
+ * */
 export class DataQuery extends Func {
     constructor(d) { super(d); }
 
+    /** Query text
+     *  @type {string} */
     get query() { return grok_Query_Query([this.d]); }
 }
 
-/** Represents a data job */
-export class DataJob extends Entity {
+/** Represents a data job
+ * @extends Func
+ * {@link https://datagrok.ai/help/access/data-job}*/
+export class DataJob extends Func {
     constructor(d) { super(d); }
 
 }
 
-/** Represents a data connection */
+/** Represents a data connection
+ * @extends Entity
+ * {@link https://datagrok.ai/help/access/data-connection}*/
 export class DataConnection extends Entity {
     constructor(d) { super(d); }
 
+    /** Collection of parameters: server, database, endpoint, etc.
+     *  @type {object} */
     get parameters() { return grok_DataConnection_Parameters([this.d]); }
 }
 
-/** Represents a predictive model */
+/** Represents a predictive model
+ * @extends Entity
+ * {@link https://datagrok.ai/help/learn/predictive-modeling-info*}
+ * */
 export class Model extends Entity {
     constructor(d) { super(d); }
 }
@@ -116,10 +151,15 @@ export class Script extends Func {
     constructor(d) { super(d); }
 }
 
-/** Represents connection credentials */
+/** Represents connection credentials
+ *  Usually it is a login and a password pair
+ *  Passwords are stored in the secured credentials storage
+ *  See also: {@link https://datagrok.ai/help/govern/security}*/
 export class Credentials extends Entity {
     constructor(d) { super(d); }
 
+    /** Collection of parameters: login, password, API key, etc.
+     *  @type {object} */
     get parameters() { return grok_Credentials_Parameters([this.d]); }
 }
 
