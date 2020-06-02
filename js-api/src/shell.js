@@ -35,11 +35,11 @@ export class Shell {
      *  @type {Project} */
     get project() { return new Project(grok_Project()); }
 
-    /** List of table names that are currently open
+    /** Names of the currently open tables
      *  @type {string[]} */
     get tableNames() { return grok_TableNames(); }
 
-    /** List of currently open tables table
+    /** List of currently open tables
      *  @type {DataFrame[]}*/
     get tables() { return this.tableNames.map(this.tableByName); }
 
@@ -66,7 +66,7 @@ export class Shell {
     error(s) { grok_Balloon(s, 'error'); }
 
     /** Docks element in a separate window.
-     * Sample: {@see https://public.datagrok.ai/js/samples/ui/docking/docking}
+     * Sample: {@link https://public.datagrok.ai/js/samples/ui/docking/docking}
      * @param {HTMLElement} element
      * @param {string} title
      * @param {DockType} dockStyle
@@ -76,7 +76,7 @@ export class Shell {
     }
 
     /** Opens the view that handles the specified url.
-     * Sample: {@see https://public.datagrok.ai/js/samples/ui/docking/docking}
+     * Sample: {@link https://public.datagrok.ai/js/samples/ui/docking/docking}
      * @param {string} url
      * @returns {View} */
     route(url) { return View.fromDart(grok_Route(url)); }
@@ -141,7 +141,7 @@ export class Shell {
     closeAll() { grok_CloseAll(); }
 
     /** Registers a viewer.
-     * Sample: {@see https://public.datagrok.ai/js/samples/scripts/functions/custom-viewers}
+     * Sample: {@link https://public.datagrok.ai/js/samples/scripts/functions/custom-viewers}
      * @param {string} viewerTypeName
      * @param {string} description
      * @param {Function} createViewer - a function that returns {@link Viewer} */

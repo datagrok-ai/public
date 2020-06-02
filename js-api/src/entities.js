@@ -138,7 +138,7 @@ export class Package {
  * Override this class, and {@link register} an instance to integrate the platform with custom
  * types and objects.
  *
- * Samples: {@see https://public.datagrok.ai/js/samples/ui/meta/meta}
+ * Samples: {@link https://public.datagrok.ai/js/samples/ui/meta/meta}
  */
 export class JsEntityMeta {
 
@@ -175,7 +175,7 @@ export class JsEntityMeta {
      * It will be suggested to run in the context menu for that object, and
      * also in the "Actions" pane on the property panel.
      *
-     * Samples: {@see https://public.datagrok.ai/js/samples/ui/docking/docking}
+     * Samples: {@link https://public.datagrok.ai/js/samples/ui/docking/docking}
      *
      * @param {string} name - function name
      * @param run - a function that takes exactly one parameter

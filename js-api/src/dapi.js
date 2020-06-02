@@ -32,42 +32,55 @@ export class Dapi {
     /** Data Queries API endpoint
      *  @type {HttpDataSource<DataQuery>} */
     get queries() { return new HttpDataSource(grok_Dapi_Queries(), (a) => new DataQuery(a)); }
+
     /** Data Connections API endpoint
      *  @type {HttpDataSource<DataConnection>} */
     get connections() { return new HttpDataSource(grok_Dapi_Connections(), (a) => new DataConnection(a)); }
+
     /** Credentials API endpoint
      *  @type {CredentialsDataSource} */
     get credentials() { return new CredentialsDataSource(grok_Dapi_Credentials(), (a) => new Credentials(a)); }
+
     /** Data Jobs API endpoint
      *  @type {HttpDataSource<DataJob>} */
     get jobs() { return new HttpDataSource(grok_Dapi_Jobs(), (a) => new DataJob(a)); }
+
     /** Jupyter Notebooks API endpoint
      *  @type {HttpDataSource<Notebook>} */
     get notebooks() { return new HttpDataSource(grok_Dapi_Notebooks(), (a) => new Notebook(a)); }
+
     /** Predictive Models API endpoint
      *  @type {HttpDataSource<Model>} */
     get models() { return new HttpDataSource(grok_Dapi_Models(), (a) => new Model(a)); }
+
     /** Packages API endpoint
      *  @type {HttpDataSource<Package>} */
     get packages() { return new HttpDataSource(grok_Dapi_Packages(), (a) => new Package(a)); }
+
     /** View Layouts API endpoint
      *  @type {HttpDataSource<ViewLayout>} */
     get layouts() { return new HttpDataSource(grok_Dapi_Layouts(), (a) => new ViewLayout(a)); }
+
     /** Data Table Infos API endpoint
      *  @type {HttpDataSource<TableInfo>} */
     get tables() { return new HttpDataSource(grok_Dapi_Tables(), (a) => new TableInfo(a)); }
+
     /** Users API endpoint
      *  @type {UsersDataSource} */
     get users() { return new UsersDataSource(grok_Dapi_Users(), (a) => new User(a)); }
+
     /** Groups API endpoint
      *  @type {HttpDataSource<Group>} */
     get groups() { return new HttpDataSource(grok_Dapi_Groups(), (a) => new Group(a)); }
+
     /** Scripts API endpoint
      *  @type {HttpDataSource<Script>} */
     get scripts() { return new HttpDataSource(grok_Dapi_Scripts(), (a) => new Script(a)); }
+
     /** Projects API endpoint
      *  @type {HttpDataSource<Project>} */
     get projects() { return new HttpDataSource(grok_Dapi_Projects(), (a) => new Project(a)); }
+
     /** Users Data Storage API endpoint
      *  @type {UserDataStorage} */
     get userDataStorage() { return new UserDataStorage(); }

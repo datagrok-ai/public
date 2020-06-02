@@ -538,7 +538,7 @@ export class Stats {
  * When the query is constructured, execute it by calling {@link aggregate}, which will
  * produce a {@link DataFrame}.
  *
- * See samples: {@see https://public.datagrok.ai/js/samples/data-frame/aggregation}
+ * See samples: {@link https://public.datagrok.ai/js/samples/data-frame/aggregation}
  *
  * @example
  * let avgAgesByRaceAndSex = demographicsTable
@@ -682,7 +682,7 @@ export class GroupByBuilder {
 
 /**
  * Efficient bit storage and manipulation.
- * See samples: {@see https://public.datagrok.ai/js/samples/data-frame/aggregation}
+ * See samples: {@link https://public.datagrok.ai/js/samples/data-frame/aggregation}
  */
 export class BitSet {
 
@@ -695,15 +695,15 @@ export class BitSet {
     static create(length) { return new BitSet(grok_BitSet(length)); }
 
     /** Number of bits in a bitset
-     * @returns {number} */
+     * @type {number} */
     get length() { return grok_BitSet_Get_Length(this.d); }
 
     /** Number of set bits
-     * @returns {number} */
+     * @type {number} */
     get trueCount() { return grok_BitSet_Get_TrueCount(this.d); }
 
     /** Number of unset bits
-     * @returns {number}*/
+     * @type {number}*/
     get falseCount() { return grok_BitSet_Get_FalseCount(this.d); }
 
     /** Clones a bitset
@@ -732,7 +732,8 @@ export class BitSet {
     findPrev(i, x) { return grok_BitSet_FindPrev(this.d, i, x); }
 
     /** Gets i-th bit
-     * @param {number} i*/
+     * @param {number} i
+     * @returns {boolean} */
     get(i) { return grok_BitSet_GetBit(this.d, i); }
 
     /** Sets i-th bit to x

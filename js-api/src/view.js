@@ -6,7 +6,7 @@ import * as ui from "./../ui";
 import {Viewer} from "./viewer";
 import {DockNode, DockManager} from "./docking";
 import {Grid} from "./grid";
-import {ToolboxPage} from "./ui_classes";
+import {Menu, ToolboxPage} from "./ui_classes";
 
 /**
  * A view is typically docked in the main document area of the Grok platform.
@@ -21,46 +21,77 @@ export class View {
             return new TableView(d);
         else
             return new View(d);
-
     }
+
+    /** Creates a new empty view.
+     * @returns {View} */
     static create() { let v = new View(grok_View()); ui._class(v.root, 'grok-default-view'); return v; }
 
+    /** @type {HTMLElement} */
     get root() { return grok_View_Get_Root(this.d); }
 
-    append(x) { return ui.appendAll(this.root, [x]); }
+    /** Appends an item to this view. Use {@link appendAll} for appending multiple elements.
+      * @param {HTMLElement} item */
+    append(item) { return ui.appendAll(this.root, [item]); }
+
+    /** Appends multiple elements this view. Use {@link appendAll} for appending multiple elements.
+     * @param {HTMLElement} item */
     appendAll(x) { return ui.appendAll(this.root, x); }
 
+    /** View type
+     * @type {string} */
     get type() { return grok_View_Get_Type(this.d); }
 
+    /** View name. It gets shown in the tab handle.
+     * @type {string} */
     get name() { return grok_View_Get_Name(this.d); }
     set name(s) { return grok_View_Set_Name(this.d, s); }
 
+    /** View URI, relative to the platform root. See also {@link basePath}
+     * @type {string} */
     get path() { return grok_View_Get_Path(this.d); }
     set path(s) { return grok_View_Set_Path(this.d, s); }
 
+    /** View
+     *  @type {string} */
     get basePath() { return grok_View_Get_BasePath(this.d); }
     set basePath(s) { return grok_View_Set_BasePath(this.d, s); }
 
+    /** @type {string} */
     get description() { return grok_View_Get_Description(this.d); }
     set description(s) { return grok_View_Set_Description(this.d, s); }
 
-    get viewType() { return grok_View_Get_Type(this.d); }
-
+    /** Associated table, if it exists (for TableView), or null.
+     *  @type {DataFrame} */
     get table() { return new DataFrame(grok_View_Get_Table(this.d)); }
 
+    /** View toolbox.
+     *  Sample: https://public.datagrok.ai/js/samples/ui/views/toolbox
+     * @type {HtmlElement} */
     get toolbox() { return grok_View_Get_Toolbox(this.d); }
     set toolbox(x) { return grok_View_Set_Toolbox(this.d, x); }
 
+    /** View menu
+     *  Sample: https://public.datagrok.ai/js/samples/ui/views/ribbon
+     *  @type {Menu} */
     get ribbonMenu() { return new Menu(grok_View_Get_RibbonMenu(this.d)); }
     set ribbonMenu(menu) { grok_View_Set_RibbonMenu(this.d, menu.d); }
 
+    /** Loads previously saved view layout. Only applicable to certain views, such as TableView.
+     *  See also {@link saveLayout}
+     *  @param {string} layout */
     loadLayout(layout) { return grok_View_Load_Layout(this.d, layout.d);  }
+
+    /** Saves view layout as a string. Only applicable to certain views, such as TableView.
+     *  See also {@link loadLayout}
+     *  @returns {string} */
     saveLayout() { return new ViewLayout(grok_View_Save_Layout(this.d)); }
 
     setRibbonPanels(panels) { grok_View_SetRibbonPanels(this.d, panels); }
 
     /** Adds a viewer of the specified type.
      * @param {VIEWER} viewerType
+     * @param options
      * @returns {Viewer} */
     addViewer(viewerType, options = null) {
         let v = new Viewer(grok_View_AddViewer(this.d, viewerType));
@@ -72,55 +103,168 @@ export class View {
     /** A dock node for this view.
      *  Use `grok.shell.dockManager` to manipulate it; {@link dockManager} is for controlling
      *  widows that reside inside this view.
-     *  @returns {DockNode} */
+     *  @type {DockNode} */
     get dockNode() { return new DockNode(grok_View_Get_DockNode(this.d)); }
 
-    /** @returns {DockManager} - only for DockView descendants (TableView, Users, etc) */
+    /** View's dock manager. Only defined for DockView descendants such as {@link TableView}, UsersView, etc.
+     * @type {DockManager} */
     get dockManager() { return new DockManager(grok_View_Get_DockManager(this.d)); }
 
+    /** Closes this view. */
     close() { grok_View_Close(this.d); }
 }
 
-
+/**
+ * @extends {View}
+ *
+ * A {@link View} that is associated with a {@link DataFrame} and exposes
+ * exploratory data analysis functionality. This view gets opened whenever
+ * a new table is added to the workspace when a user drag-and-drops a CSV file,
+ * or opens a table in any other way.
+ */
 export class TableView extends View {
     constructor(d) { super(d); }
 
+    /** @type {Grid} */
     get grid() { return new Grid(grok_View_Get_Grid(this.d)); }
 
+    /** @type {DataFrame} */
     get dataFrame() { return new DataFrame(grok_View_Get_DataFrame(this.d)); }
     set dataFrame(x) { grok_View_Set_DataFrame(this.d, x.d); }
 
+    /** View toolbox that gets shown on the left, in the sidebar
+     *  @type {ToolboxPage} */
     get toolboxPage() { return new ToolboxPage(grok_View_Get_ToolboxPage(this.d)); }
 
+    /** Adds a {@link https://datagrok.ai/help/visualize/viewers/histogram | histogram}.
+     *  Sample: https://public.datagrok.ai/js/samples/ui/viewers/histogram
+     *  @param options
+     *  @returns {Viewer} */
     histogram      (options = null) { return this.addViewer(VIEWER.HISTOGRAM, options); }
+
+    /** Adds a bar chart.
+     *  Sample: https://public.datagrok.ai/js/samples/ui/viewers/bar-chart
+     *  @param options
+     *  @returns {Viewer} */
     barChart       (options = null) { return this.addViewer(VIEWER.BAR_CHART, options); }
+
+    /** Adds a box plot.
+     *  @param options
+     *  @returns {Viewer} */
     boxPlot        (options = null) { return this.addViewer(VIEWER.BOX_PLOT, options); }
+
+    /** Adds a calendar.
+     *  @param options
+     *  @returns {Viewer} */
     calendar       (options = null) { return this.addViewer(VIEWER.CALENDAR, options); }
+
+    /** Adds a correlation plot.
+     *  @param options
+     *  @returns {Viewer} */
     corrPlot       (options = null) { return this.addViewer(VIEWER.CORR_PLOT, options); }
+
+    /** Adds a density plot.
+     *  @param options
+     *  @returns {Viewer} */
     densityPlot    (options = null) { return this.addViewer(VIEWER.DENSITY_PLOT, options); }
+
+    /** Adds filters.
+     *  @param options
+     *  @returns {Viewer} */
     filters        (options = null) { return this.addViewer(VIEWER.FILTERS, options); }
+
+    /** Adds default form.
+     *  @param options
+     *  @returns {Viewer} */
     form           (options = null) { return this.addViewer(VIEWER.FORM, options); }
-    globe          (options = null) { return this.addViewer(VIEWER.GLOBE, options); }
+
+    /** Adds a geographical map.
+     *  @param options
+     *  @returns {Viewer} */
     googleMap      (options = null) { return this.addViewer(VIEWER.GOOGLE_MAP, options); }
+
+    /** Adds a heat map.
+     *  @param options
+     *  @returns {Viewer} */
     heatMap        (options = null) { return this.addViewer(VIEWER.HEAT_MAP, options); }
+
+    /** Adds a line chart.
+     *  @param options
+     *  @returns {Viewer} */
     lineChart      (options = null) { return this.addViewer(VIEWER.LINE_CHART, options); }
+
+    /** Adds a shape map.
+     *  @param options
+     *  @returns {Viewer} */
     shapeMap       (options = null) { return this.addViewer(VIEWER.SHAPE_MAP, options); }
+
+    /** Adds a markup viewer.
+     *  @param options
+     *  @returns {Viewer} */
     markup         (options = null) { return this.addViewer(VIEWER.MARKUP, options); }
+
+    /** Adds a matrix plot.
+     *  @param options
+     *  @returns {Viewer} */
     matrixPlot     (options = null) { return this.addViewer(VIEWER.MATRIX_PLOT, options); }
+
+    /** Adds a network diagram.
+     *  @param options
+     *  @returns {Viewer} */
     networkDiagram (options = null) { return this.addViewer(VIEWER.NETWORK_DIAGRAM, options); }
+
+    /** Adds a parallel coordinates plot.
+     *  @param options
+     *  @returns {Viewer} */
     pcPlot         (options = null) { return this.addViewer(VIEWER.PC_PLOT, options); }
+
+    /** Adds a pie chart.
+     *  @param options
+     *  @returns {Viewer} */
     pieChart       (options = null) { return this.addViewer(VIEWER.PIE_CHART, options); }
+
+    /** Adds a histogram.
+     *  @param options
+     *  @returns {Viewer} */
     scatterPlot    (options = null) { return this.addViewer(VIEWER.SCATTER_PLOT, options); }
+
+    /** Adds a histogram.
+     *  @param options
+     *  @returns {Viewer} */
     scatterPlot3d  (options = null) { return this.addViewer(VIEWER.SCATTER_PLOT_3D, options); }
+
+    /** Adds a histogram.
+     *  @param options
+     *  @returns {Viewer} */
     statistics     (options = null) { return this.addViewer(VIEWER.STATISTICS, options); }
+
+    /** Adds a histogram.
+     *  @param options
+     *  @returns {Viewer} */
     tileViewer     (options = null) { return this.addViewer(VIEWER.TILE_VIEWER, options); }
+
+    /** Adds a histogram.
+     *  @param options
+     *  @returns {Viewer} */
     treeMap        (options = null) { return this.addViewer(VIEWER.TREE_MAP, options); }
+
+    /** Adds a histogram.
+     *  @param options
+     *  @returns {Viewer} */
     trellisPlot    (options = null) { return this.addViewer(VIEWER.TRELLIS_PLOT, options); }
+
+    /** Adds a histogram.
+     *  @param options
+     *  @returns {Viewer} */
     wordCloud      (options = null) { return this.addViewer(VIEWER.WORD_CLOUD, options); }
 
+    /** Resets view layout, leaving only grid visible. */
     resetLayout() { grok_View_ResetLayout(this.d); }
 
+    /** Detaches and closes the view. */
     detach() { grok_View_Detach(this.d); }
+
+    /** Detaches all viewers. */
     detachViewers() { grok_View_DetachViewers(this.d); }
 }
 

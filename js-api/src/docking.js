@@ -15,7 +15,7 @@ export const DOCK_TYPE = {
 /**
  * Represents a dockable window.
  * See also {@link DockContainer}, {@link DockNode}.
- * Samples: {@see https://public.datagrok.ai/js/samples/ui/docking/docking}
+ * Samples: {@link https://public.datagrok.ai/js/samples/ui/docking/docking}
  * */
 export class DockNode {
     constructor(d) { this.d = d; }
@@ -35,7 +35,7 @@ export class DockNode {
 /**
  * Represents a dockable window.
  * See also {@link DockContainer}, {@link DockNode}.
- * Samples: {@see https://public.datagrok.ai/js/samples/ui/docking/docking}
+ * Samples: {@link https://public.datagrok.ai/js/samples/ui/docking/docking}
  * */
 export class DockContainer {
     constructor(d) { this.d = d; }
@@ -64,8 +64,8 @@ export class DockContainer {
  * It owns a Html Div element inside which all panels are docked
  * Initially the document manager takes up the central space and acts as the root node
  *
- * Samples: {@see https://public.datagrok.ai/js/samples/ui/docking/docking}
- * Learn more: {@see https://github.com/coderespawn/dock-spawn} for details.
+ * Samples: {@link https://public.datagrok.ai/js/samples/ui/docking/docking}
+ * Learn more: {@link https://github.com/coderespawn/dock-spawn} for details.
  */
 export class DockManager {
     constructor(d) { this.d = d; }
