@@ -4,7 +4,7 @@
 
 let view = grok.shell.addTableView(grok.data.testData('demog', 5000));
 let col = view.grid.columns.byName('disease');
-view.grid.options({'rowHeight': 100});
+view.grid.setOptions({'rowHeight': 100});
 col.width = 200;
 col.format =
     `<div style="display:flex; flex-direction:column; padding: 5px">
