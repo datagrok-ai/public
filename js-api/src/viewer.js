@@ -93,8 +93,6 @@ export class JsViewer {
         /** @type {Property[]}*/
         this.properties = [];
 
-        this.dataFrameHandle = null;
-
         /** @type {DataFrame} */
         this.dataFrame = null;
 
@@ -104,17 +102,26 @@ export class JsViewer {
         ui.tools.handleResize(this.root, (w, h) => this.onSizeChanged(w, h));
     }
 
-    /** Gets called when a table is attached to the viewer.
-     * @param {DataFrame} dataFrameHandle;
-     * */
-    onFrameAttached(dataFrameHandle) {}
+    onFrameAttached(dataFrameHandle) {
+        this.dataFrame = new DG.DataFrame(dataFrameHandle);
+        this.onTableAttached();
+    }
 
+    /** Gets called when a table is attached to the viewer. */
+    onTableAttached() {}
+
+    /** Gets called when viewer's property is changed.
+     * @param {Property} property - or null, if multiple properties were changed. */
     onPropertyChanged(property) {}
 
+    /** Gets called when viewer's size is changed.
+     * @param {number} width
+     * @param {number} height */
     onSizeChanged(width, height) {}
 
+    /** Gets called when this viewer is detached. */
     detach() {
-        Balloon.info("Detached");
+        //Balloon.info("Detached");
         this.subs.forEach((sub) => sub.unsubscribe());
     }
 
@@ -124,16 +131,28 @@ export class JsViewer {
     getProperty(name) { return this.properties.find((p) => p.name === name); }
 
     getProperties() { return this.properties; }
+    
     getDartProperties() { return this.getProperties().map((p) => p.d); }
 
-    /** cleanup() will get called when the viewer is disposed **/
+    /** cleanup() will get called when the viewer is disposed
+     * @param {Function} cleanup */
     registerCleanup(cleanup) { grok_Widget_RegisterCleanup(this.root, cleanup); }
 
-    _prop(name, type, value = null) {
+    /** Registers an property with the specified type, name, and defaultValue.
+     *  Registered property gets added to {@see properties}.
+     *  Returns default value, thus allowing to combine registering a property with the initialization
+     *
+     * @param {string} propertyName
+     * @param {TYPE} propertyType
+     * @param defaultValue
+     * @returns {*}
+     * @private
+     */
+    _prop(propertyName, propertyType, defaultValue = null) {
         let obj = this;
-        let p = Property.create(name, type, () => obj[name], null, value);
+        let p = Property.create(propertyName, propertyType, () => obj[propertyName], null, defaultValue);
         p.set = function(_, x) {
-            obj[name] = x;
+            obj[propertyName] = x;
             obj.onPropertyChanged(p);
         };
 
@@ -141,12 +160,39 @@ export class JsViewer {
         return p.defaultValue;
     }
 
-    /** @returns {Column} */
-    column(name) { return this._prop(`${name}ColumnName`, TYPE.STRING); }
+    /** Returns the column bound to the specified data property. 
+     *  Note that "ColumnName" suffix (this determines whether this is a data property) should be omitted.
+     * @param {string} dataPropertyName
+     * @returns {Column} */
+    column(dataPropertyName) { return this._prop(`${dataPropertyName}ColumnName`, TYPE.STRING); }
 
-    int(name, value = null) { return this._prop(name, TYPE.INT, value); }
-    float(name, value = null) { return this._prop(name, TYPE.FLOAT, value); }
-    string(name, value = null) { return this._prop(name, TYPE.STRING, value); }
-    bool(name, value = null) { return this._prop(name, TYPE.BOOL, value); }
-    dateTime(name, value = null) { return this._prop(name, TYPE.DATE_TIME, value); }
+    /** Registers an integer property with the specified name and defaultValue
+     * @param {ViewerPropertyType} propertyName
+     * @param {number} defaultValue
+     * @returns {number} */
+    int(propertyName, defaultValue = null) { return this._prop(propertyName, TYPE.INT, defaultValue); }
+
+    /** Registers a floating point property with the specified name and defaultValue
+     * @param {ViewerPropertyType} propertyName
+     * @param {number} defaultValue
+     * @returns {number} */
+    float(propertyName, defaultValue = null) { return this._prop(propertyName, TYPE.FLOAT, defaultValue); }
+
+    /** Registers a string property with the specified name and defaultValue
+     * @param {ViewerPropertyType} propertyName
+     * @param {string} defaultValue
+     * @returns {string} */
+    string(propertyName, defaultValue = null) { return this._prop(propertyName, TYPE.STRING, defaultValue); }
+
+    /** Registers a boolean property with the specified name and defaultValue
+     * @param {ViewerPropertyType} propertyName
+     * @param {boolean} defaultValue
+     * @returns {boolean} */
+    bool(propertyName, defaultValue = null) { return this._prop(propertyName, TYPE.BOOL, defaultValue); }
+
+    /** Registers a datetime property with the specified name and defaultValue
+     * @param {ViewerPropertyType} propertyName
+     * @param {DateTime} defaultValue
+     * @returns {DateTime} */
+    dateTime(propertyName, defaultValue = null) { return this._prop(propertyName, TYPE.DATE_TIME, defaultValue); }
 }

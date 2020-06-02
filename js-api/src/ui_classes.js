@@ -1,9 +1,19 @@
 import {toDart, toJs} from "./wrappers";
 import {_sub} from "./events";
 
-export class Widget {
-    constructor(root) { this.root = root; }
 
+/** Base class for controls that have a visual root and a set of properties. */
+export class Widget {
+
+    /** @constructs Widget and initializes its root. */
+    constructor(root = null) {
+        this._root = root;
+    }
+
+    /** Visual root. */
+    get root() { return this._root; }
+
+    /** Creates a {@see Widget} from the specified React component. */
     static react(reactComponent) {
         let widget = new Widget(ui.div());
         ReactDOM.render(reactComponent, widget.root);
