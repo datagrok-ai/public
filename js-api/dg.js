@@ -9,7 +9,7 @@ export * from './src/dataframe.js';
 export * from './src/entities.js';
 export * from './src/functions.js';
 export * from './src/grid.js';
-export * from './src/ui_classes.js';
+export * from './src/widgets.js';
 export * from './src/view.js';
 export * from './src/viewer.js';
 export * from './src/docking.js';

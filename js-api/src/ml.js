@@ -1,6 +1,8 @@
-/** Machine learning-related routines
+/**
+ * Machine learning-related routines
  * @module ml
  * */
+
 import {DataFrame} from "./dataframe";
 
 
