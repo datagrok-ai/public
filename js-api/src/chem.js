@@ -1,4 +1,7 @@
-/** @module chem **/
+/**
+ * Cheminformatics support
+ * @module chem
+ * */
 
 /**
  * @typedef {string} SimilarityMetric

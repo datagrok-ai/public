@@ -1,11 +1,21 @@
+/**
+ * Routines for building UI
+ * @module ui
+ * */
+
 import {Viewer} from "./src/viewer";
 import {VirtualView} from "./src/view";
-import {Accordion, Dialog, InputBase, Menu, TabControl} from "./src/ui_classes";
+import {Accordion, Dialog, InputBase, Menu, TabControl} from "./src/widgets";
 
-export function e (s, cl = null) {
-        let x = document.createElement(s);
-        if (cl !== null)
-            _class(x, cl);
+/**
+ * Creates an instance of the element for the specified tag, and optionally assigns it a CSS class.
+ * @param {string} tagName The name of an element.
+ * @param {string | null} className
+ */
+export function e(tagName, className = null) {
+        let x = document.createElement(tagName);
+        if (className !== null)
+            _class(x, className);
         return x;
     }
 
@@ -32,51 +42,82 @@ export function _class(x, s) { x.classList.add(s); return x; }
 export function _color(x, s) { x.style.color = s; return x; }
 export function _backColor(x, s) { x.style.backgroundColor = s; return x; }
 
-export function canvas() { return document.createElement("CANVAS"); }
+/** @returns {HTMLCanvasElement} */
+export function canvas() { return element("CANVAS"); }
 
-export function h1(s) { return _innerText(ui.e('h1'), s); }
-export function h2(s) { let x = e('h2'); x.innerText = s; return x; }
-export function h3(s) { let x = e('h3'); x.innerText = s; return x; }
+/** @returns {HTMLHeadingElement} */
+export function h1(s) { return _innerText(ui.element('h1'), s); }
 
+/** @returns {HTMLHeadingElement} */
+export function h2(s) { let x = element('h2'); x.innerText = s; return x; }
+
+/** @returns {HTMLHeadingElement} */
+export function h3(s) { let x = element('h3'); x.innerText = s; return x; }
+
+/** @returns {Accordion} */
 export function accordion() { return Accordion.create(); }
+
+/** @returns {TabControl}
+ * @param {boolean} vertical */
 export function tabControl(vertical = false) { return TabControl.create(vertical); }
 
-export function divText(s) {
-        let e = document.createElement('div');
-        e.innerText = s;
-        return e;
-    }
+/** Returns DivElement with the specified inner text
+ * @param {string} text
+ * @returns {HTMLDivElement} */
+export function divText(text) {
+    let e = element('div');
+    e.innerText = text;
+    return e;
+}
 
+/** Returns a font-awesome icon with the specified name, handler, and tooltip.
+ * Sample: {@link https://public.datagrok.ai/js/samples/ui/icons}
+ * @param {string} name - icon name (omit the "fa-" prefix)
+ * @param {Function} handler
+ * @param {String} tooltipMsg
+ * @returns */
 export function iconFA(name, handler, tooltipMsg = null) {
-        let i = document.createElement('i');
-        i.classList.add('grok-icon');
-        i.classList.add('fal');
-        i.classList.add(`fa-${name}`);
-        i.addEventListener("click", handler);
-        if (tooltipMsg !== null)
-            tooltip(i, tooltipMsg);
-        return i;
-    }
+    let i = element('i');
+    i.classList.add('grok-icon');
+    i.classList.add('fal');
+    i.classList.add(`fa-${name}`);
+    i.addEventListener("click", handler);
+    if (tooltipMsg !== null)
+        tooltip(i, tooltipMsg);
+    return i;
+}
 
 /** Renders object to html element.
  * @param {object} x
- * @returns Element. */
+ * @returns {HtmlElement} */
 export function render(x) { return grok_UI_Render(x); }
 
 /** Renders object to html card.
  * @param {object} x
- * @returns Element. */
+ * @returns {HtmlElement}. */
 export function renderCard(x) { return grok_UI_RenderCard(x); }
 
 /** Renders span
- * @param {string} x
- * @returns Element. */
+ * @param {string | string[]} x
+ * @returns {HtmlElement}. */
 export function span(x) { return grok_UI_Span(x); }
 
+/** @returns {HTMLDivElement} */
 export function div(items = [], className = null) { return grok_UI_Div(items, className); }
+
+/** Div flex-box container that positions child elements vertically.
+ *  @param {HtmlElement[]} items
+ *  @param {string} className - comma-separated CSS class names
+ *  @returns {HTMLDivElement} */
 export function divV(items, className = null) { return grok_UI_DivV(items, className); }
+
+/** Div flex-box container that positions child elements horizontally.
+ *  @param {HtmlElement[]} items
+ *  @param {string} className - comma-separated CSS class names
+ *  @returns {HTMLDivElement} */
 export function divH(items, className = null) { return grok_UI_DivH(items, className); }
 
+/** Renders content as a card. */
 export function card(content) { return ui.div([content], 'd4-item-card'); }
 
 export function loader() { return grok_UI_Loader(); }

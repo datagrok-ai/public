@@ -10,7 +10,8 @@ export class Widget {
         this._root = root;
     }
 
-    /** Visual root. */
+    /** Widget's visual root.
+     * @type {HTMLElement} */
     get root() { return this._root; }
 
     /** Creates a {@see Widget} from the specified React component. */
@@ -19,11 +20,23 @@ export class Widget {
         ReactDOM.render(reactComponent, widget.root);
         return widget;
     }
-
-    //get root() { return grok_Widget_Get_Root(this.r); }
 }
 
 
+class DartWidget extends Widget {
+
+    constructor(d) {
+        super();
+        this.d = d;
+    }
+
+    get root() { return grok_TabControlBase_Get_Root(this.d); }
+}
+
+/**
+ * Accordion control with collapsible/expandable panes.
+ * Samples: {@link https://public.datagrok.ai/js/samples/ui/accordion}
+ * */
 export class Accordion {
     constructor(d) { this.d = d; }
     static create() { return new Accordion(grok_Accordion()); }
@@ -81,18 +94,34 @@ export class ToolboxPage {
 }
 
 
+/**
+ * A non-modal dialog.
+ * Sample: https://public.datagrok.ai/js/samples/ui/dialogs
+ *
+ * @example
+ * ui.dialog('Windows')
+ *   .add(ui.)
+ *   .add(ui.span(['People of Earth, your attention, please… ']))
+ *   .onOK(() => { grok.shell.info('OK!'); })
+ *   .show();
+ * */
 export class Dialog {
     constructor(d) { this.d = d; }
+
     static create(title = '') { return new Dialog(grok_Dialog(title)); }
 
-    /** @returns {Dialog} */
+    /**
+     *  @param {Function} handler
+     *  @returns {Dialog} */
     onOK(handler) { grok_Dialog_OnOK(this.d, handler); return this; }
 
     /** @returns {Dialog} */
     show() { grok_Dialog_Show(this.d); return this; }
 
-    /** @returns {Dialog} */
-    add(x) { grok_Dialog_Add(this.d, toDart(x)); return this; }
+    /** Adds content to the dialog.
+     * @param {HTMLElement | Widget} content
+     * @returns {Dialog} */
+    add(content) { grok_Dialog_Add(this.d, toDart(content)); return this; }
 }
 
 
