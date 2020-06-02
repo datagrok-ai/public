@@ -6,7 +6,6 @@ import java.time.*;
 // Data time column.
 public class DateTimeColumn extends Column<Double> {
     private static final String TYPE = Types.DATE_TIME;
-    private static final double _doubleNone = -62135607600000000.0;
 
     private double[] data;
 
@@ -39,7 +38,7 @@ public class DateTimeColumn extends Column<Double> {
         short[] millisecond = null;
 
         for (int n = 0; n < length; n++) {
-            if (data[n] != _doubleNone) {
+            if (data[n] != FloatColumn.None) {
                 LocalDateTime dateTime = Instant.ofEpochMilli((long)data[n] / 1000).atZone(ZoneId.of("UTC+0")).toLocalDateTime();
                 year[n] = (short) dateTime.getYear();
                 month[n] = (byte) dateTime.getMonthValue();
@@ -68,13 +67,13 @@ public class DateTimeColumn extends Column<Double> {
 
     public void add(Double value) {
         ensureSpace(1);
-        setValue(length++, (value != null) ? value : _doubleNone);
+        setValue(length++, (value != null) ? value : FloatColumn.None);
     }
 
     public void addAll(Double[] values) {
         ensureSpace(values.length);
         for (int n = 0; n < values.length; n++)
-            setValue(length++, (values[n] != null) ? values[n] : _doubleNone);
+            setValue(length++, (values[n] != null) ? values[n] : FloatColumn.None);
     }
 
     public Object get(int idx) {
@@ -87,7 +86,7 @@ public class DateTimeColumn extends Column<Double> {
     }
 
     public boolean isNone(int idx) {
-        return data[idx] == _doubleNone;
+        return data[idx] == FloatColumn.None;
     }
 
     private void ensureSpace(int extraLength) {

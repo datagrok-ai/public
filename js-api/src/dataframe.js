@@ -284,7 +284,7 @@ export class Column {
     /** Returns the raw buffer containing data. Return type depends on the column type:
      * {Int32Array} for ints, {@link INT_NULL} represents null.
      * {Float64Array} for floats, {@link FLOAT_NULL} represents null.
-     * {Float64Array} for datetime, in microseconds since epoch, {@link DATE_TIME_NULL} represents null.
+     * {Float64Array} for datetime, in microseconds since epoch, {@link FLOAT_NULL} represents null.
      * {Int32Array} for strings indexes of {@link categories}.
      * {Uint32Array} bit array.
      * @returns {Array} */
