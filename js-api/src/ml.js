@@ -27,8 +27,9 @@ export function applyModel(name, table, columnNamesMap = {}, showProgress = true
  * @param {number} nearestNeighbours - Number of nearest neighbours.
  * @returns {DataFrame}
  * */
-export async function missingValuesImputation(table, impute, data, nearestNeighbours) {
-    return new DataFrame(await grok_ML_MissingValuesImputation(table.d, impute, data, nearestNeighbours));
+export function missingValuesImputation(table, impute, data, nearestNeighbours) {
+    return new Promise((resolve, reject) =>
+        grok_ML_MissingValuesImputation(table.d, impute, data, nearestNeighbours, (t) => resolve(new DataFrame(t))));
 }
 
 /** Clusters data.
@@ -39,8 +40,9 @@ export async function missingValuesImputation(table, impute, data, nearestNeighb
  * @param {number} clusters - Number of clusters.
  * @returns {DataFrame}
  * */
-export async function cluster(table, features, clusters) {
-    return new DataFrame(await grok_ML_Cluster(table.d, features, clusters));
+export function cluster(table, features, clusters) {
+    return new Promise((resolve, reject) =>
+        grok_ML_Cluster(table.d, features, clusters, () => resolve(table)));
 }
 
 /** Principal component analysis.
@@ -53,8 +55,9 @@ export async function cluster(table, features, clusters) {
  * @param {boolean} scale - Scale features data before PCA.
  * @returns {DataFrame}
  * */
-export async function pca(table, features, components, center, scale) {
-    return new DataFrame(await grok_ML_PCA(table.d, features, components, center, scale));
+export function pca(table, features, components, center, scale) {
+    return new Promise((resolve, reject) =>
+        grok_ML_PCA(table.d, features, components, center, scale, () => resolve(table)));
 }
 
 /** Creates a table with random values from the specified distribution.
@@ -67,6 +70,7 @@ export async function pca(table, features, components, center, scale) {
  * @param {number} seed - Initial seed.
  * @returns {DataFrame}
  * */
-export async function randomData(table, distribution, params, seed) {
-    return new DataFrame(await grok_ML_RandomData(table.d, distribution, params, seed));
+export function randomData(table, distribution, params, seed) {
+    return new Promise((resolve, reject) =>
+        grok_ML_RandomData(table.d, distribution, params, seed, () => resolve(table)));
 }
