@@ -5,24 +5,50 @@ import {Property} from "./entities";
 import {_toJson} from "./utils";
 import {Balloon} from "./ui_classes";
 
+/**
+ * Represents a {@link https://datagrok.ai/help/visualize/viewers | viewer}.
+ *
+ * See also {@link https://datagrok.ai/help/develop/js-api#pre-defined-viewers}
+ * */
 export class Viewer {
     constructor(d) { this.d = d; }
 
+    /** Creates a new viewer of the specified type.
+     * @param {ViewerType} viewerType
+     * @param {DataFrame} table
+     * @param options
+     * @returns {Viewer} */
     static fromType(viewerType, table, options = null) {
         return new Viewer(grok_Viewer_FromType(viewerType, table.d, _toJson(options)));
     }
 
-    options(map) { grok_Viewer_Options(this.d, JSON.stringify(map)); }
-    close() { grok_Viewer_Close(this.d); }
-    serialize()  { return grok_Viewer_Serialize(this.d); }
+    /** Sets viewer options. See also {@link getOptions}
+     *  Sample: https://public.datagrok.ai/js/samples/ui/viewers/scatter-plot
+     *  @param: {object} map */
+    setOptions(map) { grok_Viewer_Options(this.d, JSON.stringify(map)); }
 
+    /** Gets viewer options. See also {@link getOptions}
+     *  Sample: https://public.datagrok.ai/js/samples/ui/viewers/scatter-plot
+     *  @returns: {object} */
+    getOptions()  { return grok_Viewer_Serialize(this.d); }
+
+    /** Closes and detaches the viewer. */
+    close() { grok_Viewer_Close(this.d); }
+
+    /** Visual root.
+     * @type {HtmlElement} */
     get root() { return grok_Viewer_Root(this.d); }
 
     static grid        (t, options = null) { return new Viewer(grok_Viewer_Grid(t.d, _toJson(options))); }
+
     static histogram   (t, options = null) { return new Viewer(grok_Viewer_Histogram(t.d, _toJson(options))); }
+
     static barChart    (t, options = null) { return Viewer.fromType(VIEWER.BAR_CHART, t, options);  }
+
     static boxPlot     (t, options = null) { return new Viewer(grok_Viewer_BoxPlot(t.d, _toJson(options)));  }
+
     static filters     (t, options = null) { return new Viewer(grok_Viewer_Filters(t.d, _toJson(options))); }
+
     static scatterPlot (t, options = null) { return new Viewer(grok_Viewer_ScatterPlot(t.d, _toJson(options))); }
 }
 
@@ -67,8 +93,11 @@ export class JsViewer {
         this.subs.forEach((sub) => sub.unsubscribe());
     }
 
-    /** @returns {Property} */
+    /** Gets property ba name (case-sensitive).
+     * @param {string} name
+     * @returns {Property} */
     getProperty(name) { return this.properties.find((p) => p.name === name); }
+
     getProperties() { return this.properties; }
     getDartProperties() { return this.getProperties().map((p) => p.d); }
 

@@ -11,6 +11,7 @@ import {Menu, ToolboxPage} from "./ui_classes";
  * See [TableView], [SketchView], etc
  */
 export class View {
+
     /** @constructs View */
     constructor(d) { this.d = d; }
 
@@ -51,7 +52,7 @@ export class View {
     get path() { return grok_View_Get_Path(this.d); }
     set path(s) { return grok_View_Set_Path(this.d, s); }
 
-    /** View
+    /** View type URI. Note that {@path} is specific to the instance of the view.
      *  @type {string} */
     get basePath() { return grok_View_Get_BasePath(this.d); }
     set basePath(s) { return grok_View_Set_BasePath(this.d, s); }
@@ -65,13 +66,13 @@ export class View {
     get table() { return new DataFrame(grok_View_Get_Table(this.d)); }
 
     /** View toolbox.
-     *  Sample: https://public.datagrok.ai/js/samples/ui/views/toolbox
+     *  Sample: {@link https://public.datagrok.ai/js/samples/ui/views/toolbox}
      * @type {HTMLElement} */
     get toolbox() { return grok_View_Get_Toolbox(this.d); }
     set toolbox(x) { return grok_View_Set_Toolbox(this.d, x); }
 
     /** View menu
-     *  Sample: https://public.datagrok.ai/js/samples/ui/views/ribbon
+     *  Sample: {@link https://public.datagrok.ai/js/samples/ui/views/ribbon}
      *  @type {Menu} */
     get ribbonMenu() { return new Menu(grok_View_Get_RibbonMenu(this.d)); }
     set ribbonMenu(menu) { grok_View_Set_RibbonMenu(this.d, menu.d); }
@@ -86,6 +87,8 @@ export class View {
      *  @returns {string} */
     saveLayout() { return new ViewLayout(grok_View_Save_Layout(this.d)); }
 
+    /** Sets custom view panels on the ribbon
+     *  Sample: {@link https://public.datagrok.ai/js/samples/ui/views/ribbon}*/
     setRibbonPanels(panels) { grok_View_SetRibbonPanels(this.d, panels); }
 
     /** Adds a viewer of the specified type.
@@ -95,7 +98,7 @@ export class View {
     addViewer(viewerType, options = null) {
         let v = new Viewer(grok_View_AddViewer(this.d, viewerType));
         if (options !== null)
-            v.options(options);
+            v.setOptions(options);
         return v;
     }
 
