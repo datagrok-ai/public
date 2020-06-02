@@ -1,5 +1,5 @@
 import * as rxjs from 'rxjs';
-import {AGG, TYPE, COLUMN_TYPE} from "./const";
+import {AGG, TYPE} from "./const";
 import {__obs, observeStream} from "./events";
 
 /**
@@ -373,7 +373,7 @@ export class ColumnList {
     names() { return grok_ColumnList_Names(this.d); }
 
     /** Creates an array of columns.
-     * @returns {ColumnList[]}*/
+     * @returns {Column[]} */
     toList() { return this.names().map(name => this.byName(name)); }
 
     /** Adds a column, and optionally notifies the parent dataframe.
@@ -580,7 +580,6 @@ export class GroupByBuilder {
     /** Adds an aggregation that counts rows, including these will null values.
      * See also {@link count}, {@link valueCount}, {@link uniqueCount}, {@link missingValueCount}
      * Call {@link aggregate} when the query is constructed.
-     * @param {string} srcColName - column name in the source table
      * @param {string} [resultColName] - column name in the resulting DataFrame
      * @returns {GroupByBuilder} */
     count(resultColName = 'count') { return this.add(AGG.TOTAL_COUNT, null, resultColName); }

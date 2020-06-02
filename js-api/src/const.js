@@ -219,4 +219,3 @@ export const SIMILARITY_METRIC = {
     ASYMMETRIC : 'asymmetric',
     BRAUN_BLANQUET : 'braun-blanquet'
 };
-

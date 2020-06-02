@@ -213,7 +213,7 @@ export class Settings {
     get hideTabsInPresentationMode() { return grok_Get_HideTabsInPresentationMode(); }
     set hideTabsInPresentationMode(x) { return grok_Set_HideTabsInPresentationMode(x); }
 
-    /** Presentaion mode **/
+    /** Presentation mode **/
     get presentationMode() { return grok_Get_PresentationMode(); }
     set presentationMode(x) { return grok_Set_PresentationMode(x); }
 }

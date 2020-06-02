@@ -1,6 +1,4 @@
-import {
-    VIEW_TYPE, VIEWER,
-} from "./const";
+import {VIEW_TYPE, VIEWER} from "./const";
 import {DataFrame} from "./dataframe.js";
 import * as ui from "./../ui";
 import {Viewer} from "./viewer";
@@ -67,7 +65,7 @@ export class View {
 
     /** View toolbox.
      *  Sample: https://public.datagrok.ai/js/samples/ui/views/toolbox
-     * @type {HtmlElement} */
+     * @type {HTMLElement} */
     get toolbox() { return grok_View_Get_Toolbox(this.d); }
     set toolbox(x) { return grok_View_Set_Toolbox(this.d, x); }
 

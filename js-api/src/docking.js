@@ -9,7 +9,7 @@ export const DOCK_TYPE = {
     TOP: "top",
     BOTTOM: "bottom",
     FILL: "fill",
-};
+}
 
 
 /**
@@ -29,7 +29,7 @@ export class DockNode {
     /** Removes a child node.
      * @param {DockNode} childNode */
     removeChild(childNode) { return grok_DockNode_RemoveChild(this.d, childNode); }
-};
+}
 
 
 /**
