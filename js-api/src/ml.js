@@ -11,7 +11,7 @@ import {DataFrame} from "./dataframe";
  * @param {DataFrame} table - Data table.
  * @param {Object} columnNamesMap - Columns map
  * @param {boolean} showProgress - Maximum number of results to return.
- * @returns {DataFrame}
+ * @returns {Promise<DataFrame>}
  * */
 export function applyModel(name, table, columnNamesMap = {}, showProgress = true) {
     return new Promise((resolve, reject) =>
@@ -25,10 +25,11 @@ export function applyModel(name, table, columnNamesMap = {}, showProgress = true
  * @param {string[]} impute - List of column names to impute missing values.
  * @param {string[]} data - List of column names contains data.
  * @param {number} nearestNeighbours - Number of nearest neighbours.
- * @returns {DataFrame}
+ * @returns {Promise<DataFrame>}
  * */
-export async function missingValuesImputation(table, impute, data, nearestNeighbours) {
-    return new DataFrame(await grok_ML_MissingValuesImputation(table.d, impute, data, nearestNeighbours));
+export function missingValuesImputation(table, impute, data, nearestNeighbours) {
+    return new Promise((resolve, reject) =>
+        grok_ML_MissingValuesImputation(table.d, impute, data, nearestNeighbours, (t) => resolve(new DataFrame(t))));
 }
 
 /** Clusters data.
@@ -37,10 +38,11 @@ export async function missingValuesImputation(table, impute, data, nearestNeighb
  * @param {DataFrame} table - Data table.
  * @param {string[]} features - List of column names contains features.
  * @param {number} clusters - Number of clusters.
- * @returns {DataFrame}
+ * @returns {Promise<DataFrame>}
  * */
-export async function cluster(table, features, clusters) {
-    return new DataFrame(await grok_ML_Cluster(table.d, features, clusters));
+export function cluster(table, features, clusters) {
+    return new Promise((resolve, reject) =>
+        grok_ML_Cluster(table.d, features, clusters, () => resolve(table)));
 }
 
 /** Principal component analysis.
@@ -51,10 +53,11 @@ export async function cluster(table, features, clusters) {
  * @param {number} components - Number of clusters.
  * @param {boolean} center - Center features data before PCA.
  * @param {boolean} scale - Scale features data before PCA.
- * @returns {DataFrame}
+ * @returns {Promise<DataFrame>}
  * */
-export async function pca(table, features, components, center, scale) {
-    return new DataFrame(await grok_ML_PCA(table.d, features, components, center, scale));
+export function pca(table, features, components, center, scale) {
+    return new Promise((resolve, reject) =>
+        grok_ML_PCA(table.d, features, components, center, scale, () => resolve(table)));
 }
 
 /** Creates a table with random values from the specified distribution.
@@ -65,8 +68,9 @@ export async function pca(table, features, components, center, scale) {
  * @param {string} distribution - Distribution name.
  * @param {Object} params - Distribution parameters.
  * @param {number} seed - Initial seed.
- * @returns {DataFrame}
+ * @returns {Promise<DataFrame>}
  * */
-export async function randomData(table, distribution, params, seed) {
-    return new DataFrame(await grok_ML_RandomData(table.d, distribution, params, seed));
+export function randomData(table, distribution, params, seed) {
+    return new Promise((resolve, reject) =>
+        grok_ML_RandomData(table.d, distribution, params, seed, () => resolve(table)));
 }
