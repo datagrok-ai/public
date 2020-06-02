@@ -1,5 +1,6 @@
 import * as ui from "./../ui.js";
-import {Func, Functions} from "./functions";
+import {Functions} from "./functions";
+
 
 /**
  * Represents a user of the Datagrok platform.
@@ -54,6 +55,9 @@ export class Entity {
     get path() { return grok_Entity_Path([this.d]); }
 }
 
+export class Func extends Entity {
+    constructor(d) {super(d)}
+}
 
 /** Represents a project */
 export class Project extends Entity {
