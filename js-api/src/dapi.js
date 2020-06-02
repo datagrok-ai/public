@@ -89,6 +89,8 @@ export class Dapi {
 
 /**
  * Common functionality for handling collections of entities stored on the server.
+ * Works with Datagrok REST API, allows to get filtered and paginated lists of entities,
+ * Can be extended with specific methods. (i.e. {@link UsersDataSource})
  */
 export class HttpDataSource {
     constructor(s, instance) {
@@ -98,12 +100,13 @@ export class HttpDataSource {
 
     /** Returns all entities that satisfy the filtering criteria (see {@link filter}).
      *  See examples: {@link https://public.datagrok.ai/js/samples/js-api/projects-list}
+     *  Smart filter: {@link https://datagrok.ai/help/overview/smart-search}
      *  @param {Object} options
      *  @param {int} options.pageSize
      *  @param {int} options.pageNumber
-     *  @param {String} options.filter
+     *  @param {string} options.filter
      *  @returns Promise<object[]>  */
-    list(options) {
+    list({options}) {
         if (options.pageSize !== undefined)
             this.by(options.pageSize);
         if (options.pageNumber !== undefined)
@@ -117,7 +120,7 @@ export class HttpDataSource {
     /** Returns an entity with the specified id.
      *  Throws an exception if an entity does not exist, or is not accessible in the current context.
      *  @param {string} id - GUID of the corresponding object
-     *  @returns {object} - entity. */
+     *  @returns {Promise<object>} - entity. */
     find(id) {
         let s = this.entityToJs;
         return new Promise((resolve, reject) => grok_DataSource_Find(this.s, id, (q) => resolve(s(q[0]))));
@@ -142,6 +145,11 @@ export class HttpDataSource {
         return this;
     }
 
+    /** Applies filter to current request.
+     *  See examples: {@link https://public.datagrok.ai/js/samples/js-api/projects-list}
+     *  Smart filter: {@link https://datagrok.ai/help/overview/smart-search}
+     *  @param {string} w
+     *  @returns HttpDataSource  */
     filter(w) {
         this.s = grok_DataSource_WhereSmart(this.s, w);
         return this;
@@ -160,6 +168,7 @@ export class HttpDataSource {
 
 /**
  * Functionality for handling Users collection from server and working with Users remote endpoint
+ * Allows to load current user and list of all Datagrok users with filtering and pagination
  * @extends HttpDataSource
  * */
 export class UsersDataSource extends HttpDataSource {
@@ -168,7 +177,7 @@ export class UsersDataSource extends HttpDataSource {
     }
 
     /** Returns current user
-     * @returns {User} */
+     * @returns {Promise<User>} */
     current() {
         let s = this.entityToJs;
         return new Promise((resolve, reject) => grok_UsersDataSource_Current(this.s, (q) => resolve(s(q[0]))));
@@ -196,61 +205,66 @@ export class CredentialsDataSource extends HttpDataSource {
 
 /**
  * Functionality for working with remote Users Data Storage
+ * Remote storage allows to save key-value pairs on the Datagrok server for further use
  * */
 export class UserDataStorage {
     constructor() {}
 
     /** Saves a single value to Users Data Storage
-     * @param {String} name Storage name
-     * @param {String} key
-     * @param {String} value
-     * @param {boolean} currentUser Value should be available only for current user  */
+     * @param {string} name Storage name
+     * @param {string} key
+     * @param {string} value
+     * @param {boolean} currentUser Value should be available only for current user
+     * @returns {Promise}*/
     postValue(name, key, value, currentUser = true) {
         return new Promise((resolve, reject) =>
             grok_Dapi_UserDataStorage_PostValue(name, key, value, currentUser, () => resolve()));
     }
 
     /** Saves a map to Users Data Storage, will be appended to existing data
-     * @param {String} name Storage name
+     * @param {string} name Storage name
      * @param {Map} data
-     * @param {boolean} currentUser Value should be available only for current user  */
+     * @param {boolean} currentUser Value should be available only for current user
+     * @returns {Promise}*/
     post(name, data, currentUser = true) {
         return new Promise((resolve, reject) =>
             grok_Dapi_UserDataStorage_Post(name, data, currentUser, () => resolve()));
     }
 
     /** Saves a map to Users Data Storage, will replace existing data
-     * @param {String} name Storage name
+     * @param {string} name Storage name
      * @param {Map} data
-     * @param {boolean} currentUser Value should be available only for current user  */
+     * @param {boolean} currentUser Value should be available only for current user
+     * @returns {Promise}*/
     put(name, data, currentUser = true) {
         return new Promise((resolve, reject) =>
             grok_Dapi_UserDataStorage_Put(name, data, currentUser, () => resolve()));
     }
 
     /** Retrieves a map from Users Data Storage
-     * @param {String} name Storage name
-     * @param {boolean} currentUser get a value from a current user sotrage
-     * @returns Map*/
+     * @param {string} name Storage name
+     * @param {boolean} currentUser get a value from a current user storage
+     * @returns {Promise<Map>}*/
     get(name, currentUser = true) {
         return new Promise((resolve, reject) =>
             grok_Dapi_UserDataStorage_Get(name, currentUser, (data) => resolve(data)));
     }
 
     /** Retrieves a single value from Users Data Storage
-     * @param {String} name Storage name
-     * @param {String} key Value key
+     * @param {string} name Storage name
+     * @param {string} key Value key
      * @param {boolean} currentUser get a value from a current user storage
-     * @returns Map*/
+     * @returns {Promise<Map>}*/
     getValue(name, key, currentUser = true) {
         return new Promise((resolve, reject) =>
             grok_Dapi_UserDataStorage_GetValue(name, key, currentUser, (value) => resolve(value)));
     }
 
     /** Removes a single value from Users Data Storage
-     * @param {String} name Storage name
-     * @param {String} key Value key
-     * @param {boolean} currentUser get a value from a current user storage*/
+     * @param {string} name Storage name
+     * @param {string} key Value key
+     * @param {boolean} currentUser get a value from a current user storage
+     * @returns {Promise}*/
     remove(name, key, currentUser = true) {
         return new Promise((resolve, reject) =>
             grok_Dapi_UserDataStorage_Delete(name, key, currentUser, () => resolve()));
