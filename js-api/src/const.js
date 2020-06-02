@@ -5,6 +5,7 @@
  * @typedef {string} ColumnType
  * @typedef {string} ViewerType
  * @typedef {string} ObjectType
+ * @typedef {string} ViewerPropertyType
  **/
 
 /** @enum {AggregationType} */
@@ -65,7 +66,8 @@ export const COLUMN_TYPE = {
     BIG_INT : 'bigint'
 }
 
-/** @enum {TYPE} */
+
+/** @enum {Type} */
 export const TYPE = {
     INT : 'int',
     BIG_INT : 'bigint',
@@ -106,6 +108,20 @@ export const TYPE = {
 }
 
 export const TYPES_SCALAR = new Set([TYPE.INT, TYPE.BIG_INT, TYPE.FLOAT, TYPE.NUM, TYPE.BOOL, TYPE.STRING]);
+
+/** @enum {ViewerPropertyType} */
+export const VIEWER_PROPERTY_TYPE = {
+    STRING : 'string',
+    INT : 'int',
+    FLOAT : 'double',
+    BOOL : 'bool',
+    DATE_TIME : 'datetime',
+    BIG_INT : 'bigint',
+
+    COLUMN : TYPE.COLUMN,
+    COLUMN_LIST: TYPE.COLUMN_LIST,
+    DATA_FRAME: TYPE.DATA_FRAME
+}
 
 export const VIEW_TYPE = {
     TABLE_VIEW : 'TableView'

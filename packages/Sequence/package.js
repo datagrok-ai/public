@@ -114,8 +114,7 @@ class SequencePackage extends DG.Package {
 _seq = new SequencePackage(null);
 
 class SequenceViewer extends DG.JsViewer {
-    onFrameAttached(dataFrameHandle) {
-        this.dataFrame = new DG.DataFrame(dataFrameHandle);
+    onTableAttached() {
         let seqCol = this.dataFrame.columns.toList().find((c) => c.semType === 'nucleotides');
         let fasta = _seq.toFasta(Array.from(seqCol.values()), null);
         let seqs = msa.io.fasta.parse(fasta);
@@ -149,8 +148,7 @@ class SeqDemoViewer extends DG.JsViewer {
     }
 
 
-    onFrameAttached(dataFrameHandle) {
-        this.dataFrame = new DG.DataFrame(dataFrameHandle);
+    onTableAttached() {
         this.dataFrame.selection.onChanged(() => this.render());
         this.dataFrame.filter.onChanged(() => this.render());
 
