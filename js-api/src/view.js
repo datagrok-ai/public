@@ -31,12 +31,12 @@ export class View {
     get root() { return grok_View_Get_Root(this.d); }
 
     /** Appends an item to this view. Use {@link appendAll} for appending multiple elements.
-      * @param {HTMLElement} item */
-    append(item) { return ui.appendAll(this.root, [item]); }
+      * @param {HTMLElement | Widget} item */
+    append(item) { return this.appendAll([item]); }
 
     /** Appends multiple elements this view. Use {@link appendAll} for appending multiple elements.
      * @param {object[]} items */
-    appendAll(items) { return ui.appendAll(this.root, items); }
+    appendAll(items) { return ui.appendAll(this.root, items.map(ui.render)); }
 
     /** View type
      * @type {string} */
