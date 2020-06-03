@@ -303,10 +303,9 @@ export class TableView extends View {
  * @extends View */
 export class DataSourceCardView extends View {
 
-    /** @constructs DataSourceCardView*/
-    constructor() {
-        super();
-    }
+    /** @constructs DataSourceCardView */
+    constructor(d) { super(d); }
+
     /** User-specified {@link https://datagrok.ai/help/overview/smart-search | filter expression}.
      * @type {string} */
     get searchValue() { return grok_DataSourceCardView_Get_SearchValue(this.d); }
@@ -320,7 +319,11 @@ export class DataSourceCardView extends View {
 }
 
 
+/** Projects view */
 export class ProjectsView extends DataSourceCardView {
+    /** @constructs ProjectsView */
+    constructor(d) { super(d); }
+
     static create(params) { return new ProjectsView(grok_ProjectsView(params)); }
 }
 
