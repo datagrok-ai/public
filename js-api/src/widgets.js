@@ -36,15 +36,22 @@ class DartWidget extends Widget {
 /**
  * Accordion control with collapsible/expandable panes.
  * Samples: {@link https://public.datagrok.ai/js/samples/ui/accordion}
+ * @extends {DartWidget}
  * */
 export class Accordion extends DartWidget {
 
     /** @constructs Accordion */
     constructor(d) { super(d); }
 
+    /** Creates a new instance of Accordion */
     static create() { return new Accordion(grok_Accordion()); }
 
+    /** @type {AccordionPane[]} */
     get panes() { return grok_TabControlBase_Get_Panes(this.d).map(p => new AccordionPane(p)); }
+
+    /** Returns a pane with the specified name.
+     * @param {string} name
+     * @returns {AccordionPane} */
     getPane(name) { return new AccordionPane(grok_TabControlBase_GetPane(this.d, name)); }
 
     addPane(name, getContent, expanded = false, before = null) {
@@ -53,12 +60,16 @@ export class Accordion extends DartWidget {
 }
 
 
+/** A pane in the {@link Accordion} control. */
 export class AccordionPane {
     constructor(d) { this.d = d; }
 
+    /** Expanded state
+     * @type {boolean} */
     get expanded() { return grok_AccordionPane_Get_Expanded(this.d); }
     set expanded(v) { return grok_AccordionPane_Set_Expanded(this.d, v); }
 
+    /** @type {string} */
     get name() { return grok_AccordionPane_Get_Name(this.d); }
     set name(name) { return grok_AccordionPane_Set_Name(this.d, name); }
 }
@@ -126,17 +137,42 @@ export class Dialog {
     add(content) { grok_Dialog_Add(this.d, toDart(content)); return this; }
 }
 
-
+/**
+ * Menu (either top menu or popup menu).
+ * Top menu sample: {@link https://public.datagrok.ai/js/samples/ui/menu}
+ * Popup menu sample: {@link https://public.datagrok.ai/js/samples/ui/popup-menu}
+ *
+ * @example
+ * DG.Menu.popup()
+ *   .item('Show info', () => grok.shell.info('Info'))
+ *   .separator()
+ *   .items(['First', 'Second'], showBalloon)
+ *   .show();
+ * */
 export class Menu {
+
     constructor(d) { this.d  = d; }
 
     static create() { return new Menu(grok_Menu()); }
+
+    /** Creates a popup menu.
+     * @returns {Menu} */
     static popup() { return new Menu(grok_Menu_Context()); }
 
-    group(s) { return new Menu(grok_Menu_Group(this.d, s)); }
+    /** Adds a menu group with the specified text.
+     * @param {string} text*/
+    group(text) { return new Menu(grok_Menu_Group(this.d, text)); }
+
     item(item, onClick) { return new Menu(grok_Menu_Item(this.d, item, onClick)); }
+
     items(items, onClick) { return new Menu(grok_Menu_Items(this.d, items, onClick)); }
+
+    /** Adds a separator line.
+     *  @returns {Menu} */
     separator() { return new Menu(grok_Menu_Separator(this.d)); }
+
+    /** Shows the menu.
+     * @returns {Menu} */
     show() { return new Menu(grok_Menu_Show(this.d)); }
 }
 
@@ -151,7 +187,7 @@ export class Balloon {
 }
 
 
-/// Input control for Property.
+/** Input control base. Could be used for editing {@link Property} values as well. */
 export class InputBase {
     constructor(d, onChanged = null) {
         this.d = d;
@@ -237,6 +273,7 @@ export class TagElement {
 }
 
 
+/** Color-related routines. */
 export class Color {
 
     static r(c) { return (c >> 16) & 0xFF; }

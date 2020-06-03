@@ -45,4 +45,6 @@ acc.addPane('menus', () => ui.button('SHOW', () => {
     });
 }));
 
-v.root.appendChild(acc.root);
+//v.root.appendChild(acc.root);
+v.append(acc);
+

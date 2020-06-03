@@ -48,7 +48,7 @@ export class Viewer {
     close() { grok_Viewer_Close(this.d); }
 
     /** Visual root.
-     * @type {HtmlElement} */
+     * @type {HTMLElement} */
     get root() { return grok_Viewer_Root(this.d); }
 
     static grid        (t, options = null) { return new Viewer(grok_Viewer_Grid(t.d, _toJson(options))); }

@@ -1,11 +1,11 @@
 /**
  * Routines for building UI
  * @module ui
- * */
+ **/
 
 import {Viewer} from "./src/viewer";
 import {VirtualView} from "./src/view";
-import {Accordion, Dialog, InputBase, Menu, TabControl} from "./src/widgets";
+import {Accordion, Dialog, InputBase, Menu, TabControl, Widget} from "./src/widgets";
 
 /**
  * Creates an instance of the element for the specified tag, and optionally assigns it a CSS class.
@@ -89,30 +89,34 @@ export function iconFA(name, handler, tooltipMsg = null) {
 
 /** Renders object to html element.
  * @param {object} x
- * @returns {HtmlElement} */
-export function render(x) { return grok_UI_Render(x); }
+ * @returns {HTMLElement} */
+export function render(x) {
+    if (x instanceof Widget)
+        return x.root;
+    return grok_UI_Render(x);
+}
 
 /** Renders object to html card.
  * @param {object} x
- * @returns {HtmlElement}. */
+ * @returns {HTMLElement}. */
 export function renderCard(x) { return grok_UI_RenderCard(x); }
 
 /** Renders span
  * @param {object[]} x
- * @returns {HtmlElement}. */
+ * @returns {HTMLElement}. */
 export function span(x) { return grok_UI_Span(x); }
 
 /** @returns {HTMLDivElement} */
 export function div(items = [], className = null) { return grok_UI_Div(items, className); }
 
 /** Div flex-box container that positions child elements vertically.
- *  @param {HtmlElement[]} items
+ *  @param {HTMLElement[]} items
  *  @param {string} className - comma-separated CSS class names
  *  @returns {HTMLDivElement} */
 export function divV(items, className = null) { return grok_UI_DivV(items, className); }
 
 /** Div flex-box container that positions child elements horizontally.
- *  @param {HtmlElement[]} items
+ *  @param {HTMLElement[]} items
  *  @param {string} className - comma-separated CSS class names
  *  @returns {HTMLDivElement} */
 export function divH(items, className = null) { return grok_UI_DivH(items, className); }
@@ -123,7 +127,15 @@ export function card(content) { return ui.div([content], 'd4-item-card'); }
 export function loader() { return grok_UI_Loader(); }
 export function setUpdateIndicator(element, updating = true) { return grok_UI_SetUpdateIndicator(element, updating)};
 
+/**
+ * Creates a button with the specified text, click handler, and tooltip
+ * @param {string} text
+ * @param {Function} handler
+ * @param {string} tooltip
+ * @returns {HTMLButtonElement}
+ * */
 export function button(text, handler, tooltip = null) { return grok_UI_Button(text, handler, tooltip); }
+
 export function bigButton(text, handler, tooltip = null) { return grok_UI_BigButton(text, handler, tooltip); }
 
 /** Creates a visual table based on [map]. */
@@ -141,27 +153,33 @@ export function dialog(title = '') { return Dialog.create(title); }
  * @returns Element. */
 export function bind(item, element) { return grok_UI_Bind(item, element); }
 
+/**
+ * Creates a virtual list widget
+ * @param {number} length - number of elements
+ * @param {Function} renderer
+ * @returns {HTMLElement}
+ */
 export function virtualView(length, renderer) {
-        let view = VirtualView.create();
-        view.setData(length, renderer);
-        return view.root;
-    }
+    let view = VirtualView.create();
+    view.setData(length, renderer);
+    return view.root;
+}
 
 export function popupMenu(items) {
-        function populate(menu, item) {
-            for (let key of Object.keys(item)) {
-                let value = item[key];
-                if (value instanceof Function)
-                    menu.item(key, value);
-                else
-                    populate(menu.group(key), value);
-            }
+    function populate(menu, item) {
+        for (let key of Object.keys(item)) {
+            let value = item[key];
+            if (value instanceof Function)
+                menu.item(key, value);
+            else
+                populate(menu.group(key), value);
         }
-
-        let menu = Menu.popup();
-        populate(menu, items);
-        menu.show();
     }
+
+    let menu = Menu.popup();
+    populate(menu, items);
+    menu.show();
+}
 
 export function tooltipHide() { grok_Tooltip_Hide(); }
 
@@ -177,9 +195,7 @@ export function multiChoiceInput(name, value, items) { return new InputBase(grok
 export function stringInput(name, value) { return new InputBase(grok_StringInput(name, value)); }
 export function floatInput(name, value) { return new InputBase(grok_FloatInput(name, value)); }
 export function dateInput(name, value) { return new InputBase(grok_DateInput(name, value.d)); }
-export function boolInput(name, value, callback = null) {
-    return new InputBase(grok_BoolInput(name, value), callback);
-}
+export function boolInput(name, value, callback = null) { return new InputBase(grok_BoolInput(name, value), callback); }
 export function moleculeInput(name, value) { return new InputBase(grok_MoleculeInput(name, value)); }
 export function columnInput(name, table, value) { return new InputBase(grok_ColumnInput(name, table.d, value.d)); }
 export function columnsInput(name, table) { return new InputBase(grok_ColumnsInput(name, table.d)); }
@@ -202,4 +218,3 @@ export class tools {
         return () => clearInterval(interval);
     }
 }
-
