@@ -139,145 +139,145 @@ export class TableView extends View {
     get toolboxPage() { return new ToolboxPage(grok_View_Get_ToolboxPage(this.d)); }
 
     /** Adds a {@link https://datagrok.ai/help/visualize/viewers/histogram | histogram}.
-     *  Sample: https://public.datagrok.ai/js/samples/ui/viewers/histogram
+     *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/histogram}
      *  @param options
      *  @returns {Viewer} */
     histogram      (options = null) { return this.addViewer(VIEWER.HISTOGRAM, options); }
 
     /** Adds a {@link https://datagrok.ai/help/visualize/viewers/bar-chart | bar chart}.
-     *  Sample: https://public.datagrok.ai/js/samples/ui/viewers/bar-chart
+     *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/bar-chart}
      *  @param options
      *  @returns {Viewer} */
     barChart       (options = null) { return this.addViewer(VIEWER.BAR_CHART, options); }
 
     /** Adds a {@link https://datagrok.ai/help/visualize/viewers/box-plot | box plot}.
-     *  Sample: https://public.datagrok.ai/js/samples/ui/viewers/box-plot
+     *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/box-plot}
      *  @param options
      *  @returns {Viewer} */
     boxPlot        (options = null) { return this.addViewer(VIEWER.BOX_PLOT, options); }
 
     /** Adds a {@link https://datagrok.ai/help/visualize/viewers/calendar | calendar}.
-     *  Sample: https://public.datagrok.ai/js/samples/ui/viewers/calendar
+     *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/calendar}
      *  @param options
      *  @returns {Viewer} */
     calendar       (options = null) { return this.addViewer(VIEWER.CALENDAR, options); }
 
     /** Adds a {@link https://datagrok.ai/help/visualize/viewers/correlation-plot | correlation plot}.
-     *  Sample: https://public.datagrok.ai/js/samples/ui/viewers/corr-plot
+     *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/corr-plot}
      *  @param options
      *  @returns {Viewer} */
     corrPlot       (options = null) { return this.addViewer(VIEWER.CORR_PLOT, options); }
 
     /** Adds a {@link https://datagrok.ai/help/visualize/viewers/density-plot | density plot}.
-     *  Sample: https://public.datagrok.ai/js/samples/ui/viewers/density-plot
+     *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/density-plot}
      *  @param options
      *  @returns {Viewer} */
     densityPlot    (options = null) { return this.addViewer(VIEWER.DENSITY_PLOT, options); }
 
     /** Adds {@link https://datagrok.ai/help/visualize/viewers/filters | filters}.
-     *  Sample: https://public.datagrok.ai/js/samples/ui/viewers/filters
+     *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/filters}
      *  @param options
      *  @returns {Viewer} */
     filters        (options = null) { return this.addViewer(VIEWER.FILTERS, options); }
 
     /** Adds default {@link https://datagrok.ai/help/visualize/viewers/form | form}.
-     *  Sample: https://public.datagrok.ai/js/samples/ui/viewers/form
+     *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/form}
      *  @param options
      *  @returns {Viewer} */
     form           (options = null) { return this.addViewer(VIEWER.FORM, options); }
 
     /** Adds a {@link https://datagrok.ai/help/visualize/viewers/google-map | geographical map}.
-     *  Sample: https://public.datagrok.ai/js/samples/ui/viewers/google-map
+     *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/google-map}
      *  @param options
      *  @returns {Viewer} */
     googleMap      (options = null) { return this.addViewer(VIEWER.GOOGLE_MAP, options); }
 
     /** Adds a {@link https://datagrok.ai/help/visualize/viewers/heat-map | heat map}.
-     *  Sample: https://public.datagrok.ai/js/samples/ui/viewers/heat-map
+     *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/heat-map}
      *  @param options
      *  @returns {Viewer} */
     heatMap        (options = null) { return this.addViewer(VIEWER.HEAT_MAP, options); }
 
     /** Adds a {@link https://datagrok.ai/help/visualize/viewers/line-chart | line chart}.
-     *  Sample: https://public.datagrok.ai/js/samples/ui/viewers/line-chart
+     *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/line-chart}
      *  @param options
      *  @returns {Viewer} */
     lineChart      (options = null) { return this.addViewer(VIEWER.LINE_CHART, options); }
 
     /** Adds a {@link https://datagrok.ai/help/visualize/viewers/shape-map | shape map}.
-     *  Sample: https://public.datagrok.ai/js/samples/ui/viewers/shape-map
+     *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/shape-map}
      *  @param options
      *  @returns {Viewer} */
     shapeMap       (options = null) { return this.addViewer(VIEWER.SHAPE_MAP, options); }
 
     /** Adds a {@link https://datagrok.ai/help/visualize/viewers/markup | markup viewer}.
-     *  Sample: https://public.datagrok.ai/js/samples/ui/viewers/markup
+     *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/markup}
      *  @param options
      *  @returns {Viewer} */
     markup         (options = null) { return this.addViewer(VIEWER.MARKUP, options); }
 
     /** Adds a {@link https://datagrok.ai/help/visualize/viewers/matrix-plot | matrix plot}.
-     *  Sample: https://public.datagrok.ai/js/samples/ui/viewers/matrix-plot
+     *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/matrix-plot}
      *  @param options
      *  @returns {Viewer} */
     matrixPlot     (options = null) { return this.addViewer(VIEWER.MATRIX_PLOT, options); }
 
     /** Adds a {@link https://datagrok.ai/help/visualize/viewers/network-diagram | network diagram}.
-     *  Sample: https://public.datagrok.ai/js/samples/ui/viewers/network-diagram
+     *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/network-diagram}
      *  @param options
      *  @returns {Viewer} */
     networkDiagram (options = null) { return this.addViewer(VIEWER.NETWORK_DIAGRAM, options); }
 
     /** Adds a {@link https://datagrok.ai/help/visualize/viewers/pc-plot | parallel coordinates plot}.
-     *  Sample: https://public.datagrok.ai/js/samples/ui/viewers/pc-plot
+     *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/pc-plot}
      *  @param options
      *  @returns {Viewer} */
     pcPlot         (options = null) { return this.addViewer(VIEWER.PC_PLOT, options); }
 
     /** Adds a {@link https://datagrok.ai/help/visualize/viewers/pie-chart | pie chart}.
-     *  Sample: https://public.datagrok.ai/js/samples/ui/viewers/pie-chart
+     *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/pie-chart}
      *  @param options
      *  @returns {Viewer} */
     pieChart       (options = null) { return this.addViewer(VIEWER.PIE_CHART, options); }
 
     /** Adds a {@link https://datagrok.ai/help/visualize/viewers/scatter-plot | scatter plot}.
-     *  Sample: https://public.datagrok.ai/js/samples/ui/viewers/scatter-plot
+     *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/scatter-plot}
      *  @param options
      *  @returns {Viewer} */
     scatterPlot    (options = null) { return this.addViewer(VIEWER.SCATTER_PLOT, options); }
 
     /** Adds a {@link https://datagrok.ai/help/visualize/viewers/3d-scatter-plot | 3D scatter plot}.
-     *  Sample: https://public.datagrok.ai/js/samples/ui/viewers/scatter-plot-3d
+     *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/scatter-plot-3d}
      *  @param options
      *  @returns {Viewer} */
     scatterPlot3d  (options = null) { return this.addViewer(VIEWER.SCATTER_PLOT_3D, options); }
 
     /** Adds a {@link https://datagrok.ai/help/visualize/viewers/statistics | statistics}.
-     *  Sample: https://public.datagrok.ai/js/samples/ui/viewers/statistics
+     *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/statistics}
      *  @param options
      *  @returns {Viewer} */
     statistics     (options = null) { return this.addViewer(VIEWER.STATISTICS, options); }
 
     /** Adds a {@link https://datagrok.ai/help/visualize/viewers/tile-viewer | tile viewer}.
-     *  Sample: https://public.datagrok.ai/js/samples/ui/viewers/tile-viewer
+     *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/tile-viewer}
      *  @param options
      *  @returns {Viewer} */
     tileViewer     (options = null) { return this.addViewer(VIEWER.TILE_VIEWER, options); }
 
     /** Adds a {@link https://datagrok.ai/help/visualize/viewers/tree-map | tree map}.
-     *  Sample: https://public.datagrok.ai/js/samples/ui/viewers/tree-map
+     *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/tree-map}
      *  @param options
      *  @returns {Viewer} */
     treeMap        (options = null) { return this.addViewer(VIEWER.TREE_MAP, options); }
 
     /** Adds a {@link https://datagrok.ai/help/visualize/viewers/trellis-plot | trellis plot}.
-     *  Sample: https://public.datagrok.ai/js/samples/ui/viewers/trellis-plot
+     *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/trellis-plot}
      *  @param options
      *  @returns {Viewer} */
     trellisPlot    (options = null) { return this.addViewer(VIEWER.TRELLIS_PLOT, options); }
 
     /** Adds a {@link https://datagrok.ai/help/visualize/viewers/word-cloud | word cloud}.
-     *  Sample: https://public.datagrok.ai/js/samples/ui/viewers/word-cloud
+     *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/word-cloud}
      *  @param options
      *  @returns {Viewer} */
     wordCloud      (options = null) { return this.addViewer(VIEWER.WORD_CLOUD, options); }
