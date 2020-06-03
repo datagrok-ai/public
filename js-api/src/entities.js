@@ -1,5 +1,6 @@
 import * as ui from "./../ui.js";
 import {Functions} from "./functions";
+import {TYPE} from "./const";
 
 
 /** @class
@@ -214,12 +215,34 @@ export class JsEntityMeta {
      * @returns {string} */
     getCaption(x) { return `${x}`; };
 
+    /** Renders icon for the item.
+     * @param x - item
+     * @returns {Element} */
     renderIcon(x) { return ui.divText(this.getCaption(x)); }
 
+    /** Renders markup for the item.
+     * @param x - item
+     * @returns {Element} */
     renderMarkup(x) { return ui.divText(this.getCaption(x)); }
+
+    /** Renders tooltip for the item.
+     * @param x - item
+     * @returns {Element} */
     renderTooltip(x) { return ui.divText(this.getCaption(x)); }
+
+    /** Renders card div for the item.
+     * @param x - item
+     * @returns {Element} */
     renderCard(x) { return ui.divText(this.getCaption(x)); }
+
+    /** Renders properties list for the item.
+     * @param x - item
+     * @returns {Element} */
     renderProperties(x) { return ui.divText(this.getCaption(x)); }
+
+    /** Renders view for the item.
+     * @param x - item
+     * @returns {Element} */
     renderView(x) {return this.renderProperties(x); }
 
     /** Gets called once upon the registration of meta export class. */
@@ -290,9 +313,37 @@ export class Property {
     get choices() { return grok_Property_Get_Choices(this.d); }
     set choices(x) { return grok_Property_Set_Choices(this.d, x); }
 
+    /** Creates a property
+     * @param {string} name
+     * @param {TYPE|Type} type
+     * @param {function} getter
+     * @param {function} setter
+     * @param {object} defaultValue
+     * @returns Property*/
     static create(name, type, getter, setter, defaultValue = null) { return new Property(grok_Property(name, type, getter, setter, defaultValue)); }
+
+    /** Creates an integer property
+     * @param {string} name
+     * @param {function} getter
+     * @param {function} setter
+     * @param {object} defaultValue
+     * @returns Property*/
     static int(name, getter, setter, defaultValue) { return Property.create(name, TYPE.INT, getter, setter, defaultValue); }
+
+    /** Creates a float property
+     * @param {string} name
+     * @param {function} getter
+     * @param {function} setter
+     * @param {object} defaultValue
+     * @returns Property*/
     static float(name, getter, setter, defaultValue) { return Property.create(name, TYPE.FLOAT, getter, setter, defaultValue); }
+
+    /** Creates a string property
+     * @param {string} name
+     * @param {function} getter
+     * @param {function} setter
+     * @param {object} defaultValue
+     * @returns Property*/
     static string(name, getter, setter, defaultValue) { return Property.create(name, TYPE.STRING, getter, setter, defaultValue); }
 }
 

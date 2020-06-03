@@ -23,7 +23,7 @@ export class Widget {
 }
 
 
-class DartWidget extends Widget {
+export class DartWidget extends Widget {
 
     constructor(d) {
         super();
