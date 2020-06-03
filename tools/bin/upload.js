@@ -12,8 +12,10 @@ if (mode !== 'debug' && mode !=='deploy') {
 }
 
 let subfolder = `${__dirname}\\win\\`;
-if (process.platform === "darwin")
+if (process.platform === "darwin") {
     subfolder = `${__dirname}/macos/`;
+    spawn('chmod', ['777', `${subfolder}dart`]);
+}
 
 const ls = spawn(`${subfolder}dart`, [`${subfolder}upload.dart`, '-p', '.', '-r', host, mode]);
 
