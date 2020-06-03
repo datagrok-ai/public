@@ -9,8 +9,8 @@ class SPGiPackage extends DG.Package {
         let projectsView = DG.ProjectsView.create({});
         projectsView.permanentFilter = '#spgi';
         projectsView.searchValue = '';
-        let header = ui.e('div', 'spgi-view-header');
-        let content = ui.e('div', 'spgi-view-content');
+        let header = ui.element('div', 'spgi-view-header');
+        let content = ui.element('div', 'spgi-view-content');
 
         let title = ui.divText("SPGi Dashboard");
         title.classList.add('spgi-view-title');
