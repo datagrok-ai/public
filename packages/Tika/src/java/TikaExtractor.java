@@ -24,7 +24,12 @@ public class TikaExtractor {
         Metadata metadata = new Metadata();
         FileInputStream stream = new FileInputStream(inputFile);
         ParseContext context = new ParseContext();
-        parser.parse(stream, handler, metadata, context);
+
+        try {
+            parser.parse(stream, handler, metadata, context);
+        } catch (Exception e) {
+            System.out.print(e.toString());
+        }
 
         Map<String, Object> map = new HashMap<>();
         for (String name: metadata.names())
