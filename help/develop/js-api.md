@@ -16,8 +16,8 @@ This document covers the following areas:
 
 ## Data manipulation
 
-Use [DataFrame](api/DataFrame.html), [Column](api/Column.html), [ColumnList](api/ColumnList.html), 
-and [Row](api/Row.html) classes for table manipulation.
+Use [DataFrame](/js-api/DataFrame.html), [Column](/js-api/Column.html), [ColumnList](/js-api/ColumnList.html), 
+and [Row](/js-api/Row.html) classes for table manipulation.
 
 ```javascript
 demog = grok.testData('demog', 5000);
@@ -33,7 +33,7 @@ foo.set(1, 777);
 demog.set('age', 1, 44);
 ``` 
 
-Each [DataFrame](api/DataFrame.html) is associated with two [bitsets](api/BitSet.html): selection and filter.
+Each [DataFrame](/js-api/DataFrame.html) is associated with two [bitsets](/js-api/BitSet.html): selection and filter.
 
 ## Views
 
@@ -68,7 +68,7 @@ hist.options({'valueColumnName': 'weight'});
 
 ## Custom viewers
 
-Extend [JsViewer](api/JsViewer.html) class to develop viewers that become first-class citizens in 
+Extend [JsViewer](/js-api/JsViewer.html) class to develop viewers that become first-class citizens in 
 the Grok platform. Once a viewer is registered, you can do the following:
 
 * Add viewer using `Add | JsDemoViewer`, or from the toolbar 'viewers' popup
