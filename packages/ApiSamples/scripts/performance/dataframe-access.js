@@ -28,6 +28,7 @@ let valuesIteration = measure(function() {
 
 let valuesIterationFast = measure(function() {
     let sum = 0;
+    let col = table.columns.byIndex(0);
     let data = col.getRawData();
     for (let i = 0; i < data.length; i++)
         sum += data[i];
