@@ -4,12 +4,6 @@
     "server": "$GROK_DB_SERVER",
     "db": "unichem"
   },
-  "credentials" : {
-    "parameters" : {
-      "login": "",
-      "password": ""
-    }
-  },
   "dataSource": "PostgreSQL",
   "description": "Unichem db",
   "tags": ["demo", "chem"]
