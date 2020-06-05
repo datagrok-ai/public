@@ -8,13 +8,35 @@ can be used from either ad-hoc scripts (`Tools | Scripting | JavaScript`),
 or from [packages](develop.md#packages). 
 
 This document covers the following areas:
+* [API structure](#api-structure)
 * [Data manipulation](#data-manipulation)
 * [Views](#views)
 * [Pre-defined viewers](#pre-defined-viewers)
 * [Custom viewers](#custom-viewers)
 * [Registering functions](#registering-functions)
 
+## API structure
+
+There are three entry points to the API: 
+**grok** for easy discoverability of the functionality, 
+**ui** for building user interfaces, and 
+**DG** for instantiating classes directly.
+
+`grok` is the entry point for most of the commonly used functionality in the platform. 
+It is structured in a way to make the discovery of the capabilities very easy, especially 
+with IntelliSense. You would just type `grok.`, then select the most appropriate choice 
+the IntelliSense gives you, and so on. For instance, let’s imagine that you want to 
+construct a dataframe from a CSV file. You would see the following choices after you 
+typed `grok.`: [chem, data, ml, shell]. What we want to do it related to data, so we 
+would type `grok.data` and see the following choices: [query, parseCsv, upload]. Obviously, we should choose parseCsv; when we select it, IntelliSense will help us with the parameters as well.
+This is the preferred way for using the API for both ad-hoc scripting and more complex development, since the resulting code is streamlined and easily readable. However, in cases where the fluent API does not cover your particular use case, or sometimes for performance reasons, you will need to work with classes from the DG namespace.
+ui generation
+Building a UI is a special form of programming, and many languages were invented for that purposes only (HTML, XAML, JSX). We have prioritized the following aspects when choosing our approach: simplicity, discoverability, readability.
+
+
 ## Data manipulation
+
+### DataFrame
 
 Use [DataFrame](/js-api/DataFrame.html), [Column](/js-api/Column.html), [ColumnList](/js-api/ColumnList.html), 
 and [Row](/js-api/Row.html) classes for table manipulation.
@@ -31,9 +53,23 @@ demog.rows.addNew().subj = 'Iron Man';
 // alternative ways of setting values
 foo.set(1, 777);
 demog.set('age', 1, 44);
+
 ``` 
 
+### BitSet
+
 Each [DataFrame](/js-api/DataFrame.html) is associated with two [bitsets](/js-api/BitSet.html): selection and filter.
+
+```javascript
+// bit set (same applies to filter)
+demog.selection.invert();
+demog.selection.set(5, false);
+demog.selection.findNext(0, false);
+```
+
+DataFrame code snippets:
+* [DataFrame manipulation](https://public.datagrok.ai/js/samples/data-frame/manipulate)
+* [DataFrame events](https://public.datagrok.ai/js/samples/data-frame/events)
 
 ## Views
 
@@ -108,31 +144,73 @@ The following code registers a "jsConcat" function that becomes a first-class
 citizen in the platform (i.e., it can be used from console, gets registered
 in help, there could be an optional audit trail associated with the invocations, etc)
 
+To test the newly registered function, enter "jsConcat(42, 33)" in the [Console](../overview/console.md).
+
 ```javascript
 grok.functions.register({
     signature: 'String jsConcat(int foo, int bar)',
     run: (foo, bar) => `${foo}_${bar}`});
 ```
 
+The code below registers two functions, "jsWidget" and "jsSuggestCountryName".  
+To test jsWidget, create a new Dashboard, and click on "Widget" under "Widgets".
+
+```javascript
+grok.functions.register({
+    signature: 'Widget jsWidget()',
+    tags: 'Widgets',
+    run: function() {
+        let e = document.createElement('DIV');
+        function update() {
+            let date = new Date();
+            e.innerText = date.toTimeString();
+        }
+        window.setTimeout(update, 1000);
+
+        return new ui.Widget(e);
+    }});
+
+grok.functions.register({
+  signature: 'List<String> jsSuggestCountryName(String text)',
+  isAsync: true,
+  run: async function(text) {
+    let response = await fetch('https://restcountries.eu/rest/v2/name/' + text);
+    return response.status === 200 ? (await response.json()).map(country => country['name']) : [];
+  }
+});
+```
+
 Internally, JavaScript-based application are also functions that are annotated accordingly.
+
+Code snippets:
+* [Dynamic registering](https://public.datagrok.ai/js/samples/functions/register-function)
+* [Functions: Parameter validators](https://public.datagrok.ai/js/samples/functions/func-params-enhancement)
+* [Functions: Info panels](https://public.datagrok.ai/js/samples/functions/info-panels/info-panels)
+* [Functions: Custom viewers](https://public.datagrok.ai/js/samples/functions/custom-viewers/viewers)
 
 
 ## Custom file handlers
 
-If custom file format support is required, just add function to [application](app.md) with 
-"file-handler" tag in Grok. Input can be string or list of bytes, output is list of 
-[tables](../overview/table.md). Extensions are specified in "meta.ext" option and separated with comma. 
+To handle custom file formats, simply register a function with 
+the "file-handler-<extension>" tag (you can specify more than one).
+Function's input is either a string or a list of bytes, the output is list of 
+[tables](../overview/table.md).  
+
+For example, the following function will get executed whenever a user
+opens a file with the "fasta" extension:
 
 ```js
 //input: string content
 //output: list tables
-//tags: file-handler
-//meta.ext: fasta
+//tags: file-handler-fasta
 function fastaFileHandler(content) {
     // ... processing files ...
     return tables;
 }
 ```
+
+Code snippets:
+
 
 ## Events
 
@@ -163,6 +241,18 @@ property panel into your code if needed.
 
 ![](inspector-events.png)
 
+## Docking
+
+The platform provides full support for docking windows.
+
+```javascript
+grok.shell.dockManager.dock(ui.divText('first'), DG.DOCK_TYPE.RIGHT, null, 'First');
+```
+
+Docking code snippets:
+* [Top level](https://public.datagrok.ai/js/samples/ui/docking/docking)
+* [Table view](https://public.datagrok.ai/js/samples/ui/docking/docking-table-view)
+* [Floating windows](https://public.datagrok.ai/js/samples/ui/docking/docking-floating)
 
 See also:
 * [JavaScript development](develop.md) 
