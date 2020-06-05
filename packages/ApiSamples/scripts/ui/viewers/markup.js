@@ -16,8 +16,8 @@ view.markup({ content: `
 <div>
     <div>Embed arbitrary HTML</div> 
     <br> 
-    <select> 
-        <option value="Apple"> Apple </select>
+    <option> 
+        <option value="Apple"> Apple </option>
         <option value="Banana"> Banana </option> 
     </select>
 </div>`});
