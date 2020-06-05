@@ -2,5 +2,5 @@
 // When TAGS_TOOLTIP is set, a combo box will be shown as a cell editor.
 
 let view = grok.shell.addTableView(grok.data.testData('demog', 5000));
-view.table.getCol('race').setTag(DG.enum.TAGS.CHOICES, '["Asian", "Black"]');
-view.table.getCol('race').setTag(DG.enum.TAGS.AUTO_CHOICES, '["Asian", "Black"]');
+view.table.getCol('race').setTag(DG.TAGS.CHOICES, '["Asian", "Black"]');
+view.table.getCol('race').setTag(DG.TAGS.AUTO_CHOICES, '["Asian", "Black"]');
