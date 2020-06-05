@@ -6,8 +6,8 @@
   },
   "credentials" : {
     "parameters" : {
-      "login": "unichem",
-      "password": "unichem"
+      "login": "",
+      "password": ""
     }
   },
   "dataSource": "PostgreSQL",
