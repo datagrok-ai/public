@@ -7,8 +7,8 @@
   },
   "credentials" : {
     "parameters" : {
-      "login": "postgres",
-      "password": "postgres"
+      "login": "",
+      "password": ""
     }
   },
   "dataSource": "PostgreSQL",
