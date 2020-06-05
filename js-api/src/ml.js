@@ -31,7 +31,7 @@ export function applyModel(name, table, columnNamesMap = {}, showProgress = true
  * */
 export function missingValuesImputation(table, impute, data, nearestNeighbours) {
     return new Promise((resolve, reject) =>
-        grok_ML_MissingValuesImputation(table.d, impute, data, nearestNeighbours, (t) => resolve(new DataFrame(t))));
+        grok_ML_MissingValuesImputation(table.d, impute, data, nearestNeighbours, () => resolve(table)));
 }
 
 /** Clusters data.
