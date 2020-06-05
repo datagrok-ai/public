@@ -79,9 +79,8 @@ The following code defines a new viewer by subclassing JsViewer. The viewer list
 of filter and selection in the attached table, and updates numbers of filtered/selected rows accordingly.
 
 ```javascript
-class JsDemoViewer extends grok.JsViewer {
-    onFrameAttached(dataFrameHandle) {
-        this.dataFrame = new DataFrame(dataFrameHandle);
+class JsDemoViewer extends DG.JsViewer {
+    onFrameAttached() {
         subs.push(this.dataFrame.selection.onChanged.subscribe((_) => this.render()));
         subs.push(this.dataFrame.filter.onChanged.subscribe((_) => this.render()));
 
@@ -129,11 +128,41 @@ If custom file format support is required, just add function to [application](ap
 //output: list tables
 //tags: file-handler
 //meta.ext: fasta
-fastaFileHandler(content) {
-    ...
+function fastaFileHandler(content) {
+    // ... processing files ...
     return tables;
 }
 ```
+
+## Events
+
+We are exposing events coming out of the platform as a stream via the 
+[Rx.JS](rxjs.dev) library that makes it easy to compose asynchronous or callback-based code.
+The API makes easy to subscribe to either global, or instance-related events:
+
+```javascript
+   // global event when user changes the current project
+   grok.events.onCurrentProjectChanged.subscribe(_ => 
+       grok.shell.info(`Current project changed: ${grok.shell.project.name}`));
+
+   // subscribing to DataFrame events
+   demog = grok.data.testData('demog', 5000);
+   demog.onValuesChanged.subscribe((_) => grok.shell.info('values changed'));
+``` 
+
+Event-related code snippets:
+* [Global events](https://public.datagrok.ai/js/samples/events/global-events)
+* [DataFrame events](https://public.datagrok.ai/js/samples/data-frame/events)
+
+To figure out what events are coming out of the platform, use the Inspector tool.
+Open it (Alt+I), go to the "Client Log" tab, and perform the action that you want
+to intercept. In the panel, you will see one or more of the events, click on them
+to inspect event parameters. To simplify the development process, we also generate
+JavaScript code for handling this particular event, copy-paste it from the
+property panel into your code if needed. 
+
+![](inspector-events.png)
+
 
 See also:
 * [JavaScript development](develop.md) 
