@@ -243,7 +243,7 @@ build viewers, plugins, and applications on top of it.
 
 Datagrok installation consists of two virtual machines:
 * [Datagrok Virtual Machine](#datagrok-virtual-machine)
-* [Grok Compute Virtual Machine](#grok-compute-virtual-machine)
+* [Compute Virtual Machine](#compute-virtual-machine)
 
 Also it needs [database](#database) and [persistent file storage](#storage).
 Both of the virtual machines can be deployed as Docker containers in [AWS EC2](deploy-amazon-ec2.md), 
@@ -294,7 +294,7 @@ Also Datagrok Virtual machine components are:
 * Nginx server
   
 
-## Grok Compute Virtual Machine
+## Compute Virtual Machine
 
 Grok Compute is used for performing on-server computations. It is used for
 scripting, training and applying predictive models, and cheminformatics. You might not need it
