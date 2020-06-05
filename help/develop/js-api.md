@@ -22,16 +22,37 @@ There are three entry points to the API:
 **ui** for building user interfaces, and 
 **DG** for instantiating classes directly.
 
+### grok
+
 `grok` is the entry point for most of the commonly used functionality in the platform. 
 It is structured in a way to make the discovery of the capabilities very easy, especially 
 with IntelliSense. You would just type `grok.`, then select the most appropriate choice 
 the IntelliSense gives you, and so on. For instance, let’s imagine that you want to 
 construct a dataframe from a CSV file. You would see the following choices after you 
-typed `grok.`: [chem, data, ml, shell]. What we want to do it related to data, so we 
-would type `grok.data` and see the following choices: [query, parseCsv, upload]. Obviously, we should choose parseCsv; when we select it, IntelliSense will help us with the parameters as well.
-This is the preferred way for using the API for both ad-hoc scripting and more complex development, since the resulting code is streamlined and easily readable. However, in cases where the fluent API does not cover your particular use case, or sometimes for performance reasons, you will need to work with classes from the DG namespace.
-ui generation
-Building a UI is a special form of programming, and many languages were invented for that purposes only (HTML, XAML, JSX). We have prioritized the following aspects when choosing our approach: simplicity, discoverability, readability.
+typed `grok.`: [shell, chem, data, data, ml]. What we want to do it related to data, so we 
+would type `grok.data` and see the following choices: [demo, query, compareTables, parseCsv, upload]. 
+Obviously, we should choose parseCsv; when we select it, IntelliSense will help us with 
+the parameters as well. This is the preferred way for using the API for both ad-hoc scripting
+and more complex development, since the resulting code is streamlined and easily readable. 
+However, in cases where the fluent API does not cover your particular use case, or sometimes
+for performance reasons, you will need to work with classes from the DG namespace.
+
+### ui
+
+Building a UI is a special form of programming, and many languages were invented for that
+purposes only (HTML, XAML, JSX). We have prioritized the following aspects when choosing 
+our approach: simplicity, discoverability, readability.
+ 
+```javascript
+ui.dialog('Windows')
+  .add(ui.span(['People of Earth, your attention, please… ']))
+  .onOK(() => { grok.shell.info('OK!'); })
+  .show();
+``` 
+
+### DG
+
+Check out [JS API Class Reference](https://datagrok.ai/js-api/) 
 
 
 ## Data manipulation
@@ -189,7 +210,7 @@ Code snippets:
 * [Functions: Custom viewers](https://public.datagrok.ai/js/samples/functions/custom-viewers/viewers)
 
 
-## Custom file handlers
+## File handlers
 
 To handle custom file formats, simply register a function with 
 the "file-handler-<extension>" tag (you can specify more than one).
@@ -208,9 +229,6 @@ function fastaFileHandler(content) {
     return tables;
 }
 ```
-
-Code snippets:
-
 
 ## Events
 
@@ -241,6 +259,15 @@ property panel into your code if needed.
 
 ![](inspector-events.png)
 
+## User-defined types
+
+Define your own classes, and integrate them easily by providing a meta-class
+that extends DG.EntityMeta. This will provide native support for 
+context actions, rendering, drag-and drop, tooltips, and favorites.
+
+Code snippets:
+* [Custom "Fruit" class](https://public.datagrok.ai/js/samples/ui/meta/meta)
+
 ## Docking
 
 The platform provides full support for docking windows.
@@ -253,6 +280,45 @@ Docking code snippets:
 * [Top level](https://public.datagrok.ai/js/samples/ui/docking/docking)
 * [Table view](https://public.datagrok.ai/js/samples/ui/docking/docking-table-view)
 * [Floating windows](https://public.datagrok.ai/js/samples/ui/docking/docking-floating)
+
+
+## REST API
+
+Use `grok.dapi` entry point for managing server-based objects, such as datasets,
+connection, users, credentials, jobs, packages, etc.
+
+See also [HttpDataSource](https://datagrok.ai/js-api/HttpDataSource) subclasses.  
+
+Code snippets:
+* [List of projects](https://public.datagrok.ai/js/samples/dapi/projects-list)
+* [Who am I](https://public.datagrok.ai/js/samples/dapi/who-am-i)
+
+## Machine learning
+
+Use `grok.ml` entry point for machine learning-related routines.
+
+Code snippets:
+* [Clustering](https://public.datagrok.ai/js/samples/domains/data-science/cluster)
+* [Missing values imputation](https://public.datagrok.ai/js/samples/domains/data-science/missing-values-imputation)
+* [PCA](https://public.datagrok.ai/js/samples/domains/data-science/pca)
+* [Applying a predictive model](https://public.datagrok.ai/js/samples/domains/data-science/predictive-model)
+* [Random data from the specified distribution](https://public.datagrok.ai/js/samples/domains/data-science/random-data)
+
+## Cheminformatics
+
+Use `grok.chem` entry point for cheminformatics-related routines.
+
+Code snippets:
+* [Calculating descriptors](https://public.datagrok.ai/js/samples/domains/data-science/random-data)
+* [Chemical diversity](https://public.datagrok.ai/js/samples/domains/chem/diversity-search)
+* [Chemical similarity](https://public.datagrok.ai/js/samples/domains/chem/similarity-search)
+* [Substructure search](https://public.datagrok.ai/js/samples/domains/chem/substructure-search)
+* [R-group analysis](https://public.datagrok.ai/js/samples/domains/chem/r-group)
+* [Most common substructure](https://public.datagrok.ai/js/samples/domains/chem/mcs)
+* [Iterating over atoms and bonds](https://public.datagrok.ai/js/samples/domains/chem/mol-atoms-bonds)
+* [Custom info panel for molecules](https://public.datagrok.ai/js/samples/domains/chem/mol-panel)
+* [Rendering molecules to SVG](https://public.datagrok.ai/js/samples/domains/chem/mol-rendering)
+
 
 See also:
 * [JavaScript development](develop.md) 
