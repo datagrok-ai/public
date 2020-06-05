@@ -92,7 +92,7 @@ export class View {
     setRibbonPanels(panels) { grok_View_SetRibbonPanels(this.d, panels); }
 
     /** Adds a viewer of the specified type.
-     * @param {VIEWER} viewerType
+     * @param {string} viewerType
      * @param options
      * @returns {Viewer} */
     addViewer(viewerType, options = null) {
