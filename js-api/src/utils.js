@@ -25,7 +25,7 @@ export function identity(length) {
     return grok_Error(message, url, lineNumber, columnNumber, errorObject);
 };*/
 
-let time = function(s, f) {
+export function time(s, f) {
     let start = new Date();
     let result = f();
     let stop = new Date();
