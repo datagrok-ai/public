@@ -57,7 +57,7 @@ This has many benefits:
 ## Grok JavaScript API
 
 JavaScript is the lingua franca of the web, and naturally it is a first-class language in the Grok ecosystem. 
-We expose a [JavaScript API](../develop/js-integration.md) that allows you to control most of the platform, including
+We expose a [JavaScript API](../develop/js-api.md) that allows you to control most of the platform, including
 data manipulation, handling platform events, creating custom viewers, controlling window docking,
 customizing the platform, etc.  
 

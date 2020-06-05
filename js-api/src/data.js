@@ -20,8 +20,19 @@ export class DemoDatasets {
 
     /** Wearable sensor data: time, x, y, z, temp, eda
      * @returns {DataFrame}*/
-    biosensor(rows = 10000) { return getDemoTable('biosensor', rows); }
+    biosensor(rows = 10000) { return this.getDemoTable('biosensor', rows); }
 
+    /** Random walk
+     * @returns {DataFrame}*/
+    randomWalk(rows = 10000, columns = 3) { return this.getDemoTable('random walk', rows, columns); }
+
+    /** Demographics
+     * @returns {DataFrame}*/
+    demog(rows = 10000) { return this.getDemoTable('demog', rows); }
+
+    /** Plate well data
+     * @returns {DataFrame}*/
+    wells(rows = 10000) { return this.getDemoTable('wells', rows); }
 
     /** Returns a demo dataset with the specified path (relative to the demo root)
      * @example

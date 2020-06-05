@@ -1,27 +1,11 @@
 // A convenient way to get reference datasets.
 // Note that this is synchronous code.
 
-grok.shell.add()
+function add(t) { grok.shell.addTableView(t); }
 
-view = grok.shell.addTableView(demog);
+add(grok.data.demo.biosensor());
 
-function info(s) { grok.shell.info(s); }
-
-demog.onValuesChanged.subscribe((_) => info('ddt-values-changed'));
-demog.onCurrentRowChanged.subscribe((_) => info('ddt-current-row-changed'));
-demog.onMouseOverRowChanged.subscribe((_) => info('ddt-mouse-over-row-changed'));
-demog.onCurrentColChanged.subscribe((_) => info('ddt-current-col-changed'));
-demog.onMouseOverColChanged.subscribe((_) => info('ddt-mouse-over-col-changed'));
-demog.onCurrentCellChanged.subscribe((_) => info('ddt-current-cell-changed'));
-demog.onMouseOverRowGroupChanged.subscribe((_) => info('ddt-mouse-over-row-group-changed'));
-demog.onNameChanged.subscribe((_) => info('ddt-table-name-changed'));
-demog.onMetadataChanged.subscribe((_) => info('ddt-table-metadata-changed'));
-demog.onColumnNameChanged.subscribe((_) => info('ddt-table-column-name-changed'));
-demog.onColumnSelectionChanged.subscribe((_) => info('ddt-column-selection-changed'));
-demog.onColumnsChanged.subscribe((_) => info('ddt-columns-changed'));
-demog.onColumnsAdded.subscribe((_) => info('ddt-columns-added'));
-demog.onColumnsRemoved.subscribe((_) => info('ddt-columns-removed'));
-demog.onRowsRemoved.subscribe((_) => info('ddt-rows-removed'));
-demog.onDataChanged.subscribe((_) => info('ddt-data-changed'));
-demog.onFilterChanged.subscribe((_) => info('ddt-filter-changed'));
-demog.onSelectionChanged.subscribe((_) => info('ddt-selection-changed'));
+// other out-of-the-box datasets:
+// grok.data.demo.demog(rows)
+// grok.data.demo.wells(rows)
+// grok.data.demo.randomWalk(rows, cols)
