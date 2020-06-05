@@ -39,14 +39,6 @@ Use the standard HTML markup to add elements, or <i>style the document</i>.
     <br>
     Custom objects: <span>${user.toMarkup()}</span>
 
-<h3>Embedding interactive viewers</h3>
-<div style="display:flex;flex-direction: row">
-    <div style="width:300px; height: 200px;">#{t.chart${sp.serialize()}}</div>
-<div style="width:300px; height: 200px;">#{t.chart${hist.serialize()}}</div>
-<div style="width:300px; height: 200px;">#{t.chart${boxPlot.serialize()}}</div>
-<div style="width:300px; height: 200px;">#{t.chart${filter.serialize()}}</div>
-</div>
-
 <h3>Metadata</h3>
 <p> Access metadata, including names and tags for tables and columns.</p>
 Name: <span>#{t.name}</span> <br>
