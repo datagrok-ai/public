@@ -1,4 +1,4 @@
-<!-- TITLE: Connecting to file shares -->
+<!-- TITLE: File Shares -->
 <!-- SUBTITLE: -->
 
 # Connecting to file shares
@@ -20,7 +20,7 @@ deployment, it is recommended to use a service account.
 
 To make this folder [indexable](#indexing), select the `Index files` checkbox.
 
-![](connect-to-file-shares-add-new.png)
+![](file-shares-add-new.png)
  
 Once the connection to a file share is created, it is accessible by the creator only. 
 To share it with others, right-click on the connection, and select "Share...". 
@@ -32,7 +32,7 @@ Expand the connection node to browse files.
 There are multiple ways to browse file shares. Open `File | Connect to Data...`,
 and expand the corresponding connection under the 'Files' section.
  
-![](connect-to-file-shares-tree.png)
+![](file-shares-tree.png)
 
 Double-click on CSV file to open it in the platform, or right-click to see
 additional options, such as downloading the content as as ZIP file. 
