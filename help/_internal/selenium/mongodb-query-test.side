@@ -652,19 +652,6 @@
       "targets": [],
       "value": ""
     }, {
-      "id": "3d237c3a-fd61-4d81-89cf-953d62f34712",
-      "comment": "",
-      "command": "click",
-      "target": "css=i[name=\"icon-context-arrow-down\"]",
-      "targets": [
-        ["css=i[name=\"icon-context-arrow-down\"]", "css"],
-        ["css=.d4-accordion-title .grok-context-arrow-down", "css:finder"],
-        ["xpath=//i[@name='icon-context-arrow-down']", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div/span/i[2]", "xpath:idRelative"],
-        ["xpath=//span/i[2]", "xpath:position"]
-      ],
-      "value": ""
-    }, {
       "id": "3c725ca0-d666-45a7-b559-38e61edeefd5",
       "comment": "",
       "command": "click",
