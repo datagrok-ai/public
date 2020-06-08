@@ -331,8 +331,3 @@ parameters:
     description: 'Returns results based on the disability ID.'
     type: integer
 definitions: []
-securityDefinitions:
-  api_key:
-    type: apiKey
-    name: api_key
-    in: query

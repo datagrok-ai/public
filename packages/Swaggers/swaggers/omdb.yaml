@@ -37,7 +37,11 @@ consumes:
 produces:
   - application/json
   - application/xml
-securityDefinitions: {}
+securityDefinitions:
+  APIKeyQueryParam:
+    type: apiKey
+    name: apikey
+    in: query
 paths:
   /:
     get:
