@@ -421,7 +421,7 @@
       "id": "e1d265b6-f658-48a8-a5e2-3ffecb91b742",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span-Index-(min-25.66,-max-73.72)",
+      "target": "name=span-Index-(min-0.00,-max-73.72)",
       "targets": [
         ["css=.d4-entity-markup-row:nth-child(11)", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div[2]/div/div/span[11]", "xpath:idRelative"],
@@ -433,7 +433,7 @@
       "id": "885ebcd6-8332-46a5-a6be-fd87a0231bbb",
       "comment": "",
       "command": "click",
-      "target": "name=span-Index-(min-25.66,-max-73.72)",
+      "target": "name=span-Index-(min-0.00,-max-73.72)",
       "targets": [
         ["css=.d4-entity-markup-row:nth-child(11)", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div[2]/div/div/span[11]", "xpath:idRelative"],
@@ -483,24 +483,24 @@
       "id": "3e45453d-8cac-4077-a74c-eae22227a8b0",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//span[contains(.,'753')]",
+      "target": "xpath=//span[contains(.,'73.72')]",
       "targets": [
-        ["css=.d4-accordion-pane-content > .d4-table tr:nth-child(1) > td:nth-child(2) > span", "css:finder"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div[2]/table/tbody/tr/td[2]/span", "xpath:idRelative"],
-        ["xpath=//td[2]/span", "xpath:position"],
-        ["xpath=//span[contains(.,'36.92')]", "xpath:innerText"]
+        ["css=tr:nth-child(7) > td:nth-child(2) > span", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[5]/div[2]/table/tbody/tr[7]/td[2]/span", "xpath:idRelative"],
+        ["xpath=//tr[7]/td[2]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'73.72')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
       "id": "8047ff13-7c2a-4f14-b435-cde44048e576",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//span[contains(.,'5095')]",
+      "target": "xpath=//span[contains(.,'5096')]",
       "targets": [
-        ["css=.d4-accordion-pane-content > .d4-table tr:nth-child(1) > td:nth-child(2) > span", "css:finder"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div[2]/table/tbody/tr/td[2]/span", "xpath:idRelative"],
-        ["xpath=//td[2]/span", "xpath:position"],
-        ["xpath=//span[contains(.,'36.92')]", "xpath:innerText"]
+        ["css=tr:nth-child(4) > td:nth-child(2) > span", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[5]/div[2]/table/tbody/tr[4]/td[2]/span", "xpath:idRelative"],
+        ["xpath=//tr[4]/td[2]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'5096')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
