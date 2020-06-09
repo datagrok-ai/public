@@ -4,6 +4,7 @@ import java.sql.*;
 import java.util.*;
 import grok_connect.utils.*;
 import grok_connect.connectors_info.*;
+import serialization.Types;
 
 
 public class TeradataDataProvider extends JdbcDataProvider {
@@ -15,6 +16,11 @@ public class TeradataDataProvider extends JdbcDataProvider {
         descriptor.connectionTemplate.add(new Property(Property.BOOL_TYPE, DbCredentials.SSL));
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
         descriptor.canBrowseSchema = true;
+        descriptor.nameBrackets = "\"";
+
+        descriptor.typesMap = new HashMap<String, String>() {{
+            put("bo", serialization.Types.BLOB);
+        }};
     }
 
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
@@ -56,5 +62,11 @@ public class TeradataDataProvider extends JdbcDataProvider {
 
     public String limitToSql(String query, Integer limit) {
         return query + "sample " + limit.toString();
+    }
+
+    public String addBrackets(String name) {
+        String brackets = descriptor.nameBrackets;
+        return name.startsWith(brackets.substring(0, 1)) ? name :
+                brackets.substring(0, 1) + name + brackets.substring(brackets.length() - 1, brackets.length());
     }
 }
