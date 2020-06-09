@@ -1,10 +1,10 @@
-#name: Detect Car Plate Numbers
+#name: Detect Car Plate Numbers Prototype
 #description: Detect car plate numbers
 #language: python
 #input: file file { condition: entity:domain == "auto" }
 #output: bool hasNumbers { file[auto:hasTags] }
 #tags: demo, files, panel, ml, opencv
-#condition: file.isFile && file.size < 1e6 && (file.name.endsWith("jpg") || file.name.endsWith("jpeg"))
+#condition: file.isFile && file.size > 1e7 && (file.name.endsWith("jpg") || file.name.endsWith("jpeg"))
 
 import cv2
 
