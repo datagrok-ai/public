@@ -132,7 +132,7 @@ export class Dialog {
     show() { grok_Dialog_Show(this.d); return this; }
 
     /** Adds content to the dialog.
-     * @param {HTMLElement | Widget} content
+     * @param {HTMLElement | Widget | InputBase} content
      * @returns {Dialog} */
     add(content) { grok_Dialog_Add(this.d, toDart(content)); return this; }
 }
