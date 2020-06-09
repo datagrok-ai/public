@@ -47,12 +47,14 @@ export class Events {
     onEvent(eventId) { return __obs(eventId); }
 
     /** Observes custom events with the specified eventId.
+     * {@link https://publis.datagrok.ai/js/samples/events/custom-events}
      * @returns {Observable} */
     onCustomEvent(eventId) {
         return this.customEventBus.onEvent(eventId);
     }
 
     /** Observes events with the specified eventId.
+     * {@link https://publis.datagrok.ai/js/samples/events/custom-events}
      * @param {string} eventId
      * @param args - event arguments*/
     fireCustomEvent(eventId, args) {
