@@ -24,6 +24,7 @@ public class Types {
     public static final String MAP = "map";
     public static final String DYNAMIC = "dynamic";
     public static final String LIST = "list";
+    public static final String BLOB = "blob";
 
     /// Types supported by [DataFrame]
     public static final List<String> dataFrameColumnTypes = new ArrayList<String>() {{
