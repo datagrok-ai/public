@@ -10,7 +10,7 @@
       "id": "e9bf33b8-479e-4ea1-a29a-0f77f3f6ee90",
       "comment": "",
       "command": "open",
-      "target": "/datasets?selenium=true&q=",
+      "target": "/?selenium=true",
       "targets": [],
       "value": ""
     }, {
@@ -878,14 +878,37 @@
       "id": "bb80478a-7a91-4fa6-b651-d0892e6bf037",
       "comment": "",
       "command": "click",
-      "target": "name=div-TestQueryBySelenium",
+      "target": "name=span-Northwind",
       "targets": [
-        ["css=span[name=\"span-Test_Query_By_Selenium\"]", "css"],
-        ["css=tr:nth-child(1) .markup", "css:finder"],
-        ["xpath=//span[@name='span-Test_Query_By_Selenium']", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div[2]/div/div/table/tbody/tr/td/span", "xpath:idRelative"],
-        ["xpath=//div[3]/div[2]/div/div/table/tbody/tr/td/span", "xpath:position"]
+        ["css=.d4-link-label > span:nth-child(1)", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div[4]/div/div/div/table/tbody/tr/td[2]/span/span", "xpath:idRelative"],
+        ["xpath=//span/span", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "d61288a0-1afb-407c-ba2b-7ce7bb125971",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "6cbc8148-011d-418e-b231-38dc6aacb40f",
+      "comment": "",
+      "command": "click",
+      "target": "name=span-TestQueryBySelenium",
+      "targets": [
+        ["css=.d4-link-label > span:nth-child(1)", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div[4]/div/div/div/table/tbody/tr/td[2]/span/span", "xpath:idRelative"],
+        ["xpath=//span/span", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "6e22b781-19c9-4c2c-b7b7-3c7e52bb6507",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "3c725ca0-d666-45a7-b559-38e61edeefd5",
