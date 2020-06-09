@@ -5,7 +5,7 @@
 #output: int cells [Number of detected cells segments]
 #output: graphics segmented
 #tags: demo, panel, files, opencv
-#condition: file.isFile && file.size < 1e6 && (file.name.endsWith("jpg") || file.name.endsWith("jpeg") || file.name.endsWith("png"))
+#condition: file.isFile && file.size < 1e6 && file.path.contains("/cells/") && (file.name.endsWith("jpg") || file.name.endsWith("jpeg") || file.name.endsWith("png"))
 #reference: https://docs.opencv.org/3.4/d3/db4/tutorial_py_watershed.html
 
 import cv2 as cv

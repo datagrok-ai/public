@@ -4,7 +4,7 @@
 #input: file file
 #output: bool hasNumbers
 #tags: demo, files, panel, ml, opencv
-#condition: file.isFile && file.size < 1e6 && (file.name.endsWith("jpg") || file.name.endsWith("jpeg"))
+#condition: file.isFile && file.size < 1e6 && file.path.contains("/cars/") && (file.name.endsWith("jpg") || file.name.endsWith("jpeg"))
 
 import cv2
 
