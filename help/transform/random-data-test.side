@@ -425,17 +425,10 @@
     }, {
       "id": "480e419b-05ba-4994-b91b-3779eadd2b9b",
       "comment": "",
-      "command": "verifyElementPresent",
-      "target": "id=random-data",
-      "targets": [
-        ["id=random-data", "id"],
-        ["css=#random-data", "css"],
-        ["css=#random-data", "css:finder"],
-        ["xpath=//h1[@id='random-data']", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/h1", "xpath:idRelative"],
-        ["xpath=//h1", "xpath:position"]
-      ],
-      "value": ""
+      "command": "verifyText",
+      "target": "css=.d4-dialog-header",
+      "targets": [],
+      "value": "Random Data"
     }]
   }],
   "suites": [{
