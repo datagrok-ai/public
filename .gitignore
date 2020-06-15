@@ -16,8 +16,8 @@ dependency-reduced-pom.xml
 node_modules/
 package-lock.json
 
-# dist
-/js-api/dist
+# Build results
+dist/
 
 # JSDoc
 /js-api/docs
