@@ -1,12 +1,13 @@
 {
   "name": "notebooks",
   "fullName": "Notebooks",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "description": "JupyterLab Notebooks integration package",
   "repository": "https://github.com/datagrok-ai/public",
   "licence": "MIT",
   "dependencies": {
     "datagrok-api": "latest",
+    "@jupyterlab/apputils": "^2.1.1",
     "@jupyterlab/coreutils": "^4.1.0",
     "@jupyterlab/codemirror": "^2.1.1",
     "@jupyterlab/completer": "^2.1.1",
