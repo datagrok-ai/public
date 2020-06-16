@@ -67,7 +67,7 @@ export function open(notebookPath) {
             useCapture
         );
 
-        const rendermime = new RenderMimeRegistry({
+        const renderMime = new RenderMimeRegistry({
             initialFactories: initialFactories,
             latexTypesetter: new MathJaxTypesetter({
                 url: PageConfig.getOption('mathjaxUrl'),
@@ -89,7 +89,7 @@ export function open(notebookPath) {
             defaultFor: ['notebook'],
             preferKernel: true,
             canStartKernel: true,
-            rendermime,
+            renderMime,
             contentFactory,
             mimeTypeService: editorServices.mimeTypeService
         });
@@ -102,26 +102,19 @@ export function open(notebookPath) {
         const model = new CompleterModel();
         const completer = new Completer({ editor, model });
         const sessionContext = nbWidget.context.sessionContext;
-        const connector = new KernelConnector({
-            session: sessionContext.session
-        });
+        const connector = new KernelConnector({ session: sessionContext.session });
         const handler = new CompletionHandler({ completer, connector });
 
         void sessionContext.ready.then(() => {
-            handler.connector = new KernelConnector({
-                session: sessionContext.session
-            });
+            handler.connector = new KernelConnector({ session: sessionContext.session });
         });
 
-        // Set the handler's editor.
         handler.editor = editor;
 
-        // Listen for active cell changes.
         nbWidget.content.activeCellChanged.connect((sender, cell) => {
-            handler.editor = cell && cell.editor;
+            handler.editor = cell !== null ? cell.editor : null;
         });
 
-        // Hide the widget when it first loads.
         completer.hide();
 
         let view = DG.View.create();
@@ -130,6 +123,8 @@ export function open(notebookPath) {
 
         Widget.attach(nbWidget, view.root);
         Widget.attach(completer, view.root);
+
+        // TODO: Check this
         ui.tools.handleResize(view.root, (w, h) => nbWidget.update());
 
         view.root.classList.add('grok-notebook-view');

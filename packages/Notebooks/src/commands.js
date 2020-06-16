@@ -39,15 +39,33 @@ const cmdIds = {
 };
 
 export const SetupCommands = (commands, nbWidget, handler) => {
-  // Add commands.
   commands.addCommand(cmdIds.invoke, { label: 'Completer: Invoke', execute: () => handler.invoke() });
   commands.addCommand(cmdIds.select, { label: 'Completer: Select', execute: () => handler.completer.selectActive() });
+  commands.addCommand(cmdIds.interrupt, { label: 'Interrupt', execute: async () => nbWidget.context.sessionContext.session.kernel.interrupt() });
+  commands.addCommand(cmdIds.restart, { label: 'Restart Kernel', execute: () => sessionContextDialogs.restart(nbWidget.context.sessionContext) });
+  commands.addCommand(cmdIds.switchKernel, { label: 'Switch Kernel', execute: () => sessionContextDialogs.selectKernel(nbWidget.context.sessionContext) });
+  commands.addCommand(cmdIds.runAndAdvance, { label: 'Run and Advance', execute: () => NotebookActions.runAndAdvance(nbWidget.content, nbWidget.context.sessionContext)});
+  commands.addCommand(cmdIds.run, { label: 'Run', execute: () => NotebookActions.run(nbWidget.content, nbWidget.context.sessionContext) });
+  commands.addCommand(cmdIds.editMode, { label: 'Edit Mode', execute: () => nbWidget.content.mode = 'edit' });
+  commands.addCommand(cmdIds.commandMode, { label: 'Command Mode', execute: () => nbWidget.content.mode = 'command' });
+  commands.addCommand(cmdIds.selectBelow, { label: 'Select Below', execute: () => NotebookActions.selectBelow(nbWidget.content) });
+  commands.addCommand(cmdIds.selectAbove, { label: 'Select Above', execute: () => NotebookActions.selectAbove(nbWidget.content) });
+  commands.addCommand(cmdIds.extendAbove, { label: 'Extend Above', execute: () => NotebookActions.extendSelectionAbove(nbWidget.content) });
+  commands.addCommand(cmdIds.extendTop, { label: 'Extend to Top', execute: () => NotebookActions.extendSelectionAbove(nbWidget.content, true) });
+  commands.addCommand(cmdIds.extendBelow, { label: 'Extend Below', execute: () => NotebookActions.extendSelectionBelow(nbWidget.content) });
+  commands.addCommand(cmdIds.extendBottom, { label: 'Extend to Bottom', execute: () => NotebookActions.extendSelectionBelow(nbWidget.content, true) });
+  commands.addCommand(cmdIds.merge, { label: 'Merge Cells', execute: () => NotebookActions.mergeCells(nbWidget.content) });
+  commands.addCommand(cmdIds.split, { label: 'Split Cell', execute: () => NotebookActions.splitCell(nbWidget.content) });
+  commands.addCommand(cmdIds.undo, { label: 'Undo', execute: () => NotebookActions.undo(nbWidget.content) });
+  commands.addCommand(cmdIds.redo, { label: 'Redo', execute: () => NotebookActions.redo(nbWidget.content) });
+
   commands.addCommand(cmdIds.invokeNotebook, { label: 'Invoke Notebook',
     execute: () => {
       if (nbWidget.content.activeCell.model.type === 'code')
         return commands.execute(cmdIds.invoke);
     }
   });
+
   commands.addCommand(cmdIds.selectNotebook, {
     label: 'Select Notebook',
     execute: () => {
@@ -77,6 +95,7 @@ export const SetupCommands = (commands, nbWidget, handler) => {
       searchInstance.focusInput();
     }
   });
+
   commands.addCommand(cmdIds.findNext, {
     label: 'Find Next',
     isEnabled: () => !!searchInstance,
@@ -88,6 +107,7 @@ export const SetupCommands = (commands, nbWidget, handler) => {
       searchInstance.updateIndices();
     }
   });
+
   commands.addCommand(cmdIds.findPrevious, {
     label: 'Find Previous',
     isEnabled: () => !!searchInstance,
@@ -99,191 +119,31 @@ export const SetupCommands = (commands, nbWidget, handler) => {
       searchInstance.updateIndices();
     }
   });
-  commands.addCommand(cmdIds.interrupt, { label: 'Interrupt', execute: async () => nbWidget.context.sessionContext.session.kernel.interrupt() });
-  commands.addCommand(cmdIds.restart, { label: 'Restart Kernel', execute: () => sessionContextDialogs.restart(nbWidget.context.sessionContext) });
-  commands.addCommand(cmdIds.switchKernel, { label: 'Switch Kernel', execute: () => sessionContextDialogs.selectKernel(nbWidget.context.sessionContext) });
-  commands.addCommand(cmdIds.runAndAdvance, {
-    label: 'Run and Advance',
-    execute: () => {
-      return NotebookActions.runAndAdvance(
-        nbWidget.content,
-        nbWidget.context.sessionContext
-      );
-    }
-  });
-  commands.addCommand(cmdIds.run, {
-    label: 'Run',
-    execute: () => {
-      return NotebookActions.run(
-        nbWidget.content,
-        nbWidget.context.sessionContext
-      );
-    }
-  });
-  commands.addCommand(cmdIds.editMode, {
-    label: 'Edit Mode',
-    execute: () => {
-      nbWidget.content.mode = 'edit';
-    }
-  });
-  commands.addCommand(cmdIds.commandMode, {
-    label: 'Command Mode',
-    execute: () => {
-      nbWidget.content.mode = 'command';
-    }
-  });
-  commands.addCommand(cmdIds.selectBelow, {
-    label: 'Select Below',
-    execute: () => NotebookActions.selectBelow(nbWidget.content)
-  });
-  commands.addCommand(cmdIds.selectAbove, {
-    label: 'Select Above',
-    execute: () => NotebookActions.selectAbove(nbWidget.content)
-  });
-  commands.addCommand(cmdIds.extendAbove, {
-    label: 'Extend Above',
-    execute: () => NotebookActions.extendSelectionAbove(nbWidget.content)
-  });
-  commands.addCommand(cmdIds.extendTop, {
-    label: 'Extend to Top',
-    execute: () => NotebookActions.extendSelectionAbove(nbWidget.content, true)
-  });
-  commands.addCommand(cmdIds.extendBelow, {
-    label: 'Extend Below',
-    execute: () => NotebookActions.extendSelectionBelow(nbWidget.content)
-  });
-  commands.addCommand(cmdIds.extendBottom, {
-    label: 'Extend to Bottom',
-    execute: () => NotebookActions.extendSelectionBelow(nbWidget.content, true)
-  });
-  commands.addCommand(cmdIds.merge, {
-    label: 'Merge Cells',
-    execute: () => NotebookActions.mergeCells(nbWidget.content)
-  });
-  commands.addCommand(cmdIds.split, {
-    label: 'Split Cell',
-    execute: () => NotebookActions.splitCell(nbWidget.content)
-  });
-  commands.addCommand(cmdIds.undo, {
-    label: 'Undo',
-    execute: () => NotebookActions.undo(nbWidget.content)
-  });
-  commands.addCommand(cmdIds.redo, {
-    label: 'Redo',
-    execute: () => NotebookActions.redo(nbWidget.content)
-  });
 
   const bindings = [
-    {
-      selector: '.jp-Notebook.jp-mod-editMode .jp-mod-completer-enabled',
-      keys: ['Tab'],
-      command: cmdIds.invokeNotebook
-    },
-    {
-      selector: `.jp-mod-completer-active`,
-      keys: ['Enter'],
-      command: cmdIds.selectNotebook
-    },
-    {
-      selector: '.jp-Notebook',
-      keys: ['Ctrl Enter'],
-      command: cmdIds.run
-    },
-    {
-      selector: '.jp-Notebook',
-      keys: ['Shift Enter'],
-      command: cmdIds.runAndAdvance
-    },
-    {
-      selector: '.jp-Notebook',
-      keys: ['Accel S'],
-      command: cmdIds.save
-    },
-    {
-      selector: '.jp-Notebook',
-      keys: ['Accel F'],
-      command: cmdIds.startSearch
-    },
-    {
-      selector: '.jp-Notebook',
-      keys: ['Accel G'],
-      command: cmdIds.findNext
-    },
-    {
-      selector: '.jp-Notebook',
-      keys: ['Accel Shift G'],
-      command: cmdIds.findPrevious
-    },
-    {
-      selector: '.jp-Notebook.jp-mod-commandMode:focus',
-      keys: ['I', 'I'],
-      command: cmdIds.interrupt
-    },
-    {
-      selector: '.jp-Notebook.jp-mod-commandMode:focus',
-      keys: ['0', '0'],
-      command: cmdIds.restart
-    },
-    {
-      selector: '.jp-Notebook.jp-mod-commandMode:focus',
-      keys: ['Enter'],
-      command: cmdIds.editMode
-    },
-    {
-      selector: '.jp-Notebook.jp-mod-editMode',
-      keys: ['Escape'],
-      command: cmdIds.commandMode
-    },
-    {
-      selector: '.jp-Notebook.jp-mod-commandMode:focus',
-      keys: ['Shift M'],
-      command: cmdIds.merge
-    },
-    {
-      selector: '.jp-Notebook.jp-mod-editMode',
-      keys: ['Ctrl Shift -'],
-      command: cmdIds.split
-    },
-    {
-      selector: '.jp-Notebook.jp-mod-commandMode:focus',
-      keys: ['J'],
-      command: cmdIds.selectBelow
-    },
-    {
-      selector: '.jp-Notebook.jp-mod-commandMode:focus',
-      keys: ['ArrowDown'],
-      command: cmdIds.selectBelow
-    },
-    {
-      selector: '.jp-Notebook.jp-mod-commandMode:focus',
-      keys: ['K'],
-      command: cmdIds.selectAbove
-    },
-    {
-      selector: '.jp-Notebook.jp-mod-commandMode:focus',
-      keys: ['ArrowUp'],
-      command: cmdIds.selectAbove
-    },
-    {
-      selector: '.jp-Notebook.jp-mod-commandMode:focus',
-      keys: ['Shift K'],
-      command: cmdIds.extendAbove
-    },
-    {
-      selector: '.jp-Notebook.jp-mod-commandMode:focus',
-      keys: ['Shift J'],
-      command: cmdIds.extendBelow
-    },
-    {
-      selector: '.jp-Notebook.jp-mod-commandMode:focus',
-      keys: ['Z'],
-      command: cmdIds.undo
-    },
-    {
-      selector: '.jp-Notebook.jp-mod-commandMode:focus',
-      keys: ['Y'],
-      command: cmdIds.redo
-    }
+    { selector: '.jp-Notebook.jp-mod-editMode .jp-mod-completer-enabled', keys: ['Tab'], command: cmdIds.invokeNotebook },
+    { selector: '.jp-mod-completer-active', keys: ['Enter'], command: cmdIds.selectNotebook },
+    { selector: '.jp-Notebook', keys: ['Ctrl Enter'], command: cmdIds.run },
+    { selector: '.jp-Notebook', keys: ['Shift Enter'], command: cmdIds.runAndAdvance },
+    { selector: '.jp-Notebook', keys: ['Accel S'], command: cmdIds.save },
+    { selector: '.jp-Notebook', keys: ['Accel F'], command: cmdIds.startSearch },
+    { selector: '.jp-Notebook', keys: ['Accel G'], command: cmdIds.findNext },
+    { selector: '.jp-Notebook', keys: ['Accel Shift G'], command: cmdIds.findPrevious },
+    { selector: '.jp-Notebook.jp-mod-commandMode:focus', keys: ['I', 'I'], command: cmdIds.interrupt },
+    { selector: '.jp-Notebook.jp-mod-commandMode:focus', keys: ['0', '0'], command: cmdIds.restart },
+    { selector: '.jp-Notebook.jp-mod-commandMode:focus', keys: ['Enter'], command: cmdIds.editMode },
+    { selector: '.jp-Notebook.jp-mod-editMode', keys: ['Escape'], command: cmdIds.commandMode },
+    { selector: '.jp-Notebook.jp-mod-commandMode:focus', keys: ['Shift M'], command: cmdIds.merge },
+    { selector: '.jp-Notebook.jp-mod-editMode', keys: ['Ctrl Shift -'], command: cmdIds.split },
+    { selector: '.jp-Notebook.jp-mod-commandMode:focus', keys: ['J'], command: cmdIds.selectBelow },
+    { selector: '.jp-Notebook.jp-mod-commandMode:focus', keys: ['ArrowDown'], command: cmdIds.selectBelow },
+    { selector: '.jp-Notebook.jp-mod-commandMode:focus', keys: ['K'], command: cmdIds.selectAbove },
+    { selector: '.jp-Notebook.jp-mod-commandMode:focus', keys: ['ArrowUp'], command: cmdIds.selectAbove },
+    { selector: '.jp-Notebook.jp-mod-commandMode:focus', keys: ['Shift K'], command: cmdIds.extendAbove },
+    { selector: '.jp-Notebook.jp-mod-commandMode:focus', keys: ['Shift J'], command: cmdIds.extendBelow },
+    { selector: '.jp-Notebook.jp-mod-commandMode:focus', keys: ['Z'], command: cmdIds.undo },
+    { selector: '.jp-Notebook.jp-mod-commandMode:focus', keys: ['Y'], command: cmdIds.redo }
   ];
+
   bindings.map(binding => commands.addKeyBinding(binding));
 };
