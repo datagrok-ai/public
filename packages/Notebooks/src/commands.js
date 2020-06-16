@@ -1,15 +1,10 @@
 /**
  * Set up keyboard shortcuts & commands for notebook
  */
-import { CommandRegistry } from '@lumino/commands';
 import { sessionContextDialogs } from '@jupyterlab/apputils';
-import { CompletionHandler } from '@jupyterlab/completer';
-import { NotebookPanel, NotebookActions } from '@jupyterlab/notebook';
-import {
-  SearchInstance,
-  NotebookSearchProvider
-} from '@jupyterlab/documentsearch';
-import { CommandPalette } from '@lumino/widgets';
+import { NotebookActions } from '@jupyterlab/notebook';
+import { SearchInstance, NotebookSearchProvider } from '@jupyterlab/documentsearch';
+
 
 /**
  * The map of command ids used by the notebook.
@@ -43,36 +38,24 @@ const cmdIds = {
   redo: 'notebook-cells:redo'
 };
 
-export const SetupCommands = (commands, palette, nbWidget, handler) => {
+export const SetupCommands = (commands, nbWidget, handler) => {
   // Add commands.
-  commands.addCommand(cmdIds.invoke, {
-    label: 'Completer: Invoke',
-    execute: () => handler.invoke()
-  });
-  commands.addCommand(cmdIds.select, {
-    label: 'Completer: Select',
-    execute: () => handler.completer.selectActive()
-  });
-  commands.addCommand(cmdIds.invokeNotebook, {
-    label: 'Invoke Notebook',
+  commands.addCommand(cmdIds.invoke, { label: 'Completer: Invoke', execute: () => handler.invoke() });
+  commands.addCommand(cmdIds.select, { label: 'Completer: Select', execute: () => handler.completer.selectActive() });
+  commands.addCommand(cmdIds.invokeNotebook, { label: 'Invoke Notebook',
     execute: () => {
-      if (nbWidget.content.activeCell.model.type === 'code') {
+      if (nbWidget.content.activeCell.model.type === 'code')
         return commands.execute(cmdIds.invoke);
-      }
     }
   });
   commands.addCommand(cmdIds.selectNotebook, {
     label: 'Select Notebook',
     execute: () => {
-      if (nbWidget.content.activeCell.model.type === 'code') {
+      if (nbWidget.content.activeCell.model.type === 'code')
         return commands.execute(cmdIds.select);
-      }
     }
   });
-  commands.addCommand(cmdIds.save, {
-    label: 'Save',
-    execute: () => nbWidget.context.save()
-  });
+  commands.addCommand(cmdIds.save, { label: 'Save', execute: () => nbWidget.context.save() });
 
   let searchInstance;
   commands.addCommand(cmdIds.startSearch, {
@@ -116,21 +99,9 @@ export const SetupCommands = (commands, palette, nbWidget, handler) => {
       searchInstance.updateIndices();
     }
   });
-  commands.addCommand(cmdIds.interrupt, {
-    label: 'Interrupt',
-    execute: async () =>
-      nbWidget.context.sessionContext.session.kernel.interrupt()
-  });
-  commands.addCommand(cmdIds.restart, {
-    label: 'Restart Kernel',
-    execute: () =>
-      sessionContextDialogs.restart(nbWidget.context.sessionContext)
-  });
-  commands.addCommand(cmdIds.switchKernel, {
-    label: 'Switch Kernel',
-    execute: () =>
-      sessionContextDialogs.selectKernel(nbWidget.context.sessionContext)
-  });
+  commands.addCommand(cmdIds.interrupt, { label: 'Interrupt', execute: async () => nbWidget.context.sessionContext.session.kernel.interrupt() });
+  commands.addCommand(cmdIds.restart, { label: 'Restart Kernel', execute: () => sessionContextDialogs.restart(nbWidget.context.sessionContext) });
+  commands.addCommand(cmdIds.switchKernel, { label: 'Switch Kernel', execute: () => sessionContextDialogs.selectKernel(nbWidget.context.sessionContext) });
   commands.addCommand(cmdIds.runAndAdvance, {
     label: 'Run and Advance',
     execute: () => {
@@ -201,32 +172,6 @@ export const SetupCommands = (commands, palette, nbWidget, handler) => {
     label: 'Redo',
     execute: () => NotebookActions.redo(nbWidget.content)
   });
-
-  let category = 'Notebook Operations';
-  [
-    cmdIds.interrupt,
-    cmdIds.restart,
-    cmdIds.editMode,
-    cmdIds.commandMode,
-    cmdIds.switchKernel,
-    cmdIds.startSearch,
-    cmdIds.findNext,
-    cmdIds.findPrevious
-  ].forEach(command => palette.addItem({ command, category }));
-
-  category = 'Notebook Cell Operations';
-  [
-    cmdIds.runAndAdvance,
-    cmdIds.run,
-    cmdIds.split,
-    cmdIds.merge,
-    cmdIds.selectAbove,
-    cmdIds.selectBelow,
-    cmdIds.extendAbove,
-    cmdIds.extendBelow,
-    cmdIds.undo,
-    cmdIds.redo
-  ].forEach(command => palette.addItem({ command, category }));
 
   const bindings = [
     {
