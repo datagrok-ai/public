@@ -1,11 +1,12 @@
 const path = require('path');
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 
 module.exports = {
     mode: 'development',
     entry: {
         package: './src/package.js'
     },
-    devtool: 'inline-source-map',
+    //devtool: 'inline-source-map',
     externals: {
         'datagrok-api/dg': 'DG',
         'datagrok-api/grok': 'grok',
@@ -14,12 +15,14 @@ module.exports = {
         "rxjs": "rxjs",
         "rxjs/operators": "rxjs.operators"
     },
+    optimization: {
+        minimize: true
+    },
     output: {
         filename: '[name].js',
         library: 'notebooks',
         libraryTarget: 'var',
         path: path.resolve(__dirname, 'dist'),
-        //publicPath: 'http://localhost:8082/packages/published/files/Notebooks/vnerozin/dist/'
     },
     module: {
         rules: [
@@ -50,5 +53,8 @@ module.exports = {
                 use: [{ loader: 'url-loader', options: { limit: 10000 } }]
             }
         ]
-    }
+    },
+    plugins: [
+        new CleanWebpackPlugin()
+    ],
 };
