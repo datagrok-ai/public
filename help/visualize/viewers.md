@@ -12,6 +12,19 @@ row selection and filter. Viewers are saved as part of the [project](../overview
 Also, it is possible to save viewers and views individually, and reuse them (or 
 share with teammates) later on.
 
+* [Creating](#creating)
+* [Docking](#docking)
+* [Selection](#selection)
+* [Filter](#selection)
+* [Viewers as filters](#viewers-as-filters)
+* [Interaction](#interaction)
+* [Properties](#properties)
+
+## Creating
+
+Once a table is open, click on the icons shown on the left pane to open the corresponding 
+viewer. 
+
 ## Docking
 
 Viewers are docked within a view. To rearrange it, start dragging viewer's header. Drop zone
@@ -57,11 +70,11 @@ To open filter group, click on the funnel icon in the toolbox:
  
 ![](viewers/filters.gif)
 
-Alternatively, click on the column's "hamburger icon" to filter by individual column:
+Alternatively, click on the column's "hamburger icon" to filter by the individual column:
 
 ![](viewers/grid-column-filter.png)
 
-## Select or filter
+## Viewers as filters
 
 Some viewers could be used simultaneously for visualization .
 
@@ -72,7 +85,7 @@ between "filter" and "select".
 By setting up these properties, it is possible to create dashboards where one
 viewer would serve as a filter to another.   
 
-## Viewers interaction
+## Interaction
 
 All visualizations are tightly coupled. Hover, selection, filtering on one viewer is displayed on the rest:
 
@@ -81,7 +94,6 @@ All visualizations are tightly coupled. Hover, selection, filtering on one viewe
 For example, filtering on a [histogram](viewers/histogram.md) affects the [scatter plot](viewers/scatter-plot.md):    
 
 ![Viewers Interaction 2](../uploads/gifs/sp-hist.gif "Viewers Interaction 2")   
-
 
 ## Properties
 
