@@ -9,8 +9,10 @@ import '@jupyterlab/codemirror/style/index.css';
 import '@jupyterlab/completer/style/index.css';
 import '@jupyterlab/documentsearch/style/index.css';
 import '@jupyterlab/notebook/style/index.css';
-import '@jupyterlab/theme-light-extension/style/index.css';
-import '../css/index.css';
+import '../css/application-base.css'
+import '../css/notebooks.css';
+import '../css/theme-light-extension-index.css';
+import '../css/ui-components-base.css';
 
 import { PageConfig } from '@jupyterlab/coreutils';
 import { CommandRegistry } from '@lumino/commands';
@@ -156,6 +158,8 @@ function openNotebook(manager, notebookPath) {
     view.root.addEventListener('resize', () => {
         panel.update();
     });
+
+    view.root.classList.add('grok-notebook-view');
 
     SetupCommands(commands, palette, nbWidget, handler);
 
