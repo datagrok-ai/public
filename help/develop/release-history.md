@@ -1,6 +1,19 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2020.06.16 Stable version
+
+## Latest docker images
+* Datagrok (new): 
+  * `766822877060.dkr.ecr.us-east-2.amazonaws.com/datagrok:1.0.79-93dc7bd` 
+  *  `docker pull datagrok/datagrok:1.0.79-93dc7bd`
+  *  [download](https://dev.datagrok.ai/docker_images/datagrok-1.0.79-93dc7bd.tar)
+* CVM (new): 
+  * `766822877060.dkr.ecr.us-east-2.amazonaws.com/cvm:1.0.77-c1d42b4` 
+  *  `docker pull datagrok/cvm:1.0.79-93dc7bd`
+  *  [download](https://dev.datagrok.ai/docker_images/cvm-1.0.79-93dc7bd.tar)
+* [docker-compose.yaml](docker-compose.yaml)
+
 # 2020.05.27 Stable version
 
 ## What's new
