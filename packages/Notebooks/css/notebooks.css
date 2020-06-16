@@ -1,10 +1,4 @@
-body {
-  background: white;
-  margin: 0;
-  padding: 0;
-}
-
-#main {
+.grok-notebook-view #main {
   position: absolute;
   top: 4px;
   left: 4px;

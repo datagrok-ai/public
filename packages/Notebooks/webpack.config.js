@@ -26,7 +26,21 @@ module.exports = {
     },
     module: {
         rules: [
-            { test: /\.css$/, use: ['style-loader', 'css-loader'] },
+            {
+                test: /\.css$/,
+                use: [
+                    'style-loader',
+                    {
+                        loader: 'css-loader',
+                        options: {
+                            import: (parsedImport, resourcePath) =>
+                                !((resourcePath.endsWith('ui-components/style/index.css') && parsedImport.url.includes('base.css')) ||
+                                    (resourcePath.endsWith('application/style/index.css') && parsedImport.url.includes('base.css')) ||
+                                    (parsedImport.url.includes('blueprint.css')))
+                        }
+                    }
+                ]
+            },
             { test: /\.html$/, use: 'file-loader' },
             { test: /\.md$/, use: 'raw-loader' },
             { test: /\.js.map$/, use: 'file-loader' },
@@ -55,6 +69,6 @@ module.exports = {
         ]
     },
     plugins: [
-        new CleanWebpackPlugin()
-    ],
+         new CleanWebpackPlugin()
+    ]
 };
