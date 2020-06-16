@@ -12,7 +12,8 @@
   * `766822877060.dkr.ecr.us-east-2.amazonaws.com/cvm:1.0.77-c1d42b4` 
   *  `docker pull datagrok/cvm:1.0.79-93dc7bd`
   *  [download](https://dev.datagrok.ai/docker_images/cvm-1.0.79-93dc7bd.tar)
-* [docker-compose.yaml](docker-compose.yaml)
+  
+* [Docker-Compose](admin/docker-compose.md)
 
 # 2020.05.27 Stable version
 
