@@ -13,10 +13,11 @@ This document contains instructions to deploy Datagrok on a regular machine with
 
 ## Setup Datagrok Virtual Machine
 
+See also: [Docker Compose](docker-compose.md)
 Requirements: 2 vCPU and 4GiB RAM
 
 1. Download latest Datagrok Virtual Machine docker image from [dev.datagrok.ai/docker_images](https://dev.datagrok.ai/docker_images)
-2. Import Docker image `docker load -i FILE.tar`
+2. Import Docker image `docker load -i FILE.tar` OR download from Docker Hub: `docker pull datagrok/cvm:VERSION` `docker pull datagrok/datagrok:VERSION`
 3. Prepare JSON string GROK_START_PARAMETERS:
  ```
 {

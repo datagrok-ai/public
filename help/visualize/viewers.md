@@ -12,11 +12,26 @@ row selection and filter. Viewers are saved as part of the [project](../overview
 Also, it is possible to save viewers and views individually, and reuse them (or 
 share with teammates) later on.
 
+* [Creating](#creating)
+* [Docking](#docking)
+* [Selection](#selection)
+* [Filter](#selection)
+* [Viewers as filters](#viewers-as-filters)
+* [Interaction](#interaction)
+* [Properties](#properties)
+
+## Creating
+
+Once a table is open, click on the icons shown on the left pane to open the corresponding 
+viewer. 
+
 ## Docking
 
 Viewers are docked within a view. To rearrange it, start dragging viewer's header. Drop zone
 indicators will appear; move the mouse cursor to one of them and release the mouse button to 
 dock the viewer at that spot. To resize the viewer, drag the viewer's border.
+
+![](viewers-docking.gif)
 
 ## Selection
 
@@ -47,17 +62,21 @@ To select rows in the [grid](viewers/grid.md):
 | (Ctrl+) Shift + mouse-drag       | (Un)select rows    |
 | (Ctrl+) Shift + ENTER            | (Un)Select rows with the current value  | 
 
+![](viewers-selection.gif)
+
 ## Filter
 
 To open filter group, click on the funnel icon in the toolbox:
  
-![](viewers/filters-icon.png)
+![](viewers/filters.gif)
 
-Alternatively, click on the column's "hamburger icon" to filter by individual column:
+Alternatively, click on the column's "hamburger icon" to filter by the individual column:
 
 ![](viewers/grid-column-filter.png)
 
-## Select or filter
+## Viewers as filters
+
+Some viewers could be used simultaneously for visualization .
 
 Use "row source" [property](#properties) to specify which rows should be visualized on the viewer.
 To define what happens when user click on a group of rows, use "on click" property and choose
@@ -66,6 +85,16 @@ between "filter" and "select".
 By setting up these properties, it is possible to create dashboards where one
 viewer would serve as a filter to another.   
 
+## Interaction
+
+All visualizations are tightly coupled. Hover, selection, filtering on one viewer is displayed on the rest:
+
+![Viewers Interaction](../uploads/gifs/viewers-interaction.gif "Viewers Interaction")      
+
+For example, filtering on a [histogram](viewers/histogram.md) affects the [scatter plot](viewers/scatter-plot.md):    
+
+![Viewers Interaction 2](../uploads/gifs/sp-hist.gif "Viewers Interaction 2")   
+
 ## Properties
 
 Each viewer has a set of properties associated with it that define either the appearance
@@ -73,6 +102,8 @@ Each viewer has a set of properties associated with it that define either the ap
 data properties (usually columns to visualize) are exposed as combo boxes on top of the viewer.
 To edit the rest of the properties, either click on the "gear" icon on top of the viewer,
 or press F4 when the viewer has focus, or right-click and select `Viewer | Propeties`.
+
+![](viewers/viewer-property-panel.gif)
 
 ## Common actions
 
@@ -293,16 +324,6 @@ Provides specified descriptive [Statistics](viewers/statistics.md) for the chose
 
 ## Globe
 Visualises magnitude and color for data on 3D globe using: latitude, longitude. Details: [Globe](viewers/globe.md) 
-
-## Viewers interaction
-
-All visualizations are tightly coupled. Hover, selection, filtering on one viewer is displayed on the rest:
-
-<br>![Viewers Interaction](../uploads/gifs/viewers-interaction.gif "Viewers Interaction")      
-
-Filtering data, for example, on a [histogram](viewers/histogram.md) will affect the [Scatter Plot](viewers/scatter-plot.md):    
-
-<br>![Viewers Interaction 2](../uploads/gifs/sp-hist.gif "Viewers Interaction 2")   
 
 ### Videos
 
