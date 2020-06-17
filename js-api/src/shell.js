@@ -219,6 +219,12 @@ export class Windows {
 
 /** User-specific platform settings. */
 export class Settings {
+    /** Jupyter Notebook URL */
+    get jupyterNotebook() { return grok_Settings_Get_JupyterNotebook(); }
+
+    /** Jupyter Notebook Token */
+    get jupyterNotebookToken() { return grok_Settings_Get_JupyterNotebookToken(); }
+
     /** Hide dock tabs in presentation mode **/
     get hideTabsInPresentationMode() { return grok_Get_HideTabsInPresentationMode(); }
     set hideTabsInPresentationMode(x) { return grok_Set_HideTabsInPresentationMode(x); }
