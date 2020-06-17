@@ -2,7 +2,7 @@
   "#type": "DataConnection",
   "id": "b5d2752b-8ba0-5d79-b393-fdf502b5d835",
   "parameters":{
-    "server": "$DEMO_DB_SERVER",
+    "server": "$GROK_DB_SERVE",
     "db": "clin"
   },
   "credentials" : {
