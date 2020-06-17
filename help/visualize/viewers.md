@@ -19,6 +19,8 @@ share with teammates) later on.
 * [Viewers as filters](#viewers-as-filters)
 * [Interaction](#interaction)
 * [Properties](#properties)
+* [Group tooltips](#group-tooltips)
+* [Trellis](#trellis)
 
 ## Creating
 
@@ -167,10 +169,22 @@ The following picture illustrates the concept:
 
 ![Group Tooltip](../uploads/viewers/viewer-group-tooltip.png "Group Tooltip")
 
-## Viewer controls
+# Trellis
 
-![Viewer controls](../uploads/viewers/viewer-controls.png "Viewer controls")
+Trellis plot are useful for finding the structure and patterns in complex data.
+A Trellis plot is a layout of smaller charts in a grid with consistent scales. Each smaller chart
+represents rows that belong to a corresponding category.  The grid layout looks similar to a garden trellis, 
+hence the name Trellis Chart.
 
+There are two ways to add a trellis plot:
+* click on the "Trellis Plot" icon in the toolbox, and then customize the inner chart by clicking 
+  on the "gear" icon on the left
+* create a viewer that you want to eventually become an inner chart, customize it the way you like,
+  and then click on `Viewer | Use in Trellis`  
+ 
+See [Trellis Plot](viewers/trellis-plot.md) for more details.
+
+![](viewers-as-trellis.gif) 
 
 ## Scatter plot
 
