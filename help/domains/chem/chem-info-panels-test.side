@@ -466,7 +466,7 @@
       "id": "8a74aaa4-c381-4e2f-976e-214d8e7f08e0",
       "comment": "",
       "command": "pause",
-      "target": "3000",
+      "target": "5000",
       "targets": [],
       "value": ""
     }, {
