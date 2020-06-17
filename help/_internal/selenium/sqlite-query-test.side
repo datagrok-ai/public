@@ -565,7 +565,7 @@
         ["xpath=//div[@id='elementContent']/div/div/div[2]/div/input", "xpath:idRelative"],
         ["xpath=//div[2]/div/input", "xpath:position"]
       ],
-      "value": "name =\"Test_Query_By_Selenium_SQLite\" and connection.name = \"northwind.sl3\""
+      "value": "name =\"Test_Query_By_Selenium_SQLite\" "
     }, {
       "id": "e5bd01a1-d3e4-4faf-8da9-fc2ccbcda086",
       "comment": "",
