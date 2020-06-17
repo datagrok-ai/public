@@ -21,6 +21,7 @@ share with teammates) later on.
 * [Properties](#properties)
 * [Group tooltips](#group-tooltips)
 * [Trellis](#trellis)
+* [Layouts](#layouts)
 
 ## Creating
 
@@ -169,7 +170,7 @@ The following picture illustrates the concept:
 
 ![Group Tooltip](../uploads/viewers/viewer-group-tooltip.png "Group Tooltip")
 
-# Trellis
+## Trellis
 
 Trellis plot are useful for finding the structure and patterns in complex data.
 A Trellis plot is a layout of smaller charts in a grid with consistent scales. Each smaller chart
@@ -185,6 +186,21 @@ There are two ways to add a trellis plot:
 See [Trellis Plot](viewers/trellis-plot.md) for more details.
 
 ![](viewers-as-trellis.gif) 
+
+
+## Layouts
+
+View Layout contains relative positions of [viewers](../visualize/viewers.md) in a [table view](../overview/table-view.md),
+along with the viewers' properties. By separating layouts from the actual data displayed, it's possible to
+save current layout (**View | Layout | Save to Gallery**) and later apply it to a different dataset
+(**View | Layout | Open Gallery**). 
+
+Saved layouts that are [applicable](view-layout.md#layout-applicability) to the current table are shown in the "Layouts" pane, see picture below. 
+
+To clone current view, either do **View | Layout | Clone**, or click on the plus sign on the view header strip, 
+and choose **Clone**.
+
+![](layout-suggestions.gif)
 
 ## Scatter plot
 
