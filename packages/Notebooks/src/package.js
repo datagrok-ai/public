@@ -31,27 +31,7 @@ import { SetupCommands } from './commands';
 //description: Opens Notebook
 //input: string notebookPath
 export function open(notebookPath) {
-    const settings = {
-        baseUrl: grok.settings.jupyterNotebook,
-        wsUrl: 'ws://localhost:8889', // TODO: ?
-        token: grok.settings.jupyterNotebookToken,
-        appUrl: '/',
-        mathjaxUrl: 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js',
-        mathjaxConfig: 'TeX-AMS_CHTML-full,Safe'
-    };
-
-    for (let key in settings)
-          PageConfig.setOption(key, settings[key]);
-
-    let _settings = ServerConnection.defaultSettings;
-
-    _settings.baseUrl = PageConfig.getBaseUrl();
-    _settings.appUrl = PageConfig.getOption('appUrl');
-    _settings.wsUrl = PageConfig.getWsUrl();
-    _settings.token = PageConfig.getToken();
-
-    const manager = new ServiceManager({ serverSettings: _settings });
-
+    const manager = new ServiceManager({ serverSettings: getSettings() });
     void manager.ready.then(() => {
         // Initialize the command registry with the bindings.
         const commands = new CommandRegistry();
@@ -88,7 +68,7 @@ export function open(notebookPath) {
             defaultFor: ['notebook'],
             preferKernel: true,
             canStartKernel: true,
-            renderMime,
+            rendermime: renderMime,
             contentFactory,
             mimeTypeService: editorServices.mimeTypeService
         });
@@ -130,4 +110,22 @@ export function open(notebookPath) {
 
         SetupCommands(commands, nbWidget, handler);
     });
+}
+
+
+function getSettings() {
+    const _settings = {
+        baseUrl: grok.settings.jupyterNotebook,
+        token: grok.settings.jupyterNotebookToken,
+        mathjaxUrl: 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js',
+        mathjaxConfig: 'TeX-AMS_CHTML-full,Safe'
+    };
+
+    for (let key in _settings) PageConfig.setOption(key, _settings[key]);
+
+    let settings = ServerConnection.defaultSettings;
+    settings.baseUrl = PageConfig.getBaseUrl();
+    settings.token = PageConfig.getToken();
+
+    return settings;
 }
