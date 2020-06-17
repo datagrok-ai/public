@@ -1,0 +1,14 @@
+/* Source: https://github.com/jupyterlab/jupyterlab/blob/master/packages/theme-light-extension/style/index.css */
+
+@import '../node_modules/@jupyterlab/theme-light-extension/style/variables.css';
+
+/* Set the default typography for monospace elements */
+.grok-notebook-view tt,
+.grok-notebook-view code,
+.grok-notebook-view kbd,
+.grok-notebook-view samp,
+.grok-notebook-view pre {
+    font-family: var(--jp-code-font-family);
+    font-size: var(--jp-code-font-size);
+    line-height: var(--jp-code-line-height);
+}
