@@ -132,13 +132,6 @@
       ],
       "value": ""
     }, {
-      "id": "aa4a27f1-534d-444a-9992-4732ed70880c",
-      "comment": "",
-      "command": "verifyElementPresent",
-      "target": "name=span-demog",
-      "targets": [],
-      "value": ""
-    }, {
       "id": "d04b5529-a9e6-46f4-97bb-0d65c2267041",
       "comment": "",
       "command": "click",
