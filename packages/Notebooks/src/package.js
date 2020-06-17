@@ -31,11 +31,10 @@ import { SetupCommands } from './commands';
 //description: Opens Notebook
 //input: string notebookPath
 export function open(notebookPath) {
-    // TODO: Fill fro the Datagrok
     const settings = {
-        baseUrl: 'http://localhost:8889',
-        wsUrl: 'ws://localhost:8889',
-        token: '77974bcd14909e7ee29330ac3657edc1e8d4ac39de425210',
+        baseUrl: grok.settings.jupyterNotebook,
+        wsUrl: 'ws://localhost:8889', // TODO: ?
+        token: grok.settings.jupyterNotebookToken,
         appUrl: '/',
         mathjaxUrl: 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js',
         mathjaxConfig: 'TeX-AMS_CHTML-full,Safe'
