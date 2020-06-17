@@ -25,13 +25,11 @@ share with teammates) later on.
 Once a table is open, click on the icons shown on the left pane to open the corresponding 
 viewer. 
 
-## Docking
-
 Viewers are docked within a view. To rearrange it, start dragging viewer's header. Drop zone
 indicators will appear; move the mouse cursor to one of them and release the mouse button to 
 dock the viewer at that spot. To resize the viewer, drag the viewer's border.
 
-![](viewers-docking.gif)
+![](viewers-interaction-main.gif)
 
 ## Selection
 
@@ -76,14 +74,20 @@ Alternatively, click on the column's "hamburger icon" to filter by the individua
 
 ## Viewers as filters
 
-Some viewers could be used simultaneously for visualization .
+By default, clicking on a segment that represents multiple rows will select these rows. However,
+some viewers, such as [Bar Chart](viewers/bar-chart.md) and [Pie Chart](viewers/pie-chart.md), 
+could be also used for filtering of the underlying table. Such viewers are a popular choice
+for interactive dashboards.
 
-Use "row source" [property](#properties) to specify which rows should be visualized on the viewer.
-To define what happens when user click on a group of rows, use "on click" property and choose
-between "filter" and "select".
+To control that behavior, click on the viewer's hamburger icon, open "On click" and choose the
+desired mode. Internally, this sets two different [properties](#properties) of a viewer:
+* `row source` - specifies which rows should be visualized on the viewer (all | filtered | selected)
+* `on click` - specifies what happens when user click on a group of rows (select | filter).
 
-By setting up these properties, it is possible to create dashboards where one
-viewer would serve as a filter to another.   
+By setting these properties manually, it is possible to achieve different combination of 
+interactivity (for instance, a viewer that shows only selected rows)  
+
+![](viewers-as-filters.gif)
 
 ## Interaction
 
