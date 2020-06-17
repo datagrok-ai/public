@@ -3,10 +3,10 @@ class SDTMPackageDetectors extends DG.Package {
     //input: column col
     //output: string semType
     detector(col) {
-        if (col.name.toLowerCase() === 'studyid')
+        if (col.dataFrame.name === 'stdmlb' && col.name.toLowerCase() === 'studyid')
             return col.semType = 'Study';
 
-        if (col.name.toLowerCase() === 'usubjid')
+        if (col.dataFrame.name === 'stdmlb' && col.name.toLowerCase() === 'usubjid')
             return col.semType = 'Subject';
 
         return null;
