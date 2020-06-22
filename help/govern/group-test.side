@@ -527,10 +527,10 @@
       "id": "e0385891-8966-415e-a334-cf4ee479a20e",
       "comment": "",
       "command": "click",
-      "target": "xpath=//i[@name='icon-user']",
+      "target": "xpath=//i[@name='icon-icon-user']",
       "targets": [
         ["css=.grok-ribbon-profile-picture > .grok-icon", "css:finder"],
-        ["xpath=//i[@name='icon-user']", "xpath:attributes"],
+        ["xpath=//i[@name='icon-icon-user']", "xpath:attributes"],
         ["xpath=//div[@id='rootDiv']/div/div/div[10]/div/div/i", "xpath:idRelative"],
         ["xpath=//div[10]/div/div/i", "xpath:position"]
       ],
