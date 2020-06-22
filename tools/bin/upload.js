@@ -6,6 +6,12 @@ let argv = require('minimist')(process.argv.slice(2));
 let mode = argv['_'][1];
 let host = argv['_'][0];
 
+let rebuild = argv['_'].contains('rebuild');
+
+let rp = '';
+if (!rebuild)
+  rp = '--no-rebuild';
+
 if (mode !== 'debug' && mode !=='deploy') {
     console.log('Mode must be either debug or deploy');
     return;
@@ -17,7 +23,7 @@ if (process.platform === "darwin") {
     spawn('chmod', ['777', `${subfolder}dart`]);
 }
 
-const ls = spawn(`${subfolder}dart`, [`${subfolder}upload.dart`, '-p', '.', '-r', host, mode]);
+const ls = spawn(`${subfolder}dart`, [`${subfolder}upload.dart`, rp, '-p', '.', '-r', host, mode]);
 
 ls.stdout.on("data", data => {
     console.log(`${data}`);
