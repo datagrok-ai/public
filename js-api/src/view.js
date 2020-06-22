@@ -19,13 +19,15 @@ export class ViewBase {
         if (createHost)
             this.d = grok_View_CreateJsViewHost(this);
 
-        /** @type {HTMLElement} */
-        this.root = ui.div([], 'grok-view');
-        this.root.tabIndex = 0;
+        this._root = ui.div([], 'grok-view');
+        this._root.tabIndex = 0;
 
         /** @type {StreamSubscription[]} */
         this.subs = [];  // stream subscriptions - will be canceled when the viewer is detached
     }
+
+    /** @type {HTMLElement} */
+    get root() { return this._root; }
 
     /** View type
      * @type {string} */
@@ -123,7 +125,6 @@ export class View extends ViewBase {
      * @returns {View} */
     static create() { let v = new View(grok_View()); ui._class(v.root, 'grok-default-view'); return v; }
 
-    /** @type {HTMLElement} */
     get root() { return grok_View_Get_Root(this.d); }
 
     get type() { return grok_View_Get_Type(this.d); }
