@@ -6,14 +6,110 @@ import {DockNode, DockManager} from "./docking";
 import {Grid} from "./grid";
 import {Menu, ToolboxPage} from "./widgets";
 
+
+/**
+ * Subclass ViewBase to implement a Datagrok view in JavaScript.
+ * */
+export class ViewBase {
+    /** @constructs ViewBase
+     * @param {Object} params - URL parameters.
+     * @param {string} path - URL path.
+     * @param {boolean} createHost - Create JS host wrapper. */
+    constructor(params = null, path = '', createHost = true) {
+        if (createHost)
+            this.d = grok_View_CreateJsViewHost(this);
+
+        /** @type {HTMLElement} */
+        this.root = ui.div([], 'grok-view');
+        this.root.tabIndex = 0;
+
+        /** @type {StreamSubscription[]} */
+        this.subs = [];  // stream subscriptions - will be canceled when the viewer is detached
+    }
+
+    /** View type
+     * @type {string} */
+    get type() { return 'js-view-base' }
+
+    /** @returns {string|null} View help URL. */
+    get helpUrl() { return null; };
+
+    /** View name. It gets shown in the tab handle.
+     * @type {string} */
+    get name() { return ''; };
+    set name(s) {}
+
+    /** @type {string} */
+    get description() { return ''; }
+    set description(s) { }
+
+    /** View toolbox.
+     *  Sample: {@link https://public.datagrok.ai/js/samples/ui/views/toolbox}
+     * @type {HTMLElement} */
+    get toolbox() { return grok_View_Get_Toolbox(this.d); }
+    set toolbox(x) { grok_View_Set_Toolbox(this.d, x); }
+
+    /** View menu.
+     *  Sample: {@link https://public.datagrok.ai/js/samples/ui/views/ribbon}
+     *  @type {Menu} */
+    get ribbonMenu() { return new Menu(grok_View_Get_RibbonMenu(this.d)); }
+    set ribbonMenu(menu) { grok_View_Set_RibbonMenu(this.d, menu.d); }
+
+    /** Sets custom view panels on the ribbon.
+     *  Sample: {@link https://public.datagrok.ai/js/samples/ui/views/ribbon} */
+    setRibbonPanels(panels) { grok_View_SetRibbonPanels(this.d, panels); }
+
+    /** @returns {HTMLElement} View icon. */
+    getIcon() { return null; }
+
+    /** @returns {Object} Viewer state map. */
+    saveStateMap() { return null; }
+
+    /** Load view state map.
+     * @param {Object} stateMap - State map. */
+    loadStateMap(stateMap) { }
+
+    /** View URI, relative to the platform root. See also {@link basePath}
+     * @type {string} */
+    get path() { return ''; }
+    set path(s) {}
+
+    /** Handles URL path.
+     * @param  {string} path - URL path. */
+    handlePath(path) { }
+
+    /** Checks if URL path is acceptable.
+     * @returns {boolean} "true" if path is acceptable, "false" otherwise.
+     * @param {string} path - URL path. */
+    acceptsPath(path) { return false; }
+
+    /** Appends an item to this view. Use {@link appendAll} for appending multiple elements.
+     * @param {HTMLElement | Widget} item */
+    append(item) { return this.appendAll([item]); }
+
+    /** Appends multiple elements this view. Use {@link appendAll} for appending multiple elements.
+     * @param {object[]} items */
+    appendAll(items) { return ui.appendAll(this.root, items.map(ui.render)); }
+
+    /** Detach this view. */
+    detach() { this.subs.forEach((sub) => sub.unsubscribe()); }
+
+    /** Closes this view. */
+    close() { this.detach(); }
+}
+
+
 /**
  * A view is typically docked in the main document area of the Grok platform.
  * See [TableView], [SketchView], etc
  */
-export class View {
+export class View extends ViewBase {
 
     /** @constructs View */
-    constructor(d) { this.d = d; }
+    constructor(d) {
+        super(null, '', false);
+        this.d = d;
+    }
 
     static fromDart(d) {
         let type = grok_View_Get_Type(d);
@@ -30,52 +126,21 @@ export class View {
     /** @type {HTMLElement} */
     get root() { return grok_View_Get_Root(this.d); }
 
-    /** Appends an item to this view. Use {@link appendAll} for appending multiple elements.
-      * @param {HTMLElement | Widget} item */
-    append(item) { return this.appendAll([item]); }
-
-    /** Appends multiple elements this view. Use {@link appendAll} for appending multiple elements.
-     * @param {object[]} items */
-    appendAll(items) { return ui.appendAll(this.root, items.map(ui.render)); }
-
-    /** View type
-     * @type {string} */
     get type() { return grok_View_Get_Type(this.d); }
 
-    /** View name. It gets shown in the tab handle.
-     * @type {string} */
     get name() { return grok_View_Get_Name(this.d); }
-    set name(s) { return grok_View_Set_Name(this.d, s); }
+    set name(s) { grok_View_Set_Name(this.d, s); }
 
-    /** View URI, relative to the platform root. See also {@link basePath}
-     * @type {string} */
     get path() { return grok_View_Get_Path(this.d); }
-    set path(s) { return grok_View_Set_Path(this.d, s); }
+    set path(s) { grok_View_Set_Path(this.d, s); }
 
     /** View type URI. Note that {@path} is specific to the instance of the view.
      *  @type {string} */
     get basePath() { return grok_View_Get_BasePath(this.d); }
-    set basePath(s) { return grok_View_Set_BasePath(this.d, s); }
+    set basePath(s) { grok_View_Set_BasePath(this.d, s); }
 
-    /** @type {string} */
     get description() { return grok_View_Get_Description(this.d); }
-    set description(s) { return grok_View_Set_Description(this.d, s); }
-
-    /** Associated table, if it exists (for TableView), or null.
-     *  @type {DataFrame} */
-    get table() { return new DataFrame(grok_View_Get_Table(this.d)); }
-
-    /** View toolbox.
-     *  Sample: {@link https://public.datagrok.ai/js/samples/ui/views/toolbox}
-     * @type {HTMLElement} */
-    get toolbox() { return grok_View_Get_Toolbox(this.d); }
-    set toolbox(x) { return grok_View_Set_Toolbox(this.d, x); }
-
-    /** View menu
-     *  Sample: {@link https://public.datagrok.ai/js/samples/ui/views/ribbon}
-     *  @type {Menu} */
-    get ribbonMenu() { return new Menu(grok_View_Get_RibbonMenu(this.d)); }
-    set ribbonMenu(menu) { grok_View_Set_RibbonMenu(this.d, menu.d); }
+    set description(s) { grok_View_Set_Description(this.d, s); }
 
     /** Loads previously saved view layout. Only applicable to certain views, such as TableView.
      *  See also {@link saveLayout}
@@ -87,9 +152,35 @@ export class View {
      *  @returns {ViewLayout} */
     saveLayout() { return new ViewLayout(grok_View_Save_Layout(this.d)); }
 
-    /** Sets custom view panels on the ribbon
-     *  Sample: {@link https://public.datagrok.ai/js/samples/ui/views/ribbon}*/
-    setRibbonPanels(panels) { grok_View_SetRibbonPanels(this.d, panels); }
+    close() { grok_View_Close(this.d); }
+}
+
+
+/**
+ * A {@link View} that is associated with a {@link DataFrame} and exposes
+ * exploratory data analysis functionality. This view gets opened whenever
+ * a new table is added to the workspace when a user drag-and-drops a CSV file,
+ * or opens a table in any other way.
+ * @extends View
+ */
+export class TableView extends View {
+    /** @constructs TableView */
+    constructor(d) { super(d); }
+
+    /** Associated table, if it exists (for TableView), or null.
+     *  @type {DataFrame} */
+    get table() { return new DataFrame(grok_View_Get_Table(this.d)); }
+
+    /** @type {Grid} */
+    get grid() { return new Grid(grok_View_Get_Grid(this.d)); }
+
+    /** @type {DataFrame} */
+    get dataFrame() { return new DataFrame(grok_View_Get_DataFrame(this.d)); }
+    set dataFrame(x) { grok_View_Set_DataFrame(this.d, x.d); }
+
+    /** View toolbox that gets shown on the left, in the sidebar
+     *  @type {ToolboxPage} */
+    get toolboxPage() { return new ToolboxPage(grok_View_Get_ToolboxPage(this.d)); }
 
     /** Adds a viewer of the specified type.
      * @param {string} viewerType
@@ -111,32 +202,6 @@ export class View {
     /** View's dock manager. Only defined for DockView descendants such as {@link TableView}, UsersView, etc.
      * @type {DockManager} */
     get dockManager() { return new DockManager(grok_View_Get_DockManager(this.d)); }
-
-    /** Closes this view. */
-    close() { grok_View_Close(this.d); }
-}
-
-/**
- * A {@link View} that is associated with a {@link DataFrame} and exposes
- * exploratory data analysis functionality. This view gets opened whenever
- * a new table is added to the workspace when a user drag-and-drops a CSV file,
- * or opens a table in any other way.
- * @extends View
- */
-export class TableView extends View {
-    /** @constructs TableView */
-    constructor(d) { super(d); }
-
-    /** @type {Grid} */
-    get grid() { return new Grid(grok_View_Get_Grid(this.d)); }
-
-    /** @type {DataFrame} */
-    get dataFrame() { return new DataFrame(grok_View_Get_DataFrame(this.d)); }
-    set dataFrame(x) { grok_View_Set_DataFrame(this.d, x.d); }
-
-    /** View toolbox that gets shown on the left, in the sidebar
-     *  @type {ToolboxPage} */
-    get toolboxPage() { return new ToolboxPage(grok_View_Get_ToolboxPage(this.d)); }
 
     /** Adds a {@link https://datagrok.ai/help/visualize/viewers/histogram | histogram}.
      *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/histogram}
