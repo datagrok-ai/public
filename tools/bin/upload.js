@@ -6,7 +6,7 @@ let argv = require('minimist')(process.argv.slice(2));
 let mode = argv['_'][1];
 let host = argv['_'][0];
 
-let rebuild = argv['_'].contains('rebuild');
+let rebuild = argv['_'].includes('rebuild');
 
 let rp = '';
 if (!rebuild)

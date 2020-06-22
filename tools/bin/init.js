@@ -57,6 +57,10 @@ function createDirectoryContents (answers, templateDir, packageDir) {
             contents = contents.replace(/#{PACKAGE_NAME_LOWERCASE}/g, answers['package-name'].toLowerCase())
             contents = contents.replace(/#{REMOTE_URL}/g, answers['remote-server'])
             contents = contents.replace(/#{REMOTE_KEY}/g, answers['dev-key'])
+            if (file === 'npmignore')
+                file = '.npmignore';
+            if (file === 'gitignore')
+                file = '.gitignore';
             fs.writeFileSync(`${packageDir}/${file}`, contents, 'utf8');
         } else if (stats.isDirectory()) {
             fs.mkdirSync(`${packageDir}/${file}`);
