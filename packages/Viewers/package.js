@@ -1,7 +1,7 @@
 class ViewersPackage extends DG.Package {
 
     //name: Sankey
-    //description: creates a sankey viewer
+    //description: Creates a sankey viewer
     //tags: viewer
     //output: viewer result
     sankeyViewer() {
@@ -9,7 +9,7 @@ class ViewersPackage extends DG.Package {
     }
 
     //name: Sunburst
-    //description: creates a sunburst viewer
+    //description: Creates a sunburst viewer
     //tags: viewer
     //output: viewer result
     sunburstViewer() {
@@ -17,7 +17,7 @@ class ViewersPackage extends DG.Package {
     }
 
     //name: Globe
-    //description: creates a globe viewer
+    //description: Creates a globe viewer
     //tags: viewer
     //output: viewer result
     globeViewer() {

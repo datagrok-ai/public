@@ -22,7 +22,7 @@ import {Balloon} from "./widgets";
  **/
 export class Viewer {
 
-    /** @constructs Viewer*/
+    /** @constructs Viewer */
     constructor(d) { this.d = d; }
 
     /** Creates a new viewer of the specified type.
@@ -88,6 +88,7 @@ export class JsViewer {
 
     /** @constructs JsViewer */
     constructor() {
+        /** @type {HTMLElement} */
         this.root = ui.div();
 
         /** @type {Property[]}*/

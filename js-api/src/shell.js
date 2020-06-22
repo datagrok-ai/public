@@ -140,11 +140,17 @@ export class Shell {
     /** Closes everything (views, tables, projects) and returns the platform to the initial state. */
     closeAll() { grok_CloseAll(); }
 
+    /** Registers a view.
+     * @param {string} viewTypeName
+     * @param {Function} createView - a function that returns {@link ViewBase}
+     * @param {string} viewUrlPath */
+    registerView(viewTypeName, createView, viewUrlPath = '') { grok_RegisterView(viewTypeName, createView, viewUrlPath); }
+
     /** Registers a viewer.
      * Sample: {@link https://public.datagrok.ai/js/samples/scripts/functions/custom-viewers}
      * @param {string} viewerTypeName
      * @param {string} description
-     * @param {Function} createViewer - a function that returns {@link Viewer} */
+     * @param {Function} createViewer - a function that returns {@link JsViewer} */
     registerViewer(viewerTypeName, description, createViewer) { grok_RegisterViewer(viewerTypeName, description, createViewer); }
 
     /** Returns table by its name. Search is case-insensitive.
