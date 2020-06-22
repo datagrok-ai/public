@@ -37,7 +37,7 @@ class NotebookView extends DG.ViewBase {
         // TODO:
         this.notebookId = 'test';//path;
 
-        this.init();
+        this.init().then();
     }
 
     get type() { return this.TYPE };
