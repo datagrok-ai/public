@@ -5,12 +5,6 @@
     "server": "$GROK_DB_SERVE",
     "db": "clin"
   },
-  "credentials" : {
-    "parameters" : {
-      "login": "",
-      "password": ""
-    }
-  },
   "dataSource": "PostgreSQL",
   "description": "clin",
   "tags": ["sdtm", "clin"]
