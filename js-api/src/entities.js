@@ -6,7 +6,6 @@ import {TYPE} from "./const";
 /** @class
  * Base class for system objects stored in the database in a structured manner.
  * Contains base properties: id, name and path
- *
  * */
 export class Entity {
     /** @constructs Entity*/
@@ -59,14 +58,13 @@ export class User extends Entity {
      *  @type {string} */
     get login() { return grok_User_Get_Login(this.d); }
 
-    /**
-     *  */
+    /** */
     toMarkup() { return grok_User_ToMarkup(this.d); }
 }
 
 /** Represents a function
  * @extends Entity
- * {@link https://datagrok.ai/help/overview/functions/function*}
+ * {@link https://datagrok.ai/help/overview/functions/function}
  * */
 export class Func extends Entity {
     /** @constructs Func*/
@@ -97,7 +95,7 @@ export class Project extends Entity {
 
 /** Represents a data query
  * @extends Func
- * {@link https://datagrok.ai/help/access/data-query*}
+ * {@link https://datagrok.ai/help/access/data-query}
  * */
 export class DataQuery extends Func {
     /** @constructs DataQuery*/
@@ -110,17 +108,19 @@ export class DataQuery extends Func {
 
 /** Represents a data job
  * @extends Func
- * {@link https://datagrok.ai/help/access/data-job}*/
+ * {@link https://datagrok.ai/help/access/data-job}
+ * */
 export class DataJob extends Func {
-    /** @constructs DataJob*/
+    /** @constructs DataJob */
     constructor(d) { super(d); }
 }
 
 /** Represents a data connection
  * @extends Entity
- * {@link https://datagrok.ai/help/access/data-connection}*/
+ * {@link https://datagrok.ai/help/access/data-connection}
+ * */
 export class DataConnection extends Entity {
-    /** @constructs DataConnection*/
+    /** @constructs DataConnection */
     constructor(d) { super(d); }
 
     /** Collection of parameters: server, database, endpoint, etc.
@@ -130,45 +130,53 @@ export class DataConnection extends Entity {
 
 /** Represents a predictive model
  * @extends Entity
- * {@link https://datagrok.ai/help/learn/predictive-modeling-info*}
+ * {@link https://datagrok.ai/help/learn/predictive-modeling-info}
  * */
 export class Model extends Entity {
-    /** @constructs Model*/
+    /** @constructs Model */
     constructor(d) { super(d); }
 }
 
 /** @extends Entity
- * Represents a Jupyter notebook */
+ * Represents a Jupyter notebook
+ * {@link https://datagrok.ai/help/compute/jupyter-notebook}
+ * */
 export class Notebook extends Entity {
-    /** @constructs Notebook*/
+    /** @constructs Notebook */
     constructor(d) { super(d); }
+
+    // TODO:
 }
 
 /** @extends Entity
- * Represents a Table metadata */
+ * Represents a Table metadata
+ * */
 export class TableInfo extends Entity {
-    /** @constructs TableInfo*/
+    /** @constructs TableInfo */
     constructor(d) { super(d); }
 }
 
 /** @extends Entity
- * Represents a User Group */
+ * Represents a User Group
+ * */
 export class Group extends Entity {
-    /** @constructs Group*/
+    /** @constructs Group */
     constructor(d) { super(d); }
 }
 
 /** @extends Func
- * Represents a Script */
+ * Represents a Script
+ * */
 export class Script extends Func {
-    /** @constructs Script*/
+    /** @constructs Script */
     constructor(d) { super(d); }
 }
 
 /** Represents connection credentials
  *  Usually it is a login and a password pair
  *  Passwords are stored in the secured credentials storage
- *  See also: {@link https://datagrok.ai/help/govern/security}*/
+ *  See also: {@link https://datagrok.ai/help/govern/security}
+ *  */
 export class Credentials extends Entity {
     constructor(d) { super(d); }
 
@@ -176,7 +184,6 @@ export class Credentials extends Entity {
      *  @type {object} */
     get parameters() { return grok_Credentials_Parameters([this.d]); }
 }
-
 
 /**
  * Represents a package, which is a unit of distribution of content in the Datagrok platform.
@@ -186,18 +193,18 @@ export class Package {
         this.webRoot = webRoot;
     }
 
-    // Override init() method to provide package-specific initialization.
-    // It is guaranteed to get called exactly once before the execution of any function below.
+    /** Override init() method to provide package-specific initialization.
+     * It is guaranteed to get called exactly once before the execution of any function below.
+     * */
     /*async*/ init() { return Promise.resolve(null); }
 }
-
 
 /**
  * Override this class, and {@link register} an instance to integrate the platform with custom
  * types and objects.
  *
  * Samples: {@link https://public.datagrok.ai/js/samples/ui/meta/meta}
- */
+ * */
 export class JsEntityMeta {
 
     /** Type of the object that this meta handles. */

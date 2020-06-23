@@ -19,13 +19,20 @@ import { CommandRegistry } from '@lumino/commands';
 import { Widget} from '@lumino/widgets';
 import { ServiceManager, ServerConnection } from '@jupyterlab/services';
 import { MathJaxTypesetter } from '@jupyterlab/mathjax2';
-import { NotebookPanel, NotebookWidgetFactory, NotebookModelFactory, NotebookActions} from '@jupyterlab/notebook';
+import {
+    NotebookPanel,
+    NotebookWidgetFactory,
+    NotebookModelFactory,
+    NotebookActions,
+    CellTypeSwitcher
+} from '@jupyterlab/notebook';
 import { CompleterModel, Completer, CompletionHandler, KernelConnector } from '@jupyterlab/completer';
 import { editorServices } from '@jupyterlab/codemirror';
 import { DocumentManager } from '@jupyterlab/docmanager';
 import { DocumentRegistry } from '@jupyterlab/docregistry';
 import { RenderMimeRegistry, standardRendererFactories as initialFactories } from '@jupyterlab/rendermime';
 import { SetupCommands } from './commands';
+import {sessionContextDialogs} from "@jupyterlab/apputils";
 
 
 class NotebookView extends DG.ViewBase {
@@ -34,8 +41,12 @@ class NotebookView extends DG.ViewBase {
         this.TYPE = 'Notebook';
         this.PATH = '/notebook';
 
-        // TODO:
-        this.notebookId = 'test';//path;
+        this.notebookId = ('id' in params) ? params['id']
+            : ((path !== null && path !== undefined) ? path
+            : null);
+
+        if ('file' in params)
+            this.notebookFile = params['file'];
 
         this.init().then();
     }
@@ -58,14 +69,13 @@ class NotebookView extends DG.ViewBase {
 
     handlePath(path) {
         let id = path.replace(`${this.PATH}/`, '');
-        //notebook = new Notebook()..id = id;
         open(id);
     }
 
     acceptsPath(path) { return path.startsWith(this.PATH); }
 
     async init() {
-        let notebookPath = `${this.notebookId}.ipynb`;
+        let notebookPath = this.notebookFile;
         const manager = new ServiceManager({serverSettings: NotebookView.getSettings()});
         await manager.ready;
 
@@ -133,12 +143,34 @@ class NotebookView extends DG.ViewBase {
         Widget.attach(nbWidget, this.root);
         Widget.attach(completer, this.root);
 
+        // TODO: As html
+        let openAsHtml = ui.bigButton('HTML', () => {}, 'Open as HTML', true);
+        openAsHtml.style.backgroundColor = 'var(--green-2)';
+
+        // TODO: Envs
+        let environmentInput = ui.choiceInput('Environment:', 'default', ['default', 'python3']);
+
         this.setRibbonPanels([
             [
-                ui.iconFA('save', () => nbWidget.context.save(), 'Save notebook'),
-                ui.iconFA('plus', () => NotebookActions.insertBelow(nbWidget.content), 'Insert a cell before')
+                openAsHtml
             ],
-            nbWidget.toolbar.layout.widgets.map(w => w.node)
+            [
+                ui.iconFA('save', () => nbWidget.context.save(), 'Save notebook'),
+                ui.iconFA('plus', () => NotebookActions.insertBelow(nbWidget.content), 'Insert a cell before'),
+                ui.iconFA('cut', () => NotebookActions.cut(nbWidget.content), 'Cut cell'),
+                ui.iconFA('copy', () => NotebookActions.copy(nbWidget.content), 'Copy cell'),
+                ui.iconFA('paste', () => NotebookActions.copy(nbWidget.content), 'Paste cell'),
+                ui.iconFA('play', () => NotebookActions.runAndAdvance(nbWidget.content, nbWidget.context.sessionContext), 'Run cell'),
+                ui.iconFA('stop', () => nbWidget.context.sessionContext.session.kernel.interrupt(), 'Interrupt Kernel'),
+                ui.iconFA('redo', () => sessionContextDialogs.restart(nbWidget.context.sessionContext), 'Restart Kernel'),
+                ui.iconFA('forward', () => sessionContextDialogs.restart(nbWidget.context.sessionContext)
+                    .then(restarted => { if (restarted) NotebookActions.runAll(nbWidget.content, nbWidget.context.sessionContext); }),
+                    'Restart Kernel and run all cells'),
+                new CellTypeSwitcher(nbWidget.content).node,
+            ],
+            [
+                environmentInput.root
+            ]
         ]);
         nbWidget.toolbar.hide();
 

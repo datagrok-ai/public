@@ -108,6 +108,74 @@ e.innerText = 'This element has been created in JavaScript';
 grok.shell.dockElement(e, 'JS', 'left', 0.5);
 ```
 
+## Custom views
+
+Extend [ViewBase](/js-api/ViewBase.html) class to develop viewes that become first-class citizens in 
+the Grok platform. Once a view is registered, you can do the following:
+
+* Open and pass parameters to View from URL 
+* Persist view as part of the project
+* Add View to navigation bar
+* Link View with entities (custom or default ones)
+
+The following part of code defines a new view for Jupyter Notebooks. 
+In package defined function "notebookView" that allocates instance of "NotebookView". 
+Function convention to register view:
+    - header should contain tag: "view"
+    - two inputs "params" and "path" to pass URL parameters an path
+    - output with type "view".
+    
+    
+```javascript
+class NotebookView extends DG.ViewBase {
+    constructor(params, path) {
+        super(params, path);
+        this.TYPE = 'Notebook';
+        this.PATH = '/notebook';
+    }
+    
+    // Override basic metods
+    get type() { return this.TYPE };
+    get helpUrl() { return '/help/compute/jupyter-notebook.md'; }
+    get name() { return 'Notebook' };
+    get path() { return `${this.PATH}/${this.notebookId}` };
+    
+    // Icon
+    getIcon() {
+        let img = document.createElement('img');
+        img.src = '/images/entities/jupyter.png';
+        img.height = 18;
+        img.width = 18;
+        return img;
+    };
+
+    // View state serialization/deserialization
+    saveStateMap() { return {'notebookId': this.notebookId }; }
+    loadStateMap(stateMap) { open(stateMap['notebookId']); }
+    
+    // URL path handler
+    handlePath(path) {
+        let id = path.replace(`${this.PATH}/`, '');
+        open(id);
+    }
+    
+    // URL path checker
+    acceptsPath(path) { return path.startsWith(this.PATH); }
+}
+
+
+//name: Notebook
+//description: Creates a Notebook View
+//input: map params =
+//input: string path =
+//tags: view
+//output: view result
+export function notebookView(params = null, path = '') {
+    return new NotebookView(params, path);
+}
+```
+
+
 ## Pre-defined viewers
 
 [Viewers](../visualize/viewers.md) are very important components of the Datagrok platform. Grok API 

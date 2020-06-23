@@ -75,7 +75,7 @@ export function divText(text) {
  * @param {string} name - icon name (omit the "fa-" prefix)
  * @param {Function} handler
  * @param {String} tooltipMsg
- * @returns */
+ * @returns {HTMLElement} */
 export function iconFA(name, handler, tooltipMsg = null) {
     let i = element('i');
     i.classList.add('grok-icon');
