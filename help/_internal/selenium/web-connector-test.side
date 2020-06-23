@@ -127,15 +127,22 @@
       ],
       "value": ""
     }, {
+      "id": "25ba673d-bc98-4b4d-bb05-3e9ff5da618a",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "af54d518-3121-4bf4-89e6-7b959cce529a",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='tree-expander-Web---OpenWeatherMap']",
+      "target": "xpath=//div[@name='tree-expander-Web---Covid-19-current-cases']",
       "targets": [
-        ["css=.d4-tree-view-group:nth-child(34) .d4-tree-view-group:nth-child(27) .d4-tree-view-tri", "css:finder"],
-        ["xpath=//div[@name='tree-expander-Web---OpenWeatherMap']", "xpath:attributes"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div[34]/div[2]/div[27]/div/div", "xpath:idRelative"],
-        ["xpath=//div[34]/div[2]/div[27]/div/div", "xpath:position"]
+        ["css=.d4-tree-view-group:nth-child(9) > .d4-tree-view-node > .d4-tree-view-tri-expanded", "css:finder"],
+        ["xpath=//div[@name='tree-expander-Web---Covid-19-current-cases']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div[2]/div[35]/div[2]/div[9]/div/div", "xpath:idRelative"],
+        ["xpath=//div[35]/div[2]/div[9]/div/div", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -148,88 +155,13 @@
     }, {
       "id": "4f29be4a-9ff4-4eb1-b643-3429db8fff1c",
       "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@name='tree-Web---OpenWeatherMap---5-day/3-hour-Forecast-By-City-Name']",
+      "command": "doubleClick",
+      "target": "xpath=//div[@name='tree-Web---Covid-19-current-cases---Cases-By-Countries']",
       "targets": [
-        ["css=.d4-tree-view-group:nth-child(27) .d4-tree-view-group:nth-child(1) > .d4-tree-view-node", "css:finder"],
-        ["xpath=//div[@name='tree-Web---OpenWeatherMap---5-day/3-hour-Forecast-By-City-Name']", "xpath:attributes"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div[34]/div[2]/div[27]/div[2]/div/div", "xpath:idRelative"],
-        ["xpath=//div[27]/div[2]/div/div", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "801dc41c-d8b4-4a28-b398-5a9843e9f186",
-      "comment": "",
-      "command": "pause",
-      "target": "500",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "8698f67f-e2a1-4c7b-a2b0-d2b4c5b81c50",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@name='div-section--Run']",
-      "targets": [
-        ["css=.d4-accordion-pane:nth-child(3) > .d4-accordion-pane-header", "css:finder"],
-        ["xpath=//div[@name='div-section--Run']", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div", "xpath:idRelative"],
-        ["xpath=//div[3]/div/div[2]/div/div/div/div/div[3]/div", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "4de47850-0270-4dbc-b12b-333ef42ab72d",
-      "comment": "",
-      "command": "pause",
-      "target": "500",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "cae65216-799c-4ef5-b875-8ceae03c5063",
-      "comment": "",
-      "command": "verifyElementPresent",
-      "target": "name=input-Q",
-      "targets": [
-        ["id=editor", "id"],
-        ["name=input-Q", "name"],
-        ["css=#editor", "css:finder"],
-        ["xpath=//input[@id='editor']", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div[2]/div/div/input", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/input", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "ad85723e-5ff9-42dd-acc5-17b6f9fe5bd9",
-      "comment": "",
-      "command": "pause",
-      "target": "500",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "89548ea8-3b2a-4442-9f8c-99186ac9c9ed",
-      "comment": "",
-      "command": "type",
-      "target": "name=input-Q",
-      "targets": [],
-      "value": "Kyiv, UA"
-    }, {
-      "id": "a6747324-1c1f-4ecd-bb12-ca870dce8e1e",
-      "comment": "",
-      "command": "pause",
-      "target": "1000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "5b279d72-1da7-48da-a458-d28a2a085c0f",
-      "comment": "",
-      "command": "click",
-      "target": "name=button-btn-RUN",
-      "targets": [
-        ["name=button-btn-RUN", "name"],
-        ["css=.btn", "css:finder"],
-        ["xpath=//button[@name='button-btn-RUN']", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div[2]/div/button", "xpath:idRelative"],
-        ["xpath=//button", "xpath:position"],
-        ["xpath=//button[contains(.,'RUN')]", "xpath:innerText"]
+        ["css=.d4-tree-view-group:nth-child(9) .d4-tree-view-group:nth-child(2) > .d4-tree-view-node", "css:finder"],
+        ["xpath=//div[@name='tree-Web---Covid-19-current-cases---Cases-By-Countries']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div[2]/div[35]/div[2]/div[9]/div[2]/div[2]/div", "xpath:idRelative"],
+        ["xpath=//div[9]/div[2]/div[2]/div", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -279,9 +211,9 @@
       "id": "f47b7bb7-9f69-4ced-a469-3a63e5ae00f4",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span-5-day/3-hour-Forecast-By-City-Name",
+      "target": "name=span-Cases-By-Countries",
       "targets": [],
-      "value": "5 day/3 hour Forecast By City Name"
+      "value": ""
     }, {
       "id": "ae315172-0a51-4895-9635-d328f97c0060",
       "comment": "",

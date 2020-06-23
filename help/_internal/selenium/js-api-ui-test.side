@@ -318,7 +318,7 @@
         ["css=.d4-dialog-header", "css:finder"],
         ["xpath=//body/div[12]/div", "xpath:position"]
       ],
-      "value": "Vogon Announcement"
+      "value": "Windows"
     }, {
       "id": "d9c3cdbf-1fb9-4f01-b909-6d1ee48bb7e1",
       "comment": "",
@@ -633,7 +633,7 @@
       "id": "d45bcdc2-5632-458a-b27a-834a58d602d5",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "4000",
       "targets": [],
       "value": ""
     }, {

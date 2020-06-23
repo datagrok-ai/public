@@ -233,8 +233,8 @@
       "command": "click",
       "target": "xpath=(//i[@name='icon-times'])[3]",
       "targets": [
-        ["css=.fa-times:nth-child(4)", "css:finder"],
-        ["xpath=(//i[@name='icon-times'])[3]", "xpath:attributes"],
+        ["css=.fa-times:nth-child(5)", "css:finder"],
+        ["xpath=(//i[@name='icon-times'])[4]", "xpath:attributes"],
         ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/i", "xpath:idRelative"],
         ["xpath=//div[3]/div[2]/div/div/div/div/div/div/i", "xpath:position"]
       ],
@@ -316,8 +316,8 @@
       "command": "click",
       "target": "xpath=(//i[@name='icon-times'])[6]",
       "targets": [
-        ["css=.fa-times:nth-child(4)", "css:finder"],
-        ["xpath=(//i[@name='icon-times'])[6]", "xpath:attributes"],
+        ["css=.fa-times:nth-child(5)", "css:finder"],
+        ["xpath=(//i[@name='icon-times'])[7]", "xpath:attributes"],
         ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/i", "xpath:idRelative"],
         ["xpath=//div[3]/div[2]/div/div/div/div/div/div/i", "xpath:position"]
       ],
@@ -1410,18 +1410,6 @@
         ["xpath=//div[@id='elementContent']/div/table/tbody/tr[11]/td[2]/span", "xpath:idRelative"],
         ["xpath=//tr[11]/td[2]/span", "xpath:position"],
         ["xpath=//span[contains(.,'-1.20')]", "xpath:innerText"]
-      ],
-      "value": ""
-    }, {
-      "id": "fcf8a190-ec3c-4c8c-ad75-114741f5ce41",
-      "comment": "",
-      "command": "verifyElementPresent",
-      "target": "xpath=//span[contains(.,'833.17')]",
-      "targets": [
-        ["css=.d4-table:nth-child(2) tr:nth-child(9) > td:nth-child(2) > span", "css:finder"],
-        ["xpath=//div[@id='elementContent']/div/table[2]/tbody/tr[9]/td[2]/span", "xpath:idRelative"],
-        ["xpath=//table[2]/tbody/tr[9]/td[2]/span", "xpath:position"],
-        ["xpath=//span[contains(.,'833.17')]", "xpath:innerText"]
       ],
       "value": ""
     }, {

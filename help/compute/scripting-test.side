@@ -362,19 +362,18 @@
       "id": "5d912f53-dfc8-43cd-ab3c-adeacad5b833",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {
       "id": "bf3dcb5f-0bbf-469c-8d59-ce9fb5217660",
       "comment": "",
       "command": "doubleClick",
-      "target": "xpath=//div[@name='tree-ARIMA-Forecasting']",
+      "target": "name=tree-ACF",
       "targets": [
-        ["css=.d4-tree-view-item:nth-child(3)", "css:finder"],
-        ["xpath=//div[@name='tree-ARIMA-Forecasting']", "xpath:attributes"],
-        ["xpath=//div[@id='grok-viewers-toolbox']/div/div[3]/div[2]/div/div[2]/div[3]", "xpath:idRelative"],
-        ["xpath=//div[3]/div[2]/div/div[2]/div[3]", "xpath:position"]
+        ["css=.d4-tree-view-item:nth-child(2) > .d4-tree-view-item-label", "css:finder"],
+        ["xpath=//div[@id='grok-viewers-toolbox']/div/div[3]/div[2]/div/div[2]/div[2]/div", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div[2]/div[2]/div", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -451,6 +450,70 @@
       ],
       "value": ""
     }, {
+      "id": "43946db3-cff2-4b17-ae96-610c704a5a35",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "570236cb-a00f-4eea-b908-2164eb3d7329",
+      "comment": "",
+      "command": "click",
+      "target": "name=button-ACF---Columns",
+      "targets": [
+        ["name=button-ACF---Columns", "name"],
+        ["css=.d4-input-columns > button", "css:finder"],
+        ["xpath=//button[@name='button-ACF---Columns']", "xpath:attributes"],
+        ["xpath=//div[2]/div[2]/div/button", "xpath:position"],
+        ["xpath=//button[contains(.,'...')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "82542c93-0b99-47f0-9ab5-5ffa725399c6",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "70f730b2-247b-4760-88e3-d84b56fbffc7",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//label[@name='label-All']",
+      "targets": [
+        ["css=div > .d4-link-label:nth-child(1)", "css:finder"],
+        ["xpath=//label[@name='label-All']", "xpath:attributes"],
+        ["xpath=//div[8]/div[2]/div/div/label", "xpath:position"],
+        ["xpath=//label[contains(.,'All')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "3c958890-a9b6-4c70-aa49-b571a31a2aae",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "c99d0c97-8a56-4840-afc4-af7269d1ba43",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=(//button[@name='button-OK'])[2]",
+      "targets": [
+        ["css=.d4-dialog:nth-child(10) .enabled", "css:finder"],
+        ["xpath=(//button[@name='button-OK'])[2]", "xpath:attributes"],
+        ["xpath=//div[9]/div[3]/div/button", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "f96dcf1b-dabb-448b-80f8-4c41f290609f",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "c23ae45a-5c7e-4208-89eb-4e48a8422de9",
       "comment": "",
       "command": "click",
@@ -516,8 +579,13 @@
       "id": "bc6bf3c8-dfb5-4db3-ba70-bad578741fbc",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//pre[contains(.,'RScripts:ARIMAForecasting(\"TSLA\", \"Date\", \"Close\", 4, 3, 3, 25)')]",
-      "targets": [],
+      "target": "xpath=//pre[contains(.,'RScripts:ACF(\"TSLA\", [\"Date\", \"Open\", \"High\", \"Low\", \"Close\", \"Volume\", \"Adjusted\"])')]",
+      "targets": [
+        ["css=.d4-console-info:nth-child(8) > pre:nth-child(2)", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div/div[2]/div[8]/pre[2]", "xpath:idRelative"],
+        ["xpath=//div[8]/pre[2]", "xpath:position"],
+        ["xpath=//pre[contains(.,'RScripts:ACF(\"TSLA\", [\"Date\", \"Open\", \"High\", \"Low\", \"Close\", \"Volume\", \"Adjusted\"])')]", "xpath:innerText"]
+      ],
       "value": ""
     }, {
       "id": "49d20360-baad-42b8-9cd3-14abcdf47e8c",

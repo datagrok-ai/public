@@ -10,7 +10,7 @@
       "id": "8ff604b9-81db-4083-8663-4b119b7492f9",
       "comment": "",
       "command": "open",
-      "target": "/datasets?selenium=true&q=",
+      "target": "/?selenium=true&q=",
       "targets": [],
       "value": ""
     }, {
@@ -58,108 +58,11 @@
       "id": "ab8f2726-12a0-40e3-ac90-4730f3344006",
       "comment": "",
       "command": "pause",
-      "target": "2000",
+      "target": "4000",
       "targets": [],
       "value": ""
     }, {
       "id": "e00f4506-4124-46ae-af8d-e27d53fa06da",
-      "comment": "",
-      "command": "verifyElementNotPresent",
-      "target": "xpath=//i[@name='icon-exclamation-circle']",
-      "targets": [
-        ["css=.fa-exclamation-circle", "css:finder"],
-        ["xpath=//i[@name='icon-exclamation-circle']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[2]/i", "xpath:idRelative"],
-        ["xpath=//div[2]/i", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "8fa33903-0db8-4031-8f78-ba1f73f13201",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=(//i[@name='icon-chevron-down'])[2]",
-      "targets": [
-        ["css=.d4-search-bar > .fa-chevron-down", "css:finder"],
-        ["xpath=(//i[@name='icon-chevron-down'])[2]", "xpath:attributes"],
-        ["xpath=//div[@id='datasets']/div/div/div[2]/i", "xpath:idRelative"],
-        ["xpath=//div[3]/div/div/div/div/div/div[2]/i", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "a570bf25-3b56-46bb-87ff-dbc7f453580c",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@name='div-Brief']",
-      "targets": [
-        ["css=.d4-menu-item-container:nth-child(5) > .d4-menu-item:nth-child(1)", "css:finder"],
-        ["xpath=//div[@name='div-Brief']", "xpath:attributes"],
-        ["xpath=//body/div[5]/div", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "9c4d015c-f912-4ff2-abbc-502478e344cb",
-      "comment": "",
-      "command": "verifyElementNotPresent",
-      "target": "xpath=//i[@name='icon-exclamation-circle']",
-      "targets": [
-        ["css=.fa-exclamation-circle", "css:finder"],
-        ["xpath=//i[@name='icon-exclamation-circle']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[2]/i", "xpath:idRelative"],
-        ["xpath=//div[2]/i", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "e20eed94-2a77-4b86-86cf-f4c7ad1900b6",
-      "comment": "",
-      "command": "pause",
-      "target": "2000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "e4d8f88d-a06d-4209-9c0a-ed2005f12159",
-      "comment": "",
-      "command": "verifyElementPresent",
-      "target": "xpath=//span[@name='span-SeleniumTestDataP1']",
-      "targets": [
-        ["css=.grok-gallery-grid > .d4-link-label:nth-child(2)", "css:finder"],
-        ["xpath=//span[@name='span-SeleniumTestDataP1']", "xpath:attributes"],
-        ["xpath=//div[@id='datasets']/div/div[4]/span[2]", "xpath:idRelative"],
-        ["xpath=//span[2]", "xpath:position"],
-        ["xpath=//span[contains(.,'Selenium test data p1')]", "xpath:innerText"]
-      ],
-      "value": ""
-    }, {
-      "id": "29c16bac-e251-4434-91cf-4a04ab21fa1c",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=(//i[@name='icon-chevron-down'])[2]",
-      "targets": [
-        ["css=.d4-search-bar > .fa-chevron-down", "css:finder"],
-        ["xpath=(//i[@name='icon-chevron-down'])[2]", "xpath:attributes"],
-        ["xpath=//div[@id='datasets']/div/div/div[2]/i", "xpath:idRelative"],
-        ["xpath=//div[3]/div/div/div/div/div/div[2]/i", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "01e1a920-bc1d-4653-aff1-614c04a3bf91",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@name='div-Grid']",
-      "targets": [
-        ["css=.d4-menu-item-container:nth-child(7) > .d4-menu-item:nth-child(3)", "css:finder"],
-        ["xpath=//div[@name='div-Grid']", "xpath:attributes"],
-        ["xpath=//body/div[7]/div[3]", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "cf549726-3a2d-4937-b53f-689eab278d37",
-      "comment": "",
-      "command": "pause",
-      "target": "2000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "f35e847b-d700-4506-89f2-35cec7f80a3f",
       "comment": "",
       "command": "verifyElementNotPresent",
       "target": "xpath=//i[@name='icon-exclamation-circle']",
