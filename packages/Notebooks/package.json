@@ -46,7 +46,7 @@
     "build": "webpack",
     "clean": "rimraf build",
     "prepublishOnly": "npm run build",
-    "upload-debug": "datagrok-upload http://localhost:8082 debug",
-    "upload-deploy": "datagrok-upload http://localhost:8082 deploy"
+    "upload-debug": "datagrok-upload http://localhost:8082 debug rebuild",
+    "upload-deploy": "datagrok-upload http://localhost:8082 deploy rebuild"
   }
 }

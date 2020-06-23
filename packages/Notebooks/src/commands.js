@@ -46,6 +46,7 @@ export const SetupCommands = (commands, nbWidget, handler) => {
   commands.addCommand(cmdIds.switchKernel, { label: 'Switch Kernel', execute: () => sessionContextDialogs.selectKernel(nbWidget.context.sessionContext) });
   commands.addCommand(cmdIds.runAndAdvance, { label: 'Run and Advance', execute: () => NotebookActions.runAndAdvance(nbWidget.content, nbWidget.context.sessionContext)});
   commands.addCommand(cmdIds.run, { label: 'Run', execute: () => NotebookActions.run(nbWidget.content, nbWidget.context.sessionContext) });
+  commands.addCommand(cmdIds.save, { label: 'Save', execute: () => nbWidget.context.save() });
   commands.addCommand(cmdIds.editMode, { label: 'Edit Mode', execute: () => nbWidget.content.mode = 'edit' });
   commands.addCommand(cmdIds.commandMode, { label: 'Command Mode', execute: () => nbWidget.content.mode = 'command' });
   commands.addCommand(cmdIds.selectBelow, { label: 'Select Below', execute: () => NotebookActions.selectBelow(nbWidget.content) });
@@ -73,7 +74,6 @@ export const SetupCommands = (commands, nbWidget, handler) => {
         return commands.execute(cmdIds.select);
     }
   });
-  commands.addCommand(cmdIds.save, { label: 'Save', execute: () => nbWidget.context.save() });
 
   let searchInstance;
   commands.addCommand(cmdIds.startSearch, {
