@@ -124,7 +124,9 @@ Function convention to register view:
     - header should contain tag: "view"
     - two inputs "params" and "path" to pass URL parameters an path
     - output with type "view".
-    
+   
+   
+See full code [there](https://github.com/datagrok-ai/public/blob/master/packages/Notebooks/src/package.js)    
     
 ```javascript
 class NotebookView extends DG.ViewBase {
