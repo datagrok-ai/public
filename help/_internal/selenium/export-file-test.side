@@ -166,7 +166,7 @@
       "id": "cd8cdb0e-fda0-42bb-ab1d-f362ccd7911a",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-File---Save---Table-as-CSV']",
+      "target": "name=icon-save-local-file-as-csv",
       "targets": [
         ["css=.d4-menu-item-hover:nth-child(3)", "css:finder"],
         ["xpath=//div[@name='div-File---Save']", "xpath:attributes"],

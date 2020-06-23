@@ -174,8 +174,13 @@
       "id": "96a537f5-09eb-4f77-879a-d819d395753e",
       "comment": "",
       "command": "select",
-      "target": "id=editor",
-      "targets": [],
+      "target": "name=input-Fingerprints---Fingerprinter",
+      "targets": [
+        ["name=input-Fingerprints---Fingerprinter", "name"],
+        ["css=.d4-input-choice > #editor", "css:finder"],
+        ["xpath=//select[@id='editor']", "xpath:attributes"],
+        ["xpath=//select", "xpath:position"]
+      ],
       "value": "label=Morgan/Circular"
     }, {
       "id": "d1ea00d6-43fa-4c64-a076-68442f5c28ff",
@@ -188,7 +193,7 @@
       "id": "74cf5083-600d-4b49-8fa7-d2e9ee9f9662",
       "comment": "",
       "command": "executeScript",
-      "target": "document.querySelector('#editor').dispatchEvent(new Event('input'))",
+      "target": "document.querySelector(\"select[name=input-Fingerprints---Fingerprinter]\").dispatchEvent(new Event('input'))",
       "targets": [],
       "value": ""
     }, {
@@ -199,16 +204,23 @@
       "targets": [],
       "value": ""
     }, {
-      "id": "6e34659b-1229-4449-9826-08cc874feadb",
+      "id": "20a4bab4-3a92-4b15-b3a3-33f7cca47945",
       "comment": "",
-      "command": "click",
-      "target": "name=input-Fingerprints---Include-Chirality",
+      "command": "type",
+      "target": "name=input-Fingerprints---Radius",
       "targets": [
-        ["name=input-Fingerprints---Include-Chirality", "name"],
-        ["css=.pure-checkbox > #editor", "css:finder"],
-        ["xpath=(//input[@id='editor'])[4]", "xpath:attributes"],
-        ["xpath=//label/input", "xpath:position"]
+        ["name=input-Fingerprints---Radius", "name"],
+        ["css=.d4-input-int:nth-child(2) > #editor", "css:finder"],
+        ["xpath=//input[@id='editor']", "xpath:attributes"],
+        ["xpath=//div[2]/input", "xpath:position"]
       ],
+      "value": "100"
+    }, {
+      "id": "242719b7-1b86-484d-9ded-283c8caabeef",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "6ecbe5ef-c229-4345-9292-9157537a4a5a",
@@ -279,7 +291,7 @@
       "id": "41bdbde7-0aad-4c30-bb6f-829815b91283",
       "comment": "",
       "command": "executeScript",
-      "target": "document.querySelector('#editor').dispatchEvent(new Event('input'))",
+      "target": "document.querySelector(\"select[name=input-Fingerprints---Fingerprinter]\").dispatchEvent(new Event('input'))",
       "targets": [],
       "value": ""
     }, {
@@ -351,7 +363,7 @@
       "id": "2a93e8fa-5a79-4930-914e-a2b728406aba",
       "comment": "",
       "command": "executeScript",
-      "target": "document.querySelector('#editor').dispatchEvent(new Event('input'))",
+      "target": "document.querySelector(\"select[name=input-Fingerprints---Fingerprinter]\").dispatchEvent(new Event('input'))",
       "targets": [],
       "value": ""
     }, {
@@ -423,7 +435,7 @@
       "id": "78e969cb-4554-4de0-a365-31dabd2b3475",
       "comment": "",
       "command": "executeScript",
-      "target": "document.querySelector('#editor').dispatchEvent(new Event('input'))",
+      "target": "document.querySelector(\"select[name=input-Fingerprints---Fingerprinter]\").dispatchEvent(new Event('input'))",
       "targets": [],
       "value": ""
     }, {
@@ -502,7 +514,7 @@
       "id": "36e8ba61-d038-45e7-ad56-1c284d4a660f",
       "comment": "",
       "command": "executeScript",
-      "target": "document.querySelector('#editor').dispatchEvent(new Event('input'))",
+      "target": "document.querySelector(\"select[name=input-Fingerprints---Fingerprinter]\").dispatchEvent(new Event('input'))",
       "targets": [],
       "value": ""
     }, {

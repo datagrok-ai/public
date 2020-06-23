@@ -58,7 +58,7 @@
       "id": "ab8f2726-12a0-40e3-ac90-4730f3344006",
       "comment": "",
       "command": "pause",
-      "target": "2000",
+      "target": "4000",
       "targets": [],
       "value": ""
     }, {
@@ -72,7 +72,7 @@
       "id": "f9e9aaec-d85f-4d2b-b967-d9a7a5df345f",
       "comment": "",
       "command": "pause",
-      "target": "8000",
+      "target": "12000",
       "targets": [],
       "value": ""
     }, {
