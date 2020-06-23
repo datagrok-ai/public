@@ -11,6 +11,7 @@ This document covers the following areas:
 * [API structure](#api-structure)
 * [Data manipulation](#data-manipulation)
 * [Views](#views)
+* [Custom views](#custom-views)
 * [Pre-defined viewers](#pre-defined-viewers)
 * [Custom viewers](#custom-viewers)
 * [Registering functions](#registering-functions)
