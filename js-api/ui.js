@@ -5,7 +5,7 @@
 
 import {Viewer} from "./src/viewer";
 import {VirtualView} from "./src/view";
-import {Accordion, Dialog, InputBase, Menu, TabControl, Widget} from "./src/widgets";
+import {Accordion, Dialog, InputBase, Menu, TabControl, TreeViewNode, Widget} from "./src/widgets";
 
 /**
  * Creates an instance of the element for the specified tag, and optionally assigns it a CSS class.
@@ -188,6 +188,10 @@ export function tooltip(e, x) { grok_Tooltip_SetOn(e, x); return e; }
 export function tooltipShow(content, x, y) { grok_Tooltip_Show(content, x, y); }
 
 export function inputs(inputs) { return div(inputs.map((x) => x.root), 'pure-form,pure-form-aligned');}
+
+/** Creates new nodes tree
+ * @returns {TreeViewNode} */
+export function tree() { return TreeViewNode.tree(); }
 
 export function intInput(name, value) { return new InputBase(grok_IntInput(name, value)); }
 export function choiceInput(name, selected, items) { return new InputBase(grok_ChoiceInput(name, selected, items)); }
