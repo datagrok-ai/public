@@ -510,7 +510,7 @@
       "id": "d4f8b352-b646-4224-8e89-af3f505b913c",
       "comment": "",
       "command": "doubleClick",
-      "target": "name=div-Products",
+      "target": "name=div-ProjectWithNotebookBySelenium",
       "targets": [
         ["css=.grok-gallery-grid-item-wrapper:nth-child(2)", "css:finder"],
         ["xpath=//div[@id='elementContent']/div[4]/div[2]", "xpath:idRelative"],
@@ -694,7 +694,7 @@
       "id": "66d79029-0f37-4555-8942-1bdadb8d5a17",
       "comment": "",
       "command": "click",
-      "target": "name=div-Products",
+      "target": "name=div-ProjectWithNotebookBySelenium",
       "targets": [],
       "value": ""
     }, {

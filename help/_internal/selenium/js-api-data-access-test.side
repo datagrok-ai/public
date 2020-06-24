@@ -282,58 +282,6 @@
       "targets": [],
       "value": ""
     }, {
-      "id": "489d8286-dbaf-461d-8e92-b3ffa864fe34",
-      "comment": "",
-      "command": "doubleClick",
-      "target": "xpath=//div[@name='tree-data-access---parameterized-query.js']",
-      "targets": [
-        ["css=.d4-tree-view-item:nth-child(5)", "css:finder"],
-        ["xpath=//div[@name='tree-data-access---parameterized-query.js']", "xpath:attributes"],
-        ["xpath=//div[@id='grok-viewers-toolbox']/div/div[3]/div[2]/div/div[2]/div/div[2]/div[5]", "xpath:idRelative"],
-        ["xpath=//div[2]/div[5]", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "5bd7d8f7-0f3c-47d5-b951-90b123e3e0f9",
-      "comment": "",
-      "command": "pause",
-      "target": "1000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "6cef93df-8edb-47fd-b15c-62f23c5798ce",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//i[@name='icon-play']",
-      "targets": [
-        ["css=.fa-play", "css:finder"],
-        ["xpath=//i[@name='icon-play']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[3]/div[7]/div/div[2]/i", "xpath:idRelative"],
-        ["xpath=//div[7]/div/div[2]/i", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "0488c8da-8858-43c9-919a-484b0cce826c",
-      "comment": "",
-      "command": "pause",
-      "target": "3000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "6c54b546-5b1b-41bb-8010-5be6fea0c032",
-      "comment": "",
-      "command": "verifyText",
-      "target": "id=balloon: info",
-      "targets": [],
-      "value": "Stores: 645"
-    }, {
-      "id": "f6824839-4d2e-448a-9501-d22555501751",
-      "comment": "",
-      "command": "click",
-      "target": "id=balloon: info",
-      "targets": [],
-      "value": ""
-    }, {
       "id": "c7296301-c0ab-443c-b323-1015cfc30218",
       "comment": "",
       "command": "verifyElementNotPresent",

@@ -345,3 +345,63 @@ export class Color {
     static get success() { return 0xFF3cb173; }
     static get failure() { return 0xFFeb6767; }
 }
+
+
+/** Tree view node.
+ * Sample: {@link https://public.datagrok.ai/js/samples/ui/tree-view}
+ * */
+export class TreeViewNode {
+    /** @constructs {TreeView} */
+    constructor(d) { this.d = d; }
+
+    /** Creates new nodes tree
+     * @returns {TreeViewNode} */
+    static tree() { return new TreeViewNode(grok_TreeViewNode_Tree()); }
+
+    /** Visual root.
+     * @type {HTMLElement} */
+    get root() { return grok_TreeViewNode_Root(this.d); }
+
+    /** Caption label.
+     * @type {HTMLElement} */
+    get captionLabel() { grok_TreeViewNode_CaptionLabel(this.d); }
+
+    /** Check box.
+     * @type {null|HTMLElement} */
+    get checkBox() { return grok_TreeViewNode_CheckBox(this.d); }
+
+    /** Returns 'true' if checked
+     * @returns {boolean} */
+    get checked() { return grok_TreeViewNode_Checked(this.d); }
+
+    /** Returns node text
+     * @returns {string} */
+    get text() { return grok_TreeViewNode_Text(this.d); }
+
+    /** Node value.
+     * @type {Object}
+     */
+    get value() { return grok_TreeViewNode_Get_Value(this.d) };
+    set value(v) { grok_TreeViewNode_Set_Value(this.d, v) };
+
+    /** Gets all node items.
+     * @returns {Array<TreeViewNode>} */
+    get items() { return grok_TreeViewNode_Items(this.d).map(i => new TreeViewNode(i)); }
+
+    /** Add new group to node.
+     * @param {string} text
+     * @param {Object} value
+     * @param {boolean} expanded
+     * @returns {TreeViewNode} */
+    group(text, value = null, expanded = true) { return new TreeViewNode(grok_TreeViewNode_Group(this.d, text, value, expanded)); }
+
+    /** Add new item to node.
+     * @param {string} text
+     * @param {Object} value
+     * @returns {TreeViewNode} */
+    item(text, value = null) { return new TreeViewNode(grok_TreeViewNode_Item(this.d, text, value)); }
+
+    /** Enables checkbox on node
+     * @param {boolean} checked */
+    enableCheckBox(checked = false) { grok_TreeViewNode_EnableCheckBox(this.d, checked); }
+}
