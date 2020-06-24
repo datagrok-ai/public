@@ -1,7 +1,7 @@
 import {Column, DataFrame} from "./dataframe";
 import {Project, Property, SemanticValue, User} from "./entities";
 import {EventData} from "./events";
-import {Menu} from "./widgets";
+import {Menu, ProgressIndicator} from "./widgets";
 import {TableView, View} from "./view";
 import {TYPE, TYPES_SCALAR} from "./const";
 import {GridCellRenderArgs} from "./grid";
@@ -54,6 +54,8 @@ export function toJs(d, check = false) {
             return new View(d);
         case TYPE.TABLE_VIEW:
             return new TableView(d);
+        case TYPE.PROGRESS_INDICATOR:
+            return new ProgressIndicator(d);
     }
 
     if (check)

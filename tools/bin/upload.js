@@ -8,7 +8,7 @@ let host = argv['_'][0];
 
 let rebuild = argv['_'].includes('rebuild');
 
-let rp = '';
+let rp = '--rebuild';
 if (!rebuild)
   rp = '--no-rebuild';
 
