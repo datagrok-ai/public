@@ -104,7 +104,8 @@ export const TYPE = {
     MENU : 'Menu',
     PROJECT : 'Project',
     SEMANTIC_VALUE : 'semantic_value',
-    EVENT_DATA : 'event_data'
+    EVENT_DATA : 'event_data',
+    PROGRESS_INDICATOR: 'progressindicator'
 }
 
 export const TYPES_SCALAR = new Set([TYPE.INT, TYPE.BIG_INT, TYPE.FLOAT, TYPE.NUM, TYPE.BOOL, TYPE.STRING]);

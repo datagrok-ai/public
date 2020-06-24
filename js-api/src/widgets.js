@@ -1,5 +1,5 @@
 import {toDart, toJs} from "./wrappers";
-import {_sub} from "./events";
+import {_sub, observeStream} from "./events";
 
 
 /** Base class for controls that have a visual root and a set of properties. */
@@ -238,10 +238,15 @@ export class InputBase {
 export class ProgressIndicator {
     constructor(d) { this.d = d; }
 
+    static create() { return new ProgressIndicator(grok_ProgressIndicator_Create()); }
+
     get description() { return grok_ProgressIndicator_Get_Description(this.d); }
     set description(s) { grok_ProgressIndicator_Set_Description(this.d, s); }
 
-    update(percent) { grok_ProgressIndicator_Update(percent); }
+    update(percent, description) { grok_ProgressIndicator_Update(this.d, percent, description); }
+
+    get onProgressUpdated() { return observeStream(grok_Progress_Updated(this.d)); }
+
 }
 
 
