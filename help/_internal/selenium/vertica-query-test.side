@@ -372,7 +372,7 @@
       "id": "1b541c4a-174d-470e-9522-bed052bfac8d",
       "comment": "",
       "command": "click",
-      "target": "css=.d4-accordion-pane:nth-child(3) > .d4-accordion-pane-header",
+      "target": "xpath=(//div[@name='div-section--name'])[2]",
       "targets": [
         ["css=.d4-accordion-pane:nth-child(3) > .d4-accordion-pane-header", "css:finder"],
         ["xpath=(//div[@name='div-section--name'])[2]", "xpath:attributes"],
@@ -442,27 +442,13 @@
     }, {
       "id": "d32c2ee3-6656-4132-a60d-ed96cfc13163",
       "comment": "",
-      "command": "verifyText",
-      "target": "xpath=//div[@name='div-view-name']",
+      "command": "verifyElementPresent",
+      "target": "name=span-Test-Query-By-Selenium-Vertica",
       "targets": [
         ["css=.d4-ribbon-name", "css:finder"],
         ["xpath=//div[@name='div-view-name']", "xpath:attributes"],
         ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
         ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
-      ],
-      "value": "Test_Query_By_Selenium_Vertica"
-    }, {
-      "id": "069c72b9-3a98-4581-a691-540b4ccfcce4",
-      "comment": "",
-      "command": "verifyElementNotPresent",
-      "target": "css=i[name=\"icon-exclamation-circle\"]",
-      "targets": [
-        ["id=error_outline_black", "id"],
-        ["name=image-ic_error_outline_black_24dp_1x", "name"],
-        ["css=#error_outline_black", "css"],
-        ["css=#error_outline_black", "css:finder"],
-        ["xpath=//img[@id='error_outline_black']", "xpath:attributes"],
-        ["xpath=//img", "xpath:position"]
       ],
       "value": ""
     }, {

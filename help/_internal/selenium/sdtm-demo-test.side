@@ -96,7 +96,7 @@
       "id": "7bb11714-6b63-49c1-8e67-2caeebf395ab",
       "comment": "",
       "command": "pause",
-      "target": "5000",
+      "target": "10000",
       "targets": [],
       "value": ""
     }, {
