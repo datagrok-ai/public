@@ -463,6 +463,13 @@
       ],
       "value": ""
     }, {
+      "id": "e80244ea-b453-4543-be3e-24c48a2d5d5b",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='div-section--Structure']",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "8a74aaa4-c381-4e2f-976e-214d8e7f08e0",
       "comment": "",
       "command": "pause",
