@@ -67,7 +67,7 @@
       "id": "ed3acd87-ca47-49d8-ab87-32dcfe964477",
       "comment": "",
       "command": "click",
-      "target": "css=.fa-folder-open",
+      "target": "xpath=//i[@name='icon-folder-open']",
       "targets": [
         ["css=.fa-folder-open", "css:finder"],
         ["xpath=//i[@name='icon-folder-open']", "xpath:attributes"],
@@ -262,6 +262,13 @@
       ],
       "value": ""
     }, {
+      "id": "34dce4a4-681a-4900-ad8e-0b65ddaedbbd",
+      "comment": "",
+      "command": "pause",
+      "target": "2000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "8b9c6565-d69d-4ae3-978d-ff740ce42260",
       "comment": "",
       "command": "click",
@@ -279,7 +286,7 @@
       "id": "ede5ed53-2b0b-4c2c-a3e1-936078a2f568",
       "comment": "",
       "command": "pause",
-      "target": "2000",
+      "target": "1000",
       "targets": [],
       "value": ""
     }, {
@@ -295,6 +302,13 @@
       ],
       "value": ""
     }, {
+      "id": "7540cbae-49fd-4587-b80d-547e7e82fdf7",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "6caebaa1-63cc-451f-a187-54034057a4e0",
       "comment": "",
       "command": "click",
@@ -305,6 +319,13 @@
         ["xpath=//div[@id='data-sources']/div/div[2]/div[19]/div[2]/div[3]/div[2]/div[8]/div/div[2]", "xpath:idRelative"],
         ["xpath=//div[3]/div[2]/div[8]/div/div[2]", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "bf605c3c-98d9-4ac4-adac-a74e44ecb86a",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "c3cd57ce-4a69-45ac-b12d-af6b40d56c8c",
@@ -319,6 +340,13 @@
       ],
       "value": ""
     }, {
+      "id": "d1a548a9-4c03-433e-8bbc-08354d8660f0",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "761f77c2-1296-484a-b6c7-713fb8279685",
       "comment": "",
       "command": "type",
@@ -330,6 +358,13 @@
         ["xpath=//textarea", "xpath:position"]
       ],
       "value": "select * from Products"
+    }, {
+      "id": "40e9e99e-21ef-443b-abbf-22852ee0b579",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
     }, {
       "id": "a6f36012-b3d2-4d4b-a778-da8063c9804e",
       "comment": "",
@@ -343,6 +378,13 @@
         ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div[2]/div/div/button[2]", "xpath:idRelative"],
         ["xpath=//button[2]", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "33b96a2c-146f-47ba-9d33-cef7a7c78603",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "1a6ca040-4ce3-40d8-8b34-c1867b8c919e",
@@ -627,7 +669,7 @@
       "id": "4c54cfbf-b002-41db-be19-74bbf3029d3e",
       "comment": "",
       "command": "pause",
-      "target": "500",
+      "target": "1000",
       "targets": [],
       "value": ""
     }, {
@@ -638,17 +680,10 @@
       "targets": [],
       "value": ""
     }, {
-      "id": "08f67b1d-cab2-4bba-a50f-b5f54643542f",
-      "comment": "",
-      "command": "pause",
-      "target": "500",
-      "targets": [],
-      "value": ""
-    }, {
       "id": "dad0363b-174d-4ca9-b572-88afe82012da",
       "comment": "",
-      "command": "//pause",
-      "target": "2000",
+      "command": "pause",
+      "target": "1000",
       "targets": [],
       "value": ""
     }, {
@@ -893,6 +928,25 @@
       "targets": [],
       "value": ""
     }, {
+      "id": "1a4fffa6-59a3-4ee6-a9b2-cc112782e2b4",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//i[@name='icon-ellipsis-h']",
+      "targets": [
+        ["css=.fa-ellipsis-h", "css:finder"],
+        ["xpath=//i[@name='icon-ellipsis-h']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div[2]/div/i", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div[3]/div[2]/div/i", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "3b180ce5-7753-4a2a-bcc6-cae1a8bb5c80",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "6cbc8148-011d-418e-b231-38dc6aacb40f",
       "comment": "",
       "command": "click",
@@ -1008,13 +1062,6 @@
       "comment": "",
       "command": "verifyElementNotPresent",
       "target": "name=div-TestQueryBySelenium",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "3564b3f1-ac73-43a5-9cea-e6170e221465",
-      "comment": "",
-      "command": "",
-      "target": "",
       "targets": [],
       "value": ""
     }]

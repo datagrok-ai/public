@@ -14,6 +14,13 @@
       "targets": [],
       "value": ""
     }, {
+      "id": "410b4190-9d62-4b5f-a2c5-3b63412b8318",
+      "comment": "",
+      "command": "pause",
+      "target": "2000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "2e74e989-5df1-447f-bf7b-163871b24921",
       "comment": "",
       "command": "type",

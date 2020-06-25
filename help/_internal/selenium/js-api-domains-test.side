@@ -60,7 +60,7 @@
       "id": "5dc82201-963e-4426-b05c-8dddb86d92b3",
       "comment": "",
       "command": "pause",
-      "target": "2000",
+      "target": "5000",
       "targets": [],
       "value": ""
     }, {
@@ -748,22 +748,13 @@
       "id": "88704447-163d-4f2b-b109-18e5b7bf269f",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "id=mol1:Atom:23",
+      "target": "xpath=//div[@id='elementContent']/div/div",
       "targets": [
-        ["id=mol1:Atom:23", "id"],
-        ["css=#mol1\\3A Atom\\3A 23", "css:finder"]
+        ["css=.grok-view > div", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div/div", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div[3]/div/div/div", "xpath:position"]
       ],
-      "value": "atoms"
-    }, {
-      "id": "34d1d7b6-605d-4052-b489-adb225198d7e",
-      "comment": "",
-      "command": "verifyElementPresent",
-      "target": "id=mol1:Atom:4",
-      "targets": [
-        ["id=mol1:Atom:4", "id"],
-        ["css=#mol1\\3A Atom\\3A 4", "css:finder"]
-      ],
-      "value": "atoms"
+      "value": ""
     }, {
       "id": "0a7f8e26-3be5-46c9-9b9f-c7ff319623d5",
       "comment": "",
