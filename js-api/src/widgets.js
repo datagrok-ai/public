@@ -252,6 +252,13 @@ export class ProgressIndicator {
 }
 
 
+export class TaskBarProgressIndicator extends ProgressIndicator {
+    static create(name) { return new TaskBarProgressIndicator(grok_TaskBarProgressIndicator_Create(name)); }
+
+    close() { return grok_TaskBarProgressIndicator_Close(this.d); }
+}
+
+
 export class TagEditor {
     constructor(d) { this.d = d; }
 
@@ -374,9 +381,10 @@ export class TreeViewNode {
 
     /** Returns 'true' if checked
      * @returns {boolean} */
-    get checked() { return grok_TreeViewNode_Checked(this.d); }
+    get checked() { return grok_TreeViewNode_Get_Checked(this.d); }
+    set checked(checked) { return grok_TreeViewNode_Set_Checked(this.d, checked); }
 
-    /** Returns node text
+    /** Returns node text.
      * @returns {string} */
     get text() { return grok_TreeViewNode_Text(this.d); }
 

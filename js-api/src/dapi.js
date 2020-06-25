@@ -255,7 +255,7 @@ export class UserDataStorage {
     /** Retrieves a map from Users Data Storage
      * @param {string} name Storage name
      * @param {boolean} currentUser get a value from a current user storage
-     * @returns {Promise<Map>}*/
+     * @returns {Promise<Map>} */
     get(name, currentUser = true) {
         return new Promise((resolve, reject) =>
             grok_Dapi_UserDataStorage_Get(name, currentUser, (data) => resolve(data)));
@@ -265,7 +265,7 @@ export class UserDataStorage {
      * @param {string} name Storage name
      * @param {string} key Value key
      * @param {boolean} currentUser get a value from a current user storage
-     * @returns {Promise<Map>}*/
+     * @returns {Promise<string>} */
     getValue(name, key, currentUser = true) {
         return new Promise((resolve, reject) =>
             grok_Dapi_UserDataStorage_GetValue(name, key, currentUser, (value) => resolve(value)));
@@ -275,7 +275,7 @@ export class UserDataStorage {
      * @param {string} name Storage name
      * @param {string} key Value key
      * @param {boolean} currentUser get a value from a current user storage
-     * @returns {Promise}*/
+     * @returns {Promise} */
     remove(name, key, currentUser = true) {
         return new Promise((resolve, reject) =>
             grok_Dapi_UserDataStorage_Delete(name, key, currentUser, () => resolve()));
