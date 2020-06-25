@@ -58,8 +58,10 @@ export class ViewBase {
     set ribbonMenu(menu) { grok_View_Set_RibbonMenu(this.d, menu.d); }
 
     /** Sets custom view panels on the ribbon.
-     *  Sample: {@link https://public.datagrok.ai/js/samples/ui/views/ribbon} */
-    setRibbonPanels(panels) { grok_View_SetRibbonPanels(this.d, panels); }
+     * @param {Array<Array<HTMLElement>>} panels
+     * @param {boolean} clear Clear all previous before setup
+     * Sample: {@link https://public.datagrok.ai/js/samples/ui/views/ribbon} */
+    setRibbonPanels(panels, clear = false) { grok_View_SetRibbonPanels(this.d, panels, clear); }
 
     /** @returns {HTMLElement} View icon. */
     getIcon() { return null; }

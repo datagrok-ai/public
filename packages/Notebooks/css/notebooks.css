@@ -9,3 +9,27 @@
 .jp-NotebookPanel {
   border-bottom: 1px solid #e0e0e0;
 }
+
+.grok-jupyter-notebook-container {
+  flex-grow: 1;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+}
+
+.grok-jupyter-notebook-container .grok-loader {
+  margin-top: 12px;
+  margin-right: 48px;
+}
+
+.grok-jupyter-notebook-iframe {
+  width: 100%;
+  border: none;
+}
+
+.grok-jupyter-notebook-html-iframe {
+  width: 100%;
+  border: none;
+  display: flex;
+  flex-grow: 1;
+}

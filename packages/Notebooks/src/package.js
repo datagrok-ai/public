@@ -19,13 +19,7 @@ import { CommandRegistry } from '@lumino/commands';
 import { Widget} from '@lumino/widgets';
 import { ServiceManager, ServerConnection } from '@jupyterlab/services';
 import { MathJaxTypesetter } from '@jupyterlab/mathjax2';
-import {
-    NotebookPanel,
-    NotebookWidgetFactory,
-    NotebookModelFactory,
-    NotebookActions,
-    CellTypeSwitcher
-} from '@jupyterlab/notebook';
+import { NotebookPanel, NotebookWidgetFactory, NotebookModelFactory, NotebookActions, CellTypeSwitcher } from '@jupyterlab/notebook';
 import { CompleterModel, Completer, CompletionHandler, KernelConnector } from '@jupyterlab/completer';
 import { editorServices } from '@jupyterlab/codemirror';
 import { DocumentManager } from '@jupyterlab/docmanager';
@@ -41,20 +35,50 @@ class NotebookView extends DG.ViewBase {
         this.TYPE = 'Notebook';
         this.PATH = '/notebook';
 
-        this.notebookId = ('id' in params) ? params['id']
+        this.openAsHtmlIcon = ui.bigButton('HTML', () => { this.htmlMode().then() }, 'Open as HTML', true);
+        this.openAsHtmlIcon.style.backgroundColor = 'var(--green-2)';
+
+        this.editIcon = ui.bigButton('EDIT', () => { this.editMode().then() }, 'Edit notebook', true);
+        this.editIcon.style.backgroundColor = 'var(--green-2)';
+
+        this.html = '';
+        this.saveAsComboPopup = ui.comboPopup(ui.iconFA('arrow-to-bottom', () => {}), ['As HTML', 'As PDF'], (item) => {
+            if (item === 'As HTML') {
+                let a = document.createElement('a');
+                a.download = `${this.notebook.name}.html`;
+                a.href = URL.createObjectURL(new Blob([this.html], {type: 'text/plain'})).toString();
+                a.click();
+            } else {
+                let w = window.open('', '','height=650,width=900,top=100,left=150');
+                let d = w['document'];
+                d['body']['innerHTML'] = this.html;
+                d['title'] = this.notebook.name;
+                w.print();
+            }
+        });
+
+        this.environmentInput = ui.choiceInput('Environment:', 'default', ['default', 'python3']);
+
+        this.id = ('id' in params) ? params['id']
             : ((path !== null && path !== undefined) ? path
             : null);
 
         if ('file' in params)
             this.notebookFile = params['file'];
 
-        this.init().then();
+        let edit = 'edit' in params ? params['edit'] : false;
+        let html = 'html' in params ? params['html'] : null;
+
+        if (edit)
+            this.editMode().then();
+        else
+            this.htmlMode(html).then();
     }
 
     get type() { return this.TYPE };
     get helpUrl() { return '/help/compute/jupyter-notebook.md'; }
-    get name() { return /*notebook?.friendlyName ??*/ 'Notebook' };
-    get path() { return `${this.PATH}/${this.notebookId}` };
+    get name() { return (this.notebook !== null && this.notebook !== undefined) ? this.notebook.name : 'Notebook' };
+    get path() { return `${this.PATH}/${this.id}` };
 
     getIcon() {
         let img = document.createElement('img');
@@ -64,7 +88,7 @@ class NotebookView extends DG.ViewBase {
         return img;
     };
 
-    saveStateMap() { return {'notebookId': this.notebookId }; }
+    saveStateMap() { return {'notebookId': this.id }; }
     loadStateMap(stateMap) { open(stateMap['notebookId']); }
 
     handlePath(path) {
@@ -74,21 +98,39 @@ class NotebookView extends DG.ViewBase {
 
     acceptsPath(path) { return path.startsWith(this.PATH); }
 
-    async init() {
+    async initNotebook() {
+        this.notebook = await grok.dapi.notebooks.find(this.id);
+    }
+
+    async htmlMode(html = null) {
+        this.html = html;
+        await this.initNotebook();
+        removeChildren(this.root);
+        if (this.html === null)
+            this.html = await this.notebook.toHtml();
+        let iframe = document.createElement('iframe');
+        iframe.src = 'data:text/html;base64,' + btoa(this.html);
+        iframe.classList.add("grok-jupyter-notebook-html-iframe");
+        let container = ui.div([iframe], 'grok-jupyter-notebook-container');
+        let view = ui.div([container], 'd4-root,d4-flex-col');
+        this.setRibbonPanels([[this.saveAsComboPopup, this.editIcon]], true);
+        //eventBus.fire(XpEvents.VIEW_RIBBON_CHANGED, this);
+        this.root.appendChild(view);
+    }
+
+    async editMode() {
+        await this.initNotebook();
+        removeChildren(this.root);
+
         let notebookPath = this.notebookFile;
         const manager = new ServiceManager({serverSettings: NotebookView.getSettings()});
         await manager.ready;
 
         // Initialize the command registry with the bindings.
+        // Setup the keydown listener for the document.
         const commands = new CommandRegistry();
         const useCapture = true;
-
-        // Setup the keydown listener for the document.
-        document.addEventListener(
-            'keydown',
-            event => { commands.processKeydownEvent(event); },
-            useCapture
-        );
+        document.addEventListener('keydown', event => { commands.processKeydownEvent(event); }, useCapture);
 
         const renderMime = new RenderMimeRegistry({
             initialFactories: initialFactories,
@@ -143,17 +185,8 @@ class NotebookView extends DG.ViewBase {
         Widget.attach(nbWidget, this.root);
         Widget.attach(completer, this.root);
 
-        // TODO: As html
-        let openAsHtml = ui.bigButton('HTML', () => {}, 'Open as HTML', true);
-        openAsHtml.style.backgroundColor = 'var(--green-2)';
-
-        // TODO: Envs
-        let environmentInput = ui.choiceInput('Environment:', 'default', ['default', 'python3']);
-
         this.setRibbonPanels([
-            [
-                openAsHtml
-            ],
+            [ this.openAsHtmlIcon ],
             [
                 ui.iconFA('save', () => nbWidget.context.save(), 'Save notebook'),
                 ui.iconFA('plus', () => NotebookActions.insertBelow(nbWidget.content), 'Insert a cell before'),
@@ -168,13 +201,11 @@ class NotebookView extends DG.ViewBase {
                     'Restart Kernel and run all cells'),
                 new CellTypeSwitcher(nbWidget.content).node,
             ],
-            [
-                environmentInput.root
-            ]
-        ]);
+            [ this.environmentInput.root ]
+        ], true);
         nbWidget.toolbar.hide();
 
-        ui.tools.handleResize(this.root, (w, h) => nbWidget.update());
+        //ui.tools.handleResize(this.root, (w, h) => nbWidget.update());
         this.root.classList.add('grok-notebook-view');
 
         SetupCommands(commands, nbWidget, handler);
@@ -208,4 +239,10 @@ class NotebookView extends DG.ViewBase {
 //output: view result
 export function notebookView(params = null, path = '') {
     return new NotebookView(params, path);
+}
+
+
+function removeChildren(node) {
+    while (node.firstChild)
+        node.removeChild(node.firstChild);
 }

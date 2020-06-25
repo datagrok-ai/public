@@ -138,6 +138,15 @@ export function button(text, handler, tooltip = null) { return grok_UI_Button(te
 
 export function bigButton(text, handler, tooltip = null) { return grok_UI_BigButton(text, handler, tooltip); }
 
+/**
+ * Creates a combo popup with the specified icons and items
+ * @param {HTMLElement} icon
+ * @param {Array<string>} items
+ * @param {Function} handler (item) => {...}
+ * @returns {HTMLElement}
+ * */
+export function comboPopup(icon, items, handler) { return grok_UI_ComboPopup(icon, items, handler); }
+
 /** Creates a visual table based on [map]. */
 export function tableFromMap(map) { return grok_UI_TableFromMap(map); }
 
