@@ -549,7 +549,7 @@
       "command": "click",
       "target": "xpath=//div[@name='div-view-name']",
       "targets": [],
-      "value": "Notebook_By_Selenium"
+      "value": ""
     }, {
       "id": "555f4894-86ac-4229-ba3e-9417a458121a",
       "comment": "",
@@ -687,7 +687,7 @@
       "id": "e3bdbe59-85f5-4903-a0ba-911bba60d7c5",
       "comment": "",
       "command": "pause",
-      "target": "3000",
+      "target": "5000",
       "targets": [],
       "value": ""
     }, {
