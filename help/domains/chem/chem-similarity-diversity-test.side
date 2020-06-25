@@ -283,7 +283,7 @@
       "id": "3e63f1b6-42e6-47a0-b0b4-9cc421e5904e",
       "comment": "",
       "command": "pause",
-      "target": "500",
+      "target": "1000",
       "targets": [],
       "value": ""
     }, {
@@ -294,61 +294,10 @@
       "targets": [],
       "value": "label=mc-connaughey"
     }, {
-      "id": "16ddce3a-1a7a-4e91-b0bb-381e843a0a9e",
-      "comment": "",
-      "command": "click",
-      "target": "css=.property-grid-item:nth-child(6) .property-grid-ellipsis-editor-ellipsis",
-      "targets": [
-        ["css=.property-grid-item:nth-child(6) .property-grid-ellipsis-editor-ellipsis", "css:finder"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div/div/div/table/tbody[2]/tr[6]/td[2]/div/button", "xpath:idRelative"],
-        ["xpath=//tr[6]/td[2]/div/button", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "cf80ec75-73f5-4c98-b5a6-6ae22d59afb5",
+      "id": "c55a91a4-9178-4692-9678-ebd8ba35061a",
       "comment": "",
       "command": "pause",
-      "target": "500",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "cc9348bf-6580-4f29-beec-79de77cc44c8",
-      "comment": "",
-      "command": "select",
-      "target": "id=editor",
-      "targets": [],
-      "value": "label=MACCSKeys"
-    }, {
-      "id": "f12bfabb-e9fd-4b7c-8cbf-27f6d52c3497",
-      "comment": "",
-      "command": "click",
-      "target": "id=editor",
-      "targets": [
-        ["id=editor", "id"],
-        ["name=input-Fingerprints---Fingerprinter", "name"],
-        ["css=#editor", "css:finder"],
-        ["xpath=//select[@id='editor']", "xpath:attributes"],
-        ["xpath=//select", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "565e3874-4d48-40f5-b957-f68c56841d7d",
-      "comment": "",
-      "command": "click",
-      "target": "name=button-OK",
-      "targets": [
-        ["name=button-OK", "name"],
-        ["css=.enabled", "css:finder"],
-        ["xpath=//button[@name='button-OK']", "xpath:attributes"],
-        ["xpath=//div[3]/div/button", "xpath:position"],
-        ["xpath=//button[contains(.,'OK')]", "xpath:innerText"]
-      ],
-      "value": ""
-    }, {
-      "id": "4432ed87-845d-43d5-a6d7-8c8366cb4c11",
-      "comment": "",
-      "command": "pause",
-      "target": "500",
+      "target": "1000",
       "targets": [],
       "value": ""
     }, {
@@ -401,7 +350,7 @@
       "id": "7eb0b971-39cf-49b7-b41a-53c669096551",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {
@@ -433,7 +382,7 @@
       "id": "9e033b24-d5b9-4ec8-bfa5-68459af5c2fb",
       "comment": "",
       "command": "pause",
-      "target": "500",
+      "target": "1000",
       "targets": [],
       "value": ""
     }, {
