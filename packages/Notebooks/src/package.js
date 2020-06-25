@@ -32,12 +32,12 @@ import {sessionContextDialogs} from "@jupyterlab/apputils";
 class NotebookView extends DG.ViewBase {
     constructor(params, path) {
         super(params, path);
+
         this.TYPE = 'Notebook';
         this.PATH = '/notebook';
 
         this.openAsHtmlIcon = ui.bigButton('HTML', () => { this.htmlMode().then() }, 'Open as HTML', true);
         this.openAsHtmlIcon.style.backgroundColor = 'var(--green-2)';
-
         this.editIcon = ui.bigButton('EDIT', () => { this.editMode().then() }, 'Edit notebook', true);
         this.editIcon.style.backgroundColor = 'var(--green-2)';
 
@@ -60,7 +60,7 @@ class NotebookView extends DG.ViewBase {
         this.environmentInput = ui.choiceInput('Environment:', 'default', ['default', 'python3']);
 
         this.id = ('id' in params) ? params['id']
-            : ((path !== null && path !== undefined) ? path
+            : ((path !== null && path !== undefined) ? path.replace(`${this.PATH}/`, '')
             : null);
 
         if ('file' in params)
@@ -114,7 +114,6 @@ class NotebookView extends DG.ViewBase {
         let container = ui.div([iframe], 'grok-jupyter-notebook-container');
         let view = ui.div([container], 'd4-root,d4-flex-col');
         this.setRibbonPanels([[this.saveAsComboPopup, this.editIcon]], true);
-        //eventBus.fire(XpEvents.VIEW_RIBBON_CHANGED, this);
         this.root.appendChild(view);
     }
 
