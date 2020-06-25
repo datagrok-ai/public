@@ -145,7 +145,9 @@ export class Notebook extends Entity {
     /** @constructs Notebook */
     constructor(d) { super(d); }
 
-    // TODO:
+    /** Converts Notebook to HTML code
+     * @returns {Promise<string>} */
+    toHtml() { return new Promise((resolve, reject) => grok_Notebook_ToHtml(this.d, (html) => resolve(html))); }
 }
 
 /** @extends Entity
