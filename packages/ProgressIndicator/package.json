@@ -1,0 +1,21 @@
+{
+  "name": "progressindicator",
+  "fullName": "ProgressIndicator",
+  "version": "0.0.1",
+  "description": "",
+  "dependencies": {
+    "datagrok-api": "latest"
+  },
+  "devDependencies": {
+    "babel-loader": "^8.1.0",
+    "@babel/cli": "7.1.2",
+    "@babel/core": "7.1.2",
+    "@babel/polyfill": "7.0.0",
+    "@babel/preset-env": "7.1.0"
+  },
+  "scripts": {
+    "upload-debug": "datagrok-upload http://localhost:8082 debug rebuild",
+    "upload-deploy": "datagrok-upload http://localhost:8082 deploy",
+    "build": "webpack"
+  }
+}
