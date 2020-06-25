@@ -1,4 +1,4 @@
-import {paramsToJs, toJs} from "./wrappers";
+import {paramsToJs, toDart, toJs} from "./wrappers";
 
 /** Grok functions */
 export class Functions {
@@ -6,7 +6,7 @@ export class Functions {
 
     registerParamFunc(name, type, run, check = null, description = null) { grok_RegisterParamFunc(name, type, run, check, description); }
 
-    call(name, parameters = {}, showProgress = false, progress = null) { return new Promise((resolve, reject) => grok_CallFunc(name, parameters, (out) => resolve(out), showProgress, progress)); }
+    call(name, parameters = {}, showProgress = false, progress = null) { return new Promise((resolve, reject) => grok_CallFunc(name, parameters, (out) => resolve(out), showProgress, toDart(progress))); }
 
     eval(name) { return new Promise((resolve, reject) => grok_EvalFunc(name, (out) => resolve(out))); }
 

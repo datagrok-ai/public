@@ -240,6 +240,8 @@ export class ProgressIndicator {
 
     static create() { return new ProgressIndicator(grok_ProgressIndicator_Create()); }
 
+    get percent() { return grok_ProgressIndicator_Get_Percent(this.d); }
+
     get description() { return grok_ProgressIndicator_Get_Description(this.d); }
     set description(s) { grok_ProgressIndicator_Set_Description(this.d, s); }
 
