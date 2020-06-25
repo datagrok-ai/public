@@ -372,11 +372,11 @@
       "id": "1b541c4a-174d-470e-9522-bed052bfac8d",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//div[@name='div-section--name'])[2]",
+      "target": "xpath=//div[@name='div-section--Run']",
       "targets": [
         ["css=.d4-accordion-pane:nth-child(3) > .d4-accordion-pane-header", "css:finder"],
-        ["xpath=(//div[@name='div-section--name'])[2]", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div", "xpath:idRelative"],
+        ["xpath=//div[@name='div-section--Run']", "xpath:attributes"],
+        ["xpath=(//div[@id='elementContent']/div/div/div/div[3]/div)[3]", "xpath:idRelative"],
         ["xpath=//div[3]/div/div[2]/div/div/div/div/div[3]/div", "xpath:position"]
       ],
       "value": ""
