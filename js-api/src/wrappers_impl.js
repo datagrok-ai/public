@@ -66,6 +66,8 @@ export function toJs(d, check = false) {
 
 /** Extracts a Dart handle from the JavaScript wrapper. See also {@link toJs} */
 export function toDart(x) {
+    if (x === undefined || x === null)
+        return x;
     return (typeof x.d !== 'undefined') ? x.d : x;
 }
 
