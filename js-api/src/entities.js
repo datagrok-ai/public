@@ -205,7 +205,11 @@ export class Package {
     /** Returns credentials for package
      * @returns {Credentials} */
     getCredentials() {
-        return new Promise((resolve, reject) => grok_Package_Get_Credentials(this.name, (c) => resolve(toJs(c))));
+        return new Promise((resolve, reject) => grok_Package_Get_Credentials(this.name, (c) => {
+            let cred = toJs(c);
+            console.log(cred);
+            resolve(cred);
+        }));
     }
 }
 
