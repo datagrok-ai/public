@@ -1,6 +1,7 @@
 import * as ui from "./../ui.js";
 import {Functions} from "./functions";
 import {TYPE} from "./const";
+import {toJs} from "./wrappers";
 
 
 /** @class
@@ -193,12 +194,19 @@ export class Credentials extends Entity {
 export class Package {
     constructor(webRoot) {
         this.webRoot = webRoot;
+        this.name = "";
     }
 
     /** Override init() method to provide package-specific initialization.
      * It is guaranteed to get called exactly once before the execution of any function below.
      * */
     /*async*/ init() { return Promise.resolve(null); }
+
+    /** Returns credentials for package
+     * @returns {Credentials} */
+    getCredentials() {
+        return new Promise((resolve, reject) => grok_Package_Get_Credentials(this.name, (c) => resolve(toJs(c))));
+    }
 }
 
 /**

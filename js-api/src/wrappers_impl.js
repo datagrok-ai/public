@@ -1,5 +1,5 @@
 import {Column, DataFrame} from "./dataframe";
-import {Project, Property, SemanticValue, User} from "./entities";
+import {Credentials, Project, Property, SemanticValue, User} from "./entities";
 import {EventData} from "./events";
 import {Menu, ProgressIndicator} from "./widgets";
 import {TableView, View} from "./view";
@@ -56,6 +56,8 @@ export function toJs(d, check = false) {
             return new TableView(d);
         case TYPE.PROGRESS_INDICATOR:
             return new ProgressIndicator(d);
+        case TYPE.CREDENTIALS:
+            return new Credentials(d);
     }
 
     if (check)
