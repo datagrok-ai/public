@@ -146,6 +146,11 @@ export class Notebook extends Entity {
     /** @constructs Notebook */
     constructor(d) { super(d); }
 
+    /** Environment name
+     * @type {string} */
+    get environment() { return grok_Notebook_Get_Environment(this.d); }
+    set environment(e) { return grok_Notebook_Set_Environment(this.d, e); }
+
     /** Converts Notebook to HTML code
      * @returns {Promise<string>} */
     toHtml() { return new Promise((resolve, reject) => grok_Notebook_ToHtml(this.d, (html) => resolve(html))); }
@@ -186,6 +191,24 @@ export class Credentials extends Entity {
     /** Collection of parameters: login, password, API key, etc.
      *  @type {object} */
     get parameters() { return grok_Credentials_Parameters([this.d]); }
+}
+
+/** Represents a script environment */
+export class ScriptEnvironment extends Entity {
+    constructor(d) { super(d); }
+
+    /** Create instance of ScriptEnvironment
+     * @param {string} name
+     * @returns {ScriptEnvironment}
+     * */
+    static create(name) { return new ScriptEnvironment(grok_ScriptEnvironment_Create(name));  }
+
+    /** Environment yaml file content
+     * @type {string} */
+    get environment() { return grok_ScriptEnvironment_Environment(this.d); }
+
+    /** Setup environment */
+    setup() { return new Promise((resolve, reject) => grok_ScriptEnvironment_Setup(this.d, () => resolve())); }
 }
 
 /**

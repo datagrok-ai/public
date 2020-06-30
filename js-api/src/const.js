@@ -106,7 +106,8 @@ export const TYPE = {
     SEMANTIC_VALUE : 'semantic_value',
     EVENT_DATA : 'event_data',
     PROGRESS_INDICATOR: 'progressindicator',
-    CREDENTIALS: 'Credentials'
+    CREDENTIALS: 'Credentials',
+    SCRIPT_ENVIRONMENT: 'ScriptEnvironment'
 }
 
 export const TYPES_SCALAR = new Set([TYPE.INT, TYPE.BIG_INT, TYPE.FLOAT, TYPE.NUM, TYPE.BOOL, TYPE.STRING]);

@@ -6,7 +6,7 @@ import {
     Entity, Group,
     Model,
     Notebook,
-    Project, Script,
+    Project, Script, ScriptEnvironment,
     TableInfo,
     User
 } from "./entities";
@@ -80,6 +80,10 @@ export class Dapi {
     /** Projects API endpoint
      *  @type {HttpDataSource<Project>} */
     get projects() { return new HttpDataSource(grok_Dapi_Projects(), (a) => new Project(a)); }
+
+    /** Environments API endpoint
+     *  @type {HttpDataSource<ScriptEnvironment>} */
+    get environments() { return new HttpDataSource(grok_Dapi_Environments(), (a) => new ScriptEnvironment(a)); }
 
     /** Users Data Storage API endpoint
      *  @type {UserDataStorage} */

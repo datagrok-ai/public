@@ -10,26 +10,34 @@
   border-bottom: 1px solid #e0e0e0;
 }
 
-.grok-jupyter-notebook-container {
+.grok-notebook-view .grok-loader {
+  margin-top: 12px;
+  margin-right: 48px;
+}
+
+.grok-notebook-view-container {
   flex-grow: 1;
   position: relative;
   overflow: hidden;
   display: flex;
 }
 
-.grok-jupyter-notebook-container .grok-loader {
-  margin-top: 12px;
-  margin-right: 48px;
-}
-
-.grok-jupyter-notebook-iframe {
-  width: 100%;
-  border: none;
-}
-
-.grok-jupyter-notebook-html-iframe {
+.grok-notebook-view-iframe {
   width: 100%;
   border: none;
   display: flex;
   flex-grow: 1;
 }
+
+.d4-ribbon-panel .jp-HTMLSelect.jp-DefaultStyle select {
+  color: #40607F;
+}
+
+.d4-ribbon-panel .jp-HTMLSelect.jp-DefaultStyle select:hover, .jp-HTMLSelect.jp-DefaultStyle select > option {
+  color: #40607F;
+}
+
+.d4-ribbon-panel .jp-HTMLSelect.jp-DefaultStyle > span {
+  display: none;
+}
+

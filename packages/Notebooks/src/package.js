@@ -57,8 +57,6 @@ class NotebookView extends DG.ViewBase {
             }
         });
 
-        this.environmentInput = ui.choiceInput('Environment:', 'default', ['default', 'python3']);
-
         this.id = ('id' in params) ? params['id']
             : ((path !== null && path !== undefined) ? path.replace(`${this.PATH}/`, '')
             : null);
@@ -110,11 +108,37 @@ class NotebookView extends DG.ViewBase {
             this.html = await this.notebook.toHtml();
         let iframe = document.createElement('iframe');
         iframe.src = 'data:text/html;base64,' + btoa(this.html);
-        iframe.classList.add("grok-jupyter-notebook-html-iframe");
-        let container = ui.div([iframe], 'grok-jupyter-notebook-container');
+        iframe.classList.add('grok-notebook-view-iframe');
+        let container = ui.div([iframe], 'grok-notebook-view-container');
         let view = ui.div([container], 'd4-root,d4-flex-col');
         this.setRibbonPanels([[this.saveAsComboPopup, this.editIcon]], true);
+        this.editIcon.parentNode.parentNode.style.flexShrink = '0';
         this.root.appendChild(view);
+    }
+
+    async getEnvironmentsInput() {
+        // TODO: Deprecate 'default' tricks after default environment implementation
+        this.envs = [DG.ScriptEnvironment.create('default')];
+        this.envs.push(...(await grok.dapi.environments.list()));
+        let selected = this.envs.filter(e => e.name === this.notebook.name);
+        selected = (selected.length === 0) ? this.envs[0].name : selected[0].name;
+        let environmentInput = ui.choiceInput('Environment:', selected, this.envs.map(e => e.name));
+        environmentInput.onChanged(async () => {
+            let environment = this.envs.filter(e => e.name === environmentInput.stringValue)[0];
+            if (this.notebook.environment === 'python3' && environment.name === 'default')
+                return;
+            if (this.notebook.environment !== environment.name) {
+                this.notebook = await grok.dapi.notebooks.find(this.notebook.id);
+                this.notebook.environment = environment.name;
+                if (environment.name !== 'default') {
+                    ui.setUpdateIndicator(this.root, true);
+                    await environment.setup();
+                    ui.setUpdateIndicator(this.root, false);
+                }
+                this.editorMode();
+            }
+        });
+        return environmentInput;
     }
 
     async editMode() {
@@ -184,6 +208,9 @@ class NotebookView extends DG.ViewBase {
         Widget.attach(nbWidget, this.root);
         Widget.attach(completer, this.root);
 
+        if (this.environmentInput === undefined)
+            this.environmentInput = await this.getEnvironmentsInput();
+
         this.setRibbonPanels([
             [ this.openAsHtmlIcon ],
             [
@@ -203,6 +230,7 @@ class NotebookView extends DG.ViewBase {
             [ this.environmentInput.root ]
         ], true);
         nbWidget.toolbar.hide();
+        this.openAsHtmlIcon.parentNode.parentNode.style.flexShrink = '0';
 
         //ui.tools.handleResize(this.root, (w, h) => nbWidget.update());
         this.root.classList.add('grok-notebook-view');
