@@ -1,5 +1,5 @@
 import {Column, DataFrame} from "./dataframe";
-import {Credentials, Project, Property, SemanticValue, User} from "./entities";
+import {Credentials, Project, Property, ScriptEnvironment, SemanticValue, User} from "./entities";
 import {EventData} from "./events";
 import {Menu, ProgressIndicator} from "./widgets";
 import {TableView, View} from "./view";
@@ -58,6 +58,8 @@ export function toJs(d, check = false) {
             return new ProgressIndicator(d);
         case TYPE.CREDENTIALS:
             return new Credentials(d);
+        case TYPE.SCRIPT_ENVIRONMENT:
+            return new ScriptEnvironment(d);
     }
 
     if (check)
