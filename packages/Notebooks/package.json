@@ -1,7 +1,7 @@
 {
   "name": "notebooks",
   "fullName": "Notebooks",
-  "version": "0.2.10",
+  "version": "0.2.11",
   "description": "JupyterLab Notebooks integration package",
   "repository": "https://github.com/datagrok-ai/public",
   "licence": "MIT",
@@ -21,7 +21,7 @@
     "@lumino/commands": "^1.10.1",
     "@lumino/widgets": "^1.11.1",
     "bufferutil": "^4.0.1",
-    "datagrok-api": ">0.1.16",
+    "datagrok-api": ">=0.1.20",
     "es6-promise": "~4.2.8",
     "utf-8-validate": "^5.0.2"
   },

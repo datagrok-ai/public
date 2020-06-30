@@ -146,6 +146,10 @@ export class Notebook extends Entity {
     /** @constructs Notebook */
     constructor(d) { super(d); }
 
+    /** Create Notebook on server for edit.
+     * @returns {Promise<string>} Current notebook's name */
+    edit() { return new Promise((resolve, reject) => grok_Notebook_Edit(this.d, (f) => resolve(f))); }
+
     /** Environment name
      * @type {string} */
     get environment() { return grok_Notebook_Get_Environment(this.d); }
