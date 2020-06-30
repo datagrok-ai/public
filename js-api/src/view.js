@@ -38,8 +38,8 @@ export class ViewBase {
 
     /** View name. It gets shown in the tab handle.
      * @type {string} */
-    get name() { return ''; };
-    set name(s) {}
+    get name() { return grok_View_Get_Name(this.d); }
+    set name(s) { grok_View_Set_Name(this.d, s); }
 
     /** @type {string} */
     get description() { return ''; }
@@ -130,9 +130,6 @@ export class View extends ViewBase {
     get root() { return grok_View_Get_Root(this.d); }
 
     get type() { return grok_View_Get_Type(this.d); }
-
-    get name() { return grok_View_Get_Name(this.d); }
-    set name(s) { grok_View_Set_Name(this.d, s); }
 
     get path() { return grok_View_Get_Path(this.d); }
     set path(s) { grok_View_Set_Path(this.d, s); }

@@ -61,9 +61,6 @@ class NotebookView extends DG.ViewBase {
             : ((path !== null && path !== undefined) ? path.replace(`${this.PATH}/`, '')
             : null);
 
-        if ('file' in params)
-            this.notebookFile = params['file'];
-
         let edit = 'edit' in params ? params['edit'] : false;
         let html = 'html' in params ? params['html'] : null;
 
@@ -75,8 +72,10 @@ class NotebookView extends DG.ViewBase {
 
     get type() { return this.TYPE };
     get helpUrl() { return '/help/compute/jupyter-notebook.md'; }
-    get name() { return (this.notebook !== null && this.notebook !== undefined) ? this.notebook.name : 'Notebook' };
     get path() { return `${this.PATH}/${this.id}` };
+
+    get name() { return (this.notebook !== null && this.notebook !== undefined) ? this.notebook.name : 'Notebook' };
+    set name(s) { super.name = s; }
 
     getIcon() {
         let img = document.createElement('img');
@@ -86,7 +85,7 @@ class NotebookView extends DG.ViewBase {
         return img;
     };
 
-    saveStateMap() { return {'notebookId': this.id }; }
+    saveStateMap() { return { 'notebookId': this.id }; }
     loadStateMap(stateMap) { open(stateMap['notebookId']); }
 
     handlePath(path) {
@@ -98,6 +97,7 @@ class NotebookView extends DG.ViewBase {
 
     async initNotebook() {
         this.notebook = await grok.dapi.notebooks.find(this.id);
+        this.name = this.notebook.name;
     }
 
     async htmlMode(html = null) {
@@ -145,7 +145,7 @@ class NotebookView extends DG.ViewBase {
         await this.initNotebook();
         removeChildren(this.root);
 
-        let notebookPath = this.notebookFile;
+        let notebookPath = await this.notebook.edit();
         const manager = new ServiceManager({serverSettings: NotebookView.getSettings()});
         await manager.ready;
 
@@ -195,6 +195,7 @@ class NotebookView extends DG.ViewBase {
 
         void sessionContext.ready.then(() => {
             handler.connector = new KernelConnector({session: sessionContext.session});
+            NotebookActions.runAll(nbWidget.content, nbWidget.context.sessionContext).then();
         });
 
         handler.editor = editor;
@@ -232,7 +233,6 @@ class NotebookView extends DG.ViewBase {
         nbWidget.toolbar.hide();
         this.openAsHtmlIcon.parentNode.parentNode.style.flexShrink = '0';
 
-        //ui.tools.handleResize(this.root, (w, h) => nbWidget.update());
         this.root.classList.add('grok-notebook-view');
 
         SetupCommands(commands, nbWidget, handler);
