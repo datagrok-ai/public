@@ -380,6 +380,16 @@ Code snippets:
 
 Use `grok.chem` entry point for cheminformatics-related routines.
 
+## Credentials
+
+You can store text information that bound to a package in secure manner. Use "Credentials..." command from package context menu.
+You can add as many strings as you want. Once added they can be read only by members of owner group. 
+Datagrok stores credentials encrypted with Datagrok encryption key. 
+
+See more:
+[Credentials](../govern/security.md#credentials)
+[Code snippet](https://public.datagrok.ai/js/samples/misc/package-credentials)  
+
 Code snippets:
 * [Calculating descriptors](https://public.datagrok.ai/js/samples/domains/data-science/random-data)
 * [Chemical diversity](https://public.datagrok.ai/js/samples/domains/chem/diversity-search)
