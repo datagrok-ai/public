@@ -77,6 +77,9 @@ class NotebookView extends DG.ViewBase {
     get name() { return (this.notebook !== null && this.notebook !== undefined) ? this.notebook.name : 'Notebook' };
     set name(s) { super.name = s; }
 
+    get entity() { return (this.notebook !== null && this.notebook !== undefined) ? this.notebook.d : null; }
+    set entity(e) { super.entity = e }
+
     getIcon() {
         let img = document.createElement('img');
         img.src = '/images/entities/jupyter.png';
@@ -144,6 +147,11 @@ class NotebookView extends DG.ViewBase {
     async editMode() {
         await this.initNotebook();
         removeChildren(this.root);
+
+        this.subs.push(grok.events.onEvent('d4-entity-edited').subscribe((e) => {
+            if (this.notebook !== undefined && this.notebook !== null && e.id === this.notebook.id)
+                this.name = e.name;
+        }));
 
         let notebookPath = await this.notebook.edit();
         const manager = new ServiceManager({serverSettings: NotebookView.getSettings()});
