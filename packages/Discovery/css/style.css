@@ -1,0 +1,27 @@
+.layout-top-panel {
+    background: #1F4661;
+    height: 60px;
+    align-items: center;
+}
+
+.layout-top-panel h1 {
+    color: white;
+    font-size: 18px;
+    margin: 0;
+    margin-left: 18px;
+}
+
+.d4-toolbox-hidden .d4-tab-header-stripe.vertical:hover ~ .layout-toolbox,
+.d4-toolbox-hidden .layout-toolbox:hover{
+    left: 50px;
+}
+
+.layout-sidebar {
+    width: 50px;
+    background-color: white;
+    border-right: 1px solid #eee;
+}
+
+.layout-sidebar .d4-tab-header i {
+    color: #aaa;
+}

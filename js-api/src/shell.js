@@ -57,6 +57,9 @@ export class Shell {
     /** @type {Menu} */
     get topMenu() { return new Menu(grok_Get_TopMenu()); }
 
+    /** @type {HTMLDivElement} */
+    get topPanel() { return grok_Get_TopPanel(); }
+
     /** Shows information message (green background)
      * @param {string} s - message */
     info(s) { grok_Balloon(s, 'info'); }
@@ -198,8 +201,8 @@ export class Windows {
 
     /** Controls the visibility of the help window.
      * @type {boolean} */
-    get showHelp() { return grok_Windows_Get_ShowSidebar(); }
-    set showHelp(x) { return grok_Windows_Set_ShowSidebar(x); }
+    get showHelp() { return grok_Windows_Get_ShowHelp(); }
+    set showHelp(x) { return grok_Windows_Set_ShowHelp(x); }
 
     /** Controls the visibility of the properties window.
      * @type {boolean} */
