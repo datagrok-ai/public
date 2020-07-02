@@ -1,0 +1,17 @@
+{
+  "name": "discovery",
+  "fullName": "Discovery",
+  "version": "0.0.1",
+  "description": "",
+  "dependencies": {
+    "datagrok-api": "latest"
+  },
+  "scripts": {
+    "upload-debug": "datagrok-upload http://localhost:8082 debug rebuild",
+    "upload-deploy": "webpack && datagrok-upload http://localhost:8082 deploy",
+    "build": "webpack"
+  },
+  "sources": [
+    "css/style.css"
+  ]
+}

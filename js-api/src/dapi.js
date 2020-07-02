@@ -59,7 +59,7 @@ export class Dapi {
 
     /** View Layouts API endpoint
      *  @type {HttpDataSource<ViewLayout>} */
-    get layouts() { return new HttpDataSource(grok_Dapi_Layouts(), (a) => new ViewLayout(a)); }
+    get layouts() { return new LayoutsDataSource(grok_Dapi_Layouts(), (a) => new ViewLayout(a)); }
 
     /** Data Table Infos API endpoint
      *  @type {HttpDataSource<TableInfo>} */
@@ -215,6 +215,26 @@ export class CredentialsDataSource extends HttpDataSource {
     forEntity(e) {
         let s = this.entityToJs;
         return new Promise((resolve, reject) => grok_CredentialsDataSource_ForEnrity(this.s, e.d, (c) => resolve(s(c[0]))));
+    }
+}
+
+/**
+ * Functionality for handling layouts collection from server
+ * Allows to manage {@link ViewLayout}
+ * @extends HttpDataSource
+ * */
+export class LayoutsDataSource extends HttpDataSource {
+    /** @constructs CredentialsDataSource*/
+    constructor(s, instance) {
+        super(s, instance);
+    }
+
+    /** Returns layouts that applicable to the table
+     * @param {DataFrame} t
+     * @returns {Promise<List<ViewLayout>>} */
+    getApplicable(t) {
+        let s = this.entityToJs;
+        return new Promise((resolve, reject) => grok_LayoutsDataSource_Applicable(this.s, t.d, (q) => resolve(q.map(s))));
     }
 }
 
