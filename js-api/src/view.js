@@ -45,6 +45,10 @@ export class ViewBase {
     get description() { return ''; }
     set description(s) { }
 
+    /** @type {Object} */
+    get entity() { return null; }
+    set entity(e) { }
+
     /** View toolbox.
      *  Sample: {@link https://public.datagrok.ai/js/samples/ui/views/toolbox}
      * @type {HTMLElement} */
@@ -99,7 +103,7 @@ export class ViewBase {
     detach() { this.subs.forEach((sub) => sub.unsubscribe()); }
 
     /** Closes this view. */
-    close() { this.detach(); }
+    close() { }
 }
 
 
