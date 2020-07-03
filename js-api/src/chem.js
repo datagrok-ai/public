@@ -93,6 +93,17 @@ export function descriptors(table, column, descriptors) {
 }
 
 /**
+ * Returns available descriptors tree.
+ * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/descriptors}
+ *
+ * @async
+ * @returns {Promise<Object>}
+ * */
+export function descriptorsTree() {
+    return new Promise((resolve, reject) => grok_Chem_DescriptorsTree((tree) => resolve(JSON.parse(tree))));
+}
+
+/**
  * Renders a molecule to SVG
  * https://public.datagrok.ai/js/samples/domains/chem/mol-rendering
  * @param {string} smiles
@@ -109,3 +120,9 @@ export function svgMol(smiles, width = 300, height = 200) {
     return root;
 }
 
+/**
+ * Molecule sketcher.
+ * @param {function} handler Molecule on change handler, SMILES
+ * @returns {HTMLElement}
+ * */
+export function sketcher(handler) { return grok_Chem_Sketcher(handler); }

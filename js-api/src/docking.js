@@ -7,7 +7,7 @@ export const DOCK_TYPE = {
     LEFT: "left",
     RIGHT: "right",
     TOP: "top",
-    BOTTOM: "bottom",
+    DOWN: "down",
     FILL: "fill",
 }
 
@@ -83,13 +83,15 @@ export class DockManager {
 
     /**
      * Docks the element relative to the reference node.
+     * @param {HTMLElement} element - Element to dock
      * @param {DockType} dockType - Dock type (left | right | top | bottom | fill).
+     * @param {DockNode|null} refNode - reference node
      * @param {number} ratio - Ratio of the area to take (relative to the reference node).
      * @param {string=} title - Name of the resulting column. Default value is agg(colName).
      * @returns {DockNode}
      * */
-    dock(element, dockType, refNode, title = '', ratio = 0.5) {
-        return new DockNode(grok_DockManager_Dock(this.d, refNode == null ? null : refNode.d, element, dockType, title, ratio));
+    dock(element, dockType = DG.DOCK_TYPE.LEFT, refNode = null, title = '', ratio = 0.5) {
+        return new DockNode(grok_DockManager_Dock(this.d, refNode === null ? null : refNode.d, element, dockType, title, ratio));
     }
 
     // /**
