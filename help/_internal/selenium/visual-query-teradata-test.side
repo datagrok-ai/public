@@ -340,20 +340,25 @@
       "id": "ae6f53fb-03bc-47c6-abbd-49420f855593",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=(//div[@name='view-handle: Orders'])[2]",
+      "target": "xpath=//div[@name='div-view-name']",
       "targets": [
-        ["css=.tab-handle:nth-child(5)", "css:finder"],
-        ["xpath=(//div[@name='view-handle: Orders'])[2]", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div[3]/div/div/div[3]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div[3]/div/div/div[3]", "xpath:position"]
+        ["css=.d4-ribbon-name", "css:finder"],
+        ["xpath=//div[@name='div-view-name']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[3]/div/div/div/div/div/div/div[2]", "xpath:idRelative"],
+        ["xpath=//div[3]/div[3]/div/div/div/div/div/div/div[2]", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "8a1af232-d903-4da0-ab7b-dcd15191fdcb",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//div[@name='view-handle: Orders'])[2]",
-      "targets": [],
+      "target": "xpath=//div[@name='div-view-name']",
+      "targets": [
+        ["css=.d4-ribbon-name", "css:finder"],
+        ["xpath=//div[@name='div-view-name']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[3]/div/div/div/div/div/div/div[2]", "xpath:idRelative"],
+        ["xpath=//div[3]/div[3]/div/div/div/div/div/div/div[2]", "xpath:position"]
+      ],
       "value": ""
     }, {
       "id": "076e17d8-7b8b-4c07-bfc8-fb37393d2851",
