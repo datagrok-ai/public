@@ -284,10 +284,10 @@
       "id": "553e7a5b-1e24-4d63-9148-c5480ec70348",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-times'])[2]",
+      "target": "css=.d4-ribbon:nth-child(1) > i[name=\"icon-times\"]",
       "targets": [
         ["css=.fa-times:nth-child(5)", "css:finder"],
-        ["xpath=(//i[@name='icon-times'])[2]", "xpath:attributes"],
+        ["css=.d4-ribbon:nth-child(1) > i[name=\"icon-times\"]", "xpath:attributes"],
         ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/i", "xpath:idRelative"],
         ["xpath=//div[2]/div/div/div/div/div/div/i", "xpath:position"]
       ],

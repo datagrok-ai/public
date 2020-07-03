@@ -517,7 +517,7 @@
       "id": "594d6cb2-c175-484f-8f99-5b78ca04897e",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-times'])[2]",
+      "target": "css=.d4-ribbon:nth-child(1) > i[name=\"icon-times\"]",
       "targets": [
         ["css=.fa-times:nth-child(5)", "css:finder"],
         ["xpath=(//i[@name='icon-times'])[3]", "xpath:attributes"],
@@ -545,14 +545,21 @@
       ],
       "value": ""
     }, {
+      "id": "636d08bd-bdb9-4592-8644-736e96eba18c",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "5a716513-bb66-4836-9ec2-781cb20ddfc0",
       "comment": "",
       "command": "doubleClick",
-      "target": "xpath=//div[@name='tree-MS-SQL---northwind---visual-query-filters-test']",
+      "target": "name=tree-MS-SQL---northwind---visual-query-filters-test",
       "targets": [
-        ["css=.d4-tree-view-group:nth-child(1) .d4-tree-view-group:nth-child(4) > .d4-tree-view-node", "css:finder"],
+        ["css=.d4-tree-view-group-host > .d4-tree-view-group:nth-child(1) .d4-tree-view-group:nth-child(4) > .d4-tree-view-node", "css:finder"],
         ["xpath=//div[@name='tree-MS-SQL---northwind---visual-query-filters-test']", "xpath:attributes"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div[18]/div[2]/div/div[2]/div[4]/div", "xpath:idRelative"],
+        ["xpath=//div[@id='elementContent']/div/div/div[2]/div[17]/div[2]/div/div[2]/div[4]/div", "xpath:idRelative"],
         ["xpath=//div[2]/div/div[2]/div[4]/div", "xpath:position"]
       ],
       "value": ""
@@ -560,7 +567,7 @@
       "id": "02ed8863-3aad-407e-a2a4-41e0aefab40b",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "2000",
       "targets": [],
       "value": ""
     }, {
