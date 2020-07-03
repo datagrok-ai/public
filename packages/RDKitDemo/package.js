@@ -3,6 +3,9 @@ class RDKitDemoPackage extends DG.Package {
     /** Guaranteed to be executed exactly once before the execution of any function below */
     async init() {
         await initRDKit();
+
+        this.STORAGE_NAME = 'rdkit_descriptors';
+        this.KEY = 'selected';
     }
 
     _svgDiv(mol) {
@@ -33,21 +36,46 @@ class RDKitDemoPackage extends DG.Package {
 
     //tags: app
     descriptorsApp(context) {
+        let defaultSmiles = 'O=C1CN=C(c2ccccc2N1)C3CCCCC3';
+        let sketcherValue = defaultSmiles;
+
         let windows = grok.shell.windows;
         windows.showToolbox = false;
         windows.showHelp = false;
         windows.showProperties = false;
 
-        let sketcher = ui.div([grok.chem.sketcher(() => {})], 'dlg-sketcher,pure-form');
-        let descriptors = ui.divV([], 'grok-prop-panel');
         let table = DG.DataFrame.create();
         table.name = 'Descriptors';
-
-        descriptors.appendChild(this.descriptorsWidget('CC1=CC(=O)C=CC1=O').root);
-
         let view = grok.shell.addTableView(table);
-        let skNode = view.dockManager.dock(sketcher, DG.DOCK_TYPE.RIGHT, null, 'Sketcher', 0.25);
-        view.dockManager.dock(descriptors, DG.DOCK_TYPE.DOWN, skNode, 'Descriptors', 0.5);
+
+        let dsDiv = ui.divV([], 'grok-prop-panel');
+        dsDiv.appendChild(this.descriptorsWidget(defaultSmiles).root);
+
+        let sketcher = grok.chem.sketcher((smiles) => {
+            sketcherValue = smiles;
+            RDKitDemoPackage.removeChildren(dsDiv);
+            dsDiv.appendChild(this.descriptorsWidget(smiles).root);
+        }, defaultSmiles);
+        let addButton = ui.bigButton('ADD', async () => {
+            this.getSelected().then(selected => {
+                grok.chem.descriptors(DG.DataFrame.fromCsv(`smiles\n${sketcherValue}`), 'smiles', selected).then(t => {
+                    let columnNames = table.columns.names();
+                    if ((table.columns.length !== selected.length + 1) || selected.some(s => !columnNames.includes(s))) {
+                        table = DG.DataFrame.create();
+                        table.name = 'Descriptors';
+                        view.dataFrame = table;
+                        for (let col of t.columns.toList())
+                            table.columns.addNew(col.name, col.type);
+                    }
+                    table.rows.addNew(t.columns.toList().map(c => c.get(0)));
+                });
+            });
+        });
+        addButton.style.marginTop = '12px';
+        let skDiv = ui.divV([sketcher, addButton], 'grok-prop-panel,dlg-sketcher,pure-form');
+
+        let skNode = view.dockManager.dock(skDiv, DG.DOCK_TYPE.RIGHT, null, 'Sketcher', 0.25);
+        view.dockManager.dock(dsDiv, DG.DOCK_TYPE.DOWN, skNode, 'Descriptors', 0.5);
 
         grok.events.onViewRemoved.subscribe((v) => {
             if (v.name === view.name) {
@@ -63,33 +91,20 @@ class RDKitDemoPackage extends DG.Package {
     //input: string smiles { semType: Molecule }
     //output: widget result
     descriptorsWidget(smiles) {
-        const STORAGE_NAME = 'rdkit_descriptors';
-        const KEY = 'selected';
-
-        async function getSelected() {
-            let str = await grok.dapi.userDataStorage.getValue(STORAGE_NAME, KEY);
-            let selected = (str != null && str !== '') ? JSON.parse(str) : [];
-            if (selected.length === 0) {
-                selected = (await grok.chem.descriptorsTree())['Lipinski']['descriptors'].slice(0, 3).map(p => p['name']);
-                await grok.dapi.userDataStorage.postValue(STORAGE_NAME, KEY, JSON.stringify(selected));
-            }
-            return selected;
-        }
-
         let widget = new DG.Widget(ui.div());
         let result = ui.div();
         let selectButton = ui.bigButton('SELECT', async () => {
-            RDKitDemoPackage.openDescriptorsDialog(await getSelected(), async (selected) => {
-                await grok.dapi.userDataStorage.postValue(STORAGE_NAME, KEY, JSON.stringify(selected));
+            RDKitDemoPackage.openDescriptorsDialog(await this.getSelected(), async (selected) => {
+                await grok.dapi.userDataStorage.postValue(this.STORAGE_NAME, this.KEY, JSON.stringify(selected));
                 update();
             });
         });
         selectButton.style.marginTop = '20px';
 
-        function update() {
+        let update = () => {
             RDKitDemoPackage.removeChildren(result);
             result.appendChild(ui.loader());
-            getSelected().then(selected => {
+            this.getSelected().then(selected => {
                 grok.chem.descriptors(DG.DataFrame.fromCsv(`smiles\n${smiles}`), 'smiles', selected).then(table => {
                     RDKitDemoPackage.removeChildren(result);
                     let map = {};
@@ -106,6 +121,17 @@ class RDKitDemoPackage extends DG.Package {
         update();
 
         return widget;
+    }
+
+    //description: Get selected descriptors
+    async getSelected() {
+        let str = await grok.dapi.userDataStorage.getValue(this.STORAGE_NAME, this.KEY);
+        let selected = (str != null && str !== '') ? JSON.parse(str) : [];
+        if (selected.length === 0) {
+            selected = (await grok.chem.descriptorsTree())['Lipinski']['descriptors'].slice(0, 3).map(p => p['name']);
+            await grok.dapi.userDataStorage.postValue(this.STORAGE_NAME, this.KEY, JSON.stringify(selected));
+        }
+        return selected;
     }
 
     //description: Open descriptors selection dialog
