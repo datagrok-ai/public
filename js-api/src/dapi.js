@@ -88,6 +88,25 @@ export class Dapi {
     /** Users Data Storage API endpoint
      *  @type {UserDataStorage} */
     get userDataStorage() { return new UserDataStorage(); }
+
+    /** Proxies URL request via Datagrok server with same interface as "fetch".
+     * @param {string} method
+     * @param {string} url
+     * @param {Object} body
+     * @param {Object} headers
+     * @returns {Promise<Object>} */
+    static async proxy(method, url, body = {}, headers = {}) {
+        headers['Accept'] = 'application/json';
+        headers['original-url'] = `${url}`;
+        headers['original-method'] = method;
+        let params = {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(body)
+        };
+        let r = await fetch('/api/connectors/proxy', params);
+        return await r.json();
+    }
 }
 
 
