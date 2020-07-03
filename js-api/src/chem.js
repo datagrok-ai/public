@@ -123,6 +123,7 @@ export function svgMol(smiles, width = 300, height = 200) {
 /**
  * Molecule sketcher.
  * @param {function} handler Molecule on change handler, SMILES
+ * @param {string} smiles Initial molecule
  * @returns {HTMLElement}
  * */
-export function sketcher(handler) { return grok_Chem_Sketcher(handler); }
+export function sketcher(handler, smiles = '') { return grok_Chem_Sketcher(handler, smiles); }
