@@ -6,5 +6,5 @@
 #condition: table.name == "demog" && table.columns.containsAll(["height", "weight", "age", "sex"])
 #output: viewer plot
 
-plot = table.ScatterPlot("height", "weight", "age", "sex")
+plot = ScatterPlot(table, x = "height", y = "weight", size = "age", color = "sex")
 plot.showRegressionLine = true
