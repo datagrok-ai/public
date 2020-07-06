@@ -243,7 +243,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                         else
                             columns.get(c - 1).add(value);
                     else if (isString(type, typeName)) {
-                        if (type == java.sql.Types.CLOB) {
+                        if (type == java.sql.Types.CLOB || value instanceof Clob) {
                             Reader reader = ((Clob)value).getCharacterStream();
                             StringWriter writer = new StringWriter();
                             IOUtils.copy(reader, writer);
