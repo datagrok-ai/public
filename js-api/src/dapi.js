@@ -92,10 +92,10 @@ export class Dapi {
     /** Proxies URL request via Datagrok server with same interface as "fetch".
      * @param {string} method
      * @param {string} url
-     * @param {Object} body
      * @param {Object} headers
+     * @param {Object} body
      * @returns {Promise<Object>} */
-    static async proxy(method, url, body = {}, headers = {}) {
+    async proxyFetch(method, url, headers = {}, body = {}) {
         headers['Accept'] = 'application/json';
         headers['original-url'] = `${url}`;
         headers['original-method'] = method;
