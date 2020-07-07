@@ -1,0 +1,267 @@
+{
+  "id": "b390008b-1b39-4405-bcfd-6b03f9f4d568",
+  "version": "2.0",
+  "name": "discovery-app-test",
+  "url": "https://dev.datagrok.ai/",
+  "tests": [{
+    "id": "1e1a7755-4e26-458c-9783-60348afe35cf",
+    "name": "discovery-app-test",
+    "commands": [{
+      "id": "8ff604b9-81db-4083-8663-4b119b7492f9",
+      "comment": "",
+      "command": "open",
+      "target": "/?selenium=true",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "2e74e989-5df1-447f-bf7b-163871b24921",
+      "comment": "",
+      "command": "type",
+      "target": "xpath=//div[@id='signup-login-fields']/div/div/input",
+      "targets": [
+        ["id=password", "id"],
+        ["css=#password", "css:finder"],
+        ["xpath=//input[@id='password']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/input[2]", "xpath:idRelative"],
+        ["xpath=//input[2]", "xpath:position"]
+      ],
+      "value": "selenium"
+    }, {
+      "id": "d9132049-31ef-45e7-bd38-43ed931a9bc2",
+      "comment": "",
+      "command": "type",
+      "target": "xpath=//div[@id='signup-login-fields']/div/div[2]/input",
+      "targets": [
+        ["id=password", "id"],
+        ["css=#password", "css:finder"],
+        ["xpath=//input[@id='password']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/input[2]", "xpath:idRelative"],
+        ["xpath=//input[2]", "xpath:position"]
+      ],
+      "value": "selenium"
+    }, {
+      "id": "c06f8d03-321e-40fa-bf29-25ec098103fc",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@id='signup-login-fields']/div[2]/button",
+      "targets": [
+        ["linkText=LOGIN", "linkText"],
+        ["css=a", "css:finder"],
+        ["xpath=//a[contains(text(),'LOGIN')]", "xpath:link"],
+        ["xpath=//div[@id='rootDiv']/div/a", "xpath:idRelative"],
+        ["xpath=//a[contains(@href, '#')]", "xpath:href"],
+        ["xpath=//a", "xpath:position"],
+        ["xpath=//a[contains(.,'LOGIN')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "ab8f2726-12a0-40e3-ac90-4730f3344006",
+      "comment": "",
+      "command": "pause",
+      "target": "5000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "e00f4506-4124-46ae-af8d-e27d53fa06da",
+      "comment": "",
+      "command": "verifyElementNotPresent",
+      "target": "xpath=//i[@name='icon-exclamation-circle']",
+      "targets": [
+        ["css=.fa-exclamation-circle", "css:finder"],
+        ["xpath=//i[@name='icon-exclamation-circle']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/i", "xpath:idRelative"],
+        ["xpath=//div[2]/i", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "0be464aa-9e51-4800-99be-3b1777f29108",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//i[@name='icon-function']",
+      "targets": [
+        ["css=.fa-function", "css:finder"],
+        ["xpath=//i[@name='icon-function']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div[3]/i", "xpath:idRelative"],
+        ["xpath=//div[3]/i", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "f50894bd-2893-437e-b6e2-b8247cd10e39",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//span[contains(.,'Apps')]",
+      "targets": [
+        ["css=.d4-toggle-button:nth-child(1) > span", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/span", "xpath:position"],
+        ["xpath=//span[contains(.,'Apps')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "0dba5c2e-800a-4e05-9162-3c5a5e099de6",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "ccefa6d6-f9af-4185-9bac-04040bb355a3",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "id=grok-app",
+      "targets": [
+        ["id=grok-app", "id"],
+        ["css=#grok-app", "css:finder"],
+        ["xpath=//h1[@id='grok-app']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/span/h1", "xpath:idRelative"],
+        ["xpath=//span/h1", "xpath:position"],
+        ["xpath=//h1[contains(.,'Grok App')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "488420f5-d357-47bd-ad65-515cb7e20466",
+      "comment": "",
+      "command": "doubleClick",
+      "target": "name=div-Discovery",
+      "targets": [
+        ["css=span:nth-child(1) > label", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[2]/div[2]/div/table/tbody/tr/td[2]/span/span/label", "xpath:idRelative"],
+        ["xpath=//td[2]/span/span/label", "xpath:position"],
+        ["xpath=//label[contains(.,'SPGi v.0.4')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "7bb11714-6b63-49c1-8e67-2caeebf395ab",
+      "comment": "",
+      "command": "pause",
+      "target": "2000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "03df217b-a673-4ecd-b580-8f380b16cfef",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "xpath=//h1[contains(.,'Discovery')]",
+      "targets": [
+        ["css=h1", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div/h1", "xpath:idRelative"],
+        ["xpath=//h1", "xpath:position"],
+        ["xpath=//h1[contains(.,'Discovery')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "46bf3a63-3903-483b-ba0e-3aade1c6f18a",
+      "comment": "",
+      "command": "verifyElementNotPresent",
+      "target": "xpath=//i[@name='icon-exclamation-circle']",
+      "targets": [
+        ["css=.fa-exclamation-circle", "css:finder"],
+        ["xpath=//i[@name='icon-exclamation-circle']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/i", "xpath:idRelative"],
+        ["xpath=//div[2]/i", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "8a933ee4-219e-4a21-9325-820d81814116",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "name=FIRST",
+      "targets": [
+        ["css=.fa-smile", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div/div/i", "xpath:idRelative"],
+        ["xpath=//i", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "79216539-0a8f-4ef3-8747-84618ee03a42",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "name=SECOND",
+      "targets": [
+        ["css=.fa-function", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div/div[2]/i", "xpath:idRelative"],
+        ["xpath=//div[2]/i", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "7ed9ffd9-52dc-45a5-9de1-5939fc3016cb",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "name=viewer-Scatter-plot",
+      "targets": [
+        ["css=.fa-function", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div/div[2]/i", "xpath:idRelative"],
+        ["xpath=//div[2]/i", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "fd7ec6e6-d3bd-4793-aaf7-9da3c139867f",
+      "comment": "",
+      "command": "verifyText",
+      "target": "css=.d4-tab-content > .expanded",
+      "targets": [],
+      "value": "A panel"
+    }, {
+      "id": "8d371efe-02fd-43d9-937e-eac50aebd877",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "3b31a0d5-a051-4cf9-99b0-d7b21ee27952",
+      "comment": "",
+      "command": "executeScript",
+      "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "c7629bcd-dab4-41ac-ac1e-521d7dcb32cd",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "b58d496b-706a-4b6a-9e35-1d1ecd861c87",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='div-Close-All']",
+      "targets": [
+        ["css=.d4-menu-popup > .d4-menu-item", "css:finder"],
+        ["xpath=//div[@name='div-Close-All']", "xpath:attributes"],
+        ["xpath=//body/div[10]/div[2]", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "639a294d-5eaa-400b-8333-0f0e55e0bf73",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "7865e6bd-67cd-45cd-809c-85090290e952",
+      "comment": "",
+      "command": "verifyElementNotPresent",
+      "target": "xpath=//i[@name='icon-exclamation-circle']",
+      "targets": [
+        ["css=.fa-exclamation-circle", "css:finder"],
+        ["xpath=//i[@name='icon-exclamation-circle']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/i", "xpath:idRelative"],
+        ["xpath=//div[2]/i", "xpath:position"]
+      ],
+      "value": ""
+    }]
+  }],
+  "suites": [{
+    "id": "ec967ec6-1191-47c4-9144-a537f982d65b",
+    "name": "discovery-app-test",
+    "persistSession": false,
+    "parallel": false,
+    "timeout": 300,
+    "tests": ["1e1a7755-4e26-458c-9783-60348afe35cf"]
+  }],
+  "urls": ["https://dev.datagrok.ai/"],
+  "plugins": []
+}
