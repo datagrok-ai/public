@@ -230,7 +230,7 @@ export class Package {
     /*async*/ init() { return Promise.resolve(null); }
 
     /** Returns credentials for package
-     * @returns {Credentials} */
+     * @returns {Promise<Credentials>} */
     getCredentials() {
         return new Promise((resolve, reject) => grok_Package_Get_Credentials(this.name, (c) => {
             let cred = toJs(c);
