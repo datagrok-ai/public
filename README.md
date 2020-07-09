@@ -19,16 +19,26 @@ and reach out to Andrew (askalkin@datagrok.ai) or post on our [community forum](
   * Timeline chart
   * Gantt chart
   * Sunburst chart
+  * Radar chart
   * Port visjs-based [network diagram](https://datagrok.ai/help/visualize/viewers/network-diagram) from Dart to JavaScript
   * WebGL-based rendering of the 2D scatter plot to work with 10M+ points
   * GIS: leaflet-m
+  * [Event drops](https://github.com/marmelab/EventDrops)
 * Scientific methods
   * Statistical hypothesis testing
-  * Bayesian statistics 
+  * Bayesian statistics
+  * Computer vision
+  * NLP 
+    * integration with the modern models (BERT, etc)
+    * pre-defined tasks (sentiment extraction, etc)
+* Apps  
+  * Examples: Real-time sentiment analysis of tweets 
+  * Examples: Amazon store clone 
 * File editors and viewers
+* File metadata extractors (see Apache Kafka)
 * WASM-based support for digital signal processing
 * Domain-specific algorithms  
-* Connectors to public web services
+* Connectors to web services
 * Bioinformatics
 * Telecom
 * Fintech
