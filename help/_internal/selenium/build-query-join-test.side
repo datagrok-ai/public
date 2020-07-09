@@ -146,12 +146,12 @@
       "id": "f5d901e1-791d-4c32-b367-7a5cd3a425ce",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='tree-PostgreSQL---datagrok---Tables---chats']",
+      "target": "xpath=//div[@name='tree-PostgreSQL---datagrok---Tables---models']",
       "targets": [
-        ["css=.d4-tree-view-group-host > .d4-tree-view-group:nth-child(1) .d4-tree-view-group:nth-child(1) > .d4-tree-view-node", "css:finder"],
-        ["xpath=//div[@name='tree-PostgreSQL---datagrok---Tables---chats']", "xpath:attributes"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div[24]/div[2]/div[4]/div[2]/div/div[2]/div/div", "xpath:idRelative"],
-        ["xpath=//div[4]/div[2]/div/div[2]/div/div", "xpath:position"]
+        ["css=.d4-tree-view-group-host > .d4-tree-view-group:nth-child(1) .d4-tree-view-group:nth-child(30) > .d4-tree-view-node", "css:finder"],
+        ["xpath=//div[@name='tree-PostgreSQL---datagrok---Tables---models']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div[2]/div[24]/div[2]/div[4]/div[2]/div/div[2]/div[30]/div", "xpath:idRelative"],
+        ["xpath=//div[30]/div", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -209,18 +209,35 @@
       "id": "3be644ab-27df-4e5c-8cd3-75803ebcff64",
       "comment": "",
       "command": "click",
-      "target": "xpath=//input[@id='editor']",
+      "target": "xpath=(//input[@id='editor'])[15]",
       "targets": [
-        ["id=editor", "id"],
-        ["css=.d4-table:nth-child(1) > .header #editor", "css:finder"],
-        ["xpath=//input[@id='editor']", "xpath:attributes"],
-        ["xpath=//label/input", "xpath:position"]
+        ["css=.d4-table:nth-child(2) > .header #editor", "css:finder"],
+        ["xpath=(//input[@id='editor'])[15]", "xpath:attributes"],
+        ["xpath=//div[2]/div[2]/div/div/label/input", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "4efe3d30-6706-48f8-ab5f-27a548984f5a",
       "comment": "",
       "command": "click",
+      "target": "xpath=(//input[@id='editor'])[15]",
+      "targets": [
+        ["css=.d4-table:nth-child(2) > .header #editor", "css:finder"],
+        ["xpath=(//input[@id='editor'])[15]", "xpath:attributes"],
+        ["xpath=//div[2]/div[2]/div/div/label/input", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "c3f3d674-5164-46f8-927e-0bbfb2652a49",
+      "comment": "",
+      "command": "pause",
+      "target": "5000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "79e90cf9-e0a4-49bf-9836-4bbdf02bbff0",
+      "comment": "",
+      "command": "click",
       "target": "xpath=//input[@id='editor']",
       "targets": [
         ["id=editor", "id"],
@@ -230,29 +247,19 @@
       ],
       "value": ""
     }, {
-      "id": "5b0b02db-6a67-486d-a02b-b8322d63e26f",
+      "id": "72cb787c-2cfa-4d4d-ac7b-29cc175e0d4f",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//input[@id='editor'])[9]",
+      "target": "xpath=//input[@id='editor']",
       "targets": [
-        ["css=.d4-table:nth-child(2) > .header #editor", "css:finder"],
-        ["xpath=(//input[@id='editor'])[9]", "xpath:attributes"],
-        ["xpath=//div[2]/div[2]/div/div/label/input", "xpath:position"]
+        ["id=editor", "id"],
+        ["css=.d4-table:nth-child(1) > .header #editor", "css:finder"],
+        ["xpath=//input[@id='editor']", "xpath:attributes"],
+        ["xpath=//label/input", "xpath:position"]
       ],
       "value": ""
     }, {
-      "id": "d4402b52-e7c9-439a-a215-c1c092cc0104",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=(//input[@id='editor'])[9]",
-      "targets": [
-        ["css=.d4-table:nth-child(2) > .header #editor", "css:finder"],
-        ["xpath=(//input[@id='editor'])[9]", "xpath:attributes"],
-        ["xpath=//div[2]/div[2]/div/div/label/input", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "c3f3d674-5164-46f8-927e-0bbfb2652a49",
+      "id": "5befaa22-a682-4241-b832-ec4645731f9e",
       "comment": "",
       "command": "pause",
       "target": "5000",
@@ -305,7 +312,7 @@
         ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span[2]", "xpath:idRelative"],
         ["xpath=//span[2]", "xpath:position"]
       ],
-      "value": "chats"
+      "value": "models"
     }, {
       "id": "ae6f53fb-03bc-47c6-abbd-49420f855593",
       "comment": "",
@@ -372,7 +379,7 @@
       "id": "1f3f5769-fb04-4aa5-8475-a558a5b087ad",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='view-handle: result']",
+      "target": "xpath=//div[@name='view-handle: models']",
       "targets": [
         ["css=.tab-handle:nth-child(4)", "css:finder"],
         ["xpath=//div[@name='view-handle: result']", "xpath:attributes"],
@@ -434,7 +441,7 @@
       "id": "d019e9e3-9f5e-45cf-b1f6-a28061c863cd",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//span[contains(.,'13')]",
+      "target": "xpath=//span[contains(.,'33')]",
       "targets": [
         ["css=.d4-pane-general tr:nth-child(2) > td:nth-child(2) > span", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div[2]/table/tbody/tr[2]/td[2]/span", "xpath:idRelative"],
