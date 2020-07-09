@@ -362,7 +362,7 @@
         ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
         ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
       ],
-      "value": "result"
+      "value": "Orders"
     }, {
       "id": "e00f4506-4124-46ae-af8d-e27d53fa06da",
       "comment": "",

@@ -147,31 +147,56 @@
     }, {
       "id": "dad53404-ba8e-46d4-9a46-90200a431a13",
       "comment": "",
-      "command": "click",
-      "target": "name=icon-arrow-to-bottom",
+      "command": "doubleClick",
+      "target": "xpath=//i[@name='icon-window']",
       "targets": [
-        ["css=.d4-combo-popup-expanded", "css:finder"],
-        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[3]/div[2]/div[2]/div", "xpath:idRelative"],
-        ["xpath=//div[3]/div[2]/div[2]/div", "xpath:position"]
+        ["css=.fa-window", "css:finder"],
+        ["xpath=//i[@name='icon-window']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div[8]/i", "xpath:idRelative"],
+        ["xpath=//div[8]/i", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "bb954a3b-63a8-4cde-99ca-559b3a8b0446",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "ef678332-f0cc-4690-921b-2f165bf7b8be",
       "comment": "",
       "command": "click",
-      "target": "name=Save local file as CSV",
-      "targets": [],
+      "target": "xpath=//div[@name='div-File']",
+      "targets": [
+        ["css=.d4-menu-item-hover:nth-child(2)", "css:finder"],
+        ["xpath=//div[@name='div-File']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div[2]", "xpath:idRelative"],
+        ["xpath=//div[3]/div[2]/div/div/div/div[2]", "xpath:position"]
+      ],
       "value": ""
     }, {
-      "id": "cd8cdb0e-fda0-42bb-ab1d-f362ccd7911a",
+      "id": "401fdd0d-6191-4c4f-a0be-42a148939fa4",
       "comment": "",
       "command": "click",
-      "target": "name=icon-save-local-file-as-csv",
+      "target": "xpath=//div[@name='div-File---Save']",
       "targets": [
         ["css=.d4-menu-item-hover:nth-child(3)", "css:finder"],
         ["xpath=//div[@name='div-File---Save']", "xpath:attributes"],
         ["xpath=//div[@id='rootDiv']/div/div/div/div/div/div[3]", "xpath:idRelative"],
         ["xpath=//div[13]/div/div/div/div/div/div[3]", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "cd8cdb0e-fda0-42bb-ab1d-f362ccd7911a",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='div-File---Save---As-CSV']",
+      "targets": [
+        ["css=.d4-menu-item:nth-child(2) .d4-menu-item:nth-child(4) .d4-menu-item:nth-child(2)", "css:finder"],
+        ["xpath=//div[@name='div-File---Save---As-CSV']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div[2]/div/div/div[4]/div/div/div[2]", "xpath:idRelative"],
+        ["xpath=//div[4]/div/div/div[2]", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -221,12 +246,12 @@
       "id": "5aac2ebe-402e-4143-a4e6-ed1843102018",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-File---Save---Table-as-CSV-(options)...']",
+      "target": "xpath=//div[@name='div-File---Save---As-CSV-(options)...']",
       "targets": [
-        ["css=.d4-menu-item-container > .d4-menu-item:nth-child(1) .d4-menu-item:nth-child(3) .d4-menu-item:nth-child(2)", "css:finder"],
-        ["xpath=//div[@name='div-File---Save---Table-as-CSV-(options)...']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div/div/div[3]/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[3]/div/div[2]", "xpath:position"]
+        ["css=.d4-menu-item:nth-child(2) .d4-menu-item:nth-child(4) .d4-menu-item:nth-child(3)", "css:finder"],
+        ["xpath=//div[@name='div-File---Save---As-CSV-(options)...']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div[2]/div/div/div[4]/div/div/div[3]", "xpath:idRelative"],
+        ["xpath=//div[4]/div/div/div[3]", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -390,12 +415,11 @@
       "id": "d9a6c5f5-18c5-41aa-b7de-c144199adeaa",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-File---Save---Table-as-JSON']",
+      "target": "name=div-File---Save---As-JSON",
       "targets": [
-        ["css=.d4-menu-item-hover:nth-child(3)", "css:finder"],
-        ["xpath=//div[@name='div-File---Save']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/div/div/div[3]", "xpath:idRelative"],
-        ["xpath=//div[13]/div/div/div/div/div/div[3]", "xpath:position"]
+        ["css=canvas:nth-child(4)", "css:finder"],
+        ["xpath=//div[@id='elementContent']/canvas[2]", "xpath:idRelative"],
+        ["xpath=//canvas[2]", "xpath:position"]
       ],
       "value": ""
     }, {
