@@ -9,6 +9,30 @@ Organizations that deploy Datagrok on their premises can access public packages.
 they might establish their own private repositories (most likely on their premises on the virtual private
 cloud) that would contain their proprietary applications built on top of the platform. 
 
+# Ideas for the contributions
+
+If you want to get familiar with the platform, here are some ideas. Pick whatever interests you,
+and reach out to Andrew (askalkin@datagrok.ai) or post on our [community forum](https://community.datagrok.ai/). 
+
+* Visualizations
+  * Sankey diagram
+  * Timeline chart
+  * Gantt chart
+  * Sunburst chart
+  * Port visjs-based [network diagram](https://datagrok.ai/help/visualize/viewers/network-diagram) from Dart to JavaScript
+  * WebGL-based rendering of the 2D scatter plot to work with 10M+ points
+  * GIS: leaflet-m
+* Scientific methods
+  * Statistical hypothesis testing
+  * Bayesian statistics 
+* File editors and viewers
+* WASM-based support for digital signal processing
+* Domain-specific algorithms  
+* Connectors to public web services
+* Bioinformatics
+* Telecom
+* Fintech
+
 # Package Development Guide
 
 Here are some of the best practices for developing and publishing Datagrok plugins: 
