@@ -37,6 +37,12 @@ export function appendAll(root, elements) {
         return root;
     }
 
+export function empty(e) {
+    while (foo.firstChild)
+        e.removeChild(foo.firstChild);
+    return e;
+}
+
 export function _innerText(x, s) { x.innerText = s; return x; }
 export function _class(x, s) { x.classList.add(s); return x; }
 export function _color(x, s) { x.style.color = s; return x; }
@@ -64,9 +70,12 @@ export function tabControl(vertical = false) { return TabControl.create(vertical
 /** Returns DivElement with the specified inner text
  * @param {string} text
  * @returns {HTMLDivElement} */
-export function divText(text) {
+export function divText(text, className = null) {
     let e = element('div');
     e.innerText = text;
+    if (className != null)
+        e.classList.add(className);
+
     return e;
 }
 
@@ -166,12 +175,12 @@ export function bind(item, element) { return grok_UI_Bind(item, element); }
  * Creates a virtual list widget
  * @param {number} length - number of elements
  * @param {Function} renderer
- * @returns {HTMLElement}
+ * @returns {VirtualView}
  */
 export function virtualView(length, renderer) {
     let view = VirtualView.create();
     view.setData(length, renderer);
-    return view.root;
+    return view;
 }
 
 export function popupMenu(items) {

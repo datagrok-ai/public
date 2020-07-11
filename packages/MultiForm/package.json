@@ -1,0 +1,10 @@
+{
+  "name": "MultiForm",
+  "version": "0.1",
+  "fullName": "MultiForm",
+  "description": "MultiForm viewer provides a convenient way to visualize a set of selected rows.",
+  "sources": [
+    "src/multi_form.css",
+    "src/multi_form.js"
+  ]
+}

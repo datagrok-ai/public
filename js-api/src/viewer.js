@@ -185,6 +185,12 @@ export class JsViewer {
      * @returns {string} */
     string(propertyName, defaultValue = null) { return this._prop(propertyName, TYPE.STRING, defaultValue); }
 
+    /** Registers a string list property with the specified name and defaultValue
+     * @param {ViewerPropertyType} propertyName
+     * @param {string[]} defaultValue
+     * @returns {string[]} */
+    stringList(propertyName, defaultValue= null) { return this._prop(propertyName, TYPE.STRING_LIST, defaultValue); }
+
     /** Registers a boolean property with the specified name and defaultValue
      * @param {ViewerPropertyType} propertyName
      * @param {boolean} defaultValue
