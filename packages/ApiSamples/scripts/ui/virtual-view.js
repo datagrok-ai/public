@@ -9,5 +9,5 @@ grok.shell.newView('virtual view', [
         sex: data.row(i).sex,
         height: data.row(i).height,
         weight: data.row(i).weight
-    })))
+    }))).root
 ]);

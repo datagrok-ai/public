@@ -26,7 +26,6 @@ class LeafletViewer extends DG.JsViewer {
     }
 
     onTableAttached() {
-        console.log('foo');
         this.init();
 
         this.latitude = this.dataFrame.columns.bySemType(DG.SEMTYPE.LATITUDE);
