@@ -4,6 +4,11 @@
     align-items: center;
 }
 
+.layout-bottom-panel {
+    height: 40px;
+    align-items: center;
+}
+
 .layout-top-panel h1 {
     color: white;
     font-size: 18px;
@@ -24,4 +29,34 @@
 
 .layout-sidebar .d4-tab-header i {
     color: #aaa;
+}
+
+.discovery-tabs {
+    display: flex;
+    flex-direction: row;
+    background-color: var(--grey-2);
+    width: 100%;
+    height: 100%;
+    align-items: center;
+    border-top: 1px solid var(--grey-3);
+}
+
+.discovery-tabs > div {
+    cursor: pointer;
+    display: flex;
+    height: 100%;
+    align-items: center;
+    padding: 0 25px;
+    border-left: 1px solid transparent;
+    border-right: 1px solid transparent;
+    border-bottom: 3px solid transparent;
+    box-sizing: border-box;
+    margin-top: -1px;
+}
+
+.discovery-tabs > div.current {
+    background-color: white;
+    border-left: 1px solid var(--grey-3);
+    border-right: 1px solid var(--grey-3);
+    border-bottom: 3px solid var(--blue-1);
 }
