@@ -184,6 +184,19 @@
       ],
       "value": ""
     }, {
+      "id": "42784cce-8c1e-4919-98ba-de5f9fad59f9",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "xpath=//span[@name='span-cars']",
+      "targets": [
+        ["css=span:nth-child(1)", "css:finder"],
+        ["xpath=//span[@name='span-cars']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[3]/div/div/div/div/div/div/div[2]/span", "xpath:idRelative"],
+        ["xpath=//div[2]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'cars')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
       "id": "7ed9ffd9-52dc-45a5-9de1-5939fc3016cb",
       "comment": "",
       "command": "verifyElementPresent",
@@ -246,6 +259,80 @@
       "value": "A panel"
     }, {
       "id": "8d371efe-02fd-43d9-937e-eac50aebd877",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "41731b46-4035-46f4-9bc4-7ce6e4e3ba39",
+      "comment": "",
+      "command": "click",
+      "target": "css=.discovery-tabs > div:nth-child(1)",
+      "targets": [
+        ["css=.discovery-tabs > div:nth-child(1)", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[4]/div/div", "xpath:idRelative"],
+        ["xpath=//div[3]/div[4]/div/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "b267c67e-ac7e-4868-8e8e-4c5d8536d100",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "06f9bd26-75b2-4183-9ecb-ace3a2ee272c",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "name=viewer-Scatter-plot",
+      "targets": [
+        ["css=.fa-function", "css:finder"],
+        ["xpath=//div[@id='rootDiv']/div/div/div[2]/i", "xpath:idRelative"],
+        ["xpath=//div[2]/i", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "e4408bd8-fa8a-4cd3-887f-78b6e0989e8d",
+      "comment": "",
+      "command": "verifyElementNotPresent",
+      "target": "xpath=//span[@name='span-cars']",
+      "targets": [
+        ["css=span:nth-child(1)", "css:finder"],
+        ["xpath=//span[@name='span-cars']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[3]/div/div/div/div/div/div/div[2]/span", "xpath:idRelative"],
+        ["xpath=//div[2]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'cars')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "43a1a582-52bd-482c-948c-c87db807b25c",
+      "comment": "",
+      "command": "verifyElementNotPresent",
+      "target": "xpath=//i[@name='icon-exclamation-circle']",
+      "targets": [
+        ["css=.fa-exclamation-circle", "css:finder"],
+        ["xpath=//i[@name='icon-exclamation-circle']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/i", "xpath:idRelative"],
+        ["xpath=//div[2]/i", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "77263f5f-98c1-499c-96ab-88abdc2b733e",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "xpath=//span[@name='span-demog-10000']",
+      "targets": [
+        ["css=span:nth-child(1)", "css:finder"],
+        ["xpath=//span[@name='span-demog-10000']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[3]/div/div/div/div/div/div/div[2]/span", "xpath:idRelative"],
+        ["xpath=//div[2]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'demog 10000')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "72451378-8d03-4ec0-b076-db86b99b78ba",
       "comment": "",
       "command": "pause",
       "target": "1000",
