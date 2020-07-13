@@ -60,6 +60,9 @@ export class Shell {
     /** @type {HTMLDivElement} */
     get topPanel() { return grok_Get_TopPanel(); }
 
+    /** @type {HTMLDivElement} */
+    get bottomPanel() { return grok_Get_BottomPanel(); }
+
     /** Shows information message (green background)
      * @param {string} s - message */
     info(s) { grok_Balloon(s, 'info'); }
