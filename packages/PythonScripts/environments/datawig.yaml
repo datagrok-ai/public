@@ -8,6 +8,5 @@ dependencies:
   - numpy
   - obspy
   - matplotlib
-
-pip:
-  - datawig = 0.1.12
+  - pip:
+    - datawig
