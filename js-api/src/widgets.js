@@ -44,18 +44,18 @@ export class Accordion extends DartWidget {
     constructor(d) { super(d); }
 
     /** Creates a new instance of Accordion */
-    static create() { return new Accordion(grok_Accordion()); }
+    static create() { return toJs(grok_Accordion()); }
 
     /** @type {AccordionPane[]} */
-    get panes() { return grok_TabControlBase_Get_Panes(this.d).map(p => new AccordionPane(p)); }
+    get panes() { return grok_TabControlBase_Get_Panes(this.d).map(toJs); }
 
     /** Returns a pane with the specified name.
      * @param {string} name
      * @returns {AccordionPane} */
-    getPane(name) { return new AccordionPane(grok_TabControlBase_GetPane(this.d, name)); }
+    getPane(name) { return toJs(grok_TabControlBase_GetPane(this.d, name)); }
 
     addPane(name, getContent, expanded = false, before = null) {
-        return new AccordionPane(grok_Accordion_AddPane(this.d, name, getContent, expanded, before !== null ? before.d : null));
+        return toJs(grok_Accordion_AddPane(this.d, name, getContent, expanded, before !== null ? before.d : null));
     }
 }
 
@@ -77,16 +77,17 @@ export class AccordionPane {
 
 export class TabControl {
     constructor(d) { this.d = d; }
-    static create(vertical = false) { return new TabControl(grok_TabControl(vertical)); }
+    static create(vertical = false) { toJs(grok_TabControl(vertical)); }
 
     get root() { return grok_TabControlBase_Get_Root(this.d); }
-    get panes() { return grok_TabControlBase_Get_Panes(this.d).map(p => new TabPane(p)); }
-    getPane(name) { return new TabPane(grok_TabControlBase_GetPane(this.d, name)); }
+    get header() { return grok_TabControlBase_Get_Header(this.d); }
+    get panes() { return grok_TabControlBase_Get_Panes(this.d).map(toJs); }
+    getPane(name) { toJs(grok_TabControlBase_GetPane(this.d, name)); }
 
     addPane(name, getContent, icon = null) {
-        return new TabPane(grok_TabControlBase_AddPane(this.d, name, getContent, icon));
+        toJs(grok_TabControlBase_AddPane(this.d, name, getContent, icon));
     }
-    clear() { return new TabPane(grok_TabControlBase_Clear(this.d)); }
+    clear() { rtoJs(grok_TabControlBase_Clear(this.d)); }
 
     get currentPane() { return grok_TabControlBase_Get_CurrentPane(this.d); }
     set currentPane(v) { return grok_TabControlBase_Set_CurrentPane(this.d, v.d); }
@@ -108,7 +109,7 @@ export class TabPane {
 export class ToolboxPage {
     constructor(d) { this.d = d; }
 
-    get accordion() { return new Accordion(grok_ToolboxPage_Get_Accordion(this.d)); }
+    get accordion() { toJs(grok_ToolboxPage_Get_Accordion(this.d)); }
 }
 
 
@@ -126,7 +127,7 @@ export class ToolboxPage {
 export class Dialog {
     constructor(d) { this.d = d; }
 
-    static create(title = '') { return new Dialog(grok_Dialog(title)); }
+    static create(title = '') { return toJs(grok_Dialog(title)); }
 
     /**
      *  @param {Function} handler
@@ -158,27 +159,27 @@ export class Menu {
 
     constructor(d) { this.d  = d; }
 
-    static create() { return new Menu(grok_Menu()); }
+    static create() { toJs(grok_Menu()); }
 
     /** Creates a popup menu.
      * @returns {Menu} */
-    static popup() { return new Menu(grok_Menu_Context()); }
+    static popup() { toJs(grok_Menu_Context()); }
 
     /** Adds a menu group with the specified text.
      * @param {string} text*/
-    group(text) { return new Menu(grok_Menu_Group(this.d, text)); }
+    group(text) { toJs(grok_Menu_Group(this.d, text)); }
 
-    item(item, onClick) { return new Menu(grok_Menu_Item(this.d, item, onClick)); }
+    item(item, onClick) { toJs(grok_Menu_Item(this.d, item, onClick)); }
 
-    items(items, onClick) { return new Menu(grok_Menu_Items(this.d, items, onClick)); }
+    items(items, onClick) { toJs(grok_Menu_Items(this.d, items, onClick)); }
 
     /** Adds a separator line.
      *  @returns {Menu} */
-    separator() { return new Menu(grok_Menu_Separator(this.d)); }
+    separator() { toJs(grok_Menu_Separator(this.d)); }
 
     /** Shows the menu.
      * @returns {Menu} */
-    show() { return new Menu(grok_Menu_Show(this.d)); }
+    show() { toJs(grok_Menu_Show(this.d)); }
 }
 
 
@@ -236,14 +237,14 @@ export class InputBase {
     addPatternMenu(pattern) { grok_InputBase_AddPatternMenu(this.d, pattern); }
     setTooltip(msg) { grok_InputBase_SetTooltip(this.d, msg); };
 
-    static forProperty(property) { return new InputBase(grok_InputBase_ForProperty(property.d)); }
+    static forProperty(property) { return toJs(grok_InputBase_ForProperty(property.d)); }
 }
 
 
 export class ProgressIndicator {
     constructor(d) { this.d = d; }
 
-    static create() { return new ProgressIndicator(grok_ProgressIndicator_Create()); }
+    static create() { toJs(grok_ProgressIndicator_Create()); }
 
     get percent() { return grok_ProgressIndicator_Get_Percent(this.d); }
 
@@ -258,7 +259,7 @@ export class ProgressIndicator {
 
 
 export class TaskBarProgressIndicator extends ProgressIndicator {
-    static create(name) { return new TaskBarProgressIndicator(grok_TaskBarProgressIndicator_Create(name)); }
+    static create(name) { return toJs(grok_TaskBarProgressIndicator_Create(name)); }
 
     close() { return grok_TaskBarProgressIndicator_Close(this.d); }
 }
@@ -267,7 +268,7 @@ export class TaskBarProgressIndicator extends ProgressIndicator {
 export class TagEditor {
     constructor(d) { this.d = d; }
 
-    static create() { return new TagEditor(grok_TagEditor()); }
+    static create() { return toJs(grok_TagEditor()); }
 
     get root() { return grok_TagEditor_Get_Root(this.d); }
 
@@ -370,7 +371,7 @@ export class TreeViewNode {
 
     /** Creates new nodes tree
      * @returns {TreeViewNode} */
-    static tree() { return new TreeViewNode(grok_TreeViewNode_Tree()); }
+    static tree() { return toJs(grok_TreeViewNode_Tree()); }
 
     /** Visual root.
      * @type {HTMLElement} */
@@ -401,20 +402,20 @@ export class TreeViewNode {
 
     /** Gets all node items.
      * @returns {Array<TreeViewNode>} */
-    get items() { return grok_TreeViewNode_Items(this.d).map(i => new TreeViewNode(i)); }
+    get items() { return grok_TreeViewNode_Items(this.d).map(i => toJs(i)); }
 
     /** Add new group to node.
      * @param {string} text
      * @param {Object} value
      * @param {boolean} expanded
      * @returns {TreeViewNode} */
-    group(text, value = null, expanded = true) { return new TreeViewNode(grok_TreeViewNode_Group(this.d, text, value, expanded)); }
+    group(text, value = null, expanded = true) { return toJs(grok_TreeViewNode_Group(this.d, text, value, expanded)); }
 
     /** Add new item to node.
      * @param {string} text
      * @param {Object} value
      * @returns {TreeViewNode} */
-    item(text, value = null) { return new TreeViewNode(grok_TreeViewNode_Item(this.d, text, value)); }
+    item(text, value = null) { return toJs(grok_TreeViewNode_Item(this.d, text, value)); }
 
     /** Enables checkbox on node
      * @param {boolean} checked */
