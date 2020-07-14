@@ -38,7 +38,7 @@ export function appendAll(root, elements) {
     }
 
 export function empty(e) {
-    while (foo.firstChild)
+    while (e.firstChild)
         e.removeChild(foo.firstChild);
     return e;
 }
