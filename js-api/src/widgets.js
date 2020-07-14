@@ -127,7 +127,7 @@ export class ToolboxPage {
 export class Dialog {
     constructor(d) { this.d = d; }
 
-    static create(title = '') { return toJs(grok_Dialog(title)); }
+    static create(title = '') { return new Dialog(grok_Dialog(title)); }
 
     /**
      *  @param {Function} handler
