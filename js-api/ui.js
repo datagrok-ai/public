@@ -6,6 +6,7 @@
 import {Viewer} from "./src/viewer";
 import {VirtualView} from "./src/view";
 import {Accordion, Dialog, InputBase, Menu, TabControl, TreeViewNode, Widget} from "./src/widgets";
+import {toDart} from "./src/wrappers";
 
 /**
  * Creates an instance of the element for the specified tag, and optionally assigns it a CSS class.
@@ -160,7 +161,7 @@ export function comboPopup(icon, items, handler) { return grok_UI_ComboPopup(ico
 export function tableFromMap(map) { return grok_UI_TableFromMap(map); }
 
 /** Creates a visual element representing list of [items]. */
-export function list(items) { return grok_UI_List(Array.from(items).map(_toDart)); }
+export function list(items) { return grok_UI_List(Array.from(items).map(toDart)); }
 
 /** Creates a [Dialog].
  * @returns {Dialog} */
