@@ -1,0 +1,13 @@
+name: datawig
+
+channels:
+  - conda-forge
+
+dependencies:
+  - python=2.7
+  - numpy
+  - obspy
+  - matplotlib
+
+pip:
+  - datawig = 0.1.12
