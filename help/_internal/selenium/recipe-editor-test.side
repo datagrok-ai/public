@@ -565,6 +565,27 @@
       ],
       "value": "PA"
     }, {
+      "id": "64ca11e8-855c-48ee-81a5-f16053cbc357",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "1e76f602-8d1a-4c40-8dd2-9fe61c8bd3f2",
+      "comment": "",
+      "command": "executeScript",
+      "target": "document.querySelector(\"#editor\").dispatchEvent(new Event('input'))",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "e12e819b-bdb1-4126-8142-669f40705e1c",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "e51990df-f8b2-44f3-b9d7-0dc2e8a4a44b",
       "comment": "",
       "command": "click",
@@ -666,14 +687,15 @@
       "targets": [],
       "value": ""
     }, {
-      "id": "69836ef0-293d-42be-989e-6ca90b5d81b6",
+      "id": "26131498-6170-4b3c-a072-6d0522db34aa",
       "comment": "",
       "command": "click",
-      "target": "css=.d4-toggle-button:nth-child(2)",
+      "target": "css=.d4-ribbon:nth-child(1) > i[name=\"icon-times\"]",
       "targets": [
-        ["css=.d4-toggle-button:nth-child(2)", "css:finder"],
-        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div[2]", "xpath:position"]
+        ["css=.d4-ribbon > .grok-icon", "css:finder"],
+        ["css=.d4-ribbon:nth-child(1) > i[name=\"icon-times\"]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/i", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/i", "xpath:position"]
       ],
       "value": ""
     }, {

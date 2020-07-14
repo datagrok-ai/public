@@ -347,7 +347,7 @@
       "id": "45073376-deb4-448f-bca9-632359c875a8",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-times'])[3]",
+      "target": "css=.d4-ribbon:nth-child(1) > i[name=icon-times]",
       "targets": [
         ["css=.fa-times:nth-child(5)", "css:finder"],
         ["xpath=(//i[@name='icon-times'])[3]", "xpath:attributes"],
@@ -603,7 +603,7 @@
       "id": "771d7674-9c75-430f-8de0-ffd076d63809",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-times'])[4]",
+      "target": "css=.d4-ribbon:nth-child(1) > i[name=icon-times]",
       "targets": [
         ["css=.fa-times:nth-child(5)", "css:finder"],
         ["xpath=(//i[@name='icon-times'])[4]", "xpath:attributes"],
@@ -783,7 +783,7 @@
       "id": "295b16d3-3006-43e4-8134-5b39e7572765",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-times'])[5]",
+      "target": "css=.d4-ribbon:nth-child(1) > i[name=icon-times]",
       "targets": [
         ["css=.fa-times:nth-child(5)", "css:finder"],
         ["xpath=(//i[@name='icon-times'])[5]", "xpath:attributes"],
