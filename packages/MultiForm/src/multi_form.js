@@ -13,7 +13,6 @@ class MultiFormViewer extends DG.JsViewer {
     }
 
     onTableAttached() {
-        this.init();
         this.fields ??= this.dataFrame.columns.names();
 
         this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 20).subscribe((_) => this.render()));

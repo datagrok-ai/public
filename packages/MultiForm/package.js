@@ -5,6 +5,7 @@ class MultiFormPackage extends DG.Package {
     //tags: viewer
     //output: viewer result
     multiFormViewer() {
+        window.alert('foo');
         return new MultiFormViewer();
     }
 }
