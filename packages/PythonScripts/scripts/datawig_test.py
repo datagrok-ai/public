@@ -1,6 +1,6 @@
 #name: DatawigTest
 #language: python
-#environment: datawig
+#environment: datawig2
 #output: dataframe test
 
 import datawig
