@@ -105,6 +105,22 @@ export function render(x) {
     return grok_UI_Render(x);
 }
 
+/** Renders a table cell to html element, taking into account grid's formatting and color-coding.
+ * @param {Cell} tableCell
+ * @returns {HTMLElement} */
+export function renderCell(tableCell) {
+
+}
+
+/** Renders a table cell to html element,
+ * Takes into account grid's formatting and color-coding.
+ * @param {Row} table
+ * @param {string[]} columnNames
+ * @returns {HTMLElement} */
+export function renderForm(table, columnNames = null) {
+  return null;
+}
+
 /** Renders object to html card.
  * @param {object} x
  * @returns {HTMLElement}. */
