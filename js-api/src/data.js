@@ -135,6 +135,6 @@ export class Data {
         return new Promise((resolve, reject) => grok_CallQuery(queryName, queryParameters, adHoc, pollingInterval, (c) => resolve(new FuncCall(c))));
     }
 
-    detectSemanticTypes(t) { return new Promise((resolve, reject) => grok_DetectSematicTypes(t.d, (_) => resolve())); }
+    detectSemanticTypes(t) { return new Promise((resolve, reject) => grok_DetectSemanticTypes(t.d, (_) => resolve())); }
 
 }
