@@ -87,7 +87,7 @@ export class TabControl {
     addPane(name, getContent, icon = null) {
         toJs(grok_TabControlBase_AddPane(this.d, name, getContent, icon));
     }
-    clear() { rtoJs(grok_TabControlBase_Clear(this.d)); }
+    clear() { toJs(grok_TabControlBase_Clear(this.d)); }
 
     get currentPane() { return grok_TabControlBase_Get_CurrentPane(this.d); }
     set currentPane(v) { return grok_TabControlBase_Set_CurrentPane(this.d, v.d); }
