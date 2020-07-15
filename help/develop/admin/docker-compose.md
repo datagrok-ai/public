@@ -22,7 +22,7 @@ services:
     volumes:
       - datagrok_db:/var/lib/postgresql/data
   datagrok:
-    image: datagrok/datagrok:1.0.79-93dc7bd
+    image: datagrok/datagrok:1.0.80-71eb62e
     environment:
       GROK_PARAMETERS: "{\"deployDemo\": false, \"dbServer\": \"database\", \"db\": \"datagrok\", \"dbAdminLogin\": \"postgres\", \"dbAdminPassword\": \"postgres\", \"dbLogin\": \"dg\", \"dbPassword\": \"dg\"}"
     ports:
@@ -35,7 +35,7 @@ services:
       - datagrok_data:/home/grok/data
       - datagrok_cfg:/home/grok/cfg
   cvm:
-    image: datagrok/cvm:1.0.79-93dc7bd
+    image: datagrok/cvm:1.0.80-71eb62e
     environment:
       GROK_COMPUTE_NUM_CORES: 4
     ports:
