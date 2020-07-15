@@ -1,6 +1,154 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2020.07.15 Stable version
+
+## Latest docker images
+* Datagrok (new): 
+  * `766822877060.dkr.ecr.us-east-2.amazonaws.com/datagrok:1.0.80-71eb62e` 
+  *  `docker pull datagrok/datagrok:1.0.79-93dc7bd`
+  *  [download](https://dev.datagrok.ai/docker_images/datagrok-1.0.80-71eb62e.tar)
+* CVM (new): 
+  * `766822877060.dkr.ecr.us-east-2.amazonaws.com/cvm:1.0.80-71eb62e` 
+  *  `docker pull datagrok/cvm:1.0.79-93dc7bd`
+  *  [download](https://dev.datagrok.ai/docker_images/cvm-1.0.80-71eb62e.tar)
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed issues
+
+* RDKitDemo App: Exception after "Close All" when the application is open
+* SDTM App does not work
+* Create new test with new structure for Visual Query for all supported providers
+* Error when adding LeafletViewer: Failed assertion: boolean expression must not be null
+* JS API Examples: "virtual-view.js" does not work
+* Predictive Modeling: Update Chemprop version
+* Ignore .git on package upload
+* Predictive Modelling: Chemprop fails
+* _1 suffix on Smiles project
+* SPARQL connections are deployed without sharing
+* Notebooks: Missing "Sharing" tab on PP
+* ODATA provider visible only with admin mode enabled
+* View switcher: show all views in it, but highlight the current one
+* Oracle: "northwind" connection does not work on dev setup
+* JS API: Stack overflow after setting ViewBase name
+* Selenium: Change tables names after Visual Query, Build Query, Get All (100)
+* ChemPredict Demo Application
+* Notebooks: Creating a new notebook doesn't work
+* Notebooks: Missed toolbar buttons after open from URL
+* Selenium: Bind the name of closure icon to the parent element of the ribbon
+* Data Queries: After running queries with same names but with different namespaces, "_#" is added to name in URL
+* New data connections are not created
+* Package is visible only for deployer
+* In open file try to find a connection entity, but not all
+* Query View: Exception after opening, missing view name, buttons and menu
+* Ability to change project.is_root from UI
+* Add a number if there is another entity with the same name in the project
+* Unable to call JS function from top menu
+* Selenium: vertica-query-test.side does not work
+* Selenium: notebook-test.side does not work
+* JS API Samples: scripting.js example does not work
+* Visual Query: There are no sections "Actions" and "Columns" on the toolbox
+* JS API Examples do not open by URL
+* Async package functions support
+* Visual query: After deleting the used column, the preview is not updated
+* Query View not displayed under relevant sidebar section when open
+* Selenium: data-query-test.side: After saving query, an exception is thrown
+* Neo4J queries do not work
+* Selenium: Tables export test: Selenium clicks on items with names and nothing happens
+* Oracle provider does not work
+* Repositories are not published
+* AddressToCoordinates does not work
+* JS API: Add TreeView
+* Register JS function in top menu using function header
+* File connector: Indexing doesn't work
+* File connector: Indexing run is not displayed for just created file connection
+* JS Examples: "parameterized query.js" does not work
+* ChemPredict demo
+* Projects do not open by URL
+* Upload: Data Sync does not turn on
+* Reset password link includes 8080 port
+* JS Credentials storage example
+* Scripts do not run from the console
+* Apps: Applications do not work
+* Custom npm registry and proxy settings
+* Ability to skip webpack building on server
+* Empty error message when publishing webpack package
+* Use session token hash instead of token on the server side 
+* Ability to add service user
+* Files: REST method to upload user file
+* Data sync: Project does not open if the table was created by "Get All"
+* Hide service projects from Projects View
+* Demo Notebooks: Notebooks that contain tables do not work
+* Packages: Change servers to global variables
+* Chem Panels: "Solubility Prediction" panel does not work (Unable to get project asset)
+* FilesView: Folder first sorting
+* Data Query: Missing parameter list for parameterized queries on PP
+* Files: After renaming connection, its namespace remains old
+* Data Sync: Share connection with project
+* Selenium: Create ui-test for upload project with Notebook
+* File Shares: If connection was not indexed, then in the "Index files" field show corresponding job for running
+* Visual Query: Exception after opening view
+* Ability to run docker for local debugging
+* Make namespaces permanent
+* "Home" folder should be indexed by default
+* Query Transformations: Addition of transformations is not saved
+* Reopening a project with a file share-based table source does not work
+* Query Transformations: If transformations view is open, an exception is thrown after "Close All"
+* Routing: When you open Open | Databases, the URL is dev.datagrok.ai/connect, which when you refresh the page is redirected to Datagrok page
+* Table View: Table name is displayed with extra spaces
+* Files browser: Exception is if you click on an empty space in tree if you have an extended connection here
+* Data Queries: If the "Transformations" tab was opened, the query is not saved
+* S3: Edit connection: bucket name is ignored
+* Share connection along with query sharing
+* Notebook: Return table to UI
+* Events documentation, events handler code generation, expose global event bus
+* 'Refresh' icon for entity-based views
+* Files: New File Share - newly created file share is not shown in the tree
+* Scripts: Scripts outputs do not appear in the console if it was not open before running
+* Table columns: "quality" tag is not saved if you set it custom manually
+* DB Table Queries: After executing "Get All", "Get Top 100" and "Build a query" the table has name "result"
+* Benchmarks: "Benchmark Encoders" and "Benchmark Encoders + Archive" do not work
+* Upload dialog: Large indent between tables
+* Files View Url to connection not handled
+* Share dialog: User permissions selector is in the wrong place
+* Join Tables: Selecting or Filtering not matching rows selects the wrong rows
+* SPGi: After opening project, URL contains /SupData instead of /Main
+* Jira web API queries does not work
+* Help view: Incorrect tree style on toolbox if you go to the help page from search (Alt + Q)
+* File shares: integrate with the URL
+* ProjectUploadView: Tooltip on sync switch
+* ProjectUploadView: Remove activity section
+* Ability to use both indexed and online file browsing
+* Table refreshing doesn't work
+* Chem | Map identifiers: Can't find "chembl" project
+* Routing for uploaded applications no longer works
+* Environments: Name of env should use name from YAML file if it is exist there
+* Project renaming
+* GrokConnect: Oracle issue with "clob" for some cases
+* InfoPanel "scatter-plot.grok" does not work
+* Scripting: GrokScript: After running "Template" script, table in the selector is duplicated if run again
+* Rename user project on user renaming
+* Audit: add "start" event
+* Project renaming doesn't affect Name, only friendlyName
+* DbContext leaks connections
+* Data | Aggregate Rows: Missing first() function in measures list (in menu under "+" | Aggregation)
+* Grid: If you close PP, then the grid properties do not appear after clicking on the gear
+* Credentials Management Service
+* Landing: Slides do not change, if you donвЂ™t first switch it by clicking on the title (on mobile)
+* Load packages files with ?hash
+* Users: Open views remain after logout
+* Context help: Wrong page is displayed after clicking on the "?" on entity deletion dialog
+* Predictive models: "Train" button is available if features are not selected
+* Chem | Diversity Search: If opened during processing in Chem | Similarity Search, the structures will not be displayed
+* Amazon: Chem | Map Identifiers does not work (not connected unichem db)
+* Uploading projects: picture is not generated
+* Impact analysis
+* Bootstrap-backed package that demonstrates grok features embedded into the custom UI
+* Test case: job-editor-test
+* JupyterLab integration
+
+
 # 2020.06.16 Stable version
 
 ## Latest docker images
@@ -12,8 +160,6 @@
   * `766822877060.dkr.ecr.us-east-2.amazonaws.com/cvm:1.0.77-c1d42b4` 
   *  `docker pull datagrok/cvm:1.0.79-93dc7bd`
   *  [download](https://dev.datagrok.ai/docker_images/cvm-1.0.79-93dc7bd.tar)
-  
-* [Docker-Compose](admin/docker-compose.md)
 
 # 2020.05.27 Stable version
 
