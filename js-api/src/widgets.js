@@ -109,7 +109,7 @@ export class TabPane {
 export class ToolboxPage {
     constructor(d) { this.d = d; }
 
-    get accordion() { toJs(grok_ToolboxPage_Get_Accordion(this.d)); }
+    get accordion() { return toJs(grok_ToolboxPage_Get_Accordion(this.d)); }
 }
 
 
