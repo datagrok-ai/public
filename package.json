@@ -1,0 +1,16 @@
+{
+  "name": "Sunburst",
+  "version": "1.0",
+  "fullName": "Sunburst",
+  "description": "Sunburst chart",
+  "sources": [
+    "vendor/d3/d3.min.js",
+    "vendor/d3-hierarchy/d3-hierarchy.min.js",
+    "sunburst/sunburst.js",
+    "sunburst/sunburst_viewer.js"
+  ],
+  "dependencies": {
+    "d3": "^5.16.0",
+    "d3-hierarchy": "^1.1.9"
+  }
+}
