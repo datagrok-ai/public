@@ -23,6 +23,11 @@ if (process.platform === "darwin") {
     spawn('chmod', ['777', `${subfolder}dart`]);
 }
 
+if (process.platform === "linux") {
+    subfolder = `${__dirname}/ubuntu/`;
+    spawn('chmod', ['777', `${subfolder}dart`]);
+}
+
 const ls = spawn(`${subfolder}dart`, [`${subfolder}upload.dart`, rp, '-p', '.', '-r', host, mode]);
 
 ls.stdout.on("data", data => {
