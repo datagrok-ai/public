@@ -365,8 +365,12 @@ export class ColumnList {
      * @returns {Column} */
     byIndex(index) { return new Column(grok_ColumnList_ByIndex(this.d, index)); }
 
-    /** First column of [semType], or null. */
-    bySemType(semType) { return new Column(grok_ColumnList_BySemType(this.d, semType)); }
+    /** First column of [semType], or null.
+     * @returns {Column} */
+    bySemType(semType) {
+        var col = grok_ColumnList_BySemType(this.d, semType);
+        return col == null ? null : new Column(col);
+    }
 
     /** Array containing column names.
      * @returns {string[]} */
