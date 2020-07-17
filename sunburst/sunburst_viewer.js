@@ -1,27 +1,30 @@
-class SunburstViewer extends DG.JsViewer {
+class Sunburst2Viewer extends DG.JsViewer {
     constructor() {
         super();
 
         // properties
-        this.level1column = this.string('level1ColumnName');
-        this.level2column = this.string('level2ColumnName');
-        this.level3column = this.string('level3ColumnName');
+        this.level1 = this.string('level1ColumnName');
+        this.level2 = this.string('level2ColumnName');
+        this.level3 = this.string('level3ColumnName');
 
-        this.treeData = this.demoTreeData();
+        this.treeData = {};
         this.containerId = "sunburst-id-123456";
+
+        this.clearTreeData();
     }
 
     init() {
         const containerDiv = ui.div([], 'd4-viewer-host');
         containerDiv.setAttribute("id", this.containerId);
-        const chartDiv = ui.div([]);
-        chartDiv.setAttribute("id", "chart");
-        containerDiv.appendChild(chartDiv);
         this.root.appendChild(containerDiv);
     }
 
     onTableAttached() {
         this.init();
+
+        // this.level1 = this.dataFrame.columns.bySemType(DG.SEMTYPE.TEXT);
+        // this.level2 = this.dataFrame.columns.bySemType(DG.SEMTYPE.TEXT);
+        // this.level3 = this.dataFrame.columns.bySemType(DG.SEMTYPE.TEXT);
 
         this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
         this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()));
@@ -45,28 +48,65 @@ class SunburstViewer extends DG.JsViewer {
 
     clearTreeData() {
         for (var x in this.treeData) if (this.treeData.hasOwnProperty(x)) delete this.treeData[x];
+        this.treeData.name = this.containerId;
+        this.treeData.children = [];
     }
 
     buildTreeData() {
-        // this.clearTreeData();
-        // const indexes = this.dataFrame.filter.getSelectedIndexes();
-        // const level1column = this.level1column.getRawData();
-        // const level2column = this.level2column.getRawData();
-        // const level3column = this.level3column.getRawData();
-        //
-        // for (const index of indexes) {
-        //
-        //     this.coordinates.push([lat[indexes[i]], lon[indexes[i]]]);
-        // }
+        this.clearTreeData();
+
+        const indexes = this.dataFrame.filter.getSelectedIndexes();
+        console.error(indexes);
+
+        this.level1 = this.level1 || (this.level1ColumnName && this.dataFrame.getCol(this.level1ColumnName));
+        this.level2 = this.level2 || (this.level2ColumnName && this.dataFrame.getCol(this.level2ColumnName));
+        this.level3 = this.level3 || (this.level3ColumnName && this.dataFrame.getCol(this.level3ColumnName));
+
+        const columns = [];
+        this.level1 && columns.push(this.level1);
+        this.level2 && columns.push(this.level2);
+        this.level3 && columns.push(this.level3);
+        console.error(columns);
+
+        if (!columns.length) {
+            return;
+        }
+
+        const table = [{ name: this.treeData.name, parent: '' }];
+        for (const index of indexes) {
+            let prevColumnValue = this.treeData.name;
+            for (const column of columns) {
+                const columnValue = column.get(index);
+                console.error(columnValue);
+                if (columnValue === '') {
+                    break;
+                }
+                table.push({ parent: prevColumnValue, name: columnValue });
+                prevColumnValue = columnValue;
+            }
+        }
+        console.error(table);
+
+        const treeData = d3.stratify()
+            .id(function (d) {
+                return d.name;
+            })
+            .parentId(function (d) {
+                return d.parent;
+            })
+            (table);
+        this.treeData.children = treeData.children;
+        console.error(this.treeData);
     }
 
     render() {
-        for (const layer of this.layers)
-            this.map.removeLayer(layer);
-        this.layers.length = 0;
+        // for (const layer of this.layers)
+        //     this.map.removeLayer(layer);
+        // this.layers.length = 0;
 
+        console.error('rendering!', this);
         this.buildTreeData();
-        d3sunburst(this.containerId);
+        d3sunburst(this.containerId, this.treeData);
 
         // if (this.renderType === 'heat map') {
         //     this.layers.push(L.heatLayer(this.coordinates, { radius: this.markerSize }).addTo(this.map));

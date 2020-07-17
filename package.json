@@ -1,12 +1,12 @@
 {
-  "name": "Sunburst",
+  "name": "Sunburst2",
   "version": "1.0",
-  "fullName": "Sunburst",
-  "description": "Sunburst chart",
+  "fullName": "Sunburst2",
+  "description": "Sunburst2 chart",
   "sources": [
-    "vendor/d3/d3.min.js",
-    "vendor/d3-hierarchy/d3-hierarchy.min.js",
-    "sunburst/sunburst.js",
+    "vendor/d3/d3.js",
+    "vendor/d3-hierarchy/d3-hierarchy.js",
+    "sunburst/sunburst-2.js",
     "sunburst/sunburst_viewer.js"
   ],
   "dependencies": {
