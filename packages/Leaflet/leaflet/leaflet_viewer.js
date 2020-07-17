@@ -28,8 +28,10 @@ class LeafletViewer extends DG.JsViewer {
     onTableAttached() {
         this.init();
 
-        this.latitude = this.dataFrame.columns.bySemType(DG.SEMTYPE.LATITUDE);
-        this.longitude = this.dataFrame.columns.bySemType(DG.SEMTYPE.LONGITUDE);
+        if (this.dataFrame.columns.bySemType(DG.SEMTYPE.LATITUDE) != null && this.dataFrame.columns.bySemType(DG.SEMTYPE.LONGITUDE) != null) {
+            this.latitude = this.dataFrame.columns.bySemType(DG.SEMTYPE.LATITUDE).name;
+            this.longitude = this.dataFrame.columns.bySemType(DG.SEMTYPE.LONGITUDE).name;
+        }
 
         this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
         this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()));
@@ -56,6 +58,9 @@ class LeafletViewer extends DG.JsViewer {
             this.map.removeLayer(layer);
         this.layers.length = 0;
 
+        if (this.latitude == null || this.longitude == null)
+            return;
+
         this.getCoordinates();
 
         if (this.renderType === 'heat map')
@@ -70,8 +75,8 @@ class LeafletViewer extends DG.JsViewer {
     getCoordinates() {
         this.coordinates.length = 0;
         let indexes = this.dataFrame.filter.getSelectedIndexes();
-        let lat = this.latitude.getRawData();
-        let lon = this.longitude.getRawData();
+        let lat = this.dataFrame.getCol(this.latitude).getRawData();
+        let lon = this.dataFrame.getCol(this.longitude).getRawData();
 
         for (let i = 0; i < indexes.length; i++)
             this.coordinates.push([lat[indexes[i]], lon[indexes[i]]]);
