@@ -409,7 +409,9 @@ export class ViewLayout {
 export class VirtualView {
     constructor(d) { this.d = d; }
 
-    static create() { return new VirtualView(grok_VirtualItemView()); }
+    static create(verticalScroll = true, maxCols = 100) {
+        return new VirtualView(grok_VirtualItemView(verticalScroll, maxCols));
+    }
 
     get root() { return grok_VirtualItemView_Get_Root(this.d); }
     setData(length, renderer) { grok_VirtualItemView_SetData(this.d, length, renderer); }
