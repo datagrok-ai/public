@@ -3,8 +3,8 @@ class LeafletViewer extends DG.JsViewer {
         super();
 
         // properties
-        this.latitude = this.string('latitudeColumnName');
-        this.longitude = this.string('longitudeColumnName');
+        this.latitudeColumnName = this.string('latitudeColumnName');
+        this.longitudeColumnName = this.string('longitudeColumnName');
         this.renderType = this.string('renderType', 'heat map');
         this.markerSize = this.int('markerSize', 10);
         this.markerOpacity = this.float('markerOpacity', 0.8);
@@ -29,8 +29,8 @@ class LeafletViewer extends DG.JsViewer {
         this.init();
 
         if (this.dataFrame.columns.bySemType(DG.SEMTYPE.LATITUDE) != null && this.dataFrame.columns.bySemType(DG.SEMTYPE.LONGITUDE) != null) {
-            this.latitude = this.dataFrame.columns.bySemType(DG.SEMTYPE.LATITUDE).name;
-            this.longitude = this.dataFrame.columns.bySemType(DG.SEMTYPE.LONGITUDE).name;
+            this.latitudeColumnName = this.dataFrame.columns.bySemType(DG.SEMTYPE.LATITUDE).name;
+            this.longitudeColumnName = this.dataFrame.columns.bySemType(DG.SEMTYPE.LONGITUDE).name;
         }
 
         this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
@@ -58,7 +58,7 @@ class LeafletViewer extends DG.JsViewer {
             this.map.removeLayer(layer);
         this.layers.length = 0;
 
-        if (this.latitude == null || this.longitude == null)
+        if (this.latitudeColumnName == null || this.longitudeColumnName == null)
             return;
 
         this.getCoordinates();
@@ -75,8 +75,8 @@ class LeafletViewer extends DG.JsViewer {
     getCoordinates() {
         this.coordinates.length = 0;
         let indexes = this.dataFrame.filter.getSelectedIndexes();
-        let lat = this.dataFrame.getCol(this.latitude).getRawData();
-        let lon = this.dataFrame.getCol(this.longitude).getRawData();
+        let lat = this.dataFrame.getCol(this.latitudeColumnName).getRawData();
+        let lon = this.dataFrame.getCol(this.longitudeColumnName).getRawData();
 
         for (let i = 0; i < indexes.length; i++)
             this.coordinates.push([lat[indexes[i]], lon[indexes[i]]]);
