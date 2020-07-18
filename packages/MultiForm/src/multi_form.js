@@ -9,7 +9,7 @@ class MultiFormViewer extends DG.JsViewer {
         let dis = this;
         this.root.classList.add('d4-multi-form');
         this.columnHeadersDiv = ui.divV([]);
-        this.virtualView = ui.virtualView(0, function(i) { return dis.renderForm(i); });
+        this.virtualView = ui.virtualView(0, function(i) { return dis.renderForm(i); }, false, 1);
         this.root.appendChild(ui.divH([this.columnHeadersDiv, this.virtualView.root]));
     }
 

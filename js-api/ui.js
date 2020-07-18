@@ -192,10 +192,12 @@ export function bind(item, element) { return grok_UI_Bind(item, element); }
  * Creates a virtual list widget
  * @param {number} length - number of elements
  * @param {Function} renderer
+ * @param {boolean} verticalScroll - vertical or horizontal scrolling
+ * @param {number} maxColumns - maximum number of items on the non-scrolling axis
  * @returns {VirtualView}
  */
-export function virtualView(length, renderer) {
-    let view = VirtualView.create();
+export function virtualView(length, renderer, verticalScroll = true, maxColumns = 1000) {
+    let view = VirtualView.create(verticalScroll, maxColumns);
     view.setData(length, renderer);
     return view;
 }
