@@ -1,10 +1,17 @@
 {
   "name": "datagrok-tools",
-  "version": "2.1.0",
+  "version": "3.0.0",
   "description": "Utility to upload and publish package to Datagrok",
   "dependencies": {
     "inquirer": "^7.1.0",
-    "minimist": "^1.2.5"
+    "minimist": "^1.2.5",
+    "request": "^2.88.2",
+    "request-promise": "^4.2.5",
+    "fs": "^0.0.1-security",
+    "node-recursive-directory": "^1.2.0",
+    "path": "^0.12.7",
+    "archiver": "^4.0.2",
+    "archiver-promise": "^1.0.0"
   },
   "bin": {
     "datagrok-init": "./bin/init.js",
