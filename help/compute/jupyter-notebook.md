@@ -30,6 +30,15 @@ available notebooks. If any of notebooks can be applicable to any of opened tabl
 
 Open required table and in "Notebooks Browser" search for notebooks for applicable table. 
 To apply: select Notebook and using it's context menu apply notebook into required table.
+
+## Return table into the platform
+
+Use simple function called "grok". 
+Example:
+```python
+    grok(<table>)
+```
+where table in Pandas dataframe.
   
 ## Supported Languages
 
