@@ -77,17 +77,17 @@ export class AccordionPane {
 
 export class TabControl {
     constructor(d) { this.d = d; }
-    static create(vertical = false) { toJs(grok_TabControl(vertical)); }
+    static create(vertical = false) { return toJs(grok_TabControl(vertical)); }
 
     get root() { return grok_TabControlBase_Get_Root(this.d); }
     get header() { return grok_TabControlBase_Get_Header(this.d); }
     get panes() { return grok_TabControlBase_Get_Panes(this.d).map(toJs); }
-    getPane(name) { toJs(grok_TabControlBase_GetPane(this.d, name)); }
+    getPane(name) { return toJs(grok_TabControlBase_GetPane(this.d, name)); }
 
     addPane(name, getContent, icon = null) {
-        toJs(grok_TabControlBase_AddPane(this.d, name, getContent, icon));
+        return toJs(grok_TabControlBase_AddPane(this.d, name, getContent, icon));
     }
-    clear() { toJs(grok_TabControlBase_Clear(this.d)); }
+    clear() { return toJs(grok_TabControlBase_Clear(this.d)); }
 
     get currentPane() { return grok_TabControlBase_Get_CurrentPane(this.d); }
     set currentPane(v) { return grok_TabControlBase_Set_CurrentPane(this.d, v.d); }
@@ -159,27 +159,27 @@ export class Menu {
 
     constructor(d) { this.d  = d; }
 
-    static create() { toJs(grok_Menu()); }
+    static create() { return toJs(grok_Menu()); }
 
     /** Creates a popup menu.
      * @returns {Menu} */
-    static popup() { toJs(grok_Menu_Context()); }
+    static popup() { return toJs(grok_Menu_Context()); }
 
     /** Adds a menu group with the specified text.
      * @param {string} text*/
-    group(text) { toJs(grok_Menu_Group(this.d, text)); }
+    group(text) { return toJs(grok_Menu_Group(this.d, text)); }
 
-    item(item, onClick) { toJs(grok_Menu_Item(this.d, item, onClick)); }
+    item(item, onClick) { return toJs(grok_Menu_Item(this.d, item, onClick)); }
 
-    items(items, onClick) { toJs(grok_Menu_Items(this.d, items, onClick)); }
+    items(items, onClick) { return toJs(grok_Menu_Items(this.d, items, onClick)); }
 
     /** Adds a separator line.
      *  @returns {Menu} */
-    separator() { toJs(grok_Menu_Separator(this.d)); }
+    separator() { return toJs(grok_Menu_Separator(this.d)); }
 
     /** Shows the menu.
      * @returns {Menu} */
-    show() { toJs(grok_Menu_Show(this.d)); }
+    show() { return toJs(grok_Menu_Show(this.d)); }
 }
 
 
@@ -244,7 +244,7 @@ export class InputBase {
 export class ProgressIndicator {
     constructor(d) { this.d = d; }
 
-    static create() { toJs(grok_ProgressIndicator_Create()); }
+    static create() { return toJs(grok_ProgressIndicator_Create()); }
 
     get percent() { return grok_ProgressIndicator_Get_Percent(this.d); }
 
