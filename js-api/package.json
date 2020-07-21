@@ -4,7 +4,8 @@
   "description": "",
   "dependencies": {
     "rxjs": "^6.5.5",
-    "openchemlib": "^7.2.3"
+    "openchemlib": "^7.2.3",
+    "cash-dom": "^8.0.0"
   },
   "devDependencies": {
     "babel-loader": "^8.1.0",
