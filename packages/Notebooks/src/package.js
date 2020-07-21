@@ -57,17 +57,17 @@ class NotebookView extends DG.ViewBase {
             }
         });
 
-        this.id = ('id' in params) ? params['id']
-            : ((path !== null && path !== undefined) ? path.replace(`${this.PATH}/`, '')
-            : null);
+        if (params !== null) {
+            this.id = 'id' in params ? params['id']
+                : ((path !== null && path !== undefined) ? path.replace(`${this.PATH}/`, '')
+                    : null);
 
-        let edit = 'edit' in params ? params['edit'] : false;
-        let html = 'html' in params ? params['html'] : null;
+            let edit = 'edit' in params ? params['edit'] : false;
+            let html = 'html' in params ? params['html'] : null;
 
-        if (edit)
-            this.editMode().then();
-        else
-            this.htmlMode(html).then();
+            if (edit) this.editMode().then();
+            else this.htmlMode(html).then();
+        }
     }
 
     get type() { return this.TYPE };
@@ -88,15 +88,15 @@ class NotebookView extends DG.ViewBase {
         return img;
     };
 
-    saveStateMap() { return { 'notebookId': this.id }; }
-    loadStateMap(stateMap) { open(stateMap['notebookId']); }
-
-    handlePath(path) {
-        let id = path.replace(`${this.PATH}/`, '');
-        open(id);
-    }
-
+    saveStateMap() { return { 'id': this.id }; }
+    loadStateMap(stateMap) { this.open(stateMap['id']); }
+    handlePath(path) { this.open(path.replace(`${this.PATH}/`, '')); }
     acceptsPath(path) { return path.startsWith(this.PATH); }
+
+    open(id) {
+        this.id = id;
+        this.htmlMode(null).then();
+    }
 
     async initNotebook() {
         this.notebook = await grok.dapi.notebooks.find(this.id);
@@ -268,8 +268,8 @@ class NotebookView extends DG.ViewBase {
 
 //name: Notebook
 //description: Creates a Notebook View
-//input: map params =
-//input: string path =
+//input: map params
+//input: string path
 //tags: view
 //output: view result
 export function notebookView(params = null, path = '') {
