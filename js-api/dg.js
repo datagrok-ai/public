@@ -1,6 +1,7 @@
 import * as _chem from './src/chem.js';
 import * as _ml from './src/ml.js';
 import * as _utils from './src/utils.js';
+import $ from 'cash-dom';
 
 export * from './src/const.js';
 export * from './src/events.js';
@@ -18,3 +19,7 @@ export * from './src/wrappers_impl';
 export let chem = _chem;
 export let ml = _ml;
 export let utils = _utils;
+
+$(function () {
+    window.$ = $;
+});
