@@ -6,11 +6,11 @@
 ## Latest docker images
 * Datagrok (new): 
   * `766822877060.dkr.ecr.us-east-2.amazonaws.com/datagrok:1.0.80-71eb62e` 
-  *  `docker pull datagrok/datagrok:1.0.79-93dc7bd`
+  *  `docker pull datagrok/datagrok:1.0.80-71eb62e`
   *  [download](https://dev.datagrok.ai/docker_images/datagrok-1.0.80-71eb62e.tar)
 * CVM (new): 
   * `766822877060.dkr.ecr.us-east-2.amazonaws.com/cvm:1.0.80-71eb62e` 
-  *  `docker pull datagrok/cvm:1.0.79-93dc7bd`
+  *  `docker pull datagrok/cvm:1.0.80-71eb62e`
   *  [download](https://dev.datagrok.ai/docker_images/cvm-1.0.80-71eb62e.tar)
   
 * [Docker-Compose](admin/docker-compose.md)
