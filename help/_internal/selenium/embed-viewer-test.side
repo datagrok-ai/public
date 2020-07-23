@@ -1,0 +1,174 @@
+{
+  "id": "b390008b-1b39-4405-bcfd-6b03f9f4d568",
+  "version": "2.0",
+  "name": "embed-viewer-test",
+  "url": "https://dev.datagrok.ai/",
+  "tests": [{
+    "id": "1e1a7755-4e26-458c-9783-60348afe35cf",
+    "name": "embed-viewer-test",
+    "commands": [{
+      "id": "8ff604b9-81db-4083-8663-4b119b7492f9",
+      "comment": "",
+      "command": "open",
+      "target": "/projects?selenium=true&q=demog",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "2e74e989-5df1-447f-bf7b-163871b24921",
+      "comment": "",
+      "command": "type",
+      "target": "xpath=//div[@id='signup-login-fields']/div/div/input",
+      "targets": [
+        ["id=password", "id"],
+        ["css=#password", "css:finder"],
+        ["xpath=//input[@id='password']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/input[2]", "xpath:idRelative"],
+        ["xpath=//input[2]", "xpath:position"]
+      ],
+      "value": "selenium"
+    }, {
+      "id": "d9132049-31ef-45e7-bd38-43ed931a9bc2",
+      "comment": "",
+      "command": "type",
+      "target": "xpath=//div[@id='signup-login-fields']/div/div[2]/input",
+      "targets": [
+        ["id=password", "id"],
+        ["css=#password", "css:finder"],
+        ["xpath=//input[@id='password']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/input[2]", "xpath:idRelative"],
+        ["xpath=//input[2]", "xpath:position"]
+      ],
+      "value": "selenium"
+    }, {
+      "id": "c06f8d03-321e-40fa-bf29-25ec098103fc",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@id='signup-login-fields']/div[2]/button",
+      "targets": [
+        ["linkText=LOGIN", "linkText"],
+        ["css=a", "css:finder"],
+        ["xpath=//a[contains(text(),'LOGIN')]", "xpath:link"],
+        ["xpath=//div[@id='rootDiv']/div/a", "xpath:idRelative"],
+        ["xpath=//a[contains(@href, '#')]", "xpath:href"],
+        ["xpath=//a", "xpath:position"],
+        ["xpath=//a[contains(.,'LOGIN')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "ab8f2726-12a0-40e3-ac90-4730f3344006",
+      "comment": "",
+      "command": "pause",
+      "target": "4000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "c2091a1f-0dd0-4b33-b502-763e6802fad5",
+      "comment": "",
+      "command": "verifyElementNotPresent",
+      "target": "xpath=//i[@name='icon-exclamation-circle']",
+      "targets": [
+        ["css=.fa-exclamation-circle", "css:finder"],
+        ["xpath=//i[@name='icon-exclamation-circle']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/i", "xpath:idRelative"],
+        ["xpath=//div[2]/i", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "ed88131a-70ef-46a8-85d6-834992fa583d",
+      "comment": "",
+      "command": "pause",
+      "target": "3000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "ab469a26-c996-4d6c-8309-de75a20ec250",
+      "comment": "",
+      "command": "doubleClick",
+      "target": "name=div-Demog",
+      "targets": [
+        ["css=.grok-gallery-grid-item-wrapper:nth-child(1)", "css:finder"],
+        ["xpath=//div[@id='datasets']/div/div[2]/div", "xpath:idRelative"],
+        ["xpath=//div/div[3]/div/div/div/div/div[2]/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "6e2a639e-3e45-47e2-8839-e5d49188e4a5",
+      "comment": "",
+      "command": "pause",
+      "target": "4000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "941dab03-90bc-42a7-99aa-3b8a04ed6b68",
+      "comment": "",
+      "command": "verifyElementNotPresent",
+      "target": "xpath=//i[@name='icon-exclamation-circle']",
+      "targets": [
+        ["css=.fa-exclamation-circle", "css:finder"],
+        ["xpath=//i[@name='icon-exclamation-circle']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/i", "xpath:idRelative"],
+        ["xpath=//div[2]/i", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "01c24b40-989b-4323-aad8-49dd32d14976",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//i[@name='icon-font-icon-menu']",
+      "targets": [
+        ["css=.splitter-container-horizontal > .panel-titlebar > .grok-font-icon-menu", "css:finder"],
+        ["xpath=//i[@name='icon-font-icon-menu']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div/div/div/i", "xpath:idRelative"],
+        ["xpath=//div/div/div/div/div[3]/div/div/div/div/div/div/div/i", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "d8739f97-6ad7-4b04-8894-ae689244969b",
+      "comment": "",
+      "command": "mouseMoveAt",
+      "target": "xpath=//div[@name='div-Viewer']",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "fc858cc0-860c-4a82-ba79-f283e83dd6bc",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='div-Viewer---Embed...']",
+      "targets": [
+        ["css=.d4-menu-item-container:nth-child(10) .d4-menu-item:nth-child(9)", "css:finder"],
+        ["xpath=//div[@name='div-Viewer---Embed...']", "xpath:attributes"],
+        ["xpath=//div[8]/div[4]/div/div/div[9]", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "b805c26f-fcd9-410d-9613-7073c323acd3",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "b3faec7c-26e7-4e53-9bd8-77fef389e3c3",
+      "comment": "",
+      "command": "verifyElementNotPresent",
+      "target": "xpath=//i[@name='icon-exclamation-circle']",
+      "targets": [
+        ["css=.fa-exclamation-circle", "css:finder"],
+        ["xpath=//i[@name='icon-exclamation-circle']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/i", "xpath:idRelative"],
+        ["xpath=//div[2]/i", "xpath:position"]
+      ],
+      "value": ""
+    }]
+  }],
+  "suites": [{
+    "id": "ec967ec6-1191-47c4-9144-a537f982d65b",
+    "name": "shape-map-test",
+    "persistSession": false,
+    "parallel": false,
+    "timeout": 300,
+    "tests": ["1e1a7755-4e26-458c-9783-60348afe35cf"]
+  }],
+  "urls": ["https://dev.datagrok.ai/"],
+  "plugins": []
+}
