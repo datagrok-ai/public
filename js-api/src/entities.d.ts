@@ -199,10 +199,9 @@ export class ScriptEnvironment extends Entity {
  * Represents a package, which is a unit of distribution of content in the Datagrok platform.
  */
 export class Package {
-    webRoot?: HTMLElement
+    webRoot?: string
 
-    //TODO: webroot?
-    constructor(webRoot?: HTMLElement)
+    constructor(webRoot?: string)
 
     /** Override init() method to provide package-specific initialization.
      * It is guaranteed to get called exactly once before the execution of any function below.

@@ -13,7 +13,7 @@ export class Widget {
     get root(): HTMLElement
 
     /** Creates a {@see Widget} from the specified React component. */
-    static react(reactComponent: React.ElementType): Widget
+    static react(reactComponent: React.DOMElement<any, any> | Array<React.DOMElement<any, any>> | React.CElement<any, any> | Array<React.CElement<any, any>> | React.ReactElement | Array<React.ReactElement>): Widget
 }
 
 
