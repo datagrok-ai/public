@@ -155,6 +155,11 @@ export class Notebook extends Entity {
     get environment() { return grok_Notebook_Get_Environment(this.d); }
     set environment(e) { return grok_Notebook_Set_Environment(this.d, e); }
 
+    /** Description
+     * @type {string} */
+    get description() { return grok_Notebook_Get_Description(this.d); }
+    set description(e) { return grok_Notebook_Set_Description(this.d, e); }
+
     /** Converts Notebook to HTML code
      * @returns {Promise<string>} */
     toHtml() { return new Promise((resolve, reject) => grok_Notebook_ToHtml(this.d, (html) => resolve(html))); }
