@@ -69,5 +69,6 @@ function d3sunburst(containerElementId, data) {
     };
 
     const result = chart(data);
+    htmlElement
     htmlElement.appendChild(result)
 }
