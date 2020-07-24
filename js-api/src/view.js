@@ -397,6 +397,15 @@ export class ProjectsView extends DataSourceCardView {
 }
 
 
+/** Script view */
+export class ScriptView extends View {
+    /** @constructs ScriptView */
+    constructor(d) { super(d); }
+
+    static create(script) { return new ScriptView(grok_ScriptView(script)); }
+}
+
+
 export class ViewLayout {
     constructor(d) { this.d = d; }
 

@@ -182,6 +182,13 @@ export class Group extends Entity {
 export class Script extends Func {
     /** @constructs Script */
     constructor(d) { super(d); }
+
+    static create(script) { return new Script(grok_Script(script)); }
+
+    /** Script
+     * @type {string} */
+    get script() { return grok_Script_GetScript(this.d); }
+    set script(s) { return grok_Script_SetScript(this.d, s); }
 }
 
 /** Represents connection credentials
