@@ -80,16 +80,27 @@ class Sunburst2Viewer extends DG.JsViewer {
         table.set(this.getKey('', this.treeData.name), 0);
         const [lastColumn] = columns.slice(-1);
         for (const index of indexes) {
+            let prevPrevColumnValue = null;
             let prevColumnValue = this.treeData.name;
             for (const column of columns) {
-                const columnValue = column.get(index);
+                let columnValue = column.get(index);
+                let isLast = column === lastColumn;
                 if (columnValue === '') {
-                    break;
+                    if (prevPrevColumnValue == null) {
+                        break;
+                    }
+                    isLast = true;
+                    columnValue = prevColumnValue;
+                    prevColumnValue = prevPrevColumnValue;
                 }
                 const key = this.getKey(prevColumnValue, columnValue);
                 const value = table.get(key) || 0;
-                const valueIncrement = valueColumn ? (column === lastColumn ? valueColumn.get(index) : 0) : 1;
+                const valueIncrement = isLast ? (valueColumn ? valueColumn.get(index) : 1) : 0;
                 table.set(key, value + valueIncrement);
+                if (isLast) {
+                    break;
+                }
+                prevPrevColumnValue = prevColumnValue;
                 prevColumnValue = columnValue;
             }
         }
