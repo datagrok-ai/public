@@ -252,6 +252,7 @@ export class ProgressIndicator {
     set description(s) { grok_ProgressIndicator_Set_Description(this.d, s); }
 
     update(percent, description) { grok_ProgressIndicator_Update(this.d, percent, description); }
+    log(line) { grok_ProgressIndicator_Log(this.d, line); }
 
     get onProgressUpdated() { return observeStream(grok_Progress_Updated(this.d)); }
 
