@@ -10,9 +10,11 @@ export let _package = new DG.Package();
 //output: string out
 //meta.progress: true
 export async function countToTen(s, progress) {
-    for(let i = 0; i < 10; i++) {
-        if (progress != null)
+    for(let i = 0; i < 3; i++) {
+        if (progress != null) {
             progress.update(i * 10);
+            progress.log(`Changed progress to ${i*10}`);
+        }
         await new Promise(resolve => setTimeout(resolve, 1000));
     }
     return `result: ${s}`
