@@ -252,30 +252,44 @@ class NotebookView extends DG.ViewBase {
     }
 
     notebookToCode(jnb) {
-        // TODO: Add inputs from notebook
-        // TODO: Add output by parsing code
+        let inputRegex = /(.*) = grok_read/g;
+        let outputRegex = /grok\((.*)\)/g;
         let script = [
             `#name: ${this.notebook.name}\n`,
             `#description: ${this.notebook.description}\n`,
             '#language: python\n',
-            '#tags: notebook\n',
-            '#input: dataframe data [Input data table]\n',
-            '#output: dataframe output [Output data table]\n\n'
+            '#tags: notebook\n'
         ];
+        let inputs = [];
+        let outputs = [];
+        let body = ['\n'];
         jnb.widgets.forEach((cell) => {
             let text = cell.model.value.text;
             if (cell.model.type === 'markdown' || cell.model.type === 'raw') {
                 let lines = text.split('\n');
                 for (let n = 0; n < lines.length; n++)
                     lines[n] = `#${lines[n]}\n`;
-                script.push(...lines);
-                script.push('\n');
+                body.push(...lines);
+                body.push('\n');
             }
             else if (cell.model.type === 'code') {
-                script.push(text);
-                script.push('\n\n');
+                let lines = text.split('\n').filter(l => !l.startsWith('%'));
+                for (let line of lines) {
+                    let match = inputRegex.exec(line);
+                    if (match !== null)
+                        inputs.push(`#input: dataframe ${match[1]}\n`);
+                    match = outputRegex.exec(line);
+                    if (match !== null)
+                        outputs.push(`#output: dataframe ${match[1]}\n`);
+                }
+                lines = lines.filter(l => !l.includes('grok')).join('\n');
+                body.push(lines);
+                body.push('\n\n');
             }
         });
+        if (inputs.length > 0) script.push(...inputs);
+        if (outputs.length > 0) script.push(...outputs);
+        script.push(...body);
         return script.join('');
     }
 
