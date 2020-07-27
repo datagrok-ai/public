@@ -1,12 +1,11 @@
 {
   "name": "datagrok-tools",
-  "version": "3.0.0",
+  "version": "3.0.7",
   "description": "Utility to upload and publish package to Datagrok",
   "dependencies": {
     "inquirer": "^7.1.0",
     "minimist": "^1.2.5",
-    "request": "^2.88.2",
-    "request-promise": "^4.2.5",
+    "node-fetch": "^2.6.0",
     "fs": "^0.0.1-security",
     "node-recursive-directory": "^1.2.0",
     "path": "^0.12.7",
