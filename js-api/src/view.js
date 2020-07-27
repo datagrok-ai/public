@@ -5,6 +5,8 @@ import {Viewer} from "./viewer";
 import {DockNode, DockManager} from "./docking";
 import {Grid} from "./grid";
 import {Menu, ToolboxPage} from "./widgets";
+import {Entity} from "./entities";
+import {toJs} from "./wrappers";
 
 
 /**
@@ -173,13 +175,13 @@ export class TableView extends View {
 
     /** Associated table, if it exists (for TableView), or null.
      *  @type {DataFrame} */
-    get table() { return new DataFrame(grok_View_Get_Table(this.d)); }
+    get table() { return toJs(grok_View_Get_Table(this.d)); }
 
     /** @type {Grid} */
     get grid() { return new Grid(grok_View_Get_Grid(this.d)); }
 
     /** @type {DataFrame} */
-    get dataFrame() { return new DataFrame(grok_View_Get_DataFrame(this.d)); }
+    get dataFrame() { return toJs(grok_View_Get_DataFrame(this.d)); }
     set dataFrame(x) { grok_View_Set_DataFrame(this.d, x.d); }
 
     /** View toolbox that gets shown on the left, in the sidebar
@@ -396,7 +398,6 @@ export class ProjectsView extends DataSourceCardView {
     static create(params) { return new ProjectsView(grok_ProjectsView(params)); }
 }
 
-
 /** Script view */
 export class ScriptView extends View {
     /** @constructs ScriptView */
@@ -406,14 +407,15 @@ export class ScriptView extends View {
 }
 
 
-export class ViewLayout {
-    constructor(d) { this.d = d; }
+export class ViewLayout extends Entity {
+
+    /** @constructs ViewLayout */
+    constructor(d) { super(d); }
 
     static fromJson(json) { return new ViewLayout(grok_ViewLayout_FromJson(json)); }
 
     toJson() { return grok_ViewLayout_ToJson(this.d); }
 }
-
 
 export class VirtualView {
     constructor(d) { this.d = d; }
