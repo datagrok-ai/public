@@ -14,6 +14,25 @@ module.exports = {
         "rxjs": "rxjs",
         "rxjs/operators": "rxjs.operators"
     },
+    module: {
+        rules: [
+            {
+                test: /\.m?js$/,
+                exclude: /node_modules/,
+                use: {
+                    loader: 'babel-loader',
+                    options: {
+                        "presets": [
+                            ["@babel/preset-env", {
+                                "targets": { "browsers": ["last 2 chrome versions", "chrome 50"] },
+                                "useBuiltIns": "usage"
+                            }]
+                        ]
+                    }
+                }
+            }
+        ]
+    },
     output: {
         filename: '[name].js',
         library: 'discovery',
