@@ -188,7 +188,7 @@ export class Script extends Func {
     /** @constructs Script */
     constructor(d) { super(d); }
 
-    static create(script) { return new Script(grok_Script(script)); }
+    static create(script) { return new Script(grok_Script_Create(script)); }
 
     /** Script
      * @type {string} */
