@@ -6,13 +6,9 @@ export class Functions {
 
     registerParamFunc(name, type, run, check = null, description = null) { grok_RegisterParamFunc(name, type, run, check, description); }
 
-    call(name, parameters = {}, showProgress = false, progress = null) { return new Promise((resolve, reject) => grok_CallFunc(name, parameters, (out) => resolve(out), showProgress, toDart(progress))); }
+    call(name, parameters = {}, showProgress = false, progress = null) { return new Promise((resolve, reject) => grok_CallFunc(name, parameters, (out) => resolve(out), (err) => reject(err), showProgress, toDart(progress))); }
 
-    eval(name) { return new Promise((resolve, reject) => grok_EvalFunc(name, (out) => resolve(out))); }
-
-    script(s) {
-        return new Promise((resolve, reject) => grok_Script(s, (t) => resolve(toJs(t, false))));
-    }
+    eval(name) { return new Promise((resolve, reject) => grok_EvalFunc(name, (out) => resolve(out), (err) => reject(err))); }
 
     scriptSync(s) { return toJs(grok_ScriptSync(s), false); }
 }
@@ -30,8 +26,9 @@ export class FuncCall {
 
     /** Executes the function call
      * @param {boolean} showProgress
+     * @param {ProgressIndicator} progress
      * @returns {Promise<FuncCall>} */
-    call(showProgress = false) { return new Promise((resolve, reject) => grok_FuncCall_Call(this.d, (out) => resolve(out), showProgress)); }
+    call(showProgress = false, progress = null) { return new Promise((resolve, reject) => grok_FuncCall_Call(this.d, (out) => resolve(out), (err) => reject(err), showProgress, toDart(progress))); }
 }
 
 export function callFuncWithDartParameters(f, params) {
