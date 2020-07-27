@@ -255,6 +255,7 @@ export class ProgressIndicator {
     log(line) { grok_ProgressIndicator_Log(this.d, line); }
 
     get onProgressUpdated() { return observeStream(grok_Progress_Updated(this.d)); }
+    get onLogUpdated() { return observeStream(grok_Progress_Log_Updated(this.d)); }
 
 }
 
