@@ -50,13 +50,12 @@ class Sunburst2Viewer extends DG.JsViewer {
     }
 
     clearTreeData() {
-        for (var x in this.treeData) if (this.treeData.hasOwnProperty(x)) delete this.treeData[x];
-        this.treeData.name = this.containerId;
-        this.treeData.children = [];
+        // for (var x in this.treeData) if (this.treeData.hasOwnProperty(x)) delete this.treeData[x];
+        this.treeData.id = d3.hierarchy({ id: this.containerId, parent: '', children: [], data: {}});
     }
 
-    getKey(parent, name) {
-        return JSON.stringify({ parent, name })
+    getKey(parent, id) {
+        return JSON.stringify({ parent, id })
     }
 
     buildTreeData() {
@@ -77,11 +76,11 @@ class Sunburst2Viewer extends DG.JsViewer {
         }
 
         const table = new Map();
-        table.set(this.getKey('', this.treeData.name), 0);
+        table.set(this.getKey('', this.containerId), 0);
         const [lastColumn] = columns.slice(-1);
         for (const index of indexes) {
             let prevPrevColumnValue = null;
-            let prevColumnValue = this.treeData.name;
+            let prevColumnValue = this.containerId;
             for (const column of columns) {
                 let columnValue = column.get(index);
                 let isLast = column === lastColumn;
@@ -111,12 +110,11 @@ class Sunburst2Viewer extends DG.JsViewer {
         console.error(list);
 
         const treeData = d3.stratify()
-            .id(d => d.name)
+            .id(d => d.id)
             .parentId(d => d.parent)
             (list)
             .sum(d => d.value);
         this.treeData = treeData;
-        console.error(this.treeData);
     }
 
     render() {
