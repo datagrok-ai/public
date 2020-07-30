@@ -7,6 +7,7 @@ import {Viewer} from "./src/viewer";
 import {VirtualView} from "./src/view";
 import {Accordion, Dialog, InputBase, Menu, TabControl, TreeViewNode, Widget} from "./src/widgets";
 import {toDart} from "./src/wrappers";
+import {Functions} from "./src/functions";
 
 /**
  * Creates an instance of the element for the specified tag, and optionally assigns it a CSS class.
@@ -257,5 +258,79 @@ export class tools {
             }
         }, 100);
         return () => clearInterval(interval);
+    }
+}
+
+
+/**
+ * Override this class, and {@link register} an instance to integrate the platform with custom
+ * types and objects.
+ *
+ * Samples: {@link https://public.datagrok.ai/js/samples/ui/meta/meta}
+ * */
+export class JsEntityMeta {
+
+    /** Type of the object that this meta handles. */
+    get type() { throw 'Not defined.'; }
+
+    /**
+     * Override this method to check whether this meta class should handle the specified object.
+     * @param x - specified object.
+     * @returns {boolean}
+     * */
+    isApplicable(x) { throw 'Not defined.'; }
+
+    /** String representation of the [item], by default item.toString().
+     * @param x - item
+     * @returns {string} */
+    getCaption(x) { return `${x}`; };
+
+    /** Renders icon for the item.
+     * @param x - item
+     * @returns {Element} */
+    renderIcon(x) { return ui.divText(this.getCaption(x)); }
+
+    /** Renders markup for the item.
+     * @param x - item
+     * @returns {Element} */
+    renderMarkup(x) { return ui.divText(this.getCaption(x)); }
+
+    /** Renders tooltip for the item.
+     * @param x - item
+     * @returns {Element} */
+    renderTooltip(x) { return ui.divText(this.getCaption(x)); }
+
+    /** Renders card div for the item.
+     * @param x - item
+     * @returns {Element} */
+    renderCard(x) { return ui.divText(this.getCaption(x)); }
+
+    /** Renders properties list for the item.
+     * @param x - item
+     * @returns {Element} */
+    renderProperties(x) { return ui.divText(this.getCaption(x)); }
+
+    /** Renders view for the item.
+     * @param x - item
+     * @returns {Element} */
+    renderView(x) {return this.renderProperties(x); }
+
+    /** Gets called once upon the registration of meta export class. */
+    init() {}
+
+    static register(meta) { grok_Meta_Register(meta); }
+
+    /**
+     * Registers a function that takes applicable objects an the only argument.
+     * It will be suggested to run in the context menu for that object, and
+     * also in the "Actions" pane on the property panel.
+     *
+     * Samples: {@link https://public.datagrok.ai/js/samples/ui/docking/docking}
+     *
+     * @param {string} name - function name
+     * @param run - a function that takes exactly one parameter
+     * */
+    registerParamFunc(name, run) {
+        new Functions().registerParamFunc(name, this.type, run, this.isApplicable);
     }
 }
