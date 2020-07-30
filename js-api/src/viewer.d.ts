@@ -1,7 +1,8 @@
-import {VIEWER, VIEWER_PROPERTY_TYPE} from './const';
+import {VIEWER} from './const';
 import {Column, DataFrame} from "./dataframe";
 import {StreamSubscription} from "./events";
 import {DateTime, Property} from "./entities";
+import {Subscription} from "rxjs";
 
 /**
  * Represents a {@link https://datagrok.ai/help/visualize/viewers | viewer}.
@@ -66,7 +67,7 @@ export class JsViewer {
     root: HTMLElement;
     properties: Property[];
     dataFrame: DataFrame;
-    subs: StreamSubscription[];
+    subs: Subscription[];
 
     /**
      * Gets called when a table is attached to the viewer.
@@ -108,30 +109,30 @@ export class JsViewer {
     /**
      * Registers an integer property with the specified name and defaultValue
      */
-    int(propertyName: VIEWER_PROPERTY_TYPE, defaultValue?: number | null): number;
+    int(propertyName: string, defaultValue?: number | null): number;
 
     /**
      * Registers a floating point property with the specified name and defaultValue
      */
-    float(propertyName: VIEWER_PROPERTY_TYPE, defaultValue?: number | null): number;
+    float(propertyName: string, defaultValue?: number | null): number;
 
     /**
      * Registers a string property with the specified name and defaultValue
      */
-    string(propertyName: VIEWER_PROPERTY_TYPE, defaultValue?: string | null): string;
+    string(propertyName: string, defaultValue?: string | null): string;
 
     /**
      * Registers a string list property with the specified name and defaultValue
      */
-    stringList(propertyName: VIEWER_PROPERTY_TYPE, defaultValue?: string[] | null): string[];
+    stringList(propertyName: string, defaultValue?: string[] | null): string[];
 
     /**
      * Registers a boolean property with the specified name and defaultValue
      */
-    bool(propertyName: VIEWER_PROPERTY_TYPE, defaultValue?: boolean | null): boolean;
+    bool(propertyName: string, defaultValue?: boolean | null): boolean;
 
     /**
      * Registers a datetime property with the specified name and defaultValue
      */
-    dateTime(propertyName: VIEWER_PROPERTY_TYPE, defaultValue?: DateTime | null): DateTime;
+    dateTime(propertyName: string, defaultValue?: DateTime | null): DateTime;
 }
