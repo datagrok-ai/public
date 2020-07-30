@@ -47,6 +47,7 @@ export const enum COLUMN_TYPE {
     STRING = 'string',
     INT = 'int',
     FLOAT = 'double',
+    QNUM = 'qnum',
     BOOL = 'bool',
     DATE_TIME = 'datetime',
     BIG_INT = 'bigint'
@@ -58,6 +59,7 @@ export enum TYPE {
     BIG_INT = 'bigint',
     FLOAT = 'double',
     NUM = 'num',
+    QNUM = 'qnum',
     BOOL = 'bool',
     STRING = 'string',
     STRING_LIST = 'string_list',

@@ -30,7 +30,7 @@ to automatically recognize chemical structures.
 
 ## Molecule sketcher
 
-Sketch a molecule using the built-in editor, or retrieve one by entering compound
+Sketch a molecule using the built-in editor, or retrieve one by entering a compound
 identifier. The following compound identifiers are natively understood since they
 have a prefix that uniquely identifies source system: SMILES, InChI, InChIKey,
 CHEMBL, MCULE, comptox, and zinc. The rest of the 30+ identifier systems can be 
