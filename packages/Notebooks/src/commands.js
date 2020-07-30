@@ -35,7 +35,9 @@ const cmdIds = {
   split: 'notebook-cells:split',
   commandMode: 'notebook:command-mode',
   undo: 'notebook-cells:undo',
-  redo: 'notebook-cells:redo'
+  redo: 'notebook-cells:redo',
+  insertBelow: 'notebook-cells:insert-below',
+  insertAbove: 'notebook-cells:insert-above'
 };
 
 export const SetupCommands = (commands, nbWidget, handler) => {
@@ -59,6 +61,9 @@ export const SetupCommands = (commands, nbWidget, handler) => {
   commands.addCommand(cmdIds.split, { label: 'Split Cell', execute: () => NotebookActions.splitCell(nbWidget.content) });
   commands.addCommand(cmdIds.undo, { label: 'Undo', execute: () => NotebookActions.undo(nbWidget.content) });
   commands.addCommand(cmdIds.redo, { label: 'Redo', execute: () => NotebookActions.redo(nbWidget.content) });
+  commands.addCommand(cmdIds.deleteCell, { label: 'Delete Cell', execute: () => NotebookActions.deleteCells(nbWidget.content) });
+  commands.addCommand(cmdIds.insertBelow, { label: 'Insert Cell Below', execute: () => NotebookActions.insertBelow(nbWidget.content) });
+  commands.addCommand(cmdIds.insertAbove, { label: 'Insert Cell Above', execute: () => NotebookActions.insertAbove(nbWidget.content) });
 
   commands.addCommand(cmdIds.invokeNotebook, { label: 'Invoke Notebook',
     execute: () => {
@@ -132,6 +137,7 @@ export const SetupCommands = (commands, nbWidget, handler) => {
     { selector: '.jp-Notebook.jp-mod-commandMode:focus', keys: ['I', 'I'], command: cmdIds.interrupt },
     { selector: '.jp-Notebook.jp-mod-commandMode:focus', keys: ['0', '0'], command: cmdIds.restart },
     { selector: '.jp-Notebook.jp-mod-commandMode:focus', keys: ['Enter'], command: cmdIds.editMode },
+    { selector: '.jp-Notebook.jp-mod-commandMode:focus', keys: ['D', 'D'], command: cmdIds.deleteCell },
     { selector: '.jp-Notebook.jp-mod-editMode', keys: ['Escape'], command: cmdIds.commandMode },
     { selector: '.jp-Notebook.jp-mod-commandMode:focus', keys: ['Shift M'], command: cmdIds.merge },
     { selector: '.jp-Notebook.jp-mod-editMode', keys: ['Ctrl Shift -'], command: cmdIds.split },
@@ -140,6 +146,9 @@ export const SetupCommands = (commands, nbWidget, handler) => {
     { selector: '.jp-Notebook.jp-mod-commandMode:focus', keys: ['K'], command: cmdIds.selectAbove },
     { selector: '.jp-Notebook.jp-mod-commandMode:focus', keys: ['ArrowUp'], command: cmdIds.selectAbove },
     { selector: '.jp-Notebook.jp-mod-commandMode:focus', keys: ['Shift K'], command: cmdIds.extendAbove },
+    { selector: '.jp-Notebook.jp-mod-commandMode:focus', keys: ['Shift J'], command: cmdIds.extendBelow },
+    { selector: '.jp-Notebook.jp-mod-commandMode:focus', keys: ['B'], command: cmdIds.insertBelow },
+    { selector: '.jp-Notebook.jp-mod-commandMode:focus', keys: ['A'], command: cmdIds.insertAbove },
     { selector: '.jp-Notebook.jp-mod-commandMode:focus', keys: ['Shift J'], command: cmdIds.extendBelow },
     { selector: '.jp-Notebook.jp-mod-commandMode:focus', keys: ['Z'], command: cmdIds.undo },
     { selector: '.jp-Notebook.jp-mod-commandMode:focus', keys: ['Y'], command: cmdIds.redo }

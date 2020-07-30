@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 const argv = require('minimist')(process.argv.slice(2));
 const getFiles = require('node-recursive-directory');
-const rp = require('request-promise');
 const fs = require('fs');
+const fetch = require('node-fetch');
 const path = require('path');
 const archiver = require('archiver-promise');
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
 let mode = argv['_'][1];
 let host = argv['_'][0];
@@ -49,9 +50,16 @@ async function processPackage() {
 //get server timestamps
     let timestamps = {};
     if (debug) {
-        timestamps = await rp({url: `${host}/packages/dev/${devKey}/${packageName}/timestamps`, json: true});
-        if (timestamps['#type'] === 'ApiError')
-            return console.log(timestamps.message);
+        try {
+            timestamps = await (await fetch(`${host}/packages/dev/${devKey}/${packageName}/timestamps`)).json();
+            if (timestamps['#type'] === 'ApiError') {
+                console.log(timestamps.message);
+                return 1;
+            }
+        } catch (error) {
+            console.log(error);
+            return 1;
+        }
     }
 
     let zip = archiver('zip', {store: false});
@@ -63,18 +71,19 @@ async function processPackage() {
 
         let fullPath = file.fullpath;
         let relativePath = path.relative(process.cwd(), fullPath);
-
+        let canonicalRelativePath = relativePath.replace(/\\/g, '/');
+        if (canonicalRelativePath.includes('/.'))
+            return;
+        if (canonicalRelativePath.startsWith('.'))
+            return;
         if (relativePath.startsWith('node_modules'))
             return;
         if (relativePath.startsWith('dist') && rebuild)
             return;
         if (relativePath.startsWith('upload.keys.json'))
             return;
-        if (relativePath.startsWith('.git'))
-            return;
         if (relativePath === 'zip')
             return;
-        let canonicalRelativePath = relativePath.replace(/\\/g, '/');
         let t = fs.statSync(fullPath).mtime.toUTCString();
         localTimestamps[canonicalRelativePath] = t;
         if (debug && timestamps[canonicalRelativePath] === t) {
@@ -87,28 +96,30 @@ async function processPackage() {
     zip.append(JSON.stringify(localTimestamps), {name: 'timestamps.json'});
 
 //upload
-    let uploadPromise = new Promise( (resolve, reject) => {
-            zip.pipe(rp({
+    let uploadPromise = new Promise((resolve, reject) => {
+            fetch(`${host}/packages/dev/${devKey}/${packageName}?debug=${debug.toString()}&rebuild=${rebuild.toString()}`, {
                 method: 'POST',
-                url: `${host}/packages/dev/${devKey}/${packageName}?debug=${debug.toString()}&rebuild=${rebuild.toString()}`,
-                json: true
-            })).then(body => {
-                resolve(body);
-            }).catch(err => {
+                body: zip
+            }).then(body => body.json()).then(j => resolve(j)).catch(err => {
                 reject(err);
             });
         }
     )
     await zip.finalize();
 
-    let log = await uploadPromise;
+    try {
+        let log = await uploadPromise;
 
-    fs.unlinkSync('zip');
-    if (log['#type'] === 'ApiError') {
-        console.log(log['message']);
-        console.log(log['innerMessage']);
+        fs.unlinkSync('zip');
+        if (log['#type'] === 'ApiError') {
+            console.log(log['message']);
+            console.log(log['innerMessage']);
+            return 1;
+        } else
+            console.log(log);
+    } catch (error) {
+        console.log(error);
         return 1;
-    } else
-     console.log(log);
+    }
     return 0;
 }

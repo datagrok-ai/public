@@ -26,7 +26,7 @@ import { DocumentManager } from '@jupyterlab/docmanager';
 import { DocumentRegistry } from '@jupyterlab/docregistry';
 import { RenderMimeRegistry, standardRendererFactories as initialFactories } from '@jupyterlab/rendermime';
 import { SetupCommands } from './commands';
-import {sessionContextDialogs} from "@jupyterlab/apputils";
+import { sessionContextDialogs } from '@jupyterlab/apputils';
 
 
 class NotebookView extends DG.ViewBase {
@@ -36,9 +36,9 @@ class NotebookView extends DG.ViewBase {
         this.TYPE = 'Notebook';
         this.PATH = '/notebook';
 
-        this.openAsHtmlIcon = ui.bigButton('HTML', () => { this.htmlMode().then() }, 'Open as HTML', true);
+        this.openAsHtmlIcon = ui.bigButton('HTML', () => { this.htmlMode().then() }, 'Open as HTML');
         this.openAsHtmlIcon.style.backgroundColor = 'var(--green-2)';
-        this.editIcon = ui.bigButton('EDIT', () => { this.editMode().then() }, 'Edit notebook', true);
+        this.editIcon = ui.bigButton('EDIT', () => { this.editMode().then() }, 'Edit notebook');
         this.editIcon.style.backgroundColor = 'var(--green-2)';
 
         this.html = '';
@@ -221,7 +221,12 @@ class NotebookView extends DG.ViewBase {
             this.environmentInput = await this.getEnvironmentsInput();
 
         this.setRibbonPanels([
-            [ this.openAsHtmlIcon ],
+            [
+                this.openAsHtmlIcon,
+                ui.iconFA('file-export', () => {
+                    grok.shell.addView(DG.ScriptView.create(DG.Script.create(this.notebookToCode(nbWidget.content))));
+                }, 'Open as script')
+            ],
             [
                 ui.iconFA('save', () => nbWidget.context.save(), 'Save notebook'),
                 ui.iconFA('plus', () => NotebookActions.insertBelow(nbWidget.content), 'Insert a cell before'),
@@ -236,7 +241,7 @@ class NotebookView extends DG.ViewBase {
                     'Restart Kernel and run all cells'),
                 new CellTypeSwitcher(nbWidget.content).node,
             ],
-            [ this.environmentInput.root ]
+            [ this.environmentInput.root ],
         ], true);
         nbWidget.toolbar.hide();
         this.openAsHtmlIcon.parentNode.parentNode.style.flexShrink = '0';
@@ -244,6 +249,48 @@ class NotebookView extends DG.ViewBase {
         this.root.classList.add('grok-notebook-view');
 
         SetupCommands(commands, nbWidget, handler);
+    }
+
+    notebookToCode(jnb) {
+        let inputRegex = /(.*) = grok_read/g;
+        let outputRegex = /grok\((.*)\)/g;
+        let script = [
+            `#name: ${this.notebook.name}\n`,
+            `#description: ${this.notebook.description}\n`,
+            '#language: python\n',
+            '#tags: notebook\n'
+        ];
+        let inputs = [];
+        let outputs = [];
+        let body = ['\n'];
+        jnb.widgets.forEach((cell) => {
+            let text = cell.model.value.text;
+            if (cell.model.type === 'markdown' || cell.model.type === 'raw') {
+                let lines = text.split('\n');
+                for (let n = 0; n < lines.length; n++)
+                    lines[n] = `#${lines[n]}\n`;
+                body.push(...lines);
+                body.push('\n');
+            }
+            else if (cell.model.type === 'code') {
+                let lines = text.split('\n').filter(l => !l.startsWith('%'));
+                for (let line of lines) {
+                    let match = inputRegex.exec(line);
+                    if (match !== null)
+                        inputs.push(`#input: dataframe ${match[1]}\n`);
+                    match = outputRegex.exec(line);
+                    if (match !== null)
+                        outputs.push(`#output: dataframe ${match[1]}\n`);
+                }
+                lines = lines.filter(l => !l.includes('grok')).join('\n');
+                body.push(lines);
+                body.push('\n\n');
+            }
+        });
+        if (inputs.length > 0) script.push(...inputs);
+        if (outputs.length > 0) script.push(...outputs);
+        script.push(...body);
+        return script.join('');
     }
 
     static getSettings() {
