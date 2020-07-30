@@ -227,7 +227,9 @@ export class Row {
 export class Column {
     constructor(d) { this.d = d; }
     static fromStrings(name, list) { return new Column(grok_Column_FromStrings(name, list)); }
-    static fromType(type, name = null, length = 0) { return new Column(grok_Column_FromType(type, name, length)); }
+    static fromType(type, name = null, length = 0) {
+        return new Column(grok_Column_FromType(type, name, length));
+    }
 
     /** [array] will be not be copied and will be used as column's storage */
     static fromInt32Array(name, array, length = null) { return new Column(grok_Column_FromInt32Array(name, array, length)); }
@@ -263,6 +265,11 @@ export class Column {
      * @param {string} name
      * @param {number} length */
     static dateTime(name, length = 0) { return Column.fromType(TYPE.DATE_TIME, name, length); }
+
+    /** Creates a qualified number column with the specified name and length.
+     * @param {string} name
+     * @param {number} length */
+    static qnum(name, length = 0) { return Column.fromType(TYPE.QNUM, name, length); }
 
     /** Column data type. */
     get type() { return grok_Column_Get_Type(this.d); }
@@ -371,6 +378,10 @@ export class ColumnList {
         var col = grok_ColumnList_BySemType(this.d, semType);
         return col == null ? null : new Column(col);
     }
+
+    //todo
+    //numerical
+    //categorical
 
     /** Array containing column names.
      * @returns {string[]} */
