@@ -1,4 +1,5 @@
 import {Script} from "./entities";
+import {ProgressIndicator} from "./widgets";
 
 /** Grok functions */
 export class Functions {
@@ -9,8 +10,6 @@ export class Functions {
     call(name: string, parameters?: Object, showProgress?: boolean, progress?: number | null): Promise<any>;
 
     eval(name: string): Promise<any>;
-
-    script(s: Script): Promise<any>
 
     scriptSync(s: Script): any
 }
@@ -28,8 +27,9 @@ export class FuncCall {
 
     /** Executes the function call
      * @param {boolean} showProgress
+     * @param {ProgressIndicator} progress
      * @returns {Promise<FuncCall>} */
-    call(showProgress?: boolean): Promise<FuncCall>
+    call(showProgress?: boolean, progress?: ProgressIndicator | null): Promise<FuncCall>
 }
 
 export function callFuncWithDartParameters<T>(f: (...params: any[]) => T, params: any): T;

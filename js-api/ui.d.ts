@@ -212,3 +212,75 @@ export class tools {
 
     static handleResize(element: HTMLElement, onChanged: (width: number, height: number) => void): () => void;
 }
+
+
+/**
+ * Override this class, and {@link register} an instance to integrate the platform with custom
+ * types and objects.
+ *
+ * Samples: {@link https://public.datagrok.ai/js/samples/ui/meta/meta}
+ * */
+export class JsEntityMeta {
+
+    /** Type of the object that this meta handles. */
+    get type(): string
+
+    static register(meta: JsEntityMeta): void
+
+    /**
+     * Override this method to check whether this meta class should handle the specified object.
+     * @param x - specified object.
+     * @returns {boolean}
+     * */
+    isApplicable(x: any): boolean
+
+    /** String representation of the [item], by default item.toString().
+     * @param x - item
+     * @returns {string} */
+    getCaption(x: any): string
+
+    /** Renders icon for the item.
+     * @param x - item
+     * @returns {Element} */
+    renderIcon(x: any): HTMLDivElement
+
+    /** Renders markup for the item.
+     * @param x - item
+     * @returns {Element} */
+    renderMarkup(x: any): HTMLDivElement
+
+    /** Renders tooltip for the item.
+     * @param x - item
+     * @returns {Element} */
+    renderTooltip(x: any): HTMLDivElement
+
+    /** Renders card div for the item.
+     * @param x - item
+     * @returns {Element} */
+    renderCard(x: any): HTMLDivElement
+
+    /** Renders properties list for the item.
+     * @param x - item
+     * @returns {Element} */
+    renderProperties(x: any): HTMLDivElement
+
+    /** Renders view for the item.
+     * @param x - item
+     * @returns {Element} */
+    renderView(x: any): HTMLDivElement
+
+    /** Gets called once upon the registration of meta export class. */
+    init(): void
+
+    /**
+     * Registers a function that takes applicable objects an the only argument.
+     * It will be suggested to run in the context menu for that object, and
+     * also in the "Actions" pane on the property panel.
+     *
+     * Samples: {@link https://public.datagrok.ai/js/samples/ui/docking/docking}
+     *
+     * @param {string} name - function name
+     * @param run - a function that takes exactly one parameter
+     * */
+    registerParamFunc(name: string, run: (params: any) => void): void;
+}

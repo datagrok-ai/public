@@ -261,9 +261,13 @@ export class ProgressIndicator {
 
     get onProgressUpdated(): Observable<any>
 
+    get onLogUpdated(): Observable<any>
+
     static create(name?: string): ProgressIndicator
 
     update(percent: number, description: string): void
+    
+    log(line: any): void
 }
 
 
