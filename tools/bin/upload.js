@@ -27,6 +27,12 @@ if (fs.existsSync('upload.keys.json')) {
     fs.writeFileSync('upload.keys.json', JSON.stringify(keys));
 }
 let devKey = keys[host];
+if (devKey === undefined) {
+    devKey = '';
+    keys[host] = devKey;
+    fs.writeFileSync('upload.keys.json', JSON.stringify(keys));
+}
+
 if (devKey === '')
    return console.log( 'Empty developer key. See upload.keys.json file.');
 
