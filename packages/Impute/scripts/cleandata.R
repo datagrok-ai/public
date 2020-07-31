@@ -1,4 +1,4 @@
-#name: CleanData
+#name: CleanDataImpl
 #description: rids the data of columns/rows with NA % above the threshold
 #language: r
 #tags: template, demo
