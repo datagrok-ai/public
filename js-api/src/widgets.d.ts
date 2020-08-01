@@ -13,7 +13,7 @@ export class Widget {
     get root(): HTMLElement
 
     /** Creates a {@see Widget} from the specified React component. */
-    static react(reactComponent: React.ElementType): Widget
+    static react(reactComponent: React.DOMElement<any, any> | Array<React.DOMElement<any, any>> | React.CElement<any, any> | Array<React.CElement<any, any>> | React.ReactElement | Array<React.ReactElement>): Widget
 }
 
 
@@ -261,9 +261,13 @@ export class ProgressIndicator {
 
     get onProgressUpdated(): Observable<any>
 
+    get onLogUpdated(): Observable<any>
+
     static create(name?: string): ProgressIndicator
 
     update(percent: number, description: string): void
+    
+    log(line: any): void
 }
 
 

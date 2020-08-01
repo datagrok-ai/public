@@ -4,6 +4,7 @@ import {Grid} from "./grid";
 import {Viewer} from "./viewer";
 import {DockManager, DockNode} from "./docking";
 import {VIEWER} from "./const";
+import {Entity, Script} from "./entities";
 
 /**
  * Subclass ViewBase to implement a Datagrok view in JavaScript.
@@ -133,7 +134,7 @@ export class View extends ViewBase {
 
     /** Creates a new empty view.
      * @returns {View} */
-    static create(): View
+    static create(param?: any): View
 
     /** Loads previously saved view layout. Only applicable to certain views, such as TableView.
      *  See also {@link saveLayout}
@@ -383,8 +384,15 @@ export class ProjectsView extends DataSourceCardView {
     static create(params?: Object): ProjectsView
 }
 
+/** Script view */
+export class ScriptView extends View {
+    /** @constructs ScriptView */
+    constructor(d: any)
 
-export class ViewLayout {
+    static create(script: Script): ScriptView
+}
+
+export class ViewLayout extends Entity {
     constructor(d: any)
 
     static fromJson(json: string): ViewLayout
