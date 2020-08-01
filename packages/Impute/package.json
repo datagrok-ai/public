@@ -1,0 +1,14 @@
+{
+  "name": "impute",
+  "fullName": "impute",
+  "version": "1.0.0",
+  "description": "",
+  "dependencies": {
+    "datagrok-api": "latest"
+  },
+  "scripts": {
+    "upload-debug": "webpack && datagrok-upload https://dev.datagrok.ai/api debug",
+    "upload-deploy": "webpack && datagrok-upload https://dev.datagrok.ai/api deploy",
+    "build": "webpack"
+  }
+}
