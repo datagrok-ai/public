@@ -13,8 +13,10 @@ Predictive models can be used either directly to estimate a response (outcome) g
 set of characteristics (features), or indirectly to drive the choice of decision rules.
 
 Plugin uses following types of kernels:
-  * [R Caret](https://topepo.github.io/caret/index.html) via OpenCPU 
+  * [R Caret](https://topepo.github.io/caret/index.html) 
   * [H2O](http://h2o.ai)
+  * [Chemprop](https://github.com/chemprop/chemprop)
+  
   
 To select kernel open **Tools** | **Settings...** | **Servers** 
 
@@ -22,7 +24,7 @@ Set **Use Open Cpu For Predictive Modeling** to use R Caret, H2O will be used in
 
 ### Available models
 
-For Caret via OpenCPU:
+For Caret:
 
 | Method    | Model                                                     |
 |-----------|-----------------------------------------------------------|
@@ -128,8 +130,8 @@ See also:
 * [Predictive modeling](https://en.wikipedia.org/wiki/Predictive_modelling)
 * [Statistical classification](https://en.wikipedia.org/wiki/Statistical_classification)
 * [R Caret package](https://topepo.github.io/caret/index.html)
-* [OpenCPU](https://www.opencpu.org/)
 * [H2O](http://h2o.ai/)
+* [Chemprop](https://github.com/chemprop/chemprop)
 * [Receiver operating characteristic (ROC)](https://en.wikipedia.org/wiki/Receiver_operating_characteristic)
 * [Confusion matrix](https://en.wikipedia.org/wiki/Confusion_matrix)
 * [Samples](https://public.datagrok.ai/js/samples/domains/data-science/predictive-model)

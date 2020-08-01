@@ -1,6 +1,6 @@
 {
   "name": "datagrok-tools",
-  "version": "3.0.7",
+  "version": "3.0.9",
   "description": "Utility to upload and publish package to Datagrok",
   "dependencies": {
     "inquirer": "^7.1.0",
