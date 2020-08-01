@@ -267,9 +267,24 @@ export class Column {
     static dateTime(name, length = 0) { return Column.fromType(TYPE.DATE_TIME, name, length); }
 
     /** Creates a qualified number column with the specified name and length.
+     *  Initialized values with [values], if it is specified; strips out the qualifier
+     *  part if [exact] is true.
+     *
      * @param {string} name
-     * @param {number} length */
-    static qnum(name, length = 0) { return Column.fromType(TYPE.QNUM, name, length); }
+     * @param {number} length
+     * @param {number[]} values
+     * @param {boolean} exact - if true, strips out qualifier from [values].
+     * */
+    static qnum(name, length = 0, values = null, exact = true) {
+        let col = Column.fromType(TYPE.QNUM, name, length);
+        if (values !== null) {
+            let buffer = col.getRawData();
+            for (let i = 0; i < length; i++)
+                buffer[i] = exact ? Qnum.exact(values[i]) : values[i];
+            col.setRawData(buffer);
+        }
+        return col;
+    }
 
     /** Column data type. */
     get type() { return grok_Column_Get_Type(this.d); }
@@ -290,12 +305,15 @@ export class Column {
 
     /** Returns the raw buffer containing data. Return type depends on the column type:
      * {Int32Array} for ints, {@link INT_NULL} represents null.
-     * {Float64Array} for floats, {@link FLOAT_NULL} represents null.
+     * {Float32Array} for floats, {@link FLOAT_NULL} represents null.
+     * {Float64Array} for qnums, {@link FLOAT_NULL} represents null.
      * {Float64Array} for datetime, in microseconds since epoch, {@link FLOAT_NULL} represents null.
      * {Int32Array} for strings indexes of {@link categories}.
      * {Uint32Array} bit array.
      * @returns {Array} */
     getRawData() { return grok_Column_GetRawData(this.d); }
+
+    setRawData(rawData, notify = true) { grok_Column_SetRawData(this.d, rawData, notify); }
 
     /** Gets i-th value */
     get(i) { return grok_Column_GetValue(this.d, i); }
