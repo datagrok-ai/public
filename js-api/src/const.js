@@ -63,7 +63,8 @@ export const COLUMN_TYPE = {
     FLOAT : 'double',
     BOOL : 'bool',
     DATE_TIME : 'datetime',
-    BIG_INT : 'bigint'
+    BIG_INT : 'bigint',
+    QNUM : 'qnum'
 }
 
 
@@ -73,6 +74,7 @@ export const TYPE = {
     BIG_INT : 'bigint',
     FLOAT : 'double',
     NUM : 'num',
+    QNUM : 'qnum',
     BOOL : 'bool',
     STRING : 'string',
     STRING_LIST : 'string_list',
