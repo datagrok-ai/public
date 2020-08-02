@@ -8,10 +8,7 @@ export function paramsToJs(params) {
     let result = [];
     for (let i = 0; i < params.length; i++) {
         let type = grok_GetType(params[i]);
-        if (type !== null && (!TYPES_SCALAR.has(type) ||
-            type === TYPE.COLUMN_LIST ||
-            type === TYPE.LIST ||
-            type === TYPE.DATA_FRAME_LIST))
+        if (type !== null && (!TYPES_SCALAR.has(type) || type === TYPE.LIST))
             result.push(toJs(params[i]));
         else
             result.push(params[i]);
@@ -32,12 +29,7 @@ export function toJs(d, check = false) {
     if (wrapper != null)
         return wrapper;
     let type = grok_GetType(d);
-    if (type === TYPE.COLUMN_LIST || type === TYPE.DATA_FRAME_LIST || type === TYPE.LIST) {
-        let p = [];
-        for(let ii = 0; ii < d.length; ii++)
-            p.push(toJs(d[ii]));
-        return p;
-    } else if (type === TYPE.PROPERTY)
+    if (type === TYPE.PROPERTY)
         return new Property(d);
     if (check)
         throw `Not supported type: ${type}`;
