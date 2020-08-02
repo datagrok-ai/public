@@ -128,7 +128,7 @@ export class Data {
     openTable(id) { return new Promise((resolve, reject) => grok_OpenTable(id, (t) => resolve(new DataFrame(t)))); }
 
     query(queryName, queryParameters = null, adHoc = false, pollingInterval = 1000) {
-        return new Promise((resolve, reject) => grok_Query(queryName, queryParameters, adHoc, pollingInterval, (t) => resolve(new DataFrame(t))));
+        return new Promise((resolve, reject) => grok_Query(queryName, queryParameters, adHoc, pollingInterval, (t) => resolve(toJs(t))));
     }
 
     callQuery(queryName, queryParameters = null, adHoc = false, pollingInterval = 1000) {
