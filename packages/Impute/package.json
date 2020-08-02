@@ -6,7 +6,15 @@
   "dependencies": {
     "datagrok-api": "latest"
   },
+  "devDependencies": {
+    "babel-loader": "^8.1.0",
+    "@babel/cli": "7.1.2",
+    "@babel/core": "7.1.2",
+    "@babel/polyfill": "7.0.0",
+    "@babel/preset-env": "7.1.0"
+  },
   "scripts": {
+    "upload-debug-local": "webpack && datagrok-upload http://localhost:8082 debug",
     "upload-debug": "webpack && datagrok-upload https://dev.datagrok.ai/api debug",
     "upload-deploy": "webpack && datagrok-upload https://dev.datagrok.ai/api deploy",
     "build": "webpack"
