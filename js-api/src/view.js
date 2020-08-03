@@ -105,7 +105,7 @@ export class ViewBase {
     detach() { this.subs.forEach((sub) => sub.unsubscribe()); }
 
     /** Closes this view. */
-    close() { }
+    close() { grok_View_Close(this.d); }
 }
 
 
@@ -158,7 +158,6 @@ export class View extends ViewBase {
      *  @returns {ViewLayout} */
     saveLayout() { return new ViewLayout(grok_View_Save_Layout(this.d)); }
 
-    close() { grok_View_Close(this.d); }
 }
 
 
