@@ -1,10 +1,8 @@
-#name: GetStations
+#name: DatawigTest
 #language: python
-#environment: ulmo
-#input: string country = GM
-#output: dataframe stations
+#environment: datawig2
+#output: dataframe test
 
-import ulmo
-import pandas
+import datawig
 
-stations = ulmo.ncdc.ghcn_daily.get_stations(country=country, as_dataframe=True)
+test = datawig.utils.generate_df_numeric()
