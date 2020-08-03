@@ -1,7 +1,7 @@
 #name: GetStations
 #language: python
 #environment: ulmo
-#input: string country
+#input: string country = GM
 #output: dataframe stations
 
 import ulmo
