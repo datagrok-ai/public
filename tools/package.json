@@ -1,6 +1,6 @@
 {
   "name": "datagrok-tools",
-  "version": "3.0.9",
+  "version": "3.0.10",
   "description": "Utility to upload and publish package to Datagrok",
   "dependencies": {
     "inquirer": "^7.1.0",
@@ -10,7 +10,8 @@
     "node-recursive-directory": "^1.2.0",
     "path": "^0.12.7",
     "archiver": "^4.0.2",
-    "archiver-promise": "^1.0.0"
+    "archiver-promise": "^1.0.0",
+    "ignore-walk": "^3.0.3"
   },
   "bin": {
     "datagrok-init": "./bin/init.js",

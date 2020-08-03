@@ -5,6 +5,8 @@ const fs = require('fs');
 const fetch = require('node-fetch');
 const path = require('path');
 const archiver = require('archiver-promise');
+const walk = require('ignore-walk')
+
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
 let mode = argv['_'][1];
@@ -47,7 +49,14 @@ else {
 }
 
 process.on('beforeExit', async () => {
-    let code = await processPackage()
+    let code = 0;
+    try {
+        code = await processPackage()
+
+    } catch(err) {
+        console.log(err);
+        code = 1;
+    }
     console.log(`Exiting with code ${code}`);
     process.exit(code);
 });
@@ -71,11 +80,16 @@ async function processPackage() {
     let zip = archiver('zip', {store: false});
 
 //gather files
-    const files = await getFiles('.', true);
     let localTimestamps = {};
-    files.forEach((file) => {
+    const files = await walk({
+        path: '.',
+        ignoreFiles: [ '.npmignore', '.gitignore' ],
+        includeEmpty: true,
+        follow: true
+    });
 
-        let fullPath = file.fullpath;
+    files.forEach((file) => {
+        let fullPath = file;
         let relativePath = path.relative(process.cwd(), fullPath);
         let canonicalRelativePath = relativePath.replace(/\\/g, '/');
         if (canonicalRelativePath.includes('/.'))
