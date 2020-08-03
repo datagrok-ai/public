@@ -334,7 +334,7 @@
       "id": "1f134634-6252-4e4c-be83-d37ef9750e15",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//span[contains(.,'20')]",
+      "target": "xpath=//span[contains(.,'21')]",
       "targets": [],
       "value": ""
     }, {

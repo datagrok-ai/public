@@ -253,10 +253,17 @@
     }, {
       "id": "fd7ec6e6-d3bd-4793-aaf7-9da3c139867f",
       "comment": "",
-      "command": "verifyText",
-      "target": "css=.d4-tab-content > .expanded",
-      "targets": [],
-      "value": "A panel"
+      "command": "click",
+      "target": "name=button-Honda",
+      "targets": [
+        ["name=button-Honda", "name"],
+        ["css=.btn:nth-child(1)", "css:finder"],
+        ["xpath=//button[@name='button-Honda']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/button", "xpath:idRelative"],
+        ["xpath=//button", "xpath:position"],
+        ["xpath=//button[contains(.,'Honda')]", "xpath:innerText"]
+      ],
+      "value": ""
     }, {
       "id": "8d371efe-02fd-43d9-937e-eac50aebd877",
       "comment": "",
@@ -264,6 +271,13 @@
       "target": "1000",
       "targets": [],
       "value": ""
+    }, {
+      "id": "358e069c-fa39-4b04-84d6-3a01d61a8ca9",
+      "comment": "",
+      "command": "verifyText",
+      "target": "name=span-filtered",
+      "targets": [],
+      "value": "2 filtered rows"
     }, {
       "id": "3b31a0d5-a051-4cf9-99b0-d7b21ee27952",
       "comment": "",
