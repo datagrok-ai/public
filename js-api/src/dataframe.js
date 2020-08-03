@@ -1,6 +1,7 @@
 import * as rxjs from 'rxjs';
 import {AGG, TYPE} from "./const";
 import {__obs, observeStream} from "./events";
+import {toDart} from "./wrappers";
 
 /**
  * DataFrame is a high-performance, easy to use tabular structure with
@@ -155,6 +156,16 @@ export class DataFrame {
         return table;
     }
 
+    /** Converts a column with the specified name to [newType],
+     * removes the original column from its dataframe and adds the new column to it.
+     * @param {string|Column} column
+     * @param {string} newType
+     * @param {string=} format
+     * @returns {Column} */
+    changeColumnType(column, newType, format = null) {
+        return new Column(grok_DataFrame_ChangeColumnType(this.d, toDart(column), newType, format));
+    }
+
     /** Begins building a query, using the specified columns as keys.
      * @param {string[]} columnNames - Names of the columns to be used as keys.
      * @returns {GroupByBuilder}
@@ -238,32 +249,40 @@ export class Column {
     static fromFloat32Array(name, array, length = null) { return new Column(grok_Column_FromFloat32Array(name, array, length)); }
 
     /** Creates a {@link Column} from the list of values.
-     * @ */
+     * @param {string} type
+     * @param {string} name
+     * @param {object[]} list
+     * @returns {Column} */
     static fromList(type, name, list) { return new Column(grok_Column_FromList(type, name, list)); }
 
     /** Creates an integer column with the specified name and length.
      * @param {string} name
-     * @param {number} length */
+     * @param {number} length
+     * @returns {Column} */
     static int(name, length = 0) { return Column.fromType(TYPE.INT, name, length); }
 
     /** Creates a floating point column with the specified name and length.
      * @param {string} name
-     * @param {number} length */
+     * @param {number} length
+     * @returns {Column} */
     static float(name, length = 0) { return Column.fromType(TYPE.FLOAT, name, length); }
 
     /** Creates a string column with the specified name and length.
      * @param {string} name
-     * @param {number} length */
+     * @param {number} length
+     * @returns {Column} */
     static string(name, length = 0) { return Column.fromType(TYPE.STRING, name, length); }
 
     /** Creates a boolean column with the specified name and length.
      * @param {string} name
-     * @param {number} length */
+     * @param {number} length
+     * @returns {Column} */
     static bool(name, length = 0) { return Column.fromType(TYPE.BOOL, name, length); }
 
     /** Creates a datetime column with the specified name and length.
      * @param {string} name
-     * @param {number} length */
+     * @param {number} length
+     * @returns {Column} */
     static dateTime(name, length = 0) { return Column.fromType(TYPE.DATE_TIME, name, length); }
 
     /** Creates a qualified number column with the specified name and length.
@@ -369,6 +388,14 @@ export class Column {
         for (let i = 0; i < this.length; i++) {
             yield this.get(i);
         }
+    }
+
+    /** Creates and returns a new column by converting [column] to the specified [newType].
+     *  @param {string} newType
+     *  @param {string} format
+     *  @returns {Column} */
+    convertTo(newType, format = null) {
+        return new Column(grok_Column_ConvertTo(this.d, newType, format));
     }
 }
 
