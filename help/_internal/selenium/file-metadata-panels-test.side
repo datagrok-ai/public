@@ -446,7 +446,7 @@
       "id": "fc0f5226-1025-4124-85ed-36e4f55585c4",
       "comment": "",
       "command": "pause",
-      "target": "5000",
+      "target": "8000",
       "targets": [],
       "value": ""
     }, {
@@ -526,12 +526,12 @@
       "id": "e2704214-9973-4f95-bb46-3c714c348512",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//span[contains(.,'[72, 1]')]",
+      "target": "xpath=//span[contains(.,'515')]",
       "targets": [
-        ["css=tr:nth-child(7) > td:nth-child(2) > span", "css:finder"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div[12]/div[2]/div/div[2]/div/table/tbody/tr[7]/td[2]/span", "xpath:idRelative"],
-        ["xpath=//tr[7]/td[2]/span", "xpath:position"],
-        ["xpath=//span[contains(.,'[72, 1]')]", "xpath:innerText"]
+        ["css=.d4-table:nth-child(1) tr:nth-child(3) > td:nth-child(2) > span", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[9]/div[2]/div/div[2]/div/table/tbody/tr[3]/td[2]/span", "xpath:idRelative"],
+        ["xpath=//tr[3]/td[2]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'515')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
@@ -605,12 +605,12 @@
       "id": "665f9c6f-9f4d-479d-bc15-c44aa5b15e77",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//span[contains(.,'[144, 1]')]",
+      "target": "xpath=//span[contains(.,'696')]",
       "targets": [
-        ["css=tr:nth-child(6) > td:nth-child(2) > span", "css:finder"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div[12]/div[2]/div/div[2]/div/table/tbody/tr[6]/td[2]/span", "xpath:idRelative"],
-        ["xpath=//tr[6]/td[2]/span", "xpath:position"],
-        ["xpath=//span[contains(.,'[144, 1]')]", "xpath:innerText"]
+        ["css=.d4-table:nth-child(1) tr:nth-child(2) > td:nth-child(2) > span", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[10]/div[2]/div/div[2]/div/table/tbody/tr[2]/td[2]/span", "xpath:idRelative"],
+        ["xpath=//tr[2]/td[2]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'696')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
