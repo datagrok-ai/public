@@ -81,13 +81,24 @@ async function processPackage() {
 
 //gather files
     let localTimestamps = {};
-    const files = await walk({
+    let files = await walk({
         path: '.',
-        ignoreFiles: [ '.npmignore', '.gitignore' ],
+        ignoreFiles: ['.npmignore', '.gitignore'],
         includeEmpty: true,
         follow: true
     });
 
+    if (!rebuild) {
+        const distFiles = await walk({
+            path: './dist',
+            ignoreFiles: [],
+            includeEmpty: true,
+            follow: true
+        });
+        distFiles.forEach((df) => {
+            files.push(`dist/${df}`);
+        })
+    }
     files.forEach((file) => {
         let fullPath = file;
         let relativePath = path.relative(process.cwd(), fullPath);
