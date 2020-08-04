@@ -26,8 +26,6 @@ export class ViewBase {
 
         /** @type {StreamSubscription[]} */
         this.subs = [];  // stream subscriptions - will be canceled when the viewer is detached
-
-        this._closing = false;
     }
 
     /** @type {HTMLElement} */
@@ -64,9 +62,6 @@ export class ViewBase {
      *  @type {Menu} */
     get ribbonMenu() { return new Menu(grok_View_Get_RibbonMenu(this.d)); }
     set ribbonMenu(menu) { grok_View_Set_RibbonMenu(this.d, menu.d); }
-
-    get closing() { return this._closing; }
-    set closing(c) { this._closing = c; }
 
     /** Sets custom view panels on the ribbon.
      * @param {Array<Array<HTMLElement>>} panels
@@ -110,10 +105,7 @@ export class ViewBase {
     detach() { this.subs.forEach((sub) => sub.unsubscribe()); }
 
     /** Closes this view. */
-    close() {
-        this._closing = true;
-        grok_View_Close(this.d);
-    }
+    close() { grok_View_Close(this.d); }
 }
 
 
