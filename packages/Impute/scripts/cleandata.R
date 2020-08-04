@@ -1,14 +1,19 @@
-#name: CleanDataImpl
+#name: CleanMetaImpl
 #description: rids the data of columns/rows with NA % above the threshold
 #language: r
 #tags: template, demo
 #input: dataframe data [Input data table]
 #input: column_list columns [list of all columns of interest]
-#input: double VarRemovalThreshold = 0.5 [% missingness per column]
-#input: double IndRemovalThreshold = 0.5 [% missingness per row]
+#input: double varRemovalThreshold = 0.5 [% missingness per column]
+#input: double indRemovalThreshold = 0.5 [% missingness per row]
+#input: bool meta = TRUE [whether to collect metadata]
 #output: dataframe X [processed dataframe]
+#output: list metadata [collected metadata]
 
-# FUNCTION
+require(dplyr)
+require(mice)
+
+# CLEAN function
 clean <- function(X, var_remove = NULL, var_removal_threshold, ind_removal_threshold,
                   missingness_coding = NA) {
   
@@ -59,7 +64,59 @@ var_remove argument or convert them into type factor/numeric where applicable.")
   
 }
 
+# METADATA function
+get_data <- function(X) {
+
+  comp <- sum(stats::complete.cases(X))
+  rows <- nrow(X)
+  cols <- ncol(X)
+  mat <- stats::cor(X, use = "pairwise.complete.obs", method = "pearson")
+  missfrac_per_df <- sum(is.na(X))/(nrow(X) * ncol(X))
+  missfrac_per_var <- colMeans(is.na(X))
+  na_per_df <- sum(is.na(X))
+  na_per_var <- sapply(X, function(x) sum(length(which(is.na(x)))))
+  mdpat <- mice::md.pattern(X, plot = F)
+  data_names <- colnames(X)
+  mdpat <- mdpat[, data_names]
+
+  # checking min_PDM thresholds
+  mdpat_count <- mdpat[-c(1, nrow(mdpat)), ]
+  min_PDM <- c(5,10,20,50,100,200,500,1000)
+  min_PDM_obs <- c()
+  for (i in 1:length(min_PDM)) {
+    index <- as.numeric(rownames(mdpat_count)) > min_PDM[i]
+    mdpat_count_simple <- mdpat_count[index, ]
+    min_PDM_obs[i] <- round(sum(100 * as.numeric(rownames(mdpat_count_simple)))/sum(as.numeric(rownames(mdpat_count))))
+  }
+
+  min_PDM_df <- cbind(min_PDM, min_PDM_obs)
+  row.names(min_PDM_df) <- c(1:8)
+  colnames(min_PDM_df) <- c("min_PDM_threshold", "perc_obs_retained")
+
+  # NA correlation
+  na_cor <- matrix(nrow = cols, ncol = cols)
+  colnames(na_cor) <- colnames(X)
+  row.names(na_cor) <- paste0(colnames(X), "_is.na")
+  for (i in 1:cols) {
+    for (j in 1:cols) {
+      na_cor[i,j] <- ltm::biserial.cor(X[,j], is.na(X)[,i], use="complete.obs")
+    }
+  }
+
+  # output
+  list(Complete_cases = comp, Rows = rows, Columns = cols, Corr_matrix = mat, Fraction_missingness = missfrac_per_df,
+       Fraction_missingness_per_variable = missfrac_per_var, Total_NA = na_per_df,
+       NA_per_variable = na_per_var, MD_Pattern = mdpat, NA_Correlations = na_cor,
+       min_PDM_thresholds = min_PDM_df)
+}
+
 X <- data[,columns]
 X <- clean(X, 
-           var_removal_threshold = VarRemovalThreshold, 
-           ind_removal_threshold = IndRemovalThreshold)
+           var_removal_threshold = varRemovalThreshold,
+           ind_removal_threshold = indRemovalThreshold)
+
+if(meta == TRUE){
+  metadata <- get_data(X)
+}else{
+  metadata == NULL
+}
