@@ -5,22 +5,42 @@ import * as DG from "datagrok-api/dg";
 
 export let _package = new DG.Package();
 
-//input: dataframe data [Input data table]
-//input: column_list columns [list of all columns of interest]
-//input: double VarRemovalThreshold = 0.5 [% missing per column]
-//input: double IndRemovalThreshold = 0.5 [% missing per row]
-
-export async function CleanData(data,columns,VarRemovalThreshold,IndRemovalThreshold) {
-
-    let cleaned = await grok.functions.call('Impute:CleanDataImpl',
+async function _clean(data,columns,varRemovalThreshold,indRemovalThreshold,meta) {
+    grok.shell.info('Preprocessing data . . .');
+    var cleaned = await grok.functions.call('Impute:CleanMetaImpl',
         {
             'data': data,
             'columns': columns,
-            'VarRemovalThreshold': VarRemovalThreshold,
-            'IndRemovalThreshold': IndRemovalThreshold
+            'varRemovalThreshold': varRemovalThreshold.value,
+            'indRemovalThreshold': indRemovalThreshold.value,
+            'meta': meta.value
         });
-    grok.shell.addTableView(cleaned);
-    return cleaned;
 }
 
 
+let container;
+
+//top-menu: ML | Impute | Visualize
+//input: dataframe data [Input data table]
+//input: column_list columns [list of all columns of interest]
+export async function ByMethod(data,columns) {
+
+    let v = ui.dialog('Preprocessing parameters');
+
+    let varRemovalThreshold = ui.floatInput('column NA max threshold (%)', 0.5);
+    let indRemovalThreshold = ui.floatInput('row NA max threshold(%)', 0.5);
+    let plotOptions = ui.multiChoiceInput('plotting options', ['NA correlation'], ['NA correlation', 'matrix plot', 'dendrogram']);
+    let meta = false;
+
+    container = ui.div();
+
+    container.appendChild(ui.inputs([varRemovalThreshold, indRemovalThreshold]));
+    container.append(ui.button('Preprocess',() => {
+        meta = true;
+        container.appendChild(ui.inputs([plotOptions]));
+    }));
+
+
+    v.add(container).onOK(()=> _clean(data,columns,varRemovalThreshold,indRemovalThreshold,meta)).show();
+          ui.choiceInput()
+}
