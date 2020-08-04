@@ -8,7 +8,7 @@ export function paramsToJs(params) {
     let result = [];
     for (let i = 0; i < params.length; i++) {
         let type = grok_GetType(params[i]);
-        if (type !== null && (!TYPES_SCALAR.has(type) || type === TYPE.LIST))
+        if (type !== null && (!TYPES_SCALAR.has(type) || type === TYPE.LIST || type === TYPE.MAP))
             result.push(toJs(params[i]));
         else
             result.push(params[i]);
@@ -25,10 +25,22 @@ export function paramsToJs(params) {
  * @returns JavaScript wrapper for the Dart object
  * */
 export function toJs(d, check = false) {
+    let type = grok_GetType(d);
+    if (type === TYPE.MAP) {
+        let wrapper = grok_GetWrapper(d);
+        for(let key in wrapper) {
+            if (wrapper.hasOwnProperty(key)) {
+                let type = grok_GetType(wrapper[key]);
+                if (type !== null && (!TYPES_SCALAR.has(type) || type === TYPE.LIST || type === TYPE.MAP))
+                  wrapper[key] = toJs(wrapper[key]);
+            }
+        }
+        console.log(wrapper);
+        return wrapper;
+    }
     let wrapper = grok_GetWrapper(d);
     if (wrapper != null)
         return wrapper;
-    let type = grok_GetType(d);
     if (type === TYPE.PROPERTY)
         return new Property(d);
     if (check)
