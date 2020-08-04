@@ -24,26 +24,5 @@ let qIntentional = DG.Column.qnum('q-intentional', 3, [
     DG.Qnum.greater(2.2345),
     DG.Qnum.less(3.4567)], false);
 
-
 let t = DG.DataFrame.fromColumns([ manual, exact, qAccidental, qIntentional ]);
 grok.shell.addTableView(t);
-
-
-/////////////////////
-
-
-// qualifier is stripped
-let c = DG.Column.qnum('exact', 3);
-c.set(1, 22);
-
-let r1 = c.getRawData();
-let r2 = c.getRawData();
-let a1 = new Float64Array(r1);
-let a2 = new Float64Array(r2);
-a1[0] = 17;
-grok.shell.info('' + a1[0]);
-grok.shell.info('' + a2[0]);
-
-grok.shell.info('' + (r1 === r2));
-grok.shell.info('' + r1);
-grok.shell.info('' + c.get(1));
