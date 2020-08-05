@@ -7,11 +7,11 @@
 #input: double varRemovalThreshold = 0.5 [% missingness per column]
 #input: double indRemovalThreshold = 0.5 [% missingness per row]
 #input: bool meta = TRUE [whether to collect metadata]
-#output: dataframe X [processed dataframe]
-#output: list metadata [collected metadata]
+#output: dataframe_list corrmat [processed dataframe]
 
 require(dplyr)
 require(mice)
+require(stats)
 
 # CLEAN function
 clean <- function(X, var_remove = NULL, var_removal_threshold, ind_removal_threshold,
@@ -93,20 +93,10 @@ get_data <- function(X) {
   row.names(min_PDM_df) <- c(1:8)
   colnames(min_PDM_df) <- c("min_PDM_threshold", "perc_obs_retained")
 
-  # NA correlation
-  na_cor <- matrix(nrow = cols, ncol = cols)
-  colnames(na_cor) <- colnames(X)
-  row.names(na_cor) <- paste0(colnames(X), "_is.na")
-  for (i in 1:cols) {
-    for (j in 1:cols) {
-      na_cor[i,j] <- ltm::biserial.cor(X[,j], is.na(X)[,i], use="complete.obs")
-    }
-  }
-
   # output
   list(Complete_cases = comp, Rows = rows, Columns = cols, Corr_matrix = mat, Fraction_missingness = missfrac_per_df,
        Fraction_missingness_per_variable = missfrac_per_var, Total_NA = na_per_df,
-       NA_per_variable = na_per_var, MD_Pattern = mdpat, NA_Correlations = na_cor,
+       NA_per_variable = na_per_var, MD_Pattern = mdpat,
        min_PDM_thresholds = min_PDM_df)
 }
 
@@ -117,6 +107,7 @@ X <- clean(X,
 
 if(meta == TRUE){
   metadata <- get_data(X)
+  corrmat <- metadata$Corr_matrix
 }else{
-  metadata == NULL
+  corrmat <- NULL
 }
