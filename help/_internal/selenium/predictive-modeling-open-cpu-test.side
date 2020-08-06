@@ -780,26 +780,6 @@
       "targets": [],
       "value": ""
     }, {
-      "id": "428c7721-b319-4c91-bdf3-fa3edf1d7aa7",
-      "comment": "",
-      "command": "select",
-      "target": "name=input-Method",
-      "targets": [
-        ["name=input-Method", "name"],
-        ["css=.d4-input-choice:nth-child(7) > #editor", "css:finder"],
-        ["xpath=(//select[@id='editor'])[3]", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div/div[2]/div/div[7]/select", "xpath:idRelative"],
-        ["xpath=//div[7]/select", "xpath:position"]
-      ],
-      "value": "svmLinear"
-    }, {
-      "id": "36a73db8-5bc9-4d3d-bb99-379b5c69a869",
-      "comment": "",
-      "command": "pause",
-      "target": "500",
-      "targets": [],
-      "value": ""
-    }, {
       "id": "bb39160c-22bb-46ab-a8f2-ce09c685f9b2",
       "comment": "",
       "command": "click",
