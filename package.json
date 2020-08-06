@@ -25,6 +25,7 @@
     "webpack-cli": "^3.3.12"
   },
   "sources": [
-    "dist/package.js"
+    "dist/package.js",
+    "src/sunburst-viewer.css"
   ]
 }

@@ -1,0 +1,25 @@
+.sunburst-selectors-container, .sunburst-value-container {
+    margin-left: 5px;
+    margin-right: 5px;
+    margin-top: 10px;
+}
+
+.sunburst-value-container {
+    margin-bottom: 20px;
+}
+
+.sunburst-chart-container {
+    margin: 20px;
+}
+
+.sunburst-selector {
+    margin-left: 5px;
+    margin-right: 5px;
+    padding-left: 4px;
+    background-color: white;
+}
+
+.sunburst-selectors-container span:first-child, .sunburst-value-container span:first-child {
+    display: inline-block;
+    width: 70px;
+}
