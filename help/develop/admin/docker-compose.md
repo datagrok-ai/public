@@ -40,7 +40,7 @@ services:
       GROK_COMPUTE_NUM_CORES: 4
     ports:
       - "5005:5005"
-      - "8081:8080"
+      - "8090:8090"
       - "54321:54321"
     networks:
       datagrok:
