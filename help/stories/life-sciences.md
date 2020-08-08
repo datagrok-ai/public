@@ -54,7 +54,7 @@ by simply looking at them. Most common reasons for that are:
 1. A value is encoded. 
    Examples: molecules encoded as SMILES
 2. A value can be interpreted, but only makes sense as part of the bigger picture. 
-   Examples: a particular pixel of the image
+   Examples: a particular pixel of an image
 3. A value makes sense only together with other attributes. 
    Examples: (LAT, LNG) points
 4. A value can be interpreted only in the context of the continuous stream of data. 
@@ -62,7 +62,7 @@ by simply looking at them. Most common reasons for that are:
 
 In order to present users with a meaningful interpretation of a dataset, the platform tries to infer
 the [true meaning of the raw data](../discover/semantic-types.md) and then offers a number of visualizations 
-and actions that can be applied to either the whole dataset or an individual point.
+and actions that can be applied either to the whole dataset or an individual point.
 
 Examples: 
 * [rendering molecules]
