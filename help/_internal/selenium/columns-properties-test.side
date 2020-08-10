@@ -1,11 +1,11 @@
 {
   "id": "4b5ebbbb-aab4-437f-9e7b-a5659a18533a",
   "version": "2.0",
-  "name": "columns-test",
+  "name": "columns-properties-test",
   "url": "https://dev.datagrok.ai/",
   "tests": [{
     "id": "f3cd043a-6e48-4add-a9a1-c5c17587fc54",
-    "name": "columns-test",
+    "name": "columns-properties-test",
     "commands": [{
       "id": "94df53ce-1880-43fc-afd1-4dcab6d68852",
       "comment": "",
@@ -787,44 +787,11 @@
       "target": "name=icon-exclamation-circle",
       "targets": [],
       "value": ""
-    }, {
-      "id": "a5c79c68-5a2a-4cc8-a72f-27359dde3dc1",
-      "comment": "",
-      "command": "click",
-      "target": "name=div-view-name",
-      "targets": [
-        ["css=.tab-handle:nth-child(4)", "css:finder"],
-        ["xpath=//div[@name='view-handle: Demog']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "d75a5869-d36a-4886-b3d4-8113d3a7ff1b",
-      "comment": "",
-      "command": "pause",
-      "target": "500",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "90905ace-9f74-4389-a539-e4dd4db687ce",
-      "comment": "",
-      "command": "verifyElementPresent",
-      "target": "name=span-WEIGHT-(min-0,-max-184)",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "5dfe9519-3f75-495b-b83f-fad10236ea3c",
-      "comment": "",
-      "command": "verifyElementNotPresent",
-      "target": "name=icon-exclamation-circle",
-      "targets": [],
-      "value": ""
     }]
   }],
   "suites": [{
     "id": "714aa4e8-ce22-4893-85d3-15f3540428a1",
-    "name": "columns-test",
+    "name": "columns-properties-test",
     "persistSession": false,
     "parallel": false,
     "timeout": 300,
