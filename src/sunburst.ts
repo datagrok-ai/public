@@ -12,7 +12,7 @@ export interface D3SunburstParams {
     htmlElement: HTMLElement;
     data: TreeData;
     radius: number;
-    clickHandler: (columnName: string, columnIndex: number) => void;
+    clickHandler: (categoryIdsFromTargetToTheRoot: string[], targetNodeDepth: number) => void;
     colors: string[]; // "rgb(123, 45, 6)"
 }
 
@@ -76,7 +76,7 @@ export function d3sunburst(params: D3SunburstParams) {
             .attr("d", arc as any);
 
             segment.on("click", d => {
-                clickHandler(d.data.id, d.depth - 1);
+                clickHandler(d.ancestors().map(n => n.data.id), d.depth);
             })
             .on("mouseover", target => {
                 segment.attr("fill-opacity", d => {
