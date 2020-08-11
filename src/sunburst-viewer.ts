@@ -23,6 +23,7 @@ export class Sunburst2Viewer extends DG.JsViewer {
         this.selectorDiv = ui.div([ui.span(["Categories:"] as any)], 'sunburst-selectors-container');
         this.root.appendChild(this.selectorDiv);
         this.addSelector(true);
+        this.addSelector(false);
 
         const valueContainer = ui.div([ui.span(["Value:"] as any)], 'sunburst-value-container');
         this.root.appendChild(valueContainer);
@@ -33,6 +34,52 @@ export class Sunburst2Viewer extends DG.JsViewer {
         this.chartDiv.setAttribute("id", this.containerId);
         this.root.appendChild(this.chartDiv);
     }
+
+    onTableAttached() {
+        this.init();
+
+        this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()) as any);
+        this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()) as any);
+
+        this.render();
+    }
+
+    detach() {
+        this.subs.forEach((sub) => sub.unsubscribe());
+    }
+
+    render() {
+        this.buildTreeData();
+
+        this.chartDiv.innerHTML = '';
+        const width = this.root.parentElement!.offsetWidth;
+        const height = this.root.parentElement!.offsetHeight;
+        const radius = Math.min(width, height) / 2 * 0.9;
+        console.error({root: this.root, width, height, radius});
+
+        d3sunburst(this.chartDiv, this.treeDataBuilder.getTreeData()!, radius, this.clickHandler.bind(this));
+    }
+
+    private buildTreeData() {
+        const selectedRows = this.dataFrame.filter.getSelectedIndexes();
+
+        const categoryColumns: Column[] = this.getSelectedColumnNames()
+            .map(columnName => this.dataFrame.getCol(columnName));
+
+        this.treeDataBuilder.buildTreeData(categoryColumns, '', selectedRows);
+    }
+
+    private clickHandler(categoryId: string, columnNameIndex: number): void {
+        const columnName = this.getSelectedColumnNames()[columnNameIndex];
+        const column = this.dataFrame.getCol(columnName);
+        const selection = this.dataFrame.selection;
+        const rowCount = this.dataFrame.rowCount;
+        for (let i = 0; i < rowCount; i++) {
+            selection.set(i, column.get(i) === categoryId);
+        }
+    }
+
+    // UI COLUMN SELECTION STUFF
 
     addSelector(setDefault = false) {
         const selectorIndex = this.selectors.length;
@@ -94,48 +141,5 @@ export class Sunburst2Viewer extends DG.JsViewer {
                 return selectedOptions.item(0)!.value!;
             })
             .filter(s => !!s);
-    }
-
-    onTableAttached() {
-        this.init();
-
-        this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()) as any);
-        this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()) as any);
-
-        this.render();
-    }
-
-    onPropertyChanged(prop: Property) {
-        this.render();
-    }
-
-    onSizeChanged(w: number, h: number) {
-        // if (w !== 0 && h !== 0)
-        //     this.map.invalidateSize();
-    }
-
-    detach() {
-        this.subs.forEach((sub) => sub.unsubscribe());
-    }
-
-    render() {
-        this.buildTreeData();
-
-        this.chartDiv.innerHTML = '';
-        const width = this.root.parentElement!.offsetWidth;
-        const height = this.root.parentElement!.offsetHeight;
-        const radius = Math.min(width, height) / 2 * 0.9;
-        console.error({root: this.root, width, height, radius});
-
-        d3sunburst(this.chartDiv, this.treeDataBuilder.getTreeData()!, radius);
-    }
-
-    private buildTreeData() {
-        const selectedRows = this.dataFrame.filter.getSelectedIndexes();
-
-        const categoryColumns: Column[] = this.getSelectedColumnNames()
-            .map(columnName => this.dataFrame.getCol(columnName));
-
-        this.treeDataBuilder.buildTreeData(categoryColumns, '', selectedRows);
     }
 }

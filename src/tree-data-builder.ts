@@ -10,10 +10,6 @@ export interface TreeItem {
     value: number;
 }
 
-export interface TreeDataBuilderParams {
-
-}
-
 export class TreeDataBuilder {
     private treeData!: TreeData;
 
