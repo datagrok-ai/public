@@ -56,7 +56,6 @@ export class Sunburst2Viewer extends DG.JsViewer {
         const width = this.root.parentElement!.offsetWidth;
         const height = this.root.parentElement!.offsetHeight;
         const radius = Math.min(width, height) / 2 * 0.9;
-        console.error({root: this.root, width, height, radius});
 
         d3sunburst({
             htmlElement: this.chartDiv,

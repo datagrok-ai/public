@@ -35,6 +35,9 @@ export function d3sunburst(params: D3SunburstParams) {
 
     // console.error(d3.quantize(d3.interpolateRainbow, data.children!.length + 1));
     const color = d3.scaleOrdinal(colors.slice(0, data.children!.length + 1));
+    const shade = (d: TreeData) => {
+        return 0.1 + 0.5 / Math.pow(2, d.depth - 1);
+    }
 
     const format = d3.format(",d");
 
@@ -46,12 +49,22 @@ export function d3sunburst(params: D3SunburstParams) {
         .innerRadius(d => d.y0)
         .outerRadius(d => d.y1 - 1)
 
+    const sameBranch = (target: TreeData, d: TreeData) => {
+        do {
+            if (d === target) {
+                return true;
+            }
+            target = target.parent!;
+        } while (target != null);
+        return false;
+    }
+
     const chart = (data: TreeData): SVGSVGElement => {
         const root = partition(data);
 
         const svg = d3.create("svg");
 
-        svg.append("g")
+        const segment = svg.append("g")
             .selectAll("path")
             .data<TreeData>(root.descendants().filter((d: any) => d.depth) as any)
             .join("path")
@@ -59,12 +72,19 @@ export function d3sunburst(params: D3SunburstParams) {
                 while (d.depth > 1) d = d.parent!;
                 return color(d.data.id);
             })
-            .attr("fill-opacity", d => {
-                return 0.3 + 0.4 / Math.pow(2, d.depth - 1);
-            })
-            .attr("d", arc as any)
-            .on("click", d => {
+            .attr("fill-opacity", shade)
+            .attr("d", arc as any);
+
+            segment.on("click", d => {
                 clickHandler(d.data.id, d.depth - 1);
+            })
+            .on("mouseover", target => {
+                segment.attr("fill-opacity", d => {
+                    return sameBranch(target, d) ? 0.8 : shade(d);
+                });
+            })
+            .on("mouseleave", target => {
+                segment.attr("fill-opacity", shade);
             })
             .append("title")
             .text(d => `${d.ancestors().map(d => d.data.id).reverse().filter((v, i) => !!i).join("/")}\n${format(d.data.value)}`);
@@ -85,71 +105,8 @@ export function d3sunburst(params: D3SunburstParams) {
             .attr("dy", "0.35em")
             .text((d: any) => d.data.id);
 
-        // var path = vis.selectAll("path")
-        //     .data(nodes)
-        //     .enter().append("path")
-        //     .attr("display", function (d) {
-        //         return d.depth ? null : "none";
-        //     })
-        //     .attr("d", arc)
-        //     .style("fill", function (d) {
-        //         return getFillValue(d);
-        //     }) // 4
-        //     .on("mouseover", mouseover); // 5
-        //
-        // d3.select("#chart-container").on("mouseleave", mouseleave); // 5
-
-        // svg.on("click", function () {
-        //     var coords = d3.mouse(this);
-        //
-        //     console.error({arguments, coords});
-        //     // // Normally we go from data to pixels, but here we're doing pixels to data
-        //     // var newData = {
-        //     //     x: Math.round(xScale.invert(coords[0])),  // Takes the pixel number to convert to number
-        //     //     y: Math.round(yScale.invert(coords[1]))
-        //     // };
-        //     //
-        //     // dataset.push(newData);   // Push data to our array
-        //     //
-        //     // svg.selectAll("circle")  // For new circle, go through the update process
-        //     //     .data(dataset)
-        //     //     .enter()
-        //     //     .append("circle")
-        //     //     .attr(circleAttrs)  // Get attributes from circleAttrs var
-        //     //     .on("mouseover", handleMouseOver)
-        //     //     .on("mouseout", handleMouseOut);
-        // })
-
         return svg.attr("viewBox", autoBox).node()!;
     };
-
-    // function mouseover(d) {
-    //     d3.select("#amount")
-    //         .text(d.value.toLocaleString('fr-FR', { minimumFractionDigits: 0, style: 'currency', currency: 'EUR' }));
-    //
-    //     d3.selectAll("path") // On grise tous les segments
-    //         .style("opacity", 0.3);
-    //
-    //     vis.selectAll("path") // Ensuite on met en valeur uniquement ceux qui sont ancêtres de la sélection
-    //         .filter(function (node) {
-    //             return (sequenceArray.indexOf(node) >= 0);
-    //         })
-    //         .style("opacity", 1);
-    // }
-    //
-    // function mouseleave(d) {
-    //     // On désactive la fonction mouseover le temps de la transition
-    //     d3.selectAll("path").on("mouseover", null);
-    //
-    //     // Transition pour revenir à l'état d'origine et on remet le mouseover
-    //     d3.selectAll("path")
-    //         .transition()
-    //         .duration(1000)
-    //         .style("opacity", 1)
-    //         .on("end", function () {
-    //             d3.select(this).on("mouseover", mouseover);
-    //         });
-    // }
 
     const result = chart(data);
     htmlElement.appendChild(result!)
