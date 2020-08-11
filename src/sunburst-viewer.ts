@@ -75,13 +75,17 @@ export class Sunburst2Viewer extends DG.JsViewer {
         this.treeDataBuilder.buildTreeData(categoryColumns, '', selectedRows);
     }
 
-    private clickHandler(categoryId: string, columnNameIndex: number): void {
-        const columnName = this.getSelectedColumnNames()[columnNameIndex];
-        const column = this.dataFrame.getCol(columnName);
+    private clickHandler(categoryIds: string[], targetNodeDepth: number): void {
+        const columns = this.getSelectedColumnNames()
+            .slice(0, targetNodeDepth)
+            .map(columnName => this.dataFrame.getCol(columnName));
+        categoryIds = categoryIds.slice(0, -1).reverse();
         const selection = this.dataFrame.selection;
         const rowCount = this.dataFrame.rowCount;
-        for (let i = 0; i < rowCount; i++) {
-            selection.set(i, column.get(i) === categoryId);
+        for (let rowIndex = 0; rowIndex < rowCount; rowIndex++) {
+             selection.set(
+                 rowIndex,
+                 columns.every((column, columnIndex) => column.get(rowIndex) === categoryIds[columnIndex]));
         }
     }
 
