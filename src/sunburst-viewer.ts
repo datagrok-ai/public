@@ -1,6 +1,6 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from "datagrok-api/dg";
-import { COLUMN_TYPE, Property } from "datagrok-api/dg";
+import { Color, COLUMN_TYPE, Property } from "datagrok-api/dg";
 import { d3sunburst } from './sunburst';
 import { TreeDataBuilder } from './tree-data-builder';
 import { Column } from 'datagrok-api/src/dataframe';
@@ -14,6 +14,7 @@ export class Sunburst2Viewer extends DG.JsViewer {
     private valueSelector!: HTMLSelectElement;
 
     private treeDataBuilder = new TreeDataBuilder(this.containerId);
+    private colors?: string[];
 
     constructor() {
         super();
@@ -57,7 +58,13 @@ export class Sunburst2Viewer extends DG.JsViewer {
         const radius = Math.min(width, height) / 2 * 0.9;
         console.error({root: this.root, width, height, radius});
 
-        d3sunburst(this.chartDiv, this.treeDataBuilder.getTreeData()!, radius, this.clickHandler.bind(this));
+        d3sunburst({
+            htmlElement: this.chartDiv,
+            data: this.treeDataBuilder.getTreeData()!,
+            radius,
+            clickHandler: this.clickHandler.bind(this),
+            colors: this.getColors()
+        });
     }
 
     private buildTreeData() {
@@ -77,6 +84,20 @@ export class Sunburst2Viewer extends DG.JsViewer {
         for (let i = 0; i < rowCount; i++) {
             selection.set(i, column.get(i) === categoryId);
         }
+    }
+
+    getColors(): string[] {
+        if (this.colors) {
+            return this.colors;
+        }
+        this.colors = Color.categoricalPalette.map(color => {
+            color = color % 0x1000000;
+            const b = color % 0x100;
+            const g = (color >> 8) % 0x100;
+            const r = (color >> 16) % 0x100;
+            return `rgb(${r},${g},${b})`;
+        });
+        return this.colors;
     }
 
     // UI COLUMN SELECTION STUFF

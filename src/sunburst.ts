@@ -8,8 +8,18 @@ interface Rectangle {
     y1: number;
 }
 
+export interface D3SunburstParams {
+    htmlElement: HTMLElement;
+    data: TreeData;
+    radius: number;
+    clickHandler: (columnName: string, columnIndex: number) => void;
+    colors: string[]; // "rgb(123, 45, 6)"
+}
+
 // https://observablehq.com/@d3/sunburst
-export function d3sunburst(htmlElement: HTMLElement, data: TreeData, radius: number, clickHandler: (columnName: string, columnIndex: number) => void) {
+export function d3sunburst(params: D3SunburstParams) {
+    const {htmlElement, data, radius, clickHandler, colors} = params;
+
     function autoBox(this: SVGGraphicsElement): string {
         document.body.appendChild(this);
         const { x, y, width, height } = this.getBBox();
@@ -23,9 +33,10 @@ export function d3sunburst(htmlElement: HTMLElement, data: TreeData, radius: num
             .sum(d => d.data.value)
             .sort((a, b) => b.value! - a.value!))
 
-    const color = d3.scaleOrdinal(d3.quantize(d3.interpolateRainbow, data.children!.length + 1))
+    // console.error(d3.quantize(d3.interpolateRainbow, data.children!.length + 1));
+    const color = d3.scaleOrdinal(colors.slice(0, data.children!.length + 1));
 
-    const format = d3.format(",d")
+    const format = d3.format(",d");
 
     const arc = d3.arc<Rectangle>()
         .startAngle(d => d.x0)
@@ -41,13 +52,15 @@ export function d3sunburst(htmlElement: HTMLElement, data: TreeData, radius: num
         const svg = d3.create("svg");
 
         svg.append("g")
-            .attr("fill-opacity", 0.6)
             .selectAll("path")
             .data<TreeData>(root.descendants().filter((d: any) => d.depth) as any)
             .join("path")
             .attr("fill", d => {
                 while (d.depth > 1) d = d.parent!;
                 return color(d.data.id);
+            })
+            .attr("fill-opacity", d => {
+                return 0.3 + 0.4 / Math.pow(2, d.depth - 1);
             })
             .attr("d", arc as any)
             .on("click", d => {
