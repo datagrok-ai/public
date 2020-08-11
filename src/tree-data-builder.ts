@@ -60,11 +60,10 @@ export class TreeDataBuilder {
                 prevColumnValue = columnValue;
             }
         }
-        console.error(table);
 
         const list: TreeItem[] = [];
         table.forEach((value, k) => list.push({ ...JSON.parse(k), value }));
-        console.error(list);
+        // console.error(list);
 
         this.treeData = this.treeItemsToTreeData(list);
     }
