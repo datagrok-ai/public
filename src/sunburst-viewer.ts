@@ -5,7 +5,7 @@ import { d3sunburst } from './sunburst';
 import { TreeDataBuilder } from './tree-data-builder';
 import { Column } from 'datagrok-api/src/dataframe';
 
-export class Sunburst2Viewer extends DG.JsViewer {
+export class SunburstViewer extends DG.JsViewer {
 
     private containerId = 'sunburst-id-' + Math.random().toString(36).slice(2);
     private chartDiv!: HTMLDivElement;
@@ -39,8 +39,8 @@ export class Sunburst2Viewer extends DG.JsViewer {
     onTableAttached() {
         this.init();
 
-        this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()) as any);
-        this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()) as any);
+        this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
+        this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()));
 
         this.render();
     }
@@ -93,13 +93,7 @@ export class Sunburst2Viewer extends DG.JsViewer {
         if (this.colors) {
             return this.colors;
         }
-        this.colors = Color.categoricalPalette.map(color => {
-            color = color % 0x1000000;
-            const b = color % 0x100;
-            const g = (color >> 8) % 0x100;
-            const r = (color >> 16) % 0x100;
-            return `rgb(${r},${g},${b})`;
-        });
+        this.colors = Color.categoricalPalette.map(Color.toRgb);
         return this.colors;
     }
 
