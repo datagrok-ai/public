@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "Sunburst chart for the datagrok platform",
   "dependencies": {
-    "datagrok-api": "^0.1.35",
+    "datagrok-api": "^0.1.36",
     "dts-bundle": "^0.7.3",
     "source-map-loader": "^1.0.1",
     "ts-loader": "^8.0.1",
