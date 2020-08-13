@@ -72,7 +72,7 @@ export class Func extends Entity {
     /** Returns {@link FuncCall} object in a stand-by state
      * @param {object} parameters
      * @returns {FuncCall} */
-    prepare(parameters = {}) { return grok_Func_Prepare(this.d, parameters); };
+    prepare(parameters = {}) { return toJs(grok_Func_Prepare(this.d, parameters)); };
 }
 
 /** Represents a project */
