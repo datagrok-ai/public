@@ -90,7 +90,7 @@ export class Shell {
     /** Adds an item to the workspace.
      * It could be a DataFrame, a View, a Widget, or an HtmlElement.
      * Throws an error
-     * @param {DataFrame | View | List<DataFrame>} item
+     * @param {DataFrame | View | List<DataFrame> | HTMLElement} item
      * @returns {Shell} */
     add(item) {
         if (item instanceof DataFrame)

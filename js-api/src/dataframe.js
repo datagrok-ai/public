@@ -210,9 +210,13 @@ export class Row {
      * @param {number} idx
      * @returns {Row} */
     constructor(table, idx) {
+
+        /** @member {DataFrame} */
         this.table = table;
+        /** @member {number} */
         this.idx = idx;
-        let setables = ['table', 'idx'];
+
+        const setables = ['table', 'idx'];
         return new Proxy(this, {
             set(target, name, value) {
                 if (setables.includes(name)) {
@@ -468,7 +472,10 @@ export class ColumnList {
  * To maximize performance, get values via [DataFrame.columns], instead.
  */
 export class RowList {
-    constructor(table, d) { this.table = table; this.d = d; }
+    constructor(table, d) {
+        /** @member {DataFrame} */
+        this.table = table; this.d = d;
+    }
 
     /** Removes specified rows
      * @param {number} idx
@@ -494,8 +501,10 @@ export class RowList {
         return new Row(this.table, grok_RowList_AddNew(this.d, values, notify));
     }
 
-    /** Iterates over all rows. */
-    *iterator() {
+    /** Iterates over all rows.
+     * @returns {Iterable.<Row>}
+     * */
+    *[Symbol.iterator]() {
         for (let i = 0; i < this.table.rowCount; i++)
             yield new Row(this.table, i);
     }
@@ -505,6 +514,21 @@ export class RowList {
      * @param values - List of values (length and types should match columns) */
     setValues(idx, values) {
         grok_RowList_SetValues(this.d, idx, values);
+    }
+
+    _applyPredicate(bitset, predicate) {
+        let selection = this.table.selection;
+        for (let row of this) {
+            selection.set(row.idx, rowPredicate(row));
+        }
+    }
+
+    select(rowPredicate) {
+        _applyPredicate(this.table.selection, rowPredicate);
+    }
+
+    filter(rowPredicate) {
+        _applyPredicate(this.table.filter, rowPredicate);
     }
 }
 
