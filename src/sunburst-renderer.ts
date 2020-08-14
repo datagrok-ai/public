@@ -52,13 +52,6 @@ export class SunburstRenderer {
     }
 
     private createSvg(data: TreeData, width: number, height: number) {
-        function autoBox(this: SVGGraphicsElement): string {
-            document.body.appendChild(this);
-            const {x, y, width, height} = this.getBBox();
-            document.body.removeChild(this);
-            return [x, y, width, height].join(',');
-        }
-        
         const center = Math.min(width, height) / 2;
         const radius = center * 0.9;
         
