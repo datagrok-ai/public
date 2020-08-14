@@ -1,5 +1,5 @@
 import * as d3 from "d3";
-import { TreeData } from './tree-data-builder';
+import {TreeData} from './tree-data-builder';
 
 interface Rectangle {
     x0: number;
@@ -22,7 +22,7 @@ export function d3sunburst(params: D3SunburstParams) {
 
     function autoBox(this: SVGGraphicsElement): string {
         document.body.appendChild(this);
-        const { x, y, width, height } = this.getBBox();
+        const {x, y, width, height} = this.getBBox();
         document.body.removeChild(this);
         return [x, y, width, height].join(',');
     }
@@ -75,9 +75,9 @@ export function d3sunburst(params: D3SunburstParams) {
             .attr("fill-opacity", shade)
             .attr("d", arc as any);
 
-            segment.on("click", d => {
-                clickHandler(d.ancestors().map(n => n.data.id), d.depth);
-            })
+        segment.on("click", d => {
+            clickHandler(d.ancestors().map(n => n.data.id), d.depth);
+        })
             .on("mouseover", target => {
                 segment.attr("fill-opacity", d => {
                     return sameBranch(target, d) ? 0.8 : shade(d);

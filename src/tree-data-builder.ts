@@ -1,6 +1,6 @@
 import * as d3 from 'd3';
 import { HierarchyNode } from 'd3';
-import { Column } from 'datagrok-api/dg';
+import * as DG from 'datagrok-api/dg';
 
 export type TreeData = HierarchyNode<TreeItem>
 
@@ -30,8 +30,8 @@ export class Branch {
 
 export class AlternativeTreeDataBuilder {
     buildTreeData(
-        categoryColumns: Column[],
-        valueColumn: "" | Column,
+        categoryColumns: DG.Column[],
+        valueColumn: "" | DG.Column,
         selectedRows: Int32Array
     ) {
         const root = new Branch("root");
@@ -87,8 +87,8 @@ export class TreeDataBuilder {
     }
 
     buildTreeData(
-        categoryColumns: Column[],
-        valueColumn: "" | Column,
+        categoryColumns: DG.Column[],
+        valueColumn: "" | DG.Column,
         selectedRows: Int32Array
     ) {
         this.clearTreeData();

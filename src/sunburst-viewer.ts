@@ -1,9 +1,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from "datagrok-api/dg";
-import { Color, COLUMN_TYPE, Property } from "datagrok-api/dg";
 import { d3sunburst } from './sunburst';
-import { TreeDataBuilder } from './tree-data-builder';
-import { Column } from 'datagrok-api/src/dataframe';
+import {AlternativeTreeDataBuilder, TreeDataBuilder} from './tree-data-builder';
 
 export class SunburstViewer extends DG.JsViewer {
 
@@ -69,9 +67,13 @@ export class SunburstViewer extends DG.JsViewer {
     private buildTreeData() {
         const selectedRows = this.dataFrame.filter.getSelectedIndexes();
 
-        const categoryColumns: Column[] = this.getSelectedColumnNames()
+        const categoryColumns: DG.Column[] = this.getSelectedColumnNames()
             .map(columnName => this.dataFrame.getCol(columnName));
 
+
+        //const alt = new AlternativeTreeDataBuilder();
+        //const data = alt.buildTreeData(categoryColumns, '', selectedRows);
+        
         this.treeDataBuilder.buildTreeData(categoryColumns, '', selectedRows);
     }
 
@@ -93,7 +95,7 @@ export class SunburstViewer extends DG.JsViewer {
         if (this.colors) {
             return this.colors;
         }
-        this.colors = Color.categoricalPalette.map(Color.toRgb);
+        this.colors = DG.Color.categoricalPalette.map(DG.Color.toRgb);
         return this.colors;
     }
 
@@ -116,18 +118,18 @@ export class SunburstViewer extends DG.JsViewer {
     }
 
     private createStringColumnSelector(setDefault: boolean) {
-        const columnNames = this.getColumnNames([COLUMN_TYPE.STRING]);
+        const columnNames = this.getColumnNames([DG.COLUMN_TYPE.STRING]);
         const defaultColumnName = setDefault && columnNames.length ? columnNames[0] : '';
         return this.createSelector(columnNames, defaultColumnName);
     }
 
     private createNumberColumnSelector(setDefault: boolean) {
-        const columnNames = this.getColumnNames([COLUMN_TYPE.INT, COLUMN_TYPE.FLOAT]);
+        const columnNames = this.getColumnNames([DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.FLOAT]);
         const defaultColumnName = setDefault && columnNames.length ? columnNames[0] : '';
         return this.createSelector(columnNames, defaultColumnName);
     }
 
-    private getColumnNames(type: COLUMN_TYPE[]) {
+    private getColumnNames(type: DG.COLUMN_TYPE[]) {
         return this.dataFrame.columns.toList().filter(c => type.some(t => t === c.type)).map(c => c.name);
     }
 
