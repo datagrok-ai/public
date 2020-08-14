@@ -1,6 +1,6 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from "datagrok-api/dg";
-import { d3sunburst } from './sunburst';
+import {d3sunburst, SunburstRenderer} from './sunburst';
 import {AlternativeTreeDataBuilder, TreeDataBuilder} from './tree-data-builder';
 
 export class SunburstViewer extends DG.JsViewer {
@@ -48,20 +48,24 @@ export class SunburstViewer extends DG.JsViewer {
     }
 
     render() {
-        this.buildTreeData();
+        const data = this.buildTreeData();
 
         this.chartDiv.innerHTML = '';
         const width = this.root.parentElement!.offsetWidth;
         const height = this.root.parentElement!.offsetHeight;
         const radius = Math.min(width, height) / 2 * 0.9;
 
+        const renderer = new SunburstRenderer(radius, this.getColors());
+        renderer.render(this.chartDiv, data);
+        
+        /*
         d3sunburst({
             htmlElement: this.chartDiv,
             data: this.treeDataBuilder.getTreeData()!,
             radius,
             clickHandler: this.clickHandler.bind(this),
             colors: this.getColors()
-        });
+        });*/
     }
 
     private buildTreeData() {
@@ -71,10 +75,11 @@ export class SunburstViewer extends DG.JsViewer {
             .map(columnName => this.dataFrame.getCol(columnName));
 
 
-        //const alt = new AlternativeTreeDataBuilder();
-        //const data = alt.buildTreeData(categoryColumns, '', selectedRows);
+        const alt = new AlternativeTreeDataBuilder();
+        const data = alt.buildTreeData(categoryColumns, '', selectedRows);
         
-        this.treeDataBuilder.buildTreeData(categoryColumns, '', selectedRows);
+        //this.treeDataBuilder.buildTreeData(categoryColumns, '', selectedRows);
+        return data;
     }
 
     private clickHandler(categoryIds: string[], targetNodeDepth: number): void {
