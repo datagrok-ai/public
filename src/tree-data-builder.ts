@@ -2,14 +2,7 @@ import * as d3 from 'd3';
 import {HierarchyNode} from 'd3';
 import * as DG from 'datagrok-api/dg';
 
-export type TreeData = HierarchyNode<TreeItem>
-export type AltTreeData = HierarchyNode<Branch>
-
-export interface TreeItem {
-    parent: string;
-    id: string;
-    value: number;
-}
+export type TreeData = HierarchyNode<Branch>
 
 export type ColumnValue = any;
 export type RowId = number;
@@ -24,7 +17,7 @@ export class Branch {
     }
 }
 
-export class AlternativeTreeDataBuilder {
+export class TreeDataBuilder {
     buildTreeData(
         categoryColumns: DG.Column[],
         valueColumn: "" | DG.Column,
