@@ -10,6 +10,71 @@ export interface TreeItem {
     value: number;
 }
 
+export type ColumnValue = any;
+export type RowId = number;
+export class Branch {
+    readonly value: ColumnValue;
+    readonly children: Map<ColumnValue, Branch>;
+    readonly leafIds: RowId[] = [];
+    
+    constructor(value: ColumnValue) {
+        this.value = value;
+        this.children = new Map();
+    }
+    
+    toArray(): (ColumnValue | ColumnValue[])[] {
+        const childrenArray = Array.from(this.children.values()).map(x => x.toArray());
+        return [ this.value, childrenArray ];
+    }
+}
+
+export class AlternativeTreeDataBuilder {
+    buildTreeData(
+        categoryColumns: Column[],
+        valueColumn: "" | Column,
+        selectedRows: Int32Array
+    ) {
+        const root = new Branch("root");
+        
+        const lastColumn = categoryColumns[categoryColumns.length - 1]; 
+        
+        for(const rowId of selectedRows) {
+            let currentBranch = root;
+            for (const column of categoryColumns) {
+                const value = column.get(rowId);
+                if (value === null || value === undefined) {
+                    currentBranch.leafIds.push(rowId);
+                    break;
+                }
+
+                const existingBranch = currentBranch.children.get(value);
+                if (existingBranch) {
+                    currentBranch = existingBranch;
+                }
+                else {
+                    const parent = currentBranch;
+                    currentBranch = new Branch(value);
+                    parent.children.set(value, currentBranch);
+                }
+                
+                if (lastColumn === column) {
+                    currentBranch.leafIds.push(rowId);
+                }
+            }
+        }
+        
+        console.log(root);
+        
+        const h1 = d3
+            .hierarchy(root, x => Array.from(x.children.values()))
+            .sum(x => x.leafIds.length);
+        
+        console.log(h1);
+        
+        return h1;
+    }
+}
+
 export class TreeDataBuilder {
     private treeData!: TreeData;
 
