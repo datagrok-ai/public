@@ -3,6 +3,34 @@ import {Column} from './dataframe.js';
 import {Cell} from "./dataframe";
 import {__obs, _sub, EventData} from "./events";
 
+let _bytes = new Float64Array(4);
+
+export class Point {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+    }
+}
+
+export class Rect {
+    constructor(x, y, width, height) {
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+    }
+
+    static fromDart(d) {
+        grok_Rect_Pack(d, _bytes);
+        return new Rect(_bytes[0], _bytes[1], _bytes[2], _bytes[3]);
+    }
+
+    get left() { return x; }
+    get top() { return y; }
+    get right() { return x + width; }
+    get bottom() { return y + height; }
+}
+
 /** Represents a grid cell */
 export class GridCell {
     constructor(d) { this.d = d; }
@@ -148,6 +176,12 @@ export class Grid extends Viewer {
     /** @returns {Observable<GridCellRenderArgs>} */
     get onCellRender() { return __obs('d4-grid-cell-render', this.d); }
 
+    /** @returns {HTMLCanvasElement} */
+    get canvas() { return grok_Grid_Get_Canvas(this.d); }
+
+    /** @returns {HTMLCanvasElement} */
+    get overlay() { return grok_Grid_Get_Overlay(this.d); }
+
     onCellPrepare(callback) {
         return _sub(grok_Grid_OnCellPrepare(this.d, (dcell) => { return callback(new GridCell(dcell)); }));
     }
@@ -155,6 +189,8 @@ export class Grid extends Viewer {
     onCellTooltip(callback) {
         return _sub(grok_Grid_OnCellTooltip(this.d, (dcell, x, y) => { return callback(new GridCell(dcell), x, y); }));
     }
+
+    hitTest(x, y) { return new GridCell(grok_Grid_HitTest(this.d, x, y)); }
 
     static create(table) { return new Grid(grok_Grid_Create(table.d)); }
 }
