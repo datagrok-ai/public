@@ -3,6 +3,7 @@ import { HierarchyNode } from 'd3';
 import * as DG from 'datagrok-api/dg';
 
 export type TreeData = HierarchyNode<TreeItem>
+export type AltTreeData = HierarchyNode<Branch>
 
 export interface TreeItem {
     parent: string;
