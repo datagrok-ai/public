@@ -1,20 +1,23 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from "datagrok-api/dg";
-import {SunburstRenderer} from './sunburst';
+import {SunburstRenderer} from './sunburst-renderer';
 import {TreeDataBuilder} from './tree-data-builder';
 
 export class SunburstViewer extends DG.JsViewer {
 
-    private containerId = 'sunburst-id-' + Math.random().toString(36).slice(2);
+    //private containerId = 'sunburst-id-' + Math.random().toString(36).slice(2);
     private chartDiv!: HTMLDivElement;
     private selectorDiv!: HTMLDivElement;
     private selectors: HTMLSelectElement[] = [];
     //private valueSelector!: HTMLSelectElement;
 
+    private renderer: SunburstRenderer;
+
     private colors?: string[];
 
     constructor() {
         super();
+        this.renderer = new SunburstRenderer(this.getColors(), this.clickHandler);
     }
 
     init() {
@@ -29,7 +32,7 @@ export class SunburstViewer extends DG.JsViewer {
         //valueContainer.appendChild(this.valueSelector);
 
         this.chartDiv = ui.div([], 'sunburst-chart-container');
-        this.chartDiv.setAttribute("id", this.containerId);
+        //this.chartDiv.setAttribute("id", this.containerId);
         this.root.appendChild(this.chartDiv);
     }
 
@@ -46,16 +49,22 @@ export class SunburstViewer extends DG.JsViewer {
         this.subs.forEach((sub) => sub.unsubscribe());
     }
 
-    render() {
+    onPropertyChanged(property: DG.Property) {
+        super.onPropertyChanged(property);
+    }
+
+    onSizeChanged(width: number, height: number) {
+        this.render();
+    }
+
+    private render() {
         const data = this.buildTreeData();
 
         this.chartDiv.innerHTML = '';
         const width = this.root.parentElement!.offsetWidth;
         const height = this.root.parentElement!.offsetHeight;
-        const radius = Math.min(width, height) / 2 * 0.9;
-
-        const renderer = new SunburstRenderer(radius, this.getColors(), this.clickHandler);
-        renderer.render(this.chartDiv, data);
+        
+        this.renderer.render(this.chartDiv, data, width, height,);
     }
 
     private buildTreeData() {

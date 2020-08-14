@@ -11,16 +11,8 @@ interface Rectangle {
 export class SunburstRenderer {
 
     private readonly format = d3.format(",d");
-    private readonly arc = d3.arc<Rectangle>()
-        .startAngle(d => d.x0)
-        .endAngle(d => d.x1)
-        .padAngle(d => Math.min((d.x1 - d.x0) / 2, 0.005))
-        .padRadius(this.radius / 2)
-        .innerRadius(d => d.y0)
-        .outerRadius(d => d.y1 - 1);
 
-    constructor(private readonly radius: number,
-                private readonly colors: string[],
+    constructor(private readonly colors: string[],
                 private readonly clickHandler: (rowIds: number[]) => void) {
     }
 
@@ -38,25 +30,39 @@ export class SunburstRenderer {
         return false;
     }
 
-    public render(htmlElement: HTMLElement, data: TreeData) {
-        htmlElement.appendChild(this.createSvg(data));
+    public render(htmlElement: HTMLElement, data: TreeData, width: number, height: number) {
+        htmlElement.appendChild(this.createSvg(data, width, height));
     }
 
-    private partitionLayout(data: TreeData) {
+    private partitionLayout(data: TreeData, radius: number) {
         return d3.partition<Branch>()
-            .size([2 * Math.PI, this.radius])
+            .size([2 * Math.PI, radius])
             (data.sort((a, b) => b.value! - a.value!))
     }
 
-    private createSvg(data: TreeData) {
+    private arc(radius: number) {
+        
+        return d3.arc<Rectangle>()
+            .startAngle(d => d.x0)
+            .endAngle(d => d.x1)
+            .padAngle(d => Math.min((d.x1 - d.x0) / 2, 0.005))
+            .padRadius(radius / 2)
+            .innerRadius(d => d.y0)
+            .outerRadius(d => d.y1 - 1);
+    }
+
+    private createSvg(data: TreeData, width: number, height: number) {
         function autoBox(this: SVGGraphicsElement): string {
             document.body.appendChild(this);
             const {x, y, width, height} = this.getBBox();
             document.body.removeChild(this);
             return [x, y, width, height].join(',');
         }
-
-        const root = this.partitionLayout(data);
+        
+        const center = Math.min(width, height) / 2;
+        const radius = center * 0.9;
+        
+        const root = this.partitionLayout(data, radius);
 
         const svg = d3.create("svg");
         
@@ -66,7 +72,7 @@ export class SunburstRenderer {
             .join("path")
             .attr("fill", this.defaultSegmentFill(root))
             .attr("fill-opacity", SunburstRenderer.shade)
-            .attr("d", this.arc);
+            .attr("d", this.arc(radius));
 
         segment.on("click", this.onClick)
             .on("mouseover", target => {
@@ -95,8 +101,8 @@ export class SunburstRenderer {
             })
             .attr("dy", "0.35em")
             .text((d) => d.data.value);
-
-        return svg.attr("viewBox", autoBox).node()!;
+        
+        return svg.attr("viewBox", `-${center} -${center} ${width} ${height}`).node()!;
     }
     
     private onClick = (d: TreeData) => {
