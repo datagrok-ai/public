@@ -55,7 +55,7 @@ export class SunburstViewer extends DG.JsViewer {
         const height = this.root.parentElement!.offsetHeight;
         const radius = Math.min(width, height) / 2 * 0.9;
 
-        const renderer = new SunburstRenderer(radius, this.getColors());
+        const renderer = new SunburstRenderer(radius, this.getColors(), this.clickHandler);
         renderer.render(this.chartDiv, data);
         
         /*
@@ -82,7 +82,15 @@ export class SunburstViewer extends DG.JsViewer {
         return data;
     }
 
-    private clickHandler(categoryIds: string[], targetNodeDepth: number): void {
+    private clickHandler = (selectedRowIds: number[]) => {
+        const selection = this.dataFrame.selection;
+        selection.setAll(false);
+        for (const rowId of selectedRowIds) {
+            selection.set(rowId, true);
+        }
+    }
+    
+    private clickHandler1(categoryIds: string[], targetNodeDepth: number): void {
         const columns = this.getSelectedColumnNames()
             .slice(0, targetNodeDepth)
             .map(columnName => this.dataFrame.getCol(columnName));

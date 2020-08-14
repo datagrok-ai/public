@@ -27,7 +27,9 @@ export class SunburstRenderer {
         .innerRadius(d => d.y0)
         .outerRadius(d => d.y1 - 1);
 
-    constructor(private radius: number, private colors: string[]) {
+    constructor(private readonly radius: number,
+                private readonly colors: string[],
+                private readonly clickHandler: (rowIds: number[]) => void) {
     }
 
     private static shade(d: AltTreeData) {
@@ -74,9 +76,7 @@ export class SunburstRenderer {
             .attr("fill-opacity", SunburstRenderer.shade)
             .attr("d", this.arc);
 
-        segment.on("click", d => {
-            //clickHandler(d.ancestors().map(n => n.data.id), d.depth);
-        })
+        segment.on("click", this.onClick)
             .on("mouseover", target => {
                 segment.attr("fill-opacity", d => {
                     return SunburstRenderer.sameBranch(target, d) ? 0.8 : SunburstRenderer.shade(d);
@@ -105,6 +105,11 @@ export class SunburstRenderer {
             .text((d) => d.data.value);
 
         return svg.attr("viewBox", autoBox).node()!;
+    }
+    
+    private onClick = (d: AltTreeData) => {
+        const rowIds = d.descendants().flatMap(x => x.data.leafIds);
+        this.clickHandler(rowIds);
     }
     
     private defaultSegmentFill(root: AltTreeData) {
