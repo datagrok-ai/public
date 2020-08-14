@@ -1,19 +1,11 @@
 import * as d3 from "d3";
-import {AltTreeData, Branch, TreeData} from './tree-data-builder';
+import {TreeData, Branch} from './tree-data-builder';
 
 interface Rectangle {
     x0: number;
     y0: number;
     x1: number;
     y1: number;
-}
-
-export interface D3SunburstParams {
-    htmlElement: HTMLElement;
-    data: TreeData;
-    radius: number;
-    clickHandler: (categoryIdsFromTargetToTheRoot: string[], targetNodeDepth: number) => void;
-    colors: string[]; // "rgb(123, 45, 6)"
 }
 
 export class SunburstRenderer {
@@ -32,11 +24,11 @@ export class SunburstRenderer {
                 private readonly clickHandler: (rowIds: number[]) => void) {
     }
 
-    private static shade(d: AltTreeData) {
+    private static shade(d: TreeData) {
         return 0.1 + 0.5 / Math.pow(2, d.depth - 1);
     }
 
-    private static sameBranch(target: AltTreeData, d: AltTreeData) {
+    private static sameBranch(target: TreeData, d: TreeData) {
         do {
             if (d === target) {
                 return true;
@@ -46,17 +38,17 @@ export class SunburstRenderer {
         return false;
     }
 
-    public render(htmlElement: HTMLElement, data: AltTreeData) {
+    public render(htmlElement: HTMLElement, data: TreeData) {
         htmlElement.appendChild(this.createSvg(data));
     }
 
-    private partitionLayout(data: AltTreeData) {
+    private partitionLayout(data: TreeData) {
         return d3.partition<Branch>()
             .size([2 * Math.PI, this.radius])
             (data.sort((a, b) => b.value! - a.value!))
     }
 
-    private createSvg(data: AltTreeData) {
+    private createSvg(data: TreeData) {
         function autoBox(this: SVGGraphicsElement): string {
             document.body.appendChild(this);
             const {x, y, width, height} = this.getBBox();
@@ -107,15 +99,15 @@ export class SunburstRenderer {
         return svg.attr("viewBox", autoBox).node()!;
     }
     
-    private onClick = (d: AltTreeData) => {
+    private onClick = (d: TreeData) => {
         const rowIds = d.descendants().flatMap(x => x.data.leafIds);
         this.clickHandler(rowIds);
     }
     
-    private defaultSegmentFill(root: AltTreeData) {
+    private defaultSegmentFill(root: TreeData) {
         const color = d3.scaleOrdinal(this.colors.slice(0, (root.children?.length || 0) + 1));
         
-        return (d: AltTreeData) => {
+        return (d: TreeData) => {
             let v: typeof d | null = d;
             while (!!v && v.depth > 1) v = v.parent;
             return color(v?.data.value || 0);

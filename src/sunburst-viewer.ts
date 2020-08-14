@@ -1,7 +1,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from "datagrok-api/dg";
 import {SunburstRenderer} from './sunburst';
-import {AlternativeTreeDataBuilder} from './tree-data-builder';
+import {TreeDataBuilder} from './tree-data-builder';
 
 export class SunburstViewer extends DG.JsViewer {
 
@@ -65,7 +65,7 @@ export class SunburstViewer extends DG.JsViewer {
             .map(columnName => this.dataFrame.getCol(columnName));
 
 
-        const alt = new AlternativeTreeDataBuilder();
+        const alt = new TreeDataBuilder();
         return alt.buildTreeData(categoryColumns, '', selectedRows);
     }
 
