@@ -11,7 +11,7 @@ export class SunburstViewer extends DG.JsViewer {
     private chartDiv!: HTMLDivElement;
     private selectorDiv!: HTMLDivElement;
     private selectors: HTMLSelectElement[] = [];
-    private valueSelector!: HTMLSelectElement;
+    //private valueSelector!: HTMLSelectElement;
 
     private treeDataBuilder = new TreeDataBuilder(this.containerId);
     private colors?: string[];
@@ -26,10 +26,10 @@ export class SunburstViewer extends DG.JsViewer {
         this.addSelector(true);
         this.addSelector(false);
 
-        const valueContainer = ui.div([ui.span(["Value:"] as any)], 'sunburst-value-container');
-        this.root.appendChild(valueContainer);
-        this.valueSelector = this.createNumberColumnSelector(true);
-        valueContainer.appendChild(this.valueSelector);
+        //const valueContainer = ui.div([ui.span(["Value:"] as any)], 'sunburst-value-container');
+        //this.root.appendChild(valueContainer);
+        //this.valueSelector = this.createNumberColumnSelector(true);
+        //valueContainer.appendChild(this.valueSelector);
 
         this.chartDiv = ui.div([], 'sunburst-chart-container');
         this.chartDiv.setAttribute("id", this.containerId);
