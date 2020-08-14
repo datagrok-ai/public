@@ -1,4 +1,4 @@
-// Selecting rows using RowList.select
+// Selecting or filtering rows by predicates
 
 let demog = grok.data.testData('demog', 5000);
 demog.rows.select((row) => row.sex === 'M');
