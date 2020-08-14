@@ -1,7 +1,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from "datagrok-api/dg";
-import {d3sunburst, SunburstRenderer} from './sunburst';
-import {AlternativeTreeDataBuilder, TreeDataBuilder} from './tree-data-builder';
+import {SunburstRenderer} from './sunburst';
+import {AlternativeTreeDataBuilder} from './tree-data-builder';
 
 export class SunburstViewer extends DG.JsViewer {
 
@@ -11,7 +11,6 @@ export class SunburstViewer extends DG.JsViewer {
     private selectors: HTMLSelectElement[] = [];
     //private valueSelector!: HTMLSelectElement;
 
-    private treeDataBuilder = new TreeDataBuilder(this.containerId);
     private colors?: string[];
 
     constructor() {
@@ -57,15 +56,6 @@ export class SunburstViewer extends DG.JsViewer {
 
         const renderer = new SunburstRenderer(radius, this.getColors(), this.clickHandler);
         renderer.render(this.chartDiv, data);
-        
-        /*
-        d3sunburst({
-            htmlElement: this.chartDiv,
-            data: this.treeDataBuilder.getTreeData()!,
-            radius,
-            clickHandler: this.clickHandler.bind(this),
-            colors: this.getColors()
-        });*/
     }
 
     private buildTreeData() {
@@ -76,10 +66,7 @@ export class SunburstViewer extends DG.JsViewer {
 
 
         const alt = new AlternativeTreeDataBuilder();
-        const data = alt.buildTreeData(categoryColumns, '', selectedRows);
-        
-        //this.treeDataBuilder.buildTreeData(categoryColumns, '', selectedRows);
-        return data;
+        return alt.buildTreeData(categoryColumns, '', selectedRows);
     }
 
     private clickHandler = (selectedRowIds: number[]) => {
@@ -87,20 +74,6 @@ export class SunburstViewer extends DG.JsViewer {
         selection.setAll(false);
         for (const rowId of selectedRowIds) {
             selection.set(rowId, true);
-        }
-    }
-    
-    private clickHandler1(categoryIds: string[], targetNodeDepth: number): void {
-        const columns = this.getSelectedColumnNames()
-            .slice(0, targetNodeDepth)
-            .map(columnName => this.dataFrame.getCol(columnName));
-        categoryIds = categoryIds.slice(0, -1).reverse();
-        const selection = this.dataFrame.selection;
-        const rowCount = this.dataFrame.rowCount;
-        for (let rowIndex = 0; rowIndex < rowCount; rowIndex++) {
-             selection.set(
-                 rowIndex,
-                 columns.every((column, columnIndex) => column.get(rowIndex) === categoryIds[columnIndex]));
         }
     }
 
