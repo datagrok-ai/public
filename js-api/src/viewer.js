@@ -102,8 +102,6 @@ export class JsViewer {
 
         /** @member {Observable[]} */
         this.obs = []
-
-        ui.tools.handleResize(this.root, (w, h) => this.onSizeChanged(w, h));
     }
 
     onFrameAttached(dataFrameHandle) {
@@ -119,8 +117,8 @@ export class JsViewer {
     onPropertyChanged(property) {}
 
     /** Gets called when viewer's size is changed.
-     * @returns {Observable} */
-    onSizeChanged() { return this._obs(_onSizeChanged(this.root)); }
+     * @returns {rxjs.Observable} */
+    get onSizeChanged() { return this._obs(_onSizeChanged(this.root)); }
 
     /** Gets called when this viewer is detached. */
     detach() {
