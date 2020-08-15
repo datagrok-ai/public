@@ -13,6 +13,8 @@ class LeafletViewer extends DG.JsViewer {
 
         this.layers = [];
         this.coordinates = [];
+
+        this.onSizeChanged.subscribe((_) => this.map.invalidateSize());
     }
 
     init() {
@@ -41,11 +43,6 @@ class LeafletViewer extends DG.JsViewer {
 
     onPropertyChanged(prop) {
         this.render();
-    }
-
-    onSizeChanged(w, h) {
-        if (w !== 0 && h !== 0)
-            this.map.invalidateSize();
     }
 
     detach() {
