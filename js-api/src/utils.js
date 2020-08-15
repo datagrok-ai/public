@@ -33,7 +33,7 @@ export function time(s, f) {
     console.log(`${s}: ${stop - start}ms`);
     Balloon.info(`${s}: ${stop - start}ms`);
     return result;
-};
+}
 
 /** @returns {rxjs.Observable} */
 export function _onSizeChanged(element) {
@@ -41,13 +41,11 @@ export function _onSizeChanged(element) {
         const resizeObserver = new ResizeObserver(observerEntries => {
             // trigger a new item on the stream when resizes happen
             for (const entry of observerEntries) {
-                console.log('new size', entry);
                 observer.next(entry);
             }
         });
 
         // start listening for resize events
-        console.log('observe', element);
         resizeObserver.observe(element);
 
         // cancel resize observer on cancelation

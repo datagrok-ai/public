@@ -81,11 +81,6 @@ export class JsViewer {
     onPropertyChanged(property: Property): void;
 
     /**
-     * Gets called when viewer's size is changed.
-     */
-    onSizeChanged(width: number, height: number): void;
-
-    /**
      * Gets called when this viewer is detached.
      */
     detach(): void;

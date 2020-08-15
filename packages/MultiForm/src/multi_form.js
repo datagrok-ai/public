@@ -11,6 +11,8 @@ class MultiFormViewer extends DG.JsViewer {
         this.columnHeadersDiv = ui.divV([]);
         this.virtualView = ui.virtualView(0, function(i) { return dis.renderForm(i); }, false, 1);
         this.root.appendChild(ui.divH([this.columnHeadersDiv, this.virtualView.root]));
+
+        this.onSizeChanged.subscribe((_) => grok.shell.info('resized'));
     }
 
     onTableAttached() {
