@@ -1,2 +1,2 @@
-let view = grok.shell.addTableView(grok.data.testData('demog', 5000));
+let view = grok.shell.addTableView(grok.data.demo.demog());
 view.dockManager.dock(ui.divText('Element'));

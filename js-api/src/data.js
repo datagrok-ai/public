@@ -47,6 +47,7 @@ export class DemoDatasets {
 export class Data {
 
     constructor() {
+        /** @member {DemoDatasets} */
         this.demo = new DemoDatasets();
     }
 

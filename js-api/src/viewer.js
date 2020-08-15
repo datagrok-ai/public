@@ -12,7 +12,7 @@ import {Balloon} from "./widgets";
  * Use Viewer to control the viewers. To develop a custom viewer, {@see JsViewer}.
  *
  * @example
- * let view = grok.shell.addTableView(grok.data.testData('demog', 5000));
+ * let view = grok.shell.addTableView(grok.data.demo.demog());
  * view.scatterPlot({
      x: 'height',
      y: 'weight',

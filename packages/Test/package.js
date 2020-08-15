@@ -2,7 +2,7 @@ class TestPackage extends DG.Package {
 
     //description: test code
     test() {
-        let view = grok.shell.addTableView(grok.data.testData('demog', 5000));
+        let view = grok.shell.addTableView(grok.data.demo.demog());
         view.grid.sort(['AGE', 'HEIGHT'], [true, false]);
 
         view.grid.onCellPrepare(function (gc) {

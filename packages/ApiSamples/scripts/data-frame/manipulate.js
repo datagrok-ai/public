@@ -1,6 +1,6 @@
 // Different ways to edit table's content, filter, selection, and metadata.
 
-let demog = grok.data.testData('demog', 5000);
+let demog = grok.data.demo.demog();
 demog.columns.remove('sex');
 foo = demog.columns.addNew('foo', 'int');
 demog.rows.removeAt(1, 3);

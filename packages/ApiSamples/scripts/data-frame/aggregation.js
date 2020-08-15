@@ -1,5 +1,5 @@
 // Aggregations
-let demog = grok.data.testData('demog', 5000);
+let demog = grok.data.demo.demog();
 
 let avgAgesByRace = demog
     .groupBy(['race', 'sex'])

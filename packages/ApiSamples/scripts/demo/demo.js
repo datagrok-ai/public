@@ -1,5 +1,5 @@
 // table manipulation
-demog = grok.data.testData('demog', 5000);
+demog = grok.data.demo.demog();
 demog.columns.remove('sex');
 foo = demog.columns.addNew('foo', 'int');
 demog.rows.removeAt(1, 3);
