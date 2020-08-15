@@ -1,4 +1,5 @@
 import {Balloon} from "./widgets";
+import * as rxjs from 'rxjs';
 
 export function _jsThen(promise, f) {
     promise.then(f);
@@ -33,3 +34,23 @@ export function time(s, f) {
     Balloon.info(`${s}: ${stop - start}ms`);
     return result;
 };
+
+/** @returns {rxjs.Observable} */
+export function _onSizeChanged(element) {
+    return rxjs.Observable.create(function(observer) {
+        const resizeObserver = new ResizeObserver(observerEntries => {
+            // trigger a new item on the stream when resizes happen
+            for (const entry of observerEntries) {
+                console.log('new size', entry);
+                observer.next(entry);
+            }
+        });
+
+        // start listening for resize events
+        console.log('observe', element);
+        resizeObserver.observe(element);
+
+        // cancel resize observer on cancelation
+        return () => resizeObserver.disconnect();
+    });
+}

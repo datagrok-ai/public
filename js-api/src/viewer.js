@@ -2,7 +2,7 @@
 import {TYPE, VIEWER} from "./const";
 import * as ui from "./../ui.js";
 import {Property} from "./entities";
-import {_toJson} from "./utils";
+import {_onSizeChanged, _toJson} from "./utils";
 import {Balloon} from "./widgets";
 
 /**
@@ -100,6 +100,9 @@ export class JsViewer {
         /** @type {StreamSubscription[]} */
         this.subs = [];  // stream subscriptions - will be canceled when the viewer is detached
 
+        /** @member {Observable[]} */
+        this.obs = []
+
         ui.tools.handleResize(this.root, (w, h) => this.onSizeChanged(w, h));
     }
 
@@ -116,9 +119,8 @@ export class JsViewer {
     onPropertyChanged(property) {}
 
     /** Gets called when viewer's size is changed.
-     * @param {number} width
-     * @param {number} height */
-    onSizeChanged(width, height) {}
+     * @returns {Observable} */
+    onSizeChanged() { return this._obs(_onSizeChanged(this.root)); }
 
     /** Gets called when this viewer is detached. */
     detach() {
@@ -159,6 +161,14 @@ export class JsViewer {
 
         this.properties.push(p);
         return p.defaultValue;
+    }
+
+    /**
+     * @param {Observable} observable
+     * @returns {Observable} */
+    _obs(observable) {
+        this.obs.push(observable);
+        return observable;
     }
 
     /** Returns the column bound to the specified data property. 
