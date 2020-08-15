@@ -1,6 +1,6 @@
 // Demonstrates handling of Grok-originated events
 
-demog = grok.data.testData('demog', 5000);
+demog = grok.data.demo.demog();
 view = grok.shell.addTableView(demog);
 
 function info(s) { grok.shell.info(s); }

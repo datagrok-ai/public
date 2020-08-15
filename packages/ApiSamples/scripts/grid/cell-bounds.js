@@ -1,4 +1,4 @@
-let table = grok.data.testData('demog', 5000);
+let table = grok.data.demo.demog();
 let view = grok.shell.addTableView(table);
 rxjs.interval(1000).pipe(rxjs.operators.startWith(0)).subscribe((i) => {
     let r = view.grid.cell('site', i).bounds;

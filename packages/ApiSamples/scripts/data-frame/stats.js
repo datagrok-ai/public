@@ -1,5 +1,5 @@
 // Column statistics
-let demog = grok.data.testData('demog', 5000);
+let demog = grok.data.demo.demog();
 let view = grok.shell.newView('stats');
 
 for (let col of demog.columns.toList()) {

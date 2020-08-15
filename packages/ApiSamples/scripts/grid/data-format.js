@@ -1,6 +1,6 @@
 // Formatting data differently. Note that this does not change the actual values and does not affect sorting.
 
-let view = grok.shell.addTableView(grok.data.testData('demog', 5000));
+let view = grok.shell.addTableView(grok.data.demo.demog());
 
 // similar effect can be achieved by editing 'format' column tag via UI (Column | Properties).
 // see available format strings below

@@ -1,6 +1,6 @@
 // Hiding columns
 
-let table = grok.data.testData('demog', 5000);
+let table = grok.data.demo.demog();
 let view = grok.shell.addTableView(table);
 
 view.grid.columns.setVisible(['age', 'sex', 'race']);

@@ -1,6 +1,6 @@
 // Customize TableView toolbox elements
 
-let t = grok.data.testData('demog', 5000);
+let t = grok.data.demo.demog();
 let view = grok.shell.addTableView(t);
 
 let acc = view.toolboxPage.accordion;

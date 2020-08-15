@@ -46,6 +46,6 @@ class JsDemoViewer extends DG.JsViewer {
 grok.shell.registerViewer('JsDemoViewer', 'JavaScript-based viewer', () => new JsDemoViewer());
 
 // Add viewer to a table view
-demog = grok.data.testData('demog', 5000);
+demog = grok.data.demo.demog();
 view = grok.shell.addTableView(demog);
 hist = view.addViewer('JsDemoViewer');
