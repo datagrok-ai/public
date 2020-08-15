@@ -35,6 +35,11 @@ export class Rect {
 export class GridCell {
     constructor(d) { this.d = d; }
 
+    /** @returns {GridCell} */
+    static fromColumnRow(grid, columnName, gridRow) {
+        return new GridCell(grok_Grid_GetCell(grid.d, columnName, gridRow));
+    }
+
     /** @returns {string} Cell type */
     get cellType() { return grok_GridCell_Get_CellType(this.d); }
 
@@ -74,6 +79,8 @@ export class GridCell {
 
     /** @returns {GridCellStyle} Style to use for rendering. */
     get style() { return new GridCellStyle(grok_GridCell_Get_Style(this.d)); }
+
+    get bounds() { return Rect.fromDart(grok_GridCell_Get_Bounds(this.d)); }
 }
 
 /** Represents a grid column */
@@ -172,6 +179,8 @@ export class Grid extends Viewer {
      * @param {string} name
      * @returns {GridColumn} */
     col(name) { return this.columns.byName(name); }
+
+    cell(columnName, gridRow) { return GridCell.fromColumnRow(this, columnName, gridRow); }
 
     /** @returns {Observable<GridCellRenderArgs>} */
     get onCellRender() { return __obs('d4-grid-cell-render', this.d); }
