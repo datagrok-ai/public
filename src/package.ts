@@ -11,7 +11,6 @@ export const _package = new DG.Package();
 //description: Sunburst chart
 //tags: viewer
 //output: viewer result
-export function sunburstViewerTs(): DG.JsViewer
-{
+export function sunburstViewerTs() {
     return new SunburstViewer();
 }
