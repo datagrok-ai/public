@@ -2,6 +2,7 @@ import {Viewer} from "./viewer.js";
 import {Column} from './dataframe.js';
 import {Cell} from "./dataframe";
 import {__obs, _sub, EventData} from "./events";
+import {_identityInt32} from "./utils";
 
 let _bytes = new Float64Array(4);
 
@@ -166,11 +167,6 @@ export class GridColumnList {
 export class Grid extends Viewer {
     constructor(d) { super(d); }
 
-    /** Sorts data by [columnIds].
-     *  Specify sort directions via [asc] array (true = ascending, false = descending)
-     *  If [asc] is not specified, sorts in ascending order. */
-    sort(columns, orders = null) { grok_Grid_Sort(this.d, columns.map((c) => c instanceof Column ? c.d : c), orders); }
-
     /** Grid columns.
      *  @returns {GridColumnList} */
     get columns() { return new GridColumnList(grok_Grid_Get_Columns(this.d)); }
@@ -200,6 +196,26 @@ export class Grid extends Viewer {
     }
 
     hitTest(x, y) { return new GridCell(grok_Grid_HitTest(this.d, x, y)); }
+
+    /** Sorts rows by the specified [columnIds].
+     *  Specify sort directions via [asc] array (true = ascending, false = descending)
+     *  If [asc] is not specified, sorts in ascending order. */
+    sort(columns, orders = null) {
+        grok_Grid_Sort(this.d, columns.map((c) => c instanceof Column ? c.d : c), orders);
+        return this;
+    }
+
+    sortIndexes(indexComparer) {
+        let indexes = _identityInt32(this.table.rowCount);
+        indexes.sort(indexComparer);
+        this.setRowOrder(indexes);
+        return this;
+    }
+
+    setRowOrder(indexes) {
+       grok_Grid_SetRowOrder(this.d, indexes);
+       return this;
+    }
 
     static create(table) { return new Grid(grok_Grid_Create(table.d)); }
 }

@@ -52,3 +52,10 @@ export function _onSizeChanged(element) {
         return () => resizeObserver.disconnect();
     });
 }
+
+export function _identityInt32(length) {
+    let values = new Int32Array(length);
+    for (let i = 0; i < length; i++)
+        values[i] = i;
+    return values;
+}
