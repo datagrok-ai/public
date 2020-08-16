@@ -1,5 +1,6 @@
 /** A viewer that is typically docked inside a [TableView]. */
 import {TYPE, VIEWER} from "./const";
+import {DataFrame} from "./dataframe.js";
 import * as ui from "./../ui.js";
 import {Property} from "./entities";
 import {_onSizeChanged, _toJson} from "./utils";
@@ -50,6 +51,8 @@ export class Viewer {
     /** Visual root.
      * @type {HTMLElement} */
     get root() { return grok_Viewer_Root(this.d); }
+
+    get table() { return new DataFrame(grok_Viewer_Get_DataFrame(this.d)); }
 
     static grid        (t, options = null) { return new Viewer(grok_Viewer_Grid(t.d, _toJson(options))); }
 
