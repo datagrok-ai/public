@@ -1,13 +1,23 @@
 # Datagrok package repository
 
 This is a public repository for [packages](https://datagrok.ai/help/develop/develop#packages) 
-available for the [Datagrok™](https://datagrok.ai) platform, 
-curated by the Datagrok team. It contains different scientific methods integrated with the platform, 
-as well as custom viewers, application, and functions.
+available for the [Datagrok™](https://datagrok.ai) platform. It contains different scientific methods integrated with the platform, 
+as well as custom viewers, application, and functions. See complete list here
 
-Organizations that deploy Datagrok on their premises can access public packages. In addition to that,
-they might establish their own private repositories (most likely on their premises on the virtual private
-cloud) that would contain their proprietary applications built on top of the platform. 
+Organizations that deploy Datagrok on their premises can access public packages. 
+In addition to that, they typically establish their own private repositories that
+contain proprietary extensions.
+
+Contents
+
+* [packages](packages): Public packages (curated by the Datagrok team)
+* [connectors](connectors): Database connectivity library
+* [help](help/home.md): Platform help ([interactive version](https://datagrok.ai/help/))
+
+# Feedback
+
+Please visit our [community forums](https://community.datagrok.ai/) for reporting bugs, and
+participating in other discussions. 
 
 # Ideas for the contributions
 
@@ -42,31 +52,6 @@ and reach out to Andrew (askalkin@datagrok.ai) or post on our [community forum](
 * Bioinformatics
 * Telecom
 * Fintech
-
-# Package Development Guide
-
-Here are some of the best practices for developing and publishing Datagrok plugins: 
-
-1. [Presentation](#presentation)
-    * [Repository](#repo)
-    * Name
-    * Description
-    * Links
-    * Metadata
-2. [Code](#code)
-    * File Structure
-    * Plugin API
-3. Publishing  
-
-## Presentation
-
-### Repository
-
-## Code
-
-
-
-### Plugin API
 
 See also:
 * [Datagrok overview](https://datagrok.ai/)
