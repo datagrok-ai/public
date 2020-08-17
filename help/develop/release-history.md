@@ -1,6 +1,93 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2020.08.11 Stable version
+
+## Latest docker images
+
+* Datagrok (new): 
+  * `766822877060.dkr.ecr.us-east-2.amazonaws.com/datagrok:1.0.82-75b821b` 
+  *  `docker pull datagrok/datagrok:1.0.82-75b821b`
+  *  [download](https://dev.datagrok.ai/docker_images/datagrok-1.0.82-75b821b.tar)
+* CVM (new): 
+  * `766822877060.dkr.ecr.us-east-2.amazonaws.com/cvm:1.0.82-75b821b` 
+  *  `docker pull datagrok/cvm:1.0.82-75b821b`
+  *  [download](https://dev.datagrok.ai/docker_images/cvm-1.0.82-75b821b.tar)
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed issues
+
+* Keep scroll positions on view change
+* Box Plot: an exception when category column is not specified
+* Viewers: ability to specify the table to bind to
+* Shape Map: allowPanZoom property not having any effect
+* Restart isolate after error
+* If all DB connections are closed with socket error they will not be reconnected
+* Sharing a package fails second time
+* Shape Map: not rendered when initialized from the saved project 
+* entity.save adds _1 to script name if there is another version of a package available
+* Disable login form after first click
+* Empty values in a float column become zeros when converted to int
+* JS API: functions/info-panels/info-panels.js: Exception after opening info panel from the example
+* Notebooks don't open
+* Use npmignore and gitignore to skip files during upload
+* JS API: expose methods for changing column type
+* View.close() doesn't fire onViewRemoved event
+* Unable to run R script from JS if there is DataFrame input parameter
+* API to push credentials to DataConnection or Package
+* Scripts to return list of Py installed packages
+* Box Plot: an exception when selecting the <empty> x category
+* Excel import: treat "N/A" as missing values
+* Missing "..." after "Edit" in the context menu for packages and repositories
+* Harmonize JS-API ViewLayout class
+* JS async functions handling
+* Support for qualified numbers
+* Support package.ts file
+* Print additional information on deploy
+* Ability to keep package function log
+* datagrok-tools: exclude .~ files from uploading
+* S3: .~lock.tree.a# filename breaks S3 storage
+* Js Function log
+* 404 at credentials-storage help
+* Scripts do not run from the console (Namespace error)
+* Add cash framework
+* Notebooks: Notebook to Script 
+* Chem | Similarity Search: Similar structures are not displayed after the progress bar disappears. If you click on the smiles, an exception will be thrown
+* JS API Examples: "menu.js" does not work
+* If you add Tile Viewer and open the "Scatter Plot" panel for "demog" table, then extra balloons will be displayed
+* Tile Viewer: Viewer is displayed empty after editing its form
+* Rewrite datagrok-upload to nodeJs
+* Support typical shortcuts in Jupyter Notebook
+* Viewer embedding doesn't work
+* Ambiguous column name exception during package creation
+* VirtualItemView: horizontal scrolling mode
+* RDKitDemo App: Exception after "Close All" when the application is open
+* SDTM App does not work
+* Discovery App: Exception after opening
+* JS API Examples: "virtual-view.js" does not work
+* Chemprop: Does not train on "demo/smiles.csv"
+* Files: "Image Classification" panel does not work
+* SPARQL connections are deployed without sharing
+* ODATA provider visible only with admin mode enabled
+* Scripting: DateTime issue
+* Apps | RDKitDemo: Application does not open by URL https://dev.datagrok.ai/apps/RDKitDemo
+* Projects with Notebooks do not open
+* Notebooks: Community demo
+* Notebooks: Default name as table name
+* Selenium: Create project with tests for viewers serialization
+* Predictive Modelling: Improve engine naming
+* Tile Viewer: In form edit mode, the "Close and Apply" does not close view
+* OpenAPI: Open connection in PP after import
+* Upgrade Maps viewer
+* Ability to execute "models" on server
+* H2O: support list parameters
+* Predictive Modelling: create diagrams of train and apply process
+* Add AM/PM with space case to date time parser
+* Investigate possibility of WebAssembly  usage
+* Improve table reading in Jupyter Notebooks
+
+
 # 2020.07.15 Stable version
 
 ## Latest docker images
@@ -12,8 +99,6 @@
   * `766822877060.dkr.ecr.us-east-2.amazonaws.com/cvm:1.0.80-71eb62e` 
   *  `docker pull datagrok/cvm:1.0.80-71eb62e`
   *  [download](https://dev.datagrok.ai/docker_images/cvm-1.0.80-71eb62e.tar)
-  
-* [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed issues
 
