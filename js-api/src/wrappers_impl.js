@@ -1,5 +1,6 @@
 import {Property} from "./entities";
 import {TYPE, TYPES_SCALAR} from "./const";
+import {TypedEventArgs} from "./viewer";
 
 /** Converts list of Dart objects to JavaScript objects by calling {@link toJs}
  * @param {object[]} params
@@ -28,7 +29,7 @@ export function toJs(d, check = false) {
     let type = grok_GetType(d);
     if (type === TYPE.MAP) {
         let wrapper = grok_GetWrapper(d);
-        for(let key in wrapper) {
+        for (let key in wrapper) {
             if (wrapper.hasOwnProperty(key)) {
                 let type = grok_GetType(wrapper[key]);
                 if (type !== null && (!TYPES_SCALAR.has(type) || type === TYPE.LIST || type === TYPE.MAP))
@@ -38,6 +39,8 @@ export function toJs(d, check = false) {
         console.log(wrapper);
         return wrapper;
     }
+    else if (type === 'DG.TypedEventArgs')
+        return new TypedEventArgs(d);
     let wrapper = grok_GetWrapper(d);
     if (wrapper != null)
         return wrapper;

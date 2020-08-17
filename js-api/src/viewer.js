@@ -5,6 +5,20 @@ import * as ui from "./../ui.js";
 import {Property} from "./entities";
 import {_onSizeChanged, _toJson} from "./utils";
 import {Balloon} from "./widgets";
+import {toJs} from "./wrappers";
+import {observeStream, StreamSubscription} from "./events";
+import * as rxjs from "rxjs";
+
+export class TypedEventArgs {
+    constructor(d) {
+        this.d = d;
+    }
+
+    get type() {
+        return grok_TypedEventArgs_Get_Type(this.d);
+    }
+    get data() { return toJs(grok_TypedEventArgs_Get_Data(this.d)); }
+}
 
 /**
  * Represents a {@link https://datagrok.ai/help/visualize/viewers | viewer}.
@@ -53,6 +67,28 @@ export class Viewer {
     get root() { return grok_Viewer_Root(this.d); }
 
     get table() { return new DataFrame(grok_Viewer_Get_DataFrame(this.d)); }
+
+    /** @type {Observable} */
+    get onEvent() {
+        let dartStream = grok_Viewer_Get_EventBus_Events(this.d);
+        let observable = rxjs.fromEventPattern(
+            function(handler) { return grok_Stream_Listen(dartStream, function (x) {
+                handler(new TypedEventArgs(x));
+            });
+            },
+            function(handler, d) { new StreamSubscription(d).cancel(); }
+        );
+        return observable;
+
+
+        // function convert(d) {
+        //     return new TypedEventArgs(d);
+        //     let x = toJs(d);
+        //     console.log(x);
+        //     return x;
+        // }
+        // return observeStream(grok_Viewer_Get_EventBus_Events(this.d));
+    }
 
     static grid        (t, options = null) { return new Viewer(grok_Viewer_Grid(t.d, _toJson(options))); }
 
