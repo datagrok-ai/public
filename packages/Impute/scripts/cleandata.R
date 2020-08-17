@@ -6,8 +6,10 @@
 #input: column_list columns [list of all columns of interest]
 #input: double varRemovalThreshold = 0.5 [% missingness per column]
 #input: double indRemovalThreshold = 0.5 [% missingness per row]
+#input: double naCoding [values to be manually converted to NA]
 #input: bool meta = FALSE [whether to collect metadata]
-#output: dataframe outputDF [processed dataframe]
+#output: dataframe outputDF1 [processed dataframe]
+#output: dataframe outputDF2 [processed dataframe]
 
 require(dplyr)
 require(mice)
@@ -104,7 +106,7 @@ get_data <- function(X) {
       na_cor[i,j] <- ltm::biserial.cor(X[,j], is.na(X)[,i], use="complete.obs")
     }
   }
-  na_cor <- data.table::as.data.table(na_cor, keep.rownames = TRUE)
+
 
   # output
   list(Complete_cases = comp, Rows = rows, Columns = cols, Corr_matrix = mat, Fraction_missingness = missfrac_per_df,
@@ -114,16 +116,16 @@ get_data <- function(X) {
 }
 
 X <- data[,columns]
-X <- as.data.frame(lapply(X, function(x) replace(x, x %in% "", NA)))
-
-X <- clean(X, 
+X <- clean(X,
            var_removal_threshold = varRemovalThreshold,
            ind_removal_threshold = indRemovalThreshold,
-           missingness_coding = -9)
+           missingness_coding = naCoding)
 
 if (meta == TRUE) {
   metadata <- get_data(X)
-  outputDF <- metadata$Corr_matrix
+  outputDF1 <- metadata$Corr_matrix
+  outputDF2 <- metadata$NA_Correlations
 } else {
-  outputDF <- X
+  outputDF1 <- X
+  outputDF2 <- data.frame()
 }

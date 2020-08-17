@@ -4,7 +4,7 @@
 #tags: template, demo
 #input: dataframe data [Input data table]
 #input: int burnin = 5 [discard initial iterations]
-#output: dataframe outputDF [imputed dataset]
+#output: dataframe imputedDF [imputed dataset]
 
 require(Hmisc)
 
@@ -19,7 +19,7 @@ hmisc_algo <- Hmisc::aregImpute(formula = Xformula,
                                 type = "pmm",
                                 pmmtype = 2)
 
-outputDF <- as.data.frame(Hmisc::impute.transcan(hmisc_algo,
+imputedDF <- as.data.frame(Hmisc::impute.transcan(hmisc_algo,
                                                  imputation = 1,
                                                  data = data,
                                                  list.out = TRUE,
