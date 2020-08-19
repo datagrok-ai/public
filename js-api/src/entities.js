@@ -12,17 +12,17 @@ export class Entity {
 
     /** Entity ID (GUID)
      *  @type {string} */
-    get id() { return grok_Entity_Get_Id([this.d]); }
-    set id(x) { return grok_Entity_Set_Id([this.d], x); }
+    get id() { return grok_Entity_Get_Id(this.d); }
+    set id(x) { return grok_Entity_Set_Id(this.d, x); }
 
     /** Entity name
      *  @type {string} */
-    get name() { return grok_Entity_Get_Name([this.d]); }
-    set name(x) { return grok_Entity_Set_Name([this.d], x); }
+    get name() { return grok_Entity_Get_Name(this.d); }
+    set name(x) { return grok_Entity_Set_Name(this.d, x); }
 
     /** Entity path
      *  @type {string} */
-    get path() { return grok_Entity_Path([this.d]); }
+    get path() { return grok_Entity_Path(this.d); }
 }
 
 /**
