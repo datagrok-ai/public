@@ -104,8 +104,7 @@ export class Dapi {
             headers: headers,
             body: JSON.stringify(body)
         };
-        let r = await fetch('/api/connectors/proxy', params);
-        return await r.json();
+        return await fetch('/api/connectors/proxy', params)
     }
 }
 

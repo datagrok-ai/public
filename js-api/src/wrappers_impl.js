@@ -36,7 +36,6 @@ export function toJs(d, check = false) {
                   wrapper[key] = toJs(wrapper[key]);
             }
         }
-        console.log(wrapper);
         return wrapper;
     }
     else if (type === 'DG.TypedEventArgs')
