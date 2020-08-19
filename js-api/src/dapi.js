@@ -25,7 +25,7 @@ export class Dapi {
      *  @returns {List<Entity>} */
     getEntities(ids) {
         return new Promise((resolve, reject) => grok_Dapi_Entities_GetEntities(ids, (q) => {
-            return resolve(q[0].map(toJs));
+            return resolve(q.map(toJs));
         }));
     }
 
@@ -47,7 +47,7 @@ export class Dapi {
 
     /** Jupyter Notebooks API endpoint
      *  @type {HttpDataSource<Notebook>} */
-    get notebooks() { return new HttpDataSource(grok_Dapi_Notebooks(), (a) => new Notebook(a)); }
+    get notebooks() { return new HttpDataSource(grok_Dapi_Notebooks(), (a) => toJs(a)); }
 
     /** Predictive Models API endpoint
      *  @type {HttpDataSource<Model>} */
@@ -150,7 +150,7 @@ export class HttpDataSource {
      *  @returns {Promise<object>} - entity. */
     find(id) {
         let s = this.entityToJs;
-        return new Promise((resolve, reject) => grok_DataSource_Find(this.s, id, (q) => resolve(s(q[0]))));
+        return new Promise((resolve, reject) => grok_DataSource_Find(this.s, id, (q) => resolve(s(q))));
     }
 
     by(i) {
@@ -210,7 +210,7 @@ export class UsersDataSource extends HttpDataSource {
      * @returns {Promise<User>} */
     current() {
         let s = this.entityToJs;
-        return new Promise((resolve, reject) => grok_UsersDataSource_Current(this.s, (q) => resolve(s(q[0]))));
+        return new Promise((resolve, reject) => grok_UsersDataSource_Current(this.s, (q) => resolve(s(q))));
     }
 }
 
@@ -232,7 +232,7 @@ export class CredentialsDataSource extends HttpDataSource {
      * @returns {Credentials} */
     forEntity(e) {
         let s = this.entityToJs;
-        return new Promise((resolve, reject) => grok_CredentialsDataSource_ForEnrity(this.s, e.d, (c) => resolve(s(c[0]))));
+        return new Promise((resolve, reject) => grok_CredentialsDataSource_ForEnrity(this.s, e.d, (c) => resolve(s(c))));
     }
 }
 
