@@ -1314,7 +1314,7 @@
       "command": "verifyText",
       "target": "name=div-view-name",
       "targets": [],
-      "value": "demog 5000"
+      "value": "demog 10000"
     }, {
       "id": "0c5bddb2-9877-4480-9c43-dedcd7eb5156",
       "comment": "",
@@ -1416,24 +1416,24 @@
       "id": "c99435f4-072e-450f-8928-33e952ea355c",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//span[contains(.,'2499.50')]",
+      "target": "xpath=//span[contains(.,'2886.90')]",
       "targets": [
-        ["css=.d4-table:nth-child(1) tr:nth-child(7) > td:nth-child(2) > span", "css:finder"],
-        ["xpath=//div[@id='elementContent']/div/table/tbody/tr[7]/td[2]/span", "xpath:idRelative"],
-        ["xpath=//tr[7]/td[2]/span", "xpath:position"],
-        ["xpath=//span[contains(.,'2499.50')]", "xpath:innerText"]
+        ["css=.d4-table:nth-child(1) tr:nth-child(8) > td:nth-child(2) > span", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div/table/tbody/tr[8]/td[2]/span", "xpath:idRelative"],
+        ["xpath=//tr[8]/td[2]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'2886.90')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
-      "id": "eea022f8-bd98-4e19-83bb-dcaadb533173",
+      "id": "1d9ebb1c-009e-4644-b01c-c3b9d4a75482",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//span[contains(.,'5000')]",
+      "target": "xpath=//span[contains(.,'10000')]",
       "targets": [
-        ["css=.d4-table:nth-child(1) tr:nth-child(2) > td:nth-child(2) > span", "css:finder"],
-        ["xpath=//div[@id='elementContent']/div/table/tbody/tr[2]/td[2]/span", "xpath:idRelative"],
-        ["xpath=//tr[2]/td[2]/span", "xpath:position"],
-        ["xpath=//span[contains(.,'5000')]", "xpath:innerText"]
+        ["css=.d4-table:nth-child(1) tr:nth-child(8) > td:nth-child(2) > span", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div/table/tbody/tr[8]/td[2]/span", "xpath:idRelative"],
+        ["xpath=//tr[8]/td[2]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'2886.90')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
@@ -1459,7 +1459,7 @@
       "id": "a3eb606e-4263-4f16-9065-19fc46a23d73",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-times'])[18]",
+      "target": "css=.d4-ribbon:nth-child(1) > i[name=\"icon-times\"]",
       "targets": [
         ["css=.d4-ribbon > .grok-icon", "css:finder"],
         ["xpath=(//i[@name='icon-times'])[3]", "xpath:attributes"],
@@ -1611,7 +1611,7 @@
       "id": "99610e8d-88c5-4bfe-9506-f0e3ffe9d6d3",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-times'])[19]",
+      "target": "css=.d4-ribbon:nth-child(1) > i[name=\"icon-times\"]",
       "targets": [
         ["css=.fa-times:nth-child(5)", "css:finder"],
         ["xpath=(//i[@name='icon-times'])[19]", "xpath:attributes"],
