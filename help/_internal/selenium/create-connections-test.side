@@ -498,6 +498,13 @@
       ],
       "value": ""
     }, {
+      "id": "7ac90d51-bf99-43e3-95d0-e0e4699e239b",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "691da0f4-7467-49e4-8cfb-9a14cef95c8e",
       "comment": "",
       "command": "click",

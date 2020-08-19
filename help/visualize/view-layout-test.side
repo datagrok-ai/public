@@ -236,35 +236,15 @@
     }, {
       "id": "b5bb2be5-db16-4536-bdfa-104d0496746b",
       "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@name='div-section--Filters']",
+      "command": "type",
+      "target": "xpath=(//input[@type='text'])[2]",
       "targets": [
-        ["css=.d4-accordion-pane:nth-child(1) > .d4-accordion-pane-header", "css:finder"],
-        ["xpath=//div[@name='div-section--Filters']", "xpath:attributes"],
-        ["xpath=//div[@id='grok-viewers-toolbox']/div/div/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/div", "xpath:position"]
+        ["css=.type-ahead-input", "css:finder"],
+        ["xpath=(//input[@type='text'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div[2]/div/input", "xpath:idRelative"],
+        ["xpath=//div[2]/div/input", "xpath:position"]
       ],
-      "value": ""
-    }, {
-      "id": "cc4cfb53-eb96-4238-8038-cd7048d93da5",
-      "comment": "",
-      "command": "pause",
-      "target": "500",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "245da9e0-acda-40fe-9279-83bc50b7ca12",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//label[@name='label-Mine']",
-      "targets": [
-        ["css=.d4-toolbar-commands > .d4-link-label:nth-child(2)", "css:finder"],
-        ["xpath=//label[@name='label-Mine']", "xpath:attributes"],
-        ["xpath=//div[@id='grok-viewers-toolbox']/div/div/div[2]/div/label[2]", "xpath:idRelative"],
-        ["xpath=//label[2]", "xpath:position"],
-        ["xpath=//label[contains(.,'Mine')]", "xpath:innerText"]
-      ],
-      "value": ""
+      "value": "author = @current and friendlyName=\"demog\""
     }, {
       "id": "67e5258c-122c-4661-b2b0-335e459bfe7f",
       "comment": "",
@@ -663,16 +643,15 @@
     }, {
       "id": "7cdfbf7a-bbed-4bbd-98d6-02640267824d",
       "comment": "",
-      "command": "click",
-      "target": "xpath=//label[@name='label-Mine']",
+      "command": "type",
+      "target": "xpath=(//input[@type='text'])[2]",
       "targets": [
-        ["css=.d4-toolbar-commands > .d4-link-label:nth-child(2)", "css:finder"],
-        ["xpath=//label[@name='label-Mine']", "xpath:attributes"],
-        ["xpath=//div[@id='grok-viewers-toolbox']/div/div/div[2]/div/label[2]", "xpath:idRelative"],
-        ["xpath=//label[2]", "xpath:position"],
-        ["xpath=//label[contains(.,'Mine')]", "xpath:innerText"]
+        ["css=.type-ahead-input", "css:finder"],
+        ["xpath=(//input[@type='text'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div[2]/div/input", "xpath:idRelative"],
+        ["xpath=//div[2]/div/input", "xpath:position"]
       ],
-      "value": ""
+      "value": "author = @current and friendlyName=\"demog\""
     }, {
       "id": "b7aedda2-675a-4b34-b9c7-2d400a92275c",
       "comment": "",

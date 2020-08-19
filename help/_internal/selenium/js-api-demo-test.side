@@ -174,12 +174,13 @@
       "id": "7ff92fc7-1363-42c7-ac50-c43171be2c15",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='view-handle: demog 5000']",
+      "target": "xpath=//span[@name='span-demog-10000']",
       "targets": [
-        ["css=.tab-handle:nth-child(5)", "css:finder"],
-        ["xpath=//div[@name='view-handle: demog 5000']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[3]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/div[3]", "xpath:position"]
+        ["css=.d4-ribbon-name > span:nth-child(1)", "css:finder"],
+        ["xpath=//span[@name='span-demog-10000']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[3]/div/div/div/div/div/div/div[2]/span", "xpath:idRelative"],
+        ["xpath=//div[2]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'demog 10000')]", "xpath:innerText"]
       ],
       "value": ""
     }, {

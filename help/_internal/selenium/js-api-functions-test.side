@@ -273,7 +273,7 @@
         ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
         ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
       ],
-      "value": "demog 5000"
+      "value": "demog 10000"
     }, {
       "id": "1e8e0154-fded-49fb-85de-60704a2418a5",
       "comment": "",

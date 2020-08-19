@@ -137,6 +137,13 @@
       ],
       "value": "Group_by_Selenium"
     }, {
+      "id": "76ee5c8e-9496-4616-acff-878e71ce15e4",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "0f307b52-fb3d-48a7-9ff9-82e3a731531d",
       "comment": "",
       "command": "type",
@@ -148,6 +155,13 @@
         ["xpath=//div[2]/input", "xpath:position"]
       ],
       "value": "Auto-created group"
+    }, {
+      "id": "2a67b7b9-3759-475c-a427-55a953c76d99",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
     }, {
       "id": "a3a5b2b9-4c3c-45a6-bf43-7ded13b63ae3",
       "comment": "",
