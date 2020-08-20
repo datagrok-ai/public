@@ -19,7 +19,11 @@
     background-color: white;
 }
 
-.sunburst-selectors-container span:first-child, .sunburst-value-container span:first-child {
+.sunburst-selectors-container .label, .sunburst-value-container .label {
     display: inline-block;
     width: 70px;
+}
+
+.sunburst-selectors-container .selector:not(:last-child)::after {
+    content: ">";
 }

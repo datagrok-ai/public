@@ -1,85 +1,89 @@
 import * as ui from 'datagrok-api/ui';
-import * as DG from "datagrok-api/dg";
+import * as DG from 'datagrok-api/dg';
 import {SunburstRenderer} from './sunburst-renderer';
-import {TreeData, TreeDataBuilder} from './tree-data-builder';
+import { Branch, TreeData, TreeDataBuilder } from './tree-data-builder';
+import { HierarchyNode } from 'd3-hierarchy';
 
 export class SunburstViewer extends DG.JsViewer {
 
-    //private containerId = 'sunburst-id-' + Math.random().toString(36).slice(2);
     private chartDiv!: HTMLDivElement;
     private selectorDiv!: HTMLDivElement;
     private selectors: HTMLSelectElement[] = [];
-    //private valueSelector!: HTMLSelectElement;
 
     private renderer: SunburstRenderer;
 
     private colors?: string[];
-    
+    private stringColumnNames?: string[];
+    private initialized = false;
+
     private treeData?: TreeData;
+
+    private valueColumnName = this.string('valueColumnName');
+    private aggregationType = this.string('aggregationType', 'count');
+    private categoryColumnsSerialized = this.string('categoryColumnsSerialized');
 
     constructor() {
         super();
+        this.getProperty('aggregationType').choices = ['count', 'sum', 'avg'];
+        // FIXME: colors will be dynamical in the future
         this.renderer = new SunburstRenderer(this.getColors(), this.clickHandler);
     }
 
-    init() {
-        this.selectorDiv = ui.div([ui.span(["Categories:"] as any)], 'sunburst-selectors-container');
+    init(): void {
+        const label = ui.span(['Categories:'] as any);
+        label.className = 'label';
+        this.selectorDiv = ui.div([label], 'sunburst-selectors-container');
         this.root.appendChild(this.selectorDiv);
         this.addSelector(true);
         this.addSelector(false);
 
-        //const valueContainer = ui.div([ui.span(["Value:"] as any)], 'sunburst-value-container');
-        //this.root.appendChild(valueContainer);
-        //this.valueSelector = this.createNumberColumnSelector(true);
-        //valueContainer.appendChild(this.valueSelector);
-
         this.chartDiv = ui.div([], 'sunburst-chart-container');
-        //this.chartDiv.setAttribute("id", this.containerId);
         this.root.appendChild(this.chartDiv);
     }
 
-    onTableAttached() {
+    onTableAttached(): void {
         this.init();
 
         this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
         this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()));
 
+        this.loadSelectedColumnNames();
         this.render();
     }
 
-    detach() {
+    detach(): void {
         this.treeData = undefined;
         this.subs.forEach((sub) => sub.unsubscribe());
     }
 
-    onPropertyChanged(property: DG.Property) {
+    onPropertyChanged(property: DG.Property): void {
         super.onPropertyChanged(property);
     }
 
-    onSizeChanged(width: number, height: number) {
+    onSizeChanged(width: number, height: number): void {
         this.render(false);
     }
 
-    private render(dataChanged = true) {
+    private render(dataChanged = true): void {
         if (dataChanged) {
-            this.treeData = this.buildTreeData();
+            const selectedColumnNames = this.getSelectedColumnNames();
+            this.saveSelectedColumnNames(selectedColumnNames);
+            this.treeData = this.buildTreeData(selectedColumnNames);
         }
 
-        this.chartDiv.innerHTML = '';
-        
         const selectorsHeight = this.selectorDiv.getBoundingClientRect().height;
         const height = this.root.parentElement!.offsetHeight - selectorsHeight;
         const width = this.root.parentElement!.offsetWidth;
-        
+
         if (this.treeData) {
-            this.renderer.render(this.chartDiv, this.treeData, width, height,);
+            this.renderer.render(this.chartDiv, this.treeData, width, height);
         }
     }
 
-    private buildTreeData() {
+    private buildTreeData(selectedColumnNames: string[]): HierarchyNode<Branch> {
         const selectedRows = this.dataFrame.filter.getSelectedIndexes();
 
-        const categoryColumns: DG.Column[] = this.getSelectedColumnNames()
+        const categoryColumns: DG.Column[] = selectedColumnNames
             .map(columnName => this.dataFrame.getCol(columnName));
 
 
@@ -95,7 +99,7 @@ export class SunburstViewer extends DG.JsViewer {
         }
     }
 
-    getColors(): string[] {
+    private getColors(): string[] {
         if (this.colors) {
             return this.colors;
         }
@@ -105,7 +109,7 @@ export class SunburstViewer extends DG.JsViewer {
 
     // UI COLUMN SELECTION STUFF
 
-    addSelector(setDefault = false) {
+    private addSelector(setDefault = false): void {
         const selectorIndex = this.selectors.length;
         const selectorName = 'sunburst-selector-' + selectorIndex;
         const selector = this.createStringColumnSelector(setDefault);
@@ -117,27 +121,30 @@ export class SunburstViewer extends DG.JsViewer {
             }
         }
         this.selectors.push(selector);
-        selectorIndex && this.selectorDiv.appendChild(ui.span(['>' as any]));
-        this.selectorDiv.appendChild(selector);
+        const span = ui.span([selector as any]);
+        span.className = 'selector';
+        this.selectorDiv.appendChild(span);
     }
 
-    private createStringColumnSelector(setDefault: boolean) {
-        const columnNames = this.getColumnNames([DG.COLUMN_TYPE.STRING]);
+    private createStringColumnSelector(setDefault: boolean): HTMLSelectElement {
+        const columnNames = this.getStringColumnNames();
         const defaultColumnName = setDefault && columnNames.length ? columnNames[0] : '';
         return this.createSelector(columnNames, defaultColumnName);
     }
 
-    private createNumberColumnSelector(setDefault: boolean) {
-        const columnNames = this.getColumnNames([DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.FLOAT]);
-        const defaultColumnName = setDefault && columnNames.length ? columnNames[0] : '';
-        return this.createSelector(columnNames, defaultColumnName);
+    private getStringColumnNames(): string[] {
+        if (this.stringColumnNames) {
+            return this.stringColumnNames;
+        }
+        this.stringColumnNames = this.getColumnNames([DG.COLUMN_TYPE.STRING]);
+        return this.stringColumnNames;
     }
 
-    private getColumnNames(type: DG.COLUMN_TYPE[]) {
+    private getColumnNames(type: DG.COLUMN_TYPE[]): string[] {
         return this.dataFrame.columns.toList().filter(c => type.some(t => t === c.type)).map(c => c.name);
     }
 
-    createSelector(columnNames: string[], selectedName = ''): HTMLSelectElement {
+    private createSelector(columnNames: string[], selectedName = ''): HTMLSelectElement {
         const select = document.createElement('select');
         select.className = 'sunburst-selector';
         select.add(this.createSelectOption());
@@ -147,7 +154,7 @@ export class SunburstViewer extends DG.JsViewer {
         return select;
     }
 
-    createSelectOption(text: string = "", value?: string, selected = false): HTMLOptionElement {
+    private createSelectOption(text: string = '', value?: string, selected = false): HTMLOptionElement {
         const option = document.createElement('option');
         option.innerText = text;
         option.value = value || text;
@@ -155,7 +162,7 @@ export class SunburstViewer extends DG.JsViewer {
         return option;
     }
 
-    getSelectedColumnNames(): string[] {
+    private getSelectedColumnNames(): string[] {
         return this.selectors
             .map(selector => {
                 const selectedOptions = selector.selectedOptions;
@@ -165,5 +172,49 @@ export class SunburstViewer extends DG.JsViewer {
                 return selectedOptions.item(0)!.value!;
             })
             .filter(s => !!s);
+    }
+
+    private saveSelectedColumnNames(selectedColumnNames: string[]): void {
+        (this.getProperty('categoryColumnsSerialized') as any).set('categoryColumnsSerialized', JSON.stringify(selectedColumnNames));
+    }
+
+    private loadSelectedColumnNames(): void {
+        const selectedColumnNames = this.deserializeSelectedColumnNames();
+        if (selectedColumnNames == null || !selectedColumnNames.length) {
+            return;
+        }
+        const columnNames = this.getStringColumnNames();
+        let selector: HTMLSelectElement | undefined = undefined;
+        for (let i = 0; i < selectedColumnNames.length; i++) {
+            selector = this.selectors[i];
+            if (!selector) {
+                this.addSelector();
+                selector = this.selectors[i];
+            }
+            const selectedColumnName = selectedColumnNames[i];
+            const index = columnNames.indexOf(selectedColumnName);
+            if (index === -1) {
+                selector.value = '';
+            } else {
+                selector.value = selectedColumnName;
+            }
+        }
+        if (selector) {
+            // Add the empty selector if needed
+            setTimeout(() => {
+                selector!.dispatchEvent(new Event('change'));
+            }, 0) ;
+        }
+    }
+
+    private deserializeSelectedColumnNames(): string[] | undefined {
+        const categoryColumnsSerialized = this.getProperty('categoryColumnsSerialized').get(this);
+        try {
+            const selectedColumnNames = JSON.parse(categoryColumnsSerialized);
+            if (Array.isArray(selectedColumnNames)) {
+                return selectedColumnNames
+            }
+        } catch (e) {
+        }
     }
 }

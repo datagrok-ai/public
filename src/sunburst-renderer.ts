@@ -31,6 +31,7 @@ export class SunburstRenderer {
     }
 
     public render(htmlElement: HTMLElement, data: TreeData, width: number, height: number) {
+        htmlElement.innerHTML = '';
         htmlElement.appendChild(this.createSvg(data, width, height));
     }
 
@@ -41,7 +42,7 @@ export class SunburstRenderer {
     }
 
     private arc(radius: number) {
-        
+
         return d3.arc<Rectangle>()
             .startAngle(d => d.x0)
             .endAngle(d => d.x1)
@@ -54,11 +55,11 @@ export class SunburstRenderer {
     private createSvg(data: TreeData, width: number, height: number) {
         const center = Math.min(width, height) / 2;
         const radius = center * 0.9;
-        
+
         const root = this.partitionLayout(data, radius);
 
         const svg = d3.create("svg");
-        
+
         const segment = svg.append("g")
             .selectAll("path")
             .data(root.descendants().filter(d => d.depth))
@@ -94,18 +95,18 @@ export class SunburstRenderer {
             })
             .attr("dy", "0.35em")
             .text((d) => d.data.value);
-        
+
         return svg.attr("viewBox", `-${center} -${center} ${width} ${height}`).node()!;
     }
-    
+
     private onClick = (d: TreeData) => {
         const rowIds = d.descendants().flatMap(x => x.data.leafIds);
         this.clickHandler(rowIds);
     }
-    
+
     private defaultSegmentFill(root: TreeData) {
         const color = d3.scaleOrdinal(this.colors.slice(0, (root.children?.length || 0) + 1));
-        
+
         return (d: TreeData) => {
             let v: typeof d | null = d;
             while (!!v && v.depth > 1) v = v.parent;
