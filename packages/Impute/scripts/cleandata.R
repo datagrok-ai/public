@@ -8,8 +8,9 @@
 #input: double indRemovalThreshold = 0.5 [% missingness per row]
 #input: double naCoding [values to be manually converted to NA]
 #input: bool meta = FALSE [whether to collect metadata]
-#output: dataframe outputDF1 [processed dataframe]
-#output: dataframe outputDF2 [processed dataframe]
+#output: dataframe cleanDf [processed dataframe]
+#output: graphics matrixPlot
+#output: graphics naPlot
 
 require(dplyr)
 require(mice)
@@ -107,13 +108,48 @@ get_data <- function(X) {
     }
   }
 
+  na_cor <- data.table::as.data.table(na_cor, keep.rownames = TRUE)
+  melted_cormat <- data.table::melt(na_cor, id = 'rn')
+  p_cor <- ggplot(data = melted_cormat, aes(x=factor(rn, levels=unique(rn)), y=variable, fill=value)) +
+    geom_tile() + labs(x= "", y= "") + theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+    ggtitle("Variable - Variable NA Correlation Matrix") +
+    theme(plot.title = element_text(hjust = 0.5))
+
+
+  X_update <- as.data.frame(scale(X))
+  nm1 <- names(X_update)[colSums(is.na(X_update)) > 0]
+  mydescend <- function(x) {
+    dplyr::desc(is.na(x))
+  }
+  arr_X <- X_update %>% dplyr::arrange_at(dplyr::vars(nm1), funs(mydescend))
+
+  # matrix plot
+  df_miss_id <- cbind(c(1:rows), arr_X)
+  colnames(df_miss_id) <- c("Observations", colnames(arr_X))
+  df_miss_id <- data.table::as.data.table(df_miss_id)
+  df_melt <- data.table::melt(df_miss_id, id = c('Observations'))
+  matrix_plot <- ggplot(df_melt, aes(x = variable, y = Observations)) + geom_tile(aes(fill = value)) +
+    scale_fill_gradient(low = "white", high = "blue") + theme(panel.background = element_blank()) +
+    ggtitle("Matrix plot of missing data") + theme(plot.title = element_text(hjust = 0.5))
+
+
+  ## cluster plot
+  #any_miss <- X_update[, which(!colSums(is.na(X_update)) == 0)]
+  #
+  #yesno <- any_miss %>% is.na
+  #d <- stats::dist(t(yesno), method = "binary")
+  #hc <- stats::hclust(d, method = "ward.D")
+  #hcdata <- ggdendro::dendro_data(hc)
+  #cluster_plot <- ggdendro::ggdendrogram(hcdata, theme_dendro = FALSE) + ggtitle("Cluster plot of missing data") +
+  #  theme(plot.title = element_text(hjust = 0.5)) + labs(x = "variable", y = "Height")
 
   # output
   list(Complete_cases = comp, Rows = rows, Columns = cols, Corr_matrix = mat, Fraction_missingness = missfrac_per_df,
        Fraction_missingness_per_variable = missfrac_per_var, Total_NA = na_per_df,
-       NA_per_variable = na_per_var, MD_Pattern = mdpat, NA_Correlations = na_cor,
-       min_PDM_thresholds = min_PDM_df)
+       NA_per_variable = na_per_var, MD_Pattern = mdpat, NA_Correlations = na_cor, NA_Correlation_plot = p_cor,
+       min_PDM_thresholds = min_PDM_df, Matrix_plot = matrix_plot)
 }
+
 
 X <- data[,columns]
 X <- clean(X,
@@ -123,9 +159,11 @@ X <- clean(X,
 
 if (meta == TRUE) {
   metadata <- get_data(X)
-  outputDF1 <- metadata$Corr_matrix
-  outputDF2 <- metadata$NA_Correlations
+  naPlot <- print(metadata$NA_Correlation_plot)
+  matrixPlot <- print(metadata$Matrix_plot)
+  cleanDf <- data.frame()
 } else {
-  outputDF1 <- X
-  outputDF2 <- data.frame()
+  naPlot  <- print(ggplot() + theme_void())
+  matrixPlot <- print(ggplot() + theme_void())
+  cleanDf <- X
 }
