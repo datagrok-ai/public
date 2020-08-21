@@ -614,12 +614,12 @@
       "id": "e0def234-a4d6-4043-86c1-d5c201e19d49",
       "comment": "",
       "command": "click",
-      "target": "xpath=//i[@name='icon-function']",
+      "target": "xpath=//i[@name='icon-icon-user']",
       "targets": [
-        ["css=.fa-function", "css:finder"],
-        ["xpath=//i[@name='icon-function']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div[2]/i", "xpath:idRelative"],
-        ["xpath=//div[2]/i", "xpath:position"]
+        ["css=.grok-ribbon-profile-picture > .grok-icon", "css:finder"],
+        ["xpath=//i[@name='icon-icon-user']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div/div[10]/div/div/i", "xpath:idRelative"],
+        ["xpath=//div[10]/div/div/i", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -633,30 +633,16 @@
       "id": "ba1de545-e006-42b1-bbf9-001e539f65ae",
       "comment": "",
       "command": "click",
-      "target": "xpath=//span[contains(.,'Notebooks')]",
+      "target": "xpath=//label[@name='label-Notebooks']",
       "targets": [
-        ["css=.d4-toggle-button:nth-child(5) > span", "css:finder"],
-        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[5]/span", "xpath:idRelative"],
-        ["xpath=//div[5]/span", "xpath:position"],
-        ["xpath=//span[contains(.,'Notebooks')]", "xpath:innerText"]
+        ["css=.d4-link-label:nth-child(11)", "css:finder"],
+        ["xpath=//label[@name='label-Notebooks']", "xpath:attributes"],
+        ["xpath=//div[@id='start']/label[11]", "xpath:idRelative"],
+        ["xpath=//label[11]", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "6159740c-0a01-4a95-b35b-b1f5ecf8ede9",
-      "comment": "",
-      "command": "pause",
-      "target": "3000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "e9ec0299-61f4-4dfc-8f45-c22d46e8d911",
-      "comment": "",
-      "command": "click",
-      "target": "name=div-NotebookBySelenium",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "13ab993e-67b5-4bc8-a733-ad3216ed302b",
       "comment": "",
       "command": "pause",
       "target": "1000",
@@ -668,10 +654,10 @@
       "command": "click",
       "target": "xpath=//i[@name='NotebookBySelenium']",
       "targets": [
-        ["css=.grok-context-arrow-down", "css:finder"],
-        ["xpath=//i[@name='NotebookBySelenium-1']", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div/span/i[2]", "xpath:idRelative"],
-        ["xpath=//span/i[2]", "xpath:position"]
+        ["css=.grok-context-arrow-down:nth-child(2)", "css:finder"],
+        ["xpath=//i[@name='NotebookBySelenium']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div/div/div/span/i", "xpath:idRelative"],
+        ["xpath=//span/i", "xpath:position"]
       ],
       "value": ""
     }, {
