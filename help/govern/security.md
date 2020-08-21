@@ -68,7 +68,12 @@ If a specialized credential vault is already used to store sensitive credentials
 Datagrok platform should be set up to take advantage of it. 
  
 ![Credentials retrieving process diagram](../uploads/security/credentials-fetch-diagram.png "Credentials retrieving process diagram")
-[Credentials retrieving process diagram.drawio](../uploads/security/credentials-fetch-diagram.drawio)
+
+Credentials retrieving process diagram [in drawio format](../uploads/security/credentials-fetch-diagram.drawio)
+
+A JS example for working with credentials storage: [open at public repo](packages/ApiSamples/scripts/misc/package-credentials.js); [open at Datagrok](https://public.datagrok.ai/e/ApiSamples:PackageCredentials).
+
+To store credentials in Datagrok Credentials Storage, send a POST request to `$(GROK_HOST)/api/credentials/for/$(PACKAGE_NAME)` with raw body containing JSON such as `{"login", "abc", "password": "123"}`.
 
 See also:
  * [Entities](../overview/objects.md) 
