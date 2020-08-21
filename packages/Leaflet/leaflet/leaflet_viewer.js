@@ -15,6 +15,7 @@ class LeafletViewer extends DG.JsViewer {
         this.coordinates = [];
 
         this.onSizeChanged.subscribe((_) => this.map.invalidateSize());
+        this.initialized = false;
     }
 
     init() {
@@ -25,6 +26,7 @@ class LeafletViewer extends DG.JsViewer {
         this.tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(this.map);
+        this.initialized = true;
     }
 
     onTableAttached() {
@@ -42,7 +44,8 @@ class LeafletViewer extends DG.JsViewer {
     }
 
     onPropertyChanged(prop) {
-        this.render();
+        if (this.initialized)
+            this.render();
     }
 
     detach() {
