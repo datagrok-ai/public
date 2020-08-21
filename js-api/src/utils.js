@@ -1,6 +1,12 @@
 import {Balloon} from "./widgets";
 import * as rxjs from 'rxjs';
 
+export function _isDartium() {
+    return Array
+        .from(document.getElementsByTagName("script"))
+        .some((s) => s.getAttribute('src').includes('dart.js'));
+}
+
 export function _jsThen(promise, f) {
     promise.then(f);
 }
@@ -37,6 +43,9 @@ export function time(s, f) {
 
 /** @returns {rxjs.Observable} */
 export function _onSizeChanged(element) {
+    if (_isDartium())
+        return rxjs.empty();
+
     return rxjs.Observable.create(function(observer) {
         const resizeObserver = new ResizeObserver(observerEntries => {
             // trigger a new item on the stream when resizes happen
