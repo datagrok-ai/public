@@ -233,7 +233,7 @@
       "id": "18b01ddd-91a1-49d8-94b9-677e1c79f8f9",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "2000",
       "targets": [],
       "value": ""
     }, {
@@ -446,7 +446,7 @@
       "id": "e23cc227-14a9-46bb-bb0d-eea2cade6ecd",
       "comment": "",
       "command": "click",
-      "target": "name=span-USUBJID-(min-273.00,-max-273.00)",
+      "target": "name=span-USUBJID-(min-null,-max-null)",
       "targets": [],
       "value": ""
     }, {

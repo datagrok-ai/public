@@ -10,7 +10,7 @@
       "id": "672c6e8a-7df1-46a1-a8ca-43b43c6fff53",
       "comment": "",
       "command": "open",
-      "target": "/",
+      "target": "/?selenium=true",
       "targets": [],
       "value": ""
     }, {
@@ -59,7 +59,7 @@
       "id": "61a66ea1-733d-42f7-9998-1b225832a1ec",
       "comment": "",
       "command": "click",
-      "target": "xpath=//i[@name='icon-function']",
+      "target": "name=Functions",
       "targets": [
         ["css=.fa-function", "css:finder"],
         ["xpath=//i[@name='icon-function']", "xpath:attributes"],
