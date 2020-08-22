@@ -37,8 +37,9 @@ export function toJs(d, check = false) {
             }
         }
         return wrapper;
-    }
-    else if (type === 'DG.TypedEventArgs')
+    } else  if (type === TYPE.LIST) {
+        return paramsToJs(d);
+    } else if (type === 'DG.TypedEventArgs')
         return new TypedEventArgs(d);
     let wrapper = grok_GetWrapper(d);
     if (wrapper != null)
