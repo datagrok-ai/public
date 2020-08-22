@@ -67,8 +67,12 @@ won't be able to get the credentials. For that reason, it makes sense to adminis
 If a specialized credential vault is already used to store sensitive credentials in your organization, the
 Datagrok platform should be set up to take advantage of it. 
  
-![Credentials retrieving process diagram](../uploads/security/credentials-fetch-diagram.png "Credentials retrieving process diagram")
-[Credentials retrieving process diagram.drawio](../uploads/security/credentials-fetch-diagram.drawio)
+![Credentials retrieving process diagram](../uploads/security/credentials-fetch-diagram.png "Credentials retrieving process diagram")  
+*Credentials retrieving process diagram* ([drawio](../uploads/security/credentials-fetch-diagram.drawio))
+
+Working with credentials storage, sample: [open at public repo](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/misc/package-credentials.js); [open at Datagrok](https://public.datagrok.ai/e/ApiSamples:PackageCredentials).
+
+To store credentials in Datagrok Credentials Storage programmatically, send a POST request to `$(GROK_HOST)/api/credentials/for/$(PACKAGE_NAME)` with raw body containing JSON such as `{"login", "abc", "password": "123"}` and API Key authorization with `Key=authorization` and value taken from your profile page in Datagrok. To manully add credentials from user interface, right-click on a package of interest in Datagrok's "[Packages](https://public.datagrok.ai/packages)" view and choose "Credentials..." dialog where you add credentials key-value pairs.
 
 See also:
  * [Entities](../overview/objects.md) 
