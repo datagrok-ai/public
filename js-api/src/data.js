@@ -2,6 +2,21 @@ import {DataFrame} from "./dataframe";
 import {toJs} from "./wrappers";
 import {FuncCall} from "./functions";
 
+/** Provides convenient file shares access **/
+export class Files {
+
+    /** Reads table from file. If file contains more than one table - reads first
+     * @path {String}
+     * @returns {Promise<DataFrame>}*/
+    openTable(path) {  return new Promise((resolve, reject) => grok_Files_OpenTable(path, (t) => resolve(toJs(t)), (e) => reject(e))); }
+
+    /** Reads all tables from file
+     * @path {String}
+     * @returns {Promise<List<DataFrame>>}*/
+    openTables(path) {  return new Promise((resolve, reject) => grok_Files_OpenTables(path, (t) => resolve(t.map(toJs)), (e) => reject(e))); }
+
+}
+
 /** Provides convenient access to demo datasets. */
 export class DemoDatasets {
 
@@ -49,6 +64,7 @@ export class Data {
     constructor() {
         /** @member {DemoDatasets} */
         this.demo = new DemoDatasets();
+        this.files = new Files();
     }
 
     /**
