@@ -102,7 +102,7 @@ export class DataQuery extends Func {
 
     /** Query text
      *  @type {string} */
-    get query() { return grok_Query_Query([this.d]); }
+    get query() { return grok_Query_Query(this.d); }
 }
 
 /** Represents a data job
@@ -124,7 +124,7 @@ export class DataConnection extends Entity {
 
     /** Collection of parameters: server, database, endpoint, etc.
      *  @type {object} */
-    get parameters() { return grok_DataConnection_Parameters([this.d]); }
+    get parameters() { return grok_DataConnection_Parameters(this.d); }
 }
 
 /** Represents a predictive model
@@ -204,7 +204,7 @@ export class Credentials extends Entity {
 
     /** Collection of parameters: login, password, API key, etc.
      *  @type {object} */
-    get parameters() { return grok_Credentials_Parameters([this.d]); }
+    get parameters() { return grok_Credentials_Parameters(this.d); }
 }
 
 /** Represents a script environment */
@@ -244,7 +244,6 @@ export class Package {
     getCredentials() {
         return new Promise((resolve, reject) => grok_Package_Get_Credentials(this.name, (c) => {
             let cred = toJs(c);
-            console.log(cred);
             resolve(cred);
         }));
     }
