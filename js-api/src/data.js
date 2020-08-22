@@ -34,6 +34,10 @@ export class DemoDatasets {
      * @returns {DataFrame}*/
     wells(rows = 10000) { return this.getDemoTable('wells', rows); }
 
+    /** Lat/lng of a walk around San Francisco
+     * @returns {DataFrame}*/
+    geo(rows = 10000) { return this.getDemoTable('geo', rows); }
+
     /** Returns a demo dataset with the specified path (relative to the demo root)
      * @example
      * grok.data.getDemoTable("sensors/eeg.csv").then((t) => grok.shell.addTableView(t));
