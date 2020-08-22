@@ -7,8 +7,8 @@
     "datagrok-api": "latest"
   },
   "scripts": {
-    "upload-debug": "datagrok-upload #{REMOTE_URL} debug rebuild",
-    "upload-deploy": "datagrok-upload #{REMOTE_URL} deploy rebuild",
+    "debug-#{PACKAGE_NAME_LOWERCASE}": "datagrok-upload #{REMOTE_URL} debug rebuild",
+    "deploy-#{PACKAGE_NAME_LOWERCASE}": "datagrok-upload #{REMOTE_URL} deploy rebuild",
     "build": "webpack"
   }
 }
