@@ -363,7 +363,7 @@
         ["css=.d4-menu-item-history > label:nth-child(2)", "css:finder"],
         ["xpath=//div/div/div/label[2]", "xpath:position"]
       ],
-      "value": "Table: demog, Predict: AGE, Features: HEIGHT,WEIGHT, Compone..."
+      "value": "Table: demog, Predict: HEIGHT, Features: WEIGHT,AGE, Compone..."
     }]
   }],
   "suites": [{

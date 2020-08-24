@@ -802,7 +802,7 @@
       "id": "bc5d3914-0a6d-4eb8-b260-bd6248c93bb7",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "css=span[name=\"span-PCA1-(4)-(min--37.46,-max-88.91)\"]",
+      "target": "name=span-PCA1-(4)-(min--88.91,-max-37.46)",
       "targets": [
         ["css=span[name=\"span-PCA1 (4)-(min--37.46,-max-88.91)\"]", "css"],
         ["css=tr:nth-child(17) .markup", "css:finder"],
@@ -810,6 +810,13 @@
         ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div[2]/table/tbody/tr[17]/td/span", "xpath:idRelative"],
         ["xpath=//tr[17]/td/span", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "e4656866-1b8b-4515-ada7-c8f59cad1b96",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }]
   }],

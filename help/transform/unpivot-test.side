@@ -213,12 +213,12 @@
       "id": "31740740-a0c6-43d4-8f03-723e7021cae7",
       "comment": "",
       "command": "click",
-      "target": "xpath=//i[@name='tag-measures-remove-avg(AGE)']",
+      "target": "xpath=//i[@name='tag-measures-remove-avg(WEIGHT)']",
       "targets": [
-        ["css=.d4-tag:nth-child(1) > .grok-icon", "css:finder"],
-        ["xpath=//i[@name='tag-measures-remove-avg(AGE)']", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div[2]/div[3]/div[3]/span/i", "xpath:idRelative"],
-        ["xpath=//div[3]/span/i", "xpath:position"]
+        ["css=.d4-tag:nth-child(2) > .grok-icon", "css:finder"],
+        ["xpath=//i[@name='tag-measures-remove-avg(WEIGHT)']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div[2]/div[3]/div[3]/span[2]/i", "xpath:idRelative"],
+        ["xpath=//span[2]/i", "xpath:position"]
       ],
       "value": ""
     }, {
