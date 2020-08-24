@@ -295,6 +295,7 @@ export async function byMethod() {
     }));
 
 
+    //impute method selection
     let impInputs0 = ui.inputs( [dfDtype, method]);
     container1.appendChild(impInputs0);
 
