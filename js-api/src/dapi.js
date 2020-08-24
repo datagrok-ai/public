@@ -29,6 +29,10 @@ export class Dapi {
         }));
     }
 
+    /** Entities API endpoint
+     *  @type {EntitiesDataSource} */
+    get entities() { return new EntitiesDataSource(grok_Dapi_Entities(), (a) => new Entity(a)); }
+
     /** Data Queries API endpoint
      *  @type {HttpDataSource<DataQuery>} */
     get queries() { return new HttpDataSource(grok_Dapi_Queries(), (a) => new DataQuery(a)); }
@@ -216,6 +220,25 @@ export class UsersDataSource extends HttpDataSource {
 
 
 /**
+ * Functionality for handling entities collection from server
+ * Allows to manage {@link Entity}
+ * @extends HttpDataSource
+ * */
+export class EntitiesDataSource extends HttpDataSource {
+    /** @constructs CredentialsDataSource*/
+    constructor(s, instance) {
+        super(s, instance);
+    }
+
+    /** Allows to set properties for entities
+     * @param {List<Map>} props
+     * @returns {Promise} */
+    saveProperties(props) {
+        return new Promise((resolve, reject) => grok_EntitiesDataSource_SaveProperties(this.s, props, (_) => resolve()));
+    }
+}
+
+/**
  * Functionality for handling credentials collection from server and working with credentials remote endpoint
  * Allows to manage {@link Credentials}
  * See also: {@link https://datagrok.ai/help/govern/security}
@@ -229,10 +252,10 @@ export class CredentialsDataSource extends HttpDataSource {
 
     /** Returns credentials for entity
      * @param {Entity} e
-     * @returns {Credentials} */
+     * @returns {Promise<Credentials>} */
     forEntity(e) {
         let s = this.entityToJs;
-        return new Promise((resolve, reject) => grok_CredentialsDataSource_ForEnrity(this.s, e.d, (c) => resolve(s(c))));
+        return new Promise((resolve, reject) => grok_CredentialsDataSource_ForEntity(this.s, e.d, (c) => resolve(s(c))));
     }
 }
 
