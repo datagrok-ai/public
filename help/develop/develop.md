@@ -258,10 +258,8 @@ above-mentioned groups to be productive.
   into the community wiki, where users would be contributing to the content. The same web pages
   are used as an interactive help within the platform (you see help on the currently selected object).
   
-Additionally, there are few ways to connect with fellow developers:    
-* [Datagrok community](https://community.datagrok.ai/) for in-depth, topic-centered discussions. 
-  It is possible to include "live" content in messages, such as viewers, project, users, etc. 
-  The UX is still a "work in progress", but it's maturing quickly.   
+Additionally, there are a few ways to connect with fellow developers:    
+* [Datagrok community](https://community.datagrok.ai/)
 * [Slack space](https://datagrok.slack.com) 
 
 See also: 
