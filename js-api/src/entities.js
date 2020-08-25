@@ -1,7 +1,6 @@
 import {TYPE} from "./const";
 import {toJs} from "./wrappers";
 
-
 /** @class
  * Base class for system objects stored in the database in a structured manner.
  * Contains base properties: id, name and path
@@ -23,6 +22,18 @@ export class Entity {
     /** Entity path
      *  @type {string} */
     get path() { return grok_Entity_Path(this.d); }
+
+    /** Allows to get properties for entity
+     * @returns {Promise<Map>} props */
+    getProperties() {
+        return new Promise((resolve, reject) => grok_EntitiesDataSource_GetProperties(grok.dapi.entities.s, this.d, (p) => resolve(p)));
+    }
+    /** Allows to set properties for entity
+     * @param {Map} props
+     * @returns Promise */
+    setProperties(props) {
+        return new Promise((resolve, reject) => grok_EntitiesDataSource_SetProperties(grok.dapi.entities.s, this.d, props, (_) => resolve(_)));
+    }
 }
 
 /**
