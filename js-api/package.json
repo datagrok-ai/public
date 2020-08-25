@@ -17,6 +17,6 @@
     "tui-jsdoc-template": "^1.2.2"
   },
   "scripts": {
-    "build": "webpack"
+    "build-js-api": "webpack"
   }
 }
