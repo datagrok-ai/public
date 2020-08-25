@@ -5,7 +5,6 @@ import * as DG from "datagrok-api/dg";
 
 export let _package = new DG.Package();
 
-
 //preprocessing and metadata collection function
 async function cleanMeta(data,columns,varRemovalThreshold,indRemovalThreshold,naCoding,meta) {
     grok.shell.info('Preprocessing data . . .');
@@ -31,7 +30,8 @@ async function cleanMeta(data,columns,varRemovalThreshold,indRemovalThreshold,na
         await call.call();
         let plt1 = call.getParamValue('naPlot');
         let plt2 = call.getParamValue('matrixPlot');
-        return [plt1, plt2];
+        let plt3 = call.getParamValue('clusterPlot')
+        return [plt1, plt2, plt3];
 
     }
 
@@ -49,6 +49,7 @@ async function imputeWithMethod(data,method,methodparams){
             });
     }
 
+    //Hmisc aregImpute
     if (method === 'Hmisc::aregImpute:pmm' || method === 'Hmisc::aregImpute:regression'
         || method === 'Hmisc::aregImpute:normpmm') {
         completeData = await grok.functions.call('Impute:aregImputeImpl',
@@ -118,11 +119,24 @@ async function imputeWithMethod(data,method,methodparams){
             });
     }
 
+    //random forest imputation with missForest
+    if (method === 'missForest::missForest'){
+        completeData = await grok.functions.call('Impute:missForestImpl',
+            {
+                'data':data,
+                'maxiter':methodparams[0].value,
+                'ntree':methodparams[1].value,
+                'decreasing':methodparams[2].value,
+                'replace':methodparams[3].value,
+                'parallelize':methodparams[4].value
+            });
+    }
+
     return(completeData);
 }
 
 
-//top-menu: ML | Impute | Visualize
+//top-menu: ML | Impute | byMethod
 export async function byMethod() {
 
     //parameter selection function
@@ -208,6 +222,19 @@ export async function byMethod() {
             methodparams = [p1];
         }
 
+        if (x === 'missForest::missForest'){
+            let p1 = ui.intInput('maxiter',10);
+
+            let p2 = ui.intInput('ntree',100);
+
+            let p3 = ui.boolInput('decreasing',true);
+
+            let p4 = ui.boolInput('replace',true);
+
+            let p5 = ui.choiceInput('parallelize','no',['no','variables','forests']);
+
+            methodparams = [p1, p2, p3, p4, p5];
+        }
         return methodparams;
     }
 
@@ -218,17 +245,17 @@ export async function byMethod() {
             placeHolder = ui.choiceInput('Algorithm','',['Hmisc::aregImpute:pmm',
                 'Hmisc::aregImpute:regression', 'Hmisc::aregImpute:normpmm', 'VIM::kNN', 'mice::mice',
                 'missMDA::PCA', 'missMDA::FAMD', 'pcaMethods::nipals',  'pcaMethods::ppca',
-                'pcaMethods::bpca', 'pcaMethods::nlpca']);
+                'pcaMethods::bpca', 'pcaMethods::nlpca','missForest::missForest']);
         }
 
         if (x === 'categorical') {
             placeHolder = ui.choiceInput('Algorithm','',['Hmisc::aregImpute:pmm',
-                'VIM::kNN', 'mice::mice', 'missMDA::FAMD', 'missMDA::MCA']);
+                'VIM::kNN', 'mice::mice', 'missMDA::FAMD', 'missMDA::MCA','missForest::missForest']);
         }
 
         if (x === 'mixed') {
             placeHolder = ui.choiceInput('Algorithm','',['Hmisc::aregImpute:pmm',
-                'VIM::kNN', 'mice::mice', 'missMDA::FAMD']);
+                'VIM::kNN', 'mice::mice', 'missMDA::FAMD','missForest::missForest']);
         }
 
         return placeHolder;
@@ -289,8 +316,9 @@ export async function byMethod() {
 
 
         let tableView = grok.shell.getTableView(tableName.value);
-        let node1 = tableView.dockManager.dock(metaOut[0], 'right', null, 'matrixPlot');
-        let node2 = tableView.dockManager.dock(metaOut[1], 'fill', node1, 'naPlot');
+        let node1 = tableView.dockManager.dock(metaOut[0], 'right', null, 'naPlot');
+        let node2 = tableView.dockManager.dock(metaOut[1], 'fill', node1, 'matrixPlot');
+        let node3 = tableView.dockManager.dock(metaOut[2], 'fill', node1, 'clusterPlot');
 
     }));
 
