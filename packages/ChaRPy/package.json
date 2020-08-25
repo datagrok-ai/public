@@ -1,6 +1,6 @@
 {
-  "name": "impute",
-  "fullName": "impute",
+  "name": "charpy",
+  "fullName": "ChaRPy",
   "version": "1.0.0",
   "description": "",
   "dependencies": {
