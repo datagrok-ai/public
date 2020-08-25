@@ -154,7 +154,15 @@ export class HttpDataSource {
      *  @returns {Promise<object>} - entity. */
     find(id) {
         let s = this.entityToJs;
-        return new Promise((resolve, reject) => grok_DataSource_Find(this.s, id, (q) => resolve(s(q))));
+        return new Promise((resolve, reject) => grok_DataSource_Find(this.s, id, (q) => resolve(s(q)), (e) => reject(e)));
+    }
+
+    /** Saves an entity
+     *  @param {Entity}  e
+     *  @returns {Promise<Entity>} - entity. */
+    save(e) {
+        let s = this.entityToJs;
+        return new Promise((resolve, reject) => grok_DataSource_Save(this.s, e.d, (q) => resolve(s(q)), (e) => reject(e)));
     }
 
     by(i) {
@@ -235,6 +243,13 @@ export class EntitiesDataSource extends HttpDataSource {
      * @returns {Promise} */
     saveProperties(props) {
         return new Promise((resolve, reject) => grok_EntitiesDataSource_SaveProperties(this.s, props, (_) => resolve()));
+    }
+
+    /** Allows to get properties for entity
+     * @param {Entity} entity
+     * @returns {Promise<Map>} props */
+    getProperties(entity) {
+        return new Promise((resolve, reject) => grok_EntitiesDataSource_GetProperties(this.s, entity.d, (p) => resolve(p)));
     }
 }
 
