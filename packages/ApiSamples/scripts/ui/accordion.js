@@ -45,5 +45,7 @@ acc.addPane('menus', () => ui.button('SHOW', () => {
     });
 }));
 
+acc.addPane('text area', () => ui.textArea('multi\nline\ntext'));
+
 //v.root.appendChild(acc.root);
 v.append(acc.root);
