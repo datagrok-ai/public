@@ -9,13 +9,16 @@
 #input: double naCoding [values to be manually converted to NA]
 #input: bool meta = FALSE [whether to collect metadata]
 #output: dataframe cleanDf [processed dataframe]
-#output: graphics matrixPlot
 #output: graphics naPlot
+#output: graphics matrixPlot
+#output: graphics clusterPlot
 
 require(dplyr)
 require(mice)
 require(stats)
 require(ltm)
+require(ggplot2)
+require(ggdendro)
 
 # CLEAN function
 clean <- function(X, var_remove = NULL, var_removal_threshold = 0.5, ind_removal_threshold = 1,
@@ -133,21 +136,21 @@ get_data <- function(X) {
     ggtitle("Matrix plot of missing data") + theme(plot.title = element_text(hjust = 0.5))
 
 
-  ## cluster plot
-  #any_miss <- X_update[, which(!colSums(is.na(X_update)) == 0)]
-  #
-  #yesno <- any_miss %>% is.na
-  #d <- stats::dist(t(yesno), method = "binary")
-  #hc <- stats::hclust(d, method = "ward.D")
-  #hcdata <- ggdendro::dendro_data(hc)
-  #cluster_plot <- ggdendro::ggdendrogram(hcdata, theme_dendro = FALSE) + ggtitle("Cluster plot of missing data") +
-  #  theme(plot.title = element_text(hjust = 0.5)) + labs(x = "variable", y = "Height")
+  # cluster plot
+  any_miss <- X_update[, which(!colSums(is.na(X_update)) == 0)]
+
+  yesno <- any_miss %>% is.na
+  d <- stats::dist(t(yesno), method = "binary")
+  hc <- stats::hclust(d, method = "ward.D")
+  hcdata <- ggdendro::dendro_data(hc)
+  cluster_plot <- ggdendro::ggdendrogram(hcdata, theme_dendro = FALSE) + ggtitle("Cluster plot of missing data") +
+    theme(plot.title = element_text(hjust = 0.5)) + labs(x = "variable", y = "Height")
 
   # output
   list(Complete_cases = comp, Rows = rows, Columns = cols, Corr_matrix = mat, Fraction_missingness = missfrac_per_df,
        Fraction_missingness_per_variable = missfrac_per_var, Total_NA = na_per_df,
        NA_per_variable = na_per_var, MD_Pattern = mdpat, NA_Correlations = na_cor, NA_Correlation_plot = p_cor,
-       min_PDM_thresholds = min_PDM_df, Matrix_plot = matrix_plot)
+       min_PDM_thresholds = min_PDM_df, Matrix_plot = matrix_plot, Cluster_plot = cluster_plot)
 }
 
 
@@ -161,9 +164,11 @@ if (meta == TRUE) {
   metadata <- get_data(X)
   naPlot <- print(metadata$NA_Correlation_plot)
   matrixPlot <- print(metadata$Matrix_plot)
+  clusterPlot <- print(metadata$Cluster_plot)
   cleanDf <- data.frame()
 } else {
   naPlot  <- print(ggplot() + theme_void())
   matrixPlot <- print(ggplot() + theme_void())
+  clusterPlot <- print(ggplot() + theme_void())
   cleanDf <- X
 }
