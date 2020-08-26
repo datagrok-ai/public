@@ -1,7 +1,7 @@
 #name: Sentiment Analysis
 #description: Detect polar sentiments in a text
 #language: python
-#input: string text [Statement where sentiments are expressed]
+#input: string text {semType: text} [Statement where sentiments are expressed]
 #output: string sentiment [Detected sentiment]
 #output: double polarity [Polarity of expression]
 #tags: nlp, panel
