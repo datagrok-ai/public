@@ -49,6 +49,8 @@ export class Viewer {
         return new Viewer(grok_Viewer_FromType(viewerType, table.d, _toJson(options)));
     }
 
+    static getViewerTypes() { return grok_Viewer_GetViewerTypes(); }
+
     /** Sets viewer options. See also {@link getOptions}
      *  Sample: https://public.datagrok.ai/js/samples/ui/viewers/scatter-plot
      *  @param: {object} map */
@@ -120,6 +122,26 @@ export class JsLookAndFeel {
 }
 
 
+export class JsViewerProps {
+
+    constructor(viewer) {
+
+        /** @member {JsViewer} */
+        this.viewer = viewer;
+
+        return new Proxy(this, {
+            set(target, name, value) {
+                this.viewer.getProperty(name).set(null, value);
+                return true;
+            },
+            get(target, name) {
+                return this.viewer.getProperty(name).get(null);
+            }
+        });
+    }
+}
+
+
 /** Subclass JsViewer to implement a DataFrame-bound Datagrok viewer in JavaScript.
  *  See an example on github: {@link https://github.com/datagrok-ai/public/tree/master/packages/Leaflet}
  *  */
@@ -141,6 +163,9 @@ export class JsViewer {
 
         /** @member {Observable[]} */
         this.obs = []
+
+        /** @member {JsViewerProps} */
+        this.props = new JsViewerProps(this);
     }
 
     onFrameAttached(dataFrameHandle) {
