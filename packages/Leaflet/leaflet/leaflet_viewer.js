@@ -8,7 +8,6 @@ class LeafletViewer extends DG.JsViewer {
         this.renderType = this.string('renderType', 'heat map');
         this.markerSize = this.int('markerSize', 10);
         this.markerOpacity = this.float('markerOpacity', 0.8);
-
         this.getProperty('renderType').choices = ['markers', 'heat map'];
 
         this.layers = [];
@@ -32,9 +31,10 @@ class LeafletViewer extends DG.JsViewer {
     onTableAttached() {
         this.init();
 
-        if (this.dataFrame.columns.bySemType(DG.SEMTYPE.LATITUDE) != null && this.dataFrame.columns.bySemType(DG.SEMTYPE.LONGITUDE) != null) {
-            this.latitudeColumnName = this.dataFrame.columns.bySemType(DG.SEMTYPE.LATITUDE).name;
-            this.longitudeColumnName = this.dataFrame.columns.bySemType(DG.SEMTYPE.LONGITUDE).name;
+        let latLngColumns = this.dataFrame.columns.bySemTypesExact([DG.SEMTYPE.LATITUDE, DG.SEMTYPE.LONGITUDE]);
+        if (latLngColumns != null && this.latitudeColumnName != null && this.longitudeColumnName != null) {
+            this.latitudeColumnName = latLngColumns[0].name;
+            this.longitudeColumnName = latLngColumns[0].name;
         }
 
         this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));

@@ -130,8 +130,8 @@ export class Shell {
 
     /** Adds a view for the specified table.
      * @param {DataFrame} table
-     * @param {DockType} dockType
-     * @param {number} width
+     * @param {DockType=} dockType
+     * @param {number=} width
      * @returns {TableView} */
     addTableView(table, dockType = DG.DOCK_TYPE.FILL, width = null) {
         return new TableView(grok_AddTableView(table.d, dockType, width));

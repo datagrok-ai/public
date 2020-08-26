@@ -428,6 +428,19 @@ export class ColumnList {
         return col == null ? null : new Column(col);
     }
 
+    /** Finds columns by the corresponding semTypes, or null, if any of the sem types could not be found.
+     * @returns {Column[]} */
+    bySemTypesExact(semTypes) {
+        let columns = [];
+        for (semType of semTypes) {
+            let col = this.bySemType(semType);
+            if (col == null)
+                return null;
+            columns.push(col);
+        }
+        return columns;
+    }
+
     //todo
     //numerical
     //categorical

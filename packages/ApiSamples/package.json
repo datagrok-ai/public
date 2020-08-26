@@ -1,7 +1,10 @@
 {
   "name": "ApiSamples",
-  "version": "1",
+  "version": "1.0.0",
   "fullName": "Grok API Examples",
   "description": "Grok API Examples",
-  "sources": [ ]
+  "sources": [ ],
+  "scripts": {
+    "samples-upload": "datagrok-upload http://localhost:8082 deploy"
+  }
 }

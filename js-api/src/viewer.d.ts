@@ -59,6 +59,12 @@ export class Viewer {
     close(): void;
 }
 
+
+export class JsViewerProps {
+
+}
+
+
 /**
  * Subclass JsViewer to implement a DataFrame-bound Datagrok viewer in JavaScript.
  See an example on github: {@link https://github.com/datagrok-api/public/tree/master/packages/Leaflet}
@@ -68,6 +74,7 @@ export class JsViewer {
     properties: Property[];
     dataFrame: DataFrame;
     subs: Subscription[];
+    props: any;
 
     /**
      * Gets called when a table is attached to the viewer.
