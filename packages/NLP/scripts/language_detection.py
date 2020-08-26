@@ -1,8 +1,8 @@
 #name: Language Detection
 #description: Detect the language in which a text is written
 #language: python
-#input: string text [A text to analyze]
-#output: string language [Detected language]
+#input: string text {semType: text} [A text to analyze]
+#output: string language {semType: lang} [Detected language]
 #tags: nlp, panel
 
 import cld3

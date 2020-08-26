@@ -1,7 +1,7 @@
 #name: Tokenizer
 #description: Segment a text into tokens (words, numbers, punctuation)
 #language: python
-#input: string text [A text to tokenize]
+#input: string text {semType: text} [A text to tokenize]
 #output: string tokens [Comma-separated tokens in the order in which they appear in the text]
 #tags: nlp
 
