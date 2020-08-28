@@ -1,7 +1,0 @@
-name: flair_sentiment
-
-channels:
-  - conda-forge
-
-dependencies:
-  - python-flair
