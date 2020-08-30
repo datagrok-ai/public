@@ -529,10 +529,9 @@ export class RowList {
         grok_RowList_SetValues(this.d, idx, values);
     }
 
-    _applyPredicate(bitset, predicate) {
-        let selection = this.table.selection;
+    _applyPredicate(bitset, rowPredicate) {
         for (let row of this) {
-            selection.set(row.idx, rowPredicate(row));
+            bitset.set(row.idx, rowPredicate(row));
         }
     }
 
@@ -834,8 +833,38 @@ export class BitSet {
 
     /** Sets i-th bit to x
      * @param {number} i
-     * @param {boolean} x */
-    set(i, x) { grok_BitSet_SetBit(this.d, i, x); }
+     * @param {boolean} x
+     * @param {boolean} notify */
+    set(i, x, notify = true) { grok_BitSet_SetBit(this.d, i, x, notify); }
+
+    /** Sets [i]-th bit to [value], does not check bounds */
+    setFast(i, value) {
+        let buf = grok_BitSet_GetBuffer(this.d);
+        let idx = (i | 0) / 0x20;
+
+        if (value)
+            buf[idx] |= 1 << (i & 0x1f);
+        else
+            buf[idx] &= ~(1 << (i & 0x1f));
+    }
+
+    /** Sets all bits by setting i-th bit to the results of f(i)
+     * @param {Function} f  */
+    init(f) {
+        let buf = grok_BitSet_Get_Buffer(this.d);
+        let length = this.length;
+
+        for (let i = 0; i < length; i++)
+            buf[i] = 0;
+
+        for (let i = 0; i < length; i++) {
+            if (f(i))
+                buf[i] |= 1 << (i & 0x1f);
+        }
+
+        grok_BitSet_Set_Buffer(this.d, buf);
+        this.fireChanged();
+    }
 
     /** Indexes of all set bits. The result is cached.
      *  @returns {Int32Array} */
@@ -845,6 +874,8 @@ export class BitSet {
      * @param {BitSet} b - BitSet to copy from.
      * @returns {BitSet} */
     copyFrom(b) { grok_BitSet_CopyFrom(this.d, b.d); return this; }
+
+    fireChanged() { grok_BitSet_FireChanged(this.d); }
 
     /** @returns {Observable} - fires when the bitset gets changed. */
     get onChanged() { return observeStream(grok_BitSet_Changed(this.d)); }
