@@ -23,7 +23,7 @@ export class Entity {
      *  @type {string} */
     get path() { return grok_Entity_Path(this.d); }
 
-    /** Allows to get properties for entity
+    /** Returns entity properties
      * @returns {Promise<Map>} props */
     getProperties() {
         return new Promise((resolve, reject) => grok_EntitiesDataSource_GetProperties(grok.dapi.entities.s, this.d, (p) => resolve(p)));
@@ -70,6 +70,11 @@ export class User extends Entity {
 
     /** */
     toMarkup() { return grok_User_ToMarkup(this.d); }
+
+    /** Security Group
+     * @type Group
+     */
+    get group() {return toJs(grok_User_Get_Group(this.d))}
 }
 
 /** Represents a function
@@ -188,6 +193,37 @@ export class TableInfo extends Entity {
 export class Group extends Entity {
     /** @constructs Group */
     constructor(d) { super(d); }
+
+    addMember(m) {
+        grok_Group_Add_Member(this.d, m.d, true);
+    }
+
+    addAdminMember(m) {
+        grok_Group_Add_Member(this.d, m.d, true);
+    }
+
+    removeMember(m) {
+        grok_Group_Remove_Member(this.d, m.d);
+    }
+
+    get members() {
+        return grok_Group_Get_Members(this.d, false);
+    }
+
+    get adminMembers() {
+        return grok_Group_Get_Members(this.d, true);
+    }
+
+    /** Personal user group
+     * @type {boolean} */
+    get personal() { return grok_Group_Get_Personal(this.d); }
+    set personal(e) { return grok_Group_Set_Personal(this.d, e); }
+
+    /** Hidden group
+     * @type {boolean} */
+    get hidden() { return grok_Group_Get_Hidden(this.d); }
+    set hidden(e) { return grok_Group_Set_Hidden(this.d, e); }
+
 }
 
 /** @extends Func
