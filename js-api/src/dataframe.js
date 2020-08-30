@@ -858,8 +858,9 @@ export class BitSet {
             buf[i] = 0;
 
         for (let i = 0; i < length; i++) {
+            let idx = (i / 0x20) | 0;
             if (f(i))
-                buf[i] |= 1 << (i & 0x1f);
+                buf[idx] |= 1 << (i & 0x1f);
         }
 
         grok_BitSet_Set_Buffer(this.d, buf);
