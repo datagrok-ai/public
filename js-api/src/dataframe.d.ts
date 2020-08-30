@@ -698,8 +698,10 @@ export class BitSet {
 
     /** Sets i-th bit to x
      * @param {number} i
-     * @param {boolean} x */
-    set(i: number, x: boolean): BitSet
+     * @param {boolean} x
+     * @param {boolean} notify
+     * */
+    set(i: number, x: boolean, notify: boolean): BitSet
 
     /** Indexes of all set bits. The result is cached.
      *  @returns {Int32Array} */
