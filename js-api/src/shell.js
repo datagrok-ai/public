@@ -45,7 +45,7 @@ export class Shell {
 
     /** Current user
      *  @type {User} */
-    get user() { return new User(grok_User()); }
+    get user() { return toJs(grok_User()); }
 
     /** Current object (rendered in the property panel) */
     get o() { return toJs(grok_Get_CurrentObject(), false); }

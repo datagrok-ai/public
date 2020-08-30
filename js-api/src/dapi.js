@@ -75,7 +75,7 @@ export class Dapi {
 
     /** Groups API endpoint
      *  @type {HttpDataSource<Group>} */
-    get groups() { return new HttpDataSource(grok_Dapi_Groups(), (a) => new Group(a)); }
+    get groups() { return new GroupsDataSource(grok_Dapi_Groups(), (a) => new Group(a)); }
 
     /** Scripts API endpoint
      *  @type {HttpDataSource<Script>} */
@@ -226,6 +226,27 @@ export class UsersDataSource extends HttpDataSource {
     }
 }
 
+/**
+ * Functionality for handling groups collection from server
+ * Allows to manage {@link Group}
+ * @extends HttpDataSource
+ * */
+export class GroupsDataSource extends HttpDataSource {
+    /** @constructs CredentialsDataSource*/
+    constructor(s, instance) {
+        super(s, instance);
+    }
+
+    /** Saves a group with relations
+     *  @param {Group}  e
+     *  @returns {Promise<Group>} - Group. */
+    saveMembers(e) {
+        let s = this.entityToJs;
+        return new Promise((resolve, reject) => grok_GroupsDataSource_Save(this.s, e.d, (q) => resolve(s(q)), (e) => reject(e)));
+    }
+
+}
+
 
 /**
  * Functionality for handling entities collection from server
@@ -245,7 +266,7 @@ export class EntitiesDataSource extends HttpDataSource {
         return new Promise((resolve, reject) => grok_EntitiesDataSource_SaveProperties(this.s, props, (_) => resolve()));
     }
 
-    /** Allows to get properties for entity
+    /** Returns entity properties
      * @param {Entity} entity
      * @returns {Promise<Map>} props */
     getProperties(entity) {
