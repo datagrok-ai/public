@@ -9,6 +9,8 @@ export class Entity {
     /** @constructs Entity*/
     constructor(d) { this.d = d;}
 
+    static create() { return new Group(grok_Group()); }
+
     /** Entity ID (GUID)
      *  @type {string} */
     get id() { return grok_Entity_Get_Id(this.d); }
@@ -195,7 +197,7 @@ export class Group extends Entity {
     constructor(d) { super(d); }
 
     addMember(m) {
-        grok_Group_Add_Member(this.d, m.d, true);
+        grok_Group_Add_Member(this.d, m.d, false);
     }
 
     addAdminMember(m) {
@@ -207,7 +209,7 @@ export class Group extends Entity {
     }
 
     get members() {
-        return grok_Group_Get_Members(this.d, false);
+        return toJs(grok_Group_Get_Members(this.d, false));
     }
 
     get adminMembers() {

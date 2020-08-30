@@ -240,7 +240,7 @@ export class GroupsDataSource extends HttpDataSource {
     /** Saves a group with relations
      *  @param {Group}  e
      *  @returns {Promise<Group>} - Group. */
-    saveWithRelations(e) {
+    saveMembers(e) {
         let s = this.entityToJs;
         return new Promise((resolve, reject) => grok_GroupsDataSource_Save(this.s, e.d, (q) => resolve(s(q)), (e) => reject(e)));
     }
