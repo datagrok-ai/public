@@ -29,6 +29,10 @@ export class Dapi {
         }));
     }
 
+    /** Entities API endpoint
+     *  @type {EntitiesDataSource} */
+    get entities() { return new EntitiesDataSource(grok_Dapi_Entities(), (a) => new Entity(a)); }
+
     /** Data Queries API endpoint
      *  @type {HttpDataSource<DataQuery>} */
     get queries() { return new HttpDataSource(grok_Dapi_Queries(), (a) => new DataQuery(a)); }
@@ -71,7 +75,7 @@ export class Dapi {
 
     /** Groups API endpoint
      *  @type {HttpDataSource<Group>} */
-    get groups() { return new HttpDataSource(grok_Dapi_Groups(), (a) => new Group(a)); }
+    get groups() { return new GroupsDataSource(grok_Dapi_Groups(), (a) => toJs(a)); }
 
     /** Scripts API endpoint
      *  @type {HttpDataSource<Script>} */
@@ -144,13 +148,28 @@ export class HttpDataSource {
         return new Promise((resolve, reject) => grok_DataSource_List(this.s, (q) => resolve(q.map(s))));
     }
 
+    /** Returns fist entity that satisfy the filtering criteria (see {@link filter}).
+     *  @returns Promise<object>  */
+    first() {
+        let s = this.entityToJs;
+        return new Promise((resolve, reject) => grok_DataSource_First(this.s, (q) => resolve(s(q))));
+    }
+
     /** Returns an entity with the specified id.
      *  Throws an exception if an entity does not exist, or is not accessible in the current context.
      *  @param {string} id - GUID of the corresponding object
      *  @returns {Promise<object>} - entity. */
     find(id) {
         let s = this.entityToJs;
-        return new Promise((resolve, reject) => grok_DataSource_Find(this.s, id, (q) => resolve(s(q))));
+        return new Promise((resolve, reject) => grok_DataSource_Find(this.s, id, (q) => resolve(s(q)), (e) => reject(e)));
+    }
+
+    /** Saves an entity
+     *  @param {Entity}  e
+     *  @returns {Promise<Entity>} - entity. */
+    save(e) {
+        let s = this.entityToJs;
+        return new Promise((resolve, reject) => grok_DataSource_Save(this.s, e.d, (q) => resolve(s(q)), (e) => reject(e)));
     }
 
     by(i) {
@@ -214,6 +233,53 @@ export class UsersDataSource extends HttpDataSource {
     }
 }
 
+/**
+ * Functionality for handling groups collection from server
+ * Allows to manage {@link Group}
+ * @extends HttpDataSource
+ * */
+export class GroupsDataSource extends HttpDataSource {
+    /** @constructs CredentialsDataSource*/
+    constructor(s, instance) {
+        super(s, instance);
+    }
+
+    /** Saves a group with relations
+     *  @param {Group}  e
+     *  @returns {Promise<Group>} - Group. */
+    saveRelations(e) {
+        let s = this.entityToJs;
+        return new Promise((resolve, reject) => grok_GroupsDataSource_Save(this.s, e.d, (q) => resolve(s(q)), (e) => reject(e)));
+    }
+
+}
+
+
+/**
+ * Functionality for handling entities collection from server
+ * Allows to manage {@link Entity}
+ * @extends HttpDataSource
+ * */
+export class EntitiesDataSource extends HttpDataSource {
+    /** @constructs CredentialsDataSource*/
+    constructor(s, instance) {
+        super(s, instance);
+    }
+
+    /** Allows to set properties for entities
+     * @param {List<Map>} props
+     * @returns {Promise} */
+    saveProperties(props) {
+        return new Promise((resolve, reject) => grok_EntitiesDataSource_SaveProperties(this.s, props, (_) => resolve()));
+    }
+
+    /** Returns entity properties
+     * @param {Entity} entity
+     * @returns {Promise<Map>} props */
+    getProperties(entity) {
+        return new Promise((resolve, reject) => grok_EntitiesDataSource_GetProperties(this.s, entity.d, (p) => resolve(p)));
+    }
+}
 
 /**
  * Functionality for handling credentials collection from server and working with credentials remote endpoint
@@ -229,10 +295,10 @@ export class CredentialsDataSource extends HttpDataSource {
 
     /** Returns credentials for entity
      * @param {Entity} e
-     * @returns {Credentials} */
+     * @returns {Promise<Credentials>} */
     forEntity(e) {
         let s = this.entityToJs;
-        return new Promise((resolve, reject) => grok_CredentialsDataSource_ForEnrity(this.s, e.d, (c) => resolve(s(c))));
+        return new Promise((resolve, reject) => grok_CredentialsDataSource_ForEntity(this.s, e.d, (c) => resolve(s(c))));
     }
 }
 

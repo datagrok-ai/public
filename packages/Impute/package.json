@@ -7,11 +7,13 @@
     "datagrok-api": "latest"
   },
   "devDependencies": {
-    "babel-loader": "^8.1.0",
     "@babel/cli": "7.1.2",
     "@babel/core": "7.1.2",
     "@babel/polyfill": "7.0.0",
-    "@babel/preset-env": "7.1.0"
+    "@babel/preset-env": "7.1.0",
+    "babel-loader": "^8.1.0",
+    "webpack": "^4.44.1",
+    "webpack-cli": "^3.3.12"
   },
   "scripts": {
     "upload-debug-local": "webpack && datagrok-upload http://localhost:8082 debug",

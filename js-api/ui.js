@@ -190,6 +190,15 @@ export function dialog(title = '') { return Dialog.create(title); }
 export function bind(item, element) { return grok_UI_Bind(item, element); }
 
 /**
+ * @param {string} value
+ * @param {boolean} autoSize
+ * @param {boolean} resizable
+ * @returns Element */
+export function textArea(value, autoSize = false, resizable = true) {
+    return grok_UI_TextArea(value, autoSize, resizable);
+}
+
+/**
  * Creates a virtual list widget
  * @param {number} length - number of elements
  * @param {Function} renderer

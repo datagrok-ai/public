@@ -1,6 +1,9 @@
 {
   "name": "ChemScripts",
-  "version": "1",
+  "version": "1.0.0",
   "description": "Chem Scripts",
-  "sources": [ ]
+  "sources": [ ],
+  "scripts": {
+    "chemscripts-upload": "datagrok-upload http://localhost:8082 deploy"
+  }
 }

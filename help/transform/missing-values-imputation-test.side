@@ -184,12 +184,12 @@
       "id": "17c25901-e6e0-4bd1-bdf8-4be2c277e346",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-ML']",
+      "target": "xpath=(//div[@name='div-ML'])[2]",
       "targets": [
         ["css=.d4-menu-item-hover:nth-child(6)", "css:finder"],
-        ["xpath=//div[@name='div-ML']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[4]/div/div/div[6]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/div/div[4]/div/div/div[6]", "xpath:position"]
+        ["xpath=(//div[@name='div-ML'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[3]/div/div/div/div/div/div/div[4]/div/div/div[6]", "xpath:idRelative"],
+        ["xpath=//div[3]/div[3]/div/div/div/div/div/div/div[4]/div/div/div[6]", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -198,9 +198,9 @@
       "command": "click",
       "target": "xpath=//div[@name='div-ML---Missing-Values-Imputation...']",
       "targets": [
-        ["css=.d4-menu-item:nth-child(4) > .d4-menu-item-container-fixed > .d4-menu-item-container > .d4-menu-item:nth-child(6) > .d4-menu-item-container-fixed > .d4-menu-item-container > .d4-menu-item:nth-child(3)", "css:finder"],
+        ["css=.d4-menu-item:nth-child(4) > .d4-menu-item-container-fixed > .d4-menu-item-container > .d4-menu-item:nth-child(6) .d4-menu-item:nth-child(3)", "css:finder"],
         ["xpath=//div[@name='div-ML---Missing-Values-Imputation...']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[4]/div/div/div[6]/div/div/div[3]", "xpath:idRelative"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[3]/div/div/div/div/div/div/div[4]/div/div/div[6]/div/div/div[3]", "xpath:idRelative"],
         ["xpath=//div[4]/div/div/div[6]/div/div/div[3]", "xpath:position"]
       ],
       "value": ""
@@ -471,12 +471,12 @@
       "id": "5b206012-b7a7-42c0-a1ac-5b58b88a65bf",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-ML']",
+      "target": "xpath=(//div[@name='div-ML'])[2]",
       "targets": [
         ["css=.d4-menu-item-hover:nth-child(6)", "css:finder"],
-        ["xpath=//div[@name='div-ML']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[4]/div/div/div[6]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/div/div[4]/div/div/div[6]", "xpath:position"]
+        ["xpath=(//div[@name='div-ML'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[3]/div/div/div/div/div/div/div[4]/div/div/div[6]", "xpath:idRelative"],
+        ["xpath=//div[3]/div/div/div/div/div/div/div[4]/div/div/div[6]", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -485,9 +485,9 @@
       "command": "click",
       "target": "xpath=//div[@name='div-ML---Missing-Values-Imputation...']",
       "targets": [
-        ["css=.d4-menu-item:nth-child(4) > .d4-menu-item-container-fixed > .d4-menu-item-container > .d4-menu-item:nth-child(6) > .d4-menu-item-container-fixed > .d4-menu-item-container > .d4-menu-item:nth-child(3)", "css:finder"],
+        ["css=.d4-menu-item:nth-child(4) > .d4-menu-item-container-fixed > .d4-menu-item-container > .d4-menu-item:nth-child(6) .d4-menu-item:nth-child(3)", "css:finder"],
         ["xpath=//div[@name='div-ML---Missing-Values-Imputation...']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[4]/div/div/div[6]/div/div/div[3]", "xpath:idRelative"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[3]/div/div/div/div/div/div/div[4]/div/div/div[6]/div/div/div[3]", "xpath:idRelative"],
         ["xpath=//div[4]/div/div/div[6]/div/div/div[3]", "xpath:position"]
       ],
       "value": ""

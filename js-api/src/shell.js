@@ -45,7 +45,7 @@ export class Shell {
 
     /** Current user
      *  @type {User} */
-    get user() { return new User(grok_User()); }
+    get user() { return toJs(grok_User()); }
 
     /** Current object (rendered in the property panel) */
     get o() { return toJs(grok_Get_CurrentObject(), false); }
@@ -130,8 +130,8 @@ export class Shell {
 
     /** Adds a view for the specified table.
      * @param {DataFrame} table
-     * @param {DockType} dockType
-     * @param {number} width
+     * @param {DockType=} dockType
+     * @param {number=} width
      * @returns {TableView} */
     addTableView(table, dockType = DG.DOCK_TYPE.FILL, width = null) {
         return new TableView(grok_AddTableView(table.d, dockType, width));

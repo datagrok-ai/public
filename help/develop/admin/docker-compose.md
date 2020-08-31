@@ -6,7 +6,22 @@
 
 This document contains instructions to deploy Datagrok on a regular machine without cloud-based hosting.
 
-Create `docker-compose.yaml` in an empty folder
+## Prerequisites
+
+1. [Docker Compose](https://docs.docker.com/compose/). If you do not have it, follow these [installation instructions](https://docs.docker.com/compose/install/) for your operating system.
+2. Ideally, you should also have at least 30 GB of free disk space.
+
+## Instructions
+
+1. Create a directory:
+
+```
+mkdir datagrok
+cd datagrok
+```
+
+2. In this folder, create a file `docker-compose.yaml` with the following contents:
+
 ```yaml
 version: "3"
 services:
@@ -54,10 +69,27 @@ networks:
   datagrok:
 ```
 
-Run `docker-compose up` command
+3. To start up Datagrok, run this command:
 
-Datagrok will start and automatically deploy a new database. After it deployed first time you can shut it down using `Ctrl+C`.
-All data will be saved in persistent storage.
+```
+docker-compose up
+```
+
+Datagrok will deploy a new database automatically.
+
+4. Once the server is up and running, the Login page should be available at `http://localhost:8080`.
+
+5. After Datagrok deployed for the first time, you can shut it down using `Ctrl+C`. Alternatively, run the command:
+
+```
+docker-compose down
+```
+
+All the data will be saved in persistent storage. If you want to reset Datagrok to factory settings, run the following command instead:
+
+```
+docker-compose down --volumes
+```
 
 See also:
 
