@@ -148,6 +148,13 @@ export class HttpDataSource {
         return new Promise((resolve, reject) => grok_DataSource_List(this.s, (q) => resolve(q.map(s))));
     }
 
+    /** Returns fist entity that satisfy the filtering criteria (see {@link filter}).
+     *  @returns Promise<object>  */
+    first() {
+        let s = this.entityToJs;
+        return new Promise((resolve, reject) => grok_DataSource_First(this.s, (q) => resolve(q.map(s))));
+    }
+
     /** Returns an entity with the specified id.
      *  Throws an exception if an entity does not exist, or is not accessible in the current context.
      *  @param {string} id - GUID of the corresponding object
