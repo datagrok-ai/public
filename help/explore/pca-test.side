@@ -245,12 +245,12 @@
       "id": "c0ad30a4-af4e-4761-bc6d-11ec017326b3",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-ML']",
+      "target": "xpath=(//div[@name='div-ML'])[2]",
       "targets": [
         ["css=.d4-menu-item-hover:nth-child(6)", "css:finder"],
-        ["xpath=//div[@name='div-ML']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[4]/div/div/div[6]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/div/div[4]/div/div/div[6]", "xpath:position"]
+        ["xpath=(//div[@name='div-ML'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[3]/div/div/div/div/div/div/div[4]/div/div/div[6]", "xpath:idRelative"],
+        ["xpath=//div[3]/div[3]/div/div/div/div/div/div/div[4]/div/div/div[6]", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -394,12 +394,12 @@
       "id": "cc7eb24d-2802-4262-bea4-347dd7859222",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//div[@name='div-ML'])",
+      "target": "xpath=(//div[@name='div-ML'])[2]",
       "targets": [
-        ["css=.d4-menu-item-hover:nth-child(5)", "css:finder"],
-        ["xpath=(//div[@name='div-Data'])[2]", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]", "xpath:position"]
+        ["css=.d4-menu-item-hover:nth-child(6)", "css:finder"],
+        ["xpath=(//div[@name='div-ML'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[3]/div/div/div/div/div/div/div[4]/div/div/div[6]", "xpath:idRelative"],
+        ["xpath=//div[3]/div/div/div/div/div/div/div[4]/div/div/div[6]", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -540,12 +540,12 @@
       "id": "8fa0320d-edcd-4ca5-88e2-cfa726f7c78b",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//div[@name='div-ML'])",
+      "target": "xpath=(//div[@name='div-ML'])[2]",
       "targets": [
-        ["css=.d4-menu-item-hover:nth-child(5)", "css:finder"],
-        ["xpath=(//div[@name='div-Data'])[2]", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]", "xpath:position"]
+        ["css=.d4-menu-item-hover:nth-child(6)", "css:finder"],
+        ["xpath=(//div[@name='div-ML'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[3]/div/div/div/div/div/div/div[4]/div/div/div[6]", "xpath:idRelative"],
+        ["xpath=//div[3]/div/div/div/div/div/div/div[4]/div/div/div[6]", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -674,12 +674,12 @@
       "id": "c5789851-418f-4282-8361-b9e298a7bb01",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//div[@name='div-ML'])",
+      "target": "xpath=(//div[@name='div-ML'])[2]",
       "targets": [
-        ["css=.d4-menu-item-hover:nth-child(5)", "css:finder"],
-        ["xpath=(//div[@name='div-Data'])[2]", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]", "xpath:position"]
+        ["css=.d4-menu-item-hover:nth-child(6)", "css:finder"],
+        ["xpath=(//div[@name='div-ML'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[3]/div/div/div/div/div/div/div[4]/div/div/div[6]", "xpath:idRelative"],
+        ["xpath=//div[3]/div/div/div/div/div/div/div[4]/div/div/div[6]", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -802,7 +802,7 @@
       "id": "bc5d3914-0a6d-4eb8-b260-bd6248c93bb7",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span-PCA1-(4)-(min--88.91,-max-37.46)",
+      "target": "name=span-PCA1-(4)-(min--37.46,-max-88.91)",
       "targets": [
         ["css=span[name=\"span-PCA1 (4)-(min--37.46,-max-88.91)\"]", "css"],
         ["css=tr:nth-child(17) .markup", "css:finder"],
