@@ -75,7 +75,7 @@ export class Dapi {
 
     /** Groups API endpoint
      *  @type {HttpDataSource<Group>} */
-    get groups() { return new GroupsDataSource(grok_Dapi_Groups(), (a) => new Group(a)); }
+    get groups() { return new GroupsDataSource(grok_Dapi_Groups(), (a) => toJs(a)); }
 
     /** Scripts API endpoint
      *  @type {HttpDataSource<Script>} */
