@@ -200,7 +200,7 @@
       "id": "341abbf7-03bf-4e71-aa67-de3eecdd0d7d",
       "comment": "",
       "command": "click",
-      "target": "xpath=//i[@name='tag-measures-remove-avg(WEIGHT)']",
+      "target": "xpath=//i[@name='tag-measures-remove-avg(AGE)']",
       "targets": [
         ["css=.d4-tag:nth-child(2) > .grok-icon", "css:finder"],
         ["xpath=//i[@name='tag-measures-remove-avg(WEIGHT)']", "xpath:attributes"],
