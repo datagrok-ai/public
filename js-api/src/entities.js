@@ -9,8 +9,6 @@ export class Entity {
     /** @constructs Entity*/
     constructor(d) { this.d = d;}
 
-    static create() { return new Group(grok_Group()); }
-
     /** Entity ID (GUID)
      *  @type {string} */
     get id() { return grok_Entity_Get_Id(this.d); }
@@ -195,6 +193,8 @@ export class TableInfo extends Entity {
 export class Group extends Entity {
     /** @constructs Group */
     constructor(d) { super(d); }
+
+    static create(name) { return new Group(grok_Group(name)); }
 
     /** Adds a member to the group
      * @param {Group} m */
