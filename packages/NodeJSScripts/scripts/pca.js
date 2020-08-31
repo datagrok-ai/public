@@ -1,6 +1,6 @@
 //name: PCA
 //description: Principal Component Analysis
-//help: https://en.wikipedia.org/wiki/Principal_component_analysis
+//help-url: https://en.wikipedia.org/wiki/Principal_component_analysis
 //language: nodejs
 //tags: demo, hide-suggestions
 //sample: cars.csv

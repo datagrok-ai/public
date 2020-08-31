@@ -5,7 +5,7 @@
 #output: map classes [Detected classes with probabilities]
 #tags: demo, panel, files, efficientnet
 #condition: file.isFile && file.size < 1e6 && (file.name.endsWith("jpg") || file.name.endsWith("jpeg") || file.name.endsWith("png"))
-#reference: https://github.com/qubvel/efficientnet
+#help-url: https://github.com/qubvel/efficientnet
 
 import numpy as np
 from skimage.io import imread
