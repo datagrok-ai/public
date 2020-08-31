@@ -152,7 +152,7 @@ export class HttpDataSource {
      *  @returns Promise<object>  */
     first() {
         let s = this.entityToJs;
-        return new Promise((resolve, reject) => grok_DataSource_First(this.s, (q) => resolve(q.map(s))));
+        return new Promise((resolve, reject) => grok_DataSource_First(this.s, (q) => resolve(s(q))));
     }
 
     /** Returns an entity with the specified id.
