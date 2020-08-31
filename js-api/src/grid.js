@@ -148,6 +148,15 @@ export class GridColumn {
 export class GridColumnList {
     constructor(d) { this.d = d; }
 
+    /** Row header column.
+     *  @returns {GridColumn}  */
+    get rowHeader() { return this.byIndex(0); }
+
+    /** Returns a grid column by name, or null if it does not exist.
+     *  @param {number} index
+     *  @returns {GridColumn}  */
+    byIndex(index) { return GridColumn.fromDart(grok_GridColumnList_ByIndex(this.d, index)); }
+
     /** Returns a grid column by name, or null if it does not exist.
      *  @param {string} columnName
      *  @returns {GridColumn}  */

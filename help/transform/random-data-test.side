@@ -108,12 +108,12 @@
       "id": "dac0d804-09b5-409d-9a8b-042272fe58ad",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-ML']",
+      "target": "xpath=(//div[@name='div-ML'])[2]",
       "targets": [
         ["css=.d4-menu-item-hover:nth-child(6)", "css:finder"],
-        ["xpath=//div[@name='div-ML']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[4]/div/div/div[6]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/div/div[4]/div/div/div[6]", "xpath:position"]
+        ["xpath=(//div[@name='div-ML'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[3]/div/div/div/div/div/div/div[4]/div/div/div[6]", "xpath:idRelative"],
+        ["xpath=//div[3]/div[3]/div/div/div/div/div/div/div[4]/div/div/div[6]", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -124,7 +124,7 @@
       "targets": [
         ["css=.d4-menu-item:nth-child(6) > .d4-menu-item-container-fixed > .d4-menu-item-container > .d4-menu-item:nth-child(5)", "css:finder"],
         ["xpath=//div[@name='div-ML---Random-Data...']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[4]/div/div/div[6]/div/div/div[5]", "xpath:idRelative"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[3]/div/div/div/div/div/div/div[4]/div/div/div[6]/div/div/div[5]", "xpath:idRelative"],
         ["xpath=//div[4]/div/div/div[6]/div/div/div[5]", "xpath:position"]
       ],
       "value": ""
@@ -295,12 +295,12 @@
       "id": "03da0f6d-6de3-4c9d-ac50-948cf540e257",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-ML']",
+      "target": "xpath=(//div[@name='div-ML'])[2]",
       "targets": [
         ["css=.d4-menu-item-hover:nth-child(6)", "css:finder"],
-        ["xpath=//div[@name='div-ML']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[4]/div/div/div[6]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/div/div[4]/div/div/div[6]", "xpath:position"]
+        ["xpath=(//div[@name='div-ML'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[3]/div/div/div/div/div/div/div[4]/div/div/div[6]", "xpath:idRelative"],
+        ["xpath=//div[3]/div/div/div/div/div/div/div[4]/div/div/div[6]", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -311,7 +311,7 @@
       "targets": [
         ["css=.d4-menu-item:nth-child(6) > .d4-menu-item-container-fixed > .d4-menu-item-container > .d4-menu-item:nth-child(5)", "css:finder"],
         ["xpath=//div[@name='div-ML---Random-Data...']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[4]/div/div/div[6]/div/div/div[5]", "xpath:idRelative"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[3]/div/div/div/div/div/div/div[4]/div/div/div[6]/div/div/div[5]", "xpath:idRelative"],
         ["xpath=//div[4]/div/div/div[6]/div/div/div[5]", "xpath:position"]
       ],
       "value": ""

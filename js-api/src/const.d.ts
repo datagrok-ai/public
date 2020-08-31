@@ -1,4 +1,4 @@
-﻿﻿﻿﻿ export const enum AGG {
+﻿﻿﻿﻿﻿ export const enum AGG {
     KEY = "key",      // Special case: to be used in the 'group by' statement.
     PIVOT = "pivot",  // Special case: to be used as a pivot.
     FIRST = "first",
@@ -200,7 +200,8 @@ export const enum VIEWER {
     TILE_VIEWER = 'Tile viewer',
     TREE_MAP = 'Tree map',
     TRELLIS_PLOT = 'Trellis plot',
-    WORD_CLOUD = 'Word cloud'
+    WORD_CLOUD = 'Word cloud',
+    SCRIPTING = 'Scripting Viewer'
 }
 
 export const enum SIMILARITY_METRIC {

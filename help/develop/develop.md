@@ -24,6 +24,7 @@ Table of contents
 * [Buildable Packages](#buildable-packages)
 * [Development](#development)
 * [Publishing](#publishing)
+* [Applications](#applications)
 * [Documentation](#documentation)
 * [Roadmap](#roadmap)
 
@@ -76,17 +77,17 @@ A simplest JavaScript package consists of the following files:
 "sources" contains a list of JS or CSS files, defined relative to the package's root, that should be
 loaded before any function from that package is executed.
 
-`package.js` is a JavaScript file. It should define a class named <package_name>Package that subclasses GrokPackage.
+`package.js` is a JavaScript file. It should define a class named `<package_name>Package` that subclasses `GrokPackage`.
 During the [publishing step](#publishing), its content gets parsed, and functions with the properly formatted
 [headers](../compute/scripting.md#header) get registered as Grok [functions](../overview/functions/function.md). By annotating
 functions in a specific way, it is possible to register custom viewers, widgets, renderers, 
 converters, validators, suggestions, info panels, and semantic type detectors. 
 
-`detectors.js` is a JavaScript file.  It should define a class named <package_name>DetectorsPackage that subclasses GrokPackage.
+`detectors.js` is a JavaScript file.  It should define a class named `<package_name>DetectorsPackage` that subclasses `GrokPackage`.
 It's similar to package.js, but intended for small functions - semantic types detectors. Datagrok calls these functions each time
 user opens a table.
 
-Below is an example of a package consisting of a single function `complement` that returns a complementary
+Below is an example of a package `Sequence` consisting of a single function `complement` that returns a complementary
 sequence for the specified nucleotide sequence:
 
 ```js
@@ -137,8 +138,8 @@ To get a package template:
 1. Create an empty folder
 2. Run `npm install datagrok-tools -g`. It's a tool to help you to build and deploy your package.
 3. Run `datagrok-init`. Enter package name, remote Datagrok server URI (including /api) and your developer key.
-This will drop to yor package all necessary files. You'll be able to change all of this in the future.
-4. Run `npm install`. This will install packages according to package.json dependencies list. For the first time, 
+This will drop to your package all necessary files. You'll be able to change all of this in the future.
+4. Run `npm install`. This will install packages according to `package.json` dependencies list. For the first time, 
 there are only the `datagrok-api` package, and you are free to add new dependencies as usual.
 
 Take a look at the `src/package.js` file:
@@ -257,10 +258,8 @@ above-mentioned groups to be productive.
   into the community wiki, where users would be contributing to the content. The same web pages
   are used as an interactive help within the platform (you see help on the currently selected object).
   
-Additionally, there are few ways to connect with fellow developers:    
-* [Datagrok forums](https://public.datagrok.ai/forums) for in-depth, topic-centered discussions. 
-  It is possible to include "live" content in messages, such as viewers, project, users, etc. 
-  The UX is still a "work in progress", but it's maturing quickly.   
+Additionally, there are a few ways to connect with fellow developers:    
+* [Datagrok community](https://community.datagrok.ai/)
 * [Slack space](https://datagrok.slack.com) 
 
 See also: 

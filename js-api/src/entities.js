@@ -1,7 +1,6 @@
 import {TYPE} from "./const";
 import {toJs} from "./wrappers";
 
-
 /** @class
  * Base class for system objects stored in the database in a structured manner.
  * Contains base properties: id, name and path
@@ -23,6 +22,18 @@ export class Entity {
     /** Entity path
      *  @type {string} */
     get path() { return grok_Entity_Path(this.d); }
+
+    /** Returns entity properties
+     * @returns {Promise<Map>} props */
+    getProperties() {
+        return new Promise((resolve, reject) => grok_EntitiesDataSource_GetProperties(grok.dapi.entities.s, this.d, (p) => resolve(p)));
+    }
+    /** Allows to set properties for entity
+     * @param {Map} props
+     * @returns Promise */
+    setProperties(props) {
+        return new Promise((resolve, reject) => grok_EntitiesDataSource_SetProperties(grok.dapi.entities.s, this.d, props, (_) => resolve(_)));
+    }
 }
 
 /**
@@ -59,6 +70,11 @@ export class User extends Entity {
 
     /** */
     toMarkup() { return grok_User_ToMarkup(this.d); }
+
+    /** Security Group
+     * @type Group
+     */
+    get group() {return toJs(grok_User_Get_Group(this.d))}
 }
 
 /** Represents a function
@@ -177,6 +193,91 @@ export class TableInfo extends Entity {
 export class Group extends Entity {
     /** @constructs Group */
     constructor(d) { super(d); }
+
+    static create(name) { return new Group(grok_Group(name)); }
+
+    /** Adds a member to the group
+     * @param {Group} m */
+    addMember(m) {
+        grok_Group_Add_Member(this.d, m.d, false);
+    }
+
+    /** Adds an admin member to the group
+     * @param {Group} m */
+    addAdminMember(m) {
+        grok_Group_Add_Member(this.d, m.d, true);
+    }
+
+    /** Removes a member from the group
+     * @param {Group} m */
+    removeMember(m) {
+        grok_Group_Remove_Member(this.d, m.d);
+    }
+
+    /** Adds the group to another one
+     * @param {Group} m */
+    addMembership(m) {
+        grok_Group_Add_Membership(this.d, m.d, false);
+    }
+
+    /** Adds the group to another one as an admin
+     * @param {Group} m */
+    addAdminMembership(m) {
+        grok_Group_Add_Membership(this.d, m.d, true);
+    }
+
+    /** Removes membership from another group
+     * @param {Group} m */
+    removeMembership(m) {
+        grok_Group_Remove_Membership(this.d, m.d);
+    }
+
+    get permissions() {
+
+    }
+
+    setPermission(e, edit) {
+
+    }
+
+    deletePermission(e, edit) {
+
+    }
+
+    /** Returns list of groups that belong to group, with no admin permissions
+     * @type {List<Group>} */
+    get members() {
+        return toJs(grok_Group_Get_Members(this.d, false));
+    }
+
+    /** Returns list of groups that belong to group, with admin permissions
+     * @type {List<Group>} */
+    get adminMembers() {
+        return grok_Group_Get_Members(this.d, true);
+    }
+
+    /** Returns list of groups that group belongs to, with no admin permissions
+     * @type {List<Group>} */
+    get memberships() {
+        return toJs(grok_Group_Get_Memberships(this.d, false));
+    }
+
+    /** Returns list of groups that group belongs to, with admin permissions
+     * @type {List<Group>} */
+    get adminMemberships() {
+        return grok_Group_Get_Memberships(this.d, true);
+    }
+
+    /** Personal user group
+     * @type {boolean} */
+    get personal() { return grok_Group_Get_Personal(this.d); }
+    set personal(e) { return grok_Group_Set_Personal(this.d, e); }
+
+    /** Hidden group
+     * @type {boolean} */
+    get hidden() { return grok_Group_Get_Hidden(this.d); }
+    set hidden(e) { return grok_Group_Set_Hidden(this.d, e); }
+
 }
 
 /** @extends Func
