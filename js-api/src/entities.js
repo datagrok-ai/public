@@ -196,24 +196,76 @@ export class Group extends Entity {
     /** @constructs Group */
     constructor(d) { super(d); }
 
+    /** Adds a member to the group
+     * @param {Group} m */
     addMember(m) {
         grok_Group_Add_Member(this.d, m.d, false);
     }
 
+    /** Adds an admin member to the group
+     * @param {Group} m */
     addAdminMember(m) {
         grok_Group_Add_Member(this.d, m.d, true);
     }
 
+    /** Removes a member from the group
+     * @param {Group} m */
     removeMember(m) {
         grok_Group_Remove_Member(this.d, m.d);
     }
 
+    /** Adds the group to another one
+     * @param {Group} m */
+    addMembership(m) {
+        grok_Group_Add_Membership(this.d, m.d, false);
+    }
+
+    /** Adds the group to another one as an admin
+     * @param {Group} m */
+    addAdminMembership(m) {
+        grok_Group_Add_Membership(this.d, m.d, true);
+    }
+
+    /** Removes membership from another group
+     * @param {Group} m */
+    removeMembership(m) {
+        grok_Group_Remove_Membership(this.d, m.d);
+    }
+
+    get permissions() {
+
+    }
+
+    setPermission(e, edit) {
+
+    }
+
+    deletePermission(e, edit) {
+
+    }
+
+    /** Returns list of groups that belong to group, with no admin permissions
+     * @type {List<Group>} */
     get members() {
         return toJs(grok_Group_Get_Members(this.d, false));
     }
 
+    /** Returns list of groups that belong to group, with admin permissions
+     * @type {List<Group>} */
     get adminMembers() {
         return grok_Group_Get_Members(this.d, true);
+    }
+
+    /** Returns list of groups that group belongs to, with no admin permissions
+     * @type {List<Group>} */
+    get memberships() {
+        return toJs(grok_Group_Get_Memberships(this.d, false));
+    }
+
+    /** Returns list of groups that group belongs to, with admin permissions
+     * @type {List<Group>} */
+    get adminMemberships() {
+        return grok_Group_Get_Memberships(this.d, true);
     }
 
     /** Personal user group
