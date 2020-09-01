@@ -216,19 +216,19 @@ export class Group extends Entity {
 
     /** Adds the group to another one
      * @param {Group} m */
-    addMembership(m) {
+    includeTo(m) {
         grok_Group_Add_Membership(this.d, m.d, false);
     }
 
     /** Adds the group to another one as an admin
      * @param {Group} m */
-    addAdminMembership(m) {
+    includeAdminTo(m) {
         grok_Group_Add_Membership(this.d, m.d, true);
     }
 
     /** Removes membership from another group
      * @param {Group} m */
-    removeMembership(m) {
+    excludeFrom(m) {
         grok_Group_Remove_Membership(this.d, m.d);
     }
 
