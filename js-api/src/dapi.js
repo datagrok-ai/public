@@ -244,6 +244,14 @@ export class GroupsDataSource extends HttpDataSource {
         super(s, instance);
     }
 
+    /** Creates a new group
+     *  @param {String}  name
+     *  @returns {Promise<Group>} - Group. */
+    createNew(name) {
+        let g = new Group(grok_Group(name));
+        return this.save(g);
+    }
+
     /** Saves a group with relations
      *  @param {Group}  e
      *  @returns {Promise<Group>} - Group. */
