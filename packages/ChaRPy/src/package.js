@@ -13,14 +13,14 @@ export async function toScript() {
     //main slicing function
     async function strReplace(optionsObj) {
 
-        grok.shell.info(Object.entries(optionsObj['look']));
+        grok.shell.info(Object.entries(optionsObj.look));
 
-        let stRing = map.plotScripts[optionsObj['type'].replace(/ /g, '')];
-        let paramsMap = map.additionalOps[optionsObj['type'].replace(/ /g, '')];
+        let stRing = map.plotScripts[optionsObj.type];
+        let paramsMap = map.additionalOps[optionsObj.type];
 
         //decompose getOptions() output
-        let toRemove = Object.keys(optionsObj['look']);
-        let toInsert = Object.values(optionsObj['look']);
+        let toRemove = Object.keys(optionsObj.look);
+        let toInsert = Object.values(optionsObj.look);
 
         //decompose custom mappings
         let mapKeys = Object.keys(paramsMap);
@@ -91,13 +91,20 @@ export async function toScript() {
     //     valueAggrType : "skew"
     // });
 
-    //Box plot
-    let plot = view.boxPlot({
-        value : 'height',
-        category: 'site',
-        markerColorColumnName: 'sex'
-        // binColorColumnName: 'height'
-    })
+    // //Box plot
+    // let plot = view.boxPlot({
+    //     value : 'height',
+    //     category: 'site',
+    //     markerColorColumnName: 'sex'
+    //     // binColorColumnName: 'height'
+    // })
+
+    //Correlation plot
+    let plot = view.corrPlot({
+        xs: ['age', 'weight', 'height'],
+        ys: ['age', 'weight', 'height'],
+    });
+
 
     //collect viewer properties
     let options = JSON.parse(plot.getOptions());
