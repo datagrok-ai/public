@@ -1,0 +1,51 @@
+{
+  "plotScripts": {
+    "Scatterplot": "require(ggplot2)\nplt <- ggplot(data, aes(.xColumnName.yColumnName.sizeColumnName.colorColumnName)) +\ngeom_point(.markerType) +\nscale_size_continuous(range = c(.markerMinSize,.markerMaxSize)).labelsColumnName.showRegressionLine",
+    "Histogram": "require(ggplot2)\nplt <- ggplot(data, aes(.valueColumnName.colorColumnName)) +\ngeom_histogram(.binscolor=\"darkblue\",position=\"identity\", alpha = 0.5)",
+    "Barplot": "require(ggplot2)\nsummaryDf <- data.frame(\n    x = levels(as.factor(data$.splitColumnName)),\n    y = tapply(data$.valueColumnName, data$.splitColumnName, function(x) .valueAggrType)\n)\n\nplt <- ggplot(summaryDf,aes(x = reorder(x,.barSortOrdery),y = y)) +\n  geom_bar(stat=\"identity\") + coord_flip()\nprint(plt)"
+  },
+  "additionalOps" : {
+    "Scatterplot": {
+      "xColumnName": "x = .xColumnName",
+      "yColumnName": ", y = .yColumnName",
+      "sizeColumnName": ", size = .sizeColumnName",
+      "colorColumnName": ", color = .colorColumnName",
+      "markerType": "shape = .markerType",
+      "labelsColumnName": " +\ngeom_text(label=rownames(.labelsColumnName))",
+      "showRegressionLine": " +\ngeom_smooth(method=lm)"
+    },
+    "Histogram": {
+      "valueColumnName" : "x = .valueColumnName",
+      "colorColumnName": ", fill = .colorColumnName",
+      "bins": "bins = .bins, "
+    },
+    "Barchart" : {
+      "none": "none"
+    }
+
+  },
+  "miscCodes" : {
+    "square": 15,
+    "circle": 16,
+    "circle border": 1,
+    "dot": 20,
+    "desc": "-",
+    "asc": "+",
+    "count": "length(x)",
+    "unique": "length(unique(x))",
+    "nulls": "sum(length(which(is.na(x))))",
+    "min": "min(x)",
+    "max": "max(x)",
+    "sum": "sum(x)",
+    "med": "med(x)",
+    "avg": "mean(x)",
+    "stdev": "sd(x)",
+    "variance": "var(x)",
+    "skewness": "skewness(x)",
+    "kurtosis": "kurtosis(x)",
+    "q1": "quantile(x)[2]",
+    "q2": "quantile(x)[3]",
+    "q3": "quantile(x)[4]"
+  },
+  "header" : "#name: Plot\n#language: r\n#input: dataframe data\n#output: graphics\n\n"
+}
