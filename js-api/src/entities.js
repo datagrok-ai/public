@@ -232,18 +232,6 @@ export class Group extends Entity {
         grok_Group_Remove_Membership(this.d, m.d);
     }
 
-    get permissions() {
-
-    }
-
-    setPermission(e, edit) {
-
-    }
-
-    deletePermission(e, edit) {
-
-    }
-
     /** Returns list of groups that belong to group, with no admin permissions
      * @type {List<Group>} */
     get members() {
