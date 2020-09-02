@@ -13,6 +13,8 @@ export async function toScript() {
     //main slicing function
     async function strReplace(optionsObj) {
 
+        grok.shell.info(Object.entries(optionsObj['look']));
+
         let stRing = map.plotScripts[optionsObj['type'].replace(/ /g, '')];
         let paramsMap = map.additionalOps[optionsObj['type'].replace(/ /g, '')];
 
@@ -50,7 +52,8 @@ export async function toScript() {
             }
 
             //replace all string parameter markers with corresponding values
-            stRing = stRing.replace("." + toRemove[i], toInsert[i]);
+            // stRing = stRing.replace(/toRemove[i]/g, toInsert[i]);
+            stRing = stRing.split("." + toRemove[i]).join(toInsert[i]);
         }
 
         stRing = stRing + "\nprint(plt)"
@@ -60,7 +63,7 @@ export async function toScript() {
     //test viewer + options
     let view = grok.shell.addTableView(grok.data.demo.demog());
 
-    // //scatterPlot
+    // //Scatter plot
     // let plot = view.scatterPlot({
     //     x: 'height',
     //     y: 'weight',
@@ -71,7 +74,7 @@ export async function toScript() {
     //     markerType: 'square'
     // });
 
-    //histogram
+    // // Histogram
     // let plot = view.histogram({
     //     value: 'weight'
     // });
@@ -79,11 +82,22 @@ export async function toScript() {
     //     bins : 40
     // });
 
-    let plot = view.barChart({
-        value: 'site'
-    });
+    // Bar chart
+    // let plot = view.barChart({
+    //     split: 'study',
+    //     value: 'age'
+    // });
+    // plot.setOptions({
+    //     valueAggrType : "skew"
+    // });
 
-
+    //Box plot
+    let plot = view.boxPlot({
+        value : 'height',
+        category: 'site',
+        markerColorColumnName: 'sex'
+        // binColorColumnName: 'height'
+    })
 
     //collect viewer properties
     let options = JSON.parse(plot.getOptions());
