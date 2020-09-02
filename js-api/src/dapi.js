@@ -77,6 +77,8 @@ export class Dapi {
      *  @type {HttpDataSource<Group>} */
     get groups() { return new GroupsDataSource(grok_Dapi_Groups(), (a) => toJs(a)); }
 
+    get permissions() { return new PermissionsDataSource(); }
+
     /** Scripts API endpoint
      *  @type {HttpDataSource<Script>} */
     get scripts() { return new HttpDataSource(grok_Dapi_Scripts(), (a) => new Script(a)); }
@@ -252,6 +254,74 @@ export class GroupsDataSource extends HttpDataSource {
         return this.save(g);
     }
 
+    /** Returns group user
+     *  @param {Group} group
+     *  @returns {Promise<Group>} - Group. */
+    getUser(group) {
+        return new Promise((resolve, reject) => grok_Dapi_Get_GroupUser(group.d, (q) => resolve(toJs(q)), (e) => reject(e)));
+    }
+
+    /** Adds a member to the group
+     * @param {Group} g
+     * @param {Group} m
+     * @returns Promise */
+    async addMember(g, m) {
+       g = await find(g.id);
+       g.addMember(m);
+       await this.saveRelations(g);
+    }
+
+    /** Adds an admin member to the group
+     * @param {Group} g
+     * @param {Group} m
+     * @returns Promise */
+    async addAdminMember(g, m) {
+        g = await find(g.id);
+        g.addAdminMember(m);
+        await this.saveRelations(g);
+    }
+
+    /** Removes a member from the group
+     * @param {Group} g
+     * @param {Group} m
+     * returns Promise */
+    async removeMember(g, m) {
+        g = await find(g.id);
+        g.removeMember(m);
+        await this.saveRelations(g);
+    }
+
+    /** Adds the group to another one
+     * @param {Group} g
+     * @param {Group} parent
+     * returns Promise */
+    async includeTo(g, parent) {
+        g = await find(g.id);
+        g.includeTo(parent);
+        await this.saveRelations(g);
+    }
+
+
+    /** Adds the group to another one as admin
+     * @param {Group} g
+     * @param {Group} parent
+     * returns Promise */
+    async includeAdminTo(g, parent) {
+        g = await find(g.id);
+        g.includeAdminTo(parent);
+        await this.saveRelations(g);
+    }
+
+    /** Removes a membership from the group
+     * @param {Group} g
+     * @param {Group} parent
+     * returns Promise */
+    async excludeFrom(g, parent) {
+        g = await find(g.id);
+        g.excludeFrom(parent);
+        await this.saveRelations(g);
+    }
+
     /** Saves a group with relations
      *  @param {Group}  e
      *  @returns {Promise<Group>} - Group. */
@@ -330,6 +400,28 @@ export class LayoutsDataSource extends HttpDataSource {
     }
 }
 
+export class PermissionsDataSource {
+    constructor() {};
+
+    getPermissions(e) {
+        return new Promise((resolve, reject) =>
+            grok_Dapi_Get_Permissions(e.d, (data) => {
+                data.view = toJs(data.view);
+                data.edit = toJs(data.edit);
+                resolve(data);
+            }, (e) => reject(e)));
+    }
+
+    setPermission(e, g, edit) {
+        return new Promise((resolve, reject) =>
+            grok_Dapi_Set_Permission(e.d, g.d, edit, (data) => resolve(data), (e) => reject(e)));
+    }
+
+    deletePermission(g, e) {
+        return new Promise((resolve, reject) =>
+            grok_Dapi_Delete_Permission(e.d, g.d, (data) => resolve(data), (e) => reject(e)));
+    }
+}
 /**
  * Functionality for working with remote Users Data Storage
  * Remote storage allows to save key-value pairs on the Datagrok server for further use
