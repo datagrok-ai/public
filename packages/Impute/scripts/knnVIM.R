@@ -9,5 +9,5 @@
 require(VIM)
 
 Xcolnames <- colnames(data)
-imputedDF <- VIM::kNN(data = data, variable = Xcolnames, k = k, trace = F, imp_var = F, numFun = 'medianMixed')
+imputedDF <- VIM::kNN(data = data, variable = Xcolnames, k = k, trace = F, imp_var = F, numFun = median)
 
