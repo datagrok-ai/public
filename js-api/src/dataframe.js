@@ -567,7 +567,7 @@ export class Cell {
     get column() { return new Column(grok_Cell_Get_Column(this.d)); }
 
     /** Cell value.
-     * @returns {object} */
+     * @returns {*} */
     get value() { return grok_Cell_Get_Value(this.d); }
 }
 

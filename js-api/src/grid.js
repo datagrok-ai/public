@@ -246,6 +246,7 @@ export class GridCellStyle {
     set element(x) { return grok_GridCellStyle_Set_Element(this.d, x); }
 }
 
+
 /** Grid cell rendering args. */
 export class GridCellRenderArgs extends EventData {
     constructor(d) { super(d); }
@@ -257,4 +258,27 @@ export class GridCellRenderArgs extends EventData {
 
     /** @returns {Rect} */
     get bounds() { return grok_GridCellRenderArgs_Get_Bounds(this.d); }
+}
+
+
+export class GridCellRenderer {
+    get name() { throw 'Not implemented'; }
+    get cellType() { throw 'Not implemented'; }
+
+    /**
+     * @param {CanvasRenderingContext2D} g
+     * @param {number} x
+     * @param {number} y
+     * @param {number} w
+     * @param {number} h
+     * @param {GridCell} gridCell
+     * @param {GridCellStyle} cellStyle
+     **/
+    render(g, x, y, w, h, gridCell, cellStyle) {
+        throw 'Not implemented';
+    }
+
+    renderInternal(g, x, y, w, h, gridCell, cellStyle) {
+        this.render(g, x, y, w, h, new GridCell(gridCell), new GridCellStyle(cellStyle));
+    }
 }
