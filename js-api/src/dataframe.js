@@ -813,8 +813,9 @@ export class BitSet {
 
     /** Sets all bits to x
      * @param {boolean} x
+     * @param {boolean} notify
      * @returns {BitSet} */
-    setAll(x) { grok_BitSet_SetAll(this.d, x); return this; }
+    setAll(x, notify = true) { grok_BitSet_SetAll(this.d, x, notify); return this; }
 
     /** Finds the first index of value x, going forward from i-th position.
      * @param {number} i - index
