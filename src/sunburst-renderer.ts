@@ -78,7 +78,7 @@ export class SunburstRenderer {
                 segment.attr("fill-opacity", SunburstRenderer.shade);
             })
             .append("title")
-            .text(d => `${d.ancestors().map(d => d.data.value).reverse().filter((v, i) => !!i).join("/")}\n${this.format(d.value || 0)}`);
+            .text(d => { return `${d.ancestors().map(d => d.data.category).reverse().filter((v, i) => !!i).join("/")}\n${this.format(d.value || 0)}`});
 
         svg.append("g")
             .attr("pointer-events", "none")
@@ -94,7 +94,7 @@ export class SunburstRenderer {
                 return `rotate(${x - 90}) translate(${y},0) rotate(${x < 180 ? 0 : 180})`;
             })
             .attr("dy", "0.35em")
-            .text((d) => d.data.value);
+            .text((d) => d.data.category);
 
         return svg.attr("viewBox", `-${center} -${center} ${width} ${height}`).node()!;
     }
@@ -110,7 +110,7 @@ export class SunburstRenderer {
         return (d: TreeData) => {
             let v: typeof d | null = d;
             while (!!v && v.depth > 1) v = v.parent;
-            return color(v?.data.value || 0);
+            return color(v?.data.category || 0);
         }
     }
 }

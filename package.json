@@ -14,8 +14,8 @@
     "d3-hierarchy": "^1.1.9"
   },
   "scripts": {
-    "upload-debug": "datagrok-upload https://public.datagrok.ai/api debug",
-    "upload-deploy": "datagrok-upload https://public.datagrok.ai/api deploy",
+    "upload-debug": "datagrok-upload https://dev.datagrok.ai/api debug",
+    "upload-deploy": "datagrok-upload https://dev.datagrok.ai/api deploy",
     "build": "webpack"
   },
   "devDependencies": {

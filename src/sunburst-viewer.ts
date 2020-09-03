@@ -1,8 +1,14 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {SunburstRenderer} from './sunburst-renderer';
-import { Branch, TreeData, TreeDataBuilder } from './tree-data-builder';
+import { AggregationType, Branch, TreeData, TreeDataBuilder } from './tree-data-builder';
 import { HierarchyNode } from 'd3-hierarchy';
+import { BitSet } from 'datagrok-api/src/dataframe';
+
+interface BitSetEx extends BitSet {
+    set(i: number, x: boolean, notify?: boolean): BitSet;
+    fireChanged(): void;
+}
 
 export class SunburstViewer extends DG.JsViewer {
 
@@ -19,7 +25,7 @@ export class SunburstViewer extends DG.JsViewer {
     private treeData?: TreeData;
 
     private valueColumnName = this.string('valueColumnName');
-    private aggregationType = this.string('aggregationType', 'count');
+    private aggregationType = this.string('aggregationType', 'count') as AggregationType;
     private categoryColumnsSerialized = this.string('categoryColumnsSerialized');
 
     constructor() {
@@ -39,6 +45,9 @@ export class SunburstViewer extends DG.JsViewer {
 
         this.chartDiv = ui.div([], 'sunburst-chart-container');
         this.root.appendChild(this.chartDiv);
+        setTimeout(() => {
+            this.initialized = true;
+        }, 0);
     }
 
     onTableAttached(): void {
@@ -58,6 +67,9 @@ export class SunburstViewer extends DG.JsViewer {
 
     onPropertyChanged(property: DG.Property): void {
         super.onPropertyChanged(property);
+        if (this.initialized && (!property || property.name !== 'categoryColumnsSerialized')) {
+            this.render();
+        }
     }
 
     onSizeChanged(width: number, height: number): void {
@@ -85,18 +97,19 @@ export class SunburstViewer extends DG.JsViewer {
 
         const categoryColumns: DG.Column[] = selectedColumnNames
             .map(columnName => this.dataFrame.getCol(columnName));
-
+        const valueColumn = this.valueColumnName ? this.dataFrame.getCol(this.valueColumnName) : undefined;
 
         const alt = new TreeDataBuilder();
-        return alt.buildTreeData(categoryColumns, '', selectedRows);
+        return alt.buildTreeData(categoryColumns, valueColumn, selectedRows, this.aggregationType);
     }
 
     private clickHandler = (selectedRowIds: number[]) => {
-        const selection = this.dataFrame.selection;
+        const selection = this.dataFrame.selection as BitSetEx;
         selection.setAll(false);
         for (const rowId of selectedRowIds) {
-            selection.set(rowId, true);
+            selection.set(rowId, true, false);
         }
+        selection.fireChanged();
     }
 
     private getColors(): string[] {
