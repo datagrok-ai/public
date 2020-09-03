@@ -419,7 +419,7 @@ export class PermissionsDataSource {
     /** Grants permission on entity to the group
      * @param {Entity} e
      * @param {Group} g
-     * @param {bool} edit allow to edit entity
+     * @param {boolean} edit allow to edit entity
      * @returns {Promise}
      * */
     grant(e, g, edit) {
