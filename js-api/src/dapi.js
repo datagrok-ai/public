@@ -403,7 +403,11 @@ export class LayoutsDataSource extends HttpDataSource {
 export class PermissionsDataSource {
     constructor() {};
 
-    getPermissions(e) {
+    /** Gets all the permission granted on entity
+     * @param {Entity} e
+     * @returns {Promise<Map>} permissions
+     * */
+    get(e) {
         return new Promise((resolve, reject) =>
             grok_Dapi_Get_Permissions(e.d, (data) => {
                 data.view = toJs(data.view);
@@ -412,16 +416,28 @@ export class PermissionsDataSource {
             }, (e) => reject(e)));
     }
 
-    setPermission(e, g, edit) {
+    /** Grants permission on entity to the group
+     * @param {Entity} e
+     * @param {Group} g
+     * @param {bool} edit allow to edit entity
+     * @returns {Promise}
+     * */
+    grant(e, g, edit) {
         return new Promise((resolve, reject) =>
             grok_Dapi_Set_Permission(e.d, g.d, edit, (data) => resolve(data), (e) => reject(e)));
     }
 
-    deletePermission(g, e) {
+    /** Revokes permission on entity from the group
+     * @param {Entity} e
+     * @param {Group} g
+     * @returns {Promise}
+     * */
+    revoke(g, e) {
         return new Promise((resolve, reject) =>
             grok_Dapi_Delete_Permission(e.d, g.d, (data) => resolve(data), (e) => reject(e)));
     }
 }
+
 /**
  * Functionality for working with remote Users Data Storage
  * Remote storage allows to save key-value pairs on the Datagrok server for further use
