@@ -174,6 +174,13 @@ export class HttpDataSource {
         return new Promise((resolve, reject) => grok_DataSource_Save(this.s, e.d, (q) => resolve(s(q)), (e) => reject(e)));
     }
 
+    /** Deletes an entity
+     *  @param {Entity}  e
+     *  @returns {Promise<Entity>} - entity. */
+    delete(e) {
+        return new Promise((resolve, reject) => grok_DataSource_Delete(this.s, e.d, () => resolve(), (e) => reject(e)));
+    }
+
     by(i) {
         this.s = grok_DataSource_By(this.s, i);
         return this;
