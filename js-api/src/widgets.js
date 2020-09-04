@@ -154,7 +154,11 @@ export class Dialog {
     onOK(handler) { grok_Dialog_OnOK(this.d, handler); return this; }
 
     /** @returns {Dialog} */
-    show() { grok_Dialog_Show(this.d); return this; }
+    show() { grok_Dialog_Show(this.d, false, false); return this; }
+
+    /** @returns {Dialog}
+     * @param {boolean} fullScreen  */
+    showModal(fullScreen) { grok_Dialog_Show(this.d, true, fullScreen); return this; }
 
     /** Adds content to the dialog.
      * @param {HTMLElement | Widget | InputBase} content
