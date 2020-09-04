@@ -19,6 +19,8 @@ export class Widget {
     get root() { return this._root; }
     set root(r) { this._root = r; }
 
+
+
     /** Creates a {@see Widget} from the specified React component. */
     static react(reactComponent) {
         let widget = new Widget(ui.div());
