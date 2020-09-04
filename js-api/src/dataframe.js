@@ -434,7 +434,7 @@ export class ColumnList {
      * @returns {Column[]} */
     bySemTypesExact(semTypes) {
         let columns = [];
-        for (semType of semTypes) {
+        for (let semType of semTypes) {
             let col = this.bySemType(semType);
             if (col == null)
                 return null;
@@ -445,7 +445,16 @@ export class ColumnList {
 
     //todo
     //numerical
-    //categorical
+
+    /** @returns {Column[]} */
+    categorical() {
+        //todo: convert to iterable
+        let result = [];
+        for (let i = 0; i < length; i++)
+            if (this.byIndex(i).type === COLUMN_TYPE.STRING)
+                result.push(this.byIndex(i));
+        return result;
+    }
 
     /** Array containing column names.
      * @returns {string[]} */
