@@ -142,7 +142,7 @@ export class Data {
     }
 
     /**
-     * Merges two tables by the specified key columns.
+     * Opens a table by its id.
      * @param {string} id - table GUID
      * @returns {Promise<DataFrame>}
      */

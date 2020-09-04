@@ -1,5 +1,5 @@
 import * as rxjs from 'rxjs';
-import {AGG, TYPE} from "./const";
+import {AGG, TYPE, COLUMN_TYPE} from "./const";
 import {__obs, observeStream} from "./events";
 import {toDart} from "./wrappers";
 
@@ -434,7 +434,7 @@ export class ColumnList {
      * @returns {Column[]} */
     bySemTypesExact(semTypes) {
         let columns = [];
-        for (semType of semTypes) {
+        for (let semType of semTypes) {
             let col = this.bySemType(semType);
             if (col == null)
                 return null;
@@ -445,7 +445,16 @@ export class ColumnList {
 
     //todo
     //numerical
-    //categorical
+
+    /** @returns {Column[]} */
+    get categorical() {
+        //todo: convert to iterable
+        let result = [];
+        for (let i = 0; i < this.length; i++)
+            if (this.byIndex(i).type === COLUMN_TYPE.STRING)
+                result.push(this.byIndex(i));
+        return result;
+    }
 
     /** Array containing column names.
      * @returns {string[]} */
@@ -813,8 +822,9 @@ export class BitSet {
 
     /** Sets all bits to x
      * @param {boolean} x
+     * @param {boolean} notify
      * @returns {BitSet} */
-    setAll(x) { grok_BitSet_SetAll(this.d, x); return this; }
+    setAll(x, notify = true) { grok_BitSet_SetAll(this.d, x, notify); return this; }
 
     /** Finds the first index of value x, going forward from i-th position.
      * @param {number} i - index

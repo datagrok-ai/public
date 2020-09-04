@@ -3,6 +3,7 @@ import {TYPE, VIEWER} from "./const";
 import {DataFrame} from "./dataframe.js";
 import * as ui from "./../ui.js";
 import {Property} from "./entities";
+import {Widget} from "./widgets";
 import {_onSizeChanged, _toJson} from "./utils";
 import {Balloon} from "./widgets";
 import {toJs} from "./wrappers";
@@ -17,7 +18,12 @@ export class TypedEventArgs {
     get type() {
         return grok_TypedEventArgs_Get_Type(this.d);
     }
-    get data() { return toJs(grok_TypedEventArgs_Get_Data(this.d)); }
+
+    get data() {
+        let data = grok_TypedEventArgs_Get_Data(this.d);
+        let jsData = toJs(data);
+        return jsData;
+    }
 }
 
 /**
@@ -145,15 +151,14 @@ export class JsViewerProps {
 /** Subclass JsViewer to implement a DataFrame-bound Datagrok viewer in JavaScript.
  *  See an example on github: {@link https://github.com/datagrok-ai/public/tree/master/packages/Leaflet}
  *  */
-export class JsViewer {
+export class JsViewer extends Widget {
 
     /** @constructs JsViewer */
     constructor() {
+        super();
+
         /** @type {HTMLElement} */
         this.root = ui.div();
-
-        /** @type {Property[]}*/
-        this.properties = [];
 
         /** @type {DataFrame} */
         this.dataFrame = null;
@@ -182,7 +187,7 @@ export class JsViewer {
 
     /** Gets called when viewer's size is changed.
      * @returns {rxjs.Observable} */
-    get onSizeChanged() { return this._obs(_onSizeChanged(this.root)); }
+    get onSizeChanged() { return _onSizeChanged(this.root); }
 
     /** Gets called when this viewer is detached. */
     detach() {
@@ -190,7 +195,7 @@ export class JsViewer {
         this.subs.forEach((sub) => sub.unsubscribe());
     }
 
-    /** Gets property ba name (case-sensitive).
+    /** Gets property by name (case-sensitive).
      * @param {string} name
      * @returns {Property} */
     getProperty(name) { return this.properties.find((p) => p.name === name); }
