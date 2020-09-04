@@ -1,5 +1,5 @@
 import * as rxjs from 'rxjs';
-import {AGG, TYPE} from "./const";
+import {AGG, TYPE, COLUMN_TYPE} from "./const";
 import {__obs, observeStream} from "./events";
 import {toDart} from "./wrappers";
 
@@ -447,10 +447,10 @@ export class ColumnList {
     //numerical
 
     /** @returns {Column[]} */
-    categorical() {
+    get categorical() {
         //todo: convert to iterable
         let result = [];
-        for (let i = 0; i < length; i++)
+        for (let i = 0; i < this.length; i++)
             if (this.byIndex(i).type === COLUMN_TYPE.STRING)
                 result.push(this.byIndex(i));
         return result;
