@@ -1,4 +1,4 @@
-async function layoutsTest() {
+async function groupsTest() {
 //get list of groups named "demo"
     let demoGroup = await grok.dapi.groups.filter('demo').first();
 
