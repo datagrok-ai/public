@@ -1,6 +1,6 @@
 class WidgetsPackage extends DG.Package {
 
-    //name:  RadioButtonFilter
+    //name: RadioButtonFilter
     //description: A filter that lets you select exactly one category
     //tags: filter
     //output: filter result
