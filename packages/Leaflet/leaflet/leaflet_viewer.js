@@ -32,9 +32,9 @@ class LeafletViewer extends DG.JsViewer {
         this.init();
 
         let latLngColumns = this.dataFrame.columns.bySemTypesExact([DG.SEMTYPE.LATITUDE, DG.SEMTYPE.LONGITUDE]);
-        if (latLngColumns != null && this.latitudeColumnName != null && this.longitudeColumnName != null) {
+        if (latLngColumns != null && this.latitudeColumnName == null && this.longitudeColumnName == null) {
             this.latitudeColumnName = latLngColumns[0].name;
-            this.longitudeColumnName = latLngColumns[0].name;
+            this.longitudeColumnName = latLngColumns[1].name;
         }
 
         this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
