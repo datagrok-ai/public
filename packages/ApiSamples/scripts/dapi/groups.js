@@ -4,10 +4,10 @@ async function groupsTest() {
 
 //create a new Demo group, if doesn't exist and save
     if (demoGroup == null)
-        demoGroup = await grok.dapi.groups.createNew("Demo");
+        demoGroup = await grok.dapi.groups.createNew("Demo Group");
 
 //create a subgroup
-    let demoSubGroup = DG.Group.create(`Demo ${Math.floor(Math.random() * 100)}`);
+    let demoSubGroup = DG.Group.create("Demo Sub Group");
 
 //add to "Demo" group
     demoSubGroup.includeTo(demoGroup);
