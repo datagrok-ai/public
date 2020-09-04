@@ -61,6 +61,8 @@ export class Events {
         return this.customEventBus.fire(eventId, args);
     }
 
+    /** @returns {Observable} */ get onContextMenu() { return __obs('d4-context-menu'); }
+
     /** @returns {Observable} */ get onCurrentViewChanged () { return __obs('d4-current-view-changed'); }
 
     /** @returns {Observable} */ get onCurrentCellChanged () { return __obs('d4-current-cell-changed'); }
