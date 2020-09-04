@@ -676,8 +676,9 @@ export class BitSet {
 
     /** Sets all bits to x
      * @param {boolean} x
+     * @param {boolean} notify
      * @returns {BitSet} */
-    setAll(x: boolean): BitSet
+    setAll(x: boolean, notify: boolean): BitSet
 
     /** Finds the first index of value x, going forward from i-th position.
      * @param {number} i - index
@@ -711,4 +712,6 @@ export class BitSet {
      * @param {BitSet} b - BitSet to copy from.
      * @returns {BitSet} */
     copyFrom(b: BitSet): BitSet
+
+    fireChanged(): void
 }

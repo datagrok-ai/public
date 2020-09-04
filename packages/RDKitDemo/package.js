@@ -3,6 +3,7 @@ class RDKitDemoPackage extends DG.Package {
     /** Guaranteed to be executed exactly once before the execution of any function below */
     async init() {
         await initRDKit();
+        console.log('RDKit initialized');
 
         this.STORAGE_NAME = 'rdkit_descriptors';
         this.KEY = 'selected';
@@ -33,6 +34,12 @@ class RDKitDemoPackage extends DG.Package {
             ui.divText(`${this.getCLogP(smiles)}`)
         ]));
     }
+
+    //name: rdkitCellRenderer
+    //tags: cellRenderer
+    //meta-cell-renderer-sem-type: Molecule
+    //output: grid_cell_renderer result
+    rdkitCellRenderer() { return new RDKitCellRenderer(); }
 
     //tags: app
     descriptorsApp(context) {
@@ -172,5 +179,25 @@ class RDKitDemoPackage extends DG.Package {
     static removeChildren(node) {
         while (node.firstChild)
             node.removeChild(node.firstChild);
+    }
+}
+
+
+class RDKitCellRenderer extends GridCellRenderer {
+    get name() { return 'RDKit cell renderer'; }
+    get cellType() { return 'Molecule'; }
+    render(g, x, y, w, h, gridCell) {
+
+        g.fillStyle = 'black';
+        g.fillText('RDKit', x, y);
+        return;
+
+        let value = gridCell.cell.value;
+        if (value == null || value === '')
+            return;
+        let mol = Module.get_mol(value);
+        mol.draw_to_canvas(g.canvas, x, y, w, h);
+
+        mol.delete();
     }
 }
