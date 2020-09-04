@@ -26,10 +26,13 @@ export class Rect {
         return new Rect(_bytes[0], _bytes[1], _bytes[2], _bytes[3]);
     }
 
-    get left() { return x; }
-    get top() { return y; }
-    get right() { return x + width; }
-    get bottom() { return y + height; }
+    get midX() { return this.x + this.width / 2; }
+    get midY() { return this.y + this.height / 2; }
+
+    get left() { return this.x; }
+    get top() { return this.y; }
+    get right() { return this.x + this.width; }
+    get bottom() { return this.y + this.height; }
 }
 
 /** Represents a grid cell */
@@ -57,10 +60,10 @@ export class GridCell {
     get tableColumn() { return this.gridColumn.column; }
 
     /** @returns {Row} Corresponding table row, or null. */
-    get tableRow() { return this.isTableCell ? this.cell.row : null; }
+    get tableRow() { return this.isTableCell || this.isRowHeader ? this.cell.row : null; }
 
     /** @returns {number|null} Index of the corresponding table row. */
-    get tableRowIndex() { return this.isTableCell ? this.cell.rowIndex : null; }
+    get tableRowIndex() { return this.isTableCell || this.isRowHeader ? this.cell.rowIndex : null; }
 
     /** @returns {number} Index of the corresponding grid row. */
     get gridRow() { return grok_GridCell_Get_GridRow(this.d); }
