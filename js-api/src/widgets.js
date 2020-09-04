@@ -6,19 +6,36 @@ import {_sub, observeStream} from "./events";
 export class Widget {
 
     /** @constructs Widget and initializes its root. */
-    constructor(root = null) {
-        this._root = root;
+    constructor() {
+        /** @member {HTMLElement} */
+        this._root = null;
+
+        /** @member {Property[]}*/
+        this.properties = [];
     }
 
     /** Widget's visual root.
      * @type {HTMLElement} */
     get root() { return this._root; }
+    set root(r) { this._root = r; }
 
     /** Creates a {@see Widget} from the specified React component. */
     static react(reactComponent) {
         let widget = new Widget(ui.div());
         ReactDOM.render(reactComponent, widget.root);
         return widget;
+    }
+}
+
+
+/** Base class for DataFrame-bound filtering controls */
+export class Filter extends Widget {
+
+    constructor() {
+        super(ui.div());
+
+        /** @member {DataFrame} */
+        this.dataFrame = null;
     }
 }
 
