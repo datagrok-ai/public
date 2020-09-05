@@ -11,11 +11,14 @@
     "path": "^0.12.7",
     "archiver": "^4.0.2",
     "archiver-promise": "^1.0.0",
-    "ignore-walk": "^3.0.3"
+    "ignore-walk": "^3.0.3",
+    "js-yaml": "^3.14.0",
+    "os": "^0.1.1"
   },
   "bin": {
     "datagrok-init": "./bin/init.js",
-    "datagrok-upload": "./bin/upload.js"
+    "datagrok-upload": "./bin/upload.js",
+    "grok": "./bin/grok.js"
   },
   "devDependencies": {
     "webpack": "^4.43.0",
