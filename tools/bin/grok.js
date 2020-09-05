@@ -35,6 +35,9 @@ const HELP_CONFIG = `
 Usage: grok config
 
 Create or update a configuration file
+
+Options:
+[--reset]
 `;
 
 const HELP_CREATE = `
@@ -50,7 +53,7 @@ Delete a package
 `;
 
 const HELP_PUBLISH = `
-Usage: grok publish <host> <options>*
+Usage: grok publish <host>
 
 Upload a package
 
@@ -93,7 +96,7 @@ function generateKeyQ(server) {
     return question;
 };
 
-let options = Object.keys(argv).length > 1;
+let nOptions = Object.keys(argv).length - 1;
 let command = argv['_'][0];
 
 switch (command) {
@@ -105,11 +108,11 @@ switch (command) {
         }
         break;
     case 'config':
-        if (argv['_'].length === 1 && !options) {
+        if (argv['_'].length === 1 && (nOptions < 1 || nOptions === 1 && argv.reset)) {
             if (!fs.existsSync(GROK_DIR)) {
                 fs.mkdirSync(GROK_DIR);
             }
-            if (!fs.existsSync(CONF_PATH)) {
+            if (!fs.existsSync(CONF_PATH) || argv.reset) {
                 fs.writeFileSync(CONF_PATH, yaml.safeDump(CONFIG));
             }
             let config = yaml.safeLoad(fs.readFileSync(CONF_PATH));
