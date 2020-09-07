@@ -109,11 +109,11 @@ plot.showRegressionLine = true
 Depending on the nature of the data, our platform makes assumptions regarding
 the ways users would want to analyze it. For instance, whenever a scientist working in the
 digital signal processing domain opens a dataset that contains digital signals, it
-it likely that he would want to easily see certain features from the frequency domain 
+is likely that they would want to easily see certain features from the frequency domain 
 (common actions would be analyzing results of the Fourier transform, doing an 
 auto-correlation, or checking out spectrogram or scalogram). Typically, when such 
 a need arises, the scientist would fire up Matlab, load that dataset, then either write 
-a script or use Matlab's DSP toolbox (along the way, he would need to enter metadata
+a script or use Matlab's DSP toolbox (along the way, they would need to enter metadata
 that is often not included in the dataset, such as sampling rate).
 
 Within the Grok platform, a simple info panel can be developed that would understand

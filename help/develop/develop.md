@@ -124,9 +124,8 @@ Each package has a version number. All objects inside the package are being depl
 That means that if version changes, there will be an independent instance of each package asset.  
 Multiple versions of each package can be deployed at one moment, and administrator can switch between them. All users 
 will see only objects that belong to current package version.
-There is a special "debug" version can be deployed for each package. If developer deploys a debug version, it becomes 
-active for current package until developer deletes it or changes his developer key. In this case developer can see objects 
-from his version of package, and changes don't affect other users package representation.  
+There is a special "debug" version that can be deployed for each package. If the developer deploys the debug version, it becomes 
+active for the current package until the developer deletes it or changes their developer key. In this case, the developer can see objects from their version of package, and changes will not affect other users package representation.  
 
 
 ## Buildable Packages

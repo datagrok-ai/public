@@ -7,7 +7,7 @@ Datagrok is an extensible data-agnostic data analysis platform. It can be extend
 with different scientific methods (functions) that are automatically discovered and suggested to user
 when the relevant dataset is open. For instance, for small molecules we have implemented 
 popular cheminformatics methods (such as R-group analysis or substructure search), 
-and when a user clicks on a molecule he sees all functions applicable to it, as well
+and when a user clicks on a molecule they see all functions applicable to it, as well
 as different [visualizations](../discover/data-augmentation.md).
 
 These functions are registered in the platform in the form of [scripts](../compute/scripting.md)
