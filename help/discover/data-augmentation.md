@@ -8,7 +8,7 @@ sources within an enterprise. Data is one of the core assets for an enterprise, 
 essential. Data augmentation can help reduce the manual effort required to developed meaningful 
 information and insight of business data, as well as significantly enhance data quality._
 
-One of the Datagrok's goals is to provide the relevant information to the user whenever he needs it.
+One of the Datagrok's goals is to provide the relevant information to the user whenever they need it.
 In many cases, that involves presenting additional augmented data without the explicit request. Here are 
 few examples of the platform going an extra mile, and delivering these simple insights:
  * Showing quick data summary in the column tooltip
