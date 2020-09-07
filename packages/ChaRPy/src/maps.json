@@ -1,42 +1,47 @@
 {
   "plotScripts": {
-    "Scatter plot": "require(ggplot2)\nplt <- ggplot(data, aes(.xColumnName.yColumnName.sizeColumnName.colorColumnName)) +\ngeom_point(.markerType) +\nscale_size_continuous(range = c(.markerMinSize,.markerMaxSize)).labelsColumnName.showRegressionLine",
-    "Histogram": "require(ggplot2)\nplt <- ggplot(data, aes(.valueColumnName.colorColumnName)) +\ngeom_histogram(.binscolor=\"darkblue\",position=\"identity\", alpha = 0.5)",
-    "Barchart": "require(ggplot2)\nrequire(e1071)\n\nsummaryDf <- data.frame(\n    x = levels(as.factor(data$.splitColumnName)),\n    y = tapply(data$.valueColumnName, data$.splitColumnName, function(x) .valueAggrType)\n)\n\nplt <- ggplot(summaryDf,aes(x = reorder(x,.barSortOrdery),y = y)) +\n  geom_bar(stat=\"identity\",fill = \"green4\") +\n  labs(x = \".splitColumnName\", y = \".valueColumnName\") +\n  geom_text(aes(label=y)) +\n  coord_flip()",
-    "Box plot": "require(ggplot2)\nplt <- ggplot(data,aes(.categoryColumnName.valueColumnName.binColorColumnName)) +\n  geom_jitter(shape = 20.markerColorColumnName) +\n  geom_boxplot(lwd = 1,alpha = 0.8) +\n  stat_boxplot(geom ='errorbar') +\n  stat_summary(fun=mean, geom=\"point\", shape=20, size=5, color=\"black\", fill=\"black\")",
-    "Correlation plot": "require(dplyr)\nrequire(ggcorrplot)\ndata <- data %>% select(.xColumnNames)\ncorr <- round(cor(data.correlationType), 3)\n\nplt <- ggcorrplot(corr, hc.order = TRUE, lab = TRUE)"
+    "Scatter plot": "require(ggplot2)\nplt <- ggplot(data, aes(!(xColumnName)!(yColumnName)!(sizeColumnName)!(colorColumnName))) +\ngeom_point(!(markerType)) +\nscale_size_continuous(range = c(!(markerMinSize),!(markerMaxSize)))!(labelsColumnName)!(showRegressionLine)",
+    "Histogram": "require(ggplot2)\nplt <- ggplot(data, aes(!(valueColumnName)!(colorColumnName))) +\ngeom_histogram(!(bins)color=\"darkblue\",position=\"identity\", alpha = 0.5)",
+    "Bar chart": "require(ggplot2)\nrequire(e1071)\n\nsummaryDf <- data.frame(\n    x = levels(as.factor(data$!(splitColumnName))),\n    y = tapply(data$!(valueColumnName), data$!(splitColumnName), !(valueAggrType))\n)\n\nplt <- ggplot(summaryDf,aes(x = reorder(x,!(barSortOrder)y),y = y)) +\n  geom_bar(stat=\"identity\",fill = \"green4\") +\n  labs(x = \"!(splitColumnName)\", y = \"!(valueColumnName)\") +\n  geom_text(aes(label=y)) +\n  coord_flip()",
+    "Box plot": "require(ggplot2)\nplt <- ggplot(data,aes(!(categoryColumnName)!(valueColumnName)!(binColorColumnName))) +\n  geom_jitter(shape = 20!(markerColorColumnName)) +\n  geom_boxplot(lwd = 1,alpha = 0.8) +\n  stat_boxplot(geom ='errorbar') +\n  stat_summary(fun=mean, geom=\"point\", shape=20, size=5, color=\"black\", fill=\"black\")",
+    "Correlation plot": "require(dplyr)\nrequire(ggcorrplot)\ndata <- data %>% select(!(xColumnNames))\ncorr <- round(cor(data!(correlationType)), 3)\n\nplt <- ggcorrplot(corr, hc.order = TRUE, lab = TRUE)",
+    "Line chart": "library(dplyr)\nlibrary(gridExtra)\nfuns <- list(!(yAggrTypes))\ndata <- data %>% select(!(xColumnName),!(yColumnNames))\nsummaryDf <- data.frame(!(xColumnName) = levels(as.factor(data$!(xColumnName))))\nplts <- list()\nfor (i in 1:length(funs)){\n  summaryDf[[names(data)[i+1]]] <- tapply(data[[i+1]], data$!(xColumnName), funs[[i]])\n  plts[[i]] <- ggplot(summaryDf, aes_string(names(statDf)[1],names(summaryDf)[i+1] , group = 1)) + geom_line() + geom_point()\n}\nplt <- do.call(grid.arrange,plts)"
   },
   "additionalOps" : {
 
     "Scatter plot": {
-      "xColumnName": "x = .xColumnName",
-      "yColumnName": ", y = .yColumnName",
-      "sizeColumnName": ", size = .sizeColumnName",
-      "colorColumnName": ", color = .colorColumnName",
-      "markerType": "shape = .markerType",
-      "labelsColumnName": " +\ngeom_text(label=rownames(.labelsColumnName))",
+      "xColumnName": "x = !(xColumnName)",
+      "yColumnName": ", y = !(yColumnName)",
+      "sizeColumnName": ", size = !(sizeColumnName)",
+      "colorColumnName": ", color = !(colorColumnName)",
+      "markerType": "shape = !(markerType)",
+      "labelsColumnName": " +\ngeom_text(label=rownames(!(labelsColumnName)))",
       "showRegressionLine": " +\ngeom_smooth(method=lm)"
     },
 
     "Histogram": {
-      "valueColumnName" : "x = .valueColumnName",
-      "colorColumnName": ", fill = .colorColumnName",
-      "bins": "bins = .bins, "
+      "valueColumnName" : "x = !(valueColumnName)",
+      "colorColumnName": ", fill = !(colorColumnName)",
+      "bins": "bins = !(bins), "
     },
 
-    "Barchart" : {
+    "Bar chart" : {
       "none": "none"
     },
 
     "Box plot" : {
-      "categoryColumnName": "x = .categoryColumnName",
-      "valueColumnName" : ", y = .valueColumnName",
-      "binColorColumnName": ", fill = .binColorColumnName",
-      "markerColorColumnName": ", aes(color = .markerColorColumnName)"
+      "categoryColumnName": "x = !(categoryColumnName)",
+      "valueColumnName" : ", y = !(valueColumnName)",
+      "binColorColumnName": ", fill = !(binColorColumnName)",
+      "markerColorColumnName": ", aes(color = !(markerColorColumnName))"
     },
 
     "Correlation plot": {
-      "correlationType": ", method = \".correlationType\""
+      "correlationType": ", method = \"!(correlationType)\""
+    },
+
+    "Line chart": {
+      "none": "none"
     }
 
   },
@@ -47,21 +52,20 @@
     "dot": 20,
     "desc": "+",
     "asc": "-",
-    "count": "length(x)",
-    "unique": "length(unique(x))",
-    "nulls": "sum(length(which(is.na(x))))",
-    "min": "min(x)",
-    "max": "max(x)",
-    "sum": "sum(x)",
-    "med": "med(x)",
-    "avg": "mean(x)",
-    "stdev": "sd(x)",
-    "variance": "var(x)",
-    "skew": "skewness(x)",
-    "kurt": "kurtosis(x)",
-    "q1": "quantile(x)[2]",
-    "q2": "quantile(x)[3]",
-    "q3": "quantile(x)[4]"
+    "count": "function(x) length(x)",
+    "unique": "function(x) length(unique(x))",
+    "nulls": "function(x) sum(length(which(is.na(x))))",
+    "min": "function(x) min(x)",
+    "max": "function(x) max(x)",
+    "med": "function(x) median(x)",
+    "avg": "function(x) mean(x)",
+    "stdev": "function(x) sd(x)",
+    "variance": "function(x) var(x)",
+    "skew": "function(x) skewness(x)",
+    "kurt": "function(x) kurtosis(x)",
+    "q1": "function(x) quantile(x)[2]",
+    "q2": "function(x) quantile(x)[3]",
+    "q3": "function(x) quantile(x)[4]"
   },
   "header" : "#name: Plot\n#language: r\n#input: dataframe data\n#output: graphics\n\n"
 }
