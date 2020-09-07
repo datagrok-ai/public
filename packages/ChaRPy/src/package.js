@@ -9,7 +9,18 @@ export let _package = new DG.Package();
 //name: toScript
 //top-menu: convert | toScript
 export async function toScript() {
-    
+
+    function assignOnlyIntersection(target, source) {
+        Object.keys(target).forEach(key => {
+            (target[key] == null) && delete target[key]
+            if (target[key] in source) {
+                target[key] = source[target[key]];
+            } else if (typeof target[key] === 'object') {
+                assignOnlyIntersection(target[key], source)
+            }
+        })
+    }
+
     //main slicing function
     async function strReplace(optionsObj) {
 
@@ -31,29 +42,21 @@ export async function toScript() {
         for (i = 0; i < mapKeys.length; i++) {
 
             if (toRemove.includes(mapKeys[i])) {
-                stRing = stRing.replace("." + mapKeys[i],mapVals[i]);
+                stRing = stRing.replace("!(" + mapKeys[i] + ")",mapVals[i]);
             } else {
-                stRing = stRing.replace("." + mapKeys[i],"");
+                stRing = stRing.replace("!(" + mapKeys[i] + ")","");
             }
 
         }
 
+        //Replace misc grok codes with R analogues
+        assignOnlyIntersection(toInsert, map.miscCodes);
+
         //fill in the actual parameters
         for (i = 0; i < toRemove.length; i++) {
 
-            //replace grok specific toInsert values with R codes
-            if (Object.keys(map.miscCodes).includes(toInsert[i])) {
-                toInsert[i] = map.miscCodes[toInsert[i]];
-            }
-
-            //replace missing values with NULL
-            if (toInsert[i] == null) {
-                toInsert[i] = 'NULL';
-            }
-
             //replace all string parameter markers with corresponding values
-            // stRing = stRing.replace(/toRemove[i]/g, toInsert[i]);
-            stRing = stRing.split("." + toRemove[i]).join(toInsert[i]);
+            stRing = stRing.split("!(" + toRemove[i] + ")").join(toInsert[i]);
         }
 
         stRing = stRing + "\nprint(plt)"
@@ -63,7 +66,7 @@ export async function toScript() {
     //test viewer + options
     let view = grok.shell.addTableView(grok.data.demo.demog());
 
-    // //Scatter plot
+    // // Scatter plot
     // let plot = view.scatterPlot({
     //     x: 'height',
     //     y: 'weight',
@@ -82,7 +85,7 @@ export async function toScript() {
     //     bins : 40
     // });
 
-    // Bar chart
+    // // Bar chart
     // let plot = view.barChart({
     //     split: 'study',
     //     value: 'age'
@@ -99,11 +102,15 @@ export async function toScript() {
     //     // binColorColumnName: 'height'
     // })
 
-    //Correlation plot
+    // Correlation plot
     let plot = view.corrPlot({
         xs: ['age', 'weight', 'height'],
         ys: ['age', 'weight', 'height'],
     });
+
+    // let plot = view.lineChart({
+    //     x: "age"
+    // });
 
 
     //collect viewer properties
