@@ -47,7 +47,7 @@ const CURR_DIR = process.cwd();
 inquirer.prompt(QUESTIONS)
     .then(answers => {
         console.log();
-        createDirectoryContents(answers, `${__dirname}/../template`, CURR_DIR);
+        createDirectoryContents(answers, `${__dirname}/../package-template`, CURR_DIR);
     });
 
 function createDirectoryContents (answers, templateDir, packageDir) {
