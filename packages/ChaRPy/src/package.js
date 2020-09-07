@@ -10,6 +10,7 @@ export let _package = new DG.Package();
 //top-menu: convert | toScript
 export async function toScript() {
 
+    // recursive multi-level object merging
     function assignOnlyIntersection(target, source) {
         Object.keys(target).forEach(key => {
             (target[key] == null) && delete target[key]
@@ -21,12 +22,29 @@ export async function toScript() {
         })
     }
 
+    function dynamicReplace(stRing, toRemove, map) {
+        Object.keys(toRemove).forEach(key => {
+            if ( typeof toRemove[key] === 'object') {
+                stRing = dynamicReplace(stRing, toRemove[key], map);
+            } else {
+                stRing = stRing.replace("!(" + key + ")",map[key]);
+            }
+        })
+        return stRing;
+    }
+
     //main slicing function
     async function strReplace(optionsObj) {
 
-        grok.shell.info(Object.entries(optionsObj.look));
+        // extract default string and viewer type
+        let stRing;
+        if (optionsObj.type === 'Trellis plot') {
+            stRing = map.plotScripts[optionsObj.look.innerViewerLook.type] +
+                "facet_grid(!(xColumnNames)!(yColumnNames))"; // need to append 'Look'
+        } else {
+            stRing = map.plotScripts[optionsObj.type];
+        }
 
-        let stRing = map.plotScripts[optionsObj.type];
         let paramsMap = map.additionalOps[optionsObj.type];
 
         //decompose getOptions() output
@@ -37,22 +55,25 @@ export async function toScript() {
         let mapKeys = Object.keys(paramsMap);
         let mapVals = Object.values(paramsMap);
 
-        //trim the generalized code version
-        let i;
-        for (i = 0; i < mapKeys.length; i++) {
+        //trim the default code string
+        // let i;
+        // for (i = 0; i < mapKeys.length; i++) {
+        //
+        //     if (toRemove.includes(mapKeys[i])) {
+        //         stRing = stRing.replace("!(" + mapKeys[i] + ")",mapVals[i]);
+        //     } else {
+        //         stRing = stRing.replace("!(" + mapKeys[i] + ")","");
+        //     }
+        //
+        // }
 
-            if (toRemove.includes(mapKeys[i])) {
-                stRing = stRing.replace("!(" + mapKeys[i] + ")",mapVals[i]);
-            } else {
-                stRing = stRing.replace("!(" + mapKeys[i] + ")","");
-            }
-
-        }
+        stRing = dynamicReplace(stRing, optionsObj.look, map)
 
         //Replace misc grok codes with R analogues
         assignOnlyIntersection(toInsert, map.miscCodes);
 
         //fill in the actual parameters
+        let i;
         for (i = 0; i < toRemove.length; i++) {
 
             //replace all string parameter markers with corresponding values
@@ -94,22 +115,21 @@ export async function toScript() {
     //     valueAggrType : "skew"
     // });
 
-    // //Box plot
-    // let plot = view.boxPlot({
-    //     value : 'height',
-    //     category: 'site',
-    //     markerColorColumnName: 'sex'
-    //     // binColorColumnName: 'height'
-    // })
+    //Box plot
+    let plot = view.boxPlot({
+        value : 'height',
+        category: 'site',
+        markerColorColumnName: 'sex'
+        // binColorColumnName: 'height'
+    })
 
-    // Correlation plot
-    let plot = view.corrPlot({
-        xs: ['age', 'weight', 'height'],
-        ys: ['age', 'weight', 'height'],
-    });
+    // // Correlation plot
+    // let plot = view.corrPlot({
+    //     xs: ['age', 'weight', 'height'],
+    //     ys: ['age', 'weight', 'height'],
+    // });
 
     // let plot = view.lineChart({
-    //     x: "age"
     // });
 
 
@@ -126,6 +146,7 @@ export async function toScript() {
         .add(input)
         .onOK(() => { grok.shell.info('OK!'); })
         .show();
+
 
     //run the generated script in R
     view.addViewer('Scripting Viewer', {
