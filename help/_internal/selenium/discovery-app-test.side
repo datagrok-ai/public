@@ -108,14 +108,14 @@
       "id": "ccefa6d6-f9af-4185-9bac-04040bb355a3",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "id=grok-app",
+      "target": "xpath=//h2[contains(.,'Applications')]",
       "targets": [
-        ["id=grok-app", "id"],
-        ["css=#grok-app", "css:finder"],
-        ["xpath=//h1[@id='grok-app']", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/span/h1", "xpath:idRelative"],
-        ["xpath=//span/h1", "xpath:position"],
-        ["xpath=//h1[contains(.,'Grok App')]", "xpath:innerText"]
+        ["id=applications", "id"],
+        ["css=#applications", "css:finder"],
+        ["xpath=//h2[@id='applications']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/span/h2[6]", "xpath:idRelative"],
+        ["xpath=//h2[6]", "xpath:position"],
+        ["xpath=//h2[contains(.,'Applications')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
