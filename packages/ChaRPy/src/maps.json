@@ -15,33 +15,49 @@
       "sizeColumnName": ", size = !(sizeColumnName)",
       "colorColumnName": ", color = !(colorColumnName)",
       "markerType": "shape = !(markerType)",
+      "markerMinSize": "!(markerMinSize)",
+      "markerMaxSize": "!(markerMaxSize)",
       "labelsColumnName": " +\ngeom_text(label=rownames(!(labelsColumnName)))",
-      "showRegressionLine": " +\ngeom_smooth(method=lm)"
+      "showRegressionLine": " +\ngeom_smooth(method=lm)",
+      "xColumnNames": "rows = vars(!(xColumnNames))",
+      "yColumnNames": ", cols = vars(!(yColumnNames))"
     },
 
     "Histogram": {
       "valueColumnName" : "x = !(valueColumnName)",
       "colorColumnName": ", fill = !(colorColumnName)",
-      "bins": "bins = !(bins), "
+      "bins": "bins = !(bins), ",
+      "xColumnNames": "rows = vars(!(xColumnNames))",
+      "yColumnNames": ", cols = vars(!(yColumnNames))"
     },
 
     "Bar chart" : {
-      "none": "none"
+      "splitColumnName": "!(splitColumnName)",
+      "valueColumnName": "!(valueColumnName)",
+      "valueAggrType": "!(valueAggrType)",
+      "barSortOrder": "!(barSortOrder)",
+      "xColumnNames": "rows = vars(!(xColumnNames))",
+      "yColumnNames": ", cols = vars(!(yColumnNames))"
     },
 
     "Box plot" : {
       "categoryColumnName": "x = !(categoryColumnName)",
       "valueColumnName" : ", y = !(valueColumnName)",
       "binColorColumnName": ", fill = !(binColorColumnName)",
-      "markerColorColumnName": ", aes(color = !(markerColorColumnName))"
+      "markerColorColumnName": ", aes(color = !(markerColorColumnName))",
+      "xColumnNames": "rows = vars(!(xColumnNames))",
+      "yColumnNames": ", cols = vars(!(yColumnNames))"
     },
 
     "Correlation plot": {
+      "xColumnNames": "!(xColumnNames)",
       "correlationType": ", method = \"!(correlationType)\""
     },
 
     "Line chart": {
-      "none": "none"
+      "yAggrTypes": "!(yAggrTypes)",
+      "xColumnName": "!(xColumnName)",
+      "yColumnNames": "!(yColumnNames)"
     }
 
   },
