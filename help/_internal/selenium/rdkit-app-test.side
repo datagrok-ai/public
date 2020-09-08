@@ -108,7 +108,7 @@
       "id": "ccefa6d6-f9af-4185-9bac-04040bb355a3",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "id=grok-app",
+      "target": "xpath=//h2[contains(.,'Applications')]",
       "targets": [
         ["id=grok-app", "id"],
         ["css=#grok-app", "css:finder"],

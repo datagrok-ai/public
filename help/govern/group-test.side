@@ -207,6 +207,13 @@
       ],
       "value": ""
     }, {
+      "id": "a8a26e8d-f65f-4737-bd79-33a6eb7fbf41",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "1e8b65f8-45c4-4096-bf18-56a377a19731",
       "comment": "",
       "command": "click",
@@ -255,6 +262,13 @@
       ],
       "value": "You already have membership in this group"
     }, {
+      "id": "6b620246-ba24-4c5a-bb37-f4c0f61cc491",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "29e68cf7-31e9-49c1-b046-5ab72def7eb4",
       "comment": "",
       "command": "click",
@@ -267,6 +281,13 @@
       ],
       "value": ""
     }, {
+      "id": "6a5f2694-b4cc-478b-bcfd-50b622f8f0d0",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "c7675ae1-ede7-4d85-99b5-722eb78cab8a",
       "comment": "",
       "command": "click",
@@ -276,6 +297,13 @@
         ["xpath=//input[@type='checkbox']", "xpath:attributes"],
         ["xpath=//label/input", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "3772d0a5-8f67-40a2-a9c7-1b778f82a8ca",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "ab697d72-a5c4-4b5d-aedd-26025ad746a2",
@@ -356,6 +384,13 @@
       ],
       "value": ""
     }, {
+      "id": "b4f68d71-2fa7-4989-aff0-546a31a5e7e5",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "59143683-fc2c-419b-87b5-31ba616fe4ca",
       "comment": "",
       "command": "click",
@@ -381,22 +416,17 @@
       ],
       "value": ""
     }, {
-      "id": "15acd901-49f4-4a4b-b0f2-e59faf40dcd0",
+      "id": "2a6d6886-3e99-423f-828f-75e6590df5f9",
       "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@name='div-section--Members']",
-      "targets": [
-        ["css=.d4-accordion-pane:nth-child(4) > .d4-accordion-pane-header", "css:finder"],
-        ["xpath=//div[@name='div-section--Members']", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div[4]/div", "xpath:position"]
-      ],
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "ac8acb26-2a17-4476-aa20-93532d6f8695",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//label[contains(.,'sakhniuk')]",
+      "target": "name=span-Sakhniuk",
       "targets": [
         ["css=.d4-accordion-pane:nth-child(4) tr:nth-child(2) label", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div[2]/table/tbody/tr[2]/td/span/label", "xpath:idRelative"],
@@ -494,6 +524,13 @@
       ],
       "value": ""
     }, {
+      "id": "6bbb25ea-14eb-48aa-a1f8-02949d0195ff",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "a5c51bd9-1553-4809-9685-db63099687be",
       "comment": "",
       "command": "click",
@@ -504,6 +541,13 @@
         ["xpath=//span[6]/label", "xpath:position"],
         ["xpath=//label[contains(.,'Delete')]", "xpath:innerText"]
       ],
+      "value": ""
+    }, {
+      "id": "06702343-d32d-4b85-9906-839a18f66b45",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
+      "targets": [],
       "value": ""
     }, {
       "id": "205fe967-a073-45e8-99d2-90ee2719cc30",
