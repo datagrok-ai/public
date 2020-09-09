@@ -1,7 +1,7 @@
 module.exports = {
-  add: add
-}
+    add: add
+};
 
-function add (args) {
-  return false
+function add(args) {
+    return false;
 }

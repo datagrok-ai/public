@@ -1,7 +1,7 @@
 module.exports = {
-  delete: deletePackage
-}
+    delete: deletePackage
+};
 
-function deletePackage (args) {
-  return false
+function deletePackage(args) {
+    return false;
 }
