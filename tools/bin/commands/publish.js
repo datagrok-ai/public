@@ -1,7 +1,7 @@
 module.exports = {
-  publish: publish
-}
+    publish: publish
+};
 
-function publish (args) {
-  return false
+function publish(args) {
+    return false;
 }
