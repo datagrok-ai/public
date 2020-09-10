@@ -8,6 +8,8 @@ import {VirtualView} from "./src/view";
 import {Accordion, Dialog, InputBase, Menu, TabControl, TreeViewNode, Widget} from "./src/widgets";
 import {toDart} from "./src/wrappers";
 import {Functions} from "./src/functions";
+import $ from "cash-dom";
+import Cash from "cash-dom";
 
 /**
  * Creates an instance of the element for the specified tag, and optionally assigns it a CSS class.
@@ -98,12 +100,27 @@ export function iconFA(name, handler, tooltipMsg = null) {
     return i;
 }
 
+export function extract(x) {
+    if (x == null)
+        return null;
+    if (typeof x.root !== 'undefined')
+        return x.root;
+    if (x instanceof Widget)
+        return x.root;
+    if (typeof x.wrap === 'function') {
+        if (x.length === 1)
+            return x[0];
+        else
+            return ui.span(x.get());
+    }  // jquery (cash) object
+    return x;
+}
+
 /** Renders object to html element.
  * @param {object} x
  * @returns {HTMLElement} */
 export function render(x) {
-    if (x instanceof Widget)
-        return x.root;
+    x = extract(x);
     return grok_UI_Render(x);
 }
 
@@ -147,6 +164,30 @@ export function divV(items, className = null) { return grok_UI_DivV(items, class
  *  @param {string} className - comma-separated CSS class names
  *  @returns {HTMLDivElement} */
 export function divH(items, className = null) { return grok_UI_DivH(items, className); }
+
+/** Div flex-box container that positions child elements horizontally.
+ *  @param {object[]} items */
+function _split(items) {
+    let renderedItems = items
+        .map(x => div([render(x)], 'd4-split-panel'))
+
+    renderedItems.forEach(e => $(e)
+        .css("flex-grow", "1")
+    );
+    return renderedItems;
+}
+
+/** Div flex-box container that positions child elements horizontally.
+ *  @param {object[]} items */
+export function splitV(items) {
+    return divV(_split(items), 'd4-split-host,d4-split-host-vert');
+}
+
+/** Div flex-box container that positions child elements horizontally.
+ *  @param {object[]} items */
+export function splitH(items) {
+    return divH(_split(items), 'd4-split-host,d4-split-host-horz');
+}
 
 /** Renders content as a card. */
 export function card(content) { return ui.div([content], 'd4-item-card'); }

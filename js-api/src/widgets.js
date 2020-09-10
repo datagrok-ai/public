@@ -1,7 +1,6 @@
 import {toDart, toJs} from "./wrappers";
 import {_sub, observeStream} from "./events";
 
-
 /** Base class for controls that have a visual root and a set of properties. */
 export class Widget {
 
@@ -163,7 +162,7 @@ export class Dialog {
     /** Adds content to the dialog.
      * @param {HTMLElement | Widget | InputBase} content
      * @returns {Dialog} */
-    add(content) { grok_Dialog_Add(this.d, toDart(content)); return this; }
+    add(content) { grok_Dialog_Add(this.d, toDart(ui.extract(content))); return this; }
 }
 
 /**
