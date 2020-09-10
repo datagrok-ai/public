@@ -1,7 +1,5 @@
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
-const yaml = require('js-yaml');
 
 module.exports = {
     create: create
@@ -9,13 +7,8 @@ module.exports = {
 
 const curDir = process.cwd();
 const curFolder = path.basename(curDir);
-const grokDir = path.join(os.homedir(), '.grok');
-const confPath = path.join(grokDir, 'config.yaml');
-const config = yaml.safeLoad(fs.readFileSync(confPath));
-const server = config['servers'][config.default]['url'];
-const key = config['servers'][config.default]['key'];
 
-function createDirectoryContents(name, configPath, templateDir, packageDir) {
+function createDirectoryContents(name, templateDir, packageDir) {
     const filesToCreate = fs.readdirSync(templateDir);
 
     filesToCreate.forEach(file => {
@@ -26,8 +19,10 @@ function createDirectoryContents(name, configPath, templateDir, packageDir) {
             let contents = fs.readFileSync(origFilePath, 'utf8');
             contents = contents.replace(/#{PACKAGE_NAME}/g, name);
             contents = contents.replace(/#{PACKAGE_NAME_LOWERCASE}/g, name.toLowerCase());
-            contents = contents.replace(/#{REMOTE_URL}/g, server + '/api');
-            contents = contents.replace(/#{REMOTE_KEY}/g, key);
+            // In the next version, we do not need the `upload.keys.json` file
+            if (file === 'upload.keys.json') {
+                return false;
+            }
             if (file === 'npmignore') {
                 file = '.npmignore';
             }
@@ -38,7 +33,7 @@ function createDirectoryContents(name, configPath, templateDir, packageDir) {
         } else if (stats.isDirectory()) {
             fs.mkdirSync(copyFilePath);
             // recursive call
-            createDirectoryContents(name, configPath, origFilePath, copyFilePath);
+            createDirectoryContents(name, origFilePath, copyFilePath);
         }
     })
 }
@@ -70,7 +65,7 @@ function create(args) {
                 return false;
             }
             const templateDir = path.join(path.dirname(path.dirname(__dirname)), 'package-template');
-            createDirectoryContents(name, confPath, templateDir, packageDir);
+            createDirectoryContents(name, templateDir, packageDir);
         } else {
             console.log('Package name may only include letters, numbers, underscores, or hyphens');
         }
