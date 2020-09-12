@@ -181,6 +181,15 @@ export class DataFrame {
      * @param {boolean} saveSelection - Whether selection should be saved. */
     clone(rowMask?: BitSet | null, columnIds?: string[] | null, saveSelection?: boolean): DataFrame
 
+    /** Converts a column with the specified name to [newType],
+     * removes the original column from its dataframe and adds the new column to it.
+     * @param {string|Column} column
+     * @param {string} newType
+     * @param {string=} format
+     * @returns {Column} */
+    changeColumnType(column: string | Column, newType: string,
+                     format?: string | null): Column
+    
     /** Begins building a query, using the specified columns as keys.
      * @param {string[]} columnNames - Names of the columns to be used as keys.
      * @returns {GroupByBuilder}
@@ -279,6 +288,18 @@ export class Column {
      * @param {number} length */
     static bool(name: string, length?: number): Column
 
+    /** Creates a qualified number column with the specified name and length.
+     *  Initialized values with [values], if it is specified; strips out the qualifier
+     *  part if [exact] is true.
+     *
+     * @param {string} name
+     * @param {number} length
+     * @param {number[]} values
+     * @param {boolean} exact - if true, strips out qualifier from [values].
+     * */
+    static qnum(name: string, length?: number, values?: number[] | null,
+                exact?: boolean): Column
+    
     /** Creates a datetime column with the specified name and length.
      * @param {string} name
      * @param {number} length */
@@ -293,6 +314,9 @@ export class Column {
      * @returns {Array} */
     getRawData(): Int32Array | Float64Array | Uint32Array
 
+
+    setRawData(rawData: any, notify?: boolean): void
+    
     /** Gets i-th value */
     get(i: number): any
 
@@ -329,6 +353,13 @@ export class Column {
     //TODO: check if iterates
     /** An iterator over all values in this column. */
     values(): Generator<any, void, unknown>
+
+
+    /** Creates and returns a new column by converting [column] to the specified [newType].
+     *  @param {string} newType
+     *  @param {string} format
+     *  @returns {Column} */
+    convertTo(newType: string, format?: string | null): Column
 }
 
 /** Columns in a [DataFrame]. */
