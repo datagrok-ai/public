@@ -2,6 +2,69 @@ import {DataFrame} from "./dataframe";
 import {JOIN_TYPE, SYNC_TYPE} from "./const";
 import {FuncCall} from "./functions";
 
+export const QNUM_LESS: number;
+export const QNUM_EXACT: number;
+export const QNUM_GREATER: number;
+
+/**
+ *  A set of static methods for working with qualified numbers.
+ *  The internal representation of a qualified number is a regular double precision floating point
+ *  number (IEEE 754), except the two least significant bits in mantissa are reserved
+ *  for holding the qualifier ([LESS], [EXACT], [GREATER]).
+ *
+ *  The advantage of that representation is that the standard arithmetic operations could be
+ *  performed directly on the number, without unpacking it. This is especially important for batch
+ *  operations such as aggregation or sorting. While there is a loss of precision, it is rather
+ *  insignificant (50 bits for storing mantissa instead of 52), which makes perfect sense
+ *  considering that qualified numbers represent imprecise measurements.
+ *
+ *  Use [create], [getValue], and [getQ] methods for packing/unpacking.
+ * */
+export class Qnum {
+    /**
+     * Extracts the qualifier ({@link QNUM_LESS}, {@link QNUM_EXACT}, {@link QNUM_GREATER}).
+     * See also {@link getValue}
+     * @param {number} x
+     * @returns {number}
+     * */
+    static getQ(x: number): number
+
+    /**
+     * Extracts the value from x, stripping the qualifier .
+     * See also {@link getQ}
+     * @param {number} x
+     * @returns {number}
+     * */
+    static getValue(x: number): number
+
+    /**
+     * Creates a QNum value out of the [value] and qualifier [q].
+     * @param {number} value
+     * @param {number} q
+     * @returns {number}
+     * */
+    static create(value: number, q?: number): number
+
+    static exact(x: number): number
+    static less(x: number): number
+    static greater(x: number): number
+
+    /**
+     * Parses a string into a qualified number.
+     * @param {string} s
+     * @returns {number}
+     * */
+    static parse(s: string): number
+
+    /**
+     * Converts a qualified number to a string representation.
+     * @param {number} x
+     * @returns {string}
+     * */
+    static toString(x: number): string
+}
+
+
 type DemoDatasetName = 'wells' | 'demog' | 'biosensor' | 'random walk';
 
 /** Provides convenient access to demo datasets. */
@@ -33,6 +96,11 @@ export class DemoDatasets {
     /** Plate well data
      * @returns {DataFrame}*/
     wells(rows?: number): DataFrame
+
+    /** Lat/lng of a walk around San Francisco
+     * @returns {DataFrame}*/
+    geo(rows?: number): DataFrame
+
 
     /** Returns a demo dataset with the specified path (relative to the demo root)
      * @example
