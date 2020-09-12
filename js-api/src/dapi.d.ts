@@ -8,7 +8,7 @@ import {
     Model,
     Notebook,
     Package,
-    Project,
+    Project, Property,
     Script,
     ScriptEnvironment,
     TableInfo,
@@ -25,6 +25,7 @@ import {DataFrame} from "./dataframe";
 export class Dapi {
     constructor()
 
+    get entities(): EntitiesDataSource;
     /** Data Queries API endpoint
      *  @type {HttpDataSource<DataQuery>} */
     get queries(): HttpDataSource<DataQuery>
@@ -65,9 +66,11 @@ export class Dapi {
      *  @type {UsersDataSource} */
     get users(): UserDataStorage
 
+    get permissions(): PermissionsDataSource
+    
     /** Groups API endpoint
      *  @type {HttpDataSource<Group>} */
-    get groups(): HttpDataSource<Group>
+    get groups(): GroupsDataSource
 
     /** Scripts API endpoint
      *  @type {HttpDataSource<Script>} */
@@ -125,12 +128,18 @@ export class HttpDataSource<T> {
         filter?: string
     }): Promise<T[]>
 
+    first(): Promise<T>
+    
     /** Returns an entity with the specified id.
      *  Throws an exception if an entity does not exist, or is not accessible in the current context.
      *  @param {string} id - GUID of the corresponding object
      *  @returns {Promise<object>} - entity. */
     find(id: string): Promise<T>
 
+    save(e: T): Promise<void>
+    
+    delete(e: T): Promise<void>
+    
     by(i: number): this
 
     page(i: number): this
@@ -172,6 +181,92 @@ export class UsersDataSource extends HttpDataSource<User> {
     current(): Promise<User>
 }
 
+/**
+ * Functionality for handling groups collection from server
+ * Allows to manage {@link Group}
+ * @extends HttpDataSource
+ * */
+export class GroupsDataSource extends HttpDataSource<Group> {
+    /** @constructs CredentialsDataSource*/
+    constructor(s: any, instance: any)
+
+    /** Creates a new group
+     *  @param {String}  name
+     *  @returns {Promise<Group>} - Group. */
+    createNew(name: string): Promise<Group>
+
+    /** Returns group user
+     *  @param {Group} group
+     *  @returns {Promise<Group>} - Group. */
+    getUser(group: Group) : Promise<Group>
+
+    /** Adds a member to the group
+     * @param {Group} g
+     * @param {Group} m
+     * @returns Promise */
+    addMember(g: Group, m: Group): Promise<Group>
+
+    /** Adds an admin member to the group
+     * @param {Group} g
+     * @param {Group} m
+     * @returns Promise */
+    addAdminMember(g: Group, m: Group): Promise<Group>
+
+    /** Removes a member from the group
+     * @param {Group} g
+     * @param {Group} m
+     * returns Promise */
+    removeMember(g: Group, m: Group): Promise<Group>
+
+    /** Adds the group to another one
+     * @param {Group} g
+     * @param {Group} parent
+     * returns Promise */
+     includeTo(g: Group, parent: Group): Promise<Group>
+
+
+    /** Adds the group to another one as admin
+     * @param {Group} g
+     * @param {Group} parent
+     * returns Promise */
+    includeAdminTo(g: Group, parent: Group): Promise<Group>
+
+    /** Removes a membership from the group
+     * @param {Group} g
+     * @param {Group} parent
+     * returns Promise */
+    excludeFrom(g: Group, parent: Group): Promise<Group>
+
+    /** Saves a group with relations
+     *  @param {Group}  e
+     *  @returns {Promise<Group>} - Group. */
+    saveRelations(e: Group): Promise<Group>
+
+}
+
+
+/**
+ * Functionality for handling entities collection from server
+ * Allows to manage {@link Entity}
+ * @extends HttpDataSource
+ * */
+export class EntitiesDataSource extends HttpDataSource<Entity> {
+    /** @constructs CredentialsDataSource*/
+    constructor(s: any, instance: any) {
+        super(s, instance);
+    }
+
+    /** Allows to set properties for entities
+     * @param {List<Map>} props
+     * @returns {Promise} */
+    saveProperties(props: Map<Property, any>[]): Promise<void>
+
+    /** Returns entity properties
+     * @param {Entity} entity
+     * @returns {Promise<Map>} props */
+    getProperties(entity: Entity): Promise<Map<Property, any>>
+}
+
 
 /**
  * Functionality for handling credentials collection from server and working with credentials remote endpoint
@@ -187,6 +282,30 @@ export class CredentialsDataSource extends HttpDataSource<Credentials> {
      * @param {Entity} e
      * @returns {Credentials} */
     forEntity(e: Entity): Promise<Credentials>
+}
+
+export class PermissionsDataSource {
+    constructor();
+
+    /** Gets all the permission granted on entity
+     * @param {Entity} e
+     * @returns {Promise<Map>} permissions
+     * */
+    get(e: Entity): Promise<Map<Group, boolean>>
+
+    /** Grants permission on entity to the group
+     * @param {Entity} e
+     * @param {Group} g
+     * @param {boolean} edit allow to edit entity
+     * @returns {Promise}
+     * */
+    grant(e: Entity, g: Group, edit: boolean): Promise<void>
+    /** Revokes permission on entity from the group
+     * @param {Entity} e
+     * @param {Group} g
+     * @returns {Promise}
+     * */
+    revoke(g: Entity, e: Group): Promise<void>
 }
 
 /**
