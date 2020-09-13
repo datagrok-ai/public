@@ -47,14 +47,14 @@ Delete a package
 `;
 
 const HELP_PUBLISH = `
-Usage: grok publish <host>
+Usage: grok publish <host>*
 
 Upload a package
 
 Options:
-[--build|--rebuild] [--debug|--release]
+[--build|--rebuild] [--debug|--release] [--key] [--migrate]
 
-Running \`grok publish\` is the same as running \`grok publish --build --debug\`
+Running \`grok publish\` is the same as running \`grok publish defaultHost --build --debug\`
 `;
 
 module.exports = {
