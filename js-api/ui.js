@@ -30,16 +30,12 @@ export function element(tagName, className = null) {
  * @param {object[]} elements
  * @returns {HTMLElement} */
 export function appendAll(root, elements) {
-        let fragment = document.createDocumentFragment();
-        for (let i = 0; i < elements.length; i++) {
-            let e = elements[i];
-            if (e instanceof Viewer)
-                e = e.root;
-            fragment.appendChild(e);
-        }
-        root.appendChild(fragment);
-        return root;
-    }
+    let fragment = document.createDocumentFragment();
+    for (let e of elements)
+        fragment.appendChild(ui.render(e));
+    root.appendChild(fragment);
+    return root;
+}
 
 export function empty(e) {
     while (e.firstChild)
@@ -208,12 +204,24 @@ export function bigButton(text, handler, tooltip = null) { return grok_UI_BigBut
 
 /**
  * Creates a combo popup with the specified icons and items
- * @param {HTMLElement} icon
+ * @param {string | HTMLElement} caption
  * @param {Array<string>} items
  * @param {Function} handler (item) => {...}
  * @returns {HTMLElement}
  * */
-export function comboPopup(icon, items, handler) { return grok_UI_ComboPopup(icon, items, handler); }
+export function comboPopup(caption, items, handler) {
+    return grok_UI_ComboPopup(caption, items, handler);
+}
+
+/**
+ * Creates a combo popup with the specified icons and items
+ * @param {string | HTMLElement} caption
+ * @param {Map<string>} items
+ * @returns {HTMLElement}
+ * */
+export function comboPopupItems(caption, items) {
+    return grok_UI_ComboPopup(caption, Object.keys(items), (key) => items[key]());
+}
 
 /** Creates a visual table based on [map]. */
 export function tableFromMap(map) { return grok_UI_TableFromMap(map); }
