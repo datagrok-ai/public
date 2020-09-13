@@ -196,6 +196,9 @@ export class DataFrame {
      *  */
     groupBy(columnNames?: string[]): GroupByBuilder
 
+    append(t2: DataFrame, inPlace?: boolean): DataFrame;
+    
+    
     /** @returns {Observable} */
     _event(event: any): Observable<any>
 
@@ -382,6 +385,12 @@ export class ColumnList {
     /** First column of [semType], or null. */
     bySemType(semType: SEMTYPE): Column | null;
 
+    /** Finds columns by the corresponding semTypes, or null, if any of the sem types could not be found.
+     * @returns {Column[]} */
+    bySemTypesExact(semTypes: SEMTYPE[]): Column[] | null;
+
+    get categorical(): Column[];
+    
     /** Array containing column names.
      * @returns {string[]} */
     names(): string[]
@@ -419,7 +428,8 @@ export class ColumnList {
  * To maximize performance, get values via [DataFrame.columns], instead.
  */
 export class RowList {
-
+    constructor(table: any, d: any);
+    
     /** Removes specified rows
      * @param {number} idx
      * @param {number} [count=1] - Number of rows to remove.
@@ -445,6 +455,10 @@ export class RowList {
      * @param {number} idx - Row index.
      * @param values - List of values (length and types should match columns) */
     setValues(idx: number, values: any[]): void
+
+    select(rowPredicate: any): void;
+    
+    filter(rowPredicate: any): void;
 }
 
 /** Represents a table cell. */
@@ -709,7 +723,7 @@ export class BitSet {
      * @param {boolean} x
      * @param {boolean} notify
      * @returns {BitSet} */
-    setAll(x: boolean, notify: boolean): BitSet
+    setAll(x: boolean, notify?: boolean): BitSet
 
     /** Finds the first index of value x, going forward from i-th position.
      * @param {number} i - index
@@ -733,8 +747,15 @@ export class BitSet {
      * @param {boolean} x
      * @param {boolean} notify
      * */
-    set(i: number, x: boolean, notify: boolean): BitSet
+    set(i: number, x: boolean, notify?: boolean): BitSet
 
+    /** Sets [i]-th bit to [value], does not check bounds */
+    setFast(i: number, value: boolean): void;
+
+    /** Sets all bits by setting i-th bit to the results of f(i)
+     * @param {Function} f  */
+    init(f: (i: number) => boolean): void;
+    
     /** Indexes of all set bits. The result is cached.
      *  @returns {Int32Array} */
     getSelectedIndexes(): Int32Array
