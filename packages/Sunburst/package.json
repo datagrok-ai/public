@@ -1,6 +1,6 @@
 {
-  "name": "sunburst-viewer-ts",
-  "fullName": "SunburstViewerTS",
+  "name": "sunburst",
+  "fullName": "Sunburst",
   "version": "1.0.0",
   "description": "Sunburst chart for the datagrok platform",
   "dependencies": {

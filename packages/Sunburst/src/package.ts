@@ -7,10 +7,10 @@ import { SunburstViewer } from './sunburst-viewer';
 
 export const _package = new DG.Package();
 
-//name: SunburstViewerTS
+//name: Sunburst
 //description: Sunburst chart
 //tags: viewer
 //output: viewer result
-export function sunburstViewerTs() {
+export function sunburst() {
     return new SunburstViewer();
 }

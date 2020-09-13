@@ -41,7 +41,7 @@ module.exports = {
 
     output: {
         filename: '[name].js',
-        library: 'sunburstviewerts',
+        library: 'sunburst',
         libraryTarget: 'var',
         path: path.resolve(__dirname, 'dist'),
     },
