@@ -78,6 +78,8 @@ export function divText(text: string, className?: string | null): HTMLDivElement
  * @returns {HTMLElement} */
 export function iconFA(name: string, handler: Function, tooltipMsg?: string | null): HTMLElement
 
+export function extract(x: any) : any
+
 /** Renders object to html element.
  * @param {object} x
  * @returns {HTMLElement} */
@@ -162,6 +164,13 @@ export function dialog(title?: string | null): Dialog
  * tooltip, and popup menu.
  * @returns Element. */
 export function bind(item: any, element: Element): Element
+
+/**
+ * @param {string} value
+ * @param {boolean} autoSize
+ * @param {boolean} resizable
+ * @returns Element */
+export function textArea(value: string, autoSize?: boolean, resizable?: boolean): Element
 
 /**
  * Creates a virtual list widget
