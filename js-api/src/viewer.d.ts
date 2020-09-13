@@ -2,7 +2,17 @@ import {VIEWER} from './const';
 import {Column, DataFrame} from "./dataframe";
 import {StreamSubscription} from "./events";
 import {DateTime, Property} from "./entities";
-import {Subscription} from "rxjs";
+import {Observable, Subscription} from "rxjs";
+import {toJs} from "./wrappers";
+import {Widget} from "./widgets";
+
+export class TypedEventArgs {
+    constructor(d: any)
+
+    get type(): string
+
+    get data(): any
+}
 
 /**
  * Represents a {@link https://datagrok.ai/help/visualize/viewers | viewer}.
@@ -29,6 +39,8 @@ export class Viewer {
      */
     static fromType(viewerType: VIEWER | string, table: DataFrame, options?: object | null): Viewer;
 
+    static getViewerTypes(): (VIEWER | string)[]
+
     static grid(t: DataFrame, options?: object | null): Viewer;
 
     static histogram(t: DataFrame, options?: object | null): Viewer;
@@ -41,6 +53,11 @@ export class Viewer {
 
     static scatterPlot(t: DataFrame, options?: object | null): Viewer;
 
+
+    get table(): DataFrame
+
+    get onEvent(): Observable<any>
+    
     /**
      * Sets viewer options. See also {@link getOptions}
      Sample: https://public.datagrok.ai/js/samples/ui/viewers/scatter-plot
@@ -61,7 +78,7 @@ export class Viewer {
 
 
 export class JsViewerProps {
-
+    constructor(viewer: Viewer)
 }
 
 
@@ -69,12 +86,12 @@ export class JsViewerProps {
  * Subclass JsViewer to implement a DataFrame-bound Datagrok viewer in JavaScript.
  See an example on github: {@link https://github.com/datagrok-api/public/tree/master/packages/Leaflet}
  */
-export class JsViewer {
+export class JsViewer extends Widget {
     root: HTMLElement;
-    properties: Property[];
     dataFrame: DataFrame;
     subs: Subscription[];
-    props: any;
+    obs: Observable<any>[];
+    props: JsViewerProps;
 
     /**
      * Gets called when a table is attached to the viewer.
@@ -96,6 +113,8 @@ export class JsViewer {
      * Gets property ba name (case-sensitive).
      */
     getProperty(name: string): Property;
+
+    get onSizeChanged(): Observable<any>
 
     /**
      * cleanup() will get called when the viewer is disposed
