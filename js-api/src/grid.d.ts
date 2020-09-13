@@ -2,11 +2,40 @@ import {Cell, Column, Row} from "./dataframe";
 import {Viewer} from "./viewer";
 import {Observable} from 'rxjs';
 import {EventData, StreamSubscription} from "./events";
+import {_identityInt32} from "./utils";
+
+export class Point {
+    constructor(x: number, y: number);
+    x: number;
+    y: number;
+}
+
+export class Rect {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    
+    constructor(x: number, y: number, width: number, height: number)
+
+    static fromDart(d: any): Rect
+
+    get midX(): number
+    get midY(): number
+
+    get left(): number
+    get top(): number
+    get right(): number
+    get bottom(): number
+}
 
 /** Represents a grid cell */
 export class GridCell {
     constructor(d: any)
 
+    /** @returns {GridCell} */
+    static fromColumnRow(grid: Grid, columnName: string, gridRow: number): GridCell
+    
     /** @returns {string} Cell type */
     get cellType(): string
 
@@ -47,6 +76,8 @@ export class GridCell {
 
     /** @returns {GridCellStyle} Style to use for rendering. */
     get style(): GridCellStyle
+    
+    get bounds(): Rect
 }
 
 /** Represents a grid column */
@@ -122,6 +153,15 @@ export class GridColumn {
 export class GridColumnList {
     constructor(d: any)
 
+    /** Row header column.
+     *  @returns {GridColumn}  */
+    get rowHeader(): GridColumn
+
+    /** Returns a grid column by name, or null if it does not exist.
+     *  @param {number} index
+     *  @returns {GridColumn}  */
+    byIndex(index: number): GridColumn
+    
     /** Returns a grid column by name, or null if it does not exist.
      *  @param {string} columnName
      *  @returns {GridColumn}  */
@@ -140,7 +180,8 @@ export class GridColumnList {
 /** High-performance, flexible spreadsheet control */
 export class Grid extends Viewer {
     constructor(d: any)
-
+    
+    
     /** Grid columns.
      *  @returns {GridColumnList} */
     get columns(): GridColumnList
@@ -155,14 +196,29 @@ export class Grid extends Viewer {
      *  If [asc] is not specified, sorts in ascending order. */
     sort(columns: Column[], orders?: boolean[] | null): void
 
+    sortIndexes(indexComparer: ((a: number, b: number) => number | undefined)): this
+
+    setRowOrder(indexes: number[]): this
+    
     /** Returns a column with the specified name.
      * @param {string} name
      * @returns {GridColumn} */
     col(name: string): GridColumn
+    
+    cell(columnName: string, gridRow: number): GridCell
+    
+    /** @returns {HTMLCanvasElement} */
+    get canvas(): HTMLCanvasElement
+
+    /** @returns {HTMLCanvasElement} */
+    get overlay(): HTMLCanvasElement
+
 
     onCellPrepare(callback: (cell: GridCell) => any): StreamSubscription
 
     onCellTooltip(callback: (cell: GridCell) => any): StreamSubscription
+    
+    hitTest(x: number, y: number): GridCell
 }
 
 
@@ -199,4 +255,21 @@ export class GridCellRenderArgs extends EventData {
     //TODO: what rect?
     /** @returns {Rect} */
     get bounds(): DOMRect
+}
+
+
+export class GridCellRenderer {
+    get name(): string
+    get cellType(): string
+
+    /**
+     * @param {CanvasRenderingContext2D} g
+     * @param {number} x
+     * @param {number} y
+     * @param {number} w
+     * @param {number} h
+     * @param {GridCell} gridCell
+     * @param {GridCellStyle} cellStyle
+     **/
+    render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: GridCell, cellStyle: GridCellStyle): void
 }
