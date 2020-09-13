@@ -1,4 +1,5 @@
 import {SEMTYPE, TYPE} from "./const";
+import {toJs} from "./wrappers";
 
 
 /** @class
@@ -22,6 +23,14 @@ export class Entity {
     /** Entity path
      *  @type {string} */
     get path(): string
+    
+    /** Returns entity properties
+     * @returns {Promise<Map>} props */
+    getProperties(): Promise<Map<any, any>>
+    /** Allows to set properties for entity
+     * @param {Map} props
+     * @returns Promise */
+    setProperties(props: Map<any, any>): Promise<void>
 }
 
 /**
@@ -56,6 +65,11 @@ export class User extends Entity {
 
     /** */
     toMarkup(): string
+
+    /** Security Group
+     * @type Group
+     */
+    get group(): Group
 }
 
 /** Represents a function
@@ -161,6 +175,60 @@ export class TableInfo extends Entity {
 export class Group extends Entity {
     /** @constructs Group */
     constructor(d: any)
+
+
+    static create(name: string): Group
+
+    /** Adds a member to the group
+     * @param {Group} m */
+    addMember(m: Group): void
+
+    /** Adds an admin member to the group
+     * @param {Group} m */
+    addAdminMember(m: Group): void
+
+    /** Removes a member from the group
+     * @param {Group} m */
+    removeMember(m: Group): void
+
+    /** Adds the group to another one
+     * @param {Group} m */
+    includeTo(m: Group): void
+
+    /** Adds the group to another one as an admin
+     * @param {Group} m */
+    includeAdminTo(m: Group): void
+
+    /** Removes membership from another group
+     * @param {Group} m */
+    excludeFrom(m: Group): void
+
+    /** Returns list of groups that belong to group, with no admin permissions
+     * @type {List<Group>} */
+    get members(): Group[]
+
+    /** Returns list of groups that belong to group, with admin permissions
+     * @type {List<Group>} */
+    get adminMembers(): Group[]
+
+    /** Returns list of groups that group belongs to, with no admin permissions
+     * @type {List<Group>} */
+    get memberships(): Group[]
+
+    /** Returns list of groups that group belongs to, with admin permissions
+     * @type {List<Group>} */
+    get adminMemberships(): Group[]
+
+    /** Personal user group
+     * @type {boolean} */
+    get personal(): boolean
+    set personal(e: boolean)
+
+    /** Hidden group
+     * @type {boolean} */
+    get hidden(): boolean
+    set hidden(e: boolean);
+
 }
 
 /** @extends Func
