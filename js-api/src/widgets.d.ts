@@ -1,21 +1,32 @@
 import {Observable} from "rxjs";
 import {StreamSubscription} from "./events";
 import {Property} from "./entities";
+import {DataFrame} from "./dataframe";
 
 /** Base class for controls that have a visual root and a set of properties. */
 export class Widget {
 
+    properties: Property[];
+    
     /** @constructs Widget and initializes its root. */
-    constructor(root?: any | null)
+    constructor()
 
     /** Widget's visual root.
      * @type {HTMLElement} */
     get root(): HTMLElement
+    set root(r: HTMLElement);
 
     /** Creates a {@see Widget} from the specified React component. */
     static react(reactComponent: React.DOMElement<any, any> | Array<React.DOMElement<any, any>> | React.CElement<any, any> | Array<React.CElement<any, any>> | React.ReactElement | Array<React.ReactElement>): Widget
 }
 
+/** Base class for DataFrame-bound filtering controls */
+export class Filter extends Widget {
+
+    dataFrame: DataFrame | null;
+    
+    constructor()
+}
 
 export class DartWidget extends Widget {
 
@@ -133,6 +144,11 @@ export class Dialog {
 
     /** @returns {Dialog} */
     show(): Dialog
+
+    /** @returns {Dialog}
+     * @param {boolean} fullScreen  */
+    showModal(fullScreen: boolean): this
+
 
     /** Adds content to the dialog.
      * @param {HTMLElement | Widget | InputBase} content
