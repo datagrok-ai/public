@@ -13,15 +13,24 @@ module.exports = {
 const grokDir = path.join(os.homedir(), '.grok');
 const confPath = path.join(grokDir, 'config.yaml');
 
+const confTemplate = {
+    servers: {
+        dev: { url: 'https://dev.datagrok.ai/api', key: '' },
+        public: { url: 'https://public.datagrok.ai/api', key: '' },
+        local: { url: 'http://127.0.0.1:8080/api', key: '' }
+    },
+    default: 'public'
+};
+
 const curDir = process.cwd();
 const keysDir = path.join(curDir, 'upload.keys.json');
 const packDir = path.join(curDir, 'package.json');
 
 const grokMap = {
     'datagrok-upload': 'grok publish',
-    'debug': '--debug',
+    'debug': '',
     'deploy': '--release',
-    'build': '--build',
+    'build': '',
     'rebuild': '--rebuild'
 };
 
@@ -127,12 +136,15 @@ function publish(args) {
     const nOptions = Object.keys(args).length - 1;
     const nArgs = args['_'].length;
 
-    if (nArgs > 2 || nOptions > 4) return false;
+    if (nArgs > 2 || nOptions > 5) return false;
     if (!Object.keys(args).slice(1).every(option =>
-        ['build', 'rebuild', 'debug', 'release', 'key', 'migrate'].includes(option))) return false;
+        ['build', 'rebuild', 'debug', 'release', 'k', 'key', 'migrate'].includes(option))) return false;
     if ((args.build && args.rebuild) || (args.debug && args.release)) return console.log('You have used incompatible options');
     
-    if (!fs.existsSync(confPath)) return console.log('There is no `config.yaml` file. Please run `grok config` to create one');
+    // Create `config.yaml` if it doesn't exist yet
+    if (!fs.existsSync(grokDir)) fs.mkdirSync(grokDir);
+    if (!fs.existsSync(confPath)) fs.writeFileSync(confPath, yaml.safeDump(confTemplate));
+
     let config = yaml.safeLoad(fs.readFileSync(confPath));
     
     if (args.migrate) {
@@ -144,7 +156,7 @@ function publish(args) {
                     try {
                         const hostname = (new URL(url)).hostname;
                         config['servers'][hostname] = {};
-                        config['servers'][hostname]['url'] = url.endsWith('/api') ? url.slice(0, -4) : url;
+                        config['servers'][hostname]['url'] = url;
                         config['servers'][hostname]['key'] = keys[url];
                     } catch (error) {
                         console.log(`Skipping an invalid URL in \`upload.keys.json\`: ${url}`);
@@ -177,21 +189,22 @@ function publish(args) {
 
     config = yaml.safeLoad(fs.readFileSync(confPath));
     let host = config.default;
+    let alias = config.default;
     if (nArgs === 2) host = args['_'][1];
 
     // The host can be passed either as a URL or an alias
     try {
         host = new URL(host);
-        let alias = host.hostname;
-        if (!alias in config.servers) {
+        alias = host.hostname;
+        if (!(alias in config.servers)) {
             config['servers'][alias] = {};
-            config['servers'][alias]['url'] = host.endsWith('/api') ? host.slice(0, -4) : host;
+            config['servers'][alias]['url'] = host.href;
             config['servers'][alias]['key'] = args.key || '';
             fs.writeFileSync(confPath, yaml.safeDump(config));
         }
     } catch (error) {
         alias = host;
-        if (!alias in config.servers) return console.log('Unknown server alias. Please add it by running `grok config`');
+        if (!(alias in config.servers)) return console.log(`Unknown server alias. Please add it to ${confPath}`);
     }
 
     // Update the developer key
@@ -207,14 +220,7 @@ function publish(args) {
     if (devKey === '') return console.log('Please provide the key with `--key` option or add it by running `grok config`');
 
     // Get the URL
-    let url = new URL(config['servers'][alias]['url']);
-    if (url.hostname !== 'localhost' && url.pathname !== '/api') url.href += '/api';
-
-    // Set the modes
-    let debug = true;
-    if (args.release) debug = false;
-    let rebuild = false;
-    if (args.rebuild) rebuild = true;
+    let url = config['servers'][alias]['url'];
 
     // Get the package name
     if (!fs.existsSync(packDir)) return console.log('`package.json` doesn\'t exist');
@@ -226,7 +232,7 @@ function publish(args) {
     process.on('beforeExit', async () => {
         let code = 0;
         try {
-            code = await processPackage(debug, rebuild, url, devKey, packageName)
+            code = await processPackage(!args.release, Boolean(args.rebuild), url, devKey, packageName)
     
         } catch (error) {
             console.error(error);
