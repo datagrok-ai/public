@@ -56,6 +56,9 @@ export class ViewBase {
 
     set ribbonMenu(menu)
 
+    get closing(): boolean
+    set closing(c)
+
     /** View URI, relative to the platform root. See also {@link basePath}
      * @type {string} */
     get path(): string
