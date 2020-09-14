@@ -12,18 +12,18 @@ First, take your time to explore the data. Hover your mouse over the table name 
 
 Go over the column names to find out which categories the data falls into and check if the columns have missing values. All of this is at your fingertips—just hover the mouse! For values in the cells, do the same trick again, and you will get the preview of the whole data record.
 
-Now, click on the column names `Street Address`, `City`, `State/Province`, and `Sales` while holding the `Shift` key. This will select the columns. `Extract` them with the corresponding menu command.
+Now, we are going to predict coffee sales based on geographic data. Click on the column names `Street Address`, `City`, `State/Province`, and `Sales` while holding the `Shift` key. This will select the columns. `Extract` them with the corresponding menu command.
 
-Alternatively, as we are only interested in a few columns, we can safely get rid of the rest. Press `Shift` and click on the headers `Brand`, `Store Number`, `Store Name`, `Ownership Type`, `Country`, `Postcode`, `Phone Number`, and `Timezone`. Once you have selected these columns, click on ![the second icon from the right at the top menu](pic-url) or `Shift + Del` to delete them. Selected the wrong column? No worries, use `Ctrl + Shift` to deselect it or undo selection by pressing the `Esc` key.
+Alternatively, as we are only interested in a few columns, we can safely get rid of the rest. Press `Shift` and click on the headers `Brand`, `Store Number`, `Store Name`, `Ownership Type`, `Country`, `Postcode`, `Phone Number`, and `Timezone`. Once you have selected these columns, click on the second icon from the right at the top menu ![](../icons/remove-column.png) or `Shift + Del` to delete them. Selected the wrong column? No worries, use `Ctrl + Shift` to deselect it or undo selection by pressing the `Esc` key.
 
-Next, let's restrict our analysis only to one state, let it be `NY`. To do that, use [the hamburger menu to the right of the column name](pic-url). Find `NY` in the list and click on the name of the state. In the right pane, you will see actions available for `645` records filtered by location. Go for the `Keep rows` option to work with them.
+Next, let's restrict our analysis only to one state, let it be `NY`. To do that, use the hamburger menu to the right of the column name ![](../icons/hamburger-menu.png). Find `NY` in the list and click on the name of the state. In the right pane, you will see actions available for `645` records filtered by location. Go for the `Keep rows` option to work with them.
 
-We can create a column containing the full address of the coffee place following these steps:
+Let's create a column containing the full address of a coffee place for future use following these steps:
 
-- choose [the rightmost icon of the menu](pic-url) to add a new column
+- choose the rightmost icon of the menu ![](../icons/add-new-column.png) to add a new column
 - type in its name, for example, `Address`
 - simply drag the columns into the field preserving the order: `Street Address`, `City`, `State/Province`
-- format the record with commas or just paste the following: `${Street Address}, ${City}, ${State/Province}`
+- format the record with commas or just paste the following: `$ {Street Address}, $ {City}, $ {State/Province}`
 
 Voilà! As we change the formula, we get a preview of the results on the fly, which are refreshed interactively. Save your work and proceed to the next section.
 
@@ -107,3 +107,13 @@ Let's go back to the `Google Map` viewer and find `Actions settings` in the view
 Now, take some time to explore the map. For convenience, select `Full screen` in the viewer settings or press `Alt + F`. Double-click on locations to see if it's worth building a new coffee place there. Find the profitable spots, such as in Times Square, and, perhaps, the underrated ones (by the water).
 
 ## [Deploying Models into Apps](https://www.youtube.com/watch?v=tVwpRB8fikQ&t=1141s)
+
+What a great job you have done thus far! Would you like to share this with the community? If so, follow these steps:
+
+- Manage what will appear in your web application, e.g., extend the `Google Map` window to the entire view by [docking it to the center](https://www.youtube.com/watch?v=tVwpRB8fikQ&t=1147s)
+- Go to `Projects` and click the `UPLOAD` button to upload the data to the server
+- Name your project and review what you are about to share
+- Share the project with a specific user or a group of users
+- Check out a link to an external web page available in the upper left corner
+
+Cheers!
