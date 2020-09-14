@@ -364,7 +364,7 @@
         ["xpath=(//input[@type='text'])[3]", "xpath:attributes"],
         ["xpath=//div[2]/div/div/input", "xpath:position"]
       ],
-      "value": "sakhniuk"
+      "value": "selenium2"
     }, {
       "id": "70ac4c67-38c8-40ab-a879-b54d43e89b00",
       "comment": "",
@@ -426,12 +426,12 @@
       "id": "ac8acb26-2a17-4476-aa20-93532d6f8695",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span-Sakhniuk",
+      "target": "name=span-Selenium2",
       "targets": [
-        ["css=.d4-accordion-pane:nth-child(4) tr:nth-child(2) label", "css:finder"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div[2]/table/tbody/tr[2]/td/span/label", "xpath:idRelative"],
-        ["xpath=//tr[2]/td/span/label", "xpath:position"],
-        ["xpath=//label[contains(.,'sakhniuk')]", "xpath:innerText"]
+        ["css=.d4-entity-markup-row:nth-child(2) > .d4-link-label label", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div[2]/div/div/span[2]/span/span/label", "xpath:idRelative"],
+        ["xpath=//span[2]/span/span/label", "xpath:position"],
+        ["xpath=//label[contains(.,'selenium2')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
@@ -648,6 +648,13 @@
       "comment": "",
       "command": "pause",
       "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "b6437a4b-e0a8-4db1-877c-99645568fe01",
+      "comment": "",
+      "command": "",
+      "target": "css=.d4-entity-markup-row:nth-child(4) > .d4-link-action",
       "targets": [],
       "value": ""
     }]
