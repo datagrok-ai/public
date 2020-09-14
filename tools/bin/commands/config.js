@@ -10,9 +10,9 @@ module.exports = {
 
 const confTemplate = {
     servers: {
-        dev: { url: 'https://dev.datagrok.ai', key: '' },
-        public: { url: 'https://public.datagrok.ai', key: '' },
-        local: { url: 'https://localhost:8082', key: '' }
+        dev: { url: 'https://dev.datagrok.ai/api', key: '' },
+        public: { url: 'https://public.datagrok.ai/api', key: '' },
+        local: { url: 'http://127.0.0.1:8080/api', key: '' }
     },
     default: 'public'
 };
@@ -48,7 +48,7 @@ function generateKeyQ(server) {
         validate: validateKey
     };
     if (server === 'local') {
-        question.message = 'Developer key for https://localhost:8082:';
+        question.message = 'Developer key for http://127.0.0.1:8080:';
     }
     return question;
 }
