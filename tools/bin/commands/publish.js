@@ -132,6 +132,14 @@ async function processPackage(debug, rebuild, host, devKey, packageName) {
     return 0;
 }
 
+function mapURL(conf) {
+    let urls = {};
+    for (let server in conf.servers) {
+        urls[conf['servers'][server]['url']] = server;
+    }
+    return urls;
+}
+
 function publish(args) {
     const nOptions = Object.keys(args).length - 1;
     const nArgs = args['_'].length;
@@ -152,9 +160,11 @@ function publish(args) {
         if (fs.existsSync(keysDir)) {
             try {
                 const keys = JSON.parse(fs.readFileSync(keysDir));
+                let urls = mapURL(config);
                 for (const url in keys) {
                     try {
-                        const hostname = (new URL(url)).hostname;
+                        let hostname = (new URL(url)).hostname;
+                        if (url in urls) hostname = urls[url];
                         config['servers'][hostname] = {};
                         config['servers'][hostname]['url'] = url;
                         config['servers'][hostname]['key'] = keys[url];
@@ -190,12 +200,13 @@ function publish(args) {
     config = yaml.safeLoad(fs.readFileSync(confPath));
     let host = config.default;
     let alias = config.default;
+    let urls = mapURL(config);
     if (nArgs === 2) host = args['_'][1];
 
     // The host can be passed either as a URL or an alias
     try {
         host = new URL(host);
-        alias = host.hostname;
+        alias = (host in urls) ? urls[host] : host.hostname;
         if (!(alias in config.servers)) {
             config['servers'][alias] = {};
             config['servers'][alias]['url'] = host.href;
