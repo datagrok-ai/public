@@ -8,7 +8,6 @@ export let _package = new DG.Package();
 
 grok.events.onContextMenu.subscribe((args) => {
     if (args.args.context instanceof DG.Viewer) {
-        // grok.shell.info(args.args.context.table.name);
         args.args.menu.item('to R script', async () => {
 
             function assignOnlyIntersection(target, source) {
@@ -33,6 +32,25 @@ grok.events.onContextMenu.subscribe((args) => {
                     }
                 })
                 return stRing;
+            }
+            function pltGenerate(options) {
+
+                let plt;
+                if (options.type === 'Scatter plot') {
+                    plt = DG.Viewer.scatterPlot(args.args.context.table, options.look);
+                } else if (options.type === 'Histogram') {
+                    plt = DG.Viewer.histogram(args.args.context.table, options.look);
+                } else if (options.type === 'Bar chart') {
+                    plt = DG.Viewer.barChart(args.args.context.table, options.look);
+                } else if (options.type === 'Box plot') {
+                    plt = DG.Viewer.boxPlot(args.args.context.table, options.look);
+                } else if (options.type === 'Correlation plot') {
+                    plt = DG.Viewer.correlationPlot(args.args.context.table, options.look);
+                } else if (options.type === 'Line chart') {
+                    plt = DG.Viewer.lineChart(args.args.context.table, options.look);
+                }
+
+                return plt;
             }
             async function strReplace(optionsObj) {
 
@@ -61,17 +79,16 @@ grok.events.onContextMenu.subscribe((args) => {
             }
 
             let options = JSON.parse(args.args.context.getOptions());
+            let plt = pltGenerate(options);
             let rCode = await strReplace(options);
 
             let block =
                 $(ui.splitV([
                     ui.textArea(rCode),
                     ui.splitH([
-                        args.args.context,
+                        plt,
                         DG.Viewer.fromType('Scripting Viewer',args.args.context.table,{script: map.header + rCode})])
                 ])).css('flex-grow', '1');
-
-
 
             ui.dialog('OUTPUT SCRIPT').add(block[0]).showModal(true);
         });
@@ -81,4 +98,3 @@ grok.events.onContextMenu.subscribe((args) => {
 //name: exportFunc
 //tags: autostart
 export function export_123() {}
-
