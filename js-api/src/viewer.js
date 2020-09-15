@@ -74,7 +74,11 @@ export class Viewer {
      * @type {HTMLElement} */
     get root() { return grok_Viewer_Root(this.d); }
 
-    get table() { return new DataFrame(grok_Viewer_Get_DataFrame(this.d)); }
+    get table() { return toJs(grok_Viewer_Get_DataFrame(this.d)); }
+
+    /** @type {DataFrame} */
+    get dataFrame() { return toJs(grok_Viewer_Get_DataFrame(this.d)); }
+    set dataFrame(t) { grok_Viewer_Set_DataFrame(this.d, t.d); }
 
     /** @type {Observable} */
     get onEvent() {
