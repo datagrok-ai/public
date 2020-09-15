@@ -23,18 +23,7 @@ const confTemplate = {
 };
 
 const curDir = process.cwd();
-const keysDir = path.join(curDir, 'upload.keys.json');
 const packDir = path.join(curDir, 'package.json');
-
-const grokMap = {
-    'datagrok-upload': 'grok publish',
-    'debug': '',
-    'deploy': '--release',
-    'build': '',
-    'rebuild': '--rebuild'
-};
-
-const replRegExp = new RegExp(Object.keys(grokMap).join("|"), "g");
 
 async function processPackage(debug, rebuild, host, devKey, packageName) {
     // Get the server timestamps
@@ -144,9 +133,9 @@ function publish(args) {
     const nOptions = Object.keys(args).length - 1;
     const nArgs = args['_'].length;
 
-    if (nArgs > 2 || nOptions > 5) return false;
+    if (nArgs > 2 || nOptions > 4) return false;
     if (!Object.keys(args).slice(1).every(option =>
-        ['build', 'rebuild', 'debug', 'release', 'k', 'key', 'migrate'].includes(option))) return false;
+        ['build', 'rebuild', 'debug', 'release', 'k', 'key'].includes(option))) return false;
     if ((args.build && args.rebuild) || (args.debug && args.release)) return console.log('You have used incompatible options');
     
     // Create `config.yaml` if it doesn't exist yet
@@ -154,50 +143,6 @@ function publish(args) {
     if (!fs.existsSync(confPath)) fs.writeFileSync(confPath, yaml.safeDump(confTemplate));
 
     let config = yaml.safeLoad(fs.readFileSync(confPath));
-    
-    if (args.migrate) {
-        // Copy keys to the `config.yaml` file
-        if (fs.existsSync(keysDir)) {
-            try {
-                const keys = JSON.parse(fs.readFileSync(keysDir));
-                let urls = mapURL(config);
-                for (const url in keys) {
-                    try {
-                        let hostname = (new URL(url)).hostname;
-                        if (url in urls) hostname = urls[url];
-                        config['servers'][hostname] = {};
-                        config['servers'][hostname]['url'] = url;
-                        config['servers'][hostname]['key'] = keys[url];
-                    } catch (error) {
-                        console.log(`Skipping an invalid URL in \`upload.keys.json\`: ${url}`);
-                    }
-                }
-                fs.writeFileSync(confPath, yaml.safeDump(config));
-                console.log('Migrated data from local `upload.keys.json`');
-                fs.unlinkSync(keysDir);
-                console.log('Successfully deleted the file');
-            } catch (error) {
-                console.error(error);
-            }
-        } else {
-            console.log('Unable to locate `upload.keys.json`');
-        }
-
-        // Rewrite scripts in `package.json`
-        if (!fs.existsSync(packDir)) return console.log('`package.json` doesn\'t exist');
-        try {
-            let package = JSON.parse(fs.readFileSync(packDir));
-            for (let script in package.scripts) {
-                if (!package['scripts'][script].includes('datagrok-upload')) continue;
-                package['scripts'][script] = package['scripts'][script].replace(replRegExp, (match) => grokMap[match]);
-            }
-            fs.writeFileSync(packDir, JSON.stringify(package, null, '\t'));
-        } catch (error) {
-            console.error(error);
-        }
-    }
-
-    config = yaml.safeLoad(fs.readFileSync(confPath));
     let host = config.default;
     let alias = config.default;
     let urls = mapURL(config);

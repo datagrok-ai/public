@@ -9,6 +9,7 @@ Commands:
     create    Create a package
     delete    Delete a package
     publish   Upload a package
+    migrate   Switch to \`grok\` tools
 
 To get help on a particular command, use:
     grok <command> --help
@@ -52,9 +53,16 @@ Usage: grok publish <host>*
 Upload a package
 
 Options:
-[--build|--rebuild] [--debug|--release] [--key] [--migrate]
+[--build|--rebuild] [--debug|--release] [--key]
 
 Running \`grok publish\` is the same as running \`grok publish defaultHost --build --debug\`
+`;
+
+HELP_MIGRATE = `
+Usage: grok migrate
+
+Switch to \`grok\` tools by copying your keys to the config
+file and converting your scripts in the \`package.json\` file
 `;
 
 module.exports = {
@@ -63,5 +71,6 @@ module.exports = {
     create: HELP_CREATE,
     delete: HELP_DELETE,
     publish: HELP_PUBLISH,
+    migrate: HELP_MIGRATE,
     help: HELP
 };

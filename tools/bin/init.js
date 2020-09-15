@@ -3,6 +3,10 @@ const inquirer = require('inquirer');
 const fs = require('fs');
 const path = require('path');
 
+// The script is no longer supported
+return console.log(`\`datagrok-init\` is not available, please use \`grok create\` instead.
+Run \`grok config\` to create a new config file and \`grok\` for help`);
+
 let dir = path.basename(process.cwd());
 
 const QUESTIONS = [
