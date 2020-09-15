@@ -7,7 +7,8 @@ const commands = {
     config: require('./commands/config').config,
     create: require('./commands/create').create,
     delete: require('./commands/delete').delete,
-    publish: require('./commands/publish').publish
+    publish: require('./commands/publish').publish,
+    migrate: require('./commands/migrate').migrate
 };
 
 const command = argv['_'][0];
