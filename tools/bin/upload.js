@@ -8,8 +8,10 @@ const archiver = require('archiver-promise');
 const walk = require('ignore-walk')
 
 // The script is no longer supported
-return console.log(`\`datagrok-upload\` is not available, please use \`grok publish\` instead.
-Run \`grok migrate\` to convert yout scripts in \`package.json\` and copy your keys to \`config.yaml\``);
+console.log(`\`datagrok-upload\` is not available, please use \`grok publish\` instead.
+Run \`grok migrate\` to convert your scripts in \`package.json\` and to copy your keys to \`config.yaml\``);
+console.log(`Exiting with code 1`);
+process.exit(1);
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
