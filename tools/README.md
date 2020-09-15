@@ -10,35 +10,6 @@ npm install datagrok-tools -g
 
 ## Usage
 
-### datagrok
-
-1. Create a folder:
-
-```
-mkdir MyPackage
-cd MyPackage
-```
-
-2. Get a package template:
-
-```
-datagrok-init
-```
-
-Enter your package name (by default, it is the name of the current folder), the remote server's URI, and your developer key.
-
-3. Install dependencies:
-
-```
-npm install
-```
-
-The only package listed in `package.json` is `datagrok-api`. You can add new dependencies later.
-
-### grok
-
-Discover our new package management tool, all while it's under development.
-
 1. Create a configuration file common to all packages:
 
 ```
@@ -60,5 +31,30 @@ grok create MyPackage
 ```
 
 A new folder `MyPackage` will be created automatically as well as its contents.
+
+3. To upload a package, use the following command:
+
+```
+grok publish
+```
+
+The default mode is set to `--debug --build`. You can easily change it with options `--release` and `--rebuild` respectively.
+
+In addition, you can pass another server either as URL or server alias from the `config.yaml` file:
+
+```
+grok publish dev
+grok publish https://dev.datagrok.ai/api -k key-for-dev
+```
+
+The developer key, if specified, gets updated in the `config.yaml` file. All new servers along with their keys will also be added to this file.
+
+4. When having a package under development, please run
+
+```
+grok migrate
+```
+
+This command will convert your scripts in `package.json` and copy keys from `upload.keys.json` to `config.yaml`.
 
 Run `grok` for instructions and `grok <command> --help` to get help on a particular command.
