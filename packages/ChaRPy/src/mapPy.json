@@ -1,0 +1,58 @@
+{
+  "plotScripts": {
+    "Scatter plot": "import plotly.express as px\nimport pandas as pd\ndata.dropna(axis = 'rows',inplace = True, subset = [!(colsList)])\nfig = px.scatter(data,!(xColumnName)!(yColumnName)!(colorColumnName)!(sizeColumnName)!(showRegressionLine)!(markerMaxSize))\nfig.update_traces(marker=dict(line=dict(width=0.5,color='DarkSlateGrey')!(markerType)),selector=dict(mode='markers'))\nfig.show()",
+    "Histogram": "import plotly.express as px\nimport pandas as pd\ndata.dropna(axis = 'rows',inplace = True, subset = [!(colsList)])\nfig = px.histogram(data, !(valueColumnName)!(colorColumnName)!(bins), marginal=\"violin\", barmode='overlay', opacity = 0.8)\nfig.show()",
+    "Bar chart": "import plotly.express as px\nimport pandas as pd\nfig = px.bar(data.groupby([!(splitColumnName)],as_index=False).agg(!(valueAggrType)), \n             x =!(valueColumnName), y=!(splitColumnName),barmode='stack')\nfig.update_layout(yaxis={'categoryorder':!(barSortOrder)})\nfig.show()",
+    "Box plot": "import plotly.express as px\nimport pandas as pd\ndata.dropna(axis = 'rows',inplace = True, subset = [!(colsList)])\nfig = px.box(data,!(categoryColumnName)!(valueColumnName)!(binColorColumnName),points = 'all')\nfig.update_traces(quartilemethod=\"exclusive\")\nfig.show()"
+  },
+  "additionalOps" : {
+    "Scatter plot": {
+      "xColumnName": "x = '!(xColumnName)'",
+      "yColumnName": ", y = '!(yColumnName)'",
+      "sizeColumnName": ", size = '!(sizeColumnName)'",
+      "colorColumnName": ", color = '!(colorColumnName)'",
+      "markerType": ", symbol = !(markerType)",
+      "markerMaxSize": ", size_max = !(markerMaxSize)",
+      "showRegressionLine": " , trendline='ols'"
+    },
+    "Histogram": {
+      "valueColumnName": "x = '!(valueColumnName)'",
+      "colorColumnName": ", color = '!(colorColumnName)'",
+      "bins": ", nbins = !(bins)"
+    },
+    "Bar chart": {
+      "splitColumnName": "'!(splitColumnName)'",
+      "valueColumnName": "'!(valueColumnName)'",
+      "valueAggrType": "!(valueAggrType)",
+      "barSortOrder": "'!(barSortOrder)'"
+    },
+    "Box plot" : {
+      "categoryColumnName": "x = '!(categoryColumnName)'",
+      "valueColumnName" : ", y = '!(valueColumnName)'",
+      "binColorColumnName": ", color = '!(binColorColumnName)'"
+    }
+  },
+  "miscCodes" : {
+    "square": 1,
+    "circle": 0,
+    "circle border": 100,
+    "dot": 200,
+    "desc": "total ascending",
+    "asc": "total descending",
+    "count": "lambda x: x.dropna().count()",
+    "unique": "lambda x: x.dropna().nunique()",
+    "nulls": "lambda x: x.dropna().sum()",
+    "min": "lambda x: x.dropna().min()",
+    "max": "lambda x: x.dropna().max()",
+    "med": "lambda x: x.dropna().median()",
+    "avg": "lambda x: x.dropna().mean()",
+    "stdev": "lambda x: x.dropna().std()",
+    "variance": "lambda x: x.dropna().var()",
+    "skew": "lambda x: x.dropna().skew()",
+    "kurt": "lambda x: x.dropna().kurt()",
+    "q1": "lambda x: x.dropna().quantile(q = 0.25)",
+    "q2": "lambda x: x.dropna().quantile(q = 0.5)",
+    "q3": "lambda x: x.dropna().quantile(q = 0.75)"
+  },
+  "header" : "#name: Plot\n#language: python\n#input: dataframe data\n#output: graphics\n\n"
+}

@@ -4,8 +4,8 @@
     "Histogram": "require(ggplot2)\nplt <- ggplot(data, aes(!(valueColumnName)!(colorColumnName))) +\ngeom_histogram(!(bins)color=\"darkblue\",position=\"identity\", alpha = 0.5)",
     "Bar chart": "require(ggplot2)\nrequire(e1071)\n\nsummaryDf <- data.frame(\n    x = levels(as.factor(data$!(splitColumnName))),\n    y = tapply(data$!(valueColumnName), data$!(splitColumnName), !(valueAggrType))\n)\n\nplt <- ggplot(summaryDf,aes(x = reorder(x,!(barSortOrder)y),y = y)) +\n  geom_bar(stat=\"identity\",fill = \"green4\") +\n  labs(x = \"!(splitColumnName)\", y = \"!(valueColumnName)\") +\n  geom_text(aes(label=y)) +\n  coord_flip()",
     "Box plot": "require(ggplot2)\nplt <- ggplot(data,aes(!(categoryColumnName)!(valueColumnName)!(binColorColumnName))) +\n  geom_jitter(shape = 20!(markerColorColumnName)) +\n  geom_boxplot(lwd = 1,alpha = 0.8) +\n  stat_boxplot(geom ='errorbar') +\n  stat_summary(fun=mean, geom=\"point\", shape=20, size=5, color=\"black\", fill=\"black\")",
-    "Correlation plot": "require(dplyr)\nrequire(ggcorrplot)\ndata <- data %>% select(!(xColumnNames))\ncorr <- round(cor(data!(correlationType)), 3)\n\nplt <- ggcorrplot(corr, hc.order = TRUE, lab = TRUE)",
-    "Line chart": "library(dplyr)\nlibrary(gridExtra)\nfuns <- list(!(yAggrTypes))\ndata <- data %>% select(!(xColumnName),!(yColumnNames))\nsummaryDf <- data.frame(!(xColumnName) = levels(as.factor(data$!(xColumnName))))\nplts <- list()\nfor (i in 1:length(funs)){\n  summaryDf[[names(data)[i+1]]] <- tapply(data[[i+1]], data$!(xColumnName), funs[[i]])\n  plts[[i]] <- ggplot(summaryDf, aes_string(names(summaryDf)[1],names(summaryDf)[i+1] , group = 1)) + geom_line() + geom_point()\n}\nplt <- do.call(grid.arrange,plts)"
+    "Correlation plot": "require(dplyr)\nrequire(ggcorrplot)\ndata <- data %>% select(!(xColumnNames))\ncorr <- round(cor(data ,use=\"complete.obs\"!(correlationType)), 3)\n\nplt <- ggcorrplot(corr, hc.order = TRUE, lab = TRUE)",
+    "Line chart": "library(dplyr)\nlibrary(gridExtra)\nfuns <- list(!(yAggrTypes))\ndata <- data %>% select(!(xColumnName),!(yColumnNames))\nsummaryDf <- data.frame(!(xColumnName) = levels(as.factor(data$!(xColumnName))))\nplts <- list()\nfor (i in 1:length(funs)){\n  summaryDf[[names(data)[i+1]]] <- tapply(data[[i+1]], data$!(xColumnName), funs[[i]])\n  plts[[i]] <- ggplot(summaryDf, aes_string(names(summaryDf)[1],names(summaryDf)[i+1] , group = 1)) + geom_line()\n}\nplt <- do.call(grid.arrange,plts)"
   },
   "additionalOps" : {
 
@@ -71,17 +71,17 @@
     "count": "function(x) length(x)",
     "unique": "function(x) length(unique(x))",
     "nulls": "function(x) sum(length(which(is.na(x))))",
-    "min": "function(x) min(x)",
-    "max": "function(x) max(x)",
-    "med": "function(x) median(x)",
-    "avg": "function(x) mean(x)",
-    "stdev": "function(x) sd(x)",
-    "variance": "function(x) var(x)",
-    "skew": "function(x) skewness(x)",
-    "kurt": "function(x) kurtosis(x)",
-    "q1": "function(x) quantile(x)[2]",
-    "q2": "function(x) quantile(x)[3]",
-    "q3": "function(x) quantile(x)[4]"
+    "min": "function(x) min(x,na.rm=TRUE)",
+    "max": "function(x) max(x,na.rm=TRUE)",
+    "med": "function(x) median(x,na.rm=TRUE)",
+    "avg": "function(x) mean(x,na.rm=TRUE)",
+    "stdev": "function(x) sd(x,na.rm=TRUE)",
+    "variance": "function(x) var(x,na.rm=TRUE)",
+    "skew": "function(x) skewness(x,na.rm=TRUE)",
+    "kurt": "function(x) kurtosis(x,na.rm=TRUE)",
+    "q1": "function(x) quantile(x,na.rm=TRUE)[2]",
+    "q2": "function(x) quantile(x,na.rm=TRUE)[3]",
+    "q3": "function(x) quantile(x,na.rm=TRUE)[4]"
   },
   "header" : "#name: Plot\n#language: r\n#input: dataframe data\n#output: graphics\n\n"
 }
