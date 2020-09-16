@@ -187,12 +187,34 @@ export class Menu {
      * @returns {Menu} */
     static popup() { return toJs(grok_Menu_Context()); }
 
+    /** Finds a child menu item with the specified text.
+     * @param {string} text
+     * @returns {Menu} */
+    find(text) { return toJs(grok_Menu_Find(this.d, text)); }
+
+    /** Removes a child menu item with the specified text.
+     * @param {string} text */
+    remove(text) { grok_Menu_Remove(this.d, text); }
+
+    /** Removes all child menu items. */
+    clear() { grok_Menu_Clear(this.d); }
+
     /** Adds a menu group with the specified text.
-     * @param {string} text*/
+     * @param {string} text
+     * @returns {Menu} */
     group(text) { return toJs(grok_Menu_Group(this.d, text)); }
 
-    item(item, onClick) { return toJs(grok_Menu_Item(this.d, item, onClick)); }
+    /** Adds a menu group with the specified text and handler.
+     * @param {string} text
+     * @param {Function} onClick - callback with no parameters
+     * @returns {Menu} */
+    item(text, onClick) { return toJs(grok_Menu_Item(this.d, text, onClick)); }
 
+    /** For each item in items, adds a menu group with the specified text and handler.
+     * Returns this.
+     * @param {string[]} items
+     * @param {Function} onClick - a callback with one parameter
+     * @returns {Menu} */
     items(items, onClick) { return toJs(grok_Menu_Items(this.d, items, onClick)); }
 
     /** Adds a separator line.
