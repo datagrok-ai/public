@@ -65,7 +65,7 @@ function config(args) {
         const config = yaml.safeLoad(fs.readFileSync(confPath));
         console.log(`Your config file (${confPath}):`);
         console.log(config);
-        if (!validateConf(config)) {
+        if (!config || !validateConf(config)) {
             console.log('The file is corrupted. Please run `grok config --reset` to restore the default template');
             return false;
         }
