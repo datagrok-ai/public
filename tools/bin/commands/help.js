@@ -36,13 +36,14 @@ Options:
 `;
 
 const HELP_CREATE = `
-Usage: grok create <name>
+Usage: grok create <name>*
 
-Create a package. Please note that the package name may only include letters, numbers, underscores, or hyphens
+Create a package
+Please note that the package name may only include letters, numbers, underscores, or hyphens
 `;
 
 const HELP_DELETE = `
-Usage: grok delete <name>
+Usage: grok delete <name>*
 
 Delete a package
 `;
@@ -58,7 +59,7 @@ Options:
 Running \`grok publish\` is the same as running \`grok publish defaultHost --build --debug\`
 `;
 
-HELP_MIGRATE = `
+const HELP_MIGRATE = `
 Usage: grok migrate
 
 Switch to \`grok\` tools by copying your keys to the config

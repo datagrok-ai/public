@@ -12,16 +12,8 @@ module.exports = {
 
 const grokDir = path.join(os.homedir(), '.grok');
 const confPath = path.join(grokDir, 'config.yaml');
-
-const confTemplate = {
-    servers: {
-        dev: { url: 'https://dev.datagrok.ai/api', key: '' },
-        public: { url: 'https://public.datagrok.ai/api', key: '' },
-        local: { url: 'http://127.0.0.1:8080/api', key: '' }
-    },
-    default: 'public'
-};
-
+const confTemplateDir = path.join(path.dirname(path.dirname(__dirname)), 'config-template.yaml');
+const confTemplate = yaml.safeLoad(fs.readFileSync(confTemplateDir));
 const curDir = process.cwd();
 const packDir = path.join(curDir, 'package.json');
 

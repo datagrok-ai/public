@@ -13,14 +13,10 @@ const curFolder = path.basename(curDir);
 const grokDir = path.join(os.homedir(), '.grok');
 const confPath = path.join(grokDir, 'config.yaml');
 
-const confTemplate = {
-    servers: {
-        dev: { url: 'https://dev.datagrok.ai/api', key: '' },
-        public: { url: 'https://public.datagrok.ai/api', key: '' },
-        local: { url: 'http://127.0.0.1:8080/api', key: '' }
-    },
-    default: 'public'
-};
+const templateDir = path.join(path.dirname(path.dirname(__dirname)), 'package-template');
+const confTemplateDir = path.join(path.dirname(path.dirname(__dirname)), 'config-template.yaml');
+
+const confTemplate = yaml.safeLoad(fs.readFileSync(confTemplateDir));
 
 function createDirectoryContents(name, config, templateDir, packageDir) {
     const filesToCreate = fs.readdirSync(templateDir);
@@ -30,6 +26,10 @@ function createDirectoryContents(name, config, templateDir, packageDir) {
         const copyFilePath = path.join(packageDir, file);
         const stats = fs.statSync(origFilePath);
         if (stats.isFile()) {
+            if (file === 'package.png') {
+                fs.writeFileSync(copyFilePath, fs.readFileSync(origFilePath, 'base64'), 'base64');
+                return false;
+            }
             let contents = fs.readFileSync(origFilePath, 'utf8');
             contents = contents.replace(/#{PACKAGE_NAME}/g, name);
             contents = contents.replace(/#{PACKAGE_NAME_LOWERCASE}/g, name.toLowerCase());
@@ -89,7 +89,6 @@ function create(args) {
             console.log('The package directory should be empty');
             return false;
         }
-        const templateDir = path.join(path.dirname(path.dirname(__dirname)), 'package-template');
         createDirectoryContents(name, config, templateDir, packageDir);
     } else {
         console.log('Package name may only include letters, numbers, underscores, or hyphens');
