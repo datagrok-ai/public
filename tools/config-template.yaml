@@ -1,0 +1,11 @@
+servers:
+  dev:
+    url: 'https://dev.datagrok.ai/api'
+    key: ''
+  public:
+    url: 'https://public.datagrok.ai/api'
+    key: ''
+  local:
+    url: 'http://127.0.0.1:8080/api'
+    key: ''
+default: 'public'
