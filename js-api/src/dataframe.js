@@ -68,7 +68,7 @@ export class DataFrame {
      * @returns {ColumnList} */
     get columns() { return new ColumnList(grok_DataFrame_Columns(this.d)); }
 
-    /** List of columns.
+    /** List of rows.
      * @returns {RowList} */
     get rows() { return new RowList(this, grok_DataFrame_Rows(this.d)); }
 
