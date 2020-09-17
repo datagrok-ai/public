@@ -1,10 +1,10 @@
 {
   "plotScripts": {
     "Scatter plot": "require(ggplot2)\nplt <- ggplot(data, aes(!(xColumnName)!(yColumnName)!(sizeColumnName)!(colorColumnName))) +\ngeom_point(!(markerType)) +\nscale_size_continuous(range = c(!(markerMinSize),!(markerMaxSize)))!(labelsColumnName)!(showRegressionLine)",
-    "Histogram": "require(ggplot2)\nplt <- ggplot(data, aes(!(valueColumnName)!(colorColumnName))) +\ngeom_histogram(!(bins)color=\"darkblue\",position=\"identity\", alpha = 0.5)",
-    "Bar chart": "require(ggplot2)\nrequire(e1071)\n\nsummaryDf <- data.frame(\n    x = levels(as.factor(data$!(splitColumnName))),\n    y = tapply(data$!(valueColumnName), data$!(splitColumnName), !(valueAggrType))\n)\n\nplt <- ggplot(summaryDf,aes(x = reorder(x,!(barSortOrder)y),y = y)) +\n  geom_bar(stat=\"identity\",fill = \"green4\") +\n  labs(x = \"!(splitColumnName)\", y = \"!(valueColumnName)\") +\n  geom_text(aes(label=y)) +\n  coord_flip()",
-    "Box plot": "require(ggplot2)\nplt <- ggplot(data,aes(!(categoryColumnName)!(valueColumnName)!(binColorColumnName))) +\n  geom_jitter(shape = 20!(markerColorColumnName)) +\n  geom_boxplot(lwd = 1,alpha = 0.8) +\n  stat_boxplot(geom ='errorbar') +\n  stat_summary(fun=mean, geom=\"point\", shape=20, size=5, color=\"black\", fill=\"black\")",
-    "Correlation plot": "require(dplyr)\nrequire(ggcorrplot)\ndata <- data %>% select(!(xColumnNames))\ncorr <- round(cor(data ,use=\"complete.obs\"!(correlationType)), 3)\n\nplt <- ggcorrplot(corr, hc.order = TRUE, lab = TRUE)",
+    "Histogram": "require(ggplot2)\nplt <- ggplot(data, aes(!(valueColumnName)!(colorColumnName))) +\ngeom_histogram(!(bins)color='darkblue',position='identity', alpha = 0.5)",
+    "Bar chart": "require(ggplot2)\nrequire(e1071)\n\nsummaryDf <- data.frame(\n    x = levels(as.factor(data$!(splitColumnName))),\n    y = tapply(data$!(valueColumnName), data$!(splitColumnName), !(valueAggrType))\n)\n\nplt <- ggplot(summaryDf,aes(x = reorder(x,!(barSortOrder)y),y = y)) +\n  geom_bar(stat='identity',fill = 'green4') +\n  labs(x = '!(splitColumnName)', y = '!(valueColumnName)') +\n  geom_text(aes(label=y)) +\n  coord_flip()",
+    "Box plot": "require(ggplot2)\nplt <- ggplot(data,aes(!(categoryColumnName)!(valueColumnName)!(binColorColumnName))) +\n  geom_jitter(shape = 20!(markerColorColumnName)) +\n  geom_boxplot(lwd = 1,alpha = 0.8) +\n  stat_boxplot(geom ='errorbar') +\n  stat_summary(fun=mean, geom='point', shape=20, size=5, color='black', fill='black')",
+    "Correlation plot": "require(dplyr)\nrequire(ggcorrplot)\ndata <- data %>% select(!(xColumnNames))\ncorr <- round(cor(data ,use='complete.obs'!(correlationType)), 3)\n\nplt <- ggcorrplot(corr, hc.order = TRUE, lab = TRUE)",
     "Line chart": "library(dplyr)\nlibrary(gridExtra)\nfuns <- list(!(yAggrTypes))\ndata <- data %>% select(!(xColumnName),!(yColumnNames))\nsummaryDf <- data.frame(!(xColumnName) = levels(as.factor(data$!(xColumnName))))\nplts <- list()\nfor (i in 1:length(funs)){\n  summaryDf[[names(data)[i+1]]] <- tapply(data[[i+1]], data$!(xColumnName), funs[[i]])\n  plts[[i]] <- ggplot(summaryDf, aes_string(names(summaryDf)[1],names(summaryDf)[i+1] , group = 1)) + geom_line()\n}\nplt <- do.call(grid.arrange,plts)"
   },
   "additionalOps" : {
@@ -51,7 +51,7 @@
 
     "Correlation plot": {
       "xColumnNames": "!(xColumnNames)",
-      "correlationType": ", method = \"!(correlationType)\""
+      "correlationType": ", method = '!(correlationType)'"
     },
 
     "Line chart": {
