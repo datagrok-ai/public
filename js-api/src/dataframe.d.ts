@@ -449,7 +449,7 @@ export class RowList {
     addNew(values?: any[] | null, notify?: boolean): Row
 
     /** Iterates over all rows. */
-    iterator(): Generator<Row, void, unknown>
+    [Symbol.iterator](): Generator<Row, void, unknown>
 
     /** Sets values for the specified row.
      * @param {number} idx - Row index.
