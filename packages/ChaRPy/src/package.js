@@ -46,13 +46,14 @@ grok.events.onContextMenu.subscribe((args) => {
                 let paramsMap;
                 if (optionsObj.type === 'Trellis plot') {
 
-                    stRing = map.plotScripts[optionsObj.look.innerViewerLook['#type'].toLowerCase().replace('look','')] +
-                        " + facet_grid(!(xColumnNames)!(yColumnNames))"; // need to append 'Look'
-                    paramsMap = map.additionalOps[optionsObj.look.innerViewerLook.type];
+                    stRing = map.plotScripts[optionsObj.look.innerViewerLook['#type'].toLowerCase().
+                        replace('look','')] + " + facet_grid(!(xColumnNames)!(yColumnNames))";
+                    paramsMap = map.additionalOps[optionsObj.look.innerViewerLook['#type'].toLowerCase().
+                        replace('look','')];
 
                 } else {
-                    stRing = map.plotScripts[optionsObj.type];
-                    paramsMap = map.additionalOps[optionsObj.type];
+                    stRing = map.plotScripts[optionsObj.type.toLowerCase().replace(' ','')];
+                    paramsMap = map.additionalOps[optionsObj.type.toLowerCase().replace(' ','')];
                 }
 
                 // Replace misc grok codes with R analogues
@@ -91,9 +92,19 @@ grok.events.onContextMenu.subscribe((args) => {
 
             async function strReplace(optionsObj,map) {
 
-                // extract default string and viewer type
-                let pyString = map.plotScripts[optionsObj.type];
-                let paramsMap = map.additionalOps[optionsObj.type];
+                let pyString;
+                let paramsMap;
+                if (optionsObj.type === 'Trellis plot') {
+
+                    pyString = map.plotScripts[optionsObj.look.innerViewerLook['#type'].toLowerCase().
+                    replace('look','')] ;
+                    paramsMap = map.additionalOps[optionsObj.look.innerViewerLook['#type'].toLowerCase().
+                    replace('look','')];
+
+                } else {
+                    pyString = map.plotScripts[optionsObj.type.toLowerCase().replace(' ','')];
+                    paramsMap = map.additionalOps[optionsObj.type.toLowerCase().replace(' ','')];
+                }
 
                 // Replace misc grok codes with R analogues
                 assignOnlyIntersection(optionsObj, map.miscCodes);
