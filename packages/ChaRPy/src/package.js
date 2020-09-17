@@ -27,7 +27,8 @@ function dynamicReplace(colsList, stRing, optionsObj, map) {
             Object.keys(optionsObj[key]).every(elem => elem != '0')) {
             stRing = dynamicReplace(colsList, stRing, optionsObj[key], map)[0];
         } else {
-            stRing = stRing.replace("!(" + key + ")",map[key]);
+            // stRing = stRing.replace("!(" + key + ")",map[key]);
+            stRing = stRing.split("!(" + key + ")").join(map[key]);
             stRing = stRing.split("!(" + key + ")").join(optionsObj[key]);
         }
     })
@@ -44,9 +45,11 @@ grok.events.onContextMenu.subscribe((args) => {
                 let stRing;
                 let paramsMap;
                 if (optionsObj.type === 'Trellis plot') {
-                    stRing = map.plotScripts[optionsObj.look.innerViewerLook.type] +
+
+                    stRing = map.plotScripts[optionsObj.look.innerViewerLook['#type'].toLowerCase().replace('look','')] +
                         " + facet_grid(!(xColumnNames)!(yColumnNames))"; // need to append 'Look'
                     paramsMap = map.additionalOps[optionsObj.look.innerViewerLook.type];
+
                 } else {
                     stRing = map.plotScripts[optionsObj.type];
                     paramsMap = map.additionalOps[optionsObj.type];
@@ -126,4 +129,4 @@ grok.events.onContextMenu.subscribe((args) => {
 
 //name: exportFunc
 //tags: autostart
-export function export_123() {}
+export function toScriptInit() {}
