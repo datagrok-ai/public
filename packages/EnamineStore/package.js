@@ -59,7 +59,7 @@ class EnamineStorePackage extends DG.Package {
             this.createSearchPanel('Similar', smiles),
             this.createSearchPanel('Substructure', smiles)
         ]);
-        return new DG.Widget(panels);
+        return DG.Widget.fromRoot(panels);
     }
 
     //description: Creates search panel

@@ -5,9 +5,10 @@ import {_sub, observeStream} from "./events";
 export class Widget {
 
     /** @constructs Widget and initializes its root. */
-    constructor() {
+    constructor(widgetRoot = null) {
+
         /** @member {HTMLElement} */
-        this._root = null;
+        this._root = widgetRoot;
 
         /** @member {Property[]}*/
         this.properties = [];
@@ -19,10 +20,16 @@ export class Widget {
     set root(r) { this._root = r; }
 
 
+    /** @returns {Widget} */
+    static fromRoot(root) {
+        let w = new Widget();
+        w.root = root;
+        return w;
+    }
 
     /** Creates a {@see Widget} from the specified React component. */
     static react(reactComponent) {
-        let widget = new Widget(ui.div());
+        let widget = Widget.fromRoot(ui.div());
         ReactDOM.render(reactComponent, widget.root);
         return widget;
     }
