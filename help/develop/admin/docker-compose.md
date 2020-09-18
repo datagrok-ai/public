@@ -4,7 +4,7 @@
 
 # Deploy Datagrok using Docker Compose
 
-This document contains instructions for running Datagrok on a regular machine via Docker Compose. This method doesn't require cloud-based hosting. It automatically fetches and runs the needed docker images, and you don't need to set up a local PostgreSQL instance as this is done automatically. We recommend you this method if you want to jump-start with trying out Datagrok in a local, private machine environment. 
+This document contains instructions for running Datagrok on a regular machine via Docker Compose. This method doesn't require cloud-based hosting. It automatically fetches and runs the needed docker images, and you don't need to set up a local PostgreSQL instance as it is delivered automatically via a PostgreSQL container image. We recommend you this method if you want to jump-start with trying out Datagrok in a local, private machine environment. 
 
 ## Prerequisites
 
