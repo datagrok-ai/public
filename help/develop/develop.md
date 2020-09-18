@@ -14,84 +14,130 @@ training and applying [predictive models](../learn/predictive-modeling.md),
 and even [building custom apps](app.md).
 
 There are two options to run custom JavaScript code. For ad-hoc scripts, use the built-in
-JavaScript editor (`Tools | Scripting | JavaScript`). For reusable functions, viewers, 
-and applications, use the packaging mechanism.
+JavaScript editor (`Functions | Scripts | New JavaScript Script`). For reusable functions, viewers, 
+and applications, use the packaging mechanism. In the rest of this article, we will mainly focus on the latter.
 
 Table of contents
 
-* [Getting Started](#getting-started)
 * [Packages](#packages)
-* [Buildable Packages](#buildable-packages)
+* [Getting Started](#getting-started)
+* [Package Structure](#package-structure)
 * [Development](#development)
 * [Publishing](#publishing)
 * [Applications](#applications)
 * [Documentation](#documentation)
-* [Roadmap](#roadmap)
-
-## Getting Started
-
-Here are the typical steps for creating and debugging applications on the Datagrok platform:
-
-1. Download package template: [Open Packages Browser](https://public.datagrok.ai/packages), click on toolbox 
-   "Actions | Download package template..." that contains sources, upload-debug.cmd and upload-deploy.cmd
-2. Setup development environment (see [video](https://www.youtube.com/watch?v=PDcXLMsu6UM))
-3. Debug using [upload-debug.cmd](#publishing) pre-run step
-4. Publish using [upload-deploy.cmd](#publishing) 
-
-If you want to build an advanced package, using WepPack builder, or use Babel, React, 
-or some other advanced Javascript Frameworks or packages, please, proceed to [Buildable Packages](#buildable-packages) section. 
 
 ## Packages
 
-A package is a versionable unit of distribution of content within Datagrok. Essentially, it is 
+A package is a versionable unit of content distribution within Datagrok. Essentially, it is 
 a folder with files in it. A package might contain different things:
 
-* JavaScript functions, viewers, widgets, applications.
-* Scripts written in R, Python, JavaScript, or Java 
-* Queries or connections
+* JavaScript functions, viewers, widgets, applications
+* Scripts written in R, Python, Octave, Grok, Julia, JavaScript, NodeJS, or Java
+* Queries and connections
 * Tables
 
-See our [github repository](https://github.com/datagrok-ai/public/tree/master/packages) for examples.
+See our [GitHub repository](https://github.com/datagrok-ai/public/tree/master/packages) for examples.
+
+## Getting Started
+
+To develop a package on the Datagrok platform, you will need `Node.js` and `npm` installed. Also, install `Webpack` to be able to build your package locally and debug it using `Webpack DevServer`. Optionally, you can use `Babel`, `React` as well as other advanced JavaScript frameworks.
+
+Here are the first steps to get you started:
+
+1. Install `datagrok-tools` utility for managing packages:
+   ```
+   npm install datagrok-tools -g
+   ```
+2. Create a configuration file with the following command:
+   ```
+   grok config
+   ```
+   Enter developer keys and set the default server. Once created, this file will be shared across all your packages. The developer key can be retrieved by opening your user profile and clicking on `Developer key`. Administrators can manage existing keys and grant or revoke them.
+privileges.
+3. Get a package template for your current folder:
+   ```
+   grok create
+   ```
+   Alternatively, pass the package name:
+   ```
+   grok create MyPackage
+   ```
+   A new folder `MyPackage` will be created automatically as well as its contents.
+
+If you are developing a package using the old template, please run `grok migrate`. This command will convert your scripts in `package.json` and copy keys from `upload.keys.json` to `config.yaml`. Run `grok` for instructions and `grok <command> --help` to get help on a particular command.
+
+## Package Structure
 
 A simplest JavaScript package consists of the following files:
 
-| file          | description    |
-|---------------|----------------|
-| package.json  | metadata       |
-| package.js    | entry point    |
-| detectors.js  | detectors file |
-| package.png   | icon           |
+| file          | description     |
+|---------------|-----------------|
+| package.json  | metadata        |
+| package.js    | entry point     |
+| detectors.js  | detectors file  |
+| README.md     | package summary |
+| package.png   | icon            |
 
 `package.json` contains metadata, such as name, version, and dependencies: 
 
 ```json
 {
-  "name": "Sequence",
-  "version": "0.1",
+  "name": "sequence",
   "fullName": "Sequence",
+  "version": "0.0.1",
   "description": "Support for DNA sequences",
-  "sources": ["ntseq/ntseq.js", "feature-viewer/feature-viewer.bundle.js", "msa/msa.min.gz.js"]
+  "sources": ["ntseq/ntseq.js", "feature-viewer/feature-viewer.bundle.js", "msa/msa.min.gz.js"],
+  "dependencies": {
+		"datagrok-api": "latest"
+  },
+  "scripts": {
+		"debug-sequence": "grok publish --rebuild",
+		"deploy-sequence": "grok publish --rebuild --release",
+    "build": "webpack"
+  }
 }
 ```
 
-"sources" contains a list of JS or CSS files, defined relative to the package's root, that should be
+`sources` contains a list of JavaScript or CSS files, defined relative to the package's root, that should be
 loaded before any function from that package is executed.
 
-`package.js` is a JavaScript file. It should define a class named `<package_name>Package` that subclasses `GrokPackage`.
-During the [publishing step](#publishing), its content gets parsed, and functions with the properly formatted
-[headers](../compute/scripting.md#header) get registered as Grok [functions](../overview/functions/function.md). By annotating
+For the first time, there is only the `datagrok-api` package in the dependencies list. Feel free to add new dependencies there and install them via `npm install`.
+
+In this file, you can also find `scripts` for [debugging and publishing your package](#publishing).
+
+Next, let's take a look at the `src/package.js` file:
+
+```js
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+import * as DG from "datagrok-api/dg";
+
+export let _package = new DG.Package();
+
+//name: test
+//input: string s
+export function test(s) {
+    grok.shell.info(_package.webRoot);
+}
+```
+
+Note that there are already `Datagrok API` modules imported. They are also set as external modules, so that `Webpack` will not include them to the output. You are completely free to include any other libraries or packages, as all of them will be built in the single bundle file.
+
+During the [publishing step](#publishing), the contents of `package.js` get parsed, and functions with the properly formatted
+[headers](../compute/scripting.md#header) are registered as Grok [functions](../overview/functions/function.md). By annotating
 functions in a specific way, it is possible to register custom viewers, widgets, renderers, 
 converters, validators, suggestions, info panels, and semantic type detectors. 
 
-`detectors.js` is a JavaScript file.  It should define a class named `<package_name>DetectorsPackage` that subclasses `GrokPackage`.
-It's similar to package.js, but intended for small functions - semantic types detectors. Datagrok calls these functions each time
+`detectors.js` is a JavaScript file.  It should define a class named `<package_name>PackageDetectors` that subclasses `DG.Package`.
+It is similar to `package.js` but intended for smaller functions — semantic type detectors. Datagrok calls these functions each time the
 user opens a table.
 
-Below is an example of a package `Sequence` consisting of a single function `complement` that returns a complementary
+Below, there is an example of a package `Sequence` consisting of a single function `complement` that returns a complementary
 sequence for the specified nucleotide sequence:
 
 ```js
-class SequencePackage extends DG.Package {
+class SequencePackageDetectors extends DG.Package {
     
     //description: returns complementary sequence
     //tags: bioinformatics, converter
@@ -106,62 +152,10 @@ class SequencePackage extends DG.Package {
 ```
 
 Once registered, this function is now available across the whole platform, and can be used in multiple contexts.
-For instance, it can be found under `Help | Functions`, and executed right from there: 
 
-![](complement.png)
+`README.md` is a text file that introduces your project. It's a common practice to include your project's summary there.
 
-Since this function is tagged as `converter` and declares semantic type of the input parameter, it 
-becomes a converter. It will be offered to convert columns with the semantic type "nucleotide". Note that
-the semantic type detector function can be registered in the same package.  
-
-![](complement-converter.png)
-
-While the function is available in the platform's UI, the corresponding JavaScript file and
-its dependencies do not get loaded in the browser until a function is used for the first time. This allows the
-platform to operate on thousands of functions covering different domains without compromising the performance.    
-
-Each package has a version number. All objects inside the package are being deployed according to package version. 
-That means that if version changes, there will be an independent instance of each package asset.  
-Multiple versions of each package can be deployed at one moment, and administrator can switch between them. All users 
-will see only objects that belong to current package version.
-There is a special "debug" version that can be deployed for each package. If the developer deploys the debug version, it becomes 
-active for the current package until the developer deletes it or changes their developer key. In this case, the developer can see objects from their version of package, and changes will not affect other users package representation.  
-
-
-## Buildable Packages
-
-To get started, you need NodeJS and NPM installed. Also, install WebPack to be able to build package locally
-and debug it using WebPack Dev Server.
-
-To get a package template:
-1. Create an empty folder
-2. Run `npm install datagrok-tools -g`. It's a tool to help you to build and deploy your package.
-3. Run `datagrok-init`. Enter package name, remote Datagrok server URI (including /api) and your developer key.
-This will drop to your package all necessary files. You'll be able to change all of this in the future.
-4. Run `npm install`. This will install packages according to `package.json` dependencies list. For the first time, 
-there are only the `datagrok-api` package, and you are free to add new dependencies as usual.
-
-Take a look at the `src/package.js` file:
-```js
-import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
-import * as DG from "datagrok-api/dg";
-
-export let _package = new DG.Package();
-
-//name test
-//input: string s
-export function test(s) {
-    grok.shell.info(_package.webRoot);
-}
-```
-Note, that there are already Datagrok API modules imported. They are also set as external modules, so Webpack 
-doesn't include them to the output.
-You are completely free to include any other libraries or packages, as they are all will be build in the single bundle file.
-To debug package run `npm run upload-debug`. This will upload package to the server in debug mode, just for your account.
-To deploy package for all users run `npm run upload-deploy`. Also, package could be deployed from git, or another source. 
-
-To change Datagrok server - edit scripts section in the `package.json` file and add new dev key to the `upload.keys.json`. 
+Lastly, `package.png` is an icon displayed for your package on the Datagrok platform.
 
 ## Development
 
@@ -174,11 +168,9 @@ it is possible to hide the complexity of that scenario. For instance, you can se
 step-by-step execution and generally debug the program in the regular way. Of course, you can always
 use the debugger that comes with the browser.
 
-To develop Grok packages, we recommend to start with downloading one of the existing package templates.
+To develop Datagrok packages, we recommend that you start with creating a package template.
 Then, set up your IDE in such a way that when starting a project, it would [publish](#publishing) the package,
-and then start the platform. Here is how to do it in WebStorm:
-
-TODO: insert gif   
+and then start the platform.
 
 Packages deployed in the development mode are visible only to the authors. This ensures that multiple
 people can simultaneously work on the same package.    
@@ -191,70 +183,104 @@ to enable deep customization. Same concepts apply to JavaScript development.
 We do not impose any requirements on the UI frameworks or technologies used for 
 the JavaScript plugins, although we encourage developers to keep it simple.
 
-To simplify development, Datagrok provides an "Inspector" tool that lets developers peek
+To simplify development, Datagrok provides an `Inspector` tool (`Alt + I`) that lets developers peek
 under the hood of the platform. Use it for understanding which events get fired and when,
 how views and viewers are serialized, what is getting stored locally, what widgets are
-currently registered with the system, etc. 
+currently registered by the system, etc. 
 
 ### Environments
 
 In order to isolate packages being debugged from the production instance, we recommend running 
-them against the "dev" instance, if possible.
+them against the `dev` instance, if possible. To change Datagrok's server, add a new developer key to your local `config.yaml` and edit the `scripts` section in the `package.json` file.
 
 ## Publishing
 
+### Version Control
+
+Each package has a version number. All objects inside the package are being deployed according to the package version. 
 When a package gets published, a "published package" entity gets created. It is associated with the 
-package, and has additional metadata (such as published date). Typically, only one version of a package
+package, and has additional metadata (such as publication date). Typically, only one version of a package
 is visible to a user. Administrators can manage published packages and decide which versions
-should be used. It is possible to roll back to an old version, or assign a particular version to
-a particular group of users.  
+should be used. It is possible to roll back to an older version, or assign a particular version to
+a particular group of users.
 
-To publish a package, use the "publish" tool included in the SDK. Alternatively, drop a zip 
-file with the package content into the platform. The tool supports two deployment modes:
+Importantly, if the version changes, there will be an independent instance of each package asset.  
+Multiple versions of a package can be deployed at one moment, and the administrator can switch between them. All users 
+will only see objects that belong to the current package version.
 
-* Development - the package will only be accessible by the developer
-  ```upload_package -p <package_path> -k <dev_key> -r <api_endpoint>```
-* Production - available to everyone who has the necessary privilege
-  ```upload_package -p <package_path> -k <dev_key> -r <api_endpoint> deploy```
+There is a special `debug` version that can be deployed for each package. If the developer applies it, it becomes 
+active for the current package until the developer deletes it or changes their developer key. In this case, the developer can see objects from their version of package, and changes will not affect other users package representation. 
 
-[Video guide to package publishing](https://www.youtube.com/watch?v=PDcXLMsu6UM)
+### Deployment Modes
 
-Package template contains two cmd files, "upload-debug.cmd" and "upload-deploy" that have all
-parameters configured already (including your dev key). Dev key can also be retrieved by opening your user profile
-and clicking on `Developer key`. Administrators can manage existing keys and grant or revoke developer
-privileges.
+The `datagrok-tools` utility supports two deployment modes:
 
-To see available packages, click on `Admin | Packages`, or follow [this link](https://public.datagrok.ai/packages)
-from outside the platform. Just as pretty much anything in the platform, packages are subject to
-[privileges](../govern/security.md#privileges), which allows a fine-grained control over the
-platform's content.  
+* *Development* means that the package will only be accessible by the developer.
+* *Production* means that the package is available to everyone who has the necessary privilege.
+
+To publish a package, open the `package.json` file in your IDE. Typically, the `scripts` section would contain several scripts generated for your package based on the contents of `config.yaml`. For development purposes, use the scripts having the `debug` word in their name. For production, use the alternative scripts starting with `deploy` instead.
+
+```json
+"scripts": {
+	"debug-sequence": "grok publish --rebuild",
+	"deploy-sequence": "grok publish --rebuild --release",
+	"build": "webpack",
+	"debug-sequence-dev": "grok publish dev --rebuild",
+	"deploy-sequence-dev": "grok publish dev --rebuild --release",
+	"debug-sequence-local": "grok publish local --rebuild",
+	"deploy-sequence-local": "grok publish local --rebuild --release"
+}
+```
+
+Alternatively, you can run these scripts with `npm run`. If you have any questions, type `grok` for instructions or `grok publish --help` to get help on this particular command.
+
+The default mode for `grok publish` is set to `--debug --build`. You can easily change it with options `--release` and `--rebuild` respectively.
+
+In addition, you can pass another server either as URL or server alias from the `config.yaml` file:
+
+```
+grok publish dev
+grok publish https://dev.datagrok.ai/api --key key-for-dev
+grok publish https://dev.datagrok.ai/api -k key-for-dev
+```
+
+The developer key, if specified, gets updated in the `config.yaml` file. All new servers along with their keys will also be added to this file.
+
+### Source Control 
+
+Package can be deployed from git as well as other resources, which allows for team collaboration. 
+
+### Sharing
+
+Just like other entities on the platform, packages are subject to [privileges](../govern/security.md#privileges). When sharing with users and groups of users, you can specify the rights (for viewing and editing) and choose if you want to notify the person in question.
+
+To see packages available to you, click on `Manage | Packages`, or follow [this link](https://public.datagrok.ai/packages) from outside the platform.
 
 ## Applications
 
-Applications are [functions](../overview/functions/function.md) tagged with the `#app` tag. A package might contain zero, one, or more apps. 
-To open application launcher, click on `Admin | Apps`, or follow [this link](https://public.datagrok.ai/apps)
-from outside the platform.  
+Applications are [functions](../overview/functions/function.md) tagged with the `#app` tag. A package might contain zero, one, or more apps. See our [GitHub repository](https://github.com/datagrok-ai/public/tree/master/packages) for application examples.
 
-To launch a particular app automatically, open the following URL: `https://public.datagrok.ai/apps/<APP_NAME>`
+To open the application launcher, click on `Functions | Apps`, or follow [this link](https://public.datagrok.ai/apps)
+from outside the platform. To launch a particular app automatically, open the following URL: `https://public.datagrok.ai/apps/<APP_NAME>`
 
 ## Documentation
 
 According to [this study](http://sigdoc.acm.org/wp-content/uploads/2019/01/CDQ18002_Meng_Steinhardt_Schubert.pdf),
-in terms of the strategies used for understanding API documentation, different developers fall into few groups 
-(systematic, opportunistic and pragmatic). These findings are consistent with our experience. 
+in terms of the strategies used for understanding API documentation, different developers fall into several groups:
+systematic, opportunistic and pragmatic. These findings are consistent with our experience. 
 For Datagrok's documentation, we have established an approach that enables developers from either of the
 above-mentioned groups to be productive. 
 
-* [Sample browser](https://public.datagrok.ai/js) (`Tools | Scripting | JavaScript`) is an interactive tool
+* [Sample browser](https://public.datagrok.ai/js) (`Functions | Scripts | New JavaScript Script`) is an interactive tool
   for browsing, editing, and running JavaScript samples that come with the platform. Samples are grouped by
   domain, such as data manipulation, visualization, or cheminformatics. They are short, clean examples
   of the working code using [Grok API](js-api.md) that can be copy-and-pasted into the existing solution.
   The samples are also cross-linked with the [help](https://datagrok.ai/help) system. 
 * [Grok API](js-api.md) provides complete control over the platform. 
-  [JSDoc documentation](https://datagrok.ai/help/develop/api/index.html) is available.
+  [JSDoc documentation](https://public.datagrok.ai/js) is available.
 * [Platform help](https://datagrok.ai/help/) explains the functionality from the user's point of view. Where
   appropriate, it is hyper-linked to samples and demo projects. In the near future, we plan to turn it
-  into the community wiki, where users would be contributing to the content. The same web pages
+  into the community wiki, where users will be contributing to the content. The same web pages
   are used as an interactive help within the platform (you see help on the currently selected object).
   
 Additionally, there are a few ways to connect with fellow developers:    
@@ -262,17 +288,7 @@ Additionally, there are a few ways to connect with fellow developers:
 * [Slack space](https://datagrok.slack.com) 
 
 See also: 
+
 * [Grok API](js-api.md)
+* [Packages from our GitHub repository](https://github.com/datagrok-ai/public/tree/master/packages)
 * [How Developers Use API Documentation: An Observation Study](http://sigdoc.acm.org/wp-content/uploads/2019/01/CDQ18002_Meng_Steinhardt_Schubert.pdf)
-
-## Roadmap
-
-* Developing shareable components and widgets
-
-### Videos
-
-<iframe width="560" height="315" src="https://www.youtube.com/embed/PDcXLMsu6UM" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-
-See also
-
-* [Github repository](https://github.com/datagrok-ai/public/tree/master/packages)
