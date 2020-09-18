@@ -32,8 +32,8 @@ Requirements: 2 vCPU and 4 GiB RAM.
     \"dbAdminPassword\": \"postgres\"           # Postgres admin password
     }
     ```
-4. Prepare local directory to store data: `GROK_DATA_PATH`, allow access to write to the group.
-5. Prepare local directory to store config files: `GROK_CFG_PATH`, allow access to write to the group.
+4. Prepare local directory to store data: `GROK_DATA_PATH`, allow write access to the group.
+5. Prepare local directory to store config files: `GROK_CFG_PATH`, allow write access to the group.
 6. Run Datagrok image. Datagrok will create a database automatically.
    ```
    docker run -it -v <GROK_DATA_PATH>:/home/grok/data -v <GROK_CFG_PATH>:/home/grok/cfg -e GROK_PARAMETERS="<GROK_START_PARAMETERS>" -p 80:80 <IMAGE_NAME>
@@ -44,7 +44,7 @@ Requirements: 2 vCPU and 4 GiB RAM.
 
 ## Setup Compute Virtual Machine
 
-Requirements: 4 vCPU and 8 GiB RAM
+Requirements: 4 vCPU and 8 GiB RAM.
 
 1. Get the latest Compute Virtual Machine docker image from [Docker Hub](https://hub.docker.com/u/datagrok):
    ```
