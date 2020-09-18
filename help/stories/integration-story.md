@@ -28,7 +28,7 @@ for [30+ popular databases](../access/data-connection.md#connectors), and the li
 In addition to that, it is possible to develop your own data connectors, and seamlessly integrate them
 into the platform.
 
-In order to do that, a "Grok Connect" REST endpoint that implements few methods has to be registered with the platform. 
+In order to do that, a "Grok Connect" REST endpoint that implements a few methods has to be registered with the platform. 
 The methods are:
 * getConnectors - returns all connectors that the endpoint supports (one for database type)
 * getSchema(connection) - if applicable, returns database schema for the given connection
@@ -38,9 +38,13 @@ The methods are:
 
 At startup, the server asks each registered endpoint for the list of supported connectors, and 
 creates a global list of supported connectors. The client asks the server for the available connectors,
-and populates the UI accordingly. Later on, when and when a request (such as a structured query)
- 
-A reference Java application is available as a template. 
+and populates the UI accordingly. Later on, when client makes a request to query a database, this request
+gets accepted by a server, and then routed to the corresponding database connector.
+
+All Datagrok connectors are open-sourced under the MIT license and reside in the 
+[Datagrok public repository](https://github.com/datagrok-ai/public/tree/master/connectors).
+A command-line ["GrokConnectTest"](https://github.com/datagrok-ai/public/tree/master/connectors/grok_connect/src/test/java/grok_connect) 
+application could be useful for testing and debug purposes. 
 
 ## OpenAPI
 
