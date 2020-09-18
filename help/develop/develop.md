@@ -15,7 +15,7 @@ and even [building custom apps](app.md).
 
 There are two options to run custom JavaScript code. For ad-hoc scripts, use the built-in
 JavaScript editor (`Functions | Scripts | New JavaScript Script`). For reusable functions, viewers, 
-and applications, use the packaging mechanism. In the rest of this article, we will mainly focus on the latter.
+and applications, use the packaging mechanism, which is the focus of this article.
 
 Table of contents
 
@@ -41,7 +41,7 @@ See our [GitHub repository](https://github.com/datagrok-ai/public/tree/master/pa
 
 ## Getting Started
 
-To develop a package on the Datagrok platform, you will need `Node.js` and `npm` installed. Also, install `Webpack` to be able to build your package locally and debug it using `Webpack DevServer`. Optionally, you can use `Babel`, `React` as well as other advanced JavaScript frameworks.
+To develop a package on the Datagrok platform, you will need [Node.js](https://nodejs.org/en/) and [npm](https://www.npmjs.com/get-npm) installed. Also, install [Webpack](https://webpack.js.org/guides/installation/) to be able to build your package locally and debug it using `Webpack DevServer`. Optionally, you can use `Babel`, `React` as well as other advanced JavaScript frameworks.
 
 Here are the first steps to get you started:
 
@@ -49,21 +49,20 @@ Here are the first steps to get you started:
    ```
    npm install datagrok-tools -g
    ```
-2. Create a configuration file with the following command:
+2. Configure your environment with the following command:
    ```
    grok config
    ```
-   Enter developer keys and set the default server. Once created, this file will be shared across all your packages. The developer key can be retrieved by opening your user profile and clicking on `Developer key`. Administrators can manage existing keys and grant or revoke them.
-privileges.
-3. Get a package template for your current folder:
+   Enter developer keys and set the default server. Your credentials will be stored locally in `config.yaml`. Once created, this file will be used for publishing all your packages. The developer key can be retrieved by opening your user profile and clicking on `Developer key`. Administrators can manage existing keys and grant or revoke privileges.
+3. Create a new package by running this command:
    ```
-   grok create
-   ```
-   Alternatively, pass the package name:
-   ```
-   grok create MyPackage
+   grok create <packageName>
    ```
    A new folder `MyPackage` will be created automatically as well as its contents.
+4. Once you've completed the work on your package, upload it by running:
+   ```
+   grok publish
+   ```
 
 If you are developing a package using the old template, please run `grok migrate`. This command will convert your scripts in `package.json` and copy keys from `upload.keys.json` to `config.yaml`. Run `grok` for instructions and `grok <command> --help` to get help on a particular command.
 
@@ -71,13 +70,13 @@ If you are developing a package using the old template, please run `grok migrate
 
 A simplest JavaScript package consists of the following files:
 
-| file          | description     |
-|---------------|-----------------|
-| package.json  | metadata        |
-| package.js    | entry point     |
-| detectors.js  | detectors file  |
-| README.md     | package summary |
-| package.png   | icon            |
+| file         | description     |
+|--------------|-----------------|
+| package.json | metadata        |
+| package.js   | entry point     |
+| detectors.js | detectors file  |
+| README.md    | package summary |
+| package.png  | package icon    |
 
 `package.json` contains metadata, such as name, version, and dependencies: 
 
@@ -93,18 +92,18 @@ A simplest JavaScript package consists of the following files:
   },
   "scripts": {
 		"debug-sequence": "grok publish --rebuild",
-		"deploy-sequence": "grok publish --rebuild --release",
+    "deploy-sequence": "grok publish --rebuild --release",
+    "build-sequence": "webpack",
     "build": "webpack"
   }
 }
 ```
 
-`sources` contains a list of JavaScript or CSS files, defined relative to the package's root, that should be
-loaded before any function from that package is executed.
+`sources` contains a list of JavaScript or CSS files defined relative to the package's root. Each of these files will be loaded before any function from that package is executed.
 
-For the first time, there is only the `datagrok-api` package in the dependencies list. Feel free to add new dependencies there and install them via `npm install`.
+The package template first includes only one dependency — `datagrok-api`. You can add more packages to the dependencies list and install them via `npm install`.
 
-In this file, you can also find `scripts` for [debugging and publishing your package](#publishing).
+The file `package.json` also contains `scripts` for [debugging and publishing your package](#publishing).
 
 Next, let's take a look at the `src/package.js` file:
 
@@ -122,7 +121,7 @@ export function test(s) {
 }
 ```
 
-Note that there are already `Datagrok API` modules imported. They are also set as external modules, so that `Webpack` will not include them to the output. You are completely free to include any other libraries or packages, as all of them will be built in the single bundle file.
+Note that `Datagrok API` modules are already imported. They are also set as external modules, so that `Webpack` will not include them to the output. You can include other libraries or packages, as all of them will be built in the single bundle file.
 
 During the [publishing step](#publishing), the contents of `package.js` get parsed, and functions with the properly formatted
 [headers](../compute/scripting.md#header) are registered as Grok [functions](../overview/functions/function.md). By annotating
@@ -131,7 +130,7 @@ converters, validators, suggestions, info panels, and semantic type detectors.
 
 `detectors.js` is a JavaScript file.  It should define a class named `<package_name>PackageDetectors` that subclasses `DG.Package`.
 It is similar to `package.js` but intended for smaller functions — semantic type detectors. Datagrok calls these functions each time the
-user opens a table.
+user opens a table. Detectors will be uploaded separately from the rest of the package and used to quickly inspect the data and determine the semantic type of the columns. Semantic type tagging allows the platform to offer specific functions for data of a particular type.
 
 Below, there is an example of a package `Sequence` consisting of a single function `complement` that returns a complementary
 sequence for the specified nucleotide sequence:
@@ -152,10 +151,6 @@ class SequencePackageDetectors extends DG.Package {
 ```
 
 Once registered, this function is now available across the whole platform, and can be used in multiple contexts.
-
-`README.md` is a text file that introduces your project. It's a common practice to include your project's summary there.
-
-Lastly, `package.png` is an icon displayed for your package on the Datagrok platform.
 
 ## Development
 
@@ -213,18 +208,19 @@ active for the current package until the developer deletes it or changes their d
 
 ### Deployment Modes
 
-The `datagrok-tools` utility supports two deployment modes:
+You can use the following flags to specify who can access your package:
 
-* *Development* means that the package will only be accessible by the developer.
-* *Production* means that the package is available to everyone who has the necessary privilege.
+* In `--debug` mode, packages are accessible by the developer only (default).
+* In `--release` mode, packages are accessible by everyone who has the privilege.
 
 To publish a package, open the `package.json` file in your IDE. Typically, the `scripts` section would contain several scripts generated for your package based on the contents of `config.yaml`. For development purposes, use the scripts having the `debug` word in their name. For production, use the alternative scripts starting with `deploy` instead.
 
 ```json
 "scripts": {
 	"debug-sequence": "grok publish --rebuild",
-	"deploy-sequence": "grok publish --rebuild --release",
-	"build": "webpack",
+  "deploy-sequence": "grok publish --rebuild --release",
+  "build-sequence": "webpack",
+  "build": "webpack",
 	"debug-sequence-dev": "grok publish dev --rebuild",
 	"deploy-sequence-dev": "grok publish dev --rebuild --release",
 	"debug-sequence-local": "grok publish local --rebuild",
@@ -234,21 +230,18 @@ To publish a package, open the `package.json` file in your IDE. Typically, the `
 
 Alternatively, you can run these scripts with `npm run`. If you have any questions, type `grok` for instructions or `grok publish --help` to get help on this particular command.
 
-The default mode for `grok publish` is set to `--debug --build`. You can easily change it with options `--release` and `--rebuild` respectively.
-
 In addition, you can pass another server either as URL or server alias from the `config.yaml` file:
 
 ```
 grok publish dev
-grok publish https://dev.datagrok.ai/api --key key-for-dev
-grok publish https://dev.datagrok.ai/api -k key-for-dev
+grok publish https://dev.datagrok.ai/api --key dev-key
 ```
 
-The developer key, if specified, gets updated in the `config.yaml` file. All new servers along with their keys will also be added to this file.
+Make sure to specify the developer key for a new server.
 
-### Source Control 
+### Source Control
 
-Package can be deployed from git as well as other resources, which allows for team collaboration. 
+Packages can be deployed from git as well as other resources, which allows for convenient team collaboration and version management. See the full list of source types in the [Package Browser](https://public.datagrok.ai/packages) (`Manage | Packages | Add new package`). When developing a package with your team, it's a good idea to commit code to the repository first and then publish your package from there. Our public repository is a telling example of this workflow. We also welcome contributions, which you can learn more about in [this article](https://datagrok.ai/help/develop/public-repository).
 
 ### Sharing
 
@@ -258,7 +251,7 @@ To see packages available to you, click on `Manage | Packages`, or follow [this 
 
 ## Applications
 
-Applications are [functions](../overview/functions/function.md) tagged with the `#app` tag. A package might contain zero, one, or more apps. See our [GitHub repository](https://github.com/datagrok-ai/public/tree/master/packages) for application examples.
+Applications are [functions](../overview/functions/function.md) tagged with the `#app` tag. A package might contain zero, one, or more apps. See our [GitHub repository](https://github.com/datagrok-ai/public/tree/master/packages) for application examples, such as [Enamine Store application](https://github.com/datagrok-ai/public/tree/master/packages/EnamineStore).
 
 To open the application launcher, click on `Functions | Apps`, or follow [this link](https://public.datagrok.ai/apps)
 from outside the platform. To launch a particular app automatically, open the following URL: `https://public.datagrok.ai/apps/<APP_NAME>`
@@ -277,7 +270,7 @@ above-mentioned groups to be productive.
   of the working code using [Grok API](js-api.md) that can be copy-and-pasted into the existing solution.
   The samples are also cross-linked with the [help](https://datagrok.ai/help) system. 
 * [Grok API](js-api.md) provides complete control over the platform. 
-  [JSDoc documentation](https://public.datagrok.ai/js) is available.
+  [JS documentation](https://public.datagrok.ai/js) is available.
 * [Platform help](https://datagrok.ai/help/) explains the functionality from the user's point of view. Where
   appropriate, it is hyper-linked to samples and demo projects. In the near future, we plan to turn it
   into the community wiki, where users will be contributing to the content. The same web pages
