@@ -241,7 +241,13 @@ Make sure to specify the developer key for a new server.
 
 ### Source Control
 
-Packages can be deployed from git as well as other resources, which allows for convenient team collaboration and version management. See the full list of source types in the [Package Browser](https://public.datagrok.ai/packages) (`Manage | Packages | Add new package`). When developing a package with your team, it's a good idea to commit code to the repository first and then publish your package from there. Our public repository is a telling example of this workflow. We also welcome contributions, which you can learn more about in [this article](https://datagrok.ai/help/develop/public-repository).
+Packages can be deployed from git as well as other resources, which allows for convenient team collaboration and version management. See the full list of source types in the [Package Browser](https://public.datagrok.ai/packages) (`Manage | Packages | Add new package`). When developing a package with your team, it's a good idea to commit code to the repository first and then publish your package from there. Our [public GitHub repository](https://github.com/datagrok-ai/public/tree/master/packages) is a telling example of this workflow. We also welcome contributions, which you can learn more about in [this article](https://datagrok.ai/help/develop/public-repository).
+
+### Continuous Integration
+
+`Webpack` is required for your package source code to work successfully in the browser. The Datagrok platform can build a package on the server side, in which case, you need to specify `--rebuild` option in scripts from `package.json`. The script `"build": "webpack"` is reserved for server build.
+
+Alternatively, it's possible to build your package on the client side using `Webpack`. To do that, specify the opposite option `--build` in your scripts.
 
 ### Sharing
 
