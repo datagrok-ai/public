@@ -1,25 +1,25 @@
 {
-  "name": "charpy",
-  "fullName": "ChaRPy",
-  "version": "1.0.0",
-  "description": "",
-  "dependencies": {
-    "datagrok-api": "latest"
-  },
-  "devDependencies": {
-    "@babel/cli": "7.1.2",
-    "@babel/core": "7.1.2",
-    "@babel/polyfill": "7.0.0",
-    "@babel/preset-env": "7.1.0",
-    "babel-loader": "^8.1.0",
-    "webpack": "^4.44.1",
-    "webpack-cli": "^3.3.12",
-    "json5-loader": "^4.0.0"
-  },
-  "scripts": {
-    "upload-debug-local": "webpack && datagrok-upload http://localhost:8082 debug",
-    "upload-debug": "webpack && datagrok-upload https://dev.datagrok.ai/api debug",
-    "upload-deploy": "webpack && datagrok-upload https://dev.datagrok.ai/api deploy",
-    "build": "webpack"
-  }
+	"name": "charpy",
+	"fullName": "ChaRPy",
+	"version": "1.0.0",
+	"description": "",
+	"dependencies": {
+		"datagrok-api": "latest"
+	},
+	"devDependencies": {
+		"@babel/cli": "7.1.2",
+		"@babel/core": "7.1.2",
+		"@babel/polyfill": "7.0.0",
+		"@babel/preset-env": "7.1.0",
+		"babel-loader": "^8.1.0",
+		"webpack": "^4.44.1",
+		"webpack-cli": "^3.3.12",
+		"json5-loader": "^4.0.0"
+	},
+	"scripts": {
+		"upload-debug-local": "webpack && grok publish http://localhost:8082 ",
+		"upload-debug": "webpack && grok publish https://dev.datagrok.ai/api ",
+		"upload-deploy": "webpack && grok publish https://dev.datagrok.ai/api --release",
+		"build": "webpack"
+	}
 }
