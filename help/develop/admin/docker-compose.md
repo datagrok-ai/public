@@ -84,7 +84,7 @@ This document contains instructions for running Datagrok on a regular machine vi
    docker-compose down --volumes  
    ```  
 
-See also:
+_See also_:
 
    * [Docker Compose](https://docs.docker.com/compose/)
    * [Deploy Datagrok on a regular machine](deploy-regular.md). This is for the case when a local PostgreSQL instance is already present, and with manual containers management. Recommended for most production environments.
