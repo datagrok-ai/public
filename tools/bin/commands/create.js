@@ -39,7 +39,7 @@ function createDirectoryContents(name, config, templateDir, packageDir) {
                 for (let server in config.servers) {
                     if (server === config.default) continue;
                     package['scripts'][`debug-${name.toLowerCase()}-${server}`] = `grok publish ${server} --rebuild`;
-                    package['scripts'][`deploy-${name.toLowerCase()}-${server}`] = `grok publish ${server} --rebuild --release`;
+                    package['scripts'][`release-${name.toLowerCase()}-${server}`] = `grok publish ${server} --rebuild --release`;
                 }
                 contents = JSON.stringify(package, null, '\t');
             }

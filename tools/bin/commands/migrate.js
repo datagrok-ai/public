@@ -81,6 +81,7 @@ function migrate(args) {
             package['scripts'][script] = package['scripts'][script].replace(replRegExp, (match) => grokMap[match]);
         }
         fs.writeFileSync(packDir, JSON.stringify(package, null, '\t'));
+        console.log('Converting scripts in `package.json`...');
     } catch (error) {
         console.error(error);
     }

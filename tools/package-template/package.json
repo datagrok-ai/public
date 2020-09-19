@@ -8,7 +8,8 @@
   },
   "scripts": {
     "debug-#{PACKAGE_NAME_LOWERCASE}": "grok publish --rebuild",
-    "deploy-#{PACKAGE_NAME_LOWERCASE}": "grok publish --rebuild --release",
+    "release-#{PACKAGE_NAME_LOWERCASE}": "grok publish --rebuild --release",
+    "build-#{PACKAGE_NAME_LOWERCASE}": "webpack",
     "build": "webpack"
   }
 }

@@ -6,7 +6,7 @@ const commands = {
     add: require('./commands/add').add,
     config: require('./commands/config').config,
     create: require('./commands/create').create,
-    delete: require('./commands/delete').delete,
+    // delete: require('./commands/delete').delete,
     publish: require('./commands/publish').publish,
     migrate: require('./commands/migrate').migrate
 };
