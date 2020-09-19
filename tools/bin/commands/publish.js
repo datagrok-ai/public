@@ -136,39 +136,24 @@ function publish(args) {
 
     let config = yaml.safeLoad(fs.readFileSync(confPath));
     let host = config.default;
-    let alias = config.default;
     let urls = mapURL(config);
     if (nArgs === 2) host = args['_'][1];
+    let key = '';
+    let url = '';
 
     // The host can be passed either as a URL or an alias
     try {
-        host = new URL(host);
-        alias = (host in urls) ? urls[host] : host.hostname;
-        if (!(alias in config.servers)) {
-            config['servers'][alias] = {};
-            config['servers'][alias]['url'] = host.href;
-            config['servers'][alias]['key'] = args.key || '';
-            fs.writeFileSync(confPath, yaml.safeDump(config));
-        }
+        url = new URL(host).href;
+        if (url in urls) key = config['servers'][urls[url]]['key'];
     } catch (error) {
-        alias = host;
-        if (!(alias in config.servers)) return console.log(`Unknown server alias. Please add it to ${confPath}`);
+        if (!(host in config.servers)) return console.log(`Unknown server alias. Please add it to ${confPath}`);
+        url = config['servers'][host]['url'];
+        key = config['servers'][host]['key'];
     }
 
     // Update the developer key
-    if (args.key) {
-        config = yaml.safeLoad(fs.readFileSync(confPath));
-        config['servers'][alias]['key'] = args.key;
-        fs.writeFileSync(confPath, yaml.safeDump(config));
-    }
-
-    // Get the non-empty developer key
-    config = yaml.safeLoad(fs.readFileSync(confPath));
-    let devKey = config['servers'][alias]['key'];
-    if (devKey === '') return console.log('Please provide the key with `--key` option or add it by running `grok config`');
-
-    // Get the URL
-    let url = config['servers'][alias]['url'];
+    if (args.key) key = args.key;
+    if (key === '') return console.log('Please provide the key with `--key` option or add it by running `grok config`');
 
     // Get the package name
     if (!fs.existsSync(packDir)) return console.log('`package.json` doesn\'t exist');
@@ -180,7 +165,7 @@ function publish(args) {
     process.on('beforeExit', async () => {
         let code = 0;
         try {
-            code = await processPackage(!args.release, Boolean(args.rebuild), url, devKey, packageName)
+            code = await processPackage(!args.release, Boolean(args.rebuild), url, key, packageName)
     
         } catch (error) {
             console.error(error);

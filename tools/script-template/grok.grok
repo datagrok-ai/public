@@ -1,8 +1,0 @@
-#name: Template
-#description: Following template calculates number of cells in table
-#language: grok
-#tags: template, demo
-#sample: cars.csv
-#input: dataframe table [Data table]
-#output: int count [Number of cells in table]
-count = table.columns.length * table.rowCount
