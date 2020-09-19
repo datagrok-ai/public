@@ -88,11 +88,11 @@ A simplest JavaScript package consists of the following files:
   "description": "Support for DNA sequences",
   "sources": ["ntseq/ntseq.js", "feature-viewer/feature-viewer.bundle.js", "msa/msa.min.gz.js"],
   "dependencies": {
-		"datagrok-api": "latest"
+    "datagrok-api": "latest"
   },
   "scripts": {
-		"debug-sequence": "grok publish --rebuild",
-    "deploy-sequence": "grok publish --rebuild --release",
+    "debug-sequence": "grok publish --rebuild",
+    "release-sequence": "grok publish --rebuild --release",
     "build-sequence": "webpack",
     "build": "webpack"
   }
@@ -217,14 +217,14 @@ To publish a package, open the `package.json` file in your IDE. Typically, the `
 
 ```json
 "scripts": {
-	"debug-sequence": "grok publish --rebuild",
-  "deploy-sequence": "grok publish --rebuild --release",
+  "debug-sequence": "grok publish --rebuild",
+  "release-sequence": "grok publish --rebuild --release",
   "build-sequence": "webpack",
   "build": "webpack",
-	"debug-sequence-dev": "grok publish dev --rebuild",
-	"deploy-sequence-dev": "grok publish dev --rebuild --release",
-	"debug-sequence-local": "grok publish local --rebuild",
-	"deploy-sequence-local": "grok publish local --rebuild --release"
+  "debug-sequence-dev": "grok publish dev --rebuild",
+  "release-sequence-dev": "grok publish dev --rebuild --release",
+  "debug-sequence-local": "grok publish local --rebuild",
+  "release-sequence-local": "grok publish local --rebuild --release"
 }
 ```
 
