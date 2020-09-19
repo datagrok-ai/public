@@ -4,7 +4,7 @@
 
 # Deploy Datagrok using Docker Compose
 
-This document contains instructions for running Datagrok on a regular machine via Docker Compose. This method doesn't require cloud-based hosting. It automatically fetches and runs the needed docker images, and you don't need to set up a local PostgreSQL instance as this is done automatically. We recommend you this method if you want to jump-start with trying out Datagrok in a local, private machine environment. 
+This document contains instructions for running Datagrok on a regular machine via Docker Compose. This method doesn't require cloud-based hosting. It automatically fetches and runs the needed docker images, and you don't need to set up a local PostgreSQL instance as it is delivered automatically via a PostgreSQL container image. We recommend you this method if you want to jump-start with trying out Datagrok in a local, private machine environment. 
 
 ## Prerequisites
 
@@ -19,7 +19,7 @@ This document contains instructions for running Datagrok on a regular machine vi
    cd datagrok
    ```
 
-2. In this folder, create a file `docker-compose.yaml` with the following contents:
+2. In this folder, create a file `docker-compose.yaml` with the following contents (replace `datagrok/datagrok:1.0.82-75b821b` and `datagrok/cvm:1.0.82-75b821b` with the latest versions which you get from our [Docker Hub](https://hub.docker.com/u/datagrok)):
     ```yaml
     version: "3"
     services:
@@ -84,7 +84,7 @@ This document contains instructions for running Datagrok on a regular machine vi
    docker-compose down --volumes  
    ```  
 
-See also:
+_See also_:
 
    * [Docker Compose](https://docs.docker.com/compose/)
-   * [Deploy Datagrok on a regular machine](help/develop/admin/deploy-regular). This is for the case when a local PostgreSQL instance is already present, and with manual containers management. Recommended for most production environments.
+   * [Deploy Datagrok on a regular machine](deploy-regular.md). This is for the case when a local PostgreSQL instance is already present, and with manual containers management. Recommended for most production environments.
