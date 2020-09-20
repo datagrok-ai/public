@@ -158,6 +158,11 @@ export class Dialog {
      *  @param {Function} handler
      *  @returns {Dialog} */
     onOK(handler) { grok_Dialog_OnOK(this.d, handler); return this; }
+    
+    /**
+     *  @param {Function} handler
+     *  @returns {Dialog} */
+    onClose(handler) { grok_Dialog_OnClose(this.d, handler); return this; }
 
     /** @returns {Dialog} */
     show() { grok_Dialog_Show(this.d, false, false); return this; }
