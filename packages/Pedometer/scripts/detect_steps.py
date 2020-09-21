@@ -2,13 +2,13 @@
 #description: Detects positions of steps based on accelerometer data
 #language: python
 #tags: template, demo, accelerometer
-#sample: accelerometer.csv
+#sample: sensors/accelerometer.csv
 #input: dataframe accel [Accelerometry data table]
 #input: column x {semType: Accelerometer-X} [X axis]
 #input: column y {semType: Accelerometer-Y} [Y axis]
 #input: column z {semType: Accelerometer-Z} [Z axis]
 #input: double sample_rate = 32 [Sample rate, in Hz]
-#output: dataframe steps {action:replace(accel)} [Steps positions]
+#output: dataframe steps {action:join(accel)} [Steps positions]
 
 import numpy as np
 import pandas as pd

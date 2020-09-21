@@ -4,17 +4,17 @@ that leverages platform's capabilities.
 
 Here are the files of particular interest:
 
-* [scripts/detect_steps.py](https://github.com/datagrok-ai/packages/blob/master/Pedometer/scripts/detect_steps.py)
-  : a Python function that detects steps based on raw accelerometer data
-* [package.js](https://github.com/datagrok-ai/packages/blob/master/Pedometer/package.js)
-  : a JavaScript function that accepts columns containing x,y, and z acceleration components, calculates
-  position of steps by invoking detect_steps, visualizes the raw data on a chart, and customizes
+* [scripts/detect_steps.py](https://github.com/datagrok-ai/public/blob/master/packages/Pedometer/scripts/detect_steps.py)
+  : a Python function that detects steps based on raw accelerometer data.
+* [package.js](https://github.com/datagrok-ai/public/blob/master/packages/Pedometer/package.js)
+  : a JavaScript function that accepts columns containing `x`, `y`, and `z` acceleration components, calculates
+  position of steps by invoking `detect_steps`, visualizes the raw data on a chart, and customizes
   chart's interactivity.
 
 ## Detecting steps
 
 Let's take a detailed look at the header of the 
-[scripts/detect_steps.py](https://github.com/datagrok-ai/packages/blob/master/Pedometer/scripts/detect_steps.py) file.
+[scripts/detect_steps.py](https://github.com/datagrok-ai/public/blob/master/packages/Pedometer/scripts/detect_steps.py) file.
 It addition to containing information such as name and
 description, it instructs the platform what the input and output parameters are, including their data types
 and semantic types:   
@@ -24,7 +24,7 @@ and semantic types:
 #description: Detects positions of steps based on accelerometer data
 #language: python
 #tags: template, demo, accelerometer
-#sample: accelerometer.csv
+#sample: sensors/accelerometer.csv
 #input: dataframe accel [Accelerometry data table]
 #input: column x {semType: Accelerometer-X} [X axis]
 #input: column y {semType: Accelerometer-Y} [Y axis]
@@ -32,8 +32,6 @@ and semantic types:
 #input: double sample_rate = 32 [Sample rate, in Hz]
 #output: dataframe steps {action:join(accel)} [Steps positions]
 ```
-
-Ones 
 
 ## JavaScript
 
