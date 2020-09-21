@@ -70,13 +70,15 @@ If you are developing a package using the old template, please run `grok migrate
 
 A simplest JavaScript package consists of the following files:
 
-| file         | description     |
-|--------------|-----------------|
-| package.json | metadata        |
-| package.js   | entry point     |
-| detectors.js | detectors file  |
-| README.md    | package summary |
-| package.png  | package icon    |
+| file                          | description     |
+|-------------------------------|-----------------|
+| [package.json](#package.json) | metadata        |
+| [package.js](#package.js)     | entry point     |
+| [detectors.js](#detectors.js) | detectors file  |
+| README.md                     | package summary |
+| package.png                   | package icon    |
+
+### <a name="package.json"></a>package.json
 
 `package.json` contains metadata, such as name, version, and dependencies: 
 
@@ -105,6 +107,8 @@ The package template first includes only one dependency — `datagrok-api`. You 
 
 The file `package.json` also contains `scripts` for [debugging and publishing your package](#publishing).
 
+### <a name="package.js"></a>package.js
+
 Next, let's take a look at the `src/package.js` file:
 
 ```js
@@ -127,6 +131,8 @@ During the [publishing step](#publishing), the contents of `package.js` get pars
 [headers](../compute/scripting.md#header) are registered as Grok [functions](../overview/functions/function.md). By annotating
 functions in a specific way, it is possible to register custom viewers, widgets, renderers, 
 converters, validators, suggestions, info panels, and semantic type detectors. 
+
+### <a name="detectors.js"></a>detectors.js
 
 `detectors.js` is a JavaScript file.  It should define a class named `<package_name>PackageDetectors` that subclasses `DG.Package`.
 It is similar to `package.js` but intended for smaller functions — semantic type detectors. Datagrok calls these functions each time the
@@ -170,7 +176,7 @@ and then start the platform.
 Packages deployed in the development mode are visible only to the authors. This ensures that multiple
 people can simultaneously work on the same package.    
 
-### General notes on package development
+### General Notes on Package Development
 
 Our approach to extending the system is providing one canonical, convenient way for 
 developers to achieve the task, at the same time exposing enough extension points
