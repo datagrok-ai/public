@@ -138,25 +138,25 @@ converters, validators, suggestions, info panels, and semantic type detectors.
 It is similar to `package.js` but intended for smaller functions — semantic type detectors. Datagrok calls these functions each time the
 user opens a table. Detectors will be uploaded separately from the rest of the package and used to quickly inspect the data and determine the semantic type of the columns. Semantic type tagging allows the platform to offer specific functions for data of a particular type.
 
-Below, there is an example of a package `Sequence` consisting of a single function `complement` that returns a complementary
-sequence for the specified nucleotide sequence:
+Below, there is an example of a package `Sequence` containing a single detector `detectNucleotides`:
 
 ```js
 class SequencePackageDetectors extends DG.Package {
     
-    //description: returns complementary sequence
-    //tags: bioinformatics, converter
-    //input: string nucleotides {semType: nucleotides}
-    //output: string result {semType: nucleotides}
-    complement(nucleotides) {
-        var seq = new Nt.Seq();
-        seq.read(nucleotides);
-        return seq.complement().sequence();
+    //tags: semTypeDetector
+    //input: column col
+    //output: string semType
+    detectNucleotides(col) {
+        if (col.name.startsWith('nuc')) {
+            col.semType = 'nucleotides';
+            return 'nucleotides';
+        }
+        return null;
     }
 }
 ```
 
-Once registered, this function is now available across the whole platform, and can be used in multiple contexts.
+Once registered, this function is now available across the whole platform, and can be used for semantic type detection.
 
 ## Development
 
