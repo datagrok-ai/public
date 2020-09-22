@@ -1,6 +1,7 @@
 import {Viewer} from "./viewer.js";
 import {Column} from './dataframe.js';
 import {Cell} from "./dataframe";
+import {toDart} from "./wrappers";
 import {__obs, _sub, EventData} from "./events";
 import {_identityInt32} from "./utils";
 
@@ -228,6 +229,9 @@ export class Grid extends Viewer {
        grok_Grid_SetRowOrder(this.d, indexes);
        return this;
     }
+
+    scrollToCell(column, row) { grok_Grid_ScrollToCell(this.d, toDart(column), row); }
+    scrollToPixels(x, y) { grok_Grid_ScrollToPixels(this.d, x, y); }
 
     static create(table) { return new Grid(grok_Grid_Create(table.d)); }
 }
