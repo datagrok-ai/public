@@ -88,7 +88,6 @@ A simplest JavaScript package consists of the following files:
   "fullName": "Sequence",
   "version": "0.0.1",
   "description": "Support for DNA sequences",
-  "sources": ["ntseq/ntseq.js", "feature-viewer/feature-viewer.bundle.js", "msa/msa.min.gz.js"],
   "dependencies": {
     "datagrok-api": "latest"
   },
@@ -100,8 +99,6 @@ A simplest JavaScript package consists of the following files:
   }
 }
 ```
-
-`sources` contains a list of JavaScript or CSS files defined relative to the package's root. Each of these files will be loaded before any function from that package is executed.
 
 The package template first includes only one dependency — `datagrok-api`. You can add more packages to the dependencies list and install them via `npm install`.
 
@@ -121,11 +118,11 @@ export let _package = new DG.Package();
 //name: test
 //input: string s
 export function test(s) {
-    grok.shell.info(_package.webRoot);
+    grok.shell.info(s);
 }
 ```
 
-Note that `Datagrok API` modules are already imported. They are also set as external modules, so that `Webpack` will not include them to the output. You can include other libraries or packages, as all of them will be built in the single bundle file.
+Note that `Datagrok API` modules are already imported. They are also set as external modules, so that `Webpack` will not include them to the output. You can include other libraries or packages, as all of them will be built in a single bundle file. If you choose to include other files, such as CSS, in your package, import them into `package.js` as well.
 
 During the [publishing step](#publishing), the contents of `package.js` get parsed, and functions with the properly formatted
 [headers](../compute/scripting.md#header) are registered as Grok [functions](../overview/functions/function.md). By annotating
@@ -240,20 +237,34 @@ In addition, you can pass another server either as URL or server alias from the 
 
 ```
 grok publish dev
-grok publish https://dev.datagrok.ai/api --key dev-key
+grok publish https://dev.datagrok.ai/api --key <dev-key>
 ```
 
 Make sure to specify the developer key for a new server.
 
 ### Source Control
 
-Packages can be deployed from git as well as other resources, which allows for convenient team collaboration and version management. See the full list of source types in the [Package Browser](https://public.datagrok.ai/packages) (`Manage | Packages | Add new package`). When developing a package with your team, it's a good idea to commit code to the repository first and then publish your package from there. Our [public GitHub repository](https://github.com/datagrok-ai/public/tree/master/packages) is a telling example of this workflow. We also welcome contributions, which you can learn more about in [this article](https://datagrok.ai/help/develop/public-repository).
+Packages can be deployed from `Git` as well as other resources, which allows for convenient team collaboration and version management. See the full list of source types in the [Package Browser](https://public.datagrok.ai/packages) (`Manage | Packages | Add new package`).
+
+When developing a package with your team, it's a good idea to commit code to the repository first and then publish your package from there. Our [public GitHub repository](https://github.com/datagrok-ai/public/tree/master/packages) is a telling example of this workflow. We also welcome contributions, which you can learn more about in [this article](https://datagrok.ai/help/develop/public-repository).
+
+To publish a package from the repository, you need to open `Manage | Packages | Add new package` first. Once the window appears, choose `Git` as the source type, enter the URL to your repository, and specify the package directory relative to its root. Click on `LOAD PACKAGE METADATA` to get the package name and description.
+
+![](git-publishing.png)
+
+If necessary, you can specify additional settings and then publish the package.
 
 ### Continuous Integration
 
 `Webpack` is required for your package source code to work successfully in the browser. The Datagrok platform can build a package on the server side, in which case, you need to specify `--rebuild` option in scripts from `package.json`. The script `"build": "webpack"` is reserved for server build.
 
-Alternatively, it's possible to build your package on the client side using `Webpack`. To do that, specify the opposite option `--build` in your scripts.
+Alternatively, it's possible to build your package on the client side using `Webpack`. To do that, run the script `"build": "webpack"` before publishing.
+
+Package publication is compatible with automation tools. You can pass your server URL and developer key explicitly without configuring:
+
+```
+grok publish <url> -k <dev-key>
+```
 
 ### Sharing
 
