@@ -6,7 +6,7 @@
 Scripting is an integration mechanism with languages for statistical/mathematical computing. 
 Scripting combines fast interactive visualizations and other features of the Datagrok platform 
 with thousands of statistical packages and visualizations available in 
-[R](https://www.r-project.org/about.html), [Python](https://www.python.org),
+[R](https://www.r-project.org/about.html), [Python](https://www.python.org), [Octave](https://octave.org/),
 [Julia](https://julialang.org), or [JavaScript](https://www.javascript.com).
 
 ## Header
@@ -182,11 +182,13 @@ grok.functions.register({
 | description | Description                        |
 | language    | Script language (see list below)   |
 | help-url    | Help URL                           |
+| reference   | Reference to research papers       |
 | tags        | Tags                               |
 | sample      | Name of a sample file              |
 | input       | Input parameter                    |
 | output      | Output parameter                   |
 | environment | Environment name                   |
+| condition   | Condition
 
 Also it is possible to add custom parameter using "meta." prefix.
 
@@ -197,6 +199,7 @@ Also it is possible to add custom parameter using "meta." prefix.
 |--------------------------|----------------|
 | r                        | R              |
 | python                   | Python         |
+| octave                   | Octave         |
 | julia                    | Julia          |
 | grok                     | Grok Scripting |
 | javascript               | JavaScript     |
