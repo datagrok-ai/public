@@ -580,6 +580,115 @@ export class Cell {
     get value() { return grok_Cell_Get_Value(this.d); }
 }
 
+/**
+ * Efficient bit storage and manipulation.
+ * See samples: {@link https://public.datagrok.ai/js/samples/data-frame/aggregation}
+ */
+export class BitSet {
+
+    /** Creates a {BitSet} from the specified Dart object. */
+    constructor(d) { this.d = d; }
+
+    /** Creates a {BitSet} of the specified length with all bits set to false.
+     * @param {number} length - Number of bits.
+     * @returns {BitSet} */
+    static create(length) { return new BitSet(grok_BitSet(length)); }
+
+    /** Number of bits in a bitset
+     * @type {number} */
+    get length() { return grok_BitSet_Get_Length(this.d); }
+
+    /** Number of set bits
+     * @type {number} */
+    get trueCount() { return grok_BitSet_Get_TrueCount(this.d); }
+
+    /** Number of unset bits
+     * @type {number}*/
+    get falseCount() { return grok_BitSet_Get_FalseCount(this.d); }
+
+    /** Clones a bitset
+     *  @returns {BitSet} */
+    clone() { return new BitSet(grok_BitSet_Clone(this.d)); }
+
+    /** Inverts a bitset.
+     * @returns {BitSet} */
+    invert() { grok_BitSet_Invert(this.d); return this; }
+
+    /** Sets all bits to x
+     * @param {boolean} x
+     * @param {boolean} notify
+     * @returns {BitSet} */
+    setAll(x, notify = true) { grok_BitSet_SetAll(this.d, x, notify); return this; }
+
+    /** Finds the first index of value x, going forward from i-th position.
+     * @param {number} i - index
+     * @param {boolean} x
+     * @returns {number} */
+    findNext(i, x) { return grok_BitSet_FindNext(this.d, i, x); }
+
+    /** Finds the first index of value x, going forward from i-th position, or -1 if not found.
+     * @param {number} i - Index to start searching from.
+     * @param {boolean} x - Value to search for.
+     * @returns {number} */
+    findPrev(i, x) { return grok_BitSet_FindPrev(this.d, i, x); }
+
+    /** Gets i-th bit
+     * @param {number} i
+     * @returns {boolean} */
+    get(i) { return grok_BitSet_GetBit(this.d, i); }
+
+    /** Sets i-th bit to x
+     * @param {number} i
+     * @param {boolean} x
+     * @param {boolean} notify */
+    set(i, x, notify = true) { grok_BitSet_SetBit(this.d, i, x, notify); }
+
+    /** Sets [i]-th bit to [value], does not check bounds */
+    setFast(i, value) {
+        let buf = grok_BitSet_GetBuffer(this.d);
+        let idx = (i | 0) / 0x20;
+
+        if (value)
+            buf[idx] |= 1 << (i & 0x1f);
+        else
+            buf[idx] &= ~(1 << (i & 0x1f));
+    }
+
+    /** Sets all bits by setting i-th bit to the results of f(i)
+     * @param {Function} f  */
+    init(f) {
+        let buf = grok_BitSet_Get_Buffer(this.d);
+        let length = this.length;
+
+        for (let i = 0; i < length; i++)
+            buf[i] = 0;
+
+        for (let i = 0; i < length; i++) {
+            let idx = (i / 0x20) | 0;
+            if (f(i))
+                buf[idx] |= 1 << (i & 0x1f);
+        }
+
+        grok_BitSet_Set_Buffer(this.d, buf);
+        this.fireChanged();
+    }
+
+    /** Indexes of all set bits. The result is cached.
+     *  @returns {Int32Array} */
+    getSelectedIndexes() { return grok_BitSet_GetSelectedIndexes(this.d); }
+
+    /** Copies the content from the other {BitSet}.
+     * @param {BitSet} b - BitSet to copy from.
+     * @returns {BitSet} */
+    copyFrom(b) { grok_BitSet_CopyFrom(this.d, b.d); return this; }
+
+    fireChanged() { grok_BitSet_FireChanged(this.d); }
+
+    /** @returns {Observable} - fires when the bitset gets changed. */
+    get onChanged() { return observeStream(grok_BitSet_Changed(this.d)); }
+}
+
+
 /** Represents basic descriptive statistics calculated for a {Column}.
  *  See samples: {@link https://public.datagrok.ai/js/samples/data-frame/stats} */
 export class Stats {
@@ -784,117 +893,12 @@ export class GroupByBuilder {
      * @param {string} [resultColName] - column name in the resulting DataFrame
      * @returns {GroupByBuilder} */
     q3(srcColName, resultColName = null) { return this.add(AGG.Q3, srcColName, resultColName); }
+
+    /**
+     * @param {BitSet} bitset
+     * @returns {GroupByBuilder} */
+    whereRowMask(bitset) { grok_GroupByBuilder_WhereBitSet(this.d, bitset.d); return this; }
 }
-
-/**
- * Efficient bit storage and manipulation.
- * See samples: {@link https://public.datagrok.ai/js/samples/data-frame/aggregation}
- */
-export class BitSet {
-
-    /** Creates a {BitSet} from the specified Dart object. */
-    constructor(d) { this.d = d; }
-
-    /** Creates a {BitSet} of the specified length with all bits set to false.
-     * @param {number} length - Number of bits.
-     * @returns {BitSet} */
-    static create(length) { return new BitSet(grok_BitSet(length)); }
-
-    /** Number of bits in a bitset
-     * @type {number} */
-    get length() { return grok_BitSet_Get_Length(this.d); }
-
-    /** Number of set bits
-     * @type {number} */
-    get trueCount() { return grok_BitSet_Get_TrueCount(this.d); }
-
-    /** Number of unset bits
-     * @type {number}*/
-    get falseCount() { return grok_BitSet_Get_FalseCount(this.d); }
-
-    /** Clones a bitset
-     *  @returns {BitSet} */
-    clone() { return new BitSet(grok_BitSet_Clone(this.d)); }
-
-    /** Inverts a bitset.
-     * @returns {BitSet} */
-    invert() { grok_BitSet_Invert(this.d); return this; }
-
-    /** Sets all bits to x
-     * @param {boolean} x
-     * @param {boolean} notify
-     * @returns {BitSet} */
-    setAll(x, notify = true) { grok_BitSet_SetAll(this.d, x, notify); return this; }
-
-    /** Finds the first index of value x, going forward from i-th position.
-     * @param {number} i - index
-     * @param {boolean} x
-     * @returns {number} */
-    findNext(i, x) { return grok_BitSet_FindNext(this.d, i, x); }
-
-    /** Finds the first index of value x, going forward from i-th position, or -1 if not found.
-     * @param {number} i - Index to start searching from.
-     * @param {boolean} x - Value to search for.
-     * @returns {number} */
-    findPrev(i, x) { return grok_BitSet_FindPrev(this.d, i, x); }
-
-    /** Gets i-th bit
-     * @param {number} i
-     * @returns {boolean} */
-    get(i) { return grok_BitSet_GetBit(this.d, i); }
-
-    /** Sets i-th bit to x
-     * @param {number} i
-     * @param {boolean} x
-     * @param {boolean} notify */
-    set(i, x, notify = true) { grok_BitSet_SetBit(this.d, i, x, notify); }
-
-    /** Sets [i]-th bit to [value], does not check bounds */
-    setFast(i, value) {
-        let buf = grok_BitSet_GetBuffer(this.d);
-        let idx = (i | 0) / 0x20;
-
-        if (value)
-            buf[idx] |= 1 << (i & 0x1f);
-        else
-            buf[idx] &= ~(1 << (i & 0x1f));
-    }
-
-    /** Sets all bits by setting i-th bit to the results of f(i)
-     * @param {Function} f  */
-    init(f) {
-        let buf = grok_BitSet_Get_Buffer(this.d);
-        let length = this.length;
-
-        for (let i = 0; i < length; i++)
-            buf[i] = 0;
-
-        for (let i = 0; i < length; i++) {
-            let idx = (i / 0x20) | 0;
-            if (f(i))
-                buf[idx] |= 1 << (i & 0x1f);
-        }
-
-        grok_BitSet_Set_Buffer(this.d, buf);
-        this.fireChanged();
-    }
-
-    /** Indexes of all set bits. The result is cached.
-     *  @returns {Int32Array} */
-    getSelectedIndexes() { return grok_BitSet_GetSelectedIndexes(this.d); }
-
-    /** Copies the content from the other {BitSet}.
-     * @param {BitSet} b - BitSet to copy from.
-     * @returns {BitSet} */
-    copyFrom(b) { grok_BitSet_CopyFrom(this.d, b.d); return this; }
-
-    fireChanged() { grok_BitSet_FireChanged(this.d); }
-
-    /** @returns {Observable} - fires when the bitset gets changed. */
-    get onChanged() { return observeStream(grok_BitSet_Changed(this.d)); }
-}
-
-
 
 export const QNUM_LESS = 1;
 export const QNUM_EXACT = 2;
