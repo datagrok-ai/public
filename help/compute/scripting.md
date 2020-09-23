@@ -323,10 +323,11 @@ You can use these fields to filter scripts with [smart search](../overview/smart
 | commentedBy | [User](../govern/user.md) object |
 | usedBy      | [User](../govern/user.md) object |
 
-See also:
+_See also_:
 
   * [Grok Scripting](../overview/grok-script.md)
   * [R](https://www.r-project.org/about.html)
   * [Python](https://www.python.org)
+  * [Octave](https://octave.org/)
   * [Julia](https://julialang.org)
   * [JavaScript](https://www.javascript.com)
