@@ -62,6 +62,7 @@ export class Events {
     }
 
     /** @returns {Observable} */ get onContextMenu() { return __obs('d4-context-menu'); }
+    /** @returns {Observable} */ get onContextMenuClosed() { return __obs('d4-menu-closed'); }
 
     /** @returns {Observable} */ get onCurrentViewChanged () { return __obs('d4-current-view-changed'); }
 
