@@ -88,7 +88,6 @@ grok.events.onContextMenu.subscribe((args) => {
             dialog.onClose.subscribe((_) => {
               viewerLeft.dataFrame = new DG.DataFrame();
               viewerRight.dataFrame = new DG.DataFrame();
-              grok.shell.info('HEY!');
             });
             dialog.showModal(true);            
         });
@@ -149,7 +148,6 @@ grok.events.onContextMenu.subscribe((args) => {
             dialog.onClose.subscribe(() => {
               viewerLeft.dataFrame = new DG.DataFrame();
               viewerRight.dataFrame = new DG.DataFrame();
-              grok.shell.info('HEY!');
             });
             dialog.showModal(true);
         });
