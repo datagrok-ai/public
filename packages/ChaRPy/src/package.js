@@ -70,24 +70,27 @@ grok.events.onContextMenu.subscribe((args) => {
             }
 
             let options = JSON.parse(args.args.context.getOptions());
-            let viewLeft = DG.Viewer.fromType(options.type,
+            let viewerLeft = DG.Viewer.fromType(options.type,
               args.args.context.table, options.look);
             let rCode = await strReplace(options, mapR);
-            let viewRight = DG.Viewer.fromType('Scripting Viewer',
+            let viewerRight = DG.Viewer.fromType('Scripting Viewer',
               args.args.context.table, {script: mapR.header + rCode});
 
             let block =
                 $(ui.splitV([
                     ui.textArea(rCode),
                     ui.splitH([
-                        viewLeft,
-                        viewRight])
+                        viewerLeft,
+                        viewerRight])
                 ])).css('flex-grow', '1');
 
-            ui.dialog('OUTPUT SCRIPT').onClose(() => {
-              viewLeft.dataFrame = new DG.DataFrame();
-              viewRight.dataFrame = new DG.DataFrame();
-            }).add(block[0]).showModal(true);
+            let dialog = ui.dialog('OUTPUT SCRIPT').add(block[0]);
+            dialog.onClose.subscribe((_) => {
+              viewerLeft.dataFrame = new DG.DataFrame();
+              viewerRight.dataFrame = new DG.DataFrame();
+              grok.shell.info('HEY!');
+            });
+            dialog.showModal(true);            
         });
     }
 });
@@ -128,24 +131,27 @@ grok.events.onContextMenu.subscribe((args) => {
             }
 
             let options = JSON.parse(args.args.context.getOptions());
-            let viewLeft = DG.Viewer.fromType(options.type,
+            let viewerLeft = DG.Viewer.fromType(options.type,
               args.args.context.table, options.look);
             let pyCode = await strReplace(options, mapPy);
-            let viewRight = DG.Viewer.fromType('Scripting Viewer',
+            let viewerRight = DG.Viewer.fromType('Scripting Viewer',
               args.args.context.table, {script: mapPy.header + pyCode});
 
             let block =
                 $(ui.splitV([
                     ui.textArea(pyCode),
                     ui.splitH([
-                        viewLeft,
-                        viewRight])
+                        viewerLeft,
+                        viewerRight])
                 ])).css('flex-grow', '1');
 
-            ui.dialog('OUTPUT SCRIPT').onClose(() => {
-              viewLeft.dataFrame = new DG.DataFrame();
-              viewRight.dataFrame = new DG.DataFrame();
-            }).add(block[0]).showModal(true);
+            let dialog = ui.dialog('OUTPUT SCRIPT').add(block[0]);
+            dialog.onClose.subscribe(() => {
+              viewerLeft.dataFrame = new DG.DataFrame();
+              viewerRight.dataFrame = new DG.DataFrame();
+              grok.shell.info('HEY!');
+            });
+            dialog.showModal(true);
         });
     }
 });

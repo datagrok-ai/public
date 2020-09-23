@@ -142,6 +142,9 @@ export class Dialog {
      *  @returns {Dialog} */
     onOK(handler: () => void): Dialog
 
+    /// Occurs when Dialog is closed
+    onClose(callback: (v: any) => void): StreamSubscription
+
     /** @returns {Dialog} */
     show(): Dialog
 

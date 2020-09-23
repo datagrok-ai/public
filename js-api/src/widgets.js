@@ -1,5 +1,5 @@
 import {toDart, toJs} from "./wrappers";
-import {_sub, observeStream} from "./events";
+import {__obs, _sub, observeStream} from "./events";
 
 /** Base class for controls that have a visual root and a set of properties. */
 export class Widget {
@@ -162,7 +162,11 @@ export class Dialog {
     /**
      *  @param {Function} handler
      *  @returns {Dialog} */
-    onClose(handler) { grok_Dialog_OnClose(this.d, handler); return this; }
+
+    get onClose() { return __obs('d4-dialog-closed', this.d); }
+    // Using __obs is a recommended method. The below are obsolete and shall not be used:
+    // onClose(handler) { grok_Dialog_OnClose(this.d, handler); return this; }
+    // onClose(handler) { let s = _sub(grok_Dialog_OnClose(this.d, () => { handler(); s.cancel(); })); return this; }
 
     /** @returns {Dialog} */
     show() { grok_Dialog_Show(this.d, false, false); return this; }
