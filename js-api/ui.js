@@ -9,7 +9,7 @@ import {Accordion, Dialog, InputBase, Menu, TabControl, TreeViewNode, Widget} fr
 import {toDart} from "./src/wrappers";
 import {Functions} from "./src/functions";
 import $ from "cash-dom";
-import Cash from "cash-dom";
+import {__obs} from "./src/events";
 
 /**
  * Creates an instance of the element for the specified tag, and optionally assigns it a CSS class.
@@ -277,12 +277,6 @@ export function popupMenu(items) {
     menu.show();
 }
 
-export function tooltipHide() { grok_Tooltip_Hide(); }
-
-export function tooltip(e, x) { grok_Tooltip_SetOn(e, x); return e; }
-
-export function tooltipShow(content, x, y) { grok_Tooltip_Show(content, x, y); }
-
 export function inputs(inputs) { return div(inputs.map((x) => x.root), 'pure-form,pure-form-aligned');}
 
 /** Creates new nodes tree
@@ -326,7 +320,7 @@ export class Tooltip {
     hide() { grok_Tooltip_Hide(); }
 
     /** Associated the specified visual element with the corresponding item. */
-    setOn(element, item) { grok_Tooltip_SetOn(element, iten); return element; }
+    bind(element, tooltip) { grok_Tooltip_SetOn(element, tooltip); return element; }
 
     /** Shows the tooltip at the specified position
      * @param {HTMLElement | string} content
@@ -340,8 +334,13 @@ export class Tooltip {
 
     /** @returns {isVisible} */
     get isVisible() { return grok_Tooltip_Is_Visible(); }
+
+    /** @returns {Observable} */ get onTooltipRequest () { return __obs('d4-tooltip-request'); }
+    /** @returns {Observable} */ get onTooltipShown () { return __obs('d4-tooltip-shown'); }
+    /** @returns {Observable} */ get onTooltipClosed () { return __obs('d4-tooltip-closed'); }
 }
 
+export let tooltip = new Tooltip();
 
 /**
  * Override this class, and {@link register} an instance to integrate the platform with custom

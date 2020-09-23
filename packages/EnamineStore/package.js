@@ -91,7 +91,7 @@ class EnamineStorePackage extends DG.Package {
                 };
                 for (let pack of comp['packs'])
                     props[`${pack['amount']} ${pack['measure']}`] = `${pack['price']} ${currency}`;
-                ui.tooltip(mol, ui.divV([ui.tableFromMap(props), ui.divText('Click to open in the store.')]));
+                ui.tooltip.bind(mol, ui.divV([ui.tableFromMap(props), ui.divText('Click to open in the store.')]));
                 mol.addEventListener('click', function() {
                     window.open(comp['productUrl'], '_blank');
                 });
@@ -103,7 +103,7 @@ class EnamineStorePackage extends DG.Package {
         }).catch(err => {
             compsHost.removeChild(compsHost.firstChild);
             let div = ui.divText('No matches');
-            ui.tooltip(div, `${err}`);
+            ui.tooltip.bind(div, `${err}`);
             compsHost.appendChild(div);
         });
         return panel;

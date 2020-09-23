@@ -111,7 +111,7 @@ class ChemspacePackage extends DG.Package {
                 for (let n = 0; n < Math.min(t.rowCount, 20); n++) {
                     let smiles = t.get('smiles', n);
                     let mol = grok.chem.svgMol(smiles, 150, 75);
-                    ui.tooltip(mol, () => getTooltip(n));
+                    ui.tooltip.bind(mol, () => getTooltip(n));
                     mol.addEventListener('click', function () {
                         window.open(t.get('link', n), '_blank');
                     });
@@ -126,7 +126,7 @@ class ChemspacePackage extends DG.Package {
             .catch(err => {
                 compsHost.removeChild(compsHost.firstChild);
                 let div = ui.divText('No matches');
-                ui.tooltip(div, `${err}`);
+                ui.tooltip.bind(div, `${err}`);
                 compsHost.appendChild(div);
             });
 
