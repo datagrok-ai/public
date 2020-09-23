@@ -6,7 +6,7 @@ Here are the directories of particular interest:
 * [data-access](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples/scripts/data-access)
   : directory with [data access](https://datagrok.ai/help/access/data-connection) examples
 * [data-frame](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples/scripts/data-access)
-  : directory with [data-frame (table)](https://datagrok.ai/help/overview/table) manipulations
+  : directory with [table (data frame)](https://datagrok.ai/help/overview/table) manipulations
 * [domains](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples/scripts/domains)
   : directory with domain specific examples: [bioinformatics](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples/scripts/domains/bio),
   [chemical](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples/scripts/domains/chem),
@@ -22,6 +22,7 @@ Here are the directories of particular interest:
 * [ui](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples/scripts/ui)
   : directory with ui manipulation examples
 
-See also: 
+See also:
+
   * [Grok API](https://datagrok.ai/help/develop/js-api)
   * [Packages](https://datagrok.ai/help/develop/develop#packages)
