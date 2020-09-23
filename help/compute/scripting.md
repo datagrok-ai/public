@@ -181,14 +181,14 @@ grok.functions.register({
 | name        | Name                               |
 | description | Description                        |
 | language    | Script language (see list below)   |
-| help-url    | Help URL                           |
-| reference   | Reference to research papers       |
+| help-url    | Datagrok's Wiki URL                |
+| reference   | Reference to a research paper      |
 | tags        | Tags                               |
 | sample      | Name of a sample file              |
 | input       | Input parameter                    |
 | output      | Output parameter                   |
 | environment | Environment name                   |
-| condition   | Condition
+| condition   | Script applicability conditions    |
 
 Also it is possible to add custom parameter using "meta." prefix.
 
