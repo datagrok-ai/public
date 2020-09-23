@@ -186,7 +186,7 @@ export function popupMenu(items: any): void
 export function tooltipHide(): void
 
 //TODO: types...e and x variables?
-export function tooltip(e: HTMLElement, x: any): HTMLElement
+//export function tooltip(e: HTMLElement, x: any): HTMLElement
 
 export function tooltipShow(content: any, x: any, y: HTMLElement): HTMLElement
 
