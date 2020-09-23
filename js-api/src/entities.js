@@ -28,12 +28,17 @@ export class Entity {
     getProperties() {
         return new Promise((resolve, reject) => grok_EntitiesDataSource_GetProperties(grok.dapi.entities.s, this.d, (p) => resolve(p)));
     }
+
     /** Allows to set properties for entity
      * @param {Map} props
      * @returns Promise */
     setProperties(props) {
         return new Promise((resolve, reject) => grok_EntitiesDataSource_SetProperties(grok.dapi.entities.s, this.d, props, (_) => resolve(_)));
     }
+
+    /** Returns a string representing the object
+     * @returns {string} */
+    toString() { return grok_Object_ToString(this.d); }
 }
 
 /**
