@@ -319,6 +319,29 @@ export class tools {
     }
 }
 
+/** Represents a tooltip. */
+export class Tooltip {
+
+    /** Hides the tooltip. */
+    hide() { grok_Tooltip_Hide(); }
+
+    /** Associated the specified visual element with the corresponding item. */
+    setOn(element, item) { grok_Tooltip_SetOn(element, iten); return element; }
+
+    /** Shows the tooltip at the specified position
+     * @param {HTMLElement | string} content
+     * @param {number} x
+     * @param {number} y */
+    show(content, x, y) { grok_Tooltip_Show(content, x, y); }
+
+    /** Returns a tooltip element.
+     * @returns {HTMLElement} */
+    get root() { return grok_Tooltip_Get_Root(); }
+
+    /** @returns {isVisible} */
+    get isVisible() { return grok_Tooltip_Is_Visible(); }
+}
+
 
 /**
  * Override this class, and {@link register} an instance to integrate the platform with custom

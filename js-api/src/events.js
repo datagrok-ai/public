@@ -82,6 +82,10 @@ export class Events {
     /** @returns {Observable} */ get onProjectOpened () { return __obs('grok-project-opened'); }
     /** @returns {Observable} */ get onProjectClosed () { return __obs('grok-project-closed'); }
     /** @returns {Observable} */ get onProjectModified () { return __obs('grok-project-modified'); }
+
+    /** @returns {Observable} */ get onTooltipRequest () { return __obs('d4-tooltip-request'); }
+    /** @returns {Observable} */ get onTooltipShown () { return __obs('d4-tooltip-shown'); }
+    /** @returns {Observable} */ get onTooltipClosed () { return __obs('d4-tooltip-closed'); }
 }
 
 
