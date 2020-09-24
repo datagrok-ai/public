@@ -6,7 +6,7 @@
 
 This document contains instructions to deploy Datagrok on a regular machine without cloud-based hosting.
 
-If you only want to try out Datagrok fully locally, for example on your own computer, with minimum manual effort, check "[Deploy Datagrok using Docker Compose](docker-compose.md)".
+In case you want to jump-start Datagrok with minimum manual effort on a local machine, check "[Deploy Datagrok using Docker Compose](docker-compose.md)". The below method gives more control and includes manual installation of a PostgreSQL instance along with locating Datagrok's working files on a host machine's file system.
 
 ## Prerequisites
 
