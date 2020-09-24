@@ -60,9 +60,9 @@ export class SunburstRenderer {
             .padRadius(radius / 2)
             .innerRadius(d => d.y0)
             .outerRadius(d => {
-                const leafsTotal = d.data.branchRowsNumber;
-                const leafsSelected = d.data.selectedRowsNumber;
-                const ratio = leafsTotal == 0 ? 0 : 1 - leafsSelected / leafsTotal;
+                const leavesTotal = d.data.statsOverall?.count || 0;
+                const leavesSelected = d.data.statsSelected?.count || 0;
+                const ratio = leavesTotal == 0 ? 0 : 1 - leavesSelected / leavesTotal;
                 return d.y1 - 1 - (d.y1 - 1 - d.y0) * ratio;
             });
     }
@@ -128,15 +128,36 @@ export class SunburstRenderer {
     }
 
     private getTooltipText = (d: TreeData): string => {
-        return `${d.ancestors().map(d => d.data.category).reverse().filter((v, i) => !!i).join("/")}\n` +
-            `rows:\t${this.format(d.value || 0)}\n` +
-            `sum:\t${this.format(d.data.valueSum || 0)}\n` +
-            `avg:\t${this.format(d.data.valueAvg || 0)}`
+        const selectedCount = d.data.statsSelected?.count || 0;
+        const selectedSum = d.data.statsSelected?.sum || 0;
+        const overallCount = d.data.statsOverall?.count || 0;
+        const overallSum = d.data.statsOverall?.sum || 0;
+        const itemPath = d.ancestors().map(d => d.data.category).reverse().filter((v, i) => !!i).join("/");
+        const selectedCountStr = d.data.statsSelected?.count !== undefined
+            ?  this.format(selectedCount) + ' / '
+            : '';
+
+        let tooltipText = `${itemPath}\n` +
+            `count: ${selectedCountStr}${this.format(overallCount)}\n`
+        if (d.data.statsOverall?.sum === undefined) {
+            return tooltipText;
+        }
+
+        // If value column is selected
+        const selectedSumStr = d.data.statsSelected?.count !== undefined
+            ? this.format(selectedSum) + ' / '
+            : '';
+        const selectedAvgStr = d.data.statsSelected?.count !== undefined
+            ? this.format(selectedSum / selectedCount) + ' / '
+            : '';
+        tooltipText += `sum:    ${selectedSumStr}${this.format(overallSum)} \n` +
+            `avg:     ${selectedAvgStr}${this.format(overallSum / overallCount)}`;
+        return tooltipText;
     }
 
     private onClick = (d: TreeData) => {
-        const rowIds = d.descendants().flatMap(x => x.data.leafRowIds);
-        this.clickHandler(rowIds);
+        // const rowIds = d.descendants().flatMap(x => x.data.leafRowIds);
+        // this.clickHandler(rowIds);
     }
 
     private defaultSegmentFill(root: TreeData) {
@@ -145,7 +166,7 @@ export class SunburstRenderer {
         return (d: TreeData) => {
             let v: typeof d | null = d;
             while (!!v && v.depth > 1) v = v.parent;
-            return color(v?.data.category || 0);
+            return color(v?.data?.category || '');
         }
     }
 }
