@@ -6,7 +6,7 @@
 
 This document contains instructions to deploy Datagrok on a regular machine without cloud-based hosting.
 
-In case you want to jump-start Datagrok with minimum manual effort on a local machine, check "[Deploy Datagrok using Docker Compose](docker-compose.md)". The below method gives more control and includes manual installation of a PostgreSQL instance along with locating Datagrok's working files on a host machine's file system.
+In case you want to jump-start using Datagrok with minimum manual effort on a local machine, check "[Deploy Datagrok using Docker Compose](docker-compose.md)". The below method gives more control and includes manual installation of a PostgreSQL instance along with locating Datagrok's working files on a host machine's file system.
 
 ## Prerequisites
 
@@ -59,7 +59,8 @@ Edit settings in the Datagrok (_Tools | Settings..._):
     * CVM Client: `http://CVM_URL:8080`
     * API Url: `http://DATAGROK_DOCKER_URL/api`
 
-_See also_:
+See also:
+
 * [Compute VM](../../compute/compute-vm.md)
 * [Architecture](architecture.md#application)
 * [Deploy Datagrok using Docker Compose](docker-compose.md)
