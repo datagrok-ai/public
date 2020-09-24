@@ -7,7 +7,7 @@ The two commands are available via a hamburger menu (a top-left button in a view
 
 ChaRPy uses [ggplot2](https://cran.r-project.org/web/packages/ggplot2/index.html) for R, and [plotly](https://plotly.com/python/) for Python.
 
-In addition to scripting viewers, the package also showcases the followng Datagrok's facilities:
+In addition to scripting viewers, the package also showcases the following Datagrok's facilities:
 
 * Creating and showing a modal dialog, `let d = ui.dialog("Title"); ...; d.showModal(true);`,
 * Placing viewers in a modal dialog using splitters, `ui.splitV` and `ui.splitH`,
