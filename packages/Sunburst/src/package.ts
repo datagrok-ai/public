@@ -4,6 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from "datagrok-api/dg";
 
 import { SunburstViewer } from './sunburst-viewer';
+import "./sunburst-viewer.css";
 
 export const _package = new DG.Package();
 
