@@ -6,11 +6,12 @@ interface Rectangle {
     y0: number;
     x1: number;
     y1: number;
+    data: Branch;
 }
 
 export class SunburstRenderer {
 
-    private readonly format = d3.format(",d");
+    private readonly format = d3.format("~r");
 
     constructor(private readonly colors: string[],
                 private readonly clickHandler: (rowIds: number[]) => void) {
@@ -42,7 +43,6 @@ export class SunburstRenderer {
     }
 
     private arc(radius: number) {
-
         return d3.arc<Rectangle>()
             .startAngle(d => d.x0)
             .endAngle(d => d.x1)
@@ -52,21 +52,49 @@ export class SunburstRenderer {
             .outerRadius(d => d.y1 - 1);
     }
 
+    private arcSelection(radius: number) {
+        return d3.arc<Rectangle>()
+            .startAngle(d => d.x0)
+            .endAngle(d => d.x1)
+            .padAngle(d => Math.min((d.x1 - d.x0) / 2, 0.005))
+            .padRadius(radius / 2)
+            .innerRadius(d => d.y0)
+            .outerRadius(d => {
+                const leafsTotal = d.data.branchRowsNumber;
+                const leafsSelected = d.data.selectedRowsNumber;
+                const ratio = leafsTotal == 0 ? 0 : 1 - leafsSelected / leafsTotal;
+                return d.y1 - 1 - (d.y1 - 1 - d.y0) * ratio;
+            });
+    }
+
     private createSvg(data: TreeData, width: number, height: number) {
         const center = Math.min(width, height) / 2;
         const radius = center * 0.9;
 
         const root = this.partitionLayout(data, radius);
+        const elements = root.descendants().filter(d => d.depth);
 
         const svg = d3.create("svg");
 
-        const segment = svg.append("g")
+        // Selection (partial) segments
+        svg.append("g")
             .selectAll("path")
-            .data(root.descendants().filter(d => d.depth))
+            .data(elements)
             .join("path")
             .attr("fill", this.defaultSegmentFill(root))
             .attr("fill-opacity", SunburstRenderer.shade)
-            .attr("d", this.arc(radius));
+            .attr("d", this.arcSelection(radius))
+        ;
+
+        // Sunburst segments
+        const segment = svg.append("g")
+            .selectAll("path")
+            .data(elements)
+            .join("path")
+            .attr("fill", this.defaultSegmentFill(root))
+            .attr("fill-opacity", SunburstRenderer.shade)
+            .attr("d", this.arc(radius))
+        ;
 
         segment.on("click", this.onClick)
             .on("mouseover", target => {
@@ -78,7 +106,7 @@ export class SunburstRenderer {
                 segment.attr("fill-opacity", SunburstRenderer.shade);
             })
             .append("title")
-            .text(d => { return `${d.ancestors().map(d => d.data.category).reverse().filter((v, i) => !!i).join("/")}\n${this.format(d.value || 0)}`});
+            .text(this.getTooltipText);
 
         svg.append("g")
             .attr("pointer-events", "none")
@@ -99,8 +127,15 @@ export class SunburstRenderer {
         return svg.attr("viewBox", `-${center} -${center} ${width} ${height}`).node()!;
     }
 
+    private getTooltipText = (d: TreeData): string => {
+        return `${d.ancestors().map(d => d.data.category).reverse().filter((v, i) => !!i).join("/")}\n` +
+            `rows:\t${this.format(d.value || 0)}\n` +
+            `sum:\t${this.format(d.data.valueSum || 0)}\n` +
+            `avg:\t${this.format(d.data.valueAvg || 0)}`
+    }
+
     private onClick = (d: TreeData) => {
-        const rowIds = d.descendants().flatMap(x => x.data.leafIds);
+        const rowIds = d.descendants().flatMap(x => x.data.leafRowIds);
         this.clickHandler(rowIds);
     }
 

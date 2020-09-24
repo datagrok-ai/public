@@ -1,39 +1,51 @@
 import * as d3 from 'd3';
 import {HierarchyNode} from 'd3';
-import * as DG from 'datagrok-api/dg';
+import { BitSet, Column, Row, RowList } from 'datagrok-api/dg';
 
 export type TreeData = HierarchyNode<Branch>
-export type AggregationType = 'count' | 'sum' | 'avg';
 
 export type ColumnCategory = any;
 export type ColumnValue = number;
 export type RowId = number;
+
 export class Branch {
     readonly category: ColumnCategory;
-    value: ColumnValue = 0;
+    valueSum: ColumnValue = 0;
+    valueAvg: ColumnValue = 0;
     readonly children: Map<ColumnCategory, Branch>;
-    readonly leafIds: RowId[] = [];
+    readonly leafRowIds: RowId[] = [];
+    selectedRowsNumber: number = 0;
+    branchRowsNumber: number = 0;
 
     constructor(category: ColumnCategory) {
         this.category = category;
         this.children = new Map();
     }
-}
 
-type Aggregator = (x: Branch) => number;
+    public traverseTree(mapFn: (branch: Branch) => void, currentBranch?: Branch): void {
+        if (currentBranch == null) {
+            this.traverseTree(mapFn, this);
+            return;
+        }
+        if (currentBranch.children && currentBranch.children.size) {
+            for (var branch of currentBranch.children.values()) {
+                this.traverseTree(mapFn, branch);
+            }
+        }
+        mapFn(currentBranch);
+    }
+}
 
 export class TreeDataBuilder {
     buildTreeData(
-        categoryColumns: DG.Column[],
-        valueColumn: DG.Column | undefined,
-        selectedRows: Int32Array,
-        aggregationType: AggregationType
+        categoryColumns: Column[],
+        valueColumn: Column | undefined,
+        rowNumber: number,
+        selection: BitSet
     ) {
         const root = new Branch("root");
 
-        const lastCategoryColumn = categoryColumns[categoryColumns.length - 1];
-
-        for(const rowId of selectedRows) {
+        for (let rowId = 0; rowId < rowNumber; rowId++) {
             let currentBranch = root;
             for (const categoryColumn of categoryColumns) {
                 const category = categoryColumn.get(rowId);
@@ -50,32 +62,45 @@ export class TreeDataBuilder {
                     currentBranch = new Branch(category);
                     parent.children.set(category, currentBranch);
                 }
-
-                if (lastCategoryColumn === categoryColumn) {
-                }
             }
-            currentBranch.leafIds.push(rowId);
+            currentBranch.leafRowIds.push(rowId);
+            currentBranch.branchRowsNumber++;
+            if (selection.get(rowId)) {
+                currentBranch.selectedRowsNumber++;
+            }
             if (valueColumn) {
-                currentBranch.value = valueColumn.get(rowId);
+                currentBranch.valueSum += parseFloat(valueColumn.get(rowId));
             }
         }
+
+        // Recalculate selectedChildrenNumber and branchChildrenNumber for all the nodes
+        root.traverseTree(branch => {
+            if (!branch || !branch.children || !branch.children.size) {
+                branch.valueAvg = this.getAvgValue(branch);
+                return;
+            }
+            var selectedChildrenSum = 0;
+            var branchChildrenSum = 0;
+            var valueSum = 0;
+            for (const childBranch of branch.children.values()) {
+                selectedChildrenSum += childBranch.selectedRowsNumber;
+                branchChildrenSum += childBranch.branchRowsNumber;
+                valueSum += childBranch.valueSum;
+            }
+            branch.branchRowsNumber = branchChildrenSum;
+            branch.selectedRowsNumber = selectedChildrenSum;
+            branch.valueSum = valueSum;
+            branch.valueAvg = this.getAvgValue(branch);
+        });
 
         return d3
             .hierarchy(root, x => Array.from(x.children.values()))
-            .sum(this.getAggregator(aggregationType));
+            .sum(x => x.leafRowIds.length);
     }
 
-    private getAggregator(aggregationType: AggregationType): Aggregator {
-        switch (aggregationType) {
-            case 'sum':
-                return x => x.value;
-            case 'avg':
-                return x => x.leafIds.length
-                    ? (x.value / x.leafIds.length)
-                    : 0;
-            case 'count':
-            default:
-        }
-        return x => x.leafIds.length;
+    private getAvgValue(branch: Branch): number {
+        return branch.branchRowsNumber
+            ? (branch.valueSum / branch.branchRowsNumber)
+            : 0;
     }
 }
