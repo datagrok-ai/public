@@ -23,5 +23,6 @@ See also:
 
   * [Scripting](https://datagrok.ai/help/compute/scripting)
   * [Scripting Viewer](https://datagrok.ai/help/visualize/viewers/scripting-viewer)
+  * [Dialogs](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples/scripts/ui/dialogs)
   * [ggplot2 R package](https://cran.r-project.org/web/packages/ggplot2/index.html)
   * [plotly Python library](https://plotly.com/python/)
