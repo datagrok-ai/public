@@ -27,5 +27,8 @@
   "sources": [
     "dist/package.js",
     "src/sunburst-viewer.css"
+  ],
+  "canEdit": [
+    "Arcadia"
   ]
 }
