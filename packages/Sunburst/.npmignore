@@ -1,3 +1,4 @@
 upload.keys.json
-src/
 data-samples/
+src/*
+!src/package.ts
