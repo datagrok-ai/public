@@ -9,8 +9,8 @@ use [scripting](../../compute/scripting.md) for integration with the Datagrok pl
 While not as interactive as the core Datagrok [viewers](../viewers.md), they allow to easily use 
 thousands of visualizations already developed for these languages.
 
-To **add an existing viewer** to a table view, select it from the
- **Add | Scripting Viewers** menu.
+To add an existing viewer to a table view, select it from the
+ `Add | Scripting Viewers` menu.
 
 To edit the rest of the properties, either click on the `gear` icon on top of the viewer,
 or press F4 when the viewer has focus, or open the hamburger menu and select `Viewer | Properties`.
