@@ -8,15 +8,17 @@ transformation to convert a set of observations of possibly correlated variables
 (entities each of which takes on various numerical values) into a set of values of 
 linearly uncorrelated variables called principal components. 
 
-## Run
+## Perform PCA
 
-  * Open table
-  * Run from menu: **Tools** | **Data Science** | **Principal Component Analysis...**
-  * Select source table
-  * Select **"features"** columns
-  * Set number of principal **"components"**
-  * Set **"center"** and/or **"scale"** data pre-processing options
-  * Run principal component analysis. Result will replace all missing values in all columns and rows.  
+  * Open a table
+  * Run from the top menu: `ML | Principal Component Analysis...`
+  * Select the source table
+  * Select `feature` columns
+  * Set the number of principal `components`
+  * Set `Center` and/or `Scale` data pre-processing options
+  * Run principal component analysis
+
+The result will replace all missing values in all columns and rows.  
   
 See also:
 
