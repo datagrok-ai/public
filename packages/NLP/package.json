@@ -1,6 +1,19 @@
 {
-  "name": "NLP",
-  "version": "1",
-  "description": "Natural Language Processing",
-  "sources": [ ]
+	"name": "nlp",
+	"fullName": "NLP",
+	"version": "0.0.1",
+	"description": "Natural Language Processing Package",
+	"dependencies": {
+		"datagrok-api": "latest"
+	},
+	"scripts": {
+		"debug-nlp": "grok publish --rebuild",
+		"release-nlp": "grok publish --rebuild --release",
+		"build-nlp": "webpack",
+		"build": "webpack",
+		"debug-nlp-dev": "grok publish dev --rebuild",
+		"release-nlp-dev": "grok publish dev --rebuild --release",
+		"debug-nlp-local": "grok publish local --rebuild",
+		"release-nlp-local": "grok publish local --rebuild --release"
+	}
 }
