@@ -14,6 +14,9 @@ export class DataFrame {
 
     constructor(d) {
         this.d = d;
+        this.columns = new ColumnList(grok_DataFrame_Columns(this.d));
+        this.rows = new RowList(this, grok_DataFrame_Rows(this.d));
+        this.filter = new BitSet(grok_DataFrame_Get_Filter(this.d));
     }
 
     /** Creates a {@link DataFrame} with the specified number of rows and no columns.
@@ -46,10 +49,6 @@ export class DataFrame {
      * @returns {BitSet} */
     get selection() { return new BitSet(grok_DataFrame_Get_Selection(this.d)); }
 
-    /** Returns a {@link BitSet} with rows that pass filter.
-     * @returns {BitSet} */
-    get filter() { return new BitSet(grok_DataFrame_Get_Filter(this.d)); }
-
     /** Name of the dataframe.
      * @returns {string}*/
     get name() { return grok_DataFrame_Get_Name(this.d); }
@@ -63,14 +62,6 @@ export class DataFrame {
      * @param {string} tag - Key.
      * @param {string} value - Value. */
     setTag(tag, value) { grok_DataFrame_Set_Tag(this.d, tag, value); }
-
-    /** List of columns.
-     * @returns {ColumnList} */
-    get columns() { return new ColumnList(grok_DataFrame_Columns(this.d)); }
-
-    /** List of rows.
-     * @returns {RowList} */
-    get rows() { return new RowList(this, grok_DataFrame_Rows(this.d)); }
 
     /** Returns i-th row.
      * @param {number} i - Row index.
@@ -192,6 +183,7 @@ export class DataFrame {
     /** @returns {Observable} */ get onColumnsRemoved() { return this._event('ddt-columns-removed'); }
     /** @returns {Observable} */ get onRowsAdded() { return this._event('ddt-rows-added'); }
     /** @returns {Observable} */ get onRowsRemoved() { return this._event('ddt-rows-removed'); }
+    /** @returns {Observable} */ get onRowsFiltering() { return this._event('ddt-rows-filtering'); }
 
     /** @returns {Observable} */ get onSemanticTypeDetecting() { return this._event('ddt-semantic-type-detecting'); }
     /** @returns {Observable} */ get onSemanticTypeDetected() { return this._event('ddt-semantic-type-detected'); }
