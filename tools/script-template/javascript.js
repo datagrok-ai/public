@@ -1,4 +1,4 @@
-//name: Template
+//name: #{NAME}
 //description: Hello world script
 //language: javascript
 

@@ -1,4 +1,4 @@
-#name: Template
+#name: #{NAME}
 #description: Following template calculates number of cells in table
 #language: python
 #tags: template, demo
