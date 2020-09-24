@@ -20,8 +20,12 @@ Usage: grok add <entity> <language>* <name>
 
 Add an object template to your package
 
-grok add script r <name>
-grok add script python <name>
+grok add app <name>
+grok add function <name>
+grok add script <language> <name>
+grok add viewer <name>
+
+Please note that entity names may only include letters and numbers
 `;
 
 const HELP_CONFIG = `
