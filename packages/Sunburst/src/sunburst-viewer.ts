@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import {SunburstRenderer} from './sunburst-renderer';
 import { Branch, TreeData, TreeDataBuilder } from './tree-data-builder';
 import { HierarchyNode } from 'd3-hierarchy';
-import { BitSet } from 'datagrok-api/src/dataframe';
+import { BitSet } from 'datagrok-api/dg';
 
 interface BitSetEx extends BitSet {
     set(i: number, x: boolean, notify?: boolean): BitSet;
@@ -70,9 +70,9 @@ export class SunburstViewer extends DG.JsViewer {
         }
     }
 
-    onSizeChanged(width: number, height: number): void {
-        this.render(false);
-    }
+    // onSizeChanged(width: number, height: number): void {
+    //     this.render(false);
+    // }
 
     private render(dataChanged = true): void {
         if (dataChanged) {
