@@ -8,7 +8,7 @@ module.exports = {
         package: './src/package.ts'
     },
     resolve: {
-        extensions: [".ts",".tsx", ".js", ".jsx"]
+        extensions: [".ts", ".tsx", ".js", ".jsx", ".css"]
     },
 
     module: {
@@ -26,7 +26,11 @@ module.exports = {
                 enforce: 'pre',
                 test: /\.js$/,
                 loader: "source-map-loader"
-            }
+            },
+            {
+                test: /\.css$/i,
+                use: ['style-loader', 'css-loader'],
+            },
         ]
     },
 
