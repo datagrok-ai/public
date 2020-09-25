@@ -18,11 +18,12 @@ To get help on a particular command, use:
 const HELP_ADD = `
 Usage: grok add <entity> <language>* <name>
 
-Add an object template to your package
+Add an object template to your package:
 
 grok add app <name>
 grok add function <name>
 grok add script <language> <name>
+grok add view <name>
 grok add viewer <name>
 
 Please note that entity names may only include letters and numbers
