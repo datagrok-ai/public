@@ -1,6 +1,6 @@
 
 //name: #{NAME}
-//description: Creates a #{NAME} view
+//description: Creates #{NAME} view
 //tags: view
 //input: map params
 //input: string path
