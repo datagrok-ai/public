@@ -136,10 +136,39 @@ function add(args) {
         //     break;
         // case 'query':
         //     break;
-        // case 'view':
-        //     break;
         // case 'panel':
         //     break;
+        case 'view':
+            if (nArgs !== 3) return false;
+
+            // View name check
+            var name = args['_'][2];
+            if (!validateName(name)) return false;
+
+            // Create src/package.js if it doesn't exist yet
+            createJsFile();
+
+            // Add a new JS file with a view class
+            let viewPath = path.join(srcDir, `${name.toLowerCase()}.js`);
+            if (fs.existsSync(viewPath)) {
+                return console.log(`The view file already exists: ${viewPath}`);
+            }
+            let viewClass = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
+                                              'entity-template', 'view-class.js'), 'utf8');
+            fs.writeFileSync(viewPath, insertName(name, viewClass), 'utf8');
+
+            // Add a view function to package.js
+            let view = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
+                                      'entity-template', 'view.js'), 'utf8');
+            var contents = insertName(name, "import #{NAME_TITLECASE}View from './#{NAME_LOWERCASE}.js'\n");
+            contents += fs.readFileSync(jsPath, 'utf8');
+            contents += insertName(name, view);
+            fs.writeFileSync(jsPath, contents, 'utf8');
+            console.log(`The view ${name} has been added successfully`);
+            console.log('Read more at https://datagrok.ai/help/develop/js-api#custom-views');
+            console.log('See examples at https://github.com/datagrok-ai/public/tree/master/packages/Notebooks');
+            break;
+
         case 'viewer':
             if (nArgs !== 3) return false;
 
@@ -163,10 +192,10 @@ function add(args) {
             // Add a viewer function to package.js
             let viewer = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
                                       'entity-template', 'viewer.js'), 'utf8');
-            var contents = `import ${name.toLowerCase()}Viewer from './${name.toLowerCase()}.js'\n`
+            var contents = insertName(name, "import #{NAME_TITLECASE}Viewer from './#{NAME_LOWERCASE}.js'\n");
             contents += fs.readFileSync(jsPath, 'utf8');
             contents += insertName(name, viewer);
-            fs.writeFileSync(jsPath, contents);
+            fs.writeFileSync(jsPath, contents, 'utf8');
             console.log(`The viewer ${name} has been added successfully`);
             console.log('Read more at https://datagrok.ai/help/develop/js-api#custom-viewers');
             console.log('See examples at https://github.com/datagrok-ai/public/tree/master/packages/Viewers,');
