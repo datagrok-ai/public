@@ -8,7 +8,7 @@ module.exports = {
 function add(args) {
     const nOptions = Object.keys(args).length - 1;
     const nArgs = args['_'].length;
-    if (nArgs < 3 || nArgs > 4 || nOptions > 0) return false;
+    if (nArgs < 2 || nArgs > 5 || nOptions > 0) return false;
     const entity = args['_'][1];
 
     // Package directory check
@@ -16,6 +16,10 @@ function add(args) {
     const curFolder = path.basename(curDir);
     const srcDir = path.join(curDir, 'src');
     const jsPath = path.join(srcDir, 'package.js');
+    const queryDir = path.join(curDir, 'queries');
+    const queryPath = path.join(queryDir, 'queries.sql');
+    const connectDir = path.join(curDir, 'connections');
+    const connectPath = path.join(connectDir, 'connection.json');
     const packagePath = path.join(curDir, 'package.json');
     if (!fs.existsSync(packagePath)) return console.log('`package.json` not found');
     try {
@@ -54,8 +58,14 @@ function add(args) {
 
     switch (entity) {
         case 'script':
-            if (nArgs !== 4) return false;
-            const lang = args['_'][2];
+            if (nArgs < 4 || nArgs > 5) return false;
+            let lang = args['_'][2];
+            var name = args['_'][3];
+            if (nArgs === 5) {
+                var tag = args['_'][2];
+                lang = args['_'][3];
+                name = args['_'][4];
+            }
             const langs = {javascript: 'js', julia: 'jl',
                            node: 'js', octave: 'm', python: 'py', r: 'R'};
             if (!Object.keys(langs).includes(lang)) {
@@ -66,8 +76,9 @@ function add(args) {
             }
 
             // Script name check
-            var name = args['_'][3];
             if (!validateName(name)) return false;
+
+            if (tag && tag !== 'panel') return console.log('Currently, you can only add the `panel` tag');
 
             const scriptsDir = path.join(curDir, 'scripts');
             if (!fs.existsSync(scriptsDir)) fs.mkdirSync(scriptsDir);
@@ -81,6 +92,10 @@ function add(args) {
             let templatePath = path.join(path.dirname(path.dirname(__dirname)), 'script-template')
             templatePath = path.join(templatePath, lang + '.' + langs[lang]);
             var contents = fs.readFileSync(templatePath, 'utf8');
+            if (tag) {
+                let ind = contents.indexOf('tags: ') + 6;
+                contents = contents.slice(0, ind) + 'panel, ' + contents.slice(ind);
+            }
             fs.writeFileSync(scriptPath, insertName(name, contents), 'utf8');
 
             // Provide a JS wrapper for the script
@@ -113,31 +128,85 @@ function add(args) {
             break;
 
         case 'function':
-            if (nArgs !== 3) return false;
+            if (nArgs < 3 || nArgs > 4) return false;
 
-            // Function name check
             var name = args['_'][2];
+            if (nArgs === 4) {
+                var tag = args['_'][2];
+                name = args['_'][3];
+            }
+
             if (!validateName(name)) return false;
+
+            if (tag && tag !== 'panel') return console.log('Currently, you can only add the `panel` tag');
 
             // Create src/package.js if it doesn't exist yet
             createJsFile();
 
             // Add a function to package.js
-            let func = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
+            let func;
+            if (tag) {
+                func = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
+                                       'entity-template', 'panel.js'), 'utf8');
+            } else {
+                func = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
                                       'entity-template', 'function.js'), 'utf8');
+            }
             fs.appendFileSync(jsPath, insertName(name, func));
             console.log(`The function ${name} has been added successfully`);
             console.log('Read more at https://datagrok.ai/help/overview/functions/function');
             console.log('See examples at https://public.datagrok.ai/functions');
+            if (tag) console.log('https://public.datagrok.ai/js/samples/functions/info-panels/info-panels');
             break;
-        // case 'group':
-        //     break;
-        // case 'connection':
-        //     break;
-        // case 'query':
-        //     break;
-        // case 'panel':
-        //     break;
+        case 'connection':
+            if (nArgs !== 2) return false;
+
+            // Create the `connections` folder if it doesn't exist yet
+            if (!fs.existsSync(connectDir)) fs.mkdirSync(connectDir);
+
+            if (fs.existsSync(connectPath)) {
+                return console.log(`The default connection file already exists: ${connectPath}`);
+            }
+            var connection = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
+                                             'entity-template', 'connection.json'), 'utf8');
+            fs.writeFileSync(connectPath, connection, 'utf8');
+            console.log(`The connection has been added successfully`);
+            console.log('Read more at https://datagrok.ai/help/access/data-connection');
+            console.log('See examples at https://github.com/datagrok-ai/public/tree/master/packages/Chembl');
+            break;
+
+        case 'query':
+            if (nArgs !== 3) return false;
+
+            // Query name check
+            var name = args['_'][2];
+            if (!validateName(name)) return false;
+
+            // Create the `queries` folder if it doesn't exist yet
+            if (!fs.existsSync(queryDir)) fs.mkdirSync(queryDir);
+
+            // Add a query to queries.sql
+            let query = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
+                                        'entity-template', 'queries.sql'), 'utf8');
+            var contents = insertName(name, query);
+            if (fs.existsSync(connectDir) && fs.readdirSync(connectDir).length !== 0) {
+                // Use the name of the first found connection
+                var connection = fs.readdirSync(connectDir).find(c => /.+\.json$/.test(c)).slice(0, -5);
+            } else {
+                // Create the default connection file
+                if (!fs.existsSync(connectDir)) fs.mkdirSync(connectDir);
+                var connection = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
+                                             'entity-template', 'connection.json'), 'utf8');
+                fs.writeFileSync(connectPath, connection, 'utf8');
+                var connection = 'connection';
+            }
+            contents = contents.replace('#{CONNECTION}', connection);
+            fs.appendFileSync(queryPath, contents);
+            console.log(`The query ${name} has been added successfully`);
+            console.log('Read more at https://datagrok.ai/help/access/data-query');
+            console.log('See examples at https://github.com/datagrok-ai/public/tree/master/packages/Chembl');
+            break;
+
         case 'view':
             if (nArgs !== 3) return false;
 
