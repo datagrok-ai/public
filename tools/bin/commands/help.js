@@ -16,17 +16,22 @@ To get help on a particular command, use:
 `;
 
 const HELP_ADD = `
-Usage: grok add <entity> <language>* <name>
+Usage: grok add <entity> <name>
 
 Add an object template to your package:
 
 grok add app <name>
-grok add function <name>
-grok add script <language> <name>
+grok add connection
+grok add function [tag] <name>
+grok add query <name>
+grok add script [tag] <language> <name>
 grok add view <name>
 grok add viewer <name>
 
 Please note that entity names may only include letters and numbers
+
+Supported languages for scripts:
+javascript, julia, node, octave, python, r
 `;
 
 const HELP_CONFIG = `
