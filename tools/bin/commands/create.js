@@ -23,7 +23,7 @@ function createDirectoryContents(name, config, templateDir, packageDir) {
 
     filesToCreate.forEach(file => {
         const origFilePath = path.join(templateDir, file);
-        const copyFilePath = path.join(packageDir, file);
+        let copyFilePath = path.join(packageDir, file);
         const stats = fs.statSync(origFilePath);
         if (stats.isFile()) {
             if (file === 'package.png') {
@@ -45,8 +45,8 @@ function createDirectoryContents(name, config, templateDir, packageDir) {
             }
             // In the next version, we do not need the `upload.keys.json` file
             if (file === 'upload.keys.json') return false;
-            if (file === 'npmignore') file = '.npmignore';
-            if (file === 'gitignore') file = '.gitignore';
+            if (file === 'npmignore') copyFilePath = path.join(packageDir, '.npmignore');
+            if (file === 'gitignore') copyFilePath = path.join(packageDir, '.gitignore');
             fs.writeFileSync(copyFilePath, contents, 'utf8');
         } else if (stats.isDirectory()) {
             fs.mkdirSync(copyFilePath);
