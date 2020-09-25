@@ -4,19 +4,28 @@
 # JavaScript API
 
 [Grok JS API](js-api.md) allows to control all aspects of the Datagrok platform. The API
-can be used from either ad-hoc scripts (`Tools | Scripting | JavaScript`), 
+can be used either from ad-hoc scripts (`Functions | Scripts | New JavaScript Script`) 
 or from [packages](develop.md#packages). 
 
 This document covers the following areas:
-* [API structure](#api-structure)
-* [Data manipulation](#data-manipulation)
-* [Views](#views)
-* [Custom views](#custom-views)
-* [Pre-defined viewers](#pre-defined-viewers)
-* [Custom viewers](#custom-viewers)
-* [Registering functions](#registering-functions)
 
-## API structure
+  * [API Structure](#api-structure)
+  * [Data Manipulation](#data-manipulation)
+  * [Views](#views)
+  * [Custom Views](#custom-views)
+  * [Pre-defined Viewers](#pre-defined-viewers)
+  * [Custom Viewers](#custom-viewers)
+  * [Registering Functions](#registering-functions)
+  * [File Handlers](#file-handlers)
+  * [Events](#events)
+  * [User-defined Types](#user-defined-types)
+  * [Docking](#docking)
+  * [REST API](#rest-api)
+  * [Machine Learning](#machine-learning)
+  * [Cheminformatics](#cheminformatics)
+  * [Credentials](#credentials)
+
+## API Structure
 
 There are three entry points to the API: 
 **grok** for easy discoverability of the functionality, 
@@ -41,7 +50,7 @@ for performance reasons, you will need to work with classes from the DG namespac
 ### ui
 
 Building a UI is a special form of programming, and many languages were invented for that
-purposes only (HTML, XAML, JSX). We have prioritized the following aspects when choosing 
+purpose only (HTML, XAML, JSX). We have prioritized the following aspects when choosing 
 our approach: simplicity, discoverability, readability.
  
 ```javascript
@@ -56,7 +65,7 @@ ui.dialog('Windows')
 Check out [JS API Class Reference](https://datagrok.ai/js-api/) 
 
 
-## Data manipulation
+## Data Manipulation
 
 ### DataFrame
 
@@ -109,26 +118,18 @@ e.innerText = 'This element has been created in JavaScript';
 grok.shell.dockElement(e, 'JS', 'left', 0.5);
 ```
 
-## Custom views
+## Custom Views
 
-Extend [ViewBase](/js-api/ViewBase.html) class to develop viewes that become first-class citizens in 
-the Grok platform. Once a view is registered, you can do the following:
+Extend [ViewBase](/js-api/ViewBase.html) class to develop views that become first-class citizens in 
+the Datagrok platform. Once a view is registered, you can do the following:
 
-* Open and pass parameters to View from URL 
-* Persist view as part of the project
-* Add View to navigation bar
-* Link View with entities (custom or default ones)
+* Open and pass parameters to the view from URL 
+* Save the view as part of the project
+* Add the view to the navigation bar
+* Link the view with entities (custom or the default ones)
 
 The following part of code defines a new view for Jupyter Notebooks. 
-In package defined function "notebookView" that allocates instance of "NotebookView". 
-Function convention to register view:
-
-* header should contain tag: "view"
-* two inputs "params" and "path" to pass URL parameters an path
-* output with type "view".
-   
-   
-See full code [there](https://github.com/datagrok-ai/public/blob/master/packages/Notebooks/src/package.js)    
+The function `notebookView` defined in the package allocates an instance of `NotebookView`.   
     
 ```javascript
 class NotebookView extends DG.ViewBase {
@@ -170,8 +171,8 @@ class NotebookView extends DG.ViewBase {
 
 //name: Notebook
 //description: Creates a Notebook View
-//input: map params =
-//input: string path =
+//input: map params
+//input: string path
 //tags: view
 //output: view result
 export function notebookView(params = null, path = '') {
@@ -179,8 +180,15 @@ export function notebookView(params = null, path = '') {
 }
 ```
 
+Follow the function convention to register a view:
 
-## Pre-defined viewers
+* the header parameters should contain the `view` tag
+* add two inputs `params` and `path` to pass URL parameters and path
+* specify an output of the `view` type.
+   
+See full code [there](https://github.com/datagrok-ai/public/blob/master/packages/Notebooks/src/package.js)  
+
+## Pre-defined Viewers
 
 [Viewers](../visualize/viewers.md) are very important components of the Datagrok platform. Grok API 
 exposes functionality for manipulating pre-defined viewers 
@@ -195,7 +203,7 @@ hist = view.addViewer('histogram');
 hist.options({'valueColumnName': 'weight'});
 ```
 
-## Custom viewers
+## Custom Viewers
 
 Extend [JsViewer](/js-api/JsViewer.html) class to develop viewers that become first-class citizens in 
 the Grok platform. Once a viewer is registered, you can do the following:
@@ -227,7 +235,7 @@ class JsDemoViewer extends DG.JsViewer {
 grok.shell.registerViewer('JsDemoViewer', 'JavaScript-based viewer', () => new JsDemoViewer());
 ```
 
-## Registering functions
+## Registering Functions
 
 Pretty much anything in Grok is a [function](../overview/functions/function.md), it is a concept that
 connects together [scripts](../compute/scripting.md) written in different languages, predictive models, statistical
@@ -282,7 +290,7 @@ Code snippets:
 * [Functions: Custom viewers](https://public.datagrok.ai/js/samples/functions/custom-viewers/viewers)
 
 
-## File handlers
+## File Handlers
 
 To handle custom file formats, simply register a function with 
 the "file-handler-<extension>" tag (you can specify more than one).
@@ -331,7 +339,7 @@ property panel into your code if needed.
 
 ![](inspector-events.png)
 
-## User-defined types
+## User-defined Types
 
 Define your own classes, and integrate them easily by providing a meta-class
 that extends DG.EntityMeta. This will provide native support for 
@@ -365,7 +373,7 @@ Code snippets:
 * [List of projects](https://public.datagrok.ai/js/samples/dapi/projects-list)
 * [Who am I](https://public.datagrok.ai/js/samples/dapi/who-am-i)
 
-## Machine learning
+## Machine Learning
 
 Use `grok.ml` entry point for machine learning-related routines.
 
@@ -387,20 +395,23 @@ You can add as many strings as you want. Once added they can be read only by mem
 Datagrok stores credentials encrypted with Datagrok encryption key. 
 
 See more:
-[Credentials](../govern/security.md#credentials)
-[Code snippet](https://public.datagrok.ai/js/samples/misc/package-credentials)  
+
+  * [Credentials](../govern/security.md#credentials)
+  * [Code snippet](https://public.datagrok.ai/js/samples/misc/package-credentials)  
 
 Code snippets:
-* [Calculating descriptors](https://public.datagrok.ai/js/samples/domains/data-science/random-data)
-* [Chemical diversity](https://public.datagrok.ai/js/samples/domains/chem/diversity-search)
-* [Chemical similarity](https://public.datagrok.ai/js/samples/domains/chem/similarity-search)
-* [Substructure search](https://public.datagrok.ai/js/samples/domains/chem/substructure-search)
-* [R-group analysis](https://public.datagrok.ai/js/samples/domains/chem/r-group)
-* [Most common substructure](https://public.datagrok.ai/js/samples/domains/chem/mcs)
-* [Iterating over atoms and bonds](https://public.datagrok.ai/js/samples/domains/chem/mol-atoms-bonds)
-* [Custom info panel for molecules](https://public.datagrok.ai/js/samples/domains/chem/mol-panel)
-* [Rendering molecules to SVG](https://public.datagrok.ai/js/samples/domains/chem/mol-rendering)
+
+  * [Calculating descriptors](https://public.datagrok.ai/js/samples/domains/data-science/random-data)
+  * [Chemical diversity](https://public.datagrok.ai/js/samples/domains/chem/diversity-search)
+  * [Chemical similarity](https://public.datagrok.ai/js/samples/domains/chem/similarity-search)
+  * [Substructure search](https://public.datagrok.ai/js/samples/domains/chem/substructure-search)
+  * [R-group analysis](https://public.datagrok.ai/js/samples/domains/chem/r-group)
+  * [Most common substructure](https://public.datagrok.ai/js/samples/domains/chem/mcs)
+  * [Iterating over atoms and bonds](https://public.datagrok.ai/js/samples/domains/chem/mol-atoms-bonds)
+  * [Custom info panel for molecules](https://public.datagrok.ai/js/samples/domains/chem/mol-panel)
+  * [Rendering molecules to SVG](https://public.datagrok.ai/js/samples/domains/chem/mol-rendering)
 
 
 See also:
-* [JavaScript development](develop.md) 
+
+  * [JavaScript development](develop.md) 
