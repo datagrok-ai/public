@@ -1,4 +1,4 @@
-// https://datagrok.ai/help/viewers/markup-viewer
+// https://datagrok.ai/help/visualize/viewers/markup
 
 fetch('/demo/markup_viewer/eeg_21_10-20.svg').then((r) => r.text().then((html) =>
     grok.data.getDemoTable("sensors/eeg.csv").then(function (t) {

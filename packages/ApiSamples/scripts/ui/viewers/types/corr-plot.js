@@ -1,4 +1,4 @@
-// https://datagrok.ai/help/viewers/correlation-plot
+// https://datagrok.ai/help/visualize/viewers/correlation-plot
 
 let view = grok.shell.addTableView(grok.data.demo.demog());
 

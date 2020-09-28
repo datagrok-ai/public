@@ -1,4 +1,4 @@
-// https://datagrok.ai/help/viewers/markup-viewer
+// https://datagrok.ai/help/visualize/viewers/markup
 
 let view = grok.shell.addTableView(grok.data.demo.demog());
 

@@ -1,4 +1,4 @@
-// https://datagrok.ai/help/viewers/box-plot
+// https://datagrok.ai/help/visualize/viewers/box-plot
 
 let view = grok.shell.addTableView(grok.data.demo.demog());
 

@@ -1,6 +1,6 @@
 // The following example shows tables compare feature.
 //
-// https://datagrok.ai/help/dialogs/compare-tables
+// https://datagrok.ai/help/explore/compare-tables
 
 let t1 = grok.data.testData('demog', 10000);
 t1.name = 'demog1';

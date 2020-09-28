@@ -1,4 +1,4 @@
-// https://datagrok.ai/help/viewers/calendar
+// https://datagrok.ai/help/visualize/viewers/calendar
 
 let view = grok.shell.addTableView(grok.data.demo.demog());
 
