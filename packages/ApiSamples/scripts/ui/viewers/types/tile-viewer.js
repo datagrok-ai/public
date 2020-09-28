@@ -1,4 +1,4 @@
-// https://datagrok.ai/help/viewers/tile-viewer
+// https://datagrok.ai/help/visualize/viewers/tile-viewer
 
 let view = grok.shell.addTableView(grok.data.demo.demog());
 

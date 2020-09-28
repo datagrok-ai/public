@@ -1,6 +1,6 @@
 // The following example joins two tables, using the specified key and value columns.
 //
-// https://datagrok.ai/help/dialogs/join-tables
+// https://datagrok.ai/help/transform/join-tables
 
 let t1 = DG.DataFrame.fromCsv(
 `id1,id2,v1,v2

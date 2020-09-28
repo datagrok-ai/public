@@ -1,4 +1,4 @@
-// https://datagrok.ai/help/viewers/density-plot
+// https://datagrok.ai/help/visualize/viewers/density-plot
 
 let view = grok.shell.addTableView(grok.data.demo.demog());
 

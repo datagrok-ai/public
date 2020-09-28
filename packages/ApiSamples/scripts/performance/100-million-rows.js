@@ -4,7 +4,7 @@
 // Note that viewers that visualize each point (such as scatter plot) might become unresponsive,
 // but will still render the picture after all.
 //
-// See also: https://public.datagrok.ai/help/concepts/performance
+// See also: https://datagrok.ai/help/develop/performance
 
 let table = grok.data.testData('random walk', 100000000, 2);
 

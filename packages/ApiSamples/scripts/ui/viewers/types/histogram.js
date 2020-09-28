@@ -1,4 +1,4 @@
-// https://datagrok.ai/help/viewers/histogram
+// https://datagrok.ai/help/visualize/viewers/histogram
 
 let view = grok.shell.addTableView(grok.data.demo.demog());
 

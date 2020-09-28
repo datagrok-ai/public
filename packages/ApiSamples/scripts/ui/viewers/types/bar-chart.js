@@ -1,4 +1,4 @@
-// https://datagrok.ai/help/viewers/bar-chart
+// https://datagrok.ai/help/visualize/viewers/bar-chart
 
 let view = grok.shell.addTableView(grok.data.demo.demog());
 
