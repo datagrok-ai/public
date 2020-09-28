@@ -3,6 +3,6 @@
 //description: Creates #{NAME} viewer
 //tags: viewer
 //output: viewer result
-export function #{NAME}() {
+export function _#{NAME}() {
     return new #{NAME}();
 }

@@ -40,7 +40,7 @@ async function processPackage(debug, rebuild, host, devKey, packageName) {
     let files = await walk({
         path: '.',
         ignoreFiles: ['.npmignore', '.gitignore'],
-        includeEmpty: true,
+        includeEmpty: false,
         follow: true
     });
 
