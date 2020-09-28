@@ -45,15 +45,22 @@ async function processPackage(debug, rebuild, host, devKey, packageName) {
     });
 
     if (!rebuild) {
-        const distFiles = await walk({
-            path: './dist',
-            ignoreFiles: [],
-            includeEmpty: true,
-            follow: true
-        });
-        distFiles.forEach((df) => {
-            files.push(`dist/${df}`);
-        })
+        if (fs.existsSync('dist/package.js')) {
+            const distFiles = await walk({
+                path: './dist',
+                ignoreFiles: [],
+                includeEmpty: true,
+                follow: true
+            });
+            distFiles.forEach((df) => {
+                files.push(`dist/${df}`);
+            })
+        } else {
+            console.log("File 'dist/package.js' not found. Building the package on the server side...");
+            console.log("Next time, please build your package locally with Webpack beforehand");
+            console.log("or run `grok publish` with the `--rebuild` option");
+            rebuild = true;
+        }
     }
 
     files.forEach((file) => {
