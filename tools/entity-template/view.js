@@ -5,6 +5,6 @@
 //input: map params
 //input: string path
 //output: view result
-export function #{NAME}(params = null, path = '') {
+export function _#{NAME}(params = null, path = '') {
     return new #{NAME}(params, path);
 }

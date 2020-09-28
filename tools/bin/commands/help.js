@@ -7,12 +7,14 @@ Commands:
     add       Add a script, app, or viewer
     config    Create and manage config files
     create    Create a package
-    delete    Delete a package
     publish   Upload a package
     migrate   Switch to \`grok\` tools
 
 To get help on a particular command, use:
     grok <command> --help
+
+Read more about the package development workflow:
+https://datagrok.ai/help/develop/develop
 `;
 
 const HELP_ADD = `
@@ -32,6 +34,9 @@ Please note that entity names may only include letters and numbers
 
 Supported languages for scripts:
 javascript, julia, node, octave, python, r
+
+Available tags:
+panel
 `;
 
 const HELP_CONFIG = `
@@ -46,20 +51,24 @@ Options:
 `;
 
 const HELP_CREATE = `
-Usage: grok create <name>*
+Usage: grok create [name]
 
-Create a package
+Create a package:
+
+grok create         Create a package in the current working directory
+grok create <name>  Create a package in a folder with the specified name
+
 Please note that the package name may only include letters, numbers, underscores, or hyphens
 `;
 
 const HELP_DELETE = `
-Usage: grok delete <name>*
+Usage: grok delete <name>
 
 Delete a package
 `;
 
 const HELP_PUBLISH = `
-Usage: grok publish <host>*
+Usage: grok publish [host]
 
 Upload a package
 

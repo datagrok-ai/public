@@ -239,7 +239,7 @@ function add(args) {
             // Add a view function to package.js
             let view = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
                                       'entity-template', 'view.js'), 'utf8');
-            var contents = insertName(name, "import #{NAME} from './#{NAME_LOWERCASE}.js'\n");
+            var contents = insertName(name, "import {#{NAME}} from './#{NAME_LOWERCASE}.js';\n");
             contents += fs.readFileSync(jsPath, 'utf8');
             contents += insertName(name, view);
             fs.writeFileSync(jsPath, contents, 'utf8');
@@ -274,7 +274,7 @@ function add(args) {
             // Add a viewer function to package.js
             let viewer = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
                                       'entity-template', 'viewer.js'), 'utf8');
-            var contents = insertName(name, "import #{NAME} from './#{NAME_LOWERCASE}.js'\n");
+            var contents = insertName(name, "import {#{NAME}} from './#{NAME_LOWERCASE}.js';\n");
             contents += fs.readFileSync(jsPath, 'utf8');
             contents += insertName(name, viewer);
             fs.writeFileSync(jsPath, contents, 'utf8');
