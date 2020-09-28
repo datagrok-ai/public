@@ -21,7 +21,7 @@ Usage: grok add <entity> <name>
 Add an object template to your package:
 
 grok add app <name>
-grok add connection
+grok add connection <name>
 grok add function [tag] <name>
 grok add query <name>
 grok add script [tag] <language> <name>

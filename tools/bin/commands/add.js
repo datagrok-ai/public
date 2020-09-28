@@ -11,16 +11,17 @@ function add(args) {
     if (nArgs < 2 || nArgs > 5 || nOptions > 0) return false;
     const entity = args['_'][1];
 
-    // Package directory check
     const curDir = process.cwd();
     const curFolder = path.basename(curDir);
     const srcDir = path.join(curDir, 'src');
     const jsPath = path.join(srcDir, 'package.js');
+    const scriptsDir = path.join(curDir, 'scripts');
     const queryDir = path.join(curDir, 'queries');
     const queryPath = path.join(queryDir, 'queries.sql');
     const connectDir = path.join(curDir, 'connections');
-    const connectPath = path.join(connectDir, 'connection.json');
     const packagePath = path.join(curDir, 'package.json');
+
+    // Package directory check
     if (!fs.existsSync(packagePath)) return console.log('`package.json` not found');
     try {
         const package = JSON.parse(fs.readFileSync(packagePath));
@@ -80,7 +81,7 @@ function add(args) {
 
             if (tag && tag !== 'panel') return console.log('Currently, you can only add the `panel` tag');
 
-            const scriptsDir = path.join(curDir, 'scripts');
+            // Create the folder `scripts` if it doesn't exist yet
             if (!fs.existsSync(scriptsDir)) fs.mkdirSync(scriptsDir);
 
             let scriptPath = path.join(scriptsDir, name + '.' + langs[lang]);
@@ -159,18 +160,24 @@ function add(args) {
             if (tag) console.log('https://public.datagrok.ai/js/samples/functions/info-panels/info-panels');
             break;
         case 'connection':
-            if (nArgs !== 2) return false;
+            if (nArgs !== 3) return false;
+            name = args['_'][2];
+
+            // Connection name check
+            if (!validateName(name)) return false;
 
             // Create the `connections` folder if it doesn't exist yet
             if (!fs.existsSync(connectDir)) fs.mkdirSync(connectDir);
 
+            let connectPath = path.join(connectDir, `${name}.json`);
             if (fs.existsSync(connectPath)) {
-                return console.log(`The default connection file already exists: ${connectPath}`);
+                return console.log(`The connection file already exists: ${connectPath}`);
             }
+
             var connection = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
                                              'entity-template', 'connection.json'), 'utf8');
-            fs.writeFileSync(connectPath, connection, 'utf8');
-            console.log(`The connection has been added successfully`);
+            fs.writeFileSync(connectPath, insertName(name, connection), 'utf8');
+            console.log(`The connection ${name} has been added successfully`);
             console.log('Read more at https://datagrok.ai/help/access/data-connection');
             console.log('See examples at https://github.com/datagrok-ai/public/tree/master/packages/Chembl');
             break;
@@ -197,7 +204,7 @@ function add(args) {
                 if (!fs.existsSync(connectDir)) fs.mkdirSync(connectDir);
                 var connection = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
                                              'entity-template', 'connection.json'), 'utf8');
-                fs.writeFileSync(connectPath, connection, 'utf8');
+                fs.writeFileSync(path.join(connectDir, 'connection.json'), insertName('connection', connection), 'utf8');
                 var connection = 'connection';
             }
             contents = contents.replace('#{CONNECTION}', connection);
@@ -213,6 +220,9 @@ function add(args) {
             // View name check
             var name = args['_'][2];
             if (!validateName(name)) return false;
+            if (!name.endsWith('View')) {
+                console.log("For consistency reasons, we recommend postfixing classes with 'View'");
+            }
 
             // Create src/package.js if it doesn't exist yet
             createJsFile();
@@ -229,7 +239,7 @@ function add(args) {
             // Add a view function to package.js
             let view = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
                                       'entity-template', 'view.js'), 'utf8');
-            var contents = insertName(name, "import #{NAME_TITLECASE}View from './#{NAME_LOWERCASE}.js'\n");
+            var contents = insertName(name, "import #{NAME} from './#{NAME_LOWERCASE}.js'\n");
             contents += fs.readFileSync(jsPath, 'utf8');
             contents += insertName(name, view);
             fs.writeFileSync(jsPath, contents, 'utf8');
@@ -244,6 +254,9 @@ function add(args) {
             // Viewer name check
             var name = args['_'][2];
             if (!validateName(name)) return false;
+            if (!name.endsWith('Viewer')) {
+                console.log("For consistency reasons, we recommend postfixing classes with 'Viewer'");
+            }
 
             // Create src/package.js if it doesn't exist yet
             createJsFile();
@@ -261,7 +274,7 @@ function add(args) {
             // Add a viewer function to package.js
             let viewer = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
                                       'entity-template', 'viewer.js'), 'utf8');
-            var contents = insertName(name, "import #{NAME_TITLECASE}Viewer from './#{NAME_LOWERCASE}.js'\n");
+            var contents = insertName(name, "import #{NAME} from './#{NAME_LOWERCASE}.js'\n");
             contents += fs.readFileSync(jsPath, 'utf8');
             contents += insertName(name, viewer);
             fs.writeFileSync(jsPath, contents, 'utf8');
