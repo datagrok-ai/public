@@ -1,7 +1,7 @@
 // A sample class from the Notebooks package:
 // https://github.com/datagrok-ai/public/tree/master/packages/Notebooks
 // This class defines a new view for Jupyter Notebooks.
-export class #{NAME_TITLECASE}View extends DG.ViewBase {
+export class #{NAME} extends DG.ViewBase {
     constructor(params, path) {
         super(params, path);
         this.TYPE = 'Notebook';

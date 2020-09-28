@@ -5,7 +5,7 @@
 //input: string smiles {semType: Molecule}
 //output: widget result
 //condition: true
-export function #{NAME_LOWERCASE}(smiles) {
+export function #{NAME}(smiles) {
     let panels = ui.div([
         this.createSearchPanel('Exact', smiles),
         this.createSearchPanel('Similar', smiles),

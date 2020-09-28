@@ -1,16 +1,17 @@
 {
+    "name": "#{NAME}",
     "#type": "DataConnection",
     "parameters": {
       "server": "#{GROK_DB_SERVER}",
-      "db": "#{NAME}"
+      "db": "#{DB_NAME}"
     },
     "credentials" : {
       "parameters": {
-        "login": "",
-        "password": ""
+        "login": "#{LOGIN}",
+        "password": "#{PASSWORD}"
       }
     },
     "dataSource": "PostgreSQL",
-    "description": "#{NAME} db",
+    "description": "#{DB_NAME} db",
     "tags": ["demo"]
 }

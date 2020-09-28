@@ -5,6 +5,6 @@
 //input: map params
 //input: string path
 //output: view result
-export function #{NAME_LOWERCASE}View(params = null, path = '') {
-    return new #{NAME_TITLECASE}View(params, path);
+export function #{NAME}(params = null, path = '') {
+    return new #{NAME}(params, path);
 }
