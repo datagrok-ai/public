@@ -76,6 +76,9 @@ export class Events {
     /** @returns {Observable} */ get onViewAdded () { return __obs('grok-view-added'); }
     /** @returns {Observable} */ get onViewRemoved () { return __obs('grok-view-removed'); }
     /** @returns {Observable} */ get onViewRenamed () { return __obs('grok-view-renamed'); }
+    /** @returns {Observable} */ get onViewLayoutGenerated () { return __obs('d4-view-layout-generated'); }
+    /** @returns {Observable} */ get onViewLayoutApplying () { return __obs('d4-view-layout-applying'); }
+    /** @returns {Observable} */ get onViewLayoutApplied () { return __obs('d4-view-layout-applied'); }
 
     /** @returns {Observable} */ get onCurrentProjectChanged () { return __obs('grok-current-project-changed'); }
     /** @returns {Observable} */ get onProjectUploaded () { return __obs('grok-project-uploaded'); }
