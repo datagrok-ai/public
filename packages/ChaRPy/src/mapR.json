@@ -1,10 +1,10 @@
 {
   "plotScripts": {
-    "scatterplot": "require(ggplot2)\nplt <- ggplot(data, aes(!(xColumnName)!(yColumnName)!(sizeColumnName)!(colorColumnName))) +\ngeom_point(!(markerType)) +\nscale_size_continuous(range = c(!(markerMinSize),!(markerMaxSize)))!(labelsColumnName)!(showRegressionLine)",
+    "scatterplot": "require(ggplot2)\nplt <- ggplot(data, aes(!(xColumnName)!(yColumnName)!(sizeColumnName)!(colorColumnName))) +\ngeom_point(alpha = 0.7!(markerType))!(labelsColumnName)!(showRegressionLine)!(xAxisType)!(yAxisType)",
     "histogram": "require(ggplot2)\nplt <- ggplot(data, aes(!(valueColumnName)!(colorColumnName))) +\ngeom_histogram(!(bins)color='darkblue',position='identity', alpha = 0.5)",
     "barchart": "require(ggplot2)\nrequire(e1071)\n\ndata$!(splitColumnName)[is.na(data$!(splitColumnName))] <- 'NAs'\nsummaryDf <- data.frame(\n    x = levels(as.factor(data$!(splitColumnName))),\n    y = tapply(data$!(valueColumnName), data$!(splitColumnName), !(valueAggrType))\n)\n\nplt <- ggplot(summaryDf,aes(x = reorder(x,!(barSortOrder)y),y = y)) +\n  geom_bar(stat='identity',fill = 'green4') +\n  labs(x = '!(splitColumnName)', y = '!(valueColumnName)') +\n  geom_text(aes(label=y)) +\n  coord_flip()",
     "boxplot": "require(ggplot2)\nplt <- ggplot(data,aes(!(categoryColumnName)!(valueColumnName)!(binColorColumnName))) +\n  geom_jitter(shape = 20!(markerColorColumnName)) +\n  geom_boxplot(lwd = 1,alpha = 0.8) +\n  stat_boxplot(geom ='errorbar') +\n  stat_summary(fun=mean, geom='point', shape=20, size=5, color='black', fill='black')",
-    "correlationplot": "require(dplyr)\nrequire(ggcorrplot)\ndata <- data %>% select(!(xColumnNames))\ncorr <- round(cor(data ,use='complete.obs'!(correlationType)), 3)\n\nplt <- ggcorrplot(corr, hc.order = TRUE, lab = TRUE)",
+    "correlationplot": "require(dplyr)\nrequire(ggcorrplot)\ndata <- data %>% select(!(xColumnNames))\ncorr <- round(cor(data ,use='complete.obs'!(correlationType)), 3)\n\nplt <- ggcorrplot(corr, lab = TRUE)",
     "linechart": "require(dplyr)\nrequire(gridExtra)\nfuns <- list(!(yAggrTypes))\ndata <- data %>% select(!(xColumnName),!(yColumnNames))\nsummaryDf <- data.frame(!(xColumnName) = levels(as.factor(data$!(xColumnName))))\nplts <- list()\nfor (i in 1:length(funs)){\n  summaryDf[[names(data)[i+1]]] <- tapply(data[[i+1]], data$!(xColumnName), funs[[i]])\n  plts[[i]] <- ggplot(summaryDf[!is.na(summaryDf[i+1]),], aes_string(names(summaryDf)[1],names(summaryDf)[i+1] , group = 1)) + geom_line()\n}\nplt <- do.call(grid.arrange,plts)",
     "matrixplot": "require(ggplot2)\nrequire(dplyr)\n\ndata <- data %>% select(!(xColumnNames))\nplt <- pairs(data,pch = 20)"
   },
@@ -15,11 +15,11 @@
       "yColumnName": ", y = !(yColumnName)",
       "sizeColumnName": ", size = !(sizeColumnName)",
       "colorColumnName": ", color = !(colorColumnName)",
-      "markerType": "shape = !(markerType)",
-      "markerMinSize": "!(markerMinSize)",
-      "markerMaxSize": "!(markerMaxSize)",
+      "markerType": ", shape = !(markerType)",
       "labelsColumnName": " +\ngeom_text(aes(label=!(labelsColumnName)))",
       "showRegressionLine": " +\ngeom_smooth(method=lm)",
+      "xAxisType": "+\nscale_x_continuous(trans='log10')",
+      "yAxisType": "+\nscale_y_continuous(trans='log10')",
       "xColumnNames": "rows = vars(!(xColumnNames))",
       "yColumnNames": ", cols = vars(!(yColumnNames))"
     },
@@ -86,7 +86,9 @@
     "kurt": "function(x) kurtosis(x,na.rm=TRUE)",
     "q1": "function(x) quantile(x,na.rm=TRUE)[2]",
     "q2": "function(x) quantile(x,na.rm=TRUE)[3]",
-    "q3": "function(x) quantile(x,na.rm=TRUE)[4]"
+    "q3": "function(x) quantile(x,na.rm=TRUE)[4]",
+    "Spearman": "spearman",
+    "Pearson": "pearson"
   },
   "header" : "#name: Plot\n#language: r\n#input: dataframe data\n#output: graphics\n\n"
 }
