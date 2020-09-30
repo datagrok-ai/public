@@ -2,7 +2,7 @@
   "plotScripts": {
     "scatterplot": "import plotly.express as px\nimport pandas as pd\ndata.dropna(axis = 'rows',inplace = True, subset = [!(colsList)])\nfig = px.scatter(data,!(xColumnName)!(yColumnName)!(colorColumnName)!(sizeColumnName)!(showRegressionLine)!(markerMaxSize)!(xColumnNames)!(yColumnNames))\nfig.update_traces(marker=dict(line=dict(width=0.5,color='DarkSlateGrey')!(markerType)),selector=dict(mode='markers'))",
     "histogram": "import plotly.express as px\nimport pandas as pd\ndata.dropna(axis = 'rows',inplace = True, subset = [!(colsList)])\nfig = px.histogram(data, !(valueColumnName)!(colorColumnName)!(xColumnNames)!(yColumnNames)!(bins), marginal=\"violin\", barmode='overlay', opacity = 0.8)\nfig.update_layout(bargap=0.1)",
-    "barchart": "import plotly.express as px\nimport pandas as pd\nfig = px.bar(data.groupby([!(splitColumnName)!(colorColumnName)],as_index=False).agg(!(valueAggrType)), \n             !(splitColumnName)!(valueColumnName)!(colorColumnName)!(xColumnNames)!(yColumnNames),barmode='stack')\nfig.update_layout(xaxis={'categoryorder':!(barSortOrder)})",
+    "barchart": "import plotly.express as px\nimport pandas as pd\ndata[!(splitColumnName)].fillna('NAs',inplace = True)\nfig = px.bar(data.groupby([!(colsList)],as_index=False).agg(!(valueAggrType)), \n             !(splitColumnName)!(valueColumnName)!(colorColumnName)!(xColumnNames)!(yColumnNames),barmode='stack')\nfig.update_layout(xaxis={'categoryorder':!(barSortOrder)})",
     "boxplot": "import plotly.express as px\nimport pandas as pd\ndata.dropna(axis = 'rows',inplace = True, subset = [!(colsList)])\nfig = px.box(data,!(categoryColumnName)!(valueColumnName)!(binColorColumnName)!(xColumnNames)!(yColumnNames))\nfig.update_traces(quartilemethod=\"exclusive\")",
     "correlationplot": "import seaborn as sn\ntoCorr = !(xColumnNames).split(',')\ndata.dropna(axis = 'rows',inplace = True, subset = toCorr)\ncorrMatrix = data[toCorr].corr(!(correlationType))\nplt = sn.heatmap(corrMatrix, annot=True)\nprint(plt)",
     "linechart": "from plotly.subplots import make_subplots\nimport plotly.graph_objects as go\n\ntoLine = !(yColumnNames).split(',')\nfuns = [!(yAggrTypes)]\ndata.dropna(axis = 'rows',inplace = True, subset = toLine.append(!(xColumnName)))\nfig = make_subplots(rows=len(toLine), cols=1)\n\nfor i in range(0,len(toLine)-1):\n    summaryDf = data.groupby([!(xColumnName)],as_index=False).agg(funs[i])\n    fig.add_trace(go.Scatter(x=summaryDf[!(xColumnName)], y=summaryDf[toLine[i]], mode='lines', name=toLine[i]),row=i+1, col=1)",
@@ -78,7 +78,10 @@
     "kurt": "lambda x: x.dropna().kurt()",
     "q1": "lambda x: x.dropna().quantile(q = 0.25)",
     "q2": "lambda x: x.dropna().quantile(q = 0.5)",
-    "q3": "lambda x: x.dropna().quantile(q = 0.75)"
+    "q3": "lambda x: x.dropna().quantile(q = 0.75)",
+    "Spearman": "spearman",
+    "Pearson": "pearson"
   },
-  "header" : "#name: Plot\n#language: python\n#input: dataframe data\n#output: graphics\n\n"
+  "header" : "#name: Plot\n#language: python\n#input: dataframe data\n#output: graphics\n\n",
+  "tail": "\nfig.write_image(\"temp.png\")\nimport matplotlib.pyplot as plt\nimport matplotlib.image as mpimg\nimport os\nimage = mpimg.imread(\"temp.png\")\nos.remove(\"temp.png\")\nplt.imshow(image)\nplt.show()"
 }

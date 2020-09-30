@@ -157,6 +157,12 @@ grok.events.onContextMenu.subscribe((args) => {
                 let dynamicOut = dynamicReplace(colsList,pyString, optionsObj, paramsMap);
                 pyString = dynamicOut[0];
                 colsList = dynamicOut[1];
+                if (optionsObj.type === 'Trellis plot' ||
+                    optionsObj.type === 'Bar chart' ||
+                    optionsObj.type === 'Line chart') {
+                    const index = colsList.indexOf('valueColumnName')
+                    if (index > -1) { colsList.splice(index, 1) }
+                }
                 pyString = pyString.replace("!(colsList)", colsList);
                 pyString = pyString.replace(/!\([^)]*\) */g, "");
 
@@ -170,7 +176,7 @@ grok.events.onContextMenu.subscribe((args) => {
               args.args.context.table, options.look);
             let pyCode = await strReplace(options, mapPy);
             let viewerRight = DG.Viewer.fromType('Scripting Viewer',
-              args.args.context.table, {script: mapPy.header + pyCode});
+              args.args.context.table, {script: mapPy.header + pyCode + mapPy.tail});
 
             // create a container for viewers
             let block =
