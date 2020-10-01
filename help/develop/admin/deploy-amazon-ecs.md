@@ -1,7 +1,7 @@
-<!-- TITLE: Deploy Datagrok on AWS ECS cluster-->
+<!-- TITLE: Deployment on AWS ECS Cluster-->
 <!-- SUBTITLE: -->
 
-# Deploy Datagrok on AWS ECS cluster
+# Deployment on AWS ECS Cluster
 
 This document contains instructions to deploy Datagrok on AWS ECS cluster.
 
@@ -110,5 +110,6 @@ Edit settings in the Datagrok (Tools | Settings...):
     * API Url: http://DATAGROK_URL/api
 
 See also:
-* [Compute VM](../../compute/compute-vm.md)
-* [Architecture](architecture.md#application)
+
+  * [Compute VM](../../compute/compute-vm.md)
+  * [Architecture](architecture.md#application)

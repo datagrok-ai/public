@@ -26,7 +26,7 @@ Let's take a look at a simple R script that returns a square of the input parame
 result = x * x
 ```
 
-In order to register a script, do **Tools | Scripting | New Script**, paste the code above, and click Save.
+In order to register a script, open `Functions | Scripts | New R Script`, paste the code above, and click `Save`.
 Congratulations, you've just written and published an R script and made it available to the whole community!
 
 Use [Console](../overview/console.md) to execute it. Simply type "RSquare(3)":
@@ -38,7 +38,7 @@ Use [Console](../overview/console.md) to execute it. Simply type "RSquare(3)":
 The syntax for invoking the scripts is the same, regardless of the language used. In the same way, you can
 call Grok Functions. See [Grok Scripting](../overview/grok-script.md) for more details.
 
-## Running a script
+## Running a Script
 
 First of all, a script can be executed right from the script editor (see picture below).
 
@@ -47,7 +47,7 @@ as a [function](../overview/functions/function.md), and can be invoked in differ
 * From the [console](../overview/console.md)
 * From the [data job](../access/data-job.md)
 * From the [transformations editor](../transform/recipe-editor.md)
-* From the function browser (**Help | Functions**)  
+* From the [function browser](https://public.datagrok.ai/functions)  
 
 ![Scripting](../uploads/gifs/scripting-visualization.gif "Scripting")
 
@@ -174,7 +174,7 @@ grok.functions.register({
 ![Script Parameter Suggestions](../uploads/features/script-param-suggestions.gif "Script Parameter Suggestions") 
 
 
-## Header parameters
+## Header Parameters
 
 | Parameter   | Description                        |
 |-------------|------------------------------------|
@@ -193,7 +193,7 @@ grok.functions.register({
 Also it is possible to add custom parameter using "meta." prefix.
 
  
-### <a href="#" id="supported-languages"></a>Supported languages
+### <a href="#" id="supported-languages"></a>Supported Languages
 
 | Language parameter value | Description    |
 |--------------------------|----------------|
@@ -204,7 +204,7 @@ Also it is possible to add custom parameter using "meta." prefix.
 | grok                     | Grok Scripting |
 | javascript               | JavaScript     |
 
-### Format template for 'input' and 'output':
+### Format Template for 'input' and 'output':
 
 ```
 #<direction>: <type> <name> = <value> {<option tag>:<value>; ...} [<description>]  
@@ -255,14 +255,14 @@ Validator also can be any function that that returns "null" if validation is rig
 otherwise.
 
 
-#### For "dataframe" type
+#### For "dataframe" Type
 
 | Option      | Value       | Description                             |
 |-------------|-------------|-----------------------------------------|
 | columns     | numerical   | Only numerical columns will be loaded   |
 | categorical | categorical | Only categorical columns will be loaded |
 
-#### For "column" and "column_list" types
+#### For "column" and "column_list" Types
 
 | Option     | Value                           | Description                                                  |
 |------------|---------------------------------|--------------------------------------------------------------|
@@ -275,7 +275,7 @@ otherwise.
 | action     | replace("table parameter name") | Replaces result with columns in specified table, for output parameters only | 
 
 
-#### For "string" type
+#### For "string" Type
 
 | Option      | Value                     | Description                          |
 |-------------|---------------------------|--------------------------------------|
@@ -323,7 +323,7 @@ You can use these fields to filter scripts with [smart search](../overview/smart
 | commentedBy | [User](../govern/user.md) object |
 | usedBy      | [User](../govern/user.md) object |
 
-_See also_:
+See also:
 
   * [Grok Scripting](../overview/grok-script.md)
   * [R](https://www.r-project.org/about.html)

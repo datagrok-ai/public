@@ -48,4 +48,5 @@ At the moment some limitations are exists:
 
 
 See also:
-* [GrokCompute](grok-compute.md)
+
+  * [GrokCompute](grok-compute.md)

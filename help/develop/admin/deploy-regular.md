@@ -1,12 +1,12 @@
 
-<!-- TITLE: Deploy Datagrok on a regular machine -->
+<!-- TITLE: Deployment on a Regular Machine -->
 <!-- SUBTITLE: -->
 
-# Deploy Datagrok on a regular machine
+# Deployment on a Regular Machine
 
 This document contains instructions to deploy Datagrok on a regular machine without cloud-based hosting.
 
-In case you want to jump-start using Datagrok with minimum manual effort on a local machine, check "[Deploy Datagrok using Docker Compose](docker-compose.md)". The below method gives more control and includes manual installation of a PostgreSQL instance along with locating Datagrok's working files on a host machine's file system.
+In case you want to jump-start using Datagrok with minimum manual effort on a local machine, check [Deployment with Docker Compose](docker-compose.md). The below method gives more control and includes manual installation of a PostgreSQL instance along with locating Datagrok's working files on a host machine's file system.
 
 ## Prerequisites
 
@@ -61,6 +61,6 @@ Edit settings in the Datagrok (_Tools | Settings..._):
 
 See also:
 
-* [Compute VM](../../compute/compute-vm.md)
-* [Architecture](architecture.md#application)
-* [Deploy Datagrok using Docker Compose](docker-compose.md)
+  * [Compute VM](../../compute/compute-vm.md)
+  * [Architecture](architecture.md#application)
+  * [Deployment with Docker Compose](docker-compose.md)
