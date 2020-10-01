@@ -113,6 +113,7 @@ public abstract class DataProvider
         add(new VirtuosoDataProvider());
         add(new ImpalaDataProvider());
         add(new DenodoDataProvider());
+        add(new SnowflakeDataProvider());
     }};
 
     public static List<String> getAllProvidersTypes() {
