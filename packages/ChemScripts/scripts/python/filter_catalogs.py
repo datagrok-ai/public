@@ -1,6 +1,6 @@
 #name: Filter by Catalogs
 #description: Finds undesireable molecules based on various criteria
-#help-url: /help/domains/chem/functions/filter-catalogs.md
+#help-url: https://datagrok.ai/help/domains/chem/functions/filter-catalogs
 #language: python
 #sample: chem/smiles.csv
 #tags: demo, chem, rdkit

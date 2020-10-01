@@ -1,6 +1,6 @@
 #name: Sentiment Classification
 #description: Sentiment classification of emotions and polarity
-#help-url: https://en.wikipedia.org/wiki/Sentiment_analysis
+#reference: https://en.wikipedia.org/wiki/Sentiment_analysis
 #language: r
 #tags: demo
 #sample: tweets.csv

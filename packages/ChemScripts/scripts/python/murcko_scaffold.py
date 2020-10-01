@@ -1,6 +1,6 @@
 #name: Murcko Scaffolds
 #description: Generation of Murcko scaffolds from a molecule
-#help-url: /help/domains/chem/functions/murcko-scaffolds.md
+#help-url: https://datagrok.ai/help/domains/chem/functions/murcko-scaffolds
 #language: python
 #sample: chem/smiles.csv
 #tags: demo, chem, rdkit

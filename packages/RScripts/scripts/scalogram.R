@@ -1,6 +1,6 @@
 #name: Scalogram
 #description: CWT (Morlet wavelet) scalogram plot
-#help-url: https://en.wikipedia.org/wiki/Scaleogram
+#reference: https://en.wikipedia.org/wiki/Scaleogram
 #language: r
 #tags: demo, viewers
 #sample: sensors/ecg.csv

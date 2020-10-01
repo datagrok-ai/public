@@ -1,6 +1,6 @@
 #name: Predictive Model SVM
 #description: Predictive model based on Support vector machine (SVM)
-#help-url: https://en.wikipedia.org/wiki/Support_vector_machine
+#reference: https://en.wikipedia.org/wiki/Support_vector_machine
 #language: r
 #tags: demo
 #sample: demog.csv

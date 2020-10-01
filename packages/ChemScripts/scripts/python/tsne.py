@@ -1,6 +1,6 @@
 #name: Chemical Space Using tSNE
 #description: Chemical space using t-distributed Stochastic Neighbor Embedding
-#help-url: /help/domains/chem/functions/tsne.md
+#help-url: https://datagrok.ai/help/domains/chem/functions/tsne
 #language: python
 #sample: chem/smiles_coordinates.csv
 #tags: demo, chem, rdkit

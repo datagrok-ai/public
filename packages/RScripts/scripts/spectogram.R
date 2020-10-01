@@ -1,6 +1,6 @@
 #name: Spectrogram
 #description: Spectrogram plot
-#help-url: https://en.wikipedia.org/wiki/Spectrogram
+#reference: https://en.wikipedia.org/wiki/Spectrogram
 #language: r
 #tags: demo, viewers
 #sample: sensors/ecg.csv

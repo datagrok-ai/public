@@ -1,6 +1,6 @@
 #name: PLS
 #description: Partial Least Squares (PLS)
-#help-url: https://en.wikipedia.org/wiki/Partial_least_squares_regression
+#reference: https://en.wikipedia.org/wiki/Partial_least_squares_regression
 #language: r
 #tags: demo, analysis, pls
 #sample: cars.csv

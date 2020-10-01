@@ -1,6 +1,6 @@
 #name: LDA
 #description: Linear Discriminant Analysis
-#help-url: https://en.wikipedia.org/wiki/Linear_discriminant_analysis
+#reference: https://en.wikipedia.org/wiki/Linear_discriminant_analysis
 #language: r
 #tags: demo, analysis, prediction, lda
 #sample: winequality.csv

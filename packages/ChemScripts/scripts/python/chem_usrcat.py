@@ -1,6 +1,6 @@
 #name: USRCAT
 #description: USRCAT - real-time ultrafast shape recognition with pharmacophoric constraints
-#help-url: /help/domains/chem/functions/usrcat.md
+#help-url: https://datagrok.ai/help/domains/chem/functions/usrcat
 #language: python
 #sample: chem/smiles_coordinates.csv
 #tags: demo, chem, rdkit

@@ -1,6 +1,6 @@
 #name: Similarity Maps Using Fingerprints
 #description: Similarity Maps Using Fingerprints, RDKit based
-#help-url: /help/domains/chem/functions/sim-maps.md
+#help-url: https://datagrok.ai/help/domains/chem/functions/sim-maps
 #language: python
 #tags: demo, chem, rdkit
 #input: string mol = COc1cccc2cc(C(=O)NCCCCN3CCN(c4cccc5nccnc54)CC3)oc21 {semType: Molecule} [Molecule, in SMILES format]

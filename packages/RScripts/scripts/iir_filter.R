@@ -1,6 +1,6 @@
 #name: IIR Filter
 #description: IIR Butterworth filter (high or low pass)
-#help-url: https://en.wikipedia.org/wiki/Butterworth_filter
+#reference: https://en.wikipedia.org/wiki/Butterworth_filter
 #language: r
 #tags: demo
 #sample: sensors/ecg.csv

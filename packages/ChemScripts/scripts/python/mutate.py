@@ -1,6 +1,6 @@
 #name: Mutate
 #description: Mutate molecule
-#help-url: /help/domains/chem/functions/mutate.md
+#help-url: https://datagrok.ai/help/domains/chem/functions/mutate
 #language: python
 #tags: demo, chem, rdkit
 #top-menu: Chem | Mutate

@@ -1,6 +1,6 @@
 #name: ANOVA
 #description: One-way ANOVA
-#help-url: https://en.wikipedia.org/wiki/One-way_analysis_of_variance
+#reference: https://en.wikipedia.org/wiki/One-way_analysis_of_variance
 #language: r
 #tags: demo, analysis, anova
 #sample: beer.csv

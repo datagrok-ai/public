@@ -1,6 +1,6 @@
 #name: Butina Molecules Clustering
 #description: Implementation of the clustering algorithm published in: Butina JCICS 39 747-750 (1999)
-#help-url: /help/domains/chem/functions/butina-cluster.md
+#help-url: https://datagrok.ai/help/domains/chem/functions/butina-cluster
 #language: python
 #sample: chem/smiles_coordinates.csv
 #tags: demo, chem, rdkit
