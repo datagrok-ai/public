@@ -62,7 +62,7 @@ function migrate(args) {
                 }
             }
             fs.writeFileSync(confPath, yaml.safeDump(config));
-            console.log('Migrated data from local `upload.keys.json`');
+            console.log(`Migrated data from local \`upload.keys.json\` to ${confPath}`);
             fs.unlinkSync(keysDir);
             console.log('Successfully deleted the file');
         } catch (error) {

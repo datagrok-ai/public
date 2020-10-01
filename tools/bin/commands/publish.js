@@ -151,6 +151,7 @@ function publish(args) {
     // The host can be passed either as a URL or an alias
     try {
         url = new URL(host).href;
+        if (url.endsWith('/')) url = url.slice(0, -1);
         if (url in urls) key = config['servers'][urls[url]]['key'];
     } catch (error) {
         if (!(host in config.servers)) return console.log(`Unknown server alias. Please add it to ${confPath}`);
