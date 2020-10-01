@@ -5,6 +5,7 @@
 #input: string text {semType: text} [Given text]
 #output: double FRES [Flesch Reading Ease Score]
 #output: string comment [Comment on the complexity of a text]
+#reference: https://en.wikipedia.org/wiki/Flesch%E2%80%93Kincaid_readability_tests#Flesch_reading_ease
 
 import nltk
 from nltk.corpus import cmudict

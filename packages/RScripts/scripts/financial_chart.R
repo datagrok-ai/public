@@ -1,6 +1,6 @@
 #name: Financial Chart
 #description: Charting tool to create standard financial charts given a time series
-#help-url: http://www.quantmod.com/examples/intro/
+#reference: http://www.quantmod.com/examples/intro/
 #language: r
 #tags: demo, viewers
 #sample: TSLA.csv

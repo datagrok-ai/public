@@ -1,6 +1,6 @@
 #name: Time Series Decomposition
 #description: Time series decomposition
-#help-url: https://en.wikipedia.org/wiki/Decomposition_of_time_series
+#reference: https://en.wikipedia.org/wiki/Decomposition_of_time_series
 #language: r
 #tags: demo, viewers
 #sample: births.csv

@@ -1,6 +1,6 @@
 #name: LMER
 #description: Mixed Effects Model (LMER)
-#help-url: https://en.wikipedia.org/wiki/Mixed_model
+#reference: https://en.wikipedia.org/wiki/Mixed_model
 #language: r
 #tags: demo, analysis, prediction, lda
 #sample: winequality.csv

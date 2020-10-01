@@ -1,6 +1,6 @@
 #name: MANOVA
 #description: MANOVA with 3 Dependent Variables ((x, y) ~ z)
-#help-url: https://en.wikipedia.org/wiki/Multivariate_analysis_of_variance
+#reference: https://en.wikipedia.org/wiki/Multivariate_analysis_of_variance
 #language: r
 #tags: demo, analysis, manova
 #sample: beer.csv

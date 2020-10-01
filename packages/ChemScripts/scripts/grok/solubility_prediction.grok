@@ -1,6 +1,6 @@
 #name: Solubility Prediction
 #description: Predicts solubility by molecule descriptors ("Ipc", "MolWt", "NumValenceElectrons", "MolLogP", "LabuteASA", "TPSA", "HeavyAtomCount", "NumHAcceptors", "NumHDonors", "NumRotatableBonds", "RingCount")
-#help-url: /help/domains/chem/functions/solubility-prediction.md
+#help-url: https://datagrok.ai/help/domains/chem/functions/solubility-prediction
 #language: grok
 #tags: panel, prediction, chem
 #condition: smiles.semType == "Molecule"

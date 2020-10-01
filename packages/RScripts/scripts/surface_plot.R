@@ -1,6 +1,6 @@
 #name: Surface Plot
 #description: Surface plot
-#help-url: https://stat.ethz.ch/R-manual/R-devel/library/lattice/html/cloud.html
+#reference: https://stat.ethz.ch/R-manual/R-devel/library/lattice/html/cloud.html
 #language: r
 #tags: demo, viewers
 #sample: TSLA.csv

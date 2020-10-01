@@ -1,6 +1,6 @@
 #name: ACF
 #description: Autocorrelation function (ACF) plots
-#help-url: https://en.wikipedia.org/wiki/Autocorrelation
+#reference: https://en.wikipedia.org/wiki/Autocorrelation
 #language: r
 #tags: demo, viewers
 #sample: TSLA.csv

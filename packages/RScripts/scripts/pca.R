@@ -1,6 +1,6 @@
 #name: PCA
 #description: Principal Component Analysis
-#help-url: https://en.wikipedia.org/wiki/Principal_component_analysis
+#reference: https://en.wikipedia.org/wiki/Principal_component_analysis
 #language: r
 #tags: demo
 #sample: cars.csv

@@ -180,9 +180,9 @@ grok.functions.register({
 |-------------|------------------------------------|
 | name        | Name                               |
 | description | Description                        |
-| language    | Script language (see list below)   |
+| language    | Script language (see the [list of supported languages](#supported-languages) below) |
 | help-url    | Datagrok's Wiki URL                |
-| reference   | Reference to a research paper      |
+| reference   | Reference to a research paper, Wikipedia article, Git repository, etc.              |
 | tags        | Tags                               |
 | sample      | Name of a sample file              |
 | input       | Input parameter                    |
@@ -193,7 +193,7 @@ grok.functions.register({
 Also it is possible to add custom parameter using "meta." prefix.
 
  
-### Supported languages
+### <a href="#" id="supported-languages"></a>Supported languages
 
 | Language parameter value | Description    |
 |--------------------------|----------------|

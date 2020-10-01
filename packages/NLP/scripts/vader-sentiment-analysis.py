@@ -7,6 +7,7 @@
 #output: dataframe sentiment {action: join(data)} [Column with the polarity interpretation]
 #tags: nlp
 #sample: tweets.csv
+#reference: https://github.com/cjhutto/vaderSentiment
 
 import nltk
 from nltk.sentiment.vader import SentimentIntensityAnalyzer

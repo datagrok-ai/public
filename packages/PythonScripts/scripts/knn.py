@@ -1,6 +1,6 @@
 #name: KNN
 #description: Imputes (numerical) missing values using the kNN algorithm
-#help-url: https://en.wikipedia.org/wiki/K-nearest_neighbors_algorithm
+#reference: https://en.wikipedia.org/wiki/K-nearest_neighbors_algorithm
 #language: python
 #tags: demo, hide-suggestions
 #sample: demog.csv

@@ -1,6 +1,6 @@
 #name: Contour Plot
 #description: Contour plot
-#help-url: https://www.image.ucar.edu/GSP/Software/Fields/Help/image.plot.html
+#reference: https://www.image.ucar.edu/GSP/Software/Fields/Help/image.plot.html
 #language: r
 #tags: demo, viewers
 #sample: volcano.csv

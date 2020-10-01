@@ -1,6 +1,6 @@
 #name: Fitting DRC
 #description: Fit dose-response curve with a 4-parameter model with no constrain
-#help-url: https://en.wikipedia.org/wiki/Dose–response_relationship
+#reference: https://en.wikipedia.org/wiki/Dose–response_relationship
 #language: r
 #tags: demo, fitting, drc
 #sample: acidiq.csv

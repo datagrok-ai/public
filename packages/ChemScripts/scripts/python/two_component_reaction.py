@@ -1,6 +1,6 @@
 #name: Two Component Reaction
 #description: Two component reaction
-#help-url: /help/domains/chem/functions/reactions.md
+#help-url: https://datagrok.ai/help/domains/chem/functions/reactions
 #language: python
 #sample: chem/reactants.csv
 #tags: demo, chem, rdkit

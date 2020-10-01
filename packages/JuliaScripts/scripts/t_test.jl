@@ -1,6 +1,6 @@
 #name: t-test
 #description: Welch's t-test
-#help-url: https://en.wikipedia.org/wiki/Welch%27s_t-test
+#reference: https://en.wikipedia.org/wiki/Welch%27s_t-test
 #language: julia
 #tags: demo, hide-suggestions
 #sample: TSLA.csv

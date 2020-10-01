@@ -4,6 +4,7 @@
 #input: string text {semType: text} [A text to analyze]
 #output: string language {semType: lang} [Detected language]
 #tags: nlp, panel
+#reference: https://github.com/google/cld3
 
 import cld3
 import pycountry

@@ -1,6 +1,6 @@
 #name: Linear Regression
 #description: Linear regression
-#help-url: https://en.wikipedia.org/wiki/Linear_regression
+#reference: https://en.wikipedia.org/wiki/Linear_regression
 #language: r
 #tags: demo
 #sample: TSLA.csv

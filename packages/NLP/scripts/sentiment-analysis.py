@@ -5,6 +5,7 @@
 #output: string sentiment [Detected sentiment]
 #output: double polarity [Polarity of expression]
 #tags: nlp, panel
+#reference: https://en.wikipedia.org/wiki/Sentiment_analysis
 
 from transformers import pipeline
 

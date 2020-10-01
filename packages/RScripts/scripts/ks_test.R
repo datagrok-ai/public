@@ -1,6 +1,6 @@
 #name: KS Test
 #description: Kolmogorov–Smirnov test (K–S test or KS test)
-#help-url: https://en.wikipedia.org/wiki/Kolmogorov–Smirnov_test
+#reference: https://en.wikipedia.org/wiki/Kolmogorov–Smirnov_test
 #language: r
 #tags: demo
 #sample: TSLA.csv

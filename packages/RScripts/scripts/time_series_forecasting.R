@@ -1,6 +1,6 @@
 #name: ARIMA Forecasting
 #description: Time series forecasting using ARIMA
-#help-url: https://en.wikipedia.org/wiki/Autoregressive_integrated_moving_average
+#reference: https://en.wikipedia.org/wiki/Autoregressive_integrated_moving_average
 #language: r
 #tags: demo, viewers
 #sample: TSLA.csv

@@ -1,6 +1,6 @@
 #name: Scalogram
 #description: CWT (Morlet wavelet) scalogram plot
-#help-url: https://en.wikipedia.org/wiki/Scaleogram
+#reference: https://en.wikipedia.org/wiki/Scaleogram
 #language: python
 #environment: scalogram
 #tags: demo, viewers, hide-suggestions

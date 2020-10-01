@@ -1,6 +1,6 @@
 #name: Chemical Space Using UMAP
 #description: Chemical space using Uniform Manifold Approximation and Projection
-#help-url: /help/domains/chem/functions/umap.md
+#help-url: https://datagrok.ai/help/domains/chem/functions/umap
 #language: python
 #sample: chem/smiles_coordinates.csv
 #tags: demo, chem, rdkit
