@@ -1,14 +1,14 @@
 
-<!-- TITLE: Deploy Datagrok using Docker Compose -->
+<!-- TITLE: Deployment with Docker Compose -->
 <!-- SUBTITLE: -->
 
-# Deploy Datagrok using Docker Compose
+# Deployment with Docker Compose
 
 This document contains instructions for running Datagrok on a regular machine via [Docker Compose](https://docs.docker.com/compose/).
 
 This method doesn't require cloud-based hosting. It automatically fetches, configures and runs the required docker images.
 
-If you want to jump-start with Datagrok on your local machine, we recommend this method. If you need to manually install PostgreSQL and put Datagrok's working data on a host machine's file system, check [Deploy Datagrok on a regular machine](deploy-regular.md).
+If you want to jump-start with Datagrok on your local machine, we recommend this method. If you need to manually install PostgreSQL and put Datagrok's working data on a host machine's file system, check [Deployment on a regular machine](deploy-regular.md).
 
 ## Prerequisites
 
@@ -91,4 +91,4 @@ If you want to jump-start with Datagrok on your local machine, we recommend this
 See also:
 
    * [Docker Compose](https://docs.docker.com/compose/)
-   * [Deploy Datagrok on a regular machine](deploy-regular.md)
+   * [Deployment on a regular machine](deploy-regular.md)

@@ -1,7 +1,7 @@
-<!-- TITLE: Deploy Datagrok on AWS EC2 -->
+<!-- TITLE: Deployment on AWS EC2 -->
 <!-- SUBTITLE: -->
 
-# Deploy Datagrok on AWS EC2
+# Deployment on AWS EC2
 
 This document contains instructions to deploy Datagrok on AWS EC2 instance.
 
@@ -45,5 +45,6 @@ Edit settings in the Datagrok (Tools | Settings...):
     * API Url: http://DATAGROK_URL/api
 
 See also:
-* [Compute VM](../../compute/compute-vm.md)
-* [Architecture](architecture.md#application)
+
+  * [Compute VM](../../compute/compute-vm.md)
+  * [Architecture](architecture.md#application)

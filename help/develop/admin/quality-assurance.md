@@ -42,7 +42,7 @@ get executed automatically:
 We use TeamCity for continuous integration. This is how our control panel looks like:
 ![](continuous-integration.png) 
 
-## Unit tests
+## Unit Tests
 
 Our core libraries contain more than 2,000 [unit tests](https://en.wikipedia.org/wiki/Unit_testing) 
 that serve two main purposes. First of all, they are produced, and get used in the process of the
@@ -52,7 +52,7 @@ identify regression bugs.
 
 Results of the UI tests are kept in the [test tracking system](#test-tracking-system). 
  
-## Integration tests 
+## Integration Tests 
 
 Integration tests are very similar to unit tests. While unit tests tend to address isolated modules,
 integration tests cover interactions between different modules. Typically, they are a lot heavier
@@ -60,7 +60,7 @@ and much slower, so they are not used as frequently by developers.
 
 Results of the integration tests are kept in the [test tracking system](#test-tracking-system).
 
-## UI tests
+## UI Tests
 
 For automated testing of the platform, we use Selenium, which works by emulating user 
 input, and then checking for the expected result. 
@@ -77,7 +77,7 @@ is a good chance that a bug will be caught by that system.
 
 Results of the UI tests are kept in the [test tracking system](#test-tracking-system).
 
-## Structured manual tests
+## Structured Manual Tests
 
 Certain UI tests are so complex that it's impractical to develop and maintain corresponding scripts.
 In such cases, we still write the story for it just like in [unit tests](#unit-tests). 
@@ -85,12 +85,12 @@ In such cases, we still write the story for it just like in [unit tests](#unit-t
 Structured unit tests are executed by our QA engineer, and results are reported to the
 [test tracking system](#test-tracking-system).
 
-## Unstructured manual tests
+## Unstructured Manual Tests
 
 In addition to the testing outlined above, each release is manually tested by our QA engineer. 
 The amount of testing depends on the magnitude of the release.  
 
-## Test tracking system
+## Test Tracking System
 
 In order to keep track of test execution results, we have built a special application 
 on top of the Datagrok platform. Not only it lets us visualize the current state of the
@@ -101,13 +101,13 @@ done using Datagrok's OpenAPI capabilities).
 
 ![](test-tracking-system.png) 
 
-## Performance benchmarks
+## Performance Benchmarks
 
 We consider performance an important feature of Datagrok, so we keep track of it. We run performance
 benchmarks as part of the build, and keep track of the results to make sure the platform
 only gets better with time.
 
-## Stress testing
+## Stress Testing
 
 To make sure the platform is stable under heavy load (either many users working simultaneously, or
 executing CPU-intensive computations), we perform automated 
@@ -125,4 +125,4 @@ see [stress testing results](stress-testing-results.md).
 
 See also:
 
-* [Architecture](architecture.md)
+  * [Architecture](architecture.md)

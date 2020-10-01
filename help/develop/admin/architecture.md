@@ -24,7 +24,7 @@ These goals heavily influenced the design. On a surface, the platform appears qu
 traditional, as it consists of two parts - client and server. However, the way these parts
 work and connect is quite unusual.  
 
-### Design philosophy
+### Design Philosophy
 
 A traditional approach to building such a system would be to commit to a widely used technology such as 
 JavaScript, select a bunch of widely used libraries and frameworks, including a UI framework, a 
@@ -269,10 +269,10 @@ by the IT department).
 * Customizable storage
 * Supports SSL 
 
-### Full-text search
+### Full-Text Search
 
 Datagrok's full-text search (press Alt+Q to search) is backed by the Elastic search. It 
-searches in wiki, forums, and datasets. Read mode: [Elastic Search](#full-text-search)
+searches in Wiki, forums, and datasets. Read more in the [Elastic Search](#full-text-search) article.
 
 ### ORM
 
@@ -318,7 +318,7 @@ Scripting works by sending code along with data to the Jupyter kernel (that resi
 
 Also, there is an ability to invoke R scripts using the OpenCPU endpoint (which is also installed on ComputeVM)
 
-### Predictive modeling
+### Predictive Modeling
 
 Datagrok utilizes few different backends for predictive modeling, while providing users the
 same look and feel. Training and applying models for either of the backends is performed on
@@ -338,9 +338,9 @@ The actual tabular data (which can be uploaded or created via other means) is st
 externally, in the highly optimized [d42 format](#in-memory-database), on a file storage chosen
 by the company. Datagrok supports the following storages:
 
-* Network shares
-* S3
-* Google Cloud
+  * Network shares
+  * S3
+  * Google Cloud
 
 By default, Datagrok works with Amazon S3 storage. Also, local file system can be used 
 if you run Datagrok docker container without AWS or another cloud infrastructure. 

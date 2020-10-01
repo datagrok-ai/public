@@ -58,7 +58,7 @@ of tens of millions of rows, or millions of columns, completely on the client,
 in the browser. In order to do that, a radical break from the traditional web-based
 applications was required.
 
-### Big datasets
+### Big Datasets
 
 In order to work with big datasets right in the browser, we developed our
 proprietary [in-memory database](architecture.md#in-memory-database).
@@ -107,4 +107,5 @@ but provides a solid foundation for evolving the ecosystem on a global scale:
   being suggested to the user.   
 
 See also:
-* [Performance](../performance.md) 
+
+  * [Performance](../performance.md) 

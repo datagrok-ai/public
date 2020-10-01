@@ -34,5 +34,6 @@ GrokCompute exposes API for the following features:
 
 
 See also:
-* [Compute VM](compute-vm.md)
-* [Cheminformatics](../domains/chem/cheminformatics.md)
+
+  * [Compute VM](compute-vm.md)
+  * [Cheminformatics](../domains/chem/cheminformatics.md)
