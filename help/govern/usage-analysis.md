@@ -59,7 +59,7 @@ the "Activity" tab in the property panel.
 
 ![](usage-analysis-pp-activity.png)
 
-By default, each [script](../compute/scripting.md) execution gets logged, along with the parameter values. 
+By default, each [script](../develop/scripting.md) execution gets logged, along with the parameter values. 
 High-level overview of the usage is available under the "Usage" tag:
 
 ![](usage-analysis-pp-usage.png)

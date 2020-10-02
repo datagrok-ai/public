@@ -61,6 +61,6 @@ Edit settings in the Datagrok (_Tools | Settings..._):
 
 See also:
 
-  * [Compute VM](../../compute/compute-vm.md)
+  * [Compute VM](compute-vm.md)
   * [Architecture](architecture.md#application)
   * [Deployment with Docker Compose](docker-compose.md)

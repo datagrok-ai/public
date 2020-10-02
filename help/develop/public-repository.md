@@ -10,7 +10,7 @@ popular cheminformatics methods (such as R-group analysis or substructure search
 and when a user clicks on a molecule they see all functions applicable to it, as well
 as different [visualizations](../discover/data-augmentation.md).
 
-These functions are registered in the platform in the form of [scripts](../compute/scripting.md)
+These functions are registered in the platform in the form of [scripts](scripting.md)
 developed primarily in Python or R. Scripts can be either registered in the platform ad-hoc,
 or stored in the public repository: [https://github.com/datagrok-ai/public](https://github.com/datagrok-ai/public).
 

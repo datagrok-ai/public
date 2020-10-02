@@ -18,7 +18,7 @@ Here are the directories of particular interest:
 * [grid](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples/scripts/grid)
   : directory with examples how to work with [table grid](https://datagrok.ai/help/visualize/viewers/grid)
 * [scripting](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples/scripts/scripting)
-  : directory with examples how to use [scripting](https://datagrok.ai/help/compute/scripting)
+  : directory with examples how to use [scripting](https://datagrok.ai/help/develop/scripting)
 * [ui](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples/scripts/ui)
   : directory with ui manipulation examples
 

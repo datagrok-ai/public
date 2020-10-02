@@ -111,5 +111,5 @@ Edit settings in the Datagrok (Tools | Settings...):
 
 See also:
 
-  * [Compute VM](../../compute/compute-vm.md)
+  * [Compute VM](compute-vm.md)
   * [Architecture](architecture.md#application)

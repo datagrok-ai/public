@@ -55,7 +55,7 @@ view their properties and manage them.
   
 1. Open the "Notebooks" tab in [Property Panel](../overview/property-panel.md) 
    * "Notebooks" tab is open
-   * Display all [notebooks](../compute/jupyter-notebook.md) which are included in [project](project.md)
+   * Display all [notebooks](../develop/jupyter-notebook.md) which are included in [project](project.md)
 
 1. Open the "Models" tab in [Property Panel](../overview/property-panel.md) 
    * "Models" tab is open

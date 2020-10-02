@@ -346,7 +346,7 @@ By default, Datagrok works with Amazon S3 storage. Also, local file system can b
 if you run Datagrok docker container without AWS or another cloud infrastructure. 
 See [Run docker image](deploy-regular.md)   
 
-See also: [Compute VM](../../compute/compute-vm.md)
+See also: [Compute VM](compute-vm.md)
  
 ## Database
 

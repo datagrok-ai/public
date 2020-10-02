@@ -12,7 +12,7 @@ for doing that already; if not, let us know and we'll come up with a solution!
 
 ## Custom Scripts
 
-[Scripting](../compute/scripting.md) is an integration mechanism with different languages,
+[Scripting](../develop/scripting.md) is an integration mechanism with different languages,
 mostly used for statistical computing and machine learning. 
 Scripting combines fast interactive visualizations and other features of the Datagrok platform 
 with thousands of statistical packages and visualizations available in 

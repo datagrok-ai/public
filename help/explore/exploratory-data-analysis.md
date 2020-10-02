@@ -24,7 +24,7 @@ let you filter and visualize data in any possible way; some of them directly sup
 EDA-related features such as [regression lines](../visualize/viewers/scatter-plot.md#regression-line), 
 or [hypothesis testing](../visualize/viewers/box-plot.md#t-test). A number of pre-defined statistical
 [functions](../overview/functions/function.md) can be used for calculations. If that is not
-enough, new functions can be developed in [R, Python, or Julia](../compute/scripting.md). 
+enough, new functions can be developed in [R, Python, or Julia](../develop/scripting.md). 
 
 Each of the above-mentioned steps can be [automated](../overview/functions/function.md#macros), and 
 used in [pipelines](../access/data-pipeline.md). Sharing the results, obtained either

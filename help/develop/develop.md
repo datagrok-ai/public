@@ -125,7 +125,7 @@ export function test(s) {
 Note that `Datagrok API` modules are already imported. They are also set as external modules, so that `Webpack` will not include them to the output. You can include other libraries or packages, as all of them will be built in a single bundle file. If you choose to include other files, such as CSS, in your package, import them into `package.js` as well.
 
 During the [publishing step](#publishing), the contents of `package.js` get parsed, and functions with the properly formatted
-[headers](../compute/scripting.md#header) are registered as Grok [functions](../overview/functions/function.md). By annotating
+[headers](scripting.md#header) are registered as Grok [functions](../overview/functions/function.md). By annotating
 functions in a specific way, it is possible to register custom viewers, widgets, renderers, 
 converters, validators, suggestions, info panels, and semantic type detectors. 
 

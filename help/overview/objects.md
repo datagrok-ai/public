@@ -16,7 +16,7 @@ them. We call these objects 'entities'. Here they are:
 * [DB Column Info](../access/db-column-info.md)
 * [User](../govern/user.md)
 * [Group](../govern/group.md)
-* [Script](../compute/scripting.md)
+* [Script](../develop/scripting.md)
 * [Project](project.md)
 * [Table](table.md)
 * [View Layout](../visualize/view-layout.md)

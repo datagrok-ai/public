@@ -10,7 +10,7 @@ export class #{NAME} extends DG.ViewBase {
     
     // Override basic metods
     get type() { return this.TYPE };
-    get helpUrl() { return '/help/compute/jupyter-notebook.md'; }
+    get helpUrl() { return '/help/develop/jupyter-notebook.md'; }
     get name() { return 'Notebook' };
     get path() { return `${this.PATH}/${this.notebookId}` };
     

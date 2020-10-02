@@ -71,7 +71,7 @@ class NotebookView extends DG.ViewBase {
     }
 
     get type() { return this.TYPE };
-    get helpUrl() { return '/help/compute/jupyter-notebook.md'; }
+    get helpUrl() { return '/help/develop/jupyter-notebook.md'; }
     get path() { return `${this.PATH}/${this.id}` };
 
     get name() { return (this.notebook !== null && this.notebook !== undefined) ? this.notebook.name : 'Notebook' };
