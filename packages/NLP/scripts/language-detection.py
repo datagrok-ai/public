@@ -1,4 +1,4 @@
-#name: Language Detection
+#name: Language Detector
 #description: Detect the language in which a text is written
 #language: python
 #input: string text {semType: text} [A text to analyze]
