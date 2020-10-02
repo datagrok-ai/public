@@ -35,8 +35,8 @@ function assignOnlyIntersection(target, source) {
 function dynamicReplace(colsList, stRing, optionsObj, map) {
     Object.keys(optionsObj).forEach(key => {
         (optionsObj[key] == null) && delete optionsObj[key];
-        if (key.includes('ColumnName')) {
-            colsList.push("'" + optionsObj[key] + "'");
+        if (key.includes('ColumnName')  && key !== 'valueColumnName') {
+            colsList.push(optionsObj[key]);
         }
         if (typeof optionsObj[key] === 'object' &&
             Object.keys(optionsObj[key]).every(elem => elem != '0')) {
@@ -49,10 +49,11 @@ function dynamicReplace(colsList, stRing, optionsObj, map) {
     return [stRing, colsList];
 }
 
-// Creates a menu button that executes viewer to R code conversion
+// Creates menu buttons that executes viewer to code conversion
 grok.events.onContextMenu.subscribe((args) => {
     if (args.args.context instanceof DG.Viewer) {
-        args.args.menu.item('to R script', async () => {
+        let menu = args.args.menu.group('To Script');
+        menu.item('to R',  async () => {
 
             // Top-level string substitution function that implements both recursive functions
             // Carries out a sequence of substitutions to produce a finalized script for the selected environment
@@ -68,9 +69,9 @@ grok.events.onContextMenu.subscribe((args) => {
                 if (optionsObj.type === 'Trellis plot') {
 
                     stRing = map.plotScripts[optionsObj.look.innerViewerLook['#type'].toLowerCase().
-                        replace('look','')] + " + facet_grid(!(xColumnNames)!(yColumnNames))";
+                    replace('look','')] + " + facet_grid(!(xColumnNames)!(yColumnNames))";
                     paramsMap = map.additionalOps[optionsObj.look.innerViewerLook['#type'].toLowerCase().
-                        replace('look','')];
+                    replace('look','')];
 
                 } else {
                     stRing = map.plotScripts[optionsObj.type.toLowerCase().replace(' ','')];
@@ -83,7 +84,10 @@ grok.events.onContextMenu.subscribe((args) => {
                 // adjust the generalized viewer code by substituting in the values from
                 // mapR.json and getOptions() output
                 let colsList = [];
-                stRing = dynamicReplace(colsList, stRing, optionsObj, paramsMap)[0];
+                let dynamicOut = dynamicReplace(colsList, stRing, optionsObj, paramsMap);
+                stRing = dynamicOut[0];
+                colsList = dynamicOut[1];
+                stRing = stRing.replace("!(colsList)", colsList);
                 stRing = stRing.replace(/!\([^)]*\) */g, "");
 
                 // add a print statement
@@ -94,10 +98,10 @@ grok.events.onContextMenu.subscribe((args) => {
             // parse getOptions() output, generate the code string and initialize the viewers
             let options = JSON.parse(args.args.context.getOptions());
             let viewerLeft = DG.Viewer.fromType(options.type,
-              args.args.context.table, options.look);
+                args.args.context.table, options.look);
             let rCode = await strReplace(options, mapR);
             let viewerRight = DG.Viewer.fromType('Scripting Viewer',
-              args.args.context.table, {script: mapR.header + rCode});
+                args.args.context.table, {script: mapR.header + rCode});
 
             // create a container for viewers
             let block =
@@ -112,18 +116,12 @@ grok.events.onContextMenu.subscribe((args) => {
             // original viewer and the scripting viewer output
             let dialog = ui.dialog('OUTPUT SCRIPT').add(block[0]);
             dialog.onClose.subscribe((_) => {
-              viewerLeft.dataFrame = new DG.DataFrame();
-              viewerRight.dataFrame = new DG.DataFrame();
+                viewerLeft.dataFrame = new DG.DataFrame();
+                viewerRight.dataFrame = new DG.DataFrame();
             });
-            dialog.showModal(true);            
+            dialog.showModal(true);
         });
-    }
-});
-
-// Creates a menu button that executes viewer to Python code conversion
-grok.events.onContextMenu.subscribe((args) => {
-    if (args.args.context instanceof DG.Viewer) {
-        args.args.menu.item('to Python script', async () => {
+        menu.item('to Python', async () => {
 
             // Top-level string substitution function that implements both recursive functions
             // Carries out a sequence of substitutions to produce a finalized script for the selected environment
@@ -157,12 +155,6 @@ grok.events.onContextMenu.subscribe((args) => {
                 let dynamicOut = dynamicReplace(colsList,pyString, optionsObj, paramsMap);
                 pyString = dynamicOut[0];
                 colsList = dynamicOut[1];
-                if (optionsObj.type === 'Trellis plot' ||
-                    optionsObj.type === 'Bar chart' ||
-                    optionsObj.type === 'Line chart') {
-                    const index = colsList.indexOf('valueColumnName')
-                    if (index > -1) { colsList.splice(index, 1) }
-                }
                 pyString = pyString.replace("!(colsList)", colsList);
                 pyString = pyString.replace(/!\([^)]*\) */g, "");
 
@@ -173,10 +165,10 @@ grok.events.onContextMenu.subscribe((args) => {
             // parse getOptions() output, generate the code string and initialize the viewers
             let options = JSON.parse(args.args.context.getOptions());
             let viewerLeft = DG.Viewer.fromType(options.type,
-              args.args.context.table, options.look);
+                args.args.context.table, options.look);
             let pyCode = await strReplace(options, mapPy);
             let viewerRight = DG.Viewer.fromType('Scripting Viewer',
-              args.args.context.table, {script: mapPy.header + pyCode + mapPy.tail});
+                args.args.context.table, {script: mapPy.header + pyCode + mapPy.tail});
 
             // create a container for viewers
             let block =
@@ -191,8 +183,8 @@ grok.events.onContextMenu.subscribe((args) => {
             // original viewer and the scripting viewer output
             let dialog = ui.dialog('OUTPUT SCRIPT').add(block[0]);
             dialog.onClose.subscribe(() => {
-              viewerLeft.dataFrame = new DG.DataFrame();
-              viewerRight.dataFrame = new DG.DataFrame();
+                viewerLeft.dataFrame = new DG.DataFrame();
+                viewerRight.dataFrame = new DG.DataFrame();
             });
             dialog.showModal(true);
         });
