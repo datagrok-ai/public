@@ -8,7 +8,7 @@ Server is easy scalable using [Amazon ECS](https://aws.amazon.com/ecs/) or [Kube
 
 ## Services 
 
-![Compute VM](../uploads/features/compute-vm.png "Compute VM")
+![Compute VM](../../uploads/features/compute-vm.png "Compute VM")
 
 | Service                                                             | Version  | Port  |
 |---------------------------------------------------------------------|----------|-------|
@@ -31,9 +31,9 @@ Server is easy scalable using [Amazon ECS](https://aws.amazon.com/ecs/) or [Kube
 
 ## Installation 
 
-* [Compute VM regular deploy](../develop/admin/deploy-regular.md#setup-compute-virtual-machine)
-* [Compute VM Amazon EC2 deploy](../develop/admin/deploy-amazon-ec2.md#setup-compute-virtual-machine)
-* [Compute VM Amazon ECS deploy](../develop/admin/deploy-amazon-ecs.md#setup-compute-virtual-machine)
+* [Compute VM regular deploy](deploy-regular.md#setup-compute-virtual-machine)
+* [Compute VM Amazon EC2 deploy](deploy-amazon-ec2.md#setup-compute-virtual-machine)
+* [Compute VM Amazon ECS deploy](deploy-amazon-ecs.md#setup-compute-virtual-machine)
 
 
 ## Scalability
