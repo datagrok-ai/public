@@ -58,7 +58,7 @@ to execute it again. This can also be used in data transformations and data pipe
  
 
 See also:
-  * [Scripting](../compute/scripting.md)
+  * [Scripting](../develop/scripting.md)
   * [Variables view](variables-view.md)
   * [Grok scripting](grok-script.md)
-  * [Scripting plugin](../compute/scripting.md)
+  * [Scripting plugin](../develop/scripting.md)

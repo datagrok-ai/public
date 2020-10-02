@@ -3,7 +3,7 @@ It extends Datagrok viewers with two commands, "To Python script" and "To R scri
 
 ![ChaRPy Demo](./charpy.gif)
 
- The selected command forms a script in R or Python which in turn generates a plot identical or very close to the plot of selected veiwer. The [script](https://datagrok.ai/help/compute/scripting) responsible for the plot becomes available along with resulting plot itself, displayed via a [Scripting Viewer](https://datagrok.ai/help/visualize/viewers/scripting-viewer).
+ The selected command forms a script in R or Python which in turn generates a plot identical or very close to the plot of selected veiwer. The [script](https://datagrok.ai/help/develop/scripting) responsible for the plot becomes available along with resulting plot itself, displayed via a [Scripting Viewer](https://datagrok.ai/help/visualize/viewers/scripting-viewer).
 
 ChaRPy uses [ggplot2](https://cran.r-project.org/web/packages/ggplot2/index.html) for R, and [plotly](https://plotly.com/python/) for Python.
 
@@ -21,7 +21,7 @@ Here are the files of particular interest:
 
 See also:
 
-  * [Scripting](https://datagrok.ai/help/compute/scripting)
+  * [Scripting](https://datagrok.ai/help/develop/scripting)
   * [Scripting Viewer](https://datagrok.ai/help/visualize/viewers/scripting-viewer)
   * [Dialogs](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples/scripts/ui/dialogs)
   * [ggplot2 R package](https://cran.r-project.org/web/packages/ggplot2/index.html)

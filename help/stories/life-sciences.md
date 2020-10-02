@@ -97,7 +97,7 @@ In addition to commonly used data formats, such as csv, txt, xsls, xml, and json
 
 ## Reproducibility
 
-* [Jupyter notebooks](../compute/jupyter-notebook.md)
+* [Jupyter notebooks](../develop/jupyter-notebook.md)
 
 ## Integration
 

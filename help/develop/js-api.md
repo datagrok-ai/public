@@ -141,7 +141,7 @@ class NotebookView extends DG.ViewBase {
     
     // Override basic metods
     get type() { return this.TYPE };
-    get helpUrl() { return '/help/compute/jupyter-notebook.md'; }
+    get helpUrl() { return '/help/develop/jupyter-notebook.md'; }
     get name() { return 'Notebook' };
     get path() { return `${this.PATH}/${this.notebookId}` };
     
@@ -238,7 +238,7 @@ grok.shell.registerViewer('JsDemoViewer', 'JavaScript-based viewer', () => new J
 ## Registering Functions
 
 Pretty much anything in Grok is a [function](../overview/functions/function.md), it is a concept that
-connects together [scripts](../compute/scripting.md) written in different languages, predictive models, statistical
+connects together [scripts](scripting.md) written in different languages, predictive models, statistical
 functions, query transformations, data flows, and many other features.
 
 The following code registers a "jsConcat" function that becomes a first-class

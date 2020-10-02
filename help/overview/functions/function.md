@@ -13,7 +13,7 @@ of the different types of functions:
 * Deleting a column from the table
 * Sending an email
 * Applying [predictive model](../../learn/predictive-modeling.md) to a dataset
-* Calculating molecule properties via a [Python script](../../compute/scripting.md)
+* Calculating molecule properties via a [Python script](../../develop/scripting.md)
 * Showing a dialog
 
 All of the above-mentioned functions are quite different in terms of what and how they do - some of them
@@ -60,7 +60,7 @@ virtual private cloud, but it might be a bigger issue when using the public envi
 While we try to do as many computations on the client side (in the browser) as possible,
 certain operations, such as 
 [training a predictive model](../../learn/predictive-modeling.md),
-[running an R script](../../compute/scripting.md), or
+[running an R script](../../develop/scripting.md), or
 [computing chemical descriptors](../../domains/chem/cheminformatics.md#chemical-properties-and-descriptors)
 run on a [server](../../develop/admin/architecture.md#compute-virtual-machine). When such operation executes, the
 relevant part of the input gets sent to the server, where it gets processed, and the result is sent back
@@ -94,4 +94,4 @@ You can use these fields to filter functions with [smart search](../smart-search
 See also
 
 * [Console](../../overview/console.md)
-* [Scripting](../../compute/scripting.md)
+* [Scripting](../../develop/scripting.md)

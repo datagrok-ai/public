@@ -37,5 +37,5 @@ Features: creating new script, different languages, navigating samples, executin
 
 See also:
   * [Data wrangling](../../transform/data-wrangling.md)
-  * [Scripting](../../compute/scripting.md)
+  * [Scripting](../../develop/scripting.md)
   

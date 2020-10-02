@@ -71,8 +71,8 @@ Turn your data into actionable insights by using state-of-the art machine learni
  
 * [Train, assess, apply, share models](learn/predictive-modeling.md) 
 * Use in [pipelines](transform/job-editor.md) 
-* [Seamless integration with Python, R, or any other language](compute/scripting.md) 
-* [Jupyter notebooks](compute/jupyter-notebook.md) 
+* [Seamless integration with Python, R, or any other language](develop/scripting.md) 
+* [Jupyter notebooks](develop/jupyter-notebook.md) 
 * [Statistical Hypothesis Testing](learn/data-science.md)
 * [Self-learning platform](learn/self-learning-platform.md): the more you use it, the better it gets 
 

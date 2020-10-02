@@ -22,7 +22,7 @@ select * from products where name == '@productName'
 
 ## Syntax
 
-The syntax for defining query parameters is based on [Scripting](../compute/scripting.md), 
+The syntax for defining query parameters is based on [Scripting](../develop/scripting.md), 
 with some additions specific to queries.
 
 ### Header parameters
@@ -53,7 +53,7 @@ Comments style can be used '#' for Sparql.
 
 ### Options
 
-Options for supported data typed are described in [Scripting](../compute/scripting.md) section. 
+Options for supported data typed are described in [Scripting](../develop/scripting.md) section. 
 
 | Option      | Description                              |
 |-------------|------------------------------------------|
@@ -161,4 +161,4 @@ See also:
   * [Data Query](data-query.md)
   * [Search Patterns](../explore/data-search-patterns.md)
   * [Function](../function.md)
-  * [Scripting](../compute/scripting.md)
+  * [Scripting](../develop/scripting.md)

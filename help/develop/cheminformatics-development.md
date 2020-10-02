@@ -15,7 +15,7 @@ For custom client-side computations, consider using either [OpenChemLib.JS](#ope
 
 For custom server-side computations, a popular option is using 
 [RDKit in Python](#rdkit-in-python). Python scripts can be seamlessly embedded into Datagrok
-via [Scripting](../compute/scripting.md).    
+via [Scripting](scripting.md).    
 
 ## Grok JS API
 
@@ -53,7 +53,7 @@ Here is an [example of manipulating atoms in a molecule](https://public.datagrok
 
 [RDKit in Python](https://www.rdkit.org/docs/GettingStartedInPython.html) are Python wrappers for 
 RDKit, one of the best open-source toolkits for cheminformatics. While Python scripts get executed
-on a server, they can be seamlessly embedded into Datagrok via [Scripting](../compute/scripting.md).  
+on a server, they can be seamlessly embedded into Datagrok via [Scripting](scripting.md).  
 
 Here are some RDKit in Python-based [cheminformatics-related scripts](https://github.com/datagrok-ai/public/tree/master/packages/ChemScripts/scripts/python)
 in the public repository.

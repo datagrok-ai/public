@@ -167,7 +167,7 @@ with an interpretation of how different sub-structure fragments contribute to th
 * [Structural alerts](info-panels/structural-alerts.md)
 
 In addition to these pre-defined info panels, users can develop their own using any
-[scripting language](../../compute/scripting.md) supported by the Grok platform. For example, 
+[scripting language](../../develop/scripting.md) supported by the Grok platform. For example, 
 #{x.demo:pythonscripts:GasteigerPartialCharges}. 
  
 ## In-memory substructure search
@@ -231,7 +231,7 @@ The following cheminformatics-related [functions](../../overview/functions/funct
 * #{x.ChemSmilesToCanonical}
 * #{x.ChemMapIdentifiers}
 
-Lot of chemical analysis is implemented using [scripting](../../compute/scripting.md) functionality:
+Lot of chemical analysis is implemented using [scripting](../../develop/scripting.md) functionality:
 * #{x.ChemScripts:ButinaMoleculesClustering}
 * #{x.ChemScripts:FilterByCatalogs}
 * #{x.ChemScripts:GasteigerPartialCharges}
@@ -298,7 +298,7 @@ See also:
 * [Fingerprints](fingerprints.md)
 * [Similarity SPE](similarity-spe.md)
 * [Info Panels](../../discover/info-panels.md)
-* [GrokCompute](../../compute/grok-compute.md)
+* [GrokCompute](../../develop/admin/grok-compute.md)
 
 References:
 * [Machine learning in chemoinformatics and drug discovery](https://www.sciencedirect.com/science/article/pii/S1359644617304695)

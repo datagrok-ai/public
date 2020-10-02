@@ -50,7 +50,7 @@ Optionally: R, Julia and JavaScript.
 ## Environments
 
 Each script can be run in an isolated environment, with predefined packages configuration, same as for 
-[Script Environments](../compute/scripting.md#Environments). The environment can be specified in the notebook properties. 
+[Script Environments](scripting.md#Environments). The environment can be specified in the notebook properties. 
 
 # Importing Notebooks
 

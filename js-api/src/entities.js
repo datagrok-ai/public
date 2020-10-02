@@ -159,7 +159,7 @@ export class Model extends Entity {
 
 /** @extends Entity
  * Represents a Jupyter notebook
- * {@link https://datagrok.ai/help/compute/jupyter-notebook}
+ * {@link https://datagrok.ai/help/develop/jupyter-notebook}
  * */
 export class Notebook extends Entity {
     /** @constructs Notebook */

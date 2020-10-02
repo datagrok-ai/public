@@ -1,4 +1,4 @@
-This [package](https://datagrok.ai/help/develop/develop#packages) stores a collection of sample [scripts](https://datagrok.ai/help/compute/scripting) written using the internal language - [GrokScript](https://datagrok.ai/help/overview/grok-script)
+This [package](https://datagrok.ai/help/develop/develop#packages) stores a collection of sample [scripts](https://datagrok.ai/help/develop/scripting) written using the internal language - [GrokScript](https://datagrok.ai/help/overview/grok-script)
 
 [Grok script](https://datagrok.ai/help/overview/grok-script) language is used to control or automate everything within the [Datagrok](https://datagrok.ai/) platform. 
 Use it to transform data, automate workflows, run queries, evaluate numerical expressions, execute commands, record macros, perform statistical computations, execute other scripts, etc.
@@ -35,9 +35,9 @@ User will see this [panel](https://datagrok.ai/help/discover/info-panels), which
 [Panel](https://datagrok.ai/help/discover/info-panels) display conditions are defined in the [script](https://datagrok.ai/help/overview/grok-script) header.
 
 
-Detailed information about [scripting](https://datagrok.ai/help/compute/scripting), [Grok scripting](https://datagrok.ai/help/overview/grok-script) and everything else can be found on our [Wiki](https://datagrok.ai/help/):
+Detailed information about [scripting](https://datagrok.ai/help/develop/scripting), [Grok scripting](https://datagrok.ai/help/overview/grok-script) and everything else can be found on our [Wiki](https://datagrok.ai/help/):
 
-* [Scripting](https://datagrok.ai/help/compute/scripting)
+* [Scripting](https://datagrok.ai/help/develop/scripting)
 * [Grok scripting](https://datagrok.ai/help/overview/grok-script)
 * [Info Panels](https://datagrok.ai/help/discover/info-panels)
 * [Functions](https://datagrok.ai/help/overview/functions/function)

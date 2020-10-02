@@ -9,7 +9,7 @@ took ownership of
 [data access](../../home.md#access), 
 [data governance](../../home.md#access),
 [data exploration](../../home.md#explore),
-[scientific computing](../../compute/scripting.md), 
+[scientific computing](../scripting.md), 
 [machine learning and artificial intelligence](../../home.md#explore), and
 [collaboration](../../home.md#share). To make sure our enterprise customers can work with their 
 data in a secure and efficient manner, we have built features like 

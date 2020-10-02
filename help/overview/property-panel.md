@@ -15,7 +15,7 @@ of applicable [Functions](functions/function.md) will be provided.
 
 For [tables](table.md), the following panels are shown:
 * Applicable [Predictive Models](../learn/predictive-modeling.md)
-* Applicable [Scripts](../compute/scripting.md)
+* Applicable [Scripts](../develop/scripting.md)
 
 To edit properties of a viewer, click on a `⚙` icon in the right top corner.
 
@@ -36,6 +36,6 @@ the panel and preserve the content, click on **Clone and detach** button on the 
 See also:
   * [Function](functions/function.md)
   * [Predictive Modeling](../learn/predictive-modeling.md)
-  * [Scripting](../compute/scripting.md)
+  * [Scripting](../develop/scripting.md)
   * [Info Panels](../discover/info-panels.md)
   * [Navigation](navigation.md)
