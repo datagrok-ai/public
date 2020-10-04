@@ -1,8 +1,6 @@
-This [package](https://datagrok.ai/help/develop/develop#packages) stores a collection of sample [scripts](https://datagrok.ai/help/develop/scripting) written using the internal language - [GrokScript](https://datagrok.ai/help/overview/grok-script)
+GrokScripts is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform. This [package](https://datagrok.ai/help/develop/develop#packages) stores a collection of sample [scripts](https://datagrok.ai/help/develop/scripting) written using the internal language – [GrokScript](https://datagrok.ai/help/overview/grok-script).
 
-[Grok script](https://datagrok.ai/help/overview/grok-script) language is used to control or automate everything within the [Datagrok](https://datagrok.ai/) platform. 
-Use it to transform data, automate workflows, run queries, evaluate numerical expressions, execute commands, record macros, perform statistical computations, execute other scripts, etc.
-
+[Grok script](https://datagrok.ai/help/overview/grok-script) language is used to control or automate everything within the [Datagrok](https://datagrok.ai/) platform. Use it to transform data, automate workflows, run queries, evaluate numerical expressions, execute commands, record macros, perform statistical computations, execute other scripts, etc.
 
 # Info-panel
 
@@ -37,9 +35,9 @@ User will see this [panel](https://datagrok.ai/help/discover/info-panels), which
 
 Detailed information about [scripting](https://datagrok.ai/help/develop/scripting), [Grok scripting](https://datagrok.ai/help/overview/grok-script) and everything else can be found on our [Wiki](https://datagrok.ai/help/):
 
-* [Scripting](https://datagrok.ai/help/develop/scripting)
-* [Grok scripting](https://datagrok.ai/help/overview/grok-script)
-* [Info Panels](https://datagrok.ai/help/discover/info-panels)
-* [Functions](https://datagrok.ai/help/overview/functions/function)
+  * [Scripting](https://datagrok.ai/help/develop/scripting)
+  * [Grok scripting](https://datagrok.ai/help/overview/grok-script)
+  * [Info Panels](https://datagrok.ai/help/discover/info-panels)
+  * [Functions](https://datagrok.ai/help/overview/functions/function)
 
 Also join our [community](https://community.datagrok.ai/) where you can ask your questions, suggest improvements, or create discussions with other users.
