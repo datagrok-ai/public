@@ -8,6 +8,21 @@ module.exports = {
                 loader: 'json5-loader',
                 type: 'javascript/auto',
             },
+            {
+                test: /\.m?js$/,
+                exclude: /node_modules/,
+                use: {
+                    loader: 'babel-loader',
+                    options: {
+                        "presets": [
+                            ["@babel/preset-env", {
+                                "targets": { "browsers": ["last 2 chrome versions", "chrome 50"] },
+                                "useBuiltIns": "usage"
+                            }]
+                        ]
+                    }
+                }
+            }
         ],
     },
     mode: 'development',
