@@ -427,6 +427,9 @@ export class ViewLayout extends Entity {
     get viewState() { return grok_ViewLayout_Get_ViewState(this.d); }
     set viewState(state) { return grok_ViewLayout_Set_ViewState(this.d, state); }
 
+    get userData() { return grok_ViewLayout_Get_UserData(this.d); }
+    set userData(data) { return grok_ViewLayout_Set_UserData(this.d, data); }
+
     toJson() { return grok_ViewLayout_ToJson(this.d); }
 }
 
