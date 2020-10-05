@@ -98,8 +98,9 @@ async function processPackage(debug, rebuild, host, devKey, packageName) {
             }).then(body => body.json()).then(j => resolve(j)).catch(err => {
                 reject(err);
             });
-        }
-    )
+    }).catch(error => { 
+        console.error(error);
+    });
     await zip.finalize();
 
     try {
