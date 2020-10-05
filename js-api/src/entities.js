@@ -246,7 +246,7 @@ export class Group extends Entity {
     /** Returns list of groups that belong to group, with admin permissions
      * @type {List<Group>} */
     get adminMembers() {
-        return grok_Group_Get_Members(this.d, true);
+        return toJs(grok_Group_Get_Members(this.d, true));
     }
 
     /** Returns list of groups that group belongs to, with no admin permissions
@@ -258,7 +258,7 @@ export class Group extends Entity {
     /** Returns list of groups that group belongs to, with admin permissions
      * @type {List<Group>} */
     get adminMemberships() {
-        return grok_Group_Get_Memberships(this.d, true);
+        return toJs(grok_Group_Get_Memberships(this.d, true));
     }
 
     /** Personal user group
