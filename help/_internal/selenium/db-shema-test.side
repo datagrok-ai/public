@@ -143,7 +143,7 @@
       "id": "461e3b0c-0a60-495b-b9a1-4eff7ce7a23c",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='tree-PostgreSQL---chembl']",
+      "target": "xpath=//div[@name='tree-PostgreSQL---Chembl']",
       "targets": [
         ["css=.d4-tree-view-group:nth-child(20) .d4-tree-view-group:nth-child(1) > .d4-tree-view-node", "css:finder"],
         ["xpath=//div[@name='tree-PostgreSQL---chembl']", "xpath:attributes"],
@@ -192,12 +192,13 @@
       "id": "d1fc053c-db26-4c26-8b9d-4719c1641e8c",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='view-handle: Schema: chembl']",
+      "target": "xpath=//span[@name='span-Schema--Chembl']",
       "targets": [
-        ["css=.tab-handle-selected", "css:finder"],
-        ["xpath=//div[@name='view-handle: Schema: chembl']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div/div/div/div/div/div[2]", "xpath:position"]
+        ["css=.d4-ribbon-name > span:nth-child(1)", "css:finder"],
+        ["xpath=//span[@name='span-Schema--Chembl']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[3]/div/div/div/div/div/div/div[2]/span", "xpath:idRelative"],
+        ["xpath=//div[2]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'Schema: Chembl')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
