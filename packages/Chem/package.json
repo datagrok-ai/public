@@ -1,0 +1,9 @@
+{
+  "name": "Chem",
+  "version": "0.1",
+  "fullName": "Cheminformatics support",
+  "description": "Cheminformatics support: \n\n* RDKit-based rendering \n* Molecule sketching \n*",
+  "sources": [
+    "wasm/RDKit_minimal.js"
+  ]
+}

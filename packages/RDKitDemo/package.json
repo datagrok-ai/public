@@ -1,9 +1,0 @@
-{
-  "name": "RDKitDemo",
-  "version": "0.1",
-  "fullName": "RDKit Demo",
-  "description": "Demonstrates Datagrok's integration with the [RDKit](https://www.rdkit.org) library. Works completely on the client side by using the WebAssembly technology.",
-  "sources": [
-    "wasm/RDKit_minimal.js"
-  ]
-}
