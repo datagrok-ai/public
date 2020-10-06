@@ -6,6 +6,7 @@
 #output: string language {semType: lang} [Detected language]
 #output: string test [FRES test for English and LIX index for other languages]
 #output: double score [Readability score]
+#output: string school_level [U.S. school grade level]
 #output: string comment [Comment on the complexity of a text]
 #condition: file.isFile && 0 < file.size && file.size < 1e6 && file.name.endsWith("txt")
 #reference: https://en.wikipedia.org/wiki/Flesch%E2%80%93Kincaid_readability_tests#Flesch_reading_ease
@@ -90,18 +91,18 @@ def get_counts(text, language):
 def comment(score, test):
     """Returns a comment on the complexity of text based on FRES and LIX."""
     if (score > 90 and test == 'FRES') or (score < 25 and test == 'LIX'):
-        return "Very easy to read"
+        return ("Very easy to read", "5th grade")
     elif (score > 80 and test == 'FRES') or (score < 30 and test == 'LIX'):
-        return "Easy to read"
+        return ("Easy to read", "6th grade")
     elif (score > 70 and test == 'FRES') or (score < 35 and test == 'LIX'):
-        return "Fairly easy to read"
+        return ("Fairly easy to read", "7th grade")
     elif (score > 60 and test == 'FRES') or (score < 45 and test == 'LIX'):
-        return "Plain English"
+        return ("Plain English", "8th to 9th grade")
     elif (score > 50 and test == 'FRES') or (score < 55 and test == 'LIX'):
-        return "Fairly difficult to read"
+        return ("Fairly difficult to read", "10th to 12th grade")
     elif (score > 30 and test == 'FRES') or (score < 60 and test == 'LIX'):
-        return "Difficult to read"
-    return "Very difficult to read"
+        return ("Difficult to read", "College")
+    return ("Very difficult to read", "College graduate")
 
 
 # Read the file's contents
@@ -120,4 +121,4 @@ else:
     score = round(lix(*get_counts(text, language)[1:]))
 
 # Comment on complexity
-comment = comment(score, test)
+comment, school_level = comment(score, test)
