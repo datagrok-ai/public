@@ -19,6 +19,8 @@ async function groupsTest() {
     demoSubGroup.addAdminMember(adminUser.group);
     await grok.dapi.groups.saveRelations(demoSubGroup);
 
+//delete subgroup
+    await grok.dapi.groups.delete(demoSubGroup);
 }
 
 groupsTest();
