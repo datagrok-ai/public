@@ -4,6 +4,7 @@
 #tags: nlp, panel
 #input: string text {semType: text} [Given text]
 #output: double FRES [Flesch Reading Ease Score]
+#output: string school_level [U.S. school grade level]
 #output: string comment [Comment on the complexity of a text]
 #reference: https://en.wikipedia.org/wiki/Flesch%E2%80%93Kincaid_readability_tests#Flesch_reading_ease
 
@@ -54,21 +55,22 @@ def get_counts(text):
 def comment(score):
     """Returns a comment on the complexity of text based on FRES."""
     if score > 90:
-        return "Very easy to read"
+        return ("Very easy to read", "5th grade")
     elif score > 80:
-        return "Easy to read"
+        return ("Easy to read", "6th grade")
     elif score > 70:
-        return "Fairly easy to read"
+        return ("Fairly easy to read", "7th grade")
     elif score > 60:
-        return "Plain English"
+        return ("Plain English", "8th to 9th grade")
     elif score > 50:
-        return "Fairly difficult to read"
+        return ("Fairly difficult to read", "10th to 12th grade")
     elif score > 30:
-        return "Difficult to read"
-    return "Very difficult to read"
+        return ("Difficult to read", "College")
+    return ("Very difficult to read", "College graduate")
 
 
 # Compute the score
 FRES = round(fres(*get_counts(text)))
+
 # Comment on complexity
-comment = comment(FRES)
+comment, school_level = comment(FRES)
