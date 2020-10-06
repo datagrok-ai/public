@@ -11,31 +11,31 @@ adding [views](js-api.md#views) or [viewers](js-api.md#pre-defined-viewers),
 [developing custom viewers](js-api.md#custom-viewers),
 [registering functions](js-api.md#registering-functions),
 training and applying [predictive models](../learn/predictive-modeling.md), 
-and even [building custom apps](app.md).
+and even [building custom apps](#applications).
 
-There are two options to run custom JavaScript code. For ad-hoc scripts, use the built-in
+There are two options to run custom JavaScript code. For ad-hoc [scripts](scripting.md), use the built-in
 JavaScript editor (`Functions | Scripts | New JavaScript Script`). For reusable functions, viewers, 
 and applications, use the packaging mechanism, which is the focus of this article.
 
 Table of contents
 
-* [Packages](#packages)
-* [Getting Started](#getting-started)
-* [Package Structure](#package-structure)
-* [Development](#development)
-* [Publishing](#publishing)
-* [Applications](#applications)
-* [Documentation](#documentation)
+  * [Packages](#packages)
+  * [Getting Started](#getting-started)
+  * [Package Structure](#package-structure)
+  * [Development](#development)
+  * [Publishing](#publishing)
+  * [Applications](#applications)
+  * [Documentation](#documentation)
 
 ## Packages
 
 A package is a versionable unit of content distribution within Datagrok. Essentially, it is 
 a folder with files in it. A package might contain different things:
 
-* JavaScript functions, viewers, widgets, applications
-* Scripts written in R, Python, Octave, Grok, Julia, JavaScript, NodeJS, or Java
-* Queries and connections
-* Tables
+  * JavaScript [functions](../overview/functions/function.md), [viewers](../visualize/viewers.md), [widgets](../visualize/widgets.md), [applications](#applications)
+  * [Scripts](scripting.md) written in R, Python, Octave, Grok, Julia, JavaScript, NodeJS, or Java
+  * [Queries](../access/data-query.md) and [connections](../access/data-connection.md)
+  * [Tables](../access/connectors/files#supported-tabular-formats)
 
 See our [GitHub repository](https://github.com/datagrok-ai/public/tree/master/packages) for examples.
 
@@ -213,8 +213,8 @@ active for the current package until the developer deletes it or changes their d
 
 You can use the following flags to specify who can access your package:
 
-* In `--debug` mode, packages are accessible by the developer only (default).
-* In `--release` mode, packages are accessible by everyone who has the privilege.
+  * In `--debug` mode, packages are accessible by the developer only (default).
+  * In `--release` mode, packages are accessible by everyone who has the privilege.
 
 To publish a package, open the `package.json` file in your IDE. Typically, the `scripts` section would contain several scripts generated for your package based on the contents of `config.yaml`. For development purposes, use the scripts having the `debug` word in their name. For production, use the alternative scripts starting with `deploy` instead.
 
@@ -287,24 +287,25 @@ systematic, opportunistic and pragmatic. These findings are consistent with our 
 For Datagrok's documentation, we have established an approach that enables developers from either of the
 above-mentioned groups to be productive. 
 
-* [Sample browser](https://public.datagrok.ai/js) (`Functions | Scripts | New JavaScript Script`) is an interactive tool
-  for browsing, editing, and running JavaScript samples that come with the platform. Samples are grouped by
-  domain, such as data manipulation, visualization, or cheminformatics. They are short, clean examples
-  of the working code using [Grok API](js-api.md) that can be copy-and-pasted into the existing solution.
-  The samples are also cross-linked with the [help](https://datagrok.ai/help) system. 
-* [Grok API](js-api.md) provides complete control over the platform. 
-  [JS documentation](https://public.datagrok.ai/js) is available.
-* [Platform help](https://datagrok.ai/help/) explains the functionality from the user's point of view. Where
-  appropriate, it is hyper-linked to samples and demo projects. In the near future, we plan to turn it
-  into the community wiki, where users will be contributing to the content. The same web pages
-  are used as an interactive help within the platform (you see help on the currently selected object).
+  * [Sample browser](https://public.datagrok.ai/js) (`Functions | Scripts | New JavaScript Script`) is an interactive tool
+    for browsing, editing, and running JavaScript samples that come with the platform. Samples are grouped by
+    domain, such as data manipulation, visualization, or cheminformatics. They are short, clean examples
+    of the working code using [Grok API](js-api.md) that can be copy-and-pasted into the existing solution.
+    The samples are also cross-linked with the [help](https://datagrok.ai/help) system. 
+  * [Grok API](js-api.md) provides complete control over the platform. 
+    [JS documentation](https://public.datagrok.ai/js) is available.
+  * [Platform help](https://datagrok.ai/help/) explains the functionality from the user's point of view. Where
+    appropriate, it is hyper-linked to samples and demo projects. In the near future, we plan to turn it
+    into the community wiki, where users will be contributing to the content. The same web pages
+    are used as an interactive help within the platform (you see help on the currently selected object).
   
 Additionally, there are a few ways to connect with fellow developers:    
-* [Datagrok community](https://community.datagrok.ai/)
-* [Slack space](https://datagrok.slack.com) 
+  * [Datagrok community](https://community.datagrok.ai/)
+  * [Slack space](https://datagrok.slack.com) 
 
 See also: 
 
-* [Grok API](js-api.md)
-* [Packages from our GitHub repository](https://github.com/datagrok-ai/public/tree/master/packages)
-* [How Developers Use API Documentation: An Observation Study](http://sigdoc.acm.org/wp-content/uploads/2019/01/CDQ18002_Meng_Steinhardt_Schubert.pdf)
+  * [Grok API](js-api.md)
+  * [Scripting](scripting.md)
+  * [Packages from our GitHub repository](https://github.com/datagrok-ai/public/tree/master/packages)
+  * [How Developers Use API Documentation: An Observation Study](http://sigdoc.acm.org/wp-content/uploads/2019/01/CDQ18002_Meng_Steinhardt_Schubert.pdf)

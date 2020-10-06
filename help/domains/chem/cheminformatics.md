@@ -13,8 +13,7 @@ Datagrok provides first-class support for small molecules, as well as most popul
 cheminformatics. It understand several popular notations for representing chemical (sub)structures, 
 such as SMILES and SMARTS. Molecules can be rendered in either 2D or 3D with different visualization options.
 They can be sketched as well. Chemical properties, descriptors, and fingerprints can be extracted.
-Predictive models that accept molecules as an input can be easily trained, assessed, executed, deployed,  
-reused by other scientists, and used in pipelines or in [info panels](../../discover/info-panels.md).
+Predictive models that accept molecules as an input can be easily trained, assessed, executed, deployed, reused by other scientists, and used in pipelines or in [info panels](../../discover/info-panels.md).
  
 Several toxicity and drug-likeness prediction models are supported. Substructure and similarity search
 works out-of-the box for imported data, and can be efficiently utilized for querying databases using 
@@ -45,7 +44,8 @@ Many viewers, such as
 [scatter plot](chemically-aware-viewers.md#scatter-plot),
 [network diagram](chemically-aware-viewers.md#network-diagram),
 [tile viewer](chemically-aware-viewers.md#tile-viewer),
-[bar chart](chemically-aware-viewers.md#bar-chart), and
+[bar chart](chemically-aware-viewers.md#bar-chart), 
+[form viewer](chemically-aware-viewers.md#form-viewer), and
 [trellis plot](chemically-aware-viewers.md#trellis-plot)
  will recognize and render chemical structures.   
 
