@@ -35,7 +35,7 @@ a folder with files in it. A package might contain different things:
   * JavaScript [functions](../overview/functions/function.md), [viewers](../visualize/viewers.md), [widgets](../visualize/widgets.md), [applications](#applications)
   * [Scripts](scripting.md) written in R, Python, Octave, Grok, Julia, JavaScript, NodeJS, or Java
   * [Queries](../access/data-query.md) and [connections](../access/data-connection.md)
-  * [Tables](../access/connectors/files#supported-tabular-formats)
+  * [Tables](../access/connectors/files.md#supported-tabular-formats)
 
 See our [GitHub repository](https://github.com/datagrok-ai/public/tree/master/packages) for examples.
 
