@@ -364,6 +364,13 @@ export class EntitiesDataSource extends HttpDataSource {
     getProperties(entity) {
         return new Promise((resolve, reject) => grok_EntitiesDataSource_GetProperties(this.s, entity.d, (p) => resolve(p)));
     }
+
+    /** Deletes entity properties
+     * @param {List<Map>} props
+     * @returns {Promise} */
+    deleteProperties(props) {
+        return new Promise((resolve, reject) => grok_EntitiesDataSource_DeleteProperties(this.s, props, (_) => resolve()));
+    }
 }
 
 /**
