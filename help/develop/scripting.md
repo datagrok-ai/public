@@ -42,7 +42,7 @@ call Grok Functions. See [Grok Scripting](../overview/grok-script.md) for more d
 
 First of all, a script can be executed right from the script editor (see picture below).
 
-Other ways involve saving the script as a part of the project. In this case, it gets registered in the platform
+Other ways involve saving the script as a part of a [package](develop.md#packages). In this case, it gets registered in the platform
 as a [function](../overview/functions/function.md), and can be invoked in different ways:    
 * From the [console](../overview/console.md)
 * From the [data job](../access/data-job.md)
@@ -331,3 +331,4 @@ See also:
   * [Octave](https://octave.org/)
   * [Julia](https://julialang.org)
   * [JavaScript](https://www.javascript.com)
+  * [Packages](develop.md#packages)
