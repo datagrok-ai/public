@@ -38,7 +38,6 @@ class ChemPackage extends DG.Package {
 
     //name: rdkitCellRenderer
     //tags: cellRenderer, cellRenderer-RDMolecule
-    //meta-cell-renderer-sem-type: RDMolecule
     //output: grid_cell_renderer result
     rdkitCellRenderer() { return new RDKitCellRenderer(); }
 
