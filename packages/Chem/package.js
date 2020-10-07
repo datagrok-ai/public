@@ -1,3 +1,4 @@
+
 class ChemPackage extends DG.Package {
 
     /** Guaranteed to be executed exactly once before the execution of any function below */
@@ -36,8 +37,8 @@ class ChemPackage extends DG.Package {
     }
 
     //name: rdkitCellRenderer
-    //tags: cellRenderer
-    //meta-cell-renderer-sem-type: Molecule
+    //tags: cellRenderer, cellRenderer-RDMolecule
+    //meta-cell-renderer-sem-type: RDMolecule
     //output: grid_cell_renderer result
     rdkitCellRenderer() { return new RDKitCellRenderer(); }
 
@@ -179,25 +180,5 @@ class ChemPackage extends DG.Package {
     static removeChildren(node) {
         while (node.firstChild)
             node.removeChild(node.firstChild);
-    }
-}
-
-
-class RDKitCellRenderer extends GridCellRenderer {
-    get name() { return 'RDKit cell renderer'; }
-    get cellType() { return 'Molecule'; }
-    render(g, x, y, w, h, gridCell) {
-
-        g.fillStyle = 'black';
-        g.fillText('RDKit', x, y);
-        return;
-
-        let value = gridCell.cell.value;
-        if (value == null || value === '')
-            return;
-        let mol = Module.get_mol(value);
-        mol.draw_to_canvas(g.canvas, x, y, w, h);
-
-        mol.delete();
     }
 }
