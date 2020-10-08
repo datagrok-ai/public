@@ -9,12 +9,14 @@ interface Rectangle {
     data: Branch;
 }
 
+export type ClickHandler = (rowIds: string[]) => void;
+
 export class SunburstRenderer {
 
     private readonly format = d3.format("~r");
 
     constructor(private readonly colors: string[],
-                private readonly clickHandler: (rowIds: number[]) => void) {
+                private readonly clickHandler: ClickHandler) {
     }
 
     private static shade(d: TreeData) {
@@ -132,7 +134,7 @@ export class SunburstRenderer {
         const selectedSum = d.data.statsSelected?.sum || 0;
         const overallCount = d.data.statsOverall?.count || 0;
         const overallSum = d.data.statsOverall?.sum || 0;
-        const itemPath = d.ancestors().map(d => d.data.category).reverse().filter((v, i) => !!i).join("/");
+        const itemPath = this.getCategories(d).join("/");
         const selectedCountStr = d.data.statsSelected?.count !== undefined
             ?  this.format(selectedCount) + ' / '
             : '';
@@ -155,9 +157,12 @@ export class SunburstRenderer {
         return tooltipText;
     }
 
+    private getCategories = (d: TreeData): string[] => {
+        return d.ancestors().map(d => d.data.category).reverse().filter((v, i) => !!i);
+    }
+
     private onClick = (d: TreeData) => {
-        // const rowIds = d.descendants().flatMap(x => x.data.leafRowIds);
-        // this.clickHandler(rowIds);
+        this.clickHandler(this.getCategories(d));
     }
 
     private defaultSegmentFill(root: TreeData) {

@@ -73,9 +73,6 @@ export class TreeDataBuilder {
                 valueColumn ? [TreeDataBuilder.COLUMN_NAME_AGG_COUNT, TreeDataBuilder.COLUMN_NAME_AGG_SUM] : [TreeDataBuilder.COLUMN_NAME_AGG_COUNT],
                 valueColumn ? [TreeDataBuilder.COLUMN_NAME_AGG_COUNT, TreeDataBuilder.COLUMN_NAME_AGG_SUM] : [TreeDataBuilder.COLUMN_NAME_AGG_COUNT],
                 JOIN_TYPE.LEFT, true);
-            // grok.shell.addTableView(aggOverall, DOCK_TYPE.FILL);
-            // grok.shell.addTableView(aggSelected, DOCK_TYPE.FILL);
-            // console.error(aggOverall.columns.toList().map(c => c.name));
         }
 
         const aggSelectedCountColumnName = TreeDataBuilder.AGG_SELECTED_TABLE_NAME + '.' + TreeDataBuilder.COLUMN_NAME_AGG_COUNT;
