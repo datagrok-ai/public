@@ -1,0 +1,21 @@
+{
+	"name": "noisefilters",
+	"fullName": "NoiseFilters",
+	"version": "0.0.1",
+	"description": "A pack of three classic noise filtering methods (and something else)",
+	"dependencies": {
+		"datagrok-api": "latest"
+	},
+	"scripts": {
+		"debug-noisefilters": "grok publish --rebuild",
+		"deploy-noisefilters": "grok publish --rebuild --release",
+		"build": "webpack",
+		"debug-noisefilters-dev": "grok publish dev --rebuild",
+		"deploy-noisefilters-dev": "grok publish dev --rebuild --release",
+		"debug-noisefilters-local": "grok publish local --rebuild",
+		"deploy-noisefilters-local": "grok publish local --rebuild --release"
+	},
+  	"sources": [
+    	"src/algs.js"
+  	]
+}
