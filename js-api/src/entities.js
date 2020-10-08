@@ -192,9 +192,25 @@ export class TableInfo extends Entity {
     constructor(d) { super(d); }
 }
 
+/** @extends Entity
+ * Allows for files handling in JS-based info panels
+ * {@link https://datagrok.ai/help/discover/info-panels}
+ * */
 export class FileInfo extends Entity {
+    /** @constructs FileInfo */
     constructor(d) { super(d); }
+    /** Returns path, i.e. `geo/dmv_offices.csv`
+     * @type {string} */
     get path() { return grok_FileInfo_Get_Path(this.d); }
+    /** Returns full path, i.e. `Demo:TestJobs:Files:DemoFiles/geo/dmv_offices.csv`
+     * @type {string} */
+    get fullPath() { return grok_FileInfo_Get_FullPath(this.d); }
+    /** Returns file extension, i.e. `csv`
+     * @type {string} */
+    get extension() { return grok_FileInfo_Get_Extension(this.d); }
+    /** Returns file name, i.e. `dmv_offices.csv`
+     * @type {string} */
+    get fileName() { return grok_FileInfo_Get_FileName(this.d); }
 }
 
 /** @extends Entity

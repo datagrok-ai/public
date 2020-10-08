@@ -170,6 +170,27 @@ export class TableInfo extends Entity {
 }
 
 /** @extends Entity
+ * Allows for files handling in JS-based info panels
+ * {@link https://datagrok.ai/help/discover/info-panels}
+ * */
+export class FileInfo extends Entity {
+    /** @constructs FileInfo */
+    constructor(d: any)
+    /** Returns path, i.e. `geo/dmv_offices.csv`
+     * @type {string} */
+    get path() : string
+    /** Returns full path, i.e. `Demo:TestJobs:Files:DemoFiles/geo/dmv_offices.csv`
+     * @type {string} */
+    get fullPath() : string
+    /** Returns file extension, i.e. `csv`
+     * @type {string} */
+    get extension() : string
+    /** Returns file name, i.e. `dmv_offices.csv`
+     * @type {string} */
+    get fileName() : string
+}
+
+/** @extends Entity
  * Represents a User Group
  * */
 export class Group extends Entity {
