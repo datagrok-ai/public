@@ -192,6 +192,11 @@ export class TableInfo extends Entity {
     constructor(d) { super(d); }
 }
 
+export class FileInfo extends Entity {
+    constructor(d) { super(d); }
+    get path() { return grok_FileInfo_Get_Path(this.d); }
+}
+
 /** @extends Entity
  * Represents a User Group
  * */
