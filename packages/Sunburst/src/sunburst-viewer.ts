@@ -1,14 +1,9 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {SunburstRenderer} from './sunburst-renderer';
+import { SunburstRenderer } from './sunburst-renderer';
 import { Branch, TreeData, TreeDataBuilder } from './tree-data-builder';
 import { HierarchyNode } from 'd3-hierarchy';
 import { BitSet } from 'datagrok-api/dg';
-
-interface BitSetEx extends BitSet {
-    set(i: number, x: boolean, notify?: boolean): BitSet;
-    fireChanged(): void;
-}
 
 export class SunburstViewer extends DG.JsViewer {
 
@@ -53,6 +48,7 @@ export class SunburstViewer extends DG.JsViewer {
 
         this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
         this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()));
+        this.subs.push(DG.debounce(this.onSizeChanged, 50).subscribe((_) => this.render(false)));
 
         this.loadSelectedColumnNames();
         this.render();
@@ -69,10 +65,6 @@ export class SunburstViewer extends DG.JsViewer {
             this.render();
         }
     }
-
-    // onSizeChanged(width: number, height: number): void {
-    //     this.render(false);
-    // }
 
     private render(dataChanged = true): void {
         if (dataChanged) {
@@ -99,16 +91,45 @@ export class SunburstViewer extends DG.JsViewer {
         const valueColumn = this.valueColumnName ? this.dataFrame.getCol(this.valueColumnName) : undefined;
 
         const alt = new TreeDataBuilder();
-        return alt.buildTreeData(categoryColumns, valueColumn, rowCount, selection);
+        return alt.buildTreeData(categoryColumns, valueColumn, this.dataFrame, selection);
     }
 
-    private clickHandler = (selectedRowIds: number[]) => {
-        const selection = this.dataFrame.selection as BitSetEx;
-        selection.setAll(false);
-        for (const rowId of selectedRowIds) {
-            selection.set(rowId, true, false);
+    private isDataFrameFiltered() {
+        console.error(this.dataFrame.rowCount ,this.dataFrame.filter.trueCount);
+        return this.dataFrame.rowCount !== this.dataFrame.filter.trueCount;
+    }
+
+    private clickHandler = (categories: string[]) => {
+        const columnNames = this.getSelectedColumnNames();
+        let columnName = columnNames.shift()!;
+        let category = categories.shift()!;
+
+        // Select all the rows that match the first category
+        const selection = BitSet.create(this.dataFrame.rowCount);
+        for (let rowId of this.dataFrame.filter.getSelectedIndexes()) {
+            if (this.dataFrame.get(columnName, rowId) === category) {
+                selection.set(rowId, true, false);
+            }
         }
         selection.fireChanged();
+
+        // De-select all not matching to the sub-categories
+        for (const category of categories) {
+            columnName = columnNames.shift()!;
+            for (let rowId of selection.getSelectedIndexes()) {
+                if (this.dataFrame.get(columnName, rowId) !== category) {
+                    selection.set(rowId, false, false);
+                }
+            }
+            selection.fireChanged();
+        }
+
+        // Select the dataframe rows
+        this.dataFrame.selection.setAll(false, false);
+        for (let rowId of selection.getSelectedIndexes()) {
+            this.dataFrame.selection.set(rowId, true, false);
+        }
+        this.dataFrame.selection.fireChanged();
     }
 
     private getColors(): string[] {
