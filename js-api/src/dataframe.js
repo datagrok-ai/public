@@ -1,7 +1,7 @@
 import * as rxjs from 'rxjs';
 import {AGG, TYPE, COLUMN_TYPE} from "./const";
 import {__obs, observeStream} from "./events";
-import {toDart} from "./wrappers";
+import {toDart, toJs} from "./wrappers";
 
 /**
  * DataFrame is a high-performance, easy to use tabular structure with
@@ -470,6 +470,12 @@ export class ColumnList {
      * @param {ColumnType} type
      * @returns {Column} */
     addNew(name, type) { return new Column(grok_ColumnList_AddNew(this.d, name, type)); }
+
+    /** Adds a virtual column.
+     * @param {string} name
+     * @param {Function} getValue - value constructor function that accepts int index and returns value
+     * @returns {Column} */
+    addNewVirtual(name, getValue) { return toJs(grok_ColumnList_AddNewVirtual(this.d, name, getValue)); }
 
     /** Removes column by name (case-insensitive).
      * @param {string} columnName
