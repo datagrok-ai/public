@@ -26,33 +26,49 @@ function assignOnlyIntersection(target, source) {
 
 // Recursive substitution function #2
 // Takes in a generalized R/Python viewer code and slices it according to user selected options
-// Input: colsList (type: list), an empty list that will be filled only with column names
+// Input: groupByList (type: list), an empty list that will be filled only with column names
+//        colsFilter
 //        stRing (type: string), a generalized R/Python viewer code obtained from map.json
 //        optionsObj (type: Object), getOptions() output
 //        map (type: Object), a predefined mapping of all user selected parameters to R/Python alternatives
 // Output: stRing (type: string), complete R/Python plot script
-//         colsList (type: list), contains column names
-function dynamicReplace(colsList, stRing, optionsObj, map) {
+//         groupByList (type: list), contains column names
+//         colsFilter
+function dynamicReplace(groupByList, colsFilter, stRing, optionsObj, map) {
     Object.keys(optionsObj).forEach(key => {
         (optionsObj[key] == null) && delete optionsObj[key];
-        if (key.includes('ColumnName')  && key !== 'valueColumnName') {
-            colsList.push(optionsObj[key]);
+        if (key.includes('ColumnName')) {
+            if (key !== 'valueColumnName') {
+                groupByList.push(optionsObj[key]);
+            }
+            colsFilter.push(optionsObj[key]);
         }
         if (typeof optionsObj[key] === 'object' &&
-            Object.keys(optionsObj[key]).every(elem => elem != '0')) {
-            stRing = dynamicReplace(colsList, stRing, optionsObj[key], map)[0];
+            Object.keys(optionsObj[key]).every(elem => elem !== '0')) {
+            stRing = dynamicReplace(groupByList, colsFilter, stRing, optionsObj[key], map)[0];
         } else {
             stRing = stRing.split("!(" + key + ")").join(map[key]);
             stRing = stRing.split("!(" + key + ")").join(optionsObj[key]);
         }
     })
-    return [stRing, colsList];
+    return [stRing, groupByList, colsFilter];
+}
+
+function tablePreProcess(colsFilter, table){
+    let l = [];
+    for (let j = 0; j < colsFilter.length; j++) {
+        l.push(table.columns.byName(colsFilter[j]));
+    }
+    let t = DG.DataFrame.fromColumns(l);
+    return t;
 }
 
 // Creates menu buttons that executes viewer to code conversion
 grok.events.onContextMenu.subscribe((args) => {
     if (args.args.context instanceof DG.Viewer) {
         let menu = args.args.menu.group('To Script');
+
+
         menu.item('to R',  async () => {
 
             // Top-level string substitution function that implements both recursive functions
@@ -83,23 +99,28 @@ grok.events.onContextMenu.subscribe((args) => {
 
                 // adjust the generalized viewer code by substituting in the values from
                 // mapR.json and getOptions() output
-                let colsList = [];
-                let dynamicOut = dynamicReplace(colsList, stRing, optionsObj, paramsMap);
+                let groupByList = [];
+                let colsFilter = [];
+                let dynamicOut = dynamicReplace(groupByList, colsFilter, stRing, optionsObj, paramsMap);
                 stRing = dynamicOut[0];
-                colsList = dynamicOut[1];
-                stRing = stRing.replace("!(colsList)", colsList);
+                groupByList = dynamicOut[1];
+                colsFilter = dynamicOut[2];
+                stRing = stRing.replace("!(groupByList)", groupByList);
                 stRing = stRing.replace(/!\([^)]*\) */g, "");
 
                 // add a print statement
                 stRing = stRing + "\nprint(plt)"
-                return stRing;
+                return [stRing, colsFilter];
             }
 
             // parse getOptions() output, generate the code string and initialize the viewers
             let options = JSON.parse(args.args.context.getOptions());
             let viewerLeft = DG.Viewer.fromType(options.type,
                 args.args.context.table, options.look);
-            let rCode = await strReplace(options, mapR);
+            let strReplaceOut = await strReplace(options, mapR);
+            let rCode = strReplaceOut[0];
+            let colsFilter = strReplaceOut[1];
+            grok.shell.info(colsFilter);
             let viewerRight = DG.Viewer.fromType('Scripting Viewer',
                 args.args.context.table, {script: mapR.header + rCode});
 
@@ -151,24 +172,28 @@ grok.events.onContextMenu.subscribe((args) => {
 
                 // adjust the generalized viewer code by substituting in the values from
                 // mapR.json and getOptions() output
-                let colsList = [];
-                let dynamicOut = dynamicReplace(colsList,pyString, optionsObj, paramsMap);
+                let groupByList = [];
+                let colsFilter =[];
+                let dynamicOut = dynamicReplace(groupByList, colsFilter, pyString, optionsObj, paramsMap);
                 pyString = dynamicOut[0];
-                colsList = dynamicOut[1];
-                pyString = pyString.replace("!(colsList)", colsList);
+                groupByList = dynamicOut[1];
+                colsFilter = dynamicOut[2];
+                pyString = pyString.replace("!(groupByList)", groupByList);
                 pyString = pyString.replace(/!\([^)]*\) */g, "");
 
                 // add a print statement
-                return pyString;
+                return [pyString,colsFilter];
             }
 
             // parse getOptions() output, generate the code string and initialize the viewers
             let options = JSON.parse(args.args.context.getOptions());
             let viewerLeft = DG.Viewer.fromType(options.type,
                 args.args.context.table, options.look);
-            let pyCode = await strReplace(options, mapPy);
+            let strReplaceOut = await strReplace(options, mapPy);
+            let pyCode = strReplaceOut[0];
+            let colsFilter = strReplaceOut[1];
             let viewerRight = DG.Viewer.fromType('Scripting Viewer',
-                args.args.context.table, {script: mapPy.header + pyCode + mapPy.tail});
+                tablePreProcess(colsFilter, args.args.context.table), {script: mapPy.header + pyCode + mapPy.tail});
 
             // create a container for viewers
             let block =
