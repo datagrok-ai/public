@@ -27,7 +27,7 @@
 | [Test](https://github.com/datagrok-ai/public/tree/master/packages/Test) | |
 | [UsageAnalysis](https://github.com/datagrok-ai/public/tree/master/packages/UsageAnalysis) | |
 | [Viewers](https://github.com/datagrok-ai/public/tree/master/packages/Viewers) | |
-| [Data Preprocessing Tools](https://github.com/datagrok-ai/public/tree/master/packages/Data%20Pre-Processing%20Tools%20(Ongoing)) | |
+| [Data Preprocessing Tools](https://github.com/datagrok-ai/public/tree/master/packages/Preprocess) | |
 
 
 See also: 
