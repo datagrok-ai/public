@@ -68,21 +68,21 @@ Turn your data into actionable insights by using state-of-the art machine learni
   * [Statistical Hypothesis Testing](learn/data-science.md)
   * [Self-learning platform](learn/self-learning-platform.md): the more you use it, the better it gets
 
-## Share 
+## Share
 
   * Easily share anything with anyone, and collaborate together
   * Innovate through the wisdom of crowds
   * Cross-pollinate knowledge via the knowledge base, [discussions](collaborate/chat.md) and [forums](collaborate/forum.md) 
   * Push ideas to users via [data augmentation](discover/data-augmentation.md)
 
-## Apply 
+## Apply
 
   * Build [custom applications](develop/applications.md) on top of the platform
   * [Cheminformatics](domains/chem/cheminformatics.md)
   * Text analytics
   * Location Analytics
 
-## Deploy and Integrate 
+## Deploy and Integrate
 
   * Different [hosting options](develop/admin/hosting-options.md)
   * [Roles, groups and privileges](govern/security.md)
