@@ -3,7 +3,10 @@ class Car {
         this.make = make;
         this.model = model;
         this.price = price;
+        console.log('car constructed');
     }
+
+    toString() { return `${this.make} ${this.model}: ${this.price}`; }
 }
 
 let table = DG.DataFrame.fromCsv(
@@ -17,4 +20,4 @@ Tesla, Model S,  ,          1.6,    120000`);
 
 table.columns.addNewVirtual('car', (i) => new Car(table.row(i).make, table.row(i).model, table.row(i).price));
 
-console.log(table.toCsv());
+grok.shell.add(table);
