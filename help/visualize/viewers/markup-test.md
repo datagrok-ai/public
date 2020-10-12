@@ -10,7 +10,7 @@ the viewer will auto-detect content type. Use the "mode" property to explicitly 
 
 1. Open "demog" dataset
 
-1. Add [Markup viewer](../visualize/viewers/markup.md) (from "Viewers" section on [Toolbox](../features/toolbox.md), "Add" menu or list on Toolbar)
+1. Add [Markup viewer](../visualize/viewers/markup.md) (from "Viewers" section on [Toolbox](../../overview/navigation.md#toolbox), "Add" menu or list on Toolbar)
    * [Markup viewer](../visualize/viewers/markup.md) is added on layout
    * Help switched to [Markup viewer](../visualize/viewers/markup.md) page
    * Sample text present on [markup](../visualize/viewers/markup.md)

@@ -3,14 +3,14 @@
 
 # Tests: Console
 
-[Console](../overview/console.md) is used to execute commands and record macros.
+[Console](../overview/navigation.md#console) is used to execute commands and record macros.
 
 
 ## Testing scenarios
 
 1. Open dataset "demog".
 
-1. Open [console](../overview/console.md) by clicking ```"~"``` (tilda) button on keyboard. 
+1. Open [console](../overview/navigation.md#console) by clicking ```"~"``` (tilda) button on keyboard. 
 
 1. Use menu "Select" for select rows ([Random](../explore/select-random-rows.md), [Duplicates](../explore/select-duplicates.md), 
    [Missing Values](../transform/missing-values-imputation.md))
@@ -31,7 +31,7 @@
    * The command matches the script name and has selected parameters.
 
 1. Start writing the name of the [script](../develop/scripting.md) "Linear regression" in the input field of the 
-   command [console](../overview/console.md). After entering the "Line" press the ```"Tab"``` key from the keyboard.
+   command [console](../overview/navigation.md#console). After entering the "Line" press the ```"Tab"``` key from the keyboard.
    * After pressing the ```"Tab"``` key, the command was written automatically.
 
 1. Enter the parameters ("demog", "HEIGHT", "WEIGHT", false) for the command "Linearregression" and execute it.
@@ -40,7 +40,7 @@
 
 1. To navigate through the commands executed, use the ```"Up"``` and ```"Down"``` keys on the keyboard.
 
-1. Highlight and drag the command from the console to the [console](../overview/console.md) input field.
+1. Highlight and drag the command from the console to the [console](../overview/navigation.md#console) input field.
    * Selected command is dragged into the console field.
 
 1. Use symbol "?" in front of the command for get help on it. (?Linearregression)
@@ -53,5 +53,5 @@
    * Console cleared
    
 See also:
- * [Console](../overview/console.md)
+ * [Console](../overview/navigation.md#console)
  * [Grok Scripting](../scripting.md)

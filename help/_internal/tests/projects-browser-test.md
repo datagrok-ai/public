@@ -20,7 +20,7 @@ Project is a collection of entities along with the applied visualizations. Proje
 1. Choose "Demog" project for [Properties Panel](../overview/property-panel.md)
    * Tabs "Details", "Connections", "Queries", "Activity", "Shared with", "Published in" and "Chats" are present on [Properties Panel](../overview/property-panel.md)
 
-1. Click on "Created by me" filter on [Toolbox](../features/toolbox.md) 
+1. Click on "Created by me" filter on [Toolbox](../overview/navigation.md#toolbox) 
    * Only projects created by current user are displayed in browser
    * Search field filled with pre-defined query *author = @current*
    
