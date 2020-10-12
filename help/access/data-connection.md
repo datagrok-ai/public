@@ -26,7 +26,6 @@ connectors, and the list is quickly growing. Most of our data connectors are ope
 | [Files](connectors/files.md)             | Files |
 | [Firebird](connectors/firebird.md)       | JDBC  |
 | [Git](connectors/git.md)                 | Files |
-| [GitHub](connectors/github.md)           | Files |
 | [GoogleCloud](connectors/googlecloud.md) | Files |
 | [HBase](connectors/hbase.md)             | JDBC  |
 | [Hive](connectors/hive.md)               | JDBC  |

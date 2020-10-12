@@ -12,4 +12,4 @@ function parameters.
 See also: 
 
 * [Functions](../overview/functions/function.md)
-* [Console](../overview/console.md)
+* [Console](../overview/navigation.md#console)
