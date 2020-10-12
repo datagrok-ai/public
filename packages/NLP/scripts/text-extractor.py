@@ -10,7 +10,7 @@ import cld3
 import pycountry
 import textract
 
-params = {'filename': file}
+params = {'filename': file, 'extension': file[file.rfind('.', 0, -10) : -10]}
 
 if file.endswith(('gif', 'jpg', 'jpeg', 'png', 'tiff', 'tif')):
     text = textract.process(**params).decode().strip()
@@ -40,6 +40,6 @@ if file.endswith(('gif', 'jpg', 'jpeg', 'png', 'tiff', 'tif')):
 # Extract text
 text = textract.process(**params).decode().strip()
 
-text = "\n".join(line for line in text.splitlines() if line and not line.isspace())
+text = "".join(line for line in text.splitlines() if line and not line.isspace())
 if not text or text.isspace():
     text = "—"
