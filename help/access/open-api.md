@@ -10,7 +10,7 @@ can read the document and use the service.
 Grok platform integrates with OpenAPI really well. Once a swagger file is imported
 (you can simply drag-and-drop yaml file into the app), its content gets translated
 to Grok connections, queries, and [functions](../overview/functions/function.md). All of them can be combined and used
-in data jobs, calculations, [info panels](../discover/info-panels.md), executed from [console](../overview/console.md), etc.   
+in data jobs, calculations, [info panels](../discover/info-panels.md), executed from [console](../overview/navigation.md#console), etc.   
 
 Let's take a look at the example of AirNow, a site that tells you how clean or polluted
 your outdoor air is. Once its swagger file is imported (which takes a second), 

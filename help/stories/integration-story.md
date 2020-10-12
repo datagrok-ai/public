@@ -50,7 +50,7 @@ Datagrok integrates with [OpenAPI](../access/open-api.md) really well, automatic
 OpenAPI's [paths](https://swagger.io/docs/specification/basic-structure/) to Grok's [functions](../overview/functions/function.md).
 This has many benefits:
 * Ability to easily call that web method from:
-  * [Console](../overview/console.md)
+  * [Console](../overview/navigation.md#console)
   * Event handler
   * [Info panel](../discover/info-panels.md)
 * Audit
@@ -74,7 +74,7 @@ A number of command-line utilities for server management. (Work in progress)
 
 ## Client-Side Settings
 
-[Client-side settings](../overview/settings.md) are specific to the user, and are controlled by the user (unless 
+[Client-side settings](../overview/navigation.md#settings) are specific to the user, and are controlled by the user (unless 
 the organization's IT policy overrides it).
 
 ## Server-Side Settings

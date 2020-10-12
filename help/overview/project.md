@@ -36,6 +36,23 @@ In the latter case, the function will be re-executed whenever the project is ope
 
 ![](project-upload-data-sync.png)
 
+## Project Gallery
+
+Browse projects that are available to you. 
+Use [Smart search](smart-search.md) for powerful
+filtering capabilities.
+
+Click on the context menu to the left of the search box to control sort 
+order, as well as access your recent searches.
+
+Controls:
+
+| []()           |              |
+|----------------|--------------|
+| Click          | Show in property panel |
+| Right click    | Context menu |
+| Double click   | Open         |
+
 ## Filtering
 
 The following fields could be used to filter projects with [smart search](smart-search.md):
@@ -54,7 +71,6 @@ The following fields could be used to filter projects with [smart search](smart-
 See also:
 
   * [Create Project](create-project.md)
-  * [Project Gallery](project-gallery.md)
   * [Data Pipeline](../access/data-pipeline.md)
   * [Data Connection](../access/data-connection.md)
   * [Data Query](../access/data-query.md)

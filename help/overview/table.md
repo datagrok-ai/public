@@ -16,7 +16,7 @@ Each table can be annotated with attributes in the form of key-value pairs. Data
 certain tables with metadata (such as the source of the table, or time of import, etc). To edit metadata manually,
 use 'Properties' context menu option.
 
-It is possible to use metadata as a search criteria in the [Projects](../overview/welcome-view.md#Projects)
+It is possible to use metadata as a search criteria in the [Projects](../overview/project.md)
 
 ## Filtering
 

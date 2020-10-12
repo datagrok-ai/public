@@ -31,11 +31,11 @@ queries and data jobs, or can be executed separately. You can also share [Transf
    * "RenameColumn" action step is highlighted in green
    * *"city"* column name was changed to *"town"* in table preview
    
-1. Switch to list of actions categories on [Toolbox](../../overview/toolbox.md)
+1. Switch to list of actions categories on [Toolbox](../../overview/navigation.md#toolbox)
 
 1. Choose "Enrich" actions category
 
-1. Switch back to list of actions on [Toolbox](../../overview/toolbox.md)
+1. Switch back to list of actions on [Toolbox](../../overview/navigation.md#toolbox)
    * Only "Enrich" category actions are shown
    
 1. Choose "AddNewColumn" action for next step in transformation
@@ -79,5 +79,5 @@ queries and data jobs, or can be executed separately. You can also share [Transf
  
 See also:
   * [Recipe Editor](../../transform/features/recipe-editor.md)
-  * [Console](../../overview/console.md)
+  * [Console](../../overview/navigation.md#console)
   * [Console Test](../../overview/console-test.md)
