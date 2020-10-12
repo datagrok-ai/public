@@ -131,7 +131,7 @@ new chemical functions are now available for use in data transformations,
 new molecule-related information panels will show up when user clicks on a 
 molecule in the grid, etc.
 
-## Application development
+## Application Development
 
 The platform provides all necessary building blocks for developing modern data-driven
 solutions, and a way for a non-developer users to put it all together. However, in terms
