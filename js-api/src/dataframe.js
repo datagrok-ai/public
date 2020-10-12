@@ -587,10 +587,17 @@ export class BitSet {
     /** Creates a {BitSet} from the specified Dart object. */
     constructor(d) { this.d = d; }
 
+    /** Creates a {BitSet} from the string representing the bitset.
+     * @param {string} zerosOnes - A string containing '1' and '0'.
+     * @returns {BitSet} */
+    static fromString(zerosOnes) { return new BitSet(grok_BitSet_FromString(zerosOnes)); }
+
     /** Creates a {BitSet} of the specified length with all bits set to false.
      * @param {number} length - Number of bits.
      * @returns {BitSet} */
     static create(length) { return new BitSet(grok_BitSet(length)); }
+
+    toBinaryString() { return grok_BitSet_ToBinaryString(this.d); }
 
     /** Number of bits in a bitset
      * @type {number} */

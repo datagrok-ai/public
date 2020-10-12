@@ -1,12 +1,10 @@
-//Finding the value of similarity
+// Computing bitset similarities
 
-let bs1 = DG.BitSet.create(5);
+let bs1 = DG.BitSet.fromString('00000');
+let bs2 = DG.BitSet.fromString('00100');
 
-let bs2 = DG.BitSet.create(5);
-bs2.set(0, true)
-
-//should be 1:
+// should be 1:
 console.log(bs1.similarityTo(bs1, "tanimoto"));
 
-//should be 0:
-console.log(bs1.similarityTo(bs2, "tanimoto"));
+// should be 0:
+console.log(bs1.similarityTo(bs2, "tanimoto"))
