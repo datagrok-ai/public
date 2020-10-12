@@ -64,14 +64,14 @@ and choose **Clone**.
    * Table is sorted by values ​​of *Age* column descending
    
 1. Save received view to Layouts Gallery from menu **View | Layout | Save to Gallery** or use ```Ctrl + S``` or use 
-   **SAVE** button in "Layouts" tab on [Toolbox](../overview/toolbox.md)
+   **SAVE** button in "Layouts" tab on [Toolbox](../overview/navigation.md#toolbox)
 
 1. Open Layouts Gallery from **View | Layout | Open Gallery** or use ```Ctrl + L```
    * In Layouts Gallery there is saved early view
 
 1. Restart **Grok** platform and open *"demog"* table in new session
 
-1. Open "Layouts" tab on [Toolbox](../overview/toolbox.md)
+1. Open "Layouts" tab on [Toolbox](../overview/navigation.md#toolbox)
    * Saved layout in step 19 is offered in "Layouts" tab.
    
 1. Open Layouts Gallery from **View | Layout | Open Gallery** or use ```Ctrl + L```

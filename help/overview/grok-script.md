@@ -89,16 +89,16 @@ t.KeepRows(Selected())
 
 Symbols '"', '{' and '}' should be replaced as '^^', '<\[' and ']>'.
 
-You can run any system [action](functions/function.md) by calling it from [console](console.md)
+You can run any system [action](functions/function.md) by calling it from [console](navigation.md#console)
 
 ## Try it!
 
-Open [console](console.md) by pressing ~ (tilda) or **Tools | Console**. and try to make some actions: 
+Open [console](navigation.md#console) by pressing ~ (tilda) or **Tools | Console**. and try to make some actions: 
 run [query](../access/data-query.md) or [job](../access/data-job.md).
 Every step you take will be recorded, so you can re-run it, or use somewhere.
 
 See also:
 
-* [Console](console.md)
+* [Console](navigation.md#console)
 * [Functions](functions/function.md)
 * [Scripting plugin](../develop/scripting.md)

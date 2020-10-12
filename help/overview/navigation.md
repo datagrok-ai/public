@@ -2,140 +2,157 @@
 <!-- SUBTITLE: -->
 
 # Navigation
- Datagrok helps you unlock the full value of your organization's data by empowering any non-technical user to **discover, cleanse, visualize, explore, model data, and share the results** seamlessly. 
 
- To get started, go to [Datagrok](https://datagrok.ai/) and click on the [![button](../uploads/pictures/button33.jpg "Launch")](https://public.datagrok.ai/?) button.
-## Welcome
-<!-- Note: this section should be on https://datagrok.ai/help/overview/welcome-view -->
+This article is designed to help you navigate the Datagrok platform. We will introduce core concepts and walk you through the fundamentals of working with our platform.
 
-Once you log in on Datagrok, you will see the welcome screen. At the **top**, you will find a toolbar with menus to import data (there are over 30 connectors to the main databases, go to _**File > Connect to Data**_). 
-![alt text](../uploads/gifs/welcome.gif "Datagrok Welcome Page Menus")
+First of all, you need to launch Datagrok. Assuming that you are going to work with a public instance of the platform, all you need to do is to open our website (https://datagrok.ai/) and hit the `LAUNCH` button. This will lead you to the _Sign-Up/Login_ form.
 
-At the **left**, there is a toolbox with info to get started with some useful links, such as: _Wiki, Connect to Data, and even Tutorials_.
+The first thing you will see after launching the platform is Datagrok's welcome page:
 
-![alt text](../uploads/pictures/welcome_start.jpg "Datagrok Welcome Page")
+![Welcome Page](../uploads/navigation/main-page-original-size-named-fields.jpg "Datagrok's Welcome Page (Public Version)")
 
-**Useful Links:** [Tutorials](../_internal/tutorials/tutorials.md) · [Scripting Tutorials](../_internal/tutorials/scripting.md) · [Function Parameters](../overview/functions/func-params-enhancement.md) · [Use Case: Navigation](../_internal/tutorials/platform-navigation.md)
+Here you can find an overview of the platform's key capabilities as well as the links to our [Wiki](https://datagrok.ai/help), [Community Forums](https://community.datagrok.ai), [Tutorials](), [YouTube Channel](https://www.youtube.com/channel/UCXPHEjOd4gyZ6m6Ji-iOBYg), [API Samples](https://public.datagrok.ai/js), browse a gallery of publicly available [projects](project.md) and more.
 
-At the **right**, you will find the property panel and the contextual help panel, which add useful information based on the selected items and the available features at a given moment.
+The welcome page consists of several visual components: a sidebar, [toolbox](#toolbox), main [view](), [property panel](#properties), and [context help](#context-help). Typically, the view resides in the center and occupies all available area in the screen. The sidebar and toolbox are placed on the left. The sidebar contains controls over the main functionality, while the toolbox displays options specific to the current view. The property panel and context help are docked to the right. This appearance is fully customizable, you can manage the displayed windows from the sidebar (`Windows`), or turn them on/off with the following shortcuts:
 
-![alt text](../uploads/pictures/welcome_property_panel.jpg "Property Panel and Contextual Help Panel")
+|    Menu Option         |      Shortcut               |         Action                |
+|------------------------|-----------------------------|-------------------------------|
+| Windows | Toolbox      | Alt + X                     | Show/hide the toolbox         |
+| Windows | Properties   | F4                          | Show/hide the property panel  | 
+| Windows | Context Help | F1                          | Show/hide the context help    |
 
-<!-- Note: add background to image so that it looks centered. -->
-## Datasets
+In addition to the design modularity, these panels can be resized and docked.
 
-<!-- Note: so far, there is only (linkable) information on public datasets: https://datagrok.ai/help/access/public-datasets
-Need to expand https://datagrok.ai/help/overview/toolbox
-Also, need info for Contextual Help
--->
+Now, let's proceed to the sidebar icons and explore the functionality they offer.
 
-When you select a **Dataset**, you will see the a similar screen to the following. From left to right, relevant features appear on the [Toolbox](../overview/toolbox.md), the data is represented in the [Main View](../visualize/view-layout.md), and additional info on the data shows up on the [Property Panel](../overview/property-panel.md) and the Contextual Help Panel.
-![alt text](../uploads/pictures/dataset.jpg "Datagrok Welcome Page")
+## Data
+## Functions
+## Manage
+## Tables
+## Favorites
+## Projects
 
-**Useful Links:** [Viewers](../visualize/viewers.md) · [Toolbox](../overview/toolbox.md) · [Main View](../visualize/view-layout.md) · [Property Panel](../overview/property-panel.md)
+## Windows
 
-### Workspace, Panels and Views
+### Menu
+### Tables
+### Columns
 
-The Datagrok platform is fully browser-oriented and suitable for desktop devices. You can import your data into the workspace. Depending on the data, you will see suitable features available to use in your workspace. The fatures are organized in panels to be accesible, namely from left to right the main elements are: **toolbox, main view,** and **property panel**.
-![alt text](../uploads/pictures/sections2.png "Sections")
+### Properties
 
-<!-- **_Note: Consider another layout for labels in the picture._** -->
+This panel describes the properties of a current object. Typically, whenever the user clicks on most objects within the platform, such as a table, data connection, application, command, or any other [supported object type](../overview/objects.md), this object becomes a current object. So, to focus on one, simply click on it. After that, you will see the corresponding property panel as well as the [context help](#context-help).
 
-##### Customizing Panels
-Panels can be relocated for major convenience by using the _drag and drop_ principle. Also, all panels can be turned ON or OFF: 
-* By clicking on the **X** sign on the top right corner, 
-* By using shortcuts (**_Toolbox > Alt + X, Workspace: Alt + W, etc._**), 
-* Or through the toolbar View menu: **_View > Toolbar, View > Properties, etc._**
+`F4` toggles the visibility of the property panel. Additionally, you can manage it from the sidebar (`Windows | Properties`). There are several useful icons in the panel header:
 
-#### Toolbar
-The toolbar provides the main features that are available at a given moment. A view resides in the center and occupies all available area in the screen. There are some static controls, such as **File > Import File**, and controls that are specific for the active view.
+|      Icon        |            Action                                           |
+|------------------|-------------------------------------------------------------|
+| Back/Forward     | Navigate the history of previously viewed object properties |
+| Clone and detach | Detach a copy of the property panel preserving the content  |
+| Collapse all     | Collapse all listed property values                         |
+| Favorites        | Switch to the properties of favorite objects                |
 
-![alt text](../uploads/pictures/toolbar.jpg "Toolbar")
-
-**Useful Links:** [Workspace](../overview/workspace.md) · [Navigation](../overview/navigation.md) · [Toolbox](../overview/toolbox.md)
-#### Main Menus
-The static menus offer basic functionalities that are common to all the environments. Moreover, some view specific menus appear when data is imported. At any moment, only the usable features appear as clickable.
-![alt text](../uploads/pictures/main_toolbar.jpg "Main Menus")
-#### Ribbons
-The ribbons menu is a quick access icon toolbar located under the static and view-specific menus. Before you import or connect to data, the available options are **Open/Save local file, Connect to Data,** and **Show Workspace**.
-
-![alt text](../uploads/gifs/ribbons.gif "Ribbons Menu")
-
-However, the quick access ribbons change depending on the available options. For instance, these are the features when you have already imported data to the workspace.
-![alt text](../uploads/pictures/icon_menu.jpg "Ribbon Toolbar")
-
-**Useful Links:** [Navigation](../overview/navigation.md) · [Toolbox](../overview/toolbox.md)
+The property panel saves history of viewed objects, so you can switch to the previous selected object if necessary. This also means that the content of the property panel is synchronized with the current object. To display properties of another object along with the currently selected one, click on the `Clone and detach` icon.
 
 ### Toolbox
-The toolbox, located on the left, contains controls that are specific to the current active view.
 
-![alt text](../uploads/pictures/toolbox.png "Toolbox")
+The toolbox located on the left shows the properties and actions available for the currently active view. You can toggle its visibility with `Alt + X` or `Windows | Toolbox`. In addition, the icons on the top right let you pin or close the toolbox.
 
-For more information check [Toolbox](../overview/toolbox.md). Below, you can find a review of the toolbox features.
-#### Search
-When data is imported, you can quickly filter and select rows using this feature of the toolbox. 
-For more information, see: [Search Data](../explore/data-search.md) · [Search Patterns](../explore/data-search-patterns.md) · [Smart Search](../explore/data-search-patterns.md)
-#### Viewers 
-The view is the main element in the workspace. The data is listed and represented on this panel, which is usually located at the center. Use this feature to change the representation (view) of the data. _Please, note that only relevant views are available depending on the imported data._
-For more info on viewers, see [Viewers](../visualize/viewers.md). For detailed info on each viewer, check these entries:
-*   [3D Scatter Plot](../visualize/viewers/3d-scatter-plot.md)
-*   [Bar Chart](../visualize/viewers/bar-chart.md)
-*   [Calendar](../visualize/viewers/calendar.md)
-*   [Filters](../visualize/viewers/filters.md)
-*   [Histogram](../visualize/viewers/histogram.md)
-*   [Pie Chart](../visualize/viewers/pie-chart.md)
-*   [Statistics](../visualize/viewers/statistics.md)
-*   [Viewers Host](../visualize/viewers/viewer-host.md)
+The toolbox contents change in accordance with the current view.
 
-<!-- Note: need to add more info in the viewer posts. -->
+### Variables
 
-#### Columns
-Use this feature to browse within the columns of the imported data quickly. For more information, see [Column Manager](../explore/column-manager.md).
-#### Layouts 
-Use this feature to **Save** the current layout of the data, i.e. view and other features. You may receive suggestions in relation to other users who used similar data. 
+`Alt + V` opens a variables view, which contains all variables available in the current context, and allows manipulating them. It is also possible to enable the variables view from the toolbox (`Windows | Variables`) or from the [console](#console).
 
-![alt text](../uploads/pictures/layouts.jpg "Layouts")
+There are several ways for an object to appear as a variable:
 
-<!-- Note: Consider changing picture -->
+* Direct assignment like `x = 5` in the [console](#console)
+* [Drag-and-drop](../overview/drag-and-drop.md) an object to the variables view
 
-Whenever you save a view layout, you will be able to repeat the representations for the same data or a new dataset easily. You can also use this feature to browse within your saved layouts to try different views for the data in seconds. For more information, see [View Layout](../visualize/view-layout.md).
-#### Actions
-Use this feature to perform key actions on the workspace, such as **Save as CSV, Save as Project, Clone, etc.** 
-![alt text](../uploads/pictures/actions.jpg "Layouts")
-#### Models 
-Use this powerful feature to train a model for your data. Once you have trained the model, you will be able to make predictions on the same or similar data. 
+![]()
 
-![alt text](../uploads/pictures/models.jpg "Models")
+The view consists of four fields describing the variables: `name`, `value`, `type`, and `semantics`. The last field contains the semantic type, or quality, of a column value detected out of the box or as per custom semantic type detection rules.
 
-**Useful Links:** [Cheminformatics Predictive Modeling](../domains/chem/chem-predictive-modeling.md) · [Use Case Predictive Modeling](../_internal/tutorials/predictive-modeling.md) · [Predictive Modeling Info](../learn/predictive-modeling-info.md)
-#### Tutorials
-* [Use Case: Predictive Modelling](../_internal/tutorials/predictive-modeling.md)
-### Algorithms
-When available, this feature serves to train an algorithm on the dataset to get valuable insight or calculations done. An example is applied in the missing values imputation, for more info see [Missing Values Imputation](../transform/missing-values-imputation.md) and [Sample Script](https://public.datagrok.ai/js/samples/domains/data-science/missing-values-imputation) on the topic.
+### Console
 
-### Main View
-The main viewer is the central panel where you can separate datasets and graphs in tabs.
-![alt text](../uploads/pictures/main_view.jpg "Main View")
-For more information, see [Viewers](../visualize/viewers.md).
-#### Workspace
-A Workspace is the collection of currently opened projects. The workspaces are separated by tabs in the main view. **Useful Links:** [Workspace](../overview/workspace.md)
-### Property Panel
-At the right, the property panel displays relevant information on the selected data of the dataset. You can perform some basic actions from this panel, such as _delete, filter, keep, or extract rows_.
-![alt text](../uploads/pictures/property_panel.jpg "Property Panel")
+Console can be used to call [functions](functions/function.md) and record [macros](functions/function.md#macros).
 
-For more information, see: [Property Panel](../overview/property-panel.md).
-### Contextual Help Panel
-The contextual help panel shows the additional insight for the specific situation or about the current selected object. 
+#### Controls
 
-![alt text](../uploads/pictures/contextual_help_panel.jpg "Contextual Help Panel")
+|     Key     |    Action             |
+|-------------|-----------------------|
+| Tilde `~`   | Open the console      |
+| Tab         | Complete a command    |
+| Up/Down     | Previous/next command |
+
+Press the tilde key `~` to open the console or enable it from the toolbox (`Windows | Console`).
+
+![Autocomplete](../uploads/gifs/console-autocomplete.gif "Console Autocomplete")
+
+Two icons on the top left let you clear the console, or open the [variables view](#variables). Clicking on the function name will bring up its details in the [property panel](#properties).
+
+#### Command Examples
+
+Run the `Mul` command (multiply two numbers) with the specified parameters:
+```
+Mul(2,3)
+```
+Edit parameters of the `Mul` command and evaluate it in a dialog window:
+```
+Mul
+```
+Get help for the `Mul` command:
+```
+Mul?
+```
+Access the current object from the console with the `o` variable:
+```
+o.name
+```
+Select rows with empty values in the `HEIGHT` column:
+```
+SelectRows("demog", IsNull("HEIGHT"))
+```
+Extract rows with empty values in the `HEIGHT` column into a new dataframe:
+```
+ExtractRows("demog", IsNull("HEIGHT"))
+```
+
+#### Recording Macros
+
+Every visual transformation within the platform is backed by a corresponding function, which provides for automatic logging. Whenever a function is executed, the call gets logged in the console. No preliminary action is required on your part, so you can seamlessly have it both ways: use the console to examine which functions got triggered by particular UI events to reproduce those steps in the future, or call functions on your data directly from the console. The first case can be used in [data transformations](../transform/recipe-editor.md) and [data pipelines](../access/data-pipeline.md). The second use case is a common practice for debugging custom functions defined in a [package](../develop/develop.md#packages).
+
+![Recording Macros](console-macros.gif "Console Macros")
+
+### Context Help
+
+Context help appears at the bottom right and shows additional information about objects you are currently working with. You can toggle this pane with the `F1` hot key or manage it from `Windows | Context Help`. It is enabled by default to help you navigate the platform and get the hang of its core components.
+
+While thorough explanations can be found in our documentation, the main purpose of contextual help is to provide you with concise cues along the way. To learn more about a topic of your interest, make use of the icons available at the top left:
+
+|      Icon                |            Action             |
+|--------------------------|-------------------------------|
+| Back/Forward             | Navigate visited pages        |
+| Home page                | Open Wiki's home page         |
+| Clone and extend to view | Open a page in the main view  |
+| Open in new tab          | Redirect to the Wiki page     |
+
+## Settings
+
+Client-side settings are specific to the user, and are controlled by the user (unless the organization's IT policy overrides this).
+
+To edit client settings, open `Settings` from the sidebar.
+
+![Settings](settings.png "Settings")
+
+## User Profile
+
+Click on your user image on the sidebar to open the [user profile](../govern/user.md#profile). Here you can find a summary of your data, read notifications, change your password, retrieve API and developer keys. The data on your activity is provided by the platform's internal [audit system](../govern/audit.md).
+
+## Help
+
+The help section at the bottom left resets the toolbox options to the ones you typically see on the welcome page. If you run into any difficulties, refer to the documentation or ask a question in the community forums, links to which are provided in this toolbox. If an error occurs, you will be notified with the corresponding error message via the help section as well. In this case, you can open the `Inspector` tool (`Alt + I`) to further investigate the issue.
 
 See also:
- * [Workspace](../overview/workspace.md) 
- * [Smart Search](../overview/smart-search.md) 
- * [Toolbox](../overview/toolbox.md) 
 
-<!-- ##### Notes -->
-<!-- * Emphasis on data analysis view > table view -->
-<!-- * Website view for data analysis  -->
-<!-- * One page about how you navigate on the system, dock &  undock -->
-<!-- * Selecting data in multiple views > navigate back and forth, etc. -->
+  * [Functions](functions/function.md)
+  * [Entities](objects.md)

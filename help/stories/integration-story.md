@@ -16,16 +16,14 @@ for doing that already; if not, let us know and we'll come up with a solution!
 mostly used for statistical computing and machine learning. 
 Scripting combines fast interactive visualizations and other features of the Datagrok platform 
 with thousands of statistical packages and visualizations available in 
-[R](https://www.r-project.org/about.html), [Python](https://www.python.org),
+[R](https://www.r-project.org/about.html), [Python](https://www.python.org), [Octave](https://octave.org/),
 [Julia](https://julialang.org), or [JavaScript](https://www.javascript.com).
 
 Note that other languages, such as Java, C#, or Node.js can be integrated in a similar way.
 
 ## Custom Data Connectors
 
-Out-of-the box, the platform comes with the data connectors  
-for [30+ popular databases](../access/data-connection.md#connectors), and the list is constantly growing.
-In addition to that, it is possible to develop your own data connectors, and seamlessly integrate them
+Out of the box, the platform comes with the data connectors for [30+ popular databases](../access/data-connection.md#connectors), and the list is constantly growing. In addition to that, it is possible to develop your own data connectors, and seamlessly integrate them
 into the platform.
 
 In order to do that, a "Grok Connect" REST endpoint that implements a few methods has to be registered with the platform. 
@@ -52,7 +50,7 @@ Datagrok integrates with [OpenAPI](../access/open-api.md) really well, automatic
 OpenAPI's [paths](https://swagger.io/docs/specification/basic-structure/) to Grok's [functions](../overview/functions/function.md).
 This has many benefits:
 * Ability to easily call that web method from:
-  * [Console](../overview/console.md)
+  * [Console](../overview/navigation.md#console)
   * Event handler
   * [Info panel](../discover/info-panels.md)
 * Audit
@@ -74,11 +72,11 @@ Datagrok's server provides a REST API that lets you programmatically invoke serv
 
 A number of command-line utilities for server management. (Work in progress)
 
-## Client-side settings
+## Client-Side Settings
 
-[Client-side settings](../overview/settings.md) are specific to the user, and are controlled by the user (unless 
-organizations's IT policy overrides it).
+[Client-side settings](../overview/navigation.md#settings) are specific to the user, and are controlled by the user (unless 
+the organization's IT policy overrides it).
 
-## Server-side settings
+## Server-Side Settings
 
-[Server settings](../overview/settings-server.md) are controlled by platform's [administrators](../govern/security.md).
+[Server settings](../overview/settings-server.md) are controlled by the platform's [administrators](../govern/security.md).
