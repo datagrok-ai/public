@@ -34,5 +34,5 @@ Press Alt+A to open data aggregation tool
 
 
 See also:
-  * [Macros](../overview/console.md) 
+  * [Macros](../overview/navigation.md#console) 
  

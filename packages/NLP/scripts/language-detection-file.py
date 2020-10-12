@@ -7,14 +7,19 @@
 #output: string alpha_3 {semType: langCode} [ISO 639-3 language code]
 #tags: nlp, panel
 #reference: https://github.com/google/cld3
-#condition: file.isFile && file.size < 1e6 && file.name.endsWith("txt")
+#condition: file.isFile && file.size < 1e6 && supportedExt(file.name)
 
 import cld3
 import pycountry
+import textract
 
+params = {'filename': file, 'extension': file[file.rfind('.', 0, -10) : -10]}
 
-with open(file) as f:
-    text = " ".join(f.read().splitlines())
+# Extract text
+text = textract.process(**params).decode().strip()
+
+# with open(file) as f:
+#     text = " ".join(f.read().splitlines())
 
 language = "Undetermined"
 alpha_2 = "—"

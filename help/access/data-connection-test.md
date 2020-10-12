@@ -84,10 +84,10 @@
 
 1. Open "Connection browser" from **Admin | Data Connections** 
 
-1. Apply "Created by me" filter from "Filters" tab on [Toolbox](../overview/toolbox.md)
+1. Apply "Created by me" filter from "Filters" tab on [Toolbox](../overview/navigation.md#toolbox)
    * Only connections created current user are displayed in browser, including those created in previous paragraph
 
-1. Open *"Add new connection"* dialog from "Actions" tab tab on [Toolbox](../overview/toolbox.md)
+1. Open *"Add new connection"* dialog from "Actions" tab tab on [Toolbox](../overview/navigation.md#toolbox)
   
 1. Select alternately different source in "Data source" field 
    * when changing data source, fields required for corresponding source are added to dialog

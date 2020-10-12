@@ -76,7 +76,7 @@ Example for R Caret engine:
   * Apply model
   
 Also apply model available through "Models Browser" (**Tools** | **Predictive modeling** | **Browse Models**) 
-or as suggested models in table properties in [Toolbox](../overview/toolbox.md) or [Property Panel](../overview/property-panel.md). 
+or as suggested models in table properties in [Toolbox](../overview/navigation.md#toolbox) or [Property Panel](../overview/property-panel.md). 
 
 ## Outputs
 

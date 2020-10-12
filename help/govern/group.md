@@ -21,7 +21,7 @@ members, or approve/deny membership requests).
  
 To request a membership, right-click on a group and choose "Request membership". A request will be sent to the
 [group admin](#markdown-header-group-admin). Once it is approved or declined, a notification will appear in the
-[notification panel](../overview/user-profile-view.md#notifications). [Audit record](audit.md) is created 
+[notification panel](user.md#profile). [Audit record](audit.md) is created 
 for both request and a resolution.
     
 ## Groups as roles
