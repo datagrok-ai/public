@@ -242,7 +242,7 @@ The implementation is based on the [grid](../visualize/viewers/grid.md), so many
 1. Open **Tools| Console** 
    * *"Console"* is open 
    
-1. Call function ```eq("test","test")``` in [Console](../overview/console.md)
+1. Call function ```eq("test","test")``` in [Console](../overview/navigation.md#console)
    * Functions returned ```true```
    * result added to Variables
    

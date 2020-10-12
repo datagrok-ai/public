@@ -29,7 +29,7 @@ result = x * x
 In order to register a script, open `Functions | Scripts | New R Script`, paste the code above, and click `Save`.
 Congratulations, you've just written and published an R script and made it available to the whole community!
 
-Use [Console](../overview/console.md) to execute it. Simply type "RSquare(3)":
+Use [Console](../overview/navigation.md#console) to execute it. Simply type "RSquare(3)":
 ```
  > RSquare(3)
    result: 9
@@ -44,7 +44,7 @@ First of all, a script can be executed right from the script editor (see picture
 
 Other ways involve saving the script as a part of a [package](develop.md#packages). In this case, it gets registered in the platform
 as a [function](../overview/functions/function.md), and can be invoked in different ways:    
-* From the [console](../overview/console.md)
+* From the [console](../overview/navigation.md#console)
 * From the [data job](../access/data-job.md)
 * From the [transformations editor](../transform/recipe-editor.md)
 * From the [function browser](https://public.datagrok.ai/functions)  

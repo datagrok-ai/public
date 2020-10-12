@@ -684,6 +684,12 @@ export class BitSet {
 
     /** @returns {Observable} - fires when the bitset gets changed. */
     get onChanged() { return observeStream(grok_BitSet_Changed(this.d)); }
+
+    /** Finds the value of similarity between two BitSets.
+     * @param {BitSet} b - second BitSet.
+     * @param {string} metric - similarity metric.
+     * @returns {number} */
+    similarityTo(b, metric) { return grok_BitSet_SimilarityTo(this.d, b.d, metric); }
 }
 
 
