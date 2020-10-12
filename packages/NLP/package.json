@@ -4,7 +4,8 @@
 	"version": "0.0.1",
 	"description": "Natural Language Processing Package",
 	"dependencies": {
-		"datagrok-api": "latest"
+		"datagrok-api": "latest",
+		"aws-sdk": "^2.762.0"
 	},
 	"scripts": {
 		"debug-nlp": "grok publish --rebuild",
