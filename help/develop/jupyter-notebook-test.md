@@ -72,7 +72,7 @@ share documents that contain live code, equations, visualizations and narrative 
 1. Choose "Chemical Space Using tSNE" notebook for [Properties Panel](../overview/property-panel.md)
    * Tabs "Details", "Projects", "Activity", "Actions" and "Chats" are present on [Properties Panel](../overview/property-panel.md)
 
-1. Click on "Created by me" filter on [Toolbox](../overview/toolbox.md) 
+1. Click on "Created by me" filter on [Toolbox](../overview/navigation.md#toolbox) 
    * Only notebooks created by current user are displayed in browser
    * Search field filled with pre-defined query *author = @current*
    
