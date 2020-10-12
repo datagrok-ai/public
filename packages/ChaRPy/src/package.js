@@ -37,23 +37,36 @@ function assignOnlyIntersection(target, source) {
 function dynamicReplace(groupByList, colsFilter, stRing, optionsObj, map) {
     Object.keys(optionsObj).forEach(key => {
         (optionsObj[key] == null) && delete optionsObj[key];
+
         if (key.includes('ColumnName')) {
             if (key !== 'valueColumnName') {
                 groupByList.push(optionsObj[key]);
             }
-            colsFilter.push(optionsObj[key]);
+            if (typeof optionsObj[key] === 'object') {
+                Object.keys(optionsObj[key]).forEach(k => {
+                    colsFilter.push(optionsObj[key][k]);
+                })
+            } else {
+                colsFilter.push(optionsObj[key]);
+            }
         }
+
         if (typeof optionsObj[key] === 'object' &&
             Object.keys(optionsObj[key]).every(elem => elem !== '0')) {
-            stRing = dynamicReplace(groupByList, colsFilter, stRing, optionsObj[key], map)[0];
+            stRing = dynamicReplace(groupByList, colsFilter, stRing, optionsObj[key], map);
         } else {
             stRing = stRing.split("!(" + key + ")").join(map[key]);
             stRing = stRing.split("!(" + key + ")").join(optionsObj[key]);
         }
     })
-    return [stRing, groupByList, colsFilter];
+    return stRing;
 }
 
+// Table preprocessing function
+// Created a new truncated dataframe
+// Input: colsFilter (type: list), list of columns to keep
+//        table (type: dataframe), original dataframe
+// Output: t (type: dataframe), new truncated dataframe
 function tablePreProcess(colsFilter, table){
     let l = [];
     for (let j = 0; j < colsFilter.length; j++) {
@@ -101,11 +114,10 @@ grok.events.onContextMenu.subscribe((args) => {
                 // mapR.json and getOptions() output
                 let groupByList = [];
                 let colsFilter = [];
-                let dynamicOut = dynamicReplace(groupByList, colsFilter, stRing, optionsObj, paramsMap);
-                stRing = dynamicOut[0];
-                groupByList = dynamicOut[1];
-                colsFilter = dynamicOut[2];
+                stRing = dynamicReplace(groupByList, colsFilter, stRing, optionsObj, paramsMap);
+                colsFilter = [...new Set(colsFilter)];
                 stRing = stRing.replace("!(groupByList)", groupByList);
+                stRing = stRing.replace("!(dateConvert)", map.dateConvert);
                 stRing = stRing.replace(/!\([^)]*\) */g, "");
 
                 // add a print statement
@@ -120,9 +132,8 @@ grok.events.onContextMenu.subscribe((args) => {
             let strReplaceOut = await strReplace(options, mapR);
             let rCode = strReplaceOut[0];
             let colsFilter = strReplaceOut[1];
-            grok.shell.info(colsFilter);
             let viewerRight = DG.Viewer.fromType('Scripting Viewer',
-                args.args.context.table, {script: mapR.header + rCode});
+                tablePreProcess(colsFilter, args.args.context.table), {script: mapR.header + rCode});
 
             // create a container for viewers
             let block =
@@ -142,6 +153,7 @@ grok.events.onContextMenu.subscribe((args) => {
             });
             dialog.showModal(true);
         });
+
         menu.item('to Python', async () => {
 
             // Top-level string substitution function that implements both recursive functions
@@ -174,10 +186,7 @@ grok.events.onContextMenu.subscribe((args) => {
                 // mapR.json and getOptions() output
                 let groupByList = [];
                 let colsFilter =[];
-                let dynamicOut = dynamicReplace(groupByList, colsFilter, pyString, optionsObj, paramsMap);
-                pyString = dynamicOut[0];
-                groupByList = dynamicOut[1];
-                colsFilter = dynamicOut[2];
+                pyString = dynamicReplace(groupByList, colsFilter, pyString, optionsObj, paramsMap);
                 pyString = pyString.replace("!(groupByList)", groupByList);
                 pyString = pyString.replace(/!\([^)]*\) */g, "");
 
@@ -219,3 +228,19 @@ grok.events.onContextMenu.subscribe((args) => {
 //name: exportFunc
 //tags: autostart
 export function toScriptInit() {}
+
+// "count": "\n!(valueColumnName) =  length(!(valueColumnName))",
+// "unique": "\n!(valueColumnName) = length(unique(!(valueColumnName)))",
+// "nulls": "\n!(valueColumnName) = sum(length(which(is.na(!(valueColumnName)))))",
+// "min": "\n!(valueColumnName) = if(sum(!is.na(!(valueColumnName))) > 0){min(!(valueColumnName),na.rm=TRUE)}else{return(NA)}",
+// "max": "\n!(valueColumnName) = if(sum(!is.na(!(valueColumnName))) > 0){max(!(valueColumnName),na.rm=TRUE)}else{return(NA)}",
+// "sum": "\n!(valueColumnName) = sum(!(valueColumnName),na.rm=TRUE)",
+// "med": "\n!(valueColumnName) = median(!(valueColumnName),na.rm=TRUE)",
+// "avg": "\n!(valueColumnName) = mean(!(valueColumnName),na.rm=TRUE)",
+// "stdev": "\n!(valueColumnName) = if(length(!(valueColumnName)) > 1){sd(!(valueColumnName),na.rm=TRUE)}else{return(0)}",
+// "variance": "\n!(valueColumnName) = var(!(valueColumnName),na.rm=TRUE)",
+// "skew": "\n!(valueColumnName) = skewness(!(valueColumnName),na.rm=TRUE)",
+// "kurt": "\n!(valueColumnName) = kurtosis(!(valueColumnName),na.rm=TRUE)",
+// "q1": "\n!(valueColumnName) = quantile(!(valueColumnName),na.rm=TRUE)[2]",
+// "q2": "\n!(valueColumnName) = quantile(!(valueColumnName),na.rm=TRUE)[3]",
+// "q3": "\n!(valueColumnName) = quantile(!(valueColumnName)na.rm=TRUE)[4]",
