@@ -70,7 +70,10 @@ function dynamicReplace(groupByList, colsFilter, stRing, optionsObj, map) {
 function tablePreProcess(colsFilter, table){
     let l = [];
     for (let j = 0; j < colsFilter.length; j++) {
-        l.push(table.columns.byName(colsFilter[j]));
+        if (colsFilter[j] !== '') {
+            grok.shell.info(colsFilter[j]);
+            l.push(table.columns.byName(colsFilter[j]));
+        }
     }
     let t = DG.DataFrame.fromColumns(l);
     return t;
@@ -80,7 +83,6 @@ function tablePreProcess(colsFilter, table){
 grok.events.onContextMenu.subscribe((args) => {
     if (args.args.context instanceof DG.Viewer) {
         let menu = args.args.menu.group('To Script');
-
 
         menu.item('to R',  async () => {
 
@@ -117,7 +119,12 @@ grok.events.onContextMenu.subscribe((args) => {
                 stRing = dynamicReplace(groupByList, colsFilter, stRing, optionsObj, paramsMap);
                 colsFilter = [...new Set(colsFilter)];
                 stRing = stRing.replace("!(groupByList)", groupByList);
-                stRing = stRing.replace("!(dateConvert)", map.dateConvert);
+                for (let id = 0; id < args.args.context.table.columns.length; id++) {
+                    if (args.args.context.table.columns.byIndex(id).type === 'datetime') {
+                        stRing = stRing.replace("!(dateConvert)",
+                            map.dateConvert.split("!(dateConvert)").join(args.args.context.table.columns.names()[id]));
+                    }
+                }
                 stRing = stRing.replace(/!\([^)]*\) */g, "");
 
                 // add a print statement
@@ -132,6 +139,7 @@ grok.events.onContextMenu.subscribe((args) => {
             let strReplaceOut = await strReplace(options, mapR);
             let rCode = strReplaceOut[0];
             let colsFilter = strReplaceOut[1];
+            grok.shell.info(colsFilter);
             let viewerRight = DG.Viewer.fromType('Scripting Viewer',
                 tablePreProcess(colsFilter, args.args.context.table), {script: mapR.header + rCode});
 
@@ -228,19 +236,3 @@ grok.events.onContextMenu.subscribe((args) => {
 //name: exportFunc
 //tags: autostart
 export function toScriptInit() {}
-
-// "count": "\n!(valueColumnName) =  length(!(valueColumnName))",
-// "unique": "\n!(valueColumnName) = length(unique(!(valueColumnName)))",
-// "nulls": "\n!(valueColumnName) = sum(length(which(is.na(!(valueColumnName)))))",
-// "min": "\n!(valueColumnName) = if(sum(!is.na(!(valueColumnName))) > 0){min(!(valueColumnName),na.rm=TRUE)}else{return(NA)}",
-// "max": "\n!(valueColumnName) = if(sum(!is.na(!(valueColumnName))) > 0){max(!(valueColumnName),na.rm=TRUE)}else{return(NA)}",
-// "sum": "\n!(valueColumnName) = sum(!(valueColumnName),na.rm=TRUE)",
-// "med": "\n!(valueColumnName) = median(!(valueColumnName),na.rm=TRUE)",
-// "avg": "\n!(valueColumnName) = mean(!(valueColumnName),na.rm=TRUE)",
-// "stdev": "\n!(valueColumnName) = if(length(!(valueColumnName)) > 1){sd(!(valueColumnName),na.rm=TRUE)}else{return(0)}",
-// "variance": "\n!(valueColumnName) = var(!(valueColumnName),na.rm=TRUE)",
-// "skew": "\n!(valueColumnName) = skewness(!(valueColumnName),na.rm=TRUE)",
-// "kurt": "\n!(valueColumnName) = kurtosis(!(valueColumnName),na.rm=TRUE)",
-// "q1": "\n!(valueColumnName) = quantile(!(valueColumnName),na.rm=TRUE)[2]",
-// "q2": "\n!(valueColumnName) = quantile(!(valueColumnName),na.rm=TRUE)[3]",
-// "q3": "\n!(valueColumnName) = quantile(!(valueColumnName)na.rm=TRUE)[4]",
