@@ -551,6 +551,10 @@ export class RowList {
     filter(rowPredicate) {
         _applyPredicate(this.table.filter, rowPredicate);
     }
+
+    /** Viewers that filter rows should subscribe to DataFrame.onRowsFiltering event.
+     * When filtering conditions are changed, viewers should call requestFilter(). */
+    requestFilter() { grok_RowList_RequestFilter(this.d); }
 }
 
 /** Represents a table cell. */
