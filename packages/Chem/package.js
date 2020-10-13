@@ -48,6 +48,37 @@ class ChemPackage extends DG.Package {
     //tags: cellRenderer, cellRenderer-RDMolecule
     //output: grid_cell_renderer result
     rdkitCellRenderer() { return new RDKitCellRenderer(); }
+    
+    //name: getFingerprints
+    //input: dataframe data [Input data table]
+    //input: column smiles [Smiles]
+    //output: column result [fingerprints]
+    getFingerprints(data, smiles) {
+        let fp_length = 128;
+        let fp_radius = 2;
+        let result = [];
+        for (let i = 0; i < smiles.length; i++) {
+            var mol = Module.get_mol(smiles.get(i));
+            let mfp = mol.get_morgan_fp(fp_radius, fp_length);
+            result[i] = DG.BitSet.fromString(mfp);
+            mol.delete();
+        }
+        let fingerprints = DG.Column.fromList('object', 'object', result);
+        //TESTS
+        let v = [];
+        for (let j = 0; j < fp_length; j++) {
+            if (fingerprints.get(0).get(j))
+              v[j] = '1';
+            else
+              v[j] = '0';
+        }
+        console.log(v);
+        let test_mol = Module.get_mol(smiles.get(0));
+        console.log(test_mol.get_morgan_fp(fp_radius, fp_length));
+        test_mol.delete();
+        //TESTS
+        return fingerprints;
+    }
 
     //tags: app
     descriptorsApp(context) {
