@@ -596,6 +596,16 @@ export class BitSet {
      * @returns {BitSet} */
     static fromString(zerosOnes) { return new BitSet(grok_BitSet_FromString(zerosOnes)); }
 
+    /** Creates a {BitSet} from the ArrayBuffer representing the bitset.
+     * @param {ArrayBuffer} buffer - An array containing 1 and 0.
+     * @param {Number} bitLength - count of bits.
+     * @returns {BitSet} */
+    static fromBytes(buffer, bitLength) {
+        if (bitLength == null || !Number.isInteger(bitLength) || bitLength < 0)
+            bitLength = buffer.byteLength * 8;
+        return new BitSet(grok_BitSet_FromBytes(buffer, bitLength));
+    }
+
     /** Creates a {BitSet} of the specified length with all bits set to false.
      * @param {number} length - Number of bits.
      * @returns {BitSet} */
