@@ -85,5 +85,6 @@
     "Pearson": "pearson"
   },
   "header" : "#name: Plot\n#language: python\n#input: dataframe data\n#output: graphics plt\n\n",
-  "tail": "\nfig.write_image(\"temp.png\")\nimport matplotlib.pyplot as plt\nimport matplotlib.image as mpimg\nimport os\nimage = mpimg.imread(\"temp.png\")\nos.remove(\"temp.png\")\nplt.imshow(image)\nplt = plt.show()"
+  "tail": "\nfig.write_image(\"temp.png\")\nimport matplotlib.pyplot as plt\nimport matplotlib.image as mpimg\nimport os\nimage = mpimg.imread(\"temp.png\")\nos.remove(\"temp.png\")\nplt.imshow(image)\nplt = plt.show()",
+  "dateConvert": "!(dateConvert)"
 }
