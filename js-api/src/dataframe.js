@@ -3,6 +3,16 @@ import {AGG, TYPE, COLUMN_TYPE} from "./const";
 import {__obs, observeStream} from "./events";
 import {toDart, toJs} from "./wrappers";
 
+class MapProxy {
+    constructor(d) {
+        this.d = d;
+        return new Proxy({}, {
+            get: function(target, prop) { return DG.toJs(grok_Map_Get(d, prop)); },
+            set: function(target, prop, value) { grok_Map_Set(d, prop, DG.toDart(value)); }
+        })
+    }
+}
+
 /**
  * DataFrame is a high-performance, easy to use tabular structure with
  * strongly-typed columns of different types.
@@ -17,6 +27,18 @@ export class DataFrame {
         this.columns = new ColumnList(grok_DataFrame_Columns(this.d));
         this.rows = new RowList(this, grok_DataFrame_Rows(this.d));
         this.filter = new BitSet(grok_DataFrame_Get_Filter(this.d));
+
+        this.temp = new MapProxy(grok_DataFrame_Get_Temp(this.d));
+        this.tags = new MapProxy(grok_DataFrame_Get_Tags(this.d));
+        //let df = this;
+        // this.temp = new Proxy({}, {
+        //     get: function(target, prop) { return DG.toJs(grok_DataFrame_Temp_Get(df.d, prop)); },
+        //     set: function(target, prop, value) { grok_DataFrame_Temp_Set(df.d, prop, DG.toDart(value)); }
+        // })
+        // this.tags = new Proxy({}, {
+        //     get: function(target, prop) { return DG.toJs(grok_DataFrame_Get_Tag(df.d, prop)); },
+        //     set: function(target, prop, value) { grok_DataFrame_Set_Tag(df.d, prop, DG.toDart(value)); }
+        // })
     }
 
     /** Creates a {@link DataFrame} with the specified number of rows and no columns.
@@ -234,7 +256,12 @@ export class Row {
 
 /** Strongly-typed column. */
 export class Column {
-    constructor(d) { this.d = d; }
+    constructor(d) {
+        this.d = d;
+        this.temp = new MapProxy(grok_Column_Get_Temp(this.d));
+        this.tags = new MapProxy(grok_Column_Get_Tags(this.d));
+    }
+
     static fromStrings(name, list) { return new Column(grok_Column_FromStrings(name, list)); }
     static fromType(type, name = null, length = 0) {
         return new Column(grok_Column_FromType(type, name, length));
@@ -437,6 +464,9 @@ export class ColumnList {
 
     //todo
     //numerical
+
+    //todo: byTags
+    //byTags(tags) {}
 
     /** @returns {Column[]} */
     get categorical() {
