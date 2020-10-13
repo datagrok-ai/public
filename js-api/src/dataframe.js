@@ -460,7 +460,7 @@ export class ColumnList {
      * @param {Column} column
      * @param {boolean} notify
      * @returns {Column} */
-    add(column, notify = false) {
+    add(column, notify = true) {
         grok_ColumnList_Add(this.d, column.d, notify);
         return column;
     }
