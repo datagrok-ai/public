@@ -2,6 +2,7 @@ import * as rxjs from 'rxjs';
 import {AGG, TYPE, COLUMN_TYPE} from "./const";
 import {__obs, observeStream} from "./events";
 import {toDart, toJs} from "./wrappers";
+import {SIMILARITY_METRIC} from "./const";
 
 /**
  * DataFrame is a high-performance, easy to use tabular structure with
@@ -708,9 +709,9 @@ export class BitSet {
 
     /** Finds the value of similarity between two BitSets.
      * @param {BitSet} b - second BitSet.
-     * @param {string} metric - similarity metric.
+     * @param {SimilarityMetric} metric - similarity metric to use.
      * @returns {number} */
-    similarityTo(b, metric) { return grok_BitSet_SimilarityTo(this.d, b.d, metric); }
+    similarityTo(b, metric = SIMILARITY_METRIC.TANIMOTO) { return grok_BitSet_SimilarityTo(this.d, b.d, metric); }
 }
 
 
