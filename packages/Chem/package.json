@@ -4,7 +4,9 @@
   "fullName": "Cheminformatics support",
   "description": "Cheminformatics support: \n\n* RDKit-based rendering \n* Molecule sketching \n*",
   "sources": [
+    "css/chem.css",
     "wasm/RDKit_minimal.js",
-    "src/rdkit_cell_renderer.js"
+    "src/rdkit_cell_renderer.js",
+    "src/rdkit_substructure_filter.js"
   ]
 }

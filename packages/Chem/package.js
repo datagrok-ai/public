@@ -10,6 +10,14 @@ class ChemPackage extends DG.Package {
         this.KEY = 'selected';
     }
 
+    //name: SubstructureFilter
+    //description: RDKit-based substructure filter
+    //tags: filter
+    //output: filter result
+    substructureFilter() {
+        return new SubstructureFilter();
+    }
+
     _svgDiv(mol) {
         let root = ui.div();
         root.innerHTML = mol.get_svg();
