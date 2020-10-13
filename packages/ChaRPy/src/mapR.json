@@ -92,5 +92,6 @@
     "Pearson": "pearson"
   },
   "header" : "#name: Plot\n#language: r\n#input: dataframe data\n#output: graphics\n\n",
+  "tail": "\nprint(plt)",
   "dateConvert": "\ndata$!(dateConvert) <- as.numeric(strptime(data$!(dateConvert),format = '%m/%d/%Y %H:%M'))"
 }
