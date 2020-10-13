@@ -2,6 +2,7 @@ import * as rxjs from 'rxjs';
 import {AGG, TYPE, COLUMN_TYPE} from "./const";
 import {__obs, observeStream} from "./events";
 import {toDart, toJs} from "./wrappers";
+import {SIMILARITY_METRIC} from "./const";
 
 class MapProxy {
     constructor(d) {
@@ -626,6 +627,16 @@ export class BitSet {
      * @returns {BitSet} */
     static fromString(zerosOnes) { return new BitSet(grok_BitSet_FromString(zerosOnes)); }
 
+    /** Creates a {BitSet} from the ArrayBuffer representing the bitset.
+     * @param {ArrayBuffer} buffer - An array containing 1 and 0.
+     * @param {Number} bitLength - count of bits.
+     * @returns {BitSet} */
+    static fromBytes(buffer, bitLength) {
+        if (bitLength == null || !Number.isInteger(bitLength) || bitLength < 0)
+            bitLength = buffer.byteLength * 8;
+        return new BitSet(grok_BitSet_FromBytes(buffer, bitLength));
+    }
+
     /** Creates a {BitSet} of the specified length with all bits set to false.
      * @param {number} length - Number of bits.
      * @returns {BitSet} */
@@ -728,9 +739,9 @@ export class BitSet {
 
     /** Finds the value of similarity between two BitSets.
      * @param {BitSet} b - second BitSet.
-     * @param {string} metric - similarity metric.
+     * @param {SimilarityMetric} metric - similarity metric to use.
      * @returns {number} */
-    similarityTo(b, metric) { return grok_BitSet_SimilarityTo(this.d, b.d, metric); }
+    similarityTo(b, metric = SIMILARITY_METRIC.TANIMOTO) { return grok_BitSet_SimilarityTo(this.d, b.d, metric); }
 }
 
 
