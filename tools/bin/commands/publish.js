@@ -44,12 +44,12 @@ async function processPackage(debug, rebuild, host, devKey, packageName) {
         follow: true
     });
 
-    if (!rebuild) {
+    if (!rebuild && fs.existsSync('webpack.config.js')) {
         if (fs.existsSync('dist/package.js')) {
             const distFiles = await walk({
                 path: './dist',
                 ignoreFiles: [],
-                includeEmpty: true,
+                includeEmpty: false,
                 follow: true
             });
             distFiles.forEach((df) => {
