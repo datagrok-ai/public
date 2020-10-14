@@ -4,7 +4,7 @@
 # Importing Data
 
 Datagrok lets you easily ingest virtually any kind of data from almost anywhere. 
-It supports dozens of file types and can connect to 50+ different databases and
+It supports dozens of file types and can connect to [30+ popular databases](data-connection.md#connectors) and
 other services, including cloud data providers.
 
 To import a local file, drag-and-drop it into the browser. The important thing
