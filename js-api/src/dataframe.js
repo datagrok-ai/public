@@ -190,6 +190,21 @@ export class DataFrame {
         return new DataFrame(grok_DataFrame_Unpivot(this.d, copyColumnNames, mergeColumnNames, categoryColumnName, valueColumnName));
     }
 
+    /**
+     * Merges two tables by the specified key columns.
+     * @param {DataFrame} t2
+     * @param {string[]} keyColumns1
+     * @param {string[]} keyColumns2
+     * @param {string[]} valueColumns1
+     * @param {string[]} valueColumns2
+     * @param {JoinType} joinType
+     * @param {boolean} inPlace - merges content in-place into the source table
+     * @returns {DataFrame}
+     * */
+    join(t2, keyColumns1, keyColumns2, valueColumns1, valueColumns2, joinType, inPlace) {
+        return new DataFrame(grok_JoinTables(this.d, t2.d, keyColumns1, keyColumns2, valueColumns1, valueColumns2, joinType, inPlace));
+    }
+
     append(t2, inPlace = false) { return new DataFrame(grok_DataFrame_Append(this.d, t2.d, inPlace)); }
 
     /** @returns {Observable} */ _event(event) { return __obs(event, this.d); }
