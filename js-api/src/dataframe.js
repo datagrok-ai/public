@@ -186,6 +186,10 @@ export class DataFrame {
      *  */
     groupBy(columnNames = []) { return new GroupByBuilder(grok_DataFrame_GroupBy(this.d, columnNames)); }
 
+    unpivot(copyColumnNames, mergeColumnNames, categoryColumnName = 'Category', valueColumnName = 'Value') {
+        return new DataFrame(grok_DataFrame_Unpivot(this.d, copyColumnNames, mergeColumnNames, categoryColumnName, valueColumnName));
+    }
+
     append(t2, inPlace = false) { return new DataFrame(grok_DataFrame_Append(this.d, t2.d, inPlace)); }
 
     /** @returns {Observable} */ _event(event) { return __obs(event, this.d); }
