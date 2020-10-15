@@ -969,6 +969,13 @@ export class GroupByBuilder {
      * @returns {GroupByBuilder} */
     q3(srcColName, resultColName = null) { return this.add(AGG.Q3, srcColName, resultColName); }
 
+    /** Adds an aggregation that takes first value for the specified column.
+     * Call {@link aggregate} when the query is constructed.
+     * @param {string} srcColName - column name in the source table
+     * @param {string} [resultColName] - column name in the resulting DataFrame
+     * @returns {GroupByBuilder} */
+    first(srcColName, resultColName = null) { return this.add(AGG.FIRST, srcColName, resultColName); }
+
     /**
      * @param {BitSet} bitset
      * @returns {GroupByBuilder} */
