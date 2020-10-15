@@ -64,6 +64,12 @@ class ChemPackage extends DG.Package {
         return DG.Column.fromList('object', 'fingerprints', fps);
     }
 
+    //name: molColumnPropertyPanel
+    //input: column molColumn
+    //tags: panel
+    //output: widget result
+    molColumnPropertyPanel(molColumn) { return getMolColumnPropertyPanel(molColumn); }
+
     //tags: app
     descriptorsApp(context) {
         let defaultSmiles = 'O=C1CN=C(c2ccccc2N1)C3CCCCC3';
