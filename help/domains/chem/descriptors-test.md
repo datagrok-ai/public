@@ -13,7 +13,7 @@ into a useful number or the result of some standardized experiment.
 
 1. Click on *"smiles"* column
 
-1. Open *"Descriptors"* dialog in *"Active"* tab on [Property Panel](../overview/property-panel.md) 
+1. Open *"Descriptors"* dialog in *"Active"* tab on [Property Panel](../overview/navigation.md#properties) 
    (or use context menu for *"smiles"* column, **Chem | Descriptors...**)
    * *"Descriptors"* dialog is open
 

@@ -18,7 +18,7 @@ Creating a new notebook is very easy. There are several ways to do this:
 
   1. Click `Functions | Notebooks | New Notebook`
   2. Run #{x.CmdNewNotebook} from the [Console](https://datagrok.ai/help/overview/console)
-  3. Select one or more tables and click `Actions | Open in Notebooks` on the [Property Panel](../overview/property-panel.md)
+  3. Select one or more tables and click `Actions | Open in Notebooks` on the [Property Panel](../overview/navigation.md#properties)
 
 If you want to link a notebook to one or more tables, please use the third method.
 

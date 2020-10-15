@@ -6,7 +6,7 @@
 Use this view to reference data, viewers, summary statistics, and other things from disparate tables. 
 This view is a good way to provide [project](project.md) summary. The content is stored
 in the [markup](../overview/markup.md) format (directly editable in the 
-[properties panel](../overview/property-panel.md) on the right). That allows to reference pretty much 
+[properties panel](../overview/navigation.md#properties) on the right). That allows to reference pretty much 
 anything in the platform, including tables, [viewers](../visualize/viewers.md), columns, statistics, 
 metadata, references to users, and invoking [functions](functions/function.md).
 

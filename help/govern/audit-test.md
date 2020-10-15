@@ -22,9 +22,9 @@ The implementation is based on the [grid](../visualize/viewers/grid.md), so many
 
 1. Enter "Test_Server" to "Server" field and save changed
  
-1. Open *"audit-test-connection"* on [Property Panel](../overview/property-panel.md)    
+1. Open *"audit-test-connection"* on [Property Panel](../overview/navigation.md#properties)    
 
-1. Expand "Activity" tab on [Property Panel](../overview/property-panel.md)
+1. Expand "Activity" tab on [Property Panel](../overview/navigation.md#properties)
    * There is history from previous steps
    * "created" and "edited" actions arranged in chronological order with indication of user
    
@@ -56,9 +56,9 @@ The implementation is based on the [grid](../visualize/viewers/grid.md), so many
 1. Run *"audit-test-query"* query
    * Query completed
    
-1. Open *"audit-test-query"* on [Property Panel](../overview/property-panel.md)    
+1. Open *"audit-test-query"* on [Property Panel](../overview/navigation.md#properties)    
 
-1. Expand "Activity" tab on [Property Panel](../overview/property-panel.md)
+1. Expand "Activity" tab on [Property Panel](../overview/navigation.md#properties)
    * There is history from previous steps
    * "created", "edited", "transformations edited", "started" actions arranged in chronological order with indication of user
    
@@ -85,9 +85,9 @@ The implementation is based on the [grid](../visualize/viewers/grid.md), so many
 
 1. Save job changes
 
-1. Open *"audit-test-job"* on [Property Panel](../overview/property-panel.md)    
+1. Open *"audit-test-job"* on [Property Panel](../overview/navigation.md#properties)    
 
-1. Expand "Activity" tab on [Property Panel](../overview/property-panel.md)
+1. Expand "Activity" tab on [Property Panel](../overview/navigation.md#properties)
    * There is history from previous steps
    * "created", "started", "edited" actions arranged in chronological order with indication of user
    
@@ -117,9 +117,9 @@ The implementation is based on the [grid](../visualize/viewers/grid.md), so many
 1. Run *"audit-test-script"* with default parameters   
    *  Script completed
    
-1. Open *"audit-test-script"* on [Property Panel](../overview/property-panel.md)    
+1. Open *"audit-test-script"* on [Property Panel](../overview/navigation.md#properties)    
 
-1. Expand "Activity" tab on [Property Panel](../overview/property-panel.md)
+1. Expand "Activity" tab on [Property Panel](../overview/navigation.md#properties)
    * There is history from previous steps
    * "created", "edited" and "started" actions arranged in chronological order with indication of user
    
@@ -154,9 +154,9 @@ The implementation is based on the [grid](../visualize/viewers/grid.md), so many
 1. Apply *"audit-test-model"* model to "demog" table
    * Applying complete
    
-1. Open *"audit-test-model"* on [Property Panel](../overview/property-panel.md)    
+1. Open *"audit-test-model"* on [Property Panel](../overview/navigation.md#properties)    
 
-1. Expand "Activity" tab on [Property Panel](../overview/property-panel.md)
+1. Expand "Activity" tab on [Property Panel](../overview/navigation.md#properties)
    * There is history from previous steps
    * "created", "edited" and "ran" actions arranged in chronological order with indication of user
    
@@ -180,9 +180,9 @@ The implementation is based on the [grid](../visualize/viewers/grid.md), so many
 1. Apply *"audit-test-notebook"* to "demog" table
    * Applying complete
    
-1. Open *"audit-test-notebook"* on [Property Panel](../overview/property-panel.md)    
+1. Open *"audit-test-notebook"* on [Property Panel](../overview/navigation.md#properties)    
 
-1. Expand "Activity" tab on [Property Panel](../overview/property-panel.md)
+1. Expand "Activity" tab on [Property Panel](../overview/navigation.md#properties)
    * There is history from previous steps
    * "created", "edited" and "ran" actions arranged in chronological order with indication of user
    
@@ -211,9 +211,9 @@ The implementation is based on the [grid](../visualize/viewers/grid.md), so many
 
 1. Open *"Datasets..."* on "Welcome" view
 
-1. Open *"audit-test-project"* on [Property Panel](../overview/property-panel.md)    
+1. Open *"audit-test-project"* on [Property Panel](../overview/navigation.md#properties)    
 
-1. Expand "Activity" tab on [Property Panel](../overview/property-panel.md)
+1. Expand "Activity" tab on [Property Panel](../overview/navigation.md#properties)
    * There is history from previous steps
    * "created", "shared", "edited" and "open" actions arranged in chronological order with indication of user
    

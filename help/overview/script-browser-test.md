@@ -22,27 +22,27 @@ view their properties and manage them.
    * Access to the script is enabled for the selected user or group of users
    * Appropriate users received a notification and a letter to the mail
 
-1. Open the "General" tab in [Property Panel](../overview/property-panel.md)
+1. Open the "General" tab in [Property Panel](../overview/navigation.md#properties)
    * "General" tab is open 
    * The correct and actually information for all fields is displayed (Created, Created by, Language)
 
-1. Open the "Details" tab in [Property Panel](../overview/property-panel.md)
+1. Open the "Details" tab in [Property Panel](../overview/navigation.md#properties)
    * "Details" tab is open
    * Display inputs and outputs values
 
-1.Open the "Script" tab in [Property Panel](../overview/property-panel.md)
+1.Open the "Script" tab in [Property Panel](../overview/navigation.md#properties)
    * "Script" tab is open. The text of the script is shown here. 
 
-1. Open the "History" tab in [Property Panel](../overview/property-panel.md)
+1. Open the "History" tab in [Property Panel](../overview/navigation.md#properties)
    * "History" tab is open
    * Display actually information about running of script
-   * Here you can see the status and start time. You can open the [Property Panel](../overview/property-panel.md) for a separate script run here
+   * Here you can see the status and start time. You can open the [Property Panel](../overview/navigation.md#properties) for a separate script run here
 
-1. Open the "Statistics" tab in [Property Panel](../overview/property-panel.md)
+1. Open the "Statistics" tab in [Property Panel](../overview/navigation.md#properties)
    * "Statistics" tab is open
    * Display information about runs count, first and last runs
 
-1. Open the "Activity" tab in [Property Panel](../overview/property-panel.md)
+1. Open the "Activity" tab in [Property Panel](../overview/navigation.md#properties)
    * "Activity" tab is open
    * Display information about actual actions with script
 

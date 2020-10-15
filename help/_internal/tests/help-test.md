@@ -54,7 +54,7 @@
    * Context help switch to [Scripting](../../develop/scripting.md) page
    
 1. Click on "Clone and detach" button on context help window
-   * Current page ([Scripting](../../develop/scripting.md)) is fixed by separate window on [Property Panel](../overview/property-panel.md)
+   * Current page ([Scripting](../../develop/scripting.md)) is fixed by separate window on [Property Panel](../overview/navigation.md#properties)
    
 1. Open **Admin | Data Queries** 
    * "Queries Browser" is open
