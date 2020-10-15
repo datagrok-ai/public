@@ -16,7 +16,7 @@ module.exports = {
     },
     output: {
         filename: '[name].js',
-        library: '#{PACKAGE_NAME_LOWERCASE}',
+        library: '#{PACKAGE_NAME_LOWERCASE_WORD}',
         libraryTarget: 'var',
         path: path.resolve(__dirname, 'dist'),
     },
