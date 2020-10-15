@@ -5,7 +5,7 @@
 
 import {Viewer} from "./src/viewer";
 import {VirtualView} from "./src/view";
-import {Accordion, Dialog, InputBase, Menu, TabControl, TreeViewNode, Widget} from "./src/widgets";
+import {Accordion, Dialog, InputBase, Menu, TabControl, TreeViewNode, Widget, RangeSlider} from "./src/widgets";
 import {toDart} from "./src/wrappers";
 import {Functions} from "./src/functions";
 import $ from "cash-dom";
@@ -245,6 +245,12 @@ export function bind(item, element) { return grok_UI_Bind(item, element); }
  * @returns Element */
 export function textArea(value, autoSize = false, resizable = true) {
     return grok_UI_TextArea(value, autoSize, resizable);
+}
+
+export function rangeSlider(minRange, maxRange, min, max) {
+    let rs = RangeSlider.create();
+    rs.setValues(minRange, maxRange, min, max);
+    return rs;
 }
 
 /**

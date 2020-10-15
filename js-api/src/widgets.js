@@ -55,7 +55,7 @@ export class DartWidget extends Widget {
         this.d = d;
     }
 
-    get root() { return grok_TabControlBase_Get_Root(this.d); }
+    get root() { return grok_Widget_Get_Root(this.d); }
 }
 
 /**
@@ -104,7 +104,7 @@ export class TabControl {
     constructor(d) { this.d = d; }
     static create(vertical = false) { return toJs(grok_TabControl(vertical)); }
 
-    get root() { return grok_TabControlBase_Get_Root(this.d); }
+    get root() { return grok_Widget_Get_Root(this.d); }
     get header() { return grok_TabControlBase_Get_Header(this.d); }
     get panes() { return grok_TabControlBase_Get_Panes(this.d).map(toJs); }
     getPane(name) { return toJs(grok_TabControlBase_GetPane(this.d, name)); }
@@ -482,4 +482,36 @@ export class TreeViewNode {
     /** Enables checkbox on node
      * @param {boolean} checked */
     enableCheckBox(checked = false) { grok_TreeViewNode_EnableCheckBox(this.d, checked); }
+}
+
+export class RangeSlider extends DartWidget{
+
+    static create() { return toJs(grok_RangeSlider()); }
+
+    /** Get min range value.
+     * @type {number}
+     */
+    get minRange() { return grok_RangeSlider_Get_MinRange(this.d) };
+
+    /** Get max range value.
+     * @type {number}
+     */
+    get maxRange() { return grok_RangeSlider_Get_MaxRange(this.d); };
+
+    /** Get min value.
+     * @type {number}
+     */
+    get min() { return grok_RangeSlider_Get_Min(this.d); };
+
+    /** Get max value.
+     * @type {number}
+     */
+    get max() { return grok_RangeSlider_Get_Max(this.d); };
+
+    /** Set values to range slider.
+     * @param {number} minRange
+     * @param {number} maxRange
+     * @param {number} min
+     * @param {number} max */
+    setValues(minRange, maxRange, min, max) { grok_RangeSlider_SetValues(this.d, minRange, maxRange, min, max); };
 }
