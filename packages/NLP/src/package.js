@@ -92,10 +92,12 @@ function testLanguagePair(sourceCode, targetCode) {
 }
 
 async function doTranslation() {
-    sourceLang = sourceLangInput.stringValue;
-    targetLang = targetLangInput.stringValue;
-    sourceCode = lang2code[sourceLang];
-    targetCode = lang2code[targetLang];
+    let sourceLang = sourceLangInput.stringValue;
+    let targetLang = targetLangInput.stringValue;
+    let sourceCode = lang2code[sourceLang];
+    let targetCode = lang2code[targetLang];
+    // Clears the text area for an unsuccessful call
+    translationArea.value = '';
     if (!testLanguagePair(sourceCode, targetCode)) return;
     let output = await translateText(translate, {
         Text: sourceText,
