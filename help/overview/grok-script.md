@@ -93,12 +93,12 @@ You can run any system [action](functions/function.md) by calling it from [conso
 
 ## Try it!
 
-Open [console](navigation.md#console) by pressing ~ (tilda) or **Tools | Console**. and try to make some actions: 
+Open [console](navigation.md#console) by pressing ~ (tilde) or **Tools | Console**. and try to make some actions: 
 run [query](../access/data-query.md) or [job](../access/data-job.md).
 Every step you take will be recorded, so you can re-run it, or use somewhere.
 
 See also:
 
-* [Console](navigation.md#console)
-* [Functions](functions/function.md)
-* [Scripting plugin](../develop/scripting.md)
+  * [Console](navigation.md#console)
+  * [Functions](functions/function.md)
+  * [Scripting](../develop/scripting.md)

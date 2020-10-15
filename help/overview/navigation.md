@@ -26,6 +26,20 @@ In addition to the design modularity, these panels can be resized and docked.
 Now, let's proceed to the sidebar icons and explore the functionality they offer.
 
 ## Data
+
+This tab brings together the platform's main data-retrieving capabilities. There are multiple ways in which you can work with data in Datagrok: from a full in-browser experience to establishing data connections, deploying interactive applications, running data jobs, building pipelines. It all starts with a simple step of [importing data](../access/importing-data.md).
+
+### Local Files
+
+Take a local file to begin with. To open it on the platform, drag-and-drop it into the browser. Other options include file dialog interaction: double-click on the `Data` icon or press `Ctrl + O`, you can access this dialog from the toolbox as well (`Data | Open local file`). It is important to note that the data resides in the browser up until the moment you choose to upload it to the server. This is always done explicitly. See the list of [supported file formats](../access/importing-data.md#supported-file-types) and read more about [saving data to the server](../overview/project.md#uploading-a-project).
+
+### File Browser
+### Databases
+### Webservices
+### Queries
+### Projects
+### Text
+
 ## Functions
 ## Manage
 ## Tables
@@ -33,6 +47,8 @@ Now, let's proceed to the sidebar icons and explore the functionality they offer
 ## Projects
 
 ## Windows
+
+The `Windows` icon lets you manage windows and see the currently open ones. In particular, you can customize the visibility of the following panes: [Menu](#menu), [Tables](#tables), [Columns](#columns), [Properties](#properties), [Toolbox](#toolbox), [Variables](#variables), [Console](#console), [Context Help](#context-help). To save your preferences regarding the display of certain windows at startup, tweak your user's [general settings](https://public.datagrok.ai/settings/general) (`Settings | General`).
 
 ### Menu
 ### Tables
@@ -53,6 +69,8 @@ This panel describes the properties of a current object. Typically, whenever the
 
 The property panel saves history of viewed objects, so you can switch to the previous selected object if necessary. This also means that the content of the property panel is synchronized with the current object. To display properties of another object along with the currently selected one, click on the `Clone and detach` icon.
 
+The content of a property panel is generated based on the type of a current object, as well as its value. For example, if you open a table, you can find applicable actions, [predictive models](../learn/predictive-modeling.md), and algorithms. To access the properties of a viewer, click on a gear icon `⚙` in the top right corner of the viewer's header. What is more, the information provided for a current object can be expanded by means of [info panels](../discover/info-panels.md).
+
 ### Toolbox
 
 The toolbox located on the left shows the properties and actions available for the currently active view. You can toggle its visibility with `Alt + X` or `Windows | Toolbox`. In addition, the icons on the top right let you pin or close the toolbox.
@@ -68,7 +86,7 @@ There are several ways for an object to appear as a variable:
 * Direct assignment like `x = 5` in the [console](#console)
 * [Drag-and-drop](../overview/drag-and-drop.md) an object to the variables view
 
-![]()
+![Variables](../uploads/navigation/variables.jpeg "Variables View")
 
 The view consists of four fields describing the variables: `name`, `value`, `type`, and `semantics`. The last field contains the semantic type, or quality, of a column value detected out of the box or as per custom semantic type detection rules.
 
@@ -150,9 +168,14 @@ Click on your user image on the sidebar to open the [user profile](../govern/use
 
 ## Help
 
-The help section at the bottom left resets the toolbox options to the ones you typically see on the welcome page. If you run into any difficulties, refer to the documentation or ask a question in the community forums, links to which are provided in this toolbox. If an error occurs, you will be notified with the corresponding error message via the help section as well. In this case, you can open the `Inspector` tool (`Alt + I`) to further investigate the issue.
+The help section at the bottom left resets the toolbox options to the ones you typically see on the welcome page.
+
+If an error occurs during any operation, you will be notified with the corresponding error message under the help section. In this case, you can open the `Inspector` tool (via an exclamation mark `!` icon or by pressing `Alt + I`) to further investigate the issue.
+
+If you run into any difficulties, please refer to our [documentation](https://datagrok.ai/help) or ask a question in our [community forums](https://community.datagrok.ai). Quick access to these links, as well as other useful resources, is provided in the toolbox of the help icon.
 
 See also:
 
   * [Functions](functions/function.md)
+  * [Info Panels](../discover/info-panels.md)
   * [Entities](objects.md)

@@ -21,32 +21,32 @@ Each [data job](data-job.md) consists of the following parts that are executed t
    * Data Job completed
    * New dataset was created 
 
-1. Open the "Details" tab in [Property Panel](../overview/property-panel.md)
+1. Open the "Details" tab in [Property Panel](../overview/navigation.md#properties)
    * "Details" tab is open
    * The correct information for all fields is displayed (Author, Created, Updated, Connection, Queries, Last Run, Tags)
 
-1. Open the "Queries" tab in [Property Panel](../overview/property-panel.md)
+1. Open the "Queries" tab in [Property Panel](../overview/navigation.md#properties)
    * "Queries" tab is open
    * Display queries which are included in Data Job
 
-1. Open the "Run" tab in [Property Panel](../overview/property-panel.md)
+1. Open the "Run" tab in [Property Panel](../overview/navigation.md#properties)
    * "Run" tab is open
    * You can select [query](data-query.md) parameters here, run Data Job and see the parameters history
 
-1. Open the "History" tab in [Property Panel](../overview/property-panel.md)
+1. Open the "History" tab in [Property Panel](../overview/navigation.md#properties)
    * "History" tab is open
    * Display information about running of [jobs](data-job.md)
    * Here you can see the status and start time 
 
-1. Open the "Statistics" tab in [Property Panel](../overview/property-panel.md)
+1. Open the "Statistics" tab in [Property Panel](../overview/navigation.md#properties)
    * "Statistics" tab is open
    * Display information about runs count, average time, first and last runs
 
-1. Open the "Activity" tab in [Property Panel](../overview/property-panel.md)
+1. Open the "Activity" tab in [Property Panel](../overview/navigation.md#properties)
    * "Activity" tab is open
    * Display information about actual actions with result of job execution
 
-1. Open the "Shared with" tab in [Property Panel](../overview/property-panel.md)
+1. Open the "Shared with" tab in [Property Panel](../overview/navigation.md#properties)
    * "Shared with" tab is open
    * Display users and users groups which this job is available 
 

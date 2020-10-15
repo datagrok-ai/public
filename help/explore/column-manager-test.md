@@ -18,7 +18,7 @@ The implementation is based on the [grid](../visualize/viewers/grid.md), so many
 
 1. Alternately click on columns in ["Column Manager"](column-manager.md)
    * Selected column is highlighted in [table](../overview/table.md)
-   * Selected column is shown on [Property Panel](../overview/property-panel.md)
+   * Selected column is shown on [Property Panel](../overview/navigation.md#properties)
    
 1. Call context menu for column in ["Column Manager"](column-manager.md)
    * Submenu is displayed that refers to selected column (tittle like *'column name' + "column"*, eg. *'Age' column*), as well as "Add stats" submenu for all columns
@@ -26,7 +26,7 @@ The implementation is based on the [grid](../visualize/viewers/grid.md), so many
         
 1. With ```Shift``` held down, select all columns from ["Column Manager"](column-manager.md)
    * In context menu, submenu appears whose actions apply to all selected columns (tittle like *"n selected columns"*)
-   * [Property Panel](../overview/property-panel.md) displays actions related to all selected columns
+   * [Property Panel](../overview/navigation.md#properties) displays actions related to all selected columns
    
 1. Expand "Add stats" submenu from the context menu
    * Submenu "Add stats" shows tree blocks of columns attributes to be added to ["Column Manager"](column-manager.md)
