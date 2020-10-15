@@ -18,6 +18,11 @@ const confTemplateDir = path.join(path.dirname(path.dirname(__dirname)), 'config
 
 const confTemplate = yaml.safeLoad(fs.readFileSync(confTemplateDir));
 
+function kebabToCamelCase(s) {
+   s = s.replace(/-./g, x => x.toUpperCase()[1]);
+   return s[0].toUpperCase() + s.slice(1);
+}
+
 function createDirectoryContents(name, config, templateDir, packageDir) {
     const filesToCreate = fs.readdirSync(templateDir);
 
@@ -32,7 +37,9 @@ function createDirectoryContents(name, config, templateDir, packageDir) {
             }
             let contents = fs.readFileSync(origFilePath, 'utf8');
             contents = contents.replace(/#{PACKAGE_NAME}/g, name);
+            contents = contents.replace(/#{PACKAGE_DETECTORS_NAME}/g, kebabToCamelCase(name));
             contents = contents.replace(/#{PACKAGE_NAME_LOWERCASE}/g, name.toLowerCase());
+            contents = contents.replace(/#{PACKAGE_NAME_LOWERCASE_WORD}/g, name.replace(/-/g, '').toLowerCase());
             if (file === 'package.json') {
                 // Generate scripts for non-default servers from `config.yaml`
                 let package = JSON.parse(contents);
