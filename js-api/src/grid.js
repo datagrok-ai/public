@@ -1,7 +1,7 @@
 import {Viewer} from "./viewer.js";
 import {Column} from './dataframe.js';
 import {Cell} from "./dataframe";
-import {toDart} from "./wrappers";
+import {toDart, toJs} from "./wrappers";
 import {__obs, _sub, EventData} from "./events";
 import {_identityInt32} from "./utils";
 
@@ -234,6 +234,12 @@ export class Grid extends Viewer {
     scrollToPixels(x, y) { grok_Grid_ScrollToPixels(this.d, x, y); }
 
     static create(table) { return new Grid(grok_Grid_Create(table.d)); }
+
+    /** @returns {RangeSlider} */
+    get vertScroll() { return toJs(grok_Grid_Get_VertScroll(this.d)); }
+
+    /** @returns {RangeSlider} */
+    get horzScroll() { return toJs(grok_Grid_Get_HorzScroll(this.d)); }
 }
 
 
