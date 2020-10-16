@@ -39,7 +39,6 @@ function statusReady(msg) {
     statusBar.innerText = msg;
 }
 
-let targetLang, targetCode;
 let sourceLang, sourceCode;
 let sourceText, cropped;
 let translate;
@@ -55,6 +54,7 @@ async function translateText(translate, params) {
 
 async function getCredentials() {
     let credentialsResponse = await _package.getCredentials();
+    if (credentialsResponse === null) return {};
     let credentials = {
         accessKeyId: credentialsResponse.parameters['accessKeyId'],
         secretAccessKey: credentialsResponse.parameters['secretAccessKey']
