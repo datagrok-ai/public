@@ -19,10 +19,6 @@ export class SunburstRenderer {
                 private readonly clickHandler: ClickHandler) {
     }
 
-    private static shade(d: TreeData) {
-        return 0.1 + 0.5 / Math.pow(2, d.depth - 1);
-    }
-
     private static sameBranch(target: TreeData, d: TreeData) {
         do {
             if (d === target) {
@@ -33,9 +29,9 @@ export class SunburstRenderer {
         return false;
     }
 
-    public render(htmlElement: HTMLElement, data: TreeData, width: number, height: number) {
+    public render(htmlElement: HTMLElement, data: TreeData, width: number, height: number, colorMode: number) {
         htmlElement.innerHTML = '';
-        htmlElement.appendChild(this.createSvg(data, width, height));
+        htmlElement.appendChild(this.createSvg(data, width, height, colorMode));
     }
 
     private partitionLayout(data: TreeData, radius: number) {
@@ -69,7 +65,7 @@ export class SunburstRenderer {
             });
     }
 
-    private createSvg(data: TreeData, width: number, height: number) {
+    private createSvg(data: TreeData, width: number, height: number, colorMode: number) {
         const center = Math.min(width, height) / 2;
         const radius = center * 0.9;
 
@@ -79,44 +75,59 @@ export class SunburstRenderer {
         const svg = d3.create("svg");
 
         // Selection (partial) segments
-        svg.append("g")
+        const segmentFiltered = svg.append("g")
             .selectAll("path")
             .data(elements)
             .join("path")
-            .attr("fill", this.defaultSegmentFill(root))
-            .attr("fill-opacity", SunburstRenderer.shade)
             .attr("d", this.arcSelection(radius))
         ;
+        if (!colorMode) {
+            segmentFiltered
+                .attr("fill-opacity", SunburstRenderer.opacityMode1)
+                .attr("fill", this.colorMode1(root))
+        } else {
+            segmentFiltered
+                .attr("fill-opacity", SunburstRenderer.opacityMode2)
+                .attr("fill", this.colorMode2(root))
+        }
 
         // Sunburst segments
         const segment = svg.append("g")
             .selectAll("path")
             .data(elements)
             .join("path")
-            .attr("fill", this.defaultSegmentFill(root))
-            .attr("fill-opacity", SunburstRenderer.shade)
             .attr("d", this.arc(radius))
         ;
+        if (!colorMode) {
+            segment
+                .attr("fill-opacity", SunburstRenderer.opacityMode1)
+                .attr("fill", this.colorMode1(root))
+        } else {
+            segment
+                .attr("fill-opacity", SunburstRenderer.opacityMode2)
+                .attr("fill", this.colorMode2(root))
+        }
 
         segment.on("click", this.onClick)
             .on("mouseover", target => {
                 segment.attr("fill-opacity", d => {
-                    return SunburstRenderer.sameBranch(target, d) ? 0.8 : SunburstRenderer.shade(d);
+                    return SunburstRenderer.sameBranch(target, d) ? 0.8 : (!colorMode ? SunburstRenderer.opacityMode1(d) : SunburstRenderer.opacityMode2(d));
                 });
             })
             .on("mouseleave", target => {
-                segment.attr("fill-opacity", SunburstRenderer.shade);
+               !colorMode ? segment.attr("fill-opacity", SunburstRenderer.opacityMode1) : segment.attr("fill-opacity", SunburstRenderer.opacityMode2);
             })
             .append("title")
             .text(this.getTooltipText);
 
+        const fontSize = radius / 20;
         svg.append("g")
             .attr("pointer-events", "none")
             .attr("text-anchor", "middle")
-            .attr("font-size", 10)
+            .attr("font-size", fontSize)
             .attr("font-family", "sans-serif")
             .selectAll("text")
-            .data(root.descendants().filter(d => d.depth && (d.y0 + d.y1) / 2 * (d.x1 - d.x0) > 10))
+            .data(root.descendants().filter(d => d.depth && (d.y0 + d.y1) / 2 * (d.x1 - d.x0) > fontSize))
             .join("text")
             .attr("transform", function (d) {
                 const x = (d.x0 + d.x1) / 2 * 180 / Math.PI;
@@ -124,6 +135,14 @@ export class SunburstRenderer {
                 return `rotate(${x - 90}) translate(${y},0) rotate(${x < 180 ? 0 : 180})`;
             })
             .attr("dy", "0.35em")
+            .attr("fill", "black")
+            .attr("fill-opacity", 1)
+            // .attr("stroke", "black")
+            // .attr("stroke-width", ".5px")
+            // .attr("stroke-linecap", "round")
+            // .attr("stroke-linejoin", "round")
+            // .attr("stroke-opacity", .3)
+            // .attr("stroke-alignment", "outer")
             .text((d) => d.data.category);
 
         return svg.attr("viewBox", `-${center} -${center} ${width} ${height}`).node()!;
@@ -165,7 +184,7 @@ export class SunburstRenderer {
         this.clickHandler(this.getCategories(d));
     }
 
-    private defaultSegmentFill(root: TreeData) {
+    private colorMode1(root: TreeData) {
         const color = d3.scaleOrdinal(this.colors.slice(0, (root.children?.length || 0) + 1));
 
         return (d: TreeData) => {
@@ -174,4 +193,31 @@ export class SunburstRenderer {
             return color(v?.data?.category || '');
         }
     }
+
+    private colorMode2(root: TreeData) {
+        return (d: TreeData) => {
+            const nodeColor = d.data?.properties?.color || 'rgb(230, 247, 255)';
+            return nodeColor; // d3.interpolate(nodeColor, "white")(.5);
+        }
+    }
+
+    private colorMode3(root: TreeData) {
+        return (d: TreeData) => {
+            const nodeColor = d.data?.properties?.color;
+            const parentColor = d.parent?.data?.properties?.color;
+            if (nodeColor) {
+                return parentColor ? d3.interpolateRgb.gamma(2.2)(nodeColor, parentColor)(.3) : nodeColor;
+            }
+            return 'rgb(230, 247, 255)';
+        }
+    }
+
+    private static opacityMode2(d: TreeData) {
+        return 0.1 + 0.5 / Math.pow(2, d.depth - 1);
+    }
+
+    private static opacityMode1(d: TreeData) {
+        return 0.3 + 0.5 / Math.pow(2, d.depth - 1);
+    }
+
 }

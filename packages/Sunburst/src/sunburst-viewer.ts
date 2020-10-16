@@ -78,7 +78,7 @@ export class SunburstViewer extends DG.JsViewer {
         const width = this.root.parentElement!.offsetWidth;
 
         if (this.treeData) {
-            this.renderer.render(this.chartDiv, this.treeData, width, height);
+            this.renderer.render(this.chartDiv, this.treeData, width, height, 1);
         }
     }
 
@@ -91,7 +91,7 @@ export class SunburstViewer extends DG.JsViewer {
         const valueColumn = this.valueColumnName ? this.dataFrame.getCol(this.valueColumnName) : undefined;
 
         const alt = new TreeDataBuilder();
-        return alt.buildTreeData(categoryColumns, valueColumn, this.dataFrame, selection);
+        return alt.buildTreeData(categoryColumns, valueColumn, this.dataFrame, selection, this.getColors());
     }
 
     private isDataFrameFiltered() {
