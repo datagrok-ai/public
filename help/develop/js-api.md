@@ -281,7 +281,7 @@ grok.functions.register({
 });
 ```
 
-Internally, JavaScript-based application are also functions that are annotated accordingly.
+Internally, JavaScript-based applications are functions that are annotated accordingly.
 
 Code snippets:
 * [Dynamic registering](https://public.datagrok.ai/js/samples/functions/register-function)
@@ -342,7 +342,7 @@ property panel into your code if needed.
 ## User-defined Types
 
 Define your own classes, and integrate them easily by providing a meta-class
-that extends DG.EntityMeta. This will provide native support for 
+that extends `DG.EntityMeta`. This will provide native support for 
 context actions, rendering, drag-and drop, tooltips, and favorites.
 
 Code snippets:
@@ -388,17 +388,6 @@ Code snippets:
 
 Use `grok.chem` entry point for cheminformatics-related routines.
 
-## Credentials
-
-You can store text information that bound to a package in secure manner. Use "Credentials..." command from package context menu.
-You can add as many strings as you want. Once added they can be read only by members of owner group. 
-Datagrok stores credentials encrypted with Datagrok encryption key. 
-
-See more:
-
-  * [Credentials](../govern/security.md#credentials)
-  * [Code snippet](https://public.datagrok.ai/js/samples/misc/package-credentials)  
-
 Code snippets:
 
   * [Calculating descriptors](https://public.datagrok.ai/js/samples/domains/data-science/random-data)
@@ -411,7 +400,34 @@ Code snippets:
   * [Custom info panel for molecules](https://public.datagrok.ai/js/samples/domains/chem/mol-panel)
   * [Rendering molecules to SVG](https://public.datagrok.ai/js/samples/domains/chem/mol-rendering)
 
+## Credentials
+
+You can store text information bound to a package in a secure manner. Right-click on a package in Datagrok's [Packages](https://public.datagrok.ai/packages) view and select the `Credentials...` command from the package context menu. This will open a dialog where you can add credentials as key-value pairs. Pay attention to the `Credentials owner` field: it may include a user or a user group, such as the current user or all users respectively. Once added, these key-value pairs can only be read by members of the owner group. Here is a way to obtain a credentials object in your package code:
+
+```javascript
+let _package = new DG.Package();
+
+async function getCredentials() {
+    let credentialsResponse = await _package.getCredentials();
+    if (credentialsResponse === null) {
+        grok.shell.info("Credentials are not set.");
+        return {};
+    }
+    return credentialsResponse.parameters;
+}
+```
+
+Additionally, you can retrieve the value of a particular parameter like this:
+
+```javascript
+_package.getCredentials().then((c) => grok.shell.info(c.parameters['test']));
+```
+
+Check out this example in our [API samples](https://public.datagrok.ai/js/samples/misc/package-credentials).
+
+Datagrok stores credentials encrypted with Datagrok's encryption key, refer to the [Security](../govern/security.md#credentials) article to learn more about it.
 
 See also:
 
-  * [JavaScript development](develop.md) 
+  * [JavaScript Development](develop.md) 
+  * [JavaScript API Samples](https://public.datagrok.ai/js)
