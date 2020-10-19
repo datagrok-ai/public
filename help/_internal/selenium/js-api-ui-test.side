@@ -655,15 +655,27 @@
       "targets": [],
       "value": ""
     }, {
+      "id": "b4d11355-712f-4d9c-96ec-95e8043272e5",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='tree-expander-ui---tooltips']",
+      "targets": [
+        ["css=.d4-tree-view-group:nth-child(13) .d4-tree-view-group:nth-child(7) .d4-tree-view-tri", "css:finder"],
+        ["xpath=//div[@name='tree-expander-ui---tooltips']", "xpath:attributes"],
+        ["xpath=//div[@id='grok-viewers-toolbox']/div/div[3]/div[2]/div/div[2]/div[13]/div[2]/div[7]/div/div", "xpath:idRelative"],
+        ["xpath=//div[13]/div[2]/div[7]/div/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
       "id": "bd32787d-980e-49e3-bc01-9082c62b3293",
       "comment": "",
       "command": "doubleClick",
-      "target": "xpath=//div[@name='tree-ui---tooltips.js']",
+      "target": "xpath=//div[@name='tree-ui---tooltips---tooltips.js']",
       "targets": [
-        ["css=.d4-tree-view-item:nth-child(11)", "css:finder"],
-        ["xpath=//div[@name='tree-ui---tooltips']", "xpath:attributes"],
-        ["xpath=//div[@id='grok-viewers-toolbox']/div/div[3]/div[2]/div/div[2]/div[10]/div[2]/div[11]", "xpath:idRelative"],
-        ["xpath=//div[2]/div[11]", "xpath:position"]
+        ["css=.d4-tree-view-group:nth-child(7) .d4-tree-view-item:nth-child(2)", "css:finder"],
+        ["xpath=//div[@name='tree-ui---tooltips---tooltips.js']", "xpath:attributes"],
+        ["xpath=//div[@id='grok-viewers-toolbox']/div/div[3]/div[2]/div/div[2]/div[13]/div[2]/div[7]/div[2]/div[2]", "xpath:idRelative"],
+        ["xpath=//div[7]/div[2]/div[2]", "xpath:position"]
       ],
       "value": ""
     }, {
