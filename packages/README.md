@@ -1,17 +1,21 @@
-# Datagrok demo packages
+# Datagrok Demo Packages
 
 | Package | Demonstrates |
 |----|----|
+| [ApiSamples](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples) | [Grok API](https://datagrok.ai/help/develop/js-api) |
+| [ChaRPy](https://github.com/datagrok-ai/public/tree/master/packages/ChaRPy) | [Scripting Viewers](https://datagrok.ai/help/visualize/viewers/scripting-viewer) |
 | [Chembl](https://github.com/datagrok-ai/public/tree/master/packages/Chembl) | [Data Connection](https://datagrok.ai/help/access/data-connection), [Data Query](https://datagrok.ai/help/access/data-query), [Info Panels](https://datagrok.ai/help/discover/info-panels), [Semantic Types](https://datagrok.ai/help/discover/semantic-types) |
 | [ChemScripts](https://github.com/datagrok-ai/public/tree/master/packages/ChemScripts) | [Scripting](https://datagrok.ai/help/develop/scripting), [Cheminformatics](https://datagrok.ai/help/domains/chem/cheminformatics), [RDKit](https://www.rdkit.org/) |
 | [Covid](https://github.com/datagrok-ai/public/tree/master/packages/Covid) | [Web Connectors](https://datagrok.ai/help/access/connectors/web), [Swagger/OpenAPI](https://swagger.io/) |
+| [Data Preprocessing Tools](https://github.com/datagrok-ai/public/tree/master/packages/Preprocess) | |
 | [EnamineStore](https://github.com/datagrok-ai/public/tree/master/packages/EnamineStore) | [Web Connectors](https://datagrok.ai/help/access/connectors/web), [Swagger/OpenAPI](https://swagger.io/), [Info Panels](https://datagrok.ai/help/discover/info-panels) |
 | [FileEditors](https://github.com/datagrok-ai/public/tree/master/packages/FileEditors) | |
 | [FileSchemasDemo](https://github.com/datagrok-ai/public/tree/master/packages/FileSchemasDemo) | [File Management](https://community.datagrok.ai/t/new-feature-file-share-browser/17/6), [Files](https://datagrok.ai/help/access/connectors/files) |
-| [ApiSamples](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples) | [Grok API](https://datagrok.ai/help/develop/js-api) |
-| [GrokScripts](https://github.com/datagrok-ai/public/tree/master/packages/GrokScripts) | [Scripting](https://datagrok.ai/help/develop/scripting) |
+| [GrokScripts](https://github.com/datagrok-ai/public/tree/master/packages/GrokScripts) | [Scripting](https://datagrok.ai/help/develop/scripting), [Info Panels](https://datagrok.ai/help/discover/info-panels) |
+| [Impute](https://github.com/datagrok-ai/public/tree/master/packages/Impute) | [Scripting](https://datagrok.ai/help/develop/scripting), [Missing Values Imputation](https://datagrok.ai/help/transform/missing-values-imputation) |
 | [JuliaScripts](https://github.com/datagrok-ai/public/tree/master/packages/JuliaScripts) | [Scripting](https://datagrok.ai/help/develop/scripting) |
 | [Leaflet](https://github.com/datagrok-ai/public/tree/master/packages/Leaflet) | |
+| [NLP](https://github.com/datagrok-ai/public/tree/master/packages/NLP) | [Scripting](https://datagrok.ai/help/develop/scripting), [Info Panels](https://datagrok.ai/help/discover/info-panels) |
 | [NodeJSScripts](https://github.com/datagrok-ai/public/tree/master/packages/NodeJSScripts) | [Scripting](https://datagrok.ai/help/develop/scripting) |
 | [Pedometer](https://github.com/datagrok-ai/public/tree/master/packages/Pedometer) | [Scripting](https://datagrok.ai/help/develop/scripting), [Info Panels](https://datagrok.ai/help/discover/info-panels), [Semantic Types](https://datagrok.ai/help/discover/semantic-types) |
 | [PlateManagement](https://github.com/datagrok-ai/public/tree/master/packages/PlateManagement) | |
@@ -27,7 +31,6 @@
 | [Test](https://github.com/datagrok-ai/public/tree/master/packages/Test) | |
 | [UsageAnalysis](https://github.com/datagrok-ai/public/tree/master/packages/UsageAnalysis) | |
 | [Viewers](https://github.com/datagrok-ai/public/tree/master/packages/Viewers) | |
-| [Data Preprocessing Tools](https://github.com/datagrok-ai/public/tree/master/packages/Preprocess) | |
 
 
 See also: 
