@@ -7,7 +7,7 @@ export let _package = new DG.Package();
 
 async function importPy(data,samplingFreq,signalType){
 
-    let f = await grok.functions.eval("Biosensors:importPyphysio");
+    let f = await grok.functions.eval("Pyphysio:importPyphysio");
 
     let call = f.prepare({
         'ecg_data':data,
@@ -25,7 +25,7 @@ async function filterPy(data,samplingFreq,signalType,filter1,filterparams){
     let call;
     if (filter1.value === 'IIR') {
 
-        f = await grok.functions.eval("Biosensors:filterIirPyphysio");
+        f = await grok.functions.eval("Pyphysio:filterIirPyphysio");
 
         call = f.prepare({
             'ecg_data':data,
@@ -39,7 +39,7 @@ async function filterPy(data,samplingFreq,signalType,filter1,filterparams){
     }
     if (filter1.value === 'normalize') {
 
-        f = await grok.functions.eval("Biosensors:filterNormPyphysio");
+        f = await grok.functions.eval("Pyphysio:filterNormPyphysio");
 
         call = f.prepare({
             'ecg_data':data,
@@ -51,7 +51,7 @@ async function filterPy(data,samplingFreq,signalType,filter1,filterparams){
     }
     if (filter1.value === 'resample') {
 
-        f = await grok.functions.eval("Biosensors:filterResPyphysio");
+        f = await grok.functions.eval("Pyphysio:filterResPyphysio");
 
         call = f.prepare({
             'ecg_data':data,
@@ -62,6 +62,21 @@ async function filterPy(data,samplingFreq,signalType,filter1,filterparams){
         });
 
     }
+    await call.call();
+    return call.getParamValue('plt');
+}
+
+async function  applyFilter(data,samplingFreq,signalType, paramsT){
+
+    let f = await grok.functions.eval("Pyphysio:filterPyphysio");
+
+    let call = f.prepare({
+        'ecg_data':data,
+        'fsamp':samplingFreq.value,
+        'signalType':signalType.value,
+        'paramsT':paramsT
+    });
+
     await call.call();
     return call.getParamValue('plt');
 }
@@ -112,9 +127,6 @@ export async function pipelineDemo() {
     signalType.setTooltip('Nature of the physiological signal');
 
     // Filter
-    let filter1 = ui.choiceInput('1st filter', '', ['IIR','normalize','resample']);
-    // let filter2 = ui.choiceInput('2nd filter', '', ['IIR','normalize','resample']);
-    // let filter3 = ui.choiceInput('3rd filter', '', ['IIR','normalize','resample']);
 
     // Information extraction
     let infoType = ui.choiceInput('To extract', '', ['Beat from ECG']);
@@ -129,17 +141,10 @@ export async function pipelineDemo() {
     let containerOGplot = ui.div();
 
     // Filter containers
-    let containerFILTER1 = ui.div();
-    let paramsContainer1 = ui.div();
-    let accFILTER1 = ui.accordion();
-
-    // let containerFILTER2 = ui.div();
-    // let paramsContainer2 = ui.div();
-    // let accFILTER2 = ui.accordion();
-    //
-    // let containerFILTER3 = ui.div();
-    // let paramsContainer3 = ui.div();
-    // let accFILTER3 = ui.accordion();
+    let filterButton = ui.div();
+    let containerFILTER = ui.div();
+    let paramsContainer = ui.div();
+    let accFILTER = ui.accordion();
     let containerFLplot = ui.div();
 
     // Information extraction containers
@@ -162,38 +167,57 @@ export async function pipelineDemo() {
 
     }));
 
-    // Filter dialogue
-    let filterparams;
-    let filterInputs1 = ui.inputs([filter1]);
-    containerFILTER1.appendChild(filterInputs1);
-    filter1.onChanged(function () {
-        $(paramsContainer1).empty()
-        filterparams = paramSelector(filter1.value)
-        paramsContainer1.appendChild(ui.inputs(filterparams));
-    });
-    accFILTER1.addPane('parameters', () => paramsContainer1);
 
-    // let filterInputs2 = ui.inputs([filter2]);
-    // containerFILTER2.appendChild(filterInputs2);
-    // filter2.onChanged(function () {
-    //     $(paramsContainer2).empty()
-    //     let filterparams2 = paramSelector(filter2.value)
-    //     paramsContainer2.appendChild(ui.inputs(filterparams2));
-    // });
-    // accFILTER2.addPane('parameters', () => paramsContainer2);
-    //
-    // let filterInputs3 = ui.inputs([filter3]);
-    // containerFILTER3.appendChild(filterInputs3);
-    // filter3.onChanged(function () {
-    //     $(paramsContainer3).empty()
-    //     let filterparams3 = paramSelector(filter3.value)
-    //     paramsContainer3.appendChild(ui.inputs(filterparams3));
-    // });
-    // accFILTER3.addPane('parameters', () => paramsContainer3);
+    // Filter dialogue
+    let filtersLST = [];
+    let allParams = [];
+    let filterInputs = ui.inputs(filtersLST);
+    containerFILTER.appendChild(filterInputs);
+
+    let i = 0;
+    filterButton.appendChild(ui.button('ADD FILTER',async () => {
+
+        var str ="filter" + i + " = ui.choiceInput('filter №' + (i + 1), '', ['IIR','normalize','resample'])";
+        eval(str);
+
+        filtersLST[i] = eval('filter' + i);
+        let filterInputs1 = ui.inputs(filtersLST);
+
+        containerFILTER.replaceChild(filterInputs1,filterInputs);
+        filterInputs = filterInputs1;
+
+        eval('filter' + i).onChanged(function () {
+            $(paramsContainer).empty();
+            let val = eval('filter' + (i-1)).value;
+            allParams[i-1] = paramSelector(val);
+            paramsContainer.appendChild(ui.inputs(allParams[i-1]));
+        })
+        i++;
+    }));
+    accFILTER.addPane('parameters', () => paramsContainer)
 
     containerFLplot.appendChild(ui.bigButton('PLOT FILTERED',async () => {
 
-        let plotFL = await filterPy(dataTable,samplingFreq,signalType,filter1,filterparams);
+        let paramsT = DG.DataFrame.create(filtersLST.length);
+        paramsT.columns.addNew('filter', 'string');
+
+        for(let j=0; j<filtersLST.length; j++) {
+            paramsT.columns.byName('filter').set(j,filtersLST[j].value);
+
+            Object.keys(allParams[j]).forEach(key => {
+                if(!paramsT.columns.names().includes(key)) {
+                    // definitely needs reworking
+                    if(typeof(allParams[j][key].value) === 'number'){
+                        paramsT.columns.addNew(key,'int');
+                    } else {
+                        paramsT.columns.addNew(key,typeof(allParams[j][key].value));
+                    }
+                }
+                paramsT.columns.byName(key).set(j,allParams[j][key].value);
+            })
+        }
+
+        let plotFL = await applyFilter(dataTable,samplingFreq,signalType,paramsT);
         let tableView = grok.shell.getTableView(tableName.value);
         let node2 = tableView.dockManager.dock(plotFL, 'right', null, 'Filtered plot');
 
@@ -213,13 +237,9 @@ export async function pipelineDemo() {
 
     v.add(containerIMPORT);
     v.add(containerOGplot);
-    v.add(containerFILTER1);
-    v.add(accFILTER1);
-    // v.add(containerFILTER2);
-    // v.add(accFILTER2);
-    // v.add(containerFILTER3);
-    // v.add(containerFLplot);
-    // v.add(accFILTER3);
+    v.add(containerFILTER);
+    v.add(accFILTER);
+    v.add(filterButton);
     v.add(containerFLplot);
     v.add(containerINFO);
     v.add(containerINFplot);

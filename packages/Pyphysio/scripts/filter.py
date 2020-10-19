@@ -1,10 +1,9 @@
-#name: filterResPyphysio
+#name: filtersPyphysio
 #language: python
 #input: dataframe ecg_data
 #input: int fsamp = 2048
 #input: string signalType = "ecg" {choices : ["ecg"]}
-#input: int fout = 4096
-#input: string kind = "cubic" {choices : ["cubic"]}
+#input: dataframe paramsT
 #output: graphics plt
 
 # import packages
@@ -28,8 +27,13 @@ label = ph.EvenlySignal(label, sampling_freq = 10, signal_type = 'label')
 # convert to signal class
 ecg = ph.EvenlySignal(values = ecg_data, sampling_freq = fsamp, signal_type = signalType)
 
-# resampling : increase the sampling frequency by cubic interpolation
-ecg = ecg.resample(fout=fout, kind=kind)
-fsamp = 4096
+for i in range(0,len(paramsT)):
+    if paramsT['filter'][i] == 'IIR':
+        ecg = ph.IIRFilter(fp = paramsT['fp'][i], fs = paramsT['fs'][i], ftype = paramsT['ftype'][i])(ecg)
+    if paramsT['filter'][i] == 'normalize':
+        ecg = ph.Normalize(norm_method=paramsT['normMethod'][i])(ecg)
+    if paramsT['filter'][i] == 'resample':
+        ecg = ecg.resample(fout=paramsT['fout'][i], kind=paramsT['kind'][i])
+        fsamp = 4096
 
 plt = ecg.plot()
