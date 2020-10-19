@@ -43,6 +43,18 @@ export class Shell {
      *  @type {DataFrame[]}*/
     get tables() { return this.tableNames.map(this.tableByName); }
 
+    /** Adds a table to the workspace.
+     * @param {DataFrame} table*/
+    addTable(table) {
+        grok_AddTable(table.d);
+    }
+
+    /** Closes a table and removes from the workspace.
+     * @param {DataFrame} table */
+    closeTable(table) {
+        grok_CloseTable(table.d);
+    }
+
     /** Current user
      *  @type {User} */
     get user() { return toJs(grok_User()); }
@@ -134,7 +146,7 @@ export class Shell {
      * @param {number=} width
      * @returns {TableView} */
     addTableView(table, dockType = DG.DOCK_TYPE.FILL, width = null) {
-        return new TableView(grok_AddTableView(table.d, dockType, width));
+        return toJs(grok_AddTableView(table.d, dockType, width));
     }
 
     /** Returns {@link TableView} for the specified table if it exists, opens a new view if necessary.
@@ -162,12 +174,12 @@ export class Shell {
     /** Returns table by its name. Search is case-insensitive.
      * @param {string} tableName
      * @returns {DataFrame} */
-    tableByName(tableName) { return new DataFrame(grok_TableByName(tableName)); }
+    tableByName(tableName) { return toJs(grok_TableByName(tableName)); }
 
     /** Returns the value of the specified variable. Search is case-insensitive.
      * @param {string} variableName
      * @returns {object} */
-    getVar(variableName) {return _toJs(grok_GetVar(variableName)); }
+    getVar(variableName) {return toJs(grok_GetVar(variableName)); }
 
     /** Sets the value of the specified variable, and returns this value.
      * @param {string} variableName
