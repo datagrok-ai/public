@@ -117,24 +117,24 @@
       "id": "a805b37f-e24c-49f3-aea2-84afc98b3663",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='tree-expander-PostgreSQL---coffee-company']",
+      "target": "xpath=//div[@name='tree-expander-PostgreSQL---Coffee-company']",
       "targets": [
-        ["css=.d4-tree-view-group-host > .d4-tree-view-group:nth-child(2) .d4-tree-view-tri-expanded", "css:finder"],
-        ["xpath=//div[@name='tree-expander-PostgreSQL---coffee-company']", "xpath:attributes"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div[20]/div[2]/div[2]/div/div", "xpath:idRelative"],
-        ["xpath=//div[20]/div[2]/div[2]/div/div", "xpath:position"]
+        ["css=.d4-tree-view-group:nth-child(24) .d4-tree-view-group:nth-child(3) .d4-tree-view-tri", "css:finder"],
+        ["xpath=//div[@name='tree-expander-PostgreSQL---Coffee-company']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div[2]/div[24]/div[2]/div[3]/div/div", "xpath:idRelative"],
+        ["xpath=//div[24]/div[2]/div[3]/div/div", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "a57baff2-0a93-4302-b28a-bb36f82f0bfe",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='tree-PostgreSQL---coffee-company---stores-in-@state']",
+      "target": "xpath=//div[@name='tree-PostgreSQL---Coffee-company---stores-in-@state']",
       "targets": [
-        ["css=.d4-tree-view-group-host > .d4-tree-view-group:nth-child(2) .d4-tree-view-group:nth-child(2) > .d4-tree-view-node", "css:finder"],
-        ["xpath=//div[@name='tree-PostgreSQL---coffee-company---stores-in-@state']", "xpath:attributes"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div[20]/div[2]/div[2]/div[2]/div[2]/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div[2]/div[2]/div", "xpath:position"]
+        ["css=.d4-tree-view-group:nth-child(3) .d4-tree-view-group:nth-child(2) > .d4-tree-view-node", "css:finder"],
+        ["xpath=//div[@name='tree-PostgreSQL---Coffee-company---stores-in-@state']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div[2]/div[24]/div[2]/div[3]/div[2]/div[2]/div", "xpath:idRelative"],
+        ["xpath=//div[3]/div[2]/div[2]/div", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -543,12 +543,12 @@
       "id": "22258cb3-08e7-4789-a807-a37c225b757b",
       "comment": "",
       "command": "doubleClick",
-      "target": "xpath=//div[@name='tree-PostgreSQL---coffee-company---stores-in-@state']",
+      "target": "xpath=//div[@name='tree-PostgreSQL---Coffee-company---stores-in-@state']",
       "targets": [
         ["css=.d4-tree-view-node-selected", "css:finder"],
-        ["xpath=//div[@name='tree-PostgreSQL---coffee-company---stores-in-@state']", "xpath:attributes"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div[20]/div[2]/div[2]/div[2]/div[2]/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div[2]/div[2]/div", "xpath:position"]
+        ["xpath=//div[@name='tree-PostgreSQL---Coffee-company---stores-in-@state']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div[2]/div[24]/div[2]/div[3]/div[2]/div[2]/div", "xpath:idRelative"],
+        ["xpath=//div[3]/div[2]/div[2]/div", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -563,7 +563,7 @@
         ["xpath=//input[@id='editor']", "xpath:attributes"],
         ["xpath=//div[2]/div/input", "xpath:position"]
       ],
-      "value": "PA"
+      "value": "NY"
     }, {
       "id": "64ca11e8-855c-48ee-81a5-f16053cbc357",
       "comment": "",
@@ -709,12 +709,12 @@
       "id": "78d6b2b3-5a6e-40c7-b6e7-eba207c62cf3",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='tree-PostgreSQL---coffee-company---stores-in-@state-with-sales-greater-than-@sales']",
+      "target": "xpath=//div[@name='tree-PostgreSQL---Coffee-company---stores-in-@state-with-sales-greater-than-@sales']",
       "targets": [
-        ["css=.d4-tree-view-group-host > .d4-tree-view-group:nth-child(2) .d4-tree-view-group:nth-child(3) > .d4-tree-view-node", "css:finder"],
-        ["xpath=//div[@name='tree-PostgreSQL---coffee-company---stores-in-@state-with-sales-greater-than-@sales']", "xpath:attributes"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div[20]/div[2]/div[2]/div[2]/div[3]/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div[3]/div", "xpath:position"]
+        ["css=.d4-tree-view-group:nth-child(3) .d4-tree-view-group:nth-child(3) > .d4-tree-view-node", "css:finder"],
+        ["xpath=//div[@name='tree-PostgreSQL---Coffee-company---stores-in-@state-with-sales-greater-than-@sales']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div[2]/div[24]/div[2]/div[3]/div[2]/div[3]/div", "xpath:idRelative"],
+        ["xpath=//div[2]/div[3]/div[2]/div[3]/div", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -728,12 +728,12 @@
       "id": "c4c1b49b-be32-42ef-8cdc-a713c32eb89f",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='tree-PostgreSQL---coffee-company---stores-in-@state']",
+      "target": "xpath=//div[@name='tree-PostgreSQL---Coffee-company---stores-in-@state']",
       "targets": [
         ["css=.d4-tree-view-node-selected", "css:finder"],
-        ["xpath=//div[@name='tree-PostgreSQL---coffee-company---stores-in-@state']", "xpath:attributes"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div[20]/div[2]/div[2]/div[2]/div[2]/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div[2]/div[2]/div", "xpath:position"]
+        ["xpath=//div[@name='tree-PostgreSQL---Coffee-company---stores-in-@state']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div[2]/div[24]/div[2]/div[3]/div[2]/div[2]/div", "xpath:idRelative"],
+        ["xpath=//div[3]/div[2]/div[2]/div", "xpath:position"]
       ],
       "value": ""
     }, {
