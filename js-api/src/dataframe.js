@@ -25,7 +25,7 @@ export class DataFrame {
 
     constructor(d) {
         this.d = d;
-        this.columns = new ColumnList(grok_DataFrame_Columns(this.d));
+        this.columns = toJs(grok_DataFrame_Columns(this.d));
         this.rows = new RowList(this, grok_DataFrame_Rows(this.d));
         this.filter = new BitSet(grok_DataFrame_Get_Filter(this.d));
 
@@ -105,7 +105,7 @@ export class DataFrame {
     /** Returns a {@link Column} with the specified name.
      * @param {string} name - Column name.
      * @returns {Column} */
-    col(name) { return new Column(grok_DataFrame_ColumnByName(this.d, name)); }
+    col(name) { return toJs(grok_DataFrame_ColumnByName(this.d, name)); }
 
     /** Returns a {@link Cell} with the specified name.
      * @param {number} idx - Row index.
@@ -142,7 +142,7 @@ export class DataFrame {
 
     /** Current column
      * @type {Column} */
-    get currentCol() { return new Column(grok_DataFrame_Get_CurrentCol(this.d)); }
+    get currentCol() { return toJs(grok_DataFrame_Get_CurrentCol(this.d)); }
     set currentCol(col) { grok_DataFrame_Set_CurrentCol(this.d, col.d); }
 
     /** Current cell
@@ -177,7 +177,7 @@ export class DataFrame {
      * @param {string=} format
      * @returns {Column} */
     changeColumnType(column, newType, format = null) {
-        return new Column(grok_DataFrame_ChangeColumnType(this.d, toDart(column), newType, format));
+        return toJs(grok_DataFrame_ChangeColumnType(this.d, toDart(column), newType, format));
     }
 
     /** Begins building a query, using the specified columns as keys.
@@ -282,23 +282,23 @@ export class Column {
         this.tags = new MapProxy(grok_Column_Get_Tags(this.d));
     }
 
-    static fromStrings(name, list) { return new Column(grok_Column_FromStrings(name, list)); }
+    static fromStrings(name, list) { return toJs(grok_Column_FromStrings(name, list)); }
     static fromType(type, name = null, length = 0) {
-        return new Column(grok_Column_FromType(type, name, length));
+        return toJs(grok_Column_FromType(type, name, length));
     }
 
     /** [array] will be not be copied and will be used as column's storage */
-    static fromInt32Array(name, array, length = null) { return new Column(grok_Column_FromInt32Array(name, array, length)); }
+    static fromInt32Array(name, array, length = null) { return toJs(grok_Column_FromInt32Array(name, array, length)); }
 
     /** [array] will be not be copied and will be used as column's storage */
-    static fromFloat32Array(name, array, length = null) { return new Column(grok_Column_FromFloat32Array(name, array, length)); }
+    static fromFloat32Array(name, array, length = null) { return toJs(grok_Column_FromFloat32Array(name, array, length)); }
 
     /** Creates a {@link Column} from the list of values.
      * @param {string} type
      * @param {string} name
      * @param {object[]} list
      * @returns {Column} */
-    static fromList(type, name, list) { return new Column(grok_Column_FromList(type, name, list)); }
+    static fromList(type, name, list) { return toJs(grok_Column_FromList(type, name, list)); }
 
     /** Creates an integer column with the specified name and length.
      * @param {string} name
@@ -440,7 +440,7 @@ export class Column {
      *  @param {string} format
      *  @returns {Column} */
     convertTo(newType, format = null) {
-        return new Column(grok_Column_ConvertTo(this.d, newType, format));
+        return toJs(grok_Column_ConvertTo(this.d, newType, format));
     }
 }
 
@@ -455,18 +455,18 @@ export class ColumnList {
     /** Column with the corresponding name (case-insensitive).
      * @param {string} name - Column name
      * @returns {Column} */
-    byName(name) { return new Column(grok_ColumnList_ByName(this.d, name)); }
+    byName(name) { return toJs(grok_ColumnList_ByName(this.d, name)); }
 
     /** Column by index.
      * @param {number} index - Index of the column.
      * @returns {Column} */
-    byIndex(index) { return new Column(grok_ColumnList_ByIndex(this.d, index)); }
+    byIndex(index) { return toJs(grok_ColumnList_ByIndex(this.d, index)); }
 
     /** First column of [semType], or null.
      * @returns {Column} */
     bySemType(semType) {
         var col = grok_ColumnList_BySemType(this.d, semType);
-        return col == null ? null : new Column(col);
+        return col == null ? null : toJs(col);
     }
 
     /** Finds columns by the corresponding semTypes, or null, if any of the sem types could not be found.
@@ -519,7 +519,7 @@ export class ColumnList {
      * @param {string} name
      * @param {ColumnType} type
      * @returns {Column} */
-    addNew(name, type) { return new Column(grok_ColumnList_AddNew(this.d, name, type)); }
+    addNew(name, type) { return toJs(grok_ColumnList_AddNew(this.d, name, type)); }
 
     /** Adds a virtual column.
      * @param {string} name
@@ -625,7 +625,7 @@ export class Cell {
 
     /** Corresponding column.
      * @returns {Column} */
-    get column() { return new Column(grok_Cell_Get_Column(this.d)); }
+    get column() { return toJs(grok_Cell_Get_Column(this.d)); }
 
     /** Cell value.
      * @returns {*} */
