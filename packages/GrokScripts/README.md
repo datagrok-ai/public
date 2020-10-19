@@ -9,8 +9,8 @@ Separately, here are [samples](https://github.com/datagrok-ai/public/tree/master
 [Info Panels](https://datagrok.ai/help/discover/info-panels) provide additional information about the current context (which can be a table, a column, or pretty much any other [object](https://datagrok.ai/help/overview/objects) in [Datagrok](https://datagrok.ai/) platform). 
 Info panels are meant to be easily developed by the users of the platform, and shared with other users. You can use all features of the Grok platform, such as scripting, data querying and transformation pipeline, user-defined functions, markup, viewers, predictive models.
 
-[Info Panels](https://datagrok.ai/help/discover/info-panels) is displayed as a separate tab in the [Property Panel](https://datagrok.ai/help/overview/property-panel).
-[Property Panel](https://datagrok.ai/help/overview/property-panel) is part of [Datagrok](https://datagrok.ai/) which displays the properties of the current [object](https://datagrok.ai/help/overview/objects) in [Datagrok](https://datagrok.ai/) platform. You can read more about it on our [Wiki](https://datagrok.ai/help/overview/property-panel).
+[Info Panels](https://datagrok.ai/help/discover/info-panels) are displayed as a separate tab in the [Property Panel](https://datagrok.ai/help/overview/navigation#properties).
+[Property Panel](https://datagrok.ai/help/overview/navigation#properties) is part of [Datagrok](https://datagrok.ai/) which displays the properties of the current [object](https://datagrok.ai/help/overview/objects) in [Datagrok](https://datagrok.ai/) platform. You can read more about it on our [Wiki](https://datagrok.ai/help/overview/navigation#properties).
 
 # Example
 ```

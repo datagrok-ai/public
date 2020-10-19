@@ -6,4 +6,4 @@ See also:
 
   * [Grok API](https://datagrok.ai/help/develop/js-api)
   * [Packages](https://datagrok.ai/help/develop/develop#packages)
-  * [Grok App](https://datagrok.ai/help/develop/app)
+  * [Grok App](https://datagrok.ai/help/develop/develop#applications)
