@@ -25,7 +25,11 @@ export function __obs(eventId, object = null) {
     }
 }
 
-
+/**
+ * Converts Dart stream to Observable.
+ * @param {Object} dartStream
+ * @returns {Observable}
+ * */
 export function observeStream(dartStream) {
     let observable = rxjs.fromEventPattern(
         function(handler) { return grok_Stream_Listen(dartStream, function (x) { handler(toJs(x)); }); },
