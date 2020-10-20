@@ -2,9 +2,9 @@ import {Balloon} from "./widgets";
 import * as rxjs from 'rxjs';
 import {toJs} from "./wrappers";
 
-export function _getIterator(d){
+export function _getIterator(d) {
     return {
-        next: function(){
+        next: function() {
             return grok_Iterator_MoveNext(d) ?
                 {value: toJs(grok_Iterator_Current(d)), done: false} :
                 {done: true};
