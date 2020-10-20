@@ -514,4 +514,7 @@ export class RangeSlider extends DartWidget{
      * @param {number} min
      * @param {number} max */
     setValues(minRange, maxRange, min, max) { grok_RangeSlider_SetValues(this.d, minRange, maxRange, min, max); };
+
+    /** @returns {Observable} */
+    get onValuesChanged() { return observeStream(grok_RangeSlider_Get_OnValuesChanged(this.d)); }
 }
