@@ -363,6 +363,10 @@ export class Column {
     get semType() { return grok_Column_Get_SemType(this.d); }
     set semType(s) { grok_Column_Set_SemType(this.d, s); }
 
+    /** Layout column ID */
+    get layoutColumnId() { return grok_Column_Get_LayoutColumnId(this.d); }
+    set layoutColumnId(s) { grok_Column_Set_LayoutColumnId(this.d, s); }
+
     /** Name */
     get name() { return grok_Column_Get_Name(this.d); }
     set name(s) { grok_Column_Set_Name(this.d, s); }
