@@ -117,7 +117,7 @@ Here we look at the correspondence of the chosen viewer type, correctness of con
    * Color mapping off on [Scatter Plot](../visualize/viewers/scatter-plot.md)
    
 1. Open properties for [Scatter Plot](../visualize/viewers/scatter-plot.md)
-   *  Viewer properties are displayed on [Property Panel](../../overview/property-panel.md)
+   *  Viewer properties are displayed on [Property Panel](../../overview/navigation.md#properties)
    
 1. Check performance and impact of changing properties on [Scatter Plot](../visualize/viewers/scatter-plot.md)
    * Data and appearance display properties changing the for  [Scatter Plot](../visualize/viewers/scatter-plot.md) affects expected

@@ -19,7 +19,7 @@ for drill-downs and further exploration. The following quick actions are there:
 
 Grok lets you visually explore both database schema and database content. Simply click
 on the item (such as connection, table, or column) in the "File | Connect to data" pane to bring up
-item's properties in the [property panel](../overview/property-panel.md). 
+item's properties in the [property panel](../overview/navigation.md#properties). 
 
 ![DB Hierarchy Browser](../uploads/features/db-hierarchy-browser.gif "DB Hierarchy Browser")  
 

@@ -33,7 +33,7 @@ shown when user clicks on that button.
 
 ## Form Designer
 
-* Click on an object to select it; its properties appear in [property panel](../overview/property-panel.md)
+* Click on an object to select it; its properties appear in [property panel](../overview/navigation.md#properties)
 * Click-and-drag to select multiple objects at once 
 
 See also:

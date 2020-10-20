@@ -130,7 +130,7 @@ The following ones are available under the **Viewer** submenu:
 
 |                 |                 |
 |-----------------|-----------------|
-| Properties      | Show viewer properties in the [property panel](../overview/property-panel.md) |
+| Properties      | Show viewer properties in the [property panel](../overview/navigation.md#properties) |
 | Clone           | Create a copy of the viewer |
 | Full Screen     | Show in full screen. **Alt+F** |
 | Close           | Close the viewer |

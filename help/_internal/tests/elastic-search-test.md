@@ -40,4 +40,4 @@ Elastic search allows search for functions and other main menu items, as well as
    * Actions in list are marked with "lightning" icon
   
 1. Click on "eq" from drop-down list (Or go to it using ↓ and click "Enter")
-   * "eq" action is open on [Property Panel](../overview/property-panel.md)
+   * "eq" action is open on [Property Panel](../overview/navigation.md#properties)

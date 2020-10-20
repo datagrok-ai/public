@@ -361,7 +361,7 @@
       "id": "11a782e1-72f5-4816-b86e-d53340368d20",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span-Chembl",
+      "target": "name=span-chembl",
       "targets": [
         ["css=tr:nth-child(1) .d4-link-label > span > label", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[2]/div[2]/table/tbody/tr/td[2]/span/span/label", "xpath:idRelative"],
@@ -417,12 +417,12 @@
       "id": "83f94fe6-5394-47e2-987a-e1cdd76925ce",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='tree-PostgreSQL---coffee-company']",
+      "target": "xpath=//div[@name='tree-PostgreSQL---Coffee-company']",
       "targets": [
-        ["css=.d4-tree-view-node-selected", "css:finder"],
-        ["xpath=//div[@name='tree-PostgreSQL---coffee-company']", "xpath:attributes"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div[20]/div[2]/div[2]/div", "xpath:idRelative"],
-        ["xpath=//div[20]/div[2]/div[2]/div", "xpath:position"]
+        ["css=.d4-tree-view-group:nth-child(24) .d4-tree-view-group:nth-child(3) > .d4-tree-view-node", "css:finder"],
+        ["xpath=//div[@name='tree-PostgreSQL---Coffee-company']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div[2]/div[24]/div[2]/div[3]/div", "xpath:idRelative"],
+        ["xpath=//div[24]/div[2]/div[3]/div", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -466,12 +466,13 @@
       "id": "d154bcae-391b-454d-999f-39b6ea6463fe",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='view-handle: Schema: coffee_company']",
+      "target": "xpath=//span[@name='span-Schema--Coffee-company']",
       "targets": [
-        ["css=.tab-handle-selected", "css:finder"],
-        ["xpath=//div[@name='view-handle: Schema: coffee_company']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div/div/div/div[3]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/div[3]", "xpath:position"]
+        ["css=.d4-ribbon-name > span:nth-child(1)", "css:finder"],
+        ["xpath=//span[@name='span-Schema--Coffee-company']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[3]/div/div/div/div/div/div/div[2]/span", "xpath:idRelative"],
+        ["xpath=//div[2]/span", "xpath:position"],
+        ["xpath=//span[contains(.,'Schema: Coffee_company')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
@@ -490,12 +491,12 @@
       "id": "093ca161-ac77-4663-99f4-0c323ffe1c8e",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//label[contains(.,'coffee_company')]",
+      "target": "xpath=//label[contains(.,'Coffee_company')]",
       "targets": [
         ["css=.d4-accordion-header label", "css:finder"],
         ["xpath=//div[@id='grok-viewers-toolbox']/div[2]/div/span/span/label", "xpath:idRelative"],
-        ["xpath=//span/label", "xpath:position"],
-        ["xpath=//label[contains(.,'coffee_company')]", "xpath:innerText"]
+        ["xpath=//label", "xpath:position"],
+        ["xpath=//label[contains(.,'Coffee_company')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
@@ -542,8 +543,12 @@
       "id": "4c54d405-ad0f-4eec-8773-3249ae4a67ea",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span-CoffeeCompany",
-      "targets": [],
+      "target": "name=span-coffee-company",
+      "targets": [
+        ["css=tr:nth-child(1) .d4-link-label > span", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[2]/div[2]/table/tbody/tr/td[2]/span/span", "xpath:idRelative"],
+        ["xpath=//span/span", "xpath:position"]
+      ],
       "value": ""
     }, {
       "id": "929d520a-c8ae-42a8-b0c2-3bd5d352f378",

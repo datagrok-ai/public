@@ -10,7 +10,12 @@ class SubstructureFilter extends DG.Filter {
         super();
         this.smiles = '';
         this.root = ui.div(null, 'grok-chem-substructure-filter');
-        this.root.appendChild(grok.chem.sketcher((smiles) => { this.smiles = smiles; this.applyFilter(); }));
+        let sketcher = grok.chem.sketcher((smiles) => {
+            this.smiles = smiles;
+            this.dataFrame.temp.smarts = smiles;
+            this.dataFrame.rows.requestFilter();
+        })
+        this.root.appendChild(sketcher);
     }
 
     attach(dFrame) {

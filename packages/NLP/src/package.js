@@ -2,110 +2,150 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import AWS from 'aws-sdk';
+import lang2code from "./lang2code.json";
+import code2lang from "./code2lang.json";
 
 export let _package = new DG.Package();
 
-//name: supportedExt
-//input: string filename
-//output: bool supported
-export function supportedExt(filename) {
-    let extensions = `.csv, .doc, .docx, .eml, .epub, .gif, .htm, .html,
-    .jpeg, .jpg, .json, .log, .mp3, .msg, .odt, .ogg, .pdf, .png, .pptx, .ps, .psv,
-    .rtf, .tff, .tif, .tiff, .tsv, .txt, .wav, .xls, .xlsx`.replace(/\s{4}/g, '');
-    return extensions.split(', ').some(ext => filename.endsWith(ext));
+// UI components
+let sourceLangInput = ui.choiceInput('', 'Undetermined', [...Object.keys(lang2code), 'Undetermined', 'Other']);
+let targetLangInput = ui.choiceInput('', 'English', Object.keys(lang2code));
+let translationArea = ui.textArea('');
+let statusBar = ui.divText('');
+translationArea.style = 'margin-top: 5px; padding: 5px;';
+let statusBarStyle = 'color: ${1}; border: 1px solid ${2}; background: ${3}; \
+                      box-shadow: 1px 1px 6px ${2}; margin-top: 5px; padding: 5px;';
+let mainDiv = ui.div([
+    ui.div([sourceLangInput.root, ui.divText('→'), targetLangInput.root]),
+    translationArea,
+    statusBar
+]);
+let mainWidget = new DG.Widget(mainDiv);
+let isError;
+
+function statusError(msg) {
+    isError = true;
+    statusBar.style = statusBarStyle.replace('${1}', '#763434')
+                                    .replaceAll('${2}', '#eb6767')
+                                    .replace('${3}', '#fbe0e0');
+    statusBar.innerText = msg;
 }
+
+function statusReady(msg) {
+    isError = false;
+    statusBar.style = statusBarStyle.replace('${1}', '#286344')
+                                    .replaceAll('${2}', '#3cb173')
+                                    .replace('${3}', '#dcf3e7');
+    statusBar.innerText = msg;
+}
+
+let sourceLang, sourceCode;
+let sourceText, cropped;
+let translate;
 
 async function translateText(translate, params) {
     return new Promise((resolve, reject) => {
-      translate.translateText(params, (err, data) => {
-        if (err) {
-          console.log('translateText error:', err);
-          reject(err);
-        }
-        resolve(data.TranslatedText);
-      })
-    }).catch(() => {});
+        translate.translateText(params, (err, data) => {
+          if (err) throw err;
+          resolve({ translation: data.TranslatedText, error: 0 });
+        })
+    }).catch((err) => { return { translation: "", error: 1 } });
 }
 
 async function getCredentials() {
     let credentialsResponse = await _package.getCredentials();
+    if (credentialsResponse === null) return {};
     let credentials = {
-      accessKeyId: credentialsResponse.parameters['accessKeyId'],
-      secretAccessKey: credentialsResponse.parameters['secretAccessKey']
+        accessKeyId: credentialsResponse.parameters['accessKeyId'],
+        secretAccessKey: credentialsResponse.parameters['secretAccessKey']
     };
     return credentials;
-}
-
-async function detectLanguage(textfile) {
-    let langDetector = await grok.functions.eval('NLP:LanguageDetection');
-    let detection = langDetector.prepare({ file: textfile });
-    await detection.call();
-    grok.shell.info(`Detected Language: ${detection.getParamValue('language')}`);
-    return detection.getParamValue('alpha_2');
-}
-
-function testLanguagePair(sourceCode, targetCode) {
-    // See the entire list of language codes at https://docs.aws.amazon.com/translate/latest/dg/what-is.html
-    let supportedLanguages = ['af', 'sq', 'am', 'ar', 'az', 'bn', 'bs', 'bg', 'zh', 'zh-TW', 'hr', 'cs',
-                              'da', 'fa-AF', 'nl', 'en', 'et', 'fi', 'fr', 'fr-CA', 'ka', 'de', 'el', 'ha',
-                              'he', 'hi', 'hu', 'id', 'it', 'ja', 'ko', 'lv', 'ms', 'no', 'fa', 'ps', 'pl',
-                              'pt', 'ro', 'ru', 'sr', 'sk', 'sl', 'so', 'es', 'es-MX', 'sw', 'sv', 'tl',
-                              'ta', 'th', 'tr', 'uk', 'ur', 'vi'];
-    if (!(supportedLanguages.includes(sourceCode) && supportedLanguages.includes(targetCode))) {
-        return grok.shell.info('The language pair is not supported.');
-    }
-    if (sourceCode === targetCode) {
-        return grok.shell.info('Cannot translate to the source language.');
-    }
-    return true;
 }
 
 async function extractText(textfile) {
     let textExtractor = await grok.functions.eval('NLP:TextExtractor');
     let extraction = textExtractor.prepare({ file: textfile });
     await extraction.call();
-    let sourceText = extraction.getParamValue('text');
-    // Character limit per request for real-time translation
-    let maxLength = 5000;
-    if (sourceText.length > maxLength) {
-      grok.shell.info(`The text is too long. Translating the first ${maxLength} characters...`);
-      sourceText = sourceText.substring(0, maxLength);
+    return extraction.getParamValue('text');
+}
+
+async function detectLanguage(text) {
+    let langDetector = await grok.functions.eval('NLP:LanguageDetector');
+    let detection = langDetector.prepare({ text: text });
+    await detection.call();
+    return [detection.getParamValue('language'),
+            detection.getParamValue('alpha_2'),
+            detection.getParamValue('alpha_3')];
+}
+
+function testLanguagePair(sourceCode, targetCode) {
+    let supportedLanguages = Object.keys(code2lang);
+    if (!(supportedLanguages.includes(sourceCode))) {
+        statusError(`The detected language (${sourceLang}) is not supported.`);
+        return false;
     }
-    return sourceText;
+    if (sourceCode === targetCode) {
+        statusError('Cannot translate to the language of the original text.');
+        return false;
+    }
+    return true;
+}
+
+async function doTranslation() {
+    let sourceLang = sourceLangInput.stringValue;
+    let targetLang = targetLangInput.stringValue;
+    let sourceCode = lang2code[sourceLang];
+    let targetCode = lang2code[targetLang];
+    // Clears the text area for an unsuccessful call
+    translationArea.value = '';
+    if (!testLanguagePair(sourceCode, targetCode)) return;
+    let output = await translateText(translate, {
+        Text: sourceText,
+        SourceLanguageCode: sourceCode,
+        TargetLanguageCode: targetCode
+    });
+    if (output.error === 1) statusError('Error calling Amazon Translate.');
+    else statusReady('Done!');
+    translationArea.value = output.translation + (cropped ? '...' : '');
 }
 
 //name: Translation
 //tags: panel, widgets
 //input: file textfile
 //output: widget result
-//condition: true
-export async function translation(textfile) {
-    // Configure AWS
+//condition: detectTextFile(textfile)
+export async function translationPanel(textfile) {
+
+    sourceLangInput.onChanged(async (_) => doTranslation());
+    targetLangInput.onChanged(async (_) => doTranslation());
+    
+    sourceText = await extractText(textfile);
+    if (!sourceText) {
+      statusError('The input text is empty.');
+      return mainWidget;
+    }
+
+    [sourceLang, sourceCode] = (await detectLanguage(sourceText)).slice(0, 2);
+    // `Other` refers to detected languages that are not currently supported by AWS
+    sourceLangInput.value = sourceCode in code2lang ? code2lang[sourceCode] : 'Other';
+    // Character limit per request for real-time translation
+    let maxLength = 5000;
+    if (sourceText.length > maxLength) {
+      cropped = true;
+      sourceText = sourceText.substring(0, maxLength);
+    }
+    doTranslation();
+    return mainWidget;
+}
+
+//name: exportFunc
+//tags: autostart
+export async function toScriptInit() {
+    // Configure AWS and create an instance of AWS Translate
     AWS.config.update({
       apiVersion: 'latest',
       credentials: await getCredentials(),
       region: 'us-east-2'
     });
-    let translate = new AWS.Translate();
-
-    // Detect the source language code and set the target language code
-    let sourceCode = await detectLanguage(textfile);
-    let targetCode = 'en';  // TODO: enable language suggestions in UI
-    if (!testLanguagePair(sourceCode, targetCode)) return;
-
-    // Extract text
-    let sourceText = await extractText(textfile);
-    if (!sourceText) return grok.shell.info('The input text is empty. Aborting...');
-
-    grok.shell.info(`Translating the text from ${sourceCode} to ${targetCode}...`);
-    let output = `Translation from ${sourceCode} to ${targetCode}:\n`;
-
-    // Get translation
-    output += await translateText(translate, {
-      Text: sourceText,
-      SourceLanguageCode: sourceCode,
-      TargetLanguageCode: targetCode
-    });
-
-    return new DG.Widget(ui.divText(output));
+    translate = new AWS.Translate();
 }

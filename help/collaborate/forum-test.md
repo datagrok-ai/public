@@ -24,7 +24,7 @@ In the latter case, entity owner will get notified that someone asked for help.
    * New topic created successfully
    * "Test_sub" topic appeared in the "Chats" tab for current user
 
-1. Replay to the "Test_sub" topic from the "Chats" tab on [Property Panel](../overview/property-panel.md) for current 
+1. Replay to the "Test_sub" topic from the "Chats" tab on [Property Panel](../overview/navigation.md#properties) for current 
    [user](../govern/user.md)
    * Reply added to topic. 
    * Open topic from "Forums" window to see a new answer.

@@ -23,41 +23,41 @@ view their properties and manage them.
    * "Details" dialog open
    * Here is the description of the project, [project](project.md) elements and activity.  
 
-1. Open the "General" tab in [Property Panel](../overview/property-panel.md) for [project](project.md)
+1. Open the "General" tab in [Property Panel](../overview/navigation.md#properties) for [project](project.md)
    * "General" tab is open
    * The correct and actually information for all fields is displayed (Created, Created by)
 
-1. Open the "Tables" tab in [Property Panel](../overview/property-panel.md) for [project](project.md)
+1. Open the "Tables" tab in [Property Panel](../overview/navigation.md#properties) for [project](project.md)
    * "Tables" tab is open
    * Display all [tables](table.md) which are included in [project](project.md)
 
-1. Open the "Connections" tab in [Property Panel](../overview/property-panel.md) for [project](project.md)
+1. Open the "Connections" tab in [Property Panel](../overview/navigation.md#properties) for [project](project.md)
    * "Connections" tab is open
    * Display all [connections](../access/data-connection.md) which are included in [project](project.md)
 
-1. Open the "Queries" tab in [Property Panel](../overview/property-panel.md) for [project](project.md)
+1. Open the "Queries" tab in [Property Panel](../overview/navigation.md#properties) for [project](project.md)
    * "Queries" tab is open
    * Display all [queries](../access/data-query.md) which are included in [project](project.md)
 
-1. Open the "Jobs" tab in [Property Panel](../overview/property-panel.md) for [project](project.md)
+1. Open the "Jobs" tab in [Property Panel](../overview/navigation.md#properties) for [project](project.md)
    * "Jobs" tab is open
    * Display all [data jobs](../access/data-job.md) which are included in [project](project.md)
 
-1. Open the "Activity" tab in [Property Panel](../overview/property-panel.md) for [project](project.md)
+1. Open the "Activity" tab in [Property Panel](../overview/navigation.md#properties) for [project](project.md)
    * "Activity" tab is open
    * Display information about actual actions with [project](project.md)
 
-1. Open the "Shared with" tab in [Property Panel](../overview/property-panel.md)
+1. Open the "Shared with" tab in [Property Panel](../overview/navigation.md#properties)
    * "Shared with" tab is open
    * Display [users](../govern/user.md) and users [groups](../govern/group.md.md) which this [project](project.md) is available for view or edit
 
-1. Open the "Resources" tab in [Property Panel](../overview/property-panel.md)
+1. Open the "Resources" tab in [Property Panel](../overview/navigation.md#properties)
   
-1. Open the "Notebooks" tab in [Property Panel](../overview/property-panel.md) 
+1. Open the "Notebooks" tab in [Property Panel](../overview/navigation.md#properties) 
    * "Notebooks" tab is open
    * Display all [notebooks](../develop/jupyter-notebook.md) which are included in [project](project.md)
 
-1. Open the "Models" tab in [Property Panel](../overview/property-panel.md) 
+1. Open the "Models" tab in [Property Panel](../overview/navigation.md#properties) 
    * "Models" tab is open
    * Display all [models](../learn/predictive-modeling.md) which are included in project
 
