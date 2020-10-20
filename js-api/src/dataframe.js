@@ -3,6 +3,7 @@ import {AGG, TYPE, COLUMN_TYPE} from "./const";
 import {__obs, observeStream} from "./events";
 import {toDart, toJs} from "./wrappers";
 import {SIMILARITY_METRIC} from "./const";
+import {_getIterator} from "./utils";
 
 class MapProxy {
     constructor(d) {
@@ -539,6 +540,13 @@ export class ColumnList {
     /** Checks wheter this list contains a column with the specified name. The check is case-insensitive.
      * @returns {boolean} */
     contains(columnName) { return grok_ColumnList_Contains(this.d, columnName); }
+
+    /** Iterates over all columns.
+     * @returns {Iterable.<Column>}
+     * */
+    [Symbol.iterator]() {
+        return _getIterator(grok_Iterable_Get_Iterator(this.d));
+    }
 }
 
 /**
