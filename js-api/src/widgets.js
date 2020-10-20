@@ -488,27 +488,27 @@ export class RangeSlider extends DartWidget{
 
     static create() { return toJs(grok_RangeSlider()); }
 
-    /** Get min range value.
+    /** Gets minimum range value.
      * @type {number}
      */
     get minRange() { return grok_RangeSlider_Get_MinRange(this.d) };
 
-    /** Get max range value.
+    /** Gets maximum range value.
      * @type {number}
      */
     get maxRange() { return grok_RangeSlider_Get_MaxRange(this.d); };
 
-    /** Get min value.
+    /** Gets minimum value.
      * @type {number}
      */
     get min() { return grok_RangeSlider_Get_Min(this.d); };
 
-    /** Get max value.
+    /** Gets maximum value.
      * @type {number}
      */
     get max() { return grok_RangeSlider_Get_Max(this.d); };
 
-    /** Set values to range slider.
+    /** Sets values to range slider.
      * @param {number} minRange
      * @param {number} maxRange
      * @param {number} min
