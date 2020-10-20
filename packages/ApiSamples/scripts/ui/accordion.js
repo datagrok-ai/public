@@ -47,5 +47,7 @@ acc.addPane('menus', () => ui.button('SHOW', () => {
 
 acc.addPane('text area', () => ui.textArea('multi\nline\ntext'));
 
+acc.addPane('range ', () => ui.rangeSlider(0, 10, 2, 5).root);
+
 //v.root.appendChild(acc.root);
 v.append(acc.root);

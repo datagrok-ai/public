@@ -42,4 +42,4 @@ text = textract.process(**params).decode().strip()
 
 text = "".join(line for line in text.splitlines() if line and not line.isspace())
 if not text or text.isspace():
-    text = "—"
+    text = ""

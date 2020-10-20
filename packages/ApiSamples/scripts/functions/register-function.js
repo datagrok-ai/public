@@ -3,7 +3,7 @@
 // in help, there could be an optional audit trail associated with the invocations, etc)
 //
 // The code below registers two functions, "jsConcat" and "jsWidget". To test
-// jsConcat, enter "jsConcat(42, 33)" in the Console(https://datagrok.ai/help/overview/console).
+// jsConcat, enter "jsConcat(42, 33)" in the console(https://datagrok.ai/help/overview/navigation#console).
 // To test jsWidget, create a new Dashboard, and click on "Widget" under "Widgets".
 //
 // See also https://datagrok.ai/help/overview/functions/function,

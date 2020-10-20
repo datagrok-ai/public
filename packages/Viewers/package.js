@@ -8,14 +8,6 @@ class ViewersPackage extends DG.Package {
         return new SankeyViewer();
     }
 
-    //name: Sunburst
-    //description: Creates a sunburst viewer
-    //tags: viewer
-    //output: viewer result
-    sunburstViewer() {
-        return new SunburstViewer();
-    }
-
     //name: Globe
     //description: Creates a globe viewer
     //tags: viewer

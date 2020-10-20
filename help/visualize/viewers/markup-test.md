@@ -28,9 +28,9 @@ the viewer will auto-detect content type. Use the "mode" property to explicitly 
 1. Add "Markup view" from "+" menu
    * New tab with Markup view added
    * There is sample text on view
-   * Markup text shown on [Property Panel](../../overview/property-panel.md)
+   * Markup text shown on [Property Panel](../../overview/navigation.md#properties)
    
-1. Enter markup text with the external viewer to [Property Panel](../../overview/property-panel.md) field *
+1. Enter markup text with the external viewer to [Property Panel](../../overview/navigation.md#properties) field *
       * Viewer from an external source displayed on markup view
       * All external viewer functionality is available inside the platform1. Return to view with [Source Tree](../entities/data-source)
 
