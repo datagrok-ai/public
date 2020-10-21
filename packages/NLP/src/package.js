@@ -134,7 +134,6 @@ export async function translationPanel(textfile) {
       cropped = true;
       sourceText = sourceText.substring(0, maxLength);
     }
-    doTranslation();
     return mainWidget;
 }
 
