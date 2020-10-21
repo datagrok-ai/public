@@ -109,7 +109,7 @@ export class Shell {
             this.addTableView(item);
         else if (item instanceof View)
             this.addView(item);
-        else if (item instanceof HtmlElement)
+        else if (item instanceof HTMLElement)
             this.dockElement(item);
         else
             throw 'Unknown type';
