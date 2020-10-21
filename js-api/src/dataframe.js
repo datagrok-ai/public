@@ -301,6 +301,12 @@ export class Column {
      * @returns {Column} */
     static fromList(type, name, list) { return toJs(grok_Column_FromList(type, name, list)); }
 
+    /** Creates a {Column} from the bitset.
+     * @param {string} name
+     * @param {BitSet} bitset
+     * @returns {Column} */
+    static fromBitSet(name, bitset) { return toJs(grok_Column_FromBitSet(name, bitset.d)); }
+
     /** Creates an integer column with the specified name and length.
      * @param {string} name
      * @param {number} length
