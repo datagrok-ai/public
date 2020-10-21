@@ -87,7 +87,7 @@ class ChemPackage extends DG.Package {
         let dsDiv = ui.divV([], 'grok-prop-panel');
         dsDiv.appendChild(this.descriptorsWidget(defaultSmiles).root);
 
-        let sketcher = grok.chem.sketcher((smiles) => {
+        let sketcher = grok.chem.sketcher((smiles, molfile) => {
             sketcherValue = smiles;
             RDKitDemoPackage.removeChildren(dsDiv);
             dsDiv.appendChild(this.descriptorsWidget(smiles).root);

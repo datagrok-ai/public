@@ -121,9 +121,9 @@ export function svgMol(smiles, width = 300, height = 200) {
 }
 
 /**
- * Molecule sketcher.
- * @param {function} handler Molecule on change handler, SMILES
+ * Sketches Molecule sketcher.
+ * @param {function} onChangedCallback - a function that accepts (smiles, molfile)
  * @param {string} smiles Initial molecule
  * @returns {HTMLElement}
  * */
-export function sketcher(handler, smiles = '') { return grok_Chem_Sketcher(handler, smiles); }
+export function sketcher(onChangedCallback, smiles = '') { return grok_Chem_Sketcher(onChangedCallback, smiles); }
