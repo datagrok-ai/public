@@ -194,7 +194,7 @@ public abstract class JdbcDataProvider extends DataProvider {
 
             if (isInteger(type, typeName, precision, scale))
                 column = new IntColumn();
-            else if (isFloat(type, typeName, scale) || isDecimal(type, typeName))
+            else if (isFloat(type, typeName, precision, scale) || isDecimal(type, typeName))
                 column = new FloatColumn();
             else if (isBoolean(type, typeName))
                 column = new BoolColumn();
@@ -252,7 +252,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                             columns.get(c - 1).add(value);
                     } else if (isDecimal(type, typeName))
                         columns.get(c - 1).add((value == null) ? null : ((BigDecimal)value).floatValue());
-                    else if (isFloat(type, typeName, scale) || (colType.equals(Types.FLOAT)))
+                    else if (isFloat(type, typeName, precision, scale) || (colType.equals(Types.FLOAT)))
                         if (value instanceof Double)
                             columns.get(c - 1).add(new Float((Double)value));
                         else
@@ -466,10 +466,10 @@ public abstract class JdbcDataProvider extends DataProvider {
         return "datetime('" + param.value.toString() + "')";
     }
 
-    private static boolean isOracleFloatNumber(String typeName, int scale) {
+    private static boolean isOracleFloatNumber(String typeName, int precision, int scale) {
         // https://markhoxey.wordpress.com/2016/05/31/maximum-number-precision/ ==>  Precision >= 38
         // https://stackoverflow.com/questions/29537292/why-can-number-type-in-oracle-scale-up-to-127 ==> scale >= 127
-        return typeName.equalsIgnoreCase("number") && (scale == 0 || scale >= 127);
+        return typeName.equalsIgnoreCase("number") && (scale == 0 || scale >= 127) && (precision >= 38);
     }
 
     // TODO Convert following code into "List.contains() style
@@ -477,14 +477,14 @@ public abstract class JdbcDataProvider extends DataProvider {
         // https://docs.oracle.com/cd/E11882_01/server.112/e41084/sql_elements001.htm#sthref119
         // The absence of precision and scale designators specifies the maximum range and precision for an Oracle number.
         // We shall ignore the case where type == java.sql.Types. ... value is identified incorrectly
-        if (isOracleFloatNumber(typeName, scale)) return false;
+        if (isOracleFloatNumber(typeName, precision, scale)) return false;
         return (type == java.sql.Types.INTEGER) || (type == java.sql.Types.TINYINT) || (type == java.sql.Types.SMALLINT) ||
                 typeName.equalsIgnoreCase("int4") ||
                 typeName.equalsIgnoreCase("int2") ||
                 typeName.equalsIgnoreCase("int") ||
                 typeName.equalsIgnoreCase("serial2") ||
                 typeName.equalsIgnoreCase("serial4") ||
-                ((precision < 33) && (scale == 0) && (isFloat(type, typeName, scale) || isDecimal(type, typeName)));
+                ((precision < 33) && (scale == 0) && (isFloat(type, typeName, precision, scale) || isDecimal(type, typeName)));
         // TODO Investigate precision value for current case
     }
 
@@ -499,12 +499,12 @@ public abstract class JdbcDataProvider extends DataProvider {
                 typeName.equalsIgnoreCase("serial8");
     }
 
-    private static boolean isFloat(int type, String typeName, int scale) {
+    private static boolean isFloat(int type, String typeName, int precision, int scale) {
         return (type == java.sql.Types.FLOAT) || (type == java.sql.Types.DOUBLE) || (type == java.sql.Types.REAL) ||
                 typeName.equalsIgnoreCase("float8") ||
                 typeName.equalsIgnoreCase("float4") ||
                 typeName.equalsIgnoreCase("money") ||
-                isOracleFloatNumber(typeName, scale);
+                isOracleFloatNumber(typeName, precision, scale);
     }
 
     private static boolean isDecimal(int type, String typeName) {
