@@ -1,3 +1,56 @@
+/*let _init = null;
+async function initWasm() {
+    if (_init == null) {
+        console.log("Wasm init");
+        return new Promise((resolve, reject) => _init = resolve);
+      }
+    else
+      {
+        console.log("Wasm reference");
+        return Promise.resolve(null);
+      }
+}
+     
+let Module = {
+  onRuntimeInitialized: function () {
+    console.log("Wasm Loaded");
+      if (_init != null) {
+          _init();
+      }
+  }
+};
+
+
+
+
+async function initWasm() {
+  if (init === null) {
+    console.log("Wasm init");
+
+    init = new Promise(async (resolve, reject) => {
+      let respone = await fetch('algs.wasm');
+      let buffer = await respone.arraybuffer();
+      //Import object!
+
+
+      
+       resolve();
+    });
+  }
+  await init;
+  }
+  */
+ var init = false;
+ async function initWasm(){
+  if (init) {
+    console.log("WASM ALREADY LOADED");
+  }
+  else {
+    console.log("WASM LOAD");
+    var asm = await createWasm();
+    init = true;
+  }
+}
 
 
 // The Module object: Our interface to the outside world. We import
@@ -1666,9 +1719,15 @@ function getBinaryPromise() {
 
 
 
+//____________________________________________________________________________________________________________
+//
+
+
 // Create the wasm instance.
 // Receives the wasm imports, returns the exports.
-function createWasm() {
+async function createWasm() {
+  //if (!init){
+    //init = true;
   // prepare imports
   var info = {
     'env': asmLibraryArg,
@@ -1750,6 +1809,7 @@ function createWasm() {
 
   instantiateAsync();
   return {}; // no exports yet; we'll fill them in later
+  //}
 }
 
 // Globals used by JS i64 conversions
@@ -1952,7 +2012,18 @@ function intArrayToString(array) {
 /* global initializers */  __ATINIT__.push({ func: function() { ___wasm_call_ctors() } });
 
 var asmLibraryArg = { "__indirect_function_table": wasmTable, "emscripten_resize_heap": _emscripten_resize_heap, "memory": wasmMemory };
+
+
+//VAR ASM WAS UNUSED (RESPONSIBLE FOR CREATING WASM) CHECK HERE!!! IF ANYTHING CRASHES
 var asm = createWasm();
+//
+//
+//
+//
+//
+//
+//
+//
 /** @type {function(...*):?} */
 var ___wasm_call_ctors = Module["___wasm_call_ctors"] = createExportWrapper("__wasm_call_ctors");
 
@@ -1976,6 +2047,15 @@ var _boxcox = Module["_boxcox"] = createExportWrapper("boxcox");
 
 /** @type {function(...*):?} */
 var _ffilter = Module["_ffilter"] = createExportWrapper("ffilter");
+
+/** @type {function(...*):?} */
+var _sdensity = Module["_sdensity"] = createExportWrapper("sdensity");
+
+/** @type {function(...*):?} */
+var _gettrend = Module["_gettrend"] = createExportWrapper("gettrend");
+
+/** @type {function(...*):?} */
+var _removetrend = Module["_removetrend"] = createExportWrapper("removetrend");
 
 /** @type {function(...*):?} */
 var ___errno_location = Module["___errno_location"] = createExportWrapper("__errno_location");
@@ -2320,10 +2400,7 @@ if (Module['preInit']) {
   noExitRuntime = true;
 
 run();
-
-
-
-
+ 
 
 
 // {{MODULE_ADDITIONS}}
