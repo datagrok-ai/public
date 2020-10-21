@@ -4,7 +4,7 @@
 #input: int fsamp = 2048
 #input: string signalType = "ecg" {choices : ["ecg"]}
 #input: dataframe paramsT
-#output: graphics plt
+#output: graphics fig
 
 # import packages
 import numpy as np
@@ -18,12 +18,6 @@ import pandas as pd
 # convert to numpy
 ecg_data = np.array(ecg_data.ecg_data)
 
-# create label
-label = np.zeros(1200)
-label[300:600] = 1
-label[900:1200] = 2
-label = ph.EvenlySignal(label, sampling_freq = 10, signal_type = 'label')
-
 # convert to signal class
 ecg = ph.EvenlySignal(values = ecg_data, sampling_freq = fsamp, signal_type = signalType)
 
@@ -36,4 +30,4 @@ for i in range(0,len(paramsT)):
         ecg = ecg.resample(fout=paramsT['fout'][i], kind=paramsT['kind'][i])
         fsamp = 4096
 
-plt = ecg.plot()
+fig = ecg.plot()
