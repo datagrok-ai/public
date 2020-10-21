@@ -1,12 +1,11 @@
-#name: filterIirPyphysio
+#name: infoPyphysio
 #language: python
 #input: dataframe ecg_data
 #input: int fsamp = 2048
 #input: string signalType = "ecg" {choices : ["ecg"]}
-#input: int fp = 45
-#input: int fs = 50
-#input: string ftype = "ellip" {choices : ["ellip"]}
-#output: graphics plt
+#input: dataframe paramsT
+#input: string info = "Beat from ECG" {choices : ["Beat from ECG"]}
+#output: graphics fig
 
 # import packages
 import numpy as np
@@ -29,21 +28,19 @@ label = ph.EvenlySignal(label, sampling_freq = 10, signal_type = 'label')
 # convert to signal class
 ecg = ph.EvenlySignal(values = ecg_data, sampling_freq = fsamp, signal_type = signalType)
 
-# (optional) IIR filtering : remove high frequency noise
-ecg = ph.IIRFilter(fp=fp, fs=fs, ftype=ftype)(ecg)
+for i in range(0,len(paramsT)):
+    if paramsT['filter'][i] == 'IIR':
+        ecg = ph.IIRFilter(fp = paramsT['fp'][i], fs = paramsT['fs'][i], ftype = paramsT['ftype'][i])(ecg)
+    if paramsT['filter'][i] == 'normalize':
+        ecg = ph.Normalize(norm_method=paramsT['normMethod'][i])(ecg)
+    if paramsT['filter'][i] == 'resample':
+        ecg = ecg.resample(fout=paramsT['fout'][i], kind=paramsT['kind'][i])
+        fsamp = 4096
 
-ibi = ph.BeatFromECG()(ecg)
-
-# check results so far
-ax1 = plt.subplot(311)
-ecg.plot()
-# plt.vlines(ibi.get_times(), np.min(ecg), np.max(ecg))
-
-plt.subplot(312)
-ibi.plot('.-')
-# plt.vlines(ibi.get_times(), np.min(ibi), np.max(ibi))
-
-plt.subplot(313, sharex = ax1)
-label.plot('.-')
-
-plt = plt.show()
+if(info == 'Beat from ECG'):
+    extracted = ph.BeatFromECG()(ecg)
+    fig, axs = plt.subplots(3)
+    fig.suptitle('Beat from ECG')
+    axs[0].plot(ecg)
+    axs[1].plot(extracted,'.-')
+    axs[2].plot(label,'.-')
