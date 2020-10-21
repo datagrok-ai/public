@@ -466,7 +466,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         return "datetime('" + param.value.toString() + "')";
     }
 
-    private static isOracleFloatNumber(String typeName, int scale) {
+    private static boolean isOracleFloatNumber(String typeName, int scale) {
         // https://markhoxey.wordpress.com/2016/05/31/maximum-number-precision/ ==>  Precision >= 38
         // https://stackoverflow.com/questions/29537292/why-can-number-type-in-oracle-scale-up-to-127 ==> scale >= 127
         return typeName.equalsIgnoreCase("number") && scale >= 127;
