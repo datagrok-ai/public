@@ -235,16 +235,27 @@ export function dialog(title = '') { return Dialog.create(title); }
 
 /** Binds [item] with the [element]. It enables selecting it as a current object, drag-and-drop,
  * tooltip, and popup menu.
- * @returns Element. */
+ * @param item
+ * @param {Element} element
+ * @returns {Element}. */
 export function bind(item, element) { return grok_UI_Bind(item, element); }
 
 /**
  * @param {string} value
  * @param {boolean} autoSize
  * @param {boolean} resizable
- * @returns Element */
+ * @returns {HTMLTextAreaElement} */
 export function textArea(value, autoSize = false, resizable = true) {
     return grok_UI_TextArea(value, autoSize, resizable);
+}
+
+/**
+ * @param {string} value
+ * @returns {HTMLInputElement} */
+export function textInput(value) {
+    var input = element('input');
+    input.value = value;
+    return input;
 }
 
 export function rangeSlider(minRange, maxRange, min, max) {
