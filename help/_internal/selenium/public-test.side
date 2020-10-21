@@ -58,7 +58,7 @@
       "id": "ca3734ee-4eae-4b41-a0dc-b501e26430da",
       "comment": "",
       "command": "pause",
-      "target": "3000",
+      "target": "5000",
       "targets": [],
       "value": ""
     }, {
@@ -1969,7 +1969,7 @@
   }],
   "suites": [{
     "id": "a373a6dc-78cb-4ce8-8fc1-4d687b80d8e2",
-    "name": "notebooks-test",
+    "name": "public-test",
     "persistSession": false,
     "parallel": false,
     "timeout": 300,
