@@ -1,1 +1,0 @@
-emcc algs.c dft.c -o algs.js -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s EXPORTED_FUNCTIONS='["_sma","_ffilter","_minmax","_zscore","_boxcox","_exps","_kalman","_malloc","_free"]' -s EXTRA_EXPORTED_RUNTIME_METHODS='["cwrap"]'

@@ -1,0 +1,21 @@
+{
+	"name": "dsp",
+	"fullName": "DSP",
+	"version": "0.0.1",
+	"description": "A pack of various digital signal processing tools",
+	"dependencies": {
+		"datagrok-api": "latest"
+	},
+	"scripts": {
+		"debug-dsp": "grok publish --rebuild",
+		"deploy-dsp": "grok publish --rebuild --release",
+		"build": "webpack",
+		"debug-dsp-dev": "grok publish dev --rebuild",
+		"deploy-dsp-dev": "grok publish dev --rebuild --release",
+		"debug-dsp-local": "grok publish local --rebuild",
+		"deploy-dsp-local": "grok publish local --rebuild --release"
+	},
+  	"sources": [
+    	"src/algs.js"
+  	]
+}
