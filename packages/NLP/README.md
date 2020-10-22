@@ -1,16 +1,27 @@
-NLP is a [Datagrok package](https://datagrok.ai/help/develop/develop#packages) for natural language processing.
+*NLP* is a [Datagrok package](https://datagrok.ai/help/develop/develop#packages) for natural language processing. The package provides integration with [AWS Translate](https://aws.amazon.com/translate/), a neural machine translation service, and extends Datagrok with [info panels](https://datagrok.ai/help/discover/info-panels) for text files.
 
-**Natural Language Processing**, or **NLP** for short, is a branch of artificial intelligence that builds a bridge between computers and human languages. This field has many applications, including:
+*Natural Language Processing*, or *NLP* for short, is a branch of artificial intelligence that builds a bridge between computers and human languages. This field has many applications, including:
 
-- [language identification](https://github.com/datagrok-ai/public/blob/master/packages/NLP/scripts/language-detection.py)
-- [machine translation](https://github.com/datagrok-ai/public/blob/master/packages/NLP/src/package.js)
-- [sentiment analysis](https://github.com/datagrok-ai/public/blob/master/packages/NLP/scripts/vader-sentiment-analysis.py)
-- [text summarization](https://github.com/datagrok-ai/public/blob/master/packages/NLP/scripts/extractive-summarizer.py)
-- topic modeling
+  * [language identification](https://en.wikipedia.org/wiki/Language_identification)
+  * [machine translation](https://en.wikipedia.org/wiki/Machine_translation)
+  * [sentiment analysis](https://en.wikipedia.org/wiki/Sentiment_analysis)
+  * [text summarization](https://en.wikipedia.org/wiki/Automatic_summarization)
+  * [topic modeling](https://en.wikipedia.org/wiki/Topic_model)
 
-The package demonstrates two main ways of developing [info panels](https://datagrok.ai/help/discover/info-panels) for Datagrok: with panel scripts and with JavaScript panel functions.
+The package demonstrates two ways of developing [info panels](https://datagrok.ai/help/discover/info-panels) for Datagrok: with panel scripts and with JavaScript panel functions.
 
-To write a panel script in any of the [languages supported by the platform](https://datagrok.ai/help/develop/scripting#supported-languages), you would need to indicate the `panel` tag and specify conditions for the panel to be shown in the `condition` header parameter. For example, the [scripts](https://github.com/datagrok-ai/public/tree/master/packages/NLP/scripts) folder contains panel scripts written in Python that work on textfiles specifically.
+To write a panel script in any of the [languages supported by the platform](https://datagrok.ai/help/develop/scripting#supported-languages), you should indicate the `panel` tag and specify conditions for the panel to be shown (in the `condition` [header parameter](https://datagrok.ai/help/develop/scripting#header-parameters)):
+
+```python
+#name: Language Detection
+#language: python
+#input: file file {semType: text} [A text to analyze]
+#output: string language {semType: lang} [Detected language]
+#tags: nlp, panel
+#condition: file.isFile && file.size < 1e6 && supportedExt(file.name)
+```
+
+The [scripts](https://github.com/datagrok-ai/public/tree/master/packages/NLP/scripts) folder contains more examples of such panel scripts, which are written in Python and work specifically on text files.
 
 A different approach is used to add an info panel from a JavaScript file. The panel function should be properly annotated to return a widget. A simplified example is shown below:
 
@@ -26,3 +37,9 @@ export function translationPanel(textfile) {
 ```
 
 Refer to [src/package.js](https://github.com/datagrok-ai/public/blob/master/packages/NLP/src/package.js) to see the panel's complete code.
+
+See also:
+
+  * [Natural Language Processing](https://en.wikipedia.org/wiki/Natural_language_processing)
+  * [Scripting](https://datagrok.ai/help/develop/scripting)
+  * [Info Panels](https://datagrok.ai/help/discover/info-panels)

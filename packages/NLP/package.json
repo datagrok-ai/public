@@ -7,13 +7,17 @@
 		"datagrok-api": "latest",
 		"aws-sdk": "^2.762.0"
 	},
+	"devDependencies": {
+		"css-loader": "^5.0.0",
+		"style-loader": "^2.0.0"
+	},
 	"scripts": {
 		"debug-nlp": "grok publish --rebuild",
 		"release-nlp": "grok publish --rebuild --release",
 		"build-nlp": "webpack",
 		"build": "webpack",
-		"debug-nlp-dev": "grok publish dev --rebuild",
-		"release-nlp-dev": "grok publish dev --rebuild --release",
+		"debug-nlp-public": "grok publish public --rebuild",
+		"release-nlp-public": "grok publish public --rebuild --release",
 		"debug-nlp-local": "grok publish local --rebuild",
 		"release-nlp-local": "grok publish local --rebuild --release"
 	}
