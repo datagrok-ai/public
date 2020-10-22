@@ -22,3 +22,4 @@ dist/
 
 # JSDoc
 /js-api/docs
+.DS_Store
