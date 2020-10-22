@@ -7,7 +7,7 @@ export let _package = new DG.Package();
 
 async function importPy(data,samplingFreq,signalType){
 
-    let f = await grok.functions.eval("Pyphysio:importPyphysio");
+    let f = await grok.functions.eval("Biosensors:importPyphysio");
 
     let call = f.prepare({
         'ecg_data':data,
@@ -21,7 +21,7 @@ async function importPy(data,samplingFreq,signalType){
 
 async function  applyFilter(data,samplingFreq,signalType, paramsT){
 
-    let f = await grok.functions.eval("Pyphysio:filtersPyphysio");
+    let f = await grok.functions.eval("Biosensors:filtersPyphysio");
 
     let call = f.prepare({
         'ecg_data':data,
@@ -36,7 +36,7 @@ async function  applyFilter(data,samplingFreq,signalType, paramsT){
 
 async function extractInfo(data,samplingFreq,signalType, paramsT,infoType){
 
-    let f = await grok.functions.eval("Pyphysio:infoPyphysio");
+    let f = await grok.functions.eval("Biosensors:infoPyphysio");
 
     let call = f.prepare({
         'ecg_data':data,
@@ -52,7 +52,7 @@ async function extractInfo(data,samplingFreq,signalType, paramsT,infoType){
 
 async function toIndicators(data,samplingFreq,signalType,paramsT,infoType,indicator){
 
-    let f = await grok.functions.eval("Pyphysio:indicatorsPyphysio");
+    let f = await grok.functions.eval("Biosensors:indicatorsPyphysio");
 
     let call = f.prepare({
         'ecg_data': data,
@@ -91,6 +91,8 @@ function paramsToTable(filtersLST,allParams){
 
 
 //name: pipelineDemo
+//tags: panel, widgets
+//condition: analysisCondition(t)
 export async function pipelineDemo() {
 
     function paramSelector(x) {
@@ -181,10 +183,8 @@ export async function pipelineDemo() {
     let filtersLST = [];
     let allParams = [];
     let paramsT;
-    let paramsView;
     let filterInputs = ui.inputs(filtersLST);
     containerFILTER.appendChild(filterInputs);
-
     let i = 0;
     filterButton.appendChild(ui.button('ADD FILTER',async () => {
 
@@ -203,8 +203,6 @@ export async function pipelineDemo() {
         i++;
     }));
     accFILTER.addPane('parameters', () => paramsContainer)
-
-
     let node2;
     containerFLplot.appendChild(ui.bigButton('PLOT FILTERED',async () => {
 
@@ -214,6 +212,7 @@ export async function pipelineDemo() {
 
     }));
 
+
     // Information extraction dialogue
     let infoInputs = ui.inputs([infoType]);
     containerINFO.appendChild(infoInputs);
@@ -221,11 +220,11 @@ export async function pipelineDemo() {
     containerINFplot.appendChild(ui.bigButton('EXTRACT INFO',async () => {
 
         paramsT = paramsToTable(filtersLST,allParams);
-        paramsView = grok.shell.addTableView(paramsT);
         let plotInfo = await extractInfo(dataTable,samplingFreq,signalType,paramsT,infoType);
         node3 = tableView.dockManager.dock(plotInfo, 'fill', node2, infoType.value);
 
     }));
+
 
     // Indicators dialogue
     let indicatorInputs = ui.inputs([indicator]);
@@ -250,3 +249,4 @@ export async function pipelineDemo() {
     }).show();
 
 }
+
