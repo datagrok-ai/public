@@ -16,7 +16,7 @@ module.exports = {
     },
     output: {
         filename: '[name].js',
-        library: 'pyphysio',
+        library: 'biosensors',
         libraryTarget: 'var',
         path: path.resolve(__dirname, 'dist'),
     },
