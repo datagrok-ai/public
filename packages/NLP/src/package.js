@@ -4,38 +4,34 @@ import * as DG from 'datagrok-api/dg';
 import AWS from 'aws-sdk';
 import lang2code from "./lang2code.json";
 import code2lang from "./code2lang.json";
+import "../css/translation-panel.css";
 
 export let _package = new DG.Package();
 
 // UI components
 let sourceLangInput = ui.choiceInput('', 'Undetermined', [...Object.keys(lang2code), 'Undetermined', 'Other']);
 let targetLangInput = ui.choiceInput('', 'English', Object.keys(lang2code));
+let headerDiv = ui.div([sourceLangInput.root, ui.divText('→', "arrow"), targetLangInput.root], "header-div");
 let translationArea = ui.textArea('');
+translationArea.classList.add("translation-area");
 let statusBar = ui.divText('');
-translationArea.style = 'margin-top: 5px; padding: 5px;';
-let statusBarStyle = 'color: ${1}; border: 1px solid ${2}; background: ${3}; \
-                      box-shadow: 1px 1px 6px ${2}; margin-top: 5px; padding: 5px;';
 let mainDiv = ui.div([
-    ui.div([sourceLangInput.root, ui.divText('→'), targetLangInput.root]),
+    headerDiv,
     translationArea,
     statusBar
-]);
+], "main-div");
 let mainWidget = new DG.Widget(mainDiv);
 let isError;
 
 function statusError(msg) {
     isError = true;
-    statusBar.style = statusBarStyle.replace('${1}', '#763434')
-                                    .replaceAll('${2}', '#eb6767')
-                                    .replace('${3}', '#fbe0e0');
+    statusBar.className = "status";
     statusBar.innerText = msg;
 }
 
 function statusReady(msg) {
     isError = false;
-    statusBar.style = statusBarStyle.replace('${1}', '#286344')
-                                    .replaceAll('${2}', '#3cb173')
-                                    .replace('${3}', '#dcf3e7');
+    statusBar.className = "status";
     statusBar.innerText = msg;
 }
 
@@ -54,7 +50,10 @@ async function translateText(translate, params) {
 
 async function getCredentials() {
     let credentialsResponse = await _package.getCredentials();
-    if (credentialsResponse === null) return {};
+    if (credentialsResponse === null) {
+        statusError('Package credentials are not set.');
+        return {};
+    }
     let credentials = {
         accessKeyId: credentialsResponse.parameters['accessKeyId'],
         secretAccessKey: credentialsResponse.parameters['secretAccessKey']
@@ -105,7 +104,7 @@ async function doTranslation() {
         TargetLanguageCode: targetCode
     });
     if (output.error === 1) statusError('Error calling Amazon Translate.');
-    else statusReady('Done!');
+    else statusReady('Your translation is ready.');
     translationArea.value = output.translation + (cropped ? '...' : '');
 }
 
@@ -125,22 +124,23 @@ export async function translationPanel(textfile) {
       return mainWidget;
     }
 
-    [sourceLang, sourceCode] = (await detectLanguage(sourceText)).slice(0, 2);
-    // `Other` refers to detected languages that are not currently supported by AWS
-    sourceLangInput.value = sourceCode in code2lang ? code2lang[sourceCode] : 'Other';
     // Character limit per request for real-time translation
     let maxLength = 5000;
     if (sourceText.length > maxLength) {
-      cropped = true;
-      sourceText = sourceText.substring(0, maxLength);
+        cropped = true;
+        sourceText = sourceText.substring(0, maxLength);
     }
+
+    [sourceLang, sourceCode] = (await detectLanguage(sourceText)).slice(0, 2);
+    // `Other` refers to detected languages that are not currently supported by AWS
+    sourceLangInput.value = sourceCode in code2lang ? code2lang[sourceCode] : 'Other';
+
     return mainWidget;
 }
 
 //name: exportFunc
 //tags: autostart
-export async function toScriptInit() {
-    // Configure AWS and create an instance of AWS Translate
+export async function initAWS() {
     AWS.config.update({
       apiVersion: 'latest',
       credentials: await getCredentials(),

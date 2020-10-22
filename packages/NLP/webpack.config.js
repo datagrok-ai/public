@@ -14,6 +14,14 @@ module.exports = {
         "rxjs": "rxjs",
         "rxjs/operators": "rxjs.operators"
     },
+    module: {
+        rules: [
+            {
+                test: /\.css$/i,
+                use: ['style-loader', 'css-loader'],
+            },
+        ]
+    },
     output: {
         filename: '[name].js',
         library: 'nlp',

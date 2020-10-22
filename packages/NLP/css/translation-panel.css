@@ -1,0 +1,38 @@
+.header-div {
+    display: flex;
+}
+
+.arrow {
+    padding: 5px 2px 5px 2px;
+}
+
+.translation-area {
+    margin-top: 5px;
+    padding: 5px;
+    height: 100px;
+}
+
+.main-div {
+    display: flex;
+    flex-direction: column;
+    min-width: 100%;
+    overflow: hidden;
+    margin-left: -32px;
+}
+
+.status {
+    color: #40607F;
+    border: 1px solid #7990A5;
+    background: #ECEFF2;
+    max-width: 288px;
+    margin-top: 5px;
+    padding: 5px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.status:hover {
+    overflow: visible;
+    white-space: normal;
+}
