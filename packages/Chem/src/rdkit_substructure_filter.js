@@ -35,6 +35,7 @@ class SubstructureFilter extends DG.Filter {
             mol.delete();
         }
 
+        subMol.delete();
         this.dataFrame.filter.fireChanged();
     }
 }
