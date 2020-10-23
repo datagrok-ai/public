@@ -60,7 +60,7 @@ class ChemPackage extends DG.Package {
     //input: column molColumn
     //output: column result [fingerprints]
     getFingerprints(molColumn) {
-        let fps = data.toList().map((smiles) => DG.BitSet.fromString(ChemPackage._morganFP(smiles)).d);
+        let fps = molColumn.toList().map((smiles) => DG.BitSet.fromString(ChemPackage._morganFP(smiles)).d);
         return DG.Column.fromList('object', 'fingerprints', fps);
     }
 
