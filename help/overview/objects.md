@@ -28,12 +28,14 @@ them. We call these objects _entities_. Here they are:
 The following operations can be applied to any entity:
 
   * Getting its URL
-  * Referencing it in a [chat](../collaborate/chat.md), in [markup](markup.md) or in a dashboard
-  * Assigning [privileges](../govern/security.md#privileges) to a particular instance
+  * Referencing it in a [chat](../collaborate/chat.md), in [markup](markup.md), or in a [dashboard](dashboard.md)
+  * Assigning [privileges](../govern/authorization.md), such as rights to view, edit, or share, to a particular instance
   * Using it as a parameter in the [audit](../govern/audit.md) record
   * Deleting it
 
 See also:
 
+  * [Privileges](../govern/authorization.md)
+  * [Sharing](../collaborate/sharing.md)
   * [Self-Learning Platform](../learn/self-learning-platform.md)
   * [Audit](../govern/audit.md)
