@@ -20,12 +20,21 @@ gets accepted by a server, and then routed to the corresponding database connect
 
 ## How to add a new database connector 
 
-Create a [DataProvider](https://github.com/datagrok-ai/public/blob/5c9a8df6b7f1494ae5f666bd2aaf5c6d55bc4dee/connectors/grok_connect/src/main/java/grok_connect/providers/JdbcDataProvider.java) 
+1. Create a [DataProvider](https://github.com/datagrok-ai/public/blob/5c9a8df6b7f1494ae5f666bd2aaf5c6d55bc4dee/connectors/grok_connect/src/main/java/grok_connect/providers/JdbcDataProvider.java) 
 subclass. If you are adding a JDBC provider, subclass it from the 
-[JdbcDataProvider](https://github.com/datagrok-ai/public/blob/5c9a8df6b7f1494ae5f666bd2aaf5c6d55bc4dee/connectors/grok_connect/src/main/java/grok_connect/providers/JdbcDataProvider.java)
-Then, override the required methods depending on the specifics of the database/provider, and add it to 
-the list of supported providers (see `DataProvider.Providers`).
+[JdbcDataProvider](https://github.com/datagrok-ai/public/blob/5c9a8df6b7f1494ae5f666bd2aaf5c6d55bc4dee/connectors/grok_connect/src/main/java/grok_connect/providers/JdbcDataProvider.java).
 
-For testing and debug purposes, a command-line 
-["GrokConnectTest"](https://github.com/datagrok-ai/public/tree/master/connectors/grok_connect/src/test/java/grok_connect) 
-application could be quite useful. 
+2. Then, override the required methods depending on the specifics of the database/provider.
+3. Add it to the `Providers` list (list of supported providers) in the `connectors_info/DataProvider.java`.
+
+## How to test a database connector
+
+You have two options for testing your database connector:
+
+Test with `GrokConnectShell`:
+
+1. Open `connectors/examples/query.json`(or use another file which you will need to use in below configuration) and set the query information: set the query itself, datasource equal to `descriptor.type` in your provider, credentials to server and server address, port, and db name.
+2. Add next run configuration: `Application`, program arguments: `--q examples/query.json  --o examples/output.csv` if you want to save your output in the `connectors/examples/output.csv`, or `--q examples/query.json` if you want to print your output.
+3. Now you can run `GrokConnectShell.main()` with the added configuration and check the output.
+
+Or you can try to connect Datagrok Docker image to the `grok_connect`.
