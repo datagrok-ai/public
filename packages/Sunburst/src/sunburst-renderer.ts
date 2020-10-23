@@ -1,5 +1,7 @@
 import * as d3 from "d3";
-import {TreeData, Branch} from './tree-data-builder';
+import { Branch, TreeData } from './tree-data-builder';
+import { ColorMode, OpacityMode, SunburstRendererColor } from './sunburst-renderer-color';
+import { HierarchyRectangularNode } from 'd3';
 
 interface Rectangle {
     x0: number;
@@ -14,9 +16,11 @@ export type ClickHandler = (rowIds: string[]) => void;
 export class SunburstRenderer {
 
     private readonly format = d3.format("~r");
+    private readonly colorPicker: SunburstRendererColor;
 
-    constructor(private readonly colors: string[],
+    constructor(colors: string[],
                 private readonly clickHandler: ClickHandler) {
+        this.colorPicker = new SunburstRendererColor(colors);
     }
 
     private static sameBranch(target: TreeData, d: TreeData) {
@@ -29,9 +33,19 @@ export class SunburstRenderer {
         return false;
     }
 
-    public render(htmlElement: HTMLElement, data: TreeData, width: number, height: number, colorMode: number) {
+    public render(htmlElement: HTMLElement, data: TreeData, width: number, height: number, colorMode: ColorMode) {
+        const center = Math.min(width, height) / 2;
+        const radius = center * 0.9;
+        const root = this.partitionLayout(data, radius);
+
+        this.colorPicker.setup(root);
+        this.colorPicker.colorMode = colorMode;
+        this.colorPicker.opacityMode = OpacityMode.GRADIENT;
+
+        const svg = this.createSvg(root, radius);
+        const html = svg.attr("viewBox", `-${center} -${center} ${width} ${height}`).node()!;
         htmlElement.innerHTML = '';
-        htmlElement.appendChild(this.createSvg(data, width, height, colorMode));
+        htmlElement.appendChild(html);
     }
 
     private partitionLayout(data: TreeData, radius: number) {
@@ -65,13 +79,8 @@ export class SunburstRenderer {
             });
     }
 
-    private createSvg(data: TreeData, width: number, height: number, colorMode: number) {
-        const center = Math.min(width, height) / 2;
-        const radius = center * 0.9;
-
-        const root = this.partitionLayout(data, radius);
+    private createSvg(root: HierarchyRectangularNode<Branch>, radius: number) {
         const elements = root.descendants().filter(d => d.depth);
-
         const svg = d3.create("svg");
 
         // Selection (partial) segments
@@ -80,16 +89,8 @@ export class SunburstRenderer {
             .data(elements)
             .join("path")
             .attr("d", this.arcSelection(radius))
-        ;
-        if (!colorMode) {
-            segmentFiltered
-                .attr("fill-opacity", SunburstRenderer.opacityMode1)
-                .attr("fill", this.colorMode1(root))
-        } else {
-            segmentFiltered
-                .attr("fill-opacity", SunburstRenderer.opacityMode2)
-                .attr("fill", this.colorMode2(root))
-        }
+            .attr("fill-opacity", d => this.colorPicker.getOpacity(d))
+            .attr("fill", d => this.colorPicker.getColor(d));
 
         // Sunburst segments
         const segment = svg.append("g")
@@ -97,25 +98,17 @@ export class SunburstRenderer {
             .data(elements)
             .join("path")
             .attr("d", this.arc(radius))
-        ;
-        if (!colorMode) {
-            segment
-                .attr("fill-opacity", SunburstRenderer.opacityMode1)
-                .attr("fill", this.colorMode1(root))
-        } else {
-            segment
-                .attr("fill-opacity", SunburstRenderer.opacityMode2)
-                .attr("fill", this.colorMode2(root))
-        }
+            .attr("fill-opacity", d => this.colorPicker.getOpacity(d))
+            .attr("fill", d => this.colorPicker.getColor(d));
 
         segment.on("click", this.onClick)
             .on("mouseover", target => {
                 segment.attr("fill-opacity", d => {
-                    return SunburstRenderer.sameBranch(target, d) ? 0.8 : (!colorMode ? SunburstRenderer.opacityMode1(d) : SunburstRenderer.opacityMode2(d));
+                    return SunburstRenderer.sameBranch(target, d) ? 0.8 : this.colorPicker.getOpacity(d);
                 });
             })
             .on("mouseleave", target => {
-               !colorMode ? segment.attr("fill-opacity", SunburstRenderer.opacityMode1) : segment.attr("fill-opacity", SunburstRenderer.opacityMode2);
+               segment.attr("fill-opacity", d => this.colorPicker.getOpacity(d));
             })
             .append("title")
             .text(this.getTooltipText);
@@ -145,7 +138,7 @@ export class SunburstRenderer {
             // .attr("stroke-alignment", "outer")
             .text((d) => d.data.category);
 
-        return svg.attr("viewBox", `-${center} -${center} ${width} ${height}`).node()!;
+        return svg
     }
 
     private getTooltipText = (d: TreeData): string => {
@@ -183,41 +176,4 @@ export class SunburstRenderer {
     private onClick = (d: TreeData) => {
         this.clickHandler(this.getCategories(d));
     }
-
-    private colorMode1(root: TreeData) {
-        const color = d3.scaleOrdinal(this.colors.slice(0, (root.children?.length || 0) + 1));
-
-        return (d: TreeData) => {
-            let v: typeof d | null = d;
-            while (!!v && v.depth > 1) v = v.parent;
-            return color(v?.data?.category || '');
-        }
-    }
-
-    private colorMode2(root: TreeData) {
-        return (d: TreeData) => {
-            const nodeColor = d.data?.properties?.color || 'rgb(230, 247, 255)';
-            return nodeColor; // d3.interpolate(nodeColor, "white")(.5);
-        }
-    }
-
-    private colorMode3(root: TreeData) {
-        return (d: TreeData) => {
-            const nodeColor = d.data?.properties?.color;
-            const parentColor = d.parent?.data?.properties?.color;
-            if (nodeColor) {
-                return parentColor ? d3.interpolateRgb.gamma(2.2)(nodeColor, parentColor)(.3) : nodeColor;
-            }
-            return 'rgb(230, 247, 255)';
-        }
-    }
-
-    private static opacityMode2(d: TreeData) {
-        return 0.1 + 0.5 / Math.pow(2, d.depth - 1);
-    }
-
-    private static opacityMode1(d: TreeData) {
-        return 0.3 + 0.5 / Math.pow(2, d.depth - 1);
-    }
-
 }
