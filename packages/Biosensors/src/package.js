@@ -89,10 +89,50 @@ function paramsToTable(filtersLST,allParams){
     return paramsT;
 }
 
+// Table preprocessing function
+// Created a new truncated dataframe
+// Input: colsFilter (type: list), list of columns to keep
+//        table (type: dataframe), original dataframe
+// Output: t (type: dataframe), new truncated dataframe
+function tableTrim(cols, table){
+    let l = [];
+    for (let j = 0; j < cols.length; j++) {
+        if (cols[j] !== '') {
+            l.push(table.columns.byName(cols[j]));
+        }
+    }
+    let t = DG.DataFrame.fromColumns(l);
+    return t;
+}
+
+
+//name: Biosensors
+//tags: panel, widgets
+//input: dataframe table
+//condition: analysisCondition(table)
+export function Biosensors(table){
+
+    let v = ui.dialog('DEMO PIPELINE');
+
+    let column = ui.columnsInput('Biosensor', table);
+    column.setTooltip('choose one column of biosensor data');
+
+    let samplingFreq = ui.intInput('Sampling frequency', 2048);
+    samplingFreq.setTooltip('Number of samples per second');
+
+    let containerImport = ui.div();
+    containerImport.appendChild(ui.inputs([column,samplingFreq]));
+
+    v.add(containerImport).onOK(() => {
+        grok.shell.addTableView(tableTrim(column.value,table));
+    }).show();
+
+}
+
+
+
 
 //name: pipelineDemo
-//tags: panel, widgets
-//condition: analysisCondition(t)
 export async function pipelineDemo() {
 
     function paramSelector(x) {
