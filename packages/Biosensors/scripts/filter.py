@@ -13,7 +13,7 @@ import pandas as pd
 
 # import the Signal classes
 import pyphysio as ph
-import pandas as pd
+
 
 # convert to numpy
 ecg_data = np.array(ecg_data.ecg_data)

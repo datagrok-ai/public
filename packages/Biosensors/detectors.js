@@ -23,7 +23,6 @@ class BiosensorsPackageDetectors extends DG.Package {
         }
 
         if (checkSemType('Biosensor')) {
-            grok.shell.info('check successful')
             return true;
         }
     }
