@@ -52,7 +52,7 @@ class ChemPackage extends DG.Package {
     static _morganFP(smiles, fp_length = 128, fp_radius = 2) {
         let mol = Module.get_mol(smiles);
         let mfp = mol.get_morgan_fp(fp_radius, fp_length);
-        mol.delete;
+        mol.delete();
         return mfp;
     }
 
@@ -60,7 +60,7 @@ class ChemPackage extends DG.Package {
     //input: column molColumn
     //output: column result [fingerprints]
     getFingerprints(molColumn) {
-        let fps = data.toList().map((smiles) => DG.BitSet.fromString(ChemPackage._morganFP(smiles)).d);
+        let fps = molColumn.toList().map((smiles) => DG.BitSet.fromString(ChemPackage._morganFP(smiles)).d);
         return DG.Column.fromList('object', 'fingerprints', fps);
     }
 
