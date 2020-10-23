@@ -92,7 +92,7 @@ export function iconFA(name, handler, tooltipMsg = null) {
     i.classList.add(`fa-${name}`);
     i.addEventListener("click", handler);
     if (tooltipMsg !== null)
-        tooltip(i, tooltipMsg);
+        tooltip.bind(i, tooltipMsg);
     return i;
 }
 
