@@ -4,6 +4,7 @@ import { SunburstRenderer } from './sunburst-renderer';
 import { Branch, TreeData, TreeDataBuilder } from './tree-data-builder';
 import { HierarchyNode } from 'd3-hierarchy';
 import { BitSet } from 'datagrok-api/dg';
+import { ColorMode } from './sunburst-renderer-color';
 
 export class SunburstViewer extends DG.JsViewer {
 
@@ -78,7 +79,7 @@ export class SunburstViewer extends DG.JsViewer {
         const width = this.root.parentElement!.offsetWidth;
 
         if (this.treeData) {
-            this.renderer.render(this.chartDiv, this.treeData, width, height, 1);
+            this.renderer.render(this.chartDiv, this.treeData, width, height, ColorMode.NODE);
         }
     }
 

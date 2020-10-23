@@ -179,6 +179,8 @@ export class TreeDataBuilder {
         });
     }
 
+    // Color distribution per category per layer
+    // Enumerate each layer from beginning of the palette
     private generateColorizationMapPerLevel(dataframe: DataFrame, categoryColumns: Column[], colors: ColorValue[]): ColorizationMap[] {
         return categoryColumns.map(column => {
             const categories = dataframe.getCol(column.name).categories;
@@ -189,6 +191,8 @@ export class TreeDataBuilder {
         });
     }
 
+    // Color distribution per category per layer (alternative)
+    // Enumerate each layer from the last color of previous layer
     private generateColorizationMapPerLevel2(dataframe: DataFrame, categoryColumns: Column[], colors: ColorValue[]): ColorizationMap[] {
         let colorIndex = 0;
         return categoryColumns.map(column => {
@@ -201,6 +205,7 @@ export class TreeDataBuilder {
         });
     }
 
+    // Assign colors to the tree elements
     private colorizeTree(root: Branch, colors: string[], maps: ColorizationMap[]): void {
         root.traverseTree((branch, depth) => {
             if (!depth) {
