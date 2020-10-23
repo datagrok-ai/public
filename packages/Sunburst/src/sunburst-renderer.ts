@@ -1,5 +1,7 @@
 import * as d3 from "d3";
-import {TreeData, Branch} from './tree-data-builder';
+import { Branch, TreeData } from './tree-data-builder';
+import { ColorMode, OpacityMode, SunburstRendererColor } from './sunburst-renderer-color';
+import { HierarchyRectangularNode } from 'd3';
 
 interface Rectangle {
     x0: number;
@@ -14,13 +16,11 @@ export type ClickHandler = (rowIds: string[]) => void;
 export class SunburstRenderer {
 
     private readonly format = d3.format("~r");
+    private readonly colorPicker: SunburstRendererColor;
 
-    constructor(private readonly colors: string[],
+    constructor(colors: string[],
                 private readonly clickHandler: ClickHandler) {
-    }
-
-    private static shade(d: TreeData) {
-        return 0.1 + 0.5 / Math.pow(2, d.depth - 1);
+        this.colorPicker = new SunburstRendererColor(colors);
     }
 
     private static sameBranch(target: TreeData, d: TreeData) {
@@ -33,9 +33,19 @@ export class SunburstRenderer {
         return false;
     }
 
-    public render(htmlElement: HTMLElement, data: TreeData, width: number, height: number) {
+    public render(htmlElement: HTMLElement, data: TreeData, width: number, height: number, colorMode: ColorMode) {
+        const center = Math.min(width, height) / 2;
+        const radius = center * 0.9;
+        const root = this.partitionLayout(data, radius);
+
+        this.colorPicker.setup(root);
+        this.colorPicker.colorMode = colorMode;
+        this.colorPicker.opacityMode = OpacityMode.GRADIENT;
+
+        const svg = this.createSvg(root, radius);
+        const html = svg.attr("viewBox", `-${center} -${center} ${width} ${height}`).node()!;
         htmlElement.innerHTML = '';
-        htmlElement.appendChild(this.createSvg(data, width, height));
+        htmlElement.appendChild(html);
     }
 
     private partitionLayout(data: TreeData, radius: number) {
@@ -69,54 +79,48 @@ export class SunburstRenderer {
             });
     }
 
-    private createSvg(data: TreeData, width: number, height: number) {
-        const center = Math.min(width, height) / 2;
-        const radius = center * 0.9;
-
-        const root = this.partitionLayout(data, radius);
+    private createSvg(root: HierarchyRectangularNode<Branch>, radius: number) {
         const elements = root.descendants().filter(d => d.depth);
-
         const svg = d3.create("svg");
 
         // Selection (partial) segments
-        svg.append("g")
+        const segmentFiltered = svg.append("g")
             .selectAll("path")
             .data(elements)
             .join("path")
-            .attr("fill", this.defaultSegmentFill(root))
-            .attr("fill-opacity", SunburstRenderer.shade)
             .attr("d", this.arcSelection(radius))
-        ;
+            .attr("fill-opacity", d => this.colorPicker.getOpacity(d))
+            .attr("fill", d => this.colorPicker.getColor(d));
 
         // Sunburst segments
         const segment = svg.append("g")
             .selectAll("path")
             .data(elements)
             .join("path")
-            .attr("fill", this.defaultSegmentFill(root))
-            .attr("fill-opacity", SunburstRenderer.shade)
             .attr("d", this.arc(radius))
-        ;
+            .attr("fill-opacity", d => this.colorPicker.getOpacity(d))
+            .attr("fill", d => this.colorPicker.getColor(d));
 
         segment.on("click", this.onClick)
             .on("mouseover", target => {
                 segment.attr("fill-opacity", d => {
-                    return SunburstRenderer.sameBranch(target, d) ? 0.8 : SunburstRenderer.shade(d);
+                    return SunburstRenderer.sameBranch(target, d) ? 0.8 : this.colorPicker.getOpacity(d);
                 });
             })
             .on("mouseleave", target => {
-                segment.attr("fill-opacity", SunburstRenderer.shade);
+               segment.attr("fill-opacity", d => this.colorPicker.getOpacity(d));
             })
             .append("title")
             .text(this.getTooltipText);
 
+        const fontSize = radius / 20;
         svg.append("g")
             .attr("pointer-events", "none")
             .attr("text-anchor", "middle")
-            .attr("font-size", 10)
+            .attr("font-size", fontSize)
             .attr("font-family", "sans-serif")
             .selectAll("text")
-            .data(root.descendants().filter(d => d.depth && (d.y0 + d.y1) / 2 * (d.x1 - d.x0) > 10))
+            .data(root.descendants().filter(d => d.depth && (d.y0 + d.y1) / 2 * (d.x1 - d.x0) > fontSize))
             .join("text")
             .attr("transform", function (d) {
                 const x = (d.x0 + d.x1) / 2 * 180 / Math.PI;
@@ -124,9 +128,17 @@ export class SunburstRenderer {
                 return `rotate(${x - 90}) translate(${y},0) rotate(${x < 180 ? 0 : 180})`;
             })
             .attr("dy", "0.35em")
+            .attr("fill", "black")
+            .attr("fill-opacity", 1)
+            // .attr("stroke", "black")
+            // .attr("stroke-width", ".5px")
+            // .attr("stroke-linecap", "round")
+            // .attr("stroke-linejoin", "round")
+            // .attr("stroke-opacity", .3)
+            // .attr("stroke-alignment", "outer")
             .text((d) => d.data.category);
 
-        return svg.attr("viewBox", `-${center} -${center} ${width} ${height}`).node()!;
+        return svg
     }
 
     private getTooltipText = (d: TreeData): string => {
@@ -163,15 +175,5 @@ export class SunburstRenderer {
 
     private onClick = (d: TreeData) => {
         this.clickHandler(this.getCategories(d));
-    }
-
-    private defaultSegmentFill(root: TreeData) {
-        const color = d3.scaleOrdinal(this.colors.slice(0, (root.children?.length || 0) + 1));
-
-        return (d: TreeData) => {
-            let v: typeof d | null = d;
-            while (!!v && v.depth > 1) v = v.parent;
-            return color(v?.data?.category || '');
-        }
     }
 }

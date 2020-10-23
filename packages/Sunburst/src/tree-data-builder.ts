@@ -5,7 +5,16 @@ import * as grok from 'datagrok-api/grok';
 
 export type TreeData = HierarchyNode<Branch>
 
-export type ColumnCategory = string;
+type ColorValue = string;
+type ColorizationMap = Map<ColumnCategory, ColorValue>
+
+export class BranchProps {
+    readonly color?: string;
+
+    constructor(color?: string) {
+        this.color = color;
+    }
+}
 
 export class BranchStats {
     readonly count: number;
@@ -17,9 +26,12 @@ export class BranchStats {
     }
 }
 
+export type ColumnCategory = string;
+
 export class Branch {
     readonly category: ColumnCategory;
     readonly children: Map<ColumnCategory, Branch> = new Map();
+    properties?: BranchProps;
     statsOverall?: BranchStats;
     statsSelected?: BranchStats;
 
@@ -28,17 +40,17 @@ export class Branch {
         this.children = new Map();
     }
 
-    public traverseTree(mapFn: (branch: Branch) => void, currentBranch?: Branch): void {
+    public traverseTree(mapFn: (branch: Branch, depth: number) => void, currentBranch?: Branch, depth = 0): void {
         if (currentBranch == null) {
-            this.traverseTree(mapFn, this);
+            this.traverseTree(mapFn, this, 0);
             return;
         }
         if (currentBranch.children && currentBranch.children.size) {
             for (const branch of currentBranch.children.values()) {
-                this.traverseTree(mapFn, branch);
+                this.traverseTree(mapFn, branch, depth + 1);
             }
         }
-        mapFn(currentBranch);
+        mapFn(currentBranch, depth);
     }
 }
 
@@ -55,7 +67,8 @@ export class TreeDataBuilder {
         categoryColumns: Column[],
         valueColumn: Column | undefined,
         dataframe: DataFrame,
-        selection: BitSet
+        selection: BitSet,
+        colors?: ColorValue[]
     ): TreeData {
         const aggOverall = this.aggregate(dataframe, categoryColumns, valueColumn);
 
@@ -110,10 +123,14 @@ export class TreeDataBuilder {
             }
         }
         this.recalculateBranchStats(root);
+        if (colors) {
+            const colorizationMaps = this.generateColorizationMapPerLevel(dataframe, categoryColumns, colors);
+            this.colorizeTree(root, colors, colorizationMaps);
+        }
 
         return d3
             .hierarchy(root, x => Array.from(x.children.values()))
-            .sum(x => x.statsOverall?.count || 0);
+            .sum(x => x.children.size ? 1 : x.statsOverall!.count);
     }
 
     private aggregate(dataframe: DataFrame, categoryColumns: Column[], valueColumn: Column | undefined, selection?: BitSet | undefined) {
@@ -160,5 +177,41 @@ export class TreeDataBuilder {
                 branch.statsSelected = new BranchStats(selectedCountTotal, selectedSumTotal);
             }
         });
+    }
+
+    // Color distribution per category per layer
+    // Enumerate each layer from beginning of the palette
+    private generateColorizationMapPerLevel(dataframe: DataFrame, categoryColumns: Column[], colors: ColorValue[]): ColorizationMap[] {
+        return categoryColumns.map(column => {
+            const categories = dataframe.getCol(column.name).categories;
+            return categories.reduce((map, category, i) => {
+                map.set(category, colors[i % colors.length]);
+                return map;
+            }, new Map() as ColorizationMap);
+        });
+    }
+
+    // Color distribution per category per layer (alternative)
+    // Enumerate each layer from the last color of previous layer
+    private generateColorizationMapPerLevel2(dataframe: DataFrame, categoryColumns: Column[], colors: ColorValue[]): ColorizationMap[] {
+        let colorIndex = 0;
+        return categoryColumns.map(column => {
+            const categories = dataframe.getCol(column.name).categories;
+            return categories.reduce((map, category) => {
+                map.set(category, colors[colorIndex]);
+                colorIndex = (colorIndex + 1) % colors.length
+                return map;
+            }, new Map() as ColorizationMap);
+        });
+    }
+
+    // Assign colors to the tree elements
+    private colorizeTree(root: Branch, colors: string[], maps: ColorizationMap[]): void {
+        root.traverseTree((branch, depth) => {
+            if (!depth) {
+                return;
+            }
+            branch.properties = new BranchProps(maps[depth - 1].get(branch.category))
+        })
     }
 }
