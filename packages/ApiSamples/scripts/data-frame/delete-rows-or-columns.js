@@ -4,7 +4,9 @@ let df = DG.DataFrame.fromColumns([
     DG.Column.fromList(DG.TYPE.FLOAT, 'z', [7, 8, 9])
 ]);
 let cols = df.columns;
-cols.remove("x");
+// Removes the second column, named 'y'
+cols.remove('y');
 let rows = df.rows;
+// Removes the second row
 rows.removeAt(1);
 let view = grok.shell.addTableView(df);
