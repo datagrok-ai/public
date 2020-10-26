@@ -1,6 +1,6 @@
 Viewers is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.
 
-This package sohwcases creating custom [viewers](https://datagrok.ai/help/visualize/viewers).
+This package showcases creating custom [viewers](https://datagrok.ai/help/visualize/viewers).
 
 The three new viewers are present:
 
@@ -13,3 +13,4 @@ See also:
   * [Grok API](https://datagrok.ai/help/develop/js-api)
   * [Packages](https://datagrok.ai/help/develop/develop#packages)
   * [Viewers](https://datagrok.ai/help/visualize/viewers)
+  * [Custom Viewers](https://datagrok.ai/help/develop/js-api#custom-viewers)
