@@ -179,6 +179,9 @@ export class Dialog {
      * @param {HTMLElement | Widget | InputBase} content
      * @returns {Dialog} */
     add(content) { grok_Dialog_Add(this.d, toDart(ui.extract(content))); return this; }
+
+    /** Closes the dialog. */
+    close() { grok_Dialog_Close(this.d); }
 }
 
 /**
