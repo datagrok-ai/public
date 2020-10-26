@@ -119,80 +119,6 @@ void EMSCRIPTEN_KEEPALIVE boxcox(float *buffer, int bufSize, float lambda, float
     }
 }
 
-void EMSCRIPTEN_KEEPALIVE ffilterold(float *buffer, int bufSize, float lowcuthz, float hicuthz)
-{
-    //void EMSCRIPTEN_KEEPALIVE ffilter(float *buffer, int bufSize, float lowcut, float hicut){
-    float imbuffer[bufSize];
-    float rout[bufSize];
-    float imout[bufSize];
-    for (int i = 0; i < bufSize; i++)
-    {
-        imbuffer[i] = 0;
-    }
-    float *imin = imbuffer;
-    float *routp = rout;
-    float *imoutp = imout;
-    dft(buffer, imbuffer, routp, imoutp, bufSize);
-    int low_frq_number = (int)lowcuthz;
-    int hi_frq_number = (int)hicuthz;
-    //int low_frq_number = (int) (bufSize*(1-lowcut))/2;
-    //int hi_frq_number = (int) (bufSize*hicut)/2;
-    int center = (int)bufSize / 2.0;
-    for (int i = low_frq_number; i < center; i++)
-    {
-        rout[i] = 0;
-        imout[i] = 0;
-        rout[bufSize - i - 1] = 0;
-        imout[bufSize - i - 1] = 0;
-    }
-    for (int i = 0; i < hi_frq_number; i++)
-    {
-        rout[i] = 0;
-        imout[i] = 0;
-        rout[bufSize - i - 1] = 0;
-        imout[bufSize - i - 1] = 0;
-    }
-    idft(routp, imoutp, buffer, imbuffer, bufSize);
-}
-
-void EMSCRIPTEN_KEEPALIVE sdensityold(float *buffer, int bufSize)
-{
-    float imbuffer[bufSize];
-    float rout[bufSize];
-    float imout[bufSize];
-    for (int i = 0; i < bufSize; i++)
-    {
-        imbuffer[i] = 0;
-    }
-    float *imin = imbuffer;
-    float *routp = rout;
-    float *imoutp = imout;
-    dft(buffer, imbuffer, routp, imoutp, bufSize);
-    for (int i = 0; i < bufSize; i++)
-    {
-        buffer[i] = pow(rout[i], 2) + pow(imout[i], 2);
-    }
-}
-
-void EMSCRIPTEN_KEEPALIVE samplitude(float *buffer, int bufSize)
-{
-    float imbuffer[bufSize];
-    float rout[bufSize];
-    float imout[bufSize];
-    for (int i = 0; i < bufSize; i++)
-    {
-        imbuffer[i] = 0;
-    }
-    float *imin = imbuffer;
-    float *routp = rout;
-    float *imoutp = imout;
-    dft(buffer, imbuffer, routp, imoutp, bufSize);
-    for (int i = 0; i < bufSize; i++)
-    {
-        buffer[i] = rout[i];
-    }
-}
-
 void EMSCRIPTEN_KEEPALIVE gettrend(float *buffer, int bufSize)
 {
     float sumXY = 0;
@@ -233,7 +159,7 @@ void EMSCRIPTEN_KEEPALIVE removetrend(float *buffer, int bufSize)
     }
 }
 
-void EMSCRIPTEN_KEEPALIVE ffilter(float *buffer, int bufSize, float lowcuthz, float hicuthz)
+void EMSCRIPTEN_KEEPALIVE ffilter(float *buffer, int bufSize, int lowcuthz, int hicuthz)
 {
     int powerOf2 = pow(2, ceil(log(bufSize) / log(2)));
     float reInput[powerOf2];
@@ -255,22 +181,22 @@ void EMSCRIPTEN_KEEPALIVE ffilter(float *buffer, int bufSize, float lowcuthz, fl
     float *rOutPtr = reOutput;
     float *imOutPtr = imOutput;
     fft(rInPtr, imInPtr, rOutPtr, imOutPtr, powerOf2, false);
-    int low_frq_number = (int)lowcuthz;
-    int hi_frq_number = (int)hicuthz;
+    int low_frq_number = (int)lowcuthz/2.0;
+    int hi_frq_number = (int) hicuthz/2.0;
     int center = (int)powerOf2 / 2.0;
     for (int i = low_frq_number; i < center; i++)
     {
         reOutput[i] = 0;
         imOutput[i] = 0;
-        reOutput[bufSize - i - 1] = 0;
-        imOutput[bufSize - i - 1] = 0;
+        reOutput[powerOf2 - i - 1] = 0;
+        imOutput[powerOf2 - i - 1] = 0;
     }
     for (int i = 0; i < hi_frq_number; i++)
     {
         reOutput[i] = 0;
         imOutput[i] = 0;
-        reOutput[bufSize - i - 1] = 0;
-        imOutput[bufSize - i - 1] = 0;
+        reOutput[powerOf2 - i - 1] = 0;
+        imOutput[powerOf2 - i - 1] = 0;
     }
     fft(rOutPtr, imOutPtr, rInPtr, imInPtr, powerOf2, true);
     for (int i = 0; i < bufSize; i++)
@@ -279,8 +205,7 @@ void EMSCRIPTEN_KEEPALIVE ffilter(float *buffer, int bufSize, float lowcuthz, fl
     }
 }
 
-void EMSCRIPTEN_KEEPALIVE sdensity(float *buffer, int bufSize)
-//HIGHER FREQUENCIES MAY BE CUT OUT
+int EMSCRIPTEN_KEEPALIVE sdensity(float *buffer, int bufSize)
 {
     int powerOf2 = pow(2, ceil(log(bufSize) / log(2)));
     float reInput[powerOf2];
@@ -306,5 +231,46 @@ void EMSCRIPTEN_KEEPALIVE sdensity(float *buffer, int bufSize)
     for (int i = 0; i < bufSize; i++)
     {
         buffer[i] = pow(reOutput[i], 2) + pow(imOutput[i], 2);
+    }
+    return ((int)powerOf2/2);
+}
+
+int EMSCRIPTEN_KEEPALIVE asamp(float *buffer, int bufSize, int windowSize, int ofset)
+{
+    // Simple Moving average resampling
+    // windowSize - resampling window size;
+    // ofset - additional parameter, allowing downsampling to start not from zero
+    int newSize = floor((bufSize - ofset) / ((float)windowSize));
+    float out[newSize];
+    for (int i = 0; i < newSize; i++)
+    {
+        float currentValue = 0;
+        for (int j = 0; j < windowSize; j++)
+        {
+            currentValue = currentValue + buffer[windowSize * i + ofset + j];
+        }
+        out[i] = currentValue / windowSize;
+    }
+    for (int i = 0; i < newSize; i++)
+    {
+        buffer[i] = out[i];
+    }
+    return newSize;
+}
+
+void EMSCRIPTEN_KEEPALIVE subsamp(float *buffer, int bufSize, int nbufSize, int ofset)
+{
+    // Simple subsample resampling
+    // nbufSize - desired new sample size;
+    // ofset - additional parameter, allowing downsampling to start not from zero
+    float out[nbufSize];
+    int windowSize = floor((bufSize - ofset) / nbufSize);
+    for (int i = 0; i < nbufSize; i++)
+    {
+        out[i] = buffer[windowSize * i + ofset];
+    }
+    for (int i = 0; i < nbufSize; i++)
+    {
+        buffer[i] = out[i];
     }
 }

@@ -48,15 +48,15 @@ Module['ready'] = new Promise(function(resolve, reject) {
       }
     
 
-      if (!Object.getOwnPropertyDescriptor(Module['ready'], '_ffilter')) {
-        Object.defineProperty(Module['ready'], '_ffilter', { configurable: true, get: function() { abort('You are getting _ffilter on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.js') } });
-        Object.defineProperty(Module['ready'], '_ffilter', { configurable: true, set: function() { abort('You are setting _ffilter on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.js') } });
+      if (!Object.getOwnPropertyDescriptor(Module['ready'], '_exps')) {
+        Object.defineProperty(Module['ready'], '_exps', { configurable: true, get: function() { abort('You are getting _exps on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.js') } });
+        Object.defineProperty(Module['ready'], '_exps', { configurable: true, set: function() { abort('You are setting _exps on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.js') } });
       }
     
 
-      if (!Object.getOwnPropertyDescriptor(Module['ready'], '_sdensityold')) {
-        Object.defineProperty(Module['ready'], '_sdensityold', { configurable: true, get: function() { abort('You are getting _sdensityold on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.js') } });
-        Object.defineProperty(Module['ready'], '_sdensityold', { configurable: true, set: function() { abort('You are setting _sdensityold on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.js') } });
+      if (!Object.getOwnPropertyDescriptor(Module['ready'], '_kalman')) {
+        Object.defineProperty(Module['ready'], '_kalman', { configurable: true, get: function() { abort('You are getting _kalman on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.js') } });
+        Object.defineProperty(Module['ready'], '_kalman', { configurable: true, set: function() { abort('You are setting _kalman on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.js') } });
       }
     
 
@@ -78,15 +78,39 @@ Module['ready'] = new Promise(function(resolve, reject) {
       }
     
 
-      if (!Object.getOwnPropertyDescriptor(Module['ready'], '_exps')) {
-        Object.defineProperty(Module['ready'], '_exps', { configurable: true, get: function() { abort('You are getting _exps on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.js') } });
-        Object.defineProperty(Module['ready'], '_exps', { configurable: true, set: function() { abort('You are setting _exps on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.js') } });
+      if (!Object.getOwnPropertyDescriptor(Module['ready'], '_gettrend')) {
+        Object.defineProperty(Module['ready'], '_gettrend', { configurable: true, get: function() { abort('You are getting _gettrend on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.js') } });
+        Object.defineProperty(Module['ready'], '_gettrend', { configurable: true, set: function() { abort('You are setting _gettrend on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.js') } });
       }
     
 
-      if (!Object.getOwnPropertyDescriptor(Module['ready'], '_kalman')) {
-        Object.defineProperty(Module['ready'], '_kalman', { configurable: true, get: function() { abort('You are getting _kalman on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.js') } });
-        Object.defineProperty(Module['ready'], '_kalman', { configurable: true, set: function() { abort('You are setting _kalman on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.js') } });
+      if (!Object.getOwnPropertyDescriptor(Module['ready'], '_removetrend')) {
+        Object.defineProperty(Module['ready'], '_removetrend', { configurable: true, get: function() { abort('You are getting _removetrend on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.js') } });
+        Object.defineProperty(Module['ready'], '_removetrend', { configurable: true, set: function() { abort('You are setting _removetrend on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.js') } });
+      }
+    
+
+      if (!Object.getOwnPropertyDescriptor(Module['ready'], '_sdensity')) {
+        Object.defineProperty(Module['ready'], '_sdensity', { configurable: true, get: function() { abort('You are getting _sdensity on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.js') } });
+        Object.defineProperty(Module['ready'], '_sdensity', { configurable: true, set: function() { abort('You are setting _sdensity on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.js') } });
+      }
+    
+
+      if (!Object.getOwnPropertyDescriptor(Module['ready'], '_ffilter')) {
+        Object.defineProperty(Module['ready'], '_ffilter', { configurable: true, get: function() { abort('You are getting _ffilter on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.js') } });
+        Object.defineProperty(Module['ready'], '_ffilter', { configurable: true, set: function() { abort('You are setting _ffilter on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.js') } });
+      }
+    
+
+      if (!Object.getOwnPropertyDescriptor(Module['ready'], '_asamp')) {
+        Object.defineProperty(Module['ready'], '_asamp', { configurable: true, get: function() { abort('You are getting _asamp on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.js') } });
+        Object.defineProperty(Module['ready'], '_asamp', { configurable: true, set: function() { abort('You are setting _asamp on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.js') } });
+      }
+    
+
+      if (!Object.getOwnPropertyDescriptor(Module['ready'], '_subsamp')) {
+        Object.defineProperty(Module['ready'], '_subsamp', { configurable: true, get: function() { abort('You are getting _subsamp on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.js') } });
+        Object.defineProperty(Module['ready'], '_subsamp', { configurable: true, set: function() { abort('You are setting _subsamp on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.js') } });
       }
     
 
@@ -99,24 +123,6 @@ Module['ready'] = new Promise(function(resolve, reject) {
       if (!Object.getOwnPropertyDescriptor(Module['ready'], '_free')) {
         Object.defineProperty(Module['ready'], '_free', { configurable: true, get: function() { abort('You are getting _free on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.js') } });
         Object.defineProperty(Module['ready'], '_free', { configurable: true, set: function() { abort('You are setting _free on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.js') } });
-      }
-    
-
-      if (!Object.getOwnPropertyDescriptor(Module['ready'], '_sdensity')) {
-        Object.defineProperty(Module['ready'], '_sdensity', { configurable: true, get: function() { abort('You are getting _sdensity on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.js') } });
-        Object.defineProperty(Module['ready'], '_sdensity', { configurable: true, set: function() { abort('You are setting _sdensity on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.js') } });
-      }
-    
-
-      if (!Object.getOwnPropertyDescriptor(Module['ready'], '_gettrend')) {
-        Object.defineProperty(Module['ready'], '_gettrend', { configurable: true, get: function() { abort('You are getting _gettrend on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.js') } });
-        Object.defineProperty(Module['ready'], '_gettrend', { configurable: true, set: function() { abort('You are setting _gettrend on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.js') } });
-      }
-    
-
-      if (!Object.getOwnPropertyDescriptor(Module['ready'], '_removetrend')) {
-        Object.defineProperty(Module['ready'], '_removetrend', { configurable: true, get: function() { abort('You are getting _removetrend on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.js') } });
-        Object.defineProperty(Module['ready'], '_removetrend', { configurable: true, set: function() { abort('You are setting _removetrend on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.js') } });
       }
     
 
@@ -2130,15 +2136,6 @@ var _zscore = Module["_zscore"] = createExportWrapper("zscore");
 var _boxcox = Module["_boxcox"] = createExportWrapper("boxcox");
 
 /** @type {function(...*):?} */
-var _ffilterold = Module["_ffilterold"] = createExportWrapper("ffilterold");
-
-/** @type {function(...*):?} */
-var _sdensityold = Module["_sdensityold"] = createExportWrapper("sdensityold");
-
-/** @type {function(...*):?} */
-var _samplitude = Module["_samplitude"] = createExportWrapper("samplitude");
-
-/** @type {function(...*):?} */
 var _gettrend = Module["_gettrend"] = createExportWrapper("gettrend");
 
 /** @type {function(...*):?} */
@@ -2149,6 +2146,12 @@ var _ffilter = Module["_ffilter"] = createExportWrapper("ffilter");
 
 /** @type {function(...*):?} */
 var _sdensity = Module["_sdensity"] = createExportWrapper("sdensity");
+
+/** @type {function(...*):?} */
+var _asamp = Module["_asamp"] = createExportWrapper("asamp");
+
+/** @type {function(...*):?} */
+var _subsamp = Module["_subsamp"] = createExportWrapper("subsamp");
 
 /** @type {function(...*):?} */
 var ___errno_location = Module["___errno_location"] = createExportWrapper("__errno_location");
