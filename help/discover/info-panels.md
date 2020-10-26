@@ -7,12 +7,15 @@ Info panels provide additional information about the
 current context (which can be a table, a column, or pretty much
 any other [object](../overview/objects.md)). Info panels are meant to be 
 easily developed by the users of the platform, and shared with other users. 
-You can use all features of the Grok platform, such as scripting, data 
+You can use all features of the Datagrok platform, such as scripting, data 
 querying and transformation pipeline, user-defined functions,
 markup, viewers, predictive models.
 
 Info panels could be developed in any language supported
 by the platform. 
+
+![Info Panel](cell-imaging-segmentation.jpg "Cell Imaging Segmentation")
+*Cell Imaging Segmentation Info Panel*
 
 ## What gets shown and when?
 
@@ -76,7 +79,7 @@ To manage suppressed panels, open Tools | Settings | Info Panels.
 ### Retrieving more details
 
 A common concept in applications is master-detail view - i.e., when
-current record changes, additional details are dynamically retrived and
+current record changes, additional details are dynamically retrieved and
 visualized in a different pane. Perhaps the most famous example is your
 favorite email client, where you would click on a subject in order for 
 the content to appear in another pane. Typically, implementing such a feature
@@ -163,7 +166,7 @@ actions = "#{button("Flag as suspicious", "http.Post(myserver, row.transactionId
 The following panel calculates different molecular properties of a given 
 chemical structure. It appears whenever user clicks on a structure.
 
-#{x:chem:SolubilityPrediction}
+#{x.ChemScripts:SolubilityPrediction}
 
 ```
 #name: Solubility prediction

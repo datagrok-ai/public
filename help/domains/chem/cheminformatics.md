@@ -166,6 +166,8 @@ with an interpretation of how different sub-structure fragments contribute to th
 * Gasteiger Partial Charges visualization 
 * [Structural alerts](info-panels/structural-alerts.md)
 
+![](../../uploads/gifs/chem-model-augment.gif "Toxicity, Gasteiger Partial Charges, Solubility Prediction")
+
 In addition to these pre-defined info panels, users can develop their own using any
 [scripting language](../../develop/scripting.md) supported by the Grok platform. For example, 
 #{x.demo:pythonscripts:GasteigerPartialCharges}. 
