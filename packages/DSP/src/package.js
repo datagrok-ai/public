@@ -13,7 +13,7 @@ export let _package = new DG.Package();
 export async function SMA_filter(data, column_to_filter, window_size) {
     await initDSPModule();
     let js_wrapped_sma = DSPModule.cwrap("sma", "null", ["number", "number", "number"]);
-    let column_name = column_to_filter.name + ' SMA Filtered';
+    //let column_name = column_to_filter.name + ' SMA Filtered';
     let filter_array = column_to_filter.getRawData();
     let nDataBytes = filter_array.length * filter_array.BYTES_PER_ELEMENT;
     let dataPtr = DSPModule._malloc(nDataBytes);
@@ -21,9 +21,8 @@ export async function SMA_filter(data, column_to_filter, window_size) {
     dataHeap.set(new Uint8Array(filter_array.buffer));
     js_wrapped_sma(dataPtr, filter_array.length, window_size);
     let result = new Float32Array(dataHeap.buffer, dataHeap.byteOffset, filter_array.length);
-    let column = new Float32Array(filter_array.length);
-    for (let i = 0; i < filter_array.length; i++) { column[i] = result[i]; }
-    data.columns.add(DG.Column.fromFloat32Array(column_name, column));
+    let column = new Float32Array(result);
+    data.columns.add(DG.Column.fromFloat32Array(column_to_filter.name + ' SMA Filtered', column));
     DSPModule._free(dataHeap.byteOffset);
 }
 
@@ -35,18 +34,15 @@ export async function SMA_filter(data, column_to_filter, window_size) {
 export async function Exp_filter(data, column_to_filter, filter_ratio) {
     await initDSPModule();
     let js_wrapped_exp = DSPModule.cwrap("exps", "null", ["number", "number", "number"]);
-    let column_name = column_to_filter.name + ' Exponentially Filtered';
     let filter_array = column_to_filter.getRawData();
     let nDataBytes = filter_array.length * filter_array.BYTES_PER_ELEMENT;
     let dataPtr = DSPModule._malloc(nDataBytes);
-    console.log(dataPtr);
     let dataHeap = new Uint8Array(DSPModule.HEAPU8.buffer, dataPtr, nDataBytes);
     dataHeap.set(new Uint8Array(filter_array.buffer));
     js_wrapped_exp(dataPtr, filter_array.length, filter_ratio);
     let result = new Float32Array(dataHeap.buffer, dataHeap.byteOffset, filter_array.length);
-    let column = new Float32Array(filter_array.length);
-    for (let i = 0; i < filter_array.length; i++) { column[i] = result[i]; }
-    data.columns.add(DG.Column.fromFloat32Array(column_name, column));
+    let column = new Float32Array(result);
+    data.columns.add(DG.Column.fromFloat32Array(column_to_filter.name + ' Exponentially Filtered', column));
     DSPModule._free(dataHeap.byteOffset);
 }
 
@@ -60,7 +56,6 @@ export async function Exp_filter(data, column_to_filter, filter_ratio) {
 export async function Kalman_filter(data, column_to_filter, Q, R, P) {
     await initDSPModule();
     let js_wrapped_kalm = DSPModule.cwrap("kalman", "null", ["number", "number", "number", "number", "number"]);
-    let column_name = column_to_filter.name + ' Kalman Filtered';
     let filter_array = column_to_filter.getRawData();
     let nDataBytes = filter_array.length * filter_array.BYTES_PER_ELEMENT;
     let dataPtr = DSPModule._malloc(nDataBytes);
@@ -68,9 +63,8 @@ export async function Kalman_filter(data, column_to_filter, Q, R, P) {
     dataHeap.set(new Uint8Array(filter_array.buffer));
     js_wrapped_kalm(dataPtr, filter_array.length, Q, R, P)
     let result = new Float32Array(dataHeap.buffer, dataHeap.byteOffset, filter_array.length);
-    let column = new Float32Array(filter_array.length);
-    for (let i = 0; i < filter_array.length; i++) { column[i] = result[i]; }
-    data.columns.add(DG.Column.fromFloat32Array(column_name, column));
+    let column = new Float32Array(result);
+    data.columns.add(DG.Column.fromFloat32Array(column_to_filter.name + ' Kalman Filtered', column));
     DSPModule._free(dataHeap.byteOffset);
 }
 
@@ -81,7 +75,6 @@ export async function Kalman_filter(data, column_to_filter, Q, R, P) {
 export async function MinMax_transform(data, column_to_filter) {
     await initDSPModule();
     let js_wrapped_sma = DSPModule.cwrap("minmax", "null", ["number", "number"]);
-    let column_name = column_to_filter.name + ' Min Max Normalized';
     let filter_array = column_to_filter.getRawData();
     let nDataBytes = filter_array.length * filter_array.BYTES_PER_ELEMENT;
     let dataPtr = DSPModule._malloc(nDataBytes);
@@ -89,9 +82,8 @@ export async function MinMax_transform(data, column_to_filter) {
     dataHeap.set(new Uint8Array(filter_array.buffer));
     js_wrapped_sma(dataPtr, filter_array.length);
     let result = new Float32Array(dataHeap.buffer, dataHeap.byteOffset, filter_array.length);
-    let column = new Float32Array(filter_array.length);
-    for (let i = 0; i < filter_array.length; i++) { column[i] = result[i]; }
-    data.columns.add(DG.Column.fromFloat32Array(column_name, column));
+    let column = new Float32Array(result);
+    data.columns.add(DG.Column.fromFloat32Array(column_to_filter.name + ' Min Max Normalized', column));
     DSPModule._free(dataHeap.byteOffset);
 }
 
@@ -102,7 +94,6 @@ export async function MinMax_transform(data, column_to_filter) {
 export async function Zscore_transform(data, column_to_filter) {
     await initDSPModule();
     let js_wrapped_sma = DSPModule.cwrap("zscore", "null", ["number", "number"]);
-    let column_name = column_to_filter.name + ' Z-score Normalized';
     let filter_array = column_to_filter.getRawData();
     let nDataBytes = filter_array.length * filter_array.BYTES_PER_ELEMENT;
     let dataPtr = DSPModule._malloc(nDataBytes);
@@ -110,9 +101,8 @@ export async function Zscore_transform(data, column_to_filter) {
     dataHeap.set(new Uint8Array(filter_array.buffer));
     js_wrapped_sma(dataPtr, filter_array.length);
     let result = new Float32Array(dataHeap.buffer, dataHeap.byteOffset, filter_array.length);
-    let column = new Float32Array(filter_array.length);
-    for (let i = 0; i < filter_array.length; i++) { column[i] = result[i]; }
-    data.columns.add(DG.Column.fromFloat32Array(column_name, column));
+    let column = new Float32Array(result);
+    data.columns.add(DG.Column.fromFloat32Array(column_to_filter.name + ' Z-score Normalized', column));
     DSPModule._free(dataHeap.byteOffset);
 }
 
@@ -125,7 +115,6 @@ export async function Zscore_transform(data, column_to_filter) {
 export async function box_cox_transform(data, column_to_filter, lambda, ofset) {
     await initDSPModule();
     let js_wrapped_sma = DSPModule.cwrap("boxcox", "null", ["number", "number", "number", "number"]);
-    let column_name = column_to_filter.name + ' Box Cox Transformed';
     let filter_array = column_to_filter.getRawData();
     let nDataBytes = filter_array.length * filter_array.BYTES_PER_ELEMENT;
     let dataPtr = DSPModule._malloc(nDataBytes);
@@ -133,9 +122,46 @@ export async function box_cox_transform(data, column_to_filter, lambda, ofset) {
     dataHeap.set(new Uint8Array(filter_array.buffer));
     js_wrapped_sma(dataPtr, filter_array.length, lambda, ofset);
     let result = new Float32Array(dataHeap.buffer, dataHeap.byteOffset, filter_array.length);
-    let column = new Float32Array(filter_array.length);
-    for (let i = 0; i < filter_array.length; i++) { column[i] = result[i]; }
-    data.columns.add(DG.Column.fromFloat32Array(column_name, column));
+    let column = new Float32Array(result);
+    data.columns.add(DG.Column.fromFloat32Array(column_to_filter.name + ' Box Cox Transformed', column));
+    DSPModule._free(dataHeap.byteOffset);
+}
+
+//top-menu: DSP | Preprocess | Get Trend
+//name: Get Trend
+//input: dataframe data [Input Dataframe]
+//input: column col [Column]
+export async function get_trend(data, col) {
+    await initDSPModule();
+    let js_wrapped_gt = DSPModule.cwrap("gettrend", "null", ["number", "number"]);
+    let filter_array = col.getRawData();
+    let nDataBytes = filter_array.length * filter_array.BYTES_PER_ELEMENT;
+    let dataPtr = DSPModule._malloc(nDataBytes);
+    let dataHeap = new Uint8Array(DSPModule.HEAPU8.buffer, dataPtr, nDataBytes);
+    dataHeap.set(new Uint8Array(filter_array.buffer));
+    js_wrapped_gt(dataPtr, filter_array.length);
+    let result = new Float32Array(dataHeap.buffer, dataHeap.byteOffset, filter_array.length);
+    let column = new Float32Array(result);
+    data.columns.add(DG.Column.fromFloat32Array(col.name + ' Trend', column));
+    DSPModule._free(dataHeap.byteOffset);
+}
+
+//top-menu: DSP | Preprocess | Detrend
+//name: Detrend
+//input: dataframe data [Input Dataframe]
+//input: column Column [Column]
+export async function remove_trend(data, col) {
+    await initDSPModule();
+    let js_wrapped_rt = DSPModule.cwrap("removetrend", "null", ["number", "number"]);
+    let filter_array = col.getRawData();
+    let nDataBytes = filter_array.length * filter_array.BYTES_PER_ELEMENT;
+    let dataPtr = DSPModule._malloc(nDataBytes);
+    let dataHeap = new Uint8Array(DSPModule.HEAPU8.buffer, dataPtr, nDataBytes);
+    dataHeap.set(new Uint8Array(filter_array.buffer));
+    js_wrapped_rt(dataPtr, filter_array.length);
+    let result = new Float32Array(dataHeap.buffer, dataHeap.byteOffset, filter_array.length);
+    let column = new Float32Array(result);
+    data.columns.add(DG.Column.fromFloat32Array(col.name + ' Detrended', column));
     DSPModule._free(dataHeap.byteOffset);
 }
 
@@ -151,7 +177,6 @@ export async function fourier_filter(data, column_to_filter, lowcut, hicut, obse
     let lowcuthz = lowcut * observationTime - 1;
     let hicuthz = hicut * observationTime - 1;
     let js_wrapped_ff = DSPModule.cwrap("ffilter", "null", ["number", "number", "number", "number"]);
-    let column_name = column_to_filter.name + ' Fourier Filtered (L: ' + lowcut + '; H: ' + hicut + ')';
     let filter_array = column_to_filter.getRawData();
     let nDataBytes = filter_array.length * filter_array.BYTES_PER_ELEMENT;
     let dataPtr = DSPModule._malloc(nDataBytes);
@@ -159,9 +184,9 @@ export async function fourier_filter(data, column_to_filter, lowcut, hicut, obse
     dataHeap.set(new Uint8Array(filter_array.buffer));
     js_wrapped_ff(dataPtr, filter_array.length, lowcuthz, hicuthz);
     let result = new Float32Array(dataHeap.buffer, dataHeap.byteOffset, filter_array.length);
-    let column = new Float32Array(filter_array.length);
-    for (let i = 0; i < filter_array.length; i++) { column[i] = result[i]; }
-    data.columns.add(DG.Column.fromFloat32Array(column_name, column));
+    let column = new Float32Array(result);
+    data.columns.add(DG.Column.fromFloat32Array(column_to_filter.name + ' Fourier Filtered (L: ' + lowcut +
+        '; H: ' + hicut + ')', column));
     DSPModule._free(dataHeap.byteOffset);
 }
 
@@ -169,27 +194,25 @@ export async function fourier_filter(data, column_to_filter, lowcut, hicut, obse
 //top-menu: DSP | Preprocess | Spectral Density
 //name: Spectral Density
 //input: dataframe data [Input Dataframe]
-//input: column Column [Column]
+//input: column col [Column]
 //input: double observationTime[Time taken to record observed signal]
-export async function spectral_density(data, Column, observationTime) {
+export async function spectral_density(data, col, observationTime) {
     await initDSPModule();
     let js_wrapped_sd = DSPModule.cwrap("sdensity", "null", ["number", "number"]);
-    let column_name = Column.name + ' Density';
-    let filter_array = Column.getRawData();
+    let filter_array = col.getRawData();
     let nDataBytes = filter_array.length * filter_array.BYTES_PER_ELEMENT;
     let dataPtr = DSPModule._malloc(nDataBytes);
     let dataHeap = new Uint8Array(DSPModule.HEAPU8.buffer, dataPtr, nDataBytes);
     dataHeap.set(new Uint8Array(filter_array.buffer));
     js_wrapped_sd(dataPtr, filter_array.length);
     let result = new Float32Array(dataHeap.buffer, dataHeap.byteOffset, filter_array.length);
-    let column = new Float32Array(Math.floor(filter_array.length / 2));
-    for (let i = 0; i < column.length; i++) { column[i] = result[i]; }
+    let column = new Float32Array(result.slice(0, result.length / 2));
     let newName = data.name + " Densities";
     let tableNames = grok.shell.tableNames;
     let doesExist = tableNames.includes(newName);
     if (doesExist) {
         let t = grok.shell.tableByName(newName);
-        t.columns.add(DG.Column.fromFloat32Array(column_name, column));
+        t.columns.add(DG.Column.fromFloat32Array(col.name + ' Density', column));
     }
     else {
         let col1 = [];
@@ -198,90 +221,86 @@ export async function spectral_density(data, Column, observationTime) {
         }
         let t = DG.DataFrame.create(column.length);
         t.columns.add(DG.Column.fromList('double', 'Frequency', col1));
-        t.columns.add(DG.Column.fromFloat32Array(column_name, column));
+        t.columns.add(DG.Column.fromFloat32Array(col.name + ' Density', column));
         t.name = newName;
         grok.shell.addTableView(t);
     }
     DSPModule._free(dataHeap.byteOffset);
 }
 
-//top-menu: DSP | Preprocess | Spectral Amplitude
-//name: Spectral Amplitude
+//top-menu: DSP | Preprocess | Subsample
+//name: Subsample
 //input: dataframe data [Input Dataframe]
-//input: column Column [Column]
-//input: double observationTime[Time taken to record observed signal]
-export async function spectral_amplitude(data, Column, observationTime) {
+//input: column col [Column]
+//input: double subsampleSize [Desired Subsample Length]
+//input: double offset [Subsampling starting point]
+export async function subsample(data, col, subsampleSize, offset) {
     await initDSPModule();
-    let js_wrapped_sd = DSPModule.cwrap("samplitude", "null", ["number", "number"]);
-    let column_name = Column.name + ' Amplitude';
-    let filter_array = Column.getRawData();
+    let js_wrapped_ss = DSPModule.cwrap("subsamp", "null", ["number", "number", "number", "number"]);
+    //let column_name = col.name + ' Subsample';
+    let filter_array = col.getRawData();
     let nDataBytes = filter_array.length * filter_array.BYTES_PER_ELEMENT;
     let dataPtr = DSPModule._malloc(nDataBytes);
     let dataHeap = new Uint8Array(DSPModule.HEAPU8.buffer, dataPtr, nDataBytes);
     dataHeap.set(new Uint8Array(filter_array.buffer));
-    js_wrapped_sd(dataPtr, filter_array.length);
+    js_wrapped_ss(dataPtr, filter_array.length, subsampleSize, offset);
     let result = new Float32Array(dataHeap.buffer, dataHeap.byteOffset, filter_array.length);
-    let column = new Float32Array(Math.floor(filter_array.length / 2));
-    for (let i = 0; i < column.length; i++) { column[i] = result[i]; }
-    let newName = data.name + " Amplitudes";
+    let column = new Float32Array(result.slice(0, subsampleSize));
+    DSPModule._free(dataHeap.byteOffset);
+    let newName = data.name + " Subsamples, L=" + subsampleSize;
     let tableNames = grok.shell.tableNames;
     let doesExist = tableNames.includes(newName);
     if (doesExist) {
         let t = grok.shell.tableByName(newName);
-        t.columns.add(DG.Column.fromFloat32Array(column_name, column));
+        t.columns.add(DG.Column.fromFloat32Array(col.name + ' Subsample', column));
     }
     else {
         let col1 = [];
         for (let i = 0; i < column.length; i++) {
-            col1[i] = (i + 1) / observationTime;
+            col1[i] = i;
         }
         let t = DG.DataFrame.create(column.length);
-        t.columns.add(DG.Column.fromList('double', 'Frequency', col1));
-        t.columns.add(DG.Column.fromFloat32Array(column_name, column));
+        t.columns.add(DG.Column.fromList('int', 'time', col1));
+        t.columns.add(DG.Column.fromFloat32Array(col.name + ' Subsample', column));
         t.name = newName;
         grok.shell.addTableView(t);
     }
-    DSPModule._free(dataHeap.byteOffset);
 }
 
-//top-menu: DSP | Preprocess | Get Trend
-//name: Get Trend
+//top-menu: DSP | Preprocess | Averaging Downsampling
+//name: Averaging Downsampling
 //input: dataframe data [Input Dataframe]
-//input: column Column [Column]
-export async function get_trend(data, Column) {
+//input: column col [Column]
+//input: double windowSize [Desired Window Size]
+//input: double offset [Subsampling starting point]
+export async function asample(data, col, windowSize, offset) {
     await initDSPModule();
-    let js_wrapped_gt = DSPModule.cwrap("gettrend", "null", ["number", "number"]);
-    let column_name = Column.name + ' Trend';
-    let filter_array = Column.getRawData();
+    let js_wrapped_as = DSPModule.cwrap("asamp", "null", ["number", "number", "number", "number"]);
+    let filter_array = col.getRawData();
     let nDataBytes = filter_array.length * filter_array.BYTES_PER_ELEMENT;
     let dataPtr = DSPModule._malloc(nDataBytes);
     let dataHeap = new Uint8Array(DSPModule.HEAPU8.buffer, dataPtr, nDataBytes);
     dataHeap.set(new Uint8Array(filter_array.buffer));
-    js_wrapped_gt(dataPtr, filter_array.length);
+    let nLength = js_wrapped_as(dataPtr, filter_array.length, windowSize, offset);
     let result = new Float32Array(dataHeap.buffer, dataHeap.byteOffset, filter_array.length);
-    let column = new Float32Array(filter_array.length);
-    for (let i = 0; i < filter_array.length; i++) { column[i] = result[i]; }
-    data.columns.add(DG.Column.fromFloat32Array(column_name, column));
+    let column = new Float32Array(result.slice(0, nLength));
     DSPModule._free(dataHeap.byteOffset);
-}
-
-//top-menu: DSP | Preprocess | Detrend
-//name: Detrend
-//input: dataframe data [Input Dataframe]
-//input: column Column [Column]
-export async function remove_trend(data, Column) {
-    await initDSPModule();
-    let js_wrapped_rt = DSPModule.cwrap("removetrend", "null", ["number", "number"]);
-    let column_name = Column.name + ' Detrended';
-    let filter_array = Column.getRawData();
-    let nDataBytes = filter_array.length * filter_array.BYTES_PER_ELEMENT;
-    let dataPtr = DSPModule._malloc(nDataBytes);
-    let dataHeap = new Uint8Array(DSPModule.HEAPU8.buffer, dataPtr, nDataBytes);
-    dataHeap.set(new Uint8Array(filter_array.buffer));
-    js_wrapped_rt(dataPtr, filter_array.length);
-    let result = new Float32Array(dataHeap.buffer, dataHeap.byteOffset, filter_array.length);
-    let column = new Float32Array(filter_array.length);
-    for (let i = 0; i < filter_array.length; i++) { column[i] = result[i]; }
-    data.columns.add(DG.Column.fromFloat32Array(column_name, column));
-    DSPModule._free(dataHeap.byteOffset);
+    let newName = data.name + " Avaraged, L=" + nLength;
+    let tableNames = grok.shell.tableNames;
+    let doesExist = tableNames.includes(newName);
+    if (doesExist) {
+        let t = grok.shell.tableByName(newName);
+        t.columns.add(DG.Column.fromFloat32Array(col.name + ' Subsample', column));
+    }
+    else {
+        let col1 = [];
+        for (let i = 0; i < column.length; i++) {
+            col1[i] = i;
+        }
+        let t = DG.DataFrame.create(column.length);
+        t.columns.add(DG.Column.fromList('int', 'time', col1));
+        t.columns.add(DG.Column.fromFloat32Array(col.name + ' Subsample', column));
+        t.name = newName;
+        grok.shell.addTableView(t);
+    }
 }

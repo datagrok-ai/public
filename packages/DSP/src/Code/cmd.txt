@@ -1,3 +1,1 @@
-emcc algs.c dft.c -o algs.js -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s MODULARIZE=1 -s 'EXPORT_NAME="createDSPWasm"' -s EXPORTED_FUNCTIONS='["_sma","_ffilter","_minmax","_zscore","_boxcox","_exps","_kalman","_malloc","_free","_sdensity","_gettrend","_removetrend"]' -s EXTRA_EXPORTED_RUNTIME_METHODS='["cwrap"]'
-
-
+emcc dspWasm.c dft.c -o dspWasm.js -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s MODULARIZE=1 -s 'EXPORT_NAME="createDSPWasm"' -s EXPORTED_FUNCTIONS='["_sma","_exps","_kalman","_minmax","_zscore","_boxcox","_gettrend","_removetrend","_sdensity","_ffilter","_asamp", "_subsamp","_malloc","_free"]' -s EXTRA_EXPORTED_RUNTIME_METHODS='["cwrap"]'
