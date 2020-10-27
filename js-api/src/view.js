@@ -180,6 +180,11 @@ export class TableView extends View {
     /** @constructs TableView */
     constructor(d) { super(d); }
 
+    /** Creates a new table view.
+     * @params {DataFrame} table
+     * @returns {TableView} */
+    static create(table) { return new TableView(grok_TableView(table.d)); }
+
     /** Associated table, if it exists (for TableView), or null.
      *  @type {DataFrame} */
     get table() { return toJs(grok_View_Get_Table(this.d)); }
