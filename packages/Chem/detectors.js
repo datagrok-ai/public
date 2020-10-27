@@ -13,6 +13,11 @@ class ChemPackageDetectors extends DG.Package {
             col.semType = 'RDMolecule';
             return col.semType;
         }
+        
+        if (col.name === 'scaffold' && col.type === DG.TYPE.STRING) {
+            col.semType = 'RDMolecule';
+            return col.semType;
+        }
 
         return null;
     }
