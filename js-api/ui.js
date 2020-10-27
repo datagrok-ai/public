@@ -6,7 +6,7 @@
 import {Viewer} from "./src/viewer";
 import {VirtualView} from "./src/view";
 import {Accordion, Dialog, InputBase, Menu, TabControl, TreeViewNode, Widget, RangeSlider} from "./src/widgets";
-import {toDart} from "./src/wrappers";
+import {toDart, toJs} from "./src/wrappers";
 import {Functions} from "./src/functions";
 import $ from "cash-dom";
 import {__obs} from "./src/events";
@@ -225,6 +225,9 @@ export function comboPopupItems(caption, items) {
 
 /** Creates a visual table based on [map]. */
 export function tableFromMap(map) { return grok_UI_TableFromMap(map); }
+
+/** Creates a visual table based on [map]. */
+export function table(items, renderer) { return grok_UI_Table(items, renderer !== null ? (object, ind) => renderer(toJs(object), ind) : null); }
 
 /** Creates a visual element representing list of [items]. */
 export function list(items) { return grok_UI_List(Array.from(items).map(toDart)); }
