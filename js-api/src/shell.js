@@ -119,10 +119,12 @@ export class Shell {
     /**
      * Adds a view.
      * @param {View} v
+     * @param {DockType=} dockType
+     * @param {number=} width
      * @returns {View}
      */
-    addView(v) {
-        grok_AddView(v.d);
+    addView(v, dockType = DG.DOCK_TYPE.FILL, width = null) {
+        grok_AddView(v.d, dockType, width);
         return v;
     }
 
