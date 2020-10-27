@@ -9,6 +9,7 @@
 import cld3
 import pycountry
 import textract
+import cleantext
 
 params = {'filename': file, 'extension': file[file.rfind('.', 0, -10) : -10]}
 
@@ -38,8 +39,6 @@ if file.endswith(('gif', 'jpg', 'jpeg', 'png', 'tiff', 'tif')):
     params.update({'method': 'tesseract', 'language': code})
 
 # Extract text
-text = textract.process(**params).decode().strip()
+text = textract.process(**params).decode()
 
-text = "".join(line for line in text.splitlines() if line and not line.isspace())
-if not text or text.isspace():
-    text = ""
+text = cleantext.clean(text, lower=False, to_ascii=False, no_line_breaks=True)
