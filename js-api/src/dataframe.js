@@ -271,8 +271,10 @@ export class Row {
         });
     }
 
-    /** Returns th */
-    get(name, idx) { return this.table.getCol(name).get(idx); }
+    /** Returns this row's value for the specified column
+     * @param {string} columnName
+     * @returns {Object} */
+    get(columnName) { return this.table.getCol(columnName).get(this.idx); }
 }
 
 /** Strongly-typed column. */
