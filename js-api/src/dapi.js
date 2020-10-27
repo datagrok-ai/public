@@ -112,6 +112,10 @@ export class Dapi {
         };
         return await fetch('/api/connectors/proxy', params)
     }
+
+    /** Administering API endpoint
+     *  @type {AdminDataSource} */
+    get admin() { return new AdminDataSource(grok_Dapi_Admin()); }
 }
 
 
@@ -239,6 +243,19 @@ export class UsersDataSource extends HttpDataSource {
     current() {
         let s = this.entityToJs;
         return new Promise((resolve, reject) => grok_UsersDataSource_Current(this.s, (q) => resolve(s(q))));
+    }
+}
+
+export class AdminDataSource {
+    /** @constructs AdminDataSource*/
+    constructor(s) {
+        this.s = s;
+    }
+
+    /** Returns information about the services
+     *  @returns {Promise<Map>} */
+    getServiceInfos() {
+        return new Promise((resolve, reject) => grok_Dapi_Admin_GetServiceInfos(this.s, (q) => resolve(toJs(q)), (e) => reject(e)));
     }
 }
 
