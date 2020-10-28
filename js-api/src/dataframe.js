@@ -15,6 +15,7 @@ class MapProxy {
     }
 }
 
+
 /**
  * DataFrame is a high-performance, easy to use tabular structure with
  * strongly-typed columns of different types.
@@ -237,6 +238,9 @@ export class DataFrame {
     /** @returns {Observable} */ get onFilterChanged() { return this.filter.onChanged; }
 
     fireValuesChanged() { grok_DataFrame_FireValuesChanged(this.d); }
+
+    /** @returns {string} */
+    toString() { return grok_Object_ToString(this.d); }
 }
 
 /** Represents a row. Allows for quick property access like "row.height". */
@@ -455,6 +459,9 @@ export class Column {
     convertTo(newType, format = null) {
         return toJs(grok_Column_ConvertTo(this.d, newType, format));
     }
+
+    /** @returns {string} */
+    toString() { return grok_Object_ToString(this.d); }
 }
 
 /** Columns in a [DataFrame]. */
@@ -555,6 +562,9 @@ export class ColumnList {
     [Symbol.iterator]() {
         return _getIterator(grok_Iterable_Get_Iterator(this.d));
     }
+
+    /** @returns {string} */
+    toString() { return grok_Object_ToString(this.d); }
 }
 
 /**
@@ -566,7 +576,8 @@ export class ColumnList {
 export class RowList {
     constructor(table, d) {
         /** @member {DataFrame} */
-        this.table = table; this.d = d;
+        this.table = table;
+        this.d = d;
     }
 
     /** Removes specified rows
@@ -625,6 +636,9 @@ export class RowList {
     /** Viewers that filter rows should subscribe to DataFrame.onRowsFiltering event.
      * When filtering conditions are changed, viewers should call requestFilter(). */
     requestFilter() { grok_RowList_RequestFilter(this.d); }
+
+    /** @returns {string} */
+    toString() { return grok_Object_ToString(this.d); }
 }
 
 /** Represents a table cell. */
@@ -650,6 +664,9 @@ export class Cell {
     /** Cell value.
      * @returns {*} */
     get value() { return grok_Cell_Get_Value(this.d); }
+
+    /** @returns {string} */
+    toString() { return grok_Object_ToString(this.d); }
 }
 
 /**
@@ -781,6 +798,9 @@ export class BitSet {
      * @param {SimilarityMetric} metric - similarity metric to use.
      * @returns {number} */
     similarityTo(b, metric = SIMILARITY_METRIC.TANIMOTO) { return grok_BitSet_SimilarityTo(this.d, b.d, metric); }
+
+    /** @returns {string} */
+    toString() { return grok_Object_ToString(this.d); }
 }
 
 
@@ -838,6 +858,9 @@ export class Stats {
 
     /** @returns {number} - third quartile */
     get q3() { return grok_Stats_Get_Q3(this.d); }
+
+    /** @returns {string} */
+    toString() { return grok_Object_ToString(this.d); }
 }
 
 /**
@@ -1000,6 +1023,9 @@ export class GroupByBuilder {
      * @param {BitSet} bitset
      * @returns {GroupByBuilder} */
     whereRowMask(bitset) { grok_GroupByBuilder_WhereBitSet(this.d, bitset.d); return this; }
+
+    /** @returns {string} */
+    toString() { return grok_Object_ToString(this.d); }
 }
 
 export const QNUM_LESS = 1;
