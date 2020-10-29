@@ -226,8 +226,11 @@ export function comboPopupItems(caption, items) {
 /** Creates a visual table based on [map]. */
 export function tableFromMap(map) { return grok_UI_TableFromMap(map); }
 
-/** Creates a visual table based on [map]. */
+/** Creates a visual table based on [items] and [renderer]. */
 export function table(items, renderer) { return grok_UI_Table(items, renderer !== null ? (object, ind) => renderer(toJs(object), ind) : null); }
+
+/** Waits for Future<Element> function to complete and collect its result.*/
+export function wait(getElement) { return toJs(grok_UI_Wait(getElement));}
 
 /** Creates a visual element representing list of [items]. */
 export function list(items) { return grok_UI_List(Array.from(items).map(toDart)); }

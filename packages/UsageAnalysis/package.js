@@ -5,6 +5,7 @@ class UsageAnalysisPackage extends DG.Package {
     startApp() {
         let acc = null;
         let view = grok.shell.newView('Usage');
+        view.root.style.overflow = 'auto';
         let results = ui.div();
         let panesExpanded = {};
 
@@ -55,6 +56,16 @@ class UsageAnalysisPackage extends DG.Package {
 
             while (results.firstChild)
                 results.removeChild(results.firstChild);
+
+            acc.addPane('Dashboard', () => ui.wait(async () => {
+                let result = await grok.dapi.admin.getServiceInfos();
+
+                let root = ui.div();
+                root.appendChild(ui.table(result, (item, idx) =>
+                    [`${item.key}:`, item.status] ));
+
+                return root;
+            }));
 
             acc.addPane('Unique users', () => {
                 let host = ui.div();
