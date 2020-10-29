@@ -244,6 +244,12 @@ export class UsersDataSource extends HttpDataSource {
         let s = this.entityToJs;
         return new Promise((resolve, reject) => grok_UsersDataSource_Current(this.s, (q) => resolve(s(q))));
     }
+
+    /** Returns current session
+     * @returns {Promise<UserSession>} */
+    currentSession() {
+        return new Promise((resolve, reject) => grok_UsersDataSource_CurrentSession(this.s, (q) => resolve(toJs(q))));
+    }
 }
 
 export class AdminDataSource {
