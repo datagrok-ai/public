@@ -15,10 +15,26 @@ where @interv(joined);
 --name: new users last month week day
 --connection: datagrok
 with
-monthQuery as (select count(*) as monthCount from users where joined > current_timestamp - interval '30 days'),
-weekQuery as (select count(*) as weekCount from users where joined > current_timestamp - interval '7 days'),
-dayQuery as (select count(*) as dayCount from users where joined > current_timestamp - interval '1 day')
-select * from monthQuery, weekQuery, dayQuery;
+month_count as (select count(*) as month_count from users where joined > current_timestamp - interval '30 days'),
+week_count as (select count(*) as week_count from users where joined > current_timestamp - interval '7 days'),
+day_count as (select count(*) as day_count from users where joined > current_timestamp - interval '1 day')
+select * from month_count, week_count, day_count;
+--end
+
+
+--name: new events and errors last month week day
+--connection: datagrok
+with
+month_events as (select count(*) as month_events from events where event_time > current_timestamp - interval '30 days'),
+month_errors as (select count(*) as month_errors from events where error_stack_trace is not null and event_time > current_timestamp - interval '30 days'),
+
+week_events as (select count(*) as week_events from events where event_time > current_timestamp - interval '7 days'),
+week_errors as (select count(*) as week_errors from events where error_stack_trace is not null and event_time > current_timestamp - interval '7 days'),
+
+day_events as (select count(*) as day_events from events where event_time > current_timestamp - interval '1 day'),
+day_errors as (select count(*) as day_errors from events where error_stack_trace is not null and event_time > current_timestamp - interval '1 day')
+
+select * from month_events, month_errors, week_events, week_errors, day_events, day_errors;
 --end
 
 

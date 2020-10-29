@@ -63,13 +63,24 @@ class UsageAnalysisPackage extends DG.Package {
                 let lastUsers = await grok.data.query('UsageAnalysis:NewUsersLastMonthWeekDay');
                 let totalUsersCount = await grok.data.query('UsageAnalysis:TotalUsersCount');
 
+                root.appendChild(ui.h2('New users'));
                 root.appendChild(ui.tableFromMap({
-                    'New users in the last month:': lastUsers.get('monthCount',0),
-                    'New users in the last week:': lastUsers.get('weekCount',0),
-                    'New users today:': lastUsers.get('dayCount',0),
-                    'Total users count:': totalUsersCount.get(0,0)
+                    'New users in the last month:': lastUsers.get('month_count', 0),
+                    'New users in the last week:': lastUsers.get('week_Count', 0),
+                    'New users today:': lastUsers.get('day_count', 0),
+                    'Total users count:': totalUsersCount.get(0, 0)
                 }));
 
+                let newEventsAndErrors = await grok.data.query('UsageAnalysis:NewEventsAndErrorsLastMonthWeekDay');
+
+                root.appendChild(ui.h2('Events/errors'));
+                root.appendChild(ui.tableFromMap({
+                    'New events/errors in the last month:': `${newEventsAndErrors.get('month_events', 0)}/${newEventsAndErrors.get('month_errors', 0)}`,
+                    'New events/errors in the last week:': `${newEventsAndErrors.get('week_events', 0)}/${newEventsAndErrors.get('week_errors', 0)}`,
+                    'New events/errors today:': `${newEventsAndErrors.get('day_events', 0)}/${newEventsAndErrors.get('day_errors', 0)}`
+                }));
+
+                root.appendChild(ui.h2('Service infos'));
                 let serviceInfos = await grok.dapi.admin.getServiceInfos();
                 root.appendChild(ui.table(serviceInfos, (item, idx) =>
                     [`${item.key}:`, item.status] ));
