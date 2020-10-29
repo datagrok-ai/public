@@ -82,6 +82,31 @@ export class User extends Entity {
     get group() {return toJs(grok_User_Get_Group(this.d))}
 }
 
+
+/**
+ * Represents a user session in the Datagrok platform.
+ * @extends Entity
+ * */
+export class UserSession {
+    /** @constructs User*/
+    constructor(d) {
+        this.d = d;
+    }
+
+    /** Entity ID (GUID)
+     *  @type {string} */
+    get id() { return grok_Entity_Get_Id(this.d); }
+    set id(x) { return grok_Entity_Set_Id(this.d, x); }
+
+    /** Login
+     *  @type {string} */
+    get type() { return grok_UserSession_Get_Type(this.d); }
+
+    /** External Token
+     *  @type {string} */
+    get externalToken() { return grok_UserSession_Get_ExternalToken(this.d); }
+}
+
 /** Represents a function
  * @extends Entity
  * {@link https://datagrok.ai/help/overview/functions/function}
