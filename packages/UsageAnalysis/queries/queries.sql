@@ -1,3 +1,27 @@
+--name: total users count
+--connection: datagrok
+select count(*) from users;
+--end
+
+
+--name: new users
+--input: string interv { pattern: datetime }
+--connection: datagrok
+select count(*) as count from users
+where @interv(joined);
+--end
+
+
+--name: new users last month week day
+--connection: datagrok
+with
+monthQuery as (select count(*) as monthCount from users where joined > current_timestamp - interval '30 days'),
+weekQuery as (select count(*) as weekCount from users where joined > current_timestamp - interval '7 days'),
+dayQuery as (select count(*) as dayCount from users where joined > current_timestamp - interval '1 day')
+select * from monthQuery, weekQuery, dayQuery;
+--end
+
+
 --name: unique users by @date
 --input: string date { pattern: datetime }
 --connection: datagrok
