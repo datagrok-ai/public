@@ -58,10 +58,20 @@ class UsageAnalysisPackage extends DG.Package {
                 results.removeChild(results.firstChild);
 
             acc.addPane('Dashboard', () => ui.wait(async () => {
-                let result = await grok.dapi.admin.getServiceInfos();
-
                 let root = ui.div();
-                root.appendChild(ui.table(result, (item, idx) =>
+
+                let lastUsers = await grok.data.query('UsageAnalysis:NewUsersLastMonthWeekDay');
+                let totalUsersCount = await grok.data.query('UsageAnalysis:TotalUsersCount');
+
+                root.appendChild(ui.tableFromMap({
+                    'New users in the last month:': lastUsers.get('monthCount',0),
+                    'New users in the last week:': lastUsers.get('weekCount',0),
+                    'New users today:': lastUsers.get('dayCount',0),
+                    'Total users count:': totalUsersCount.get(0,0)
+                }));
+
+                let serviceInfos = await grok.dapi.admin.getServiceInfos();
+                root.appendChild(ui.table(serviceInfos, (item, idx) =>
                     [`${item.key}:`, item.status] ));
 
                 return root;
