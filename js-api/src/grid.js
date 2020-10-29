@@ -240,6 +240,10 @@ export class Grid extends Viewer {
 
     /** @returns {RangeSlider} */
     get horzScroll() { return toJs(grok_Grid_Get_HorzScroll(this.d)); }
+
+    /** Forces the grid to execute calculations that were postponed before the next rendering (such as recalculating layout).
+     * Call it in case the client code changes column widths and needs to access the new recalculated layout. */
+    runPostponedComputations() { grok_CanvasViewer_RunPostponedComputations(this.d); }
 }
 
 
