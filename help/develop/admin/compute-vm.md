@@ -21,12 +21,14 @@ Server is easy scalable using [Amazon ECS](https://aws.amazon.com/ecs/) or [Kube
 
 ## Programming Languages
 
-| Service                          | Version  |
-|----------------------------------|----------|
-| [Python](https://www.python.org) | 3.7.4    |
-| [R](https://www.r-project.org)   | 3.6.1    |
-| [Julia](https://julialang.org)   | 1.1.1    |
-| [NodeJS](https://nodejs.org)     | 10.15.0  |
+| Service                                      | Version  |
+|----------------------------------------------|----------|
+| [Python](https://www.python.org)             | 3.7.4    |
+| [R](https://www.r-project.org)               | 3.6.1    |
+| [Julia](https://julialang.org)               | 1.1.1    |
+| [NodeJS](https://nodejs.org)                 | 10.15.0  |
+| [Octave](https://octave.sourceforge.io/)     | 5.2.0    |
+
 
 
 ## Installation 
