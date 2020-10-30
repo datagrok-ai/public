@@ -403,8 +403,9 @@ export class Column {
      * Sets [i]-th value to [x]
      * @param {number} i
      * @param x
+     * @param {boolean} notify
      */
-    set(i, x) { grok_Column_SetValue(this.d, i, x); }
+    set(i, x, notify = true) { grok_Column_SetValue(this.d, i, x, notify); }
 
     /** Returns whether i-th value is missing.
      * @param {number} i - Row index.
