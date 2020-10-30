@@ -57,33 +57,29 @@ class UsageAnalysisPackage extends DG.Package {
             while (results.firstChild)
                 results.removeChild(results.firstChild);
 
-            acc.addPane('Dashboard', () => ui.wait(async () => {
+            acc.addPane('Summary', () => ui.wait(async () => {
                 let root = ui.div();
 
                 let lastUsers = await grok.data.query('UsageAnalysis:NewUsersLastMonthWeekDay');
+                let newEvents = await grok.data.query('UsageAnalysis:NewEventsLastMonthWeekDay');
+                let newErrors = await grok.data.query('UsageAnalysis:NewErrorsLastMonthWeekDay');
+                let summ = [
+                    ['New users', lastUsers],
+                    ['New events', newEvents],
+                    ['New errors', newErrors],
+                ];
+
+                root.appendChild(ui.table(summ, (item, idx) =>
+                    [`${item[0]}:`, item[1].get('day', 0), item[1].get('week', 0), item[1].get('month', 0)],
+                    ['', 'Day', 'Week', 'Month']));
+
                 let totalUsersCount = await grok.data.query('UsageAnalysis:TotalUsersCount');
+                root.appendChild(ui.span([`Total users: ${totalUsersCount.get(0, 0)}`]));
 
-                root.appendChild(ui.h2('New users'));
-                root.appendChild(ui.tableFromMap({
-                    'New users in the last month:': lastUsers.get('month_count', 0),
-                    'New users in the last week:': lastUsers.get('week_Count', 0),
-                    'New users today:': lastUsers.get('day_count', 0),
-                    'Total users count:': totalUsersCount.get(0, 0)
-                }));
-
-                let newEventsAndErrors = await grok.data.query('UsageAnalysis:NewEventsAndErrorsLastMonthWeekDay');
-
-                root.appendChild(ui.h2('Events/errors'));
-                root.appendChild(ui.tableFromMap({
-                    'New events/errors in the last month:': `${newEventsAndErrors.get('month_events', 0)}/${newEventsAndErrors.get('month_errors', 0)}`,
-                    'New events/errors in the last week:': `${newEventsAndErrors.get('week_events', 0)}/${newEventsAndErrors.get('week_errors', 0)}`,
-                    'New events/errors today:': `${newEventsAndErrors.get('day_events', 0)}/${newEventsAndErrors.get('day_errors', 0)}`
-                }));
-
-                root.appendChild(ui.h2('Service infos'));
+                root.appendChild(ui.h2('Services'));
                 let serviceInfos = await grok.dapi.admin.getServiceInfos();
                 root.appendChild(ui.table(serviceInfos, (item, idx) =>
-                    [`${item.key}:`, item.status] ));
+                    [`${item.key}:`, item.status], ['Service', 'Status'] ));
 
                 return root;
             }));
