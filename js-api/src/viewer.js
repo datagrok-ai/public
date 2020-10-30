@@ -78,7 +78,7 @@ export class Viewer {
 
     /** @type {DataFrame} */
     get dataFrame() { return toJs(grok_Viewer_Get_DataFrame(this.d)); }
-    set dataFrame(t) { grok_Viewer_Set_DataFrame(this.d, t.d); }
+    set dataFrame(t) { grok_Viewer_Set_DataFrame(this.d, t == null ? null : t.d); }
 
     /** @type {Observable} */
     get onEvent() {
