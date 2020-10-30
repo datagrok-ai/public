@@ -36,3 +36,12 @@
     overflow: visible;
     white-space: normal;
 }
+
+.entity-obj {
+    font-family: monospace;
+    color: #000000;
+    -webkit-user-select: text;
+    overflow: scroll;
+    white-space: pre-wrap;
+    max-height: 300px;
+}
