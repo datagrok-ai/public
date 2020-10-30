@@ -8,7 +8,11 @@ import "../css/translation-panel.css";
 
 export let _package = new DG.Package();
 
-// UI components
+// AWS service instances
+let translate;
+let comprehendMedical;
+
+// UI components for the `Translation` panel
 let sourceLangInput = ui.choiceInput('', 'Undetermined', [...Object.keys(lang2code), 'Undetermined', 'Other']);
 let targetLangInput = ui.choiceInput('', 'English', Object.keys(lang2code));
 let headerDiv = ui.div([sourceLangInput.root, ui.divText('→', "arrow"), targetLangInput.root], "header-div");
@@ -22,22 +26,25 @@ let mainDiv = ui.div([
 ], "main-div");
 let mainWidget = new DG.Widget(mainDiv);
 let isError;
+// UI components for the `Entities` panel
+let entDiv = ui.divText('{}', "entity-obj");
+let entStatusBar = ui.divText('');
+let entWidget = new DG.Widget(ui.div([entDiv, entStatusBar]));
 
-function statusError(msg) {
+function statusError(div, msg) {
     isError = true;
-    statusBar.className = "status";
-    statusBar.innerText = msg;
+    div.className = "status";
+    div.innerText = msg;
 }
 
-function statusReady(msg) {
+function statusReady(div, msg) {
     isError = false;
-    statusBar.className = "status";
-    statusBar.innerText = msg;
+    div.className = "status";
+    div.innerText = msg;
 }
 
 let sourceLang, sourceCode;
 let sourceText, cropped;
-let translate;
 
 async function translateText(translate, params) {
     return new Promise((resolve, reject) => {
@@ -48,10 +55,21 @@ async function translateText(translate, params) {
     }).catch((err) => { return { translation: "", error: 1 } });
 }
 
+async function detectEntities(comprehendMedical, params) {
+    return new Promise((resolve, reject) => {
+        comprehendMedical.detectEntitiesV2(params, (err, data) => {
+            if (err) throw err;
+            // Alternatively, return the `data.Entities` array
+            resolve({ entities: data, error: 0 });
+        })
+    }).catch((err) => { return { entities: {}, error: 1 } });
+}
+
 async function getCredentials() {
     let credentialsResponse = await _package.getCredentials();
     if (credentialsResponse === null) {
-        statusError('Package credentials are not set.');
+        statusError(statusBar, 'Package credentials are not set.');
+        statusError(entStatusBar, 'Package credentials are not set.');
         return {};
     }
     let credentials = {
@@ -80,11 +98,11 @@ async function detectLanguage(text) {
 function testLanguagePair(sourceCode, targetCode) {
     let supportedLanguages = Object.keys(code2lang);
     if (!(supportedLanguages.includes(sourceCode))) {
-        statusError(`The detected language (${sourceLang}) is not supported.`);
+        statusError(statusBar, `The detected language (${sourceLang}) is not supported.`);
         return false;
     }
     if (sourceCode === targetCode) {
-        statusError('Cannot translate to the language of the original text.');
+        statusError(statusBar, 'Cannot translate to the language of the original text.');
         return false;
     }
     return true;
@@ -103,8 +121,8 @@ async function doTranslation() {
         SourceLanguageCode: sourceCode,
         TargetLanguageCode: targetCode
     });
-    if (output.error === 1) statusError('Error calling Amazon Translate.');
-    else statusReady('Your translation is ready.');
+    if (output.error === 1) statusError(statusBar, 'Error calling Amazon Translate.');
+    else statusReady(statusBar, 'Your translation is ready.');
     translationArea.value = output.translation + (cropped ? '...' : '');
 }
 
@@ -120,7 +138,7 @@ export async function translationPanel(textfile) {
     
     sourceText = await extractText(textfile);
     if (!sourceText) {
-      statusError('The input text is empty.');
+      statusError(statusBar, 'The input text is empty.');
       return mainWidget;
     }
 
@@ -138,6 +156,30 @@ export async function translationPanel(textfile) {
     return mainWidget;
 }
 
+//name: Entities
+//tags: panel, widgets
+//input: file textfile
+//output: widget result
+//condition: detectTextFile(textfile)
+export async function entitiesPanel(textfile) {
+
+    let text = await extractText(textfile);
+    if (!text) {
+        statusError(entStatusBar, 'The input text is empty.');
+        return entWidget;
+    }
+
+    let output = await detectEntities(comprehendMedical, { Text: text });
+    if (output.error === 1) {
+        statusError(entStatusBar, 'Error calling Comprehend Medical.');
+        return entWidget;
+    }
+
+    entDiv.innerText = JSON.stringify(output.entities, null, 2);
+
+    return entWidget;
+}
+
 //name: exportFunc
 //tags: autostart
 export async function initAWS() {
@@ -147,4 +189,5 @@ export async function initAWS() {
       region: 'us-east-2'
     });
     translate = new AWS.Translate();
+    comprehendMedical = new AWS.ComprehendMedical();
 }
