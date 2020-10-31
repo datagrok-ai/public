@@ -41,16 +41,6 @@ export class DataFrame {
         //         return target.table.get(name, target.idx);
         //     }
         // });
-
-        //let df = this;
-        // this.temp = new Proxy({}, {
-        //     get: function(target, prop) { return DG.toJs(grok_DataFrame_Temp_Get(df.d, prop)); },
-        //     set: function(target, prop, value) { grok_DataFrame_Temp_Set(df.d, prop, DG.toDart(value)); }
-        // })
-        // this.tags = new Proxy({}, {
-        //     get: function(target, prop) { return DG.toJs(grok_DataFrame_Get_Tag(df.d, prop)); },
-        //     set: function(target, prop, value) { grok_DataFrame_Set_Tag(df.d, prop, DG.toDart(value)); }
-        // })
     }
 
     /** Creates a {@link DataFrame} with the specified number of rows and no columns.
@@ -293,6 +283,15 @@ export class Column {
         this.d = d;
         this.temp = new MapProxy(grok_Column_Get_Temp(this.d));
         this.tags = new MapProxy(grok_Column_Get_Tags(this.d));
+        //
+        // return new Proxy(this, {
+        //     get(target, x) {
+        //         if (typeof x === 'number')
+        //             return target.get(x);
+        //         if (target.hasOwnProperty(x))
+        //             return target[x];
+        //     }
+        // });
     }
 
     static fromStrings(name, list) { return toJs(grok_Column_FromStrings(name, list)); }
@@ -369,24 +368,29 @@ export class Column {
         return col;
     }
 
-    /** Column data type. */
+    /** Column data type.
+     * @type {string} */
     get type() { return grok_Column_Get_Type(this.d); }
 
-    /** Number of elements */
+    /** Number of elements
+     * @type {number} */
     get length() { return grok_Column_Get_Length(this.d); }
 
-    /** Parent table */
-    get dataFrame() { return new DataFrame(grok_Column_Get_DataFrame(this.d)); }
+    /** Parent table
+     * @type {DataFrame} */
+    get dataFrame() { return toJs(grok_Column_Get_DataFrame(this.d)); }
 
-    /** Semantic type */
+    /** Semantic type
+     * @type {string} */
     get semType() { return grok_Column_Get_SemType(this.d); }
     set semType(s) { grok_Column_Set_SemType(this.d, s); }
 
-    /** Layout column ID */
+    /** Layout column ID
+     @type {string} */
     get layoutColumnId() { return grok_Column_Get_LayoutColumnId(this.d); }
     set layoutColumnId(s) { grok_Column_Set_LayoutColumnId(this.d, s); }
 
-    /** Name */
+    /** @type {string} */
     get name() { return grok_Column_Get_Name(this.d); }
     set name(s) { grok_Column_Set_Name(this.d, s); }
 
