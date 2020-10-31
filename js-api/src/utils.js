@@ -43,12 +43,17 @@ export function identity(length) {
     return grok_Error(message, url, lineNumber, columnNumber, errorObject);
 };*/
 
-export function time(s, f) {
+/** Times the execution of function f
+ * @param {string} name
+ * @param {Function} f - function with no parameters that will get measured
+ * @returns {number} - milliseconds elapsed
+ * */
+export function time(name, f) {
     let start = new Date();
     let result = f();
     let stop = new Date();
-    console.log(`${s}: ${stop - start}ms`);
-    Balloon.info(`${s}: ${stop - start}ms`);
+    console.log(`${name}: ${stop - start}ms`);
+    new Balloon().info(`${name}: ${stop - start}ms`);
     return result;
 }
 

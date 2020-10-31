@@ -22,7 +22,7 @@ export function paramsToJs(params) {
 /**
  * Instantiates the corresponding JS handler for the Dart object [d]. See also {@link toDart}
  * @param d - Dart handle
- * @param {boolean} check -
+ * @param {boolean} check - when true, throws an exception if the object can't be converted to JS.
  * @returns JavaScript wrapper for the Dart object
  * */
 export function toJs(d, check = false) {
@@ -37,7 +37,7 @@ export function toJs(d, check = false) {
             }
         }
         return wrapper;
-    } else  if (type === TYPE.LIST) {
+    } else if (type === TYPE.LIST) {
         return paramsToJs(d);
     } else if (type === 'DG.TypedEventArgs')
         return new TypedEventArgs(d);

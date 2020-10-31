@@ -33,6 +33,15 @@ export class DataFrame {
 
         this.temp = new MapProxy(grok_DataFrame_Get_Temp(this.d));
         this.tags = new MapProxy(grok_DataFrame_Get_Tags(this.d));
+
+        // return new Proxy(this, {
+        //     get(target, name) {
+        //         if (target.hasOwnProperty(name))
+        //             return target[name];
+        //         return target.table.get(name, target.idx);
+        //     }
+        // });
+
         //let df = this;
         // this.temp = new Proxy({}, {
         //     get: function(target, prop) { return DG.toJs(grok_DataFrame_Temp_Get(df.d, prop)); },
@@ -63,8 +72,6 @@ export class DataFrame {
      * @param {string} json - JSON document.
      * @returns {DataFrame} */
     static fromJson(json) { return new DataFrame(grok_DataFrame_FromJson(json)); }
-
-    toString() { return `${this.name} (${this.rowCount} rows, ${this.columns.length} columns)` };
 
     /** Returns number of rows in the table.
      * @returns {number} */
@@ -257,10 +264,9 @@ export class Row {
         /** @member {number} */
         this.idx = idx;
 
-        const setables = ['table', 'idx'];
         return new Proxy(this, {
             set(target, name, value) {
-                if (setables.includes(name)) {
+                if (target.hasOwnProperty(name)) {
                     target[name] = value;
                     return true;
                 }
@@ -268,7 +274,7 @@ export class Row {
                 return true;
             },
             get(target, name) {
-                if (setables.includes(name))
+                if (target.hasOwnProperty(name))
                     return target[name];
                 return target.table.get(name, target.idx);
             }
