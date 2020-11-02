@@ -23,7 +23,7 @@ If you want to jump-start with Datagrok on your local machine, we recommend this
    cd datagrok
    ```
 
-2. In this folder, create a file `docker-compose.yaml` with the following contents (replace `datagrok/datagrok:1.0.82-75b821b` and `datagrok/cvm:1.0.82-75b821b` with the latest versions which you get from our [Docker Hub](https://hub.docker.com/u/datagrok)):
+2. In this folder, create a file `docker-compose.yaml` with the following contents (you can get the specific versions of `datagrok/datagrok` and `datagrok/cvm` from our [Docker Hub](https://hub.docker.com/u/datagrok)):
     ```yaml
     version: "3"
     services:
@@ -39,7 +39,7 @@ If you want to jump-start with Datagrok on your local machine, we recommend this
         volumes:
           - datagrok_db:/var/lib/postgresql/data
       datagrok:
-        image: datagrok/datagrok:1.0.82-75b821b
+        image: datagrok/datagrok:latest
         environment:
           GROK_PARAMETERS: "{\"deployDemo\": false, \"dbServer\": \"database\", \"db\": \"datagrok\", \"dbAdminLogin\": \"postgres\", \"dbAdminPassword\": \"postgres\", \"dbLogin\": \"dg\", \"dbPassword\": \"dg\"}"
         ports:
@@ -52,7 +52,7 @@ If you want to jump-start with Datagrok on your local machine, we recommend this
           - datagrok_data:/home/grok/data
           - datagrok_cfg:/home/grok/cfg
       cvm:
-        image: datagrok/cvm:1.0.82-75b821b
+        image: datagrok/cvm:latest
         environment:
           GROK_COMPUTE_NUM_CORES: 4
         ports:
