@@ -79,7 +79,7 @@ class UsageAnalysisPackage extends DG.Package {
                 root.appendChild(ui.h2('Services'));
                 let serviceInfos = await grok.dapi.admin.getServiceInfos();
                 root.appendChild(ui.table(serviceInfos, (item, idx) =>
-                    [`${item.key}:`, item.status], ['Service', 'Status'] ));
+                    [`${item.key}:`, $(ui.span([item.status])).addClass(`grok-plugin-status-${item.status.toLowerCase()}`)[0]], ['Service', 'Status'] ));
 
                 return root;
             }));
