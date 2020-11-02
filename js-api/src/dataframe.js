@@ -33,15 +33,14 @@ export class DataFrame {
 
         this.temp = new MapProxy(grok_DataFrame_Get_Temp(this.d));
         this.tags = new MapProxy(grok_DataFrame_Get_Tags(this.d));
-        //let df = this;
-        // this.temp = new Proxy({}, {
-        //     get: function(target, prop) { return DG.toJs(grok_DataFrame_Temp_Get(df.d, prop)); },
-        //     set: function(target, prop, value) { grok_DataFrame_Temp_Set(df.d, prop, DG.toDart(value)); }
-        // })
-        // this.tags = new Proxy({}, {
-        //     get: function(target, prop) { return DG.toJs(grok_DataFrame_Get_Tag(df.d, prop)); },
-        //     set: function(target, prop, value) { grok_DataFrame_Set_Tag(df.d, prop, DG.toDart(value)); }
-        // })
+
+        // return new Proxy(this, {
+        //     get(target, name) {
+        //         if (target.hasOwnProperty(name))
+        //             return target[name];
+        //         return target.table.get(name, target.idx);
+        //     }
+        // });
     }
 
     /** Creates a {@link DataFrame} with the specified number of rows and no columns.
@@ -63,8 +62,6 @@ export class DataFrame {
      * @param {string} json - JSON document.
      * @returns {DataFrame} */
     static fromJson(json) { return new DataFrame(grok_DataFrame_FromJson(json)); }
-
-    toString() { return `${this.name} (${this.rowCount} rows, ${this.columns.length} columns)` };
 
     /** Returns number of rows in the table.
      * @returns {number} */
@@ -257,10 +254,9 @@ export class Row {
         /** @member {number} */
         this.idx = idx;
 
-        const setables = ['table', 'idx'];
         return new Proxy(this, {
             set(target, name, value) {
-                if (setables.includes(name)) {
+                if (target.hasOwnProperty(name)) {
                     target[name] = value;
                     return true;
                 }
@@ -268,7 +264,7 @@ export class Row {
                 return true;
             },
             get(target, name) {
-                if (setables.includes(name))
+                if (target.hasOwnProperty(name))
                     return target[name];
                 return target.table.get(name, target.idx);
             }
@@ -287,6 +283,15 @@ export class Column {
         this.d = d;
         this.temp = new MapProxy(grok_Column_Get_Temp(this.d));
         this.tags = new MapProxy(grok_Column_Get_Tags(this.d));
+        //
+        // return new Proxy(this, {
+        //     get(target, x) {
+        //         if (typeof x === 'number')
+        //             return target.get(x);
+        //         if (target.hasOwnProperty(x))
+        //             return target[x];
+        //     }
+        // });
     }
 
     static fromStrings(name, list) { return toJs(grok_Column_FromStrings(name, list)); }
@@ -363,24 +368,29 @@ export class Column {
         return col;
     }
 
-    /** Column data type. */
+    /** Column data type.
+     * @type {string} */
     get type() { return grok_Column_Get_Type(this.d); }
 
-    /** Number of elements */
+    /** Number of elements
+     * @type {number} */
     get length() { return grok_Column_Get_Length(this.d); }
 
-    /** Parent table */
-    get dataFrame() { return new DataFrame(grok_Column_Get_DataFrame(this.d)); }
+    /** Parent table
+     * @type {DataFrame} */
+    get dataFrame() { return toJs(grok_Column_Get_DataFrame(this.d)); }
 
-    /** Semantic type */
+    /** Semantic type
+     * @type {string} */
     get semType() { return grok_Column_Get_SemType(this.d); }
     set semType(s) { grok_Column_Set_SemType(this.d, s); }
 
-    /** Layout column ID */
+    /** Layout column ID
+     @type {string} */
     get layoutColumnId() { return grok_Column_Get_LayoutColumnId(this.d); }
     set layoutColumnId(s) { grok_Column_Set_LayoutColumnId(this.d, s); }
 
-    /** Name */
+    /** @type {string} */
     get name() { return grok_Column_Get_Name(this.d); }
     set name(s) { grok_Column_Set_Name(this.d, s); }
 
@@ -403,8 +413,9 @@ export class Column {
      * Sets [i]-th value to [x]
      * @param {number} i
      * @param x
+     * @param {boolean} notify
      */
-    set(i, x) { grok_Column_SetValue(this.d, i, x); }
+    set(i, x, notify = true) { grok_Column_SetValue(this.d, i, x, notify); }
 
     /** Returns whether i-th value is missing.
      * @param {number} i - Row index.
@@ -432,6 +443,14 @@ export class Column {
     /** Returns all unique strings in a sorted order. Applicable to string column only.
      * @returns {string[]} */
     get categories() { return grok_Column_Categories(this.d); }
+
+    /** Sets order of categories
+     * @param {string[]} order */
+    setCategoryOrder(order) { grok_Column_SetCategoryOrder(this.d, order); }
+
+    /** Gets order of categories
+     * @returns string[] */
+    getCategoryOrder() { return grok_Column_GetCategoryOrder(this.d); }
 
     /** Column's minimum value. The result is cached.
      * @returns {number} */
