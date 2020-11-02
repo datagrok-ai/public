@@ -1,10 +1,8 @@
 var _initRDKitResolve = null;
+var _promise = new Promise((resolve, reject) => _initRDKitResolve = resolve);
 
 function initRDKit() {
-    if (_initRDKitResolve == null)
-        return new Promise((resolve, reject) => _initRDKitResolve = resolve);
-    else
-        return Promise.resolve(null);
+    return _promise;
 }
 
 var Module = {
@@ -13,10 +11,7 @@ var Module = {
         var m1 = Module.get_mol("c1ccccc1O");
         console.log('smiles: ' + m1.get_smiles());
         m1.delete();
-
-        if (_initRDKitResolve != null)
-            _initRDKitResolve();
-        //callback("CC(=O)Oc1ccccc1C(=O)O");
+        _initRDKitResolve();
     }
 };
 
