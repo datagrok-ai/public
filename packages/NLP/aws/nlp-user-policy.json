@@ -1,0 +1,45 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "translate:TranslateText",
+
+                "translate:StartTextTranslationJob",
+                "translate:ListTextTranslationJobs",
+                "translate:DescribeTextTranslationJob",
+                "translate:StopTextTranslationJob",
+
+                "translate:ImportTerminology",
+                "translate:GetTerminology",
+                "translate:ListTerminologies",
+                "translate:DeleteTerminology"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "comprehendmedical:DetectEntities",
+                "comprehendmedical:DetectPHI"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::nlp-bucket/*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": "s3:PutObject",
+            "Resource": "arn:aws:s3:::nlp-bucket/*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::nlp-bucket"
+        }
+    ]
+}
