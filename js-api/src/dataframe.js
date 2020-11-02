@@ -444,6 +444,14 @@ export class Column {
      * @returns {string[]} */
     get categories() { return grok_Column_Categories(this.d); }
 
+    /** Sets order of categories
+     * @param {string[]} order */
+    setCategoryOrder(order) { grok_Column_SetCategoryOrder(this.d, order); }
+
+    /** Gets order of categories
+     * @returns string[] */
+    getCategoryOrder() { return grok_Column_GetCategoryOrder(this.d); }
+
     /** Column's minimum value. The result is cached.
      * @returns {number} */
     get min() { return grok_Column_Min(this.d); }
