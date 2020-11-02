@@ -1,4 +1,4 @@
-// The following example joins two tables, using the specified key and value columns.
+// Joining two tables by key columns.
 //
 // https://datagrok.ai/help/transform/join-tables
 

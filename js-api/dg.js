@@ -15,6 +15,7 @@ export * from './src/view.js';
 export * from './src/viewer.js';
 export * from './src/docking.js';
 export * from './src/wrappers_impl';
+export {time} from './src/utils.js';
 export {JsEntityMeta} from './ui';
 
 export let chem = _chem;
