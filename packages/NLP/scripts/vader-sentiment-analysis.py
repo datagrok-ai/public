@@ -22,6 +22,8 @@ nltk.download('vader_lexicon')
 def get_polarity_score(text):
     """Analyzes `text` at the sentence level and returns its overall polarity."""
     sentences = sent_tokenize(text)
+    if text and not sentences:
+        sentences = [text]
     polarity = 0.0
     sent_analyzer = SentimentIntensityAnalyzer()
     for sentence in sentences:
