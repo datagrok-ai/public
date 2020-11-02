@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import AWS from 'aws-sdk';
 import lang2code from "./lang2code.json";
 import code2lang from "./code2lang.json";
-import "../css/translation-panel.css";
+import "../css/info-panels.css";
 
 export let _package = new DG.Package();
 
