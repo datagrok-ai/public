@@ -6,26 +6,26 @@
 A parameterized query is a query with one or more parameters. When the query is
 executed from the UI, a user is prompted to enter parameters. It is also possible
 to run a query programmatically with the specified parameters 
-(see [code snippet](https://public.datagrok.ai/js/samples/data-access/parameterized-query)). 
+(see this [code snippet](https://public.datagrok.ai/js/samples/data-access/parameterized-query)). 
 
-## Creating a parameterized query
+## Creating a Parameterized Query
 
-To create a parameterized query, open **File | Connect to Data**, right-click
-on the connection, and select **Add Query**. After that, annotate parameter 
+To create a parameterized query, open `Data | Databases`, right-click
+on a connection, and select `Add Query...`. After that, annotate parameter 
 information in the query header. Below is an example of a simple query that
 defines a "productName" parameter:
 
-```$sql
+```sql
 --input: string productName
 select * from products where name == '@productName'
 ```
 
 ## Syntax
 
-The syntax for defining query parameters is based on [Scripting](../develop/scripting.md), 
+The syntax for defining query parameters is based on [scripting](../develop/scripting.md), 
 with some additions specific to queries.
 
-### Header parameters
+### Header Parameters
 
 | Parameter   | Description                        |
 |-------------|------------------------------------|
@@ -35,9 +35,9 @@ with some additions specific to queries.
 | tags        | Tags                               |
 | input       | Input parameter                    |
 
-### Format template for 'input':
+### Format Template for 'input':
 
-```
+```sql
 --input: <type> <name> = <value> {<option tag>:<value>; ...} [<description>]  
 ```
 
@@ -53,17 +53,17 @@ Comments style can be used '#' for Sparql.
 
 ### Options
 
-Options for supported data typed are described in [Scripting](../develop/scripting.md) section. 
+Options for supported data typed are described in the [Scripting](../develop/scripting.md) section. 
 
-| Option      | Description                              |
-|-------------|------------------------------------------|
-| choices     | Comma-separated list of choices  |
+| Option      | Description                                                                        |
+|-------------|------------------------------------------------------------------------------------|
+| choices     | Comma-separated list of choices                                                    |
 | suggestions | Name of the query to be called to generate suggestion as the user types the value  |     
 
 "choices" option can be either a list, a name of the query, or the actual SQL query.
 
 Examples:
-```
+```sql
 --input: string shipCountry = France {choices: Query("SELECT DISTINCT shipCountry FROM Orders")}
 --input: string shipCountry = France {choices: northwind:countries}
 --input: string shipCountry = France {suggestions: northwind:countries}
@@ -71,17 +71,18 @@ Examples:
 
 This query can be used as a "suggestion" query. It accepts exactly one parameter,
 which is what a user has typed in the input box so far:
-```
+
+```sql
 --name: country
 --input: string sub
 SELECT DISTINCT shipCountry FROM Orders WHERE shipCountry LIKE '%' || @sub || '%'
 ```
 
-#### Patterns
+### Patterns
 
-Sometime, we want to give users the possibility to enter the filtering criteria as 
+Sometimes, we want to give users the possibility to enter the filtering criteria as 
 a free text. On a server side, this query would be parsed and safely transformed to a proper
-SQL clause. Check out [search Patterns](../explore/data-search-patterns.md) for more details.
+SQL clause. Check out [search patterns](../explore/data-search-patterns.md) for more details.
 
 In this case, the input type has to be `string`, since the user will be entering 
 free-text query, and the actual data type should be put in the `pattern` option. Then,
@@ -128,7 +129,7 @@ Patterns summary:
 
 Here is an example of the parameterized query applicable to the "Northwind" database: 
 
-```$sql
+```sql
 --input: int employeeId = 5
 --input: string shipVia = = 3 {pattern: int}
 --input: double freight = 10.0
@@ -148,13 +149,17 @@ SELECT * FROM Orders WHERE (employeeId = @employeeId)
 ```
 
 When this query is started, the following dialog with the auto-generated inputs appears.
-Note that inputs marked as patters allow users to enter expressions like "> 5" for numbers,
-"after 2019" for dates, and ""
+Note that inputs marked as patterns allow users to enter expressions like "> 5" for numbers,
+"after 2019" for dates, and "starts with r" for strings.
 
 ![](parameterized-queries.png)
 
 Behind the scenes, Datagrok will parse the free-text query, and then execute a parameterized, safe, 
 provider-specific SQL query on the backend.
+
+## Videos
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/dKrCk38A1m8?start=1980" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
 See also:
 
@@ -162,3 +167,4 @@ See also:
   * [Search Patterns](../explore/data-search-patterns.md)
   * [Function](../function.md)
   * [Scripting](../develop/scripting.md)
+  * [JavaScript API Samples](https://public.datagrok.ai/js/samples/data-access/parameterized-query)

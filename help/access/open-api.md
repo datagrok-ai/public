@@ -37,7 +37,12 @@ only retrieve data from external services, but do pretty much everything the ser
 to do. For instance, you can automatically provision virtual machines via the Amazon AWS swagger,
 create Jira tickets, or purchase items on eBay. 
 
+## Videos
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/dKrCk38A1m8?start=3121" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
 See also:
-* [Public datasets](public-datasets.md)
-* [OpenAPI collection](https://apis.guru/browse-apis/)
-* [Data query](data-query.md)
+
+  * [Public Datasets](public-datasets.md)
+  * [OpenAPI Collection](https://apis.guru/browse-apis/)
+  * [Data Query](data-query.md)
