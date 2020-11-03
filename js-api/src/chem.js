@@ -28,6 +28,34 @@ export function similaritySearch(column, molecule, metric = SIMILARITY_METRIC.TA
         limit, minScore, (t) => resolve(new DataFrame(t))));
 }
 
+export async function similarityScoring(molStringsColumn, molString) {
+    
+    let foo = await grok.functions.eval('Chem:similarityScoring');
+    console.log("Before prepare");
+    let call = await foo.prepare({
+        'molStringsColumn': molStringsColumn,
+        'molString': molString
+    });
+    console.log("Before call");
+    await call.call();
+    console.log("Before returning result");
+    return call.getParamValue('result');
+    
+    /*
+    return new Promise((resolve, reject) => {
+        grok.functions.eval('Chem:similarityScoring').then(
+            f => f.prepare({
+              'molStringsColumn': molStringsColumn,
+              'molString': molString
+            }).call().then(
+              r => resolve(r.getParamValue('result'))
+            )
+        )
+      }
+    );
+     */
+}
+
 /**
  * Returns the specified number of most diverse molecules in the column.
  * See example: {@link https://datagrok.ai/help/domains/chem/diversity-search}

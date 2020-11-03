@@ -8,6 +8,7 @@
     "wasm/RDKit_minimal.js",
     "src/rdkit_cell_renderer.js",
     "src/rdkit_substructure_filter.js",
-    "src/chem_column_property_panel.js"
+    "src/chem_column_property_panel.js",
+    "src/chem_searches.js"
   ]
 }
