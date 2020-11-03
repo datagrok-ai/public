@@ -84,6 +84,8 @@ class UsageAnalysisPackage extends DG.Package {
                 return root;
             }));
 
+            addPane('Unique users per day for the last month', 'UniqueUsersPerDayLastMonth', (t) => DG.Viewer.lineChart(t).root);
+
             acc.addPane('Unique users', () => {
                 let host = ui.div();
                 host.appendChild(ui.loader());

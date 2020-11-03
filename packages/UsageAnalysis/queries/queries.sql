@@ -43,6 +43,26 @@ select * from month_errors, week_errors, day_errors;
 --end
 
 
+--name: unique users per day last month
+--connection: datagrok
+select d.date::date, count(t.id) as user_count from (
+	(
+		select to_char(date_trunc('day', (current_date - offs)), 'DD-MM-YYYY') as date
+    	from generate_series(0, 30, 1) as offs
+    ) d
+    left outer join
+    (
+    	select distinct on (date(e.event_time), u.id) u.id, e.event_time as date
+    	from events e
+		inner join users_sessions s on e.session_id = s.id
+		inner join users u on u.id = s.user_id
+	) t
+	on d.date = to_char(date_trunc('day', t.date), 'DD-MM-YYYY')
+)
+group by d.date;
+--end
+
+
 --name: unique users by @date
 --input: string date { pattern: datetime }
 --connection: datagrok
