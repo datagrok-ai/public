@@ -20,11 +20,13 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
         }
     
         let molIsInMolBlock = function(molString, rdkitMol) {
-            const molBlockString = rdkitMol.get_molblock();
-            if (molBlockString === molString) return true;
-            const v3KmolblockString = rdkitMol.get_v3Kmolblock();
-            if (v3KmolblockString === molString) return true;
-            return false;
+            const smilesMolString = rdkitMol.get_smiles();
+            if (smilesMolString === molString) return false;
+            const cxsmilesMolString = rdkitMol.get_cxsmiles();
+            if (cxsmilesMolString === molString) return false;
+            const inchiMolString = rdkitMol.get_inchi();
+            if (inchiMolString === molString) return false;
+            return true;
         }
         
         let drawMoleculeWithScaffold = function(scaffoldMolString, rdkitMol) {
@@ -37,8 +39,8 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
                 const substructJson = rdkitMol.get_substruct_match(scaffoldMol);
                 if (substructJson !== '{}') {
                     rdkitMol.generate_aligned_coords(scaffoldMol, true);
-                    drawMolecule(rdkitMol);
                 }
+                drawMolecule(rdkitMol);
             }
             scaffoldMol.delete();
     
