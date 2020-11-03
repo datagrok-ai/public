@@ -113,6 +113,8 @@ export class Viewer {
     static filters     (t, options = null) { return new Viewer(grok_Viewer_Filters(t.d, _toJson(options))); }
 
     static scatterPlot (t, options = null) { return new Viewer(grok_Viewer_ScatterPlot(t.d, _toJson(options))); }
+
+    static lineChart   (t, options = null) { return new Viewer(grok_Viewer_LineChart(t.d, _toJson(options))); }
 }
 
 export class JsLookAndFeel {
