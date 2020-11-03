@@ -1,14 +1,14 @@
 <!-- TITLE: File Shares -->
 <!-- SUBTITLE: -->
 
-# Connecting to file shares
+# Connecting to File Shares
 
-File shares is a popular choice for storing datasets due to its 
+File shares are a popular choice for storing datasets due to its 
 ubiquitousness, ease of use, and hierarchical structure. Datagrok 
 provides an easy way to connect to it and use files in a secure,
 manageable way.
 
-## Adding a file share
+## Adding a File Share
 
 In Datagrok, file share is a [data connection](data-connection.md), 
 and as such inherits all its properties and features, such as privileges.
@@ -27,7 +27,7 @@ To share it with others, right-click on the connection, and select "Share...".
 
 Expand the connection node to browse files.
 
-## Browsing files
+## Browsing Files
 
 There are multiple ways to browse file shares. Open `File | Connect to Data...`,
 and expand the corresponding connection under the 'Files' section.
@@ -35,24 +35,29 @@ and expand the corresponding connection under the 'Files' section.
 ![](file-shares-tree.png)
 
 Double-click on CSV file to open it in the platform, or right-click to see
-additional options, such as downloading the content as as ZIP file. 
+additional options, such as downloading the content as a ZIP file. 
 
 ## Indexing
 
 Indexing the content of a file share will let users find datasets of interest easier, as indexed files
 appear in the file search results. The following information gets extracted from CSV files 
 during the indexing:
-* File name
-* File size in bytes
-* Data dimensions (number of rows and columns)
-* Column-level information (name, data type, [semantic type](../discover/semantic-types.md))
+  * File name
+  * File size in bytes
+  * Data dimensions (number of rows and columns)
+  * Column-level information (name, data type, [semantic type](../discover/semantic-types.md))
 
 Internally, file share indexing is done as a recurrent [job](data-job.md). 
 
 To enable indexing, set the `Index files` flag in the 
 [connection properties](#adding-a-file-share). 
 
+## Videos
+
+<iframe width="560" height="315" src="https://www.youtube.com/watch?v=dKrCk38A1m8&t=417s" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
 See also:
-* [Data Connection](data-connection.md)
-* [Indexing file shares](files-indexer.md)
-* [Data Job](data-job.md)
+
+  * [Data Connection](data-connection.md)
+  * [Indexing File Shares](files-indexer.md)
+  * [Data Job](data-job.md)
