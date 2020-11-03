@@ -22,6 +22,10 @@ You can add steps manually and switch between steps to view results of each step
 
 ![Transform query](../uploads/gifs/query-transform-3a.gif "Transform Query") 
 
+## Videos
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/dKrCk38A1m8?start=2776" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
 See also:
 
   * [Data Pipeline](../access/data-pipeline.md)
