@@ -12,13 +12,14 @@ class SubstructureFilter extends DG.Filter {
         this.root = ui.div(null, 'grok-chem-substructure-filter');
         let sketcher = grok.chem.sketcher((smiles, molfile) => {
             this.smiles = smiles;
-            this.dataFrame.temp.smarts = smiles;
+            // this.dataFrame.temp.smarts = smiles;
             this.dataFrame.rows.requestFilter();
         })
         this.root.appendChild(sketcher);
     }
 
     attach(dFrame) {
+        
         this.dataFrame = DG.toJs(dFrame);
         this.column = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
         this.dataFrame.onRowsFiltering.subscribe((_) => this.applyFilter());

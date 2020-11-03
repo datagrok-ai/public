@@ -1,6 +1,9 @@
-
 class ChemPackage extends DG.Package {
-
+    
+    //name: chemExportFunc
+    //tags: autostart
+    chemInit() { }
+    
     /** Guaranteed to be executed exactly once before the execution of any function below */
     async init() {
         await initRDKit();
@@ -49,6 +52,8 @@ class ChemPackage extends DG.Package {
     //output: grid_cell_renderer result
     rdkitCellRenderer() { return new RDKitCellRenderer(); }
 
+    /*
+
     static _morganFP(smiles, fp_length = 128, fp_radius = 2) {
         let mol = Module.get_mol(smiles);
         let mfp = mol.get_morgan_fp(fp_radius, fp_length);
@@ -62,6 +67,17 @@ class ChemPackage extends DG.Package {
     getFingerprints(molColumn) {
         let fps = molColumn.toList().map((smiles) => DG.BitSet.fromString(ChemPackage._morganFP(smiles)).d);
         return DG.Column.fromList('object', 'fingerprints', fps);
+    }
+    
+    */
+    
+    //name: similarityScoring
+    //input: column molStringsColumn
+    //input: string molString
+    //output: dataframe result
+    similarityScoring(molStringsColumn, molString) {
+        console.log("We are here");
+        return chemSimilarityScoring(molStringsColumn, molString, {'sorted' : true});
     }
 
     //name: molColumnPropertyPanel
