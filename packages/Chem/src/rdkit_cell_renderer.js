@@ -12,33 +12,44 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
         let value = gridCell.cell.value;
         if (value == null || value === '')
             return;
-
         let mol = Module.get_mol(value);
-        let singleScaffold = gridCell.tableColumn.dataFrame.columns.byName('smiles').tags['chem-scaffold'];
+        if (!mol.is_valid()) return;
+        
+        let drawMolecule = function (rdkitMol) {
+            rdkitMol.draw_to_canvas_with_offset(g.canvas, x, -y, w, h);
+        }
     
-        let drawAtomic = function (mol) {
-            mol.draw_to_canvas_with_offset(g.canvas, x, -y, w, h);
+        let molIsInMolBlock = function(molString, rdkitMol) {
+            const molBlockString = rdkitMol.get_molblock();
+            if (molBlockString === molString) return true;
+            const v3KmolblockString = rdkitMol.get_v3Kmolblock();
+            if (v3KmolblockString === molString) return true;
+            return false;
         }
         
-        if (singleScaffold) {
-    
-            let qmol = Module.get_mol(singleScaffold);
-            try {
-                if (mol.is_valid() && qmol.is_valid()) {
-                    const mdetails = mol.get_substruct_match(qmol);
-                    const match = JSON.parse(mdetails);
-                    // draw_with_highlights(mol, match);
-                    if (match.atoms && match.atoms.length) {
-                        mol.generate_aligned_coords(qmol, true);
-                    }
-                    drawAtomic(mol);
-                }
-            } catch {
-                let resqueMol = Module.get_mol(value);
-                drawAtomic(resqueMol);
-                resqueMol.delete();
+        let drawMoleculeWithScaffold = function(scaffoldMolString, rdkitMol) {
+            let scaffoldMol = Module.get_mol(scaffoldMolString);
+            if (!scaffoldMol.is_valid()) {
+                drawMolecule(rdkitMol);
+                return;
             }
-            qmol.delete();
+            if (molIsInMolBlock(scaffoldMolString, scaffoldMol)) {
+                const substructJson = rdkitMol.get_substruct_match(scaffoldMol);
+                if (substructJson !== '{}') {
+                    rdkitMol.generate_aligned_coords(scaffoldMol, true);
+                    drawMolecule(rdkitMol);
+                }
+            }
+            scaffoldMol.delete();
+    
+        }
+    
+        const molCol = gridCell.tableColumn.dataFrame.columns.byName('rdkit');
+        let singleScaffoldMolString = molCol ? molCol.tags['chem-scaffold'] : null;
+        
+        if (singleScaffoldMolString) {
+            
+            drawMoleculeWithScaffold(singleScaffoldMolString, mol);
         
         } else {
     
@@ -52,52 +63,18 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
                     break;
                 }
             }
-            let smilesToMolBlock = function (smiles) {
-                let qmol = Module.get_mol(smiles);
-                let scaffoldInMolBlock = qmol.get_v3Kmolblock();
-                qmol.delete();
-                return scaffoldInMolBlock;
-            }
-            let drawSimple = function (mol) {
-                if (gridCell.tableColumn.name === 'scaffold') {
-                    // specially draw with MolBlock orientation
-                    let smol = Module.get_mol(smilesToMolBlock(value));
-                    mol.generate_aligned_coords(smol, true);
-                    drawAtomic(mol);
-                    smol.delete();
-                } else {
-                    drawAtomic(mol);
-                }
-            }
+            
             if (rowScaffoldCol == null) {
                 // regular drawing
-                drawSimple(mol);
+                drawMolecule(mol);
             } else {
                 let idx = gridCell.tableRowIndex;
-                let scaffold = df.get(rowScaffoldCol.name, idx);
-                // align to scaffold
-                let smol = Module.get_mol(smilesToMolBlock(scaffold));
-                try {
-                    if (mol.is_valid() && smol.is_valid()) {
-                        const mdetails = mol.get_substruct_match(smol);
-                        const match = JSON.parse(mdetails);
-                        // draw_with_highlights(mol, match);
-                        if (match.atoms && match.atoms.length) {
-                            mol.generate_aligned_coords(smol, true);
-                            drawAtomic(mol);
-                        } else {
-                            drawSimple(mol);
-                        }
-                    }
-                } catch {
-                    let resqueMol = Module.get_mol(value);
-                    drawSimple(resqueMol);
-                    resqueMol.delete();
-                }
-                smol.delete();
+                let scaffoldMolString = df.get(rowScaffoldCol.name, idx);
+                drawMoleculeWithScaffold(scaffoldMolString, mol);
             }
-    
+            
         }
+        
         mol.delete();
     }
 }
