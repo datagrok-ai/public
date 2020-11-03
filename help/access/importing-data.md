@@ -9,7 +9,7 @@ other services, including cloud data providers.
 
 To import a local file, drag-and-drop it into the browser. The important thing
 to understand is that the data will stay in the browser. It won't get sent to 
-the server, unless you explicitly do that by [Uploading a project](../overview/project.md#uploading-a-project).
+the server, unless you explicitly do that by [uploading a project](../overview/project.md#uploading-a-project).
 
 ## Supported File Types
 
@@ -36,35 +36,40 @@ the server, unless you explicitly do that by [Uploading a project](../overview/p
 
 ## Supported Data Sources
 
-* Access
-* Amazon S3
-* Amazon Athena
-* Amazon Redshift
-* Google BigQuery
-* Google Cloud
-* Cassandra
-* DB2
-* Dropbox
-* File Network Shares
-* Firebird
-* HBase
-* Hive
-* MS SQL
-* MariaDB
-* MongoDB
-* MySQL
-* ODATA
-* Oracle
-* PostgreSQL
-* SQLite
-* [Socrata](edit-socrata-query.md)
-* Sparql
-* Teradata
-* Twitter
-* Vertica
+| Data Source                      |
+|----------------------------------|
+| Access                           |
+| Amazon S3                        |
+| Amazon Athena                    |
+| Amazon Redshift                  |
+| Google BigQuery                  |
+| Google Cloud                     |
+| Cassandra                        |
+| DB2                              |
+| Dropbox                          |
+| File Network Shares              |
+| Firebird                         |
+| HBase                            |
+| Hive                             |
+| MS SQL                           |
+| MariaDB                          |
+| MongoDB                          |
+| MySQL                            |
+| ODATA                            |
+| Oracle                           |
+| PostgreSQL                       |
+| SQLite                           |
+| [Socrata](edit-socrata-query.md) |
+| Sparql                           |
+| Teradata                         |
+| Twitter                          |
+| Vertica                          |
 
+## Videos
 
-See also
-* [Import Text](import-text.md)
-* [Data Query](data-query.md)
-* [JS API: Load CSV](https://public.datagrok.ai/js/samples/data-access/load-csv)
+<iframe width="560" height="315" src="https://www.youtube.com/watch?v=dKrCk38A1m8&t=336s" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
+See also:
+  * [Import Text](import-text.md)
+  * [Data Query](data-query.md)
+  * [JS API: Load CSV](https://public.datagrok.ai/js/samples/data-access/load-csv)

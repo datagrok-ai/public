@@ -51,7 +51,7 @@ connectors, and the list is quickly growing. Most of our data connectors are ope
 | [Web](connectors/web.md)                 |       |
 
 
-## Creating a new connection
+## Creating a Connection
 
 To create a new data connection, open the "Databases" pane (Open | Databases), right-click on the appropriate 
 connector in the tree, and choose "Add connection...". Alternatively, click on "New Connection" under the
@@ -69,7 +69,7 @@ be picked up from the corresponding fields).
 Once a connection is set up, you are ready to start creating queries. There are multiple ways to 
 do so: manually, or         
         
-## Access control
+## Access Control
 
 Connections are first-class entities in the Datagrok platform, and as such are subjects to the standard 
 checks and routines performed against them whenever they are used in the specific context. Some of the 
@@ -101,15 +101,19 @@ You can use these fields to filter connections with [smart search](../overview/s
 | commentedBy | [User](../govern/user.md) object            |
 | usedBy      | [User](../govern/user.md) object            |
 
-## JDBC connection
+## JDBC Connection
 
 For some cases connection may require custom JDBC connection string. For this case JDBC-based data connection has 
 parameter "Conn. string". If it filled, it will be used for connection, all other parameters will be ignored except 
-'login' and 'password'.  
+'login' and 'password'. 
+
+## Videos
+
+<iframe width="560" height="315" src="https://www.youtube.com/watch?v=dKrCk38A1m8&t=1048s" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
 See also:
 
-* [Data Pipeline](data-pipeline.md)
-* [Data Query](data-query.md)
-* [Data Job](data-job.md)
-* [Function Call](../overview/functions/function-call.md)
+  * [Data Pipeline](data-pipeline.md)
+  * [Data Query](data-query.md)
+  * [Data Job](data-job.md)
+  * [Function Call](../overview/functions/function-call.md)

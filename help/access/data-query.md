@@ -9,7 +9,7 @@ typically be the SQL query; for Excel file, that would be sheet name, etc.
 Queries can be executed either manually, or as part of the [Data Job](data-job.md). The result of 
 executing a query is represented by the [Function Call](../overview/functions/function-call.md).
 
-## Parameterized queries
+## Parameterized Queries
 
 Queries can be parameterized. In the following example, the we are introducing 'employeeId' parameter: 
 
@@ -20,7 +20,7 @@ SELECT * FROM Orders WHERE (employeeId = @employeeId)
 
 For more details, see [Parameterized queries](parameterized-queries.md) section.
 
-## Access control
+## Access Control
 
 Data queries are first-class entities in the Datagrok platform, and as such are subjects to the 
 standard checks and routines performed against them whenever they are used in the specific context. 
@@ -60,5 +60,6 @@ See also:
   * [Data Connection](data-connection.md)
   * [Data Job](data-job.md)
   * [Function Call](../overview/functions/function-call.md)
-  * [Parameterized queries](parameterized-queries.md)
+  * [Parameterized Queries](parameterized-queries.md)
   * [Query Builder](query-builder.md)
+  * [Visual Query](db-visual-query.md)
