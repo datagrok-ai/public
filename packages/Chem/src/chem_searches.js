@@ -1,37 +1,20 @@
 // Through RDKit we operate on all acceptable strings representing
 
 function _morganFP(molString, fp_length = 128, fp_radius = 2) {
-    console.log("In morganFP");
     let mol = Module.get_mol(molString);
-    console.log("After mol");
     let mfp = mol.get_morgan_fp(fp_radius, fp_length);
-    console.log("After FP");
     mol.delete();
     return mfp;
 }
 
 function moleculesToFingerprints(molStringsColumn, settings) {
-    console.log("In moleculesToFingerprints");
     const len = molStringsColumn.length;
     const fpLength = settings.hasOwnProperty('fpLength') ? settings.fpLength : 128;
     const fpRadius = settings.hasOwnProperty('fpRadius') ? settings.fpRadius : 2;
     let fingerprints = molStringsColumn.toList().map((molString) =>
       DG.BitSet.fromString(_morganFP(molString, fpLength, fpRadius)));
-    console.log("Before returning from moleculesToFingerprints");
     return DG.Column.fromList('object', 'fingerprints', fingerprints);
 }
-
-/*
-function tanimotoSimilarity(bitsetX, bitsetY) {
-    if (bitsetX.length !== bitsetY.length)
-        throw "Bit sets should be the same length";
-    const total = bitsetX.countBits(true) + bitsetY.countBits(true);
-    if (total === 0)
-        return 1.0;
-    const common = bitsetX.andWithCountBits(bitsetY, true);
-    return common / (total - common);
-}
- */
 
 function _foldFingerprint(bitsetFp, newLength) {
     let result = DG.BitSet.create(newLength);
@@ -57,8 +40,6 @@ function chemSimilarityScoring(molStringsColumn, molString, settings) {
     const fingerprint = moleculesToFingerprints(DG.Column.fromStrings('molecules', [molString]), settings).get(0);
     const fingerprintCol = moleculesToFingerprints(molStringsColumn, settings);
     const len = molStringsColumn.length;
-    
-    console.log("We are THERE");
     
     let distances = DG.Column.fromType(DG.TYPE.FLOAT, 'distances', len);
     for (let row = 0; row < len; ++row) {
@@ -100,4 +81,20 @@ function chemSimilarityScoring(molStringsColumn, molString, settings) {
         return distances;
         
     }
+}
+
+function chemSubstructureSearch(molStringsColumn, molString) {
+    
+    const len = molStringsColumn.length;
+    let result = DG.BitSet.create(len);
+    let subMol = Module.get_mol(molString);
+    for (let i = 0; i < len; ++i) {
+        let mol = Module.get_mol(molStringsColumn.get(i));
+        let match = mol.get_substruct_match(subMol);
+        if (match !== "{}")
+            result.set(i, true, false);
+        mol.delete();
+    }
+    subMol.delete();
+    
 }
