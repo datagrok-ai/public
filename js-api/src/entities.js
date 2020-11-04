@@ -365,6 +365,26 @@ export class ScriptEnvironment extends Entity {
     setup() { return new Promise((resolve, reject) => grok_ScriptEnvironment_Setup(this.d, () => resolve())); }
 }
 
+export class LogEvent extends Entity {
+    constructor(d) { super(d); }
+
+    /** Description of the event
+     * @type {string} */
+    get description() { return grok_LogEvent_Get_Description(this.d); }
+
+    /** Friendly name of the event
+     * @type {string} */
+    get name() { return grok_LogEvent_Get_Name(this.d); }
+
+    /** Source of the event
+     * @type {string} */
+    get source() { return grok_LogEvent_Get_Source(this.d); }
+
+    /** Session id of the event
+     * @type {string} */
+    get session() { return grok_LogEvent_Get_Session(this.d); }
+}
+
 /**
  * Represents a package, which is a unit of distribution of content in the Datagrok platform.
  */
