@@ -77,7 +77,7 @@ group by u.name, u.id
 --name: events on @date
 --input: string date { pattern: datetime }
 --connection: datagrok
-select u.login as user, u.id as user_id, t.name, t.source, e.event_time, e.description from events e
+select u.login as user, u.id as user_id, t.name, t.source, e.id as event_id, e.event_time, e.description from events e
 inner join event_types t on e.event_type_id = t.id
 inner join users_sessions s on e.session_id = s.id
 inner join users u on u.id = s.user_id
