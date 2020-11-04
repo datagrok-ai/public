@@ -372,6 +372,7 @@ export class Package {
     constructor(webRoot) {
         this.webRoot = webRoot;
         this.name = "";
+        this.version = "";
     }
 
     /** Override init() method to provide package-specific initialization.
