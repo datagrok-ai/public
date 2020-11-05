@@ -47,7 +47,7 @@ select * from month_errors, week_errors, day_errors;
 --connection: datagrok
 select d.date::date, count(t.id) as user_count from (
 	(
-		select to_char(date_trunc('day', (current_date - offs)), 'DD-MM-YYYY') as date
+		select date_trunc('day', (current_date - offs)) as date
     	from generate_series(0, 30, 1) as offs
     ) d
     left outer join
@@ -57,7 +57,7 @@ select d.date::date, count(t.id) as user_count from (
 		inner join users_sessions s on e.session_id = s.id
 		inner join users u on u.id = s.user_id
 	) t
-	on d.date = to_char(date_trunc('day', t.date), 'DD-MM-YYYY')
+	on d.date = date_trunc('day', t.date)
 )
 group by d.date;
 --end
