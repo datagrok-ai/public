@@ -8,7 +8,8 @@ import {
     Notebook,
     Project, Script, ScriptEnvironment,
     TableInfo,
-    User
+    User,
+    LogEvent
 } from "./entities";
 import {ViewLayout} from "./view";
 import {toJs} from "./wrappers";
@@ -116,6 +117,10 @@ export class Dapi {
     /** Administering API endpoint
      *  @type {AdminDataSource} */
     get admin() { return new AdminDataSource(grok_Dapi_Admin()); }
+
+    /** Logging API endpoint
+     *  @type {HttpDataSource<LogEvent>} */
+    get log() { return new HttpDataSource(grok_Dapi_Log(), (a) => new LogEvent(a)); }
 }
 
 
@@ -221,6 +226,14 @@ export class HttpDataSource {
      * @returns {HttpDataSource} */
     order(fieldName, desc = false) {
         this.s = grok_DataSource_Order(this.s, fieldName, desc);
+        return this;
+    }
+
+    /** Includes entity in the result
+     * @param {string} include
+     * @returns {HttpDataSource} */
+    include(include) {
+        this.s = grok_DataSource_Include(this.s, include);
         return this;
     }
 }

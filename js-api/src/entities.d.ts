@@ -298,6 +298,26 @@ export class ScriptEnvironment extends Entity {
     setup(): Promise<void>
 }
 
+export class LogEvent extends Entity {
+    constructor(d: any)
+
+    /** Description of the event
+     * @type {string} */
+    get description(): string
+
+    /** Friendly name of the event
+     * @type {string} */
+    get name(): string
+
+    /** Source of the event
+     * @type {string} */
+    get source(): string
+
+    /** Session id of the event
+     * @type {string} */
+    get session(): string
+}
+
 /**
  * Represents a package, which is a unit of distribution of content in the Datagrok platform.
  */
