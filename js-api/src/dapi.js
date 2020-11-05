@@ -228,6 +228,14 @@ export class HttpDataSource {
         this.s = grok_DataSource_Order(this.s, fieldName, desc);
         return this;
     }
+
+    /** Includes entity in the result
+     * @param {string} include
+     * @returns {HttpDataSource} */
+    include(include) {
+        this.s = grok_DataSource_Include(this.s, include);
+        return this;
+    }
 }
 
 
