@@ -406,8 +406,37 @@ export class Column {
 
     setRawData(rawData, notify = true) { grok_Column_SetRawData(this.d, rawData, notify); }
 
-    /** Gets i-th value */
-    get(i) { return grok_Column_GetValue(this.d, i); }
+    //toJsonString()
+
+    /** Gets i-th value
+     * @param {number} row - row index
+     * @returns {object} - or null if isNone(i) */
+    get(row) { return grok_Column_GetValue(this.d, row); }
+
+    // /** Returns i-th value as integer. Throws exception if column's type is not TYPE_INT or TYPE_DATE_TIME.
+    //  * @param {number} i
+    //  * @returns {number} */
+    // getInt(i);
+    //
+    // /** Returns i-th value as a integer. Works for IntColumns only.
+    //  * @param {number} i
+    //  * @returns {number} */
+    // getFloat(i)
+    //
+    // /** Returns i-th value as boolean. Works for IntColumns only.
+    //  * @param {number} i
+    //  * @returns {number} */
+    // getBool(i)
+    //
+    // /** Returns i-th value as integer. Works for IntColumns only.
+    //  * @param {number} i
+    //  * @returns {number} */
+    // getDateTime(i)
+    //
+    // /** Returns i-th value as integer. Works for IntColumns only.
+    //  * @param {number} i
+    //  * @returns {number} */
+    // getString(i);
 
     /**
      * Sets [i]-th value to [x]
