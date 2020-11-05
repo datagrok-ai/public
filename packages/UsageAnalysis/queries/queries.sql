@@ -47,7 +47,7 @@ select * from month_errors, week_errors, day_errors;
 --connection: datagrok
 select d.date::date, count(t.id) as user_count from (
 	(
-		select to_char(date_trunc('day', (current_date - offs)), 'DD-MM-YYYY') as date
+		select date_trunc('day', (current_date - offs)) as date
     	from generate_series(0, 30, 1) as offs
     ) d
     left outer join
@@ -57,7 +57,7 @@ select d.date::date, count(t.id) as user_count from (
 		inner join users_sessions s on e.session_id = s.id
 		inner join users u on u.id = s.user_id
 	) t
-	on d.date = to_char(date_trunc('day', t.date), 'DD-MM-YYYY')
+	on d.date = date_trunc('day', t.date)
 )
 group by d.date;
 --end
@@ -77,7 +77,7 @@ group by u.name, u.id
 --name: events on @date
 --input: string date { pattern: datetime }
 --connection: datagrok
-select u.login as user, u.id as user_id, t.name, t.source, e.event_time, e.description from events e
+select u.login as user, u.id as user_id, t.name, t.source, e.id as event_id, e.event_time, e.description from events e
 inner join event_types t on e.event_type_id = t.id
 inner join users_sessions s on e.session_id = s.id
 inner join users u on u.id = s.user_id
