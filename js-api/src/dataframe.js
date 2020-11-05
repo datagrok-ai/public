@@ -406,8 +406,6 @@ export class Column {
 
     setRawData(rawData, notify = true) { grok_Column_SetRawData(this.d, rawData, notify); }
 
-    //toJsonString()
-
     /** Gets i-th value
      * @param {number} row - row index
      * @returns {object} - or null if isNone(i) */
