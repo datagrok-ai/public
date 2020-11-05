@@ -74,6 +74,10 @@ export class Viewer {
      * @type {HTMLElement} */
     get root() { return grok_Viewer_Root(this.d); }
 
+    /** Returns viewer type (see VIEWER constants)
+     * @returns {string} */
+    get type() { return JSON.parse(args.args.context.getOptions()).type; }
+
     get table() { return toJs(grok_Viewer_Get_DataFrame(this.d)); }
 
     /** @type {DataFrame} */
@@ -173,7 +177,7 @@ export class JsViewer extends Widget {
         this.subs = [];  // stream subscriptions - will be canceled when the viewer is detached
 
         /** @member {Observable[]} */
-        this.obs = []
+        this.obs = [];
 
         /** @member {JsViewerProps} */
         this.props = new JsViewerProps(this);
