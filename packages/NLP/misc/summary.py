@@ -1,8 +1,8 @@
-#name: Summary
+#name: Summarization
 #language: python
 #input: file file [Text file that should be summarized]
 #output: string summary [Text summary]
-#tags: demo, panel, ml, nltk
+#tags: demo, ml, nltk
 #condition: file.size < 1e6 && file.name.endsWith("txt")
 import pandas as pd
 import numpy as np
