@@ -1,14 +1,17 @@
-#name: Readability Score
+#name: Text Statistics
 #description: Check how easy your text is to understand
 #language: python
 #tags: nlp, panel
 #input: file file {semType: text} [Given text]
 #output: string language {semType: lang} [Detected language]
-#output: string test [FRES test for English and LIX index for other languages]
+#output: string words [Number of words]
+#output: string sentences [Number of sentences]
+#output: string long_words [Number of long words (7+ letters)]
+#output: string readability_test [FRES test for English and LIX index for other languages]
 #output: double score [Readability score]
-#output: string school_level [U.S. school grade level]
+#output: string edu_level [U.S. school grade level]
 #output: string comment [Comment on the complexity of a text]
-#condition: file.isFile && 0 < file.size && file.size < 1e6 && file.name.endsWith("txt")
+#condition: file.isFile && file.size < 1e6 && supportedExt(file.name)
 #reference: https://en.wikipedia.org/wiki/Flesch%E2%80%93Kincaid_readability_tests#Flesch_reading_ease
 #reference: https://en.wikipedia.org/wiki/Lix_(readability_test)
 
@@ -17,6 +20,7 @@ import pycountry
 import nltk
 from nltk.corpus import cmudict
 from nltk.tokenize import sent_tokenize, word_tokenize
+import textract
 
 
 nltk.download('cmudict')
@@ -105,20 +109,23 @@ def comment(score, test):
     return ("Very difficult to read", "College graduate")
 
 
-# Read the file's contents
-with open(file) as f:
-    text = f.read()
+# Extract text
+params = {'filename': file, 'extension': file[file.rfind('.', 0, -10) : -10]}
+text = textract.process(**params).decode().strip()
 
 # Detect the language
 language = detect_language(text)
 
+# Calculate counts
+syllables, words, sentences, long_words = get_counts(text, language)
+
 # Compute the score
 if language == 'English':
-    test = 'FRES'
-    score = round(fres(*get_counts(text, language)[:-1]))
+    readability_test = 'Flesch Reading-Ease'
+    score = round(fres(syllables, words, sentences))
 else:
-    test = 'LIX'
-    score = round(lix(*get_counts(text, language)[1:]))
+    readability_test = 'LIX (Läsbarhetsindex)'
+    score = round(lix(words, sentences, long_words))
 
 # Comment on complexity
-comment, school_level = comment(score, test)
+comment, edu_level = comment(score, readability_test)

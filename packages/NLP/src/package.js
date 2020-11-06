@@ -14,34 +14,15 @@ let comprehendMedical;
 
 // UI components for the `Translation` panel
 let sourceLangInput = ui.choiceInput('', 'Undetermined', [...Object.keys(lang2code), 'Undetermined', 'Other']);
-let targetLangInput = ui.choiceInput('', 'English', Object.keys(lang2code));
+let targetLangInput = ui.choiceInput('', 'English', [...Object.keys(lang2code), 'Choose...']);
 let headerDiv = ui.div([sourceLangInput.root, ui.divText('→', "arrow"), targetLangInput.root], "header-div");
 let translationArea = ui.textArea('');
 translationArea.classList.add("translation-area");
-let statusBar = ui.divText('');
-let mainDiv = ui.div([
-    headerDiv,
-    translationArea,
-    statusBar
-], "main-div");
+let mainDiv = ui.div([headerDiv, translationArea], "main-div");
 let mainWidget = new DG.Widget(mainDiv);
-let isError;
 // UI components for the `Entities` panel
 let entDiv = ui.divText('{}', "entity-obj");
-let entStatusBar = ui.divText('');
-let entWidget = new DG.Widget(ui.div([entDiv, entStatusBar]));
-
-function statusError(div, msg) {
-    isError = true;
-    div.className = "status";
-    div.innerText = msg;
-}
-
-function statusReady(div, msg) {
-    isError = false;
-    div.className = "status";
-    div.innerText = msg;
-}
+let entWidget = new DG.Widget(entDiv);
 
 let sourceLang, sourceCode;
 let sourceText, cropped;
@@ -68,8 +49,8 @@ async function detectEntities(comprehendMedical, params) {
 async function getCredentials() {
     let credentialsResponse = await _package.getCredentials();
     if (credentialsResponse === null) {
-        statusError(statusBar, 'Package credentials are not set.');
-        statusError(entStatusBar, 'Package credentials are not set.');
+        translationArea.value = 'Package credentials are not set.';
+        entDiv.value = 'Package credentials are not set.';
         return {};
     }
     let credentials = {
@@ -97,33 +78,39 @@ async function detectLanguage(text) {
 
 function testLanguagePair(sourceCode, targetCode) {
     let supportedLanguages = Object.keys(code2lang);
+    if (targetLangInput.value === 'Choose...') return false;
     if (!(supportedLanguages.includes(sourceCode))) {
-        statusError(statusBar, `The detected language (${sourceLang}) is not supported.`);
+        // The user unintentionally picks `Undetermined` or `Other`
+        if (supportedLanguages.includes(lang2code[sourceLang])) {
+            translationArea.value = `Translating from ${sourceLang}`;
+            sourceLangInput.value = sourceLang;
+            return true;
+        }
+        translationArea.value = `The detected language (${sourceLang}) is not supported.`;
         return false;
     }
     if (sourceCode === targetCode) {
-        statusError(statusBar, 'Cannot translate to the language of the original text.');
+        targetLangInput.value = 'Choose...';
         return false;
     }
     return true;
 }
 
 async function doTranslation() {
+    translationArea.value = '';
     let sourceLang = sourceLangInput.stringValue;
     let targetLang = targetLangInput.stringValue;
     let sourceCode = lang2code[sourceLang];
     let targetCode = lang2code[targetLang];
-    // Clears the text area for an unsuccessful call
-    translationArea.value = '';
     if (!testLanguagePair(sourceCode, targetCode)) return;
+    translationArea.value = 'Translating...';
     let output = await translateText(translate, {
         Text: sourceText,
         SourceLanguageCode: sourceCode,
         TargetLanguageCode: targetCode
     });
-    if (output.error === 1) statusError(statusBar, 'Error calling Amazon Translate.');
-    else statusReady(statusBar, 'Your translation is ready.');
-    translationArea.value = output.translation + (cropped ? '...' : '');
+    if (output.error === 1) translationArea.value = 'Error calling Amazon Translate.';
+    else translationArea.value = output.translation + (cropped ? '...' : '');
 }
 
 //name: Translation
@@ -138,7 +125,7 @@ export async function translationPanel(textfile) {
     
     sourceText = await extractText(textfile);
     if (!sourceText) {
-      statusError(statusBar, 'The input text is empty.');
+      translationArea.value = 'The input text is empty.';
       return mainWidget;
     }
 
@@ -165,13 +152,13 @@ export async function entitiesPanel(textfile) {
 
     let text = await extractText(textfile);
     if (!text) {
-        statusError(entStatusBar, 'The input text is empty.');
+        entDiv.innerText = 'The input text is empty.';
         return entWidget;
     }
 
     let output = await detectEntities(comprehendMedical, { Text: text });
     if (output.error === 1) {
-        statusError(entStatusBar, 'Error calling Comprehend Medical.');
+        entDiv.innerText = 'Error calling Comprehend Medical.';
         return entWidget;
     }
 

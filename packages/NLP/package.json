@@ -19,6 +19,8 @@
 		"debug-nlp-public": "grok publish public --rebuild",
 		"release-nlp-public": "grok publish public --rebuild --release",
 		"debug-nlp-local": "grok publish local --rebuild",
-		"release-nlp-local": "grok publish local --rebuild --release"
+		"release-nlp-local": "grok publish local --rebuild --release",
+		"debug-nlp-localhost": "webpack && grok publish localhost",
+		"release-nlp-localhost": "webpack && grok publish localhost --release"
 	}
 }
