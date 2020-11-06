@@ -4,7 +4,7 @@
 #tags: nlp, panel, extractor
 #input: file file [A file that contains text]
 #output: string text {semType: text} [Extracted text]
-#condition: file.isFile && 0 < file.size && file.size < 1e6 && supportedExt(file.name)
+#condition: file.isFile && 0 < file.size && file.size < 1e6 && supportedExtExtract(file.name)
 
 import cld3
 import pycountry
