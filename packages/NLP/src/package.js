@@ -130,10 +130,12 @@ export async function translationPanel(textfile) {
     }
 
     // Character limit per request for real-time translation
-    let maxLength = 5000;
-    if (sourceText.length > maxLength) {
+    let maxLengthBytes = 5000;
+    let lengthBytes = (new TextEncoder().encode(sourceText)).length;
+    if (lengthBytes > maxLengthBytes) {
         cropped = true;
-        sourceText = sourceText.substring(0, maxLength);
+        sourceText = sourceText.substring(0, Math.max(
+            0, sourceText.length - (lengthBytes - maxLengthBytes)));
     }
 
     [sourceLang, sourceCode] = (await detectLanguage(sourceText)).slice(0, 2);
