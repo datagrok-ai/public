@@ -18,6 +18,9 @@ class FruitMeta extends DG.JsEntityMeta {
     // Renders properties in the property panel
     renderProperties(x) { return ui.divText(`Properties for ${x.name}`); }
 
+    // Renders tooltip
+    renderTooltip(x) { return ui.divText(`${x.name} is in the air!`); }
+
     init() {
         this.registerParamFunc('Eat', (fruit) => { grok.shell.info(`Ate ${fruit.name}`); } );
     }
