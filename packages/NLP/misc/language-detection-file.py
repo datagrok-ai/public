@@ -5,7 +5,7 @@
 #output: string language {semType: lang} [Detected language]
 #output: string alpha_2 {semType: langCode} [ISO 639-3 language code]
 #output: string alpha_3 {semType: langCode} [ISO 639-3 language code]
-#tags: nlp, panel
+#tags: nlp
 #reference: https://github.com/google/cld3
 #condition: file.isFile && file.size < 1e6 && supportedExt(file.name)
 
