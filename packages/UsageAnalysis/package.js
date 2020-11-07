@@ -46,7 +46,7 @@ class UsageAnalysisPackage extends DG.Package {
                     }
                     grok.data.query('UsageAnalysis:' + queryName, params).then((t) => {
                         if (paneName === 'Errors')
-                            grok.shell.detectSemanticTypes(t);
+                            grok.data.detectSemanticTypes(t);
                         host.removeChild(host.firstChild);
                         host.appendChild(f(t));
                     });
