@@ -102,18 +102,7 @@ class UsageAnalysisPackage extends DG.Package {
 
             addPane('Usage', 'EventsOnDate', (t) => {
                 t.onCurrentRowChanged.subscribe((something) => {
-                    grok.dapi.log.find(t.currentRow.event_id).then((event) => {
-                          let root = ui.div([], 'd4-accordion');
-
-                          root.append(ui.h1(['Event']));
-                          root.append(ui.span(['Name: ', event.name]));
-                          root.append(ui.span(['Description: ', event.description]));
-                          root.append(ui.span(['Source: ', event.source]));
-                          root.append(ui.span(['Session: ', event.session]));
-
-                          grok.shell.o = root;
-                    });
-
+                    grok.dapi.log.include('session.user').find(t.currentRow.event_id).then((event) => grok.shell.o = event);
                 });
                 return DG.Viewer.scatterPlot(t, {'color': 'user'}).root;
             });
