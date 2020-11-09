@@ -61,7 +61,7 @@ export class Shell {
 
     /** Current object (rendered in the property panel) */
     get o() { return toJs(grok_Get_CurrentObject(), false); }
-    set o(x) { grok_Set_CurrentObject(toJs(x)); }
+    set o(x) { grok_Set_CurrentObject(toDart(x)); }
 
     /** @type {TabControl} */
     get sidebar() { return new TabControl(grok_Get_Sidebar()); }
