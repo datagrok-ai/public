@@ -1,6 +1,6 @@
 {
   "#type": "DataConnection",
-  "friendlyName": "test_track",
+  "name": "TestTrack",
   "parameters": {
     "server": "$GROK_DB_SERVER",
     "port": 5432,
