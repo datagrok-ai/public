@@ -52,10 +52,14 @@ Optionally: R, Julia and JavaScript.
 Each script can be run in an isolated environment, with predefined packages configuration, same as for 
 [Script Environments](scripting.md#Environments). The environment can be specified in the notebook properties. 
 
-# Importing Notebooks
+## Importing Notebooks
 
 To import a notebook, just drag-and-drop the corresponding `.ipynb` file to the platform or use 
 [import](../access/importing-data.md).
+
+## Videos
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/7MBXWzdC0-I?start=3880" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
 See also:
 

@@ -427,6 +427,10 @@ Check out this example in our [API samples](https://public.datagrok.ai/js/sample
 
 Datagrok stores credentials encrypted with Datagrok's encryption key, refer to the [Security](../govern/security.md#credentials) article to learn more about it.
 
+## Videos
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/YR17h4_0Mc8?start=536" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
 See also:
 
   * [JavaScript Development](develop.md) 

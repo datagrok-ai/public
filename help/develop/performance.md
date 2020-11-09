@@ -4,7 +4,7 @@
 # Performance
 
 The importance of performance cannot be overstated. A modern system should be capable of 
-working with hundreds of millions of datapoints, and every bit of performance counts. 
+working with hundreds of millions of data points, and every bit of performance counts. 
 Memory consumption and latency fall in the same category.
 
 ## In-Memory Database
@@ -18,7 +18,7 @@ exploratory data analysis, interactive visualizations, and machine learning.
   * Column-based data store
   * High-performance bitsets
   * Versionable tables, columns, and bitsets
-  * Adaptive bit storage for ints
+  * Adaptive bit storage for integers
   * Out-of-box support for big integers
   * All strings are categories
   * Backed by typed arrays
@@ -40,7 +40,7 @@ exploratory data analysis, interactive visualizations, and machine learning.
 * Built-in intelligent CSV parser
   * Automatically handles delimiters and comments
   * Adaptive reading: makes one very fast pass to find out some features about the file (whether or not it 
-    has quotes, multilines, etc) and chooses the strategy accordingly
+    has quotes, multilines, etc.) and chooses the strategy accordingly
   * Adjusts strategy for performance/memory as it reads
   * Smart parsing of dates
   * Multithreaded parsing 
@@ -51,7 +51,7 @@ exploratory data analysis, interactive visualizations, and machine learning.
   * Simple API for sorting by simple/multiple columns
   * Default natural sorting for strings (“study2” comes before “study10”)
   * Built-in custom category sorting (ex: Mon, Tue, Wed, Thurs, Fri, Sat, Sun)
-  * Ability to pass custom comparison function that will also be used by the rest of the engine (sorting, aggregations, grouping, etc)
+  * Ability to pass custom comparison function that will also be used by the rest of the engine (sorting, aggregations, grouping, etc.)
 * Built-in high-performance descriptive statistics
   * Counts, min, max, sum, avg, med, avg, stdev, q1, q2, q3
   * All stats calculated in one pass where possible
@@ -65,7 +65,7 @@ exploratory data analysis, interactive visualizations, and machine learning.
   * Pivoting
   * Supports user-defined aggregations
   * Free-text, SQL-like queries
-* Metadata on column and data frame levels (units, quality, auto-formatting, etcc)
+* Metadata on column and data frame levels (units, quality, auto-formatting, etc.)
 * Change notifications
   * A custom eventing mechanism used across the whole platform allows for easy listening to, aggregation, filtering, routing, and logging events.
 
@@ -81,9 +81,9 @@ have the same look and feel and usage patterns, and cooperate in certain tasks.
 * Fast, slick, relevant.
 * Engineered to take full advantage of DDT
   * Uses DDT’s data frames - super fast and no additional memory overhead
-  * Uses the same cached descriptive statistics, sorted orders, etc
+  * Uses the same cached descriptive statistics, sorted orders, etc.
   * Many viewers use lightweight, calculated on-the-fly dataframes as an aggregate data source
-  * Picking up column metadata (formats, etc)
+  * Picking up column metadata (formats, etc.)
   * Fast, extensible, annotated aggregation functions that work across all viewers 
 * High-performance rendering
   * Choosing the best option for rendering (html / canvas / svg  / WebGL) based on the viewer’s distinctive features, 
@@ -102,7 +102,7 @@ have the same look and feel and usage patterns, and cooperate in certain tasks.
     slider is being dragged.
 * Interactivity and synchronization
   * Current row, mouse-over row, current column, mouse-over column, mouse-over row group
-* Viewers as first class citizens
+* Viewers as first-class citizens
   * Register, query, instantiate, attach to data source, add to view, use as a tooltip for row groups, render 
     viewers dynamically. Usage example: full-screen mode that applies to all viewers.
   * Viewer descriptors: name, tooltip, best size/position, type of accepted data
@@ -111,7 +111,7 @@ have the same look and feel and usage patterns, and cooperate in certain tasks.
   * Consistent names enforced by conventions
   * Discoverability
   * Easy UI bindings (property grid, menu, dialogs)
-  * out-of-box automatic validation
+  * Out-of-box automatic validation
   * Minimum overhead (convention over configuration)
   * Automatic, seamless code generation at build time (small code size)
   * Change notification
@@ -141,14 +141,14 @@ have the same look and feel and usage patterns, and cooperate in certain tasks.
   * Color pickers
   * Sliders
   * Column selectors (lightweight, searchable, sortable, draggable, extensible, customizable)
-* Drag-n-drop
+* Drag-and-drop
   * Drag files right into the browser (import)
   * Drag columns
       * from anywhere (column manager, grid, column selectors) 
       * to anywhere (dialogs, column selectors, viewer settings)
       * very slick and interactive
-  * Drag rows (extract rows, etc)
-  * Drag any objects (users, scripts, tables, statistics, viewers, etc)
+  * Drag rows (extract rows, etc.)
+  * Drag any objects (users, scripts, tables, statistics, viewers, etc.)
 * Composable rendering
   * Many controls, such as histogram, are capable on rendering themselves on a canvas that is owned by another viewer. 
     That allows for a lightweight, memory-efficient rendering of complex scenes (ex: histograms on line chart)
@@ -162,16 +162,22 @@ have the same look and feel and usage patterns, and cooperate in certain tasks.
   * Filter-viewer relationship
 * Dialogs
   * Fluent API for easy programmatic construction of dialogs
-  * Standard validation across all UIi
+  * Standard validation across all UIs
   * Out-of-box, opt-in persistence
   * Out-of-box, opt-in logging
 * Standard (but extensible) editors for data types used across dialogs/grids
 * Flex tooltips
   * Row tooltips: Ability to select columns to show on a tooltip (including row viewers)
   * Row group tooltip: Use any viewer as a tooltip (for example, when mouse is over a particular histogram bin, the 
-    tooltip contains a scatterplot with values that fall in that bin)
-  * Object tooltip (users, etc)
+    tooltip contains a scatter plot with values that fall in that bin)
+  * Object tooltip (users, etc.)
+
+### Videos
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/wAfEqAMOZzw?start=907" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
 
 See also:
-* [Exploratory data analysis](../explore/exploratory-data-analysis.md) 
+
+  * [Exploratory Data Analysis](../explore/exploratory-data-analysis.md) 
+  * [Viewers](../visualize/viewers.md)

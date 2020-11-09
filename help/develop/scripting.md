@@ -323,6 +323,10 @@ You can use these fields to filter scripts with [smart search](../overview/smart
 | commentedBy | [User](../govern/user.md) object |
 | usedBy      | [User](../govern/user.md) object |
 
+## Videos
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/p7_qOU_IzLM?start=954" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
 See also:
 
   * [Grok Scripting](../overview/grok-script.md)
