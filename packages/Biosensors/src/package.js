@@ -5,6 +5,19 @@ import * as DG from "datagrok-api/dg";
 
 export let _package = new DG.Package();
 
+async function typeDetector(table,npeaks,fsamp){
+
+    let bsType = await grok.functions.call('Biosensors:typeDetector',
+        {
+            'dat':table,
+            'npeaks':npeaks,
+            'fsamp':fsamp
+        })
+
+    return(bsType);
+}
+
+
 async function importPy(data,samplingFreq,signalType){
 
     let f = await grok.functions.eval("Biosensors:importPyphysio");
@@ -94,13 +107,15 @@ function paramsToTable(filtersLST,allParams){
 // Input: colsFilter (type: list), list of columns to keep
 //        table (type: dataframe), original dataframe
 // Output: t (type: dataframe), new truncated dataframe
-function tableTrim(cols, table){
+function tableTrim(cols, table, idxs){
     let l = [];
     for (let j = 0; j < cols.length; j++) {
         if (cols[j] !== '') {
+            // cols[j]
             l.push(table.columns.byName(cols[j]));
         }
     }
+
     let t = DG.DataFrame.fromColumns(l);
     return t;
 }
@@ -123,13 +138,15 @@ export function Biosensors(table){
     let containerImport = ui.div();
     containerImport.appendChild(ui.inputs([column,samplingFreq]));
 
-    v.add(containerImport).onOK(() => {
-        grok.shell.addTableView(tableTrim(column.value,table));
+    v.add(containerImport).onOK(async() => {
+
+        let npeaks = 10;
+        let fsamp = samplingFreq.value;
+        let bsType = await typeDetector(tableTrim(column.value,table,npeaks*fsamp),npeaks,fsamp);
+        grok.shell.info(bsType);
     }).show();
 
 }
-
-
 
 
 //name: pipelineDemo
