@@ -118,7 +118,7 @@ class UsageAnalysisPackage extends DG.Package {
                 return DG.Viewer.scatterPlot(t, {'color': 'user'}).root;
             });
             addPane('Errors', 'ErrorsOnDate', (t) => DG.Viewer.grid(t).root);
-            addPane('Event Types', 'EventsSummaryOnDate', (t) => DG.Viewer.barChart(t).root);
+            addPane('Event Types', 'EventsSummaryOnDate', (t) => DG.Viewer.barChart(t, {valueAggrType: 'avg'}).root);
             addPane('Error Types', 'ErrorsSummaryOnDate', (t) => DG.Viewer.barChart(t).root);
             addPane('Test Tracking', 'ManualActivityByDate', (t) => DG.Viewer.grid(t).root, false);
 
