@@ -6,16 +6,12 @@ import * as DG from "datagrok-api/dg";
 export let _package = new DG.Package();
 
 //preprocessing and metadata collection function
-async function cleanMeta(data,columns,varRemovalThreshold,indRemovalThreshold,naCoding,meta) {
+async function cleanMeta(data,meta) {
     grok.shell.info('Preprocessing data . . .');
     let f = await grok.functions.eval("Impute:cleanMetaImpl");
 
     let call = f.prepare({
         'data': data,
-        'columns': columns.value,
-        'varRemovalThreshold': varRemovalThreshold.value,
-        'indRemovalThreshold': indRemovalThreshold.value,
-        'naCoding': naCoding.value,
         'meta': meta
     });
 
@@ -34,10 +30,9 @@ async function cleanMeta(data,columns,varRemovalThreshold,indRemovalThreshold,na
         return [plt1, plt2, plt3];
 
     }
-
 }
 
-async function imputeWithMethod(data,method,methodparams){
+async function imputeWithMethod(data,method,methodparams,columns){
     let completeData;
 
     //mixed imputation with mice
@@ -45,6 +40,7 @@ async function imputeWithMethod(data,method,methodparams){
         completeData = await grok.functions.call('Impute:miceImpl',
             {
                 'data':data,
+                'columns':columns.value,
                 'maxIter':methodparams[0].value
             });
     }
@@ -135,6 +131,67 @@ async function imputeWithMethod(data,method,methodparams){
     return(completeData);
 }
 
+function tableFilter(data,colsList){
+    let l = [];
+    for (let j = 0; j < colsList.length; j++) {
+        l.push(data.columns.byName(colsList[j]));
+    }
+    let t = DG.DataFrame.fromColumns(l);
+    return(t);
+}
+
+function warnings(data,columnsData,columnsImpute,warningsContainer,keepCols,varRemoveThreshold){
+
+    let selectedCols = [...new Set(columnsData.value.concat(columnsImpute.value))];
+    selectedCols.forEach(col => keepCols[col] = col);
+
+    let summaryTable = [];
+    let incompleteCols = [];
+    for (let j = 0; j < selectedCols.length; j++) {
+
+        if (data.columns.byName(selectedCols[j]).stats.missingValueCount/
+            data.columns.byName(selectedCols[j]).stats.totalCount > varRemoveThreshold.value) {
+
+            let tempStats = [];
+            incompleteCols = [];
+            tempStats[0] = data.columns.byName(selectedCols[j]).stats.missingValueCount;
+            tempStats[1] = data.columns.byName(selectedCols[j]).stats.missingValueCount/
+                           data.columns.byName(selectedCols[j]).stats.totalCount;
+            tempStats[2] = ui.button('drop column',() => {
+                delete keepCols[selectedCols[j]];
+
+                summaryTable = summaryTable.filter(item => !item.includes(selectedCols[j]));
+
+                $(warningsContainer).empty()
+                if(summaryTable.length >= 1){
+
+                    let tb = ui.table(summaryTable, (item, idx) =>
+                            [`${item[0]}:`, item[1][0], item[1][1], item[1][2]],
+                        ['column', '№ missing', '% missing', 'action']);
+
+                    warningsContainer.appendChild(ui.h2('Columns summary'));
+                    warningsContainer.appendChild(tb);
+
+                }
+
+            })
+
+            incompleteCols.push(selectedCols[j]);
+            incompleteCols.push(tempStats);
+            summaryTable.push(incompleteCols);
+        }
+    }
+
+    if (incompleteCols.length > 0) {
+        let tb = ui.table(summaryTable, (item, idx) =>
+                [`${item[0]}:`, item[1][0], item[1][1], item[1][2]],
+            ['column', '№ missing', '% missing', 'action']);
+
+        warningsContainer.appendChild(ui.h2('Columns summary'));
+        warningsContainer.appendChild(tb);
+    }
+
+}
 
 //top-menu: ML | Impute | byMethod
 export async function byMethod() {
@@ -266,16 +323,9 @@ export async function byMethod() {
     //container0 inputs
     let tableName = ui.choiceInput('Table', null, grok.shell.tableNames);
     let dataTable = grok.shell.tableByName(tableName.value);
-    let columns = ui.columnsInput('Columns', dataTable);
-
-    let varRemovalThreshold = ui.floatInput('Column NA threshold (%)', 0.5);
-    varRemovalThreshold.setTooltip('all columns with NA % above the threshold will be removed');
-
-    let indRemovalThreshold = ui.floatInput('Row NA threshold (%)', 0.5);
-    indRemovalThreshold.setTooltip('all rows with NA % above the threshold will be removed');
-
-    let naCoding = ui.floatInput('NA coding', null);
-    naCoding.setTooltip('manually convert anomalous values to NA')
+    let columnsImpute = ui.columnsInput('Impute', dataTable);
+    let columnsData = ui.columnsInput('Impute from', dataTable);
+    let varRemoveThreshold = ui.floatInput('Column NA threshold',0.05)
 
     //container1 inputs
     let dfDtype = ui.choiceInput('Data type','',['continuous','categorical','mixed']);
@@ -295,27 +345,50 @@ export async function byMethod() {
 
 
     //data preprocessing
-    let pltInputs0 = ui.inputs([tableName,columns,varRemovalThreshold,indRemovalThreshold,naCoding]);
+    let pltInputs0 = ui.inputs([tableName,columnsImpute,columnsData,varRemoveThreshold]);
     container0.appendChild(pltInputs0);
     tableName.onChanged(function() {
         dataTable = grok.shell.tableByName(tableName.value);
-        columns = ui.columnsInput('Columns', dataTable);
-        let pltInputs1 = ui.inputs([tableName,columns,varRemovalThreshold,indRemovalThreshold,naCoding]);
+        columnsImpute = ui.columnsInput('Impute', dataTable);
+        columnsData = ui.columnsInput('Data', dataTable);
+        let pltInputs1 = ui.inputs([tableName,columnsImpute,columnsData,varRemoveThreshold]);
         container0.replaceChild(pltInputs1,pltInputs0);
         pltInputs0 = pltInputs1;
     });
 
+    let warningsContainer = ui.div();
+    let keepCols;
+    columnsImpute.onChanged(function() {
+        $(warningsContainer).empty()
+        keepCols = {};
+        warnings(dataTable,columnsData,columnsImpute,warningsContainer,keepCols,varRemoveThreshold);
+    });
+    columnsData.onChanged(function() {
+        $(warningsContainer).empty()
+        keepCols = {};
+        warnings(dataTable,columnsData,columnsImpute,warningsContainer,keepCols,varRemoveThreshold);
+    });
+    varRemoveThreshold.onChanged(function() {
+        $(warningsContainer).empty()
+        keepCols = {};
+        warnings(dataTable,columnsData,columnsImpute,warningsContainer,keepCols,varRemoveThreshold);
+    });
+
+
+
     //plotting
-    container0.appendChild(ui.button('GENERATE PLOTS',async () => {
+    let plottingContainer = ui.div();
+    plottingContainer.appendChild(ui.button('GENERATE PLOTS',async () => {
 
         //preprocess and extract metadata
         meta = true;
-        let metaOut = await cleanMeta(dataTable,columns,varRemovalThreshold,indRemovalThreshold,naCoding,meta);
+        let filteredTable = tableFilter(dataTable,Object.values(keepCols));
+        let metaOut = await cleanMeta(filteredTable,meta);
 
         grok.shell.info('Generating: NA correlation, dendrogram and matrix plots');
 
-
         let tableView = grok.shell.getTableView(tableName.value);
+        tableView.detachViewers();
         let node1 = tableView.dockManager.dock(metaOut[0], 'right', null, 'naPlot');
         let node2 = tableView.dockManager.dock(metaOut[1], 'fill', node1, 'matrixPlot');
         let node3 = tableView.dockManager.dock(metaOut[2], 'fill', node1, 'clusterPlot');
@@ -343,6 +416,8 @@ export async function byMethod() {
 
     //add containers to dialogue
     v.add(container0);
+    v.add(warningsContainer);
+    v.add(plottingContainer);
     v.add(container1);
     v.add(acc0).onOK(async ()=> {
 
@@ -351,15 +426,15 @@ export async function byMethod() {
 
         //preprocess without extracting metadata and impute
         meta = false;
-        let cleanOut = await cleanMeta(dataTable,columns,varRemovalThreshold,indRemovalThreshold,naCoding,meta);
+        let filteredTable = tableFilter(dataTable,Object.values(keepCols));
+        let cleanOut = await cleanMeta(filteredTable,meta);
         grok.shell.info('Imputing with: ' + method.value);
         grok.shell.info(methodparams.map((i) => `${i.caption}: ${i.stringValue}`).join('<br>'));
 
         //imputation function
-        let completeData = await imputeWithMethod(cleanOut,method.value,methodparams);
+        let completeData = await imputeWithMethod(cleanOut,method.value,methodparams,columnsImpute);
         grok.shell.addTableView(completeData);
         pi.close();
 
     }).show();
 }
-
