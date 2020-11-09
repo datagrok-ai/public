@@ -127,7 +127,7 @@ export class GridColumn {
     set cellType(x) { return grok_GridColumn_Set_CellType(this.d, x); }
 
     /** Column visibility.
-     *  @returns {string} */
+     *  @returns {boolean} */
     get visible() { return grok_GridColumn_Get_Visible(this.d); }
     set visible(x) { return grok_GridColumn_Set_Visible(this.d, x); }
 
