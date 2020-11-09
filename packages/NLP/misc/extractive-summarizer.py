@@ -10,4 +10,8 @@
 from gensim.summarization.summarizer import summarize
 
 
-summary = " ".join(summarize(text, ratio=ratio, split=True))
+# Return a summary or the input text if only one sentence is present
+try:
+    summary = " ".join(summarize(text, ratio=ratio, split=True))
+except ValueError:
+    summary = text

@@ -17,4 +17,8 @@ params = {'filename': file, 'extension': file[file.rfind('.', 0, -10) : -10]}
 text = textract.process(**params).decode().strip()
 text = cleantext.clean(text, lower=False, to_ascii=False, no_line_breaks=True)
 
-summary = " ".join(summarize(text, word_count=100, split=True))
+# Return a summary or the input text if only one sentence is present
+try:
+    summary = " ".join(summarize(text, word_count=100, split=True))
+except ValueError:
+    summary = text
