@@ -88,7 +88,7 @@ export class User extends Entity {
  * @extends Entity
  * */
 export class UserSession {
-    /** @constructs User*/
+    /** @constructs UserSession*/
     constructor(d) {
         this.d = d;
     }
@@ -105,6 +105,10 @@ export class UserSession {
     /** External Token
      *  @type {string} */
     get externalToken() { return grok_UserSession_Get_ExternalToken(this.d); }
+
+    /** User
+     *  @type {User} */
+    get user() { return toJs(grok_UserSession_Get_User(this.d)); }
 }
 
 /** Represents a function
@@ -113,7 +117,7 @@ export class UserSession {
  * */
 export class Func extends Entity {
     /** @constructs Func*/
-    constructor(d) {super(d)}
+    constructor(d) { super(d); }
 
     /** Returns {@link FuncCall} object in a stand-by state
      * @param {object} parameters
@@ -381,8 +385,52 @@ export class LogEvent extends Entity {
     get source() { return grok_LogEvent_Get_Source(this.d); }
 
     /** Session id of the event
+     * @type {UserSession} */
+    get session() { return toJs(grok_LogEvent_Get_Session(this.d)); }
+
+    /** Parameters of the event
+     * @type {ArrayList<LogEventParameterValue>} */
+    get parameters() { return grok_LogEvent_Get_Parameters(this.d); }
+}
+
+export class LogEventParameter extends Entity {
+    constructor(d) { super(d); }
+
+    /** Name of the parameter
      * @type {string} */
-    get session() { return grok_LogEvent_Get_Session(this.d); }
+     get name() { return grok_LogEventParameter_Get_Name(this.d); }
+
+    /** Type of the parameter
+     * @type {string} */
+     get type() { return grok_LogEventParameter_Get_Type(this.d); }
+
+     /** Description of the parameter
+      * @type {string} */
+      get description() { return grok_LogEventParameter_Get_Description(this.d); }
+
+     /** Is the parameter input
+      * @type {Boolean} */
+      get isInput() { return grok_LogEventParameter_Get_IsInput(this.d); }
+
+     /** Is the parameter optional
+      * @type {Boolean} */
+      get isOptional() { return grok_LogEventParameter_Get_IsOptional(this.d); }
+}
+
+export class LogEventParameterValue extends Entity {
+    constructor(d) { super(d); }
+
+    /** Event of the parameter value
+     * @type {LogEvent} */
+    get event() { return toJs(grok_LogEventParameterValue_Get_Event(this.d)); }
+
+    /** Parameter of the parameter value
+     * @type {LogEventParameter} */
+    get parameter() { return toJs(grok_LogEventParameterValue_Get_Parameter(this.d)); }
+
+    /** Parameter value
+     * @type {string} */
+    get value() { return grok_LogEventParameterValue_Get_Value(this.d); }
 }
 
 /**
