@@ -143,8 +143,10 @@ export async function translationPanel(textfile) {
     [sourceLang, sourceCode] = (await detectLanguage(sourceText)).slice(0, 2);
     // `Other` refers to detected languages that are not currently supported by AWS
     sourceLangInput.value = (sourceCode in code2lang) ? code2lang[sourceCode]
-                             : (sourceCode === 'und') ? 'Undetermined' : 'Other';
-    if (sourceLangInput.value !== 'English') targetLangInput.value = 'English';
+                             : (sourceCode === 'un') ? 'Undetermined' : 'Other';
+    if ((sourceLangInput.value !== 'English') && (targetLangInput.value === 'Choose...')) {
+        targetLangInput.value = 'English';
+    }
 
     return mainWidget;
 }
