@@ -84,7 +84,7 @@ class UsageAnalysisPackage extends DG.Package {
                 return root;
             }));
 
-            addPane('Unique users per day for the last month', 'UniqueUsersPerDayLastMonth', (t) => DG.Viewer.lineChart(t).root);
+            addPane('Unique users per day for the last month', 'UsageAnalysis:UniqueUsersPerDayLastMonth', (t) => DG.Viewer.lineChart(t).root);
 
             acc.addPane('Unique users', () => {
                 let host = ui.div();
@@ -115,7 +115,7 @@ class UsageAnalysisPackage extends DG.Package {
                 return DG.Viewer.grid(t).root;
             });
             addPane('Event Types', 'EventsSummaryOnDate', (t) => DG.Viewer.barChart(t, {valueAggrType: 'avg'}).root);
-            addPane('Error Types', 'ErrorsSummaryOnDate', (t) => DG.Viewer.barChart(t).root);
+            addPane('Error Types', 'ErrorsSummaryOnDate', (t) => DG.Viewer.barChart(t, {valueAggrType: 'avg'}).root);
             addPane('Test Tracking', 'ManualActivityByDate', (t) => DG.Viewer.grid(t).root, false);
 
             results.appendChild(acc.root);

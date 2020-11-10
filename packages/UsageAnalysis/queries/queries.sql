@@ -126,6 +126,7 @@ inner join event_types et on e.event_type_id = et.id
 where @date(e.event_time)
 group by et.friendly_name
 order by count(et.friendly_name) desc
+limit 25
 --end
 
 
@@ -140,6 +141,7 @@ inner join users u on u.id = s.user_id
 where @date(e.event_time) and u.login = any(@users)
 group by et.friendly_name
 order by count(et.friendly_name) desc
+limit 25
 --end
 
 
@@ -151,6 +153,7 @@ join event_types et on e.event_type_id = et.id
 where @date(e.event_time) and e.error_stack_trace is not null
 group by concat(e.friendly_name, ': ', e.error_message)
 order by count(et.friendly_name) desc
+limit 25
 --end
 
 
@@ -165,6 +168,7 @@ inner join users u on u.id = s.user_id
 where @date(e.event_time) and e.error_stack_trace is not null and u.login = any(@users)
 group by concat(e.friendly_name, ': ', e.error_message)
 order by count(et.friendly_name) desc
+limit 25
 --end
 
 
