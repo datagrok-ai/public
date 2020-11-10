@@ -83,8 +83,8 @@ export function substructureSearch_(column, pattern, isSmarts = true) {
  * Searches for a molecular pattern in a given column, returning a bitset with hits.
  * See example: {@link substructure-search}
  * @async
- * @param {Column} column - Column with molecules to search.
- * @param {string} pattern - Pattern, either SMARTS or SMILES.
+ * @param {Column} column - Column with molecules to search
+ * @param {string} pattern - Pattern, either one of which RDKit supports
  * @returns {Promise<BitSet>}
  * */
 export async function substructureSearch(column, pattern, settings = {}) {
@@ -95,7 +95,8 @@ export async function substructureSearch(column, pattern, settings = {}) {
         'molString': pattern
     });
     await call.call();
-    return call.getParamValue('result');
+    // unpacking our BitSet object from a synthetic column
+    return call.getParamValue('result').get(0);
     
 }
 
