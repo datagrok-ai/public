@@ -100,13 +100,20 @@ class UsageAnalysisPackage extends DG.Package {
                 return host;
             });
 
-            addPane('Usage', 'EventsOnDate', (t) => {
-                t.onCurrentRowChanged.subscribe((something) => {
-                    grok.dapi.log.include('session.user').find(t.currentRow.event_id).then((event) => grok.shell.o = event);
+            function subscribeOnTableWithEvents(table) {
+                table.onCurrentRowChanged.subscribe((_) => {
+                    grok.dapi.log.include('session.user').find(table.currentRow.event_id).then((event) => {grok.shell.o = event; console.log(event); });
                 });
+            }
+
+            addPane('Usage', 'EventsOnDate', (t) => {
+                subscribeOnTableWithEvents(t);
                 return DG.Viewer.scatterPlot(t, {'color': 'user'}).root;
             });
-            addPane('Errors', 'ErrorsOnDate', (t) => DG.Viewer.grid(t).root);
+            addPane('Errors', 'ErrorsOnDate', (t) => {
+                subscribeOnTableWithEvents(t);
+                return DG.Viewer.grid(t).root;
+            });
             addPane('Event Types', 'EventsSummaryOnDate', (t) => DG.Viewer.barChart(t, {valueAggrType: 'avg'}).root);
             addPane('Error Types', 'ErrorsSummaryOnDate', (t) => DG.Viewer.barChart(t).root);
             addPane('Test Tracking', 'ManualActivityByDate', (t) => DG.Viewer.grid(t).root, false);
