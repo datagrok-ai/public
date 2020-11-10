@@ -13,7 +13,7 @@ import pycountry
 
 def detect_language():
     detected = cld3.get_language(text)
-    undetermined = ("Undetermined", "—", "—")
+    undetermined = ("Undetermined", "und", "und")
     if not detected: return undetermined
     langcode = detected.language
     if langcode == "iw": langcode = "he"
