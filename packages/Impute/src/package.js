@@ -6,30 +6,19 @@ import * as DG from "datagrok-api/dg";
 export let _package = new DG.Package();
 
 //preprocessing and metadata collection function
-async function cleanMeta(data,meta) {
+async function cleanMeta(data) {
     grok.shell.info('Preprocessing data . . .');
     let f = await grok.functions.eval("Impute:cleanMetaImpl");
 
     let call = f.prepare({
-        'data': data,
-        'meta': meta
+        'data': data
     });
 
-    if (meta === false) {
-
-        await call.call();
-        return call.getParamValue('cleanDf');
-
-
-    } else {
-
-        await call.call();
-        let plt1 = call.getParamValue('naPlot');
-        let plt2 = call.getParamValue('matrixPlot');
-        let plt3 = call.getParamValue('clusterPlot')
-        return [plt1, plt2, plt3];
-
-    }
+    await call.call();
+    let plt1 = call.getParamValue('naPlot');
+    let plt2 = call.getParamValue('matrixPlot');
+    let plt3 = call.getParamValue('clusterPlot')
+    return [plt1, plt2, plt3];
 }
 
 async function imputeWithMethod(data,method,methodparams,columns){
@@ -40,7 +29,7 @@ async function imputeWithMethod(data,method,methodparams,columns){
         completeData = await grok.functions.call('Impute:miceImpl',
             {
                 'data':data,
-                'columns':columns.value,
+                'columns':columns,
                 'maxIter':methodparams[0].value
             });
     }
@@ -51,6 +40,7 @@ async function imputeWithMethod(data,method,methodparams,columns){
         completeData = await grok.functions.call('Impute:aregImputeImpl',
             {
                 'data':data,
+                'columns':columns,
                 'nk': methodparams[0].value,
                 'tlinear':methodparams[1].value,
                 'type': method,
@@ -66,6 +56,7 @@ async function imputeWithMethod(data,method,methodparams,columns){
         completeData = await grok.functions.call('Impute:knnImpl',
             {
                 'data':data,
+                'columns':columns,
                 'k':methodparams[0].value
             });
     }
@@ -75,6 +66,7 @@ async function imputeWithMethod(data,method,methodparams,columns){
         completeData = await grok.functions.call('Impute:imputeFAMDImpl',
             {
                 'data':data,
+                'columns':columns,
                 'catCols':methodparams[0].value,
                 'ncp':methodparams[1].value,
                 'method':methodparams[2].value,
@@ -87,6 +79,7 @@ async function imputeWithMethod(data,method,methodparams,columns){
         completeData = await grok.functions.call('Impute:imputePCAImpl',
             {
                 'data':data,
+                'columns':columns,
                 'catCols':methodparams[0].value,
                 'method':methodparams[1].value,
                 'regCoeff':methodparams[2].value
@@ -98,6 +91,7 @@ async function imputeWithMethod(data,method,methodparams,columns){
         completeData = await grok.functions.call('Impute:imputeMCAImpl',
             {
                 'data':data,
+                'columns':columns,
                 'ncp':methodparams[0].value,
                 'method':methodparams[1].value,
                 'regCoeff':methodparams[2].value
@@ -110,6 +104,7 @@ async function imputeWithMethod(data,method,methodparams,columns){
         completeData = await grok.functions.call('Impute:pcaMethodsImpl',
             {
                 'data':data,
+                'columns':columns,
                 'scaling':methodparams[0].value,
                 'method':method
             });
@@ -120,6 +115,7 @@ async function imputeWithMethod(data,method,methodparams,columns){
         completeData = await grok.functions.call('Impute:missForestImpl',
             {
                 'data':data,
+                'columns':columns,
                 'maxiter':methodparams[0].value,
                 'ntree':methodparams[1].value,
                 'decreasing':methodparams[2].value,
@@ -381,9 +377,8 @@ export async function byMethod() {
     plottingContainer.appendChild(ui.button('GENERATE PLOTS',async () => {
 
         //preprocess and extract metadata
-        meta = true;
         let filteredTable = tableFilter(dataTable,Object.values(keepCols));
-        let metaOut = await cleanMeta(filteredTable,meta);
+        let metaOut = await cleanMeta(filteredTable);
 
         grok.shell.info('Generating: NA correlation, dendrogram and matrix plots');
 
@@ -425,14 +420,16 @@ export async function byMethod() {
         let pi = DG.TaskBarProgressIndicator.create('Imputing...');
 
         //preprocess without extracting metadata and impute
-        meta = false;
-        let filteredTable = tableFilter(dataTable,Object.values(keepCols));
-        let cleanOut = await cleanMeta(filteredTable,meta);
         grok.shell.info('Imputing with: ' + method.value);
         grok.shell.info(methodparams.map((i) => `${i.caption}: ${i.stringValue}`).join('<br>'));
 
         //imputation function
-        let completeData = await imputeWithMethod(cleanOut,method.value,methodparams,columnsImpute);
+        columnsImpute = columnsImpute.value;
+        keepCols = Object.values(keepCols);
+
+        let filteredTable = tableFilter(dataTable,keepCols);
+        columnsImpute = columnsImpute.filter(value => keepCols.includes(value));
+        let completeData = await imputeWithMethod(filteredTable,method.value,methodparams,columnsImpute);
         grok.shell.addTableView(completeData);
         pi.close();
 

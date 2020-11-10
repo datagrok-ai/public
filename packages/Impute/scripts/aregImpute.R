@@ -3,6 +3,7 @@
 #language: r
 #tags: template, demo
 #input: dataframe data [Input data table]
+#input: column_list columns
 #input: int nk = 0
 #input: bool tlinear = True
 #input: string type {choices : ["pmm", "regression", "normpmm"]}
@@ -13,6 +14,7 @@
 #output: dataframe imputedDF [imputed dataset]
 
 require(Hmisc)
+require(gdata)
 
 type <- gsub(".*:","",type)
 if (type == 'regression') {
@@ -20,6 +22,12 @@ if (type == 'regression') {
 } else if (type == 'normpmm') {
   tlinear <- TRUE
 }
+
+# convert all variables to numeric
+vars_non_num <- names(data)[!sapply(data, is.numeric)]
+bigMap <- mapLevels(data[,c(vars_non_num)])
+if (length(vars_non_num) != 0) {
+  data <- as.data.frame(sapply(data, as.integer)) }
 
 Xcolnames <- colnames(data)
 Xformula <- stats::as.formula(paste("~", paste(Xcolnames, collapse = "+")))
@@ -41,3 +49,6 @@ imputedDF <- as.data.frame(Hmisc::impute.transcan(hmisc_algo,
                                                  list.out = TRUE,
                                                  pr = FALSE,
                                                  check = FALSE))
+
+mapLevels(imputedDF[,c(vars_non_num)]) <- bigMap
+imputedDF <- imputedDF[,columns]
