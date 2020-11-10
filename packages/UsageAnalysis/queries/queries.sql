@@ -90,7 +90,7 @@ order by e.event_time desc
 --input: string date { pattern: datetime }
 --input: list users
 --connection: datagrok
-select u.login as user, u.id as user_id, t.name, t.source, e.event_time, e.description from events e
+select u.login as user, u.id as user_id, t.name, t.source, e.id as event_id, e.event_time, e.description from events e
 inner join event_types t on e.event_type_id = t.id
 inner join users_sessions s on e.session_id = s.id
 inner join users u on u.id = s.user_id
@@ -102,7 +102,7 @@ order by e.event_time desc
 --name: errors on @date
 --input: string date { pattern: datetime }
 --connection: datagrok
-select friendly_name as name, event_time, error_message, error_stack_trace, source, run_number as count from events e
+select friendly_name as name, event_time, error_message, error_stack_trace, source, run_number as count, e.id as event_id from events e
 where @date(e.event_time) and e.error_stack_trace is not null
 --end
 
@@ -111,7 +111,7 @@ where @date(e.event_time) and e.error_stack_trace is not null
 --input: string date { pattern: datetime }
 --input: list users
 --connection: datagrok
-select e.friendly_name as name, e.event_time, e.error_message, e.error_stack_trace, e.source, e.run_number as count from events e
+select e.friendly_name as name, e.event_time, e.error_message, e.error_stack_trace, e.source, e.run_number as count, e.id as event_id from events e
 inner join users_sessions s on e.session_id = s.id
 inner join users u on u.id = s.user_id
 where @date(e.event_time) and e.error_stack_trace is not null and u.login = any(@users)
