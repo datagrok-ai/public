@@ -23,7 +23,7 @@ If you want to jump-start with Datagrok on your local machine, we recommend this
    cd datagrok
    ```
 
-2. In this folder, create a file `docker-compose.yaml` with the following contents (you can get the specific versions of `datagrok/datagrok` and `datagrok/cvm` from our [Docker Hub](https://hub.docker.com/u/datagrok)):
+2. In this folder, create a file `docker-compose.yaml` with the following contents (you can get the specific versions of `datagrok/datagrok` and `datagrok/cvm` from our [Docker Hub page](https://hub.docker.com/u/datagrok)):
     ```yaml
     version: "3"
     services:
@@ -77,13 +77,13 @@ If you want to jump-start with Datagrok on your local machine, we recommend this
    ```  
    Datagrok will deploy a new database automatically.
 
-4. Once the server is up and running, the Login page should be available at [`http://localhost:8080`](http://localhost:8080).
+4. Once the server is up and running, the Login page should be available at [`http://localhost:8080`](http://localhost:8080). For a quick setup, login to Datagrok using a username `admin` and a password `SM9ekKEkZuBDp5eD`. To change your password, pass a key-value pair `"adminPassword": "yourPassword"` to the JSON string `GROK_PARAMETERS`.
 
 5. After Datagrok is deployed for the first time, you can shut it down using `Ctrl+C`. Alternatively, run the command:
    ```  
    docker-compose down  
    ```  
-   All the data will be saved in the persistent storage. If you want to reset Datagrok to factory settings, run the following command instead:  
+   All the data will be saved in the persistent storage ([Docker volumes](https://docs.docker.com/storage/volumes/)). If you want to reset Datagrok to factory settings, run the following command instead:  
    ```  
    docker-compose down --volumes  
    ```  

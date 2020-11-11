@@ -32,6 +32,10 @@ Hit 'R' to toggle regression line.
 
 ![Scatter plot](../../uploads/gifs/scatter-plot.gif "scatter plot")
 
+## Videos
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/7MBXWzdC0-I?start=214" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
 See also:
  
 * [Column Selectors](column-selectors.md)

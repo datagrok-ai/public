@@ -35,18 +35,18 @@ export function similaritySearch_(column, molecule, metric = SIMILARITY_METRIC.T
  * @param {Column} column - Molecule column to search in
  * @param {string} pattern - Reference molecule in one of formats supported by RDKit:
  *     smiles, cxsmiles, molblock, v3Kmolblock
- * @param {boolean} sorted -
+ * @param {boolean} settings.sorted -
  *     if set, returns a two-column dataframe with molecule strings and scores,
  *     sorted in descending order by the score
  * @returns {Promise<DataFrame>}
  * */
-export async function similarityScoring(column, pattern, sorted = false) {
+export async function similarityScoring(column, pattern, settings = { sorted: false }) {
     
     let foo = await grok.functions.eval('Chem:similarityScoring');
     let call = await foo.prepare({
         'molStringsColumn': column,
         'molString': pattern,
-        'sorted': sorted
+        'sorted': settings.sorted
     });
     await call.call();
     return call.getParamValue('result');
@@ -83,11 +83,11 @@ export function substructureSearch_(column, pattern, isSmarts = true) {
  * Searches for a molecular pattern in a given column, returning a bitset with hits.
  * See example: {@link substructure-search}
  * @async
- * @param {Column} column - Column with molecules to search.
- * @param {string} pattern - Pattern, either SMARTS or SMILES.
+ * @param {Column} column - Column with molecules to search
+ * @param {string} pattern - Pattern, either one of which RDKit supports
  * @returns {Promise<BitSet>}
  * */
-export async function substructureSearch(column, pattern) {
+export async function substructureSearch(column, pattern, settings = {}) {
     
     let foo = await grok.functions.eval('Chem:substructureSearch');
     let call = await foo.prepare({
@@ -95,7 +95,8 @@ export async function substructureSearch(column, pattern) {
         'molString': pattern
     });
     await call.call();
-    return call.getParamValue('result');
+    // unpacking our BitSet object from a synthetic column
+    return call.getParamValue('result').get(0);
     
 }
 

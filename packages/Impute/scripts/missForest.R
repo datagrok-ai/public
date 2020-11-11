@@ -3,6 +3,7 @@
 #language: r
 #tags: template, demo
 #input: dataframe data
+#input: column_list columns
 #input: int maxiter = 10
 #input: int ntree = 100
 #input: bool decreasing = TRUE
@@ -11,6 +12,13 @@
 #output: dataframe imputedDF [processed dataframe]
 
 require(missForest)
+require(gdata)
+
+# convert all variables to numeric
+vars_non_num <- names(data)[!sapply(data, is.numeric)]
+bigMap <- mapLevels(data[,c(vars_non_num)])
+if (length(vars_non_num) != 0) {
+  data <- as.data.frame(sapply(data, as.integer)) }
 
 results <- missForest::missForest(xmis = data,
                                   maxiter = 10,
@@ -19,3 +27,6 @@ results <- missForest::missForest(xmis = data,
                                   replace = T,
                                   parallelize = 'no')
 imputedDF <- results$ximp
+
+mapLevels(imputedDF[,c(vars_non_num)]) <- bigMap
+imputedDF <- imputedDF[,columns]

@@ -3,12 +3,20 @@
 #language: r
 #tags: template, demo
 #input: dataframe data [Input data table]
+#input: column_list columns
 #input: string scaling {choices: ["none", "uv", "vector", 'pareto"]}
 #input: string method {choices: ["nipals", "ppca", "bpca", "nlpca"]}
 #output: dataframe imputedDF [imputed dataset]
 
 require(pcaMethods)
 require(missMDA)
+require(gdata)
+
+# convert all variables to numeric
+vars_non_num <- names(data)[!sapply(data, is.numeric)]
+bigMap <- mapLevels(data[,c(vars_non_num)])
+if (length(vars_non_num) != 0) {
+  data <- as.data.frame(sapply(data, as.integer)) }
 
 method <- gsub(".*:","",method)
 if (scaling != 'none') {
@@ -33,5 +41,8 @@ if (scaling != 'none') {
   imputedDF <- imputedDF@completeObs
 
 }
+
+mapLevels(imputedDF[,c(vars_non_num)]) <- bigMap
+imputedDF <- imputedDF[,columns]
 
 

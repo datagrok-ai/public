@@ -39,6 +39,10 @@ to be drawn from Q1 into the box.
 
 For instance, you would get the upper whisker inverted on the following data: [0, 41, 42, 70]
 
+## Videos
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/7MBXWzdC0-I?start=2332" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
 See also: 
   
 * [Viewers](../viewers.md)
