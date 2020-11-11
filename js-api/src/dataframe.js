@@ -131,7 +131,7 @@ export class DataFrame {
      * @param {string[]} columnIds - Columns to include.
      * @param {boolean} saveSelection - Whether selection should be saved. */
     clone(rowMask = null, columnIds = null, saveSelection = false) {
-        return new DataFrame(grok_DataFrame_Clone(this.d, rowMask.d, columnIds, saveSelection));
+        return new DataFrame(grok_DataFrame_Clone(this.d, toDart(rowMask), columnIds, saveSelection));
     }
 
     /** Current row
