@@ -90,8 +90,11 @@ You can use these fields to filter functions with [smart search](../smart-search
 | commentedBy | [User](../../govern/user.md) object                             |
 | usedBy      | [User](../../govern/user.md) object                             |
 
+## Videos
 
-See also
+<iframe width="560" height="315" src="https://www.youtube.com/embed/p7_qOU_IzLM?start=724" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
-* [Console](../../overview/navigation.md#console)
-* [Scripting](../../develop/scripting.md)
+See also:
+
+  * [Console](../../overview/navigation.md#console)
+  * [Scripting](../../develop/scripting.md)
