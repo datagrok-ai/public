@@ -9,12 +9,14 @@
 
 require(mice)
 require(gdata)
+require(dplyr)
 
 # convert all variables to numeric
 vars_non_num <- names(data)[!sapply(data, is.numeric)]
 bigMap <- mapLevels(data[,c(vars_non_num)])
 if (length(vars_non_num) != 0) {
-  data <- as.data.frame(sapply(data, as.integer)) }
+  data <- data %>% mutate_at(c(vars_non_num), as.integer)
+}
 
 imputedData <- mice::mice(data, m = 1,maxit = maxIter)
 imputedDF <- mice::complete(imputedData,1)

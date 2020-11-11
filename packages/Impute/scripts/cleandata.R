@@ -3,8 +3,6 @@
 #language: r
 #tags: template, demo
 #input: dataframe data [Input data table]
-#input: bool meta = FALSE [whether to collect metadata]
-#output: dataframe cleanDf [processed dataframe]
 #output: graphics naPlot
 #output: graphics matrixPlot
 #output: graphics clusterPlot
@@ -104,15 +102,15 @@ vars_non_num <- names(data)[!sapply(data, is.numeric)]
 if (length(vars_non_num) != 0) {
   X <- as.data.frame(sapply(data, as.numeric)) }
 
-if (meta == TRUE) {
-  metadata <- get_data(X)
-  naPlot <- print(metadata$NA_Correlation_plot)
-  matrixPlot <- print(metadata$Matrix_plot)
-  clusterPlot <- print(metadata$Cluster_plot)
-  cleanDf <- data.frame()
-} else {
-  naPlot  <- print(ggplot() + theme_void())
-  matrixPlot <- print(ggplot() + theme_void())
-  clusterPlot <- print(ggplot() + theme_void())
-  cleanDf <- X
-}
+
+metadata <- get_data(X)
+naPlot <- print(metadata$NA_Correlation_plot)
+matrixPlot <- print(metadata$Matrix_plot)
+clusterPlot <- print(metadata$Cluster_plot)
+
+
+#naPlot  <- print(ggplot() + theme_void())
+#matrixPlot <- print(ggplot() + theme_void())
+#clusterPlot <- print(ggplot() + theme_void())
+#cleanDf <- X
+

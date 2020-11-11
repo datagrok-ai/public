@@ -96,5 +96,5 @@ function chemSubstructureSearch(molStringsColumn, molString) {
         mol.delete();
     }
     subMol.delete();
-    
+    return result;
 }

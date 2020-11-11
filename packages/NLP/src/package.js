@@ -77,8 +77,8 @@ async function detectLanguage(text) {
 }
 
 function testLanguagePair(sourceCode, targetCode) {
-    let supportedLanguages = Object.keys(code2lang);
     if (targetLangInput.value === 'Choose...') return false;
+    let supportedLanguages = Object.keys(code2lang);
     if (!(supportedLanguages.includes(sourceCode))) {
         // The user unintentionally picks `Undetermined` or `Other`
         if (supportedLanguages.includes(lang2code[sourceLang])) {
@@ -86,7 +86,8 @@ function testLanguagePair(sourceCode, targetCode) {
             sourceLangInput.value = sourceLang;
             return true;
         }
-        translationArea.value = `The detected language (${sourceLang}) is not supported.`;
+        translationArea.value = (sourceLang === 'Undetermined') ? 'The language could not be determined.'
+                                : `The detected language (${sourceLang}) is not supported.`;
         return false;
     }
     if (sourceCode === targetCode) {
@@ -125,8 +126,9 @@ export async function translationPanel(textfile) {
     
     sourceText = await extractText(textfile);
     if (!sourceText) {
-      translationArea.value = 'The input text is empty.';
-      return mainWidget;
+        sourceLangInput.value = 'Undetermined';
+        translationArea.value = 'The input text is empty.';
+        return mainWidget;
     }
 
     // Character limit per request for real-time translation
@@ -140,7 +142,11 @@ export async function translationPanel(textfile) {
 
     [sourceLang, sourceCode] = (await detectLanguage(sourceText)).slice(0, 2);
     // `Other` refers to detected languages that are not currently supported by AWS
-    sourceLangInput.value = sourceCode in code2lang ? code2lang[sourceCode] : 'Other';
+    sourceLangInput.value = (sourceCode in code2lang) ? code2lang[sourceCode]
+                             : (sourceCode === 'un') ? 'Undetermined' : 'Other';
+    if ((sourceLangInput.value !== 'English') && (targetLangInput.value === 'Choose...')) {
+        targetLangInput.value = 'English';
+    }
 
     return mainWidget;
 }

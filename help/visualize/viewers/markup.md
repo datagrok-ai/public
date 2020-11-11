@@ -27,6 +27,10 @@ Here is how to embed iframes:
 
 ![Markup Viewer](markup-iframe-embedding.gif "iframe embedding") 
 
+## Videos
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/7MBXWzdC0-I?start=3052" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
 See also: 
   
   * [Viewers](../viewers.md)
