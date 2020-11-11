@@ -487,7 +487,7 @@ export class TreeViewNode {
     enableCheckBox(checked = false) { grok_TreeViewNode_EnableCheckBox(this.d, checked); }
 }
 
-export class RangeSlider extends DartWidget{
+export class RangeSlider extends DartWidget {
 
     static create() { return toJs(grok_RangeSlider()); }
 
@@ -520,4 +520,12 @@ export class RangeSlider extends DartWidget{
 
     /** @returns {Observable} */
     get onValuesChanged() { return observeStream(grok_RangeSlider_Get_OnValuesChanged(this.d)); }
+}
+
+export class HtmlTable extends Widget {
+//    constructor(d) { this.d = d; }
+
+    static create(items, renderer, columnNames = null) { return toJs(grok_HtmlTable(items, renderer !== null ? (object, ind) => renderer(toJs(object), ind) : null, columnNames)); }
+
+    removeItem(item) { grok_HtmlTable_RemoveItem(this.d, item); }
 }
