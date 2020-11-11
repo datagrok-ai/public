@@ -20,6 +20,9 @@ sometimes it can't map names to the regions. To identify these records, select
 ![Shape Map](../../uploads/viewers/shape-map-pa-counties.png "Shape Map")
 ![Shape Map](../../uploads/viewers/shape-map-plate.png "Shape Map")
 
+## Videos
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/7MBXWzdC0-I?start=3650" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
 See also:
 * Applicable tables: #{x.demo:germany_grp_by_state}, #{x.demo:pa_income_by_county}, #{x.demo:ua_population}  

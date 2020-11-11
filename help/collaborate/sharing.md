@@ -11,6 +11,10 @@ Access rights of a database connection inherit access rights of a query. However
 
 As for web queries, they are automatically shared along with sharing the corresponding connection.
 
+## Videos
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/7MBXWzdC0-I?start=1334" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
 See also:
 
   * [Entities](../overview/objects.md) 

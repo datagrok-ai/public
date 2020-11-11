@@ -98,6 +98,9 @@ To add a custom form: **Menu | Add | Forms | Custom...**
 
 ![Molecules](../../uploads/viewers/grid-molecules.png "Molecule renderer")
 
+## Videos
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/7MBXWzdC0-I?start=2971" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
 See also: 
   

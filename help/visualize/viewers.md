@@ -21,6 +21,7 @@ share with teammates) later on.
 * [Properties](#properties)
 * [Group tooltips](#group-tooltips)
 * [Trellis](#trellis)
+* [Statistical Hypothesis Testing](#statistical-hypothesis-testing)
 * [Layouts](#layouts)
 
 ## Creating
@@ -33,6 +34,10 @@ indicators will appear; move the mouse cursor to one of them and release the mou
 dock the viewer at that spot. To resize the viewer, drag the viewer's border.
 
 ![](viewers-interaction-main.gif)
+
+## Docking
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/wAfEqAMOZzw?start=1726" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
 ## Selection
 
@@ -82,6 +87,8 @@ some viewers, such as [Bar Chart](viewers/bar-chart.md) and [Pie Chart](viewers/
 could be also used for filtering of the underlying table. Such viewers are a popular choice
 for interactive dashboards.
 
+<iframe width="560" height="315" src="https://www.youtube.com/embed/wAfEqAMOZzw?start=4201" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
 To control that behavior, click on the viewer's hamburger icon, open "On click" and choose the
 desired mode. Internally, this sets two different [properties](#properties) of a viewer:
 * `row source` - specifies which rows should be visualized on the viewer (all | filtered | selected)
@@ -108,7 +115,9 @@ Each viewer has a set of properties associated with it that define either the ap
 (such as "Back Color" or "Font"), or data (such as "Value" or "Split"). The most important
 data properties (usually columns to visualize) are exposed as combo boxes on top of the viewer.
 To edit the rest of the properties, either click on the "gear" icon on top of the viewer,
-or press F4 when the viewer has focus, or right-click and select `Viewer | Propeties`.
+or press F4 when the viewer has focus, or right-click and select `Viewer | Properties`.
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/wAfEqAMOZzw?start=804" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
 ![](viewers/viewer-property-panel.gif)
 
@@ -186,6 +195,10 @@ There are two ways to add a trellis plot:
 See [Trellis Plot](viewers/trellis-plot.md) for more details.
 
 ![](viewers-as-trellis.gif) 
+
+## Statistical Hypothesis Testing
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/wAfEqAMOZzw?start=4810" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
 
 ## Layouts
