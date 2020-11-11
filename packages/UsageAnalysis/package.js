@@ -15,12 +15,12 @@ class UsageAnalysisPackage extends DG.Package {
 
         let users = DG.TagEditor.create();
         users.acceptsDragDrop = (x) => x instanceof User;
-        users.doDrop = (user) => users.addTag(user.login);
+        users.doDrop = (user) => this.addUserToFilter(user.login);
 
         let addUser = ui.div([ui.iconFA('plus', () => {
             grok.dapi.users.order('login').list().then((allUsers) => {
                 DG.Menu.popup()
-                    .items(allUsers.map(u => u.login), (item) => users.addTag(item))
+                    .items(allUsers.map(u => u.login), (item) => this.addUserToFilter(item))
                     .show();
             });
         })], 'usage-analysis-users-plus');
@@ -148,6 +148,11 @@ class UsageAnalysisPackage extends DG.Package {
 
         view.root.appendChild(results);
         view.toolbox = accToolbox.root;
+    }
+
+    addUserToFilter(user) {
+        if (!this.users.tags.includes(user))
+            this.users.addTag(user);
     }
 
     /*
