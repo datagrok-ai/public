@@ -26,7 +26,6 @@ Contains gallery of published [projects](project.md).
 
 ## Videos
 
-// Terminology: Table View & Viewers
 <iframe width="560" height="315" src="https://www.youtube.com/embed/wAfEqAMOZzw?start=589" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
 See also:
