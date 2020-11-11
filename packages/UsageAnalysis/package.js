@@ -13,9 +13,8 @@ class UsageAnalysisPackage extends DG.Package {
         date.root.classList.add('usage-analysis-date', 'pure-form');
         date.addPatternMenu('datetime');
 
-        let users = DG.TagEditor.create();
-        users.acceptsDragDrop = (x) => x instanceof User;
-        users.doDrop = (user) => this.addUserToFilter(user.login);
+        this.users.acceptsDragDrop = (x) => x instanceof User;
+        this.users.doDrop = (user) => this.addUserToFilter(user.login);
 
         let addUser = ui.div([ui.iconFA('plus', () => {
             grok.dapi.users.order('login').list().then((allUsers) => {
@@ -25,12 +24,39 @@ class UsageAnalysisPackage extends DG.Package {
             });
         })], 'usage-analysis-users-plus');
 
+        let users = this.users;
+        let events = this.events;
+
         function showUsage() {
             if (acc !== null)
                 for (let p of acc.panes)
                     panesExpanded[p.name] = p.expanded;
 
             acc = ui.accordion();
+
+            function addPaneWithAllFilters(paneName, queryName, f, supportUsers = true) {
+                queryName += 'OnDateAndUsersAndEvents';
+
+                if (!(paneName in panesExpanded))
+                    panesExpanded[paneName] = false;
+                acc.addPane(paneName, () => {
+                    let host = ui.div([], 'usage-analysis-card');
+                    host.appendChild(ui.loader());
+                    let params = {'date': date.value};
+                    let selectedUsers = users.tags;
+
+                    params['users'] = (supportUsers && selectedUsers.length !== 0) ? selectedUsers : ['all'];
+                    params['events'] = (events.value.length !== 0) ? [events.value] : ['all'];
+
+                    grok.data.query('UsageAnalysis:' + queryName, params).then((t) => {
+                        if (paneName === 'Errors')
+                            grok.data.detectSemanticTypes(t);
+                        host.removeChild(host.firstChild);
+                        host.appendChild(f(t));
+                    });
+                    return host;
+                }, panesExpanded[paneName]);
+            }
 
             function addPane(paneName, queryName, f, supportUsers = true) {
                 if (!(paneName in panesExpanded))
@@ -84,7 +110,7 @@ class UsageAnalysisPackage extends DG.Package {
                 return root;
             }));
 
-            addPane('Unique users per day for the last month', 'UsageAnalysis:UniqueUsersPerDayLastMonth', (t) => DG.Viewer.lineChart(t).root);
+            addPaneWithAllFilters('Unique users per day', 'UniqueUsersPerDay', (t) => DG.Viewer.lineChart(t).root);
 
             acc.addPane('Unique users', () => {
                 let host = ui.div();
@@ -102,15 +128,15 @@ class UsageAnalysisPackage extends DG.Package {
 
             function subscribeOnTableWithEvents(table) {
                 table.onCurrentRowChanged.subscribe((_) => {
-                    grok.dapi.log.include('session.user').find(table.currentRow.event_id).then((event) => {grok.shell.o = event; console.log(event); });
+                    grok.dapi.log.include('session.user').find(table.currentRow.event_id).then((event) => grok.shell.o = event);
                 });
             }
 
-            addPane('Usage', 'EventsOnDate', (t) => {
+            addPaneWithAllFilters('Usage', 'Events', (t) => {
                 subscribeOnTableWithEvents(t);
                 return DG.Viewer.scatterPlot(t, {'color': 'user'}).root;
             });
-            addPane('Errors', 'ErrorsOnDate', (t) => {
+            addPaneWithAllFilters('Errors', 'Errors', (t) => {
                 subscribeOnTableWithEvents(t);
                 return DG.Viewer.grid(t).root;
             });
@@ -122,7 +148,8 @@ class UsageAnalysisPackage extends DG.Package {
         }
 
         date.onChanged(this.debounce(showUsage, 750));
-        users.onChanged(showUsage);
+        this.users.onChanged(showUsage);
+        this.events.onChanged(this.debounce(showUsage, 750));
 
         showUsage();
 
@@ -131,14 +158,15 @@ class UsageAnalysisPackage extends DG.Package {
 
         let usersSelection = ui.divV([
             ui.divH([usersLabel, addUser]),
-            users.root
+            this.users.root
         ], 'usage-analysis-users');
         usersSelection.style.marginBottom = '12px';
 
         let accToolbox = ui.accordion();
         accToolbox.addPane('Filters', () => ui.divV([
             date.root,
-            usersSelection
+            usersSelection,
+            this.events.root
         ]), true);
         accToolbox.addPane('Layouts', () => {
             let link = ui.divText('Summary');
@@ -148,6 +176,24 @@ class UsageAnalysisPackage extends DG.Package {
 
         view.root.appendChild(results);
         view.toolbox = accToolbox.root;
+    }
+
+    async init() {
+        this.users = DG.TagEditor.create();
+        this.events = ui.stringInput('Events', '');
+
+        grok.events.onContextMenu.subscribe((args) => {
+            if (args.args.item instanceof DG.User) {
+                args.args.menu.item('Add user to filter',  async () => {
+                    this.addUserToFilter(args.args.item.login);
+                });
+            }
+            else if (args.args.item instanceof DG.LogEvent) {
+                args.args.menu.item('Add event to filter',  async () => {
+                    this.events.value = args.args.item.name;
+                });
+            }
+        });
     }
 
     addUserToFilter(user) {
