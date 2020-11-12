@@ -11,6 +11,31 @@ Info panels are added as part of a [package](../develop.md). There are two ways 
 
 ### Visibility Conditions
 
+#### Semantic Types
+
+Sometimes it is desirable to show an info panel only for data of a specific [semantic type](../../discover/semantic-types.md). To make use of detectors available out of the box, simply specify a relevant semantic type either from a script or from a panel function written in JavaScript.
+
+```python
+#name: String Length
+#language: python
+#tags: panel
+#input: string s {semType: Text}
+#output: int length
+#condition: true
+
+length = len(s)
+```
+
+In the above example, the input parameter has `{semType: Text}`. So when you have a table open and go to a cell in a column with the semantic type `Text`, you will see this panel. You can use other semantic types in a similar way, for example, set `{semType: Molecule}` to display properties of various chemical structures. See the full list of semantic types [here](../../discover/semantic-types.md#automatic-semantic-type-detection). Since the type is common to all values in a column, it is often convenient to check it in the panel condition like this:
+
+```
+condition: columnName.semType == "Molecule"
+```
+
+Our [JavaScript API](../js-api.md) provides the means to override the types automatically detected by the platform. Refer to this [code snippet](https://public.datagrok.ai/js/samples/data-frame/semantic-type-detection) as an example.
+
+It is possible to define your own semantic types. To apply a custom detector, first define a function that determines the corresponding semantic type in your [detectors.js](../develop.md#package-structure) file. Then you can write a function for auto-detection, as done in our demo package [Pedometer](https://github.com/datagrok-ai/public/tree/master/packages/Pedometer).
+
 ### Scripts
 
 To create a panel script, you should tag it as `panel` and specify conditions for the panel to be shown in the `condition` header parameter:
@@ -32,7 +57,7 @@ detector = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalcat
 hasCats = len(detector.detectMultiScale(gray, scaleFactor=1.3, minNeighbors=3, minSize=(75, 75))) != 0
 ```
 
-Regardless of a script's language, conditions are written in [Grok script](../../overview/grok-script.md).
+Regardless of a script's language, conditions are written in [Grok script](../../overview/grok-script.md) syntax.
 
 ### Functions
 
@@ -59,3 +84,4 @@ See also:
   * [JavaScript Development](../develop.md)
   * [Scripting](../scripting.md)
   * [Functions](../overview/functions/function.md)
+  * [Semantic Types](../../discover/semantic-types.md)
