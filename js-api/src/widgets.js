@@ -522,10 +522,15 @@ export class RangeSlider extends DartWidget {
     get onValuesChanged() { return observeStream(grok_RangeSlider_Get_OnValuesChanged(this.d)); }
 }
 
-export class HtmlTable extends Widget {
-//    constructor(d) { this.d = d; }
+export class HtmlTable extends DartWidget {
 
+    /** @constructs {HtmlTable} */
+    constructor(d) { super(d); }
+
+    /** Creates a visual table based on [items], [renderer], and [columnNames]
+     * @returns {HtmlTable} */
     static create(items, renderer, columnNames = null) { return toJs(grok_HtmlTable(items, renderer !== null ? (object, ind) => renderer(toJs(object), ind) : null, columnNames)); }
 
-    removeItem(item) { grok_HtmlTable_RemoveItem(this.d, item); }
+    /** Removes item */
+    remove(item) { grok_HtmlTable_Remove(this.d, item); }
 }
