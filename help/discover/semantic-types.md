@@ -24,14 +24,14 @@ Semantic types are used in several ways:
 Semantic type is stored in the [column tags](tags.md#semantic-type). It could be either detected automatically
 by column semantic type detectors, or set manually.
                
-## Manually setting semantic types
+## Manually Setting Semantic Types
 
 Open column properties (click on a column and press F2, or right-click and select Properties), 
 see 'Semantics' field.
 
-## Automatic semantic type detection
+## Automatic Semantic Type Detection
 
-Out-of-the-box, the following semantic types are automatically detected based on the content:
+Out of the box, the following semantic types are automatically detected based on the content:
 
 * Molecule
 * IP Address
@@ -47,7 +47,7 @@ Out-of-the-box, the following semantic types are automatically detected based on
 * US City
 * Stock ticker
 
-## Custom semantic types
+## Custom Semantic Types
 
 Datagrok has been designed to be as extensible as possible, so naturally it is possible
 to define your own custom semantic types, along with the type auto-detection functions,
