@@ -112,6 +112,8 @@ export class Viewer {
 
     static barChart    (t, options = null) { return Viewer.fromType(VIEWER.BAR_CHART, t, options);  }
 
+    static heatMap     (t, options = null) { return Viewer.fromType(VIEWER.HEAT_MAP, t, options);  }
+
     static boxPlot     (t, options = null) { return new Viewer(grok_Viewer_BoxPlot(t.d, _toJson(options)));  }
 
     static filters     (t, options = null) { return new Viewer(grok_Viewer_Filters(t.d, _toJson(options))); }
