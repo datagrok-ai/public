@@ -554,14 +554,11 @@ export class ColumnList {
     //todo: byTags
     //byTags(tags) {}
 
-    /** @returns {Column[]} */
+    /** @returns {Iterable.<Column>} */
     get categorical() {
-        //todo: convert to iterable
-        let result = [];
-        for (let i = 0; i < this.length; i++)
-            if (this.byIndex(i).type === COLUMN_TYPE.STRING)
-                result.push(this.byIndex(i));
-        return result;
+        let iterable = {};
+        iterable[Symbol.iterator] = () => _getIterator(grok_ColumnList_CategoricalIterator(this.d));
+        return iterable;
     }
 
     /** Array containing column names.
