@@ -201,11 +201,14 @@ export class TableView extends View {
     get toolboxPage() { return new ToolboxPage(grok_View_Get_ToolboxPage(this.d)); }
 
     /** Adds a viewer of the specified type.
-     * @param {string} viewerType
+     * @param {string | Viewer} v
      * @param options
      * @returns {Viewer} */
-    addViewer(viewerType, options = null) {
-        let v = new Viewer(grok_View_AddViewer(this.d, viewerType));
+    addViewer(v, options = null) {
+        if (typeof v === 'string' )
+            v = new Viewer(grok_View_AddViewerByName(this.d, v));
+        else
+            grok_View_AddViewer(this.d, v.d);
         if (options !== null)
             v.setOptions(options);
         return v;
