@@ -605,7 +605,7 @@ export class ColumnList {
     /** Replaces the column with the new column.
      * @param {Column} columnToReplace
      * @param {Column} newColumn */
-    replace(columnToReplace, newColumn) { grok_ColumnList_Replace(this.d, columnToReplace.d, newColumn.d); }
+    replace(columnToReplace, newColumn) { grok_ColumnList_Replace(this.d, (typeof columnToReplace === 'string') ? columnToReplace : columnToReplace.d, newColumn.d); }
 
     /** Iterates over all columns.
      * @returns {Iterable.<Column>}
