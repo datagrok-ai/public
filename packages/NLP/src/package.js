@@ -30,7 +30,7 @@ let sourceText, cropped;
 async function translateText(translate, params) {
     return new Promise((resolve, reject) => {
         translate.translateText(params, (err, data) => {
-          if (err) throw err;
+          if (err) reject(err);
           resolve({ translation: data.TranslatedText, error: 0 });
         })
     }).catch((err) => { return { translation: "", error: 1 } });
@@ -39,7 +39,7 @@ async function translateText(translate, params) {
 async function detectEntities(comprehendMedical, params) {
     return new Promise((resolve, reject) => {
         comprehendMedical.detectEntitiesV2(params, (err, data) => {
-            if (err) throw err;
+            if (err) reject(err);
             // Alternatively, return the `data.Entities` array
             resolve({ entities: data, error: 0 });
         })
