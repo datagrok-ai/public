@@ -548,16 +548,20 @@ export class ColumnList {
         return columns;
     }
 
-    //todo
-    //numerical
-
     //todo: byTags
     //byTags(tags) {}
 
     /** @returns {Iterable.<Column>} */
     get categorical() {
         let iterable = {};
-        iterable[Symbol.iterator] = () => _getIterator(grok_ColumnList_CategoricalIterator(this.d));
+        iterable[Symbol.iterator] = () => _getIterator(grok_ColumnList_Categorical(this.d));
+        return iterable;
+    }
+
+    /** @returns {Iterable.<Column>} */
+    get numerical() {
+        let iterable = {};
+        iterable[Symbol.iterator] = () => _getIterator(grok_ColumnList_Numerical(this.d));
         return iterable;
     }
 
