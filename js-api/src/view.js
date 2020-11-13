@@ -376,6 +376,13 @@ export class TableView extends View {
 
     /** Detaches all viewers. */
     detachViewers() { grok_View_DetachViewers(this.d); }
+
+    /** Returns all viewers. */
+    get viewers() {
+        let iterable = {};
+        iterable[Symbol.iterator] = () => _getIterator(grok_View_Get_Viewers(this.d));
+        return iterable;
+    }
 }
 
 
