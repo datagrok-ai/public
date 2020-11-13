@@ -126,11 +126,11 @@ and (e.friendly_name = any(@events) or @events = ARRAY['all'])
 --name: events summary on @date
 --input: string date { pattern: datetime }
 --connection: datagrok
-select et.friendly_name, count(et.friendly_name) from events e
+select et.friendly_name, et.id as event_type_id, count(1) as cnt from events e
 inner join event_types et on e.event_type_id = et.id
 where @date(e.event_time)
-group by et.friendly_name
-order by count(et.friendly_name) desc
+group by et.friendly_name, et.id
+order by cnt desc
 limit 25
 --end
 
@@ -139,13 +139,13 @@ limit 25
 --input: string date { pattern: datetime }
 --input: list users
 --connection: datagrok
-select et.friendly_name, count(et.friendly_name) from events e
+select et.friendly_name, et.id as event_type_id, count(1) as cnt from events e
 inner join event_types et on e.event_type_id = et.id
 inner join users_sessions s on e.session_id = s.id
 inner join users u on u.id = s.user_id
 where @date(e.event_time) and u.login = any(@users)
-group by et.friendly_name
-order by count(et.friendly_name) desc
+group by et.friendly_name, et.id
+order by cnt desc
 limit 25
 --end
 
@@ -153,11 +153,11 @@ limit 25
 --name: errors summary on @date
 --input: string date { pattern: datetime }
 --connection: datagrok
-select concat(e.friendly_name, ': ', e.error_message), count(et.friendly_name) from events e
+select et.friendly_name, et.id as event_type_id, count(1) as cnt from events e
 join event_types et on e.event_type_id = et.id
 where @date(e.event_time) and e.error_stack_trace is not null
-group by concat(e.friendly_name, ': ', e.error_message)
-order by count(et.friendly_name) desc
+group by et.friendly_name, et.id
+order by cnt desc
 limit 25
 --end
 
@@ -166,13 +166,13 @@ limit 25
 --input: string date { pattern: datetime }
 --input: list users
 --connection: datagrok
-select concat(e.friendly_name, ': ', e.error_message), count(et.friendly_name) from events e
+select et.friendly_name, et.id as event_type_id, count(1) as cnt from events e
 join event_types et on e.event_type_id = et.id
 inner join users_sessions s on e.session_id = s.id
 inner join users u on u.id = s.user_id
 where @date(e.event_time) and e.error_stack_trace is not null and u.login = any(@users)
-group by concat(e.friendly_name, ': ', e.error_message)
-order by count(et.friendly_name) desc
+group by et.friendly_name, et.id
+order by cnt desc
 limit 25
 --end
 
