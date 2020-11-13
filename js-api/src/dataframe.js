@@ -602,6 +602,11 @@ export class ColumnList {
      * @returns {boolean} */
     contains(columnName) { return grok_ColumnList_Contains(this.d, columnName); }
 
+    /** Replaces the column with the new column.
+     * @param {Column} columnToReplace
+     * @param {Column} newColumn */
+    replace(columnToReplace, newColumn) { grok_ColumnList_Replace(this.d, columnToReplace.d, newColumn.d); }
+
     /** Iterates over all columns.
      * @returns {Iterable.<Column>}
      * */
