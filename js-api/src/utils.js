@@ -2,6 +2,12 @@ import {Balloon} from "./widgets";
 import * as rxjs from 'rxjs';
 import {toJs} from "./wrappers";
 
+export function _toIterable(o) {
+    let iterable = {};
+    iterable[Symbol.iterator] = () => _getIterator(o);
+    return iterable;
+}
+
 export function _getIterator(d) {
     return {
         next: function() {

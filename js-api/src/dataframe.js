@@ -3,7 +3,7 @@ import {AGG, TYPE, COLUMN_TYPE} from "./const";
 import {__obs, observeStream} from "./events";
 import {toDart, toJs} from "./wrappers";
 import {SIMILARITY_METRIC} from "./const";
-import {_getIterator} from "./utils";
+import {_getIterator, _toIterable} from "./utils";
 
 class MapProxy {
     constructor(d) {
@@ -553,16 +553,12 @@ export class ColumnList {
 
     /** @returns {Iterable.<Column>} */
     get categorical() {
-        let iterable = {};
-        iterable[Symbol.iterator] = () => _getIterator(grok_ColumnList_Categorical(this.d));
-        return iterable;
+        return _toIterable(grok_ColumnList_Categorical(this.d));
     }
 
     /** @returns {Iterable.<Column>} */
     get numerical() {
-        let iterable = {};
-        iterable[Symbol.iterator] = () => _getIterator(grok_ColumnList_Numerical(this.d));
-        return iterable;
+        return _toIterable(grok_ColumnList_Numerical(this.d));
     }
 
     /** Array containing column names.
