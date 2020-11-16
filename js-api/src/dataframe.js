@@ -548,8 +548,10 @@ export class ColumnList {
         return columns;
     }
 
-    //todo: byTags
-    //byTags(tags) {}
+    /** @returns {Iterable.<Column>} */
+    byTags(tags) {
+        return _toIterable(grok_ColumnList_ByTags(this.d, tags));
+    }
 
     /** @returns {Iterable.<Column>} */
     get categorical() {
