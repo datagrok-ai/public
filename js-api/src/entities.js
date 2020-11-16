@@ -369,6 +369,14 @@ export class ScriptEnvironment extends Entity {
     setup() { return new Promise((resolve, reject) => grok_ScriptEnvironment_Setup(this.d, () => resolve())); }
 }
 
+export class LogEventType extends Entity {
+    constructor(d) { super(d); }
+
+    /** Friendly name of the event type
+     * @type {string} */
+    get name() { return grok_LogEventType_Get_Name(this.d); }
+}
+
 export class LogEvent extends Entity {
     constructor(d) { super(d); }
 
@@ -391,6 +399,10 @@ export class LogEvent extends Entity {
     /** Parameters of the event
      * @type {ArrayList<LogEventParameterValue>} */
     get parameters() { return grok_LogEvent_Get_Parameters(this.d); }
+
+    /** Type of the event
+     * @type {LogEventType} */
+    get eventType() { return toJs(grok_LogEvent_Get_Type(this.d)); }
 }
 
 export class LogEventParameter extends Entity {

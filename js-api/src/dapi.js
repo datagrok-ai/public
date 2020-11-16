@@ -9,7 +9,8 @@ import {
     Project, Script, ScriptEnvironment,
     TableInfo,
     User,
-    LogEvent
+    LogEvent,
+    LogEventType
 } from "./entities";
 import {ViewLayout} from "./view";
 import {toJs} from "./wrappers";
@@ -121,6 +122,10 @@ export class Dapi {
     /** Logging API endpoint
      *  @type {HttpDataSource<LogEvent>} */
     get log() { return new HttpDataSource(grok_Dapi_Log(), (a) => new LogEvent(a)); }
+
+    /** Logging API endpoint
+     *  @type {HttpDataSource<LogEventType>} */
+    get logTypes() { return new HttpDataSource(grok_Dapi_LogTypes(), (a) => new LogEventType(a)); }
 }
 
 
