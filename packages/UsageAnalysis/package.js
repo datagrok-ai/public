@@ -26,6 +26,7 @@ class UsageAnalysisPackage extends DG.Package {
 
         let users = this.users;
         let events = this.events;
+        let isExactly = this.isExactly;
 
         function showUsage() {
             if (acc !== null)
@@ -42,11 +43,11 @@ class UsageAnalysisPackage extends DG.Package {
                 acc.addPane(paneName, () => {
                     let host = ui.div([], 'usage-analysis-card');
                     host.appendChild(ui.loader());
-                    let params = {'date': date.value};
+                    let params = {'date': date.value, 'isExactly': isExactly.value};
                     let selectedUsers = users.tags;
 
                     params['users'] = (supportUsers && selectedUsers.length !== 0) ? selectedUsers : ['all'];
-                    params['events'] = (events.value.length !== 0) ? [events.value] : ['all'];
+                    params['events'] = (events.value.length !== 0) ? [isExactly.value ? events.value : events.value+'%'] : ['all'];
 
                     grok.data.query('UsageAnalysis:' + queryName, params).then((t) => {
                         if (paneName === 'Errors')
@@ -150,6 +151,7 @@ class UsageAnalysisPackage extends DG.Package {
         date.onChanged(this.debounce(showUsage, 750));
         this.users.onChanged(showUsage);
         this.events.onChanged(this.debounce(showUsage, 750));
+        this.isExactly.onChanged(showUsage);
 
         showUsage();
 
@@ -166,7 +168,7 @@ class UsageAnalysisPackage extends DG.Package {
         accToolbox.addPane('Filters', () => ui.divV([
             date.root,
             usersSelection,
-            this.events.root
+            ui.divH([this.events.root, this.isExactly.root])
         ]), true);
         accToolbox.addPane('Layouts', () => {
             let link = ui.divText('Summary');
@@ -181,16 +183,17 @@ class UsageAnalysisPackage extends DG.Package {
     async init() {
         this.users = DG.TagEditor.create();
         this.events = ui.stringInput('Events', '');
+        this.isExactly = ui.boolInput('', false);
+        this.isExactly.setTooltip('Exact matching');
 
         grok.events.onContextMenu.subscribe((args) => {
             if (args.args.item instanceof DG.User) {
-                args.args.menu.item('Add user to filter',  async () => {
-                    this.addUserToFilter(args.args.item.login);
-                });
+                args.args.menu.item('Add user to filter',  async () => this.addUserToFilter(args.args.item.login));
             }
             else if (args.args.item instanceof DG.LogEvent) {
                 args.args.menu.item('Add event to filter',  async () => {
                     this.events.value = args.args.item.name;
+                    this.isExactly.value = true;
                 });
             }
         });

@@ -47,6 +47,7 @@ select * from month_errors, week_errors, day_errors;
 --input: string date { pattern: datetime }
 --input: list users
 --input: list events
+--input: bool isExactly
 --connection: datagrok
 select t.date::date, count(t.id) as user_count from (
 	select distinct on (date(e.event_time), u.id) u.id, e.event_time as date
@@ -55,7 +56,11 @@ select t.date::date, count(t.id) as user_count from (
 	inner join users u on u.id = s.user_id
 	where @date(e.event_time)
 	and (u.login = any(@users) or @users = ARRAY['all'])
-	and (e.friendly_name = any(@events) or @events = ARRAY['all'])
+    and
+    case @isExactly
+    when true then (e.friendly_name = any(@events) or @events = ARRAY['all'])
+    else (e.friendly_name like any (@events) or @events = ARRAY['all'])
+    end
 ) t
 group by t.date::date;
 --end
@@ -88,6 +93,7 @@ group by u.name, u.id
 --input: string date { pattern: datetime }
 --input: list users
 --input: list events
+--input: bool isExactly
 --connection: datagrok
 select u.login as user, u.id as user_id, t.name, t.source, e.id as event_id, e.event_time, e.description from events e
 inner join event_types t on e.event_type_id = t.id
@@ -95,7 +101,11 @@ inner join users_sessions s on e.session_id = s.id
 inner join users u on u.id = s.user_id
 where @date(e.event_time)
 and (u.login = any(@users) or @users = ARRAY['all'])
-and (e.friendly_name = any(@events) or @events = ARRAY['all'])
+and
+case @isExactly
+when true then (e.friendly_name = any(@events) or @events = ARRAY['all'])
+else (e.friendly_name like any (@events) or @events = ARRAY['all'])
+end
 order by e.event_time desc
 --end
 
@@ -112,6 +122,7 @@ order by e.event_time desc
 --input: string date { pattern: datetime }
 --input: list users
 --input: list events
+--input: bool isExactly
 --connection: datagrok
 select e.friendly_name as name, e.event_time, e.error_message, e.error_stack_trace, e.source, e.run_number as count, e.id as event_id from events e
 inner join users_sessions s on e.session_id = s.id
@@ -119,7 +130,11 @@ inner join users u on u.id = s.user_id
 where e.error_stack_trace is not null
 and @date(e.event_time)
 and (u.login = any(@users) or @users = ARRAY['all'])
-and (e.friendly_name = any(@events) or @events = ARRAY['all'])
+and
+case @isExactly
+when true then (e.friendly_name = any(@events) or @events = ARRAY['all'])
+else (e.friendly_name like any (@events) or @events = ARRAY['all'])
+end
 --end
 
 
