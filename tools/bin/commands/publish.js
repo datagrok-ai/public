@@ -95,9 +95,15 @@ async function processPackage(debug, rebuild, host, devKey, packageName) {
             fetch(`${host}/packages/dev/${devKey}/${packageName}?debug=${debug.toString()}&rebuild=${rebuild.toString()}`, {
                 method: 'POST',
                 body: zip
-            }).then(body => body.json()).then(j => resolve(j)).catch(err => {
-                reject(err);
-            });
+            }).then(async(body) => {
+                let response;
+                try {
+                    response = await body.text();
+                    return JSON.parse(response);
+                } catch (error) {
+                    console.log(response);
+                }
+            }).then(j => resolve(j)).catch(err => { reject(err); });
     }).catch(error => { 
         console.error(error);
     });
