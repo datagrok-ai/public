@@ -7,4 +7,4 @@ parentView.histogram({value: 'age'});
 parentView.lineChart();
 
 for (let view of parentView.viewers)
-  console.log(view);
+  grok.shell.info(JSON.parse(view.getOptions()).type);
