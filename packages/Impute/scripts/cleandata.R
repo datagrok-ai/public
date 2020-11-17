@@ -100,10 +100,11 @@ get_data <- function(X) {
 # convert all variables to numeric
 vars_non_num <- names(data)[!sapply(data, is.numeric)]
 if (length(vars_non_num) != 0) {
-  X <- as.data.frame(sapply(data, as.numeric)) }
+  data <- as.data.frame(sapply(data, as.numeric)) }
 
+data <- data[rowSums(is.na(data)) != ncol(data), ]
 
-metadata <- get_data(X)
+metadata <- get_data(data)
 naPlot <- print(metadata$NA_Correlation_plot)
 matrixPlot <- print(metadata$Matrix_plot)
 clusterPlot <- print(metadata$Cluster_plot)
