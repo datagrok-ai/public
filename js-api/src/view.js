@@ -7,6 +7,7 @@ import {Grid} from "./grid";
 import {Menu, ToolboxPage} from "./widgets";
 import {Entity} from "./entities";
 import {toJs} from "./wrappers";
+import {_toIterable} from "./utils";
 
 
 /**
