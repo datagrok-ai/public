@@ -26,7 +26,7 @@ class ViewersPackage extends DG.Package {
 
 class FlagCellRenderer extends DG.GridCellRenderer {
 
-    get name() { return 'RDKit cell renderer'; }
+    get name() { return 'Flag cell renderer'; }
 
     get cellType() { return 'flag'; }
 
