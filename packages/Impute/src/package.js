@@ -67,10 +67,9 @@ async function imputeWithMethod(data,method,methodparams,columns){
             {
                 'data':data,
                 'columns':columns,
-                'catCols':methodparams[0].value,
-                'ncp':methodparams[1].value,
-                'method':methodparams[2].value,
-                'regCoeff':methodparams[3].value
+                'ncp':methodparams[0].value,
+                'method':methodparams[1].value,
+                'regCoeff':methodparams[2].value
             });
     }
 
@@ -80,9 +79,8 @@ async function imputeWithMethod(data,method,methodparams,columns){
             {
                 'data':data,
                 'columns':columns,
-                'catCols':methodparams[0].value,
-                'method':methodparams[1].value,
-                'regCoeff':methodparams[2].value
+                'method':methodparams[0].value,
+                'regCoeff':methodparams[1].value
             });
     }
 
@@ -129,64 +127,60 @@ async function imputeWithMethod(data,method,methodparams,columns){
 
 function tableFilter(data,colsList){
     let l = [];
-    for (let j = 0; j < colsList.length; j++) {
-        l.push(data.columns.byName(colsList[j]));
-    }
+    colsList.forEach(col => l.push(data.columns.byName(col)));
     let t = DG.DataFrame.fromColumns(l);
     return(t);
 }
 
 function warnings(data,columnsData,columnsImpute,warningsContainer,keepCols,varRemoveThreshold){
 
-    let selectedCols = [...new Set(columnsData.value.concat(columnsImpute.value))];
-    selectedCols.forEach(col => keepCols[col] = col);
-
-    let summaryTable = [];
-    let incompleteCols = [];
-    for (let j = 0; j < selectedCols.length; j++) {
-
-        if (data.columns.byName(selectedCols[j]).stats.missingValueCount/
-            data.columns.byName(selectedCols[j]).stats.totalCount > varRemoveThreshold.value) {
-
-            let tempStats = [];
-            incompleteCols = [];
-            tempStats[0] = data.columns.byName(selectedCols[j]).stats.missingValueCount;
-            tempStats[1] = data.columns.byName(selectedCols[j]).stats.missingValueCount/
-                           data.columns.byName(selectedCols[j]).stats.totalCount;
-            tempStats[2] = ui.button('drop column',() => {
-                delete keepCols[selectedCols[j]];
-
-                summaryTable = summaryTable.filter(item => !item.includes(selectedCols[j]));
-
-                $(warningsContainer).empty()
-                if(summaryTable.length >= 1){
-
-                    let tb = ui.table(summaryTable, (item, idx) =>
-                            [`${item[0]}:`, item[1][0], item[1][1], item[1][2]],
-                        ['column', '№ missing', '% missing', 'action']);
-
-                    warningsContainer.appendChild(ui.h2('Columns summary'));
-                    warningsContainer.appendChild(tb);
-
-                }
-
-            })
-
-            incompleteCols.push(selectedCols[j]);
-            incompleteCols.push(tempStats);
-            summaryTable.push(incompleteCols);
+    function getButton (column,currentAction){
+        let bt;
+        if (currentAction === 'exclude column'){
+            bt = ui.button(currentAction,()=> {
+                delete keepCols[column];
+                summaryTable[column][2] = 'include column';
+                btGenerate(summaryTable);
+            });
+        } else if (currentAction === 'include column'){
+            bt = ui.button(currentAction,()=> {
+                keepCols[column] = column.split(" ")[0];
+                summaryTable[column][2] = 'exclude column';
+                btGenerate(summaryTable);
+            });
         }
+        return bt;
     }
 
-    if (incompleteCols.length > 0) {
-        let tb = ui.table(summaryTable, (item, idx) =>
-                [`${item[0]}:`, item[1][0], item[1][1], item[1][2]],
-            ['column', '№ missing', '% missing', 'action']);
+    function btGenerate(table){
 
+        let tb = ui.table(Object.entries(table), (item, idx) =>
+            [`${item[0]}:`, `${item[1][0]} (${item[1][1]}%)`, getButton(item[0],item[1][2])],
+            ['column', 'missing', 'action']);
+
+        $(warningsContainer).empty()
         warningsContainer.appendChild(ui.h2('Columns summary'));
         warningsContainer.appendChild(tb);
     }
 
+    let summaryTable = {};
+    let selectedCols = [...new Set(columnsData.value.concat(columnsImpute.value))];
+    selectedCols.forEach(col => {
+
+        keepCols[col] = col
+        if (data.columns.byName(col).stats.missingValueCount /
+            data.columns.byName(col).stats.totalCount > varRemoveThreshold.value) {
+
+            let tempStats = [];
+            tempStats[0] = data.columns.byName(col).stats.missingValueCount;
+            tempStats[1] = data.columns.byName(col).stats.missingValueCount /
+                data.columns.byName(col).stats.totalCount;
+            tempStats[2] = 'exclude column';
+            summaryTable[col] = tempStats;
+        }
+    });
+
+    btGenerate(summaryTable);
 }
 
 //top-menu: ML | Impute | byMethod
@@ -232,28 +226,23 @@ export async function byMethod() {
         }
 
         if (x === 'missMDA::FAMD') {
-            let p1 = ui.columnsInput('Categorical columns', dataTable);
-            p1.setTooltip('columns to be treated as categorical variables');
 
-            let p2 = ui.intInput('ncp', 9);
-            p2.setTooltip('number of components used to predict the missing entries ~(ncol() - 2)');
-
-            let p3 = ui.choiceInput('Reconstruction method','',['Regularized','EM']);
-
-            let p4 = ui.floatInput('Regularization coefficient',1);
-            p4.setTooltip('Used only if Regularized method is selected');
-            methodparams  = [p1, p2, p3, p4];
-        }
-
-        if (x === 'missMDA::PCA') {
-            let p1 = ui.columnsInput('Categorical columns', dataTable);
-            p1.setTooltip('columns to be treated as categorical variables');
+            let p1 = ui.intInput('ncp', 9);
+            p1.setTooltip('number of components used to predict the missing entries ~(ncol() - 2)');
 
             let p2 = ui.choiceInput('Reconstruction method','',['Regularized','EM']);
 
             let p3 = ui.floatInput('Regularization coefficient',1);
             p3.setTooltip('Used only if Regularized method is selected');
             methodparams  = [p1, p2, p3];
+        }
+
+        if (x === 'missMDA::PCA') {
+            let p1 = ui.choiceInput('Reconstruction method','',['Regularized','EM']);
+
+            let p2 = ui.floatInput('Regularization coefficient',1);
+            p2.setTooltip('Used only if Regularized method is selected');
+            methodparams  = [p1, p2];
         }
 
         if (x === 'missMDA::MCA') {
@@ -270,7 +259,7 @@ export async function byMethod() {
 
         if (x === 'pcaMethods::nipals' || x === 'pcaMethods::ppca' || x === 'pcaMethods::bpca' || x === 'pcaMethods::nlpca') {
 
-            let p1 = ui.choiceInput('Scaling method','none',['none','uv','vector','pareto']);
+            let p1 = ui.choiceInput('Scaling method','uv',['uv','vector','pareto']);
             p1.setTooltip('matrix is centered and normalized using the selected method');
             methodparams = [p1];
         }
@@ -328,7 +317,6 @@ export async function byMethod() {
     let method = methodSelector(dfDtype.value);
 
     //metadata collection switch
-    let meta;
     let methodparams = [];
 
     //add containers
@@ -383,7 +371,7 @@ export async function byMethod() {
         grok.shell.info('Generating: NA correlation, dendrogram and matrix plots');
 
         let tableView = grok.shell.getTableView(tableName.value);
-        tableView.detachViewers();
+        tableView.resetLayout()
         let node1 = tableView.dockManager.dock(metaOut[0], 'right', null, 'naPlot');
         let node2 = tableView.dockManager.dock(metaOut[1], 'fill', node1, 'matrixPlot');
         let node3 = tableView.dockManager.dock(metaOut[2], 'fill', node1, 'clusterPlot');
@@ -424,14 +412,15 @@ export async function byMethod() {
         grok.shell.info(methodparams.map((i) => `${i.caption}: ${i.stringValue}`).join('<br>'));
 
         //imputation function
-        columnsImpute = columnsImpute.value;
         keepCols = Object.values(keepCols);
+        columnsImpute = columnsImpute.value;
+        columnsImpute = columnsImpute.filter(value => keepCols.includes(value));
 
         let filteredTable = tableFilter(dataTable,keepCols);
-        columnsImpute = columnsImpute.filter(value => keepCols.includes(value));
         let completeData = await imputeWithMethod(filteredTable,method.value,methodparams,columnsImpute);
         grok.shell.addTableView(completeData);
         pi.close();
 
     }).show();
 }
+

@@ -12,21 +12,22 @@
 #output: dataframe imputedDF [processed dataframe]
 
 require(missForest)
-require(gdata)
+require(dplyr)
 
-# convert all variables to numeric
 vars_non_num <- names(data)[!sapply(data, is.numeric)]
-bigMap <- mapLevels(data[,c(vars_non_num)])
-if (length(vars_non_num) != 0) {
-  data <- as.data.frame(sapply(data, as.integer)) }
+vars_int <- names(data)[sapply(data, is.integer)]
+
+data<-data[rowSums(is.na(data)) != ncol(data), ]
+
+if (length(vars_non_num) != 0) { data <- data %>% mutate_at(c(vars_non_num), as.factor) }
 
 results <- missForest::missForest(xmis = data,
-                                  maxiter = 10,
-                                  ntree = 100,
-                                  decreasing =,
-                                  replace = T,
-                                  parallelize = 'no')
-imputedDF <- results$ximp
+                                  maxiter = maxiter,
+                                  ntree = ntree,
+                                  decreasing =decreasing,
+                                  replace = replace,
+                                  parallelize = parallelize)
 
-mapLevels(imputedDF[,c(vars_non_num)]) <- bigMap
+imputedDF <- results$ximp
+imputedDF <- imputedDF %>% mutate_at(c(vars_int), as.integer)
 imputedDF <- imputedDF[,columns]

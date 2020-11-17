@@ -15,6 +15,7 @@
 
 require(Hmisc)
 require(gdata)
+require(dplyr)
 
 type <- gsub(".*:","",type)
 if (type == 'regression') {
@@ -23,11 +24,16 @@ if (type == 'regression') {
   tlinear <- TRUE
 }
 
+data<-data[rowSums(is.na(data)) != ncol(data), ]
+
 # convert all variables to numeric
 vars_non_num <- names(data)[!sapply(data, is.numeric)]
-bigMap <- mapLevels(data[,c(vars_non_num)])
+vars_int <- names(data)[sapply(data, is.integer)]
+
 if (length(vars_non_num) != 0) {
-  data <- as.data.frame(sapply(data, as.integer)) }
+  bigMap <- mapLevels(data[,c(vars_non_num)])
+  data <- data %>% mutate_at(c(vars_non_num), as.integer)
+}
 
 Xcolnames <- colnames(data)
 Xformula <- stats::as.formula(paste("~", paste(Xcolnames, collapse = "+")))
@@ -50,5 +56,10 @@ imputedDF <- as.data.frame(Hmisc::impute.transcan(hmisc_algo,
                                                  pr = FALSE,
                                                  check = FALSE))
 
-mapLevels(imputedDF[,c(vars_non_num)]) <- bigMap
+if (length(vars_non_num) != 0) {
+  imputedDF <- imputedDF %>% mutate_at(c(vars_non_num), as.integer)
+  mapLevels(imputedDF[,c(vars_non_num)]) <- bigMap
+}
+
+imputedDF <- imputedDF %>% mutate_at(c(vars_int), as.integer)
 imputedDF <- imputedDF[,columns]
