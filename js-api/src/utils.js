@@ -9,10 +9,11 @@ export function _toIterable(o) {
 }
 
 export function _getIterator(d) {
+    let iterator = grok_Iterable_Get_Iterator(d);
     return {
         next: function() {
-            return grok_Iterator_MoveNext(d) ?
-                {value: toJs(grok_Iterator_Current(d)), done: false} :
+            return grok_Iterator_MoveNext(iterator) ?
+                {value: toJs(grok_Iterator_Current(iterator)), done: false} :
                 {done: true};
         }
     }
