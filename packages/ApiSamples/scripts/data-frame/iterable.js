@@ -3,4 +3,4 @@
 let demog = grok.data.demo.demog();
 
 for (let column of demog.columns)
-    console.log(column.name);
+    grok.shell.info(column.name);
