@@ -610,7 +610,7 @@ export class ColumnList {
      * @returns {Iterable.<Column>}
      * */
     [Symbol.iterator]() {
-        return _getIterator(grok_Iterable_Get_Iterator(this.d));
+        return _getIterator(this.d);
     }
 
     /** @returns {string} */
