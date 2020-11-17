@@ -54,10 +54,6 @@ function runStockBroker() {
         colorColumnName: 'symbol'
     });
 
-    // Now we can iterate over the added viewers:
-    for (let item of view.viewers)
-        console.log(item);
-
     view.barChart({
         splitColumnName: 'symbol',
         valueColumnName: 'price',
