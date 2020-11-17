@@ -62,8 +62,9 @@ export function h3(s: string): HTMLHeadingElement
 export function accordion(): Accordion
 
 /** @returns {TabControl}
+ * @param {Object} pages
  * @param {boolean} vertical */
-export function tabControl(vertical?: boolean): TabControl
+export function tabControl(pages?: any, vertical?: boolean): TabControl
 
 /** Returns DivElement with the specified inner text
  * @param {string} text

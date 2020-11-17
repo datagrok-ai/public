@@ -100,8 +100,8 @@ export class ViewBase {
     acceptsPath(path) { return false; }
 
     /** Appends an item to this view. Use {@link appendAll} for appending multiple elements.
-     * @param {HTMLElement | Widget} item */
-    append(item) { return this.appendAll([item]); }
+     * @param {Object} item */
+    append(item) { return this.appendAll([ui.render(item)]); }
 
     /** Appends multiple elements this view. Use {@link appendAll} for appending multiple elements.
      * @param {object[]} items */
