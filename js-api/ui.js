@@ -3,6 +3,7 @@
  * @module ui
  **/
 
+
 import {Viewer} from "./src/viewer";
 import {VirtualView} from "./src/view";
 import {Accordion, Dialog, InputBase, Menu, TabControl, TreeViewNode, Widget, RangeSlider} from "./src/widgets";
@@ -10,6 +11,13 @@ import {toDart, toJs} from "./src/wrappers";
 import {Functions} from "./src/functions";
 import $ from "cash-dom";
 import {__obs} from "./src/events";
+
+/**
+ * @typedef {Object} ElementOptions
+ * @property {string} id
+ * @property {string} classes
+ * @property {Object} style
+ **/
 
 /**
  * Creates an instance of the element for the specified tag, and optionally assigns it a CSS class.
@@ -64,17 +72,27 @@ export function h3(s) { let x = element('h3'); x.innerText = s; return x; }
 export function accordion() { return Accordion.create(); }
 
 /** @returns {TabControl}
+ * @param {Object} pages - list of page factories
  * @param {boolean} vertical */
-export function tabControl(vertical = false) { return TabControl.create(vertical); }
+export function tabControl(pages = null, vertical = false) {
+    let tabs = TabControl.create(vertical);
+    if (pages != null) {
+        for (let key of Object.keys(pages)) {
+            let value = pages[key];
+            tabs.addPane(key, value instanceof Function ? value : () => render(value));
+        }
+    }
+    return tabs;
+}
 
 /** Returns DivElement with the specified inner text
  * @param {string} text
+ * @param {string | ElementOptions | null} options
  * @returns {HTMLDivElement} */
-export function divText(text, className = null) {
+export function divText(text, options = null) {
     let e = element('div');
     e.innerText = text;
-    if (className != null)
-        e.classList.add(className);
+    _options(e, options);
 
     return e;
 }
@@ -146,20 +164,45 @@ export function renderCard(x) { return grok_UI_RenderCard(x); }
  * @returns {HTMLElement}. */
 export function span(x) { return grok_UI_Span(x); }
 
-/** @returns {HTMLDivElement} */
-export function div(items = [], className = null) { return grok_UI_Div(items, className); }
+/**
+ * @param {HTMLElement} element
+ * @param {string | ElementOptions | null} options
+ * @returns {HTMLElement}
+ * */
+function _options(element, options) {
+    if (options === null)
+        return element;
+    if (typeof options === 'string')
+        element.className += ` $options`;
+    if (options.id != null)
+        element.id = options.id;
+    if (options.classes != null)
+        element.className += ` $classes`;
+    if (options.style != null)
+        Object.assign(element.style, options.style);
+    return element;
+}
+
+/**
+ * @param {object[]} children
+ * @param {string | ElementOptions} options
+ * @returns {HTMLDivElement}
+ * */
+export function div(children = [], options = null) {
+    return _options(grok_UI_Div(children.map(render), null), options);
+}
 
 /** Div flex-box container that positions child elements vertically.
- *  @param {HTMLElement[]} items
- *  @param {string} className - comma-separated CSS class names
- *  @returns {HTMLDivElement} */
-export function divV(items, className = null) { return grok_UI_DivV(items, className); }
+ * @param {object[]} items
+ * @param {string | ElementOptions} options
+ * @returns {HTMLDivElement} */
+export function divV(items, options = null) { return _options(grok_UI_DivV(items.map(render), null)); }
 
 /** Div flex-box container that positions child elements horizontally.
- *  @param {HTMLElement[]} items
- *  @param {string} className - comma-separated CSS class names
- *  @returns {HTMLDivElement} */
-export function divH(items, className = null) { return grok_UI_DivH(items, className); }
+ * @param {object[]} items
+ * @param {string | ElementOptions} options
+ * @returns {HTMLDivElement} */
+export function divH(items, options = null) { return _options(grok_UI_DivH(items.map(render), null)); }
 
 /** Div flex-box container that positions child elements horizontally.
  *  @param {object[]} items */
