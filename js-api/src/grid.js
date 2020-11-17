@@ -282,6 +282,9 @@ export class GridCellRenderer {
     get name() { throw 'Not implemented'; }
     get cellType() { throw 'Not implemented'; }
 
+    get defaultWidth() { return null; }
+    get defaultHeight() { return null; }
+
     /**
      * @param {CanvasRenderingContext2D} g
      * @param {number} x
