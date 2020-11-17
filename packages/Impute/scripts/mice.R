@@ -18,6 +18,7 @@ if (length(vars_non_num) != 0) {
   data <- data %>% mutate_at(c(vars_non_num), as.integer)
 }
 
+data<-data[rowSums(is.na(data)) != ncol(data), ]
 imputedData <- mice::mice(data, m = 1,maxit = maxIter)
 imputedDF <- mice::complete(imputedData,1)
 

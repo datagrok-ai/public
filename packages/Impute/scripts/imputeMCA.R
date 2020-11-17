@@ -1,4 +1,4 @@
-#name: imputePCAImpl
+#name: imputeMCAImpl
 #description: Impute the missing values of a mixed dataset using the Multiple Correspondence Analysis method
 #language: r
 #tags: template, demo
@@ -11,12 +11,14 @@
 
 require(missMDA)
 require(gdata)
+require(dplyr)
 
 # convert all variables to numeric
 vars_non_num <- names(data)[!sapply(data, is.numeric)]
 bigMap <- mapLevels(data[,c(vars_non_num)])
 if (length(vars_non_num) != 0) {
-  data <- as.data.frame(sapply(data, as.integer)) }
+  data <- data %>% mutate_at(c(vars_non_num), as.integer)
+}
 
 data <- lapply(data , factor)
 imputedDF <- imputePCA(data, ncp = ncp, method = method, coeff.ridge = regCoeff)
