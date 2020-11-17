@@ -745,8 +745,14 @@ export class BitSet {
 
     /** Creates a {BitSet} of the specified length with all bits set to false.
      * @param {number} length - Number of bits.
+     * @param {Function} f - when specified, Sets all bits by setting i-th bit to the results of f(i)
      * @returns {BitSet} */
-    static create(length) { return new BitSet(grok_BitSet(length)); }
+    static create(length, f = null) {
+        let bitset = new BitSet(grok_BitSet(length));
+        if (f != null)
+            f.init(f);
+        return bitset;
+    }
 
     toBinaryString() { return grok_BitSet_ToBinaryString(this.d); }
 
@@ -811,7 +817,8 @@ export class BitSet {
     }
 
     /** Sets all bits by setting i-th bit to the results of f(i)
-     * @param {Function} f  */
+     * @param {Function} f
+     * @returns {BitSet} */
     init(f) {
         let buf = grok_BitSet_Get_Buffer(this.d);
         let length = this.length;
@@ -827,6 +834,7 @@ export class BitSet {
 
         grok_BitSet_Set_Buffer(this.d, buf);
         this.fireChanged();
+        return this;
     }
 
     /** Indexes of all set bits. The result is cached.
