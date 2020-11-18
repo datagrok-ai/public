@@ -173,11 +173,11 @@ function _options(element, options= null) {
     if (options === null)
         return element;
     if (typeof options === 'string')
-        element.className += ` $options`;
+        element.className += ` ${options}`;
     if (options.id != null)
         element.id = options.id;
     if (options.classes != null)
-        element.className += ` $classes`;
+        element.className += ` ${options.classes}`;
     if (options.style != null)
         Object.assign(element.style, options.style);
     return element;
