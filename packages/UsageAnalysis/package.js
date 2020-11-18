@@ -155,7 +155,7 @@ class UsageAnalysisPackage extends DG.Package {
 
         showUsage();
 
-        let usersLabel = ui.div(null, 'usage-analysis-users-title');
+        let usersLabel = ui.div([], {classes: 'usage-analysis-users-title'});
         usersLabel.innerText = 'Users';
 
         let usersSelection = ui.divV([
