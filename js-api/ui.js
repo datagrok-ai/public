@@ -169,7 +169,7 @@ export function span(x) { return grok_UI_Span(x); }
  * @param {string | ElementOptions | null} options
  * @returns {HTMLElement}
  * */
-function _options(element, options) {
+function _options(element, options= null) {
     if (options === null)
         return element;
     if (typeof options === 'string')
@@ -197,6 +197,14 @@ export function div(children = [], options = null) {
  * @param {string | ElementOptions} options
  * @returns {HTMLDivElement} */
 export function divV(items, options = null) { return _options(grok_UI_DivV(items.map(render), null)); }
+
+/** Same as divV, but with margins.
+ * @param {object[]} items
+ * @param {string | ElementOptions} options
+ * @returns {HTMLDivElement} */
+export function panel(items, options = null) {
+    return _options(divV(items, options), 'd4-panel');
+}
 
 /** Div flex-box container that positions child elements horizontally.
  * @param {object[]} items
@@ -343,7 +351,7 @@ export function popupMenu(items) {
     menu.show();
 }
 
-export function inputs(inputs) { return div(inputs.map((x) => x.root), 'pure-form,pure-form-aligned');}
+export function inputs(inputs) { return div(inputs.map((x) => x.root), 'pure-form,pure-form-aligned'); }
 
 /** Creates new nodes tree
  * @returns {TreeViewNode} */
