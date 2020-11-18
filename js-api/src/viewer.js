@@ -7,7 +7,7 @@ import {Widget} from "./widgets";
 import {_onSizeChanged, _toJson} from "./utils";
 import {Balloon} from "./widgets";
 import {toJs} from "./wrappers";
-import {observeStream, StreamSubscription} from "./events";
+import {observeStream, StreamSubscription, __obs} from "./events";
 import * as rxjs from "rxjs";
 
 export class TypedEventArgs {
@@ -121,6 +121,10 @@ export class Viewer {
     static scatterPlot (t, options = null) { return new Viewer(grok_Viewer_ScatterPlot(t.d, _toJson(options))); }
 
     static lineChart   (t, options = null) { return new Viewer(grok_Viewer_LineChart(t.d, _toJson(options))); }
+
+    /** Observes platform events with the specified eventId.
+     * @returns {Observable} */
+    onEvent(eventId) { return __obs(eventId, this.d); }
 }
 
 export class JsLookAndFeel {
