@@ -68,7 +68,7 @@ A different approach is used to introduce an info panel in a JavaScript file. In
 //tags: panel, widgets
 //input: file file
 //output: widget result
-//condition: detectTextFile(file)
+//condition: isTextFile(file)
 export function translationPanel(file) {
     return new DG.Widget(ui.divText("Lost in Translation"));
 }

@@ -118,7 +118,7 @@ async function doTranslation() {
 //tags: panel, widgets
 //input: file textfile
 //output: widget result
-//condition: detectTextFile(textfile)
+//condition: isTextFile(textfile)
 export async function translationPanel(textfile) {
 
     sourceLangInput.onChanged(async (_) => doTranslation());
@@ -155,7 +155,7 @@ export async function translationPanel(textfile) {
 //tags: panel, widgets
 //input: file textfile
 //output: widget result
-//condition: detectTextFile(textfile)
+//condition: isTextFile(textfile)
 export async function entitiesPanel(textfile) {
 
     let text = await extractText(textfile);
