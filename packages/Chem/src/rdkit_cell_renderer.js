@@ -5,7 +5,9 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
 
     get name() { return 'RDKit cell renderer'; }
 
-    get cellType() { return 'RDMolecule'; }
+    get cellType() { return DG.SEMTYPE.MOLECULE; }
+    
+    get defaultHeight() { return 80; }
 
     render(g, x, y, w, h, gridCell, cellStyle) {
         
@@ -16,7 +18,15 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
         if (!mol.is_valid()) return;
         
         let drawMolecule = function (rdkitMol) {
-            rdkitMol.draw_to_canvas_with_offset(g.canvas, x, -y, w, h);
+            //rdkitMol.draw_to_canvas_with_offset(g.canvas, x, -y, w, h);         
+            const opts = {
+              "clearBackground": false,
+              "offsetx": x,
+              "offsety": -y,
+              "width": w,
+              "height": h
+            }
+            mol.draw_to_canvas_with_highlights(g.canvas, JSON.stringify(opts));
         }
     
         let molIsInMolBlock = function(molString, rdkitMol) {
