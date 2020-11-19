@@ -52,24 +52,21 @@ export class ChordViewer extends DG.JsViewer {
         let outCol = strColumns[1];
         let numCol = numColumns[0];
 
-        let data = [];
+        let data = inpCol.categories.map(cat => { return {
+                id: cat.toLowerCase(),
+                label: cat,
+                len: 0,
+                color: "#80b1d3"
+        }});
         let chords = [];
 
         for (let i = 0; i < inpCol.length; i++) {
-            let label = inpCol.get(i);
-            let inpId = label.toLowerCase();
+            let inpId = inpCol.get(i).toLowerCase();
             let outId = outCol.get(i).toLowerCase();
-            // TODO: Calculate the length of a segment as inpCol.categories().length
-            // (and update it with every next segment). 
 
-            data.push({
-                id: inpId,
-                label: label,
-                len: numCol.get(i),
-                color: "#80b1d3"
-            });
+            data.find(obj => obj.id === inpId).len += 1;
 
-            // TODO: Calculate `start` and `end`
+            // TODO: Calculate `start` and `end` based on numColumn(s)
             chords.push({
                 source: {
                     id: inpId,
