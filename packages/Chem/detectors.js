@@ -4,18 +4,12 @@ class ChemPackageDetectors extends DG.Package {
     //input: column col
     //output: string semType
     detectRDSmiles(col) {
-        if (col.name === 'smiles' && col.type === DG.TYPE.STRING) {
+        if ((
+            col.name === 'smiles' ||
+            col.name === 'rdkit' ||
+            col.name === 'scaffold'
+        ) && col.type === DG.TYPE.STRING) {
             col.semType = DG.SEMTYPE.MOLECULE;
-            return col.semType;
-        }
-
-        if (col.name === 'rdkit' && col.type === DG.TYPE.STRING) {
-            col.semType = 'RDMolecule';
-            return col.semType;
-        }
-        
-        if (col.name === 'scaffold' && col.type === DG.TYPE.STRING) {
-            col.semType = 'RDMolecule';
             return col.semType;
         }
 
