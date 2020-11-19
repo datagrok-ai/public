@@ -1,10 +1,10 @@
 class NlpPackageDetectors extends DG.Package {
-    // `detectTextFile` appears in JavaScript panel conditions
+    // `isTextFile` appears in JavaScript panel conditions
     // `supportedExt` is used in Python scripts
 
     //input: file file
     //output: bool result
-    detectTextFile(file) {
+    isTextFile(file) {
         let extensions = ["doc", "docx", "odt", "pdf", "rtf", "txt"];
         return extensions.includes(file.extension);
     }

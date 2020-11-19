@@ -30,7 +30,7 @@ A different approach is used to add an info panel from a JavaScript file. The pa
 //tags: panel, widgets
 //input: file textfile
 //output: widget result
-//condition: detectTextFile(textfile)
+//condition: isTextFile(textfile)
 export function translationPanel(textfile) {
     return new DG.Widget(ui.divText("Lost in Translation"));
 }
