@@ -94,6 +94,12 @@ export class DockManager {
         return new DockNode(grok_DockManager_Dock(this.d, refNode === null ? null : refNode.d, element, dockType, title, ratio));
     }
 
+    /**
+     * Undocks the element.
+     * @param {HTMLElement} element - Element to undock
+     * */
+    undock(element) { grok_DockManager_Undock(this.d, element); }
+
     // /**
     //  * Docks the element relative to the reference node.
     //  * @param {DockType} dockType - Dock type (left | right | top | bottom | fill).
