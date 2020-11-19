@@ -84,28 +84,6 @@ export class Viewer {
     get dataFrame() { return toJs(grok_Viewer_Get_DataFrame(this.d)); }
     set dataFrame(t) { grok_Viewer_Set_DataFrame(this.d, t == null ? null : t.d); }
 
-    /** @type {Observable} */
-    get onEvent() {
-        let dartStream = grok_Viewer_Get_EventBus_Events(this.d);
-        let observable = rxjs.fromEventPattern(
-            function(handler) { return grok_Stream_Listen(dartStream, function (x) {
-                handler(new TypedEventArgs(x));
-            });
-            },
-            function(handler, d) { new StreamSubscription(d).cancel(); }
-        );
-        return observable;
-
-
-        // function convert(d) {
-        //     return new TypedEventArgs(d);
-        //     let x = toJs(d);
-        //     console.log(x);
-        //     return x;
-        // }
-        // return observeStream(grok_Viewer_Get_EventBus_Events(this.d));
-    }
-
     static grid        (t, options = null) { return new Viewer(grok_Viewer_Grid(t.d, _toJson(options))); }
 
     static histogram   (t, options = null) { return new Viewer(grok_Viewer_Histogram(t.d, _toJson(options))); }
@@ -124,7 +102,19 @@ export class Viewer {
 
     /** Observes platform events with the specified eventId.
      * @returns {Observable} */
-    onEvent(eventId) { return __obs(eventId, this.d); }
+    onEvent(eventId = null) {
+        if (eventId !== null)
+            return __obs(eventId, this.d);
+
+        let dartStream = grok_Viewer_Get_EventBus_Events(this.d);
+        return rxjs.fromEventPattern(
+            function(handler) { return grok_Stream_Listen(dartStream, function (x) {
+                handler(new TypedEventArgs(x));
+            });
+            },
+            function(handler, d) { new StreamSubscription(d).cancel(); }
+        );
+    }
 }
 
 export class JsLookAndFeel {
