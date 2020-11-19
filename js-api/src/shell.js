@@ -195,6 +195,9 @@ export class Shell {
     get dockManager() {
         return new DockManager(grok_Get_DockManager());
     }
+
+    /** Clears dirty flag in scratchpad and open projects. */
+    clearDirtyFlag() { grok_ClearDirtyFlag(); }
 }
 
 
