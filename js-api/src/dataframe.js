@@ -676,11 +676,11 @@ export class RowList {
     }
 
     select(rowPredicate) {
-        _applyPredicate(this.table.selection, rowPredicate);
+        this._applyPredicate(this.table.selection, rowPredicate);
     }
 
     filter(rowPredicate) {
-        _applyPredicate(this.table.filter, rowPredicate);
+        this._applyPredicate(this.table.filter, rowPredicate);
     }
 
     /** Viewers that filter rows should subscribe to DataFrame.onRowsFiltering event.
