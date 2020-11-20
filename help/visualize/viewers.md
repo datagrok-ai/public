@@ -205,7 +205,7 @@ To help users analyze their data in depth, our visualizations include a number o
   * Scatter plots can display a [regression line](viewers/scatter-plot.md#regression-line) along with its equation; moreover, it is possible to plot multiple regression lines by encoding categories with color
   * The values of Pearson's correlation coefficient computed for [correlation plots](viewers/correlation-plot.md) are highlighted, which makes it easy to trace the strength of relationship between given variables
   * Statistics viewer gives a concise summary of commonly used [measures](viewers/statistics.md#statistical-measures) for selected columns
-  * The platform's viewers offer two commands, `To Script | To Python` and `To Script | To R`, that can be used to (reproduce charts)[https://www.youtube.com/watch?v=seAgx5TbrzI&t=258s] with Python or R code respectively
+  * The platform's viewers offer two commands, `To Script | To Python` and `To Script | To R`, that can be used to [reproduce charts](https://www.youtube.com/watch?v=seAgx5TbrzI&t=258s) with Python or R code respectively
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/wAfEqAMOZzw?start=4810" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
