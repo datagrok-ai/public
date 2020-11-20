@@ -2,6 +2,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Circos from 'circos';
 import * as d3 from 'd3';
+import { layoutConf } from './configuration.js';
 
 
 export class ChordViewer extends DG.JsViewer {
@@ -19,7 +20,7 @@ export class ChordViewer extends DG.JsViewer {
         this.inpCol;
         this.outCol;
         this.data = [];
-        this.conf = {};
+        this.conf = layoutConf;
         this.chords = [];
         this.chordConf = {};
     }
@@ -122,7 +123,7 @@ export class ChordViewer extends DG.JsViewer {
             height: size
         });
 
-        circos.layout(this.data);
+        circos.layout(this.data, this.conf);
         circos.chords('beta-track', this.chords);
         circos.render();
         document.getElementById('chart')
