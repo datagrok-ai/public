@@ -1,4 +1,4 @@
-rdkit,scaffold
+molecule,scaffold
 O=C(c1cc(-c2cc3c(cc2C(=O)N2Cc4ccccc4C[C@H]2CN2CCOCC2)OCO3)n2c1CCCC2)N(c1ccc(O)cc1)c1ccc(Cl)cc1,"
   MJ200900                      
 
