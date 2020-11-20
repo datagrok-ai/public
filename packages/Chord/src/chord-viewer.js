@@ -66,15 +66,24 @@ export class ChordViewer extends DG.JsViewer {
 
     generateData() {
 
-        this.data = this.dataFrame
+        this.aggregatedTable = this.dataFrame
             .groupBy([this.fromColumnName, this.toColumnName])
             .count('count')
             .aggregate();
 
-        let fromCol = this.data.columns.byName(this.fromColumnName);
-        let toCol = this.data.columns.byName(this.toColumnName);
+        let fromCol = this.aggregatedTable.columns.byName(this.fromColumnName);
+        let toCol = this.aggregatedTable.columns.byName(this.toColumnName);
 
-        for (let i = 0; i < this.data.rowCount; i++) {
+        function toCircos(s) { return {
+            id: s,
+            label: s,
+            len: 0,
+            color: "#80b1d3"
+        }}
+
+        this.data = fromCol.categories.map(toCircos).concat(toCol.categories.map(toCircos));
+
+        for (let i = 0; i < this.aggregatedTable.rowCount; i++) {
             // TODO: Calculate `start` and `end` based on numColumns
             this.chords.push({
                 source: {
