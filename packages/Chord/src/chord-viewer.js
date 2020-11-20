@@ -8,6 +8,11 @@ export class ChordViewer extends DG.JsViewer {
 
     constructor() {
         super();
+
+        // properties
+        this.fromColumnName = this.string('fromColumnName');
+        this.toColumnName = this.string('toColumnName');
+
         this.initialized = false;
         this.numColumns = [];
         this.strColumns = [];
@@ -36,8 +41,8 @@ export class ChordViewer extends DG.JsViewer {
 
         if (this.testColumns()) {
             // TODO: Choose the most relevant columns
-            this.inpCol = this.strColumns[0];
-            this.outCol = this.strColumns[1];
+            this.fromColumnName = this.strColumns[0].name;
+            this.toColumnName = this.strColumns[1].name;
             this.generateData();
         }
 
@@ -61,35 +66,29 @@ export class ChordViewer extends DG.JsViewer {
 
     generateData() {
 
-        this.data = this.inpCol.categories.map(cat => { return {
-            id: cat.toLowerCase(),
-            label: cat,
-            len: 0,
-            color: "#80b1d3"
-        }});
+        this.data = this.dataFrame
+            .groupBy([this.fromColumnName, this.toColumnName])
+            .count('count')
+            .aggregate();
 
-        for (let i = 0; i < this.inpCol.length; i++) {
+        let fromCol = this.data.columns.byName(this.fromColumnName);
+        let toCol = this.data.columns.byName(this.toColumnName);
 
-            let inpId = this.inpCol.get(i).toLowerCase();
-            let outId = this.outCol.get(i).toLowerCase();
-            this.data.find(obj => obj.id === inpId).len += 100;
-
+        for (let i = 0; i < this.data.rowCount; i++) {
             // TODO: Calculate `start` and `end` based on numColumns
             this.chords.push({
                 source: {
-                    id: inpId,
+                    id: fromCol.get(i),
                     start: 1,
                     end: 12
                 },
                 target: {
-                    id: outId,
+                    id: toCol.get(i),
                     start: 1,
                     end: 12
                 }
             });
         }
-        console.log(this.data);
-        console.log(this.chords);
     }
 
     render() {
