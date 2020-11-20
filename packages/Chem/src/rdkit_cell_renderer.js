@@ -56,7 +56,7 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
     
         }
     
-        const molCol = gridCell.tableColumn.dataFrame.columns.byName('rdkit');
+        const molCol = gridCell.tableColumn.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
         let singleScaffoldMolString = molCol ? molCol.tags['chem-scaffold'] : null;
         
         if (singleScaffoldMolString) {
@@ -76,7 +76,7 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
                 }
             }
             
-            if (rowScaffoldCol == null) {
+            if (rowScaffoldCol == null || rowScaffoldCol.name === gridCell.tableColumn.name) {
                 // regular drawing
                 drawMolecule(mol);
             } else {

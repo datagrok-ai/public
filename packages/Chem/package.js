@@ -52,25 +52,6 @@ class ChemPackage extends DG.Package {
     //meta-cell-renderer-sem-type: Molecule
     //output: grid_cell_renderer result
     rdkitCellRenderer() { return new RDKitCellRenderer(); }
-
-    /*
-
-    static _morganFP(smiles, fp_length = 128, fp_radius = 2) {
-        let mol = Module.get_mol(smiles);
-        let mfp = mol.get_morgan_fp(fp_radius, fp_length);
-        mol.delete();
-        return mfp;
-    }
-
-    //name: getFingerprints
-    //input: column molColumn
-    //output: column result [fingerprints]
-    getFingerprints(molColumn) {
-        let fps = molColumn.toList().map((smiles) => DG.BitSet.fromString(ChemPackage._morganFP(smiles)).d);
-        return DG.Column.fromList('object', 'fingerprints', fps);
-    }
-    
-    */
     
     //name: similarityScoring
     //input: column molStringsColumn
