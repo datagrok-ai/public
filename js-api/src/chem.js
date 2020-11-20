@@ -13,22 +13,6 @@ import {SIMILARITY_METRIC} from "./const";
 /** Cheminformatics-related routines */
 
 /**
- * Returns molecules similar to the reference one. Uses server RDKit, deprecated.
- * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/similarity-search}
- * @async
- * @param {Column} column - Molecule column to search in.
- * @param {string} molecule - Reference molecule in SMILES format.
- * @param {SimilarityMetric} metric - Metric to use.
- * @param {number} limit - Maximum number of results to return.
- * @param {number} minScore - Minimum similarity score for a molecule to be included.
- * @returns {Promise<DataFrame>}
- * */
-export function similaritySearch_(column, molecule, metric = SIMILARITY_METRIC.TANIMOTO, limit = 10, minScore = 0.7) {
-    return new Promise((resolve, reject) => grok_Chem_SimilaritySearch(column.d, molecule, metric,
-        limit, minScore, (t) => resolve(new DataFrame(t))));
-}
-
-/**
  * Returns molecules similar to the reference one.
  * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/similarity-search}
  * @async
@@ -64,19 +48,6 @@ export async function similarityScoring(column, pattern, settings = { sorted: fa
  * */
 export function diversitySearch(column, metric = SIMILARITY_METRIC.TANIMOTO, limit = 10) {
     return new Promise((resolve, reject) => grok_Chem_DiversitySearch(column.d, metric, limit, (mols) => resolve(mols)));
-}
-
-/**
- * Searches for a molecular pattern in a given column, returning a bitset with hits.
- * See example: {@link substructure-search}
- * @async
- * @param {Column} column - Column with molecules to search.
- * @param {string} pattern - Pattern, either SMARTS or SMILES.
- * @param {boolean} isSmarts - Whether the pattern is SMARTS.
- * @returns {Promise<BitSet>}
- * */
-export function substructureSearch_(column, pattern, isSmarts = true) {
-    return new Promise((resolve, reject) => grok_Chem_SubstructureSearch(column.d, pattern, isSmarts, (bs) => resolve(new BitSet(bs))));
 }
 
 /**
