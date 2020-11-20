@@ -14,6 +14,15 @@ Many options are available under the context menu.
 | Context menu \| Statistics              | Choose descriptive statistics to show                     |
 | Context menu \| Save as table           | Add statistics table to the workspace                     |
 
+## Statistical Measures
+
+The results include a set of frequently used statistics, among them the measures of central tendency and dispersion:
+
+  * arithmetic mean and median
+  * standard deviation
+  * minimum and maximum
+  * number of unique values
+  * number of missing values
 
 ## Videos
 

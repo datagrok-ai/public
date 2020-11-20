@@ -16,10 +16,11 @@ share with teammates) later on.
 * [Docking](#docking)
 * [Selection](#selection)
 * [Filter](#selection)
-* [Viewers as filters](#viewers-as-filters)
+* [Viewers as Filters](#viewers-as-filters)
 * [Interaction](#interaction)
 * [Properties](#properties)
-* [Group tooltips](#group-tooltips)
+* [Common Actions](#common-actions)
+* [Group Tooltips](#group-tooltips)
 * [Trellis](#trellis)
 * [Statistical Hypothesis Testing](#statistical-hypothesis-testing)
 * [Layouts](#layouts)
@@ -80,7 +81,7 @@ Alternatively, click on the column's "hamburger icon" to filter by the individua
 
 ![](viewers/grid-column-filter.png)
 
-## Viewers as filters
+## Viewers as Filters
 
 By default, clicking on a segment that represents multiple rows will select these rows. However,
 some viewers, such as [Bar Chart](viewers/bar-chart.md) and [Pie Chart](viewers/pie-chart.md), 
@@ -121,7 +122,7 @@ or press F4 when the viewer has focus, or right-click and select `Viewer | Prope
 
 ![](viewers/viewer-property-panel.gif)
 
-## Common actions
+## Common Actions
 
 Many viewers support the following:
 
@@ -167,9 +168,9 @@ Tooltip-related settings reside under the **Tooltip** submenu:
 | Reset                | Stop using this viewer as a group tooltip |
 
 
-## Group tooltips
+## Group Tooltips
 
-One of the unique features of the Grok platform is the ability to quickly visualize multiple rows
+One of the unique features of the Datagrok platform is the ability to quickly visualize multiple rows
 in a tooltip, using the settings of another viewer.  
 
 Once the "Use as Group Tooltip" command is executed, the original viewer is no longer required, 
@@ -181,7 +182,7 @@ The following picture illustrates the concept:
 
 ## Trellis
 
-Trellis plot are useful for finding the structure and patterns in complex data.
+Trellis plots are useful for finding the structure and patterns in complex data.
 A Trellis plot is a layout of smaller charts in a grid with consistent scales. Each smaller chart
 represents rows that belong to a corresponding category.  The grid layout looks similar to a garden trellis, 
 hence the name Trellis Chart.
@@ -197,6 +198,14 @@ See [Trellis Plot](viewers/trellis-plot.md) for more details.
 ![](viewers-as-trellis.gif) 
 
 ## Statistical Hypothesis Testing
+
+To help users analyze their data in depth, our visualizations include a number of statistical features:
+
+  * Box plots show [p-value](viewers/box-plot.md#t-test), which allows to determine whether the findings are statistically significant
+  * Scatter plots can display a [regression line](viewers/scatter-plot.md#regression-line) along with its equation; moreover, it is possible to plot multiple regression lines by encoding categories with color
+  * The values of Pearson's correlation coefficient computed for [correlation plots](viewers/correlation-plot.md) are highlighted, which makes it easy to trace the strength of relationship between given variables
+  * Statistics viewer gives a concise summary of commonly used [measures](viewers/statistics.md#statistical-measures) for selected columns
+  * The platform's viewers offer two commands, `To Script | To Python` and `To Script | To R`, that can be used to (reproduce charts)[https://www.youtube.com/watch?v=seAgx5TbrzI&t=258s] with Python or R code respectively
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/wAfEqAMOZzw?start=4810" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
@@ -215,11 +224,11 @@ and choose **Clone**.
 
 ![](layout-suggestions.gif)
 
-## Scatter plot
+## Scatter Plot
 
 |                           |                        |
 |---------------------------|------------------------|
-| ![Scatter plot](../uploads/gifs/scatter-plot.gif "Scatter plot")             | A scatter plot (also called a scatter graph, scatter chart, scattergram, or scatter diagram) is a type of plot or mathematical diagram using Cartesian coordinates to display values for typically two variables for a set of data. If the points are color-coded you can increase the number of displayed variables to three. The data is displayed as a collection of points, each having the value of one variable determining the position on the horizontal axis and the value of the other variable determining the position on the vertical axis. <br> [Scatter Plot](viewers/scatter-plot.md) |
+| ![Scatter Plot](../uploads/gifs/scatter-plot.gif "Scatter plot")             | A scatter plot (also called a scatter graph, scatter chart, scattergram, or scatter diagram) is a type of plot or mathematical diagram using Cartesian coordinates to display values for typically two variables for a set of data. If the points are color-coded you can increase the number of displayed variables to three. The data is displayed as a collection of points, each having the value of one variable determining the position on the horizontal axis and the value of the other variable determining the position on the vertical axis. <br> [Scatter Plot](viewers/scatter-plot.md) |
 
 
 ## 3D Scatter Plot
@@ -265,7 +274,7 @@ and choose **Clone**.
 |---------------------------|------------------------|
 | ![Trellis Plot](../uploads/viewers/trellis-plot-2.png "Trellis Plot")    | A Trellis Chart is a layout of smaller charts in a grid with consistent scales. Each smaller chart represents rows that belong to a corresponding category. Trellis Charts are useful for finding the structure and patterns in complex data. The grid layout looks similar to a garden trellis, hence the name Trellis Chart.<br>[Trellis Plot](viewers/trellis-plot.md) |
 
-## Tree map
+## Tree Map
 
 |                           |                        |
 |---------------------------|------------------------|
@@ -329,7 +338,7 @@ and choose **Clone**.
 | ![Pie Chart](../uploads/viewers/pie-chart.png "Pie Chart")        | Pie chart is useful for reflecting numerical proportions.<br>[Pie Chart](viewers/pie-chart.md) | 
 
 
-## Word cloud
+## Word Cloud
 
 |                           |                        |
 |---------------------------|------------------------|
@@ -357,7 +366,7 @@ and choose **Clone**.
 
 |                           |                        |
 |---------------------------|------------------------|
-| ![Markup](viewers/markup-viewer.png "Markup")  | Use [Markup Viewer](viewers/markup.md) to host any text, arbitrary HTML content, or [markdown-formatted text](../features/markdown.md). In most casees, the viewer will auto-detect content type. Use the "Content Type" property to explicitly specify it.  | 
+| ![Markup](viewers/markup-viewer.png "Markup")  | Use [Markup Viewer](viewers/markup.md) to host any text, arbitrary HTML content, or [markdown-formatted text](../features/markdown.md). In most cases, the viewer will auto-detect content type. Use the "Content Type" property to explicitly specify it.  | 
 
 ## Tile Viewer
 
@@ -370,7 +379,7 @@ and choose **Clone**.
 Provides specified descriptive [Statistics](viewers/statistics.md) for the chosen columns.
 
 ## Globe
-Visualises magnitude and color for data on 3D globe using: latitude, longitude. Details: [Globe](viewers/globe.md) 
+Visualizes magnitude and color for data on 3D globe using: latitude, longitude. Details: [Globe](viewers/globe.md) 
 
 ### Videos
 
