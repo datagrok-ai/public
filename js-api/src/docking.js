@@ -1,3 +1,6 @@
+import {toJs} from "./wrappers";
+import {_toIterable} from "./utils";
+
 /**
  * @typedef {string} DockType
  **/
@@ -29,6 +32,12 @@ export class DockNode {
     /** Removes a child node.
      * @param {DockNode} childNode */
     removeChild(childNode) { return grok_DockNode_RemoveChild(this.d, childNode); }
+
+    /** @returns {DockNode} */
+    get parent() { return toJs(grok_DockNode_Parent(this.d)); }
+
+    /** @returns {Iterable.<DockNode>} */
+    get children() { return _toIterable(grok_DockNode_Children(this.d)); }
 }
 
 
@@ -72,7 +81,7 @@ export class DockManager {
 
     get element() { return grok_DockManager_Get_Element(this.d); }
 
-    get rootNode() { return new DockNode(grok_DockManager_Get_RootNode(this.d)); }
+    get rootNode() { return toJs(grok_DockManager_Get_RootNode(this.d)); }
 
     /**
      * The document view is then central area of the dock layout hierarchy.
@@ -96,9 +105,21 @@ export class DockManager {
 
     /**
      * Undocks the element.
-     * @param {HTMLElement} element - Element to undock
+     * @param {HTMLElement | DockNode} object - Element to undock
      * */
-    undock(element) { grok_DockManager_Undock(this.d, element); }
+    close(object) {
+        if (object.d === undefined)
+            grok_DockManager_UndockByElement(this.d, object);
+        else
+            grok_DockManager_UndockNode(this.d, object.d);
+    }
+
+    /**
+     * Finds node of the element.
+     * @param {HTMLElement} element - Element to find
+     * @returns {DockNode}
+     * */
+    findNode(element) { return toJs(grok_DockManager_FindNode(this.d, element)); }
 
     // /**
     //  * Docks the element relative to the reference node.
