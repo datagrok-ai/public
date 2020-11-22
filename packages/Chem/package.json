@@ -10,5 +10,24 @@
     "src/rdkit_substructure_filter.js",
     "src/chem_column_property_panel.js",
     "src/chem_searches.js"
-  ]
+  ],
+  "settings": {
+    "description": "Chem rendering settings",
+    "properties": [
+      {
+        "name": "Highlight on search",
+        "propertyType": "bool",
+        "description": "highlight substructures in the grid",
+        "category": "Rendering",
+        "defaultValue": true
+      },
+      {
+        "name": "Structure renderer",
+        "propertyType": "string",
+        "choices": ["OpenChemLib", "RDKit"],
+        "category": "Rendering",
+        "defaultValue": "OpenChemLib"
+      }
+    ]
+  }
 }
