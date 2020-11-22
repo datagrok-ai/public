@@ -78,11 +78,11 @@ export class ChordViewer extends DG.JsViewer {
         function toCircos(s) { return {
             id: s,
             label: s,
-            len: 0,
+            len: 30,
             color: "#80b1d3"
         }}
 
-        this.data = fromCol.categories.map(toCircos).concat(toCol.categories.map(toCircos));
+        this.data = Array.from(new Set(fromCol.categories.concat(toCol.categories))).map(toCircos);
 
         for (let i = 0; i < this.aggregatedTable.rowCount; i++) {
             // TODO: Calculate `start` and `end` based on numColumns
@@ -109,6 +109,7 @@ export class ChordViewer extends DG.JsViewer {
         }
 
         this.root.classList.add('viewer-window');
+        $(this.root).empty();
         let size = Math.min(this.root.clientWidth, this.root.clientHeight);
         let svg = d3.select(this.root)
                     .append("div")
