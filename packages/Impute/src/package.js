@@ -155,7 +155,7 @@ function warnings(data,columnsData,columnsImpute,warningsContainer,keepCols,varR
     function btGenerate(table){
 
         let tb = ui.table(Object.entries(table), (item, idx) =>
-            [`${item[0]}:`, `${item[1][0]} (${item[1][1]}%)`, getButton(item[0],item[1][2])],
+            [`${item[0]}:`, `${item[1][0]} (${item[1][1]})`, getButton(item[0],item[1][2])],
             ['column', 'missing', 'action']);
 
         $(warningsContainer).empty()
