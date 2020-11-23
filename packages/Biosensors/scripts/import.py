@@ -1,24 +1,24 @@
 #name: importPyphysio
 #language: python
-#input: dataframe ecg_data
+#input: dataframe data
 #input: int fsamp = 2048
-#input: string signalType = "ecg" {choices : ["ecg"]}
-#output: graphics fig
+#input: string signalType = "ecg" {choices : ["ecg","eda"]}
+#output: dataframe newDf
 
 # import packages
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-
-# import the Signal classes
 import pyphysio as ph
-import pandas as pd
+
 
 # convert to numpy
-ecg_data = np.array(ecg_data.ecg_data)
+# ecg_data = np.array(ecg_data.ecg_data)
+data = np.array(data.iloc[:,0])
 
 # convert to signal class
-ecg = ph.EvenlySignal(values = ecg_data, sampling_freq = fsamp, signal_type = signalType)
+sig = ph.EvenlySignal(values = data, sampling_freq = fsamp, signal_type = signalType)
 
 # render
-fig = ecg.plot()
+#fig = sig.plot()
+newDf = pd.DataFrame({'time':range(0,len(sig)),'sig':sig})

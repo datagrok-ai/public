@@ -1,10 +1,10 @@
 #name: filtersPyphysio
 #language: python
-#input: dataframe ecg_data
+#input: dataframe data
 #input: int fsamp = 2048
-#input: string signalType = "ecg" {choices : ["ecg"]}
+#input: string signalType = "ecg" {choices : ["ecg","eda"]}
 #input: dataframe paramsT
-#output: graphics fig
+#output: dataframe newDf
 
 # import packages
 import numpy as np
@@ -16,18 +16,20 @@ import pyphysio as ph
 
 
 # convert to numpy
-ecg_data = np.array(ecg_data.ecg_data)
+# ecg_data = np.array(ecg_data.ecg_data)
+data = np.array(data.iloc[:,0])
 
 # convert to signal class
-ecg = ph.EvenlySignal(values = ecg_data, sampling_freq = fsamp, signal_type = signalType)
+sig = ph.EvenlySignal(values = data, sampling_freq = fsamp, signal_type = signalType)
 
 for i in range(0,len(paramsT)):
     if paramsT['filter'][i] == 'IIR':
-        ecg = ph.IIRFilter(fp = paramsT['fp'][i], fs = paramsT['fs'][i], ftype = paramsT['ftype'][i])(ecg)
+        sig = ph.IIRFilter(fp = paramsT['fp'][i], fs = paramsT['fs'][i], ftype = paramsT['ftype'][i])(sig)
     if paramsT['filter'][i] == 'normalize':
-        ecg = ph.Normalize(norm_method=paramsT['normMethod'][i])(ecg)
+        sig = ph.Normalize(norm_method=paramsT['normMethod'][i])(sig)
     if paramsT['filter'][i] == 'resample':
-        ecg = ecg.resample(fout=paramsT['fout'][i], kind=paramsT['kind'][i])
+        sig = sig.resample(fout=paramsT['fout'][i], kind=paramsT['kind'][i])
         fsamp = 4096
 
-fig = ecg.plot()
+#fig = sig.plot()
+newDf = pd.DataFrame({'time':range(0,len(sig)),'sig':sig})
