@@ -94,6 +94,9 @@ export class Events {
     /** @returns {Observable} */ get onTooltipRequest () { return __obs('d4-tooltip-request'); }
     /** @returns {Observable} */ get onTooltipShown () { return __obs('d4-tooltip-shown'); }
     /** @returns {Observable} */ get onTooltipClosed () { return __obs('d4-tooltip-closed'); }
+
+    /** @returns {Observable} */ get onViewerAdded () { return __obs('d4-viewer-added'); }
+    /** @returns {Observable} */ get onViewerClosed () { return __obs('d4-viewer-closed'); }
 }
 
 
