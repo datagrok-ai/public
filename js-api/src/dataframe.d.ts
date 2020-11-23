@@ -32,7 +32,7 @@ export class DataFrame {
      * @returns {ColumnList} */
     get columns(): ColumnList
 
-    /** List of columns.
+    /** List of rows.
      * @returns {RowList} */
     get rows(): RowList
 
