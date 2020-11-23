@@ -145,6 +145,14 @@ export class GridColumn {
      *  @returns {boolean}  */
     get selected() { return grok_GridColumn_Get_Selected(this.d); }
     set selected(x) { return grok_GridColumn_Set_Selected(this.d, x); }
+
+    /** Column position from the left side.
+     *  @returns {number}  */
+    get left() { return grok_GridColumn_Get_Left(this.d); }
+
+    /** Column position from the right side.
+     *  @returns {number}  */
+    get right() { return grok_GridColumn_Get_Right(this.d); }
 }
 
 
@@ -156,7 +164,7 @@ export class GridColumnList {
      *  @returns {GridColumn}  */
     get rowHeader() { return this.byIndex(0); }
 
-    /** Returns a grid column by name, or null if it does not exist.
+    /** Returns a grid column by index, or null if it does not exist.
      *  @param {number} index
      *  @returns {GridColumn}  */
     byIndex(index) { return GridColumn.fromDart(grok_GridColumnList_ByIndex(this.d, index)); }
@@ -173,6 +181,10 @@ export class GridColumnList {
     /** Shows the specified columns (and hides the rest).
      *  @param {string[]} columnNames - Names of the columns to show. */
     setVisible(columnNames) { grok_GridColumnList_SetVisible(this.d, columnNames); }
+
+    /** GridColumnList length.
+     *  @returns {number}  */
+    get length() { return grok_GridColumnList_Get_Length(this.d); }
 }
 
 
