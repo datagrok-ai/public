@@ -44,5 +44,5 @@ the mechanism relies on column labels, however its functionality can be extended
 By design all the inputs could be split into three sub-types:
 
 * **User input:** completely manual (for areas where no inferences from the data can be made);
-* **Auto suggest:** completely automated (input suggestion inferred from the data);
+* **Auto suggest:** completely automated (input suggestions inferred from the data);
 * **Auto Limit:** automatically limit the options, given previous choices;
