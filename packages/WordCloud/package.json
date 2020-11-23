@@ -1,0 +1,30 @@
+{
+	"name": "wordcloud",
+	"fullName": "WordCloud",
+	"version": "0.0.1",
+	"description": "",
+	"dependencies": {
+		"datagrok-api": "latest",
+		"d3": "^6.2.0",
+		"d3-cloud": "^1.2.5"
+	},
+	"devDependencies": {
+		"datagrok-tools": "^4.0.12",
+		"css-loader": "^5.0.0",
+		"style-loader": "^2.0.0",
+		"webpack": "^4.44.2",
+		"webpack-cli": "^4.2.0"
+	},
+	"scripts": {
+		"debug-wordcloud": "grok publish --rebuild",
+		"release-wordcloud": "grok publish --rebuild --release",
+		"build-wordcloud": "webpack",
+		"build": "webpack",
+		"debug-wordcloud-public": "grok publish public --rebuild",
+		"release-wordcloud-public": "grok publish public --rebuild --release",
+		"debug-wordcloud-local": "grok publish local --rebuild",
+		"release-wordcloud-local": "grok publish local --rebuild --release",
+		"debug-wordcloud-localhost": "grok publish localhost --rebuild",
+		"release-wordcloud-localhost": "grok publish localhost --rebuild --release"
+	}
+}
