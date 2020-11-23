@@ -1,4 +1,4 @@
-class BiosensorsPackageDetectors extends DG.Package {
+class BiosignalsPackageDetectors extends DG.Package {
 
     //tags: semTypeDetector
     //input: column col
@@ -6,7 +6,7 @@ class BiosensorsPackageDetectors extends DG.Package {
     detectBioS(col) {
         if ((col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT) && (col.name.match(/ecg/i) ||
             col.name.match(/eeg/i) || col.name.match(/eda/i))) {
-            col.semType = 'Biosensor-' + col.name.toLowerCase();
+            col.semType = 'BioSignal-' + col.name.toLowerCase();
             return col.semType;
         }
 
@@ -19,7 +19,7 @@ class BiosensorsPackageDetectors extends DG.Package {
         let columns = table.columns.toList();
         console.log('hello');
 
-        return columns.some((c) => c.semType.includes('Biosensor'));
+        return columns.some((c) => c.semType.includes('BioSignal'));
 
     }
 }
