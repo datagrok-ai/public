@@ -17,14 +17,9 @@ class BiosensorsPackageDetectors extends DG.Package {
     //output: bool result
     analysisCondition(table) {
         let columns = table.columns.toList();
+        console.log('hello');
 
-        function checkSemType(semType) {
-            return columns.some((c) => c.semType.includes(semType))
-        }
+        return columns.some((c) => c.semType.includes('Biosensor'));
 
-        if (checkSemType('Biosensor')) {
-            return true;
-        }
     }
-
 }
