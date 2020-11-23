@@ -16,7 +16,7 @@ module.exports = {
     },
     output: {
         filename: '[name].js',
-        library: 'biosensors',
+        library: 'biosignals',
         libraryTarget: 'var',
         path: path.resolve(__dirname, 'dist'),
     },

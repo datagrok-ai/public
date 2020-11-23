@@ -7,7 +7,7 @@ export let _package = new DG.Package();
 
 async function typeDetector(table,npeaks,fsamp){
 
-    let bsType = await grok.functions.call('Biosensors:typeDetector',
+    let bsType = await grok.functions.call('BioSignals:typeDetector',
         {
             'dat':table,
             'npeaks':npeaks,
@@ -19,7 +19,7 @@ async function typeDetector(table,npeaks,fsamp){
 
 async function importPy(data,fsamp,bsType){
 
-    let f = await grok.functions.eval("Biosensors:importPyphysio");
+    let f = await grok.functions.eval("BioSignals:importPyphysio");
 
     let call = f.prepare({
         'data':data,
@@ -33,7 +33,7 @@ async function importPy(data,fsamp,bsType){
 
 async function  applyFilter(data,fsamp,bsType, paramsT){
 
-    let f = await grok.functions.eval("Biosensors:filtersPyphysio");
+    let f = await grok.functions.eval("BioSignals:filtersPyphysio");
 
     let call = f.prepare({
         'data':data,
@@ -48,7 +48,7 @@ async function  applyFilter(data,fsamp,bsType, paramsT){
 
 async function extractInfo(data,fsamp,bsType, paramsT,infoType){
 
-    let f = await grok.functions.eval("Biosensors:infoPyphysio");
+    let f = await grok.functions.eval("BioSignals:infoPyphysio");
 
     let call = f.prepare({
         'data':data,
@@ -68,7 +68,7 @@ async function extractInfo(data,fsamp,bsType, paramsT,infoType){
 
 async function toIndicators(data,fsamp,bsType,paramsT,infoType,indicator){
 
-    let f = await grok.functions.eval("Biosensors:indicatorsPyphysio");
+    let f = await grok.functions.eval("BioSignals:indicatorsPyphysio");
 
     let call = f.prepare({
         'data': data,
@@ -107,7 +107,7 @@ function paramsToTable(filtersLST,allParams){
     return paramsT;
 }
 
-//name: Biosensors
+//name: BioSignals
 //tags: panel, widgets
 //input: dataframe table
 //output: widget result
@@ -269,164 +269,3 @@ export function Biosensors(table){
 
     return new DG.Widget(tempButton);
 }
-
-
-//name: pipelineDemo
-export async function pipelineDemo() {
-
-    function paramSelector(x) {
-
-        let methodparams;
-        if (x === 'IIR') {
-            let fp = ui.intInput('fp', 45);
-            let fs = ui.intInput('fs', 50);
-            let ftype = ui.choiceInput('ftype','ellip',['ellip']);
-            methodparams = {'fp':fp,'fs':fs,'ftype':ftype};
-
-        }
-        if (x === 'normalize') {
-
-            let normMethod = ui.choiceInput('norm_method','standard',['standard']);
-            methodparams = {'normMethod' : normMethod};
-        }
-        if (x === 'resample') {
-
-            let fout = ui.intInput('fout', 4096);
-            let kind = ui.choiceInput('kind','cubic',['cubic']);
-            methodparams = {'fout':fout,'kind':kind};
-        }
-        return methodparams;
-    }
-
-    let v = ui.dialog('DEMO PIPELINE');
-
-    /////////////////////////////////////////
-
-    // Import
-    let tableName = ui.choiceInput('Table', null, grok.shell.tableNames);
-    let dataTable = grok.shell.tableByName(tableName.value);
-
-    let signalClass = ui.choiceInput('Signal class','',['Evenly signal','Unevenly signal']);
-    signalClass.setTooltip("Choose 'Evenly' if the sampling frequency was constant, 'Unevenly' otherwise");
-
-    let samplingFreq = ui.intInput('Sampling frequency', 2048);
-    samplingFreq.setTooltip('Number of samples per second');
-
-    let signalType = ui.choiceInput('Signal type','',['ecg','eda']);
-    signalType.setTooltip('Nature of the physiological signal');
-
-    // Filter
-
-    // Information extraction
-    let infoType = ui.choiceInput('To extract', '', ['Beat from ECG']);
-
-    // Indicators
-    let indicator = ui.choiceInput('Indicator preset', '', ['HRV']);
-
-    /////////////////////////////////////////
-
-    // Import containers
-    let containerIMPORT = ui.div();
-    let containerOGplot = ui.div();
-
-    // Filter containers
-    let filterButton = ui.div();
-    let containerFILTER = ui.div();
-    let paramsContainer = ui.div();
-    let accFILTER = ui.accordion();
-    let containerFLplot = ui.div();
-
-    // Information extraction containers
-    let containerINFO = ui.div();
-    let containerINFplot = ui.div();
-
-    // Indicator containers
-    let containerIndicator = ui.div();
-    let tableView = grok.shell.getTableView(tableName.value);
-
-    /////////////////////////////////////////
-
-    // Import dialogue
-    let importInputs = ui.inputs([tableName, signalClass, samplingFreq, signalType]);
-    containerIMPORT.appendChild(importInputs);
-    let node1;
-    containerOGplot.appendChild(ui.bigButton('PLOT ORIGINAL',async () => {
-
-        let plotOG = await importPy(dataTable,samplingFreq,signalType);
-        node1 = tableView.dockManager.dock(plotOG, 'right', null, 'Original plot');
-
-    }));
-
-
-    // Filter dialogue
-    let filtersLST = [];
-    let allParams = [];
-    let paramsT;
-    let filterInputs = ui.inputs(filtersLST);
-    containerFILTER.appendChild(filterInputs);
-    let i = 0;
-    filterButton.appendChild(ui.button('ADD FILTER',async () => {
-
-        filtersLST[i] = ui.choiceInput('filter №' + (i+1), '', ['IIR','normalize','resample']);
-        let filterInputs1 = ui.inputs(filtersLST);
-
-        containerFILTER.replaceChild(filterInputs1,filterInputs);
-        filterInputs = filterInputs1;
-
-        filtersLST[i].onChanged(function () {
-            $(paramsContainer).empty();
-            let val = filtersLST[i-1].value;
-            allParams[i-1] = paramSelector(val);
-            paramsContainer.appendChild(ui.inputs(Object.values(allParams[i-1])));
-        })
-        i++;
-    }));
-    accFILTER.addPane('parameters', () => paramsContainer)
-
-    let node2;
-    containerFLplot.appendChild(ui.bigButton('PLOT FILTERED',async () => {
-
-        paramsT = paramsToTable(filtersLST,allParams);
-        let plotFL = await applyFilter(dataTable,samplingFreq,signalType,paramsT);
-        node2 = tableView.dockManager.dock(plotFL, 'fill', node1, 'Filtered plot');
-
-    }));
-
-
-    // Information extraction dialogue
-    let infoInputs = ui.inputs([infoType]);
-    containerINFO.appendChild(infoInputs);
-    let node3;
-    containerINFplot.appendChild(ui.bigButton('EXTRACT INFO',async () => {
-
-        paramsT = paramsToTable(filtersLST,allParams);
-        let plotInfo = await extractInfo(dataTable,samplingFreq,signalType,paramsT,infoType);
-        node3 = tableView.dockManager.dock(plotInfo, 'fill', node2, infoType.value);
-
-    }));
-
-
-    // Indicators dialogue
-    let indicatorInputs = ui.inputs([indicator]);
-    containerIndicator.appendChild(indicatorInputs);
-
-    /////////////////////////////////////////
-
-    v.add(containerIMPORT);
-    v.add(containerOGplot);
-    v.add(containerFILTER);
-    v.add(accFILTER);
-    v.add(filterButton);
-    v.add(containerFLplot);
-    v.add(containerINFO);
-    v.add(containerINFplot);
-    v.add(containerIndicator).onOK(async ()=> {
-
-        paramsT = paramsToTable(filtersLST,allParams);
-        let indicatorDf = await toIndicators(dataTable,samplingFreq,signalType,paramsT,infoType,indicator);
-        let newView = grok.shell.addTableView(indicatorDf);
-
-    }).show();
-
-}
-

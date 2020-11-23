@@ -1,0 +1,25 @@
+{
+	"name": "biosignals",
+	"fullName": "BioSignals",
+	"version": "0.0.1",
+	"description": "",
+	"dependencies": {
+		"datagrok-api": "latest"
+	},
+	"scripts": {
+		"debug-biosignals": "grok publish --rebuild",
+		"release-biosignals": "grok publish --rebuild --release",
+		"build-biosignals": "webpack",
+		"build": "webpack",
+		"debug-biosignals-dev": "grok publish dev --rebuild",
+		"release-biosignals-dev": "grok publish dev --rebuild --release",
+		"debug-biosignals-public": "grok publish public --rebuild",
+		"release-biosignals-public": "grok publish public --rebuild --release",
+		"debug-biosignals-local": "grok publish local --rebuild",
+		"release-biosignals-local": "grok publish local --rebuild --release"
+	},
+	"devDependencies": {
+		"webpack": "^4.44.2",
+		"webpack-cli": "^3.3.12"
+	}
+}
