@@ -456,8 +456,9 @@ export class Column {
 
     /** Sets a tag to the specified value.
      * @param {string} tag - Key.
-     * @param {string} value - Value. */
-    setTag(tag, value) { grok_Column_Set_Tag(this.d, tag, value); }
+     * @param {string} value - Value.
+     * @returns {Column}. * */
+    setTag(tag, value) { grok_Column_Set_Tag(this.d, tag, value); return this; }
 
     /** Compacts the internal column representation.
      *  Currently, it only affects string columns where values were modified. */
