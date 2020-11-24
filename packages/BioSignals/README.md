@@ -46,7 +46,7 @@ Key signal types:
 
 Since various signals require a different combination of filters and information extraction steps,
 a separate pipeline has to be designed for every input. We plan to first separately recreate the 
-recommended workflows and then combine them to form a complete package. 
+recommended workflows and then combine them into a complete package. 
 
 # Automation
 A substantial part of this project targets improvements to user-friendliness. Our goal is to create a smart
@@ -54,13 +54,16 @@ environment, which streamlines the pre-processing steps by autonomously selectin
 appropriate tools.
 
 ### Detectors.js
-A file containing functions for preliminary data analysis. Once any table is uploaded to the platform,
-this script decides whether the BioSignals package should be added to the 'Algorithms' list. Currently,
-the mechanism relies on column labels, however its functionality can be extended to rely on actual data.
+A file containing functions for preliminary data analysis. Once any table is uploaded to [Datagrok](https://datagrok.ai),
+this script decides whether the BioSignals package should be added to the '*Algorithms*' list. Currently,
+the proposed mechanism relies on column labels, however its functionality can be extended to draw insights from actual data.
 
 ### Types of auto-input
 By design all the inputs could be split into three sub-types:
 
-* **User input:** completely manual (for areas where no inferences from the data can be made);
-* **Auto suggest:** completely automated (input suggestions inferred from the data);
+* **User input:** completely manual (for areas where no inferences from data can be made);
+* **Auto suggest:** completely automated (input suggestions inferred from data);
 * **Auto Limit:** automatically limit the options, given previous choices;
+
+The pipeline can then be viewed as a branching decision tree, which offers and/or block certain paths depending on 
+retrieved metadata and the sequence of inputs.
