@@ -17,8 +17,8 @@ export class ChordViewer extends DG.JsViewer {
         this.initialized = false;
         this.numColumns = [];
         this.strColumns = [];
-        this.inpCol;
-        this.outCol;
+        this.fromCol;
+        this.toCol;
         this.data = [];
         this.conf = layoutConf;
         this.chords = [];
@@ -72,8 +72,8 @@ export class ChordViewer extends DG.JsViewer {
             .count('count')
             .aggregate();
 
-        let fromCol = this.aggregatedTable.columns.byName(this.fromColumnName);
-        let toCol = this.aggregatedTable.columns.byName(this.toColumnName);
+        this.fromCol = this.aggregatedTable.columns.byName(this.fromColumnName);
+        this.toCol = this.aggregatedTable.columns.byName(this.toColumnName);
 
         function toCircos(s) { return {
             id: s,
@@ -82,23 +82,34 @@ export class ChordViewer extends DG.JsViewer {
             color: "#80b1d3"
         }}
 
-        this.data = Array.from(new Set(fromCol.categories.concat(toCol.categories))).map(toCircos);
+        this.data = Array.from(new Set(this.fromCol.categories.concat(this.toCol.categories))).map(toCircos);
+    }
+
+    computeChords() {
 
         for (let i = 0; i < this.aggregatedTable.rowCount; i++) {
+            let sourceId = this.fromCol.get(i);
+            let targetId = this.toCol.get(i);
+            let sourceBlock = this.data.find(obj => obj.id === sourceId);
+            let targetBlock = this.data.find(obj => obj.id === targetId);
+            let sourceCenter = (sourceBlock.end - sourceBlock.start) / 2;
+            let targetCenter = (targetBlock.end - targetBlock.start) / 2;
+
             // TODO: Calculate `start` and `end` based on numColumns
             this.chords.push({
                 source: {
-                    id: fromCol.get(i),
-                    start: 1,
-                    end: 12
+                    id: sourceId,
+                    start: sourceCenter - (sourceCenter / 2),
+                    end: sourceCenter + (sourceCenter / 2)
                 },
                 target: {
-                    id: toCol.get(i),
-                    start: 1,
-                    end: 12
+                    id: targetId,
+                    start: targetCenter - (targetCenter / 2),
+                    end: targetCenter + (targetCenter / 2)
                 }
             });
         }
+
     }
 
     render() {
@@ -125,6 +136,7 @@ export class ChordViewer extends DG.JsViewer {
         });
 
         circos.layout(this.data, this.conf);
+        this.computeChords();
         circos.chords('beta-track', this.chords);
         circos.render();
         document.getElementById('chart')
