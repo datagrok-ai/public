@@ -92,7 +92,7 @@ export class DockManager {
 
     /**
      * Docks the element relative to the reference node.
-     * @param {HTMLElement} element - Element to dock
+     * @param {HTMLElement | Viewer} element - Element to dock
      * @param {DockType} dockType - Dock type (left | right | top | bottom | fill).
      * @param {DockNode|null} refNode - reference node
      * @param {number} ratio - Ratio of the area to take (relative to the reference node).
