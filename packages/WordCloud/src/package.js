@@ -8,7 +8,7 @@ import '../css/word-cloud.css';
 
 export const _package = new DG.Package();
 
-//name: WordCloud
+//name: Word Cloud
 //description: Creates a word cloud
 //tags: viewer
 //output: viewer result
