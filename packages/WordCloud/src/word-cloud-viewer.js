@@ -9,7 +9,7 @@ export class WordCloudViewer extends DG.JsViewer {
     constructor() {
         super();
 
-        // properties
+        // Properties
         this.strColumnName = this.string('strColumnName');
 
         this.strColumns = [];
@@ -27,8 +27,7 @@ export class WordCloudViewer extends DG.JsViewer {
     onTableAttached() {
         this.init();
 
-        let columns = this.dataFrame.columns.toList();
-        this.strColumns = columns.filter(col => col.type === 'string');
+        this.strColumns = Array.from(this.dataFrame.columns.categorical);
 
         if (this.testColumns()) {
             // Find a string column with the smallest number of unique values
@@ -74,29 +73,29 @@ export class WordCloudViewer extends DG.JsViewer {
             .append("g")
             .attr("transform", `translate(${margin.left}, ${margin.top})`);
 
-        let words = this.dataFrame.columns.byName(this.strColumnName).categories;
+        // TODO: sort categories by number of values and tweak the font size accordingly
+        let words = this.dataFrame.getCol(this.strColumnName).categories;
 
         let layout = cloud()
             .size([width, height])
-            .words(words.map(function(d) { return {text: d}; }))
+            .words(words.map(d => { return { text: d, size: 10 + Math.random() * 90 }; }))
             .padding(10)
-            .fontSize(60)
+            .rotate(() => (~~(Math.random() * 6) - 3) * 30)
+            .fontSize(d => d.size)
             .on("end", draw);
         layout.start();
 
         function draw(words) {
-        svg
-            .append("g")
-            .attr("transform", "translate(" + layout.size()[0] / 2 + "," + layout.size()[1] / 2 + ")")
-            .selectAll("text")
-                .data(words)
-            .enter().append("text")
-                .style("font-size", function(d) { return d.size + "px"; })
-                .attr("text-anchor", "middle")
-                .attr("transform", function(d) {
-                return "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")";
-                })
-                .text(function(d) { return d.text; });
+            svg
+                .append("g")
+                .attr("transform", `translate(${layout.size()[0] / 2}, ${layout.size()[1] / 2})`)
+                .selectAll("text")
+                    .data(words)
+                .enter().append("text")
+                    .style("font-size", d => d.size + "px")
+                    .attr("text-anchor", "middle")
+                    .attr("transform", d => `translate(${[d.x, d.y]})rotate(${d.rotate})`)
+                    .text(d => d.text);
         }
 
         this.root.appendChild(svg.node());
