@@ -1,13 +1,31 @@
 # BioSignals
 BioSignals is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platfrom.
-The goal of the project is to offer an efficient and automated biosignal processing routine based on [pyphysio](https://github.com/MPBA/pyphysio) - a python library
+The goal of the project is to offer an efficient and automated biosignal processing routine. The initial version is based on [pyphysio](https://github.com/MPBA/pyphysio) - a python library
 developed by [Andrea Bizzego](https://www.sciencedirect.com/science/article/pii/S2352711019301839).
 
 The package reinforces the existing pyhton code with datagroks' [visualization](https://datagrok.ai/help/visualize/viewers) and [data processing](https://datagrok.ai/help/transform/add-new-column) tools. The pipeline itself is designed with scientific 
-community in mind, standartizing and thus facilitating the usual ECG,EEG,EDA,etc. signal processing workflows. The fusion of manual and automated steps is largely enabled
-by our [intercative viewers](https://datagrok.ai/help/visualize/viewers), [scripting](https://dev.datagrok.ai/help/develop/scripting) capabilities, [detector](https://datagrok.ai/help/develop/how-to/add-info-panel) functions and native [scientific methods](https://datagrok.ai/help/learn/data-science).   
+community in mind, standartizing and thus facilitating the usual ECG, EEG, EDA, etc. signal processing workflows. The fusion of manual and automated steps is largely enabled
+by our [interactive viewers](https://datagrok.ai/help/visualize/viewers), [scripting](https://dev.datagrok.ai/help/develop/scripting) capabilities, 
+[detector](https://datagrok.ai/help/develop/how-to/add-info-panel) functions,
+[data augmentation](https://datagrok.ai/help/discover/data-augmentation),
+and a curated collection of the [scientific methods](https://datagrok.ai/help/learn/data-science).   
 
-Currently the project is in its early stages and we welcome you to contirbute to this repository. 
+In particular, project's initial goals are:
+* automatically read various biosensor file formats
+  * integrate with the built-in file share browser 
+* provide efficient interactive visualizations for raw biosensor data
+  * including domain-specific visualizations, such as "head view" for EEG
+* provide efficient ways for manipulating raw biosensor data (marking regions, etc)
+* provide a collection of high-performance DSP algorithms
+* detect type of signals, along with the metadata (sampling rate, etc)
+* automatically suggest analyses and pipelines applicable to the current dataset
+  * Example: "Extract step count" for the accelerometry data 
+* visually define pipelines
+* derive high-level features out of the raw biosensor signal
+* allow to build predictive models by integrating previously defined pipelines with the Datagrok's [predictive modeling](https://datagrok.ai/help/learn/predictive-modeling) capabilities
+  * Example: training a model to find "bad" quality segments based on the manually annotated data
+        
+Currently, the project is in its early stages, and we welcome you to contribute to this repository. 
 
 # Pyphysio
 [Pyphysio](https://github.com/MPBA/pyphysio) is a library that contains the implementations of the most important algorithms for the analysis of physiological data.
