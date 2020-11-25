@@ -72,8 +72,8 @@ export class ChordViewer extends DG.JsViewer {
             .count('count')
             .aggregate();
 
-        this.fromCol = this.aggregatedTable.columns.byName(this.fromColumnName);
-        this.toCol = this.aggregatedTable.columns.byName(this.toColumnName);
+        this.fromCol = this.aggregatedTable.getCol(this.fromColumnName);
+        this.toCol = this.aggregatedTable.getCol(this.toColumnName);
 
         function toCircos(s) { return {
             id: s,

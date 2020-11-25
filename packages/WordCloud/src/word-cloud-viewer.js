@@ -74,11 +74,10 @@ export class WordCloudViewer extends DG.JsViewer {
             .append("g")
             .attr("transform", `translate(${margin.left}, ${margin.top})`);
 
-        let words = this.dataFrame.getCol(this.strColumnName).categories;
+        let strColumn = this.dataFrame.getCol(this.strColumnName);
+        let words = strColumn.categories;
         this.freqMap = {};
-        this.dataFrame.getCol(this.strColumnName).toList().forEach(w => {
-            this.freqMap[w] = (this.freqMap[w] || 0) + 1;
-        });
+        strColumn.toList().forEach(w => this.freqMap[w] = (this.freqMap[w] || 0) + 1);
         let sortedWords = Object.keys(this.freqMap).sort((a, b) => {
             this.freqMap[b] - this.freqMap[a];
         });
