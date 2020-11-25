@@ -27,7 +27,8 @@ export class WordCloudViewer extends DG.JsViewer {
     onTableAttached() {
         this.init();
 
-        this.strColumns = Array.from(this.dataFrame.columns.categorical);
+        let columns = this.dataFrame.columns.toList();
+        this.strColumns = columns.filter(col => col.type === 'string');
 
         if (this.testColumns()) {
             // Find a string column with the smallest number of unique values
@@ -73,12 +74,21 @@ export class WordCloudViewer extends DG.JsViewer {
             .append("g")
             .attr("transform", `translate(${margin.left}, ${margin.top})`);
 
-        // TODO: sort categories by number of values and tweak the font size accordingly
         let words = this.dataFrame.getCol(this.strColumnName).categories;
+        this.freqMap = {};
+        this.dataFrame.getCol(this.strColumnName).toList().forEach(w => {
+            this.freqMap[w] = (this.freqMap[w] || 0) + 1;
+        });
+        let sortedWords = Object.keys(this.freqMap).sort((a, b) => {
+            this.freqMap[b] - this.freqMap[a];
+        });
+        this.max = this.freqMap[sortedWords[0]];  
 
         let layout = cloud()
             .size([width, height])
-            .words(words.map(d => { return { text: d, size: 10 + Math.random() * 90 }; }))
+            .words(words.map(d => {
+                return { text: d, size: (this.freqMap[d] * (100 - 10))/this.max + 10};
+            }))
             .padding(10)
             .rotate(() => (~~(Math.random() * 6) - 3) * 30)
             .fontSize(d => d.size)
