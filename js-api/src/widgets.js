@@ -534,3 +534,12 @@ export class HtmlTable extends DartWidget {
     /** Removes item */
     remove(item) { grok_HtmlTable_Remove(this.d, item); }
 }
+
+export class ColumnComboBox extends InputBase {
+    /** @constructs {ColumnComboBox} */
+    constructor(d) { super(d); }
+
+    /** Creates a column combo box with specified [dataframe] and [predicate]
+     * @returns {ColumnComboBox} */
+    static create(dataframe, predicate) { return toJs(grok_ColumnComboBox(dataframe.d, (x) => predicate(toJs(x)))); }
+}
