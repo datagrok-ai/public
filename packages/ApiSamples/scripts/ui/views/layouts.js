@@ -40,7 +40,7 @@ acc.addPane('Layouts demo', () => {
     return ui.div([
         ui.divH([nameInput.root, load]),
         saveDiv
-    ], 'pure-form,pure-form-aligned');
+    ], 'pure-form pure-form-aligned');
 }, true, acc.panes[0]);
 
 view.setRibbonPanels([[
