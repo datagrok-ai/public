@@ -21,10 +21,10 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
             //rdkitMol.draw_to_canvas_with_offset(g.canvas, x, -y, w, h);         
             const opts = {
               "clearBackground": false,
-              "offsetx": x,
-              "offsety": -y,
-              "width": w,
-              "height": h
+              "offsetx": Math.floor(x),
+              "offsety": -Math.floor(y),
+              "width": Math.floor(w),
+              "height": Math.floor(h)
             }
             mol.draw_to_canvas_with_highlights(g.canvas, JSON.stringify(opts));
         }
