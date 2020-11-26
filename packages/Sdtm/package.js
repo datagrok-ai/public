@@ -11,8 +11,8 @@ class SDTMPackage extends DG.Package {
         let loadingLayout = false;
         let preview = ui.boolInput('', true);
         let limit = ui.intInput('Limit', 1000);
-        let analysis = ui.div([], 'pure-form,pure-form-aligned');
-        let filtersHost =  ui.div([analysis, ui.divH([preview.root, limit.root], 'sdtm-limit')], 'sdtm-controls,pure-form');
+        let analysis = ui.div([], 'pure-form pure-form-aligned');
+        let filtersHost =  ui.div([analysis, ui.divH([preview.root, limit.root], 'sdtm-limit')], 'sdtm-controls pure-form');
         let count = ui.divH([ui.divText('Count:'), ui.loader()], 'sdtm-count');
         filtersHost.appendChild(count);
 

@@ -351,7 +351,7 @@ export function popupMenu(items) {
     menu.show();
 }
 
-export function inputs(inputs) { return div(inputs.map((x) => x.root), 'pure-form,pure-form-aligned'); }
+export function inputs(inputs) { return div(inputs.map((x) => x.root), 'pure-form pure-form-aligned'); }
 
 /** Creates new nodes tree
  * @returns {TreeViewNode} */
