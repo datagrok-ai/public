@@ -297,6 +297,14 @@ export function dialog(title = '') { return Dialog.create(title); }
  * @returns {Element}. */
 export function bind(item, element) { return grok_UI_Bind(item, element); }
 
+/** Shows popup with the [element] near the [anchor].
+ * tooltip, and popup menu.
+ * @param {Element} element
+ * @param {Element} anchor
+ * @param {boolean} vertical
+ * @returns {Element}. */
+export function showPopup(element, anchor, vertical = false) { return grok_UI_ShowPopup(element, anchor, vertical); }
+
 /**
  * @param {string} value
  * @param {boolean} autoSize
