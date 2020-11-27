@@ -129,7 +129,7 @@ export class Data {
      * Parses the CSV string.
      * @returns {DataFrame}
      * */
-    parseCsv(csv: string): DataFrame
+    parseCsv(csv: string, options: object): DataFrame
 
     /**
      * Loads table from the specified URL.
