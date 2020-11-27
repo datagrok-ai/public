@@ -542,4 +542,7 @@ export class ColumnComboBox extends InputBase {
     /** Creates a column combo box with specified [dataframe] and [predicate]
      * @returns {ColumnComboBox} */
     static create(dataframe, predicate) { return toJs(grok_ColumnComboBox(dataframe.d, (x) => predicate(toJs(x)))); }
+
+    /** @type {boolean} */
+    get vertical() { return grok_ColumnComboBox_Get_Vertical(this.d); }
 }
