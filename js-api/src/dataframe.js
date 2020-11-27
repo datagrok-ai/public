@@ -55,8 +55,9 @@ export class DataFrame {
 
     /** Constructs {@link DataFrame} from a comma-separated values string
      * @param {string} csv - The content of the comma-separated values file.
+     * @param {CsvImportOptions} options
      * @returns {DataFrame} */
-    static fromCsv(csv) { return grok.data.parseCsv(csv); }
+    static fromCsv(csv, options) { return grok.data.parseCsv(csv, options); }
 
     /** Constructs {@link DataFrame} from the specified JSON string.
      * @param {string} json - JSON document.

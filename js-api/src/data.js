@@ -89,10 +89,19 @@ export class Data {
     }
 
     /**
+     * @typedef {Object} CsvImportOptions
+     * @property {string} delimiter
+     * @property {string} decimalSeparator
+     * @property {Object} thousandSeparator
+     **/
+
+    /**
      * Parses the CSV string.
+     * @param {string} csv - The content of the comma-separated values file.
+     * @param {CsvImportOptions} options
      * @returns {DataFrame}
      * */
-    parseCsv(csv) { return new DataFrame(grok_ParseCsv(csv)); }
+    parseCsv(csv, options) { return new DataFrame(grok_ParseCsv(csv, options)); }
 
     /**
      * Loads table from the specified URL.
