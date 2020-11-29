@@ -178,7 +178,7 @@ export class LruCache {
             pointer = this.tail;
             this.tail = this.backward[pointer];
             if (this.onItemEvicted != null)
-                this.onItemEvicted(this.items[this.K[pointer]]);
+                this.onItemEvicted(this.V[pointer]);
             delete this.items[this.K[pointer]];
         }
 
@@ -219,12 +219,12 @@ export class LruCache {
      * @return {any}
      */
     getOrCreate(key, createFromKey) {
-        let pointer = this.items[key];
-        if (typeof pointer !== 'undefined')
-            return pointer;
+        let value = this.get(key);
+        if (typeof value !== 'undefined')
+            return value;
         else {
-            let item = creteFromKey(key);
-            set(key, item);
+            let item = createFromKey(key);
+            this.set(key, item);
             return item;
         }
     }
