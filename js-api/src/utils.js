@@ -91,3 +91,141 @@ export function _identityInt32(length) {
         values[i] = i;
     return values;
 }
+
+
+/**
+ * Inspired by https://github.com/Yomguithereal/mnemonist/blob/master/lru-cache.js
+ * */
+export class LruCache {
+
+    constructor() {
+        this.capacity = 100;
+        this.forward = new Uint16Array(this.capacity);
+        this.backward = new Uint16Array(this.capacity);
+        this.V = new Array(this.capacity);
+        this.K = new Array(this.capacity);
+        this.size = 0;
+        this.head = 0;
+        this.tail = 0;
+        this.items = {};
+        this.onItemEvicted = null;
+    }
+
+    /**
+     * Splays a value on top.
+     * @param {number} pointer - Pointer of the value to splay on top.
+     * @return {LruCache}
+     */
+    splayOnTop(pointer) {
+        let oldHead = this.head;
+
+        if (this.head === pointer)
+            return this;
+
+        let previous = this.backward[pointer];
+        let next = this.forward[pointer];
+
+        if (this.tail === pointer)
+            this.tail = previous;
+        else
+            this.backward[next] = previous;
+
+        this.forward[previous] = next;
+        this.backward[oldHead] = pointer;
+        this.head = pointer;
+        this.forward[pointer] = oldHead;
+
+        return this;
+    };
+
+
+    /**
+     * Checks whether the key exists in the cache.
+     *
+     * @param  {any} key   - Key.
+     * @return {boolean}
+     */
+    has(key) {
+        return key in this.items;
+    };
+
+    /**
+     * Sets the value for the given key in the cache.
+     *
+     * @param  {any} key   - Key.
+     * @param  {any} value - Value.
+     * @return {undefined}
+     */
+    set(key, value) {
+
+        // The key already exists, we just need to update the value and splay on top
+        let pointer = this.items[key];
+
+        if (typeof pointer !== 'undefined') {
+            this.splayOnTop(pointer);
+            this.V[pointer] = value;
+
+            return;
+        }
+
+        // The cache is not yet full
+        if (this.size < this.capacity) {
+            pointer = this.size++;
+        }
+
+        // Cache is full, we need to drop the last value
+        else {
+            pointer = this.tail;
+            this.tail = this.backward[pointer];
+            if (this.onItemEvicted != null)
+                this.onItemEvicted(this.items[this.K[pointer]]);
+            delete this.items[this.K[pointer]];
+        }
+
+        // Storing key & value
+        this.items[key] = pointer;
+        this.K[pointer] = key;
+        this.V[pointer] = value;
+
+        // Moving the item at the front of the list
+        this.forward[pointer] = this.head;
+        this.backward[this.head] = pointer;
+        this.head = pointer;
+    };
+
+    /**
+     * Gets the value attached to the given key, and makes it the most recently used item.
+     *
+     * @param  {any} key   - Key.
+     * @return {any}
+     */
+    get(key) {
+        let pointer = this.items[key];
+
+        if (typeof pointer === 'undefined')
+            return;
+
+        this.splayOnTop(pointer);
+
+        return this.V[pointer];
+    };
+
+    /**
+     * Returns the value with the specified key, if it already exists in the cache,
+     * or creates a new one by calling the provided function.
+     *
+     * @param  {any} key   - Key.
+     * @param  {Function} createFromKey - Function to create a new item.
+     * @return {any}
+     */
+    getOrCreate(key, createFromKey) {
+        let pointer = this.items[key];
+        if (typeof pointer !== 'undefined')
+            return pointer;
+        else {
+            let item = creteFromKey(key);
+            set(key, item);
+            return item;
+        }
+    }
+}
