@@ -173,7 +173,7 @@ function _options(element, options= null) {
     if (options === null)
         return element;
     if (typeof options === 'string')
-        element.className += ` ${options}`;
+        element.className += ` ${options.replace(/,/g,' ')}`;
     if (options.id != null)
         element.id = options.id;
     if (options.classes != null)
