@@ -46,6 +46,7 @@ export class WordCloudViewer extends DG.JsViewer {
     onPropertyChanged(property) {
         super.onPropertyChanged(property);
         if (this.initialized && this.testColumns()) {
+            if (property.name === 'strColumnName') this.strColumnName = property.get();
             this.render();
         }
     }
@@ -62,6 +63,7 @@ export class WordCloudViewer extends DG.JsViewer {
         }
 
         this.root.classList.add('viewer-window');
+        $(this.root).empty();
         let margin = {top: 10, right: 10, bottom: 10, left: 10};
         let width = this.root.clientWidth - margin.left - margin.right;
         let height = this.root.clientHeight - margin.top - margin.bottom;
