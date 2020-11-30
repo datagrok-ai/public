@@ -10,9 +10,13 @@ export class ChordViewer extends DG.JsViewer {
     constructor() {
         super();
 
-        // properties
+        // Properties
         this.fromColumnName = this.string('fromColumnName');
         this.toColumnName = this.string('toColumnName');
+        this.aggType = this.string('Agg Type', 'avg');
+        this.getProperty('Agg Type').choices = ['count', 'values', 'unique', 'nulls', 'min', 'max', 
+                                                'sum', 'med', 'avg', 'stdev', 'variance', 'skew',
+                                                'kurt', 'q1', 'q2', 'q3'];
 
         this.initialized = false;
         this.numColumns = [];
@@ -59,6 +63,10 @@ export class ChordViewer extends DG.JsViewer {
             if (property.name === 'toColumnName') {
                 this.generateData(this.fromColumnName, property.get());
             }
+            if (property.name === 'Agg Type') {
+                this.aggType = property.get();
+                this.generateData(this.fromColumnName, this.toColumnName);
+            }
             this.render();
         }
     }
@@ -72,9 +80,10 @@ export class ChordViewer extends DG.JsViewer {
         this.fromColumnName = fromColumnName;
         this.toColumnName = toColumnName;
 
+        // For now, applies the aggregation function to the first numeric column
         this.aggregatedTable = this.dataFrame
             .groupBy([this.fromColumnName, this.toColumnName])
-            .count('count')
+            .add(this.aggType, this.numColumns[0].name, 'result')
             .aggregate();
 
         this.fromCol = this.aggregatedTable.getCol(this.fromColumnName);
@@ -94,11 +103,12 @@ export class ChordViewer extends DG.JsViewer {
     }
 
     computeChords() {
+        this.chords = [];
 
         for (let i = 0; i < this.aggregatedTable.rowCount; i++) {
             let sourceId = this.fromCol.get(i);
             let targetId = this.toCol.get(i);
-            let count = this.aggregatedTable.getCol('count').get(i);
+            let aggVal = this.aggregatedTable.getCol('result').get(i);
             let sourceBlock = this.data.find(obj => obj.id === sourceId);
             let targetBlock = this.data.find(obj => obj.id === targetId);
             let sourceCenter = (sourceBlock.end - sourceBlock.start) / 2;
@@ -116,7 +126,7 @@ export class ChordViewer extends DG.JsViewer {
                     start: targetCenter - (targetCenter / 2),
                     end: targetCenter + (targetCenter / 2)
                 },
-                value: count
+                value: aggVal
             });
         }
 
