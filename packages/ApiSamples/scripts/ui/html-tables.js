@@ -11,8 +11,8 @@ grok.shell.newView('table from map', [
 
 let view = grok.shell.newView('table with renderer');
 var myList = [
-  {key: 'first object', 'value': 5},
-  {'key': 'second object', value: false},
+  {key: 'first object', value: 5},
+  {key: 'second object', value: false},
   {key: 'third object', value: false},
 ];
 
