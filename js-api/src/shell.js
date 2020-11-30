@@ -83,6 +83,10 @@ export class Shell {
      * @param {string} s - message */
     error(s) { grok_Balloon(s, 'error'); }
 
+    /** Shows warning message (red background)
+     * @param {string} s - message */
+    warning(s) { grok_Balloon(s, 'warning'); }
+
     /** Docks element in a separate window.
      * Sample: {@link https://public.datagrok.ai/js/samples/ui/docking/docking}
      * @param {HTMLElement} element
