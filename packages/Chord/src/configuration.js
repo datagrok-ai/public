@@ -30,3 +30,13 @@ export const layoutConf = {
     },
     events: {}
 };
+
+export const chordConf = {
+    color: '#fd6a62',
+    opacity: 0.7,
+    tooltipContent: d => {
+        return `<h3>${d.source.id} ➤ ${d.target.id}: ${d.value}</h3><i>(CTRL+C to copy to clipboard)</i>`;
+    },
+    radius: null,
+    events: {}
+};
