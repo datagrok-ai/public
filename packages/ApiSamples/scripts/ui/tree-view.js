@@ -26,7 +26,4 @@ let button = ui.button('Push', () => {
     grok.shell.info('Selected items:\n' + items.filter(i => i.checked).map(i => i.text).join(', '));
 });
 
-let view = DG.View.create();
-view.name = 'TreeView Demo';
-view.root.appendChild(tree.root);
-grok.shell.addView(view);
+grok.shell.newView('TreeView Demo', [tree.root, button]);
