@@ -351,7 +351,7 @@ type PropertySetter = (item: any) => void
 export class Property {
     constructor(d: any)
 
-    /** Property getter is a function that acccepts one parameter (item)
+    /** Property getter is a function that accepts one parameter (item)
      * and returns the property value. */
     get get(): PropertyGetter
 

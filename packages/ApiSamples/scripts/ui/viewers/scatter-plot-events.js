@@ -9,4 +9,4 @@ let plot = view.scatterPlot({
     color: 'race',
 });
 
-plot.onEvent.subscribe((e) => grok.shell.info(e.name));
+plot.onEvent().subscribe((e) => grok.shell.info(e.name));
