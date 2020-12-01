@@ -65,7 +65,7 @@ export class Viewer {
     /** Gets viewer options. See also {@link getOptions}
      *  Sample: https://public.datagrok.ai/js/samples/ui/viewers/scatter-plot
      *  @returns: {object} */
-    getOptions()  { return grok_Viewer_Serialize(this.d); }
+    getOptions()  { return JSON.parse(grok_Viewer_Serialize(this.d)); }
 
     /** Closes and detaches the viewer. */
     close() { grok_Viewer_Close(this.d); }
@@ -76,7 +76,7 @@ export class Viewer {
 
     /** Returns viewer type (see VIEWER constants)
      * @returns {string} */
-    get type() { return JSON.parse(args.args.context.getOptions()).type; }
+    get type() { return this.getOptions().type; }
 
     get table() { return toJs(grok_Viewer_Get_DataFrame(this.d)); }
 
