@@ -27,6 +27,7 @@ export class DemoDatasets {
      * "demog" - clinical study demographics data: subj, study, site, sex, race, disease, start date
      * "biosensor": wearable sensor data: time, x, y, z, temp, eda
      * "random walk": random walk data for the specified number of dimensions
+     * "geo": geographic coordinates given as latitude/longitude pairs: lat, lng, value
      *
      * @returns {DataFrame} */
     getDemoTable(dataset, rows = 10000, columns = 3) {
@@ -78,6 +79,7 @@ export class Data {
      * "demog" - clinical study demographics data: subj, study, site, sex, race, disease, start date
      * "biosensor": wearable sensor data: time, x, y, z, temp, eda
      * "random walk": random walk data for the specified number of dimensions
+     * "geo": geographic coordinates given as latitude/longitude pairs: lat, lng, value
      *
      * @returns {DataFrame} */
     testData(dataset, rows = 10000, columns = 3) {
