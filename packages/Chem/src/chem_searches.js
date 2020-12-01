@@ -83,7 +83,7 @@ function chemSimilarityScoring(molStringsColumn, molString, settings) {
     }
 }
 
-function chemSubstructureSearch(molStringsColumn, molString) {
+function chemSubstructureSearchGraph(molStringsColumn, molString) {
     
     const len = molStringsColumn.length;
     let result = DG.BitSet.create(len);
@@ -96,5 +96,46 @@ function chemSubstructureSearch(molStringsColumn, molString) {
         mol.delete();
     }
     subMol.delete();
+    return result;
+}
+
+function chemSubstructureSearchLibrary(molStringsColumn, molString) {
+    
+    let df = molStringsColumn.dataFrame;
+    let col = molStringsColumn;
+    let library = null;
+    if (df == null) {
+        // no caching mode
+        library = new Module.SubstructLibrary();
+    } else {
+        // caching mode
+        df.onValuesChanged.subscribe((_) => {
+            if (col != null && col.temp.rdkitLirary != null) {
+                col.temp.rdkitLirary.delete();
+                col.temp.rdkitLirary = null;
+            }
+        });
+        if (col.temp.rdkitLirary == null) {
+            col.temp.rdkitLirary = new Module.SubstructLibrary();
+            for (let i = 0; i < col.length; ++i) {
+                const smiles = molStringsColumn.get(i);
+                col.temp.rdkitLirary.add_trusted_smiles(smiles);
+            }
+        }
+        library = col.temp.rdkitLirary;
+    }
+  
+    var query = Module.get_qmol(molString);
+    const matches = JSON.parse(library.get_matches(query));
+    query.delete();
+    let result = DG.BitSet.create(col.length);
+    for (let m of matches) {
+        result.set(m, true, false);
+    }
+    
+    if (df == null) {
+        library.delete();
+    }
+    
     return result;
 }
