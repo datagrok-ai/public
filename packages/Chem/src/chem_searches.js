@@ -109,7 +109,10 @@ function chemSubstructureSearchLibrary(molStringsColumn, molString) {
         library = new Module.SubstructLibrary();
     } else {
         // caching mode
-        df.onValuesChanged.subscribe((_) => {
+        if (df.temp.libraryCleaner != null) {
+            df.temp.libraryCleaner.unsubscribe();
+        }
+        df.temp.libraryCleaner = df.onValuesChanged.subscribe((_) => {
             if (col != null && col.temp.rdkitLirary != null) {
                 col.temp.rdkitLirary.delete();
                 col.temp.rdkitLirary = null;
