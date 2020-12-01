@@ -65,7 +65,7 @@ export class Qnum {
 }
 
 
-type DemoDatasetName = 'wells' | 'demog' | 'biosensor' | 'random walk';
+type DemoDatasetName = 'wells' | 'demog' | 'biosensor' | 'random walk' | 'geo';
 
 /** Provides convenient access to demo datasets. */
 export class DemoDatasets {
@@ -77,6 +77,7 @@ export class DemoDatasets {
      * "demog" - clinical study demographics data: subj, study, site, sex, race, disease, start date
      * "biosensor": wearable sensor data: time, x, y, z, temp, eda
      * "random walk": random walk data for the specified number of dimensions
+     * "geo": geographic coordinates given as latitude/longitude pairs: lat, lng, value
      *
      * @returns {DataFrame} */
     getDemoTable(dataset: DemoDatasetName, rows?: number, columns?: number): DataFrame
@@ -119,6 +120,7 @@ export class Data {
      * "demog" - clinical study demographics data: subj, study, site, sex, race, disease, start date
      * "biosensor": wearable sensor data: time, x, y, z, temp, eda
      * "random walk": random walk data for the specified number of dimensions
+     * "geo": geographic coordinates given as latitude/longitude pairs: lat, lng, value
      *
      * @returns {DataFrame} */
     testData(dataset: DemoDatasetName, rows?: number, columns?: number): DataFrame
