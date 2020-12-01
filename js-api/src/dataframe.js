@@ -431,11 +431,22 @@ export class Column {
     //  * @param {number} i
     //  * @returns {number} */
     // getDateTime(i)
-    //
-    // /** Returns i-th value as integer. Works for IntColumns only.
-    //  * @param {number} i
-    //  * @returns {number} */
-    // getString(i);
+
+    /** Returns i-th value as string, taking into account value format defined for the column.
+     *  An empty string is returned if there is no value.
+     * @param {number} i
+     * @returns {string} */
+    getString(i) { return grok_Column_GetString(this.d, i); }
+
+    /** Attempts to set i-th value by converting a provided string to the corresponding strongly-typed value.
+     *  Returns true if text was successfully parsed and set, otherwise false.
+     *  Examples: dateColumn.setString('April 1, 2020');
+     *            intColumn.setString('42');
+     * @param {number} i
+     * @param {string} str
+     * @param {boolean} notify
+     * @returns {boolean} */
+    setString(i, str, notify = true) { grok_Column_SetString(this.d, i, str, notify); }
 
     /**
      * Sets [i]-th value to [x]
