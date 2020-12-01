@@ -13,7 +13,9 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
 
     get cellType() { return DG.SEMTYPE.MOLECULE; }
     
-    get defaultHeight() { return 80; }
+    get defaultHeight() { return 200; }
+
+    get defaultHeight() { return 150; }
 
     render(g, x, y, w, h, gridCell, cellStyle) {
         
