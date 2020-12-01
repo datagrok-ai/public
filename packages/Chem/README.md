@@ -1,4 +1,4 @@
-# Cheminformatics support (beta).
+# Cheminformatics support
 
 This package provides first-class [cheminformatics support](https://datagrok.ai/cheminformatics) for the Datagrok platform.
 See it in action on [YouTube](https://www.youtube.com/watch?v=k1NVdTRpYOM&ab_channel=Datagrok).
