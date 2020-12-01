@@ -85,7 +85,7 @@ export class Data {
     }
 
     getDemoTable(path) {
-        return new Promise((resolve, reject) => grok_GetDemoTable(path, (t) => resolve(toJs(t))));
+        return new Promise((resolve, reject) => grok_GetDemoTable(path, (t) => resolve(toJs(t)), (e) => reject(e)));
     }
 
     /**
@@ -109,7 +109,7 @@ export class Data {
      * @returns {Promise<DataFrame>}
      * */
     loadTable(csvUrl) {
-        return new Promise((resolve, reject) => grok_LoadDataFrame(csvUrl, (t) => resolve(toJs(t, false))));
+        return new Promise((resolve, reject) => grok_LoadDataFrame(csvUrl, (t) => resolve(toJs(t, false)), (e) => reject(e)));
     }
 
     /**
@@ -155,16 +155,16 @@ export class Data {
      * @param {string} id - table GUID
      * @returns {Promise<DataFrame>}
      */
-    openTable(id) { return new Promise((resolve, reject) => grok_OpenTable(id, (t) => resolve(new DataFrame(t)))); }
+    openTable(id) { return new Promise((resolve, reject) => grok_OpenTable(id, (t) => resolve(new DataFrame(t)), (e) => reject(e))); }
 
     query(queryName, queryParameters = null, adHoc = false, pollingInterval = 1000) {
-        return new Promise((resolve, reject) => grok_Query(queryName, queryParameters, adHoc, pollingInterval, (t) => resolve(toJs(t))));
+        return new Promise((resolve, reject) => grok_Query(queryName, queryParameters, adHoc, pollingInterval, (t) => resolve(toJs(t)), (e) => reject(e)));
     }
 
     callQuery(queryName, queryParameters = null, adHoc = false, pollingInterval = 1000) {
-        return new Promise((resolve, reject) => grok_CallQuery(queryName, queryParameters, adHoc, pollingInterval, (c) => resolve(new FuncCall(c))));
+        return new Promise((resolve, reject) => grok_CallQuery(queryName, queryParameters, adHoc, pollingInterval, (c) => resolve(new FuncCall(c)), (e) => reject(e)));
     }
 
-    detectSemanticTypes(t) { return new Promise((resolve, reject) => grok_DetectSemanticTypes(t.d, (_) => resolve())); }
+    detectSemanticTypes(t) { return new Promise((resolve, reject) => grok_DetectSemanticTypes(t.d, (_) => resolve(), (e) => reject(e))); }
 
 }
