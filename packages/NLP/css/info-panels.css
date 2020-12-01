@@ -2,8 +2,8 @@
     display: flex;
 }
 
-.arrow {
-    padding: 5px 2px 5px 2px;
+.dropdown {
+    margin: 0px 5px;
 }
 
 .translation-area {
