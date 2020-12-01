@@ -15,7 +15,10 @@ let comprehendMedical;
 // UI components for the `Translation` panel
 let sourceLangInput = ui.choiceInput('', 'Undetermined', [...Object.keys(lang2code), 'Undetermined', 'Other']);
 let targetLangInput = ui.choiceInput('', 'English', [...Object.keys(lang2code), 'Choose...']);
-let headerDiv = ui.div([sourceLangInput.root, ui.divText('→', "arrow"), targetLangInput.root], "header-div");
+let headerDiv = ui.div([
+    ui.div([sourceLangInput.root], 'dropdown'),
+    ui.div([targetLangInput.root], 'dropdown')
+], 'header-div pure-form');
 let translationArea = ui.textArea('');
 translationArea.classList.add("translation-area");
 let mainDiv = ui.div([headerDiv, translationArea], "main-div");
