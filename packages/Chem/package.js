@@ -65,10 +65,14 @@ class ChemPackage extends DG.Package {
     //name: substructureSearch
     //input: column molStringsColumn
     //input: string molString
+    //input: bool substructLibrary
     //output: column result
-    substructureSearch(molStringsColumn, molString) {
-        return DG.Column.fromList('object', 'bitset',
-          [chemSubstructureSearch(molStringsColumn, molString)]);
+    substructureSearch(molStringsColumn, molString, substructLibrary) {
+        let result =
+            substructLibrary ?
+                chemSubstructureSearchLibrary(molStringsColumn, molString) :
+                chemSubstructureSearchGraph(molStringsColumn, molString);
+        return DG.Column.fromList('object', 'bitset', [result]);
     }
 
     //name: molColumnPropertyPanel

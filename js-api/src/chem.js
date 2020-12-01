@@ -58,12 +58,15 @@ export function diversitySearch(column, metric = SIMILARITY_METRIC.TANIMOTO, lim
  * @param {string} pattern - Pattern, either one of which RDKit supports
  * @returns {Promise<BitSet>}
  * */
-export async function substructureSearch(column, pattern, settings = {}) {
+export async function substructureSearch(column, pattern, settings = null) {
     
     let foo = await grok.functions.eval('Chem:substructureSearch');
     let call = await foo.prepare({
         'molStringsColumn': column,
-        'molString': pattern
+        'molString': pattern,
+        'substructLibrary':
+          (settings && settings.hasOwnProperty('substructLibrary') && settings.substructLibrary === false) ?
+            false : true
     });
     await call.call();
     // unpacking our BitSet object from a synthetic column

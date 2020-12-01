@@ -468,6 +468,14 @@ export class Package {
             resolve(cred);
         }));
     }
+
+    /** Returns properties for package
+     * @returns {Promise<object>} */
+    getProperties() {
+        return new Promise((resolve, reject) => grok_Package_Get_Properties(this.name, (c) => {
+            resolve(c);
+        }));
+    }
 }
 
 /**
