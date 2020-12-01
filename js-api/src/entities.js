@@ -26,14 +26,14 @@ export class Entity {
     /** Returns entity properties
      * @returns {Promise<Map>} props */
     getProperties() {
-        return new Promise((resolve, reject) => grok_EntitiesDataSource_GetProperties(grok.dapi.entities.s, this.d, (p) => resolve(p)));
+        return new Promise((resolve, reject) => grok_EntitiesDataSource_GetProperties(grok.dapi.entities.s, this.d, (p) => resolve(p), (e) => reject(e)));
     }
 
     /** Allows to set properties for entity
      * @param {Map} props
      * @returns Promise */
     setProperties(props) {
-        return new Promise((resolve, reject) => grok_EntitiesDataSource_SetProperties(grok.dapi.entities.s, this.d, props, (_) => resolve(_)));
+        return new Promise((resolve, reject) => grok_EntitiesDataSource_SetProperties(grok.dapi.entities.s, this.d, props, (_) => resolve(_), (e) => reject(e)));
     }
 
     /** Returns a string representing the object
@@ -196,7 +196,7 @@ export class Notebook extends Entity {
 
     /** Create Notebook on server for edit.
      * @returns {Promise<string>} Current notebook's name */
-    edit() { return new Promise((resolve, reject) => grok_Notebook_Edit(this.d, (f) => resolve(f))); }
+    edit() { return new Promise((resolve, reject) => grok_Notebook_Edit(this.d, (f) => resolve(f), (e) => reject(e))); }
 
     /** Environment name
      * @type {string} */
@@ -210,7 +210,7 @@ export class Notebook extends Entity {
 
     /** Converts Notebook to HTML code
      * @returns {Promise<string>} */
-    toHtml() { return new Promise((resolve, reject) => grok_Notebook_ToHtml(this.d, (html) => resolve(html))); }
+    toHtml() { return new Promise((resolve, reject) => grok_Notebook_ToHtml(this.d, (html) => resolve(html), (e) => reject(e))); }
 }
 
 /** @extends Entity
@@ -366,7 +366,7 @@ export class ScriptEnvironment extends Entity {
     get environment() { return grok_ScriptEnvironment_Environment(this.d); }
 
     /** Setup environment */
-    setup() { return new Promise((resolve, reject) => grok_ScriptEnvironment_Setup(this.d, () => resolve())); }
+    setup() { return new Promise((resolve, reject) => grok_ScriptEnvironment_Setup(this.d, () => resolve(), (e) => reject(e))); }
 }
 
 export class LogEventType extends Entity {
@@ -466,7 +466,7 @@ export class Package {
         return new Promise((resolve, reject) => grok_Package_Get_Credentials(this.name, (c) => {
             let cred = toJs(c);
             resolve(cred);
-        }));
+        }, (e) => reject(e)));
     }
 
     /** Returns properties for package
@@ -474,7 +474,7 @@ export class Package {
     getProperties() {
         return new Promise((resolve, reject) => grok_Package_Get_Properties(this.name, (c) => {
             resolve(c);
-        }));
+        }, (e) => reject(e)));
     }
 }
 
