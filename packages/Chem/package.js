@@ -1,3 +1,5 @@
+var rdKitModule = null;
+
 class ChemPackage extends DG.Package {
     
     //name: chemExportFunc
@@ -6,9 +8,9 @@ class ChemPackage extends DG.Package {
     
     /** Guaranteed to be executed exactly once before the execution of any function below */
     async init() {
-        await initRDKit();
+        rdKitModule = await initRDKitModule();
         console.log('RDKit initialized');
-        Module.prefer_coordgen(false);
+        rdKitModule.prefer_coordgen(false);
         this.STORAGE_NAME = 'rdkit_descriptors';
         this.KEY = 'selected';
     }
@@ -31,7 +33,7 @@ class ChemPackage extends DG.Package {
     //input: string smiles {semType: Molecule}
     //output: double cLogP
     getCLogP(smiles) {
-        let mol = Module.get_mol(smiles);
+        let mol = rdKitModule.get_mol(smiles);
         return JSON.parse(mol.get_descriptors()).CrippenClogP;
     }
 
@@ -40,7 +42,7 @@ class ChemPackage extends DG.Package {
     //input: string smiles {semType: Molecule}
     //output: widget result
     rdkitInfoPanel(smiles) {
-        let mol = Module.get_mol(smiles);
+        let mol = rdKitModule.get_mol(smiles);
         return new DG.Widget(ui.divV([
             this._svgDiv(mol),
             ui.divText(`${this.getCLogP(smiles)}`)

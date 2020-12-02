@@ -1,7 +1,7 @@
 // Through RDKit we operate on all acceptable strings representing
 
 function _morganFP(molString, fp_length = 128, fp_radius = 2) {
-    let mol = Module.get_mol(molString);
+    let mol = rdKitModule.get_mol(molString);
     let mfp = mol.get_morgan_fp(fp_radius, fp_length);
     mol.delete();
     return mfp;
@@ -87,9 +87,9 @@ function chemSubstructureSearchGraph(molStringsColumn, molString) {
     
     const len = molStringsColumn.length;
     let result = DG.BitSet.create(len);
-    let subMol = Module.get_mol(molString);
+    let subMol = rdKitModule.get_mol(molString);
     for (let i = 0; i < len; ++i) {
-        let mol = Module.get_mol(molStringsColumn.get(i));
+        let mol = rdKitModule.get_mol(molStringsColumn.get(i));
         let match = mol.get_substruct_match(subMol);
         if (match !== "{}")
             result.set(i, true, false);
@@ -123,7 +123,7 @@ function chemSubstructureSearchLibrary(molStringsColumn, molString) {
             foo.cachedLibrary = null;
         }
         foo.cachedForCol = molStringsColumn;
-        foo.cachedLibrary = new Module.SubstructLibrary();
+        foo.cachedLibrary = new rdKitModule.SubstructLibrary();
         for (let i = 0; i < molStringsColumn.length; ++i) {
             const smiles = molStringsColumn.get(i);
             foo.cachedLibrary.add_trusted_smiles(smiles);
@@ -134,8 +134,8 @@ function chemSubstructureSearchLibrary(molStringsColumn, molString) {
     
         const library = foo.cachedLibrary;
     
-        var query = Module.get_qmol(molString);
-        const matches = JSON.parse(library.get_matches(query));
+        var query = rdKitModule.get_mol(molString);
+        const matches = JSON.parse(library.get_matches(query,  false, 1, 2147483647));
         query.delete();
     
         let result = DG.BitSet.create(molStringsColumn.length);
