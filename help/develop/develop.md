@@ -268,7 +268,18 @@ grok publish <url> -k <dev-key>
 
 ### Sharing
 
-Just like other entities on the platform, packages are subject to [privileges](../govern/security.md#privileges). When sharing with users and groups of users, you can specify the rights (for viewing and editing) and choose if you want to notify the person in question.
+Just like other entities on the platform, packages are subject to [privileges](../govern/security.md#privileges). When sharing with users and groups of users, you can specify the rights (for viewing and editing) and choose if you want to notify the person in question. These privileges can be managed not only from the user interface, but also directly from the package. To do that, you should specify the eligible user groups in the `package.json` file:
+
+```json
+{
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ]
+}
+```
 
 To see packages available to you, click on `Manage | Packages`, or follow [this link](https://public.datagrok.ai/packages) from outside the platform.
 
