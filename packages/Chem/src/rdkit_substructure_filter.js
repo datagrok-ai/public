@@ -26,10 +26,10 @@ class SubstructureFilter extends DG.Filter {
     }
 
     applyFilter() {
-        let subMol = Module.get_mol(this.smiles);
+        let subMol = rdKitModule.get_mol(this.smiles);
 
         for (let i of this.dataFrame.filter.getSelectedIndexes()) {
-            let mol = Module.get_mol(this.column.get(i));
+            let mol = rdKitModule.get_mol(this.column.get(i));
             let match = mol.get_substruct_match(subMol);
             if (match === "{}" )
                 this.dataFrame.filter.set(i, false, false);

@@ -24,7 +24,7 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
         if (value == null || value === '')
             return;
 
-        let mol = this.molCache.getOrCreate(value, (s) => Module.get_mol(s));
+        let mol = this.molCache.getOrCreate(value, (s) => rdKitModule.get_mol(s));
 
         if (!mol.is_valid())
             return;
@@ -58,7 +58,7 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
     
             if (!scaffoldCache.has(rdkitMolSmiles)) {
     
-                let scaffoldMol = Module.get_mol(scaffoldMolString);
+                let scaffoldMol = rdKitModule.get_mol(scaffoldMolString);
                 if (!scaffoldMol.is_valid()) {
                     drawMolecule(rdkitMol);
                     return;
