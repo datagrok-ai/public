@@ -101,44 +101,57 @@ function chemSubstructureSearchGraph(molStringsColumn, molString) {
 
 function chemSubstructureSearchLibrary(molStringsColumn, molString) {
     
-    let df = molStringsColumn.dataFrame;
-    let col = molStringsColumn;
-    let library = null;
-    if (df == null) {
-        // no caching mode
-        library = new Module.SubstructLibrary();
-    } else {
-        // caching mode
-        if (df.temp.libraryCleaner != null) {
-            df.temp.libraryCleaner.unsubscribe();
-        }
-        df.temp.libraryCleaner = df.onValuesChanged.subscribe((_) => {
-            if (col != null && col.temp.rdkitLirary != null) {
-                col.temp.rdkitLirary.delete();
-                col.temp.rdkitLirary = null;
-            }
-        });
-        if (col.temp.rdkitLirary == null) {
-            col.temp.rdkitLirary = new Module.SubstructLibrary();
-            for (let i = 0; i < col.length; ++i) {
-                const smiles = molStringsColumn.get(i);
-                col.temp.rdkitLirary.add_trusted_smiles(smiles);
-            }
-        }
-        library = col.temp.rdkitLirary;
+    let invalidateCache = false;
+    let foo = chemSubstructureSearchLibrary;
+    
+    if (
+      typeof foo.cachedForCol == 'undefined' &&
+      typeof foo.cachedLibrary == 'undefined')
+      {
+        foo.cachedForCol = null;
+        foo.cachedLibrary = null;
+        invalidateCache = true;
     }
-  
+    
+    if (molStringsColumn !== foo.cachedForCol || molString === null) {
+        invalidateCache = true;
+    }
+    
+    if (invalidateCache) {
+        if (foo.cachedLibrary != null) {
+            foo.cachedLibrary.delete();
+            foo.cachedLibrary = null;
+        }
+        foo.cachedForCol = molStringsColumn;
+        foo.cachedLibrary = new Module.SubstructLibrary();
+        for (let i = 0; i < molStringsColumn.length; ++i) {
+            const smiles = molStringsColumn.get(i);
+            foo.cachedLibrary.add_trusted_smiles(smiles);
+        }
+    }
+    
+    const library = foo.cachedLibrary;
+    
     var query = Module.get_qmol(molString);
     const matches = JSON.parse(library.get_matches(query));
     query.delete();
-    let result = DG.BitSet.create(col.length);
-    for (let m of matches) {
-        result.set(m, true, false);
+    
+    /*
+    let resultString = '';
+    let idx = 0;
+    for (let c = 0; c < molStringsColumn.length; ++c) {
+        if (c === matches[idx]) {
+            idx++;
+            resultString += '1';
+        } else {
+            resultString += '0';
+        }
     }
     
-    if (df == null) {
-        library.delete();
-    }
+    return DG.BitSet.fromString(resultString);*/
     
+    let result = DG.BitSet.create(molStringsColumn.length);
+    for (let match of matches)
+        result.set(match, true, false);
     return result;
 }
