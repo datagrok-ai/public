@@ -62,7 +62,7 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
             if (molIsInMolBlock(scaffoldMolString, scaffoldMol)) {
                 const substructJson = rdkitMol.get_substruct_match(scaffoldMol);
                 if (substructJson !== '{}') {
-                    rdkitMol.generate_aligned_coords(scaffoldMol, true);
+                    rdkitMol.generate_aligned_coords(scaffoldMol, false);
                 }
                 drawMolecule(rdkitMol);
             }

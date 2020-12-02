@@ -8,7 +8,7 @@ class ChemPackage extends DG.Package {
     async init() {
         await initRDKit();
         console.log('RDKit initialized');
-        Module.prefer_coordgen(true);
+        Module.prefer_coordgen(false);
         this.STORAGE_NAME = 'rdkit_descriptors';
         this.KEY = 'selected';
     }
