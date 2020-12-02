@@ -126,7 +126,9 @@ function chemSubstructureSearchLibrary(molStringsColumn, molString) {
         foo.cachedLibrary = new rdKitModule.SubstructLibrary();
         for (let i = 0; i < molStringsColumn.length; ++i) {
             const smiles = molStringsColumn.get(i);
-            foo.cachedLibrary.add_trusted_smiles(smiles);
+            let tempMol = rdKitModule.get_mol(smiles);
+            foo.cachedLibrary.add_trusted_smiles(tempMol.get_smiles());
+            tempMol.delete();
         }
     }
     
@@ -135,7 +137,7 @@ function chemSubstructureSearchLibrary(molStringsColumn, molString) {
         const library = foo.cachedLibrary;
     
         var query = rdKitModule.get_mol(molString);
-        const matches = JSON.parse(library.get_matches(query,  false, 1, 2147483647));
+        const matches = JSON.parse(library.get_matches(query, false, 1, -1));
         query.delete();
     
         let result = DG.BitSet.create(molStringsColumn.length);
