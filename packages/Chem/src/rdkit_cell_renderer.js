@@ -6,6 +6,7 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
     constructor() {
         super();
         this.molCache = new DG.LruCache();
+        this.molScaffoldCache = new DG.LruCache();
         this.molCache.onItemEvicted = function (mol) { mol.delete(); };
     }
 
@@ -53,27 +54,33 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
             return true;
         }
         
-        let drawMoleculeWithScaffold = function(scaffoldMolString, rdkitMol) {
-            let scaffoldMol = Module.get_mol(scaffoldMolString);
-            if (!scaffoldMol.is_valid()) {
-                drawMolecule(rdkitMol);
-                return;
-            }
-            if (molIsInMolBlock(scaffoldMolString, scaffoldMol)) {
-                const substructJson = rdkitMol.get_substruct_match(scaffoldMol);
-                if (substructJson !== '{}') {
-                    rdkitMol.generate_aligned_coords(scaffoldMol, true);
+        const drawMoleculeWithScaffold = function(scaffoldMolString, rdkitMol, rdkitMolSmiles, scaffoldCache) {
+    
+            if (!scaffoldCache.has(rdkitMolSmiles)) {
+    
+                let scaffoldMol = Module.get_mol(scaffoldMolString);
+                if (!scaffoldMol.is_valid()) {
+                    drawMolecule(rdkitMol);
+                    return;
                 }
-                drawMolecule(rdkitMol);
+                if (molIsInMolBlock(scaffoldMolString, scaffoldMol)) {
+                    const substructJson = rdkitMol.get_substruct_match(scaffoldMol);
+                    if (substructJson !== '{}') {
+                        rdkitMol.generate_aligned_coords(scaffoldMol, true);
+                    }
+                }
+                scaffoldMol.delete();
+                scaffoldCache.set(rdkitMolSmiles, true);
             }
-            scaffoldMol.delete();
+    
+            drawMolecule(rdkitMol);
         }
     
         const molCol = gridCell.tableColumn.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
         let singleScaffoldMolString = molCol ? molCol.tags['chem-scaffold'] : null;
         
         if (singleScaffoldMolString) {
-            drawMoleculeWithScaffold(singleScaffoldMolString, mol);
+            drawMoleculeWithScaffold(singleScaffoldMolString, mol, value, this.molScaffoldCache);
         } else {
     
             let df = gridCell.tableColumn.dataFrame;
@@ -93,7 +100,7 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
             } else {
                 let idx = gridCell.tableRowIndex;
                 let scaffoldMolString = df.get(rowScaffoldCol.name, idx);
-                drawMoleculeWithScaffold(scaffoldMolString, mol);
+                drawMoleculeWithScaffold(scaffoldMolString, mol, value, this.molScaffoldCache);
             }
         }
     }

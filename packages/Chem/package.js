@@ -8,7 +8,7 @@ class ChemPackage extends DG.Package {
     async init() {
         await initRDKit();
         console.log('RDKit initialized');
-        Module.prefer_coordgen(true);
+        Module.prefer_coordgen(false);
         this.STORAGE_NAME = 'rdkit_descriptors';
         this.KEY = 'selected';
     }
@@ -59,7 +59,8 @@ class ChemPackage extends DG.Package {
     //input: bool sorted
     //output: dataframe result
     similarityScoring(molStringsColumn, molString, sorted) {
-        return chemSimilarityScoring(molStringsColumn, molString, {'sorted' : sorted});
+        let result = chemSimilarityScoring(molStringsColumn, molString, {'sorted' : sorted});
+        return (sorted ? result : DG.DataFrame.fromColumns([result]));
     }
     
     //name: substructureSearch

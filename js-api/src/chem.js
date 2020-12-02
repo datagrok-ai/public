@@ -22,7 +22,7 @@ import {SIMILARITY_METRIC} from "./const";
  * @param {boolean} settings.sorted -
  *     if set, returns a two-column dataframe with molecule strings and scores,
  *     sorted in descending order by the score
- * @returns {Promise<DataFrame>}
+ * @returns {Promise<DataFrame>, if sorted; Promise<Column>, otherwise}
  * */
 export async function similarityScoring(column, pattern, settings = { sorted: false }) {
     
@@ -33,7 +33,8 @@ export async function similarityScoring(column, pattern, settings = { sorted: fa
         'sorted': settings.sorted
     });
     await call.call();
-    return call.getParamValue('result');
+    let result = call.getParamValue('result');
+    return settings.sorted ? result : result.columns.byIndex(0);
     
 }
 
