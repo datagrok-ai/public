@@ -23,7 +23,8 @@ async function time(name, n, f) {
   
   await time('Substructure Search - Graph', n, async () => {
     for (let s of searchFor) {
-      await grok.chem.substructureSearch(df.col('smiles'), s, { substructLibrary: false });
+      let result = await grok.chem.substructureSearch(df.col('smiles'), s, { substructLibrary: false });
+      // console.log(s + ": " + result.toString());
     }
   });
   
@@ -33,7 +34,8 @@ async function time(name, n, f) {
   
   await time('Substructure Search - Library - Search', n, async () => {
     for (let s of searchFor) {
-      await grok.chem.substructureSearch(df.col('smiles'), s);
+      let result = await grok.chem.substructureSearch(df.col('smiles'), s);
+      // console.log(s + ": " + result.toString());
     }
   });
   
