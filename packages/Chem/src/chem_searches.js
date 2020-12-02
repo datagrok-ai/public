@@ -130,28 +130,18 @@ function chemSubstructureSearchLibrary(molStringsColumn, molString) {
         }
     }
     
-    const library = foo.cachedLibrary;
+    if (molString !== null) {
     
-    var query = Module.get_qmol(molString);
-    const matches = JSON.parse(library.get_matches(query));
-    query.delete();
+        const library = foo.cachedLibrary;
     
-    /*
-    let resultString = '';
-    let idx = 0;
-    for (let c = 0; c < molStringsColumn.length; ++c) {
-        if (c === matches[idx]) {
-            idx++;
-            resultString += '1';
-        } else {
-            resultString += '0';
-        }
+        var query = Module.get_qmol(molString);
+        const matches = JSON.parse(library.get_matches(query));
+        query.delete();
+    
+        let result = DG.BitSet.create(molStringsColumn.length);
+        for (let match of matches)
+            result.set(match, true, false);
+        return result;
+    
     }
-    
-    return DG.BitSet.fromString(resultString);*/
-    
-    let result = DG.BitSet.create(molStringsColumn.length);
-    for (let match of matches)
-        result.set(match, true, false);
-    return result;
 }
