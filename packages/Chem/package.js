@@ -59,7 +59,8 @@ class ChemPackage extends DG.Package {
     //input: bool sorted
     //output: dataframe result
     similarityScoring(molStringsColumn, molString, sorted) {
-        return chemSimilarityScoring(molStringsColumn, molString, {'sorted' : sorted});
+        let result = chemSimilarityScoring(molStringsColumn, molString, {'sorted' : sorted});
+        return (sorted ? result : DG.DataFrame.fromColumns([result]));
     }
     
     //name: substructureSearch
