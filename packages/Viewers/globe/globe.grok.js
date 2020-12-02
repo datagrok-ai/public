@@ -6,7 +6,7 @@ class GlobeViewer extends DG.JsViewer {
         // properties
         this.latitude = this.string('latitudeColumnName');
         this.longitude = this.string('longitudeColumnName');
-        this.magnitude = this.float('magnitude');
+        this.magnitude = this.float('magnitudeColumnName');
     }
 
     init() {
@@ -14,7 +14,7 @@ class GlobeViewer extends DG.JsViewer {
 
         let latCol = this.dataFrame.columns.bySemType(DG.SEMTYPE.LATITUDE);
         let lonCol = this.dataFrame.columns.bySemType(DG.SEMTYPE.LONGITUDE);
-        let magCol = this.dataFrame.getCol(this.options.magnitude);
+        let magCol = this.dataFrame.columns.toList().filter(col => col.type === 'double')[0];
 
         let points = [];
         for (let i = 0; i < this.dataFrame.rowCount; i++) {
