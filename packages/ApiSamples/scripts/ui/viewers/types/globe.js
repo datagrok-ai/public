@@ -1,5 +1,5 @@
 // https://datagrok.ai/help/visualize/viewers/globe
 
-let view = grok.shell.addTableView(grok.data.demo.geo());
-
-view.globe();
+grok.data.getDemoTable('geo/world_pop_1990.csv').then((t) => {
+    grok.shell.addTableView(t).addViewer('Globe');
+});
