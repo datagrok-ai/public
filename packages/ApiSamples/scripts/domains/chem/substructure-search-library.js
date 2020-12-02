@@ -18,7 +18,6 @@ async function time(name, n, f) {
   let df = await grok.data.getDemoTable('chem/zbb/99_p3_4.5-6.csv');
   const N = Math.min(2000, df.rowCount);
   df.rows.removeAt(N, df.rowCount - N, false);
-  let bsGraph = null, bsLibrary = null;
   
   const n = 10;
   
