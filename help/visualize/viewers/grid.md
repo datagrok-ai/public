@@ -48,7 +48,7 @@
 | Ctrl+click   | Invert column selection |
 | ≡            | Open column filter      |
 
-### Resizing and reordering
+### Resizing and Reordering
 
 | []()         |                         |
 |--------------|-------------------------|
@@ -57,7 +57,15 @@
 | Drag row header border    | Copy cell               |
 | Menu -> Column sizing     | Batch sizing options    |
 
-### Color-coding
+### Formatting
+
+|                                              |                         |
+|----------------------------------------------|-------------------------|
+| Right-click column header \| Format          |                         |
+| Right-click cell \| Current column \| Format |  Change datetime format |
+| F2 \| Tags \| format                         |                         |
+
+### Color-Coding
 
 |              |                         |
 |--------------|-------------------------|
@@ -66,7 +74,7 @@
 
 ![](grid-color-coding.gif "Color-coding")
 
-### Row summary columns
+### Row Summary Columns
 
 Summary columns is a way to visualize multiple values numerical across
 the row. This feature is useful for quick visual profiling of values. 
@@ -94,7 +102,7 @@ in each row.
 To add a default form: **Menu | Add | Forms | Default**
 To add a custom form: **Menu | Add | Forms | Custom...**
 
-### Custom cell renderers
+### Custom Cell Renderers
 
 ![Molecules](../../uploads/viewers/grid-molecules.png "Molecule renderer")
 

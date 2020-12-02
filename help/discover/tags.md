@@ -7,7 +7,7 @@ metadata could be set manually; additionally, some of it gets assigned automatic
 Some keys affect the way an object (such as a column) interacts with the platform; other have no
 effect at all, except that you can search objects by metadata.
 
-Below are some of the standard tags that related to tables or columns. To edit 
+Below are some of the standard tags related to tables or columns. To edit 
 column's metadata, right-click on it and select "Properties..." (or press F2 in the grid).
 
 ## semantic-type
@@ -24,22 +24,72 @@ Also, see [semantic-type](#semantic-type).
 ## format
 
 Applicable to numeric or datetime columns. Determines the way values should 
-be represented. In addition to the standard notation (example: "#.000"), the 
-following formats are predefined and could be used (they also appear as choices
-when you right-click on a column and open "Format" section):
+be represented.
  
-* int
-* two digits after comma
-* four digits after comma
-* max two digits after comma
-* scientific
-* money
-* compact long
-* compact
-* compact simple currency
-* percent
-* thousand separator
-* full precision
+### Numbers
+
+In addition to the standard notation (example: "#.000"), the following formats are predefined and could be used (they also appear as choices when you right-click on a column and open "Format" section):
+
+|           Format           | Example |
+|----------------------------|---------|
+| int                        | 71      |
+| two digits after comma     | 70.50   |
+| four digits after comma    | 70.5000 |
+| max two digits after comma | 70.5    |
+| scientific                 | 7E1     |
+| money                      | $70.50  |
+| compact long               | 70.5    |
+| compact                    | 70.5    |
+| compact simple currency    | $70.50  |
+| percent                    | 7,050%  |
+| thousand separator         | 71      |
+| full precision             | 70.5    |
+
+### Datetime
+
+The standard formats representing date and time include:
+
+|         Format          |          Example            |
+|-------------------------|-----------------------------|
+| MM/dd/yyyy HH:mm:ss.fff | 07/21/1991 00:00:00.000     |
+| M/d/yyyy                | 7/21/1991                   |
+| dd.MM.yyyy              | 21.07.1991                  |
+| M/d/yyyy h:mm tt        | 7/21/1991 12:00 AM          |
+| M/d/yyyy h:mm:ss tt     | 7/21/1991 12:00:00 AM       |
+| yyyy-MM-dd              | 1991-07-21                  |
+| dddd, MMMM d, yyyy      | Sunday, July 21, 1991       |
+| MMM d, yyyy             | Jul 21, 1991                |
+| h:mm:ss                 | 12:00:00                    |
+| h:mm:ss.fff             | 12:00:00.000                |
+| relative                | 29 years ago                |
+| auto                    | Jul 21, 1991                |
+
+In case you need to define a different date format, proceed to column properties and edit the template string. Here are the valid specifiers:
+
+| Symbol |          Meaning                 |          Example           |
+|--------|----------------------------------|----------------------------|
+| yy     | Year without the century         | 00, 01, ..., 20, ..., 99   |
+| yyyy   | Year with the century            | 0001, ..., 2020, ..., 9999 |
+| M      | Month                            | 1, 2, 3, ..., 12           |
+| MM     | Zero-padded month                | 01, 02, 03, ..., 12        |
+| MMM    | Abbreviated month name           | Jan, Feb, Mar, ..., Dec    |
+| MMMM   | Full month name                  | January, ..., December     |
+| d      | Day of the month                 | 1, 2, 3, ..., 31           |
+| dd     | Zero-padded day                  | 01, 02, 03, ..., 31        |
+| ddd    | Abbreviated weekday name         | Mon, ..., Fri, Sat, Sun    |
+| dddd   | Full weekday name                | Monday, ..., Sunday        |
+| h      | Hour (12-hour clock)             | 1, 2, 3, ..., 12           |
+| hh     | Zero-padded hour (12-hour clock) | 01, 02, 03, ..., 12        |
+| H      | Hour (24-hour clock)             | 0, 1, 2, ..., 23           |
+| HH     | Zero-padded hour (24-hour clock) | 00, 01, 02, ..., 23        |
+| m      | Minute                           | 0, 1, 2, ..., 59           |
+| mm     | Zero-padded minute               | 00, 01, 02, ..., 59        |
+| s      | Second                           | 0, 1, 2, ..., 59           |
+| ss     | Zero-padded second               | 00, 01, 02, ..., 59        |
+| f      | Second fraction (1 digit)        | 0, 1, ..., 9               |
+| ff     | Second fraction (2 digits)       | 00, 01, ..., 99            |
+| fff    | Second fraction (3 digits)       | 000, 001, ..., 999         |
+| tt     | 12-hour periods                  | AM, PM                     |
 
 ## formula
 
