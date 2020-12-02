@@ -3,9 +3,10 @@ let t = grok.data.testData('demog', 100);
 
 let predict = ui.columnInput('Predict', t,  t.col('age'));
 let features = ui.columnsInput('Features', t);
+features.value = [t.col('height'), t.col('weight')];
 
 // events
-predict.onInput(() => grok.shell.info(predict.value.map((col) => col.name)) );
+features.onInput(() => grok.shell.info(features.value.map((col) => col.name).join()));
 
 let inputs = [predict, features];
 let container = ui.div();
