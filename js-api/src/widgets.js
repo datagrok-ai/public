@@ -273,8 +273,8 @@ export class InputBase {
     get nullable() { return grok_InputBase_Get_Nullable(this.d); };
     set nullable(v) { return grok_InputBase_Set_Nullable(this.d, v); };
 
-    get value() { return grok_InputBase_Get_Value(this.d); };
-    set value(x) { return grok_InputBase_Set_Value(this.d, x); };
+    get value() { return toJs(grok_InputBase_Get_Value(this.d)); };
+    set value(x) { return toDart(grok_InputBase_Set_Value(this.d, x)); };
 
     get stringValue() { return grok_InputBase_Get_StringValue(this.d); };
     set stringValue(s) { return grok_InputBase_Set_StringValue(this.d, s); };
