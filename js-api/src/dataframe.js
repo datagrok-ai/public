@@ -349,6 +349,12 @@ export class Column {
      * @returns {Column} */
     static dateTime(name, length = 0) { return Column.fromType(TYPE.DATE_TIME, name, length); }
 
+    /** Creates a column containing dataframes with the specified name and length.
+     * @param {string} name
+     * @param {number} length
+     * @returns {Column} */
+    static dataFrame(name, length = 0) { return Column.fromType(TYPE.DATA_FRAME, name, length); }
+
     /** Creates a qualified number column with the specified name and length.
      *  Initialized values with [values], if it is specified; strips out the qualifier
      *  part if [exact] is true.
@@ -454,7 +460,7 @@ export class Column {
      * @param x
      * @param {boolean} notify
      */
-    set(i, x, notify = true) { grok_Column_SetValue(this.d, i, x, notify); }
+    set(i, x, notify = true) { grok_Column_SetValue(this.d, i, toDart(x), notify); }
 
     /** Returns whether i-th value is missing.
      * @param {number} i - Row index.
