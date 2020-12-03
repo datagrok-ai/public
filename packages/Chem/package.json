@@ -1,6 +1,6 @@
 {
   "name": "Chem",
-  "version": "0.3.0-6c8b910",
+  "version": "0.3.0-8b678c",
   "fullName": "Cheminformatics support",
   "description": "Cheminformatics support: \n\n* RDKit-based rendering \n* Molecule sketching \n*",
   "sources": [

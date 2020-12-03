@@ -126,9 +126,7 @@ function chemSubstructureSearchLibrary(molStringsColumn, molString) {
         foo.cachedLibrary = new rdKitModule.SubstructLibrary();
         for (let i = 0; i < molStringsColumn.length; ++i) {
             const smiles = molStringsColumn.get(i);
-            let tempMol = rdKitModule.get_mol(smiles);
-            foo.cachedLibrary.add_trusted_smiles(tempMol.get_smiles());
-            tempMol.delete();
+            foo.cachedLibrary.add_smiles(smiles);
         }
     }
     

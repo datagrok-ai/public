@@ -29,7 +29,7 @@ async function time(name, n, f) {
   });
   
   await time('Substructure Search - Library - Init', 1, async() => {
-    await grok.chem.substructureSearch(df.col('smiles'), searchFor[0]);
+    await grok.chem.substructureSearch(df.col('smiles'));
   });
   
   await time('Substructure Search - Library - Search', n, async () => {
