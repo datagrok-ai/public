@@ -1,6 +1,168 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2020.12.03 Stable Version
+
+In this release, we have introduced new [filtering functionality](https://www.youtube.com/watch?v=GM3XixUFFUs&t=2688s) 
+and exposed plenty of methods to our JavaScript API. In addition to general improvements of the platform's core, 
+Datagrok has been extended with packages in various domains, 
+from [cheminformatics](https://community.datagrok.ai/t/cheminformatics/457) 
+to [biosignal processing](https://community.datagrok.ai/t/biosignals-package/443) and
+ [natural language processing](https://www.youtube.com/watch?v=GM3XixUFFUs&t=94s)
+
+## Latest Docker Images
+
+* Datagrok (new): 
+  *  `docker pull datagrok/datagrok:1.0.88-451665c`
+  *  `docker pull datagrok/datagrok:stable`
+  
+* CVM (new): 
+  *  `docker pull datagrok/cvm:1.0.88-451665c`
+  *  `docker pull datagrok/cvm:stable`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* [Form viewer is now available in tooltips](https://community.datagrok.ai/t/using-tile-viewer-for-tooltip/424)
+* [Qualified numbers support for forms](https://community.datagrok.ai/t/some-viewers-cant-be-added/470)
+* JS API: DataFrame in cells
+* Save column format as part of the layout
+* ScatterPlot: do not apply "filter by zoom" _while_ zooming
+* Adjust columnsInput to return column name
+* [JS API: Viewer.type throws an error](https://community.datagrok.ai/t/viewers-type-error/444)
+* [Viewer properties: Collapse non-important sections by default](https://community.datagrok.ai/t/organization-of-viewer-property-panels/446)
+* Stata file handler
+* Chem: use LRU molecule cache to speed up rendering
+* JS API: an efficient LRU cache
+* [Grid: Not able to render custom html in cell if format tag is set](https://community.datagrok.ai/t/not-able-to-render-custom-html-in-cell-if-format-tag-is-set/451)
+* JS API: add showPopup() function
+* JS API: add event on viewer axis click
+* JS API: CsvImportOptions
+* Package deletion issue
+* Projects: after opening a project with a table without view, the automatically added view is not displayed in Scratchpad
+* Projects: if you open a project that has a table view layout, another empty view will be added to Scratchpad
+* Grid: content won't be copied between browser tabs
+* Grid: support for pasting to/from Excel
+* Saving settings breaks password fields
+* URI should correspond to an app, not a package
+* Scatter Plot: sometimes the plot gets zoomed out while panning
+* [Scatter Plot: log scale tickmarks improvements](https://community.datagrok.ai/t/scatterplot-issues-requests/434)
+* JS API: Ability to dock viewers
+* Mime-type sporadically comes as plain text
+* OpenId OAUTH Iframe support
+* Trellis Plot: Scatter plot is always displayed for entire table
+* [JS API: add getters and events for GridColumnList, GridColumn, and Events](https://community.datagrok.ai/t/requests-for-js-properties/441)
+* Bar Chart: an error when a bool column is selected for split
+* JS API: DockManager improvements
+* Cell renderers only work in related viewers the second time
+* JS API: add dirty flag cleaning method
+* Error after opening a sample table from a script
+* [Virtual columns are broken](https://community.datagrok.ai/t/virtual-columns/382)
+* JS API: add onEvent method for viewers
+* JS API: ui library: ability to easily pass css parameters
+* JS API: Automatically get an iterator
+* JS-based cell renderers: ability to specify default width and height
+* JS-based cell renderers only work after the table is opened for the second time
+* JS-based semantic type detection: short notation
+* JS API: add grok.dapi.logTypes
+* JS API: Add ColumnList.numerical(), ColumnList.byTags()
+* JS API: Ability to add Viewer as instance
+* Package files API endpoint must return correct HTTP codes
+* SAS importing: use R's haven instead of sasb7dat
+* JS API: ability to save / apply filter state
+* JS API: add ColumnList.replace()
+* Grid: mouse wheel event is overridden even when you can't scroll up/down anymore
+* JS API: add HtmlTable with remove method
+* Correlation Plot: Column names are displayed incorrectly
+* DbContext leaks connections
+* Usage Analysis: add a dashboard with the most important metrics 
+* [Grid: setting gridColumn.visible = true does not unhide it](https://community.datagrok.ai/t/visible-property-of-a-gridcolumn/429)
+* Queries: Parameterized queries do not return a dataframe
+* Queries: After execution, the "Refresh" button does not work in the table view
+* DB Tables: Inspecting the content of tables and columns does not work
+* Package file caching
+* Fire d4-viewer-added event on adding default view
+* Incorrect layout serialization
+* Python date format
+* JS API: Ability to get package version
+* Call functions from JS packages in JS clients
+* DataQueries with non-table results don't work
+* JS API: Ability to order categories in a string column
+* Columns | Sort: Exception when calling dialog for columns with int, double, datetime or bool types
+* JS API: Ability to retrieve oauth token
+* OpenID Auto-login
+* Filters: ability to filter missing values on/off
+* Filters: ability to select categories by Ctrl, Shift, or Ctrl+Shift-clicking
+* Viewer won't update on underlying dataframe changed
+* Stochastic Proximity Embedding improvements
+* Pie Chart: clicking on "no value" category returns 0 rows even if there are empty values
+* Pie Chart: "no value" color in the legend differs from the one on the pie chart
+* Grid: column auto-sizing does not work well with multi-line values
+* Packages initialization hangs on error
+* [Grid: scrollToPixels does not properly work](https://community.datagrok.ai/t/scrolling-of-grid-content/342/8)
+* Grid: resizing columns when the grid is horizontally scrolled does not work
+* OpenID: Check token audience
+* IP inside docker should be 127.0.0.1
+* JS API: grok.shell.addTableView is asynchronous inside
+* JS API: Ability to create a TableView without adding to shell
+* Filters: tooltip harmonization (available actions, counts)
+* Load indicator stuck
+* Filters: selection indication
+* JS API: Add dialog.close()
+* Filters: Categorical: use column header for sorting
+* Filters: Categorical: a column with the filtered count
+* Filters: Histograms: show filtered-out values in gray
+* Filters: Categorical: ability to sort by name or filtered count
+* Filters: categories indicator: [Select all / Deselect all / Invert all] context menu
+* Filters: "active filters" indicator: "Close others" action
+* Filters: an icon to expand / collapse all
+* Filters: global indicator: tooltip
+* Filters: categorical: in filtering mode, show blue checkboxes
+* Filters: categories: color-fill based on the filtered ratio
+* Filters: check boxes for category selection
+* Oracle NUMBER type handling
+* Normalization before clustering works well on dev/public, but throws exception locally on some columns
+* Generic Stochastic Proximity Embedding: all data types support
+* JS API: Add Column.fromBitSet() constructor
+* Grid: onCellValueEdited event
+* Filters: ability to turn the whole filter group on/off
+* Filters: ability to turn individual filters on/off
+* JS API: Chem: Sketcher: ability to get molfile representation
+* JS API: RangeSlider: add onValuesChanged event
+* JS API: map Dart iterable to JS iterables
+* Add normalization option in clustering 
+* Layouts: match columns by semantic type
+* Filters: top panel: ability to search filters
+* Filters: top panel: filter count indicators
+* Search boxes: ESC should clear input
+* Histograms: ignore margins between bins for hit testing
+* JS API: Ability to control xp.tables
+* Filters: Numerical: "filtering" indicator
+* Filters: Categorical: 'selected categories' indicator
+* Filters: Categorical Filters: search box
+* Filters: headers
+* Histograms: changing any visual setting via property panel triggers filter application
+* [JS API: add getters and setters for Range Slider](https://community.datagrok.ai/t/scrolling-of-grid-content/342/4)
+* JS API: Add first() aggregation
+* Compatibility between npm and Datagrok naming conventions
+* Scripting: Created scripts do not open
+* Add selection of distance metrics for clustering
+* Aggregation: Do not add a space if second part of a column name is an empty string
+* OpenId: pick key by kid instead of first
+* datagrok-tools: do not require dist for old packages (without webpack.config.js)
+* Packages: When function condition is set to another function call -- name is wrong
+* JS API: unpivoting
+* CSV import: column names are not trimmed
+* JS API: metadata handling for data frames and columns
+* JS API: BitSet.fromBytes(buffer, bitLength)
+* JS API: BitSet: similarity functions
+* JS API: creating a column from objects
+* JS API: BitSet.fromString('100101')
+* DataFrame: virtual columns
+* JS API: Support FileInfo & file type
+
+
 # 2020.08.11 Stable version
 
 ## Latest docker images
