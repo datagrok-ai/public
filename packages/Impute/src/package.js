@@ -5,7 +5,12 @@ import * as DG from "datagrok-api/dg";
 
 export let _package = new DG.Package();
 
-//preprocessing and metadata collection function
+//Preprocessing and metadata collection function
+//Passes the dataframe to a python script, which generates plots and collects additional metadata
+//Inputs:  data (type: dataframe) - table with missing values
+//Outputs: plt1 (type: HTML element) - NA correlation plot
+//         plt2 (type: HTML element) - matrix plot
+//         plt3 (type: HTML element) - cluster plot
 async function cleanMeta(data) {
     grok.shell.info('Preprocessing data . . .');
     let f = await grok.functions.eval("Impute:cleanMetaImpl");
@@ -21,6 +26,13 @@ async function cleanMeta(data) {
     return [plt1, plt2, plt3];
 }
 
+//Main imputation function
+//Calls the correct imputation method with previously specified hyperparameters
+//Inputs:  data (type: dataframe) - processed table containing missing values
+//         method (type: string) - imputation method selected by the user
+//         methodparams (type: list) - list of chosen hyperparameters
+//         columns (type: list) - list of columns to be imputed
+//Outputs: completeData (type: dataframe) - table of completed columns
 async function imputeWithMethod(data,method,methodparams,columns){
     let completeData;
 
@@ -125,6 +137,11 @@ async function imputeWithMethod(data,method,methodparams,columns){
     return(completeData);
 }
 
+//Column filtering function
+//Makes a new table from specified columns
+//Inputs:  data (type: dataframe) - original table
+//         colsList (type: list) - names of columns to be kept
+//Outputs: t (type: dataframe) - trimmed table
 function tableFilter(data,colsList){
     let l = [];
     colsList.forEach(col => l.push(data.columns.byName(col)));
@@ -132,42 +149,25 @@ function tableFilter(data,colsList){
     return(t);
 }
 
-function warnings(data,columnsData,columnsImpute,warningsContainer,keepCols,varRemoveThreshold){
+//Warnings generator function
+//Alerts user if too many values per column are missing, displays the columns and their stats in a summary table,
+//allows user to choose which columns are to be removed, parses column inputs.
+//Inputs:  data (type: dataframe) - original processed table with missing values
+//         columnsImpute (type: Object) - columns to be filled in
+//         columnsData (type: Object) - inferences are made from these columns
+//         varRemoveThreshold (type: Object) - minimum allowed fraction of missing values per column
+//         summaryTable (type: Object) - empty Object filled in by the warnings functions
+//         warningsContainer (type: ui.div()) - container for the info in summaryTable
+//Outputs: selectedCols (type: list) - list of all columns selected by the user
+//         columnsImpute (type: list) - list of columns to be imputed
+//         columnsData (type: list) - list of columns to be used for making inferences
+function warnings(data,columnsImpute,columnsData,varRemoveThreshold,summaryTable,warningsContainer){
 
-    function getButton (column,currentAction){
-        let bt;
-        if (currentAction === 'exclude column'){
-            bt = ui.button(currentAction,()=> {
-                delete keepCols[column];
-                summaryTable[column][2] = 'include column';
-                btGenerate(summaryTable);
-            });
-        } else if (currentAction === 'include column'){
-            bt = ui.button(currentAction,()=> {
-                keepCols[column] = column.split(" ")[0];
-                summaryTable[column][2] = 'exclude column';
-                btGenerate(summaryTable);
-            });
-        }
-        return bt;
-    }
-
-    function btGenerate(table){
-
-        let tb = ui.table(Object.entries(table), (item, idx) =>
-            [`${item[0]}:`, `${item[1][0]} (${item[1][1]})`, getButton(item[0],item[1][2])],
-            ['column', 'missing', 'action']);
-
-        $(warningsContainer).empty()
-        warningsContainer.appendChild(ui.h2('Columns summary'));
-        warningsContainer.appendChild(tb);
-    }
-
-    let summaryTable = {};
-    let selectedCols = [...new Set(columnsData.value.concat(columnsImpute.value))];
+    columnsImpute = columnsImpute.value.map((col) => col.name).join().split(',');
+    columnsData = columnsData.value.map((col) => col.name).join().split(',');
+    let selectedCols = [...new Set(columnsData.concat(columnsImpute))].filter(el => el !== '');
     selectedCols.forEach(col => {
 
-        keepCols[col] = col
         if (data.columns.byName(col).stats.missingValueCount /
             data.columns.byName(col).stats.totalCount > varRemoveThreshold.value) {
 
@@ -175,162 +175,185 @@ function warnings(data,columnsData,columnsImpute,warningsContainer,keepCols,varR
             tempStats[0] = data.columns.byName(col).stats.missingValueCount;
             tempStats[1] = data.columns.byName(col).stats.missingValueCount /
                 data.columns.byName(col).stats.totalCount;
-            tempStats[2] = 'exclude column';
+            tempStats[2] = ui.boolInput('',true);
             summaryTable[col] = tempStats;
         }
     });
 
-    btGenerate(summaryTable);
+    let tb = ui.table(Object.entries(summaryTable), (item, idx) =>
+            [`${item[0]}:`, `${item[1][0]} (${item[1][1]})`, item[1][2].root],
+        ['column', 'missing', 'keep']);
+
+    $(warningsContainer).empty()
+    warningsContainer.appendChild(ui.h2('Columns summary'));
+    warningsContainer.appendChild(tb);
+
+    return([selectedCols,columnsImpute,columnsData]);
+
+}
+
+//Column list filtering function
+//Makes sure columns deselected by the user are removed from the list
+//Inputs:  selectedCols (type: list) - list of all columns selected by the user
+//         summaryTable (type: Object) - Object containing info on which columns to drop
+//Outputs: keepCols (type: list) - filtered column list
+function colsSieve(selectedCols,summaryTable){
+    let dropCols = [];
+    Object.keys(summaryTable).forEach(key => {
+        if(summaryTable[key][2].value === false){
+            dropCols.push(key);
+        }
+    })
+    let keepCols = selectedCols.filter(x => !dropCols.includes(x));
+    return(keepCols);
+}
+
+//Parameter selection function
+//Chooses hyperparameter inputs based on the selected algorithm
+//Inputs:  method (type: string) - imputation method selected by the user
+//Outputs: methodparams (type: list) - list of ui.inputs related to the selected method
+function paramSelector(method) {
+
+    let methodparams;
+    if (method === 'mice::mice') {
+        let p1 = ui.intInput('Imputation iterations', 20);
+        p1.setTooltip('number of imputation iterations');
+        methodparams  = [p1];
+    }
+
+    if (method === 'Hmisc::aregImpute:pmm' || method === 'Hmisc::aregImpute:regression' || method === 'Hmisc::aregImpute:normpmm') {
+
+        let p1 = ui.intInput('Number of knots',0);
+        p1.setTooltip('number of knots to use for continuous variables')
+
+        let p2 = ui.boolInput('Tlinear transform',true);
+        p1.setTooltip('set to FALSE to allow a target variable to have a nonlinear left-hand-side transformation')
+
+        let p3 = ui.choiceInput('PMM type',2,[1,2,3]);
+        p1.setTooltip('type of matching to be used for predictive mean matching')
+
+        let p4 = ui.choiceInput('Match','weighted',['weighted', 'closest', 'kclosest']);
+        p1.setTooltip('donor observation sampling method')
+
+        let p5 = ui.choiceInput('Boot method','simple',['simple','approximate bayesian']);
+        p1.setTooltip('')
+
+        let p6 = ui.intInput('Burnin',10);
+        p1.setTooltip('more burn-in iterations may be required when multiple variables are missing on the same observations')
+
+        methodparams = [p1, p2, p3, p4, p5, p6];
+
+    }
+
+    if (method === 'VIM::kNN') {
+        let p1 = ui.intInput('Nearest neighbours', 10);
+        p1.setTooltip('number of nearest neighbours to be used by kNN');
+        methodparams  = [p1];
+    }
+
+    if (method === 'missMDA::FAMD') {
+
+        let p1 = ui.intInput('ncp', 9);
+        p1.setTooltip('number of components used to predict the missing entries ~(ncol() - 2)');
+
+        let p2 = ui.choiceInput('Reconstruction method','',['Regularized','EM']);
+
+        let p3 = ui.floatInput('Regularization coefficient',1);
+        p3.setTooltip('Used only if Regularized method is selected');
+        methodparams  = [p1, p2, p3];
+    }
+
+    if (method === 'missMDA::PCA') {
+        let p1 = ui.choiceInput('Reconstruction method','',['Regularized','EM']);
+
+        let p2 = ui.floatInput('Regularization coefficient',1);
+        p2.setTooltip('Used only if Regularized method is selected');
+        methodparams  = [p1, p2];
+    }
+
+    if (method === 'missMDA::MCA') {
+
+        let p1 = ui.intInput('ncp', 9);
+        p1.setTooltip('number of components used to predict the missing entries ~(ncol() - 2)');
+
+        let p2 = ui.choiceInput('Reconstruction method','',['Regularized','EM']);
+
+        let p3 = ui.floatInput('Regularization coefficient',1);
+        p3.setTooltip('Used only if Regularized method is selected');
+        methodparams  = [p1, p2, p3];
+    }
+
+    if (method === 'pcaMethods::nipals' || x === 'pcaMethods::ppca' || x === 'pcaMethods::bpca' || x === 'pcaMethods::nlpca') {
+
+        let p1 = ui.choiceInput('Scaling method','uv',['uv','vector','pareto']);
+        p1.setTooltip('matrix is centered and normalized using the selected method');
+        methodparams = [p1];
+    }
+
+    if (method === 'missForest::missForest'){
+        let p1 = ui.intInput('maxiter',10);
+
+        let p2 = ui.intInput('ntree',100);
+
+        let p3 = ui.boolInput('decreasing',true);
+
+        let p4 = ui.boolInput('replace',true);
+
+        let p5 = ui.choiceInput('parallelize','no',['no','variables','forests']);
+
+        methodparams = [p1, p2, p3, p4, p5];
+    }
+    return methodparams;
+}
+
+//Method selection function
+//Offers a subset of algorithms suitable for a given table
+//Inputs:  dfDtype (type: string) - table data type
+//Outputs: methodLst (type: ui.choiceInput) - selection of algorithms to choose from
+function methodSelector(dfDtype) {
+
+    let methodLst = ui.choiceInput('Algorithm','none',['none']);
+    if (dfDtype === 'continuous') {
+        methodLst = ui.choiceInput('Algorithm','',['Hmisc::aregImpute:pmm',
+            'Hmisc::aregImpute:regression', 'Hmisc::aregImpute:normpmm', 'VIM::kNN', 'mice::mice',
+            'missMDA::PCA', 'missMDA::FAMD', 'pcaMethods::nipals',  'pcaMethods::ppca',
+            'pcaMethods::bpca', 'pcaMethods::nlpca','missForest::missForest']);
+    }
+
+    if (dfDtype === 'categorical') {
+        methodLst = ui.choiceInput('Algorithm','',['Hmisc::aregImpute:pmm',
+            'VIM::kNN', 'mice::mice', 'missMDA::FAMD', 'missMDA::MCA','missForest::missForest']);
+    }
+
+    if (dfDtype === 'mixed') {
+        methodLst = ui.choiceInput('Algorithm','',['Hmisc::aregImpute:pmm',
+            'VIM::kNN', 'mice::mice', 'missMDA::FAMD','missForest::missForest']);
+    }
+
+    return methodLst;
 }
 
 //top-menu: ML | Impute | byMethod
 export async function byMethod() {
 
-    //parameter selection function
-    function paramSelector(x) {
-
-        if (x === 'mice::mice') {
-            let p1 = ui.intInput('Imputation iterations', 20);
-            p1.setTooltip('number of imputation iterations');
-            methodparams  = [p1];
-        }
-
-        if (x === 'Hmisc::aregImpute:pmm' || x === 'Hmisc::aregImpute:regression' || x === 'Hmisc::aregImpute:normpmm') {
-
-            let p1 = ui.intInput('Number of knots',0);
-            p1.setTooltip('number of knots to use for continuous variables')
-
-            let p2 = ui.boolInput('Tlinear transform',true);
-            p1.setTooltip('set to FALSE to allow a target variable to have a nonlinear left-hand-side transformation')
-
-            let p3 = ui.choiceInput('PMM type',2,[1,2,3]);
-            p1.setTooltip('type of matching to be used for predictive mean matching')
-
-            let p4 = ui.choiceInput('Match','weighted',['weighted', 'closest', 'kclosest']);
-            p1.setTooltip('donor observation sampling method')
-
-            let p5 = ui.choiceInput('Boot method','simple',['simple','approximate bayesian']);
-            p1.setTooltip('')
-
-            let p6 = ui.intInput('Burnin',10);
-            p1.setTooltip('more burn-in iterations may be required when multiple variables are missing on the same observations')
-
-            methodparams = [p1, p2, p3, p4, p5, p6];
-
-        }
-
-        if (x === 'VIM::kNN') {
-            let p1 = ui.intInput('Nearest neighbours', 10);
-            p1.setTooltip('number of nearest neighbours to be used by kNN');
-            methodparams  = [p1];
-        }
-
-        if (x === 'missMDA::FAMD') {
-
-            let p1 = ui.intInput('ncp', 9);
-            p1.setTooltip('number of components used to predict the missing entries ~(ncol() - 2)');
-
-            let p2 = ui.choiceInput('Reconstruction method','',['Regularized','EM']);
-
-            let p3 = ui.floatInput('Regularization coefficient',1);
-            p3.setTooltip('Used only if Regularized method is selected');
-            methodparams  = [p1, p2, p3];
-        }
-
-        if (x === 'missMDA::PCA') {
-            let p1 = ui.choiceInput('Reconstruction method','',['Regularized','EM']);
-
-            let p2 = ui.floatInput('Regularization coefficient',1);
-            p2.setTooltip('Used only if Regularized method is selected');
-            methodparams  = [p1, p2];
-        }
-
-        if (x === 'missMDA::MCA') {
-
-            let p1 = ui.intInput('ncp', 9);
-            p1.setTooltip('number of components used to predict the missing entries ~(ncol() - 2)');
-
-            let p2 = ui.choiceInput('Reconstruction method','',['Regularized','EM']);
-
-            let p3 = ui.floatInput('Regularization coefficient',1);
-            p3.setTooltip('Used only if Regularized method is selected');
-            methodparams  = [p1, p2, p3];
-        }
-
-        if (x === 'pcaMethods::nipals' || x === 'pcaMethods::ppca' || x === 'pcaMethods::bpca' || x === 'pcaMethods::nlpca') {
-
-            let p1 = ui.choiceInput('Scaling method','uv',['uv','vector','pareto']);
-            p1.setTooltip('matrix is centered and normalized using the selected method');
-            methodparams = [p1];
-        }
-
-        if (x === 'missForest::missForest'){
-            let p1 = ui.intInput('maxiter',10);
-
-            let p2 = ui.intInput('ntree',100);
-
-            let p3 = ui.boolInput('decreasing',true);
-
-            let p4 = ui.boolInput('replace',true);
-
-            let p5 = ui.choiceInput('parallelize','no',['no','variables','forests']);
-
-            methodparams = [p1, p2, p3, p4, p5];
-        }
-        return methodparams;
-    }
-
-    function methodSelector(x) {
-
-        let placeHolder = ui.choiceInput('Algorithm','none',['none']);
-        if (x === 'continuous') {
-            placeHolder = ui.choiceInput('Algorithm','',['Hmisc::aregImpute:pmm',
-                'Hmisc::aregImpute:regression', 'Hmisc::aregImpute:normpmm', 'VIM::kNN', 'mice::mice',
-                'missMDA::PCA', 'missMDA::FAMD', 'pcaMethods::nipals',  'pcaMethods::ppca',
-                'pcaMethods::bpca', 'pcaMethods::nlpca','missForest::missForest']);
-        }
-
-        if (x === 'categorical') {
-            placeHolder = ui.choiceInput('Algorithm','',['Hmisc::aregImpute:pmm',
-                'VIM::kNN', 'mice::mice', 'missMDA::FAMD', 'missMDA::MCA','missForest::missForest']);
-        }
-
-        if (x === 'mixed') {
-            placeHolder = ui.choiceInput('Algorithm','',['Hmisc::aregImpute:pmm',
-                'VIM::kNN', 'mice::mice', 'missMDA::FAMD','missForest::missForest']);
-        }
-
-        return placeHolder;
-    }
-
+    //Create dialogue window
     let v = ui.dialog('Missing Value Imputation');
 
+    //region 1st Wizard window
+    //region INPUTS
     //container0 inputs
     let tableName = ui.choiceInput('Table', null, grok.shell.tableNames);
     let dataTable = grok.shell.tableByName(tableName.value);
     let columnsImpute = ui.columnsInput('Impute', dataTable);
     let columnsData = ui.columnsInput('Impute from', dataTable);
     let varRemoveThreshold = ui.floatInput('Column NA threshold',0.05)
-
-    //container1 inputs
-    let dfDtype = ui.choiceInput('Data type','',['continuous','categorical','mixed']);
-    let method = methodSelector(dfDtype.value);
-
-    //metadata collection switch
-    let methodparams = [];
-
-    //add containers
-    let container0 = ui.div();
-    let container1 = ui.div();
-    let container2 = ui.div();
-
-    //add accordeons
-    let acc0 = ui.accordion();
-
-
-    //data preprocessing
     let pltInputs0 = ui.inputs([tableName,columnsImpute,columnsData,varRemoveThreshold]);
+
+    //create container0, add inputs
+    let container0 = ui.div();
     container0.appendChild(pltInputs0);
+
+    //refresh column inputs when changing table
     tableName.onChanged(function() {
         dataTable = grok.shell.tableByName(tableName.value);
         columnsImpute = ui.columnsInput('Impute', dataTable);
@@ -339,33 +362,34 @@ export async function byMethod() {
         container0.replaceChild(pltInputs1,pltInputs0);
         pltInputs0 = pltInputs1;
     });
+    //endregion
 
+    //region WARNINGS
+    //create warnings, parse column inputs
+    let colsArr;
+    let summaryTable;
     let warningsContainer = ui.div();
-    let keepCols;
     columnsImpute.onChanged(function() {
-        $(warningsContainer).empty()
-        keepCols = {};
-        warnings(dataTable,columnsData,columnsImpute,warningsContainer,keepCols,varRemoveThreshold);
+        summaryTable = {};
+        colsArr = warnings(dataTable,columnsImpute,columnsData,varRemoveThreshold,summaryTable,warningsContainer);
     });
     columnsData.onChanged(function() {
-        $(warningsContainer).empty()
-        keepCols = {};
-        warnings(dataTable,columnsData,columnsImpute,warningsContainer,keepCols,varRemoveThreshold);
+        summaryTable = {};
+        colsArr = warnings(dataTable,columnsImpute,columnsData,varRemoveThreshold,summaryTable,warningsContainer);
     });
     varRemoveThreshold.onChanged(function() {
-        $(warningsContainer).empty()
-        keepCols = {};
-        warnings(dataTable,columnsData,columnsImpute,warningsContainer,keepCols,varRemoveThreshold);
+        summaryTable = {};
+        colsArr = warnings(dataTable,columnsImpute,columnsData,varRemoveThreshold,summaryTable,warningsContainer);
     });
+    //endregion
 
-
-
-    //plotting
+    //region PLOTTING
+    //display analytic plots
     let plottingContainer = ui.div();
     plottingContainer.appendChild(ui.button('GENERATE PLOTS',async () => {
 
         //preprocess and extract metadata
-        let filteredTable = tableFilter(dataTable,Object.values(keepCols));
+        let filteredTable = tableFilter(dataTable,colsSieve(colsArr[0],summaryTable));
         let metaOut = await cleanMeta(filteredTable);
 
         grok.shell.info('Generating: NA correlation, dendrogram and matrix plots');
@@ -377,12 +401,24 @@ export async function byMethod() {
         let node3 = tableView.dockManager.dock(metaOut[2], 'fill', node1, 'clusterPlot');
 
     }));
+    //endregion
+    //endregion
 
-
-    //impute method selection
+    //region 2nd Wizard window
+    //region INPUTS
+    //container1 inputs
+    let dfDtype = ui.choiceInput('Data type','',['continuous','categorical','mixed']);
+    let method = methodSelector(dfDtype.value);
     let impInputs0 = ui.inputs( [dfDtype, method]);
+    let methodparams;
+
+    //create container1, add inputs
+    let container1 = ui.div();
+    let container2 = ui.div();
+    let acc0 = ui.accordion();
     container1.appendChild(impInputs0);
 
+    //refresh algorithms and parameters input when changing dfDtype
     dfDtype.onChanged(function () {
         $(container2).empty()
         method = methodSelector(dfDtype.value);
@@ -396,8 +432,10 @@ export async function byMethod() {
         });
     });
     acc0.addPane('parameters', () => container2)
+    //endregion
 
-    //add containers to dialogue
+    //region ASSEMBLE & IMPUTE
+    //add containers to dialogue window
     v.add(container0);
     v.add(warningsContainer);
     v.add(plottingContainer);
@@ -407,19 +445,18 @@ export async function byMethod() {
         //progress indicator
         let pi = DG.TaskBarProgressIndicator.create('Imputing...');
 
-        //preprocess without extracting metadata and impute
+        //display basic info
         grok.shell.info('Imputing with: ' + method.value);
         grok.shell.info(methodparams.map((i) => `${i.caption}: ${i.stringValue}`).join('<br>'));
 
-        //imputation function
-        keepCols = Object.values(keepCols);
-        columnsImpute = columnsImpute.value;
-        columnsImpute = columnsImpute.filter(value => keepCols.includes(value));
-
-        let filteredTable = tableFilter(dataTable,keepCols);
-        let completeData = await imputeWithMethod(filteredTable,method.value,methodparams,columnsImpute);
+        //impute with selected method
+        let filteredTable = tableFilter(dataTable,colsSieve(colsArr[0],summaryTable));
+        let completeData = await imputeWithMethod(filteredTable,method.value,methodparams,
+            colsSieve(colsArr[1],summaryTable));
         grok.shell.addTableView(completeData);
         pi.close();
 
     }).show();
+    //endregion
+    //endregion
 }
