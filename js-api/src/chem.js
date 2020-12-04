@@ -48,7 +48,7 @@ export async function similarityScoring(column, pattern, settings = { sorted: fa
  * @returns {Promise<DataFrame>}
  * */
 export function diversitySearch(column, metric = SIMILARITY_METRIC.TANIMOTO, limit = 10) {
-    return new Promise((resolve, reject) => grok_Chem_DiversitySearch(column.d, metric, limit, (mols) => resolve(mols)));
+    return new Promise((resolve, reject) => grok_Chem_DiversitySearch(column.d, metric, limit, (mols) => resolve(mols), (e) => reject(e)));
 }
 
 /**
@@ -86,7 +86,7 @@ export async function substructureSearch(column, pattern = null, settings = null
  * @returns {Promise<DataFrame>}
  * */
 export function rGroup(table, column, core) {
-    return new Promise((resolve, reject) => grok_Chem_RGroup(table.d, column, core, () => resolve(table)));
+    return new Promise((resolve, reject) => grok_Chem_RGroup(table.d, column, core, () => resolve(table), (e) => reject(e)));
 }
 
 /**
@@ -97,7 +97,7 @@ export function rGroup(table, column, core) {
  * @returns {Promise<string>}
  * */
 export function mcs(column) {
-    return new Promise((resolve, reject) => grok_Chem_MCS(column.d, (mcs) => resolve(mcs)));
+    return new Promise((resolve, reject) => grok_Chem_MCS(column.d, (mcs) => resolve(mcs), (e) => reject(e)));
 }
 
 /**
@@ -111,7 +111,7 @@ export function mcs(column) {
  * @returns {Promise<DataFrame>}
  * */
 export function descriptors(table, column, descriptors) {
-    return new Promise((resolve, reject) => grok_Chem_Descriptors(table.d, column, descriptors, () => resolve(table)));
+    return new Promise((resolve, reject) => grok_Chem_Descriptors(table.d, column, descriptors, () => resolve(table), (e) => reject(e)));
 }
 
 /**
@@ -122,7 +122,7 @@ export function descriptors(table, column, descriptors) {
  * @returns {Promise<Object>}
  * */
 export function descriptorsTree() {
-    return new Promise((resolve, reject) => grok_Chem_DescriptorsTree((tree) => resolve(JSON.parse(tree))));
+    return new Promise((resolve, reject) => grok_Chem_DescriptorsTree((tree) => resolve(JSON.parse(tree)), (e) => reject(e)));
 }
 
 /**

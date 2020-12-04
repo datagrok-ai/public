@@ -17,7 +17,7 @@ import {DataFrame} from "./dataframe";
  * */
 export function applyModel(name, table, columnNamesMap = {}, showProgress = true) {
     return new Promise((resolve, reject) =>
-        grok_ML_ApplyModel(name, table.d, (t) => resolve(new DataFrame(t)), columnNamesMap, showProgress));
+        grok_ML_ApplyModel(name, table.d, (t) => resolve(new DataFrame(t)), (e) => reject(e), columnNamesMap, showProgress));
 }
 
 /** Imputes missing values.
@@ -31,7 +31,7 @@ export function applyModel(name, table, columnNamesMap = {}, showProgress = true
  * */
 export function missingValuesImputation(table, impute, data, nearestNeighbours) {
     return new Promise((resolve, reject) =>
-        grok_ML_MissingValuesImputation(table.d, impute, data, nearestNeighbours, () => resolve(table)));
+        grok_ML_MissingValuesImputation(table.d, impute, data, nearestNeighbours, () => resolve(table), (e) => reject(e)));
 }
 
 /** Clusters data.
@@ -44,7 +44,7 @@ export function missingValuesImputation(table, impute, data, nearestNeighbours) 
  * */
 export function cluster(table, features, clusters) {
     return new Promise((resolve, reject) =>
-        grok_ML_Cluster(table.d, features, clusters, () => resolve(table)));
+        grok_ML_Cluster(table.d, features, clusters, () => resolve(table), (e) => reject(e)));
 }
 
 /** Principal component analysis.
@@ -59,7 +59,7 @@ export function cluster(table, features, clusters) {
  * */
 export function pca(table, features, components, center, scale) {
     return new Promise((resolve, reject) =>
-        grok_ML_PCA(table.d, features, components, center, scale, () => resolve(table)));
+        grok_ML_PCA(table.d, features, components, center, scale, () => resolve(table), (e) => reject(e)));
 }
 
 /** Creates a table with random values from the specified distribution.
@@ -74,5 +74,5 @@ export function pca(table, features, components, center, scale) {
  * */
 export function randomData(table, distribution, params, seed) {
     return new Promise((resolve, reject) =>
-        grok_ML_RandomData(table.d, distribution, params, seed, () => resolve(table)));
+        grok_ML_RandomData(table.d, distribution, params, seed, () => resolve(table), (e) => reject(e)));
 }
