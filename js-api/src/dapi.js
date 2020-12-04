@@ -28,7 +28,7 @@ export class Dapi {
     getEntities(ids) {
         return new Promise((resolve, reject) => grok_Dapi_Entities_GetEntities(ids, (q) => {
             return resolve(q.map(toJs));
-        }));
+        }, (e) => reject(e)));
     }
 
     /** Entities API endpoint
@@ -161,14 +161,14 @@ export class HttpDataSource {
         if (options.order !== undefined)
             this.order(options.order);
         let s = this.entityToJs;
-        return new Promise((resolve, reject) => grok_DataSource_List(this.s, (q) => resolve(q.map(s))));
+        return new Promise((resolve, reject) => grok_DataSource_List(this.s, (q) => resolve(q.map(s)), (e) => reject(e)));
     }
 
     /** Returns fist entity that satisfy the filtering criteria (see {@link filter}).
      *  @returns Promise<object>  */
     first() {
         let s = this.entityToJs;
-        return new Promise((resolve, reject) => grok_DataSource_First(this.s, (q) => resolve(s(q))));
+        return new Promise((resolve, reject) => grok_DataSource_First(this.s, (q) => resolve(s(q)), (e) => reject(e)));
     }
 
     /** Returns an entity with the specified id.
@@ -260,13 +260,13 @@ export class UsersDataSource extends HttpDataSource {
      * @returns {Promise<User>} */
     current() {
         let s = this.entityToJs;
-        return new Promise((resolve, reject) => grok_UsersDataSource_Current(this.s, (q) => resolve(s(q))));
+        return new Promise((resolve, reject) => grok_UsersDataSource_Current(this.s, (q) => resolve(s(q)), (e) => reject(e)));
     }
 
     /** Returns current session
      * @returns {Promise<UserSession>} */
     currentSession() {
-        return new Promise((resolve, reject) => grok_UsersDataSource_CurrentSession(this.s, (q) => resolve(toJs(q))));
+        return new Promise((resolve, reject) => grok_UsersDataSource_CurrentSession(this.s, (q) => resolve(toJs(q)), (e) => reject(e)));
     }
 }
 
@@ -396,21 +396,21 @@ export class EntitiesDataSource extends HttpDataSource {
      * @param {List<Map>} props
      * @returns {Promise} */
     saveProperties(props) {
-        return new Promise((resolve, reject) => grok_EntitiesDataSource_SaveProperties(this.s, props, (_) => resolve()));
+        return new Promise((resolve, reject) => grok_EntitiesDataSource_SaveProperties(this.s, props, (_) => resolve(), (e) => reject(e)));
     }
 
     /** Returns entity properties
      * @param {Entity} entity
      * @returns {Promise<Map>} props */
     getProperties(entity) {
-        return new Promise((resolve, reject) => grok_EntitiesDataSource_GetProperties(this.s, entity.d, (p) => resolve(p)));
+        return new Promise((resolve, reject) => grok_EntitiesDataSource_GetProperties(this.s, entity.d, (p) => resolve(p), (e) => reject(e)));
     }
 
     /** Deletes entity properties
      * @param {List<Map>} props
      * @returns {Promise} */
     deleteProperties(props) {
-        return new Promise((resolve, reject) => grok_EntitiesDataSource_DeleteProperties(this.s, props, (_) => resolve()));
+        return new Promise((resolve, reject) => grok_EntitiesDataSource_DeleteProperties(this.s, props, (_) => resolve(), (e) => reject(e)));
     }
 }
 
@@ -431,7 +431,7 @@ export class CredentialsDataSource extends HttpDataSource {
      * @returns {Promise<Credentials>} */
     forEntity(e) {
         let s = this.entityToJs;
-        return new Promise((resolve, reject) => grok_CredentialsDataSource_ForEntity(this.s, e.d, (c) => resolve(s(c))));
+        return new Promise((resolve, reject) => grok_CredentialsDataSource_ForEntity(this.s, e.d, (c) => resolve(s(c)), (e) => reject(e)));
     }
 }
 
@@ -451,7 +451,7 @@ export class LayoutsDataSource extends HttpDataSource {
      * @returns {Promise<List<ViewLayout>>} */
     getApplicable(t) {
         let s = this.entityToJs;
-        return new Promise((resolve, reject) => grok_LayoutsDataSource_Applicable(this.s, t.d, (q) => resolve(q.map(s))));
+        return new Promise((resolve, reject) => grok_LayoutsDataSource_Applicable(this.s, t.d, (q) => resolve(q.map(s)), (e) => reject(e)));
     }
 }
 
@@ -508,7 +508,7 @@ export class UserDataStorage {
      * @returns {Promise}*/
     postValue(name, key, value, currentUser = true) {
         return new Promise((resolve, reject) =>
-            grok_Dapi_UserDataStorage_PostValue(name, key, value, currentUser, () => resolve()));
+            grok_Dapi_UserDataStorage_PostValue(name, key, value, currentUser, () => resolve(), (e) => reject(e)));
     }
 
     /** Saves a map to Users Data Storage, will be appended to existing data
@@ -518,7 +518,7 @@ export class UserDataStorage {
      * @returns {Promise}*/
     post(name, data, currentUser = true) {
         return new Promise((resolve, reject) =>
-            grok_Dapi_UserDataStorage_Post(name, data, currentUser, () => resolve()));
+            grok_Dapi_UserDataStorage_Post(name, data, currentUser, () => resolve(), (e) => reject(e)));
     }
 
     /** Saves a map to Users Data Storage, will replace existing data
@@ -528,7 +528,7 @@ export class UserDataStorage {
      * @returns {Promise}*/
     put(name, data, currentUser = true) {
         return new Promise((resolve, reject) =>
-            grok_Dapi_UserDataStorage_Put(name, data, currentUser, () => resolve()));
+            grok_Dapi_UserDataStorage_Put(name, data, currentUser, () => resolve(), (e) => reject(e)));
     }
 
     /** Retrieves a map from Users Data Storage
@@ -537,7 +537,7 @@ export class UserDataStorage {
      * @returns {Promise<Map>} */
     get(name, currentUser = true) {
         return new Promise((resolve, reject) =>
-            grok_Dapi_UserDataStorage_Get(name, currentUser, (data) => resolve(data)));
+            grok_Dapi_UserDataStorage_Get(name, currentUser, (data) => resolve(data), (e) => reject(e)));
     }
 
     /** Retrieves a single value from Users Data Storage
@@ -547,7 +547,7 @@ export class UserDataStorage {
      * @returns {Promise<string>} */
     getValue(name, key, currentUser = true) {
         return new Promise((resolve, reject) =>
-            grok_Dapi_UserDataStorage_GetValue(name, key, currentUser, (value) => resolve(value)));
+            grok_Dapi_UserDataStorage_GetValue(name, key, currentUser, (value) => resolve(value), (e) => reject(e)));
     }
 
     /** Removes a single value from Users Data Storage
@@ -557,6 +557,6 @@ export class UserDataStorage {
      * @returns {Promise} */
     remove(name, key, currentUser = true) {
         return new Promise((resolve, reject) =>
-            grok_Dapi_UserDataStorage_Delete(name, key, currentUser, () => resolve()));
+            grok_Dapi_UserDataStorage_Delete(name, key, currentUser, () => resolve(), (e) => reject(e)));
     }
 }

@@ -59,7 +59,7 @@ export class DemoDatasets {
      * grok.data.getDemoTable("sensors/eeg.csv").then((t) => grok.shell.addTableView(t));
      * @returns {Promise<DataFrame>}*/
     loadDemoTable(path) {
-        return new Promise((resolve, reject) => grok_GetDemoTable(path, (t) => resolve(toJs(t))));
+        return new Promise((resolve, reject) => grok_GetDemoTable(path, (t) => resolve(toJs(t)), (e) => reject(e)));
     }
 }
 
