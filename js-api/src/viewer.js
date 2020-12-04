@@ -69,7 +69,7 @@ export class Viewer {
 
     getInfo() { return grok_Viewer_GetInfo(this.d); }
 
-    get properties() { return grok_Viewer_Get_Property(this.d); }
+    get properties() { return grok_Viewer_Get_Properties(this.d); }
 
     /** Closes and detaches the viewer. */
     close() { grok_Viewer_Close(this.d); }
