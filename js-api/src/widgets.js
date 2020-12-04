@@ -547,5 +547,6 @@ export class ColumnComboBox extends DartWidget {
     get vertical() { return grok_ColumnComboBox_Get_Vertical(this.d); }
 
     /** @type {string} */
-    get caption() { return grok_ColumnComboBox_Caption(this.d); }
+    get caption() { return grok_ColumnComboBox_Get_Caption(this.d); }
+    set caption(c) { return grok_ColumnComboBox_Set_Caption(this.d, c); }
 }
