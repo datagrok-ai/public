@@ -535,7 +535,7 @@ export class HtmlTable extends DartWidget {
     remove(item) { grok_HtmlTable_Remove(this.d, item); }
 }
 
-export class ColumnComboBox extends InputBase {
+export class ColumnComboBox extends DartWidget {
     /** @constructs {ColumnComboBox} */
     constructor(d) { super(d); }
 
