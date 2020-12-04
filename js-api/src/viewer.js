@@ -67,6 +67,8 @@ export class Viewer {
      *  @returns: {object} */
     getOptions()  { return JSON.parse(grok_Viewer_Serialize(this.d)); }
 
+    getInfo() { return grok_Viewer_GetInfo(this.d); }
+
     get properties() { return grok_Viewer_Get_Property(this.d); }
 
     /** Closes and detaches the viewer. */
