@@ -59,18 +59,20 @@
 
 ### Formatting
 
-|                                              |                         |
-|----------------------------------------------|-------------------------|
-| Right-click column header \| Format          |                         |
-| Right-click cell \| Current column \| Format |  Change datetime format |
-| F2 \| Tags \| format                         |                         |
+|                                                |                         |
+|------------------------------------------------|-------------------------|
+| Right-click column header \|  Format           |  Change datetime format |
+| Right-click cell \|  Current column \|  Format |  Change datetime format |
+| Column Properties (F2) \|  Tags \|  format     |  Change datetime format |
+
+![](grid-formatting.gif "Date and number formatting")
 
 ### Color-Coding
 
 |              |                         |
 |--------------|-------------------------|
-| Menu \| Color coding \| On/Off  | Turn color-coding on/off for all columns  |
-| Menu \| Color coding \| Color scheme  | Select a palette  |
+| Menu \|  Color coding \|  On/Off  | Turn color-coding on/off for all columns  |
+| Menu \|  Color coding \|  Color scheme  | Select a palette  |
 
 ![](grid-color-coding.gif "Color-coding")
 
