@@ -114,17 +114,16 @@ export class ChordViewer extends DG.JsViewer {
             let sourceCenter = (sourceBlock.end - sourceBlock.start) / 2;
             let targetCenter = (targetBlock.end - targetBlock.start) / 2;
 
-            // TODO: Calculate `start` and `end` based on numColumns
             this.chords.push({
                 source: {
                     id: sourceId,
-                    start: sourceCenter - (sourceCenter / 2),
-                    end: sourceCenter + (sourceCenter / 2)
+                    start: (sourceBlock.end - sourceBlock.start) / 4,
+                    end: (sourceBlock.len - sourceCenter / 2) / 2
                 },
                 target: {
                     id: targetId,
-                    start: targetCenter - (targetCenter / 2),
-                    end: targetCenter + (targetCenter / 2)
+                    start: (targetBlock.len - targetCenter / 2) / 2,
+                    end: targetBlock.len
                 },
                 value: aggVal
             });
@@ -144,12 +143,13 @@ export class ChordViewer extends DG.JsViewer {
         let width = this.root.clientWidth;
         let height = this.root.clientHeight;
         let size = Math.min(width, height);
-        let svg = d3.select(this.root)
-                    .append("div")
-                        .attr('id', 'chart')
-                        .attr('class', 'chord-diagram-container')
-                        .attr('width', size)
-                        .attr('height', size);
+
+        d3.select(this.root)
+          .append("div")
+            .attr('id', 'chart')
+            .attr('class', 'chord-diagram-container')
+            .attr('width', size)
+            .attr('height', size);
 
         let circos = Circos({
             container: '#chart',
