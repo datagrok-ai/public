@@ -83,15 +83,22 @@ export class WordCloudViewer extends DG.JsViewer {
         let sortedWords = Object.keys(this.freqMap).sort((a, b) => {
             this.freqMap[b] - this.freqMap[a];
         });
-        this.max = this.freqMap[sortedWords[0]];  
+        let fontSize = d3.scaleLinear()
+                            .domain([0, this.freqMap[sortedWords[0]]])
+                            .range([10, 100]);
+
+        let fontColor = () => {
+            let nColors = DG.Color.categoricalPalette.length;
+            let color = DG.Color.getCategoricalColor(Math.floor(Math.random() * nColors));
+            return DG.Color.toRgb(color);
+        };
 
         let layout = cloud()
             .size([width, height])
             .words(words.map(d => {
                 return { text: d,
-                         size: (this.freqMap[d] * (100 - 10))/this.max + 10,
-                         color: DG.Color.toRgb(DG.Color.getCategoricalColor(Math.floor(
-                                Math.random() * DG.Color.categoricalPalette.length)))
+                         size: fontSize(this.freqMap[d]),
+                         color: fontColor()
                 };
             }))
             .padding(10)
@@ -107,7 +114,7 @@ export class WordCloudViewer extends DG.JsViewer {
                 .selectAll("text")
                     .data(words)
                 .enter().append("text")
-                    .style("font-size", d => d.size + "px")
+                    .style("font-size", d => d.size)
                     .style("fill", d => d.color)
                     .attr("text-anchor", "middle")
                     .attr("transform", d => `translate(${[d.x, d.y]}) rotate(${d.rotate})`)
