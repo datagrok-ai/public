@@ -1,70 +1,72 @@
 // Formatting data differently. Note that this does not change the actual values and does not affect sorting.
+// Similar effect can be achieved by editing 'format' column tag via UI (Column | Properties or press F2).
+// See available format strings below
 
 let view = grok.shell.addTableView(grok.data.demo.demog());
 
-// similar effect can be achieved by editing 'format' column tag via UI (Column | Properties).
-// see available format strings below
 view.grid.col('age').format = 'compact simple currency';
+view.grid.col('height').format = 'scientific';
 view.grid.col('weight').format = '#.0000';
+view.grid.col('started').format = 'dd.MM.yyyy'
 
-// NUMBER FORMATS:
-// The usual formats, such as "0.000" or "#.0000"
-// ALSO, the following formats are understood:
-// two digits after comma
-// four digits after comma
-// max two digits after comma
-// scientific
-// money
-// compact long
-// compact
-// compact simple currency
-// percent
-// thousand separator
-// full precision
-// money($)
+// NUMBER FORMATS (https://datagrok.ai/help/discover/tags#numbers)
+// The usual formats, such as "0.000" or "#.0000", are supported.
+// In addition, you can choose one of the following formats in the UI:
+// |           Format           | Example |
+// |----------------------------|---------|
+// | int                        | 71      |
+// | two digits after comma     | 70.50   |
+// | four digits after comma    | 70.5000 |
+// | max two digits after comma | 70.5    |
+// | scientific                 | 7E1     |
+// | money                      | $70.50  |
+// | compact long               | 70.5    |
+// | compact                    | 70.5    |
+// | compact simple currency    | $70.50  |
+// | percent                    | 7,050%  |
+// | thousand separator         | 71      |
+// | full precision             | 70.5    |
 
 
-// DATE-TIME FORMATS (see https://pub.dev/documentation/intl/latest/intl/DateFormat-class.html)
-// ICU Name                   Skeleton
-// --------                   --------
-//     DAY                          d
-// ABBR_WEEKDAY                 E
-// WEEKDAY                      EEEE
-// ABBR_STANDALONE_MONTH        LLL
-// STANDALONE_MONTH             LLLL
-// NUM_MONTH                    M
-// NUM_MONTH_DAY                Md
-// NUM_MONTH_WEEKDAY_DAY        MEd
-// ABBR_MONTH                   MMM
-// ABBR_MONTH_DAY               MMMd
-// ABBR_MONTH_WEEKDAY_DAY       MMMEd
-// MONTH                        MMMM
-// MONTH_DAY                    MMMMd
-// MONTH_WEEKDAY_DAY            MMMMEEEEd
-// ABBR_QUARTER                 QQQ
-// QUARTER                      QQQQ
-// YEAR                         y
-// YEAR_NUM_MONTH               yM
-// YEAR_NUM_MONTH_DAY           yMd
-// YEAR_NUM_MONTH_WEEKDAY_DAY   yMEd
-// YEAR_ABBR_MONTH              yMMM
-// YEAR_ABBR_MONTH_DAY          yMMMd
-// YEAR_ABBR_MONTH_WEEKDAY_DAY  yMMMEd
-// YEAR_MONTH                   yMMMM
-// YEAR_MONTH_DAY               yMMMMd
-// YEAR_MONTH_WEEKDAY_DAY       yMMMMEEEEd
-// YEAR_ABBR_QUARTER            yQQQ
-// YEAR_QUARTER                 yQQQQ
-// HOUR24                       H
-// HOUR24_MINUTE                Hm
-// HOUR24_MINUTE_SECOND         Hms
-// HOUR                         j
-// HOUR_MINUTE                  jm
-// HOUR_MINUTE_SECOND           jms
-// HOUR_MINUTE_GENERIC_TZ       jmv
-// HOUR_MINUTE_TZ               jmz
-// HOUR_GENERIC_TZ              jv
-// HOUR_TZ                      jz
-// MINUTE                       m
-// MINUTE_SECOND                ms
-// SECOND                       s//
+// DATETIME FORMATS (see https://datagrok.ai/help/discover/tags#datetime)
+// The standard formats representing date and time include:
+// |         Format          |          Example            |
+// |-------------------------|-----------------------------|
+// | MM/dd/yyyy HH:mm:ss.fff | 07/21/1991 00:00:00.000     |
+// | M/d/yyyy                | 7/21/1991                   |
+// | dd.MM.yyyy              | 21.07.1991                  |
+// | M/d/yyyy h:mm tt        | 7/21/1991 12:00 AM          |
+// | M/d/yyyy h:mm:ss tt     | 7/21/1991 12:00:00 AM       |
+// | yyyy-MM-dd              | 1991-07-21                  |
+// | dddd, MMMM d, yyyy      | Sunday, July 21, 1991       |
+// | MMM d, yyyy             | Jul 21, 1991                |
+// | h:mm:ss                 | 12:00:00                    |
+// | h:mm:ss.fff             | 12:00:00.000                |
+// | relative                | 29 years ago                |
+// | auto                    | Jul 21, 1991                |
+
+// Supported units of time:
+// | Symbol |          Meaning                 |          Example           |
+// |--------|----------------------------------|----------------------------|
+// | yy     | Year without the century         | 00, 01, ..., 20, ..., 99   |
+// | yyyy   | Year with the century            | 0001, ..., 2020, ..., 9999 |
+// | M      | Month                            | 1, 2, 3, ..., 12           |
+// | MM     | Zero-padded month                | 01, 02, 03, ..., 12        |
+// | MMM    | Abbreviated month name           | Jan, Feb, Mar, ..., Dec    |
+// | MMMM   | Full month name                  | January, ..., December     |
+// | d      | Day of the month                 | 1, 2, 3, ..., 31           |
+// | dd     | Zero-padded day                  | 01, 02, 03, ..., 31        |
+// | ddd    | Abbreviated weekday name         | Mon, ..., Fri, Sat, Sun    |
+// | dddd   | Full weekday name                | Monday, ..., Sunday        |
+// | h      | Hour (12-hour clock)             | 1, 2, 3, ..., 12           |
+// | hh     | Zero-padded hour (12-hour clock) | 01, 02, 03, ..., 12        |
+// | H      | Hour (24-hour clock)             | 0, 1, 2, ..., 23           |
+// | HH     | Zero-padded hour (24-hour clock) | 00, 01, 02, ..., 23        |
+// | m      | Minute                           | 0, 1, 2, ..., 59           |
+// | mm     | Zero-padded minute               | 00, 01, 02, ..., 59        |
+// | s      | Second                           | 0, 1, 2, ..., 59           |
+// | ss     | Zero-padded second               | 00, 01, 02, ..., 59        |
+// | f      | Second fraction (1 digit)        | 0, 1, ..., 9               |
+// | ff     | Second fraction (2 digits)       | 00, 01, ..., 99            |
+// | fff    | Second fraction (3 digits)       | 000, 001, ..., 999         |
+// | tt     | 12-hour periods                  | AM, PM                     |
