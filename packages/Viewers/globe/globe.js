@@ -10,8 +10,9 @@
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  */
+import * as THREE from 'three';
 
-var DAT = DAT || {};
+export var DAT = DAT || {};
 
 DAT.Globe = function(container, opts) {
   opts = opts || {};
@@ -104,7 +105,8 @@ DAT.Globe = function(container, opts) {
     shader = Shaders['earth'];
     uniforms = THREE.UniformsUtils.clone(shader.uniforms);
 
-    uniforms['texture'].value = THREE.ImageUtils.loadTexture(imgDir+'world.jpg');
+    var loader = new THREE.TextureLoader();
+    uniforms['texture'].value = loader.load(imgDir+'world.jpg');
 
     material = new THREE.ShaderMaterial({
 
@@ -137,7 +139,7 @@ DAT.Globe = function(container, opts) {
     scene.add(mesh);
 
     geometry = new THREE.BoxGeometry(0.75, 0.75, 1);
-    geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0,0,-0.5));
+    geometry.applyMatrix4(new THREE.Matrix4().makeTranslation(0,0,-0.5));
 
     point = new THREE.Mesh(geometry);
 

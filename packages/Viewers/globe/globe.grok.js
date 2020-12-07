@@ -1,9 +1,14 @@
-class GlobeViewer extends DG.JsViewer {
+import { DAT } from './globe.js';
+import * as THREE from 'three';
+import { Easing, Tween} from '@tweenjs/tween.js';
+
+
+export class GlobeViewer extends DG.JsViewer {
 
     constructor() {
         super();
 
-        // properties
+        // Properties
         this.latitude = this.string('latitudeColumnName');
         this.longitude = this.string('longitudeColumnName');
         this.magnitude = this.float('magnitudeColumnName');
@@ -22,10 +27,10 @@ class GlobeViewer extends DG.JsViewer {
             points.push(lonCol.get(i));
             points.push(magCol.get(i));
         }
-        TWEEN.start();
+        //TWEEN.start();  // https://github.com/tweenjs/tween.js/issues/47 
         globe.addData(points, {format: 'magnitude', name: 'Series A', animated: true});
         globe.createPoints();
-        new TWEEN.Tween(globe).to({time: 0},500).easing(TWEEN.Easing.Cubic.EaseOut).start();
+        new Tween(globe).to({time: 0}, 500).easing(Easing.Cubic.EaseOut).start();
         globe.animate();
     }
 
