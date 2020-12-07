@@ -14,6 +14,11 @@ module.exports = {
         "rxjs": "rxjs",
         "rxjs/operators": "rxjs.operators"
     },
+    resolve: {
+        fallback: {
+            util: require.resolve("util/")
+        }
+    },
     module: {
         rules: [
             {
