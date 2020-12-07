@@ -1,4 +1,6 @@
-class SankeyViewer extends DG.JsViewer {
+import * as d3 from 'd3';
+
+export class SankeyViewer extends DG.JsViewer {
   init() {
     this.root.className = 'sankey';
 
@@ -157,7 +159,7 @@ class SankeyViewer extends DG.JsViewer {
   }
 }
 
-d3_sankey = function() {
+const d3_sankey = function() {
   var sankey = {},
     nodeWidth = 24,
     nodePadding = 8,

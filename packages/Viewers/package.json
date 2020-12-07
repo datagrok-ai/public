@@ -1,18 +1,31 @@
 {
-  "name": "Viewers",
-  "version": "0.1",
-  "fullName": "Viewers",
-  "description": "Set of data viewers",
-  "sources": [
-    "common/d3.v5.js",
-    "common/Detector.js",
-    "common/sunburst-chart.min.js",
-    "common/three.min.js",
-    "common/Tween.js",
-    "globe/globe.js",
-    "globe/globe.grok.js",
-    "sankey/sankey.js",
-    "sankey/sankey.css",
-    "sunburst/sunburst.js"
-  ]
+		"name": "viewers",
+		"fullName": "Viewers",
+		"version": "0.0.1",
+		"description": "Set of custom JavaScript viewers",
+		"dependencies": {
+				"datagrok-api": "latest",
+				"d3": "^6.2.0",
+				"three": "^0.123.0",
+				"@tweenjs/tween.js": "^18.6.4"
+		},
+		"devDependencies": {
+				"datagrok-tools": "^4.0.12",
+				"css-loader": "^5.0.0",
+				"style-loader": "^2.0.0",
+				"webpack": "^4.44.2",
+				"webpack-cli": "^4.2.0"
+		},
+		"scripts": {
+				"debug-viewers": "grok publish --rebuild",
+				"release-viewers": "grok publish --rebuild --release",
+				"build-viewers": "webpack",
+				"build": "webpack",
+				"debug-viewers-public": "grok publish public --rebuild",
+				"release-viewers-public": "grok publish public --rebuild --release",
+				"debug-viewers-local": "grok publish local --rebuild",
+				"release-viewers-local": "grok publish local --rebuild --release",
+				"debug-viewers-localhost": "grok publish localhost --rebuild",
+				"release-viewers-localhost": "grok publish localhost --rebuild --release"
+		}
 }
