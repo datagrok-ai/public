@@ -1,4 +1,25 @@
-// Through RDKit we operate on all acceptable strings representing
+function cacheByAction(params, invalidator) {
+    
+    let invalidateCache = false;
+    let {foo, column, query} = params;
+    
+    if (
+      typeof foo.cachedForCol == 'undefined' &&
+      typeof foo.cachedStructure == 'undefined') {
+        foo.cachedForCol = null;
+        foo.cachedStructure = null;
+        invalidateCache = true;
+    }
+    
+    if (column !== foo.cachedForCol || query === null) {
+        invalidateCache = true;
+    }
+    
+    if (invalidateCache) {
+        invalidator(params);
+        foo.cachedForCol = column;
+    }
+}
 
 function _morganFP(molString, fp_length = 128, fp_radius = 2) {
     let mol = rdKitModule.get_mol(molString);
@@ -33,13 +54,9 @@ function fingerprintSimilarity(bitsetFp1, bitsetFp2) {
     return bitsetFp1.similarityTo(bitsetFp2, 'tanimoto'); // tanimotoSimilarity(fp1, fp2);
 }
 
-// molString can be any string type RDKit supports: smiles, MolBlock
-// This also applies to cells content of molColumn
-function chemSimilarityScoring(molStringsColumn, molString, settings) {
+function _chemSimilarityScoringByFingerprints(fingerprintCol, fingerprint, molStringsColumn, settings) {
     
-    const fingerprint = moleculesToFingerprints(DG.Column.fromStrings('molecules', [molString]), settings).get(0);
-    const fingerprintCol = moleculesToFingerprints(molStringsColumn, settings);
-    const len = molStringsColumn.length;
+    const len = fingerprintCol.length;
     
     let distances = DG.Column.fromType(DG.TYPE.FLOAT, 'distances', len);
     for (let row = 0; row < len; ++row) {
@@ -83,6 +100,23 @@ function chemSimilarityScoring(molStringsColumn, molString, settings) {
     }
 }
 
+// molString can be any string type RDKit supports: smiles, MolBlock
+// This also applies to cells content of molColumn
+function chemSimilarityScoring(molStringsColumn, molString, settings) {
+    
+    cacheByAction(
+      {foo: chemSimilarityScoring, column: molStringsColumn, query: molString},
+      (params) => {
+          let {foo, column, query} = params;
+          foo.cachedStructure = moleculesToFingerprints(molStringsColumn, settings);
+      });
+    
+    const fingerprintCol = chemSimilarityScoring.cachedStructure;
+    const fingerprint = moleculesToFingerprints(DG.Column.fromStrings('molecules', [molString]), settings).get(0);
+    return _chemSimilarityScoringByFingerprints(fingerprintCol, fingerprint, molStringsColumn, settings);
+    
+}
+    
 function chemSubstructureSearchGraph(molStringsColumn, molString) {
     
     const len = molStringsColumn.length;
@@ -97,6 +131,7 @@ function chemSubstructureSearchGraph(molStringsColumn, molString) {
     }
     subMol.delete();
     return result;
+
 }
 
 function chemSubstructureSearchLibrary(molStringsColumn, molString) {
