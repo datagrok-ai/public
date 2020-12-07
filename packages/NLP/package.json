@@ -4,12 +4,15 @@
 	"version": "0.0.1",
 	"description": "Natural Language Processing Package",
 	"dependencies": {
+		"aws-sdk": "^2.762.0",
 		"datagrok-api": "latest",
-		"aws-sdk": "^2.762.0"
+		"util": "^0.12.3"
 	},
 	"devDependencies": {
 		"css-loader": "^5.0.0",
-		"style-loader": "^2.0.0"
+		"style-loader": "^2.0.0",
+		"webpack": "^5.0.0",
+		"webpack-cli": "^4.2.0"		
 	},
 	"scripts": {
 		"debug-nlp": "grok publish --rebuild",
