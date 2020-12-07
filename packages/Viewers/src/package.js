@@ -5,8 +5,15 @@ import * as DG from 'datagrok-api/dg';
 
 import { SankeyViewer } from '../sankey/sankey.js';
 import { GlobeViewer } from '../globe/globe.grok.js';
+import { WordCloudViewer } from '../word-cloud/word-cloud-viewer.js';
+import { ChordViewer } from '../chord/chord-viewer.js';
+
 /* TODO: move cell renderer tests out of this package */
 import { FlagCellRenderer } from './flag-cell-renderer.js';
+
+import '../css/word-cloud.css';
+import '../css/chord-viewer.css';
+
 
 export const _package = new DG.Package();
 
@@ -24,6 +31,22 @@ export function sankey() {
 //output: viewer result
 export function globe() {
     return new GlobeViewer(this.webRoot + '/globe/');
+}
+
+//name: Chord
+//description: Creates a chord diagram
+//tags: viewer
+//output: viewer result
+export function chord() {
+    return new ChordViewer();
+}
+
+//name: Word Cloud
+//description: Creates a word cloud
+//tags: viewer
+//output: viewer result
+export function wordcloud() {
+    return new WordCloudViewer();
 }
 
 //name: flagCellRenderer

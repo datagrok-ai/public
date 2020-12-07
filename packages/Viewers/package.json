@@ -4,8 +4,10 @@
 		"version": "0.0.1",
 		"description": "Set of custom JavaScript viewers",
 		"dependencies": {
-				"datagrok-api": "latest",
-				"d3": "^6.2.0",
+        "datagrok-api": "latest",
+        "circos": "^2.1.0",
+        "d3": "^6.2.0",
+        "d3-cloud": "^1.2.5",
 				"three": "^0.123.0",
 				"@tweenjs/tween.js": "^18.6.4"
 		},
