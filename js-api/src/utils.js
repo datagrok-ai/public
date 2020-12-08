@@ -2,6 +2,18 @@ import {Balloon} from "./widgets";
 import * as rxjs from 'rxjs';
 import {toJs} from "./wrappers";
 
+
+// export class PropProxy {
+//     constructor(d) {
+//         this.d = d;
+//         return new Proxy({}, {
+//             get: function(target, prop) { return DG.toJs(grok_PropMixin_Get(d, prop)); },
+//             set: function(target, prop, value) { grok_PropMixin_Set(d, prop, DG.toDart(value)); }
+//         })
+//     }
+// }
+
+
 export function _toIterable(o) {
     let iterable = {};
     iterable[Symbol.iterator] = () => _getIterator(o);
