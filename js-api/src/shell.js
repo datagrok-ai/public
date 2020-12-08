@@ -252,6 +252,25 @@ export class Windows {
 
 /** User-specific platform settings. */
 export class Settings {
+
+    constructor() {
+        return new Proxy({}, {
+            get: function(target, prop) {
+                return DG.toJs(grok_PropMixin_GetPropertyValue(grok_Get_Settings(), prop));
+            },
+            set: function(target, prop, value) {
+                if (target.hasOwnProperty(prop))
+                    return target[prop];
+                if (target.hasOwnProperty(prop)) {
+                    target[prop] = value;
+                    return true;
+                }
+                grok_PropMixin_SetPropertyValue(grok_Get_Settings(), prop, DG.toDart(value));
+                return true;
+            }
+        });
+    }
+
     /** Jupyter Notebook URL */
     get jupyterNotebook() { return grok_Settings_Get_JupyterNotebook(); }
 
