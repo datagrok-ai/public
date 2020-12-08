@@ -23,8 +23,15 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
         let value = gridCell.cell.value;
         if (value == null || value === '')
             return;
-
-        let mol = this.molCache.getOrCreate(value, (s) => rdKitModule.get_mol(s));
+        
+        let mol = this.molCache.getOrCreate(value, (s) => {
+          try {
+            return rdKitModule.get_mol(s);
+          } catch (e) {
+            return rdKitModule.get_mol("");
+          }
+          rdKitModule.get_mol(s)
+        });
 
         if (!mol.is_valid())
             return;
