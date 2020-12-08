@@ -160,8 +160,18 @@ function chemSubstructureSearchLibrary(molStringsColumn, molString) {
         foo.cachedForCol = molStringsColumn;
         foo.cachedLibrary = new rdKitModule.SubstructLibrary();
         for (let i = 0; i < molStringsColumn.length; ++i) {
-            const smiles = molStringsColumn.get(i);
-            foo.cachedLibrary.add_smiles(smiles);
+            const dictMolString = molStringsColumn.get(i);
+            let mol = null;
+            try {
+                mol = rdKitModule.get_mol(dictMolString);
+                foo.cachedLibrary.add_mol(mol);
+            } catch (e) {
+                console.error(
+                    "Possibly a malformed molString: `" + dictMolString + "`");
+                throw e;
+            }
+            // shall always be !null actually
+            mol?.delete();    
         }
     }
     
