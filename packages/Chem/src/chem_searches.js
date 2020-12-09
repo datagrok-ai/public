@@ -104,6 +104,8 @@ function _chemSimilarityScoringByFingerprints(fingerprintCol, fingerprint, molSt
 // This also applies to cells content of molColumn
 function chemSimilarityScoring(molStringsColumn, molString, settings) {
     
+    if (molString === "") molString = null;
+    
     cacheByAction(
       {foo: chemSimilarityScoring, column: molStringsColumn, query: molString},
       (params) => {
@@ -134,59 +136,28 @@ function chemSubstructureSearchGraph(molStringsColumn, molString) {
 
 }
 
-function chemSubstructureSearchLibrary(molStringsColumn, molString) {
+async function chemSubstructureSearchLibrary(molStringsColumn, molString) {
     
-    let invalidateCache = false;
-    let foo = chemSubstructureSearchLibrary;
+    if (molString === "") molString = null;
     
-    if (
-      typeof foo.cachedForCol == 'undefined' &&
-      typeof foo.cachedLibrary == 'undefined')
-      {
-        foo.cachedForCol = null;
-        foo.cachedLibrary = null;
-        invalidateCache = true;
-    }
-    
-    if (molStringsColumn !== foo.cachedForCol || molString === null) {
-        invalidateCache = true;
-    }
-    
-    if (invalidateCache) {
-        if (foo.cachedLibrary != null) {
-            foo.cachedLibrary.delete();
-            foo.cachedLibrary = null;
-        }
-        foo.cachedForCol = molStringsColumn;
-        foo.cachedLibrary = new rdKitModule.SubstructLibrary();
-        for (let i = 0; i < molStringsColumn.length; ++i) {
-            const dictMolString = molStringsColumn.get(i);
-            let mol = null;
-            try {
-                mol = rdKitModule.get_mol(dictMolString);
-                foo.cachedLibrary.add_mol(mol);
-            } catch (e) {
-                console.error(
-                    "Possibly a malformed molString: `" + dictMolString + "`");
-                throw e;
-            }
-            // shall always be !null actually
-            mol?.delete();    
-        }
-    }
+    cacheByAction({
+            foo: chemSubstructureSearchLibrary,
+            column: molStringsColumn, 
+            query: molString
+        },
+        (params) => 
+            rdKitWorkerProxy.substructInit(molStringsColumn.toList())
+    );
     
     if (molString !== null) {
-    
-        const library = foo.cachedLibrary;
-    
-        var query = rdKitModule.get_mol(molString);
-        const matches = JSON.parse(library.get_matches(query, false, 1, -1));
-        query.delete();
-    
+
+        const matches = JSON.parse(await rdKitWorkerProxy.substructSearch(molString));
         let result = DG.BitSet.create(molStringsColumn.length);
         for (let match of matches)
             result.set(match, true, false);
         return result;
     
     }
+    
+    return null;
 }

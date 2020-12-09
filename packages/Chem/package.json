@@ -1,11 +1,13 @@
 {
   "name": "Chem",
-  "version": "0.3.0-8b678c",
+  "version": "0.4.0-8b678c",
   "fullName": "Cheminformatics support",
   "description": "Cheminformatics support: \n\n* RDKit-based rendering \n* Molecule sketching \n*",
   "sources": [
     "css/chem.css",
-    "wasm/RDKit_minimal.js",
+    "src/RDKit_minimal.js",
+    "src/rdkit_worker_proxy.js",
+    "src/rdkit_substruct_library.js",
     "src/rdkit_cell_renderer.js",
     "src/rdkit_substructure_filter.js",
     "src/chem_column_property_panel.js",

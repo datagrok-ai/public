@@ -1,4 +1,5 @@
 var rdKitModule = null;
+var rdKitWorkerProxy = null;
 
 class ChemPackage extends DG.Package {
     
@@ -9,8 +10,10 @@ class ChemPackage extends DG.Package {
     /** Guaranteed to be executed exactly once before the execution of any function below */
     async init() {
         rdKitModule = await initRDKitModule();
-        console.log('RDKit initialized');
+        console.log('RDKit (package) initialized');
         rdKitModule.prefer_coordgen(false);
+        rdKitWorkerProxy = new RdKitWorkerProxy();
+        await rdKitWorkerProxy.moduleInit();
         this.STORAGE_NAME = 'rdkit_descriptors';
         this.KEY = 'selected';
     }
@@ -70,10 +73,10 @@ class ChemPackage extends DG.Package {
     //input: string molString
     //input: bool substructLibrary
     //output: column result
-    substructureSearch(molStringsColumn, molString, substructLibrary) {
+    async substructureSearch(molStringsColumn, molString, substructLibrary) {
         let result =
             substructLibrary ?
-                chemSubstructureSearchLibrary(molStringsColumn, molString) :
+                await chemSubstructureSearchLibrary(molStringsColumn, molString) :
                 chemSubstructureSearchGraph(molStringsColumn, molString);
         return DG.Column.fromList('object', 'bitset', [result]);
     }
