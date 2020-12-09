@@ -1,8 +1,3 @@
-/*
-importScripts('http://localhost:8080/api/packages/published/files/Chem/0.3.0-8b678c/src/RDKit_minimal.js');
-importScripts('http://localhost:8080/api/packages/published/files/Chem/0.3.0-8b678c/src/rdkit_substruct_library.js');
-*/
-
 importScripts('RDKit_minimal.js');
 importScripts('rdkit_substruct_library.js');
 

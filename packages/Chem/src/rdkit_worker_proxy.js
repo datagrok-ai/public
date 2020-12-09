@@ -1,15 +1,13 @@
 class RdKitWorkerProxy {
 
-  constructor(path = 'http://localhost:8080/api/packages/published/files/Chem/0.3.0-8b678c/src/rdkit_worker.js') {
+  constructor(basePath, path = 'rdkit_worker.js') {
     
-    // https://advancedweb.hu/how-to-use-async-await-with-postmessage/
-    //this.channel = new MessageChannel();
-    this.worker = new Worker(path);
-    
+    this.worker = new Worker(basePath + 'src/' + path);
   }
 
   async call(op, args = []) { return new Promise((res, rej) => {
     
+    // https://advancedweb.hu/how-to-use-async-await-with-postmessage/
     // {op, args} -> {op, retval} | {error}
     const channel = new MessageChannel(); 
     channel.port1.onmessage = ({ data }) => {

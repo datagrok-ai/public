@@ -12,7 +12,7 @@ class ChemPackage extends DG.Package {
         rdKitModule = await initRDKitModule();
         console.log('RDKit (package) initialized');
         rdKitModule.prefer_coordgen(false);
-        rdKitWorkerProxy = new RdKitWorkerProxy();
+        rdKitWorkerProxy = new RdKitWorkerProxy(this.webRoot);
         await rdKitWorkerProxy.moduleInit();
         this.STORAGE_NAME = 'rdkit_descriptors';
         this.KEY = 'selected';
