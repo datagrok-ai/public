@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import { SankeyViewer } from '../sankey/sankey.js';
-import { GlobeViewer } from '../globe/globe.grok.js';
+import { GlobeViewer } from '../globe/globe-viewer.js';
 import { WordCloudViewer } from '../word-cloud/word-cloud-viewer.js';
 import { ChordViewer } from '../chord/chord-viewer.js';
 
