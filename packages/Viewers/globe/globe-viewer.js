@@ -16,16 +16,17 @@ export class GlobeViewer extends DG.JsViewer {
 
     init() {
 
-        let latCol = this.dataFrame.columns.bySemType(DG.SEMTYPE.LATITUDE);
-        let lonCol = this.dataFrame.columns.bySemType(DG.SEMTYPE.LONGITUDE);
-        let magCol = this.dataFrame.columns.toList().filter(col => col.type === 'double')[0];
+        let latCol = this.dataFrame.columns.bySemType(DG.SEMTYPE.LATITUDE).getRawData();
+        let lonCol = this.dataFrame.columns.bySemType(DG.SEMTYPE.LONGITUDE).getRawData();
+        let magCol = this.dataFrame.columns.toList().filter(col => col.type === 'double')[0].getRawData();
 
         let points = [];
-        for (let i = 0; i < this.dataFrame.rowCount; i++) {
+        let rowCount = this.dataFrame.rowCount;
+        for (let i = 0; i < rowCount; i++) {
             points.push({
-                lat: latCol.get(i),
-                lng: lonCol.get(i),
-                size: magCol.get(i)
+                lat: latCol[i],
+                lng: lonCol[i],
+                size: magCol[i]
             });
         }
         let globe = new ThreeGlobe()
@@ -35,7 +36,7 @@ export class GlobeViewer extends DG.JsViewer {
             .pointAltitude('size');
 
         // Basic example
-        this.root.style = "width: 100%; height: 100%;";
+        this.root.classList.add('viewer-window');
         let width = this.root.clientWidth;
         let height = this.root.clientHeight;
         
