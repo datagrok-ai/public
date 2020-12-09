@@ -62,11 +62,10 @@ export class WordCloudViewer extends DG.JsViewer {
             return;
         }
 
-        this.root.classList.add('viewer-window');
         $(this.root).empty();
         let margin = {top: 10, right: 10, bottom: 10, left: 10};
-        let width = this.root.clientWidth - margin.left - margin.right;
-        let height = this.root.clientHeight - margin.top - margin.bottom;
+        let width = this.root.parentElement.clientWidth - margin.left - margin.right;
+        let height = this.root.parentElement.clientHeight - margin.top - margin.bottom;
 
         let svg = d3.select(this.root).append("svg")
                         .attr("width", width + margin.left + margin.right)

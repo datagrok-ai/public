@@ -7,12 +7,10 @@ import { SankeyViewer } from '../sankey/sankey.js';
 import { GlobeViewer } from '../globe/globe-viewer.js';
 import { WordCloudViewer } from '../word-cloud/word-cloud-viewer.js';
 import { ChordViewer } from '../chord/chord-viewer.js';
+import '../css/chord-viewer.css';
 
 /* TODO: move cell renderer tests out of this package */
 import { FlagCellRenderer } from './flag-cell-renderer.js';
-
-import '../css/word-cloud.css';
-import '../css/chord-viewer.css';
 
 
 export const _package = new DG.Package();

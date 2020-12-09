@@ -36,9 +36,8 @@ export class GlobeViewer extends DG.JsViewer {
             .pointAltitude('size');
 
         // Basic example
-        this.root.classList.add('viewer-window');
-        let width = this.root.clientWidth;
-        let height = this.root.clientHeight;
+        let width = this.root.parentElement.clientWidth;
+        let height = this.root.parentElement.clientHeight;
         
         // Setup renderer
         let renderer = new THREE.WebGLRenderer();

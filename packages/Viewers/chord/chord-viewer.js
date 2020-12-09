@@ -138,10 +138,9 @@ export class ChordViewer extends DG.JsViewer {
             return;
         }
 
-        this.root.classList.add('viewer-window');
         $(this.root).empty();
-        let width = this.root.clientWidth;
-        let height = this.root.clientHeight;
+        let width = this.root.parentElement.clientWidth;
+        let height = this.root.parentElement.clientHeight;
         let size = Math.min(width, height);
 
         d3.select(this.root)
