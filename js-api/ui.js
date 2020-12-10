@@ -410,6 +410,8 @@ export class Tooltip {
      * @param {number} y */
     show(content, x, y) { grok_Tooltip_Show(content, x, y); }
 
+    showRowGroup(dataFrame, indexPredicate, x, y) { grok_Tooltip_ShowRowGroup(dataFrame.d, indexPredicate, x, y); }
+
     /** Returns a tooltip element.
      * @returns {HTMLElement} */
     get root() { return grok_Tooltip_Get_Root(); }
