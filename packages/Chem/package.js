@@ -64,8 +64,13 @@ class ChemPackage extends DG.Package {
     //input: bool sorted
     //output: dataframe result
     similarityScoring(molStringsColumn, molString, sorted) {
-        let result = chemSimilarityScoring(molStringsColumn, molString, {'sorted' : sorted});
-        return (sorted ? result : DG.DataFrame.fromColumns([result]));
+        try {
+          let result = chemSimilarityScoring(molStringsColumn, molString, {'sorted' : sorted});
+          return (sorted ? result : DG.DataFrame.fromColumns([result]));
+        } catch (e) {
+          console.error("In similarityScoring: " + e.toString());
+          throw e;
+        }
     }
     
     //name: substructureSearch
@@ -74,11 +79,17 @@ class ChemPackage extends DG.Package {
     //input: bool substructLibrary
     //output: column result
     async substructureSearch(molStringsColumn, molString, substructLibrary) {
-        let result =
-            substructLibrary ?
-                await chemSubstructureSearchLibrary(molStringsColumn, molString) :
-                chemSubstructureSearchGraph(molStringsColumn, molString);
-        return DG.Column.fromList('object', 'bitset', [result]);
+      
+      try {
+          let result =
+              substructLibrary ?
+                  await chemSubstructureSearchLibrary(molStringsColumn, molString) :
+                  chemSubstructureSearchGraph(molStringsColumn, molString);
+          return DG.Column.fromList('object', 'bitset', [result]);
+      } catch (e) {
+          console.error("In substructureSearch: " + e.toString());
+          throw e;
+      }
     }
 
     //name: molColumnPropertyPanel

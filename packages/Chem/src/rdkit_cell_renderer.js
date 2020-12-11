@@ -23,15 +23,20 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
         let value = gridCell.cell.value;
         if (value == null || value === '')
             return;
+          
+        let molCache = this.molCache;
+          
+        const fetchMol = function (molString) {
+          return molCache.getOrCreate(molString, (s) => {
+            try {
+              return rdKitModule.get_mol(s);
+            } catch (e) {
+              return rdKitModule.get_mol("");
+            }
+          });
+        }
         
-        let mol = this.molCache.getOrCreate(value, (s) => {
-          try {
-            return rdKitModule.get_mol(s);
-          } catch (e) {
-            return rdKitModule.get_mol("");
-          }
-          rdKitModule.get_mol(s)
-        });
+        let mol = fetchMol(value);
 
         if (!mol.is_valid())
             return;
@@ -65,18 +70,21 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
     
             if (!scaffoldCache.has(rdkitMolSmiles)) {
     
-                let scaffoldMol = rdKitModule.get_mol(scaffoldMolString);
-                if (!scaffoldMol.is_valid()) {
+                let scaffoldMol = fetchMol(scaffoldMolString);
+                if (!scaffoldMol.is_valid() || scaffoldMol.get_smiles() === "") {
                     drawMolecule(rdkitMol);
                     return;
                 }
                 if (molIsInMolBlock(scaffoldMolString, scaffoldMol)) {
+                  try {
                     const substructJson = rdkitMol.get_substruct_match(scaffoldMol);
                     if (substructJson !== '{}') {
                         rdkitMol.generate_aligned_coords(scaffoldMol, true);
                     }
+                  } catch (e) {
+                  }
                 }
-                scaffoldMol.delete();
+                // scaffoldMol.delete();
                 scaffoldCache.set(rdkitMolSmiles, true);
             }
     

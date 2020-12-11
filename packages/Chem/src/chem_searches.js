@@ -125,11 +125,18 @@ function chemSubstructureSearchGraph(molStringsColumn, molString) {
     let result = DG.BitSet.create(len);
     let subMol = rdKitModule.get_mol(molString);
     for (let i = 0; i < len; ++i) {
-        let mol = rdKitModule.get_mol(molStringsColumn.get(i));
-        let match = mol.get_substruct_match(subMol);
-        if (match !== "{}")
-            result.set(i, true, false);
-        mol.delete();
+        const item = molStringsColumn.get(i);
+        try {
+            let mol = rdKitModule.get_mol(item);
+            let match = mol.get_substruct_match(subMol);
+            if (match !== "{}")
+                result.set(i, true, false);
+            mol.delete();
+        } catch (e) {
+            console.error(
+                "Possibly a malformed molString: `" + item + "`");
+            // Won't rethrow
+        }
     }
     subMol.delete();
     return result;
