@@ -28,7 +28,7 @@ export function sankey() {
 //tags: viewer
 //output: viewer result
 export function globe() {
-    return new GlobeViewer(this.webRoot + '/globe/');
+    return new GlobeViewer();
 }
 
 //name: Chord
