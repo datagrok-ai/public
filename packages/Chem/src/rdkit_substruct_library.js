@@ -16,12 +16,12 @@ class RdKitSubstructLibrary {
       try {
         mol = this.rdKitModule.get_mol(item);
         this.library.add_mol(mol);
+        mol.delete();
       } catch (e) {
         console.error(
           "Possibly a malformed molString: `" + item + "`");
-        throw e;
+        // Won't rethrow
       }
-      mol?.delete(); // TODO: remove ?
     }
     
   }
