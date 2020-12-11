@@ -878,6 +878,10 @@ export class BitSet {
 
     /** @returns {string} */
     toString() { return grok_Object_ToString(this.d); }
+
+    handleClick(rowIndexPredicate, mouseEvent) {
+        grok_Utils_SelectRowsWhere(this.d, rowIndexPredicate, mouseEvent.ctrlKey, mouseEvent.shiftKey, mouseEvent.metaKey);
+    }
 }
 
 

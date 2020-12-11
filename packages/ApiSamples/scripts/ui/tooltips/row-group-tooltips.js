@@ -9,4 +9,5 @@ view.addViewer(DG.VIEWER.PIE_CHART);
 let div = ui.divText('Hover to highlight odd rows');
 $(div).on('mouseenter', () => ui.tooltip.showRowGroup(t, (i) => i % 2 === 0, 10, 10));
 $(div).on('mouseleave', () => ui.tooltip.hide());
+$(div).on('mousedown', (e) => t.selection.handleClick((i) => i % 2 === 0, e));
 view.dockManager.dock(div);
