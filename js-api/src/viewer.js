@@ -88,7 +88,7 @@ export class Viewer {
     get dataFrame() { return toJs(grok_Viewer_Get_DataFrame(this.d)); }
     set dataFrame(t) { grok_Viewer_Set_DataFrame(this.d, t == null ? null : t.d); }
 
-    static grid        (t, options = null) { return new Viewer(grok_Viewer_Grid(t.d, _toJson(options))); }
+    static grid        (t, options = null) { return new DG.Grid(grok_Viewer_Grid(t.d, _toJson(options))); }
 
     static histogram   (t, options = null) { return new Viewer(grok_Viewer_Histogram(t.d, _toJson(options))); }
 
