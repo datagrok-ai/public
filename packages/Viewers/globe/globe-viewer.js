@@ -11,13 +11,15 @@ export class GlobeViewer extends DG.JsViewer {
         super();
 
         // Properties
-        this.latitudeColName = this.string('latitudeColumnName');
-        this.longitudeColName = this.string('longitudeColumnName');
+        this.latitudeColumnName = this.string('latitudeColumnName');
+        this.longitudeColumnName = this.string('longitudeColumnName');
         // TODO: draw country polygons for columns with DG.SEMTYPE.COUNTRY
-        this.magnitudeColName = this.float('magnitudeColumnName');
-        this.pointRadius = this.float('Point Radius', 0.15);
+        this.magnitudeColumnName = this.float('magnitudeColumnName');
+        this.pointRadius = this.float('Point Radius', 15);
         this.pointAltitude = this.float('Point Altitude', 0.1);
+        this.autorotation = this.bool('Autorotation', true);
 
+        this.rScale = scaleLinear([0, 100], [0, 1]);
         this.points = [];
         this.initialized = false;
     }
@@ -29,9 +31,9 @@ export class GlobeViewer extends DG.JsViewer {
     onTableAttached() {
         this.init();
 
-        this.latitudeColName = this.dataFrame.columns.bySemType(DG.SEMTYPE.LATITUDE).name;
-        this.longitudeColName = this.dataFrame.columns.bySemType(DG.SEMTYPE.LONGITUDE).name;
-        this.magnitudeColName = this.dataFrame.columns.bySemType('Magnitude').name;
+        this.latitudeColumnName = this.dataFrame.columns.bySemType(DG.SEMTYPE.LATITUDE).name;
+        this.longitudeColumnName = this.dataFrame.columns.bySemType(DG.SEMTYPE.LONGITUDE).name;
+        this.magnitudeColumnName = this.dataFrame.columns.bySemType('Magnitude').name;
         this.getCoordinates();
 
         this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
@@ -44,6 +46,7 @@ export class GlobeViewer extends DG.JsViewer {
     onPropertyChanged(property) {
         super.onPropertyChanged(property);
         if (this.initialized) {
+            this.getCoordinates();
             this.render();
         }
     }
@@ -53,9 +56,9 @@ export class GlobeViewer extends DG.JsViewer {
     }
 
     getCoordinates() {
-        let lat = this.dataFrame.getCol(this.latitudeColName).getRawData();
-        let lon = this.dataFrame.getCol(this.longitudeColName).getRawData();
-        let mag = this.dataFrame.getCol(this.magnitudeColName);
+        let lat = this.dataFrame.getCol(this.latitudeColumnName).getRawData();
+        let lon = this.dataFrame.getCol(this.longitudeColumnName).getRawData();
+        let mag = this.dataFrame.getCol(this.magnitudeColumnName);
         let magRange = [mag.min, mag.max];
         let color = scaleSequential(magRange, interpolateYlOrRd);
         let size = scaleSqrt(magRange, [0.1, 0.5]);
@@ -79,7 +82,7 @@ export class GlobeViewer extends DG.JsViewer {
             .pointsData(this.points)
             .pointAltitude('size')
             .pointColor('color')
-            .pointRadius(this.pointRadius);
+            .pointRadius(this.rScale(this.getProperty('Point Radius').get()));
 
         $(this.root).empty();
         let width = this.root.parentElement.clientWidth;
@@ -105,8 +108,10 @@ export class GlobeViewer extends DG.JsViewer {
 
         // Add camera controls
         let orbControls = new OrbitControls(camera, renderer.domElement);
-        orbControls.autoRotate = true;
-        orbControls.autoRotateSpeed = 2.2;
+        if (this.autorotation) {
+            orbControls.autoRotate = true;
+            orbControls.autoRotateSpeed = 2.2;
+        }
         orbControls.minDistance = 101;
         orbControls.rotateSpeed = 1.5;
         orbControls.zoomSpeed = 0.8;
