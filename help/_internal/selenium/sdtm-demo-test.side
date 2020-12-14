@@ -115,8 +115,12 @@
       "id": "78284637-510c-497c-b440-c1353cd485a7",
       "comment": "",
       "command": "verifyText",
-      "target": "css=.sdtm-count > div",
-      "targets": [],
+      "target": "css=.d4-flex-row:nth-child(3) > div",
+      "targets": [
+        ["css=.d4-flex-row:nth-child(3) > div", "css:finder"],
+        ["xpath=//div[@id='grok-viewers-toolbox']/div[2]/div/div[2]/div/div[3]/div", "xpath:idRelative"],
+        ["xpath=//div/div[3]/div", "xpath:position"]
+      ],
       "value": "Count: 0"
     }, {
       "id": "46bf3a63-3903-483b-ba0e-3aade1c6f18a",
@@ -276,8 +280,12 @@
       "id": "3ec6b424-8389-4819-80f9-370d79072532",
       "comment": "",
       "command": "verifyText",
-      "target": "css=.sdtm-count > div",
-      "targets": [],
+      "target": "css=.d4-flex-row:nth-child(3) > div",
+      "targets": [
+        ["css=.d4-flex-row:nth-child(3) > div", "css:finder"],
+        ["xpath=//div[@id='grok-viewers-toolbox']/div[2]/div/div[2]/div/div[3]/div", "xpath:idRelative"],
+        ["xpath=//div/div[3]/div", "xpath:position"]
+      ],
       "value": "Count: 8865"
     }, {
       "id": "d163f819-1fbe-4845-ab6a-4af2c27488de",

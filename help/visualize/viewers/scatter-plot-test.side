@@ -1569,6 +1569,31 @@
       ],
       "value": ""
     }, {
+      "id": "ceff495b-814b-4346-8bbe-90cf3c52edf3",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "09f1a2df-305d-417b-8cf8-fa74efab4f31",
+      "comment": "",
+      "command": "click",
+      "target": "css=tbody:nth-child(11) div:nth-child(2)",
+      "targets": [
+        ["css=tbody:nth-child(11) div:nth-child(2)", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div/div/div/table/tbody[11]/tr/td/div[2]", "xpath:idRelative"],
+        ["xpath=//tbody[11]/tr/td/div[2]", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "59febf1d-c9d6-41bf-8cbf-3a6d343b40e1",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "3d91d163-e052-40e6-be5d-56a5d2e446bf",
       "comment": "",
       "command": "verifyText",

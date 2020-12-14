@@ -424,12 +424,12 @@
       "id": "7bc2f95b-4b72-4efa-8832-5b73ce82465a",
       "comment": "",
       "command": "click",
-      "target": "name=span-Matches--CC(C(OCCCc1cccnc1)=O)c1cccc(C(c2ccccc2)=O)c1-(min-0,-max-1)",
+      "target": "name=span-Matches--CC(C(Oc1ccc(C)cc1OC)=O)c1ccc(cc(cc2)OC)c2c1-(min-0,-max-1)",
       "targets": [
-        ["css=.d4-entity-markup-row:nth-child(5) label", "css:finder"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div[2]/div/div/span[5]/span/label", "xpath:idRelative"],
-        ["xpath=//span[5]/span/label", "xpath:position"],
-        ["xpath=//label[contains(.,'Matches: CC(C(C=C1)=O)=CC1=O')]", "xpath:innerText"]
+        ["css=.d4-entity-markup-row:nth-child(21) label", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div[2]/div/div/span[21]/span/label", "xpath:idRelative"],
+        ["xpath=//span[21]/span/label", "xpath:position"],
+        ["xpath=//label[contains(.,'Matches: CC(C(Oc1ccc(C)cc1OC)=O)c1ccc(cc(cc2)OC)c2c1')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
@@ -455,7 +455,7 @@
       "id": "b8a733e9-f963-413f-84c1-abc65708fd2b",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//span[contains(.,'true')]",
+      "target": "xpath=//span[contains(.,'false')]",
       "targets": [
         ["css=td:nth-child(2) > span", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div[2]/table/tbody/tr/td[2]/span", "xpath:idRelative"],
@@ -512,12 +512,12 @@
       "id": "a39c14ae-24c9-4c8a-a3a5-1acbf2f05c17",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//pre[contains(.,'ChemSubstructureSearch(\"smiles\", \"canonical_smiles\", \"CC(C(OCCCc1cccnc1)=O)c1cccc(C(c2ccccc2)=O)c1\")')]",
+      "target": "xpath=//pre[contains(.,'ChemSubstructureSearch(\"smiles\", \"canonical_smiles\", \"CC(C(Oc1ccc(C)cc1OC)=O)c1ccc(cc(cc2)OC)c2c1\")')]",
       "targets": [
         ["css=.d4-console-info:nth-child(10) > pre:nth-child(2)", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div[2]/div[10]/pre[2]", "xpath:idRelative"],
         ["xpath=//div[10]/pre[2]", "xpath:position"],
-        ["xpath=//pre[contains(.,'ChemSubstructureSearch(\"smiles\", \"canonical_smiles\", \"CC(C(OCCCc1cccnc1)=O)c1cccc(C(c2ccccc2)=O)c1\")')]", "xpath:innerText"]
+        ["xpath=//pre[contains(.,'ChemSubstructureSearch(\"smiles\", \"canonical_smiles\", \"CC(C(Oc1ccc(C)cc1OC)=O)c1ccc(cc(cc2)OC)c2c1\")')]", "xpath:innerText"]
       ],
       "value": ""
     }, {

@@ -420,11 +420,11 @@
       "id": "a5fb302c-a565-499d-a874-5e6e4bcacb14",
       "comment": "",
       "command": "verifyText",
-      "target": "css=.property-grid-item:nth-child(2) .d4-column-selector-column",
+      "target": "css=.property-grid-item:nth-child(3) .d4-column-selector-column",
       "targets": [
-        ["css=.property-grid-item:nth-child(2) .d4-column-selector-column", "css:finder"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div/div/div/table/tbody[2]/tr[2]/td[2]/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//tr[2]/td[2]/div/div/div[2]", "xpath:position"]
+        ["css=.property-grid-item:nth-child(3) .d4-column-selector-column", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div/div/div/table/tbody[2]/tr[3]/td[2]/div/div/div[2]", "xpath:idRelative"],
+        ["xpath=//tr[3]/td[2]/div/div/div[2]", "xpath:position"]
       ],
       "value": "WEIGHT"
     }, {
@@ -581,11 +581,11 @@
       "id": "3a6fecea-c6ad-494d-bd14-e7fb87bd8504",
       "comment": "",
       "command": "verifyText",
-      "target": "css=.property-grid-item:nth-child(2) .d4-column-selector-column",
+      "target": "css=.property-grid-item:nth-child(3) .d4-column-selector-column",
       "targets": [
-        ["css=.property-grid-item:nth-child(2) .d4-column-selector-column", "css:finder"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div/div/div/table/tbody[2]/tr[2]/td[2]/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//tr[2]/td[2]/div/div/div[2]", "xpath:position"]
+        ["css=.property-grid-item:nth-child(3) .d4-column-selector-column", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div/div/div/table/tbody[2]/tr[3]/td[2]/div/div/div[2]", "xpath:idRelative"],
+        ["xpath=//tr[3]/td[2]/div/div/div[2]", "xpath:position"]
       ],
       "value": "WEIGHT"
     }, {

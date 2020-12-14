@@ -283,7 +283,7 @@
       "command": "select",
       "target": "name=input-Normalize---Method",
       "targets": [],
-      "value": "label=z-scores"
+      "value": "label=Z-scores"
     }, {
       "id": "452c42c8-f4f5-47ec-ba32-bf0f434b972b",
       "comment": "",

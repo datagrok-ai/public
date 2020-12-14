@@ -203,6 +203,25 @@
       "targets": [],
       "value": ""
     }, {
+      "id": "656516a6-521a-46d5-8e16-ec3e95a06317",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//td[contains(.,'Misc')]",
+      "targets": [
+        ["css=tbody:nth-child(3) td", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div/div/div/table/tbody[3]/tr/td", "xpath:idRelative"],
+        ["xpath=//tbody[3]/tr/td", "xpath:position"],
+        ["xpath=//td[contains(.,'Misc')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "94172d9f-2f68-4540-8c16-61898cb1391a",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "72be38dc-e36f-405e-a4c3-f4186561ebd0",
       "comment": "",
       "command": "click",

@@ -1491,7 +1491,7 @@
       "id": "957888cc-6590-4b07-9b4a-8a7b22391d00",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-demog-(5850-rows,-10-columns)']",
+      "target": "name=div-demog-(5850-rows,-11-columns)",
       "targets": [
         ["css=.d4-toggle-button:nth-child(5)", "css:finder"],
         ["xpath=//div[@name='div-demog-(5850-rows,-10-columns)']", "xpath:attributes"],

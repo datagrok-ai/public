@@ -213,12 +213,12 @@
       "id": "f5597a04-8078-4307-b84d-baa7072af14a",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//canvas[@name='FC(F)(F)c1ccc(OC2CCNCC2)cc1']",
+      "target": "xpath=//canvas[@name='CC(C)Cc1ccc(cc1)C(C)C(=O)N2CCCC2C(=O)OCCO']",
       "targets": [
-        ["css=canvas:nth-child(2)", "css:finder"],
-        ["xpath=//canvas[@name='FC(F)(F)c1ccc(OC2CCNCC2)cc1']", "xpath:attributes"],
-        ["xpath=//div[@id='center']/div/div/canvas", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/canvas", "xpath:position"]
+        ["css=.d4-flex-col:nth-child(3) > canvas", "css:finder"],
+        ["xpath=//canvas[@name='CC(C)Cc1ccc(cc1)C(C)C(=O)N2CCCC2C(=O)OCCO']", "xpath:attributes"],
+        ["xpath=//div[@id='vlist']/div/div[2]/canvas", "xpath:idRelative"],
+        ["xpath=//div[2]/canvas", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -246,6 +246,17 @@
       "command": "pause",
       "target": "500",
       "targets": [],
+      "value": ""
+    }, {
+      "id": "71e2e81b-d5be-4944-b6a9-7726eea54109",
+      "comment": "",
+      "command": "click",
+      "target": "css=tbody:nth-child(1) div:nth-child(2)",
+      "targets": [
+        ["css=tbody:nth-child(1) div:nth-child(2)", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div/div/div/table/tbody/tr/td/div[2]", "xpath:idRelative"],
+        ["xpath=//td/div[2]", "xpath:position"]
+      ],
       "value": ""
     }, {
       "id": "fd72f96e-653d-415e-b335-ace804c36df0",
@@ -316,12 +327,12 @@
       "id": "d7652516-753c-45b9-ac38-29ee4d31b391",
       "comment": "",
       "command": "click",
-      "target": "xpath=//canvas[@name='COc1cccc(OCC(O)CN2CCC(CC2)Oc3ccc(cc3)C(F)(F)F)c1']",
+      "target": "xpath=//canvas[@name='COc1ccc2c(c1)c(CC(=O)OCCN(C)C)c(C)n2C(=O)c3ccc(Cl)cc3']",
       "targets": [
-        ["css=.d4-flex-col:nth-child(12) > canvas", "css:finder"],
-        ["xpath=//canvas[@name='COc1cccc(OCC(O)CN2CCC(CC2)Oc3ccc(cc3)C(F)(F)F)c1']", "xpath:attributes"],
-        ["xpath=//div[@id='vlist']/div/div[11]/canvas", "xpath:idRelative"],
-        ["xpath=//div[11]/canvas", "xpath:position"]
+        ["css=.d4-flex-col:nth-child(7) > canvas", "css:finder"],
+        ["xpath=//canvas[@name='COc1ccc2c(c1)c(CC(=O)OCCN(C)C)c(C)n2C(=O)c3ccc(Cl)cc3']", "xpath:attributes"],
+        ["xpath=//div[@id='vlist']/div/div[6]/canvas", "xpath:idRelative"],
+        ["xpath=//div[6]/canvas", "xpath:position"]
       ],
       "value": ""
     }, {
