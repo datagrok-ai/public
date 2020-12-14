@@ -3,9 +3,9 @@
 // * listens to changes of filter and selection in the attached table,
 // * updates the number of filtered/selected rows accordingly.
 export class #{NAME} extends DG.JsViewer {
-    onFrameAttached() {
-        subs.push(this.dataFrame.selection.onChanged.subscribe((_) => this.render()));
-        subs.push(this.dataFrame.filter.onChanged.subscribe((_) => this.render()));
+    onTableAttached() {
+        this.subs.push(this.dataFrame.selection.onChanged.subscribe((_) => this.render()));
+        this.subs.push(this.dataFrame.filter.onChanged.subscribe((_) => this.render()));
 
         this.render();
     }
