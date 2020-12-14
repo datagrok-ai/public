@@ -888,7 +888,7 @@
       "id": "1da7696d-4e53-49a3-8a27-01c20c49d9d7",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='div-Aact']",
+      "target": "xpath=//div[@name='div-aact']",
       "targets": [
         ["css=.grok-gallery-grid-item-wrapper:nth-child(1) > .d4-gallery-card", "css:finder"],
         ["xpath=//div[@name='div-Aact']", "xpath:attributes"],

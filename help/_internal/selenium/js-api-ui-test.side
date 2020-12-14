@@ -450,48 +450,86 @@
         ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
         ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
       ],
-      "value": "tables"
+      "value": "table with renderer"
     }, {
       "id": "ca357b4e-6572-4f3d-9a9d-92f11c17fddb",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span-Selenium",
+      "target": "xpath=//td[contains(.,'first object')]",
       "targets": [
-        ["css=.grok-markup-user > label", "css:finder"],
-        ["xpath=//div[@id='elementContent']/div/table/tbody/tr/td[2]/span/span/span/span/label", "xpath:idRelative"],
-        ["xpath=//span/label", "xpath:position"],
-        ["xpath=//label[contains(.,'Selenium')]", "xpath:innerText"]
+        ["css=tr:nth-child(1) > td:nth-child(1)", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div/table/tbody/tr/td", "xpath:idRelative"],
+        ["xpath=//td", "xpath:position"],
+        ["xpath=//td[contains(.,'first object')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
       "id": "9b1537fa-ac92-43b4-a39a-bd12f4d7714f",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//span[contains(.,'Scratchpad')]",
+      "target": "xpath=//td[contains(.,'second object')]",
       "targets": [
-        ["css=.grok-markup-user > label", "css:finder"],
-        ["xpath=//div[@id='elementContent']/div/table/tbody/tr/td[2]/span/span/span/span/label", "xpath:idRelative"],
-        ["xpath=//span/label", "xpath:position"],
-        ["xpath=//label[contains(.,'Selenium')]", "xpath:innerText"]
+        ["css=tr:nth-child(2) > td:nth-child(1)", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div/table/tbody/tr[2]/td", "xpath:idRelative"],
+        ["xpath=//tr[2]/td", "xpath:position"],
+        ["xpath=//td[contains(.,'second object')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
-      "id": "cda9ee0c-c8a3-493b-933c-d5c9358ea8f8",
+      "id": "f0372213-1867-43e9-a127-7720b93c02e0",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-times'])[3]",
+      "target": "xpath=(//i[@name='icon-times'])[4]",
       "targets": [
         ["css=.d4-ribbon > .grok-icon", "css:finder"],
-        ["xpath=(//i[@name='icon-times'])[3]", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/i", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/div/i", "xpath:position"]
+        ["xpath=(//i[@name='icon-times'])[4]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[3]/div/div/div/div/div/div/i", "xpath:idRelative"],
+        ["xpath=//div[3]/div[3]/div/div/div/div/div/div/i", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "c04ba290-ec81-4192-a0d9-96ed35a20431",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "500",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "b361ea70-8bb8-4a19-a2a4-37889831cf0e",
+      "comment": "",
+      "command": "verifyText",
+      "target": "xpath=//div[@name='div-view-name']",
+      "targets": [
+        ["css=.d4-ribbon-name", "css:finder"],
+        ["xpath=//div[@name='div-view-name']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/div/div/span", "xpath:position"]
+      ],
+      "value": "table from map"
+    }, {
+      "id": "3a6cadac-1e3b-47c7-ab56-219a3ec49a03",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "815a54f9-32b8-498d-994b-cb24f7a67bba",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=(//i[@name='icon-times'])[3]",
+      "targets": [
+        ["css=.d4-ribbon > .grok-icon", "css:finder"],
+        ["xpath=(//i[@name='icon-times'])[3]", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[3]/div/div/div/div/div/div/i", "xpath:idRelative"],
+        ["xpath=//div[3]/div/div/div/div/div/div/i", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "335c9fbf-3432-4678-8217-cc65777cf50b",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
       "targets": [],
       "value": ""
     }, {

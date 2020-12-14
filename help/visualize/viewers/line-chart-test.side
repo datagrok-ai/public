@@ -1028,6 +1028,32 @@
       ],
       "value": "AGE"
     }, {
+      "id": "331433dd-b7e1-4876-b443-aae0794ea334",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "157cbbf8-b56a-4b91-bc7b-32062095dda2",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//td[contains(.,'Misc')]",
+      "targets": [
+        ["css=tbody:nth-child(3) td", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div/div/div/table/tbody[3]/tr/td", "xpath:idRelative"],
+        ["xpath=//tbody[3]/tr/td", "xpath:position"],
+        ["xpath=//td[contains(.,'Misc')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "33a9df2d-1c48-4107-a902-865357a790c8",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "414b0cdc-7195-4eb5-9a28-03b54ac4b074",
       "comment": "",
       "command": "verifyText",
@@ -1040,10 +1066,36 @@
       ],
       "value": "Area Chart"
     }, {
+      "id": "22601b4b-bf14-4d3d-992c-2ad95c27657c",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "63435107-cd98-4a5d-99b0-05dd579aade9",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//td[contains(.,'Markers')]",
+      "targets": [
+        ["css=tbody:nth-child(13) td", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div/div/div/table/tbody[13]/tr/td", "xpath:idRelative"],
+        ["xpath=//tbody[13]/tr/td", "xpath:position"],
+        ["xpath=//td[contains(.,'Markers')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "2eea429a-336b-49d8-8d11-586222e2c773",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "7992d208-8c5f-47e2-8829-c934253698b5",
       "comment": "",
       "command": "verifyText",
-      "target": "name=prop-view-show-markers",
+      "target": "xpath=//div[@name='prop-view-show-markers']",
       "targets": [
         ["css=.property-grid-category-body:nth-child(14) > .property-grid-item:nth-child(3) .property-grid-item-view-label", "css:finder"],
         ["xpath=//div[@name='prop-view-show-markers']", "xpath:attributes"],
