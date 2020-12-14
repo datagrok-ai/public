@@ -212,14 +212,14 @@ the Grok platform. Once a viewer is registered, you can do the following:
 * Persist viewer as part of the project
 * Common viewer operations under the "Viewer" popup menu, such as cloning, embedding, etc
 
-The following code defines a new viewer by subclassing JsViewer. The viewer listens to changes
+The following code defines a new viewer by subclassing `JsViewer`. The viewer listens to changes
 of filter and selection in the attached table, and updates numbers of filtered/selected rows accordingly.
 
 ```javascript
 class JsDemoViewer extends DG.JsViewer {
-    onFrameAttached() {
-        subs.push(this.dataFrame.selection.onChanged.subscribe((_) => this.render()));
-        subs.push(this.dataFrame.filter.onChanged.subscribe((_) => this.render()));
+    onTableAttached() {
+        this.subs.push(this.dataFrame.selection.onChanged.subscribe((_) => this.render()));
+        this.subs.push(this.dataFrame.filter.onChanged.subscribe((_) => this.render()));
 
         this.render();
     }
