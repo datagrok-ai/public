@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import ThreeGlobe from 'three-globe';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { _package } from '../src/package.js';
+import { scaleLinear, scaleSqrt, scaleSequential, interpolateYlOrRd } from 'd3';
 
 
 export class GlobeViewer extends DG.JsViewer {
@@ -10,37 +11,77 @@ export class GlobeViewer extends DG.JsViewer {
         super();
 
         // Properties
-        this.latitude = this.string('latitudeColumnName');
-        this.longitude = this.string('longitudeColumnName');
-        this.magnitude = this.float('magnitudeColumnName');
+        this.latitudeColName = this.string('latitudeColumnName');
+        this.longitudeColName = this.string('longitudeColumnName');
+        // TODO: draw country polygons for columns with DG.SEMTYPE.COUNTRY
+        this.magnitudeColName = this.float('magnitudeColumnName');
+        this.pointRadius = this.float('Point Radius', 0.15);
+        this.pointAltitude = this.float('Point Altitude', 0.1);
+
+        this.points = [];
+        this.initialized = false;
     }
 
     init() {
+        this.initialized = true;
+    }
 
-        let latCol = this.dataFrame.columns.bySemType(DG.SEMTYPE.LATITUDE).getRawData();
-        let lonCol = this.dataFrame.columns.bySemType(DG.SEMTYPE.LONGITUDE).getRawData();
-        let magCol = this.dataFrame.columns.toList().filter(col => col.type === 'double')[0].getRawData();
+    onTableAttached() {
+        this.init();
 
-        let points = [];
+        this.latitudeColName = this.dataFrame.columns.bySemType(DG.SEMTYPE.LATITUDE).name;
+        this.longitudeColName = this.dataFrame.columns.bySemType(DG.SEMTYPE.LONGITUDE).name;
+        this.magnitudeColName = this.dataFrame.columns.bySemType('Magnitude').name;
+        this.getCoordinates();
+
+        this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
+        this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()));
+        this.subs.push(DG.debounce(this.onSizeChanged, 50).subscribe((_) => this.render()));
+
+        this.render();
+    }
+
+    onPropertyChanged(property) {
+        super.onPropertyChanged(property);
+        if (this.initialized) {
+            this.render();
+        }
+    }
+
+    detach() {
+        this.subs.forEach((sub) => sub.unsubscribe());
+    }
+
+    getCoordinates() {
+        let lat = this.dataFrame.getCol(this.latitudeColName).getRawData();
+        let lon = this.dataFrame.getCol(this.longitudeColName).getRawData();
+        let mag = this.dataFrame.getCol(this.magnitudeColName);
+        let magRange = [mag.min, mag.max];
+        let color = scaleSequential(magRange, interpolateYlOrRd);
+        let size = scaleSqrt(magRange, [0.1, 0.5]);
+        mag = mag.getRawData();
         let rowCount = this.dataFrame.rowCount;
-        let factor = 0.005;
         for (let i = 0; i < rowCount; i++) {
-            points.push({
-                lat: latCol[i],
-                lng: lonCol[i],
-                size: magCol[i] * factor,
-                color: '#ffd444'
+            this.points.push({
+                lat: lat[i],
+                lng: lon[i],
+                size: size(mag[i]),
+                color: color(mag[i])
             });
         }
+    }
+
+    render() {
+
         let globe = new ThreeGlobe()
             .globeImageUrl(`${_package.webRoot}globe/earth-blue-marble.jpg`)
             .bumpImageUrl(`${_package.webRoot}globe/earth-topology.png`)
-            .pointsData(points)
+            .pointsData(this.points)
             .pointAltitude('size')
             .pointColor('color')
-            .pointRadius(0.15);
+            .pointRadius(this.pointRadius);
 
-        // Basic example
+        $(this.root).empty();
         let width = this.root.parentElement.clientWidth;
         let height = this.root.parentElement.clientHeight;
         
@@ -78,13 +119,4 @@ export class GlobeViewer extends DG.JsViewer {
             requestAnimationFrame(animate);
         })();
     }
-
-    onTableAttached() {
-        this.init();
-        this.subs.push(this.dataFrame.selection.onChanged.subscribe((_) => this.render()));
-        this.subs.push(this.dataFrame.filter.onChanged.subscribe((_) => this.render()));
-        this.render();
-    }
-
-    render() {}
 }
