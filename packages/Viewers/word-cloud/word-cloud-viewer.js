@@ -123,7 +123,12 @@ export class WordCloudViewer extends DG.JsViewer {
                     .on('mouseover', d => ui.tooltip.showRowGroup(table, i => {
                         return d.srcElement.innerHTML === strColumn.get(i);
                     }, d.x, d.y))
-                    .on('mouseout', () => ui.tooltip.hide());
+                    .on('mouseout', () => ui.tooltip.hide())
+                    .on('mousedown', d => {
+                            table.selection.handleClick(i => {
+                            return d.srcElement.innerHTML === strColumn.get(i);
+                            }, d);
+                    });
         }
 
         this.root.appendChild(svg.node());
