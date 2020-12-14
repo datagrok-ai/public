@@ -104,7 +104,9 @@ export class WordCloudViewer extends DG.JsViewer {
             .rotate(() => (~~(Math.random() * 6) - 3) * 30)
             .fontSize(d => d.size)
             .on("end", draw);
+
         layout.start();
+        let table = this.dataFrame;
 
         function draw(words) {
             svg
@@ -117,7 +119,11 @@ export class WordCloudViewer extends DG.JsViewer {
                     .style("fill", d => d.color)
                     .attr("text-anchor", "middle")
                     .attr("transform", d => `translate(${[d.x, d.y]}) rotate(${d.rotate})`)
-                    .text(d => d.text);
+                    .text(d => d.text)
+                    .on('mouseover', d => ui.tooltip.showRowGroup(table, i => {
+                        return d.srcElement.innerHTML === strColumn.get(i);
+                    }, d.x, d.y))
+                    .on('mouseout', () => ui.tooltip.hide());
         }
 
         this.root.appendChild(svg.node());
