@@ -94,7 +94,6 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
                     } catch (e) {
                     }
                 }
-                // scaffoldMol.delete();
                 scaffoldCache.set(rdkitMolSmiles, true);
             }
 
@@ -109,15 +108,31 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
         } else {
 
             let df = gridCell.tableColumn.dataFrame;
-            let rowScaffoldCol = null;
-            for (let j = 0; j < df.columns.length; ++j) {
-                let col = df.columns.byIndex(j);
-                let tags = col.tags;
-                if (tags && tags['row-scaffold']) {
-                    rowScaffoldCol = col;
-                    break;
+            const rowScaffoldCol = (() => {
+
+                // if given, take the 'scaffold-col' col
+                let colTags = gridCell.tableColumn.tags;
+                if (colTags && colTags['scaffold-col']) {
+                    let rowScaffoldColName = colTags['scaffold-col'];
+                    let rowScaffoldColProbe = df.columns.byName(rowScaffoldColName);
+                    if (rowScaffoldColProbe !== null) {
+                        return rowScaffoldColProbe;
+                    }
                 }
-            }
+
+                // TODO: deprecate
+                // otherwise, find the 'row-scaffold' col
+                for (let j = 0; j < df.columns.length; ++j) {
+                    let col = df.columns.byIndex(j);
+                    let tags = col.tags;
+                    if (tags && tags['row-scaffold']) {
+                        return col;
+                    }
+                }
+
+                return null;
+
+            })();
 
             if (rowScaffoldCol == null || rowScaffoldCol.name === gridCell.tableColumn.name) {
                 // regular drawing
