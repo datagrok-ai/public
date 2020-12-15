@@ -122,7 +122,7 @@ class ChemPackage extends DG.Package {
 
         let sketcher = grok.chem.sketcher((smiles, molfile) => {
             sketcherValue = smiles;
-            RDKitDemoPackage.removeChildren(dsDiv);
+            ChemPackage.removeChildren(dsDiv);
             dsDiv.appendChild(this.descriptorsWidget(smiles).root);
         }, defaultSmiles);
         let addButton = ui.bigButton('ADD', async () => {
@@ -163,7 +163,7 @@ class ChemPackage extends DG.Package {
         let widget = new DG.Widget(ui.div());
         let result = ui.div();
         let selectButton = ui.bigButton('SELECT', async () => {
-            RDKitDemoPackage.openDescriptorsDialog(await this.getSelected(), async (selected) => {
+            ChemPackage.openDescriptorsDialog(await this.getSelected(), async (selected) => {
                 await grok.dapi.userDataStorage.postValue(this.STORAGE_NAME, this.KEY, JSON.stringify(selected));
                 update();
             });
@@ -171,11 +171,11 @@ class ChemPackage extends DG.Package {
         selectButton.style.marginTop = '20px';
 
         let update = () => {
-            RDKitDemoPackage.removeChildren(result);
+            ChemPackage.removeChildren(result);
             result.appendChild(ui.loader());
             this.getSelected().then(selected => {
                 grok.chem.descriptors(DG.DataFrame.fromCsv(`smiles\n${smiles}`), 'smiles', selected).then(table => {
-                    RDKitDemoPackage.removeChildren(result);
+                    ChemPackage.removeChildren(result);
                     let map = {};
                     for (let descriptor of selected)
                         map[descriptor] = table.col(descriptor).get(0);
