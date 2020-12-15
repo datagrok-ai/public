@@ -17,24 +17,27 @@ async function time(name, n, f) {
   
   let df = await grok.data.getDemoTable('chem/zbb/99_p3_4.5-6.csv');
   const N = Math.min(2000, df.rowCount);
-  df.rows.removeAt(N, df.rowCount - N, false);
+  df.rows.removeAt(N - 1, df.rowCount - N + 1, false);
+  let col = df.col('smiles');
   
-  const n = 10;
+  const n = 5;
   
-  await time('Substructure Search - Graph', n, async () => {
+  console.log('Substructure search microbenchmark');
+  
+  await time(`Graph-based search on ${df.rowCount} molecules`, n, async () => {
     for (let s of searchFor) {
-      let result = await grok.chem.substructureSearch(df.col('smiles'), s, { substructLibrary: false });
+      let result = await grok.chem.substructureSearch(col, s, { substructLibrary: false });
       // console.log(s + ": " + result.toString());
     }
   });
   
-  await time('Substructure Search - Library - Init', 1, async() => {
-    await grok.chem.substructureSearch(df.col('smiles'));
+  await time(`Building a library for ${df.rowCount} molecules`, 1, async() => {
+    await grok.chem.substructureSearch(col, '');
   });
   
-  await time('Substructure Search - Library - Search', n, async () => {
+  await time(`Searching the library on ${searchFor.length} molecules`, n, async () => {
     for (let s of searchFor) {
-      let result = await grok.chem.substructureSearch(df.col('smiles'), s);
+      let result = await grok.chem.substructureSearch(col, s);
       // console.log(s + ": " + result.toString());
     }
   });
