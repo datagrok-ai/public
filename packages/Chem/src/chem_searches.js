@@ -11,7 +11,7 @@ function cacheByAction(params, invalidator) {
         invalidateCache = true;
     }
 
-    if (column !== foo.cachedForCol || query === null) {
+    if (column !== foo.cachedForCol || query == null) {
         invalidateCache = true;
     }
 
@@ -23,17 +23,22 @@ function cacheByAction(params, invalidator) {
 
 function _morganFP(molString, fp_length = 128, fp_radius = 2) {
 
-    try {
-        let mol = rdKitModule.get_mol(molString);
-        let mfp = mol.get_morgan_fp(fp_radius, fp_length);
-        mol.delete();
-        return mfp;
-    } catch (e) {
+    if (molString == null) {
         console.error(
-            "Possibly a malformed molString: `" + molString + "`");
-        return '0'.repeat(fp_length);
-        // Won't rethrow
+            "Possibly an empty molString: `" + molString + "`");
+    } else {
+        try {
+            let mol = rdKitModule.get_mol(molString);
+            let mfp = mol.get_morgan_fp(fp_radius, fp_length);
+            mol.delete();
+            return mfp;
+        } catch (e) {
+            console.error(
+                "Possibly a malformed molString: `" + molString + "`");
+            // Won't rethrow
+        }
     }
+    return '0'.repeat(fp_length);
 
 }
 
@@ -41,8 +46,13 @@ function moleculesToFingerprints(molStringsColumn, settings) {
     const len = molStringsColumn.length;
     const fpLength = settings.hasOwnProperty('fpLength') ? settings.fpLength : 128;
     const fpRadius = settings.hasOwnProperty('fpRadius') ? settings.fpRadius : 2;
-    let fingerprints = molStringsColumn.toList().map((molString) =>
-        DG.BitSet.fromString(_morganFP(molString, fpLength, fpRadius)));
+    let fingerprints = [];
+    for (let i = 0; i < molStringsColumn.length; ++i) {
+        let molString = molStringsColumn.get(i);
+        let morganFp = _morganFP(molString, fpLength, fpRadius);
+        const fingerprint = DG.BitSet.fromString(morganFp);
+        fingerprints.push(fingerprint);
+    }
     return DG.Column.fromList('object', 'fingerprints', fingerprints);
 }
 
@@ -70,7 +80,7 @@ function _chemSimilarityScoringByFingerprints(fingerprintCol, fingerprint, molSt
     let distances = DG.Column.fromType(DG.TYPE.FLOAT, 'distances', len);
     for (let row = 0; row < len; ++row) {
         const fp = fingerprintCol.get(row);
-        distances.set(row, fp === null ? 100.0 : fingerprintSimilarity(fingerprint, fp));
+        distances.set(row, fp == null ? 1.0 : fingerprintSimilarity(fingerprint, fp));
     }
 
     if (settings.hasOwnProperty('sorted') && settings.sorted === true) {
@@ -134,7 +144,7 @@ function chemSubstructureSearchGraph(molStringsColumn, molString) {
     let result = DG.BitSet.create(len);
     let subMol = rdKitModule.get_mol(molString);
     for (let i = 0; i < len; ++i) {
-        const item = molStringsColumn.get(i);
+        let item = molStringsColumn.get(i);
         try {
             let mol = rdKitModule.get_mol(item);
             let match = mol.get_substruct_match(subMol);
@@ -165,7 +175,7 @@ async function chemSubstructureSearchLibrary(molStringsColumn, molString) {
             rdKitWorkerProxy.substructInit(molStringsColumn.toList())
     );
 
-    if (molString !== null) {
+    if (molString != null) {
 
         const matches = JSON.parse(await rdKitWorkerProxy.substructSearch(molString));
         let result = DG.BitSet.create(molStringsColumn.length);
