@@ -22,10 +22,19 @@ function cacheByAction(params, invalidator) {
 }
 
 function _morganFP(molString, fp_length = 128, fp_radius = 2) {
-    let mol = rdKitModule.get_mol(molString);
-    let mfp = mol.get_morgan_fp(fp_radius, fp_length);
-    mol.delete();
-    return mfp;
+
+    try {
+        let mol = rdKitModule.get_mol(molString);
+        let mfp = mol.get_morgan_fp(fp_radius, fp_length);
+        mol.delete();
+        return mfp;
+    } catch (e) {
+        console.error(
+            "Possibly a malformed molString: `" + molString + "`");
+        return '0'.repeat(fp_length);
+        // Won't rethrow
+    }
+
 }
 
 function moleculesToFingerprints(molStringsColumn, settings) {
