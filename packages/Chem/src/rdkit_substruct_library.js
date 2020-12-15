@@ -12,9 +12,8 @@ class RdKitSubstructLibrary {
         this.deinit();
         this.library = new this.rdKitModule.SubstructLibrary();
         for (let item of dict) {
-            let mol = null;
             try {
-                mol = this.rdKitModule.get_mol(item);
+                let mol = this.rdKitModule.get_mol(item);
                 this.library.add_mol(mol);
                 mol.delete();
             } catch (e) {
