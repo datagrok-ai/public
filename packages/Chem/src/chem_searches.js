@@ -1,4 +1,4 @@
-function cacheByAction(params, invalidator) {
+async function cacheByAction(params, invalidator) {
 
     let invalidateCache = false;
     let {foo, column, query} = params;
@@ -16,7 +16,7 @@ function cacheByAction(params, invalidator) {
     }
 
     if (invalidateCache) {
-        invalidator(params);
+        await invalidator(params);
         foo.cachedForCol = column;
     }
 }
@@ -166,13 +166,13 @@ async function chemSubstructureSearchLibrary(molStringsColumn, molString) {
 
     if (molString === "") molString = null;
 
-    cacheByAction({
+    await cacheByAction({
             foo: chemSubstructureSearchLibrary,
             column: molStringsColumn,
             query: molString
         },
-        (params) =>
-            rdKitWorkerProxy.substructInit(molStringsColumn.toList())
+        async (params) =>
+            await rdKitWorkerProxy.substructInit(molStringsColumn.toList())
     );
 
     if (molString != null) {
