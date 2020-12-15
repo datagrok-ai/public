@@ -12,13 +12,14 @@ async function time(name, n, f) {
 
 (async () => {
   
-  let df = await grok.data.getDemoTable('chem/zbb/99_p3_4.5-6.csv');
-  const N = Math.min(2000, df.rowCount);
-  df.rows.removeAt(N - 1, df.rowCount - N + 1, false);
-  let col = df.col('smiles');
-  
   const q = 3;
   const n = 5;
+  const N = 2000;
+  
+  let df = await grok.data.getDemoTable('chem/zbb/99_p3_4.5-6.csv');
+  if (N < df.rowCount)
+  	df.rows.removeAt(N, df.rowCount - N, false);
+  let col = df.col('smiles');
   
   console.log('Similarity scoring microbenchmark');
   
