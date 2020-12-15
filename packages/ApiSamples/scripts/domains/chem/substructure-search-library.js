@@ -13,14 +13,14 @@ async function time(name, n, f) {
 
 (async () => {
   
+  const n = 5;
+  const N = 2000;
   let searchFor = ['c1ccccc1', 'C1CCCCC1', 'CC'];
   
   let df = await grok.data.getDemoTable('chem/zbb/99_p3_4.5-6.csv');
-  const N = Math.min(2000, df.rowCount);
-  df.rows.removeAt(N - 1, df.rowCount - N + 1, false);
+  if (N < df.rowCount)
+  	df.rows.removeAt(N, df.rowCount - N, false);
   let col = df.col('smiles');
-  
-  const n = 5;
   
   console.log('Substructure search microbenchmark');
   
