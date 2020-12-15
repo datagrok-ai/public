@@ -33,7 +33,56 @@ export function awesome() {
 }
 ```
 
-The annotated function above registers our viewer and makes it available on the platform.
+The annotated function above [registers](#registering-viewers) our viewer and makes it available on the platform.
+
+Now we will start adding new functionality to this template. If you have [datagrok-tools](https://www.npmjs.com/package/datagrok-tools) installed and want to follow along, you can obtain the `Awesome` viewer code used for illustration with these commands:
+
+```
+grok create AwesomePackage
+grok add viewer AwesomeViewer
+grok publish --rebuild
+```
+
+In case you are new to package development workflow, [this article](../develop.md) will get you started. The code provided here can be found in our [JavaScript API Samples](https://public.datagrok.ai/js/samples/functions/custom-viewers/viewers) as well.
+
+Finally, if you would like to explore the methods discussed in the article on your own, jump right to our [JavaScript API documentation](https://datagrok.ai/js-api/JsViewer).
+
+#### Properties
+
+First and foremost, let's take a look at how we can define properties of a viewer. They will include all the parameters you want users to be able to tweak from the UI in the [property panel](../../overview/navigation.md#properties), be it data to display, color scheme, or some numeric values.
+
+```javascript
+class AwesomeViewer extends DG.JsViewer {
+
+    constructor() {
+        super();
+
+        // Register properties and define fields initialized to properties' default values
+        this.question = this.string('question', 'life');
+        this.answer = this.int('answer', 42);
+
+        // Properties that represent columns should be strings with the 'ColumnName' postfix
+        this.valueColumnName = this.string('valueColumnName', null);
+        this.registerCleanup(ui.tools.handleResize(this.root, (w, h) => this.render()));
+    }
+
+}
+```
+
+In the class `constructor`, you can create properties of the following data types:
+
+  * integer number `this.int(propertyName[, defaultValue])`
+  * floating point number `this.float(propertyName[, defaultValue])`
+  * string `this.string(propertyName[, defaultValue])`
+  * string array `this.stringList(propertyName[, defaultValue])`
+  * boolean value `this.bool(propertyName[, defaultValue])`
+  * datetime `this.dateTime(propertyName[, defaultValue])`
+
+Follow the naming conventions for JavaScript variables (`lowerCamelCase` will do). Certainly, the names will be nicely displayed in the property panel: capitalized, with spaces between words (e.g., `property` becomes `Property` and `propertyName` becomes `Property Name`). But for them to appear so, pay attention to the names you use in your code. Consistency in naming also ensures that property values are updated correctly.
+
+Properties are divided into two main groups depending on whether they are data-related or not. The first ones belong to the `Data` tab of the property panel, while the rest of them are placed under the `Misc` tab. Add the `ColumnName` postfix to the property name to indicate that it is a data property, otherwise, it will appear in `Misc`. Some properties, such as `stringList` and `dateTime`, can only be used to represent columns.
+
+#### Events
 
 ### Scripting Viewers
 
@@ -41,16 +90,16 @@ The annotated function above registers our viewer and makes it available on the 
 
 Tagging scripts or functions as `viewers` registers them within the platform. Registering a viewer makes it available via menu, etc.
 
-![](leaflet-menu.jpg "Viewer Menu")
+![](leaflet-menu.png "Viewer Menu")
 
 ## Examples
 
 You can find more inspiring examples in our [public repository](https://github.com/datagrok-ai/public):
 
   * JavaScript-based viewers:
-    * [Leaflet](https://github.com/datagrok-ai/public/tree/master/packages/Leaflet)
-    * [Sunburst](https://github.com/datagrok-ai/public/tree/master/packages/Sunburst)
-    * [Viewers](https://github.com/datagrok-ai/public/tree/master/packages/Viewers)
+    * [Leaflet](https://github.com/datagrok-ai/public/tree/master/packages/Leaflet): integrates with the [Leaflet](https://leafletjs.com/) library to build interactive maps
+    * [Sunburst](https://github.com/datagrok-ai/public/tree/master/packages/Sunburst): uses the [D3](https://d3js.org/) library for a sunburst chart
+    * [Viewers](https://github.com/datagrok-ai/public/tree/master/packages/Viewers): showcases creating JavaScript viewers using various visualization libraries
   * Scripting viewers (R, Python, Julia):
     * [ChaRPy](https://github.com/datagrok-ai/public/tree/master/packages/ChaRPy): translates a Datagrok viewer to Python and R code using scripting viewers for the respective programming languages
     * [JuliaScripts](https://github.com/datagrok-ai/public/tree/master/packages/JuliaScripts): demonstrates the scripting functionality for Julia
