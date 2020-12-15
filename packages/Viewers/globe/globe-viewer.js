@@ -15,9 +15,9 @@ export class GlobeViewer extends DG.JsViewer {
         this.longitudeColumnName = this.string('longitudeColumnName');
         // TODO: draw country polygons for columns with DG.SEMTYPE.COUNTRY
         this.magnitudeColumnName = this.float('magnitudeColumnName');
-        this.pointRadius = this.float('Point Radius', 15);
-        this.pointAltitude = this.float('Point Altitude', 0.1);
-        this.autorotation = this.bool('Autorotation', true);
+        this.pointRadius = this.float('pointRadius', 15);
+        this.pointAltitude = this.float('pointAltitude', 50);
+        this.autorotation = this.bool('autorotation', true);
 
         this.rScale = scaleLinear([0, 100], [0, 1]);
         this.points = [];
@@ -61,7 +61,9 @@ export class GlobeViewer extends DG.JsViewer {
         let mag = this.dataFrame.getCol(this.magnitudeColumnName);
         let magRange = [mag.min, mag.max];
         let color = scaleSequential(magRange, interpolateYlOrRd);
-        let size = scaleSqrt(magRange, [0.1, 0.5]);
+        let altRange = [0.1, this.rScale(this.pointAltitude)];
+        if (altRange[1] < 0.1) altRange[0] = 0;
+        let size = scaleSqrt(magRange, altRange);
         mag = mag.getRawData();
         let rowCount = this.dataFrame.rowCount;
         for (let i = 0; i < rowCount; i++) {
@@ -82,7 +84,7 @@ export class GlobeViewer extends DG.JsViewer {
             .pointsData(this.points)
             .pointAltitude('size')
             .pointColor('color')
-            .pointRadius(this.rScale(this.getProperty('Point Radius').get()));
+            .pointRadius(this.rScale(this.pointRadius));
 
         $(this.root).empty();
         let width = this.root.parentElement.clientWidth;
