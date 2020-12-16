@@ -28,7 +28,7 @@ function createCanvas(width, height) {
   
   let df = await grok.data.getDemoTable('chem/zbb/99_p3_4.5-6.csv');
   if (N < df.rowCount)
-  	df.rows.removeAt(N, df.rowCount - N, false);
+    df.rows.removeAt(N, df.rowCount - N, false);
   let col = df.col('smiles');
   
   console.log('Chem Benchmark');
@@ -40,8 +40,8 @@ function createCanvas(width, height) {
   
   await time(`Rendering a ${N} molecules`, 1, async () => {
     for (let mol of molArray) {
-   	  const opts = {
-      	"clearBackground": false,
+      const opts = {
+        "clearBackground": false,
         "offsetx": Math.floor(x),
         "offsety": -Math.floor(y),
         "width": Math.floor(w),
