@@ -19,7 +19,7 @@ async function time(name, n, f) {
   
   let df = await grok.data.getDemoTable('chem/zbb/99_p3_4.5-6.csv');
   if (N < df.rowCount)
-  	df.rows.removeAt(N, df.rowCount - N, false);
+    df.rows.removeAt(N, df.rowCount - N, false);
   let col = df.col('smiles');
   
   console.log('Substructure search microbenchmark');
