@@ -17,6 +17,10 @@ class ChemPackage extends DG.Package {
         await rdKitWorkerProxy.moduleInit();
         this.STORAGE_NAME = 'rdkit_descriptors';
         this.KEY = 'selected';
+        this.rdKitRendererCache = new DG.LruCache();
+        this.rdKitRendererCache.onItemEvicted = (mol) => {
+            mol.delete();
+        };
     }
 
     //name: SubstructureFilter
@@ -235,6 +239,33 @@ class ChemPackage extends DG.Package {
             .onOK(() => onOK(items.filter(i => i.checked).map(i => i.value['name'])))
             .show();
         });
+    }
+
+    renderMolRdKitCanvasCache(molString, canvas, x, y, w, h) {
+
+        let mol = this.rdKitRendererCache.getOrCreate(molString, (s) => {
+            try {
+                return rdKitModule.get_mol(s);
+            } catch (e) {
+                return rdKitModule.get_mol("");
+            }
+        });
+
+        const opts = {
+            "clearBackground": false,
+            "offsetx": Math.floor(x),
+            "offsety": -Math.floor(y),
+            "width": Math.floor(w),
+            "height": Math.floor(h)
+        };
+        mol.draw_to_canvas_with_highlights(canvas, JSON.stringify(opts));
+
+    }
+
+    get rdKitModule() {
+
+        return rdKitModule;
+
     }
 
     //description: Removes all children from node
