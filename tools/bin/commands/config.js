@@ -34,15 +34,16 @@ function validateConf(config) {
     return valid;
 }
 
-function generateKeyQ(server) {
+function generateKeyQ(server, url) {
+    const origin = (new URL(url)).origin;
     const question = {
         name: server,
         type: 'input',
-        message: `Developer key (get it from https://${server}.datagrok.ai/u):`,
+        message: `Developer key (get it from ${origin}/u):`,
         validate: validateKey
     };
-    if (server === 'local') {
-        question.message = 'Developer key for http://127.0.0.1:8080:';
+    if (server.startsWith('local')) {
+        question.message = `Developer key for ${origin}`;
     }
     return question;
 }
@@ -73,7 +74,8 @@ function config(args) {
                 });
                 if (answers['edit-config']) {
                     for (const server in config.servers) {
-                        const question = generateKeyQ(server);
+                        const url = config['servers'][server]['url'];
+                        const question = generateKeyQ(server, url);
                         question.default = config['servers'][server]['key'];
                         const devKey = await inquirer.prompt(question);
                         config['servers'][server]['key'] = devKey[server];
