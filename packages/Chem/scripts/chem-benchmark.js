@@ -12,7 +12,7 @@ async function time(name, n, f) {
 }
 
 function createCanvas(width, height) {
-  var c = document.createElement('canvas');
+  let c = document.createElement('canvas');
   c.setAttribute('width', width);
   c.setAttribute('height', height);
   return c;
