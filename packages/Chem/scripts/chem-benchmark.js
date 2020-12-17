@@ -44,6 +44,7 @@ async function testCase(title, f) {
   const N_scroll = 20;
   const t_scroll = 100;
   const N_search = 20000;
+  const N_sample = 10;
   const x = 0, y = 0;
   const w = 200, h = 100;
 
@@ -99,11 +100,20 @@ async function testCase(title, f) {
     'O=C(C)Oc1ccccc1C(=O)O' // Aspirin
   ];
 
-  await testCase(`Substructure search, building library`, async () =>
+  await testCase(`Substructure search, building a library of ${col.length} molecules`, async () =>
     await grok.chem.substructureSearch(col, ''));
-  await testCase(`Substructure search, searching benzene`, async () =>
+  await testCase(`Substructure search, searching benzene in ${N_search} molecules`, async () =>
     await grok.chem.substructureSearch(col, searchFor[0]));
-  await testCase(`Substructure search, searching aspirin`, async () =>
+  await testCase(`Substructure search, searching aspirin in ${N_search} molecules`, async () =>
     await grok.chem.substructureSearch(col, searchFor[1]));
+
+  await testCase(`Similarity scoring, building a library of ${col.length} molecules`, async () =>
+      await grok.chem.similarityScoring(col, ''));
+  const queryIdx = getIdxRandomSubset(N, N_sample);
+  await testCase(`Similarity scoring, search for ${queryIdx.length} samples in ${N_search} molecules`, async () => {
+    for (let i of queryIdx) {
+      await grok.chem.similarityScoring(col, col.get(i));
+    }
+  });
 
 })();
