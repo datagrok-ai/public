@@ -31,4 +31,4 @@ See also:
 * #{cmd(AddressToCoordinates)}
 * [Viewers](../viewers.md)
 * [Table View](../../overview/table-view.md)
-* [JS API: Google Maa](https://public.datagrok.ai/js/samples/ui/viewers/google-map)
+* [JS API: Google Map](https://public.datagrok.ai/js/samples/ui/viewers/google-map)
