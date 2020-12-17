@@ -506,6 +506,11 @@ export class Column {
      * @returns {number} */
     get max() { return grok_Column_Max(this.d); }
 
+    /** Checks whether the column passes the specified [filter].
+    * [filter] can be either specific data [type] such as 'int' or 'string', more broadly - 'numerical', or 'categorical', or null for any columns.
+    * @returns {boolean} */
+    matches(filter) { return grok_Column_Matches(this.d, filter); }
+
     /** Basic descriptive statistics. The result is cached.
      * @returns {Stats} */
     get stats() { return Stats.fromColumn(this); }

@@ -525,6 +525,10 @@ export class Property {
     get choices() { return grok_Property_Get_Choices(this.d); }
     set choices(x) { return grok_Property_Set_Choices(this.d, x); }
 
+    /** Column type filter
+     * @type {string}*/
+    get columnFilter() { return grok_Property_Get_ColumnTypeFilter(this.d); }
+
     /** Creates a property
      * @param {string} name
      * @param {TYPE|Type} type

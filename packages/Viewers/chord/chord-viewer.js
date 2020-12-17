@@ -72,6 +72,24 @@ export class ChordViewer extends DG.JsViewer {
 
     generateData() {
 
+        this.fromColumn = this.dataFrame.getCol(this.fromColumnName);
+        this.toColumn = this.dataFrame.getCol(this.toColumnName);
+        this.conf.events = {
+            mouseover: ((datum, index, nodes, event) => {
+                ui.tooltip.showRowGroup(this.dataFrame, i => {
+                    return this.fromColumn.get(i) === datum.id ||
+                           this.toColumn.get(i) === datum.id;
+                }, event.x, event.y);
+            }).bind(ChordViewer),
+            mouseout: () => ui.tooltip.hide(),
+            mousedown: ((datum, index, nodes, event) => {
+                this.dataFrame.selection.handleClick(i => {
+                    return this.fromColumn.get(i) === datum.id ||
+                           this.toColumn.get(i) === datum.id;
+                }, event);
+            }).bind(ChordViewer)
+        };
+
         // For now, applies the aggregation function to the first numeric column
         this.aggregatedTable = this.dataFrame
             .groupBy([this.fromColumnName, this.toColumnName])
