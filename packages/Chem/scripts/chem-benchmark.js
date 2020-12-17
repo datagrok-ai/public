@@ -1,9 +1,8 @@
 //name: chemBenchmark
 //language: javascript
 
-function randomInt(min, max) {
-  return min + Math.floor((max - min) * Math.random());
-}
+const randomInt = (min, max) =>  min + Math.floor((max - min) * Math.random());
+const range = (l, r) => new Array(r - l).fill().map((_,k) => k + l);
 
 // TODO: internalize with Datagrok
 async function time(name, n, f) {
@@ -15,159 +14,83 @@ async function time(name, n, f) {
   console.log(`${name}: ${((stop - start) / n).toFixed(2)} ms`);
 }
 
-async function timeBySubarrays(name, samples, sz, n, f) {
-  console.assert(sz <= samples.length,
-      'Subsample size is larger than samples array');
-  let total = 0;
-  let cntr = n;
-  while (cntr > 0) {
-    let from = randomInt(0, samples.length - 1 - sz);
-    let to = from + sz;
-    let sample = samples.slice(from, to);
-    const start = window.performance.now();
-    await f(sample);
-    const stop = window.performance.now();
-    total += stop - start;
-    cntr--;
-  }
-  console.log(
-      `${name}, averaged on ${n} subarrays of length ` +
-      `${sz} from a pool of ${samples.length} items: ${total.toFixed(2)} ms`);
-}
-
-function getRandomSubarray(arr, size) {
-  var shuffled = arr.slice(0), i = arr.length, temp, index;
+function getIdxRandomSubset(N, n) {
+  let arr = range(0, N - 1);
+  let shuffled = arr.slice(0);
+  let i = arr.length, temp, index;
   while (i--) {
-    index = Math.floor((i + 1) * Math.random());
+    index = randomInt(0, i + 1);
     temp = shuffled[index];
     shuffled[index] = shuffled[i];
     shuffled[i] = temp;
   }
-  return shuffled.slice(0, size);
+  return shuffled.slice(0, n);
 }
 
-// TODO: make this uniform with timeBySubarrays
-async function timeByRandomArrays(name, samples, sz, n, f) {
-  console.assert(sz <= samples.length,
-      'Subsample size is larger than samples array');
-  let total = 0;
-  let cntr = n;
-  while (cntr > 0) {
-    let sample = getRandomSubarray(samples, sz);
-    const start = window.performance.now();
-    await f(sample);
-    const stop = window.performance.now();
-    total += stop - start;
-    cntr--;
-  }
-  console.log(
-      `${name}, averaged on ${n} random subsets of size ` +
-      `${sz} from a pool of ${samples.length} items: ${total.toFixed(2)} ms`);
+function getIdxRandomSubarray(N, n) {
+  const from = randomInt(0, N - 1 - n);
+  const to = from + n;
+  return range(from, to);
 }
 
-function createCanvas(width, height) {
-  let c = document.createElement('canvas');
-  c.setAttribute('width', width);
-  c.setAttribute('height', height);
-  return c;
+let caseCntr = 0;
+async function testCase(title, f) {
+  await time(caseCntr++ + '. ' + title, 1, f);
 }
 
 (async () => {
 
-  const N0 = 40000;
-  const N1 = 1000;
-  const n = 20;
-  const t = 100;
-  const x = 0;
-  const y = 0;
-  const w = 200;
-  const h = 100;
-  const mu = 5;
+  const N_render = 1000;
+  const N_scroll = 20;
+  const t_scroll = 100;
+  const N_search = 40000;
+  const x = 0, y = 0;
+  const w = 200, h = 100;
 
   let df = await grok.data.getDemoTable('chem/zbb/99_p3_4.5-6.csv');
-  if (N0 < df.rowCount)
-    df.rows.removeAt(N0, df.rowCount - N0, false);
-  let col = df.col('smiles');
+  const colName = 'smiles';
+  let col = df.col(colName);
+  let N = col.length;
 
   console.log('Chem Benchmark');
 
-  let canvas = createCanvas(w, h);
-  let module = _ChemPackage.rdKitModule;
-  let molStrings = col.toList().slice(0, N1 - 1); // TODO: add and try random with a seed
-  let molArray = molStrings.map(s => module.get_mol(s));
+  let rdKitCellRenderer = new RDKitCellRenderer();
+  let grid = DG.Viewer.grid(df);
+  let canvas = grid.canvas;
+  let ctx = canvas.getContext('2d');
+  let rowsInd = null;
 
-  const renderMol = (mol) => {
-    const opts = {
-      "clearBackground": false,
-      "offsetx": Math.floor(x),
-      "offsety": -Math.floor(y),
-      "width": Math.floor(w),
-      "height": Math.floor(h)
-    };
-    mol.draw_to_canvas_with_highlights(
-        canvas, JSON.stringify(opts));
-  };
-
-  /* --- */ console.log('1. Rendering pre-built molecules...'); /* --- */
-
-  const renderMols = (mols) => {
-    for (let mol of mols) {
-      renderMol(mol);
-    }
-  };
-
-  await time(`Rendering a ${N1} molecules, pre-built`, 1, async () => {
-    renderMols(molArray);
-  });
-
-  /* --- */ console.log('2. Rendering molecules, without LRU-cache...'); /* --- */
-
-  const renderMolsByStrings = (strings) => {
-    for (let smiles of strings) {
-      let mol = module.get_mol(smiles);
-      renderMol(mol);
-      mol.delete();
-    }
-  };
-
-  await time(`Rendering a ${N1} molecules, no cache`, 1, async () => {
-    renderMolsByStrings(molStrings);
-  });
-
-  /* --- */ console.log('3. Rendering molecules, with LRU-cache...'); /* --- */
-
-  let rendererCache = new DG.LruCache();
-  rendererCache.onItemEvicted = (mol) => mol.delete();
-  const renderMolsWithCache = (strings) => {
-    for (let smiles of strings) {
-      let mol = rendererCache.getOrCreate(smiles, s => module.get_mol(s));
-      renderMol(mol);
-    }
-  };
-
-  await time(`Rendering a ${N1} molecules, with cache`, 1, async () => {
-    renderMolsWithCache(molStrings);
-  });
-
-  /* --- */ console.log('4. Horizontal scrolling...'); /* --- */
-
-  await timeBySubarrays(`Rendering ${n} molecules ${t} times`, molStrings, n, 5, (sample) => {
-    for (let j = 0; j < t; ++j) {
-      renderMolsWithCache(sample);
+  rowsInd = getIdxRandomSubset(N, N_render);
+  await testCase('Rendering molecules', () => {
+    for (i of rowsInd) {
+      rdKitCellRenderer.render(ctx, x, y, w, h, grid.cell(colName, i), null);
     }
   });
 
-  /* --- */ console.log('5. Vertical scrolling...'); /* --- */
-
-  await timeBySubarrays(`Rendering ${n} molecules ${t} times with a sliding window`, molStrings, n + t, 5, (sample) => {
-    for (let j = 0; j < t; ++j) {
-      renderMolsWithCache(sample.slice(j, j + n));
+  rowsInd = getIdxRandomSubarray(N, N_scroll);
+  await testCase('Horizontal scrolling', () => {
+    for (let t = 0; t < t_scroll; ++t) {
+      for (let i of rowsInd) {
+        rdKitCellRenderer.render(ctx, x, y, w, h, grid.cell(colName, i), null);
+      }
     }
   });
 
-  /* --- */ console.log('6. Substructure search...'); /* --- */
+  rowsInd = getIdxRandomSubarray(N, N_scroll + t_scroll);
+  await testCase('Vertical scrolling', () => {
+    for (let t = 0; t < t_scroll; ++t) {
+      for (let i of rowsInd.slice(t, t + N_scroll)) {
+        rdKitCellRenderer.render(ctx, x, y, w, h, grid.cell(colName, i), null);
+      }
+    }
+  });
 
-  const searchFor = ['c1ccccc1' /* Benzene */, 'O=C(C)Oc1ccccc1C(=O)O' /* Aspirin */];
+  /*
+
+  const searchFor = [
+    'c1ccccc1', // Benzene
+    'O=C(C)Oc1ccccc1C(=O)O' // Aspirin
+  ];
 
   await time(`Building a library for ${N0} molecules`, 1, async() => {
     await grok.chem.substructureSearch(col, '');
@@ -176,10 +99,10 @@ function createCanvas(width, height) {
   await time(`Searching benzene`, n, async () => await grok.chem.substructureSearch(col, searchFor[0]));
   await time(`Searching aspirin`, n, async () => await grok.chem.substructureSearch(col, searchFor[1]));
 
-  /* --- */ console.log('7. Cleaning molecules array...'); /* --- */
-
   await time(`Cleaning a ${N1} RDKit molecules`, 1, async () => {
     molArray.forEach(m => m.delete());
   });
+
+  */
 
 })();
