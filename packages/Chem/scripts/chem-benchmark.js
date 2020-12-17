@@ -109,7 +109,7 @@ async function testCase(title, f) {
 
   await testCase(`Similarity scoring, building a library of ${col.length} molecules`, async () =>
       await grok.chem.similarityScoring(col, ''));
-  const queryIdx = getIdxRandomSubset(N, N_sample);
+  const queryIdx = getIdxRandomSubset(N_search, N_sample);
   await testCase(`Similarity scoring, search for ${queryIdx.length} samples in ${N_search} molecules`, async () => {
     for (let i of queryIdx) {
       await grok.chem.similarityScoring(col, col.get(i));
