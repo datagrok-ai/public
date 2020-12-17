@@ -43,7 +43,7 @@ async function testCase(title, f) {
   const N_render = 1000;
   const N_scroll = 20;
   const t_scroll = 100;
-  const N_search = 40000;
+  const N_search = 20000;
   const x = 0, y = 0;
   const w = 200, h = 100;
 
@@ -61,14 +61,14 @@ async function testCase(title, f) {
   let rowsInd = null;
 
   rowsInd = getIdxRandomSubset(N, N_render);
-  await testCase('Rendering molecules', () => {
+  await testCase(`Rendering a ${rowsInd.length} random molecules`, () => {
     for (i of rowsInd) {
       rdKitCellRenderer.render(ctx, x, y, w, h, grid.cell(colName, i), null);
     }
   });
 
   rowsInd = getIdxRandomSubarray(N, N_scroll);
-  await testCase('Horizontal scrolling', () => {
+  await testCase(`Horizontal scrolling (${rowsInd.length} random molecules, ${t_scroll} times)`, () => {
     for (let t = 0; t < t_scroll; ++t) {
       for (let i of rowsInd) {
         rdKitCellRenderer.render(ctx, x, y, w, h, grid.cell(colName, i), null);
@@ -77,7 +77,7 @@ async function testCase(title, f) {
   });
 
   rowsInd = getIdxRandomSubarray(N, N_scroll + t_scroll);
-  await testCase('Vertical scrolling', () => {
+  await testCase(`Vertical scrolling (${N_scroll} random molecules, ${t_scroll} times)`, () => {
     for (let t = 0; t < t_scroll; ++t) {
       for (let i of rowsInd.slice(t, t + N_scroll)) {
         rdKitCellRenderer.render(ctx, x, y, w, h, grid.cell(colName, i), null);
@@ -85,24 +85,25 @@ async function testCase(title, f) {
     }
   });
 
-  /*
+  rowInd = getIdxRandomSubset(N, N_search);
+  let newDf = DG.DataFrame.fromColumns([
+      DG.Column.fromList(DG.TYPE.STRING, colName, [])]);
+  for (i of rowInd) {
+    newDf.rows.addNew([col.get(i)]);
+  }
+  df = newDf;
+  col = df.col(colName);
 
   const searchFor = [
     'c1ccccc1', // Benzene
     'O=C(C)Oc1ccccc1C(=O)O' // Aspirin
   ];
 
-  await time(`Building a library for ${N0} molecules`, 1, async() => {
-    await grok.chem.substructureSearch(col, '');
-  });
-
-  await time(`Searching benzene`, n, async () => await grok.chem.substructureSearch(col, searchFor[0]));
-  await time(`Searching aspirin`, n, async () => await grok.chem.substructureSearch(col, searchFor[1]));
-
-  await time(`Cleaning a ${N1} RDKit molecules`, 1, async () => {
-    molArray.forEach(m => m.delete());
-  });
-
-  */
+  await testCase(`Substructure search, building library`, async () =>
+    await grok.chem.substructureSearch(col, ''));
+  await testCase(`Substructure search, searching benzene`, async () =>
+    await grok.chem.substructureSearch(col, searchFor[0]));
+  await testCase(`Substructure search, searching aspirin`, async () =>
+    await grok.chem.substructureSearch(col, searchFor[1]));
 
 })();
