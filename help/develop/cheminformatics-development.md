@@ -19,18 +19,40 @@ via [Scripting](scripting.md).
 
 ## Grok JS API
 
-For convenience, some of the commonly used functions are exposed via the [JS API](js-api.md).
-Use `grok.chem` instance to invoke the following methods (most of them are asynchronous, since
-behind the scenes they use server-side assist):
+For convenience, some of the commonly used functions are exposed via the [JS API](js-api.md). Use `grok.chem` instance to invoke the methods below. Note that most of them are asynchronous, since behind the scenes they either use a server-side assist, or a browser's separate Web Worker to call [RDKit-JS](https://github.com/rdkit/RDKitjs) functions.
 
 ```
-similaritySearch(column, molecule, metric = METRIC_TANIMOTO, limit = 10, minScore = 0.7);
+substructureSearch(column, pattern, settings = { substructLibrary: true });
+similarityScoring(column, molecule, settings = { sorted: false });
 diversitySearch(column, metric = METRIC_TANIMOTO, limit = 10);
-substructureSearch(column, pattern, isSmarts = true);
 rGroup(table, column, core);
 mcs(column);
 descriptors(table, column, descriptors);
 ```
+
+The two first functions, `substructureSearch` and `similarityScoring`, are currently made client-based, using [RDKit-JS](https://github.com/rdkit/RDKitjs) library. We are planning to support both server-side and browser-side modes for these functions in the future, while the API remains as described below.
+
+### Substructure Search
+
+`substructureSearch(column, pattern, settings = { substructLibrary: true })`
+
+The `settings` object allows passing the following parameters:
+
+* `substructLibrary`: a boolean indicating whether to use the 'naive' search method, using [`get_substruct_match`](https://www.rdkit.org/docs/source/rdkit.Chem.rdchem.html) method of RDKit (`substructLibrary: false`), or (`substructLibrary`) from RDKit. The default is `true`.
+
+`column` should be a string column containing molecules in any notation RDKit-JS [supports](https://github.com/rdkit/rdkit/blob/master/Code/MinimalLib/minilib.h): smiles, cxsmiles, molblock, v3Kmolblock, and inchi. Same applies to a `pattern`: this can be a string representation of a molecule in any format of the above.
+
+For the chosen `substructLibrary` method, the first call to the function with a `column` previouly unseen by the `substructureSearch` function shall invoke building a library. The library is used for conducting further searches in the same given column while the `pattern` is varying.
+
+The function's user doesn't need to manage the library, as it is done by the function automatically. As long as the function detects it has received a new column instead of the one previously seen, it will rebuild the library for this newly seen column.
+
+It is possible to call `substructureSearch` solely for initializing the library, without an actual search. For this, call it without passing `pattern`, or passing it with the value on `null`.
+
+Sometimes it happens that the molecule strings aren't supported by RDKit-JS. These inputs are skipped when indexing, but an error log entry is added for each such entry to the browser's console together with the actual molecule string.
+
+### Similarity Scoring
+
+TBW
 
 Examples (see on [github](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples/scripts/domains/chem))
 * [Calculating descriptors](https://public.datagrok.ai/js/samples/domains/chem/descriptors)
