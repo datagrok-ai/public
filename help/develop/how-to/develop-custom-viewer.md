@@ -78,9 +78,22 @@ In the class `constructor`, you can create properties of the following data type
   * boolean value `this.bool(propertyName[, defaultValue])`
   * datetime `this.dateTime(propertyName[, defaultValue])`
 
-Follow the naming conventions for JavaScript variables (`lowerCamelCase` will do). Certainly, the names will be nicely displayed in the property panel: capitalized, with spaces between words (e.g., `property` becomes `Property` and `propertyName` becomes `Property Name`). But for them to appear so, pay attention to the names you use in your code. Consistency in naming also ensures that property values are updated correctly.
+Follow the naming conventions for JavaScript variables (`lowerCamelCase` will do). Certainly, the names will be nicely displayed in the property panel: capitalized, with spaces between words (e.g., `property` becomes `Property` and `propertyName` becomes `Property Name`). But for them to appear so, pay attention to the names you use in your code. Consistency in naming also ensures that property values are updated correctly. When you set a value of a property, either as default or within the class body as a result of assignment, the specified value appears next to the corresponding property in UI. Then changing these values is up to users, and only correctly named properties are synchronized.
 
-Properties are divided into two main groups depending on whether they are data-related or not. The first ones belong to the `Data` tab of the property panel, while the rest of them are placed under the `Misc` tab. Add the `ColumnName` postfix to the property name to indicate that it is a data property, otherwise, it will appear in `Misc`. Some properties, such as `stringList` and `dateTime`, can only be used to represent columns.
+Properties are divided into two main groups depending on whether they are data-related or not. The first ones belong to the `Data` tab of the property panel, while the rest of them are placed under the `Misc` tab. Add the `ColumnName` postfix to the property name to indicate that it is a data property, otherwise, it will appear in `Misc`. Some properties, such as `stringList` and `dateTime`, can only be used to represent columns and require the `ColumnName` postfix. 
+
+The properties of a viewer are updated automatically, however, the exact behavior can be adjusted or completely overridden in the `onPropertyChanged` method:
+
+```javascript
+class AwesomeViewer extends DG.JsViewer {
+    constructor {...}
+
+    // Override to handle property changes
+    onPropertyChanged(property) {
+        grok.shell.info(`${property.name}: ${property.get(this)}`);
+    }
+}
+```
 
 #### Events
 
@@ -88,7 +101,7 @@ Properties are divided into two main groups depending on whether they are data-r
 
 ## Registering Viewers
 
-Tagging scripts or functions as `viewers` registers them within the platform. Registering a viewer makes it available via menu, etc.
+Tagging scripts or functions as `viewers` registers them within the platform. Registering a viewer makes it available in the top menu and enables common viewer operations, such as cloning, docking, embedding, and switching to full screen mode. This also means that users can persist this viewer as part of a [project](../../overview/project.md).
 
 ![](leaflet-menu.png "Viewer Menu")
 
