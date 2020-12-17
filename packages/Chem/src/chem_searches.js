@@ -173,6 +173,7 @@ async function chemSubstructureSearchLibrary(molStringsColumn, molString) {
         },
         async (params) =>
             await rdKitWorkerProxy.substructInit(molStringsColumn.toList())
+            // TODO: avoid creating an additional array here
     );
 
     if (molString != null) {

@@ -32,7 +32,37 @@ async function timeBySubarrays(name, samples, sz, n, f) {
   }
   console.log(
       `${name}, averaged on ${n} subarrays of length ` +
-      `${sz} from ${samples.length}: ${total.toFixed(2)} ms`);
+      `${sz} from a pool of ${samples.length} items: ${total.toFixed(2)} ms`);
+}
+
+function getRandomSubarray(arr, size) {
+  var shuffled = arr.slice(0), i = arr.length, temp, index;
+  while (i--) {
+    index = Math.floor((i + 1) * Math.random());
+    temp = shuffled[index];
+    shuffled[index] = shuffled[i];
+    shuffled[i] = temp;
+  }
+  return shuffled.slice(0, size);
+}
+
+// TODO: make this uniform with timeBySubarrays
+async function timeByRandomArrays(name, samples, sz, n, f) {
+  console.assert(sz <= samples.length,
+      'Subsample size is larger than samples array');
+  let total = 0;
+  let cntr = n;
+  while (cntr > 0) {
+    let sample = getRandomSubarray(samples, sz);
+    const start = window.performance.now();
+    await f(sample);
+    const stop = window.performance.now();
+    total += stop - start;
+    cntr--;
+  }
+  console.log(
+      `${name}, averaged on ${n} random subsets of size ` +
+      `${sz} from a pool of ${samples.length} items: ${total.toFixed(2)} ms`);
 }
 
 function createCanvas(width, height) {
@@ -44,7 +74,8 @@ function createCanvas(width, height) {
 
 (async () => {
 
-  const N = 1000;
+  const N0 = 40000;
+  const N1 = 1000;
   const n = 20;
   const t = 100;
   const x = 0;
@@ -52,17 +83,17 @@ function createCanvas(width, height) {
   const w = 200;
   const h = 100;
   const mu = 5;
-  
+
   let df = await grok.data.getDemoTable('chem/zbb/99_p3_4.5-6.csv');
-  if (N < df.rowCount)
-    df.rows.removeAt(N, df.rowCount - N, false);
+  if (N0 < df.rowCount)
+    df.rows.removeAt(N0, df.rowCount - N0, false);
   let col = df.col('smiles');
-  
+
   console.log('Chem Benchmark');
-  
+
   let canvas = createCanvas(w, h);
   let module = _ChemPackage.rdKitModule;
-  let molStrings = col.toList();
+  let molStrings = col.toList().slice(0, N1 - 1); // TODO: add and try random with a seed
   let molArray = molStrings.map(s => module.get_mol(s));
 
   const renderMol = (mol) => {
@@ -77,67 +108,78 @@ function createCanvas(width, height) {
         canvas, JSON.stringify(opts));
   };
 
-  console.log('1. Rendering pre-built molecules...'); // ---
+  /* --- */ console.log('1. Rendering pre-built molecules...'); /* --- */
 
-    const renderMols = (mols) => {
-      for (let mol of mols) {
-        renderMol(mol);
-      }
-    };
+  const renderMols = (mols) => {
+    for (let mol of mols) {
+      renderMol(mol);
+    }
+  };
 
-    await time(`Rendering a ${N} molecules, pre-built`, 1, async () => {
-      renderMols(molArray);
-    });
+  await time(`Rendering a ${N1} molecules, pre-built`, 1, async () => {
+    renderMols(molArray);
+  });
 
-  console.log('2. Rendering molecules, without LRU-cache...'); // ---
+  /* --- */ console.log('2. Rendering molecules, without LRU-cache...'); /* --- */
 
-    const renderMolsByStrings = (strings) => {
-      for (let smiles of strings) {
-        let mol = module.get_mol(smiles);
-        renderMol(mol);
-        mol.delete();
-      }
-    };
+  const renderMolsByStrings = (strings) => {
+    for (let smiles of strings) {
+      let mol = module.get_mol(smiles);
+      renderMol(mol);
+      mol.delete();
+    }
+  };
 
-    await time(`Rendering a ${N} molecules, no cache`, 1, async () => {
-      renderMolsByStrings(molStrings);
-    });
+  await time(`Rendering a ${N1} molecules, no cache`, 1, async () => {
+    renderMolsByStrings(molStrings);
+  });
 
-  console.log('3. Rendering molecules, with LRU-cache...'); // ---
+  /* --- */ console.log('3. Rendering molecules, with LRU-cache...'); /* --- */
 
-    let rendererCache = new DG.LruCache();
-    rendererCache.onItemEvicted = (mol) => mol.delete();
-    const renderMolsWithCache = (strings) => {
-      for (let smiles of strings) {
-        let mol = rendererCache.getOrCreate(smiles, s => module.get_mol(s));
-        renderMol(mol);
-      }
-    };
+  let rendererCache = new DG.LruCache();
+  rendererCache.onItemEvicted = (mol) => mol.delete();
+  const renderMolsWithCache = (strings) => {
+    for (let smiles of strings) {
+      let mol = rendererCache.getOrCreate(smiles, s => module.get_mol(s));
+      renderMol(mol);
+    }
+  };
 
-    await time(`Rendering a ${N} molecules, with cache`, 1, async () => {
-      renderMolsWithCache(molStrings);
-    });
+  await time(`Rendering a ${N1} molecules, with cache`, 1, async () => {
+    renderMolsWithCache(molStrings);
+  });
 
-  console.log('4. Horizontal scrolling...'); // ---
+  /* --- */ console.log('4. Horizontal scrolling...'); /* --- */
 
-    await timeBySubarrays(`Rendering ${n} molecules ${t} times`, molStrings, n, 5, (sample) => {
-      for (let j = 0; j < t; ++j) {
-        renderMolsWithCache(sample);
-      }
-    });
+  await timeBySubarrays(`Rendering ${n} molecules ${t} times`, molStrings, n, 5, (sample) => {
+    for (let j = 0; j < t; ++j) {
+      renderMolsWithCache(sample);
+    }
+  });
 
-  console.log('5. Vertical scrolling...'); // ---
+  /* --- */ console.log('5. Vertical scrolling...'); /* --- */
 
-    await timeBySubarrays(`Rendering ${n} molecules ${t} times with a sliding window`, molStrings, n + t, 5, (sample) => {
-      for (let j = 0; j < t; ++j) {
-        renderMolsWithCache(sample.slice(j, j + n));
-      }
-    });
+  await timeBySubarrays(`Rendering ${n} molecules ${t} times with a sliding window`, molStrings, n + t, 5, (sample) => {
+    for (let j = 0; j < t; ++j) {
+      renderMolsWithCache(sample.slice(j, j + n));
+    }
+  });
 
-  console.log('6. Cleaning molecules array...'); // ---
+  /* --- */ console.log('6. Substructure search...'); /* --- */
 
-    await time(`Cleaning a ${N} RDKit molecules`, 1, async () => {
-      molArray.forEach(m => m.delete());
-    });
-  
+  const searchFor = ['c1ccccc1' /* Benzene */, 'O=C(C)Oc1ccccc1C(=O)O' /* Aspirin */];
+
+  await time(`Building a library for ${N0} molecules`, 1, async() => {
+    await grok.chem.substructureSearch(col, '');
+  });
+
+  await time(`Searching benzene`, n, async () => await grok.chem.substructureSearch(col, searchFor[0]));
+  await time(`Searching aspirin`, n, async () => await grok.chem.substructureSearch(col, searchFor[1]));
+
+  /* --- */ console.log('7. Cleaning molecules array...'); /* --- */
+
+  await time(`Cleaning a ${N1} RDKit molecules`, 1, async () => {
+    molArray.forEach(m => m.delete());
+  });
+
 })();
