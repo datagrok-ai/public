@@ -7,12 +7,12 @@ function randomInt(min, max) {
 
 // TODO: internalize with Datagrok
 async function time(name, n, f) {
-  let start = new Date();
+  let start = window.performance.now();
   for (let k = 0; k < n; ++k) {
     await f();
   }
-  let stop = new Date();
-  console.log(`${name}: ${(stop - start) / n} ms`);
+  let stop = window.performance.now();
+  console.log(`${name}: ${((stop - start) / n).toFixed(2)} ms`);
 }
 
 async function timeBySubarrays(name, samples, sz, n, f) {
@@ -24,15 +24,15 @@ async function timeBySubarrays(name, samples, sz, n, f) {
     let from = randomInt(0, samples.length - 1 - sz);
     let to = from + sz;
     let sample = samples.slice(from, to);
-    const start = new Date();
+    const start = window.performance.now();
     await f(sample);
-    const stop = new Date();
+    const stop = window.performance.now();
     total += stop - start;
     cntr--;
   }
   console.log(
       `${name}, averaged on ${n} subarrays of length ` +
-      `${sz} from ${samples.length}: ${total} ms`);
+      `${sz} from ${samples.length}: ${total.toFixed(2)} ms`);
 }
 
 function createCanvas(width, height) {
@@ -77,7 +77,7 @@ function createCanvas(width, height) {
         canvas, JSON.stringify(opts));
   };
 
-  console.log('1. Rendering pre-built molecules...');
+  console.log('1. Rendering pre-built molecules...'); // ---
 
     const renderMols = (mols) => {
       for (let mol of mols) {
@@ -89,7 +89,7 @@ function createCanvas(width, height) {
       renderMols(molArray);
     });
 
-  console.log('2. Rendering molecules, without LRU-cache...');
+  console.log('2. Rendering molecules, without LRU-cache...'); // ---
 
     const renderMolsByStrings = (strings) => {
       for (let smiles of strings) {
@@ -103,7 +103,7 @@ function createCanvas(width, height) {
       renderMolsByStrings(molStrings);
     });
 
-  console.log('3. Rendering molecules, with LRU-cache...');
+  console.log('3. Rendering molecules, with LRU-cache...'); // ---
 
     let rendererCache = new DG.LruCache();
     rendererCache.onItemEvicted = (mol) => mol.delete();
@@ -118,23 +118,23 @@ function createCanvas(width, height) {
       renderMolsWithCache(molStrings);
     });
 
-  console.log('4. Horizontal scrolling...');
+  console.log('4. Horizontal scrolling...'); // ---
 
-    await timeBySubarrays(`Rendering ${n} molecules ${t} times`, molStrings, n, 1, (sample) => {
+    await timeBySubarrays(`Rendering ${n} molecules ${t} times`, molStrings, n, 5, (sample) => {
       for (let j = 0; j < t; ++j) {
         renderMolsWithCache(sample);
       }
     });
 
-  console.log('5. Vertical scrolling...');
+  console.log('5. Vertical scrolling...'); // ---
 
-    await timeBySubarrays(`Rendering ${n} molecules ${t} times with a sliding window`, molStrings, n + t, 1, (sample) => {
+    await timeBySubarrays(`Rendering ${n} molecules ${t} times with a sliding window`, molStrings, n + t, 5, (sample) => {
       for (let j = 0; j < t; ++j) {
         renderMolsWithCache(sample.slice(j, j + n));
       }
     });
 
-  console.log('6. Cleaning molecules array...');
+  console.log('6. Cleaning molecules array...'); // ---
 
     await time(`Cleaning a ${N} RDKit molecules`, 1, async () => {
       molArray.forEach(m => m.delete());
