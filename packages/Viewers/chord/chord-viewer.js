@@ -144,6 +144,22 @@ export class ChordViewer extends DG.JsViewer {
             });
         }
 
+        this.chordConf.events = {
+            mouseover: ((datum, index, nodes, event) => {
+                ui.tooltip.showRowGroup(this.dataFrame, i => {
+                    return this.fromColumn.get(i) === datum.source.id &&
+                           this.toColumn.get(i) === datum.target.id;
+                }, event.x, event.y);
+            }).bind(ChordViewer),
+            mouseout: () => ui.tooltip.hide(),
+            mousedown: ((datum, index, nodes, event) => {
+                this.dataFrame.selection.handleClick(i => {
+                    return this.fromColumn.get(i) === datum.source.id &&
+                           this.toColumn.get(i) === datum.target.id;
+                }, event);
+            }).bind(ChordViewer)
+        };
+
     }
 
     render() {
