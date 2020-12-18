@@ -15,7 +15,7 @@ async function time(name, n, f) {
 }
 
 function getIdxRandomSubset(N, n) {
-  let arr = range(0, N - 1);
+  let arr = range(0, N);
   let shuffled = arr.slice(0);
   let i = arr.length, temp, index;
   while (i--) {
@@ -35,7 +35,7 @@ function getIdxRandomSubarray(N, n) {
 
 let caseCntr = 0;
 async function testCase(title, f) {
-  await time(caseCntr++ + '. ' + title, 1, f);
+  await time(++caseCntr + '. ' + title, 1, f);
 }
 
 (async () => {
@@ -49,6 +49,8 @@ async function testCase(title, f) {
   const w = 200, h = 100;
 
   let df = await grok.data.getDemoTable('chem/zbb/99_p3_4.5-6.csv');
+  // For using with your HOME files in Datagrok:
+  // let df = (await grok.functions.eval('OpenServerFile("UserName:Home/Chembl_100K.csv")'))[0];
   const colName = 'smiles';
   let col = df.col(colName);
   let N = col.length;
