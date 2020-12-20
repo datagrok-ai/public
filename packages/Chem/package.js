@@ -73,6 +73,9 @@ class ChemPackage extends DG.Package {
     similarityScoring(molStringsColumn, molString, sorted) {
         try {
             let result = chemSimilarityScoring(molStringsColumn, molString, {'sorted': sorted});
+            if (result == null) {
+                return DG.DataFrame.create();
+            }
             return (sorted ? result : DG.DataFrame.fromColumns([result]));
         } catch (e) {
             console.error("In similarityScoring: " + e.toString());
