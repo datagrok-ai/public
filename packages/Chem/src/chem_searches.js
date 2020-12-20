@@ -95,6 +95,7 @@ function _chemSimilarityScoringByFingerprints(fingerprintCol, fingerprint, molSt
             return 0; // a2.compareTo(a1)
         });
         let sortedMolStrings = DG.Column.fromType(DG.TYPE.STRING, 'molecule', limit);
+        let sortedMolInd = DG.Column.fromType(DG.TYPE.INT, 'index', limit);
         sortedMolStrings.semType = DG.SEMTYPE.MOLECULE;
         let sortedScores = DG.Column.fromType(DG.TYPE.FLOAT, 'score', limit);
 
@@ -108,9 +109,10 @@ function _chemSimilarityScoringByFingerprints(fingerprintCol, fingerprint, molSt
             }
             sortedMolStrings.set(n, molStringsColumn.get(idx));
             sortedScores.set(n, score);
+            sortedMolInd.set(n, idx);
         }
 
-        return DG.DataFrame.fromColumns([sortedMolStrings, sortedScores]);
+        return DG.DataFrame.fromColumns([sortedMolStrings, sortedScores, sortedMolInd]);
 
     } else {
 
