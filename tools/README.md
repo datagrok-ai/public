@@ -25,8 +25,6 @@ npm install datagrok-tools -g
     grok publish
     ```
 
-If you are developing a package using the old template, please run `grok migrate`. This command will convert your scripts in `package.json` and copy keys from `upload.keys.json` to `config.yaml`.
-
 Run `grok` for instructions and `grok <command> --help` to get help on a particular command.
 
 Read more about package development in [Datagrok's documentation](https://datagrok.ai/help/develop/develop).
