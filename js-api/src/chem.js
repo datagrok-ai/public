@@ -24,12 +24,12 @@ import {SIMILARITY_METRIC} from "./const";
  *     sorted in descending order by the score
  * @returns {Promise<DataFrame>, if sorted; Promise<Column>, otherwise}
  * */
-export async function similarityScoring(column, pattern, settings = { sorted: false }) {
+export async function similarityScoring(column, pattern = null, settings = { sorted: false }) {
     
     let foo = await grok.functions.eval('Chem:similarityScoring');
     let call = await foo.prepare({
         'molStringsColumn': column,
-        'molString': pattern,
+        'molString': pattern == null ? "" : pattern,
         'sorted': settings.sorted
     });
     await call.call();
@@ -64,7 +64,7 @@ export async function substructureSearch(column, pattern = null, settings = null
     let foo = await grok.functions.eval('Chem:substructureSearch');
     let call = await foo.prepare({
         'molStringsColumn': column,
-        'molString': pattern,
+        'molString': pattern == null ? "" : pattern,
         'substructLibrary':
           (settings && settings.hasOwnProperty('substructLibrary') && settings.substructLibrary === false) ?
             false : true
