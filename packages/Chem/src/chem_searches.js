@@ -142,6 +142,9 @@ function chemSubstructureSearchGraph(molStringsColumn, molString) {
 
     const len = molStringsColumn.length;
     let result = DG.BitSet.create(len);
+    if (molString === "") {
+        return result;
+    }
     let subMol = rdKitModule.get_mol(molString);
     for (let i = 0; i < len; ++i) {
         let item = molStringsColumn.get(i);
@@ -176,15 +179,12 @@ async function chemSubstructureSearchLibrary(molStringsColumn, molString) {
             // TODO: avoid creating an additional array here
     );
 
+    let result = DG.BitSet.create(molStringsColumn.length);
     if (molString != null) {
-
         const matches = JSON.parse(await rdKitWorkerProxy.substructSearch(molString));
-        let result = DG.BitSet.create(molStringsColumn.length);
         for (let match of matches)
             result.set(match, true, false);
-        return result;
-
     }
 
-    return null;
+    return result;
 }
