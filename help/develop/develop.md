@@ -64,21 +64,22 @@ Here are the first steps to get you started:
    grok publish
    ```
 
-If you are developing a package using the old template, please run `grok migrate`. This command will convert your scripts in `package.json` and copy keys from `upload.keys.json` to `config.yaml`. Run `grok` for instructions and `grok <command> --help` to get help on a particular command.
+Run `grok` for instructions and `grok <command> --help` to get help on a particular command.
 
 ## Package Structure
 
 A simplest JavaScript package consists of the following files:
 
-| file                          | description     |
-|-------------------------------|-----------------|
-| [package.json](#package.json) | metadata        |
-| [package.js](#package.js)     | entry point     |
-| [detectors.js](#detectors.js) | detectors file  |
-| README.md                     | package summary |
-| package.png                   | package icon    |
+| file                                    | description           |
+|-----------------------------------------|-----------------------|
+| [package.json](#package.json)           | metadata              |
+| [package.js](#package.js)               | entry point           |
+| [detectors.js](#detectors.js)           | detectors file        |
+| [webpack.config.js](#webpack.config.js) | webpack configuration |
+| README.md                               | package summary       |
+| package.png                             | package icon          |
 
-### <a href="#" id="package.json"></a>package.json
+### package.json
 
 `package.json` contains metadata, such as name, version, and dependencies: 
 
@@ -104,7 +105,7 @@ The package template first includes only one dependency — `datagrok-api`. You 
 
 The file `package.json` also contains `scripts` for [debugging and publishing your package](#publishing).
 
-### <a href="#" id="package.js"></a>package.js
+### package.js
 
 Next, let's take a look at the `src/package.js` file:
 
@@ -129,7 +130,7 @@ During the [publishing step](#publishing), the contents of `package.js` get pars
 functions in a specific way, it is possible to register custom viewers, widgets, renderers, 
 converters, validators, suggestions, info panels, and semantic type detectors. 
 
-### <a href="#" id="detectors.js"></a>detectors.js
+### detectors.js
 
 `detectors.js` is a JavaScript file.  It should define a class named `<package_name>PackageDetectors` that subclasses `DG.Package`.
 It is similar to `package.js` but intended for smaller functions — semantic type detectors. Datagrok calls these functions each time the
@@ -154,6 +155,58 @@ class SequencePackageDetectors extends DG.Package {
 ```
 
 Once registered, this function is now available across the whole platform, and can be used for semantic type detection.
+
+### webpack.config.js
+
+The package is built according to its configuration file, which typically has the following content:
+
+```javascript
+const path = require("path");
+
+module.exports = {
+    mode: "development",  // set to "production" to minify the output and enable optimizations for production builds
+    entry: {
+        package: "./src/package.js"  // the package is limited to exactly one entry point
+    },
+    devtool: "inline-source-map",   // enhances package debugging in the browser devtools
+    externals: {                    // external modules won't be loaded to the output, but taken from the environment
+        "datagrok-api/dg": "DG",
+        "datagrok-api/grok": "grok",
+        "datagrok-api/ui": "ui",
+        "openchemlib/full.js": "OCL",
+        "rxjs": "rxjs",
+        "rxjs/operators": "rxjs.operators"
+    },
+    output: {
+        filename: "[name].js",
+        library: "sequence",     // the name of the package in lower case
+        libraryTarget: "var",    // the results will be assigned to a variable `sequence`
+        path: path.resolve(__dirname, "dist"),
+    },
+};
+```
+
+Have a look at the [Webpack documentation](https://webpack.js.org/configuration/) in case you need to modify or extend the provided options. For instance, you can add CSS and other file [loaders](https://webpack.js.org/loaders/) to `module.rules`. When the package is loaded, the output gets assigned to a variable (type `window.sequence` in the browser console just to check). Finally, note that the package name have reoccurred in multiple files, including this one. This might become important if you are going to introduce changes to the code or, for example, rename the package without creating it from scratch. In this case, make sure the name is accurately substituted: set the `name` field in `package.json` and `library` in `webpack.config.js` to the desired name in lower case, and rename a class `<package_name>PackageDetectors` using camel case in `detectors.js`.
+
+### Naming Conventions
+
+Continuing the topic we have just touched on, here are naming guidelines and general recommendations that you might consider:
+
+  * Use upper camel case for package names, for example, `ApiSamples` and `OctaveScripts`. Package names that comply with the [rules](https://docs.npmjs.com/cli/v6/configuring-npm/package-json#name) for `npm` packages, e.g. `api-samples` and `octave-scripts`, are accepted as well. That being said, you can still write the desired name in the `fullName` field of `package.json`
+  * When defining new [views](js-api.md#custom-views) and [viewers](how-to/develop-custom-viewer.md), we recommend postfixing your classes with `View` and `Viewer` respectively
+  * The names of semantic type detectors typically start with the `detect` prefix, e.g., `detectNucleotides` or `detectRDSmiles`
+  * File names can be written in lower case, with dashes between words: `tika-extractor.py` and `chord-viewer.js`
+
+### Structuring Package Sources
+
+Apart from the files included in the standard template, let's briefly consider what else can be distributed as part of a package. Depending on your needs, the package may contain some of the following additional folders:
+
+  * `environments`: [environment configurations](scripting.md#environments) for [scripts](scripting.md). Examples: [PythonScripts](https://github.com/datagrok-ai/public/tree/master/packages/PythonScripts)
+  * `scripts`: a collection of [scripts](scripting.md) used for computations. Examples: [ChemScripts](https://github.com/datagrok-ai/public/tree/master/packages/ChemScripts), [RScripts](https://github.com/datagrok-ai/public/tree/master/packages/RScripts), [Impute](https://github.com/datagrok-ai/public/tree/master/packages/Impute)
+  * `swaggers`: REST APIs in [Swagger/OpenAPI](../access/open-api.md) format. Examples: [EnamineStore](https://github.com/datagrok-ai/public/tree/master/packages/EnamineStore), [Swaggers](https://github.com/datagrok-ai/public/tree/master/packages/Swaggers)
+  * `connections` and `queries`: [connections](../access/data-connection.md) and [queries](../access/data-query.md) for data retrieval. Examples: [Chembl](https://github.com/datagrok-ai/public/tree/master/packages/Chembl), [UsageAnalysis](https://github.com/datagrok-ai/public/tree/master/packages/UsageAnalysis)
+  * `css`: CSS files for custom styling. Examples: [Notebooks](https://github.com/datagrok-ai/public/tree/master/packages/Notebooks), [Discovery](https://github.com/datagrok-ai/public/tree/master/packages/Discovery)
+  * `data-samples`: data for demonstration and testing. Examples: [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem), [Sunburst](https://github.com/datagrok-ai/public/tree/master/packages/Sunburst)
 
 ## Development
 
