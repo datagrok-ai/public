@@ -132,9 +132,13 @@ function chemSimilarityScoring(molStringsColumn, molString, settings) {
             foo.cachedStructure = moleculesToFingerprints(molStringsColumn, settings);
         });
 
-    const fingerprintCol = chemSimilarityScoring.cachedStructure;
-    const fingerprint = moleculesToFingerprints(DG.Column.fromStrings('molecules', [molString]), settings).get(0);
-    return _chemSimilarityScoringByFingerprints(fingerprintCol, fingerprint, molStringsColumn, settings);
+    if (molString != null) {
+        const fingerprintCol = chemSimilarityScoring.cachedStructure;
+        const fingerprint = moleculesToFingerprints(DG.Column.fromStrings('molecules', [molString]), settings).get(0);
+        return _chemSimilarityScoringByFingerprints(fingerprintCol, fingerprint, molStringsColumn, settings);
+    } else {
+        return null;
+    }
 
 }
 
