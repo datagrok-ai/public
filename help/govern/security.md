@@ -72,7 +72,7 @@ Datagrok platform should be set up to take advantage of it.
 
 Working with credentials storage, sample: [open at public repo](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/misc/package-credentials.js); [open at Datagrok](https://public.datagrok.ai/e/ApiSamples:PackageCredentials).
 
-To store credentials in Datagrok's Credentials Storage programmatically, send a POST request to `$(GROK_HOST)/api/credentials/for/$(PACKAGE_NAME)` with raw body containing JSON, such as `{"login": "abc", "password": "123"}`, and headers `{"Authorization": $(API_KEY), 'Content-Type': 'application/json'}` (the API key should be taken from your profile page in Datagrok, e.g., https://public.datagrok.ai/u). To manually add credentials from the user interface, right-click on a package of interest in Datagrok's [Packages](https://public.datagrok.ai/packages) view, select "Credentials..." dialog, and pass on credentials key-value pairs.
+To store credentials in Datagrok's Credentials Storage programmatically, send a POST request to `$(GROK_HOST)/api/credentials/for/$(PACKAGE_NAME)` with raw body containing JSON, such as `{"login": "abc", "password": "123"}`, and headers `{"Authorization": $(API_KEY), "Content-Type": "application/json"}` (the API key should be taken from your profile page in Datagrok, e.g., https://public.datagrok.ai/u). To manually add credentials from the user interface, right-click on a package of interest in Datagrok's [Packages](https://public.datagrok.ai/packages) view, select "Credentials..." dialog, and pass on credentials key-value pairs.
 
 See also:
  * [Entities](../overview/objects.md) 

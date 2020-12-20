@@ -39,8 +39,9 @@ connectors, and the list is quickly growing. Most of our data connectors are ope
 | [OData](connectors/odata.md)             |       |
 | [Oracle](connectors/oracle.md)           | JDBC  |
 | [Postgres](connectors/postgres.md)       | JDBC  |
-| [Redshift](connectors/postgres.md)       | JDBC  |
+| [Redshift](connectors/redshift.md)       | JDBC  |
 | [S3](connectors/s3.md)                   | Files |
+| [Snowflake](connectors/snowflake.md)     | JDBC  |
 | [Socrata](connectors/socrata.md)         |       |
 | [Sparql](connectors/sparql.md)           |       |
 | [SQLite](connectors/sqlite.md)           | JDBC  |
@@ -67,7 +68,7 @@ be picked up from the corresponding fields).
 ![](data-connection-create.png)
         
 Once a connection is set up, you are ready to start creating queries. There are multiple ways to 
-do so: manually, or         
+do so: manually or programmatically.
         
 ## Access Control
 
@@ -103,9 +104,8 @@ You can use these fields to filter connections with [smart search](../overview/s
 
 ## JDBC Connection
 
-For some cases connection may require custom JDBC connection string. For this case JDBC-based data connection has 
-parameter "Conn. string". If it filled, it will be used for connection, all other parameters will be ignored except 
-'login' and 'password'. 
+For some cases connection may require custom JDBC connection string. For this case, JDBC-based data connection has 
+parameter "Conn. string". If filled, it will be used for connection, and all other parameters will be ignored except for "Login" and "Password". 
 
 ## Videos
 
