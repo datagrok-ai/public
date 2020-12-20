@@ -33,8 +33,10 @@ export async function similarityScoring(column, pattern = null, settings = { sor
         'sorted': settings.sorted
     });
     await call.call();
-    let result = call.getParamValue('result');
-    return settings.sorted ? result : result.columns.byIndex(0);
+    if (pattern != null) {
+        let result = call.getParamValue('result');
+        return settings.sorted ? result : result.columns.byIndex(0);
+    }
     
 }
 
