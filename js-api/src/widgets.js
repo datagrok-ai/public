@@ -4,58 +4,65 @@ import {__obs, _sub, observeStream} from "./events";
 /** Base class for controls that have a visual root and a set of properties. */
 export class Widget {
 
-    /** @constructs Widget and initializes its root. */
-    constructor(widgetRoot = null) {
+  /** @constructs Widget and initializes its root. */
+  constructor(widgetRoot = null) {
 
-        /** @member {HTMLElement} */
-        this._root = widgetRoot;
+    /** @member {HTMLElement} */
+    this._root = widgetRoot;
 
-        /** @member {Property[]}*/
-        this.properties = [];
-    }
+    /** @member {Property[]}*/
+    this.properties = [];
+  }
 
-    /** Widget's visual root.
-     * @type {HTMLElement} */
-    get root() { return this._root; }
-    set root(r) { this._root = r; }
+  /** Widget's visual root.
+   * @type {HTMLElement} */
+  get root() {
+    return this._root;
+  }
+
+  set root(r) {
+    this._root = r;
+  }
 
 
-    /** @returns {Widget} */
-    static fromRoot(root) {
-        let w = new Widget();
-        w.root = root;
-        return w;
-    }
+  /** @returns {Widget} */
+  static fromRoot(root) {
+    let w = new Widget();
+    w.root = root;
+    return w;
+  }
 
-    /** Creates a {@see Widget} from the specified React component. */
-    static react(reactComponent) {
-        let widget = Widget.fromRoot(ui.div());
-        ReactDOM.render(reactComponent, widget.root);
-        return widget;
-    }
+  /** Creates a {@see Widget} from the specified React component. */
+  static react(reactComponent) {
+    let widget = Widget.fromRoot(ui.div());
+    ReactDOM.render(reactComponent, widget.root);
+    return widget;
+  }
 }
 
 
 /** Base class for DataFrame-bound filtering controls */
 export class Filter extends Widget {
 
-    constructor() {
-        super(ui.div());
+  constructor() {
+    super(ui.div());
 
-        /** @member {DataFrame} */
-        this.dataFrame = null;
-    }
+    /** @member {DataFrame} */
+    this.dataFrame = null;
+  }
 }
 
 
 export class DartWidget extends Widget {
 
-    constructor(d) {
-        super();
-        this.d = d;
-    }
+  constructor(d) {
+    super();
+    this.d = d;
+  }
 
-    get root() { return grok_Widget_Get_Root(this.d); }
+  get root() {
+    return grok_Widget_Get_Root(this.d);
+  }
 }
 
 /**
@@ -65,76 +72,136 @@ export class DartWidget extends Widget {
  * */
 export class Accordion extends DartWidget {
 
-    /** @constructs Accordion */
-    constructor(d) { super(d); }
+  /** @constructs Accordion */
+  constructor(d) {
+    super(d);
+  }
 
-    /** Creates a new instance of Accordion */
-    static create() { return toJs(grok_Accordion()); }
+  /** Creates a new instance of Accordion */
+  static create() {
+    return toJs(grok_Accordion());
+  }
 
-    /** @type {AccordionPane[]} */
-    get panes() { return grok_TabControlBase_Get_Panes(this.d).map(toJs); }
+  /** @type {AccordionPane[]} */
+  get panes() {
+    return grok_TabControlBase_Get_Panes(this.d).map(toJs);
+  }
 
-    /** Returns a pane with the specified name.
-     * @param {string} name
-     * @returns {AccordionPane} */
-    getPane(name) { return toJs(grok_TabControlBase_GetPane(this.d, name)); }
+  /** Returns a pane with the specified name.
+   * @param {string} name
+   * @returns {AccordionPane} */
+  getPane(name) {
+    return toJs(grok_TabControlBase_GetPane(this.d, name));
+  }
 
-    addPane(name, getContent, expanded = false, before = null) {
-        return toJs(grok_Accordion_AddPane(this.d, name, getContent, expanded, before !== null ? before.d : null));
-    }
+  addPane(name, getContent, expanded = false, before = null) {
+    return toJs(grok_Accordion_AddPane(this.d, name, getContent, expanded, before !== null ? before.d : null));
+  }
 }
 
 
 /** A pane in the {@link Accordion} control. */
 export class AccordionPane {
-    constructor(d) { this.d = d; }
+  constructor(d) {
+    this.d = d;
+  }
 
-    /** Expanded state
-     * @type {boolean} */
-    get expanded() { return grok_AccordionPane_Get_Expanded(this.d); }
-    set expanded(v) { return grok_AccordionPane_Set_Expanded(this.d, v); }
+  /** Expanded state
+   * @type {boolean} */
+  get expanded() {
+    return grok_AccordionPane_Get_Expanded(this.d);
+  }
 
-    /** @type {string} */
-    get name() { return grok_AccordionPane_Get_Name(this.d); }
-    set name(name) { return grok_AccordionPane_Set_Name(this.d, name); }
+  set expanded(v) {
+    return grok_AccordionPane_Set_Expanded(this.d, v);
+  }
+
+  /** @type {string} */
+  get name() {
+    return grok_AccordionPane_Get_Name(this.d);
+  }
+
+  set name(name) {
+    return grok_AccordionPane_Set_Name(this.d, name);
+  }
 }
 
 
 export class TabControl {
-    constructor(d) { this.d = d; }
-    static create(vertical = false) { return toJs(grok_TabControl(vertical)); }
+  constructor(d) {
+    this.d = d;
+  }
 
-    get root() { return grok_Widget_Get_Root(this.d); }
-    get header() { return grok_TabControlBase_Get_Header(this.d); }
-    get panes() { return grok_TabControlBase_Get_Panes(this.d).map(toJs); }
-    getPane(name) { return toJs(grok_TabControlBase_GetPane(this.d, name)); }
+  static create(vertical = false) {
+    return toJs(grok_TabControl(vertical));
+  }
 
-    addPane(name, getContent, icon = null) {
-        return toJs(grok_TabControlBase_AddPane(this.d, name, getContent, icon));
-    }
-    clear() { return toJs(grok_TabControlBase_Clear(this.d)); }
+  get root() {
+    return grok_Widget_Get_Root(this.d);
+  }
 
-    get currentPane() { return grok_TabControlBase_Get_CurrentPane(this.d); }
-    set currentPane(v) { return grok_TabControlBase_Set_CurrentPane(this.d, v.d); }
+  get header() {
+    return grok_TabControlBase_Get_Header(this.d);
+  }
+
+  get panes() {
+    return grok_TabControlBase_Get_Panes(this.d).map(toJs);
+  }
+
+  getPane(name) {
+    return toJs(grok_TabControlBase_GetPane(this.d, name));
+  }
+
+  addPane(name, getContent, icon = null) {
+    return toJs(grok_TabControlBase_AddPane(this.d, name, getContent, icon));
+  }
+
+  clear() {
+    return toJs(grok_TabControlBase_Clear(this.d));
+  }
+
+  get currentPane() {
+    return grok_TabControlBase_Get_CurrentPane(this.d);
+  }
+
+  set currentPane(v) {
+    return grok_TabControlBase_Set_CurrentPane(this.d, v.d);
+  }
 
 }
 
 
 export class TabPane {
-    constructor(d) { this.d = d; }
+  constructor(d) {
+    this.d = d;
+  }
 
-    get expanded() { return grok_AccordionPane_Get_Expanded(this.d); }
-    set expanded(v) { return grok_AccordionPane_Set_Expanded(this.d, v); }
+  get expanded() {
+    return grok_AccordionPane_Get_Expanded(this.d);
+  }
 
-    get name() { return grok_AccordionPane_Get_Name(this.d); }
-    set name(name) { return grok_AccordionPane_Set_Name(this.d, name); }
+  set expanded(v) {
+    return grok_AccordionPane_Set_Expanded(this.d, v);
+  }
+
+  get name() {
+    return grok_AccordionPane_Get_Name(this.d);
+  }
+
+  set name(name) {
+    return grok_AccordionPane_Set_Name(this.d, name);
+  }
 }
 
 
 export class ToolboxPage {
-    constructor(d) { this.d = d; }
+  constructor(d) {
+    this.d = d;
+  }
 
-    get accordion() { return toJs(grok_ToolboxPage_Get_Accordion(this.d)); }
+  get accordion() {
+    return toJs(grok_ToolboxPage_Get_Accordion(this.d));
+  }
 }
 
 
@@ -150,38 +217,59 @@ export class ToolboxPage {
  *   .show();
  * */
 export class Dialog {
-    constructor(d) { this.d = d; }
+  constructor(d) {
+    this.d = d;
+  }
 
-    static create(title = '') { return new Dialog(grok_Dialog(title)); }
+  static create(title = '') {
+    return new Dialog(grok_Dialog(title));
+  }
 
-    /**
-     *  @param {Function} handler
-     *  @returns {Dialog} */
-    onOK(handler) { grok_Dialog_OnOK(this.d, handler); return this; }
-    
-    /**
-     *  @param {Function} handler
-     *  @returns {Dialog} */
+  /**
+   *  @param {Function} handler
+   *  @returns {Dialog} */
+  onOK(handler) {
+    grok_Dialog_OnOK(this.d, handler);
+    return this;
+  }
 
-    get onClose() { return __obs('d4-dialog-closed', this.d); }
-    // Using __obs is a recommended method. The below are obsolete and shall not be used:
-    // onClose(handler) { grok_Dialog_OnClose(this.d, handler); return this; }
-    // onClose(handler) { let s = _sub(grok_Dialog_OnClose(this.d, () => { handler(); s.cancel(); })); return this; }
+  /**
+   *  @param {Function} handler
+   *  @returns {Dialog} */
 
-    /** @returns {Dialog} */
-    show() { grok_Dialog_Show(this.d, false, false); return this; }
+  get onClose() {
+    return __obs('d4-dialog-closed', this.d);
+  }
 
-    /** @returns {Dialog}
-     * @param {boolean} fullScreen  */
-    showModal(fullScreen) { grok_Dialog_Show(this.d, true, fullScreen); return this; }
+  // Using __obs is a recommended method. The below are obsolete and shall not be used:
+  // onClose(handler) { grok_Dialog_OnClose(this.d, handler); return this; }
+  // onClose(handler) { let s = _sub(grok_Dialog_OnClose(this.d, () => { handler(); s.cancel(); })); return this; }
 
-    /** Adds content to the dialog.
-     * @param {HTMLElement | Widget | InputBase} content
-     * @returns {Dialog} */
-    add(content) { grok_Dialog_Add(this.d, toDart(ui.extract(content))); return this; }
+  /** @returns {Dialog} */
+  show() {
+    grok_Dialog_Show(this.d, false, false);
+    return this;
+  }
 
-    /** Closes the dialog. */
-    close() { grok_Dialog_Close(this.d); }
+  /** @returns {Dialog}
+   * @param {boolean} fullScreen  */
+  showModal(fullScreen) {
+    grok_Dialog_Show(this.d, true, fullScreen);
+    return this;
+  }
+
+  /** Adds content to the dialog.
+   * @param {HTMLElement | Widget | InputBase} content
+   * @returns {Dialog} */
+  add(content) {
+    grok_Dialog_Add(this.d, toDart(ui.extract(content)));
+    return this;
+  }
+
+  /** Closes the dialog. */
+  close() {
+    grok_Dialog_Close(this.d);
+  }
 }
 
 /**
@@ -198,232 +286,507 @@ export class Dialog {
  * */
 export class Menu {
 
-    constructor(d) { this.d  = d; }
+  constructor(d) {
+    this.d = d;
+  }
 
-    static create() { return toJs(grok_Menu()); }
+  static create() {
+    return toJs(grok_Menu());
+  }
 
-    /** Creates a popup menu.
-     * @returns {Menu} */
-    static popup() { return toJs(grok_Menu_Context()); }
+  /** Creates a popup menu.
+   * @returns {Menu} */
+  static popup() {
+    return toJs(grok_Menu_Context());
+  }
 
-    /** Finds a child menu item with the specified text.
-     * @param {string} text
-     * @returns {Menu} */
-    find(text) { return toJs(grok_Menu_Find(this.d, text)); }
+  /** Finds a child menu item with the specified text.
+   * @param {string} text
+   * @returns {Menu} */
+  find(text) {
+    return toJs(grok_Menu_Find(this.d, text));
+  }
 
-    /** Removes a child menu item with the specified text.
-     * @param {string} text */
-    remove(text) { grok_Menu_Remove(this.d, text); }
+  /** Removes a child menu item with the specified text.
+   * @param {string} text */
+  remove(text) {
+    grok_Menu_Remove(this.d, text);
+  }
 
-    /** Removes all child menu items. */
-    clear() { grok_Menu_Clear(this.d); }
+  /** Removes all child menu items. */
+  clear() {
+    grok_Menu_Clear(this.d);
+  }
 
-    /** Adds a menu group with the specified text.
-     * @param {string} text
-     * @returns {Menu} */
-    group(text) { return toJs(grok_Menu_Group(this.d, text)); }
+  /** Adds a menu group with the specified text.
+   * @param {string} text
+   * @returns {Menu} */
+  group(text) {
+    return toJs(grok_Menu_Group(this.d, text));
+  }
 
-    /** Adds a menu group with the specified text and handler.
-     * @param {string} text
-     * @param {Function} onClick - callback with no parameters
-     * @returns {Menu} */
-    item(text, onClick) { return toJs(grok_Menu_Item(this.d, text, onClick)); }
+  /** Adds a menu group with the specified text and handler.
+   * @param {string} text
+   * @param {Function} onClick - callback with no parameters
+   * @returns {Menu} */
+  item(text, onClick) {
+    return toJs(grok_Menu_Item(this.d, text, onClick));
+  }
 
-    /** For each item in items, adds a menu group with the specified text and handler.
-     * Returns this.
-     * @param {string[]} items
-     * @param {Function} onClick - a callback with one parameter
-     * @returns {Menu} */
-    items(items, onClick) { return toJs(grok_Menu_Items(this.d, items, onClick)); }
+  /** For each item in items, adds a menu group with the specified text and handler.
+   * Returns this.
+   * @param {string[]} items
+   * @param {Function} onClick - a callback with one parameter
+   * @returns {Menu} */
+  items(items, onClick) {
+    return toJs(grok_Menu_Items(this.d, items, onClick));
+  }
 
-    /** Adds a separator line.
-     *  @returns {Menu} */
-    separator() { return toJs(grok_Menu_Separator(this.d)); }
+  /** Adds a separator line.
+   *  @returns {Menu} */
+  separator() {
+    return toJs(grok_Menu_Separator(this.d));
+  }
 
-    /** Shows the menu.
-     * @returns {Menu} */
-    show() { return toJs(grok_Menu_Show(this.d)); }
+  /** Shows the menu.
+   * @returns {Menu} */
+  show() {
+    return toJs(grok_Menu_Show(this.d));
+  }
 }
 
 
 /** Balloon-style visual notifications. */
 export class Balloon {
-    /** Shows information message (green background) */
-    info(s) { grok_Balloon(s, 'info'); }
+  /** Shows information message (green background) */
+  info(s) {
+    grok_Balloon(s, 'info');
+  }
 
-    /** Shows information message (red background) */
-    error(s) { grok_Balloon(s, 'error'); }
+  /** Shows information message (red background) */
+  error(s) {
+    grok_Balloon(s, 'error');
+  }
 }
 
 
 /** Input control base. Could be used for editing {@link Property} values as well. */
 export class InputBase {
-    constructor(d, onChanged = null) {
-        this.d = d;
-        if (onChanged != null)
-            this.onChanged((_) => onChanged(this.value));
-    }
+  constructor(d, onChanged = null) {
+    this.d = d;
+    if (onChanged != null)
+      this.onChanged((_) => onChanged(this.value));
+  }
 
-    get root() { return grok_InputBase_Get_Root(this.d); };
-    get caption() { return grok_InputBase_Get_Caption(this.d); };
-    get format() { return grok_InputBase_Get_Format(this.d); } ;
-    get captionLabel() { return grok_InputBase_Get_CaptionLabel(this.d); };
-    get input() { return grok_InputBase_Get_Input(this.d); };
+  get root() {
+    return grok_InputBase_Get_Root(this.d);
+  };
 
-    get nullable() { return grok_InputBase_Get_Nullable(this.d); };
-    set nullable(v) { return grok_InputBase_Set_Nullable(this.d, v); };
+  get caption() {
+    return grok_InputBase_Get_Caption(this.d);
+  };
 
-    get value() { return toJs(grok_InputBase_Get_Value(this.d)); };
-    set value(x) { return toDart(grok_InputBase_Set_Value(this.d, x)); };
+  get format() {
+    return grok_InputBase_Get_Format(this.d);
+  } ;
 
-    get stringValue() { return grok_InputBase_Get_StringValue(this.d); };
-    set stringValue(s) { return grok_InputBase_Set_StringValue(this.d, s); };
+  get captionLabel() {
+    return grok_InputBase_Get_CaptionLabel(this.d);
+  };
 
-    get readOnly() { return grok_InputBase_Get_ReadOnly(this.d); };
-    set readOnly(v) { return grok_InputBase_Set_ReadOnly(this.d, v); };
+  get input() {
+    return grok_InputBase_Get_Input(this.d);
+  };
 
-    get enabled() { return grok_InputBase_Get_Enabled(this.d); };
-    set enabled(v) { return grok_InputBase_Set_Enabled(this.d, v); };
+  get nullable() {
+    return grok_InputBase_Get_Nullable(this.d);
+  };
 
-    /// Occurs when [value] is changed, either by user or programmatically.
-    onChanged(callback) { return _sub(grok_InputBase_OnChanged(this.d, callback)); }
+  set nullable(v) {
+    return grok_InputBase_Set_Nullable(this.d, v);
+  };
 
-    /// Occurs when [value] is changed by user.
-    onInput(callback) { return _sub(grok_InputBase_OnInput(this.d, callback)); }
+  get value() {
+    return toJs(grok_InputBase_Get_Value(this.d));
+  };
 
-    save() { return grok_InputBase_Save(this.d); };
-    load(s) { return grok_InputBase_Load(this.d, s); };
+  set value(x) {
+    return toDart(grok_InputBase_Set_Value(this.d, x));
+  };
 
-    init() { return grok_InputBase_Init(this.d); };
-    fireChanged() { return grok_InputBase_FireChanged(this.d); };
-    addCaption(caption) { grok_InputBase_AddCaption(this.d, caption); };
-    addPatternMenu(pattern) { grok_InputBase_AddPatternMenu(this.d, pattern); }
-    setTooltip(msg) { grok_InputBase_SetTooltip(this.d, msg); };
+  get stringValue() {
+    return grok_InputBase_Get_StringValue(this.d);
+  };
 
-    static forProperty(property) { return toJs(grok_InputBase_ForProperty(property.d)); }
+  set stringValue(s) {
+    return grok_InputBase_Set_StringValue(this.d, s);
+  };
+
+  get readOnly() {
+    return grok_InputBase_Get_ReadOnly(this.d);
+  };
+
+  set readOnly(v) {
+    return grok_InputBase_Set_ReadOnly(this.d, v);
+  };
+
+  get enabled() {
+    return grok_InputBase_Get_Enabled(this.d);
+  };
+
+  set enabled(v) {
+    return grok_InputBase_Set_Enabled(this.d, v);
+  };
+
+  /// Occurs when [value] is changed, either by user or programmatically.
+  onChanged(callback) {
+    return _sub(grok_InputBase_OnChanged(this.d, callback));
+  }
+
+  /// Occurs when [value] is changed by user.
+  onInput(callback) {
+    return _sub(grok_InputBase_OnInput(this.d, callback));
+  }
+
+  save() {
+    return grok_InputBase_Save(this.d);
+  };
+
+  load(s) {
+    return grok_InputBase_Load(this.d, s);
+  };
+
+  init() {
+    return grok_InputBase_Init(this.d);
+  };
+
+  fireChanged() {
+    return grok_InputBase_FireChanged(this.d);
+  };
+
+  addCaption(caption) {
+    grok_InputBase_AddCaption(this.d, caption);
+  };
+
+  addPatternMenu(pattern) {
+    grok_InputBase_AddPatternMenu(this.d, pattern);
+  }
+
+  setTooltip(msg) {
+    grok_InputBase_SetTooltip(this.d, msg);
+  };
+
+  static forProperty(property) {
+    return toJs(grok_InputBase_ForProperty(property.d));
+  }
 }
 
 
 export class ProgressIndicator {
-    constructor(d) { this.d = d; }
+  constructor(d) {
+    this.d = d;
+  }
 
-    static create() { return toJs(grok_ProgressIndicator_Create()); }
+  static create() {
+    return toJs(grok_ProgressIndicator_Create());
+  }
 
-    get percent() { return grok_ProgressIndicator_Get_Percent(this.d); }
+  get percent() {
+    return grok_ProgressIndicator_Get_Percent(this.d);
+  }
 
-    get description() { return grok_ProgressIndicator_Get_Description(this.d); }
-    set description(s) { grok_ProgressIndicator_Set_Description(this.d, s); }
+  get description() {
+    return grok_ProgressIndicator_Get_Description(this.d);
+  }
 
-    update(percent, description) { grok_ProgressIndicator_Update(this.d, percent, description); }
-    log(line) { grok_ProgressIndicator_Log(this.d, line); }
+  set description(s) {
+    grok_ProgressIndicator_Set_Description(this.d, s);
+  }
 
-    get onProgressUpdated() { return observeStream(grok_Progress_Updated(this.d)); }
-    get onLogUpdated() { return observeStream(grok_Progress_Log_Updated(this.d)); }
+  update(percent, description) {
+    grok_ProgressIndicator_Update(this.d, percent, description);
+  }
+
+  log(line) {
+    grok_ProgressIndicator_Log(this.d, line);
+  }
+
+  get onProgressUpdated() {
+    return observeStream(grok_Progress_Updated(this.d));
+  }
+
+  get onLogUpdated() {
+    return observeStream(grok_Progress_Log_Updated(this.d));
+  }
 
 }
 
 
 export class TaskBarProgressIndicator extends ProgressIndicator {
-    static create(name) { return toJs(grok_TaskBarProgressIndicator_Create(name)); }
+  static create(name) {
+    return toJs(grok_TaskBarProgressIndicator_Create(name));
+  }
 
-    close() { return grok_TaskBarProgressIndicator_Close(this.d); }
+  close() {
+    return grok_TaskBarProgressIndicator_Close(this.d);
+  }
 }
 
 
 export class TagEditor {
-    constructor(d) { this.d = d; }
+  constructor(d) {
+    this.d = d;
+  }
 
-    static create() { return toJs(grok_TagEditor()); }
+  static create() {
+    return toJs(grok_TagEditor());
+  }
 
-    get root() { return grok_TagEditor_Get_Root(this.d); }
+  get root() {
+    return grok_TagEditor_Get_Root(this.d);
+  }
 
-    get tags() { return grok_TagEditor_Get_Tags(this.d); }
+  get tags() {
+    return grok_TagEditor_Get_Tags(this.d);
+  }
 
-    addTag(tag, notify = true) { return grok_TagEditor_AddTag(this.d, tag, notify); }
-    removeTag(tag) { grok_TagEditor_RemoveTag(this.d, tag); }
-    clearTags() { grok_TagEditor_ClearTags(this.d); }
+  addTag(tag, notify = true) {
+    return grok_TagEditor_AddTag(this.d, tag, notify);
+  }
 
-    set acceptsDragDrop(predicate) { grok_TagEditor_Set_AcceptsDragDrop(this.d, (x) => predicate(toJs(x, false))); };
-    set doDrop(action) { grok_TagEditor_Set_DoDrop(this.d, (x) => action(toJs(x, false))); }
+  removeTag(tag) {
+    grok_TagEditor_RemoveTag(this.d, tag);
+  }
 
-    onChanged(callback) { return _sub(grok_TagEditor_OnChanged(this.d, callback)); }
+  clearTags() {
+    grok_TagEditor_ClearTags(this.d);
+  }
+
+  set acceptsDragDrop(predicate) {
+    grok_TagEditor_Set_AcceptsDragDrop(this.d, (x) => predicate(toJs(x, false)));
+  };
+
+  set doDrop(action) {
+    grok_TagEditor_Set_DoDrop(this.d, (x) => action(toJs(x, false)));
+  }
+
+  onChanged(callback) {
+    return _sub(grok_TagEditor_OnChanged(this.d, callback));
+  }
 }
 
 
 export class TagElement {
-    constructor(d) { this.d = d; }
+  constructor(d) {
+    this.d = d;
+  }
 
-    get tag() { return grok_TagElement_Get_Tag(this.d); };
-    set tag(x) { return grok_TagElement_Set_Tag(this.d, x); };
+  get tag() {
+    return grok_TagElement_Get_Tag(this.d);
+  };
+
+  set tag(x) {
+    return grok_TagElement_Set_Tag(this.d, x);
+  };
 }
 
 
 /** Color-related routines. */
 export class Color {
 
-    static r(c) { return (c >> 16) & 0xFF; }
-    static g(c) { return (c >> 8) & 0xFF; }
-    static b(c) { return c & 0xFF; }
+  static r(c) {
+    return (c >> 16) & 0xFF;
+  }
 
-    /** Returns i-th categorical color (looping over the palette if needed) */
-    static getCategoricalColor(i) { return Color.categoricalPalette[i % Color.categoricalPalette.length]; }
+  static g(c) {
+    return (c >> 8) & 0xFF;
+  }
 
-    /** Returns either black or white color, depending on which one would be most contrast to the specified [color] */
-    static getContrastColor(color) { return grok_Color_GetContrastColor(color); }
+  static b(c) {
+    return c & 0xFF;
+  }
 
-    static toRgb(color) { return color === null ? '': `rgb(${Color.r(color)},${Color.g(color)},${Color.b(color)})`; }
+  /** Returns i-th categorical color (looping over the palette if needed) */
+  static getCategoricalColor(i) {
+    return Color.categoricalPalette[i % Color.categoricalPalette.length];
+  }
 
-    static get categoricalPalette() { return grok_Color_CategoricalPalette(); }
+  /** Returns either black or white color, depending on which one would be most contrast to the specified [color] */
+  static getContrastColor(color) {
+    return grok_Color_GetContrastColor(color);
+  }
 
-    static scale(x, min, max) {
-        return min === max ? min : (x - min) / (max - min);
-    }
+  static toRgb(color) {
+    return color === null ? '' : `rgb(${Color.r(color)},${Color.g(color)},${Color.b(color)})`;
+  }
 
-    static get gray() { return 0xFF808080; }
-    static get lightLightGray() { return 0xFFF0F0F0; }
-    static get lightGray() { return 0xFFD3D3D3; }
-    static get darkGray() { return 0xFF838383; }
-    static get blue() { return 0xFF0000FF; }
-    static get green() { return 0xFF00FF00; }
-    static get darkGreen() { return 0xFF006400; }
-    static get black() { return 0xFF000000; }
-    static get yellow() { return 0xFFFFFF00; }
-    static get white() { return 0xFFFFFFFF; }
-    static get red() { return 0xFFFF0000; }
-    static get darkRed() { return 0xFF8b0000; }
-    static get maroon() { return 0xFF800000; }
-    static get olive() { return 0xFF808000; }
-    static get orange() { return 0xFFFFA500; }
-    static get darkOrange() { return 0xFFFF8C00; }
-    static get lightBlue() { return 0xFFADD8E6; }
-    static get darkBlue() { return 0xFF0000A0; }
-    static get purple() { return 0xFF800080; }
-    static get whitesmoke() { return 0xFFF5F5F5; }
-    static get navy() { return 0xFF000080; }
-    static get cyan() { return 0xFF00ffff; }
+  static get categoricalPalette() {
+    return grok_Color_CategoricalPalette();
+  }
 
-    static get filteredRows() { return 0xff1f77b4; }
-    static get filteredOutRows() { return Color.lightLightGray; }
-    static get selectedRows() { return Color.darkOrange; }
-    static get missingValueRows() { return Color.filteredOutRows; }
-    static get mouseOverRows() { return 0xFFAAAAAA; }
-    static get currentRow() { return 0xFF38B738; }
+  static scale(x, min, max) {
+    return min === max ? min : (x - min) / (max - min);
+  }
 
-    static get histogramBar() { return Color.filteredRows; }
-    static get barChart() { return 0xFF24A221; }
-    static get scatterPlotMarker() { return 0xFF40699c; }
-    static get scatterPlotSelection() { return 0x80323232; }
-    static get scatterPlotZoom() { return 0x80626200; }
+  static get gray() {
+    return 0xFF808080;
+  }
 
-    static get areaSelection() { return Color.lightBlue; }
-    static get rowSelection() { return 0x60dcdca0; }
-    static get colSelection() { return 0x60dcdca0; }
-    static get areaZoom() { return 0x80323232; }
+  static get lightLightGray() {
+    return 0xFFF0F0F0;
+  }
 
-    static get gridWarningBackground() { return 0xFFFFB9A7; }
+  static get lightGray() {
+    return 0xFFD3D3D3;
+  }
 
-    static get success() { return 0xFF3cb173; }
-    static get failure() { return 0xFFeb6767; }
+  static get darkGray() {
+    return 0xFF838383;
+  }
+
+  static get blue() {
+    return 0xFF0000FF;
+  }
+
+  static get green() {
+    return 0xFF00FF00;
+  }
+
+  static get darkGreen() {
+    return 0xFF006400;
+  }
+
+  static get black() {
+    return 0xFF000000;
+  }
+
+  static get yellow() {
+    return 0xFFFFFF00;
+  }
+
+  static get white() {
+    return 0xFFFFFFFF;
+  }
+
+  static get red() {
+    return 0xFFFF0000;
+  }
+
+  static get darkRed() {
+    return 0xFF8b0000;
+  }
+
+  static get maroon() {
+    return 0xFF800000;
+  }
+
+  static get olive() {
+    return 0xFF808000;
+  }
+
+  static get orange() {
+    return 0xFFFFA500;
+  }
+
+  static get darkOrange() {
+    return 0xFFFF8C00;
+  }
+
+  static get lightBlue() {
+    return 0xFFADD8E6;
+  }
+
+  static get darkBlue() {
+    return 0xFF0000A0;
+  }
+
+  static get purple() {
+    return 0xFF800080;
+  }
+
+  static get whitesmoke() {
+    return 0xFFF5F5F5;
+  }
+
+  static get navy() {
+    return 0xFF000080;
+  }
+
+  static get cyan() {
+    return 0xFF00ffff;
+  }
+
+  static get filteredRows() {
+    return 0xff1f77b4;
+  }
+
+  static get filteredOutRows() {
+    return Color.lightLightGray;
+  }
+
+  static get selectedRows() {
+    return Color.darkOrange;
+  }
+
+  static get missingValueRows() {
+    return Color.filteredOutRows;
+  }
+
+  static get mouseOverRows() {
+    return 0xFFAAAAAA;
+  }
+
+  static get currentRow() {
+    return 0xFF38B738;
+  }
+
+  static get histogramBar() {
+    return Color.filteredRows;
+  }
+
+  static get barChart() {
+    return 0xFF24A221;
+  }
+
+  static get scatterPlotMarker() {
+    return 0xFF40699c;
+  }
+
+  static get scatterPlotSelection() {
+    return 0x80323232;
+  }
+
+  static get scatterPlotZoom() {
+    return 0x80626200;
+  }
+
+  static get areaSelection() {
+    return Color.lightBlue;
+  }
+
+  static get rowSelection() {
+    return 0x60dcdca0;
+  }
+
+  static get colSelection() {
+    return 0x60dcdca0;
+  }
+
+  static get areaZoom() {
+    return 0x80323232;
+  }
+
+  static get gridWarningBackground() {
+    return 0xFFFFB9A7;
+  }
+
+  static get success() {
+    return 0xFF3cb173;
+  }
+
+  static get failure() {
+    return 0xFFeb6767;
+  }
 }
 
 
@@ -431,125 +794,188 @@ export class Color {
  * Sample: {@link https://public.datagrok.ai/js/samples/ui/tree-view}
  * */
 export class TreeViewNode {
-    /** @constructs {TreeView} */
-    constructor(d) { this.d = d; }
+  /** @constructs {TreeView} */
+  constructor(d) {
+    this.d = d;
+  }
 
-    /** Creates new nodes tree
-     * @returns {TreeViewNode} */
-    static tree() { return toJs(grok_TreeViewNode_Tree()); }
+  /** Creates new nodes tree
+   * @returns {TreeViewNode} */
+  static tree() {
+    return toJs(grok_TreeViewNode_Tree());
+  }
 
-    /** Visual root.
-     * @type {HTMLElement} */
-    get root() { return grok_TreeViewNode_Root(this.d); }
+  /** Visual root.
+   * @type {HTMLElement} */
+  get root() {
+    return grok_TreeViewNode_Root(this.d);
+  }
 
-    /** Caption label.
-     * @type {HTMLElement} */
-    get captionLabel() { grok_TreeViewNode_CaptionLabel(this.d); }
+  /** Caption label.
+   * @type {HTMLElement} */
+  get captionLabel() {
+    grok_TreeViewNode_CaptionLabel(this.d);
+  }
 
-    /** Check box.
-     * @type {null|HTMLElement} */
-    get checkBox() { return grok_TreeViewNode_CheckBox(this.d); }
+  /** Check box.
+   * @type {null|HTMLElement} */
+  get checkBox() {
+    return grok_TreeViewNode_CheckBox(this.d);
+  }
 
-    /** Returns 'true' if checked
-     * @returns {boolean} */
-    get checked() { return grok_TreeViewNode_Get_Checked(this.d); }
-    set checked(checked) { return grok_TreeViewNode_Set_Checked(this.d, checked); }
+  /** Returns 'true' if checked
+   * @returns {boolean} */
+  get checked() {
+    return grok_TreeViewNode_Get_Checked(this.d);
+  }
 
-    /** Returns node text.
-     * @returns {string} */
-    get text() { return grok_TreeViewNode_Text(this.d); }
+  set checked(checked) {
+    return grok_TreeViewNode_Set_Checked(this.d, checked);
+  }
 
-    /** Node value.
-     * @type {Object}
-     */
-    get value() { return grok_TreeViewNode_Get_Value(this.d) };
-    set value(v) { grok_TreeViewNode_Set_Value(this.d, v) };
+  /** Returns node text.
+   * @returns {string} */
+  get text() {
+    return grok_TreeViewNode_Text(this.d);
+  }
 
-    /** Gets all node items.
-     * @returns {Array<TreeViewNode>} */
-    get items() { return grok_TreeViewNode_Items(this.d).map(i => toJs(i)); }
+  /** Node value.
+   * @type {Object}
+   */
+  get value() {
+    return grok_TreeViewNode_Get_Value(this.d)
+  };
 
-    /** Add new group to node.
-     * @param {string} text
-     * @param {Object} value
-     * @param {boolean} expanded
-     * @returns {TreeViewNode} */
-    group(text, value = null, expanded = true) { return toJs(grok_TreeViewNode_Group(this.d, text, value, expanded)); }
+  set value(v) {
+    grok_TreeViewNode_Set_Value(this.d, v)
+  };
 
-    /** Add new item to node.
-     * @param {string} text
-     * @param {Object} value
-     * @returns {TreeViewNode} */
-    item(text, value = null) { return toJs(grok_TreeViewNode_Item(this.d, text, value)); }
+  /** Gets all node items.
+   * @returns {Array<TreeViewNode>} */
+  get items() {
+    return grok_TreeViewNode_Items(this.d).map(i => toJs(i));
+  }
 
-    /** Enables checkbox on node
-     * @param {boolean} checked */
-    enableCheckBox(checked = false) { grok_TreeViewNode_EnableCheckBox(this.d, checked); }
+  /** Add new group to node.
+   * @param {string} text
+   * @param {Object} value
+   * @param {boolean} expanded
+   * @returns {TreeViewNode} */
+  group(text, value = null, expanded = true) {
+    return toJs(grok_TreeViewNode_Group(this.d, text, value, expanded));
+  }
+
+  /** Add new item to node.
+   * @param {string} text
+   * @param {Object} value
+   * @returns {TreeViewNode} */
+  item(text, value = null) {
+    return toJs(grok_TreeViewNode_Item(this.d, text, value));
+  }
+
+  /** Enables checkbox on node
+   * @param {boolean} checked */
+  enableCheckBox(checked = false) {
+    grok_TreeViewNode_EnableCheckBox(this.d, checked);
+  }
 }
 
 export class RangeSlider extends DartWidget {
 
-    static create() { return toJs(grok_RangeSlider()); }
+  static create() {
+    return toJs(grok_RangeSlider());
+  }
 
-    /** Gets minimum range value.
-     * @type {number}
-     */
-    get minRange() { return grok_RangeSlider_Get_MinRange(this.d) };
+  /** Gets minimum range value.
+   * @type {number}
+   */
+  get minRange() {
+    return grok_RangeSlider_Get_MinRange(this.d)
+  };
 
-    /** Gets maximum range value.
-     * @type {number}
-     */
-    get maxRange() { return grok_RangeSlider_Get_MaxRange(this.d); };
+  /** Gets maximum range value.
+   * @type {number}
+   */
+  get maxRange() {
+    return grok_RangeSlider_Get_MaxRange(this.d);
+  };
 
-    /** Gets minimum value.
-     * @type {number}
-     */
-    get min() { return grok_RangeSlider_Get_Min(this.d); };
+  /** Gets minimum value.
+   * @type {number}
+   */
+  get min() {
+    return grok_RangeSlider_Get_Min(this.d);
+  };
 
-    /** Gets maximum value.
-     * @type {number}
-     */
-    get max() { return grok_RangeSlider_Get_Max(this.d); };
+  /** Gets maximum value.
+   * @type {number}
+   */
+  get max() {
+    return grok_RangeSlider_Get_Max(this.d);
+  };
 
-    /** Sets values to range slider.
-     * @param {number} minRange
-     * @param {number} maxRange
-     * @param {number} min
-     * @param {number} max */
-    setValues(minRange, maxRange, min, max) { grok_RangeSlider_SetValues(this.d, minRange, maxRange, min, max); };
+  /** Sets values to range slider.
+   * @param {number} minRange
+   * @param {number} maxRange
+   * @param {number} min
+   * @param {number} max */
+  setValues(minRange, maxRange, min, max) {
+    grok_RangeSlider_SetValues(this.d, minRange, maxRange, min, max);
+  };
 
-    /** @returns {Observable} */
-    get onValuesChanged() { return observeStream(grok_RangeSlider_Get_OnValuesChanged(this.d)); }
+  /** @returns {Observable} */
+  get onValuesChanged() {
+    return observeStream(grok_RangeSlider_Get_OnValuesChanged(this.d));
+  }
 }
 
 export class HtmlTable extends DartWidget {
 
-    /** @constructs {HtmlTable} */
-    constructor(d) { super(d); }
+  /** @constructs {HtmlTable} */
+  constructor(d) {
+    super(d);
+  }
 
-    /** Creates a visual table based on [items], [renderer], and [columnNames]
-     * @returns {HtmlTable} */
-    static create(items, renderer, columnNames = null) { return toJs(grok_HtmlTable(items, renderer !== null ? (object, ind) => renderer(toJs(object), ind) : null, columnNames)); }
+  /** Creates a visual table based on [items], [renderer], and [columnNames]
+   * @returns {HtmlTable} */
+  static create(items, renderer, columnNames = null) {
+    return toJs(grok_HtmlTable(items, renderer !== null ? (object, ind) => renderer(toJs(object), ind) : null, columnNames));
+  }
 
-    /** Removes item */
-    remove(item) { grok_HtmlTable_Remove(this.d, item); }
+  /** Removes item */
+  remove(item) {
+    grok_HtmlTable_Remove(this.d, item);
+  }
 }
 
 export class ColumnComboBox extends DartWidget {
-    /** @constructs {ColumnComboBox} */
-    constructor(d) { super(d); }
+  /** @constructs {ColumnComboBox} */
+  constructor(d) {
+    super(d);
+  }
 
-    /** Creates a column combo box with specified [dataframe] and [predicate]
-     * @returns {ColumnComboBox} */
-    static create(dataframe, predicate) { return toJs(grok_ColumnComboBox(dataframe.d, (x) => predicate(toJs(x)))); }
+  /** Creates a column combo box with specified [dataframe] and [predicate]
+   * @returns {ColumnComboBox} */
+  static create(dataframe, predicate) {
+    return toJs(grok_ColumnComboBox(dataframe.d, (x) => predicate(toJs(x))));
+  }
 
-    /** @type {boolean} */
-    get vertical() { return grok_ColumnComboBox_Get_Vertical(this.d); }
+  /** @type {boolean} */
+  get vertical() {
+    return grok_ColumnComboBox_Get_Vertical(this.d);
+  }
 
-    /** @type {string} */
-    get caption() { return grok_ColumnComboBox_Get_Caption(this.d); }
-    set caption(c) { return grok_ColumnComboBox_Set_Caption(this.d, c); }
+  /** @type {string} */
+  get caption() {
+    return grok_ColumnComboBox_Get_Caption(this.d);
+  }
 
-    /** @type {Property} */
-    get property() { return toJs(grok_ColumnComboBox_Get_Property(this.d)); }
+  set caption(c) {
+    return grok_ColumnComboBox_Set_Caption(this.d, c);
+  }
+
+  /** @type {Property} */
+  get property() {
+    return toJs(grok_ColumnComboBox_Get_Property(this.d));
+  }
 }

@@ -1,7 +1,7 @@
 // Once specified, custom category order gets used for sorting across all visualizations
 
 let t1 = DG.DataFrame.fromCsv(
-    `Severity,id
+  `Severity,id
 Medium, s_001
 High, s_002
 High, s_003

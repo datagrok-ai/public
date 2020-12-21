@@ -3,5 +3,5 @@
 let view = grok.shell.addTableView(grok.data.demo.demog());
 
 view.histogram({
-    value: 'age'
+  value: 'age'
 });

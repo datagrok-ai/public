@@ -1,8 +1,8 @@
 //name: chemBenchmark
 //language: javascript
 
-const randomInt = (min, max) =>  min + Math.floor((max - min) * Math.random());
-const range = (l, r) => new Array(r - l).fill().map((_,k) => k + l);
+const randomInt = (min, max) => min + Math.floor((max - min) * Math.random());
+const range = (l, r) => new Array(r - l).fill().map((_, k) => k + l);
 
 // TODO: internalize with Datagrok
 async function time(name, n, f) {
@@ -34,6 +34,7 @@ function getIdxRandomSubarray(N, n) {
 }
 
 let caseCntr = 0;
+
 async function testCase(title, f) {
   await time(++caseCntr + '. ' + title, 1, f);
 }
@@ -104,14 +105,14 @@ async function testCase(title, f) {
   ];
 
   await testCase(`Substructure search, building a library of ${col.length} molecules`, async () =>
-      await grok.chem.substructureSearch(col));
+    await grok.chem.substructureSearch(col));
   await testCase(`Substructure search, searching benzene in ${N_search} molecules`, async () =>
-      await grok.chem.substructureSearch(col, searchFor[0]));
+    await grok.chem.substructureSearch(col, searchFor[0]));
   await testCase(`Substructure search, searching aspirin in ${N_search} molecules`, async () =>
-      await grok.chem.substructureSearch(col, searchFor[1]));
+    await grok.chem.substructureSearch(col, searchFor[1]));
 
   await testCase(`Similarity scoring, building a library of ${col.length} molecules`, async () =>
-      await grok.chem.similarityScoring(col));
+    await grok.chem.similarityScoring(col));
   const queryIdx = getIdxRandomSubset(N_search, N_sample);
   await testCase(`Similarity scoring, search for ${queryIdx.length} samples in ${N_search} molecules`, async () => {
     for (let i of queryIdx) {

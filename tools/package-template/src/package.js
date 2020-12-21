@@ -8,5 +8,5 @@ export let _package = new DG.Package();
 //name: test
 //input: string s
 export function test(s) {
-    grok.shell.info(_package.webRoot);
+  grok.shell.info(_package.webRoot);
 }

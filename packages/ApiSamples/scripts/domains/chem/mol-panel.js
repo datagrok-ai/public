@@ -5,9 +5,9 @@
 // See also: https://datagrok.ai/help/discover/info-panels
 
 grok.functions.register({
-    signature: 'widget molWidget(String/Molecule smiles)',
-    tags: 'panel',
-    run: (smiles) => {
-        return new DG.Widget(ui.divText(`mol panel: ${smiles}`));
-    }
+  signature: 'widget molWidget(String/Molecule smiles)',
+  tags: 'panel',
+  run: (smiles) => {
+    return new DG.Widget(ui.divText(`mol panel: ${smiles}`));
+  }
 });

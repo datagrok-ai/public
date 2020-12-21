@@ -1,10 +1,10 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { SunburstRenderer } from './sunburst-renderer';
-import { Branch, TreeData, TreeDataBuilder } from './tree-data-builder';
-import { HierarchyNode } from 'd3-hierarchy';
-import { BitSet } from 'datagrok-api/dg';
-import { ColorMode } from './sunburst-renderer-color';
+import {SunburstRenderer} from './sunburst-renderer';
+import {Branch, TreeData, TreeDataBuilder} from './tree-data-builder';
+import {HierarchyNode} from 'd3-hierarchy';
+import {BitSet} from 'datagrok-api/dg';
+import {ColorMode} from './sunburst-renderer-color';
 
 export class SunburstViewer extends DG.JsViewer {
 
@@ -96,7 +96,7 @@ export class SunburstViewer extends DG.JsViewer {
     }
 
     private isDataFrameFiltered() {
-        console.error(this.dataFrame.rowCount ,this.dataFrame.filter.trueCount);
+        console.error(this.dataFrame.rowCount, this.dataFrame.filter.trueCount);
         return this.dataFrame.rowCount !== this.dataFrame.filter.trueCount;
     }
 
@@ -237,7 +237,7 @@ export class SunburstViewer extends DG.JsViewer {
             // Add the empty selector if needed
             setTimeout(() => {
                 selector!.dispatchEvent(new Event('change'));
-            }, 0) ;
+            }, 0);
         }
     }
 

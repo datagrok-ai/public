@@ -23,10 +23,11 @@ export class Entity {
     /** Entity path
      *  @type {string} */
     get path(): string
-    
+
     /** Returns entity properties
      * @returns {Promise<Map>} props */
     getProperties(): Promise<Map<any, any>>
+
     /** Allows to set properties for entity
      * @param {Map} props
      * @returns Promise */
@@ -176,18 +177,22 @@ export class TableInfo extends Entity {
 export class FileInfo extends Entity {
     /** @constructs FileInfo */
     constructor(d: any)
+
     /** Returns path, i.e. `geo/dmv_offices.csv`
      * @type {string} */
-    get path() : string
+    get path(): string
+
     /** Returns full path, i.e. `Demo:TestJobs:Files:DemoFiles/geo/dmv_offices.csv`
      * @type {string} */
-    get fullPath() : string
+    get fullPath(): string
+
     /** Returns file extension, i.e. `csv`
      * @type {string} */
-    get extension() : string
+    get extension(): string
+
     /** Returns file name, i.e. `dmv_offices.csv`
      * @type {string} */
-    get fileName() : string
+    get fileName(): string
 }
 
 /** @extends Entity
@@ -260,10 +265,10 @@ export class Script extends Func {
     constructor(d: any)
 
     static create(script: string): Script
-    
+
     /** Script
      * @type {string} */
-    get script() : string
+    get script(): string
     set script(s)
 }
 

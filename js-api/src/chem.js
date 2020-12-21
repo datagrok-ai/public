@@ -24,20 +24,20 @@ import {SIMILARITY_METRIC} from "./const";
  *     sorted in descending order by the score
  * @returns {Promise<DataFrame>, if sorted; Promise<Column>, otherwise}
  * */
-export async function similarityScoring(column, molecule = null, settings = { sorted: false }) {
-    
-    let foo = await grok.functions.eval('Chem:similarityScoring');
-    let call = await foo.prepare({
-        'molStringsColumn': column,
-        'molString': molecule == null ? "" : molecule,
-        'sorted': settings.sorted
-    });
-    await call.call();
-    if (molecule != null && molecule !== "") {
-        let result = call.getParamValue('result');
-        return settings.sorted ? result : result.columns.byIndex(0);
-    }
-    
+export async function similarityScoring(column, molecule = null, settings = {sorted: false}) {
+
+  let foo = await grok.functions.eval('Chem:similarityScoring');
+  let call = await foo.prepare({
+    'molStringsColumn': column,
+    'molString': molecule == null ? "" : molecule,
+    'sorted': settings.sorted
+  });
+  await call.call();
+  if (molecule != null && molecule !== "") {
+    let result = call.getParamValue('result');
+    return settings.sorted ? result : result.columns.byIndex(0);
+  }
+
 }
 
 /**
@@ -50,7 +50,7 @@ export async function similarityScoring(column, molecule = null, settings = { so
  * @returns {Promise<DataFrame>}
  * */
 export function diversitySearch(column, metric = SIMILARITY_METRIC.TANIMOTO, limit = 10) {
-    return new Promise((resolve, reject) => grok_Chem_DiversitySearch(column.d, metric, limit, (mols) => resolve(mols), (e) => reject(e)));
+  return new Promise((resolve, reject) => grok_Chem_DiversitySearch(column.d, metric, limit, (mols) => resolve(mols), (e) => reject(e)));
 }
 
 /**
@@ -62,19 +62,19 @@ export function diversitySearch(column, metric = SIMILARITY_METRIC.TANIMOTO, lim
  * @returns {Promise<BitSet>}
  * */
 export async function substructureSearch(column, pattern = null, settings = null) {
-    
-    let foo = await grok.functions.eval('Chem:substructureSearch');
-    let call = await foo.prepare({
-        'molStringsColumn': column,
-        'molString': pattern == null ? "" : pattern,
-        'substructLibrary':
-          (settings && settings.hasOwnProperty('substructLibrary') && settings.substructLibrary === false) ?
-            false : true
-    });
-    await call.call();
-    // unpacking our BitSet object from a synthetic column
-    return call.getParamValue('result').get(0);
-    
+
+  let foo = await grok.functions.eval('Chem:substructureSearch');
+  let call = await foo.prepare({
+    'molStringsColumn': column,
+    'molString': pattern == null ? "" : pattern,
+    'substructLibrary':
+      (settings && settings.hasOwnProperty('substructLibrary') && settings.substructLibrary === false) ?
+        false : true
+  });
+  await call.call();
+  // unpacking our BitSet object from a synthetic column
+  return call.getParamValue('result').get(0);
+
 }
 
 
@@ -88,7 +88,7 @@ export async function substructureSearch(column, pattern = null, settings = null
  * @returns {Promise<DataFrame>}
  * */
 export function rGroup(table, column, core) {
-    return new Promise((resolve, reject) => grok_Chem_RGroup(table.d, column, core, () => resolve(table), (e) => reject(e)));
+  return new Promise((resolve, reject) => grok_Chem_RGroup(table.d, column, core, () => resolve(table), (e) => reject(e)));
 }
 
 /**
@@ -99,7 +99,7 @@ export function rGroup(table, column, core) {
  * @returns {Promise<string>}
  * */
 export function mcs(column) {
-    return new Promise((resolve, reject) => grok_Chem_MCS(column.d, (mcs) => resolve(mcs), (e) => reject(e)));
+  return new Promise((resolve, reject) => grok_Chem_MCS(column.d, (mcs) => resolve(mcs), (e) => reject(e)));
 }
 
 /**
@@ -113,7 +113,7 @@ export function mcs(column) {
  * @returns {Promise<DataFrame>}
  * */
 export function descriptors(table, column, descriptors) {
-    return new Promise((resolve, reject) => grok_Chem_Descriptors(table.d, column, descriptors, () => resolve(table), (e) => reject(e)));
+  return new Promise((resolve, reject) => grok_Chem_Descriptors(table.d, column, descriptors, () => resolve(table), (e) => reject(e)));
 }
 
 /**
@@ -124,7 +124,7 @@ export function descriptors(table, column, descriptors) {
  * @returns {Promise<Object>}
  * */
 export function descriptorsTree() {
-    return new Promise((resolve, reject) => grok_Chem_DescriptorsTree((tree) => resolve(JSON.parse(tree)), (e) => reject(e)));
+  return new Promise((resolve, reject) => grok_Chem_DescriptorsTree((tree) => resolve(JSON.parse(tree)), (e) => reject(e)));
 }
 
 /**
@@ -136,12 +136,12 @@ export function descriptorsTree() {
  * @returns {HTMLDivElement}
  * */
 export function svgMol(smiles, width = 300, height = 200) {
-    let root = document.createElement('div');
-    import('openchemlib/full.js').then((OCL) => {
-        let m = OCL.Molecule.fromSmiles(smiles);
-        root.innerHTML = m.toSVG(width, height);
-    });
-    return root;
+  let root = document.createElement('div');
+  import('openchemlib/full.js').then((OCL) => {
+    let m = OCL.Molecule.fromSmiles(smiles);
+    root.innerHTML = m.toSVG(width, height);
+  });
+  return root;
 }
 
 /**
@@ -150,4 +150,6 @@ export function svgMol(smiles, width = 300, height = 200) {
  * @param {string} smiles Initial molecule
  * @returns {HTMLElement}
  * */
-export function sketcher(onChangedCallback, smiles = '') { return grok_Chem_Sketcher(onChangedCallback, smiles); }
+export function sketcher(onChangedCallback, smiles = '') {
+  return grok_Chem_Sketcher(onChangedCallback, smiles);
+}

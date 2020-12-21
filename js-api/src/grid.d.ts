@@ -6,6 +6,7 @@ import {_identityInt32} from "./utils";
 
 export class Point {
     constructor(x: number, y: number);
+
     x: number;
     y: number;
 }
@@ -15,17 +16,21 @@ export class Rect {
     y: number;
     width: number;
     height: number;
-    
+
     constructor(x: number, y: number, width: number, height: number)
 
     static fromDart(d: any): Rect
 
     get midX(): number
+
     get midY(): number
 
     get left(): number
+
     get top(): number
+
     get right(): number
+
     get bottom(): number
 }
 
@@ -35,7 +40,7 @@ export class GridCell {
 
     /** @returns {GridCell} */
     static fromColumnRow(grid: Grid, columnName: string, gridRow: number): GridCell
-    
+
     /** @returns {string} Cell type */
     get cellType(): string
 
@@ -76,7 +81,7 @@ export class GridCell {
 
     /** @returns {GridCellStyle} Style to use for rendering. */
     get style(): GridCellStyle
-    
+
     get bounds(): Rect
 }
 
@@ -161,7 +166,7 @@ export class GridColumnList {
      *  @param {number} index
      *  @returns {GridColumn}  */
     byIndex(index: number): GridColumn
-    
+
     /** Returns a grid column by name, or null if it does not exist.
      *  @param {string} columnName
      *  @returns {GridColumn}  */
@@ -180,8 +185,8 @@ export class GridColumnList {
 /** High-performance, flexible spreadsheet control */
 export class Grid extends Viewer {
     constructor(d: any)
-    
-    
+
+
     /** Grid columns.
      *  @returns {GridColumnList} */
     get columns(): GridColumnList
@@ -199,14 +204,14 @@ export class Grid extends Viewer {
     sortIndexes(indexComparer: ((a: number, b: number) => number | undefined)): this
 
     setRowOrder(indexes: number[]): this
-    
+
     /** Returns a column with the specified name.
      * @param {string} name
      * @returns {GridColumn} */
     col(name: string): GridColumn
-    
+
     cell(columnName: string, gridRow: number): GridCell
-    
+
     /** @returns {HTMLCanvasElement} */
     get canvas(): HTMLCanvasElement
 
@@ -217,7 +222,7 @@ export class Grid extends Viewer {
     onCellPrepare(callback: (cell: GridCell) => any): StreamSubscription
 
     onCellTooltip(callback: (cell: GridCell) => any): StreamSubscription
-    
+
     hitTest(x: number, y: number): GridCell
 }
 
@@ -260,6 +265,7 @@ export class GridCellRenderArgs extends EventData {
 
 export class GridCellRenderer {
     get name(): string
+
     get cellType(): string
 
     /**

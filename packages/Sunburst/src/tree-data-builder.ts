@@ -1,6 +1,6 @@
 import * as d3 from 'd3';
-import { HierarchyNode } from 'd3';
-import { BitSet, Column, DataFrame, DOCK_TYPE, GroupByBuilder, JOIN_TYPE } from 'datagrok-api/dg';
+import {HierarchyNode} from 'd3';
+import {BitSet, Column, DataFrame, DOCK_TYPE, GroupByBuilder, JOIN_TYPE} from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
 export type TreeData = HierarchyNode<Branch>

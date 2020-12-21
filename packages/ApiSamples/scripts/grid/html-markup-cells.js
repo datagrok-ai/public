@@ -7,7 +7,7 @@ let col = view.grid.columns.byName('disease');
 view.grid.setOptions({'rowHeight': 100});
 col.width = 200;
 col.format =
-    `<div style="display:flex; flex-direction:column; padding: 5px">
+  `<div style="display:flex; flex-direction:column; padding: 5px">
   <div>
     <div>sex: <b>#{t.row[sex]}</b></div>
     <div> height: <span style="background-color:#{t.color(height)}"><b>#{t.row[height]}</b></span> </div>

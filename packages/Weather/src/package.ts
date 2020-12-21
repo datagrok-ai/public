@@ -14,5 +14,5 @@ export function test(s: string) {
 //name: Weather
 //tags: app
 export function weatherApp() {
-    grok.shell.addView(<any> new WeatherView());
+    grok.shell.addView(<any>new WeatherView());
 }

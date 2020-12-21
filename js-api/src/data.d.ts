@@ -46,7 +46,9 @@ export class Qnum {
     static create(value: number, q?: number): number
 
     static exact(x: number): number
+
     static less(x: number): number
+
     static greater(x: number): number
 
     /**

@@ -1,44 +1,44 @@
 class PedometerPackageDetectors extends DG.Package {
 
-    //tags: semTypeDetector
-    //input: column col
-    //output: string semType
-    detectAccel(col) {
-        if ((col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT) && col.name.startsWith('accel_') && col.name.length === 7) {
-            col.semType = 'Accelerometer-' + col.name.substring(6).toUpperCase();
-            return col.semType;
-        }
-
-        return null;
+  //tags: semTypeDetector
+  //input: column col
+  //output: string semType
+  detectAccel(col) {
+    if ((col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT) && col.name.startsWith('accel_') && col.name.length === 7) {
+      col.semType = 'Accelerometer-' + col.name.substring(6).toUpperCase();
+      return col.semType;
     }
 
-    //tags: semTypeDetector
-    //input: column col
-    //output: string semType
-    detectTimeOffset(col) {
-        if (col.type === DG.TYPE.FLOAT && col.name === 'time_offset') {
-            col.semType = 'Time-Offset';
-            return col.semType;
-        }
+    return null;
+  }
 
-        return null;
+  //tags: semTypeDetector
+  //input: column col
+  //output: string semType
+  detectTimeOffset(col) {
+    if (col.type === DG.TYPE.FLOAT && col.name === 'time_offset') {
+      col.semType = 'Time-Offset';
+      return col.semType;
     }
 
-    //input: dataframe table
-    //output: bool result
-    stepCounterCondition(table) {
-        if (table.columns.length >= 4) {
-            let columns = table.columns.toList();
+    return null;
+  }
 
-            function checkSemType(semType) {
-                return columns.some((c) => c.semType === semType)
-            }
+  //input: dataframe table
+  //output: bool result
+  stepCounterCondition(table) {
+    if (table.columns.length >= 4) {
+      let columns = table.columns.toList();
 
-            if (checkSemType('Accelerometer-X') && checkSemType('Accelerometer-Y') &&
-                checkSemType('Accelerometer-Z') && checkSemType('Time-Offset'))
-                return true;
-        }
+      function checkSemType(semType) {
+        return columns.some((c) => c.semType === semType)
+      }
 
-        return false;
+      if (checkSemType('Accelerometer-X') && checkSemType('Accelerometer-Y') &&
+        checkSemType('Accelerometer-Z') && checkSemType('Time-Offset'))
+        return true;
     }
+
+    return false;
+  }
 }

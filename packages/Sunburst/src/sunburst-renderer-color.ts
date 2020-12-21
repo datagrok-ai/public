@@ -1,6 +1,6 @@
-import { TreeData } from './tree-data-builder';
+import {TreeData} from './tree-data-builder';
 import * as d3 from 'd3';
-import { ScaleOrdinal } from 'd3';
+import {ScaleOrdinal} from 'd3';
 
 export enum ColorMode {
     BRANCH,

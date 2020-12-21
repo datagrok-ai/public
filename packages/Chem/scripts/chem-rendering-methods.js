@@ -17,7 +17,7 @@ async function time(name, n, f) {
 
 async function timeBySubarrays(name, samples, sz, n, f) {
   console.assert(sz <= samples.length,
-      'Subsample size is larger than samples array');
+    'Subsample size is larger than samples array');
   let total = 0;
   let cntr = n;
   while (cntr > 0) {
@@ -31,8 +31,8 @@ async function timeBySubarrays(name, samples, sz, n, f) {
     cntr--;
   }
   console.log(
-      `${name}, averaged on ${n} subarrays of length ` +
-      `${sz} from a pool of ${samples.length} items: ${total.toFixed(2)} ms`);
+    `${name}, averaged on ${n} subarrays of length ` +
+    `${sz} from a pool of ${samples.length} items: ${total.toFixed(2)} ms`);
 }
 
 function getRandomSubarray(arr, size) {
@@ -49,7 +49,7 @@ function getRandomSubarray(arr, size) {
 // TODO: make this uniform with timeBySubarrays
 async function timeByRandomArrays(name, samples, sz, n, f) {
   console.assert(sz <= samples.length,
-      'Subsample size is larger than samples array');
+    'Subsample size is larger than samples array');
   let total = 0;
   let cntr = n;
   while (cntr > 0) {
@@ -61,8 +61,8 @@ async function timeByRandomArrays(name, samples, sz, n, f) {
     cntr--;
   }
   console.log(
-      `${name}, averaged on ${n} random subsets of size ` +
-      `${sz} from a pool of ${samples.length} items: ${total.toFixed(2)} ms`);
+    `${name}, averaged on ${n} random subsets of size ` +
+    `${sz} from a pool of ${samples.length} items: ${total.toFixed(2)} ms`);
 }
 
 function createCanvas(width, height) {
@@ -102,10 +102,11 @@ function createCanvas(width, height) {
       "height": Math.floor(h)
     };
     mol.draw_to_canvas_with_highlights(
-        canvas, JSON.stringify(opts));
+      canvas, JSON.stringify(opts));
   };
 
-  /* --- */ console.log('1. Rendering pre-built molecules...'); /* --- */
+  /* --- */
+  console.log('1. Rendering pre-built molecules...'); /* --- */
 
   const renderMols = (mols) => {
     for (let mol of mols) {
@@ -117,7 +118,8 @@ function createCanvas(width, height) {
     renderMols(molArray);
   });
 
-  /* --- */ console.log('2. Rendering molecules, without LRU-cache...'); /* --- */
+  /* --- */
+  console.log('2. Rendering molecules, without LRU-cache...'); /* --- */
 
   const renderMolsByStrings = (strings) => {
     for (let smiles of strings) {
@@ -131,7 +133,8 @@ function createCanvas(width, height) {
     renderMolsByStrings(molStrings);
   });
 
-  /* --- */ console.log('3. Rendering molecules, with LRU-cache...'); /* --- */
+  /* --- */
+  console.log('3. Rendering molecules, with LRU-cache...'); /* --- */
 
   let rendererCache = new DG.LruCache();
   rendererCache.onItemEvicted = (mol) => mol.delete();
@@ -146,7 +149,8 @@ function createCanvas(width, height) {
     renderMolsWithCache(molStrings);
   });
 
-  /* --- */ console.log('4. Horizontal scrolling...'); /* --- */
+  /* --- */
+  console.log('4. Horizontal scrolling...'); /* --- */
 
   await timeBySubarrays(`Rendering ${n} molecules ${t} times`, molStrings, n, 5, (sample) => {
     for (let j = 0; j < t; ++j) {
@@ -154,7 +158,8 @@ function createCanvas(width, height) {
     }
   });
 
-  /* --- */ console.log('5. Vertical scrolling...'); /* --- */
+  /* --- */
+  console.log('5. Vertical scrolling...'); /* --- */
 
   await timeBySubarrays(`Rendering ${n} molecules ${t} times with a sliding window`, molStrings, n + t, 5, (sample) => {
     for (let j = 0; j < t; ++j) {

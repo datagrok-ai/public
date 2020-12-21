@@ -3,7 +3,9 @@
 demog = grok.data.demo.demog();
 view = grok.shell.addTableView(demog);
 
-function info(s) { grok.shell.info(s); }
+function info(s) {
+  grok.shell.info(s);
+}
 
 grok.events.onProjectClosed.subscribe(p => info(`${p.name}: closed`));
 grok.events.onProjectModified.subscribe(p => info(`${p.name}: modified`));

@@ -6,37 +6,37 @@
  * */
 class SubstructureFilter extends DG.Filter {
 
-    constructor() {
-        super();
-        this.smiles = '';
-        this.root = ui.div(null, 'grok-chem-substructure-filter');
-        let sketcher = grok.chem.sketcher((smiles, molfile) => {
-            this.smiles = smiles;
-            // this.dataFrame.temp.smarts = smiles;
-            this.dataFrame.rows.requestFilter();
-        })
-        this.root.appendChild(sketcher);
+  constructor() {
+    super();
+    this.smiles = '';
+    this.root = ui.div(null, 'grok-chem-substructure-filter');
+    let sketcher = grok.chem.sketcher((smiles, molfile) => {
+      this.smiles = smiles;
+      // this.dataFrame.temp.smarts = smiles;
+      this.dataFrame.rows.requestFilter();
+    })
+    this.root.appendChild(sketcher);
+  }
+
+  attach(dFrame) {
+
+    this.dataFrame = DG.toJs(dFrame);
+    this.column = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
+    this.dataFrame.onRowsFiltering.subscribe((_) => this.applyFilter());
+  }
+
+  applyFilter() {
+    let subMol = rdKitModule.get_mol(this.smiles);
+
+    for (let i of this.dataFrame.filter.getSelectedIndexes()) {
+      let mol = rdKitModule.get_mol(this.column.get(i));
+      let match = mol.get_substruct_match(subMol);
+      if (match === "{}")
+        this.dataFrame.filter.set(i, false, false);
+      mol.delete();
     }
 
-    attach(dFrame) {
-        
-        this.dataFrame = DG.toJs(dFrame);
-        this.column = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
-        this.dataFrame.onRowsFiltering.subscribe((_) => this.applyFilter());
-    }
-
-    applyFilter() {
-        let subMol = rdKitModule.get_mol(this.smiles);
-
-        for (let i of this.dataFrame.filter.getSelectedIndexes()) {
-            let mol = rdKitModule.get_mol(this.column.get(i));
-            let match = mol.get_substruct_match(subMol);
-            if (match === "{}" )
-                this.dataFrame.filter.set(i, false, false);
-            mol.delete();
-        }
-
-        subMol.delete();
-        this.dataFrame.filter.fireChanged();
-    }
+    subMol.delete();
+    this.dataFrame.filter.fireChanged();
+  }
 }

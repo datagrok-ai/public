@@ -7,14 +7,14 @@ let ints = new Int32Array(len);
 let floats = new Float32Array(len);
 
 for (let i = 0; i < len; i++)
-    ints[i] = i;
+  ints[i] = i;
 
 for (let i = 0; i < len; i++)
-    floats[i] = i / 10;
+  floats[i] = i / 10;
 
 let table = DG.DataFrame.fromColumns([
-    DG.Column.fromInt32Array('ints', ints),
-    DG.Column.fromFloat32Array('floats', floats)
+  DG.Column.fromInt32Array('ints', ints),
+  DG.Column.fromFloat32Array('floats', floats)
 ]);
 
 grok.shell.addTableView(table);

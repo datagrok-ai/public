@@ -18,12 +18,12 @@ g2.item('item 2.2').enableCheckBox();
 
 let groups = [g1, g11, g2];
 let items = g1.items.slice()
-    .concat(g11.items)
-    .concat(g2.items);
+  .concat(g11.items)
+  .concat(g2.items);
 
 let button = ui.button('Push', () => {
-    grok.shell.info('Selected groups:\n' + groups.filter(g => g.checked).map(g => `${g.value}`).join(', '));
-    grok.shell.info('Selected items:\n' + items.filter(i => i.checked).map(i => i.text).join(', '));
+  grok.shell.info('Selected groups:\n' + groups.filter(g => g.checked).map(g => `${g.value}`).join(', '));
+  grok.shell.info('Selected items:\n' + items.filter(i => i.checked).map(i => i.text).join(', '));
 });
 
 grok.shell.newView('TreeView Demo', [tree.root, button]);

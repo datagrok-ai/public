@@ -20,9 +20,9 @@ let qAccidental = DG.Column.qnum('q-accidental', 3, [1.123, 2.2345, 3.4567], fal
 
 // Method 4: correct initialization with qualified numbers values (last parameter set to true)
 let qIntentional = DG.Column.qnum('q-intentional', 3, [
-    DG.Qnum.exact(1.123),
-    DG.Qnum.greater(2.2345),
-    DG.Qnum.less(3.4567)], false);
+  DG.Qnum.exact(1.123),
+  DG.Qnum.greater(2.2345),
+  DG.Qnum.less(3.4567)], false);
 
-let t = DG.DataFrame.fromColumns([ manual, exact, qAccidental, qIntentional ]);
+let t = DG.DataFrame.fromColumns([manual, exact, qAccidental, qIntentional]);
 grok.shell.addTableView(t);

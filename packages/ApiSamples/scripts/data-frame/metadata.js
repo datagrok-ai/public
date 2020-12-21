@@ -9,11 +9,11 @@ demog.setTag('foo1', 'bar1');
 
 // A special "temp" variable can hold values of any types.
 // Use it as a temporary store of the auxiliary data; it won't get serialized.
-demog.temp.zoo = { a: 1, b: 2 };
+demog.temp.zoo = {a: 1, b: 2};
 
 // The same concepts applies to columns:
 let age = demog.columns.byName('age');
-age.temp.foo = { a : 'column foo'};
+age.temp.foo = {a: 'column foo'};
 age.tags.bar = 'bar';
 demog.columns.byName('weight').tags.bar = 'bar';
 

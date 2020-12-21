@@ -3,7 +3,9 @@
 demog = grok.data.demo.demog();
 view = grok.shell.addTableView(demog);
 
-function info(s) { grok.shell.info(s); }
+function info(s) {
+  grok.shell.info(s);
+}
 
 demog.onValuesChanged.subscribe((_) => info('ddt-values-changed'));
 demog.onCurrentRowChanged.subscribe((_) => info('ddt-current-row-changed'));

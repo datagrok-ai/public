@@ -3,7 +3,7 @@
 // https://datagrok.ai/help/transform/join-tables
 
 let t1 = DG.DataFrame.fromCsv(
-`id1,id2,v1,v2
+  `id1,id2,v1,v2
 a1,b4,0,0
 a2,b3,1,1
 a3,b2,2,2
@@ -11,7 +11,7 @@ a4,b1,3,3`);
 t1.name = 't1';
 
 let t2 = DG.DataFrame.fromCsv(
-`id3,id4,v3,v4
+  `id3,id4,v3,v4
 a1,b4,5,5
 a2,b3,6,6
 a3,b2,7,7

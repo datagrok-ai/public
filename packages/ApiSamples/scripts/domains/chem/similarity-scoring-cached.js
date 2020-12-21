@@ -11,26 +11,26 @@ async function time(name, n, f) {
 }
 
 (async () => {
-  
+
   const q = 3;
   const n = 5;
   const N = 2000;
-  
+
   let df = await grok.data.getDemoTable('chem/zbb/99_p3_4.5-6.csv');
   if (N < df.rowCount)
     df.rows.removeAt(N, df.rowCount - N, false);
   let col = df.col('smiles');
-  
+
   console.log('Similarity scoring microbenchmark');
-  
-  await time(`Building library for ${df.rowCount} molecules`, 1, async() => {    
+
+  await time(`Building library for ${df.rowCount} molecules`, 1, async () => {
     await grok.chem.similarityScoring(col, '');
   });
-  
-  await time(`Searching the first ${q} molecules`, n, async() => {    
+
+  await time(`Searching the first ${q} molecules`, n, async () => {
     for (let i = 0; i < q; ++i) {
       let similar = await grok.chem.similarityScoring(col, col.get(i));
     }
   });
-  
+
 })();

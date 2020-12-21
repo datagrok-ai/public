@@ -86,11 +86,11 @@ file and converting your scripts in the \`package.json\` file
 `;
 
 module.exports = {
-    add: HELP_ADD,
-    config: HELP_CONFIG,
-    create: HELP_CREATE,
-    delete: HELP_DELETE,
-    publish: HELP_PUBLISH,
-    migrate: HELP_MIGRATE,
-    help: HELP
+  add: HELP_ADD,
+  config: HELP_CONFIG,
+  create: HELP_CREATE,
+  delete: HELP_DELETE,
+  publish: HELP_PUBLISH,
+  migrate: HELP_MIGRATE,
+  help: HELP
 };

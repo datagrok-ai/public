@@ -7,7 +7,7 @@ import {DataFrame} from "./dataframe";
 export class Widget {
 
     properties: Property[];
-    
+
     /** @constructs Widget and initializes its root. */
     constructor()
 
@@ -24,7 +24,7 @@ export class Widget {
 export class Filter extends Widget {
 
     dataFrame: DataFrame | null;
-    
+
     constructor()
 }
 
@@ -285,7 +285,7 @@ export class ProgressIndicator {
     static create(name?: string): ProgressIndicator
 
     update(percent: number, description: string): void
-    
+
     log(line: any): void
 }
 

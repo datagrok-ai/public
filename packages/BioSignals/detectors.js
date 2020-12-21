@@ -1,25 +1,25 @@
 class BiosignalsPackageDetectors extends DG.Package {
 
-    //tags: semTypeDetector
-    //input: column col
-    //output: string semType
-    detectBioS(col) {
-        if ((col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT) && (col.name.match(/ecg/i) ||
-            col.name.match(/eeg/i) || col.name.match(/eda/i))) {
-            col.semType = 'BioSignal-' + col.name.toLowerCase();
-            return col.semType;
-        }
-
-        return null;
+  //tags: semTypeDetector
+  //input: column col
+  //output: string semType
+  detectBioS(col) {
+    if ((col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT) && (col.name.match(/ecg/i) ||
+      col.name.match(/eeg/i) || col.name.match(/eda/i))) {
+      col.semType = 'BioSignal-' + col.name.toLowerCase();
+      return col.semType;
     }
 
-    //input: dataframe table
-    //output: bool result
-    analysisCondition(table) {
-        let columns = table.columns.toList();
-        console.log('hello');
+    return null;
+  }
 
-        return columns.some((c) => c.semType.includes('BioSignal'));
+  //input: dataframe table
+  //output: bool result
+  analysisCondition(table) {
+    let columns = table.columns.toList();
+    console.log('hello');
 
-    }
+    return columns.some((c) => c.semType.includes('BioSignal'));
+
+  }
 }
