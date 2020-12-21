@@ -118,7 +118,7 @@ Sensitive information is always a special case. Datagrok has a built-in credenti
 }
 ```
 
-What you can do instead is to deploy a connection and send a POST request to `$(GROK_HOST)/api/credentials/for/$(PACKAGE_NAME).$(CONNECTION_NAME)` with raw body containing JSON, such as `{"login": "abc", "password": "123"}`, and headers `{"Authorization": $(API_KEY), "Content-Type": "application/json"}` (the API key should be taken from your profile page in Datagrok, e.g., https://public.datagrok.ai/u).
+What you can do instead is to deploy a connection and send a POST request to `$(GROK_HOST)/api/credentials/for/$(PACKAGE_NAME).$(CONNECTION_NAME)` with raw body containing JSON, such as `{"login": "abc", "password": "123"}`, and headers `{"Authorization": $(API_KEY), "Content-Type": "application/json"}` (the API key should be taken from your profile page in Datagrok, e.g., [https://public.datagrok.ai/u](https://public.datagrok.ai/u)).
 
 ### Queries
 

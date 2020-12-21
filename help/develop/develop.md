@@ -53,7 +53,7 @@ Here are the first steps to get you started:
    ```
    grok config
    ```
-   Enter developer keys and set the default server. Your credentials will be stored locally in `config.yaml`. Once created, this file will be used for publishing all your packages. The developer key can be retrieved by opening your user profile (see it on public: https://public.datagrok.ai/u) and clicking on `Developer key`. Administrators can manage existing keys and grant or revoke privileges.
+   Enter developer keys and set the default server. Your credentials will be stored locally in `config.yaml`. Once created, this file will be used for publishing all your packages. The developer key can be retrieved by opening your user profile (see it on public: [https://public.datagrok.ai/u](https://public.datagrok.ai/u)) and clicking on `Developer key`. Administrators can manage existing keys and grant or revoke privileges.
 3. Create a new package by running this command:
    ```
    grok create <packageName>
