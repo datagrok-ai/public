@@ -1,28 +1,34 @@
-var Nt = function() {
+var Nt = function () {
 
   'use strict';
 
   function makeArray(length, val) {
-    if (val === undefined) { val = 0|0; }
-    if (val < 0) { val = 0; }
+    if (val === undefined) {
+      val = 0 | 0;
+    }
+    if (val < 0) {
+      val = 0;
+    }
     length |= 0;
     var max = 0;
-    for (var i = length; i !== 0; i >>>= 1) { max++; }
-      var n = Array(max);
-      n[0] = [val];
-      for (i = 1; i < max; i++) {
-      n[i] = n[i-1].concat(n[i-1]);
+    for (var i = length; i !== 0; i >>>= 1) {
+      max++;
+    }
+    var n = Array(max);
+    n[0] = [val];
+    for (i = 1; i < max; i++) {
+      n[i] = n[i - 1].concat(n[i - 1]);
     }
     var a = [];
     for (var i = 0, l = length; l !== 0; l >>>= 1, i++) {
-      if (l&1) {
+      if (l & 1) {
         a = a.concat(n[i]);
       }
     }
     return a;
   };
 
-  var __bitCount = (function() {
+  var __bitCount = (function () {
     var a = new Uint8Array(256);
     var bin;
     for (var i = 0; i < 256; i++) {
@@ -62,7 +68,7 @@ var Nt = function() {
   setNucleotide('N', 'A', 'T', 'G', 'C');
 
   var __4BitToNucleotide = (
-    function() {
+    function () {
       var a = makeArray(16);
       var keys = Object.keys(__nucleotideTo4Bit);
       for (var i = 0, len = keys.length; i < len; i++) {
@@ -75,7 +81,7 @@ var Nt = function() {
   var __nucleotideList = Object.keys(__nucleotideTo4Bit);
 
   var __complementNucleotide = (
-    function() {
+    function () {
       var a = Object.create(null);
       a['A'] = 'T';
       a['G'] = 'C';
@@ -83,7 +89,7 @@ var Nt = function() {
       a['H'] = 'D';
       a['M'] = 'K';
       a['R'] = 'Y';
-        // S, W, N, - not included
+      // S, W, N, - not included
       var keys = Object.keys(a);
       for (var i = 0, len = keys.length; i < len; i++) {
         a[a[keys[i]]] = keys[i];
@@ -97,7 +103,7 @@ var Nt = function() {
   )();
 
   var __complement4Bit = (
-    function() {
+    function () {
       var a = new Uint8Array(16);
       for (var i = 0, len = a.length; i < len; i++) {
         a[i] = __nucleotideTo4Bit[__complementNucleotide[__4BitToNucleotide[i]]];
@@ -128,7 +134,7 @@ var Nt = function() {
   var __byteToNucleotides;
   var __byteNucleotideContent;
 
-  void function() {
+  void function () {
 
     var a = Object.create(null);
     var b = new Uint8Array(256);
@@ -232,7 +238,7 @@ var Nt = function() {
   __codonToAminoAcid['CCG'] = 'P';
   __codonToAminoAcid['CCC'] = 'P';
 
-  var __12BitToAminoAcid = (function() {
+  var __12BitToAminoAcid = (function () {
 
     var a = makeArray(4096, '?');
     var codons = Object.keys(__codonToAminoAcid);
@@ -240,10 +246,10 @@ var Nt = function() {
     for (var i = 0, len = codons.length; i < len; i++) {
       codon = codons[i];
       a[
-        (nucleotideToBin(codon[2]) << 8) |
-        (nucleotideToBin(codon[1]) << 4) |
-        nucleotideToBin(codon[0])
-      ] = __codonToAminoAcid[codon];
+      (nucleotideToBin(codon[2]) << 8) |
+      (nucleotideToBin(codon[1]) << 4) |
+      nucleotideToBin(codon[0])
+        ] = __codonToAminoAcid[codon];
     }
 
     return a;
@@ -276,7 +282,7 @@ var Nt = function() {
 
   };
 
-  Seq.prototype.read = function(strData) {
+  Seq.prototype.read = function (strData) {
 
     var ntToByte = nucleotidesToByte;
 
@@ -327,7 +333,7 @@ var Nt = function() {
 
   };
 
-  Seq.prototype.readFASTA = function(strFASTA) {
+  Seq.prototype.readFASTA = function (strFASTA) {
 
     var data = strFASTA.split(/\n\r?/gi);
 
@@ -339,7 +345,7 @@ var Nt = function() {
 
   };
 
-  Seq.prototype.readBuffer = function(buffer) {
+  Seq.prototype.readBuffer = function (buffer) {
 
     this.__buffer = buffer;
 
@@ -364,7 +370,7 @@ var Nt = function() {
 
   };
 
-  Seq.prototype.__byteComplement = function() {
+  Seq.prototype.__byteComplement = function () {
 
     var bComp = __byteComplement;
 
@@ -384,7 +390,7 @@ var Nt = function() {
       fromArray = new Uint32Array(fwdBuffer, 4);
 
       n = (len - 4) >>> 2;
-      while(n--) {
+      while (n--) {
         copyArray[n] = (fromArray[n] << 4) | ((fromArray[n - 1]) >>> 28);
       }
 
@@ -401,7 +407,7 @@ var Nt = function() {
 
     n = (len - 4) - this.__endPadding;
     i = 0;
-    while(n--) {
+    while (n--) {
       dataArray[i++] = bComp[fwdArray[n]];
     }
 
@@ -411,11 +417,11 @@ var Nt = function() {
 
   };
 
-  Seq.prototype.size = function() {
+  Seq.prototype.size = function () {
     return this.__length;
   };
 
-  Seq.prototype.sequence = function() {
+  Seq.prototype.sequence = function () {
 
     var byteToNt = __byteToNucleotides;
     var buffer = this.__buffer;
@@ -450,7 +456,7 @@ var Nt = function() {
 
   };
 
-  Seq.prototype.complement = function() {
+  Seq.prototype.complement = function () {
 
     if (!this.__complement) {
       this.__complement = this.__byteComplement();
@@ -464,7 +470,7 @@ var Nt = function() {
 
   };
 
-  Seq.prototype.equivalent = function(seq) {
+  Seq.prototype.equivalent = function (seq) {
 
     if (!(seq instanceof Seq)) {
       throw new Error('Can only check for equivalence between sequences');
@@ -487,7 +493,7 @@ var Nt = function() {
 
   };
 
-  Seq.prototype.replicate = function(start, length) {
+  Seq.prototype.replicate = function (start, length) {
 
     start |= 0;
 
@@ -524,7 +530,7 @@ var Nt = function() {
 
   };
 
-  Seq.prototype.polymerize = function(seq) {
+  Seq.prototype.polymerize = function (seq) {
 
     var seqLen = seq.__length;
 
@@ -582,7 +588,7 @@ var Nt = function() {
 
   };
 
-  Seq.prototype.insertion = function(seq, offset) {
+  Seq.prototype.insertion = function (seq, offset) {
 
     if (!(seq instanceof Seq)) {
       throw new Error('Insertion requires valid sequence');
@@ -600,7 +606,7 @@ var Nt = function() {
 
   };
 
-  Seq.prototype.deletion = function(offset, count) {
+  Seq.prototype.deletion = function (offset, count) {
 
     if (offset === undefined || count === undefined) {
       throw new Error('Must give valid offset and count for deletion');
@@ -627,7 +633,7 @@ var Nt = function() {
 
   };
 
-  Seq.prototype.repeat = function(count) {
+  Seq.prototype.repeat = function (count) {
 
     count |= 0;
 
@@ -638,7 +644,7 @@ var Nt = function() {
       return base;
     }
 
-    while(true) {
+    while (true) {
       if (count & 1) {
         base = base.polymerize(copy);
       }
@@ -653,7 +659,7 @@ var Nt = function() {
 
   };
 
-  Seq.prototype.mask = function(seq) {
+  Seq.prototype.mask = function (seq) {
 
     if (!(seq instanceof Seq)) {
       throw new Error('Can only mask with valid sequence');
@@ -671,7 +677,7 @@ var Nt = function() {
 
   };
 
-  Seq.prototype.cover = function(seq) {
+  Seq.prototype.cover = function (seq) {
 
     if (!(seq instanceof Seq)) {
       throw new Error('Can only cover with valid sequence');
@@ -689,19 +695,19 @@ var Nt = function() {
 
   };
 
-  Seq.prototype.__nullSeq = function() {
+  Seq.prototype.__nullSeq = function () {
 
     return new Seq(this.__type).readBuffer(new ArrayBuffer(4));
 
   };
 
-  Seq.prototype.__clone = function() {
+  Seq.prototype.__clone = function () {
 
     return new Seq(this.__type).readBuffer(this.__buffer.slice(0));
 
   };
 
-  Seq.prototype.__slice = function(start, length) {
+  Seq.prototype.__slice = function (start, length) {
 
     var max = length >>> 1;
     var odd = length & 1;
@@ -760,7 +766,7 @@ var Nt = function() {
 
   };
 
-  Seq.prototype.content = function() {
+  Seq.prototype.content = function () {
 
     if (!this.__content) {
 
@@ -769,7 +775,7 @@ var Nt = function() {
       var buffer = this.__buffer;
       var dataArray = new Uint8Array(buffer);
 
-      for(var i = 4; i < buffer.byteLength - this.__endPadding; i++) {
+      for (var i = 4; i < buffer.byteLength - this.__endPadding; i++) {
         ntContentByte[dataArray[i]]++;
       }
 
@@ -811,7 +817,7 @@ var Nt = function() {
 
   };
 
-  Seq.prototype.fractionalContent = function() {
+  Seq.prototype.fractionalContent = function () {
 
     if (!this.__fractionalContent) {
 
@@ -835,7 +841,7 @@ var Nt = function() {
 
   };
 
-  Seq.prototype.contentATGC = function() {
+  Seq.prototype.contentATGC = function () {
 
     if (!this.__contentATGC) {
 
@@ -858,7 +864,9 @@ var Nt = function() {
       for (var i = 0, len = nts.length; i < len; i++) {
         nt = nts[i];
         n = ntToBin(nt);
-        for (bits = 0; n; bits++) { n &= n - 1; }
+        for (bits = 0; n; bits++) {
+          n &= n - 1;
+        }
 
         ntBin = ntToBin(nt);
         curContent = content[nts[i]] * (1 / bits);
@@ -889,7 +897,7 @@ var Nt = function() {
 
   };
 
-  Seq.prototype.fractionalContentATGC = function() {
+  Seq.prototype.fractionalContentATGC = function () {
 
     if (!this.__fractionalContentATGC) {
 
@@ -913,7 +921,7 @@ var Nt = function() {
 
   };
 
-  Seq.prototype.translate = function(ntOffset, ntCount) {
+  Seq.prototype.translate = function (ntOffset, ntCount) {
 
     var binToAA = __12BitToAminoAcid;
 
@@ -941,8 +949,8 @@ var Nt = function() {
       for (var i = offset; i < max; i += 3) {
 
         var byte1 = dataArray[i];
-        var byte2 = dataArray[i+1];
-        var byte3 = dataArray[i+2];
+        var byte2 = dataArray[i + 1];
+        var byte3 = dataArray[i + 2];
 
         aminoAcids[aa++] = binToAA[byte1 | ((byte2 & 0xF) << 8)];
         aminoAcids[aa++] = binToAA[(byte3 << 4) | (byte2 >>> 4)];
@@ -956,8 +964,8 @@ var Nt = function() {
       for (var i = offset + 1; i < max; i += 3) {
 
         byte1 = dataArray[i];
-        byte2 = dataArray[i+1];
-        byte3 = dataArray[i+2];
+        byte2 = dataArray[i + 1];
+        byte3 = dataArray[i + 2];
 
         aminoAcids[aa++] = binToAA[(lastByte >> 4) | (byte1 << 4)];
         aminoAcids[aa++] = binToAA[byte2 | ((byte3 & 0xF) << 8)];
@@ -968,13 +976,15 @@ var Nt = function() {
 
     }
 
-    if (ntCount & 1) { aminoAcids.pop(); }
+    if (ntCount & 1) {
+      aminoAcids.pop();
+    }
 
     return aminoAcids.join('');
 
   };
 
-  Seq.prototype.translateFrame = function(frame, AAoffset, AAcount) {
+  Seq.prototype.translateFrame = function (frame, AAoffset, AAcount) {
 
     if (frame === undefined) {
       frame = 0;
@@ -996,7 +1006,7 @@ var Nt = function() {
 
   };
 
-  Seq.prototype.mapSequence = function(seq, offset) {
+  Seq.prototype.mapSequence = function (seq, offset) {
 
     if (!(seq instanceof Seq)) {
       throw new Error('.mapSequence requires valid Seq');
@@ -1018,7 +1028,7 @@ var Nt = function() {
 
   };
 
-  MatchResult.prototype.alignment = function() {
+  MatchResult.prototype.alignment = function () {
 
     if (!this.__align) {
       var map = this.__matchMap;
@@ -1039,13 +1049,13 @@ var Nt = function() {
 
   };
 
-  MatchResult.prototype.alignmentMask = function() {
+  MatchResult.prototype.alignmentMask = function () {
 
     return this.__matchMap.__query.mask(this.alignment());
 
   };
 
-  MatchResult.prototype.alignmentCover = function() {
+  MatchResult.prototype.alignmentCover = function () {
 
     return this.__matchMap.__query.cover(this.alignment());
 
@@ -1077,7 +1087,7 @@ var Nt = function() {
 
   };
 
-  MatchMap.prototype.initialize = function(results) {
+  MatchMap.prototype.initialize = function (results) {
 
     this.__orderedResults = [];
     this.__matchFrequencyData = null;
@@ -1107,7 +1117,7 @@ var Nt = function() {
 
   };
 
-  MatchMap.prototype.sort = function() {
+  MatchMap.prototype.sort = function () {
 
     if (!this.__initialized) {
       throw new Error('MatchMap must be initialized first.');
@@ -1121,14 +1131,18 @@ var Nt = function() {
 
     var adjust = this.__positionAdjustment;
     this.__orderedResults = this.__results
-      .map(function(v, i) { return {n: i + adjust, s: v}; })
-      .sort(function(a, b) { return b.s - a.s; });
+      .map(function (v, i) {
+        return {n: i + adjust, s: v};
+      })
+      .sort(function (a, b) {
+        return b.s - a.s;
+      });
     this.__debug.sortTime = new Date().valueOf() - t;
     return this;
 
   };
 
-  MatchMap.prototype.__calculate_p_match = function(query, searchSpace) {
+  MatchMap.prototype.__calculate_p_match = function (query, searchSpace) {
 
     /*
       The approximate probability that two randomly chosen nucleotides
@@ -1145,7 +1159,7 @@ var Nt = function() {
 
   };
 
-  MatchMap.prototype.results = function(offset, count) {
+  MatchMap.prototype.results = function (offset, count) {
 
     if (!this.__initialized) {
       throw new Error('MatchMap must be initialized first.');
@@ -1163,7 +1177,7 @@ var Nt = function() {
 
   };
 
-  MatchMap.prototype.best = function() {
+  MatchMap.prototype.best = function () {
 
     if (!this.__initialized) {
       throw new Error('MatchMap must be initialized first.');
@@ -1178,7 +1192,7 @@ var Nt = function() {
 
   };
 
-  MatchMap.prototype.top = function(n) {
+  MatchMap.prototype.top = function (n) {
 
     if (!this.__initialized) {
       throw new Error('MatchMap must be initialized first.');
@@ -1190,13 +1204,13 @@ var Nt = function() {
 
     var self = this;
 
-    return this.__orderedResults.slice(0, n).map(function(result) {
+    return this.__orderedResults.slice(0, n).map(function (result) {
       return new MatchResult(self, result.n, result.s);
     });
 
   };
 
-  MatchMap.prototype.bottom = function(n) {
+  MatchMap.prototype.bottom = function (n) {
 
     if (!this.__initialized) {
       throw new Error('MatchMap must be initialized first.');
@@ -1210,7 +1224,7 @@ var Nt = function() {
 
     var adjust = this.__positionAdjustment;
     var len = this.__orderedResults.length;
-    return this.__orderedResults.slice(this.__orderedResults.length - n, n).map(function(result) {
+    return this.__orderedResults.slice(this.__orderedResults.length - n, n).map(function (result) {
       return new MatchResult(self, result.n, result.s);
     });
 
@@ -1218,7 +1232,7 @@ var Nt = function() {
 
   /* Can be optimized with binary splitting */
 
-  MatchMap.prototype.matchFrequencyData = function() {
+  MatchMap.prototype.matchFrequencyData = function () {
 
     if (!this.__initialized) {
       throw new Error('MatchMap must be initialized first.');
@@ -1256,7 +1270,7 @@ var Nt = function() {
 
   };
 
-  MatchMap.prototype.__countMatches = function(int, bitCount) {
+  MatchMap.prototype.__countMatches = function (int, bitCount) {
 
     int |= int >>> 1;
     int |= int >>> 2;
@@ -1267,7 +1281,7 @@ var Nt = function() {
 
   };
 
-  MatchMap.prototype.__execute = function(queryBuffer, searchSpaceBuffer) {
+  MatchMap.prototype.__execute = function (queryBuffer, searchSpaceBuffer) {
 
     var queryInts, spaceInts, queryIntsLength, spaceIntsLength,
       arrLen, mapBuffer, mapArray,
@@ -1281,19 +1295,19 @@ var Nt = function() {
     fnCountMatches = this.__countMatches;
     bitCount = __bitCount;
 
-    queryIntsLength = queryInts.length|0;
-    spaceIntsLength = spaceInts.length|0;
+    queryIntsLength = queryInts.length | 0;
+    spaceIntsLength = spaceInts.length | 0;
 
     arrLen = (queryIntsLength + spaceIntsLength) << 3;
     mapBuffer = new ArrayBuffer(4 * arrLen);
     mapArray = new Uint32Array(mapBuffer);
 
-    for (k = 0|0; k < queryIntsLength; k++) {
+    for (k = 0 | 0; k < queryIntsLength; k++) {
 
       A = queryInts[k];
       cur = (queryIntsLength - k) << 3;
 
-      for (i = 0|0; i < spaceIntsLength; i++) {
+      for (i = 0 | 0; i < spaceIntsLength; i++) {
         (T = A & spaceInts[i]) && (mapArray[(i << 3) + cur] += fnCountMatches(T, bitCount));
       }
 
@@ -1303,9 +1317,9 @@ var Nt = function() {
       adjustNeg = cur - 1;
       adjustPos = cur + 1;
 
-      while(A1 || A2) {
+      while (A1 || A2) {
 
-        for (i = 0|0; i < spaceIntsLength; i++) {
+        for (i = 0 | 0; i < spaceIntsLength; i++) {
           B = spaceInts[i];
           pos = (i << 3);
 

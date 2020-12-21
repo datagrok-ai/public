@@ -26,6 +26,7 @@ export class Dapi {
     constructor()
 
     get entities(): EntitiesDataSource;
+
     /** Data Queries API endpoint
      *  @type {HttpDataSource<DataQuery>} */
     get queries(): HttpDataSource<DataQuery>
@@ -67,7 +68,7 @@ export class Dapi {
     get users(): UserDataStorage
 
     get permissions(): PermissionsDataSource
-    
+
     /** Groups API endpoint
      *  @type {HttpDataSource<Group>} */
     get groups(): GroupsDataSource
@@ -129,7 +130,7 @@ export class HttpDataSource<T> {
     }): Promise<T[]>
 
     first(): Promise<T>
-    
+
     /** Returns an entity with the specified id.
      *  Throws an exception if an entity does not exist, or is not accessible in the current context.
      *  @param {string} id - GUID of the corresponding object
@@ -137,9 +138,9 @@ export class HttpDataSource<T> {
     find(id: string): Promise<T>
 
     save(e: T): Promise<void>
-    
+
     delete(e: T): Promise<void>
-    
+
     by(i: number): this
 
     page(i: number): this
@@ -198,7 +199,7 @@ export class GroupsDataSource extends HttpDataSource<Group> {
     /** Returns group user
      *  @param {Group} group
      *  @returns {Promise<Group>} - Group. */
-    getUser(group: Group) : Promise<Group>
+    getUser(group: Group): Promise<Group>
 
     /** Adds a member to the group
      * @param {Group} g
@@ -222,7 +223,7 @@ export class GroupsDataSource extends HttpDataSource<Group> {
      * @param {Group} g
      * @param {Group} parent
      * returns Promise */
-     includeTo(g: Group, parent: Group): Promise<Group>
+    includeTo(g: Group, parent: Group): Promise<Group>
 
 
     /** Adds the group to another one as admin
@@ -300,6 +301,7 @@ export class PermissionsDataSource {
      * @returns {Promise}
      * */
     grant(e: Entity, g: Group, edit: boolean): Promise<void>
+
     /** Revokes permission on entity from the group
      * @param {Entity} e
      * @param {Group} g

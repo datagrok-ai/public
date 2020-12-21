@@ -3,7 +3,7 @@
 let view = grok.shell.addTableView(grok.data.demo.demog());
 
 view.barChart({
-    split: 'race',
-    value: 'age',
-    valueAggrType: 'avg'
+  split: 'race',
+  value: 'age',
+  valueAggrType: 'avg'
 });

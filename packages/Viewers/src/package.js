@@ -3,14 +3,14 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import { SankeyViewer } from '../sankey/sankey.js';
-import { GlobeViewer } from '../globe/globe-viewer.js';
-import { WordCloudViewer } from '../word-cloud/word-cloud-viewer.js';
-import { ChordViewer } from '../chord/chord-viewer.js';
+import {SankeyViewer} from '../sankey/sankey.js';
+import {GlobeViewer} from '../globe/globe-viewer.js';
+import {WordCloudViewer} from '../word-cloud/word-cloud-viewer.js';
+import {ChordViewer} from '../chord/chord-viewer.js';
 import '../css/chord-viewer.css';
 
 /* TODO: move cell renderer tests out of this package */
-import { FlagCellRenderer } from './flag-cell-renderer.js';
+import {FlagCellRenderer} from './flag-cell-renderer.js';
 
 
 export const _package = new DG.Package();
@@ -20,7 +20,7 @@ export const _package = new DG.Package();
 //tags: viewer
 //output: viewer result
 export function sankey() {
-    return new SankeyViewer();
+  return new SankeyViewer();
 }
 
 //name: Globe
@@ -28,7 +28,7 @@ export function sankey() {
 //tags: viewer
 //output: viewer result
 export function globe() {
-    return new GlobeViewer();
+  return new GlobeViewer();
 }
 
 //name: Chord
@@ -36,7 +36,7 @@ export function globe() {
 //tags: viewer
 //output: viewer result
 export function chord() {
-    return new ChordViewer();
+  return new ChordViewer();
 }
 
 //name: Word Cloud
@@ -44,13 +44,13 @@ export function chord() {
 //tags: viewer
 //output: viewer result
 export function wordcloud() {
-    return new WordCloudViewer();
+  return new WordCloudViewer();
 }
 
 //name: flagCellRenderer
 //tags: cellRenderer, cellRenderer-flag
 //meta-cell-renderer-sem-type: flag
 //output: grid_cell_renderer result
-export function flagCellRenderer() { 
-    return new FlagCellRenderer();
+export function flagCellRenderer() {
+  return new FlagCellRenderer();
 }

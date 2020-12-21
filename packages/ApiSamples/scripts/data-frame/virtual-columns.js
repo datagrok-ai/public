@@ -1,16 +1,18 @@
 class Car {
-    constructor(make, model, price) {
-        this.make = make;
-        this.model = model;
-        this.price = price;
-        console.log('car constructed');
-    }
+  constructor(make, model, price) {
+    this.make = make;
+    this.model = model;
+    this.price = price;
+    console.log('car constructed');
+  }
 
-    toString() { return `${this.make} ${this.model}: ${this.price}`; }
+  toString() {
+    return `${this.make} ${this.model}: ${this.price}`;
+  }
 }
 
 let table = DG.DataFrame.fromCsv(
-    `make, model,    cylinders, volume, price
+  `make, model,    cylinders, volume, price
 Honda, Civic,    4,         1.4,    15000
 Honda, Accord,   6,         1.8,    20000
 BMW,   328i,     4,         1.7,    60000        

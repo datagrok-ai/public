@@ -79,7 +79,7 @@ export function divText(text: string, className?: string | null): HTMLDivElement
  * @returns {HTMLElement} */
 export function iconFA(name: string, handler: Function, tooltipMsg?: string | null): HTMLElement
 
-export function extract(x: any) : any
+export function extract(x: any): any
 
 /** Renders object to html element.
  * @param {object} x

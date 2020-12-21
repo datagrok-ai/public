@@ -1,7 +1,7 @@
 // Creating a DataFrame from a CSV string
 
 let table = DG.DataFrame.fromCsv(
-`make, model,    cylinders, volume, price
+  `make, model,    cylinders, volume, price
 Honda, Civic,    4,         1.4,    15000
 Honda, Accord,   6,         1.8,    20000
 BMW,   328i,     4,         1.7,    60000        

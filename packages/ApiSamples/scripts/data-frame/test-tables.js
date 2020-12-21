@@ -1,7 +1,9 @@
 // A convenient way to get reference datasets.
 // Note that this is synchronous code.
 
-function add(t) { grok.shell.addTableView(t); }
+function add(t) {
+  grok.shell.addTableView(t);
+}
 
 add(grok.data.demo.biosensor());
 

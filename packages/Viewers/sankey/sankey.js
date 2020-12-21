@@ -159,7 +159,7 @@ export class SankeyViewer extends DG.JsViewer {
   }
 }
 
-const d3_sankey = function() {
+const d3_sankey = function () {
   var sankey = {},
     nodeWidth = 24,
     nodePadding = 8,

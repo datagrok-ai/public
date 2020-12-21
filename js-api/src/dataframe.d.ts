@@ -189,7 +189,7 @@ export class DataFrame {
      * @returns {Column} */
     changeColumnType(column: string | Column, newType: string,
                      format?: string | null): Column
-    
+
     /** Begins building a query, using the specified columns as keys.
      * @param {string[]} columnNames - Names of the columns to be used as keys.
      * @returns {GroupByBuilder}
@@ -197,8 +197,8 @@ export class DataFrame {
     groupBy(columnNames?: string[]): GroupByBuilder
 
     append(t2: DataFrame, inPlace?: boolean): DataFrame;
-    
-    
+
+
     /** @returns {Observable} */
     _event(event: any): Observable<any>
 
@@ -302,7 +302,7 @@ export class Column {
      * */
     static qnum(name: string, length?: number, values?: number[] | null,
                 exact?: boolean): Column
-    
+
     /** Creates a datetime column with the specified name and length.
      * @param {string} name
      * @param {number} length */
@@ -319,7 +319,7 @@ export class Column {
 
 
     setRawData(rawData: any, notify?: boolean): void
-    
+
     /** Gets i-th value */
     get(i: number): any
 
@@ -390,7 +390,7 @@ export class ColumnList {
     bySemTypesExact(semTypes: SEMTYPE[]): Column[] | null;
 
     get categorical(): Column[];
-    
+
     /** Array containing column names.
      * @returns {string[]} */
     names(): string[]
@@ -429,7 +429,7 @@ export class ColumnList {
  */
 export class RowList {
     constructor(table: any, d: any);
-    
+
     /** Removes specified rows
      * @param {number} idx
      * @param {number} [count=1] - Number of rows to remove.
@@ -457,7 +457,7 @@ export class RowList {
     setValues(idx: number, values: any[]): void
 
     select(rowPredicate: any): void;
-    
+
     filter(rowPredicate: any): void;
 }
 
@@ -755,7 +755,7 @@ export class BitSet {
     /** Sets all bits by setting i-th bit to the results of f(i)
      * @param {Function} f  */
     init(f: (i: number) => boolean): void;
-    
+
     /** Indexes of all set bits. The result is cached.
      *  @returns {Int32Array} */
     getSelectedIndexes(): Int32Array

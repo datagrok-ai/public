@@ -2,5 +2,7 @@
 
 ui.dialog('Windows')
   .add(ui.span(['People of Earth, your attention, please… ']))
-  .onOK(() => { grok.shell.info('OK!'); })
+  .onOK(() => {
+    grok.shell.info('OK!');
+  })
   .show();

@@ -1,44 +1,44 @@
 class SequencePackageDetectors extends DG.Package {
 
-    //tags: autostart
-    autostartTest() {
-        console.log('sequence autostarted.');
+  //tags: autostart
+  autostartTest() {
+    console.log('sequence autostarted.');
+  }
+
+  //tags: semTypeDetector
+  //input: column col
+  //output: string semType
+  detectNucleotides(col) {
+    if (col.name.startsWith('nuc')) {
+      col.semType = 'nucleotides';
+      return 'nucleotides';
     }
 
-    //tags: semTypeDetector
-    //input: column col
-    //output: string semType
-    detectNucleotides(col) {
-        if (col.name.startsWith('nuc')) {
-            col.semType = 'nucleotides';
-            return 'nucleotides';
-        }
+    return null;
+  }
 
-        return null;
+  //tags: semTypeDetector
+  //input: column col
+  //output: string semType
+  detectPdb(col) {
+    if (col.name === "pdb") {
+      col.semType = 'pdb_id';
+      return 'pdb_id';
     }
 
-    //tags: semTypeDetector
-    //input: column col
-    //output: string semType
-    detectPdb(col) {
-        if (col.name === "pdb") {
-            col.semType = 'pdb_id';
-            return 'pdb_id';
-        }
+    return null;
+  }
 
-        return null;
-    }
-
-    //input: string s
-    //output: string ss
-    dupXX(s) {
-        return s + '_' + s + ' (sequence)';
-    }
+  //input: string s
+  //output: string ss
+  dupXX(s) {
+    return s + '_' + s + ' (sequence)';
+  }
 
 
-    //input: string s
-    //output: string ss
-    dup(s) {
-        return s + '_' + s + ' (sequence)';
-    }
+  //input: string s
+  //output: string ss
+  dup(s) {
+    return s + '_' + s + ' (sequence)';
+  }
 }

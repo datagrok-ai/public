@@ -18,7 +18,7 @@ export class Events {
 
 
     /** @returns {Observable} */ get onContextMenu(): Observable<any>;
-    
+
     /** @returns {Observable} */ get onCurrentViewChanged(): Observable<any>;
 
     /** @returns {Observable} */ get onCurrentCellChanged(): Observable<any>;

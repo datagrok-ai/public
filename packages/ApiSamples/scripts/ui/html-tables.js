@@ -2,11 +2,11 @@
 // For high-performance grid, check out samples under /grid
 
 grok.shell.newView('table from map', [
-    ui.tableFromMap({
-        user: grok.shell.user.toMarkup(),
-        project: grok.shell.project.toMarkup(),
-        time: new Date(),
-    })
+  ui.tableFromMap({
+    user: grok.shell.user.toMarkup(),
+    project: grok.shell.project.toMarkup(),
+    time: new Date(),
+  })
 ]);
 
 let view = grok.shell.newView('table with renderer');

@@ -6,25 +6,25 @@ let table = grok.data.testData('demog', 10000);
 let view = grok.shell.addTableView(table);
 
 let sp = DG.Viewer.scatterPlot(table, {
-    xColumnName: 'age',
-    yColumnName: 'weight',
-    markerDefaultSize: 5,
-    markerType: 'circle',
-    colorColumnName: 'site',
-    legendVisibilityMode: 'Never'
+  xColumnName: 'age',
+  yColumnName: 'weight',
+  markerDefaultSize: 5,
+  markerType: 'circle',
+  colorColumnName: 'site',
+  legendVisibilityMode: 'Never'
 });
 
 let hist = DG.Viewer.histogram(table, {
-    valueColumnName: 'weight'
+  valueColumnName: 'weight'
 });
 
 let boxPlot = DG.Viewer.boxPlot(table, {
-    valueColumnName: 'weight',
-    categoryColumnName: 'race'
+  valueColumnName: 'weight',
+  categoryColumnName: 'race'
 });
 
 let filter = DG.Viewer.filters(table, {
-    columnNames: ['race']
+  columnNames: ['race']
 });
 
 let markup = `<div style="padding:0px 20px">

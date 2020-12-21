@@ -1,7 +1,7 @@
 import * as d3 from "d3";
-import { Branch, TreeData } from './tree-data-builder';
-import { ColorMode, OpacityMode, SunburstRendererColor } from './sunburst-renderer-color';
-import { HierarchyRectangularNode } from 'd3';
+import {Branch, TreeData} from './tree-data-builder';
+import {ColorMode, OpacityMode, SunburstRendererColor} from './sunburst-renderer-color';
+import {HierarchyRectangularNode} from 'd3';
 
 interface Rectangle {
     x0: number;
@@ -108,7 +108,7 @@ export class SunburstRenderer {
                 });
             })
             .on("mouseleave", target => {
-               segment.attr("fill-opacity", d => this.colorPicker.getOpacity(d));
+                segment.attr("fill-opacity", d => this.colorPicker.getOpacity(d));
             })
             .append("title")
             .text(this.getTooltipText);
@@ -148,7 +148,7 @@ export class SunburstRenderer {
         const overallSum = d.data.statsOverall?.sum || 0;
         const itemPath = this.getCategories(d).join("/");
         const selectedCountStr = d.data.statsSelected?.count !== undefined
-            ?  this.format(selectedCount) + ' / '
+            ? this.format(selectedCount) + ' / '
             : '';
 
         let tooltipText = `${itemPath}\n` +

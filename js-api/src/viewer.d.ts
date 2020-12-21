@@ -57,7 +57,7 @@ export class Viewer {
     get table(): DataFrame
 
     get onEvent(): Observable<any>
-    
+
     /**
      * Sets viewer options. See also {@link getOptions}
      Sample: https://public.datagrok.ai/js/samples/ui/viewers/scatter-plot

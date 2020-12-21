@@ -11,5 +11,5 @@ view.addViewer(viewer);
 view.dockManager.dock(viewer, 'right');
 
 div.append(ui.bigButton('close', (_) => {
-    view.dockManager.close(div);
+  view.dockManager.close(div);
 }));

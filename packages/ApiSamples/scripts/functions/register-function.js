@@ -10,27 +10,33 @@
 // https://datagrok.ai/help/develop/js-api#registering-functions
 
 grok.functions.register({
-    signature: 'String jsConcat(int foo, int bar)',
-    run: (foo, bar) => `${foo}_${bar}`});
+  signature: 'String jsConcat(int foo, int bar)',
+  run: (foo, bar) => `${foo}_${bar}`
+});
 
 grok.functions.register({
-    signature: 'double norm2(double x, double y)',
-    run: (x, y) => Math.sqrt(x / y)});
+  signature: 'double norm2(double x, double y)',
+  run: (x, y) => Math.sqrt(x / y)
+});
 
 grok.functions.register({
-    signature: 'String/Molecule testMol()',
-    run: () => `C(=O)(O)c1ccccc1N`});
+  signature: 'String/Molecule testMol()',
+  run: () => `C(=O)(O)c1ccccc1N`
+});
 
 grok.functions.register({
-    signature: 'Widget jsWidget()',
-    tags: 'Widgets',
-    run: function() {
-        let e = document.createElement('DIV');
-        function update() {
-            let date = new Date();
-            e.innerText = date.toTimeString();
-        }
-        window.setTimeout(update, 1000);
+  signature: 'Widget jsWidget()',
+  tags: 'Widgets',
+  run: function () {
+    let e = document.createElement('DIV');
 
-        return new DG.Widget(e);
-    }});
+    function update() {
+      let date = new Date();
+      e.innerText = date.toTimeString();
+    }
+
+    window.setTimeout(update, 1000);
+
+    return new DG.Widget(e);
+  }
+});

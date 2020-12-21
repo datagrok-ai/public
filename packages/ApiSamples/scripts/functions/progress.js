@@ -6,5 +6,7 @@ p.onProgressUpdated.subscribe((p) => grok.shell.info(p.percent));
 p.onLogUpdated.subscribe((line) => console.log(line));
 
 grok.functions.call("Discovery:countToTen",
-    {s: "a"}, true, p)
-    .then((res) => {grok.shell.info(res); });
+  {s: "a"}, true, p)
+  .then((res) => {
+    grok.shell.info(res);
+  });

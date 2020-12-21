@@ -3,5 +3,5 @@
 // https://datagrok.ai/help/explore/pca
 
 grok.data.loadTable('https://public.datagrok.ai/demo/cars.csv')
-    .then(t => grok.ml.pca(t, ["wheel.base", "length", "width", "height", "city.mpg", "price"], 2, true, true)
-        .then(t => grok.shell.addTableView(t)));
+  .then(t => grok.ml.pca(t, ["wheel.base", "length", "width", "height", "city.mpg", "price"], 2, true, true)
+    .then(t => grok.shell.addTableView(t)));

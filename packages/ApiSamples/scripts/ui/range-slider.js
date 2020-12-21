@@ -1,6 +1,8 @@
 // Creates a range slider, subscribes to its stream, which fires new events when values change
 
-function info(s) { grok.shell.info(s); }
+function info(s) {
+  grok.shell.info(s);
+}
 
 let v = grok.shell.newView('demo: range slider');
 

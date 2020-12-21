@@ -16,8 +16,8 @@ let comprehendMedical;
 let sourceLangInput = ui.choiceInput('', 'Undetermined', [...Object.keys(lang2code), 'Undetermined', 'Other']);
 let targetLangInput = ui.choiceInput('', 'English', [...Object.keys(lang2code), 'Choose...']);
 let headerDiv = ui.div([
-    ui.div([sourceLangInput.root], 'dropdown'),
-    ui.div([targetLangInput.root], 'dropdown')
+  ui.div([sourceLangInput.root], 'dropdown'),
+  ui.div([targetLangInput.root], 'dropdown')
 ], 'header-div pure-form');
 let translationArea = ui.textArea('');
 translationArea.classList.add("translation-area");
@@ -31,90 +31,94 @@ let sourceLang, sourceCode;
 let sourceText, cropped;
 
 async function translateText(translate, params) {
-    return new Promise((resolve, reject) => {
-        translate.translateText(params, (err, data) => {
-          if (err) reject(err);
-          resolve({ translation: data.TranslatedText, error: 0 });
-        })
-    }).catch((err) => { return { translation: "", error: 1 } });
+  return new Promise((resolve, reject) => {
+    translate.translateText(params, (err, data) => {
+      if (err) reject(err);
+      resolve({translation: data.TranslatedText, error: 0});
+    })
+  }).catch((err) => {
+    return {translation: "", error: 1}
+  });
 }
 
 async function detectEntities(comprehendMedical, params) {
-    return new Promise((resolve, reject) => {
-        comprehendMedical.detectEntitiesV2(params, (err, data) => {
-            if (err) reject(err);
-            // Alternatively, return the `data.Entities` array
-            resolve({ entities: data, error: 0 });
-        })
-    }).catch((err) => { return { entities: {}, error: 1 } });
+  return new Promise((resolve, reject) => {
+    comprehendMedical.detectEntitiesV2(params, (err, data) => {
+      if (err) reject(err);
+      // Alternatively, return the `data.Entities` array
+      resolve({entities: data, error: 0});
+    })
+  }).catch((err) => {
+    return {entities: {}, error: 1}
+  });
 }
 
 async function getCredentials() {
-    let credentialsResponse = await _package.getCredentials();
-    if (credentialsResponse === null) {
-        translationArea.value = 'Package credentials are not set.';
-        entDiv.value = 'Package credentials are not set.';
-        return {};
-    }
-    let credentials = {
-        accessKeyId: credentialsResponse.parameters['accessKeyId'],
-        secretAccessKey: credentialsResponse.parameters['secretAccessKey']
-    };
-    return credentials;
+  let credentialsResponse = await _package.getCredentials();
+  if (credentialsResponse === null) {
+    translationArea.value = 'Package credentials are not set.';
+    entDiv.value = 'Package credentials are not set.';
+    return {};
+  }
+  let credentials = {
+    accessKeyId: credentialsResponse.parameters['accessKeyId'],
+    secretAccessKey: credentialsResponse.parameters['secretAccessKey']
+  };
+  return credentials;
 }
 
 async function extractText(textfile) {
-    let textExtractor = await grok.functions.eval('NLP:TextExtractor');
-    let extraction = textExtractor.prepare({ file: textfile });
-    await extraction.call();
-    return extraction.getParamValue('text');
+  let textExtractor = await grok.functions.eval('NLP:TextExtractor');
+  let extraction = textExtractor.prepare({file: textfile});
+  await extraction.call();
+  return extraction.getParamValue('text');
 }
 
 async function detectLanguage(text) {
-    let langDetector = await grok.functions.eval('NLP:LanguageDetector');
-    let detection = langDetector.prepare({ text: text });
-    await detection.call();
-    return [detection.getParamValue('language'),
-            detection.getParamValue('alpha_2'),
-            detection.getParamValue('alpha_3')];
+  let langDetector = await grok.functions.eval('NLP:LanguageDetector');
+  let detection = langDetector.prepare({text: text});
+  await detection.call();
+  return [detection.getParamValue('language'),
+    detection.getParamValue('alpha_2'),
+    detection.getParamValue('alpha_3')];
 }
 
 function testLanguagePair(sourceCode, targetCode) {
-    if (targetLangInput.value === 'Choose...') return false;
-    let supportedLanguages = Object.keys(code2lang);
-    if (!(supportedLanguages.includes(sourceCode))) {
-        // The user unintentionally picks `Undetermined` or `Other`
-        if (supportedLanguages.includes(lang2code[sourceLang])) {
-            translationArea.value = `Translating from ${sourceLang}`;
-            sourceLangInput.value = sourceLang;
-            return true;
-        }
-        translationArea.value = (sourceLang === 'Undetermined') ? 'The language could not be determined.'
-                                : `The detected language (${sourceLang}) is not supported.`;
-        return false;
+  if (targetLangInput.value === 'Choose...') return false;
+  let supportedLanguages = Object.keys(code2lang);
+  if (!(supportedLanguages.includes(sourceCode))) {
+    // The user unintentionally picks `Undetermined` or `Other`
+    if (supportedLanguages.includes(lang2code[sourceLang])) {
+      translationArea.value = `Translating from ${sourceLang}`;
+      sourceLangInput.value = sourceLang;
+      return true;
     }
-    if (sourceCode === targetCode) {
-        targetLangInput.value = 'Choose...';
-        return false;
-    }
-    return true;
+    translationArea.value = (sourceLang === 'Undetermined') ? 'The language could not be determined.'
+      : `The detected language (${sourceLang}) is not supported.`;
+    return false;
+  }
+  if (sourceCode === targetCode) {
+    targetLangInput.value = 'Choose...';
+    return false;
+  }
+  return true;
 }
 
 async function doTranslation() {
-    translationArea.value = '';
-    let sourceLang = sourceLangInput.stringValue;
-    let targetLang = targetLangInput.stringValue;
-    let sourceCode = lang2code[sourceLang];
-    let targetCode = lang2code[targetLang];
-    if (!testLanguagePair(sourceCode, targetCode)) return;
-    translationArea.value = 'Translating...';
-    let output = await translateText(translate, {
-        Text: sourceText,
-        SourceLanguageCode: sourceCode,
-        TargetLanguageCode: targetCode
-    });
-    if (output.error === 1) translationArea.value = 'Error calling Amazon Translate.';
-    else translationArea.value = output.translation + (cropped ? '...' : '');
+  translationArea.value = '';
+  let sourceLang = sourceLangInput.stringValue;
+  let targetLang = targetLangInput.stringValue;
+  let sourceCode = lang2code[sourceLang];
+  let targetCode = lang2code[targetLang];
+  if (!testLanguagePair(sourceCode, targetCode)) return;
+  translationArea.value = 'Translating...';
+  let output = await translateText(translate, {
+    Text: sourceText,
+    SourceLanguageCode: sourceCode,
+    TargetLanguageCode: targetCode
+  });
+  if (output.error === 1) translationArea.value = 'Error calling Amazon Translate.';
+  else translationArea.value = output.translation + (cropped ? '...' : '');
 }
 
 //name: Translation
@@ -124,34 +128,34 @@ async function doTranslation() {
 //condition: isTextFile(textfile)
 export async function translationPanel(textfile) {
 
-    sourceLangInput.onChanged(async (_) => doTranslation());
-    targetLangInput.onChanged(async (_) => doTranslation());
-    
-    sourceText = await extractText(textfile);
-    if (!sourceText) {
-        sourceLangInput.value = 'Undetermined';
-        translationArea.value = 'The input text is empty.';
-        return mainWidget;
-    }
+  sourceLangInput.onChanged(async (_) => doTranslation());
+  targetLangInput.onChanged(async (_) => doTranslation());
 
-    // Character limit per request for real-time translation
-    let maxLengthBytes = 5000;
-    let lengthBytes = (new TextEncoder().encode(sourceText)).length;
-    if (lengthBytes > maxLengthBytes) {
-        cropped = true;
-        sourceText = sourceText.substring(0, Math.max(
-            0, sourceText.length - (lengthBytes - maxLengthBytes)));
-    }
-
-    [sourceLang, sourceCode] = (await detectLanguage(sourceText)).slice(0, 2);
-    // `Other` refers to detected languages that are not currently supported by AWS
-    sourceLangInput.value = (sourceCode in code2lang) ? code2lang[sourceCode]
-                             : (sourceCode === 'un') ? 'Undetermined' : 'Other';
-    if ((sourceLangInput.value !== 'English') && (targetLangInput.value === 'Choose...')) {
-        targetLangInput.value = 'English';
-    }
-
+  sourceText = await extractText(textfile);
+  if (!sourceText) {
+    sourceLangInput.value = 'Undetermined';
+    translationArea.value = 'The input text is empty.';
     return mainWidget;
+  }
+
+  // Character limit per request for real-time translation
+  let maxLengthBytes = 5000;
+  let lengthBytes = (new TextEncoder().encode(sourceText)).length;
+  if (lengthBytes > maxLengthBytes) {
+    cropped = true;
+    sourceText = sourceText.substring(0, Math.max(
+      0, sourceText.length - (lengthBytes - maxLengthBytes)));
+  }
+
+  [sourceLang, sourceCode] = (await detectLanguage(sourceText)).slice(0, 2);
+  // `Other` refers to detected languages that are not currently supported by AWS
+  sourceLangInput.value = (sourceCode in code2lang) ? code2lang[sourceCode]
+    : (sourceCode === 'un') ? 'Undetermined' : 'Other';
+  if ((sourceLangInput.value !== 'English') && (targetLangInput.value === 'Choose...')) {
+    targetLangInput.value = 'English';
+  }
+
+  return mainWidget;
 }
 
 //name: Entities
@@ -161,31 +165,31 @@ export async function translationPanel(textfile) {
 //condition: isTextFile(textfile)
 export async function entitiesPanel(textfile) {
 
-    let text = await extractText(textfile);
-    if (!text) {
-        entDiv.innerText = 'The input text is empty.';
-        return entWidget;
-    }
-
-    let output = await detectEntities(comprehendMedical, { Text: text });
-    if (output.error === 1) {
-        entDiv.innerText = 'Error calling Comprehend Medical.';
-        return entWidget;
-    }
-
-    entDiv.innerText = JSON.stringify(output.entities, null, 2);
-
+  let text = await extractText(textfile);
+  if (!text) {
+    entDiv.innerText = 'The input text is empty.';
     return entWidget;
+  }
+
+  let output = await detectEntities(comprehendMedical, {Text: text});
+  if (output.error === 1) {
+    entDiv.innerText = 'Error calling Comprehend Medical.';
+    return entWidget;
+  }
+
+  entDiv.innerText = JSON.stringify(output.entities, null, 2);
+
+  return entWidget;
 }
 
 //name: exportFunc
 //tags: autostart
 export async function initAWS() {
-    AWS.config.update({
-      apiVersion: 'latest',
-      credentials: await getCredentials(),
-      region: 'us-east-2'
-    });
-    translate = new AWS.Translate();
-    comprehendMedical = new AWS.ComprehendMedical();
+  AWS.config.update({
+    apiVersion: 'latest',
+    credentials: await getCredentials(),
+    region: 'us-east-2'
+  });
+  translate = new AWS.Translate();
+  comprehendMedical = new AWS.ComprehendMedical();
 }

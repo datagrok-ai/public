@@ -10,5 +10,5 @@ selection.init((i) => i % 2 === 0);
 // method 2: passing notify = false (last parameter).
 // You will need to call fireChanged() in order for UI to redraw.
 for (let i = 0; i < 10; i++)
-    selection.set(i, true, false);
+  selection.set(i, true, false);
 selection.fireChanged();

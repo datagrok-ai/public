@@ -23,5 +23,5 @@ export let ml = _ml;
 export let utils = _utils;
 
 $(function () {
-    window.$ = $;
+  window.$ = $;
 });

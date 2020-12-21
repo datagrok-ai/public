@@ -14,7 +14,7 @@ export * from './src/view';
 export * from './src/viewer'
 export * from './src/docking';
 export * from './src/wrappers';
-export { JsEntityMeta } from './ui'
+export {JsEntityMeta} from './ui'
 
 export let chem: typeof _chem;
 export let ml: typeof _ml;

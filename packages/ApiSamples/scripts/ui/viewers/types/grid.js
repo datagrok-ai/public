@@ -3,5 +3,5 @@
 let view = grok.shell.addTableView(grok.data.demo.demog());
 
 view.grid.setOptions({
-    colHeaderHeight: 80,
+  colHeaderHeight: 80,
 });
