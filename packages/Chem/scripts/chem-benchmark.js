@@ -43,7 +43,7 @@ async function testCase(title, f) {
   const N_render = 1000;
   const N_scroll = 20;
   const t_scroll = 100;
-  const N_search = 20000;
+  const N_search = 5000;
   const N_sample = 10;
   const x = 0, y = 0;
   const w = 200, h = 100;
@@ -88,9 +88,10 @@ async function testCase(title, f) {
     }
   });
 
+  // Truncate the original dataset for searching
   rowInd = getIdxRandomSubset(N, N_search);
-  let newDf = DG.DataFrame.fromColumns([
-      DG.Column.fromList(DG.TYPE.STRING, colName, [])]);
+  let newDf = DG.DataFrame.create();
+  newDf.columns.addNew(colName, DG.TYPE.STRING);
   for (i of rowInd) {
     newDf.rows.addNew([col.get(i)]);
   }
@@ -103,14 +104,14 @@ async function testCase(title, f) {
   ];
 
   await testCase(`Substructure search, building a library of ${col.length} molecules`, async () =>
-    await grok.chem.substructureSearch(col, ''));
+      await grok.chem.substructureSearch(col));
   await testCase(`Substructure search, searching benzene in ${N_search} molecules`, async () =>
-    await grok.chem.substructureSearch(col, searchFor[0]));
+      await grok.chem.substructureSearch(col, searchFor[0]));
   await testCase(`Substructure search, searching aspirin in ${N_search} molecules`, async () =>
-    await grok.chem.substructureSearch(col, searchFor[1]));
+      await grok.chem.substructureSearch(col, searchFor[1]));
 
   await testCase(`Similarity scoring, building a library of ${col.length} molecules`, async () =>
-      await grok.chem.similarityScoring(col, ''));
+      await grok.chem.similarityScoring(col));
   const queryIdx = getIdxRandomSubset(N_search, N_sample);
   await testCase(`Similarity scoring, search for ${queryIdx.length} samples in ${N_search} molecules`, async () => {
     for (let i of queryIdx) {
