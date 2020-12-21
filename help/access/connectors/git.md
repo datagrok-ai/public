@@ -10,8 +10,8 @@ Works with any Git repository.
 
 ```json
 {
-  "url": "",
-  "dir": "",
+  "url": "https://github.com/datagrok-ai/public.git",
+  "dir": "packages/ApiSamples",
   "index files": true,
   "private repo": false
 }
