@@ -17,23 +17,23 @@ import {SIMILARITY_METRIC} from "./const";
  * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/similarity-search}
  * @async
  * @param {Column} column - Molecule column to search in
- * @param {string} pattern - Reference molecule in one of formats supported by RDKit:
+ * @param {string} molecule - Reference molecule in one of formats supported by RDKit:
  *     smiles, cxsmiles, molblock, v3Kmolblock
  * @param {boolean} settings.sorted -
  *     if set, returns a two-column dataframe with molecule strings and scores,
  *     sorted in descending order by the score
  * @returns {Promise<DataFrame>, if sorted; Promise<Column>, otherwise}
  * */
-export async function similarityScoring(column, pattern = null, settings = { sorted: false }) {
+export async function similarityScoring(column, molecule = null, settings = { sorted: false }) {
     
     let foo = await grok.functions.eval('Chem:similarityScoring');
     let call = await foo.prepare({
         'molStringsColumn': column,
-        'molString': pattern == null ? "" : pattern,
+        'molString': molecule == null ? "" : molecule,
         'sorted': settings.sorted
     });
     await call.call();
-    if (pattern != null && pattern !== "") {
+    if (molecule != null && molecule !== "") {
         let result = call.getParamValue('result');
         return settings.sorted ? result : result.columns.byIndex(0);
     }
