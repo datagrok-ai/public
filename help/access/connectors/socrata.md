@@ -6,6 +6,15 @@
 Provides access to various data sources based on [Socrata](https://www.tylertech.com/products/socrata) 
 server using [Socrata Query](../edit-socrata-query.md). 
 
+## Connection Parameters
+
+```json
+{
+  "Owner_id": "",
+  "Requires Server": true
+}
+```
+
 See also:
 
   * [Data Connection](../data-connection.md)
