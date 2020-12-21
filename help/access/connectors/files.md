@@ -41,6 +41,21 @@ across all (or specified) data providers (including relational databases, etc) a
 
 ![Files Browser](files-browser.gif "Files Browser")
 
+## Connection Parameters
+
+```json
+{
+  "dir": "",
+  "index files": true,
+  "credentials" : {
+    "parameters": {
+      "login": "",
+      "password": ""
+    }
+  }
+}
+```
+
 See also:
 
   * [Data Connection](../data-connection.md)

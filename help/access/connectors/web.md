@@ -6,6 +6,16 @@
 Provides access to data sources via REST API based on 
 [OpenAPI 2.0 (Swagger API)](https://swagger.io/).
 
+## Connection Parameters
+
+
+```json
+{
+  "url": "",
+  "Requires Server": true
+}
+```
+
 See also:
 
   * [Data Connection](../data-connection.md)
