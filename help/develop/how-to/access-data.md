@@ -48,7 +48,7 @@ Connection parameters are specific to a data source. However, most of the data p
 | [DB2](../../access/connectors/db2.md)                  | &check; | &check; | &check; | &check;      | &check;       | &check; | &check;           |&check;| &check;  |                                                                              |
 | [Denodo](../../access/connectors/denodo.md)            | &check; | &check; | &check; | &check;      | &check;       | &check; | &check;           |&check;| &check;  |                                                                              |
 | [DropBox](../../access/connectors/dropbox.md)          |         |         |         |              |               |         |                   |       | &check;  | [See the list](../../access/connectors/dropbox.md#connection-parameters)     | 
-| [Files](../../access/connectors/files.md)              |         |         |         |              |               |         |                   |&check;| &check;  | [See the list](../../access/connectors/files.md#connection-parameters))      |
+| [Files](../../access/connectors/files.md)              |         |         |         |              |               |         |                   |&check;| &check;  | [See the list](../../access/connectors/files.md#connection-parameters)       |
 | [Firebird](../../access/connectors/firebird.md)        | &check; | &check; | &check; | &check;      | &check;       |         | &check;           |&check;| &check;  |                                                                              |
 | [Git](../../access/connectors/git.md)                  |         |         |         |              |               |         |                   |       |          | [See the list](../../access/connectors/git.md#connection-parameters)         | 
 | [Google Cloud](../../access/connectors/googlecloud.md) |         |         |         |              |               |         |                   |       |          | [See the list](../../access/connectors/googlecloud.md#connection-parameters) | 
@@ -77,7 +77,7 @@ Connection parameters are specific to a data source. However, most of the data p
 | [Virtuoso](../../access/connectors/virtuoso.md)        | &check; | &check; | &check; | &check;      | &check;       | &check; | &check;           |&check;| &check;  |                                                                              |
 | [Web](../../access/connectors/web.md)                  |         |         |         |              |               |         |                   |       |          | [See the list](../../access/connectors/web.md#connection-parameters)         |
 
-When providing a connection string, you do not have to pass other parameters, as they will not be taken into account. The only exception is credentials: for such parameters as `Login` and `Password`, or `Access Key` and `Secret Key`, the case is different. We will cover that in the [next section](#managing-credentials). For now, let's assume that parameters carrying sensitive data form a separate category. Given the parameters listed above, in the most general case, you would add a connection with the following contents to pull data from a provider:
+When providing a connection string, you do not have to pass other parameters, as they will not be taken into account. The only exception is credentials: for such parameters as `Login` and `Password`, or `Access Key` and `Secret Key`, the case is different. We will cover that in the [next section](#managing-credentials). For now, let's assume that parameters carrying sensitive data form a distinct category. Given the parameters listed above, in the most general case, you would add a connection with the following contents to pull data from a provider:
 
 ```json
 {
@@ -105,9 +105,26 @@ When providing a connection string, you do not have to pass other parameters, as
 
 ### Managing Credentials
 
+Sensitive information is always a special case. Datagrok has a built-in credentials management system that protects such data (for more details, see the [Security](../../govern/security.md#credentials-storage) article). For this reason, parameters of a connection that regulate access to the resource are processed independently. Therefore, you should not include these parameters to a custom connection string. However, pushing them in a `json` file to your project's repository is not a good idea either:
+
+```json
+{
+  "credentials" : {
+    "parameters": {
+      "login": "<login>",
+      "password": "<password>"
+    }
+  }
+}
+```
+
+What you can do instead is to deploy a connection and send a POST request to `$(GROK_HOST)/api/credentials/for/$(PACKAGE_NAME).$(CONNECTION_NAME)` with raw body containing JSON, such as `{"login": "abc", "password": "123"}`, and headers `{"Authorization": $(API_KEY), "Content-Type": "application/json"}` (the API key should be taken from your profile page in Datagrok, e.g., https://public.datagrok.ai/u).
+
 ### Queries
 
 ### Sharing Connections
+
+Data connections can be shared as part of a [project](../../overview/project.md), [package](../develop.md#packages) (and [repository](../../access/connectors/git.md) containing this package), or as an independent [entity](../../overview/objects.md). Access rights of a database connection inherit access rights of a query. However, access rights of the query don't inherit access rights of the database connection. Thus, if one shares a query, the associated database connection shall automatically be shared. At the same time, when you are sharing a connection, your queries aren't going to be shared automatically. As for web queries, they are automatically shared along with sharing the corresponding connection.
 
 See also:
   * [Data Connection](../../access/data-connection)
