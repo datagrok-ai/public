@@ -32,8 +32,8 @@ connectors, and the list is quickly growing. Most of our data connectors are ope
 | [Hive2](connectors/hive2.md)             | JDBC  |
 | [Impala](connectors/impala.md)           | JDBC  |
 | [MariaDB](connectors/mariadb.md)         | JDBC  |
-| [MongoDB](connectors/mssql.md)           | JDBC  |
-| [MS SQL](connectors/mongodb.md)          | JDBC  |
+| [MongoDB](connectors/mongodb.md)         | JDBC  |
+| [MS SQL](connectors/mssql.md)            | JDBC  |
 | [MySql](connectors/mysql.md)             | JDBC  |
 | [Neo4j](connectors/neo4j.md)             | JDBC  |
 | [OData](connectors/odata.md)             |       |
