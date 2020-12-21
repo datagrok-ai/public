@@ -36,11 +36,11 @@ This function performs substructure search using the corresponsing facilities of
 
 The `settings` object allows passing the following parameters:
 
-* `substructLibrary`: a boolean indicating whether to use the "naive" graph-based search method, using [`get_substruct_match`](https://www.rdkit.org/docs/source/rdkit.Chem.rdchem.html) method of RDKit (`substructLibrary: false`), or a [`substructLibrary`](http://rdkit.blogspot.com/2018/02/introducing-substructlibrary.html) from RDKit. The default value is `true`.
+* `substructLibrary`: a boolean indicating whether to use the "naive" graph-based search method, using [`get_substruct_match`](https://www.rdkit.org/docs/source/rdkit.Chem.rdchem.html) method of RDKit (`substructLibrary: false`, [code sample 1](https://public.datagrok.ai/js/samples/domains/chem/substructure-search-simple), [code sample 2](https://public.datagrok.ai/js/samples/domains/chem/substructure-search-library)), or a [`substructLibrary`](http://rdkit.blogspot.com/2018/02/introducing-substructlibrary.html) from RDKit (`substructLibrary: true`, [code sample](https://public.datagrok.ai/js/samples/domains/chem/substructure-search-library)). The default value is `true`.
 
-For the chosen `substructLibrary` method, the first call to the function with a `column` previouly unseen by the `substructureSearch` function shall invoke building a library. The library is used for conducting further searches in the same given column while the `pattern` is varying.
+For the chosen `substructLibrary` option, the first call to the function with a `column` previously unseen by the `substructureSearch` function shall build a library. The library is used for further searches in the same given column while the `pattern` is varying.
 
-The function's user doesn't need to manage the library, as it is done by the function automatically. As long as the function detects it has received a new column instead of the one previously seen, it will rebuild the library for this newly seen column.
+The function's user doesn't need to manage the built library, as it is done by the function automatically. As long as the function detects it has received a column different to the one previously seen, it shall rebuild the library for this newly seen column before continuing with searches.
 
 It is possible to call `substructureSearch` solely for initializing the library, without performing an actual search. In order to do this, `pattern` should be passed with a value of either `null` or an empty string `'''`.
 
@@ -50,15 +50,15 @@ Sometimes it happens that the molecule strings aren't supported by RDKit-JS. The
 
 `similarityScoring(column, molecule = null, settings = { sorted: false });`
 
-This function uses [Morgan fingerprints](https://www.rdkit.org/docs/GettingStartedInPython.html#morgan-fingerprints-circular-fingerprints) and [Tanimoto similarity](https://en.wikipedia.org/wiki/Chemical_similarity) (also known as Jaccard similarity) on computed fingerprints to rank molecules in a `column` by their similarity to a given `molecule`.
+This function uses [Morgan fingerprints](https://www.rdkit.org/docs/GettingStartedInPython.html#morgan-fingerprints-circular-fingerprints) and [Tanimoto similarity](https://en.wikipedia.org/wiki/Chemical_similarity) (also known as Jaccard similarity) on these computed fingerprints to rank molecules from a `column` by their similarity to a given `molecule`.
 
-Identically to the convention of `substructureSearch`, `column` is a column of type String containing molecules, each in any notation RDKit-JS [supports](https://github.com/rdkit/rdkit/blob/master/Code/MinimalLib/minilib.h): smiles, cxsmiles, molblock, v3Kmolblock, and inchi. Same applies to a `molecule`: this is a string representation of a molecule in any of the previous notations.
+Identically to the convention of `substructureSearch`, a `column` is a column of type String containing molecules, each in any notation RDKit-JS [supports](https://github.com/rdkit/rdkit/blob/master/Code/MinimalLib/minilib.h): smiles, cxsmiles, molblock, v3Kmolblock, and inchi. Same applies to a `molecule`: this is a string representation of a molecule in any of the previous notations.
 
 The `settings` object allows passing the following parameters:
 
 * `sorted`: a boolean indicating what type of output to be produced
-  * `sorted === false`: one Datagrok [`Column`](https://datagrok.ai/js-api/Column) shall be produced, where the i-th element contains a similarity score for the i-th element of the input `column`
-  * `sorted === true`: a Datagrok [`DataFrame`](https://datagrok.ai/js-api/DataFrame) of three columns shall be produced:
+  * `sorted === false`: one Datagrok [`Column`](https://datagrok.ai/js-api/Column) shall be produced, where the i-th element contains a similarity score for the i-th element of the input `column` ([code sample](https://public.datagrok.ai/js/samples/domains/chem/similarity-scoring-scores)). This is a default setting
+  * `sorted === true`: a Datagrok [`DataFrame`](https://datagrok.ai/js-api/DataFrame) of three columns shall be produced ([code sample](https://public.datagrok.ai/js/samples/domains/chem/similarity-scoring-sorted)):
     * The 1-st column, named `molecule`, contains the original molecules string representation from the input `column`
     * The 2-nd column, named `score`, contains the corresponding similarity scores of the range from 0.0 to 1.0, and the DataFrame is sorted descending by this column
     * The 3-rd column, named `index`, contains indices of the molecules in the original input `column`
