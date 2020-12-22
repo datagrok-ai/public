@@ -1,4 +1,4 @@
-import * as d3 from 'd3';
+import {scaleOrdinal, select} from 'd3';
 import {sankey, sankeyLinkHorizontal} from 'd3-sankey';
 
 export class SankeyViewer extends DG.JsViewer {
@@ -16,7 +16,7 @@ export class SankeyViewer extends DG.JsViewer {
     this.graph = {};
     // Chart Settings
     this.margin = {top: 10, right: 10, bottom: 10, left: 10};
-    this.color = d3.scaleOrdinal(d3.schemeCategory10); // TODO: use DG.Color.categoricalPalette
+    this.color = scaleOrdinal(DG.Color.categoricalPalette);
     this.initialized = true;
   }
 
@@ -80,7 +80,7 @@ export class SankeyViewer extends DG.JsViewer {
 
     let {nodes, links} = sankey().extent([[0, 0], [width, height]])(this.graph);
 
-    let svg = d3.select(this.root).append("svg")
+    let svg = select(this.root).append("svg")
         .attr("width", width + this.margin.left + this.margin.right)
         .attr("height", height + this.margin.top + this.margin.bottom)
       .append("g")
@@ -94,7 +94,7 @@ export class SankeyViewer extends DG.JsViewer {
         .attr("y", d => d.y0)
         .attr("height", d => d.y1 - d.y0)
         .attr("width", d => d.x1 - d.x0)
-        .attr("fill", d => this.color(d.name))
+        .attr("fill", d => DG.Color.toRgb(this.color(d.name)))
       .on('mouseover', d => ui.tooltip.showRowGroup(this.dataFrame, i => true, d.x, d.y))
       .on('mouseout', () => ui.tooltip.hide())
       .on('mousedown', d => this.dataFrame.selection.handleClick(i => true, d));
