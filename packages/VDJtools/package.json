@@ -1,0 +1,21 @@
+{
+	"name": "vdjtools",
+	"fullName": "VDJtools",
+	"version": "0.0.1",
+	"description": "",
+	"dependencies": {
+		"datagrok-api": "latest"
+	},
+	"scripts": {
+		"debug-vdjtools": "grok publish --rebuild",
+		"release-vdjtools": "grok publish --rebuild --release",
+		"build-vdjtools": "webpack",
+		"build": "webpack",
+		"debug-vdjtools-dev": "grok publish dev --rebuild",
+		"release-vdjtools-dev": "grok publish dev --rebuild --release",
+		"debug-vdjtools-public": "grok publish public --rebuild",
+		"release-vdjtools-public": "grok publish public --rebuild --release",
+		"debug-vdjtools-local": "grok publish local --rebuild",
+		"release-vdjtools-local": "grok publish local --rebuild --release"
+	}
+}
