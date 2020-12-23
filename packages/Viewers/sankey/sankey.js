@@ -1,7 +1,14 @@
 import {drag} from 'd3-drag';
 import {scaleOrdinal} from 'd3-scale';
 import {select} from 'd3-selection';
-import {sankey, sankeyLinkHorizontal} from 'd3-sankey';
+import {
+  sankey,
+  sankeyLinkHorizontal,
+  sankeyCenter,
+  sankeyJustify,
+  sankeyLeft,
+  sankeyRight
+} from 'd3-sankey';
 
 export class SankeyViewer extends DG.JsViewer {
   constructor() {
@@ -11,6 +18,8 @@ export class SankeyViewer extends DG.JsViewer {
     this.sourceColumnName = this.string('sourceColumnName');
     this.targetColumnName = this.string('targetColumnName');
     this.valueColumnName = this.float('valueColumnName');
+    this.alignment = this.string('alignment', 'justify');
+    this.getProperty('alignment').choices = ['justify', 'left', 'right', 'center'];
 
     this.initialized = false;
   }
@@ -20,6 +29,8 @@ export class SankeyViewer extends DG.JsViewer {
     this.graph = {};
     // Chart Settings
     this.margin = {top: 10, right: 10, bottom: 10, left: 10};
+    this.alignMethod = {center: sankeyCenter, justify: sankeyJustify,
+      left: sankeyLeft, right: sankeyRight};
     this.color = scaleOrdinal(DG.Color.categoricalPalette);
     this.nodeWidth = 10;
     this.nodePadding = 15;
@@ -94,6 +105,7 @@ export class SankeyViewer extends DG.JsViewer {
 
     let generator = sankey().nodeWidth(this.nodeWidth)
       .nodePadding(this.nodePadding)
+      .nodeAlign(this.alignMethod[this.alignment])
       .extent([[0, 0], [width, height]]);
     let graph = generator(this.graph);
 
@@ -137,7 +149,20 @@ export class SankeyViewer extends DG.JsViewer {
       .join("path")
         .attr("class", "link")
         .attr("d", sankeyLinkHorizontal())
-        .attr("stroke-width", d => Math.max(1, d.width));
+        .attr("stroke-width", d => Math.max(1, d.width))
+      .on("mouseover", (event, d) => {
+        ui.tooltip.showRowGroup(this.dataFrame, i => {
+          return this.sourceCol.get(i) === d.source.name &&
+            this.targetCol.get(i) === d.target.name;
+        }, event.x, event.y);
+      })
+      .on("mouseout", () => ui.tooltip.hide())
+      .on("click", (event, d) => {
+        this.dataFrame.selection.handleClick(i => {
+          return this.sourceCol.get(i) === d.source.name &&
+            this.targetCol.get(i) === d.target.name;
+        }, event);
+      });
 
     let titles = svg.append("g")
         .attr("font-family", "'Roboto', 'Roboto Local', sans-serif")
