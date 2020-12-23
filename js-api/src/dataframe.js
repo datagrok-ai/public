@@ -1273,6 +1273,16 @@ export class Stats {
     return grok_Stats_Get_Q3(this.d);
   }
 
+  /** Pearson correlation
+   * @param {Column} otherColumn
+   * @returns {number} */
+  corr(otherColumn) { return grok_Stats_Corr(this.d, otherColumn.d); }
+
+  /** Spearman correlation
+   * @param {Column} otherColumn
+   * @returns {number} */
+  spearmanCorr(otherColumn) { return grok_Stats_SpearmanCorr(this.d, otherColumn.d); }
+
   /** @returns {string} */
   toString() {
     return grok_Object_ToString(this.d);
