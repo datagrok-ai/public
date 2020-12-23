@@ -47,19 +47,19 @@ export class SankeyViewer extends DG.JsViewer {
 
   prepareData() {
 
-    let sourceCol = this.dataFrame.getCol(this.sourceColumnName);
-    let targetCol = this.dataFrame.getCol(this.targetColumnName);
-    let valueCol = this.dataFrame.getCol(this.valueColumnName);
-    let sourceCats = sourceCol.categories;
-    let targetCats = targetCol.categories;
+    this.sourceCol = this.dataFrame.getCol(this.sourceColumnName);
+    this.targetCol = this.dataFrame.getCol(this.targetColumnName);
+    this.valueCol = this.dataFrame.getCol(this.valueColumnName);
+    let sourceCats = this.sourceCol.categories;
+    let targetCats = this.targetCol.categories;
     let nodes = Array.from(new Set(sourceCats.concat(targetCats)))
       .map((node, index) => ({node: index, name: node}));
 
     let links = [];
     let rowCount = this.dataFrame.rowCount;
-    let source = sourceCol.getRawData();
-    let target = targetCol.getRawData();
-    let value = valueCol.getRawData();
+    let source = this.sourceCol.getRawData();
+    let target = this.targetCol.getRawData();
+    let value = this.valueCol.getRawData();
     for (let i = 0; i < rowCount; i++) {
       links.push({
         source: nodes.findIndex(node => node.name === sourceCats[source[i]]),
@@ -112,13 +112,24 @@ export class SankeyViewer extends DG.JsViewer {
         .attr("height", d => d.y1 - d.y0)
         .attr("width", d => d.x1 - d.x0)
         .attr("fill", d => DG.Color.toRgb(this.color(d.name)))
-      .on("mouseover", d => ui.tooltip.showRowGroup(this.dataFrame, i => true, d.x, d.y))
+      .on("mouseover", (event, d) => {
+        ui.tooltip.showRowGroup(this.dataFrame, i => {
+          return this.sourceCol.get(i) === d.name ||
+            this.targetCol.get(i) === d.name;
+        }, event.x, event.y);
+      })
       .on("mouseout", () => ui.tooltip.hide())
       // .call(drag().subject(d => d)
       //   .on("start", () => select(this).attr("stroke", "#fff"))
       //   .on("drag", dragmove)
       //   .on("end", () => select(this).attr("stroke", null)))
-      .on("click", event => (event.defaultPrevented) ? null : this.dataFrame.selection.handleClick(i => true, event));
+      .on("click", (event, d) => {
+        if (event.defaultPrevented) return;  // dragging
+        this.dataFrame.selection.handleClick(i => {
+          return this.sourceCol.get(i) === d.name ||
+            this.targetCol.get(i) === d.name;
+        }, event);
+      });
 
     let links = svg.append("g")
         .attr("fill", "none")
