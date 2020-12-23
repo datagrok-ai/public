@@ -103,7 +103,7 @@ export class SankeyViewer extends DG.JsViewer {
       .append("g")
         .attr("transform", `translate(${this.margin.left}, ${this.margin.top})`);
 
-    let nodes = svg.append('g').attr("stroke", "#000")
+    let nodes = svg.append('g')
       .selectAll("rect")
       .data(graph.nodes)
       .join("rect")
@@ -132,12 +132,10 @@ export class SankeyViewer extends DG.JsViewer {
       });
 
     let links = svg.append("g")
-        .attr("fill", "none")
-        .attr("stroke", "#000")
-        .attr("stroke-opacity", 0.2)
       .selectAll("path")
       .data(graph.links)
       .join("path")
+        .attr("class", "link")
         .attr("d", sankeyLinkHorizontal())
         .attr("stroke-width", d => Math.max(1, d.width));
 
