@@ -1,4 +1,6 @@
-import {scaleOrdinal, select} from 'd3';
+import {drag} from 'd3-drag';
+import {scaleOrdinal} from 'd3-scale';
+import {select} from 'd3-selection';
 import {sankey, sankeyLinkHorizontal} from 'd3-sankey';
 
 export class SankeyViewer extends DG.JsViewer {
@@ -9,6 +11,8 @@ export class SankeyViewer extends DG.JsViewer {
     this.sourceColumnName = this.string('sourceColumnName');
     this.targetColumnName = this.string('targetColumnName');
     this.valueColumnName = this.float('valueColumnName');
+
+    this.initialized = false;
   }
 
   init() {
@@ -17,6 +21,8 @@ export class SankeyViewer extends DG.JsViewer {
     // Chart Settings
     this.margin = {top: 10, right: 10, bottom: 10, left: 10};
     this.color = scaleOrdinal(DG.Color.categoricalPalette);
+    this.nodeWidth = 10;
+    this.nodePadding = 15;
     this.initialized = true;
   }
 
@@ -69,6 +75,14 @@ export class SankeyViewer extends DG.JsViewer {
 
   }
 
+  onPropertyChanged(property) {
+    super.onPropertyChanged(property);
+    if (this.initialized) {
+      this.prepareData();
+      this.render();
+    }
+  }
+
   detach() {
     this.subs.forEach((sub) => sub.unsubscribe());
   }
@@ -78,7 +92,10 @@ export class SankeyViewer extends DG.JsViewer {
     let width = this.root.parentElement.clientWidth - this.margin.left - this.margin.right;
     let height = this.root.parentElement.clientHeight - this.margin.top - this.margin.bottom;
 
-    let {nodes, links} = sankey().extent([[0, 0], [width, height]])(this.graph);
+    let generator = sankey().nodeWidth(this.nodeWidth)
+      .nodePadding(this.nodePadding)
+      .extent([[0, 0], [width, height]]);
+    let graph = generator(this.graph);
 
     let svg = select(this.root).append("svg")
         .attr("width", width + this.margin.left + this.margin.right)
@@ -86,39 +103,50 @@ export class SankeyViewer extends DG.JsViewer {
       .append("g")
         .attr("transform", `translate(${this.margin.left}, ${this.margin.top})`);
 
-    svg.append('g').attr("stroke", "#000")
+    let nodes = svg.append('g').attr("stroke", "#000")
       .selectAll("rect")
-      .data(nodes)
+      .data(graph.nodes)
       .join("rect")
         .attr("x", d => d.x0)
         .attr("y", d => d.y0)
         .attr("height", d => d.y1 - d.y0)
         .attr("width", d => d.x1 - d.x0)
         .attr("fill", d => DG.Color.toRgb(this.color(d.name)))
-      .on('mouseover', d => ui.tooltip.showRowGroup(this.dataFrame, i => true, d.x, d.y))
-      .on('mouseout', () => ui.tooltip.hide())
-      .on('mousedown', d => this.dataFrame.selection.handleClick(i => true, d));
+      .on("mouseover", d => ui.tooltip.showRowGroup(this.dataFrame, i => true, d.x, d.y))
+      .on("mouseout", () => ui.tooltip.hide())
+      // .call(drag().subject(d => d)
+      //   .on("start", () => select(this).attr("stroke", "#fff"))
+      //   .on("drag", dragmove)
+      //   .on("end", () => select(this).attr("stroke", null)))
+      .on("click", event => (event.defaultPrevented) ? null : this.dataFrame.selection.handleClick(i => true, event));
 
-    svg.append("g")
+    let links = svg.append("g")
         .attr("fill", "none")
         .attr("stroke", "#000")
         .attr("stroke-opacity", 0.2)
       .selectAll("path")
-      .data(links)
+      .data(graph.links)
       .join("path")
         .attr("d", sankeyLinkHorizontal())
         .attr("stroke-width", d => Math.max(1, d.width));
 
-    svg.append("g")
-        .attr("font-family", "sans-serif")
-        .attr("font-size", 10)
+    let titles = svg.append("g")
+        .attr("font-family", "'Roboto', 'Roboto Local', sans-serif")
+        .attr("font-size", 13)
       .selectAll("text")
-      .data(nodes)
+      .data(graph.nodes)
       .join("text")
         .attr("x", d => d.x0 < width / 2 ? d.x1 + 6 : d.x0 - 6)
         .attr("y", d => (d.y1 + d.y0) / 2)
         .attr("dy", "0.35em")
         .attr("text-anchor", d => d.x0 < width / 2 ? "start" : "end")
         .text(d => d.name);
+
+    function dragmove(event, d) {
+      d.y0 = Math.max(0, Math.min(height - d.value, event.y));
+      select(this).attr("transform", `translate(${d.x0}, ${d.y0})`);
+      generator.update(graph);
+      links.attr("d", sankeyLinkHorizontal());
+    };
   }
 }
