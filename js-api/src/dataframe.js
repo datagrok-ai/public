@@ -1473,6 +1473,12 @@ export class GroupByBuilder {
     return this.add(AGG.FIRST, srcColName, resultColName);
   }
 
+  /** Gets groups of DataFrames
+   * @returns {Map} - where keys are stings in format 'columnName=value' and values are DataFrames */
+  getGroups() {
+    return grok_GroupByBuilder_GetGroups(this.d);
+  }
+
   /**
    * @param {BitSet} bitset
    * @returns {GroupByBuilder} */
