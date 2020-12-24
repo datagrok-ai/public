@@ -226,17 +226,24 @@ export class Dialog {
   }
 
   /**
-   *  @param {Function} handler
-   *  @returns {Dialog} */
+   * Sets the OK button handler, and shows the OK button
+   * @param {Function} handler
+   * @returns {Dialog} */
   onOK(handler) {
     grok_Dialog_OnOK(this.d, handler);
     return this;
   }
 
   /**
-   *  @param {Function} handler
-   *  @returns {Dialog} */
+   * Sets the CANCEL button handler
+   * @param {Function} handler
+   * @returns {Dialog} */
+  onCancel(handler) {
+    grok_Dialog_OnCancel(this.d, handler);
+    return this;
+  }
 
+  /** @returns {Observable} */
   get onClose() {
     return __obs('d4-dialog-closed', this.d);
   }
@@ -245,9 +252,12 @@ export class Dialog {
   // onClose(handler) { grok_Dialog_OnClose(this.d, handler); return this; }
   // onClose(handler) { let s = _sub(grok_Dialog_OnClose(this.d, () => { handler(); s.cancel(); })); return this; }
 
-  /** @returns {Dialog} */
-  show() {
-    grok_Dialog_Show(this.d, false, false);
+  /** @returns {Dialog}
+   * @param {{x: number, y: number}|{}} options
+   * */
+  show(options) {
+    options = options || {};
+    grok_Dialog_Show(this.d, false, false, options.x, options.y);
     return this;
   }
 
@@ -269,6 +279,32 @@ export class Dialog {
   /** Closes the dialog. */
   close() {
     grok_Dialog_Close(this.d);
+  }
+
+  /** Returns command button with the specified text.
+   * @param {string} text
+   * @returns {HTMLButtonElement}
+   * */
+  getButton(text) {
+    return grok_Dialog_GetButton(this.d, text);
+  }
+
+  /** Returns command button with the specified text.
+   * @param {string} text
+   * @param {Function} action
+   * */
+  addButton(text, action, index = 0, tooltip = null) {
+    grok_Dialog_AddButton(this.d, text, action, index, tooltip);
+    return this;
+  }
+
+  /** Returns command button with the specified text.
+   * @param {string} text
+   * @param {Function} action
+   * */
+  addContextAction(text, action) {
+    grok_Dialog_AddContextAction(this.d, text, action);
+    return this;
   }
 }
 
