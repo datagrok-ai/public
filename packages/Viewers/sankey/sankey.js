@@ -115,7 +115,9 @@ export class SankeyViewer extends DG.JsViewer {
       .append("g")
         .attr("transform", `translate(${this.margin.left}, ${this.margin.top})`);
 
-    let nodes = svg.append('g')
+    let nodeGroup = svg.append("g").attr("class", "node");
+
+    let nodes = nodeGroup
       .selectAll("rect")
       .data(graph.nodes)
       .join("rect")
@@ -131,10 +133,7 @@ export class SankeyViewer extends DG.JsViewer {
         }, event.x, event.y);
       })
       .on("mouseout", () => ui.tooltip.hide())
-      // .call(drag().subject(d => d)
-      //   .on("start", () => select(this).attr("stroke", "#fff"))
-      //   .on("drag", dragmove)
-      //   .on("end", () => select(this).attr("stroke", null)))
+      .call(drag().subject(d => d).on("drag", dragmove))
       .on("click", (event, d) => {
         if (event.defaultPrevented) return;  // dragging
         this.dataFrame.selection.handleClick(i => {
@@ -164,9 +163,7 @@ export class SankeyViewer extends DG.JsViewer {
         }, event);
       });
 
-    let titles = svg.append("g")
-        .attr("font-family", "'Roboto', 'Roboto Local', sans-serif")
-        .attr("font-size", 13)
+    let titles = nodeGroup
       .selectAll("text")
       .data(graph.nodes)
       .join("text")
@@ -177,8 +174,14 @@ export class SankeyViewer extends DG.JsViewer {
         .text(d => d.name);
 
     function dragmove(event, d) {
-      d.y0 = Math.max(0, Math.min(height - d.value, event.y));
-      select(this).attr("transform", `translate(${d.x0}, ${d.y0})`);
+      let rect = select(this);
+      let rectX = rect.attr("x");
+      let rectY = rect.attr("y");
+      d.x0 += event.dx;
+      d.x1 += event.dx;
+      d.y0 += event.dy;
+      d.y1 += event.dy;
+      rect.attr("transform", `translate(${d.x0 - rectX}, ${d.y0 - rectY})`);
       generator.update(graph);
       links.attr("d", sankeyLinkHorizontal());
     };

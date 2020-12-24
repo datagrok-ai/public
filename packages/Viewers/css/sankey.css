@@ -1,12 +1,17 @@
 .node rect {
-    cursor: move;
     fill-opacity: .9;
-    shape-rendering: crispEdges;
+    shape-rendering: optimizeSpeed;
+}
+
+.node rect:hover {
+    fill-opacity: 1;
 }
 
 .node text {
     pointer-events: none;
-    text-shadow: 0 1px 0 #fff;
+    font-family: "Roboto", "Roboto Local", sans-serif;
+    font-size: 13px;
+    color: #4D5261;
 }
 
 .link {
