@@ -7,12 +7,12 @@ This article will walk you through different ways of data extraction, from manag
 
 ## Connections
 
-In the Datagrok platform, you can retrieve data from a variety of sources, be it a file, database, cloud, or web service. And what's remarkable, this can be accomplished equally well from the user interface and from your program. You can learn more about connections and look at how to create them from the UI in the [dedicated article](../../access/data-connection), while here we go over the technical details for developers, namely:
+In the Datagrok platform, you can retrieve data from a variety of sources, be it a file, database, cloud, or web service. And what's remarkable, this can be accomplished equally well from the user interface and from your program. You can learn more about connections and look at how to create them from the UI in the [dedicated article](../../access/data-connection.md), while here we go over the technical details for developers, namely:
 
   * how to [add a data connection](#adding-connections)
   * which [parameters](#parameters) to specify
   * secure ways to [transfer credentials](#managing-credentials)
-  * creating and executing [parameterized queries](#queries)
+  * [creating](#creating-queries) and [executing parameterized queries](#executing-queries)
   * [sharing connections](#sharing-connections)
 
 ### Adding Connections
@@ -125,7 +125,7 @@ What you can do instead is to deploy a connection and send a POST request to `$(
 
 #### Creating Queries
 
-Once the connection is established, the next step is to extract data. This can be done by sending a [query](../../access/data-query) to the data source. In a package, queries are typically placed in the `queries` folder. Let's start with a simple example for your `queries.sql` file:
+Once the connection is established, the next step is to extract data. This can be done by sending a [query](../../access/data-query.md) to the data source. In a package, queries are typically placed in the `queries` folder. Let's start with a simple example for your `queries.sql` file:
 
 ```sql
 --name: protein classification
@@ -135,6 +135,8 @@ select * from protein_classification
 ```
 
 SQL statements are annotated with comments, just like [scripts](../scripting.md), since the underlying mechanism is essentially the same (read more on the concept of [functions](../../overview/functions/function.md)). Here we have two header parameters: the query `name` and the `connection` to use. In fact, this particular query could have been even simpler: there is no need to specify `connection` if the package only has one. Similarly, the tag `end` is not required if there is only one query per file: the parser needs it to understand where the current query ends and the next one begins. So safely omit the name of `connection` and/or the `end` tag if these conditions are met.
+
+You can find a list of header parameters and other details related to the query annotation in [this article](../../access/parameterized-queries.md). In addition to this, examples of data queries are available in the [Chembl](https://github.com/datagrok-ai/public/tree/master/packages/Chembl/queries) package.
 
 #### Executing Queries
 
@@ -150,7 +152,7 @@ grok.functions.call('Chembl:ProteinClassification')
 Data connections can be shared as part of a [project](../../overview/project.md), [package](../develop.md#packages) (and [repository](../../access/connectors/git.md) containing this package), or as an independent [entity](../../overview/objects.md). Access rights of a database connection inherit access rights of a query. However, access rights of the query don't inherit access rights of the database connection. Thus, if one shares a query, the associated database connection shall automatically be shared. At the same time, when you are sharing a connection, your queries aren't going to be shared automatically. As for web queries, they are automatically shared along with sharing the corresponding connection.
 
 See also:
-  * [Data Connection](../../access/data-connection)
-  * [Data Query](../../access/data-query)
+  * [Data Connection](../../access/data-connection.md)
+  * [Data Query](../../access/data-query.md)
   * [Functions](../../overview/functions/function.md)
   * [Parameterized Queries](../../access/parameterized-queries.md)
