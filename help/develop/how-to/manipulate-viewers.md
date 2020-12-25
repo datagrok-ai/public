@@ -72,6 +72,27 @@ Examples:
   * [Trellis Plot](https://public.datagrok.ai/js/samples/ui/viewers/types/trellis-plot)
   * [Word Cloud](https://public.datagrok.ai/js/samples/ui/viewers/types/word-cloud)
 
+## Docking Viewers
+
+Just like other visual components that occupy a window of their own, viewers can be docked to a particular position:
+
+```javascript
+let data = grok.data.demo.demog();
+let view = grok.shell.addTableView(data);
+let viewer = DG.Viewer.fromType(DG.VIEWER.SCATTER_PLOT, data);
+view.addViewer(viewer);
+view.dockManager.dock(viewer, 'right');
+```
+
+The list of positions consists of the following options: `left | right | top | bottom | fill`. Notice that here the viewer will be placed independently of the table view:
+
+```javascript
+grok.shell.dockManager.dock(viewer, 'right');
+```
+
+Examples:
+  * [Docking Viewers](https://public.datagrok.ai/js/samples/ui/docking/docking-table-view)
+
 See also:
   * [Viewers](../../visualize/viewers.md)
   * [How to Develop Custom Viewer](develop-custom-viewer.md)

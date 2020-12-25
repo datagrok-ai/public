@@ -34,6 +34,7 @@ with some additions specific to queries.
 | help        | Help URL                           |
 | tags        | Tags                               |
 | input       | Input parameter                    |
+| output      | Output parameter (optional)        |
 
 ### Format Template for 'input':
 
@@ -124,6 +125,15 @@ Patterns summary:
 |                  | after       | after March 2001         |
 |                  | min-max     | Range: 1941-1945         |
 
+### Output Parameter
+
+Based on the form of statements in a query, the platform automatically determines the type of output. In most cases, the call returns a dataframe. If you plan to obtain a value of different data type, you can explicitly specify it in the output parameter. Below is an example from [Chembl](https://github.com/datagrok-ai/public/tree/master/packages/Chembl) package:
+
+```sql
+--output: string smiles {semType: Molecule}
+```
+
+The query with such header parameter will output a string of the semantic type `Molecule`.
 
 ## Example
 
