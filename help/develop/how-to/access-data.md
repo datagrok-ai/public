@@ -12,6 +12,7 @@ In the Datagrok platform, you can retrieve data from a variety of sources, be it
   * how to [add a data connection](#adding-connections)
   * which [parameters](#parameters) to specify
   * secure ways to [transfer credentials](#managing-credentials)
+  * creating and executing [parameterized queries](#queries)
   * [sharing connections](#sharing-connections)
 
 ### Adding Connections
@@ -105,7 +106,7 @@ When providing a connection string, you do not have to pass other parameters, as
 
 ### Managing Credentials
 
-Sensitive information is always a special case. Datagrok has a built-in credentials management system that protects such data (for more details, see the [Security](../../govern/security.md#credentials-storage) article). For this reason, parameters of a connection that regulate access to the resource are processed independently. Therefore, you should not include these parameters to a custom connection string. However, pushing them in a `json` file to your project's repository is not a good idea either:
+Private information is always a special case. Datagrok has a built-in credentials management system that protects such data (for more details, see the [Security](../../govern/security.md#credentials-storage) article). For this reason, parameters of a connection that regulate access to the resource are processed independently. Therefore, you should not include these parameters to a custom connection string. However, pushing them in a `json` file to your project's repository is not a good idea either:
 
 ```json
 {
@@ -122,6 +123,28 @@ What you can do instead is to deploy a connection and send a POST request to `$(
 
 ### Queries
 
+#### Creating Queries
+
+Once the connection is established, the next step is to extract data. This can be done by sending a [query](../../access/data-query) to the data source. In a package, queries are typically placed in the `queries` folder. Let's start with a simple example for your `queries.sql` file:
+
+```sql
+--name: protein classification
+--connection: chembl
+select * from protein_classification
+--end
+```
+
+SQL statements are annotated with comments, just like [scripts](../scripting.md), since the underlying mechanism is essentially the same (read more on the concept of [functions](../../overview/functions/function.md)). Here we have two header parameters: the query `name` and the `connection` to use. In fact, this particular query could have been even simpler: there is no need to specify `connection` if the package only has one. Similarly, the tag `end` is not required if there is only one query per file: the parser needs it to understand where the current query ends and the next one begins. So safely omit the name of `connection` and/or the `end` tag if these conditions are met.
+
+#### Executing Queries
+
+There are several ways in which queries can be run in Datagrok. The first and most natural way is to launch a query from the interface, which will be equivalent to the line `$(PACKAGE_NAME):$(QUERY_NAME)()` in the console, for example, `Chembl:ProteinClassification()`. As you might know, it is possible to call any function that can be run in the console through Datagrok's JS API. Thus, the fact that a query behaves like a regular function allows us to use the corresponding methods in JavaScript:
+
+```javascript
+grok.functions.call('Chembl:ProteinClassification')
+  .then(t => grok.shell.addTableView(t));
+```
+
 ### Sharing Connections
 
 Data connections can be shared as part of a [project](../../overview/project.md), [package](../develop.md#packages) (and [repository](../../access/connectors/git.md) containing this package), or as an independent [entity](../../overview/objects.md). Access rights of a database connection inherit access rights of a query. However, access rights of the query don't inherit access rights of the database connection. Thus, if one shares a query, the associated database connection shall automatically be shared. At the same time, when you are sharing a connection, your queries aren't going to be shared automatically. As for web queries, they are automatically shared along with sharing the corresponding connection.
@@ -129,3 +152,5 @@ Data connections can be shared as part of a [project](../../overview/project.md)
 See also:
   * [Data Connection](../../access/data-connection)
   * [Data Query](../../access/data-query)
+  * [Functions](../../overview/functions/function.md)
+  * [Parameterized Queries](../../access/parameterized-queries.md)
