@@ -41,11 +41,11 @@ async function testCase(title, f) {
 
 (async () => {
 
-  const N_render = 1000;
-  const N_scroll = 20;
-  const t_scroll = 100;
-  const N_search = 5000;
-  const N_sample = 10;
+  const nRender = 1000;
+  const nScroll = 20;
+  const tScroll = 100;
+  const nSearch = 25000;
+  const nSample = 10;
   const x = 0, y = 0;
   const w = 200, h = 100;
 
@@ -64,33 +64,33 @@ async function testCase(title, f) {
   let ctx = canvas.getContext('2d');
   let rowsInd = null;
 
-  rowsInd = getIdxRandomSubset(N, N_render);
+  rowsInd = getIdxRandomSubset(N, nRender);
   await testCase(`Rendering a ${rowsInd.length} random molecules`, () => {
     for (i of rowsInd) {
       rdKitCellRenderer.render(ctx, x, y, w, h, grid.cell(colName, i), null);
     }
   });
 
-  rowsInd = getIdxRandomSubarray(N, N_scroll);
-  await testCase(`Horizontal scrolling (${rowsInd.length} random molecules, ${t_scroll} times)`, () => {
-    for (let t = 0; t < t_scroll; ++t) {
+  rowsInd = getIdxRandomSubarray(N, nScroll);
+  await testCase(`Horizontal scrolling (${rowsInd.length} random molecules, ${tScroll} times)`, () => {
+    for (let t = 0; t < tScroll; ++t) {
       for (let i of rowsInd) {
         rdKitCellRenderer.render(ctx, x, y, w, h, grid.cell(colName, i), null);
       }
     }
   });
 
-  rowsInd = getIdxRandomSubarray(N, N_scroll + t_scroll);
-  await testCase(`Vertical scrolling (${N_scroll} random molecules, ${t_scroll} times)`, () => {
-    for (let t = 0; t < t_scroll; ++t) {
-      for (let i of rowsInd.slice(t, t + N_scroll)) {
+  rowsInd = getIdxRandomSubarray(N, nScroll + tScroll);
+  await testCase(`Vertical scrolling (${nScroll} random molecules, ${tScroll} times)`, () => {
+    for (let t = 0; t < tScroll; ++t) {
+      for (let i of rowsInd.slice(t, t + nScroll)) {
         rdKitCellRenderer.render(ctx, x, y, w, h, grid.cell(colName, i), null);
       }
     }
   });
 
   // Truncate the original dataset for searching
-  rowInd = getIdxRandomSubset(N, N_search);
+  rowInd = getIdxRandomSubset(N, nSearch);
   let newDf = DG.DataFrame.create();
   newDf.columns.addNew(colName, DG.TYPE.STRING);
   for (i of rowInd) {
@@ -106,15 +106,15 @@ async function testCase(title, f) {
 
   await testCase(`Substructure search, building a library of ${col.length} molecules`, async () =>
     await grok.chem.substructureSearch(col));
-  await testCase(`Substructure search, searching benzene in ${N_search} molecules`, async () =>
+  await testCase(`Substructure search, searching benzene in ${nSearch} molecules`, async () =>
     await grok.chem.substructureSearch(col, searchFor[0]));
-  await testCase(`Substructure search, searching aspirin in ${N_search} molecules`, async () =>
+  await testCase(`Substructure search, searching aspirin in ${nSearch} molecules`, async () =>
     await grok.chem.substructureSearch(col, searchFor[1]));
 
   await testCase(`Similarity scoring, building a library of ${col.length} molecules`, async () =>
     await grok.chem.similarityScoring(col));
-  const queryIdx = getIdxRandomSubset(N_search, N_sample);
-  await testCase(`Similarity scoring, search for ${queryIdx.length} samples in ${N_search} molecules`, async () => {
+  const queryIdx = getIdxRandomSubset(nSearch, nSample);
+  await testCase(`Similarity scoring, search for ${queryIdx.length} samples in ${nSearch} molecules`, async () => {
     for (let i of queryIdx) {
       await grok.chem.similarityScoring(col, col.get(i));
     }
