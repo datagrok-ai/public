@@ -63,16 +63,31 @@ export function identity(length) {
 };*/
 
 /** Times the execution of function f
- * @param {string} name
+ * @param {string} name - a label for the execution time to display
  * @param {Function} f - function with no parameters that will get measured
- * @returns {number} - milliseconds elapsed
+ * @returns {value} - a value which f returns
  * */
 export function time(name, f) {
   let start = new Date();
   let result = f();
   let stop = new Date();
-  console.log(`${name}: ${stop - start}ms`);
-  new Balloon().info(`${name}: ${stop - start}ms`);
+  console.log(`${name}: ${stop - start} ms`);
+  new Balloon().info(`${name}: ${stop - start} ms`);
+  return result;
+}
+
+/** Times the execution of asyncronous function f
+ * @async
+ * @param {string} name - a label for the execution time to display
+ * @param {Function} f - async function with no parameters that will get measured
+ * @returns {Promise<value>} - a promise for the value which f returns
+ * */
+export async function timeAsync(name, f) {
+  let start = new Date();
+  let result = await f();
+  let stop = new Date();
+  console.log(`${name}: ${stop - start} ms`);
+  new Balloon().info(`${name}: ${stop - start} ms`);
   return result;
 }
 

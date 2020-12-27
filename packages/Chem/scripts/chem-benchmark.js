@@ -4,16 +4,6 @@
 const randomInt = (min, max) => min + Math.floor((max - min) * Math.random());
 const range = (l, r) => new Array(r - l).fill().map((_, k) => k + l);
 
-// TODO: internalize with Datagrok
-async function time(name, n, f) {
-  let start = window.performance.now();
-  for (let k = 0; k < n; ++k) {
-    await f();
-  }
-  let stop = window.performance.now();
-  console.log(`${name}: ${((stop - start) / n).toFixed(2)} ms`);
-}
-
 function getIdxRandomSubset(N, n) {
   let arr = range(0, N);
   let shuffled = arr.slice(0);
@@ -36,7 +26,7 @@ function getIdxRandomSubarray(N, n) {
 let caseCntr = 0;
 
 async function testCase(title, f) {
-  await time(++caseCntr + '. ' + title, 1, f);
+  await DG.timeAsync(++caseCntr + '. ' + title, f);
 }
 
 (async () => {
