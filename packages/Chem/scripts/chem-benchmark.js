@@ -41,20 +41,19 @@ async function testCase(title, f) {
 
 (async () => {
 
+  const nSearch = 25000;
   const nRender = 1000;
   const nScroll = 20;
   const tScroll = 100;
-  const nSearch = 25000;
   const nSample = 10;
-  const x = 0, y = 0;
-  const w = 200, h = 100;
 
   let df = await grok.data.getDemoTable('chem/zbb/99_p3_4.5-6.csv');
   // For using with your HOME files in Datagrok:
   // let df = (await grok.functions.eval('OpenServerFile("UserName:Home/Chembl_100K.csv")'))[0];
+  if (nSearch < df.rowCount)
+    df.rows.removeAt(nSearch, df.rowCount - nSearch, false);
   const colName = 'smiles';
   let col = df.col(colName);
-  let N = col.length;
 
   console.log('Chem Benchmark');
 
@@ -64,40 +63,33 @@ async function testCase(title, f) {
   let ctx = canvas.getContext('2d');
   let rowsInd = null;
 
-  rowsInd = getIdxRandomSubset(N, nRender);
+  const render = (i) => rdKitCellRenderer.render(
+    ctx, 0, 0, 200, 100, grid.cell(colName, i), null);
+
+  rowsInd = getIdxRandomSubarray(nSearch, nRender);
   await testCase(`Rendering a ${rowsInd.length} random molecules`, () => {
     for (i of rowsInd) {
-      rdKitCellRenderer.render(ctx, x, y, w, h, grid.cell(colName, i), null);
+      render(i);
     }
   });
 
-  rowsInd = getIdxRandomSubarray(N, nScroll);
+  rowsInd = getIdxRandomSubarray(nSearch, nScroll);
   await testCase(`Horizontal scrolling (${rowsInd.length} random molecules, ${tScroll} times)`, () => {
     for (let t = 0; t < tScroll; ++t) {
       for (let i of rowsInd) {
-        rdKitCellRenderer.render(ctx, x, y, w, h, grid.cell(colName, i), null);
+        render(i);
       }
     }
   });
 
-  rowsInd = getIdxRandomSubarray(N, nScroll + tScroll);
+  rowsInd = getIdxRandomSubarray(nSearch, nScroll + tScroll);
   await testCase(`Vertical scrolling (${nScroll} random molecules, ${tScroll} times)`, () => {
     for (let t = 0; t < tScroll; ++t) {
       for (let i of rowsInd.slice(t, t + nScroll)) {
-        rdKitCellRenderer.render(ctx, x, y, w, h, grid.cell(colName, i), null);
+        render(i);
       }
     }
   });
-
-  // Truncate the original dataset for searching
-  rowInd = getIdxRandomSubset(N, nSearch);
-  let newDf = DG.DataFrame.create();
-  newDf.columns.addNew(colName, DG.TYPE.STRING);
-  for (i of rowInd) {
-    newDf.rows.addNew([col.get(i)]);
-  }
-  df = newDf;
-  col = df.col(colName);
 
   const searchFor = [
     'c1ccccc1', // Benzene
