@@ -5,6 +5,7 @@
   "description": "Support for editing end previewing multiple file formats (PDF, SVG)",
   "sources": [
     "js/pdf.js",
-    "js/pdf.worker.js"
+    "js/pdf.worker.js",
+    "common/ngl_viewer/ngl.js"
   ]
 }
