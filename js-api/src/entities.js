@@ -347,6 +347,19 @@ export class FileInfo extends Entity {
   get fileName() {
     return grok_FileInfo_Get_FileName(this.d);
   }
+
+  /** @returns {string} */
+  get url() { grok_FileInfo_Get_Url(this.d); }
+
+  /** @returns {Promise<string>} */
+  readAsString() {
+    return new Promise((resolve, reject) => grok_FileInfo_ReadAsString(this.d, (x) => resolve(x), (x) => reject(x)));
+  }
+
+  /** @returns {Promise<Uint8Array>} */
+  readAsBytes() {
+    return new Promise((resolve, reject) => grok_FileInfo_ReadAsBytes(this.d, (x) => resolve(x), (x) => reject(x)));
+  }
 }
 
 /** @extends Entity

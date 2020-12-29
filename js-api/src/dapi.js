@@ -25,7 +25,7 @@ export class Dapi {
   }
 
   /** Retrieves entities from server by list of IDs
-   *  @returns {List<Entity>} */
+   *  @returns {Promise<List<Entity>>} */
   getEntities(ids) {
     return new Promise((resolve, reject) => grok_Dapi_Entities_GetEntities(ids, (q) => {
       return resolve(q.map(toJs));
