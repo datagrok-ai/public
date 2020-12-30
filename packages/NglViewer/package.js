@@ -40,7 +40,7 @@ class NglViewerPackage extends DG.Package {
 
       function loadBytes(bytes) {
         var blob = new Blob([bytes], {type: 'application/octet-binary'});
-        stage.loadFile(blob, { ext: 'cif'} );
+        stage.loadFile(blob, { defaultRepresentation: true, ext: file.extension} );
       }
 
       // function loadString(bytes) {
