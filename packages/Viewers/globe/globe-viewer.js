@@ -1,3 +1,4 @@
+import * as ui from 'datagrok-api/ui';
 import * as THREE from 'three';
 import ThreeGlobe from 'three-globe';
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls.js';
@@ -38,7 +39,7 @@ export class GlobeViewer extends DG.JsViewer {
 
     this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
     this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()));
-    this.subs.push(DG.debounce(this.onSizeChanged, 50).subscribe((_) => this.render()));
+    this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => this.render()));
 
     this.render();
   }

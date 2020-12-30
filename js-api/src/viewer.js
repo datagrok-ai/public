@@ -4,7 +4,7 @@ import {DataFrame} from "./dataframe.js";
 import * as ui from "./../ui.js";
 import {Property} from "./entities";
 import {Widget} from "./widgets";
-import {_onSizeChanged, _toJson} from "./utils";
+import {_toJson} from "./utils";
 import {Balloon} from "./widgets";
 import {toJs} from "./wrappers";
 import {observeStream, StreamSubscription, __obs} from "./events";
@@ -241,12 +241,6 @@ export class JsViewer extends Widget {
   /** Gets called when viewer's property is changed.
    * @param {Property} property - or null, if multiple properties were changed. */
   onPropertyChanged(property) {
-  }
-
-  /** Gets called when viewer's size is changed.
-   * @returns {rxjs.Observable} */
-  get onSizeChanged() {
-    return _onSizeChanged(this.root);
   }
 
   /** Gets called when this viewer is detached. */

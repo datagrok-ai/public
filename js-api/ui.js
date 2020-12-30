@@ -474,6 +474,9 @@ export function columnsInput(name, table) {
 }
 
 
+/**
+ * @param {HTMLElement} element
+ * @returns {rxjs.Observable} */
 export function onSizeChanged(element) {
 
   if (_isDartium()) {
