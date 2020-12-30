@@ -1,0 +1,10 @@
+{
+  "name": "NglViewer",
+  "version": "0.1",
+  "fullName": "NGL Viewer",
+  "description": "Web-based 3D molecular graphics. Supports the following file formats: .PDB, .CIF, SDF, MOL",
+  "sources": [
+    "css/ngl.css",
+    "common/ngl_viewer/ngl.js"
+  ]
+}
