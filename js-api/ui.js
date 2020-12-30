@@ -11,6 +11,8 @@ import {toDart, toJs} from "./src/wrappers";
 import {Functions} from "./src/functions";
 import $ from "cash-dom";
 import {__obs} from "./src/events";
+import {_isDartium} from "./src/utils";
+import * as rxjs from 'rxjs';
 
 /**
  * @typedef {Object} ElementOptions
@@ -469,6 +471,44 @@ export function columnInput(name, table, value) {
 
 export function columnsInput(name, table) {
   return new InputBase(grok_ColumnsInput(name, table.d));
+}
+
+
+export function onSizeChanged(element) {
+
+  if (_isDartium()) {
+    // Polyfill for Dartium which does not have a native ResizeObserver
+    return new rxjs.Observable(function(observer) {
+      let width = element.clientWidth;
+      let height = element.clientHeight;
+      let interval = setInterval(() => {
+        let newWidth = element.clientWidth;
+        let newHeight = element.clientHeight;
+        if (newWidth !== width || newHeight !== height) {
+          width = newWidth;
+          height = newHeight;
+          observer.next(element);
+        }
+      }, 100);
+      return () => clearInterval(interval);
+    });
+  }
+
+  return rxjs.Observable.create(function (observer) {
+    const resizeObserver = new ResizeObserver(observerEntries => {
+      // trigger a new item on the stream when resizes happen
+      for (const entry of observerEntries) {
+        observer.next(entry);
+      }
+    });
+
+    // start listening for resize events
+    resizeObserver.observe(element);
+
+    // cancel resize observer on cancellation
+    return () => resizeObserver.disconnect();
+  });
+
 }
 
 /** UI Tools **/

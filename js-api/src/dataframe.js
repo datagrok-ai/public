@@ -1591,3 +1591,51 @@ export class Qnum {
     return grok_Qnum_ToString(x);
   }
 }
+
+
+//static const int None = -2147483648;
+//static const double None = 2.6789344063684636e-34;
+//
+// class JsColumn {
+//
+//   /// init
+//   void init(Int32Array values);
+//
+//   /// Removes [count] element at position [idx]. Returns the element at idx-th position.
+//   TValue removeAt(int idx, [int count = 1]);
+//
+//   /// Inserts [count] elements, initialized to the empty value, at position [idx].
+//   void insertAt(int idx, [int count = 1]);
+//
+//   /// Compares elements at positions [idx1] and [idx2].
+//   int compare(int idx1, int idx2);
+//
+//   /// Compares values.
+//   int compareValues(TValue v1, TValue v2);
+//
+//   /// Sets [idx]-th element to None.
+//   void setNone(int idx);
+//
+//   /// Is [idx]-th None?
+//   bool isNone(int idx);
+//
+//   /// Returns whether i-th element exists and is not +-Infinity.
+//   /// Applicable for numerical columns only.
+//   bool isFinite(int idx) => !isNone(idx);
+//
+//   /// String representation of the [idx]-th element.
+//   /// The result depends on the column formatting options, and therefore might lose precision.
+//   String toStr(int idx);
+//
+//   /// Returns a [double] representation of [idx]-th element.
+//   double toDouble(int idx);
+//
+//   TValue getItem(int pos) => isNone(pos) ? null : this[pos];
+//   void   setItem(int pos, TValue value)
+//
+//   /// Minimum value of a column.
+//   double get min
+//
+//   /// Maximum value of a column.
+//   double get max
+// }

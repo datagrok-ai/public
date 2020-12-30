@@ -48,7 +48,9 @@ class FileEditorsPackage extends DG.Package {
 
       function loadString(bytes) {
         var blob = new Blob([bytes], {type: 'text/plain'});
-        stage.loadFile(blob, { ext: file.extension} );
+        //stage.loadFile("http://files.rcsb.org/download/5IOS.cif", {defaultRepresentation: true});
+        console.log(file.extension);
+        stage.loadFile(blob, { defaultRepresentation: true, ext: file.extension} );
       }
 
       file
