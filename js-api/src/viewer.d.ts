@@ -114,8 +114,6 @@ export class JsViewer extends Widget {
      */
     getProperty(name: string): Property;
 
-    get onSizeChanged(): Observable<any>
-
     /**
      * cleanup() will get called when the viewer is disposed
      */

@@ -13,7 +13,8 @@ class LeafletViewer extends DG.JsViewer {
     this.layers = [];
     this.coordinates = [];
 
-    this.onSizeChanged.subscribe((_) => this.map.invalidateSize());
+    ui.onSizeChanged(this.root).subscribe((_) => this.map.invalidateSize());
+
     this.initialized = false;
   }
 
