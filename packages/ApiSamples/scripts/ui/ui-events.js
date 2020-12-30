@@ -3,6 +3,8 @@
 demog = grok.data.demo.demog();
 view = grok.shell.addTableView(demog);
 
+ui.onSizeChanged(view.root).subscribe((_) => grok.shell.info('Size changed'));
+
 function info(s) {
   grok.shell.info(s);
 }
