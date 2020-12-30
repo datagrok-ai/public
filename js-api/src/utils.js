@@ -93,8 +93,26 @@ export async function timeAsync(name, f) {
 
 /** @returns {rxjs.Observable} */
 export function _onSizeChanged(element) {
-  if (_isDartium())
+
+  if (_isDartium()) {
     return rxjs.empty();
+
+    // Polyfill for Dartium which does not have a native ResizeObserver
+    // return new rxjs.Observable(function(observer) {
+    //   let width = element.clientWidth;
+    //   let height = element.clientHeight;
+    //   let interval = setInterval(() => {
+    //     let newWidth = element.clientWidth;
+    //     let newHeight = element.clientHeight;
+    //     if (newWidth !== width || newHeight !== height) {
+    //       width = newWidth;
+    //       height = newHeight;
+    //       observer.next(element);
+    //     }
+    //   }, 100);
+    //   return () => clearInterval(interval);
+    // });
+  }
 
   return rxjs.Observable.create(function (observer) {
     const resizeObserver = new ResizeObserver(observerEntries => {
@@ -107,7 +125,7 @@ export function _onSizeChanged(element) {
     // start listening for resize events
     resizeObserver.observe(element);
 
-    // cancel resize observer on cancelation
+    // cancel resize observer on cancellation
     return () => resizeObserver.disconnect();
   });
 }
