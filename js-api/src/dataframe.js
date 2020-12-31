@@ -5,6 +5,13 @@ import {toDart, toJs} from "./wrappers";
 import {SIMILARITY_METRIC} from "./const";
 import {_getIterator, _toIterable} from "./utils";
 
+/**
+ * Finds the item by its unique id.
+ * @typedef {function(Row): boolean} RowPredicate
+ * @typedef {function(Column): boolean} ColumnPredicate
+ * @typedef {function(number): boolean} IndexPredicate
+ */
+
 class MapProxy {
   constructor(d) {
     this.d = d;
@@ -928,9 +935,13 @@ export class RowList {
     grok_RowList_SetValues(this.d, idx, values);
   }
 
+  /**
+   * @param {BitSet} bitset
+   * @param {RowPredicate} rowPredicate
+   * */
   _applyPredicate(bitset, rowPredicate) {
     for (let row of this) {
-      bitset.set(row.idx, rowPredicate(row));
+      bitset.set(row.idx, rowPredicate(row), false);
     }
   }
 
