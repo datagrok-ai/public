@@ -945,10 +945,18 @@ export class RowList {
     }
   }
 
+  /**
+   * @param {BitSet} bitset
+   * @param {RowPredicate} rowPredicate
+   * */
   select(rowPredicate) {
     this._applyPredicate(this.table.selection, rowPredicate);
   }
 
+  /**
+   * @param {BitSet} bitset
+   * @param {RowPredicate} rowPredicate
+   * */
   filter(rowPredicate) {
     this._applyPredicate(this.table.filter, rowPredicate);
   }
