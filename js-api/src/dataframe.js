@@ -946,7 +946,6 @@ export class RowList {
   }
 
   /**
-   * @param {BitSet} bitset
    * @param {RowPredicate} rowPredicate
    * */
   select(rowPredicate) {
@@ -954,7 +953,6 @@ export class RowList {
   }
 
   /**
-   * @param {BitSet} bitset
    * @param {RowPredicate} rowPredicate
    * */
   filter(rowPredicate) {
