@@ -883,6 +883,20 @@ export class ColumnList {
   }
 }
 
+
+/**
+ * Row matcher.
+ * */
+export class RowMatcher {
+  constructor(d) { this.d = d; }
+
+  select() { grok_RowMatcher_Select(this.d); }
+  filter() { grok_RowMatcher_Filter(this.d); }
+  highlight() { grok_RowMatcher_Highlight(this.d); }
+
+  toDataFrame() { return toJs(grok_RowMatcher_ToDataFrame(this.d)); }
+}
+
 /**
  * Represents rows of the [DataFrame].
  *
@@ -933,6 +947,15 @@ export class RowList {
    * @param values - List of values (length and types should match columns) */
   setValues(idx, values) {
     grok_RowList_SetValues(this.d, idx, values);
+  }
+
+  /**
+   * Creates a query matcher.
+   * @param {String|Object} query
+   * @returns {RowMatcher}
+   * */
+  match(query) {
+    return toJs(grok_RowList_Match(this.d, query));
   }
 
   /**
