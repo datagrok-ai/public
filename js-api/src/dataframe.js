@@ -1530,6 +1530,16 @@ export class GroupByBuilder {
   }
 
   /**
+   * Specifies the filter for the source rows.
+   * @input {String|Object} pattern
+   * @returns {GroupByBuilder}
+   **/
+  where(pattern) {
+    grok_GroupByBuilder_Where(pattern);
+    return this;
+  }
+
+  /**
    * @param {BitSet} bitset
    * @returns {GroupByBuilder} */
   whereRowMask(bitset) {
