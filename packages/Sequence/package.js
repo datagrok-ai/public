@@ -53,24 +53,6 @@ class SequencePackage extends DG.Package {
     return new DG.Widget(e);
   }
 
-  //description: Protein viewer widget based on the pdb_id
-  //input: string pdbId {semType: pdb_id}
-  //tags: panel
-  //output: widget result
-  pdbWidget(pdbId) {
-    let e = ui.div([], 'd4-ngl-viewer');
-    e.id = 'pdb77';
-    e.style.height = '500px';
-    e.style.width = '500px';
-
-    setTimeout(function () {
-      let stage = new NGL.Stage('pdb77', {backgroundColor: 'white'});
-      stage.loadFile(`rcsb://${pdbId}`, {defaultRepresentation: true});
-    }, 1000);
-
-    return new DG.Widget(e);
-  }
-
   //name: Sequence
   //description: creates a sequence viewer
   //tags: viewer
