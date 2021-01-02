@@ -1535,7 +1535,7 @@ export class GroupByBuilder {
    * @returns {GroupByBuilder}
    **/
   where(pattern) {
-    grok_GroupByBuilder_Where(pattern);
+    grok_GroupByBuilder_Where(this.d, pattern);
     return this;
   }
 
