@@ -1,6 +1,6 @@
 class NglViewerPackage extends DG.Package {
 
-  //tags: fileViewer, fileViewer-sdf
+  //tags: fileViewer, fileViewer-sdf, fileViewer-sd
   //input: file file
   //output: view v
   sdfViewer(file) {
@@ -14,10 +14,17 @@ class NglViewerPackage extends DG.Package {
     return this.nglViewer(file);
   }
 
-  //tags: fileViewer, fileViewer-mol, fileViewer-mol2, fileViewer-mmcif
+  //tags: fileViewer, fileViewer-mol, fileViewer-mol2, fileViewer-mmcif, fileViewer-gro, fileViewer-pdb, fileViewer-mmtf
   //input: file file
   //output: view v
   molViewer(file) {
+    return this.nglViewer(file);
+  }
+
+  //tags: fileViewer, fileViewer-dsn6, fileViewer-brix
+  //input: file file
+  //output: view v
+  molDensityViewer(file) {
     return this.nglViewer(file);
   }
 
