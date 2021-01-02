@@ -1,30 +1,31 @@
 class NglViewerPackage extends DG.Package {
 
-  //tags: fileViewer, fileViewer-sdf, fileViewer-sd
+
+  //tags: fileViewer, fileViewer-mol, fileViewer-mol2, fileViewer-cif, fileViewer-mcif, fileViewer-mmcif, fileViewer-gro, fileViewer-pdb, fileViewer-ent, fileViewer-pqr, fileViewer-mmtf, fileViewer-mtl, fileViewer-sdf, fileViewer-sd
   //input: file file
   //output: view v
-  sdfViewer(file) {
+  nglStructureViewer(file) {
     return this.nglViewer(file);
   }
 
-  //tags: fileViewer, fileViewer-cif
+  //tags: fileViewer, fileViewer-ply, fileViewer-obj
   //input: file file
   //output: view v
-  cifViewer(file) {
+  nglSurfaceViewer(file) {
     return this.nglViewer(file);
   }
 
-  //tags: fileViewer, fileViewer-mol, fileViewer-mol2, fileViewer-mmcif, fileViewer-gro, fileViewer-pdb, fileViewer-mmtf
+  //tags: fileViewer, fileViewer-prmtop, fileViewer-parm7, fileViewer-psf, fileViewer-top
   //input: file file
   //output: view v
-  molViewer(file) {
+  nglTopologyViewer(file) {
     return this.nglViewer(file);
   }
 
-  //tags: fileViewer, fileViewer-dsn6, fileViewer-brix
+  //tags: fileViewer, fileViewer-dsn6, fileViewer-brix, fileViewer-cube, fileViewer-cub, fileViewer-dx, fileViewer-dxbin, fileViewer-xplor, fileViewer-cns, fileViewer-mrc, fileViewer-map, fileViewer-ccp4
   //input: file file
   //output: view v
-  molDensityViewer(file) {
+  nglDensityViewer(file) {
     return this.nglViewer(file);
   }
 
