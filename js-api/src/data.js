@@ -1,4 +1,4 @@
-import {DataFrame} from "./dataframe";
+import {DataFrame, Column} from "./dataframe";
 import {toJs} from "./wrappers";
 import {FuncCall} from "./functions";
 
@@ -190,5 +190,30 @@ export class Data {
   detectSemanticTypes(t) {
     return new Promise((resolve, reject) => grok_DetectSemanticTypes(t.d, (_) => resolve(), (e) => reject(e)));
   }
+}
 
+export class Detector {
+  /**
+   * Calls [check] function against a random subset of the column values, returns true
+   * if all checks return true. Useful for the efficient auto-detection of the column semantic type.
+   *
+   * @param {Column} column
+   * @param {StringPredicate} check
+   * @param {number} min - minimum number of categories. Returns false if less than that.
+   * @param {number} max - number of checks to make
+   * @returns {boolean}
+   * */
+  static sampleCategories(column, check, min = 5, max = 10) {
+    let categories = column.categories;
+    if (categories.length > min)
+      return false;
+
+    for (let i = 0; i < Math.max(max, categories.length); i++) {
+      let value = Math.floor(Math.random() * categories.length);
+      if (value !== null && !check(value))
+        return false;
+    }
+
+    return true;
+  }
 }

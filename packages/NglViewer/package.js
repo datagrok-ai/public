@@ -29,6 +29,15 @@ class NglViewerPackage extends DG.Package {
     return this.nglViewer(file);
   }
 
+  //name: PDB Viewer
+  //tags: panel
+  //input: string pdbId {semType: pdb_id}
+  //output: widget w
+  nglPdbPanelWidget(pdbId) {
+    return DG.Widget.fromRoot(ui.divText(pdbId));
+  }
+
+
   /** @returns {DG.View} */
   nglViewer(file) {
     let view = DG.View.create();
@@ -50,11 +59,6 @@ class NglViewerPackage extends DG.Package {
         var blob = new Blob([bytes], {type: 'application/octet-binary'});
         stage.loadFile(blob, { defaultRepresentation: true, ext: file.extension} );
       }
-
-      // function loadString(bytes) {
-      //   var blob = new Blob([bytes], {type: 'text/plain'});
-      //   stage.loadFile(blob, { defaultRepresentation: true, ext: file.extension} );
-      // }
 
       file
         .readAsBytes()
