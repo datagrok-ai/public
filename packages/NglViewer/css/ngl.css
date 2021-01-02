@@ -4,6 +4,11 @@
     height: 100%;
 }
 
+.d4-accordion-pane .d4-ngl-viewer {
+    min-width: 300px;
+    min-height: 300px;
+}
+
 .d4-ngl-viewer canvas {
     position: absolute;
     top: 0;

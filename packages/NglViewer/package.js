@@ -34,7 +34,23 @@ class NglViewerPackage extends DG.Package {
   //input: string pdbId {semType: pdb_id}
   //output: widget w
   nglPdbPanelWidget(pdbId) {
-    return DG.Widget.fromRoot(ui.divText(pdbId));
+    var host = ui.div([], 'd4-ngl-viewer');
+    var stage = new NGL.Stage(host);
+    NglViewerPackage.handleResize(host, stage);
+    stage.loadFile(`rcsb://${pdbId}`, { defaultRepresentation: true });
+    return DG.Widget.fromRoot(host);
+  }
+
+  static handleResize(host, stage) {
+    let canvas = host.querySelector('canvas');
+    function resize() {
+      canvas.width = Math.floor(canvas.clientWidth * window.devicePixelRatio);
+      canvas.height = Math.floor(canvas.clientHeight * window.devicePixelRatio);
+      stage.handleResize();
+    }
+
+    ui.onSizeChanged(host).subscribe((_) => resize());
+    resize();
   }
 
 
@@ -43,29 +59,17 @@ class NglViewerPackage extends DG.Package {
     let view = DG.View.create();
     var host = ui.div([], 'd4-ngl-viewer');
     var stage = new NGL.Stage(host);
-    let canvas = host.querySelector('canvas');
+    NglViewerPackage.handleResize(host, stage);
 
-    function init() {
-      function resize() {
-        canvas.width = Math.floor(canvas.clientWidth * window.devicePixelRatio);
-        canvas.height = Math.floor(canvas.clientHeight * window.devicePixelRatio);
-        stage.handleResize();
-      }
-
-      ui.onSizeChanged(host).subscribe((_) => resize());
-      resize();
-
-      function loadBytes(bytes) {
-        var blob = new Blob([bytes], {type: 'application/octet-binary'});
-        stage.loadFile(blob, { defaultRepresentation: true, ext: file.extension} );
-      }
-
-      file
-        .readAsBytes()
-        .then(loadBytes);
+    function loadBytes(bytes) {
+      var blob = new Blob([bytes], {type: 'application/octet-binary'});
+      stage.loadFile(blob, { defaultRepresentation: true, ext: file.extension} );
     }
 
-    setTimeout(init, 200);
+    file
+      .readAsBytes()
+      .then(loadBytes);
+
     view.append(host);
     return view;
   }
