@@ -2,9 +2,9 @@
 
 let agesByRace = grok.data.demo.demog()
   .groupBy(['race', 'sex'])
-  .where('race = Asian and started after 1/1/2003')
+  .where('race = Asian and started after 2/2/2000')
   .avg('age')
-  .min('started')
+  .avg('started')
   .add('med', 'age')
   .aggregate();
 
