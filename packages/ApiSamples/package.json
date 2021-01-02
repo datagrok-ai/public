@@ -5,6 +5,7 @@
   "description": "Grok API Examples",
   "sources": [ ],
   "scripts": {
-    "samples-upload": "datagrok-upload http://localhost:8082 deploy"
+    "samples-upload": "datagrok-upload http://localhost:8082 deploy",
+    "publish samples local": "grok publish local"
   }
 }
