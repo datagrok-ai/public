@@ -10,6 +10,7 @@ import {_getIterator, _toIterable} from "./utils";
  * @typedef {function(Row): boolean} RowPredicate
  * @typedef {function(Column): boolean} ColumnPredicate
  * @typedef {function(number): boolean} IndexPredicate
+ * @typedef {function(String): boolean} StringPredicate
  */
 
 class MapProxy {
