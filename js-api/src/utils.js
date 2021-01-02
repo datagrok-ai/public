@@ -2,7 +2,6 @@ import {Balloon} from "./widgets";
 import * as rxjs from 'rxjs';
 import {toJs} from "./wrappers";
 
-
 // export class PropProxy {
 //     constructor(d) {
 //         this.d = d;
