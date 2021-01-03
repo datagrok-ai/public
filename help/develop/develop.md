@@ -49,6 +49,7 @@ Here are the first steps to get you started:
    ```
    npm install datagrok-tools -g
    ```
+   To avoid permission issues when installing packages globally (`-g`), use a version manager to install both `Node.js` and `npm` (here are the [instructions](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)).
 2. Configure your environment with the following command:
    ```
    grok config
@@ -186,7 +187,7 @@ module.exports = {
 };
 ```
 
-Have a look at the [Webpack documentation](https://webpack.js.org/configuration/) in case you need to modify or extend the provided options. For instance, you can add CSS and other file [loaders](https://webpack.js.org/loaders/) to `module.rules`. When the package is loaded, the output gets assigned to a variable (type `window.sequence` in the browser console just to check). Finally, note that the package name have reoccurred in multiple files, including this one. This might become important if you are going to introduce changes to the code or, for example, rename the package without creating it from scratch. In this case, make sure the name is accurately substituted: set the `name` field in `package.json` and `library` in `webpack.config.js` to the desired name in lower case, and rename a class `<package_name>PackageDetectors` using camel case in `detectors.js`.
+Have a look at the [Webpack documentation](https://webpack.js.org/configuration/) in case you need to modify or extend the provided options. For instance, you can add CSS and other file [loaders](https://webpack.js.org/loaders/) to `module.rules`. When the package is loaded, the output gets assigned to a variable (type `window.<package_name>`, e.g. `window.sequence`, in the browser's console just to check). Finally, note that the package name have reoccurred in multiple files, including this one. This might become important if you are going to introduce changes to the code or, for example, rename the package without creating it from scratch. In this case, make sure the name is accurately substituted: set the `name` field in `package.json` and `library` in `webpack.config.js` to the desired name in lower case, and rename a class `<package_name>PackageDetectors` using camel case in `detectors.js`.
 
 ### Naming Conventions
 
