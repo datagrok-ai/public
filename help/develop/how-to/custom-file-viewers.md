@@ -31,7 +31,7 @@ nglStructureViewer(file) {
 ```
 
 This is it! Once a [package](../develop.md#packages) containing that function is published, 
-the platform will automatically create the corresponding viewer once user selects the file with the
+the platform will automatically create the corresponding viewer when user selects the file with the
 specified extension. Here's how it looks:
 
 ![](../../access/file-shares-file-viewers.gif)
