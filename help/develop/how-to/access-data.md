@@ -15,6 +15,8 @@ In the Datagrok platform, you can retrieve data from a variety of sources, be it
   * [creating](#creating-queries) and [executing parameterized queries](#executing-queries)
   * [sharing connections](#sharing-connections)
 
+Let's outline a general workflow for accessing data using connections. You will add a connection to your package, use it to query the database, and get a dataframe after running the query in JavaScript code. This is how you obtain the data for further work.
+
 ### Adding Connections
 
 As with everything else, development starts with a [package](../develop.md#packages). Packages may contain one or more data connections under the `connections` folder. For each connection, you need to create a separate `json` file with the required parameters. Here is an example:
@@ -34,7 +36,7 @@ As with everything else, development starts with a [package](../develop.md#packa
 
 The field `name` is optional, if omitted, the file name (without the extension) will be used as the connection name. In any case, remember that you should not rely on letter case to distinguish between connections, since their names are not case-sensitive. Giving parameters for the connection in `json` is completely equivalent to what you can do from the platform's interface: you would go to `Data | Databases` and right-click on the data source `PostgreSQL` to add such a connection (or, more generally, perform it from `Actions | Add New Connection`).
 
-Our package utilities provide a similar template on running the `grok add connection <name>`command. To see other examples, open [Chembl](https://github.com/datagrok-ai/public/tree/master/packages/Chembl) or [UsageAnalysis](https://github.com/datagrok-ai/public/tree/master/packages/UsageAnalysis) packages in our public repository.
+Our package utilities provide a similar template on running the `grok add connection <name>` command. To see other examples, open [Chembl](https://github.com/datagrok-ai/public/tree/master/packages/Chembl) or [UsageAnalysis](https://github.com/datagrok-ai/public/tree/master/packages/UsageAnalysis) packages in our public repository.
 
 ### Parameters
 
@@ -78,7 +80,7 @@ Connection parameters are specific to a data source. However, most of the data p
 | [Virtuoso](../../access/connectors/virtuoso.md)        | &check; | &check; | &check; | &check;      | &check;       | &check; | &check;           |&check;| &check;  |                                                                              |
 | [Web](../../access/connectors/web.md)                  |         |         |         |              |               |         |                   |       |          | [See the list](../../access/connectors/web.md#connection-parameters)         |
 
-When providing a connection string, you do not have to pass other parameters, as they will not be taken into account. The only exception is credentials: for such parameters as `Login` and `Password`, or `Access Key` and `Secret Key`, the case is different. We will cover that in the [next section](#managing-credentials). For now, let's assume that parameters carrying sensitive data form a distinct category. Given the parameters listed above, in the most general case, you would add a connection with the following contents to pull data from a provider:
+When providing a connection string, you do not have to pass other parameters, as they will not be taken into account. The only exception is credentials: for such parameters as `Login` and `Password`, or `Access Key` and `Secret Key`, the case is different. We will cover that in the [next section](#managing-credentials). For now, let's assume that parameters carrying sensitive data form a distinct category. Given the parameters listed above, in the most general case, you would add a connection with similar contents to pull data from a provider:
 
 ```json
 {
@@ -98,7 +100,7 @@ When providing a connection string, you do not have to pass other parameters, as
       "password": ""
     }
   },
-  "dataSource": "Maria DB",
+  "dataSource": "MariaDB",
   "description": "Northwind Connection",
   "tags": ["demo"]
 }
@@ -136,16 +138,24 @@ select * from protein_classification
 
 SQL statements are annotated with comments, just like [scripts](../scripting.md), since the underlying mechanism is essentially the same (read more on the concept of [functions](../../overview/functions/function.md)). Here we have two header parameters: the query `name` and the `connection` to use. In fact, this particular query could have been even simpler: there is no need to specify `connection` if the package only has one. Similarly, the tag `end` is not required if there is only one query per file: the parser needs it to understand where the current query ends and the next one begins. So safely omit the name of `connection` and/or the `end` tag if these conditions are met.
 
-You can find a list of header parameters and other details related to the query annotation in [this article](../../access/parameterized-queries.md). In addition to this, examples of data queries are available in the [Chembl](https://github.com/datagrok-ai/public/tree/master/packages/Chembl/queries) package.
+You can find a list of header parameters and other details related to the query annotation in [this article](../../access/parameterized-queries.md). In addition to this, examples of data queries are available in the [Chembl](https://github.com/datagrok-ai/public/tree/master/packages/Chembl/queries) package. To quickly insert a query template into your package, type `grok add query <name>` in the terminal.
 
 #### Executing Queries
 
-There are several ways in which queries can be run in Datagrok. The first and most natural way is to launch a query from the interface, which will be equivalent to the line `$(PACKAGE_NAME):$(QUERY_NAME)()` in the console, for example, `Chembl:ProteinClassification()`. As you might know, it is possible to call any function that can be run in the console through Datagrok's JS API. Thus, the fact that a query behaves like a regular function allows us to use the corresponding methods in JavaScript:
+There are several ways in which queries can be run in Datagrok. The first and most natural way is to launch a query from the interface, which will be equivalent to the line `$(PACKAGE_NAME):$(QUERY_NAME)()` in the console, for example, `Chembl:ProteinClassification()`. As you might know, it is possible to call any function that can be run in the console through Datagrok's JS API. Thus, the fact that a query behaves like a regular function allows us to use the corresponding method in JavaScript:
 
 ```javascript
 grok.functions.call('Chembl:ProteinClassification')
   .then(t => grok.shell.addTableView(t));
 ```
+
+There is also a special method for queries that takes the query name as a required parameter and a few additional ones (query parameters, whether it is ad hoc or not, and the polling interval):
+
+```javascript
+grok.data.query(`${PACKAGE_NAME}:${QUERY_NAME}`, {'parameter': 'value'}, true, 100);
+```
+
+See how this method works in the [example](https://public.datagrok.ai/js/samples/data-access/parameterized-query) on Datagrok.
 
 ### Sharing Connections
 
