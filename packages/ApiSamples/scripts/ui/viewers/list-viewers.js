@@ -1,10 +1,10 @@
-// You can iterate over the added to the TableView viewers
+// Inspecting view contents
 
-let parentView = grok.shell.addTableView(grok.data.demo.demog());
+let view = grok.shell.addTableView(grok.data.demo.demog());
 
-parentView.scatterPlot({x: 'height', y: 'weight'});
-parentView.histogram({value: 'age'});
-parentView.lineChart();
+view.scatterPlot({x: 'height', y: 'weight'});
+view.histogram({value: 'age'});
+view.lineChart();
 
-for (let view of parentView.viewers)
-  grok.shell.info(JSON.parse(view.getOptions()).type);
+for (let viewer of view.viewers)
+  grok.shell.info(viewer.type);

@@ -1,6 +1,88 @@
 import {toDart, toJs} from "./wrappers";
 import {__obs, _sub, observeStream} from "./events";
 
+
+export class ObjectPropertyBag {
+
+  constructor(source, x = null) {
+
+    /** @member {Object} */
+    this.source = source;
+
+    if (x == null)
+      x = source;
+
+    this.get = this.get.bind(this);
+    this.set = this.set.bind(this);
+    this.getProperty = this.getProperty.bind(this);
+    this.getProperties = this.getProperties.bind(this);
+    let props = this;
+
+    const handler = {
+      ownKeys(target) {
+        return props.getProperties().map(p => p.name);
+      },
+      has(target, name) {
+        return props.getProperties().find(p => p.name === name) !== null;
+      },
+      getOwnPropertyDescriptor(target, key) {
+        return {
+          enumerable: true,
+          configurable: true
+        };
+      },
+      set(target, name, value) {
+        target.getProperty(name).set(x, value);
+        return true;
+      },
+      get(target, name) {
+        if (name === '__proto__' || props.hasOwnProperty(name))
+          return props[name];
+
+        return target.getProperty(name).get(x);
+      }
+    }
+
+    return new Proxy(this, handler);
+  }
+
+  /**
+   * Gets the value of the specified property
+   * @param {String} propertyName
+   * @returns {Object}
+   * */
+  get(propertyName) {
+    return this.getProperty(propertyName).get(this.source);
+  }
+
+  /**
+   * Sets the value of the specified property
+   * @param {String} propertyName
+   * @param {Object} propertyValue
+   * */
+  set(propertyName, propertyValue) {
+    this.getProperty(propertyName).set(this.source, propertyValue);
+  }
+
+  /** @returns {Property[]} */
+  getProperties() {
+    return this.source.getProperties();
+  }
+
+  /** Gets property by name (case-sensitive).
+   * @param {string} name
+   * @returns {Property} */
+  getProperty(name) {
+    var property = this.getProperties().find((p) => p.name === name);
+    if (typeof property == 'undefined')
+      throw `Property not found: ${name}`;
+    return property;
+  }
+
+  //apply() {}
+}
+
+
 /** Base class for controls that have a visual root and a set of properties. */
 export class Widget {
 
@@ -11,19 +93,20 @@ export class Widget {
     this._root = widgetRoot;
 
     /** @member {Property[]}*/
-    this.properties = [];
+    this._properties = [];
+
+    /** @member {ObjectPropertyBag} */
+    this.props = new ObjectPropertyBag(this);
+
+    this.getProperties = this.getProperties.bind(this);
   }
+
+  getProperties() { return this._properties; }
 
   /** Widget's visual root.
    * @type {HTMLElement} */
-  get root() {
-    return this._root;
-  }
-
-  set root(r) {
-    this._root = r;
-  }
-
+  get root() { return this._root; }
+  set root(r) { this._root = r; }
 
   /** @returns {Widget} */
   static fromRoot(root) {

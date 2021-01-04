@@ -344,8 +344,8 @@ export class Package {
 }
 
 
-type PropertyGetter = (item: any) => any
-type PropertySetter = (item: any) => void
+type PropertyGetter = (x: any) => any
+type PropertySetter = (x: any, item: any) => void
 
 /**
  * Strongly-typed property associated with an object.

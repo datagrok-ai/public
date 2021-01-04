@@ -3,10 +3,21 @@ import {StreamSubscription} from "./events";
 import {Property} from "./entities";
 import {DataFrame} from "./dataframe";
 
+export class ObjectPropertyBag {
+    constructor(source: any, x?: any);
+
+    get(propertyName: string): any;
+    set(propertyName: string, propertyValue: any): void;
+    getProperties(): Property[];
+    getProperty(name: string): Property;
+}
+
 /** Base class for controls that have a visual root and a set of properties. */
 export class Widget {
 
-    properties: Property[];
+    getProperties(): Property[];
+
+    props: ObjectPropertyBag;
 
     /** @constructs Widget and initializes its root. */
     constructor()

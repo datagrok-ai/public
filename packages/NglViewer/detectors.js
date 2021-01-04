@@ -5,7 +5,7 @@ class NglViewerPackageDetectors extends DG.Package {
   //output: string semType
   detectPdbId(col) {
     let name = col.name.toLowerCase();
-    if (col.type === DG.TYPE.STRING && name.contains('pdb') && DG.Detector.sampleCategories(col,(s) => s.length === 4))
+    if (col.type === DG.TYPE.STRING && name.includes('pdb') && DG.Detector.sampleCategories(col,(s) => s.length === 4))
       return 'pdb_id';
   }
 }
