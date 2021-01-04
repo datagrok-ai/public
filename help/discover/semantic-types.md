@@ -29,6 +29,8 @@ by column semantic type detectors, or set manually.
 Open column properties (click on a column and press F2, or right-click and select Properties), 
 see 'Semantics' field.
 
+![](semantic-properties.gif "Column Properties")
+
 ## Automatic Semantic Type Detection
 
 Out of the box, the following semantic types are automatically detected based on the content:
@@ -51,7 +53,11 @@ Out of the box, the following semantic types are automatically detected based on
 
 Datagrok has been designed to be as extensible as possible, so naturally it is possible
 to define your own custom semantic types, along with the type auto-detection functions,
-renderers, comparers, and so on. To do that, check out [JavaScript API](../develop/develop.md). 
+renderers, comparers, and so on. To do that, check out [this article](../develop/how-to/semantic-type-detector.md).
+
+![](../develop/how-to/semantic-type-detectors.gif "Custom Semantic Type Magnitude")
 
 See also:
-* [Metadata](metadata.md)
+  * [Metadata](metadata.md)
+  * [JavaScript Development](../develop/develop.md)
+  * [How to Define Semantic Type Detectors](../develop/how-to/semantic-type-detector.md)

@@ -49,6 +49,8 @@ class ViewersPackageDetectors extends DG.Package {
 
 Apart from `col.min` and `col.max`, there are other [descriptive statistics](https://public.datagrok.ai/js/samples/data-frame/stats) calculated for a column. It is also possible to run a custom check function on a random subset of column values (see an example in the public package [NglViewer](https://github.com/datagrok-ai/public/blob/master/packages/NglViewer/detectors.js)).
 
+![](semantic-type-detectors.gif "Detected Types: Latitude, Longitude, Magnitude")
+
 See also:
   * [JavaScript Development](../develop.md)
   * [Semantic Types](../../discover/semantic-types.md)
