@@ -93,8 +93,8 @@ Let's consider how Datagrok interprets individual attributes of the Swagger file
 
 | In Swagger File | In Datagrok                                          |
 |-----------------|------------------------------------------------------|
-| title           | [Data connection](data-connection.md) name           |                                         |
-| description     | [Data connection](data-connection.md) description    |                                            |
+| title           | [Data connection](data-connection.md) name           |
+| description     | [Data connection](data-connection.md) description    |
 | paths           | [Data query](data-query.md) is created for each path |
 | summary         | [Data query](data-query.md) name                     |
 
