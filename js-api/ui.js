@@ -224,7 +224,7 @@ function _options(element, options = null) {
  * @returns {HTMLDivElement}
  * */
 export function div(children = [], options = null) {
-  return _options(grok_UI_Div(children.map(render), null), options);
+  return _options(grok_UI_Div(children == null ? null :  children.map(render), null), options);
 }
 
 /** Div flex-box container that positions child elements vertically.
@@ -232,7 +232,7 @@ export function div(children = [], options = null) {
  * @param {string | ElementOptions} options
  * @returns {HTMLDivElement} */
 export function divV(items, options = null) {
-  return _options(grok_UI_DivV(items.map(render), null));
+  return _options(grok_UI_DivV(items == null ? null : items.map(render), null), options);
 }
 
 /** Same as divV, but with margins.
@@ -248,7 +248,7 @@ export function panel(items, options = null) {
  * @param {string | ElementOptions} options
  * @returns {HTMLDivElement} */
 export function divH(items, options = null) {
-  return _options(grok_UI_DivH(items.map(render), null));
+  return _options(grok_UI_DivH(items == null ? null : items.map(render), null), options);
 }
 
 /** Div flex-box container that positions child elements horizontally.
