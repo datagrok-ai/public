@@ -76,11 +76,9 @@ export class Viewer {
     close(): void;
 }
 
-
-export class JsViewerProps {
-    constructor(viewer: Viewer)
+export class ObjectPropertyBag {
+    constructor(x: any);
 }
-
 
 /**
  * Subclass JsViewer to implement a DataFrame-bound Datagrok viewer in JavaScript.
@@ -91,7 +89,7 @@ export class JsViewer extends Widget {
     dataFrame: DataFrame;
     subs: Subscription[];
     obs: Observable<any>[];
-    props: JsViewerProps;
+    props: ObjectPropertyBag;
 
     /**
      * Gets called when a table is attached to the viewer.

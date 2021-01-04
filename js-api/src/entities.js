@@ -686,21 +686,25 @@ export class Property {
     this.d = d;
   }
 
-  /** Property getter is a function that acccepts one parameter (item)
-   * and returns the property value. */
+  /** Property getter is a function that accepts one parameter (item)
+   * and returns the property value.
+   *
+   * @returns {PropertyGetter} */
   get get() {
     return grok_Property_Get_Get(this.d);
   }
 
+  /** @param {PropertyGetter} x */
   set get(x) {
     return grok_Property_Set_Get(this.d, x);
   }
 
-  /** Property setter */
+  /** @returns {PropertySetter} */
   get set() {
     return grok_Property_Get_Set(this.d);
   }
 
+  /** @param {PropertySetter} x*/
   set set(x) {
     return grok_Property_Set_Set(this.d, x);
   }

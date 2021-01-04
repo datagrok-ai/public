@@ -7,6 +7,10 @@ import {_getIterator, _toIterable} from "./utils";
 
 /**
  * Finds the item by its unique id.
+
+ * @typedef {function(String): Object} PropertyGetter
+ * @typedef {function(String, Object)} PropertySetter
+ *
  * @typedef {function(Row): boolean} RowPredicate
  * @typedef {function(Column): boolean} ColumnPredicate
  * @typedef {function(number): boolean} IndexPredicate

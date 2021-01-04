@@ -8,6 +8,6 @@ let aggColSelector = bc.getInfo().aggColSelector;
 let splitColSelector = bc.getInfo().splitColSelector;
 let canvas = bc.getInfo().canvas;
 
-grok.shell.info('splitColumnName name: ' + bc.properties.splitColumnName.name);
-grok.shell.info('stackColumnName propertyType: ' + bc.properties.stackColumnName.propertyType);
-grok.shell.info('valueColumnName semType:' + bc.properties.valueColumnName.semType);
+grok.shell.info('splitColumnName name: ' + bc.props.getProperty('splitColumnName').name);
+grok.shell.info('stackColumnName propertyType: ' + bc.props.getProperty('stackColumnName').propertyType);
+grok.shell.info('valueColumnName semType:' + bc.props.getProperty('valueColumnName').semType);

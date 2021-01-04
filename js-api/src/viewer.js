@@ -3,9 +3,8 @@ import {TYPE, VIEWER} from "./const";
 import {DataFrame} from "./dataframe.js";
 import * as ui from "./../ui.js";
 import {Property} from "./entities";
-import {Widget} from "./widgets";
+import {Widget, ObjectPropertyBag} from "./widgets";
 import {_toJson} from "./utils";
-import {Balloon} from "./widgets";
 import {toJs} from "./wrappers";
 import {observeStream, StreamSubscription, __obs} from "./events";
 import * as rxjs from "rxjs";
@@ -41,11 +40,15 @@ export class TypedEventArgs {
      color: 'race',
    });
  **/
-export class Viewer {
+export class Viewer extends Widget {
 
   /** @constructs Viewer */
   constructor(d) {
+    super();
     this.d = d;
+
+    /** @member {ObjectPropertyBag} */
+    this.props = new ObjectPropertyBag(this, grok_Viewer_Get_Look(this.d));
   }
 
   /** Creates a new viewer of the specified type.
@@ -79,7 +82,7 @@ export class Viewer {
     return grok_Viewer_GetInfo(this.d);
   }
 
-  get properties() {
+  getProperties() {
     return grok_Viewer_Get_Properties(this.d);
   }
 
@@ -165,44 +168,6 @@ export class Viewer {
   }
 }
 
-export class JsLookAndFeel {
-  constructor() {
-    return new Proxy(this, {
-      set(target, name, value) {
-        target.table.set(name, target.idx, value);
-        return true;
-      },
-      get(target, name) {
-        return target.table.get(name, target.idx);
-      }
-    });
-  }
-
-  get(name) {
-    return null;
-  }
-}
-
-
-export class JsViewerProps {
-
-  constructor(viewer) {
-
-    /** @member {JsViewer} */
-    this.viewer = viewer;
-
-    return new Proxy(this, {
-      set(target, name, value) {
-        this.viewer.getProperty(name).set(null, value);
-        return true;
-      },
-      get(target, name) {
-        return this.viewer.getProperty(name).get(null);
-      }
-    });
-  }
-}
-
 
 /** Subclass JsViewer to implement a DataFrame-bound Datagrok viewer in JavaScript.
  *  See an example on github: {@link https://github.com/datagrok-ai/public/tree/master/packages/Leaflet}
@@ -225,8 +190,8 @@ export class JsViewer extends Widget {
     /** @member {Observable[]} */
     this.obs = [];
 
-    /** @member {JsViewerProps} */
-    this.props = new JsViewerProps(this);
+    /** @member {ObjectPropertyBag} */
+    this.props = new ObjectPropertyBag(this);
   }
 
   onFrameAttached(dataFrameHandle) {
@@ -253,11 +218,11 @@ export class JsViewer extends Widget {
    * @param {string} name
    * @returns {Property} */
   getProperty(name) {
-    return this.properties.find((p) => p.name === name);
+    return this.getProperties().find((p) => p.name === name);
   }
 
   getProperties() {
-    return this.properties;
+    return this._properties;
   }
 
   getDartProperties() {
@@ -288,7 +253,7 @@ export class JsViewer extends Widget {
       obj.onPropertyChanged(p);
     };
 
-    this.properties.push(p);
+    this._properties.push(p);
     return p.defaultValue;
   }
 
