@@ -12,10 +12,45 @@ export class ObjectPropertyBag {
     if (x == null)
       x = source;
 
-    this.get = this.get.bind(this);
-    this.set = this.set.bind(this);
-    this.getProperty = this.getProperty.bind(this);
-    this.getProperties = this.getProperties.bind(this);
+    // this.get = this.get.bind(this);
+    // this.set = this.set.bind(this);
+    // this.getProperty = this.getProperty.bind(this);
+    // this.getProperties = this.getProperties.bind(this);
+
+    // /**
+    //  * Gets the value of the specified property
+    //  * @param {String} propertyName
+    //  * @returns {Object}
+    //  * */
+    // this.get = function(propertyName) {
+    //   return this.getProperty(propertyName).get(this.source);
+    // }
+    //
+    // /**
+    //  * Sets the value of the specified property
+    //  * @param {String} propertyName
+    //  * @param {Object} propertyValue
+    //  * */
+    // this.set = function(propertyName, propertyValue) {
+    //   this.getProperty(propertyName).set(this.source, propertyValue);
+    // }
+    //
+    // /** @returns {Property[]} */
+    // this.getProperties = function() {
+    //   return this.source.getProperties();
+    // }
+    //
+    // /** Gets property by name (case-sensitive).
+    //  * @param {string} name
+    //  * @returns {Property} */
+    // this.getProperty = function(name) {
+    //   var property = this.getProperties().find((p) => p.name === name);
+    //   if (typeof property == 'undefined')
+    //     throw `Property not found: ${name}`;
+    //   return property;
+    // }
+
+
     let props = this;
 
     const handler = {
@@ -36,7 +71,8 @@ export class ObjectPropertyBag {
         return true;
       },
       get(target, name) {
-        if (name === '__proto__' || props.hasOwnProperty(name))
+        const own = ['__proto__', 'getProperty', 'getProperties', 'get', 'set'];
+        if (own.includes(name) || props.hasOwnProperty(name))
           return props[name];
 
         return target.getProperty(name).get(x);
@@ -78,8 +114,6 @@ export class ObjectPropertyBag {
       throw `Property not found: ${name}`;
     return property;
   }
-
-  //apply() {}
 }
 
 
