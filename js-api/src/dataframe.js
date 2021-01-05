@@ -849,9 +849,10 @@ export class ColumnList {
   /** Adds a virtual column.
    * @param {string} name
    * @param {Function} getValue - value constructor function that accepts int index and returns value
+   * @param {String} type - column type
    * @returns {Column} */
-  addNewVirtual(name, getValue) {
-    return toJs(grok_ColumnList_AddNewVirtual(this.d, name, getValue));
+  addNewVirtual(name, getValue, type = TYPE.OBJECT) {
+    return toJs(grok_ColumnList_AddNewVirtual(this.d, name, getValue, type));
   }
 
   /** Removes column by name (case-insensitive).
