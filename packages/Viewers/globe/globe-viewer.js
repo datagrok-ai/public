@@ -14,8 +14,8 @@ export class GlobeViewer extends DG.JsViewer {
     // Properties
     this.latitudeColumnName = this.string('latitudeColumnName');
     this.longitudeColumnName = this.string('longitudeColumnName');
-    // TODO: draw country polygons for columns with DG.SEMTYPE.COUNTRY
     this.magnitudeColumnName = this.float('magnitudeColumnName');
+    this.colorByColumnName = this.float('colorByColumnName');
     this.pointRadius = this.float('pointRadius', 15);
     this.pointAltitude = this.float('pointAltitude', 50);
     this.autorotation = this.bool('autorotation', true);
@@ -26,6 +26,39 @@ export class GlobeViewer extends DG.JsViewer {
   }
 
   init() {
+    this.globe = new ThreeGlobe()
+      .globeImageUrl(`${_package.webRoot}globe/earth-blue-marble.jpg`)
+      .bumpImageUrl(`${_package.webRoot}globe/earth-topology.png`);
+
+    this.width = this.root.parentElement.clientWidth;
+    this.height = this.root.parentElement.clientHeight;
+
+    this.renderer = new THREE.WebGLRenderer({alpha: true});
+    this.renderer.domElement.style.backgroundImage = `url(${_package.webRoot}globe/night-sky.png)`;
+    this.renderer.setSize(this.width, this.height);
+    this.root.appendChild(this.renderer.domElement);
+
+    this.scene = new THREE.Scene();
+    this.scene.add(this.globe);
+    this.scene.add(new THREE.AmbientLight(0xbbbbbb));
+    this.scene.add(new THREE.DirectionalLight(0xffffff, 0.6));
+
+    this.camera = new THREE.PerspectiveCamera(50, this.width / this.height);
+    this.camera.position.z = 500;
+
+    this.orbControls = new OrbitControls(this.camera, this.renderer.domElement);
+    this.orbControls.minDistance = 101;
+    this.orbControls.rotateSpeed = 1.5;
+    this.orbControls.zoomSpeed = 0.8;
+    this.orbControls.autoRotate = true;
+    this.orbControls.autoRotateSpeed = 2.2;
+
+    (function animate() {
+      this.orbControls.update();
+      this.renderer.render(this.scene, this.camera);
+      requestAnimationFrame(animate.bind(this));
+    }).bind(this)();
+
     this.initialized = true;
   }
 
@@ -35,11 +68,18 @@ export class GlobeViewer extends DG.JsViewer {
     this.latitudeColumnName = this.dataFrame.columns.bySemType(DG.SEMTYPE.LATITUDE).name;
     this.longitudeColumnName = this.dataFrame.columns.bySemType(DG.SEMTYPE.LONGITUDE).name;
     this.magnitudeColumnName = this.dataFrame.columns.bySemType('Magnitude').name;
-    this.getCoordinates();
+    // By default, beam color and size depend on the same column
+    this.colorByColumnName = this.magnitudeColumnName;
 
     this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
     this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()));
-    this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => this.render()));
+    this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => {
+      let width = this.root.parentElement.clientWidth;
+      let height = this.root.parentElement.clientHeight;
+      this.renderer.setSize(width, height);
+      this.camera.aspect = width / height;
+      this.camera.updateProjectionMatrix();
+    }));
 
     this.render();
   }
@@ -47,7 +87,7 @@ export class GlobeViewer extends DG.JsViewer {
   onPropertyChanged(property) {
     super.onPropertyChanged(property);
     if (this.initialized) {
-      this.getCoordinates();
+      this.orbControls.autoRotate = this.autorotation;
       this.render();
     }
   }
@@ -57,74 +97,42 @@ export class GlobeViewer extends DG.JsViewer {
   }
 
   getCoordinates() {
+    this.points.length = 0;
     let lat = this.dataFrame.getCol(this.latitudeColumnName).getRawData();
     let lon = this.dataFrame.getCol(this.longitudeColumnName).getRawData();
+
+    let colorByCol = this.dataFrame.getCol(this.colorByColumnName);
     let mag = this.dataFrame.getCol(this.magnitudeColumnName);
+
     let magRange = [mag.min, mag.max];
-    let color = scaleSequential(magRange, interpolateYlOrRd);
+    let color = scaleSequential().interpolator(interpolateYlOrRd);
+    if (this.magnitudeColumnName === this.colorByColumnName) color.domain(magRange);
+    else color.domain([colorByCol.min, colorByCol.max]);
+
     let altRange = [0.1, this.rScale(this.pointAltitude)];
     if (altRange[1] < 0.1) altRange[0] = 0;
     let size = scaleSqrt(magRange, altRange);
+
     mag = mag.getRawData();
-    let rowCount = this.dataFrame.rowCount;
-    for (let i = 0; i < rowCount; i++) {
+    colorByCol = colorByCol.getRawData();
+    for (let i of this.dataFrame.filter.getSelectedIndexes()) {
       this.points.push({
         lat: lat[i],
         lng: lon[i],
         size: size(mag[i]),
-        color: color(mag[i])
+        color: color(colorByCol[i])
       });
     }
   }
 
   render() {
 
-    let globe = new ThreeGlobe()
-      .globeImageUrl(`${_package.webRoot}globe/earth-blue-marble.jpg`)
-      .bumpImageUrl(`${_package.webRoot}globe/earth-topology.png`)
+    this.getCoordinates();
+    this.globe
       .pointsData(this.points)
       .pointAltitude('size')
       .pointColor('color')
       .pointRadius(this.rScale(this.pointRadius));
 
-    $(this.root).empty();
-    let width = this.root.parentElement.clientWidth;
-    let height = this.root.parentElement.clientHeight;
-
-    // Setup renderer
-    let renderer = new THREE.WebGLRenderer({alpha: true});
-    renderer.setSize(width, height);
-    renderer.domElement.style.backgroundImage = `url(${_package.webRoot}globe/night-sky.png)`;
-    this.root.appendChild(renderer.domElement);
-
-    // Setup scene
-    let scene = new THREE.Scene();
-    scene.add(globe);
-    scene.add(new THREE.AmbientLight(0xbbbbbb));
-    scene.add(new THREE.DirectionalLight(0xffffff, 0.6));
-
-    // Setup camera
-    let camera = new THREE.PerspectiveCamera();
-    camera.aspect = width / height;
-    camera.updateProjectionMatrix();
-    camera.position.z = 500;
-
-    // Add camera controls
-    let orbControls = new OrbitControls(camera, renderer.domElement);
-    if (this.autorotation) {
-      orbControls.autoRotate = true;
-      orbControls.autoRotateSpeed = 2.2;
-    }
-    orbControls.minDistance = 101;
-    orbControls.rotateSpeed = 1.5;
-    orbControls.zoomSpeed = 0.8;
-
-    // Kick-off renderer
-    (function animate() { // IIFE
-      // Frame cycle
-      orbControls.update();
-      renderer.render(scene, camera);
-      requestAnimationFrame(animate);
-    })();
   }
 }
