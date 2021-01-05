@@ -161,8 +161,73 @@ See how this method works in the [example](https://public.datagrok.ai/js/samples
 
 Data connections can be shared as part of a [project](../../overview/project.md), [package](../develop.md#packages) (and [repository](../../access/connectors/git.md) containing this package), or as an independent [entity](../../overview/objects.md). Access rights of a database connection inherit access rights of a query. However, access rights of the query don't inherit access rights of the database connection. Thus, if one shares a query, the associated database connection shall automatically be shared. At the same time, when you are sharing a connection, your queries aren't going to be shared automatically. As for web queries, they are automatically shared along with sharing the corresponding connection.
 
+### Database Connection Caching
+
+Caching query results is quite straightforward — all you need to do is setting the `cache results` parameter to `true`. Saving relies on the current connection parameters and the query name, if those remain unchanged, you will get the cached results. A similar setting exists at the query level as well: `--meta.cache: true`.
+
+## Reading Files
+
+In addition to connections and queries, it is useful to look at methods for reading files. In our [JavaScript API examples](https://public.datagrok.ai/js), you can find methods that provide data for demonstration (`grok.data.demo` or `grok.data.getDemoTable`) and testing purposes (`grok.data.testData`). However, here we will cover the part that you will often use to deliver data to your applications.
+
+### Package Files
+
+If you want to access data that resides within your package (e.g. open a `csv` table), load it from URL, as you would do with other [external files](https://public.datagrok.ai/js/samples/data-access/external/stock-prices). The package root for client side can be found with `webRoot` property. The example shown below gets the `test.csv` table from the `data-samples` subdirectory and opens a table view for it:
+
+```javascript
+let _package = new DG.Package();
+
+grok.data.loadTable(`${_package.webRoot}data-samples/test.csv`)
+  .then(t => grok.shell.addTableView(t));
+```
+
+### File Shares
+
+Connecting to [file shares](../../access/file-shares.md) offers you more opportunities: files form a hierarchy, which you can browse naturally from the interface. Let's start with an existing file share — the user's home directory. In Datagrok's [file browser](https://public.datagrok.ai/files), each user has a special `HOME` folder to store their files, which makes it a perfect example. Here is how you can work with your files located there:
+
+```javascript
+grok.functions.eval(`OpenServerFile("${USER}:Home/data.csv")`)
+  .then(t => grok.shell.addTableView(t[0]));
+```
+
+But more importantly, file shares let you gain access to data from various locations. So let's find out how to create such a connection in your package. Again, it's just a `json` file with the corresponding parameters:
+
+```json
+{
+    "name": "New File Share",
+    "parameters": {
+        "dir": "/home/www/master/servergrok/data/demo",
+        "index files": true
+    },
+    "credentials" : {
+        "parameters": {
+            "login": "",
+            "password": ""
+        }
+    },
+    "dataSource": "Files",
+    "tags": ["demo"]
+}
+```
+
+You should specify two parameters for connection: the directory you are going to work with and whether you want to index its files (if you do, there will be an indexing data job). When referring to a file from your code, put the names of package and connection before the file. The path to it should be relative to what you previously specified in the `dir` parameter:
+
+```javascript
+grok.functions.eval(`OpenServerFile("${PACKAGE_NAME}:${CONNECTION_NAME}/data.csv")`)
+  .then(t => grok.shell.addTableView(t[0]));
+```
+
+### Other Ways for Reading Files
+
+Finally, let's walk through other methods that can be used to open files from JavaScript:
+
+  * If you define a function that takes an input of `file` type, this creates a number of opportunities. First, you can call `file.readAsBytes()` or `file.readAsString()` methods on it. For instance, if you pass an obtained string to `grok.data.parseCsv(csv, options)`, it is possible to fine-tune the construction of dataframe from comma-separated values. Alternatively, you can pass a file to a [script](../scripting.md) to compute something and get the results back to your application's code.
+  * The method `grok.data.openTable(id)` might come in handy when you are reproducing a process and need to open a specific table by its id. See an [example](https://public.datagrok.ai/js/samples/data-access/open-table-by-id).
+
 See also:
+  * [JavaScript Development](../develop.md)
   * [Data Connection](../../access/data-connection.md)
   * [Data Query](../../access/data-query.md)
+  * [Data Job](../../access/data-job.md)
+  * [File Shares](../../access/file-shares.md)
   * [Functions](../../overview/functions/function.md)
   * [Parameterized Queries](../../access/parameterized-queries.md)
