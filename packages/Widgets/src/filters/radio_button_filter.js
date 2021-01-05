@@ -11,13 +11,21 @@ class RadioButtonFilter extends DG.Filter {
   constructor() {
     super();
     this.root = ui.divV(null, 'd4-radio-button-filter');
+    this.subs = [];
   }
 
-  attach(dFrame) {
-    this.dataFrame = DG.toJs(dFrame);
-    this.column = this.dataFrame.columns.categorical[0];
-    this.dataFrame.onRowsFiltering.subscribe((_) => this.applyFilter());
+  attach(dataFrame) {
+    this.dataFrame = dataFrame;
+    this.column = DG.Utils.firstOrNull(this.dataFrame.columns.categorical);
+
+    this.subs.push(this.dataFrame.onRowsFiltering.subscribe((_) => this.applyFilter()));
+
     this.render();
+  }
+
+  detach() {
+    console.log('detached!');
+    this.subs.forEach((s) => s.unsubscribe());
   }
 
   applyFilter() {

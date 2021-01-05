@@ -2,6 +2,14 @@ import {Balloon} from "./widgets";
 import * as rxjs from 'rxjs';
 import {toJs} from "./wrappers";
 
+export class Utils {
+  /** @param {Iterable} iterable*/
+  static firstOrNull(iterable) {
+    let first = iterable[Symbol.iterator]().next();
+    return first.done ? null : first.value;
+  }
+}
+
 // export class PropProxy {
 //     constructor(d) {
 //         this.d = d;

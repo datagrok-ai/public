@@ -133,6 +133,13 @@ export class Filter extends Widget {
     /** @member {DataFrame} */
     this.dataFrame = null;
   }
+
+  /** Gets called when a data frame is attached.
+   * @param {DataFrame} dataFrame*/
+  attach(dataFrame) {}
+
+  /** Gets called when a filter is detached and will no longer be used. Unsubscribe from events here. */
+  detach() {}
 }
 
 

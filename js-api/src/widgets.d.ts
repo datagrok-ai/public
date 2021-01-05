@@ -39,6 +39,10 @@ export class Filter extends Widget {
     dataFrame: DataFrame | null;
 
     constructor()
+
+    attach(dataFrame: DataFrame): void
+
+    detach(): void
 }
 
 export class DartWidget extends Widget {
