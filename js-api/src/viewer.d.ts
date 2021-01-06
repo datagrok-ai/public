@@ -60,13 +60,13 @@ export class Viewer {
 
     /**
      * Sets viewer options. See also {@link getOptions}
-     Sample: https://public.datagrok.ai/js/samples/ui/viewers/scatter-plot
+     Sample: https://public.datagrok.ai/js/samples/ui/viewers/types/scatter-plot
      */
     setOptions(map: object): void;
 
     /**
      * Gets viewer options. See also {@link getOptions}
-     Sample: https://public.datagrok.ai/js/samples/ui/viewers/scatter-plot
+     Sample: https://public.datagrok.ai/js/samples/ui/viewers/types/scatter-plot
      */
     getOptions(): object;
 

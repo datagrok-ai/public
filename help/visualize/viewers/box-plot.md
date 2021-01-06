@@ -47,5 +47,5 @@ See also:
   
 * [Viewers](../viewers.md)
 * [Table View](../../overview/table-view.md)
-* [JS API: Box plot](https://public.datagrok.ai/js/samples/ui/viewers/box-plot)
+* [JS API: Box plot](https://public.datagrok.ai/js/samples/ui/viewers/types/box-plot)
 * [Wikipedia: Welch's t-test](https://en.wikipedia.org/wiki/Welch%27s_t-test)

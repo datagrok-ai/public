@@ -116,4 +116,4 @@ See also:
   
   * [Viewers](../viewers.md)
   * [Table View](../../overview/table-view.md)
-  * [JS API: Grid](https://public.datagrok.ai/js/samples/ui/viewers/grid)
+  * [JS API: Grid](https://public.datagrok.ai/js/samples/ui/viewers/types/grid)

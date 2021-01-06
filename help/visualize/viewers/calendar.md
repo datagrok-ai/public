@@ -26,4 +26,4 @@ See also:
   
   * [Viewers](../viewers.md)
   * [Table View](../../overview/table-view.md)
-  * [JS API: Calendar](https://public.datagrok.ai/js/samples/ui/viewers/calendar)
+  * [JS API: Calendar](https://public.datagrok.ai/js/samples/ui/viewers/types/calendar)

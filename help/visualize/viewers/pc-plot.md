@@ -34,4 +34,4 @@ See also:
   
   * [Viewers](../viewers.md)
   * [Table View](../../overview/table-view.md)
-  * [JS API: PC Plot](https://public.datagrok.ai/js/samples/ui/viewers/pc-plot)
+  * [JS API: PC Plot](https://public.datagrok.ai/js/samples/ui/viewers/types/pc-plot)

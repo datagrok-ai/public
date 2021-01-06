@@ -27,4 +27,4 @@ sometimes it can't map names to the regions. To identify these records, select
 See also:
 * Applicable tables: #{x.demo:germany_grp_by_state}, #{x.demo:pa_income_by_county}, #{x.demo:ua_population}  
 * [Viewers](../viewers.md)
-* [JS API: Shape Map](https://public.datagrok.ai/js/samples/ui/viewers/shape-map)
+* [JS API: Shape Map](https://public.datagrok.ai/js/samples/ui/viewers/types/shape-map)

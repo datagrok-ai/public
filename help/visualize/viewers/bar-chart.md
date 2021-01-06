@@ -25,5 +25,5 @@ See also:
 * [Column Selectors](column-selectors.md)
 * [Table View](../../overview/table-view.md)
 * [Viewers](../viewers.md)
-* [JS API: Bar Chart](https://public.datagrok.ai/js/samples/ui/viewers/bar-chart)
+* [JS API: Bar Chart](https://public.datagrok.ai/js/samples/ui/viewers/types/bar-chart)
   

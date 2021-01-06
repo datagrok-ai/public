@@ -25,4 +25,4 @@ See also:
   
   * [Viewers](../viewers.md)
   * [Table View](../../overview/table-view.md)
-  * [JS API: Line chart](https://public.datagrok.ai/js/samples/ui/viewers/line-chart)
+  * [JS API: Line chart](https://public.datagrok.ai/js/samples/ui/viewers/types/line-chart)

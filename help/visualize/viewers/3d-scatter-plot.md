@@ -30,4 +30,4 @@ See also:
   * [Column Selectors](column-selectors.md)
   * [Table View](../../overview/table-view.md)
   * [Viewers](../viewers.md)
-  * [JS API: 3D Scatter Plot](https://public.datagrok.ai/js/samples/ui/viewers/scatter-plot-3d)
+  * [JS API: 3D Scatter Plot](https://public.datagrok.ai/js/samples/ui/viewers/types/scatter-plot-3d)
