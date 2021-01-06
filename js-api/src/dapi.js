@@ -148,7 +148,7 @@ export class Dapi {
       headers: headers,
       body: JSON.stringify(body)
     };
-    return await fetch('/api/connectors/proxy', params)
+    return await fetch('/api/connectors/proxy', params);
   }
 
   /** Proxies URL request via Datagrok server with same interface as "fetch".
@@ -158,7 +158,7 @@ export class Dapi {
     params.headers['original-url'] = `${url}`;
     params.headers['original-method'] = params.method;
     params.method = 'POST';
-    return fetch('/api/connectors/proxy', params)
+    return fetch('/api/connectors/proxy', params);
   }
 
   /** Administering API endpoint
