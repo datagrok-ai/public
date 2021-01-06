@@ -133,6 +133,7 @@ export class Dapi {
   }
 
   /** Proxies URL request via Datagrok server with same interface as "fetch".
+   * @deprecated
    * @param {string} method
    * @param {string} url
    * @param {Object} headers
@@ -148,6 +149,16 @@ export class Dapi {
       body: JSON.stringify(body)
     };
     return await fetch('/api/connectors/proxy', params)
+  }
+
+  /** Proxies URL request via Datagrok server with same interface as "fetch".
+   * @param {Object} params
+   * @returns {Promise<Object>} */
+  async fetchProxy(params) {
+    params.headers['original-url'] = `${url}`;
+    params.headers['original-method'] = params.method;
+    params.method = 'POST';
+    return fetch('/api/connectors/proxy', params)
   }
 
   /** Administering API endpoint
