@@ -36,4 +36,4 @@ See also:
   * [Viewers](../viewers.md)
   * [Table View](../../overview/table-view.md)
   * [Flex View](../../overview/flex-view.md)
-  * [JS API: Markup](https://public.datagrok.ai/js/samples/ui/viewers/markup)
+  * [JS API: Markup](https://public.datagrok.ai/js/samples/ui/viewers/types/markup)

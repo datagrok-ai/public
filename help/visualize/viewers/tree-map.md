@@ -23,4 +23,4 @@ See also:
   
   * [Viewers](../viewers.md)
   * [Table View](../../overview/table-view.md)
-  * [JS API: Tree Map](https://public.datagrok.ai/js/samples/ui/viewers/tree-map)
+  * [JS API: Tree Map](https://public.datagrok.ai/js/samples/ui/viewers/types/tree-map)

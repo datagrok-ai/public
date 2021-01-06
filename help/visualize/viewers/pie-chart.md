@@ -21,4 +21,4 @@ See also:
   * [Column Selectors](column-selectors.md) 
   * [Viewers](../viewers.md)
   * [Table View](../../overview/table-view.md)
-  * [JS API: Pie Chart](https://public.datagrok.ai/js/samples/ui/viewers/pie-chart)
+  * [JS API: Pie Chart](https://public.datagrok.ai/js/samples/ui/viewers/types/pie-chart)

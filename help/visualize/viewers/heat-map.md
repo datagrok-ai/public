@@ -14,4 +14,4 @@ It is based on [grid](grid.md), so all of the grid's features are applicable to 
 
 See also:
 * [Grid](grid.md)
-* [JS API: Heat map](https://public.datagrok.ai/js/samples/ui/viewers/heat-map)
+* [JS API: Heat map](https://public.datagrok.ai/js/samples/ui/viewers/types/heat-map)

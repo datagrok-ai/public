@@ -41,4 +41,4 @@ See also:
 * [Column Selectors](column-selectors.md)
 * [Viewers](../viewers.md)
 * [Table View](../../overview/table-view.md)
-* [JS API: Scatter plot](https://public.datagrok.ai/js/samples/ui/viewers/scatter-plot)
+* [JS API: Scatter plot](https://public.datagrok.ai/js/samples/ui/viewers/types/scatter-plot)

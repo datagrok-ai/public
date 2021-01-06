@@ -21,4 +21,4 @@ See also:
   
   * [Viewers](../viewers.md)
   * [Table View](../../overview/table-view.md)
-  * [JS API: Matrix Plot](https://public.datagrok.ai/js/samples/ui/viewers/matrix-plot)
+  * [JS API: Matrix Plot](https://public.datagrok.ai/js/samples/ui/viewers/types/matrix-plot)

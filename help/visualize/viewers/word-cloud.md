@@ -36,4 +36,4 @@ See also:
   
   * [Viewers](../viewers.md)
   * [Table View](../../overview/table-view.md)
-  * [JS API: Word Cloud](https://public.datagrok.ai/js/samples/ui/viewers/word-cloud)
+  * [JS API: Word Cloud](https://public.datagrok.ai/js/samples/ui/viewers/types/word-cloud)

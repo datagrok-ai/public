@@ -32,4 +32,4 @@ See also:
   
   * [Viewers](../viewers.md)
   * [Table View](../../overview/table-view.md)
-  * [JS API: Statistics](https://public.datagrok.ai/js/samples/ui/viewers/statistics)
+  * [JS API: Statistics](https://public.datagrok.ai/js/samples/ui/viewers/types/statistics)

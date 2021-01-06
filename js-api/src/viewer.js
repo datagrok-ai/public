@@ -65,14 +65,14 @@ export class Viewer extends Widget {
   }
 
   /** Sets viewer options. See also {@link getOptions}
-   *  Sample: https://public.datagrok.ai/js/samples/ui/viewers/scatter-plot
+   *  Sample: https://public.datagrok.ai/js/samples/ui/viewers/types/scatter-plot
    *  @param: {object} map */
   setOptions(map) {
     grok_Viewer_Options(this.d, JSON.stringify(map));
   }
 
   /** Gets viewer options. See also {@link getOptions}
-   *  Sample: https://public.datagrok.ai/js/samples/ui/viewers/scatter-plot
+   *  Sample: https://public.datagrok.ai/js/samples/ui/viewers/types/scatter-plot
    *  @returns: {object} */
   getOptions() {
     return JSON.parse(grok_Viewer_Serialize(this.d));

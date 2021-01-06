@@ -21,4 +21,4 @@ See also:
   
   * [Viewers](../viewers.md)
   * [Table View](../../overview/table-view.md)
-  * [JS API: Filters](https://public.datagrok.ai/js/samples/ui/viewers/filters)
+  * [JS API: Filters](https://public.datagrok.ai/js/samples/ui/viewers/types/filters)

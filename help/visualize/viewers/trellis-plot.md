@@ -40,4 +40,4 @@ See also:
   * [Viewers](../viewers.md)
   * [Table View](../../overview/table-view.md)
   * [R-Group Analysis](../../domains/chem/r-group-analysis.md)
-  * [JS API: Trellis Plot](https://public.datagrok.ai/js/samples/ui/viewers/trellis-plot)
+  * [JS API: Trellis Plot](https://public.datagrok.ai/js/samples/ui/viewers/types/trellis-plot)

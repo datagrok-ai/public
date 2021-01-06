@@ -16,4 +16,4 @@ To edit the form, right-click and select "Edit form...".
 See also:
 
 * [Form](form.md)
-* [JS API: Tile Viewer](https://public.datagrok.ai/js/samples/ui/viewers/tile-viewer)
+* [JS API: Tile Viewer](https://public.datagrok.ai/js/samples/ui/viewers/types/tile-viewer)
