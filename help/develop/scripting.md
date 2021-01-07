@@ -59,6 +59,8 @@ that means they can be implemented in different ways (db query, script, etc), an
 
 ## Environments
 
+### Conda Environments
+
 Each script can be associated with the specific package configuration that it depends on. 
 [Conda](https://docs.conda.io/en/latest/) is used as the environment management system. Environment configuration 
 is stored in the default Conda format and can be 
@@ -79,6 +81,30 @@ This is how to define the "chemprop" environment in the script header:
 ```
 #environment: chemprop
 ```
+
+### renv Environments
+
+Datagrok natively supports [_renv_](https://rstudio.github.io/renv/articles/renv.html) environments. It runs each R script in a temporary folder with an unique name. This folder becomes an renv project folder for the current run of the script.
+
+Start using _renv_ by initializing it and installing packages (see a [full example](https://github.com/datagrok-ai/public/tree/master/packages/RScripts/scripts/renv_spelling.js)):
+
+```
+#language: r
+...
+renv::init()
+renv::install("hunspell@3.0.1")
+...
+```
+
+An _renv_ session only impacts the R environment for this one single run.
+
+_Renv_ uses a global package cache. It caches a package requested once with `renv::install` and re-uses whenever it is requested onward. However, in case the latest version is requested, such as in `renv::install("hunspell")`, _renv_ connects to remote R package repositories assuring the package version. This may introduce a significant delay into the script, several seconds in practice. To avoid this, we recommend installing a specific version of the package, such as in `renv::install("hunspell@3.0.1")`. 
+
+_Note_. At the R script's start and finish Datagrok calls `renv::deactivate()` to assure script's body isolation. Therefore, the script's author doesn't need to call `renv::deactivate()` manually.
+
+We are planning to support [_renv_ lockfiles](https://rstudio.github.io/renv/articles/lockfile.html) shipped with packages similarly to how it works now for Conda `yaml` files. 
+
+## Parameters
 
 ### Parameter Validators
 
