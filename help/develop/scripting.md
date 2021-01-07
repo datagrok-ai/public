@@ -71,7 +71,7 @@ Scripts that have multiple output parameters may require a different approach. T
 let function = await grok.functions.eval(`${packageName}:${scriptName}`);
 let call = function.prepare({ params });
 await call.call();
-call.getParamValue('paramName')
+call.getParamValue('paramName');
 ```
 
 In the first line we evaluate an expression and get the function that corresponds to our script. After passing the input parameters and executing the script, we can retrieve any output value by the parameter's name.
@@ -103,7 +103,7 @@ This is how to define the "chemprop" environment in the script header:
 
 ### renv Environments
 
-Datagrok natively supports [_renv_](https://rstudio.github.io/renv/articles/renv.html) environments. It runs each R script in a temporary folder with an unique name. This folder becomes an renv project folder for the current run of the script.
+Datagrok natively supports [_renv_](https://rstudio.github.io/renv/articles/renv.html) environments. It runs each R script in a temporary folder with a unique name. This folder becomes an _renv_ project folder for the current run of the script.
 
 Start using _renv_ by initializing it and installing packages (see a [full example](https://github.com/datagrok-ai/public/tree/master/packages/RScripts/scripts/renv_spelling.js)):
 
@@ -119,7 +119,7 @@ An _renv_ session only impacts the R environment for this one single run.
 
 _Renv_ uses a global package cache. It caches a package requested once with `renv::install` and re-uses whenever it is requested onward. However, in case the latest version is requested, such as in `renv::install("hunspell")`, _renv_ connects to remote R package repositories assuring the package version. This may introduce a significant delay into the script, several seconds in practice. To avoid this, we recommend installing a specific version of the package, such as in `renv::install("hunspell@3.0.1")`. 
 
-_Note_. At the R script's start and finish Datagrok calls `renv::deactivate()` to assure script's body isolation. Therefore, the script's author doesn't need to call `renv::deactivate()` manually.
+_Note_. At the R script's start and finish, Datagrok calls `renv::deactivate()` to assure the script's body isolation. Therefore, the script's author doesn't need to call `renv::deactivate()` manually.
 
 We are planning to support [_renv_ lockfiles](https://rstudio.github.io/renv/articles/lockfile.html) shipped with packages similarly to how it works now for Conda `yaml` files. 
 

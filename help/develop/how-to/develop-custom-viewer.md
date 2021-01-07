@@ -97,6 +97,8 @@ class AwesomeViewer extends DG.JsViewer {
 
 #### Events
 
+Datagrok makes working with browser events easy. For a start, you can make viewers more interactive by showing custom tooltips. Their content may be of any kind (see an [example](https://dev.datagrok.ai/js/samples/ui/tooltips/tooltips)). For instance, there are [special tooltips](https://dev.datagrok.ai/js/samples/ui/tooltips/row-group-tooltips) for elements that represent multiple rows in a dataframe. With them, users will immediately see the rows that match pre-defined criteria and will be able to select them on click (pay attention to the `handleClick` function in the [example](https://dev.datagrok.ai/js/samples/ui/tooltips/row-group-tooltips)). Plus, other open viewers will highlight the elements that represent the respective row group as you move the mouse pointer over the current viewer (you don't need to configure anything, read more about Datagrok's efficient visualizations [here](../../visualize/viewers.md)). This also works the other way around: you can show only a selected portion of the data in your viewer. To do that, you need to know which rows the user selected so that you can narrow the data set for rendering accordingly. And this is fairly simple: the method `dataFrame.filter.getSelectedIndexes()` gives you exactly the data you need.
+
 ### Scripting Viewers
 
 ## Registering Viewers

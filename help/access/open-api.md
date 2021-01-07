@@ -7,9 +7,9 @@
 is a popular format that describes the structure of the server APIs so that machines 
 can read the document and use the service.
 
-Simple example of contents of a Swagger file in yaml format (Datagrok also supports json format for Swagger files) with a minimum set of attributes might look like this:
+Simple example of contents of a Swagger file in `yaml` format (Datagrok also supports `json` format for Swagger files) with a minimum set of attributes might look like this:
 
-```
+```yaml
 swagger: '2.0'
 info:
   description: 'AirNow'
@@ -78,18 +78,18 @@ securityDefinitions:
 
 ```
 
-Grok platform integrates with OpenAPI really well. Once a swagger file is imported
-(you can simply drag-and-drop yaml or json file into the app), its content gets translated
-to Grok connections, queries, and [functions](../overview/functions/function.md). All of them can be combined and used
-in data jobs, calculations, [info panels](../discover/info-panels.md), executed from [console](../overview/navigation.md#console), etc.   
+The Datagrok platform integrates with OpenAPI really well. Once a swagger file is imported
+(you can simply drag-and-drop a `yaml` or `json` file into the app), its content gets translated
+to [data connections](data-connection.md), [queries](data-query.md), and [functions](../overview/functions/function.md). All of them can be combined and used
+in [data jobs](data-job.md), calculations, [info panels](../discover/info-panels.md), executed from [console](../overview/navigation.md#console), etc.
 
-After  swagger file is uploaded to the platform, based on what is described in it, new [data connection](data-connection.md) will be created in Datagrok.
+After a swagger file is uploaded to the platform, based on what is described in it, a new [data connection](data-connection.md) will be created in Datagrok.
 
-You can find this connection in Connections Tree under the source "Web". Also in the user interface of Datagrok there is a special view "Web Services", which displays only connections for OpenAPI. (Located in the "Data" section on the left sidebar next to "Databases")
+You can find this connection in [Connections Tree](https://public.datagrok.ai/connect) under the source "Web". In the user interface of Datagrok, there is a special view [Web Services](https://public.datagrok.ai/webservices), which displays only connections for OpenAPI (located in the "Data" section on the left sidebar next to "Databases").
 
-Also, you can find all  created connections to OpenAPI in the Data Connections browser. ("Manage" section on side bar and then "Connections" view)
+Also, you can find all created connections to OpenAPI in the [Data Connections Browser](https://public.datagrok.ai/connections) ("Manage" section on side bar and then "Connections" view).
 
-Let's consider how Datagrok interprets individual attributes of the Swagger file:
+Let's consider how Datagrok interprets individual attributes of a Swagger file:
 
 | In Swagger File | In Datagrok                                          |
 |-----------------|------------------------------------------------------|
@@ -106,7 +106,7 @@ As we can see from the Swagger file example above, this field can be used at the
 
 
 Here it is defined at the level of the entire Swagger file:
-```
+```yaml
 swagger: '2.0'
 info:
   description: 'AirNow'
@@ -121,7 +121,7 @@ parameters:
 
 
 And here it is overridden at the level of an individual path (for "data" parameter):
-```
+```yaml
 swagger: '2.0'
 info:
   description: 'AirNow'
@@ -174,7 +174,7 @@ The ```"securityDefinitions:``` section is used to determine the type and access
 
 In the AirNow example, the api_key type is used with a parameter named "API_KEY" (external service itself provides the parameter naming requirement):
 
-```
+```yaml
 securityDefinitions:
   api_key:
     type: apiKey
