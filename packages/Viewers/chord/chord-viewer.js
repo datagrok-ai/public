@@ -1,7 +1,6 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Circos from 'circos';
-import * as d3 from 'd3';
 import {layoutConf, chordConf} from './configuration.js';
 
 
@@ -145,7 +144,7 @@ export class ChordViewer extends DG.JsViewer {
       let sourceBlock = this.segments[sourceId];
       let targetBlock = this.segments[targetId];
 
-      this.chords.push({
+      let chord = {
         source: {
           id: sourceId,
           start: sourceBlock.pos,
@@ -157,8 +156,17 @@ export class ChordViewer extends DG.JsViewer {
           end: targetBlock.pos + targetBlock.step
         },
         value: aggVal[i]
-      });
+      };
 
+      if (sourceId === targetId) {
+        chord.source.start = 0;
+        chord.target.start = chord.source.end;
+        chord.target.end = targetBlock.len;
+      }
+
+      this.chords.push(chord);
+
+      if (sourceId === targetId) continue;
       sourceBlock.pos += sourceBlock.step;
       targetBlock.pos += targetBlock.step;
     }
@@ -202,7 +210,7 @@ export class ChordViewer extends DG.JsViewer {
       height: size
     });
 
-    this.conf.innerRadius = size/2 - 80;
+    this.conf.innerRadius = size/2 - 60;
     this.conf.outerRadius = size/2 - 40;
     circos.layout(this.data, this.conf);
 
