@@ -244,6 +244,17 @@ export class DataFrame {
     return toJs(grok_DataFrame_ChangeColumnType(this.d, toDart(column), newType, format));
   }
 
+  /**
+   * Returns [Int32Array] that contains sorted order, or null for unsorted (original) order.
+   * @param {Object[]} sortByColumnIds - Collection of [Column]s to use as keys for sorting.
+   * @param {boolean[]} sortOrders - List of sort orders for [sortByCols]. True == ascending.
+   * @param {BitSet} rowMask - Mask of the rows to sort. Result array will contain [rowIndexes.length] elements.
+   * @returns {Int32Array}
+   * */
+  getSortedOrder(sortByColumnIds, sortOrders = null, rowMask = null) {
+    return grok_DataFrame_GetSortedOrder(this.d, sortByColumnIds.map(toDart), sortOrders, toDart(rowMask));
+  }
+
   /** Begins building a query, using the specified columns as keys.
    * @param {string[]} columnNames - Names of the columns to be used as keys.
    * @returns {GroupByBuilder}
