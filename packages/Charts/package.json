@@ -1,0 +1,20 @@
+{
+	"name": "charts",
+	"fullName": "Charts",
+	"version": "0.0.2",
+	"description": "",
+	"dependencies": {
+		"datagrok-api": "latest",
+		"echarts": "^5.0.0"
+	},
+	"scripts": {
+		"debug-charts": "grok publish --rebuild",
+		"release-charts": "grok publish --rebuild --release",
+		"build-charts": "webpack",
+		"build": "webpack",
+		"debug-charts-dev": "grok publish dev --rebuild",
+		"release-charts-dev": "grok publish dev --rebuild --release",
+		"debug-charts-public": "grok publish public --rebuild",
+		"release-charts-public": "grok publish public --rebuild --release"
+	}
+}
