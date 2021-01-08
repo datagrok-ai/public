@@ -1567,7 +1567,8 @@ export class GroupByBuilder {
    * @param {BitSet} bitset
    * @returns {GroupByBuilder} */
   whereRowMask(bitset) {
-    grok_GroupByBuilder_WhereBitSet(this.d, bitset.d);
+    if (bitset != null)
+      grok_GroupByBuilder_WhereBitSet(this.d, bitset.d);
     return this;
   }
 

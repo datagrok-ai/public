@@ -94,7 +94,7 @@ export class JsViewer extends Widget {
     /**
      * Gets called when a table is attached to the viewer.
      */
-    onTableAttached(dataFromHandle: any): void;
+    onTableAttached(): void;
 
     /**
      * Gets called when viewer's property is changed.
@@ -136,7 +136,7 @@ export class JsViewer extends Widget {
     /**
      * Registers a string property with the specified name and defaultValue
      */
-    string(propertyName: string, defaultValue?: string | null): string;
+    string(propertyName: string, defaultValue?: string | null, options?: any | null): string;
 
     /**
      * Registers a string list property with the specified name and defaultValue
