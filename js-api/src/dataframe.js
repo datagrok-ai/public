@@ -786,6 +786,13 @@ export class ColumnList {
     return toJs(grok_ColumnList_ByName(this.d, name));
   }
 
+  /** Maps names to columns.
+   * @param {string[]} names - Column names
+   * @returns {Column[]} */
+  byNames(names) {
+    return names.map(name => this.byName(name));
+  }
+
   /** Column by index.
    * @param {number} index - Index of the column.
    * @returns {Column} */
