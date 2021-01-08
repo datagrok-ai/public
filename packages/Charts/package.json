@@ -8,7 +8,7 @@
 		"echarts": "^5.0.0"
 	},
 	"scripts": {
-		"debug-charts": "grok publish --rebuild",
+		"charts-local": "webpack && grok publish",
 		"release-charts": "grok publish --rebuild --release",
 		"build-charts": "webpack",
 		"build": "webpack",

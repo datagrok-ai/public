@@ -4,14 +4,18 @@ export class Utils {
 
   /** @param {DataFrame} dataFrame
    * @param {String[]} splitByColumnNames
+   * @param {DG.BitSet} rowMask
    * @returns {Object} */
-  static toHierarchy(dataFrame, splitByColumnNames) {
+  static toHierarchy(dataFrame, splitByColumnNames, rowMask) {
     let data = {
       name: 'All',
       children: []
     };
 
-    let aggregated = dataFrame.groupBy(splitByColumnNames).aggregate();
+    let aggregated = dataFrame
+      .groupBy(splitByColumnNames)
+      .whereRowMask(rowMask)
+      .aggregate();
     let columns = aggregated.columns.byNames(splitByColumnNames);
     let parentNodes = columns.map(_ => null);
 
