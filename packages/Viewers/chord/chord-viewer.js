@@ -14,6 +14,7 @@ export class ChordViewer extends DG.JsViewer {
     this.toColumnName = this.string('toColumnName');
     this.aggType = this.string('aggType', 'count');
     this.getProperty('aggType').choices = ['count', 'sum'];
+    this.chordLengthColumnName = this.float('chordLengthColumnName');
 
     this.initialized = false;
     this.numColumns = [];
@@ -37,15 +38,14 @@ export class ChordViewer extends DG.JsViewer {
   onTableAttached() {
     this.init();
 
-    let columns = this.dataFrame.columns.toList();
-    this.strColumns = columns.filter(col => col.type === 'string');
-    this.numColumns = columns.filter(col => ['double', 'int'].includes(col.type));
+    this.strColumns = [...this.dataFrame.columns.categorical];
+    this.numColumns = [...this.dataFrame.columns.numerical];
 
     // TODO: Choose the most relevant columns
     if (this.testColumns()) {
       this.fromColumnName = this.strColumns[0].name;
       this.toColumnName = this.strColumns[1].name;
-      this.generateData();
+      this.chordLengthColumnName = this.numColumns[0].name;
     }
 
     this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
@@ -57,10 +57,7 @@ export class ChordViewer extends DG.JsViewer {
 
   onPropertyChanged(property) {
     super.onPropertyChanged(property);
-    if (this.initialized && this.testColumns()) {
-      this.generateData();
-      this.render();
-    }
+    if (this.initialized && this.testColumns()) this.render();
   }
 
   detach() {
@@ -68,6 +65,7 @@ export class ChordViewer extends DG.JsViewer {
   }
 
   generateData() {
+    this.data.length = 0;
 
     this.fromColumn = this.dataFrame.getCol(this.fromColumnName);
     this.toColumn = this.dataFrame.getCol(this.toColumnName);
@@ -90,7 +88,7 @@ export class ChordViewer extends DG.JsViewer {
     // For now, applies the aggregation function to the first numeric column
     this.aggregatedTable = this.dataFrame
       .groupBy([this.fromColumnName, this.toColumnName])
-      .add(this.aggType, this.numColumns[0].name, 'result')
+      .add(this.aggType, this.chordLengthColumnName, 'result')
       .aggregate();
 
     this.freqMap = {};
@@ -122,38 +120,39 @@ export class ChordViewer extends DG.JsViewer {
     let aggVal = this.aggregatedTable.getCol('result').getRawData();
     let rowCount = this.aggregatedTable.rowCount;
 
-    let nMaxChords = {};
+    let aggTotal = {};
     for (let cat of this.categories) {
       for (let i = 0; i < rowCount; i++) {
         if (cat === this.fromCol.get(i) || cat === this.toCol.get(i)) {
-          nMaxChords[cat] = (nMaxChords[cat] || 0) + 1;
+          aggTotal[cat] = (aggTotal[cat] || 0) + aggVal[i];
         }
       }
     }
 
-    this.segments = {};
+    let segments = {};
     this.data.forEach(s => {
-      this.segments[s.id] = s;
-      s.step = s.len / nMaxChords[s.id];
+      segments[s.id] = s;
       s.pos = 0;
     });
 
     for (let i = 0; i < rowCount; i++) {
       let sourceId = fromCatList[source[i]];
       let targetId = toCatList[target[i]];
-      let sourceBlock = this.segments[sourceId];
-      let targetBlock = this.segments[targetId];
+      let sourceBlock = segments[sourceId];
+      let targetBlock = segments[targetId];
+      let sourceStep = sourceBlock.len * (aggVal[i] / aggTotal[sourceId]);
+      let targetStep = targetBlock.len * (aggVal[i] / aggTotal[targetId]);
 
       let chord = {
         source: {
           id: sourceId,
           start: sourceBlock.pos,
-          end: sourceBlock.pos + sourceBlock.step
+          end: sourceBlock.pos + sourceStep
         },
         target: {
           id: targetId,
           start: targetBlock.pos,
-          end: targetBlock.pos + targetBlock.step
+          end: targetBlock.pos + targetStep
         },
         value: aggVal[i]
       };
@@ -167,8 +166,8 @@ export class ChordViewer extends DG.JsViewer {
       this.chords.push(chord);
 
       if (sourceId === targetId) continue;
-      sourceBlock.pos += sourceBlock.step;
-      targetBlock.pos += targetBlock.step;
+      sourceBlock.pos += sourceStep;
+      targetBlock.pos += targetStep;
     }
 
     this.chordConf.events = {
@@ -192,16 +191,18 @@ export class ChordViewer extends DG.JsViewer {
   render() {
 
     if (!this.testColumns()) {
-      this.root.innerText = "Not enough data to produce the result.";
+      this.root.innerText = 'Not enough data to produce the result.';
       return;
     }
+
+    this.generateData();
 
     $(this.root).empty();
     let width = this.root.parentElement.clientWidth;
     let height = this.root.parentElement.clientHeight;
     let size = Math.min(width, height);
 
-    this.root.style = "width: 100%; height: 100%;";
+    this.root.style = 'width: 100%; height: 100%;';
     this.root.id = 'chart';
 
     let circos = Circos({
@@ -215,7 +216,7 @@ export class ChordViewer extends DG.JsViewer {
     circos.layout(this.data, this.conf);
 
     this.computeChords();
-    circos.chords('beta-track', this.chords, this.chordConf);
+    circos.chords('chords-track', this.chords, this.chordConf);
     circos.render();
   }
 }
