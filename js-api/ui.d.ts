@@ -7,6 +7,7 @@ import {Viewer} from "./src/viewer";
 import {Accordion, Dialog, InputBase, TabControl, TreeViewNode, Widget} from "./src/widgets";
 import {Cell, Row} from "./src/dataframe";
 import {VirtualView} from "./src/view";
+import {Observable} from 'rxjs';
 
 /**
  * Creates an instance of the element for the specified tag, and optionally assigns it a CSS class.
@@ -14,6 +15,8 @@ import {VirtualView} from "./src/view";
  * @param {string | null} className
  */
 export function element(tagName: string, className?: string | null): HTMLElement
+
+export function onSizeChanged(element: HTMLElement): Observable
 
 /** Appends multiple elements to root, and returns root.
  *  An element could be either {@link HTMLElement} or {@link Viewer}.
