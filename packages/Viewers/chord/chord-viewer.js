@@ -1,7 +1,6 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Circos from 'circos';
-import * as d3 from 'd3';
 import {layoutConf, chordConf} from './configuration.js';
 
 
@@ -13,10 +12,8 @@ export class ChordViewer extends DG.JsViewer {
     // Properties
     this.fromColumnName = this.string('fromColumnName');
     this.toColumnName = this.string('toColumnName');
-    this.aggType = this.string('aggType', 'avg');
-    this.getProperty('aggType').choices = ['count', 'values', 'unique', 'nulls', 'min', 'max',
-      'sum', 'med', 'avg', 'stdev', 'variance', 'skew',
-      'kurt', 'q1', 'q2', 'q3'];
+    this.aggType = this.string('aggType', 'count');
+    this.getProperty('aggType').choices = ['count', 'sum'];
 
     this.initialized = false;
     this.numColumns = [];
@@ -67,7 +64,7 @@ export class ChordViewer extends DG.JsViewer {
   }
 
   detach() {
-    this.subs.forEach((sub) => sub.unsubscribe());
+    this.subs.forEach(sub => sub.unsubscribe());
   }
 
   generateData() {
@@ -75,19 +72,19 @@ export class ChordViewer extends DG.JsViewer {
     this.fromColumn = this.dataFrame.getCol(this.fromColumnName);
     this.toColumn = this.dataFrame.getCol(this.toColumnName);
     this.conf.events = {
-      mouseover: ((datum, index, nodes, event) => {
+      mouseover: (datum, index, nodes, event) => {
         ui.tooltip.showRowGroup(this.dataFrame, i => {
           return this.fromColumn.get(i) === datum.id ||
             this.toColumn.get(i) === datum.id;
         }, event.x, event.y);
-      }).bind(ChordViewer),
+      },
       mouseout: () => ui.tooltip.hide(),
-      mousedown: ((datum, index, nodes, event) => {
+      mousedown: (datum, index, nodes, event) => {
         this.dataFrame.selection.handleClick(i => {
           return this.fromColumn.get(i) === datum.id ||
             this.toColumn.get(i) === datum.id;
         }, event);
-      }).bind(ChordViewer)
+      }
     };
 
     // For now, applies the aggregation function to the first numeric column
@@ -96,13 +93,15 @@ export class ChordViewer extends DG.JsViewer {
       .add(this.aggType, this.numColumns[0].name, 'result')
       .aggregate();
 
+    this.freqMap = {};
+    this.fromColumn.toList().forEach(k => this.freqMap[k] = (this.freqMap[k] || 0) + 1);
+    this.toColumn.toList().forEach(k => this.freqMap[k] = (this.freqMap[k] || 0) + 1);
+
     this.fromCol = this.aggregatedTable.getCol(this.fromColumnName);
     this.toCol = this.aggregatedTable.getCol(this.toColumnName);
-    this.freqMap = {};
 
-    this.fromCol.toList().forEach(k => this.freqMap[k] = (this.freqMap[k] || 0) + 1);
-    this.toCol.toList().forEach(k => this.freqMap[k] = (this.freqMap[k] || 0) + 1);
-    this.data = Array.from(new Set(this.fromCol.categories.concat(this.toCol.categories)))
+    this.categories = Array.from(new Set(this.fromCol.categories.concat(this.toCol.categories)));
+    this.data = this.categories
       .sort((a, b) => this.freqMap[b] - this.freqMap[a])
       .map(s => {
         return {
@@ -115,7 +114,7 @@ export class ChordViewer extends DG.JsViewer {
   }
 
   computeChords() {
-    this.chords = [];
+    this.chords.length = 0;
     let source = this.fromCol.getRawData();
     let fromCatList = this.fromCol.categories;
     let target = this.toCol.getRawData();
@@ -123,43 +122,69 @@ export class ChordViewer extends DG.JsViewer {
     let aggVal = this.aggregatedTable.getCol('result').getRawData();
     let rowCount = this.aggregatedTable.rowCount;
 
+    let nMaxChords = {};
+    for (let cat of this.categories) {
+      for (let i = 0; i < rowCount; i++) {
+        if (cat === this.fromCol.get(i) || cat === this.toCol.get(i)) {
+          nMaxChords[cat] = (nMaxChords[cat] || 0) + 1;
+        }
+      }
+    }
+
+    this.segments = {};
+    this.data.forEach(s => {
+      this.segments[s.id] = s;
+      s.step = s.len / nMaxChords[s.id];
+      s.pos = 0;
+    });
+
     for (let i = 0; i < rowCount; i++) {
       let sourceId = fromCatList[source[i]];
       let targetId = toCatList[target[i]];
-      let sourceBlock = this.data.find(obj => obj.id === sourceId);
-      let targetBlock = this.data.find(obj => obj.id === targetId);
-      let sourceCenter = (sourceBlock.end - sourceBlock.start) / 2;
-      let targetCenter = (targetBlock.end - targetBlock.start) / 2;
+      let sourceBlock = this.segments[sourceId];
+      let targetBlock = this.segments[targetId];
 
-      this.chords.push({
+      let chord = {
         source: {
           id: sourceId,
-          start: (sourceBlock.end - sourceBlock.start) / 4,
-          end: (sourceBlock.len - sourceCenter / 2) / 2
+          start: sourceBlock.pos,
+          end: sourceBlock.pos + sourceBlock.step
         },
         target: {
           id: targetId,
-          start: (targetBlock.len - targetCenter / 2) / 2,
-          end: targetBlock.len
+          start: targetBlock.pos,
+          end: targetBlock.pos + targetBlock.step
         },
         value: aggVal[i]
-      });
+      };
+
+      if (sourceId === targetId) {
+        chord.source.start = 0;
+        chord.target.start = chord.source.end;
+        chord.target.end = targetBlock.len;
+      }
+
+      this.chords.push(chord);
+
+      if (sourceId === targetId) continue;
+      sourceBlock.pos += sourceBlock.step;
+      targetBlock.pos += targetBlock.step;
     }
 
     this.chordConf.events = {
-      mouseover: ((datum, index, nodes, event) => {
+      mouseover: (datum, index, nodes, event) => {
         ui.tooltip.showRowGroup(this.dataFrame, i => {
           return this.fromColumn.get(i) === datum.source.id &&
             this.toColumn.get(i) === datum.target.id;
         }, event.x, event.y);
-      }).bind(ChordViewer),
+      },
       mouseout: () => ui.tooltip.hide(),
-      mousedown: ((datum, index, nodes, event) => {
+      mousedown: (datum, index, nodes, event) => {
         this.dataFrame.selection.handleClick(i => {
           return this.fromColumn.get(i) === datum.source.id &&
             this.toColumn.get(i) === datum.target.id;
         }, event);
-      }).bind(ChordViewer)
+      }
     };
 
   }
@@ -176,12 +201,8 @@ export class ChordViewer extends DG.JsViewer {
     let height = this.root.parentElement.clientHeight;
     let size = Math.min(width, height);
 
-    d3.select(this.root)
-      .append("div")
-      .attr('id', 'chart')
-      .attr('class', 'chord-diagram-container')
-      .attr('width', size)
-      .attr('height', size);
+    this.root.style = "width: 100%; height: 100%;";
+    this.root.id = 'chart';
 
     let circos = Circos({
       container: '#chart',
@@ -189,12 +210,12 @@ export class ChordViewer extends DG.JsViewer {
       height: size
     });
 
+    this.conf.innerRadius = size/2 - 60;
+    this.conf.outerRadius = size/2 - 40;
     circos.layout(this.data, this.conf);
+
     this.computeChords();
     circos.chords('beta-track', this.chords, this.chordConf);
     circos.render();
-    document.getElementById('chart')
-      .children[0].children[0]
-      .setAttribute('viewBox', `${-width / 2} ${-height / 2} ${size * 2} ${size * 2}`);
   }
 }
