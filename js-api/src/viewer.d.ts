@@ -126,12 +126,12 @@ export class JsViewer extends Widget {
     /**
      * Registers an integer property with the specified name and defaultValue
      */
-    int(propertyName: string, defaultValue?: number | null): number;
+    int(propertyName: string, defaultValue?: number | null, options?: any | null): number;
 
     /**
      * Registers a floating point property with the specified name and defaultValue
      */
-    float(propertyName: string, defaultValue?: number | null): number;
+    float(propertyName: string, defaultValue?: number | null, options?: any | null): number;
 
     /**
      * Registers a string property with the specified name and defaultValue
@@ -141,15 +141,15 @@ export class JsViewer extends Widget {
     /**
      * Registers a string list property with the specified name and defaultValue
      */
-    stringList(propertyName: string, defaultValue?: string[] | null): string[];
+    stringList(propertyName: string, defaultValue?: string[] | null, options?: any | null): string[];
 
     /**
      * Registers a boolean property with the specified name and defaultValue
      */
-    bool(propertyName: string, defaultValue?: boolean | null): boolean;
+    bool(propertyName: string, defaultValue?: boolean | null, options?: any | null): boolean;
 
     /**
      * Registers a datetime property with the specified name and defaultValue
      */
-    dateTime(propertyName: string, defaultValue?: DateTime | null): DateTime;
+    dateTime(propertyName: string, defaultValue?: DateTime | null, options?: any | null): DateTime;
 }
