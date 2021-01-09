@@ -5,6 +5,7 @@
 	"description": "",
 	"dependencies": {
 		"datagrok-api": "latest",
+		"wu": "latest",
 		"echarts": "^5.0.0"
 	},
 	"scripts": {

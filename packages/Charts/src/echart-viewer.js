@@ -1,4 +1,5 @@
 import * as echarts from "echarts";
+import {wu} from "wu";
 
 export class Utils {
 
@@ -11,6 +12,7 @@ export class Utils {
     let data = {
       name: 'All',
       value: 0,
+      path: null,
       children: []
     };
 
@@ -30,7 +32,12 @@ export class Utils {
 
       for (let colIdx = idx; colIdx < columns.length; colIdx++) {
         let parentNode = colIdx === 0 ? data : parentNodes[colIdx - 1];
-        let node = { name: columns[colIdx].getString(i), value: 0 };
+        let name = columns[colIdx].getString(i);
+        let node = {
+          name: name,
+          path: parentNode.path == null ? name : parentNode.path + ' | ' + name,
+          value: 0
+        };
         parentNodes[colIdx] = node;
 
         if (!parentNode.children)
@@ -75,6 +82,18 @@ export class Utils {
     }
     return result;
   }
+
+  /**
+   * @param {String[]} columnNames
+   * @param {String} path - pipe-separated values
+   */
+  static pathToPattern(columnNames, path) {
+    let values = path.split(' | ');
+    let pattern = {};
+    for (let i = 0; i < columnNames.length; i++)
+      pattern[columnNames[i]] = values[i];
+    return pattern;
+  }
 }
 
 
@@ -83,8 +102,8 @@ export class EChartViewer extends DG.JsViewer {
     super();
     let chartDiv = ui.div(null, { style: { position: 'absolute', left: '0', right: '0', top: '0', bottom: '0'}} );
     this.root.appendChild(chartDiv);
-    this.myChart = echarts.init(chartDiv);
-    this.subs.push(ui.onSizeChanged(chartDiv).subscribe((_) => this.myChart.resize()));
+    this.chart = echarts.init(chartDiv);
+    this.subs.push(ui.onSizeChanged(chartDiv).subscribe((_) => this.chart.resize()));
   }
 
   initCommonProperties() {
@@ -113,11 +132,11 @@ export class EChartViewer extends DG.JsViewer {
       this.option.series[0][p.name] = p.get(this);
 
     if (render)
-      this.myChart.setOption(this.option);
+      this.chart.setOption(this.option);
   }
 
   render() {
     this.option.series[0].data = this.getSeriesData();
-    this.myChart.setOption(this.option);
+    this.chart.setOption(this.option);
   }
 }
