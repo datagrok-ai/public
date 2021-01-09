@@ -10,6 +10,7 @@ export class Utils {
   static toTree(dataFrame, splitByColumnNames, rowMask, visitNode = null) {
     let data = {
       name: 'All',
+      value: 0,
       children: []
     };
 
@@ -18,23 +19,33 @@ export class Utils {
       .count()
       .whereRowMask(rowMask)
       .aggregate();
+
+    let countCol = aggregated.columns.byName('count');
     let columns = aggregated.columns.byNames(splitByColumnNames);
     let parentNodes = columns.map(_ => null);
 
     for (let i = 0; i < aggregated.rowCount; i++) {
       let idx = i === 0 ? 0 : columns.findIndex((col) => col.get(i) !== col.get(i - 1));
+      let value = countCol.get(i);
 
       for (let colIdx = idx; colIdx < columns.length; colIdx++) {
         let parentNode = colIdx === 0 ? data : parentNodes[colIdx - 1];
-        let node = { name: columns[colIdx].getString(i) };
+        let node = { name: columns[colIdx].getString(i), value: 0 };
         parentNodes[colIdx] = node;
+
         if (!parentNode.children)
           parentNode.children = [];
         parentNode.children.push(node);
         if (visitNode !== null)
           visitNode(node);
       }
+
+      for (let i = 0; i < parentNodes.length; i++)
+        parentNodes[i].value += value;
+      data.value += value;
     }
+
+    console.log(JSON.stringify(data));
 
     return data;
   }
@@ -42,6 +53,27 @@ export class Utils {
   static toForest(dataFrame, splitByColumnNames, rowMask) {
     let tree = Utils.toTree(dataFrame, splitByColumnNames, rowMask, (node) => node.value = 10);
     return tree.children;
+  }
+
+  /**
+   * @param {DataFrame} dataFrame
+   * @param {String[]} columnNames
+   * @param {String[]} objectKeys
+   * @returns {Object[]}
+   */
+  static mapRowsToObjects(dataFrame, columnNames, objectKeys = null) {
+    let columns = dataFrame.columns.byNames(columnNames);
+    if (objectKeys === null)
+      objectKeys = columnNames;
+
+    let result = [];
+    for (let i = 0; i < dataFrame.rowCount; i++) {
+      let object = {};
+      for (let j = 0; j < columns.length; j++)
+        object[objectKeys[j]] = columns[j].get(i);
+      result.push(object);
+    }
+    return result;
   }
 }
 
@@ -74,13 +106,14 @@ export class EChartViewer extends DG.JsViewer {
 
   prepareOption() {}
 
-  onPropertyChanged(p) {
+  onPropertyChanged(p, render = true) {
     let properties = p !== null ? [p] : this.props.getProperties();
 
     for (let p of properties)
       this.option.series[0][p.name] = p.get(this);
 
-    this.myChart.setOption(this.option);
+    if (render)
+      this.myChart.setOption(this.option);
   }
 
   render() {

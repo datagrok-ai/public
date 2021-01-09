@@ -20,10 +20,7 @@ export class TreeMapViewer extends EChartViewer {
             treePath.push(treePathInfo[i].name);
           }
 
-          return [
-            '<div class="tooltip-title">' + formatUtil.encodeHTML(treePath.join('/')) + '</div>',
-            'Disk Usage: ' + formatUtil.addCommas(value) + ' KB',
-          ].join('');
+          return '<div class="tooltip-title">' + treePath.join('/') + '</div>';
         }
       },
       series: [
