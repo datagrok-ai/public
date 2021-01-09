@@ -112,7 +112,7 @@ export function renderCard(x: object): HTMLElement
 export function span(x: object[]): HTMLElement
 
 /** @returns {HTMLDivElement} */
-export function div(items?: any[], className?: string | null): HTMLDivElement
+export function div(items?: any[], className?: string | any | null): HTMLDivElement
 
 /** Div flex-box container that positions child elements vertically.
  *  @param {HTMLElement[]} items

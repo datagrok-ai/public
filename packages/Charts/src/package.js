@@ -3,6 +3,8 @@ import {TreeMapViewer} from './tree-map-viewer.js';
 import {SunburstViewer} from './sunburst-viewer.js';
 import {RadarViewer} from './radarviewer.js';
 import {TimelinesViewer} from './timelinesviewer.js';
+import {SankeyViewer} from './sankey-viewer.js';
+
 /* Do not change these import lines. Datagrok will import API library in exactly the same manner */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -37,7 +39,6 @@ export function timelinesViewerDemo() {
 }
 
 //name: RadarViewer
-//description: Creates RadarViewer viewer
 //tags: viewer
 //output: viewer result
 export function _RadarViewer() {
@@ -53,7 +54,6 @@ export function radarViewerDemo() {
 }
 
 //name: TreeViewer
-//description: Creates TreeViewer viewer
 //tags: viewer
 //output: viewer result
 export function _TreeViewer() {
@@ -61,7 +61,6 @@ export function _TreeViewer() {
 }
 
 //name: TreeMapViewer
-//description: Creates TreeMapViewer viewer
 //tags: viewer
 //output: viewer result
 export function _TreeMapViewer() {
@@ -69,9 +68,15 @@ export function _TreeMapViewer() {
 }
 
 //name: SunburstViewer
-//description: Creates SunburstViewer viewer
 //tags: viewer
 //output: viewer result
 export function _SunburstViewer() {
     return new SunburstViewer();
+}
+
+//name: SankeyViewer
+//tags: viewer
+//output: viewer result
+export function _SankeyViewer() {
+    return new SankeyViewer();
 }
