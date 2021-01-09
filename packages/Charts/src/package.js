@@ -1,4 +1,6 @@
 import {TreeViewer} from './tree-viewer.js';
+import {TreeMapViewer} from './tree-map-viewer.js';
+import {SunburstViewer} from './sunburst-viewer.js';
 import {RadarViewer} from './radarviewer.js';
 import {TimelinesViewer} from './timelinesviewer.js';
 /* Do not change these import lines. Datagrok will import API library in exactly the same manner */
@@ -49,10 +51,27 @@ export function radarViewerDemo() {
     let view = grok.shell.addTableView(grok.data.demo.demog(100));
     view.addViewer('RadarViewer');
 }
+
 //name: TreeViewer
 //description: Creates TreeViewer viewer
 //tags: viewer
 //output: viewer result
 export function _TreeViewer() {
     return new TreeViewer();
+}
+
+//name: TreeMapViewer
+//description: Creates TreeMapViewer viewer
+//tags: viewer
+//output: viewer result
+export function _TreeMapViewer() {
+    return new TreeMapViewer();
+}
+
+//name: SunburstViewer
+//description: Creates SunburstViewer viewer
+//tags: viewer
+//output: viewer result
+export function _SunburstViewer() {
+    return new SunburstViewer();
 }

@@ -1,14 +1,14 @@
 {
 	"name": "charts",
 	"fullName": "Charts",
-	"version": "0.0.2",
+	"version": "0.0.3",
 	"description": "",
 	"dependencies": {
 		"datagrok-api": "latest",
 		"echarts": "^5.0.0"
 	},
 	"scripts": {
-		"charts-local": "webpack && grok publish",
+		"charts-local": "webpack && grok publish local --rebuild --release",
 		"release-charts": "grok publish --rebuild --release",
 		"build-charts": "webpack",
 		"build": "webpack",

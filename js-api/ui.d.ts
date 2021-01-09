@@ -16,7 +16,7 @@ import {Observable} from 'rxjs';
  */
 export function element(tagName: string, className?: string | null): HTMLElement
 
-export function onSizeChanged(element: HTMLElement): Observable
+export function onSizeChanged(element: HTMLElement): Observable<any>
 
 /** Appends multiple elements to root, and returns root.
  *  An element could be either {@link HTMLElement} or {@link Viewer}.
