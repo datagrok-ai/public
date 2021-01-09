@@ -1,7 +1,8 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Circos from 'circos';
-import {layoutConf, chordConf} from './configuration.js';
+import {select, scaleOrdinal} from 'd3';
+import {layoutConf} from './configuration.js';
 
 
 export class ChordViewer extends DG.JsViewer {
@@ -15,6 +16,8 @@ export class ChordViewer extends DG.JsViewer {
     this.aggType = this.string('aggType', 'count');
     this.getProperty('aggType').choices = ['count', 'sum'];
     this.chordLengthColumnName = this.float('chordLengthColumnName');
+    this.colorBy = this.string('colorBy', 'source');
+    this.getProperty('colorBy').choices = ['source', 'target'];
 
     this.initialized = false;
     this.numColumns = [];
@@ -24,10 +27,18 @@ export class ChordViewer extends DG.JsViewer {
     this.data = [];
     this.conf = layoutConf;
     this.chords = [];
-    this.chordConf = chordConf;
+    this.chordConf = {};
   }
 
   init() {
+    this.innerRadiusMargin = 60;
+    this.outerRadiusMargin = 40;
+    this.color = scaleOrdinal(DG.Color.categoricalPalette);
+    this.chordConf.color = (datum, index) => {
+      return (datum.source.id === datum.target.id) ? '#ff5500'
+      : DG.Color.toRgb(this.color(datum[this.colorBy]['id']));
+    };
+    this.chordConf.opacity = 0.7;
     this.initialized = true;
   }
 
@@ -71,12 +82,16 @@ export class ChordViewer extends DG.JsViewer {
     this.toColumn = this.dataFrame.getCol(this.toColumnName);
     this.conf.events = {
       mouseover: (datum, index, nodes, event) => {
+        select(nodes[index]).select(`#${datum.id}`).attr('stroke', 'black');
         ui.tooltip.showRowGroup(this.dataFrame, i => {
           return this.fromColumn.get(i) === datum.id ||
             this.toColumn.get(i) === datum.id;
         }, event.x, event.y);
       },
-      mouseout: () => ui.tooltip.hide(),
+      mouseout: (datum, index, nodes, event) => {
+        select(nodes[index]).select(`#${datum.id}`).attr('stroke', 'none');
+        ui.tooltip.hide()
+      },
       mousedown: (datum, index, nodes, event) => {
         this.dataFrame.selection.handleClick(i => {
           return this.fromColumn.get(i) === datum.id ||
@@ -85,7 +100,7 @@ export class ChordViewer extends DG.JsViewer {
       }
     };
 
-    // For now, applies the aggregation function to the first numeric column
+    if (this.aggType === 'count') this.chordLengthColumnName = null;
     this.aggregatedTable = this.dataFrame
       .groupBy([this.fromColumnName, this.toColumnName])
       .add(this.aggType, this.chordLengthColumnName, 'result')
@@ -106,7 +121,7 @@ export class ChordViewer extends DG.JsViewer {
           id: s,
           label: s,
           len: this.freqMap[s],
-          color: "#80b1d3"
+          color: DG.Color.toRgb(this.color(s))
         }
       });
   }
@@ -121,11 +136,14 @@ export class ChordViewer extends DG.JsViewer {
     let rowCount = this.aggregatedTable.rowCount;
 
     let aggTotal = {};
-    for (let cat of this.categories) {
-      for (let i = 0; i < rowCount; i++) {
-        if (cat === this.fromCol.get(i) || cat === this.toCol.get(i)) {
-          aggTotal[cat] = (aggTotal[cat] || 0) + aggVal[i];
-        }
+    for (let i = 0; i < rowCount; i++) {
+      const from = this.fromCol.get(i);
+      const to = this.toCol.get(i);
+      if (from === to) {
+        aggTotal[from] = (aggTotal[from] || 0) + aggVal[i];
+      } else {
+        aggTotal[from] = (aggTotal[from] || 0) + aggVal[i];
+        aggTotal[to] = (aggTotal[to] || 0) + aggVal[i];
       }
     }
 
@@ -172,12 +190,16 @@ export class ChordViewer extends DG.JsViewer {
 
     this.chordConf.events = {
       mouseover: (datum, index, nodes, event) => {
+        select(nodes[index]).attr('opacity', 0.9);
         ui.tooltip.showRowGroup(this.dataFrame, i => {
           return this.fromColumn.get(i) === datum.source.id &&
             this.toColumn.get(i) === datum.target.id;
         }, event.x, event.y);
       },
-      mouseout: () => ui.tooltip.hide(),
+      mouseout: (datum, index, nodes, event) => {
+        select(nodes[index]).attr('opacity', 0.7);
+        ui.tooltip.hide()
+      },
       mousedown: (datum, index, nodes, event) => {
         this.dataFrame.selection.handleClick(i => {
           return this.fromColumn.get(i) === datum.source.id &&
@@ -196,6 +218,7 @@ export class ChordViewer extends DG.JsViewer {
     }
 
     this.generateData();
+    this.computeChords();
 
     $(this.root).empty();
     let width = this.root.parentElement.clientWidth;
@@ -211,12 +234,14 @@ export class ChordViewer extends DG.JsViewer {
       height: size
     });
 
-    this.conf.innerRadius = size/2 - 60;
-    this.conf.outerRadius = size/2 - 40;
-    circos.layout(this.data, this.conf);
+    this.conf.innerRadius = size/2 - this.innerRadiusMargin;
+    this.conf.outerRadius = size/2 - this.outerRadiusMargin;
 
-    this.computeChords();
+    circos.layout(this.data, this.conf);
     circos.chords('chords-track', this.chords, this.chordConf);
     circos.render();
+
+    document.getElementById('chart').children[0]
+      .setAttribute('style', 'position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);');
   }
 }
