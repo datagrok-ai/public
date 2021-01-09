@@ -8,7 +8,7 @@ export const layoutConf = {
     position: 'center',
     size: '14px',
     color: '#000000',
-    radialOffset: 35,
+    radialOffset: 30,
   },
   ticks: {
     display: false,
@@ -28,12 +28,5 @@ export const layoutConf = {
       major: 5,
     }
   },
-  events: {}
-};
-
-export const chordConf = {
-  color: (datum, index) => (datum.source.id === datum.target.id) ? '#ff5500' : '#fd6a62',
-  opacity: 0.7,
-  radius: null,
   events: {}
 };
