@@ -5,7 +5,6 @@ import { EChartViewer, Utils } from './echart-viewer';
 export class TreeMapViewer extends EChartViewer {
 
   constructor() {
-    console.log('tree map');
     super();
     this.initCommonProperties();
 
@@ -32,12 +31,21 @@ export class TreeMapViewer extends EChartViewer {
     };
 
     this.onPropertyChanged(null);
+    this.chart.on('click', params => {
+      console.log(params);
+      let pattern = Utils.pathToPattern(this.getColumnNames(), params.data.path);
+      this.dataFrame.rows.match(pattern).select();
+    });
+  }
+
+  getColumnNames() {
+    return ['sex', 'race', 'dis_pop'];
   }
 
   getSeriesData() {
     return Utils.toForest(
       this.dataFrame,
-      ['sex', 'race', 'dis_pop'],
+      this.getColumnNames(),
       this.dataFrame.filter);
   }
 

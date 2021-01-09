@@ -30,11 +30,11 @@ export class SankeyViewer extends EChartViewer {
     let toCol = this.dataFrame.getCol('target');
     let nodes = [];
     for (let name of new Set(fromCol.categories.concat(toCol.categories)))
-      nodes.push( { name: name});
+      nodes.push({name: name});
 
     this.option.series[0].data = nodes;
     this.option.series[0].links = Utils.mapRowsToObjects(this.dataFrame, ['source', 'target', 'value']);
 
-    this.myChart.setOption(this.option);
+    this.chart.setOption(this.option);
   }
 }
