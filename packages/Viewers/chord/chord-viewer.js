@@ -34,10 +34,7 @@ export class ChordViewer extends DG.JsViewer {
     this.innerRadiusMargin = 60;
     this.outerRadiusMargin = 40;
     this.color = scaleOrdinal(DG.Color.categoricalPalette);
-    this.chordConf.color = (datum, index) => {
-      return (datum.source.id === datum.target.id) ? '#ff5500'
-      : DG.Color.toRgb(this.color(datum[this.colorBy]['id']));
-    };
+    this.chordConf.color = (datum, index) => DG.Color.toRgb(this.color(datum[this.colorBy]['id']));
     this.chordConf.opacity = 0.7;
     this.initialized = true;
   }
@@ -61,7 +58,7 @@ export class ChordViewer extends DG.JsViewer {
 
     this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
     this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()));
-    this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => this.render()));
+    this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => this.render(false)));
 
     this.render();
   }
@@ -139,9 +136,7 @@ export class ChordViewer extends DG.JsViewer {
     for (let i = 0; i < rowCount; i++) {
       const from = this.fromCol.get(i);
       const to = this.toCol.get(i);
-      if (from === to) {
-        aggTotal[from] = (aggTotal[from] || 0) + aggVal[i];
-      } else {
+      if (from !== to) {
         aggTotal[from] = (aggTotal[from] || 0) + aggVal[i];
         aggTotal[to] = (aggTotal[to] || 0) + aggVal[i];
       }
@@ -210,15 +205,17 @@ export class ChordViewer extends DG.JsViewer {
 
   }
 
-  render() {
+  render(computeData = true) {
 
     if (!this.testColumns()) {
       this.root.innerText = 'Not enough data to produce the result.';
       return;
     }
 
-    this.generateData();
-    this.computeChords();
+    if (computeData) {
+      this.generateData();
+      this.computeChords();
+    }
 
     $(this.root).empty();
     let width = this.root.parentElement.clientWidth;
