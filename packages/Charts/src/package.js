@@ -4,6 +4,7 @@ import {SunburstViewer} from './sunburst-viewer.js';
 import {RadarViewer} from './radarviewer.js';
 import {TimelinesViewer} from './timelinesviewer.js';
 import {SankeyViewer} from './sankey-viewer.js';
+import {ChordViewer} from './chord-viewer.js';
 
 /* Do not change these import lines. Datagrok will import API library in exactly the same manner */
 import * as grok from 'datagrok-api/grok';
@@ -79,4 +80,11 @@ export function _SunburstViewer() {
 //output: viewer result
 export function _SankeyViewer() {
     return new SankeyViewer();
+}
+
+//name: ChordViewer
+//tags: viewer
+//output: viewer result
+export function _ChordViewer() {
+    return new ChordViewer();
 }
