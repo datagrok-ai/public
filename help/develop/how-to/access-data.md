@@ -89,10 +89,10 @@ When providing a connection string, you do not have to pass other parameters, as
     "server": "dev.datagrok.ai",
     "port": 23306,
     "db": "Northwind",
-    "cache schema": false,
-    "cache results": false,
-    "SSL": false,
-    "conn. string": ""
+    "cacheSchema": false,
+    "cacheResults": false,
+    "ssl": false,
+    "connString": ""
   },
   "credentials" : {
     "parameters": {
@@ -163,7 +163,7 @@ Data connections can be shared as part of a [project](../../overview/project.md)
 
 ### Database Connection Caching
 
-Caching query results is quite straightforward — all you need to do is setting the `cache results` parameter to `true`. Saving relies on the current connection parameters and the query name, if those remain unchanged, you will get the cached results. A similar setting exists at the query level as well: `--meta.cache: true`.
+Caching query results is quite straightforward — all you need to do is setting the `cacheResults` parameter to `true`. Saving relies on the current connection parameters and the query name, if those remain unchanged, you will get the cached results. A similar setting exists at the query level as well: `--meta.cache: true`.
 
 ## Reading Files
 
@@ -196,7 +196,7 @@ But more importantly, file shares let you gain access to data from various locat
     "name": "New File Share",
     "parameters": {
         "dir": "/home/www/master/servergrok/data/demo",
-        "index files": true
+        "indexFiles": true
     },
     "credentials" : {
         "parameters": {

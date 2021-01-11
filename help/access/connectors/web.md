@@ -12,7 +12,7 @@ Provides access to data sources via REST API based on
 ```json
 {
   "url": "",
-  "Requires Server": true
+  "requiresServer": true
 }
 ```
 

@@ -9,7 +9,9 @@ Provides access to [Dropbox](https://www.dropbox.com) storage as [file share](fi
 
 ```json
 {
-  "dir": "",
+  "parameters": {
+    "dir": ""
+  },
   "credentials": {
     "parameters": {
       "password": ""
