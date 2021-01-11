@@ -109,6 +109,7 @@ At the same time, its interactivity remains fully and also it will be bound to t
 
 To generate an iframe for the viewer, open its context menu, then go to the **Viewer** submenu and select **Embed**:
 
+
 ![Viewers Embedding](../uploads/viewers/embedding.png "Viewers Embedding")
 
 
