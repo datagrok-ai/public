@@ -12,11 +12,11 @@ public class DbCredentials
     public static final String LOGIN = "login";
     public static final String PASSWORD = "password";
     public static final String PORT = "port";
-    public static final String CONNECTION_STRING = "conn. string";
-    public static final String SSL = "SSL";
-    public static final String CACHE_SCHEMA = "cache schema";
-    public static final String CACHE_RESULTS = "cache results";
-    public static final String CACHE_DATE = "cache date";
+    public static final String CONNECTION_STRING = "connString";
+    public static final String SSL = "ssl";
+    public static final String CACHE_SCHEMA = "cacheSchema";
+    public static final String CACHE_RESULTS = "cacheResults";
+    public static final String CACHE_DATE = "cacheDate";
 
     public static final String DB_DESCRIPTION = "Database name";
     public static final String CONNECTION_STRING_DESCRIPTION = "This string will be used for connection. " +
