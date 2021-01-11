@@ -11,7 +11,7 @@ A semantic query language for databases.
 {
   "endpoint": "http://sparql.bioontology.org",
   "prefixes": "",
-  "Requires Server": true
+  "requiresServer": true
 }
 ```
 

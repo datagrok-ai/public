@@ -10,8 +10,10 @@ using SQL queries via JDBC driver.
 
 ```json
 {
-  "conn. string": "",
-  "project_id": "",
+  "parameters": {
+    "connString": "",
+    "projectId": ""
+  },
   "credentials" : {
     "parameters": {
       "login": "",

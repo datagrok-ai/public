@@ -45,8 +45,10 @@ across all (or specified) data providers (including relational databases, etc) a
 
 ```json
 {
-  "dir": "",
-  "index files": true,
+  "parameters": {
+    "dir": "",
+    "indexFiles": true,
+  },
   "credentials" : {
     "parameters": {
       "login": "",
