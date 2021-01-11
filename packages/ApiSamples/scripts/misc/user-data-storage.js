@@ -32,10 +32,10 @@ storageButton.style.margin = '8px 24px 0 24px';
 
 let postButton = ui.button('Post to storage', () => {
   grok.shell.info(inputs.map((i) => `${i.caption}: ${i.stringValue}`).join('<br>'));
-  grok.dapi.userDataStorage.postValue(STORAGE_NAME, new Date().toLocaleString(),
-    JSON.stringify(inputs.map(i => {
-      return {caption: i.caption, value: i.save()};
-    })));
+  grok.dapi.userDataStorage.postValue(STORAGE_NAME, `${Math.floor(Math.random() * Math.floor(1000))}`,
+      JSON.stringify(inputs.map(i => {
+        return {caption: i.caption, value: i.save()};
+      })));
 });
 
 let clearButton = ui.button('Clear storage', () => {
