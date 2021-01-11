@@ -46,7 +46,7 @@ export class ChordViewer extends DG.JsViewer {
   onTableAttached() {
     this.init();
 
-    this.strColumns = [...this.dataFrame.columns.categorical];
+    this.strColumns = this.dataFrame.columns.toList().filter(col => col.type === 'string');
     this.numColumns = [...this.dataFrame.columns.numerical];
 
     // TODO: Choose the most relevant columns
@@ -136,7 +136,9 @@ export class ChordViewer extends DG.JsViewer {
     for (let i = 0; i < rowCount; i++) {
       const from = this.fromCol.get(i);
       const to = this.toCol.get(i);
-      if (from !== to) {
+      if (from === to) {
+        aggTotal[from] = (aggTotal[from] || 0) + aggVal[i];
+      } else {
         aggTotal[from] = (aggTotal[from] || 0) + aggVal[i];
         aggTotal[to] = (aggTotal[to] || 0) + aggVal[i];
       }
@@ -156,7 +158,7 @@ export class ChordViewer extends DG.JsViewer {
       let sourceStep = sourceBlock.len * (aggVal[i] / aggTotal[sourceId]);
       let targetStep = targetBlock.len * (aggVal[i] / aggTotal[targetId]);
 
-      let chord = {
+      this.chords.push({
         source: {
           id: sourceId,
           start: sourceBlock.pos,
@@ -168,18 +170,10 @@ export class ChordViewer extends DG.JsViewer {
           end: targetBlock.pos + targetStep
         },
         value: aggVal[i]
-      };
+      });
 
-      if (sourceId === targetId) {
-        chord.source.start = 0;
-        chord.target.start = chord.source.end;
-        chord.target.end = targetBlock.len;
-      }
-
-      this.chords.push(chord);
-
-      if (sourceId === targetId) continue;
       sourceBlock.pos += sourceStep;
+      if (sourceId === targetId) continue;
       targetBlock.pos += targetStep;
     }
 
