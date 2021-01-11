@@ -103,9 +103,9 @@ This is how to define the "chemprop" environment in the script header:
 
 ### renv Environments
 
-Datagrok natively supports [_renv_](https://rstudio.github.io/renv/articles/renv.html) environments. It runs each R script in a temporary folder with a unique name. This folder becomes an _renv_ project folder for the current run of the script.
+[_Renv_](https://rstudio.github.io/renv/articles/renv.html) environments are natively supported. Datagrok runs each R script in a temporary folder with an unique name. This folder becomes an _renv_ project folder for the current run of the script.
 
-Start using _renv_ by initializing it and installing packages (see a [full example](https://github.com/datagrok-ai/public/tree/master/packages/RScripts/scripts/renv_spelling.js)):
+Start using _renv_ by initializing it and installing packages (see a [full example](https://github.com/datagrok-ai/public/tree/master/packages/RScripts/scripts/renv_spelling.R)):
 
 ```
 #language: r
@@ -115,9 +115,9 @@ renv::install("hunspell@3.0.1")
 ...
 ```
 
-An _renv_ session only impacts the R environment for this one single run.
+An _renv_ session only impacts the R environment for this one single run, and no other R scripts running in parallel by the users of the platform are aware of this local script environment.
 
-_Renv_ uses a global package cache. It caches a package requested once with `renv::install` and re-uses whenever it is requested onward. However, in case the latest version is requested, such as in `renv::install("hunspell")`, _renv_ connects to remote R package repositories assuring the package version. This may introduce a significant delay into the script, several seconds in practice. To avoid this, we recommend installing a specific version of the package, such as in `renv::install("hunspell@3.0.1")`. 
+_Renv_ uses a global package cache. It caches a package requested once with `renv::install` and re-uses whenever it is requested onward. However, in case the latest package version is requested, such as in `renv::install("hunspell")`, _renv_ connects to remote R package repositories assuring if the cached package needs to be updated to the newer version. This may introduce a significant delay into the script, several seconds in practice. To avoid this, we recommend installing a specific version of the package, such as in `renv::install("hunspell@3.0.1")`. 
 
 _Note_. At the R script's start and finish, Datagrok calls `renv::deactivate()` to assure the script's body isolation. Therefore, the script's author doesn't need to call `renv::deactivate()` manually.
 
