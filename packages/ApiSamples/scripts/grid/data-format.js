@@ -7,7 +7,7 @@ let view = grok.shell.addTableView(grok.data.demo.demog());
 view.grid.col('age').format = 'compact simple currency';
 view.grid.col('height').format = 'scientific';
 view.grid.col('weight').format = '#.0000';
-view.grid.col('started').format = 'dd.MM.yyyy'
+view.grid.col('started').format = 'dd.MM.yyyy';
 
 // NUMBER FORMATS (https://datagrok.ai/help/discover/tags#numbers)
 // The usual formats, such as "0.000" or "#.0000", are supported.

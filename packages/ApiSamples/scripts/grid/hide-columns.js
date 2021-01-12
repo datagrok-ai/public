@@ -3,8 +3,9 @@
 let table = grok.data.demo.demog();
 let view = grok.shell.addTableView(table);
 
-view.grid.columns.setVisible(['age', 'sex', 'race']);
+view.grid.columns.setVisible(['age', 'site', 'race']);
 
-// or hiding by adding '~' prefix to column name
+// Hiding columns by adding '~' prefix to column names affects all views
 
 table.columns.byName('sex').name = '~sex';
+grok.shell.addTableView(table);
