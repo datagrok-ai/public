@@ -3,7 +3,7 @@
 
 # Data Access
 
-This article will walk you through different ways of data extraction, from managing connections to data sources and running queries to reading files into dataframe objects in your application.
+This article will walk you through different ways of data extraction, from [managing connections](#connections) to data sources and running queries, to [using REST APIs](#rest-endpoints), and to [reading files](#reading-files) into dataframe objects in your application.
 
 ## Connections
 
@@ -164,6 +164,10 @@ Data connections can be shared as part of a [project](../../overview/project.md)
 ### Database Connection Caching
 
 Caching query results is quite straightforward — all you need to do is setting the `cacheResults` parameter to `true`. Saving relies on the current connection parameters and the query name, if those remain unchanged, you will get the cached results. A similar setting exists at the query level as well: `--meta.cache: true`.
+
+## REST Endpoints
+
+Web services provide endpoints that you can programmatically connect to. There are two main options for this: the first is to use [OpenAPI/Swagger](../../access/open-api.md) format supported by Datagrok, the second one involves the [use of the platform's server](https://dev.datagrok.ai/js/samples/dapi/fetch) to send a network request.
 
 ## Reading Files
 
