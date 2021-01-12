@@ -4,10 +4,10 @@ const url = 'https://jsonplaceholder.typicode.com/posts';
 const data = { name: 'username', password: 'password' };
 
 // GET
-grok.dapi.fetchProxy(url)
-  .then(response => response.text())
+grok.dapi.fetchProxy(url, { headers: {} })
+  .then(response => response.json())
   .then(data => {
-    const df = DG.DataFrame.fromJson(data);
+    const df = DG.DataFrame.fromJson(JSON.stringify(data));
     grok.shell.addTableView(df);
 });
 
