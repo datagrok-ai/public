@@ -28,6 +28,24 @@ view.grid.col('started').format = 'dd.MM.yyyy';
 
 If a format is specified on a column level, it takes precedence over global settings. Another thing to keep in mind is that the tag applies only to numeric and datetime columns. Columns of other data types will ignore the `format` tag. As the actual values remain unchanged, sorting and filtering produce the same result regardless of selected data representation.
 
+## Ordering
+
+The order of rows and columns is easy to adjust. Let's have a look at columns first:
+
+```javascript
+let view = grok.shell.addTableView(grok.data.demo.demog());
+view.grid.columns.setOrder(['age', 'sex', 'race']);
+```
+
+The column names are not case-sensitive. If a dataset consists of more columns than specified in the `setOrder` method, the unmentioned columns will appear after the given ones (this is shown in the [example](https://public.datagrok.ai/js/samples/grid/order-columns)). A different logic applies when arranging rows:
+
+```javascript
+let view = grok.shell.addTableView(grok.data.demo.demog());
+view.grid.setRowOrder([1, 56, 3, 6, 4]);
+```
+
+The `setRowOrder` method accepts an array of row indexes (starting at zero) and displays the corresponding rows exclusively. This allows you to control which rows should be shown in the grid (check out the [example](https://public.datagrok.ai/js/samples/grid/order-rows)).
+
 ## Column Visibility
 
 It is possible to hide parts of data in a grid without actually removing them (see an [example](https://public.datagrok.ai/js/samples/grid/hide-columns)). To achieve this, either explicitly specify the columns you intend to show:

@@ -3,19 +3,11 @@
 
 # Routing
 
-In this article, we will consider the places in Datagrok, in which the platform, after refreshing the browser page, retains its state before refresh.
-
-
-It can also be useful for quickly sharing something by simply copying the URL and sending it to another person to whom you want to show a particular view, project, application, etc.
-
-
-Also, Datagrok supports some actions that can be performed after going to specific URL. (for example, executing a query with the given parameters). We will consider all this below.
+In this article, we will consider in which cases the Datagrok platform retains the state in which it was before refreshing the browser page. Routing can be useful for quickly sharing something by simply copying the URL and sending it to another person to whom you want to show a particular view, project, application, etc. We will find out which actions Datagrok can perform under the hood as the user goes to a specific URL (for example, executing a query with the given parameters). We will consider all this below.
 
 ## Entity Browsers
 
-Entity browsers are special Platform views that display a set of available certain entities to the user. 
-
-Each such browser is available for opening by ULR.
+Entity browsers are special platform views that display a set of certain available entities to the user. Each such browser is available for opening by URL.
 
 Platform has browsers for the following entities:
 
@@ -39,50 +31,30 @@ Platform has browsers for the following entities:
 
 ## Projects
 
-[Project](project.md) uploaded to the server is available for opening via direct URL. 
-
-
-For [project](project.md) in which there is more than one table view, you can pass specific view in the URL that you want to see after opening.
+A [project](project.md) uploaded to the server is available for opening via a direct URL. If a project has more than one table view, you can pass the name of a specific view to the URL so that you can see it after opening.
 
 Links for projects are generated according to following rule:
 
-*https://public.datagrok.ai/p/{poject.namespace}.{project.name}/{tableView.name}*
+*https://public.datagrok.ai/p/{project.namespace}.{project.name}/{tableView.name}*
 
 Example: [https://public.datagrok.ai/p/demo.zbb/99_p0_ph7](https://public.datagrok.ai/p/demo.zbb/99_p0_ph7)
 
-Above link will open "99_p0_ph7" view from the "zbb" project, which is belongs to "demo" namespace. Try it!
-
-Draw your attention it is not necessary to specify the table view in the URL. In this case, the first view from the project will be opened.
+The above link will open `99_p0_ph7` view from the `zbb` project, which belongs to the `demo` namespace. Notice that it is not necessary to include a table view in the URL. If not specified, the first view from the project will open.
 
 ## Files
 
-[File share](../access/file-shares.md) for which the user has access is available by the link. 
+A [file share](../access/file-shares.md) for which the user has access is available by the link. You should specify the file share name and the namespace in which it exists in the URL, for example, [https://public.datagrok.ai/files/demo.testjobs.files.demofiles](https://public.datagrok.ai/files/demo.testjobs.files.demofiles). 
 
+The above link will open a view for the `demofiles` file share. Since the platform supports nesting of namespaces, there can be more than one namespace in a URL. Our example has several namespaces separated by periods: `demo`, `testjobs`, and `files`. This means that every next namespace can be reached from the previous one (in practice, this is possible when one project is nested within another).
 
-For [file share](../access/file-shares.md) you must specify its name and the namespace in which it exists in URL. 
+Here is an example of link to a file share with one namespace: [https://public.datagrok.ai/files/skalkin.datagrokdata](https://public.datagrok.ai/files/skalkin.datagrokdata). In this case, the namespace is the personal project of the user who created this file share.
 
-Example: [https://public.datagrok.ai/files/demo.testjobs.files.demofiles](https://public.datagrok.ai/files/demo.testjobs.files.demofiles)
-
-The above link will open a view for "demofiles" [file share](../access/file-shares.md). 
-
-Since the platform supports nesting of namespaces, there are several of them in the example. This means that each next namespace exists in the previous. (In practice, this is possible when one project is nested within another). 
-
-Here is an example of link to [file share](../access/file-shares.md) with one namespace: [https://public.datagrok.ai/files/skalkin.datagrokdata](https://public.datagrok.ai/files/skalkin.datagrokdata)
-
-In this case, the namespace is the personal project of the user who created this [file share](../access/file-shares.md).
-
-File shares URLs support directory nesting. With their help, you can easily get to any depth of folder nesting.
-
-For example: [https://public.datagrok.ai/files/demo.testjobs.files.demofiles/chem/zbb](https://public.datagrok.ai/files/demo.testjobs.files.demofiles/chem/zbb)
-
-After following the link above, the "zbb" folder will open, which exists inside the "chem" folder in "demofiles" [file share](../access/file-shares.md)
+File share URLs support directory nesting. With its help, you can easily get to subdirectories of any nesting depth. For example: [https://public.datagrok.ai/files/demo.testjobs.files.demofiles/chem/zbb](https://public.datagrok.ai/files/demo.testjobs.files.demofiles/chem/zbb). After following the link above, the `zbb` folder will open, which exists inside the `chem` folder in the `demofiles` file share.
 
 
 ## Queries
 
-Datagrok supports execution of saved queries via URL.
-
-For example, after following the link [https://public.datagrok.ai/q/Demo.Northwind.Products](https://public.datagrok.ai/q/Demo.Northwind.Products), the query "Products" will be executed and we will see the table that has just been created from query result.
+Datagrok supports execution of saved queries via URL. For example, after following the link [https://public.datagrok.ai/q/Demo.Northwind.Products](https://public.datagrok.ai/q/Demo.Northwind.Products), the query `Products` will be executed and we will see the table that has just been created as a query result.
 
 The link to [Data query](../access/data-query.md), in addition to its name, must also contain the [Data connection](../access/data-connection.md) name and namespace (or several nested namespaces).
 
