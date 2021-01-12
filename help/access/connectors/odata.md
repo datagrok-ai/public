@@ -9,8 +9,8 @@ Provides access to [OData](https://www.odata.org/) based service.
 
 ```json
 {
-  "Requires Server": true,
-  "Service URL": ""
+  "requiresServer": true,
+  "serviceUrl": ""
 }
 ``` 
 

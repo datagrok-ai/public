@@ -10,11 +10,13 @@ using SQL queries via JDBC driver.
 
 ```json
 {
-  "server": "",
-  "port": 21050,
-  "db": "",
-  "schema": "",
-  "conn. string": "",
+  "parameters": {
+    "server": "",
+    "port": 21050,
+    "db": "",
+    "schema": "",
+    "connString": "",
+  },
   "credentials" : {
     "parameters": {
       "login": "",

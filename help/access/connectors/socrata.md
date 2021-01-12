@@ -10,8 +10,8 @@ server using [Socrata Query](../edit-socrata-query.md).
 
 ```json
 {
-  "Owner_id": "",
-  "Requires Server": true
+  "ownerId": "",
+  "requiresServer": true
 }
 ```
 
