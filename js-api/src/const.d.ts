@@ -172,6 +172,7 @@ export const enum TAGS {
      Applicable for string columns only.
      See also [TAGS_CHOICES]. */
     AUTO_CHOICES = '.auto-choices',
+    ID = '.id'
 }
 
 export const enum VIEWER {

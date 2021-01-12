@@ -1,5 +1,5 @@
 import * as rxjs from 'rxjs';
-import {AGG, TYPE, COLUMN_TYPE} from "./const";
+import {AGG, TYPE, COLUMN_TYPE, TAGS} from "./const";
 import {__obs, observeStream} from "./events";
 import {toDart, toJs} from "./wrappers";
 import {SIMILARITY_METRIC} from "./const";
@@ -386,6 +386,16 @@ export class DataFrame {
   /** @returns {string} */
   toString() {
     return grok_Object_ToString(this.d);
+  }
+
+  /** Id of the dataframe.
+   * @returns {string}*/
+  get id() {
+    return this.tags[TAGS.ID];
+  }
+
+  set id(id) {
+    this.tags[TAGS.ID] = id;
   }
 }
 

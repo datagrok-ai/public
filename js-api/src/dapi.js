@@ -87,9 +87,9 @@ export class Dapi {
   }
 
   /** Data Table Infos API endpoint
-   *  @type {HttpDataSource<TableInfo>} */
+   *  @type {TablesDataSource} */
   get tables() {
-    return new HttpDataSource(grok_Dapi_Tables(), (a) => new TableInfo(a));
+    return new TablesDataSource(grok_Dapi_Tables(), (a) => new TableInfo(a));
   }
 
   /** Users API endpoint
@@ -616,4 +616,28 @@ export class UserDataStorage {
     return new Promise((resolve, reject) =>
       grok_Dapi_UserDataStorage_Delete(name, key, currentUser, () => resolve(), (e) => reject(e)));
   }
+}
+
+/**
+ * Functionality for working with remote tables
+ * @extends HttpDataSource
+ * */
+export class TablesDataSource extends HttpDataSource {
+  /** @constructs TablesDataSource*/
+  constructor(s, instance) {
+    super(s, instance);
+  }
+
+  /** @returns {Promise<string>} */
+  uploadDataFrame(dataFrame) {
+    return new Promise((resolve, reject) =>
+      grok_Dapi_TablesDataSource_UploadDataFrame(dataFrame.d, (id) => resolve(id), (e) => reject(e)));
+  }
+
+  /** @returns {Promise<DataFrame>} */
+  getTable(id) {
+    return new Promise((resolve, reject) =>
+      grok_Dapi_TablesDataSource_GetTable(id, (df) => resolve(toJs(df)), (e) => reject(e)));
+  }
+
 }
