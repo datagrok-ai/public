@@ -103,7 +103,7 @@ This is how to define the "chemprop" environment in the script header:
 
 ### renv Environments
 
-[_Renv_](https://rstudio.github.io/renv/articles/renv.html) environments are natively supported. Datagrok runs each R script in a temporary folder with an unique name. This folder becomes an _renv_ project folder for the current run of the script.
+[_Renv_](https://rstudio.github.io/renv/articles/renv.html) environments are natively supported. Datagrok runs each R script in a temporary folder with a unique name. This folder becomes an _renv_ project folder for the current run of the script.
 
 Start using _renv_ by initializing it and installing packages (see a [full example](https://github.com/datagrok-ai/public/tree/master/packages/RScripts/scripts/renv_spelling.R)):
 
