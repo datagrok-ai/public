@@ -71,7 +71,7 @@ Here is an example of link to [file share](../access/file-shares.md) with one na
 
 In this case, the namespace is the personal project of the user who created this [file share](../access/file-shares.md).
 
-It's important to note that file shares URLs support directory nesting. With their help, you can easily get to any depth of folder nesting.
+File shares URLs support directory nesting. With their help, you can easily get to any depth of folder nesting.
 
 For example: [https://public.datagrok.ai/files/demo.testjobs.files.demofiles/chem/zbb](https://public.datagrok.ai/files/demo.testjobs.files.demofiles/chem/zbb)
 
@@ -80,12 +80,11 @@ After following the link above, the "zbb" folder will open, which exists inside 
 
 ## Queries
 
-Datagroke supports execution of saved queries via URL.
+Datagrok supports execution of saved queries via URL.
 
 For example, after following the link [https://public.datagrok.ai/q/Demo.Northwind.Products](https://public.datagrok.ai/q/Demo.Northwind.Products), the query "Products" will be executed and we will see the table that has just been created from query result.
 
-
-It is important to note that the link to [Data query](../access/data-query.md), in addition to its name, must also contain the [Data connection](../access/data-connection.md) name and namespace (or several nested namespaces).
+The link to [Data query](../access/data-query.md), in addition to its name, must also contain the [Data connection](../access/data-connection.md) name and namespace (or several nested namespaces).
 
 [Parameterized queries](../access/parameterized-queries.md) can also be executed using the URL. Query parameters are passed directly in the URL. For Example:
 
