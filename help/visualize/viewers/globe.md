@@ -6,6 +6,7 @@
 Visualizes magnitude and color for data on a 3D globe using latitude and longitude.
 
 Controls:
+
 |                           |                        |
 |---------------------------|------------------------|
 | Left click                | Rotate the globe       |
@@ -14,6 +15,7 @@ Controls:
 | Mouse Wheel Down or Minus | Zoom out               |
 
 Properties:
+
 |                |                                                          |
 |----------------|----------------------------------------------------------|
 | Autorotation   | Automatically rotates the globe                          |
