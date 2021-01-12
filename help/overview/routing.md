@@ -71,7 +71,7 @@ Here is an example of link to [file share](../access/file-shares.md) with one na
 
 In this case, the namespace is the personal project of the user who created this [file share](../access/file-shares.md).
 
-It's important to note that test URLs support directory nesting. With their help, you can easily get to any depth of folder nesting.
+It's important to note that file shares URLs support directory nesting. With their help, you can easily get to any depth of folder nesting.
 
 For example: [https://public.datagrok.ai/files/demo.testjobs.files.demofiles/chem/zbb](https://public.datagrok.ai/files/demo.testjobs.files.demofiles/chem/zbb)
 
