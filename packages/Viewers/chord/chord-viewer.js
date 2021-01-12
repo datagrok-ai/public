@@ -227,6 +227,7 @@ export class ChordViewer extends DG.JsViewer {
 
     this.conf.innerRadius = size/2 - this.innerRadiusMargin;
     this.conf.outerRadius = size/2 - this.outerRadiusMargin;
+    this.chordConf.radius = d => (d.source.id === d.target.id) ? this.conf.outerRadius : null;
 
     circos.layout(this.data, this.conf);
     circos.chords('chords-track', this.chords, this.chordConf);

@@ -56,7 +56,7 @@ Simple steps to link CSVs with Athena and get results in Datagrok:
      Tips: 
        * To change CSV delimiter adjust "serialization.format" and "field.delim" parameters
        * To skip the header line add "skip.header.line.count" parameter
-  4. Create a [data connection](../data-connection.md) in the Datagrok platform. The <a href="#" id="parameters">parameters</a> may include: `"server"`, `"db"`, `"port"`, `"S3OutputLocation"`, `"S3OutputEncOption"`, `"AccessKey"`, `"SecretKey"`, or `"conn. string"`.
+  4. Create a [data connection](../data-connection.md) in the Datagrok platform. The <a href="#" id="parameters">parameters</a> may include: `"server"`, `"db"`, `"port"`, `"s3OutputLocation"`, `"s3OutputEncOption"`, `"accessKey"`, `"secretKey"`, or `"connString"`.
      For example:
       - Name: northwind
       - Server: athena.us-east-2.amazonaws.com

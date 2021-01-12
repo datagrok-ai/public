@@ -12,8 +12,8 @@ Works with any Git repository.
 {
   "url": "https://github.com/datagrok-ai/public.git",
   "dir": "packages/ApiSamples",
-  "index files": true,
-  "private repo": false
+  "indexFiles": true,
+  "privateRepo": false
 }
 ```
 
