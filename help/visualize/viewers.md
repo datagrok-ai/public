@@ -103,19 +103,11 @@ interactivity (for instance, a viewer that shows only selected rows)
 
 ## Embedding
 
-Each viewer created in Datagrok can be embedded into an external web-site as an iframe.
-
-At the same time, its interactivity remains fully and also it will be bound to the data for which it was created inside platform.
-
-To generate an iframe for the viewer, open its context menu, then go to the **Viewer** submenu and select **Embed**:
-
+Each viewer created in Datagrok can be embedded into an external web-site as an iframe. It remains fully interactive and will be bound to the data for which it was created inside the platform. To generate an iframe for a viewer, open its context menu, then go to the **Viewer** submenu and select **Embed**:
 
 ![Viewers Embedding](../uploads/viewers/embedding.png "Viewers Embedding")
 
-
-Now you can copy the generated iframe and use it in your website.
-
-The only thing you need to remember is that this feature works only for data that is uploaded as project to server.
+Now you can copy the generated iframe and use it in your website. The only thing you need to remember is that this feature works only for data uploaded as a project to the server.
 
 ## Interaction
 
