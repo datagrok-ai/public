@@ -1,15 +1,12 @@
 var rdKitModule = null;
 var rdKitWorkerProxy = null;
 
+//name: Chem
 class ChemPackage extends DG.Package {
-
-  //name: chemExportFunc
-  //tags: autostart
-  chemInit() {
-  }
 
   /** Guaranteed to be executed exactly once before the execution of any function below */
   async init() {
+    this.name = "Chem";
     rdKitModule = await initRDKitModule();
     console.log('RDKit (package) initialized');
     rdKitModule.prefer_coordgen(false);
@@ -61,8 +58,11 @@ class ChemPackage extends DG.Package {
   //tags: cellRenderer, cellRenderer-Molecule
   //meta-cell-renderer-sem-type: Molecule
   //output: grid_cell_renderer result
-  rdkitCellRenderer() {
-    return new RDKitCellRenderer();
+  async rdkitCellRenderer() {
+    let props = DG.toJs(await this.getProperties());
+    if (props.Renderer && props.Renderer === 'RDKit') {
+      return new RDKitCellRenderer();
+    }
   }
 
   //name: similarityScoring
