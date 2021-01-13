@@ -59,7 +59,8 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
         "offsety": -Math.floor(y),
         "width": Math.floor(w),
         "height": Math.floor(h),
-        "bondLineWidth": 1
+        "bondLineWidth": 1,
+        "minFontSize": 11
       }
       mol.draw_to_canvas_with_highlights(g.canvas, JSON.stringify(opts));
     }
