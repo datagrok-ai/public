@@ -1,11 +1,11 @@
 const path = require('path');
 
 module.exports = {
-  mode: 'development',
+  mode: 'production',
   entry: {
     package: './src/package.js'
   },
-  devtool: 'inline-source-map',
+  // devtool: 'inline-source-map',
   externals: {
     'datagrok-api/dg': 'DG',
     'datagrok-api/grok': 'grok',
