@@ -1,6 +1,6 @@
 {
   "name": "Chem",
-  "version": "0.6",
+  "version": "0.6.1",
   "fullName": "Cheminformatics support",
   "description": "Cheminformatics support: \n\n* RDKit-based rendering \n* Molecule sketching \n*",
   "sources": [
@@ -12,5 +12,13 @@
     "src/rdkit_substructure_filter.js",
     "src/chem_column_property_panel.js",
     "src/chem_searches.js"
+  ],
+  "properties": [
+    {
+      "name": "Renderer",
+      "propertyType": "string",
+      "choices": [ "OCL", "RDKit" ],
+      "defaultValue": "OCL"
+    }
   ]
 }

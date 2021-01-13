@@ -21,11 +21,11 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
   }
 
   get defaultWidth() {
-    return 150;
+    return 100; // should be 200, now *2; TODO
   }
 
   get defaultHeight() {
-    return 150;
+    return 100;
   }
 
   render(g, x, y, w, h, gridCell, cellStyle) {
@@ -58,7 +58,8 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
         "offsetx": Math.floor(x),
         "offsety": -Math.floor(y),
         "width": Math.floor(w),
-        "height": Math.floor(h)
+        "height": Math.floor(h),
+        "bondLineWidth": 1
       }
       mol.draw_to_canvas_with_highlights(g.canvas, JSON.stringify(opts));
     }
