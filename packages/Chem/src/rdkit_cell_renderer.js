@@ -21,7 +21,7 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
   }
 
   get defaultWidth() {
-    return 50; // should be 200, now *4; TODO
+    return 200;
   }
 
   get defaultHeight() {
