@@ -397,6 +397,10 @@ export class DataFrame {
   set id(id) {
     this.tags[TAGS.ID] = id;
   }
+
+  getDensity(xBins, yBins, xColName, yColName) {
+    return grok_MathActions_GetDensity(this.d, xBins, yBins, xColName, yColName);
+  }
 }
 
 /** Represents a row. Allows for quick property access like "row.height". */
