@@ -28,6 +28,7 @@ export class ChordViewer extends DG.JsViewer {
     this.conf = layoutConf;
     this.chords = [];
     this.chordConf = {};
+    this.labels = [];
   }
 
   init() {
@@ -36,6 +37,10 @@ export class ChordViewer extends DG.JsViewer {
     this.color = scaleOrdinal(DG.Color.categoricalPalette);
     this.chordConf.color = (datum, index) => DG.Color.toRgb(this.color(datum[this.colorBy]['id']));
     this.chordConf.opacity = 0.7;
+    this.labelConf = {
+      innerRadius: 1.02,
+      style: { 'font-size': 12, fill: '#7f7f7f' }
+    };
     this.initialized = true;
   }
 
@@ -74,6 +79,7 @@ export class ChordViewer extends DG.JsViewer {
 
   generateData() {
     this.data.length = 0;
+    this.labels.length = 0;
 
     this.fromColumn = this.dataFrame.getCol(this.fromColumnName);
     this.toColumn = this.dataFrame.getCol(this.toColumnName);
@@ -114,9 +120,9 @@ export class ChordViewer extends DG.JsViewer {
     this.data = this.categories
       .sort((a, b) => this.freqMap[b] - this.freqMap[a])
       .map(s => {
+        this.labels.push({ block_id: s, position: this.freqMap[s] / 2, value: s });
         return {
           id: s,
-          label: s,
           len: this.freqMap[s],
           color: DG.Color.toRgb(this.color(s))
         }
@@ -227,10 +233,11 @@ export class ChordViewer extends DG.JsViewer {
 
     this.conf.innerRadius = size/2 - this.innerRadiusMargin;
     this.conf.outerRadius = size/2 - this.outerRadiusMargin;
-    this.chordConf.radius = d => (d.source.id === d.target.id) ? this.conf.outerRadius : null;
+    // this.chordConf.radius = d => (d.source.id === d.target.id) ? this.conf.outerRadius : null;
 
     circos.layout(this.data, this.conf);
     circos.chords('chords-track', this.chords, this.chordConf);
+    circos.text('labels', this.labels, this.labelConf);
     circos.render();
 
     document.getElementById('chart').children[0]
