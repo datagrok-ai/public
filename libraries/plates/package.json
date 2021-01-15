@@ -1,0 +1,14 @@
+{
+  "name": "plates",
+  "version": "1.0.0",
+  "description": "Routines for plate visualizations",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Datagrok",
+  "license": "MIT",
+  "dependencies": {
+    "datagrok-api": "^0.89.12"
+  }
+}
