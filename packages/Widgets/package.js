@@ -7,4 +7,10 @@ class WidgetsPackage extends DG.Package {
   radioButtonFilter() {
     return new RadioButtonFilter();
   }
+
+  //name: TimeWidget
+  //output: widget result
+  timeWidget() {
+    return new TimeWidget();
+  }
 }

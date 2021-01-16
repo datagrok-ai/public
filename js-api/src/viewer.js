@@ -203,11 +203,6 @@ export class JsViewer extends Widget {
   onTableAttached() {
   }
 
-  /** Gets called when viewer's property is changed.
-   * @param {Property} property - or null, if multiple properties were changed. */
-  onPropertyChanged(property) {
-  }
-
   /** Gets called when this viewer is detached. */
   detach() {
     //Balloon.info("Detached");
@@ -231,34 +226,6 @@ export class JsViewer extends Widget {
     grok_Widget_RegisterCleanup(this.root, cleanup);
   }
 
-  /** Registers an property with the specified type, name, and defaultValue.
-   *  Registered property gets added to {@see properties}.
-   *  Returns default value, thus allowing to combine registering a property with the initialization
-   *
-   * @param {string} propertyName
-   * @param {TYPE} propertyType
-   * @param defaultValue
-   * @param {Object} options
-   * @returns {*}
-   * @private
-   */
-  _prop(propertyName, propertyType, defaultValue = null, options = null) {
-    let obj = this;
-    let p = Property.create(propertyName, propertyType, () => obj[propertyName], null, defaultValue);
-    p.set = function (_, x) {
-      obj[propertyName] = x;
-      obj.onPropertyChanged(p);
-    };
-
-    if (options !== null) {
-      for (let key of Object.keys(options))
-        grok_PropMixin_SetPropertyValue(p.d, key, options[key]);
-    }
-
-    this._properties.push(p);
-    return p.defaultValue;
-  }
-
   /**
    * @param {Observable} observable
    * @returns {Observable} */
@@ -272,7 +239,7 @@ export class JsViewer extends Widget {
    * @param {string} dataPropertyName
    * @returns {Column} */
   column(dataPropertyName, options = null) {
-    return this._prop(`${dataPropertyName}ColumnName`, TYPE.STRING, null, options);
+    return this.addProperty(`${dataPropertyName}ColumnName`, TYPE.STRING, null, options);
   }
 
   /** Registers an integer property with the specified name and defaultValue
@@ -280,7 +247,7 @@ export class JsViewer extends Widget {
    * @param {number} defaultValue
    * @returns {number} */
   int(propertyName, defaultValue = null, options = null) {
-    return this._prop(propertyName, TYPE.INT, defaultValue, options);
+    return this.addProperty(propertyName, TYPE.INT, defaultValue, options);
   }
 
   /** Registers a floating point property with the specified name and defaultValue
@@ -288,7 +255,7 @@ export class JsViewer extends Widget {
    * @param {number} defaultValue
    * @returns {number} */
   float(propertyName, defaultValue = null, options = null) {
-    return this._prop(propertyName, TYPE.FLOAT, defaultValue, options);
+    return this.addProperty(propertyName, TYPE.FLOAT, defaultValue, options);
   }
 
   /** Registers a string property with the specified name and defaultValue
@@ -297,7 +264,7 @@ export class JsViewer extends Widget {
    * @param {Object} options
    * @returns {string} */
   string(propertyName, defaultValue = null, options = null) {
-    return this._prop(propertyName, TYPE.STRING, defaultValue, options);
+    return this.addProperty(propertyName, TYPE.STRING, defaultValue, options);
   }
 
   /** Registers a string list property with the specified name and defaultValue
@@ -305,7 +272,7 @@ export class JsViewer extends Widget {
    * @param {string[]} defaultValue
    * @returns {string[]} */
   stringList(propertyName, defaultValue = null, options = null) {
-    return this._prop(propertyName, TYPE.STRING_LIST, defaultValue, options);
+    return this.addProperty(propertyName, TYPE.STRING_LIST, defaultValue, options);
   }
 
   /** Registers a boolean property with the specified name and defaultValue
@@ -313,7 +280,7 @@ export class JsViewer extends Widget {
    * @param {boolean} defaultValue
    * @returns {boolean} */
   bool(propertyName, defaultValue = null, options = null) {
-    return this._prop(propertyName, TYPE.BOOL, defaultValue, options);
+    return this.addProperty(propertyName, TYPE.BOOL, defaultValue, options);
   }
 
   /** Registers a datetime property with the specified name and defaultValue
@@ -321,6 +288,6 @@ export class JsViewer extends Widget {
    * @param {DateTime} defaultValue
    * @returns {DateTime} */
   dateTime(propertyName, defaultValue = null, options = null) {
-    return this._prop(propertyName, TYPE.DATE_TIME, defaultValue, options);
+    return this.addProperty(propertyName, TYPE.DATE_TIME, defaultValue, options);
   }
 }
