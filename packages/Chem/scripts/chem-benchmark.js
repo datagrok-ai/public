@@ -50,7 +50,7 @@ async function testCase(title, f) {
 
   // TODO: await _ChemPackage.init(); dummy priming for now
   grok.chem.searchSubstructure(
-    DG.Column.fromList(DG.TYPE.STRING, '', ['cc']));
+    DG.Column.fromList(DG.TYPE.STRING, '', ['c1ccccc1']));
   let rdKitCellRenderer = new RDKitCellRenderer();
   let grid = DG.Viewer.grid(df);
   let canvas = grid.canvas;
