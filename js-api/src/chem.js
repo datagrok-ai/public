@@ -97,7 +97,8 @@ export async function getSimilarities(column, molecule = "", settings = {}) {
     'molString': molecule
   });
   await call.call();
-  return (molecule.length != 0) ? call.getParamValue('result') : null;
+  // TODO: figure out what's the state in returning columns from package functions
+  return (molecule.length != 0) ? call.getParamValue('result').columns.byIndex(0) : null;
 
 }
 

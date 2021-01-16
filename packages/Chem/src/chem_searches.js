@@ -144,12 +144,12 @@ function _chemSimilarityScoring(molStringsColumn, molString, settings) {
 
 }
 
-function chemGetSimilarities(molStringsColumn, molString, settings) {
+function chemGetSimilarities(molStringsColumn, molString = "", settings = {}) {
   settings.sorted = false;
   return _chemSimilarityScoring(molStringsColumn, molString, settings);
 }
 
-function chemFindSimilar(molStringsColumn, molString, settings) {
+function chemFindSimilar(molStringsColumn, molString = "", settings = {}) {
   settings.sorted = true;
   return _chemSimilarityScoring(molStringsColumn, molString, settings);
 }
