@@ -44,7 +44,7 @@ class RadioButtonFilter extends DG.Filter {
     let name = `radio_${groupId++}`;
     $(this.root).empty();
 
-    for (let i = 0; i < this.column.categories.length; i++) {
+    for (let i = 0; i < Math.min(20, this.column.categories.length); i++) {
       let category = this.column.categories[i];
       let id = `rb_${buttonId++}`;
       let radioButon = $(`<input type="radio" id="${id}" name="${name}" data-category-id="${i}">`)
