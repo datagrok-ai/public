@@ -37,9 +37,10 @@ async function testCase(title, f) {
   const tScroll = 100;
   const nSample = 10;
 
-  let df = await grok.data.getDemoTable('chem/zbb/99_p3_4.5-6.csv');
+  let df = await grok.data.getDemoTable('chem/chembl/chembl_100k.csv');
   // For using with your HOME files in Datagrok:
   // let df = (await grok.functions.eval('OpenServerFile("UserName:Home/Chembl_100K.csv")'))[0];
+  // An alternative data source for testing (~40K+ molecules): chem/zbb/99_p3_4.5-6.csv
   if (nSearch < df.rowCount)
     df.rows.removeAt(nSearch, df.rowCount - nSearch, false);
   const colName = 'smiles';
@@ -47,6 +48,7 @@ async function testCase(title, f) {
 
   console.log('Chem Benchmark');
 
+  await _ChemPackage.init();
   let rdKitCellRenderer = new RDKitCellRenderer();
   let grid = DG.Viewer.grid(df);
   let canvas = grid.canvas;
@@ -87,18 +89,18 @@ async function testCase(title, f) {
   ];
 
   await testCase(`Substructure search, building a library of ${col.length} molecules`, async () =>
-    await grok.chem.substructureSearch(col));
+    await grok.chem.searchSubstructure(col));
   await testCase(`Substructure search, searching benzene in ${nSearch} molecules`, async () =>
-    await grok.chem.substructureSearch(col, searchFor[0]));
+    await grok.chem.searchSubstructure(col, searchFor[0]));
   await testCase(`Substructure search, searching aspirin in ${nSearch} molecules`, async () =>
-    await grok.chem.substructureSearch(col, searchFor[1]));
+    await grok.chem.searchSubstructure(col, searchFor[1]));
 
   await testCase(`Similarity scoring, building a library of ${col.length} molecules`, async () =>
-    await grok.chem.similarityScoring(col));
+    await grok.chem.getSimilarities(col));
   const queryIdx = getIdxRandomSubset(nSearch, nSample);
   await testCase(`Similarity scoring, search for ${queryIdx.length} samples in ${nSearch} molecules`, async () => {
     for (let i of queryIdx) {
-      await grok.chem.similarityScoring(col, col.get(i));
+      await grok.chem.getSimilarities(col, col.get(i));
     }
   });
 
