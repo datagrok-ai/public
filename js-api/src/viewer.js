@@ -194,8 +194,8 @@ export class JsViewer extends Widget {
     this.props = new ObjectPropertyBag(this);
   }
 
-  onFrameAttached(dataFrameHandle) {
-    this.dataFrame = new DG.DataFrame(dataFrameHandle);
+  onFrameAttached(dataFrame) {
+    this.dataFrame = dataFrame;
     this.onTableAttached();
   }
 
@@ -223,10 +223,6 @@ export class JsViewer extends Widget {
 
   getProperties() {
     return this._properties;
-  }
-
-  getDartProperties() {
-    return this.getProperties().map((p) => p.d);
   }
 
   /** cleanup() will get called when the viewer is disposed

@@ -12,45 +12,6 @@ export class ObjectPropertyBag {
     if (x == null)
       x = source;
 
-    // this.get = this.get.bind(this);
-    // this.set = this.set.bind(this);
-    // this.getProperty = this.getProperty.bind(this);
-    // this.getProperties = this.getProperties.bind(this);
-
-    // /**
-    //  * Gets the value of the specified property
-    //  * @param {String} propertyName
-    //  * @returns {Object}
-    //  * */
-    // this.get = function(propertyName) {
-    //   return this.getProperty(propertyName).get(this.source);
-    // }
-    //
-    // /**
-    //  * Sets the value of the specified property
-    //  * @param {String} propertyName
-    //  * @param {Object} propertyValue
-    //  * */
-    // this.set = function(propertyName, propertyValue) {
-    //   this.getProperty(propertyName).set(this.source, propertyValue);
-    // }
-    //
-    // /** @returns {Property[]} */
-    // this.getProperties = function() {
-    //   return this.source.getProperties();
-    // }
-    //
-    // /** Gets property by name (case-sensitive).
-    //  * @param {string} name
-    //  * @returns {Property} */
-    // this.getProperty = function(name) {
-    //   var property = this.getProperties().find((p) => p.name === name);
-    //   if (typeof property == 'undefined')
-    //     throw `Property not found: ${name}`;
-    //   return property;
-    // }
-
-
     let props = this;
 
     const handler = {
@@ -114,6 +75,13 @@ export class ObjectPropertyBag {
       throw `Property not found: ${name}`;
     return property;
   }
+
+  /**
+   * @param {string} name
+   * @returns {boolean} */
+  hasProperty(name) {
+    return this.getProperties().findIndex((p) => p.name === name) !== -1;
+  }
 }
 
 
@@ -136,6 +104,15 @@ export class Widget {
   }
 
   getProperties() { return this._properties; }
+
+  getDartProperties() {
+    return this.getProperties().map((p) => p.d);
+  }
+
+  onFrameAttached(dataFrame) {
+    if (this.props.getProperty())
+    this.props.set('dataFrame', dataFrame);
+  }
 
   /** Widget's visual root.
    * @type {HTMLElement} */
