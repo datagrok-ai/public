@@ -106,7 +106,7 @@ class ChemPackage extends DG.Package {
   findSimilar(molStringsColumn, molString, aLimit, aCutoff) {
     try {
       let result = chemFindSimilar(molStringsColumn, molString, {limit: aLimit, cutoff: aCutoff});
-      return result ? DG.DataFrame.fromColumns([result]) : DG.DataFrame.create();
+      return result ? result : DG.DataFrame.create();
     } catch (e) {
       console.error("In getSimilarities: " + e.toString());
       throw e;
