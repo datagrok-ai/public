@@ -1,6 +1,6 @@
 {
   "name": "Chem",
-  "version": "0.6.7",
+  "version": "0.7",
   "fullName": "Cheminformatics support",
   "description": "Cheminformatics support: \n\n* RDKit-based rendering \n* Molecule sketching \n*",
   "sources": [
@@ -19,6 +19,12 @@
       "propertyType": "string",
       "choices": [ "OCL", "RDKit" ],
       "defaultValue": "OCL"
+    },
+    {
+      "name": "Searches",
+      "propertyType": "string",
+      "choices": [ "RDKit Server", "RDKit Client" ],
+      "defaultValue": "RDKit Server"
     }
   ]
 }

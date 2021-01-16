@@ -83,6 +83,36 @@ class ChemPackage extends DG.Package {
     }
   }
 
+  //name: getSimilarities
+  //input: column molStringsColumn
+  //input: string molString
+  //output: dataframe result
+  getSimilarities(molStringsColumn, molString) {
+    try {
+      let result = chemGetSimilarities(molStringsColumn, molString);
+      return result ? DG.DataFrame.fromColumns([result]) : DG.DataFrame.create();
+    } catch (e) {
+      console.error("In getSimilarities: " + e.toString());
+      throw e;
+    }
+  }
+
+  //name: findSimilar
+  //input: column molStringsColumn
+  //input: string molString
+  //input: int limit
+  //input: int cutoff
+  //output: dataframe result
+  findSimilar(molStringsColumn, molString, aLimit, aCutoff) {
+    try {
+      let result = chemFindSimilar(molStringsColumn, molString, {limit: aLimit, cutoff: aCutoff});
+      return result ? DG.DataFrame.fromColumns([result]) : DG.DataFrame.create();
+    } catch (e) {
+      console.error("In getSimilarities: " + e.toString());
+      throw e;
+    }
+  }
+
   //name: substructureSearch
   //input: column molStringsColumn
   //input: string molString

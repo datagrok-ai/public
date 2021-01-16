@@ -16,6 +16,7 @@ import {SIMILARITY_METRIC} from "./const";
  * Returns molecules similar to the reference one.
  * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/similarity-search}
  * @async
+ * @deprecated
  * @param {Column} column - Molecule column to search in
  * @param {string} molecule - Reference molecule in one of formats supported by RDKit:
  *     smiles, cxsmiles, molblock, v3Kmolblock
@@ -24,16 +25,16 @@ import {SIMILARITY_METRIC} from "./const";
  *     sorted in descending order by the score
  * @returns {Promise<DataFrame>, if sorted; Promise<Column>, otherwise}
  * */
-export async function similarityScoring(column, molecule = null, settings = {sorted: false}) {
+export async function similarityScoring(column, molecule = "", settings = {sorted: false}) {
 
   let foo = await grok.functions.eval('Chem:similarityScoring');
   let call = await foo.prepare({
     'molStringsColumn': column,
-    'molString': molecule == null ? "" : molecule,
+    'molString': molecule,
     'sorted': settings.sorted
   });
   await call.call();
-  if (molecule != null && molecule !== "") {
+  if (molecule.length != 0) {
     let result = call.getParamValue('result');
     return settings.sorted ? result : result.columns.byIndex(0);
   }
@@ -57,18 +58,19 @@ export function diversitySearch(column, metric = SIMILARITY_METRIC.TANIMOTO, lim
  * Searches for a molecular pattern in a given column, returning a bitset with hits.
  * See example: {@link substructure-search}
  * @async
+ * @deprecated
  * @param {Column} column - Column with molecules to search
  * @param {string} pattern - Pattern, either one of which RDKit supports
  * @returns {Promise<BitSet>}
  * */
-export async function substructureSearch(column, pattern = null, settings = null) {
+export async function substructureSearch(column, pattern = "", settings = {}) {
 
   let foo = await grok.functions.eval('Chem:substructureSearch');
   let call = await foo.prepare({
     'molStringsColumn': column,
-    'molString': pattern == null ? "" : pattern,
+    'molString': pattern,
     'substructLibrary':
-      (settings && settings.hasOwnProperty('substructLibrary') && settings.substructLibrary === false) ?
+      (settings.hasOwnProperty('substructLibrary') && settings.substructLibrary === false) ?
         false : true
   });
   await call.call();
@@ -77,6 +79,99 @@ export async function substructureSearch(column, pattern = null, settings = null
 
 }
 
+/**
+ * Computes similarity scores for molecules in the input vector based on a preferred similarity score.
+ * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/similarity-scoring-scores}
+ * @async
+ * @param {Column} column - Column with molecules to search in
+ * @param {string} molecule - Reference molecule in one of formats supported by RDKit:
+ *   smiles, cxsmiles, molblock, v3Kmolblock, and inchi
+ * @param {} settings - Properties for the similarity function (type, parameters, etc.)
+ * @returns {Promise<Column>} - Column of corresponding similarity scores
+ * */
+export async function getSimilarities(column, molecule = "", settings = {}) {
+
+  let foo = await grok.functions.eval('Chem:getSimilarities');
+  let call = await foo.prepare({
+    'molStringsColumn': column,
+    'molString': molecule
+  });
+  await call.call();
+  return (molecule.length != 0) ? call.getParamValue('result') : null;
+
+}
+
+/**
+ * Computes similarity scores for molecules in the input vector based on a preferred similarity score.
+ * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/similarity-scoring-sorted}
+ * @async
+ * @param {Column} column - Column with molecules to search in
+ * @param {string} molecule - Reference molecule in one of formats supported by RDKit:
+ *   smiles, cxsmiles, molblock, v3Kmolblock, and inchi
+ * @param {} settings - Properties for the similarity function
+ * @param {int} limit - Would return top limit molecules based on the score
+ * @param {int} cutoff - Would drop molecules which score is lower than cutoff
+ * @returns {Promise<DataFrame>} - DataFrame with 3 columns:
+ *   - molecule: original molecules string representation from the input column
+ *   - score: similarity scores within the range from 0.0 to 1.0;
+ *            DataFrame is sorted descending by this column
+ *   - index: indices of the molecules in the original input column
+ * */
+export async function findSimilar(column, molecule = "", settings = { limit: Number.MAX_VALUE, cutoff: 0.0 }) {
+
+  let foo = await grok.functions.eval('Chem:findSimilar');
+  let call = await foo.prepare({
+    'molStringsColumn': column,
+    'molString': molecule,
+    'limit': settings.limit,
+    'cutoff': settings.cutoff
+  });
+  await call.call();
+  return (molecule.length != 0) ? call.getParamValue('result') : null;
+
+}
+
+/**
+ * Returns molecules similar to the reference one.
+ * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/similarity-search}
+ * @async
+ * @param {Column} column - Molecule column to search in.
+ * @param {string} molecule - Reference molecule in SMILES format.
+ * @param {SimilarityMetric} metric - Metric to use.
+ * @param {number} limit - Maximum number of results to return.
+ * @param {number} minScore - Minimum similarity score for a molecule to be included.
+ * @returns {Promise<DataFrame>}
+ * */
+export function similaritySearchServer(column, molecule, metric = SIMILARITY_METRIC.TANIMOTO, limit = 10, minScore = 0.7) {
+  return new Promise((resolve, reject) => grok_Chem_SimilaritySearch(column.d, molecule, metric,
+    limit, minScore, (t) => resolve(new DataFrame(t))));
+}
+
+/**
+ * Searches for a molecular pattern in a given column, returning a bitset with hits.
+ * See example: {@link substructure-search}
+ * @async
+ * @param {Column} column - Column with molecules to search.
+ * @param {string} pattern - Pattern, either SMARTS or SMILES.
+ * @param {boolean} isSmarts - Whether the pattern is SMARTS.
+ * @returns {Promise<BitSet>}
+ * */
+export function substructureSearchServer(column, pattern, isSmarts = true) {
+  return new Promise((resolve, reject) => grok_Chem_SubstructureSearch(column.d, pattern, isSmarts, (bs) => resolve(new BitSet(bs))));
+}
+
+/**
+ * Searches for a molecular pattern in a given column, returning a bitset with hits.
+ * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/substructure-search}
+ * @async
+ * @param {Column} column - Column with molecules to search
+ * @param {string} molecule - Substructure being sought, either one of which RDKit supports:
+ *   smiles, cxsmiles, molblock, v3Kmolblock, and inchi
+ * @returns {Promise<BitSet>}
+ * */
+export async function searchSubstructure(column, molecule = "", settings = {}) {
+  return substructureSearch(column, molecule, settings);
+}
 
 /**
  * Performs R-group analysis.
