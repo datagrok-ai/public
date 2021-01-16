@@ -26,18 +26,18 @@ async function time(name, n, f) {
 
   await time(`Graph-based search on ${df.rowCount} molecules`, n, async () => {
     for (let s of searchFor) {
-      let result = await grok.chem.substructureSearch(col, s, {substructLibrary: false});
+      let result = await grok.chem.searchSubstructure(col, s, {substructLibrary: false});
       // console.log(s + ": " + result.toString());
     }
   });
 
   await time(`Building a library for ${df.rowCount} molecules`, 1, async () => {
-    await grok.chem.substructureSearch(col, '');
+    await grok.chem.searchSubstructure(col);
   });
 
   await time(`Searching the library on ${searchFor.length} molecules`, n, async () => {
     for (let s of searchFor) {
-      let result = await grok.chem.substructureSearch(col, s);
+      let result = await grok.chem.searchSubstructure(col, s);
       // console.log(s + ": " + result.toString());
     }
   });

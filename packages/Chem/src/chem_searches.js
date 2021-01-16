@@ -1,4 +1,4 @@
-async function cacheByAction(params, invalidator) {
+async function _cacheByAction(params, invalidator) {
 
   let invalidateCache = false;
   let {foo, column, query} = params;
@@ -23,7 +23,7 @@ async function cacheByAction(params, invalidator) {
 
 function _morganFP(molString, fp_length = 128, fp_radius = 2) {
 
-  if (molString == null) {
+  if (molString.length == 0) {
     console.error(
       "Possibly an empty molString: `" + molString + "`");
   } else {
@@ -42,7 +42,7 @@ function _morganFP(molString, fp_length = 128, fp_radius = 2) {
 
 }
 
-function moleculesToFingerprints(molStringsColumn, settings) {
+function _moleculesToFingerprints(molStringsColumn, settings) {
   const len = molStringsColumn.length;
   const fpLength = settings.hasOwnProperty('fpLength') ? settings.fpLength : 128;
   const fpRadius = settings.hasOwnProperty('fpRadius') ? settings.fpRadius : 2;
@@ -63,7 +63,7 @@ function _foldFingerprint(bitsetFp, newLength) {
   return result;
 }
 
-function fingerprintSimilarity(bitsetFp1, bitsetFp2) {
+function _fingerprintSimilarity(bitsetFp1, bitsetFp2) {
   const len1 = bitsetFp1.length;
   const len2 = bitsetFp2.length;
   if (len1 < len2)
@@ -73,6 +73,7 @@ function fingerprintSimilarity(bitsetFp1, bitsetFp2) {
   return bitsetFp1.similarityTo(bitsetFp2, 'tanimoto'); // tanimotoSimilarity(fp1, fp2);
 }
 
+// Only this function receives {sorted} in settings
 function _chemSimilarityScoringByFingerprints(fingerprintCol, fingerprint, molStringsColumn, settings) {
 
   const len = fingerprintCol.length;
@@ -80,7 +81,7 @@ function _chemSimilarityScoringByFingerprints(fingerprintCol, fingerprint, molSt
   let distances = DG.Column.fromType(DG.TYPE.FLOAT, 'distances', len);
   for (let row = 0; row < len; ++row) {
     const fp = fingerprintCol.get(row);
-    distances.set(row, fp == null ? 1.0 : fingerprintSimilarity(fingerprint, fp));
+    distances.set(row, fp == null ? 1.0 : _fingerprintSimilarity(fingerprint, fp));
   }
 
   if (settings.hasOwnProperty('sorted') && settings.sorted === true) {
@@ -121,22 +122,21 @@ function _chemSimilarityScoringByFingerprints(fingerprintCol, fingerprint, molSt
   }
 }
 
-// molString can be any string type RDKit supports: smiles, MolBlock
-// This also applies to cells content of molColumn
-function chemSimilarityScoring(molStringsColumn, molString, settings) {
+// molStringsColumn and molString can be anything  RDKit supports:
+// smiles, cxsmiles, molblock, v3Kmolblock, and inchi;
+// see https://github.com/rdkit/rdkit/blob/master/Code/MinimalLib/minilib.h
+function _chemSimilarityScoring(molStringsColumn, molString, settings) {
 
-  if (molString === "") molString = null;
-
-  cacheByAction(
-    {foo: chemSimilarityScoring, column: molStringsColumn, query: molString},
+  _cacheByAction(
+    {foo: _chemSimilarityScoring, column: molStringsColumn, query: molString},
     (params) => {
       let {foo, column, query} = params;
-      foo.cachedStructure = moleculesToFingerprints(molStringsColumn, settings);
+      foo.cachedStructure = _moleculesToFingerprints(molStringsColumn, settings);
     });
 
-  if (molString != null) {
-    const fingerprintCol = chemSimilarityScoring.cachedStructure;
-    const fingerprint = moleculesToFingerprints(DG.Column.fromStrings('molecules', [molString]), settings).get(0);
+  if (molString.length != 0) {
+    const fingerprintCol = _chemSimilarityScoring.cachedStructure;
+    const fingerprint = _moleculesToFingerprints(DG.Column.fromStrings('molecules', [molString]), settings).get(0);
     return _chemSimilarityScoringByFingerprints(fingerprintCol, fingerprint, molStringsColumn, settings);
   } else {
     return null;
@@ -144,11 +144,21 @@ function chemSimilarityScoring(molStringsColumn, molString, settings) {
 
 }
 
+function chemGetSimilarities(molStringsColumn, molString, settings) {
+  settings.sorted = false;
+  return _chemSimilarityScoring(molStringsColumn, molString, settings);
+}
+
+function chemFindSimilar(molStringsColumn, molString, settings) {
+  settings.sorted = true;
+  return _chemSimilarityScoring(molStringsColumn, molString, settings);
+}
+
 function chemSubstructureSearchGraph(molStringsColumn, molString) {
 
   const len = molStringsColumn.length;
   let result = DG.BitSet.create(len);
-  if (molString === "") {
+  if (molString.length == 0) {
     return result;
   }
   let subMol = rdKitModule.get_mol(molString);
@@ -173,9 +183,7 @@ function chemSubstructureSearchGraph(molStringsColumn, molString) {
 
 async function chemSubstructureSearchLibrary(molStringsColumn, molString) {
 
-  if (molString === "") molString = null;
-
-  await cacheByAction({
+  await _cacheByAction({
       foo: chemSubstructureSearchLibrary,
       column: molStringsColumn,
       query: molString
@@ -186,7 +194,7 @@ async function chemSubstructureSearchLibrary(molStringsColumn, molString) {
   );
 
   let result = DG.BitSet.create(molStringsColumn.length);
-  if (molString != null) {
+  if (molString.length != 0) {
     const matches = JSON.parse(await rdKitWorkerProxy.substructSearch(molString));
     for (let match of matches)
       result.set(match, true, false);
