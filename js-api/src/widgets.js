@@ -1,5 +1,6 @@
 import {toDart, toJs} from "./wrappers";
 import {__obs, _sub, observeStream} from "./events";
+import {Property} from "./entities";
 
 
 export class ObjectPropertyBag {
@@ -105,19 +106,51 @@ export class Widget {
 
   getProperties() { return this._properties; }
 
+  /** Gets called when viewer's property is changed.
+   * @param {Property} property - or null, if multiple properties were changed. */
+  onPropertyChanged(property) { }
+
   getDartProperties() {
     return this.getProperties().map((p) => p.d);
   }
 
   onFrameAttached(dataFrame) {
-    if (this.props.getProperty())
-    this.props.set('dataFrame', dataFrame);
+    if (this.props.hasProperty('dataFrame'))
+      this.props.set('dataFrame', dataFrame);
   }
 
   /** Widget's visual root.
    * @type {HTMLElement} */
   get root() { return this._root; }
   set root(r) { this._root = r; }
+
+  /** Registers an property with the specified type, name, and defaultValue.
+   *  Registered property gets added to {@see properties}.
+   *  Returns default value, thus allowing to combine registering a property with the initialization
+   *
+   * @param {string} propertyName
+   * @param {TYPE} propertyType
+   * @param defaultValue
+   * @param {Object} options
+   * @returns {*}
+   * @private
+   */
+  addProperty(propertyName, propertyType, defaultValue = null, options = null) {
+    let obj = this;
+    let p = Property.create(propertyName, propertyType, () => obj[propertyName], null, defaultValue);
+    p.set = function (_, x) {
+      obj[propertyName] = x;
+      obj.onPropertyChanged(p);
+    };
+
+    if (options !== null) {
+      for (let key of Object.keys(options))
+        grok_PropMixin_SetPropertyValue(p.d, key, options[key]);
+    }
+
+    this._properties.push(p);
+    return p.defaultValue;
+  }
 
   /** @returns {Widget} */
   static fromRoot(root) {

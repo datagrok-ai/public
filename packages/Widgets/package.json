@@ -4,6 +4,7 @@
   "fullName": "MultiForm",
   "description": "A collection of commonly used widgets, viewers, filters, and cell renderers.",
   "sources": [
+    "src/widgets.js",
     "src/widgets.css",
     "src/filters/radio_button_filter.js"
   ]
