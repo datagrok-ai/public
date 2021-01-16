@@ -4,20 +4,28 @@ var rdKitWorkerProxy = null;
 //name: Chem
 class ChemPackage extends DG.Package {
 
+  constructor() {
+    super();
+    this.initialized = false;
+  }
+
   /** Guaranteed to be executed exactly once before the execution of any function below */
   async init() {
-    this.name = "Chem";
-    rdKitModule = await initRDKitModule();
-    console.log('RDKit (package) initialized');
-    rdKitModule.prefer_coordgen(false);
-    rdKitWorkerProxy = new RdKitWorkerProxy(this.webRoot);
-    await rdKitWorkerProxy.moduleInit();
-    this.STORAGE_NAME = 'rdkit_descriptors';
-    this.KEY = 'selected';
-    this.rdKitRendererCache = new DG.LruCache();
-    this.rdKitRendererCache.onItemEvicted = (mol) => {
-      mol.delete();
-    };
+    if (!initialized) {
+      this.name = "Chem";
+      rdKitModule = await initRDKitModule();
+      console.log('RDKit (package) initialized');
+      rdKitModule.prefer_coordgen(false);
+      rdKitWorkerProxy = new RdKitWorkerProxy(this.webRoot);
+      await rdKitWorkerProxy.moduleInit();
+      this.STORAGE_NAME = 'rdkit_descriptors';
+      this.KEY = 'selected';
+      this.rdKitRendererCache = new DG.LruCache();
+      this.rdKitRendererCache.onItemEvicted = (mol) => {
+        mol.delete();
+      };
+      this.initialized = true;
+    }
   }
 
   //name: SubstructureFilter
@@ -90,6 +98,7 @@ class ChemPackage extends DG.Package {
   getSimilarities(molStringsColumn, molString) {
     try {
       let result = chemGetSimilarities(molStringsColumn, molString);
+      // TODO: get rid of a wrapping DataFrame and be able to return Columns
       return result ? DG.DataFrame.fromColumns([result]) : DG.DataFrame.create();
     } catch (e) {
       console.error("In getSimilarities: " + e.toString());
