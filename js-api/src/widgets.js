@@ -33,7 +33,7 @@ export class ObjectPropertyBag {
         return true;
       },
       get(target, name) {
-        const own = ['__proto__', 'getProperty', 'getProperties', 'get', 'set'];
+        const own = ['__proto__', 'hasProperty', 'getProperty', 'getProperties', 'get', 'set', 'apply'];
         if (own.includes(name) || props.hasOwnProperty(name))
           return props[name];
 
@@ -43,6 +43,15 @@ export class ObjectPropertyBag {
 
     return new Proxy(this, handler);
   }
+
+  // /**
+  //  * @param {Object} properties  */
+  // apply(properties) {
+  //   for (let name of Object.keys(properties)) {
+  //     if (this.hasProperty(name))
+  //       this.set(name, properties.name);
+  //   }
+  // }
 
   /**
    * Gets the value of the specified property
@@ -71,7 +80,8 @@ export class ObjectPropertyBag {
    * @param {string} name
    * @returns {Property} */
   getProperty(name) {
-    var property = this.getProperties().find((p) => p.name === name);
+    console.log(`get ${name}`);
+    let property = this.getProperties().find((p) => p.name === name);
     if (typeof property == 'undefined')
       throw `Property not found: ${name}`;
     return property;
@@ -101,7 +111,28 @@ export class Widget {
     /** @member {ObjectPropertyBag} */
     this.props = new ObjectPropertyBag(this);
 
+    /** @member {Subscription[]} */
+    this.subs = [];
+
     this.getProperties = this.getProperties.bind(this);
+  }
+
+  /** Registers a subscription to an external event.
+   * @param {Subscription} subscription */
+  sub(subscription) {
+    this.subs.push(subscription);
+  }
+
+  /**
+   * @param {Object} properties
+   * @returns {Widget} */
+  apply(properties) {
+    for (let name of Object.keys(properties))
+      if (typeof name !== 'undefined')
+        this.props[name] = properties[name];
+
+     //this.props.apply(properties);
+    return this;
   }
 
   getProperties() { return this._properties; }
@@ -123,6 +154,12 @@ export class Widget {
    * @type {HTMLElement} */
   get root() { return this._root; }
   set root(r) { this._root = r; }
+
+  /** Gets called when a widget is detached and will no longer be used. Typically used for unsubscribing from events.
+   * Be sure to call super.detach() if this method is overridden.  */
+  detach() {
+    this.subs.forEach((s) => s.unsubscribe());
+  }
 
   /** Registers an property with the specified type, name, and defaultValue.
    *  Registered property gets added to {@see properties}.
@@ -181,9 +218,6 @@ export class Filter extends Widget {
   /** Gets called when a data frame is attached.
    * @param {DataFrame} dataFrame*/
   attach(dataFrame) {}
-
-  /** Gets called when a filter is detached and will no longer be used. Unsubscribe from events here. */
-  detach() {}
 }
 
 
