@@ -189,13 +189,13 @@ async function chemSubstructureSearchLibrary(molStringsColumn, molString) {
       query: molString
     },
     async (params) =>
-      await rdKitWorkerProxy.substructInit(molStringsColumn.toList())
+      await rdKitParallel.substructInit(molStringsColumn.toList())
     // TODO: avoid creating an additional array here
   );
 
   let result = DG.BitSet.create(molStringsColumn.length);
   if (molString.length != 0) {
-    const matches = JSON.parse(await rdKitWorkerProxy.substructSearch(molString));
+    const matches = await rdKitParallel.substructSearch(molString);
     for (let match of matches)
       result.set(match, true, false);
   }

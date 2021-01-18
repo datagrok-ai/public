@@ -59,6 +59,11 @@ grok create         Create a package in the current working directory
 grok create <name>  Create a package in a folder with the specified name
 
 Please note that the package name may only include letters, numbers, underscores, or hyphens
+
+Options:
+[--ide]
+
+--ide       Add an IDE-specific configuration for debugging (vscode)
 `;
 
 const HELP_DELETE = `

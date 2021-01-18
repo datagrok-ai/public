@@ -6,7 +6,6 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
   constructor() {
     super();
     this.molCache = new DG.LruCache();
-    this.molScaffoldCache = new DG.LruCache();
     this.molCache.onItemEvicted = function (mol) {
       mol.delete();
     };
@@ -36,17 +35,36 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
 
     let molCache = this.molCache;
 
-    const fetchMol = function (molString) {
+    const fetchMolNoScaffold = function (molString) {
       return molCache.getOrCreate(molString, (s) => {
         try {
-          return rdKitModule.get_mol(s);
+          let mol = rdKitModule.get_mol(s);
+          return mol.is_valid() ? mol : rdKitModule.get_mol("");
         } catch (e) {
           return rdKitModule.get_mol("");
         }
       });
     }
 
-    let mol = fetchMol(value);
+    const fetchMolOnScaffold = function (molString, mol, scaffoldMolString, scaffoldMol) {
+      return molCache.getOrCreate(molString + " || " + scaffoldMolString, (s) => {
+        try {
+          if (molIsInMolBlock(scaffoldMolString, scaffoldMol)) {
+            const substructJson = mol.get_substruct_match(scaffoldMol);
+            if (substructJson !== '{}') {
+              let newMol = rdKitModule.get_mol(molString);
+              newMol.generate_aligned_coords(scaffoldMol, true);
+              return newMol;
+            }
+          }
+          return mol;
+        } catch (e) {
+          return mol;
+        }
+      });
+    }
+
+    let mol = fetchMolNoScaffold(value);
 
     if (!mol.is_valid())
       return;
@@ -60,9 +78,9 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
         "width": Math.floor(w),
         "height": Math.floor(h),
         "bondLineWidth": 1,
-        "minFontSize": 11
+        "minFontSize": 12
       }
-      mol.draw_to_canvas_with_highlights(g.canvas, JSON.stringify(opts));
+      rdkitMol.draw_to_canvas_with_highlights(g.canvas, JSON.stringify(opts));
     }
 
     let molIsInMolBlock = function (molString, rdkitMol) {
@@ -80,26 +98,10 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
 
     const drawMoleculeWithScaffold = function (scaffoldMolString, rdkitMol, rdkitMolSmiles, scaffoldCache) {
 
-      if (!scaffoldCache.has(rdkitMolSmiles)) {
+      let scaffoldMol = fetchMolNoScaffold(scaffoldMolString);
+      const molWithScaffold = fetchMolOnScaffold(rdkitMolSmiles, rdkitMol, scaffoldMolString, scaffoldMol);
+      drawMolecule(molWithScaffold);
 
-        let scaffoldMol = fetchMol(scaffoldMolString);
-        if (!scaffoldMol.is_valid() || scaffoldMol.get_smiles() === "") {
-          drawMolecule(rdkitMol);
-          return;
-        }
-        if (molIsInMolBlock(scaffoldMolString, scaffoldMol)) {
-          try {
-            const substructJson = rdkitMol.get_substruct_match(scaffoldMol);
-            if (substructJson !== '{}') {
-              rdkitMol.generate_aligned_coords(scaffoldMol, true);
-            }
-          } catch (e) {
-          }
-        }
-        scaffoldCache.set(rdkitMolSmiles, true);
-      }
-
-      drawMolecule(rdkitMol);
     }
 
     const molCol = gridCell.tableColumn.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
