@@ -11,11 +11,13 @@ class RdKitParallel {
   
   async init(webRoot) {
     this._workers = [];
+    let initWaiters = [];
     for (let k = 0; k < this._nWorkers; ++k) {
       let worker = new RdKitWorkerProxy(webRoot);
-      await worker.moduleInit();
+      initWaiters.push(worker.moduleInit());
       this._workers.push(worker);
     }
+    await Promise.all(initWaiters);
   }
   
   async _doParallel(fooScatter, fooGather = async (d) => null) {
