@@ -1,23 +1,31 @@
 var rdKitModule = null;
-var rdKitWorkerProxy = null;
+// var rdKitWorkerProxy = null;
+var rdKitParallel = null;
 
 //name: Chem
 class ChemPackage extends DG.Package {
 
-  constructor() {
-    super();
+  constructor(webRoot) {
+    super(webRoot);
     this.initialized = false;
   }
 
   /** Guaranteed to be executed exactly once before the execution of any function below */
   async init() {
-    if (!initialized) {
+    if (!this.initialized) {
       this.name = "Chem";
       rdKitModule = await initRDKitModule();
       console.log('RDKit (package) initialized');
       rdKitModule.prefer_coordgen(false);
-      rdKitWorkerProxy = new RdKitWorkerProxy(this.webRoot);
-      await rdKitWorkerProxy.moduleInit();
+      // rdKitWorkerProxy = new RdKitWorkerProxy();
+      // await rdKitWorkerProxy.moduleInit();
+      /*
+      if (!this.webRoot) {
+        this.webRoot = "https://dev.datagrok.ai/api/packages/published/files/Chem/0.8/";
+      }
+      */
+      rdKitParallel = new RdKitParallel(1);
+      await rdKitParallel.init(this.webRoot);
       this.STORAGE_NAME = 'rdkit_descriptors';
       this.KEY = 'selected';
       this.rdKitRendererCache = new DG.LruCache();
