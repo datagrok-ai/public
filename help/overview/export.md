@@ -3,17 +3,17 @@
 
 # Data Export
 
-Using Datagrok, you can always save the currently open data locally to file or set of files.
+When working on the Datagrok platform, you can always save the currently open data to a file or a set of files in your local environment.
 
 Currently Datagrok supports the following formats for data export:
 
 * CSV
-* Excel file (.xlsx)
+* Excel documents (.xlsx)
 * JSON
 * PNG
-* Power Point presentation (.pptx)
+* PowerPoint presentations (.pptx)
 
-To export file, use the corresponding button on the toolbar while table view is open:
+To export file, use the corresponding button on the toolbar while a table view is open:
 
 
 ![Data Export](../uploads/pictures/export.png "Data Export")
@@ -34,10 +34,10 @@ Such **Zip** archive will contain not only CSV files with tables, but also **scr
 
 When saving in **Excel format**, each open table is saved as a separate sheet.
 
-When saving in **presentation** format, it will be Power Point presentation containing screenshots of all tables and all added viewers to open tables. 
+A PowerPoint presentation will contain screenshots of all tables and all viewers added to open tables. 
 
-See Also:
+See also:
+
   * [Projects](../overview/project.md)
   * [Layout](../visualize/view-layout.md)
   * [Viewers](../visualize/viewers.md)
-
