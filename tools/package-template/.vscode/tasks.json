@@ -1,0 +1,10 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "shell",
+			"command": "cmd.exe /c 'call webpack && call grok publish'",
+			"label": "rebuild"
+		}
+	]
+}
