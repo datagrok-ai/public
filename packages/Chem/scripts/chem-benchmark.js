@@ -86,8 +86,8 @@ async function testCase(title, f) {
   });
 
   const searchFor = [
-    'c1ccccc1', // Benzene
-    'O=C(C)Oc1ccccc1C(=O)O' // Aspirin
+    'c1ccccc1', // Benzene https://www.ebi.ac.uk/chembl/compound_report_card/CHEMBL277500/ 
+    'CC(=O)Oc1ccccc1C(=O)O' // Aspirin https://www.ebi.ac.uk/chembl/compound_report_card/CHEMBL25/
   ];
 
   await testCase(`Substructure search, building a library of ${col.length} molecules`, async () =>

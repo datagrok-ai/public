@@ -17,14 +17,7 @@ class ChemPackage extends DG.Package {
       rdKitModule = await initRDKitModule();
       console.log('RDKit (package) initialized');
       rdKitModule.prefer_coordgen(false);
-      // rdKitWorkerProxy = new RdKitWorkerProxy();
-      // await rdKitWorkerProxy.moduleInit();
-      /*
-      if (!this.webRoot) {
-        this.webRoot = "https://dev.datagrok.ai/api/packages/published/files/Chem/0.8/";
-      }
-      */
-      rdKitParallel = new RdKitParallel(1);
+      rdKitParallel = new RdKitParallel();
       await rdKitParallel.init(this.webRoot);
       this.STORAGE_NAME = 'rdkit_descriptors';
       this.KEY = 'selected';
