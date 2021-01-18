@@ -35,9 +35,9 @@ A [project](project.md) uploaded to the server can be opened via a direct URL. I
 
 *https://public.datagrok.ai/p/{project.namespace}.{project.name}/{tableView.name}*
 
-Example: [https://public.datagrok.ai/p/demo.zbb/99_p0_ph7](https://public.datagrok.ai/p/demo.zbb/99_p0_ph7)
+Example: [https://public.datagrok.ai/p/demo.pic50/desc_canvas_aug30](https://public.datagrok.ai/p/demo.pic50/desc_canvas_aug30)
 
-The above link will open the `99_p0_ph7` view from the `zbb` project, which belongs to the `demo` namespace. Notice that it is not necessary to include a table view in the project URL. If not specified, the first view from the project will open.
+The above link will open the `https://public.datagrok.ai/p/demo.pic50/desc_canvas_aug30` view from the `pic50` project, which belongs to the `demo` namespace. Notice that it is not necessary to include a table view in the project URL. If not specified, the first view from the project will open.
 
 ## Files
 
