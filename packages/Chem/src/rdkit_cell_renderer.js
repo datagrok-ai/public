@@ -78,7 +78,7 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
         "width": Math.floor(w),
         "height": Math.floor(h),
         "bondLineWidth": 1,
-        "minFontSize": 11
+        "minFontSize": 12
       }
       rdkitMol.draw_to_canvas_with_highlights(g.canvas, JSON.stringify(opts));
     }
