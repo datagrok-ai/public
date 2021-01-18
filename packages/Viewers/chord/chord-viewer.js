@@ -222,11 +222,8 @@ export class ChordViewer extends DG.JsViewer {
     let height = this.root.parentElement.clientHeight;
     let size = Math.min(width, height);
 
-    this.root.style = 'width: 100%; height: 100%;';
-    this.root.id = 'chart';
-
     let circos = Circos({
-      container: '#chart',
+      container: this.root,
       width: size,
       height: size
     });
@@ -240,7 +237,6 @@ export class ChordViewer extends DG.JsViewer {
     circos.text('labels', this.labels, this.labelConf);
     circos.render();
 
-    document.getElementById('chart').children[0]
-      .setAttribute('style', 'position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);');
+    this.root.firstChild.style = 'position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);';
   }
 }

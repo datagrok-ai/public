@@ -1,23 +1,24 @@
 var rdKitModule = null;
-var rdKitWorkerProxy = null;
+// var rdKitWorkerProxy = null;
+var rdKitParallel = null;
 
 //name: Chem
 class ChemPackage extends DG.Package {
 
-  constructor() {
-    super();
+  constructor(webRoot) {
+    super(webRoot);
     this.initialized = false;
   }
 
   /** Guaranteed to be executed exactly once before the execution of any function below */
   async init() {
-    if (!initialized) {
+    if (!this.initialized) {
       this.name = "Chem";
       rdKitModule = await initRDKitModule();
       console.log('RDKit (package) initialized');
       rdKitModule.prefer_coordgen(false);
-      rdKitWorkerProxy = new RdKitWorkerProxy(this.webRoot);
-      await rdKitWorkerProxy.moduleInit();
+      rdKitParallel = new RdKitParallel();
+      await rdKitParallel.init(this.webRoot);
       this.STORAGE_NAME = 'rdkit_descriptors';
       this.KEY = 'selected';
       this.rdKitRendererCache = new DG.LruCache();

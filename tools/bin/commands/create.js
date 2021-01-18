@@ -7,6 +7,7 @@ module.exports = {
   create: create
 };
 
+const platform = os.platform();
 const curDir = process.cwd();
 const curFolder = path.basename(curDir);
 
@@ -23,7 +24,7 @@ function kebabToCamelCase(s) {
   return s[0].toUpperCase() + s.slice(1);
 }
 
-function createDirectoryContents(name, config, templateDir, packageDir) {
+function createDirectoryContents(name, config, templateDir, packageDir, ide = '') {
   const filesToCreate = fs.readdirSync(templateDir);
 
   filesToCreate.forEach(file => {
@@ -40,6 +41,8 @@ function createDirectoryContents(name, config, templateDir, packageDir) {
       contents = contents.replace(/#{PACKAGE_DETECTORS_NAME}/g, kebabToCamelCase(name));
       contents = contents.replace(/#{PACKAGE_NAME_LOWERCASE}/g, name.toLowerCase());
       contents = contents.replace(/#{PACKAGE_NAME_LOWERCASE_WORD}/g, name.replace(/-/g, '').toLowerCase());
+      contents = contents.replace(/#{GROK_HOST_ALIAS}/g, config.default);
+      contents = contents.replace(/#{GROK_HOST}/g, (new URL(config['servers'][config.default]['url'])).origin);
       if (file === 'package.json') {
         // Generate scripts for non-default servers from `config.yaml`
         let package = JSON.parse(contents);
@@ -56,6 +59,7 @@ function createDirectoryContents(name, config, templateDir, packageDir) {
       if (file === 'gitignore') copyFilePath = path.join(packageDir, '.gitignore');
       fs.writeFileSync(copyFilePath, contents, 'utf8');
     } else if (stats.isDirectory()) {
+      if (file === '.vscode' && (ide !== 'vscode' || platform !== 'win32')) return;
       fs.mkdirSync(copyFilePath);
       // recursive call
       createDirectoryContents(name, config, origFilePath, copyFilePath);
@@ -70,7 +74,8 @@ function isEmpty(dir) {
 function create(args) {
   const nOptions = Object.keys(args).length - 1;
   const nArgs = args['_'].length;
-  if (nArgs > 2 || nOptions > 0) return false;
+  if (nArgs > 2 || nOptions > 1) return false;
+  if (nOptions && !args.hasOwnProperty('ide')) return false;
 
   // Create `config.yaml` if it doesn't exist yet
   if (!fs.existsSync(grokDir)) fs.mkdirSync(grokDir);
@@ -96,7 +101,7 @@ function create(args) {
       console.log('The package directory should be empty');
       return false;
     }
-    createDirectoryContents(name, config, templateDir, packageDir);
+    createDirectoryContents(name, config, templateDir, packageDir, args.ide);
   } else {
     console.log('Package name may only include letters, numbers, underscores, or hyphens');
   }

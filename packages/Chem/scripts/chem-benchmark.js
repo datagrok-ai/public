@@ -49,7 +49,7 @@ async function testCase(title, f) {
   console.log('Chem Benchmark');
 
   // TODO: await _ChemPackage.init(); dummy priming for now
-  grok.chem.searchSubstructure(
+  await grok.chem.searchSubstructure(
     DG.Column.fromList(DG.TYPE.STRING, '', ['c1ccccc1']));
   let rdKitCellRenderer = new RDKitCellRenderer();
   let grid = DG.Viewer.grid(df);
@@ -86,8 +86,8 @@ async function testCase(title, f) {
   });
 
   const searchFor = [
-    'c1ccccc1', // Benzene
-    'O=C(C)Oc1ccccc1C(=O)O' // Aspirin
+    'c1ccccc1', // Benzene https://www.ebi.ac.uk/chembl/compound_report_card/CHEMBL277500/ 
+    'CC(=O)Oc1ccccc1C(=O)O' // Aspirin https://www.ebi.ac.uk/chembl/compound_report_card/CHEMBL25/
   ];
 
   await testCase(`Substructure search, building a library of ${col.length} molecules`, async () =>
@@ -105,5 +105,16 @@ async function testCase(title, f) {
       await grok.chem.getSimilarities(col, col.get(i));
     }
   });
+  
+  await testCase(`Substructure search (server), searching benzene in ${nSearch} molecules`, async () =>
+    await grok.chem.searchSubstructureServer(col, searchFor[0]), false);
+  await testCase(`Substructure search (server), searching aspirin in ${nSearch} molecules`, async () =>
+    await grok.chem.searchSubstructureServer(col, searchFor[1]), false);
+  
+  await testCase(`Similarity scoring (server), search for ${queryIdx.length} samples in ${nSearch} molecules`, async () => {
+    await grok.chem.findSimilarServer(col, searchFor[0]);
+  });
+  
+
 
 })();

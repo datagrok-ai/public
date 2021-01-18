@@ -12,7 +12,6 @@ This document covers the following areas:
   * [API Structure](#api-structure)
   * [Data Manipulation](#data-manipulation)
   * [Views](#views)
-  * [Custom Views](#custom-views)
   * [Pre-defined Viewers](#pre-defined-viewers)
   * [Custom Viewers](#custom-viewers)
   * [Registering Functions](#registering-functions)
@@ -23,7 +22,6 @@ This document covers the following areas:
   * [REST API](#rest-api)
   * [Machine Learning](#machine-learning)
   * [Cheminformatics](#cheminformatics)
-  * [Credentials](#credentials)
 
 ## API Structure
 
@@ -104,7 +102,7 @@ DataFrame code snippets:
 
 ## Views
 
-Control [views](../overview/navigation.md) via the following methods:
+Control [views](../overview/table-view.md) via the following methods:
 
 ```javascript
 grok.shell.addTableView(table);
@@ -117,76 +115,6 @@ let e = document.createElement('DIV');
 e.innerText = 'This element has been created in JavaScript';
 grok.shell.dockElement(e, 'JS', 'left', 0.5);
 ```
-
-## Custom Views
-
-Extend [ViewBase](/js-api/ViewBase.html) class to develop views that become first-class citizens in 
-the Datagrok platform. Once a view is registered, you can do the following:
-
-* Open and pass parameters to the view from URL 
-* Save the view as part of the project
-* Add the view to the navigation bar
-* Link the view with entities (custom or the default ones)
-
-The following part of code defines a new view for Jupyter Notebooks. 
-The function `notebookView` defined in the package allocates an instance of `NotebookView`.   
-    
-```javascript
-class NotebookView extends DG.ViewBase {
-    constructor(params, path) {
-        super(params, path);
-        this.TYPE = 'Notebook';
-        this.PATH = '/notebook';
-    }
-    
-    // Override basic metods
-    get type() { return this.TYPE };
-    get helpUrl() { return '/help/develop/jupyter-notebook.md'; }
-    get name() { return 'Notebook' };
-    get path() { return `${this.PATH}/${this.notebookId}` };
-    
-    // Icon
-    getIcon() {
-        let img = document.createElement('img');
-        img.src = '/images/entities/jupyter.png';
-        img.height = 18;
-        img.width = 18;
-        return img;
-    };
-
-    // View state serialization/deserialization
-    saveStateMap() { return {'notebookId': this.notebookId }; }
-    loadStateMap(stateMap) { open(stateMap['notebookId']); }
-    
-    // URL path handler
-    handlePath(path) {
-        let id = path.replace(`${this.PATH}/`, '');
-        open(id);
-    }
-    
-    // URL path checker
-    acceptsPath(path) { return path.startsWith(this.PATH); }
-}
-
-
-//name: Notebook
-//description: Creates a Notebook View
-//input: map params
-//input: string path
-//tags: view
-//output: view result
-export function notebookView(params = null, path = '') {
-    return new NotebookView(params, path);
-}
-```
-
-Follow the function convention to register a view:
-
-* the header parameters should contain the `view` tag
-* add two inputs `params` and `path` to pass URL parameters and path
-* specify an output of the `view` type.
-   
-See full code [there](https://github.com/datagrok-ai/public/blob/master/packages/Notebooks/src/package.js)  
 
 ## Pre-defined Viewers
 
@@ -399,33 +327,6 @@ Code snippets:
   * [Iterating over atoms and bonds](https://public.datagrok.ai/js/samples/domains/chem/mol-atoms-bonds)
   * [Custom info panel for molecules](https://public.datagrok.ai/js/samples/domains/chem/mol-panel)
   * [Rendering molecules to SVG](https://public.datagrok.ai/js/samples/domains/chem/mol-rendering)
-
-## Credentials
-
-You can store text information bound to a package in a secure manner. Right-click on a package in Datagrok's [Packages](https://public.datagrok.ai/packages) view and select the `Credentials...` command from the package context menu. This will open a dialog where you can add credentials as key-value pairs. Pay attention to the `Credentials owner` field: it may include a user or a user group, such as the current user or all users respectively. Once added, these key-value pairs can only be read by members of the owner group. Here is a way to obtain a credentials object in your package code:
-
-```javascript
-let _package = new DG.Package();
-
-async function getCredentials() {
-    let credentialsResponse = await _package.getCredentials();
-    if (credentialsResponse === null) {
-        grok.shell.info("Credentials are not set.");
-        return {};
-    }
-    return credentialsResponse.parameters;
-}
-```
-
-Additionally, you can retrieve the value of a particular parameter like this:
-
-```javascript
-_package.getCredentials().then((c) => grok.shell.info(c.parameters['test']));
-```
-
-Check out this example in our [API samples](https://public.datagrok.ai/js/samples/misc/package-credentials).
-
-Datagrok stores credentials encrypted with Datagrok's encryption key, refer to the [Security](../govern/security.md#credentials) article to learn more about it.
 
 ## Videos
 

@@ -1,0 +1,16 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "preLaunchTask": "rebuild",
+            "type": "chrome",
+            "request": "launch",
+            "name": "Debug #{GROK_HOST_ALIAS}",
+            "url": "#{GROK_HOST}/apps",
+            "webRoot": "${workspaceFolder}"
+        }
+    ]
+}
