@@ -124,16 +124,6 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
           }
         }
 
-        // TODO: deprecate
-        // otherwise, find the 'row-scaffold' col
-        for (let j = 0; j < df.columns.length; ++j) {
-          let col = df.columns.byIndex(j);
-          let tags = col.tags;
-          if (tags && tags['row-scaffold']) {
-            return col;
-          }
-        }
-
         return null;
 
       })();
