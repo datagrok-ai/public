@@ -78,7 +78,7 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
         "width": Math.floor(w),
         "height": Math.floor(h),
         "bondLineWidth": 1,
-        "minFontSize": 12
+        "minFontSize": 11
       }
       rdkitMol.draw_to_canvas_with_highlights(g.canvas, JSON.stringify(opts));
     }
@@ -121,16 +121,6 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
           let rowScaffoldColProbe = df.columns.byName(rowScaffoldColName);
           if (rowScaffoldColProbe !== null) {
             return rowScaffoldColProbe;
-          }
-        }
-
-        // TODO: deprecate
-        // otherwise, find the 'row-scaffold' col
-        for (let j = 0; j < df.columns.length; ++j) {
-          let col = df.columns.byIndex(j);
-          let tags = col.tags;
-          if (tags && tags['row-scaffold']) {
-            return col;
           }
         }
 
