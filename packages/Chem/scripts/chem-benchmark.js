@@ -111,10 +111,11 @@ async function testCase(title, f) {
   await testCase(`Substructure search (server), searching aspirin in ${nSearch} molecules`, async () =>
     await grok.chem.searchSubstructureServer(col, searchFor[1]), false);
   
+  /*
   await testCase(`Similarity scoring (server), search for ${queryIdx.length} samples in ${nSearch} molecules`, async () => {
     await grok.chem.findSimilarServer(col, searchFor[0]);
   });
-  
+  */
 
 
 })();
