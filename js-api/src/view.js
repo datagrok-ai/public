@@ -197,7 +197,7 @@ export class View extends ViewBase {
    * @returns {View} */
   static create(options) {
     let v = new View(grok_View());
-    _options(v.root, 'grok-def-view');
+    _options(v.root, 'grok-default-view');
     _options(v.root, options);
     return v;
   }
