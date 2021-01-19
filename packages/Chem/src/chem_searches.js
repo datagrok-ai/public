@@ -1,3 +1,13 @@
+var rdKitParallel = null;
+async function _initRdKitWorkers() {
+  let foo = _initRdKitWorkers;
+  if (typeof foo.initialized == 'undefined' || !foo.initialized) {
+    rdKitParallel = new RdKitParallel();
+    await rdKitParallel.init(rdKitWorkerWebRoot);
+    _initRdKitWorkers.initialized = true;
+  }
+}
+
 async function _cacheByAction(params, invalidator) {
 
   let invalidateCache = false;
@@ -125,7 +135,9 @@ function _chemSimilarityScoringByFingerprints(fingerprintCol, fingerprint, molSt
 // molStringsColumn and molString can be anything  RDKit supports:
 // smiles, cxsmiles, molblock, v3Kmolblock, and inchi;
 // see https://github.com/rdkit/rdkit/blob/master/Code/MinimalLib/minilib.h
-function _chemSimilarityScoring(molStringsColumn, molString, settings) {
+async function _chemSimilarityScoring(molStringsColumn, molString, settings) {
+
+  // await _initRdKitWorkers();
 
   _cacheByAction(
     {foo: _chemSimilarityScoring, column: molStringsColumn, query: molString},
@@ -144,12 +156,12 @@ function _chemSimilarityScoring(molStringsColumn, molString, settings) {
 
 }
 
-function chemGetSimilarities(molStringsColumn, molString = "", settings = {}) {
+async function chemGetSimilarities(molStringsColumn, molString = "", settings = {}) {
   settings.sorted = false;
   return _chemSimilarityScoring(molStringsColumn, molString, settings);
 }
 
-function chemFindSimilar(molStringsColumn, molString = "", settings = {}) {
+async function chemFindSimilar(molStringsColumn, molString = "", settings = {}) {
   settings.sorted = true;
   return _chemSimilarityScoring(molStringsColumn, molString, settings);
 }
@@ -182,6 +194,8 @@ function chemSubstructureSearchGraph(molStringsColumn, molString) {
 }
 
 async function chemSubstructureSearchLibrary(molStringsColumn, molString) {
+
+  await _initRdKitWorkers();
 
   await _cacheByAction({
       foo: chemSubstructureSearchLibrary,
