@@ -1,6 +1,6 @@
 var rdKitModule = null;
 // var rdKitWorkerProxy = null;
-var rdKitParallel = null;
+var rdKitWorkerWebRoot = null;
 
 //name: Chem
 class ChemPackage extends DG.Package {
@@ -17,8 +17,7 @@ class ChemPackage extends DG.Package {
       rdKitModule = await initRDKitModule();
       console.log('RDKit (package) initialized');
       rdKitModule.prefer_coordgen(false);
-      rdKitParallel = new RdKitParallel();
-      await rdKitParallel.init(this.webRoot);
+      rdKitWorkerWebRoot = this.webRoot;
       this.STORAGE_NAME = 'rdkit_descriptors';
       this.KEY = 'selected';
       this.rdKitRendererCache = new DG.LruCache();
@@ -79,9 +78,10 @@ class ChemPackage extends DG.Package {
   //input: string molString
   //input: bool sorted
   //output: dataframe result
-  similarityScoring(molStringsColumn, molString, sorted) {
+  // deprecated
+  async similarityScoring(molStringsColumn, molString, sorted) {
     try {
-      let result = chemSimilarityScoring(molStringsColumn, molString, {'sorted': sorted});
+      let result = await _chemSimilarityScoring(molStringsColumn, molString, {'sorted': sorted});
       if (result == null) {
         return DG.DataFrame.create();
       }
@@ -96,9 +96,9 @@ class ChemPackage extends DG.Package {
   //input: column molStringsColumn
   //input: string molString
   //output: dataframe result
-  getSimilarities(molStringsColumn, molString) {
+  async getSimilarities(molStringsColumn, molString) {
     try {
-      let result = chemGetSimilarities(molStringsColumn, molString);
+      let result = await chemGetSimilarities(molStringsColumn, molString);
       // TODO: get rid of a wrapping DataFrame and be able to return Columns
       return result ? DG.DataFrame.fromColumns([result]) : DG.DataFrame.create();
     } catch (e) {
@@ -113,9 +113,9 @@ class ChemPackage extends DG.Package {
   //input: int limit
   //input: int cutoff
   //output: dataframe result
-  findSimilar(molStringsColumn, molString, aLimit, aCutoff) {
+  async findSimilar(molStringsColumn, molString, aLimit, aCutoff) {
     try {
-      let result = chemFindSimilar(molStringsColumn, molString, {limit: aLimit, cutoff: aCutoff});
+      let result = await chemFindSimilar(molStringsColumn, molString, {limit: aLimit, cutoff: aCutoff});
       return result ? result : DG.DataFrame.create();
     } catch (e) {
       console.error("In getSimilarities: " + e.toString());
@@ -128,6 +128,7 @@ class ChemPackage extends DG.Package {
   //input: string molString
   //input: bool substructLibrary
   //output: column result
+  // deprecated
   async substructureSearch(molStringsColumn, molString, substructLibrary) {
 
     try {
