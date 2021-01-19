@@ -42,7 +42,8 @@ function createDirectoryContents(name, config, templateDir, packageDir, ide = ''
       contents = contents.replace(/#{PACKAGE_NAME_LOWERCASE}/g, name.toLowerCase());
       contents = contents.replace(/#{PACKAGE_NAME_LOWERCASE_WORD}/g, name.replace(/-/g, '').toLowerCase());
       contents = contents.replace(/#{GROK_HOST_ALIAS}/g, config.default);
-      contents = contents.replace(/#{GROK_HOST}/g, (new URL(config['servers'][config.default]['url'])).origin);
+      contents = contents.replace(/#{GROK_HOST}/g, /localhost|127\.0\.0\.1/.test(config['servers'][config.default]['url']) ?
+        'http://localhost:63343/login.html' : (new URL(config['servers'][config.default]['url'])).origin);
       if (file === 'package.json') {
         // Generate scripts for non-default servers from `config.yaml`
         let package = JSON.parse(contents);
@@ -59,7 +60,7 @@ function createDirectoryContents(name, config, templateDir, packageDir, ide = ''
       if (file === 'gitignore') copyFilePath = path.join(packageDir, '.gitignore');
       fs.writeFileSync(copyFilePath, contents, 'utf8');
     } else if (stats.isDirectory()) {
-      if (file === '.vscode' && (ide !== 'vscode' || platform !== 'win32')) return;
+      if (file === '.vscode' && !(ide == 'vscode' && platform == 'win32')) return;
       fs.mkdirSync(copyFilePath);
       // recursive call
       createDirectoryContents(name, config, origFilePath, copyFilePath);
