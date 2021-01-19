@@ -11,7 +11,7 @@ import {toDart, toJs} from "./src/wrappers";
 import {Functions} from "./src/functions";
 import $ from "cash-dom";
 import {__obs} from "./src/events";
-import {_isDartium} from "./src/utils";
+import {_isDartium, _options} from "./src/utils.js";
 import * as rxjs from 'rxjs';
 
 /**
@@ -200,31 +200,14 @@ export function span(x) {
 }
 
 /**
- * @param {HTMLElement} element
- * @param {string | ElementOptions | null} options
- * @returns {HTMLElement}
- * */
-function _options(element, options = null) {
-  if (options === null)
-    return element;
-  if (typeof options === 'string')
-    element.className += ` ${options.replace(/,/g, ' ')}`;
-  if (options.id != null)
-    element.id = options.id;
-  if (options.classes != null)
-    element.className += ` ${options.classes}`;
-  if (options.style != null)
-    Object.assign(element.style, options.style);
-  return element;
-}
-
-/**
  * @param {object[]} children
  * @param {string | ElementOptions} options
- * @returns {HTMLDivElement}
+ * @returns {HTMLElement}
  * */
 export function div(children = [], options = null) {
-  return _options(grok_UI_Div(children == null ? null :  children.map(render), null), options);
+  let d = _options(grok_UI_Div(children == null ? null :  children.map(render), null), options);
+  $(d).addClass('ui-div');
+  return d;
 }
 
 /** Div flex-box container that positions child elements vertically.
@@ -249,30 +232,6 @@ export function panel(items, options = null) {
  * @returns {HTMLDivElement} */
 export function divH(items, options = null) {
   return _options(grok_UI_DivH(items == null ? null : items.map(render), null), options);
-}
-
-/** Div flex-box container that positions child elements horizontally.
- *  @param {object[]} items */
-function _split(items) {
-  let renderedItems = items
-    .map(x => div([render(x)], 'd4-split-panel'))
-
-  renderedItems.forEach(e => $(e)
-    .css("flex-grow", "1")
-  );
-  return renderedItems;
-}
-
-/** Div flex-box container that positions child elements horizontally.
- *  @param {object[]} items */
-export function splitV(items) {
-  return divV(_split(items), 'd4-split-host,d4-split-host-vert');
-}
-
-/** Div flex-box container that positions child elements horizontally.
- *  @param {object[]} items */
-export function splitH(items) {
-  return divH(_split(items), 'd4-split-host,d4-split-host-horz');
 }
 
 /** Renders content as a card. */
@@ -677,4 +636,39 @@ export class JsEntityMeta {
   registerParamFunc(name, run) {
     new Functions().registerParamFunc(name, this.type, run, this.isApplicable);
   }
+}
+
+export function box(item) {
+  /*
+    if ($(item).hasClass('ui-box'))
+      return item;
+  */
+  let c = document.createElement('div');
+  $(c).append(item).addClass('ui-box');
+  return c;
+}
+
+
+/** Div flex-box container that positions child elements horizontally.
+ *  @param {object[]} items */
+export function splitV(items) {
+  return $(box(items.map(item => box(item)))).addClass('ui-split-v')[0];
+}
+
+/** Div flex-box container that positions child elements horizontally.
+ *  @param {object[]} items */
+export function splitH(items) {
+  return $(box(items.map(item => box(item)))).addClass('ui-split-h')[0];
+}
+
+export function block(items) {
+  let c = document.createElement('div');
+  $(c).append(items).addClass('ui-block');
+  return c;
+}
+
+export function p(text) {
+  let c = document.createElement('p');
+  c.textContent = text;
+  return c;
 }

@@ -7,7 +7,7 @@ import {Grid} from "./grid";
 import {Menu, ToolboxPage} from "./widgets";
 import {Entity} from "./entities";
 import {toJs} from "./wrappers";
-import {_toIterable} from "./utils";
+import {_options, _toIterable} from "./utils.js";
 
 
 /**
@@ -193,12 +193,15 @@ export class View extends ViewBase {
   }
 
   /** Creates a new empty view.
+   * @param {string | ElementOptions | null} options
    * @returns {View} */
-  static create() {
+  static create(options) {
     let v = new View(grok_View());
-    ui._class(v.root, 'grok-default-view');
+    _options(v.root, 'grok-def-view');
+    _options(v.root, options);
     return v;
   }
+
 
   get root() {
     return grok_View_Get_Root(this.d);
