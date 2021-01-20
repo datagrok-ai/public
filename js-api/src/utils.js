@@ -242,3 +242,22 @@ export class LruCache {
     }
   }
 }
+
+/**
+ * @param {HTMLElement} element
+ * @param {string | ElementOptions | null} options
+ * @returns {HTMLElement}
+ * */
+export function _options(element, options = null) {
+  if (options === null)
+    return element;
+  if (typeof options === 'string')
+    element.className += ` ${options.replace(/,/g, ' ')}`;
+  if (options.id != null)
+    element.id = options.id;
+  if (options.classes != null)
+    element.className += ` ${options.classes}`;
+  if (options.style != null)
+    Object.assign(element.style, options.style);
+  return element;
+}
