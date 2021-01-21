@@ -1,0 +1,74 @@
+
+div.ui-box.grok-view {
+    display: flex;
+}
+
+div.ui-div {
+    vertical-align: text-top;
+    box-sizing: border-box;
+}
+
+div.ui-box {
+    box-sizing: border-box;
+    display:inline-flex;
+    flex-direction: column;
+    overflow: auto!important;
+    padding: 0;
+}
+
+div.ui-box.ui-split-h {
+    display: flex;
+    flex-direction: row;
+}
+
+div.ui-box.ui-split-v {
+    display: flex;
+    flex-direction: column;
+}
+
+div.ui-box.ui-split-v > div.ui-box,
+div.ui-box.ui-split-h > div.ui-box {
+    flex-basis: 50%;
+}
+
+div.ui-box > div {
+    flex-grow: 1;
+}
+
+div.ui-block {
+    display: inline-block;
+    max-width: 100%;
+    width: 100%;
+}
+
+div.ui-block-75 {
+    width: 75%;
+}
+
+div.ui-block-50 {
+    width: 50%;
+}
+
+div.ui-block-25 {
+    width: 25%;
+}
+
+div.ui-div > div.ui-box,
+div.ui-block > div.ui-box{
+    /* all elements within simple container should have min size. It can be override in element style */
+    min-width: 400px;
+    min-height: 300px;
+    box-sizing: border-box;
+    display:inline-flex;
+}
+
+div.ui-box-fixed {
+    flex-basis: initial!important;
+    flex-grow: 0!important;
+    flex-shrink: 0!important;
+}
+
+div.ui-panel {
+    padding: 12px;
+    box-sizing: border-box;
+}

@@ -14,6 +14,8 @@ import {__obs} from "./src/events";
 import {_isDartium, _options} from "./src/utils.js";
 import * as rxjs from 'rxjs';
 
+import './css/ui.css';
+
 /**
  * @typedef {Object} ElementOptions
  * @property {string} id
