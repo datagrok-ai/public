@@ -32,8 +32,8 @@ export class ChordViewer extends DG.JsViewer {
   }
 
   init() {
-    this.innerRadiusMargin = 60;
-    this.outerRadiusMargin = 40;
+    this.innerRadiusMargin = 80;
+    this.outerRadiusMargin = 60;
     this.color = scaleOrdinal(DG.Color.categoricalPalette);
     this.chordConf.color = (datum, index) => DG.Color.toRgb(this.color(datum[this.colorBy]['id']));
     this.chordConf.opacity = 0.7;
@@ -240,6 +240,15 @@ export class ChordViewer extends DG.JsViewer {
     circos.chords('chords-track', this.chords, this.chordConf);
     circos.text('labels', this.labels, this.labelConf);
     circos.render();
+
+    // fix label rotation past 180
+    select(this.root).selectAll('.block').filter((d, i, nodes) => {
+      return +(select(nodes[i]).attr('transform').match(/\d+\.?\d*/g)[0]) >= 180;
+    }).selectAll('text').each((d, i, nodes) => {
+      let node = select(nodes[i]);
+      node.attr('transform', node.attr('transform') + ' rotate(180) ');
+      node.attr('text-anchor', 'end')
+    });
 
     this.root.firstChild.style = 'position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);';
   }
