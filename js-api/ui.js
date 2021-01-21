@@ -166,6 +166,8 @@ export function extract(x) {
  * @returns {HTMLElement} */
 export function render(x) {
   x = extract(x);
+  if (window.grok_UI_Render == null)
+    return x;
   return grok_UI_Render(x);
 }
 
@@ -205,7 +207,11 @@ export function span(x) {
  * @returns {HTMLElement}
  * */
 export function div(children = [], options = null) {
-  let d = _options(grok_UI_Div(children == null ? null :  children.map(render), null), options);
+  let d = document.createElement('div');
+  if (children != null) {
+    $(d).append(children.map(render));
+  }
+  _options(d);
   $(d).addClass('ui-div');
   return d;
 }
@@ -216,14 +222,6 @@ export function div(children = [], options = null) {
  * @returns {HTMLDivElement} */
 export function divV(items, options = null) {
   return _options(grok_UI_DivV(items == null ? null : items.map(render), null), options);
-}
-
-/** Same as divV, but with margins.
- * @param {object[]} items
- * @param {string | ElementOptions} options
- * @returns {HTMLDivElement} */
-export function panel(items, options = null) {
-  return _options(divV(items, options), 'd4-panel');
 }
 
 /** Div flex-box container that positions child elements horizontally.
@@ -639,36 +637,59 @@ export class JsEntityMeta {
 }
 
 export function box(item) {
-  /*
-    if ($(item).hasClass('ui-box'))
-      return item;
-  */
+  if ($(item).hasClass('ui-box')) {
+    console.log(item);
+    return item;
+  }
   let c = document.createElement('div');
   $(c).append(item).addClass('ui-box');
   return c;
 }
 
+export function boxFixed(item) {
+  let c = box(item);
+  $(c).addClass('ui-box-fixed');
+  return c;
+}
 
 /** Div flex-box container that positions child elements horizontally.
  *  @param {object[]} items */
 export function splitV(items) {
-  return $(box(items.map(item => box(item)))).addClass('ui-split-v')[0];
+  let b = box();
+  $(b).addClass('ui-split-v').append(items.map(item => box(item)));
+  return b
 }
 
 /** Div flex-box container that positions child elements horizontally.
  *  @param {object[]} items */
 export function splitH(items) {
-  return $(box(items.map(item => box(item)))).addClass('ui-split-h')[0];
+  let b = box();
+  $(b).addClass('ui-split-h').append(items.map(item => box(item)));
+  return b
 }
 
 export function block(items) {
-  let c = document.createElement('div');
+  let c = div(items);
   $(c).append(items).addClass('ui-block');
   return c;
+}
+
+export function block75(items) {
+  return $(block(items)).addClass('ui-block-75')[0];
+}
+export function block25(items) {
+  return $(block(items)).addClass('ui-block-25')[0];
+}
+export function block50(items) {
+  return $(block(items)).addClass('ui-block-50')[0];
 }
 
 export function p(text) {
   let c = document.createElement('p');
   c.textContent = text;
   return c;
+}
+
+export function panel(items, options) {
+  return $(div(items, options)).addClass('ui-panel')[0];
 }
