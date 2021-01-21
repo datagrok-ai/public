@@ -2,16 +2,15 @@
  * RDKit-based molecule cell renderer.
  * */
 class RDKitCellRenderer extends DG.GridCellRenderer {
-  
+
   constructor() {
     super();
 
     this.canvasCounter = 0;
     this.molCache = new DG.LruCache();
-    this.molCache.onItemEvicted = function (obj) {
-      obj.mol?.delete();
-      obj.mol = null;
-      obj = null;
+    this.molCache.onItemEvicted = function (mol) {
+      mol?.delete();
+      mol = null;
     };
     this.rendersCache = new DG.LruCache();
     this.rendersCache.onItemEvicted = function (obj) {
