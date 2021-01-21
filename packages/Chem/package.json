@@ -1,11 +1,11 @@
 {
   "name": "Chem",
-  "version": "0.8.4",
+  "version": "0.8.9",
   "fullName": "Cheminformatics support",
   "description": "Cheminformatics support: \n\n* RDKit-based rendering \n* Molecule sketching \n*",
   "sources": [
     "css/chem.css",
-    "src/RDKit_minimal_2021.03_01.js",
+    "src/RDKit_minimal_2021.03_03.js",
     "src/rdkit_worker_proxy.js",
     "src/rdkit_substruct_library.js",
     "src/rdkit_parallel.js",
@@ -18,14 +18,23 @@
     {
       "name": "Renderer",
       "propertyType": "string",
-      "choices": [ "OCL", "RDKit" ],
+      "choices": [
+        "OCL",
+        "RDKit"
+      ],
       "defaultValue": "RDKit"
     },
     {
       "name": "Searches",
       "propertyType": "string",
-      "choices": [ "RDKit Server", "RDKit Client" ],
+      "choices": [
+        "RDKit Server",
+        "RDKit Client"
+      ],
       "defaultValue": "RDKit Server"
     }
-  ]
+  ],
+  "dependencies": {
+    "datagrok-tools": "^4.0.15"
+  }
 }
