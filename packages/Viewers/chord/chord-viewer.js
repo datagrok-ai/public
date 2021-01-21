@@ -241,13 +241,25 @@ export class ChordViewer extends DG.JsViewer {
     circos.text('labels', this.labels, this.labelConf);
     circos.render();
 
+    let labels = select(this.root).selectAll('.block');
+
     // fix label rotation past 180
-    select(this.root).selectAll('.block').filter((d, i, nodes) => {
+    labels.filter((d, i, nodes) => {
       return +(select(nodes[i]).attr('transform').match(/\d+\.?\d*/g)[0]) >= 180;
-    }).selectAll('text').each((d, i, nodes) => {
-      let node = select(nodes[i]);
-      node.attr('transform', node.attr('transform') + ' rotate(180) ');
-      node.attr('text-anchor', 'end')
+    }).selectAll('text')
+        .attr('transform', (d, i, nodes) => select(nodes[i]).attr('transform') + ' rotate(180) ')
+        .attr('text-anchor', 'end');
+
+    // ellipsis
+    labels.selectAll('text').each((d, i, nodes) => {
+      let el = select(nodes[i]);
+      let textLength = el.node().getComputedTextLength();
+      let text = d.value;
+      while (text.length && textLength > (this.outerRadiusMargin - 15)) {
+        text = text.slice(0, -1);
+        el.text(text + '\u2026');
+        textLength = el.node().getComputedTextLength();
+      }
     });
 
     this.root.firstChild.style = 'position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);';
