@@ -51,7 +51,9 @@ export class ChordViewer extends DG.JsViewer {
   onTableAttached() {
     this.init();
 
-    this.strColumns = this.dataFrame.columns.toList().filter(col => col.type === 'string');
+    this.strColumns = this.dataFrame.columns.toList()
+      .filter(col => col.type === 'string')
+      .sort((a, b) => a.categories.length - b.categories.length);
     this.numColumns = [...this.dataFrame.columns.numerical];
 
     // TODO: Choose the most relevant columns
