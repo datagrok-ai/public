@@ -1271,9 +1271,10 @@ export class Stats {
 
   /** Calculates statistics for the specified column.
    * @param {Column} col
+   * @param {BitSet} mask
    * @returns {Stats} */
-  static fromColumn(col) {
-    return new Stats(grok_Stats_FromColumn(col.d));
+  static fromColumn(col, mask = null) {
+    return new Stats(grok_Stats_FromColumn(col.d, toDart(mask)));
   }
 
   /** Total number of values (including missing values). */
