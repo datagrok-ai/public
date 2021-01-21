@@ -1,7 +1,18 @@
 //name: chemBenchmark
 //language: javascript
 
-const randomInt = (min, max) => min + Math.floor((max - min) * Math.random());
+// https://stackoverflow.com/a/47593316
+function mulberry32(a) {
+    return function() {
+      var t = a += 0x6D2B79F5;
+      t = Math.imul(t ^ t >>> 15, t | 1);
+      t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    }
+}
+var rand = mulberry32(42); // seed = 42
+
+const randomInt = (min, max) => min + Math.floor((max - min) * rand());
 const range = (l, r) => new Array(r - l).fill().map((_, k) => k + l);
 
 function getIdxRandomSubset(N, n) {
@@ -46,6 +57,7 @@ async function testCase(title, f) {
   const colName = 'smiles';
   let col = df.col(colName);
 
+  console.clear();
   console.log('Chem Benchmark');
 
   // TODO: await _ChemPackage.init(); dummy priming for now

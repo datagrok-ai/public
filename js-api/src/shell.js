@@ -172,10 +172,11 @@ export class Shell {
    * Adds a new view with the specified name.
    * @param {string } name - view name
    * @param {object[]} children - content to be added by calling {@link ui.appendAll}
+   * @param {string | ElementOptions | null} options
    * @returns {View}
    */
-  newView(name = 'view', children = []) {
-    let view = View.create();
+  newView(name = 'view', children = [], options) {
+    let view = View.create(options);
     view.name = name;
     ui.appendAll(view.root, children);
     this.addView(view);
