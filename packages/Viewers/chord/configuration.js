@@ -30,3 +30,21 @@ export const layoutConf = {
   },
   events: {}
 };
+
+export function topSort(graph) {
+  let stack = [];
+
+  function visit(id, node, stack) {
+    node.visited = true;
+    for (let target of node.targets) {
+      if (!graph[target].visited) visit(target, graph[target], stack);
+    }
+    stack.unshift(node.datum);
+  }
+
+  for (let [id, node] of Object.entries(graph)) {
+    if (!node.visited) visit(id, node, stack);
+  }
+
+  return stack;
+}

@@ -22,7 +22,7 @@
 	"scripts": {
 		"debug-viewers": "grok publish --rebuild",
 		"release-viewers": "grok publish --rebuild --release",
-		"build-viewers": "webpack",
+		"build-viewers": "webpack && grok publish",
 		"build": "webpack",
 		"debug-viewers-public": "grok publish public --rebuild",
 		"release-viewers-public": "grok publish public --rebuild --release",

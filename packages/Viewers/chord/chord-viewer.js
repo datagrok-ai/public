@@ -2,7 +2,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Circos from 'circos';
 import {select, scaleOrdinal} from 'd3';
-import {layoutConf} from './configuration.js';
+import {layoutConf, topSort} from './configuration.js';
 
 
 export class ChordViewer extends DG.JsViewer {
@@ -13,11 +13,10 @@ export class ChordViewer extends DG.JsViewer {
     // Properties
     this.fromColumnName = this.string('fromColumnName');
     this.toColumnName = this.string('toColumnName');
-    this.aggType = this.string('aggType', 'count');
-    this.getProperty('aggType').choices = ['count', 'sum'];
+    this.aggType = this.string('aggType', 'count', { choices: ['count', 'sum'] });
     this.chordLengthColumnName = this.float('chordLengthColumnName');
-    this.colorBy = this.string('colorBy', 'source');
-    this.getProperty('colorBy').choices = ['source', 'target'];
+    this.colorBy = this.string('colorBy', 'source', { choices: ['source', 'target'] });
+    this.sortBy = this.string('sortBy', 'frequency', { choices: ['alphabet', 'frequency', 'topology'] });
 
     this.initialized = false;
     this.numColumns = [];
@@ -29,6 +28,7 @@ export class ChordViewer extends DG.JsViewer {
     this.chords = [];
     this.chordConf = {};
     this.labels = [];
+    this.segments = {};
   }
 
   init() {
@@ -115,10 +115,12 @@ export class ChordViewer extends DG.JsViewer {
 
     this.fromCol = this.aggregatedTable.getCol(this.fromColumnName);
     this.toCol = this.aggregatedTable.getCol(this.toColumnName);
+    this.aggVal = this.aggregatedTable.getCol('result').getRawData();
+    this.rowCount = this.aggregatedTable.rowCount;
 
     this.categories = Array.from(new Set(this.fromCol.categories.concat(this.toCol.categories)));
     this.data = this.categories
-      .sort((a, b) => this.freqMap[b] - this.freqMap[a])
+      .sort((this.sortBy === 'frequency') ? (a, b) => this.freqMap[b] - this.freqMap[a] : undefined)
       .map(s => {
         this.labels.push({ block_id: s, position: this.freqMap[s] / 2, value: s });
         return {
@@ -126,7 +128,27 @@ export class ChordViewer extends DG.JsViewer {
           len: this.freqMap[s],
           color: DG.Color.toRgb(this.color(s))
         }
-      });
+    });
+
+    for (const prop of Object.getOwnPropertyNames(this.segments)) {
+      delete this.segments[prop];
+    }
+
+    this.data.forEach(s => {
+      this.segments[s.id] = { datum: s, targets: [], aggTotal: null, visited: false };
+      s.pos = 0;
+    });
+
+    for (let i = 0; i < this.rowCount; i++) {
+      let from = this.fromCol.get(i);
+      let to = this.toCol.get(i);
+
+      this.segments[from]['targets'].push(to);
+      this.segments[from]['aggTotal'] = (this.segments[from]['aggTotal'] || 0) + this.aggVal[i];
+      if (from !== to) this.segments[to]['aggTotal'] = (this.segments[to]['aggTotal'] || 0) + this.aggVal[i];
+    }
+
+    if (this.sortBy === 'topology') this.data = topSort(this.segments);
   }
 
   computeChords() {
@@ -135,34 +157,14 @@ export class ChordViewer extends DG.JsViewer {
     let fromCatList = this.fromCol.categories;
     let target = this.toCol.getRawData();
     let toCatList = this.toCol.categories;
-    let aggVal = this.aggregatedTable.getCol('result').getRawData();
-    let rowCount = this.aggregatedTable.rowCount;
 
-    let aggTotal = {};
-    for (let i = 0; i < rowCount; i++) {
-      const from = this.fromCol.get(i);
-      const to = this.toCol.get(i);
-      if (from === to) {
-        aggTotal[from] = (aggTotal[from] || 0) + aggVal[i];
-      } else {
-        aggTotal[from] = (aggTotal[from] || 0) + aggVal[i];
-        aggTotal[to] = (aggTotal[to] || 0) + aggVal[i];
-      }
-    }
-
-    let segments = {};
-    this.data.forEach(s => {
-      segments[s.id] = s;
-      s.pos = 0;
-    });
-
-    for (let i = 0; i < rowCount; i++) {
+    for (let i = 0; i < this.rowCount; i++) {
       let sourceId = fromCatList[source[i]];
       let targetId = toCatList[target[i]];
-      let sourceBlock = segments[sourceId];
-      let targetBlock = segments[targetId];
-      let sourceStep = sourceBlock.len * (aggVal[i] / aggTotal[sourceId]);
-      let targetStep = targetBlock.len * (aggVal[i] / aggTotal[targetId]);
+      let sourceBlock = this.segments[sourceId]['datum'];
+      let targetBlock = this.segments[targetId]['datum'];
+      let sourceStep = sourceBlock.len * (this.aggVal[i] / this.segments[sourceId]['aggTotal']);
+      let targetStep = targetBlock.len * (this.aggVal[i] / this.segments[targetId]['aggTotal']);
 
       this.chords.push({
         source: {
@@ -175,7 +177,7 @@ export class ChordViewer extends DG.JsViewer {
           start: targetBlock.pos,
           end: targetBlock.pos + targetStep
         },
-        value: aggVal[i]
+        value: this.aggVal[i]
       });
 
       sourceBlock.pos += sourceStep;
