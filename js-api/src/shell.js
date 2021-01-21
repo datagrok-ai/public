@@ -164,7 +164,12 @@ export class Shell {
    * @returns {View}
    */
   addView(v, dockType = DG.DOCK_TYPE.FILL, width = null) {
-    grok_AddView(v.d, dockType, width);
+    if (window.grok_AddView == null) {
+      document.body.append(v.root);
+      v.root.style.width = '100vw';
+      v.root.style.height = '100vh';
+    } else
+      grok_AddView(v.d, dockType, width);
     return v;
   }
 

@@ -14,7 +14,9 @@
     "@babel/polyfill": "7.0.0",
     "@babel/preset-env": "7.1.0",
     "@types/react": "16.9.43",
-    "tui-jsdoc-template": "^1.2.2"
+    "tui-jsdoc-template": "^1.2.2",
+    "css-loader": "^5.0.0",
+    "style-loader": "^2.0.0"
   },
   "scripts": {
     "build-js-api": "webpack",

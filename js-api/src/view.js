@@ -50,11 +50,14 @@ export class ViewBase {
   /** View name. It gets shown in the tab handle.
    * @type {string} */
   get name() {
-    return grok_View_Get_Name(this.d);
+    return window.grok_View_Get_Name == null ? this._name : grok_View_Get_Name(this.d);
   }
 
   set name(s) {
-    grok_View_Set_Name(this.d, s);
+    if (window.grok_View_Set_Name == null)
+      this._name = s;
+    else
+      grok_View_Set_Name(this.d, s);
   }
 
   /** @type {string} */
@@ -196,14 +199,16 @@ export class View extends ViewBase {
    * @param {string | ElementOptions | null} options
    * @returns {View} */
   static create(options) {
-    let v = new View(grok_View());
-    _options(v.root, 'grok-default-view');
+    let v = window.grok_View == null ? new View(null) : new View(grok_View());
+    _options(v.root, 'grok-default-view ui-panel');
     _options(v.root, options);
     return v;
   }
 
 
   get root() {
+    if (window.grok_View_Get_Root == null)
+      return this._root;
     return grok_View_Get_Root(this.d);
   }
 
