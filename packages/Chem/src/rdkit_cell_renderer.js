@@ -28,7 +28,7 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
   render(g, x, y, w, h, gridCell, cellStyle) {
 
     const emptyMol = rdKitModule.get_mol("");
-    let canvasCounter = this.canvasCounter;
+    let renderer = this;
     let molString = gridCell.cell.value;
     if (molString == null || molString === '')
       return;
@@ -36,11 +36,11 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
     let molCache = this.molCache;
     let rendersCache = this.rendersCache;
 
-    const fetchMol = function (molString) {
+    const fetchMol = function (molString, scaffoldMolString = "") {
       const add = function (s) {
         let mol = emptyMol;
         try {
-          mol = rdKitModule.get_mol(s);
+          mol = rdKitModule.get_mol(molString);
           if (!mol.is_valid()) {
             mol = emptyMol;
           }
@@ -51,11 +51,8 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
         return mol;
       };
       // A lightweight reference counting
-      let retMol = molCache.getOrCreate(molString, add);
-      if (retMol == null) {
-        retMol = add(molString);
-      }
-      return retMol;
+      const name = molString + " || " + scaffoldMolString;
+      return molCache.getOrCreate(name, add);
     }
 
     const drawMoleculeToCanvas = function (rdkitMol, w, h, canvas) {
@@ -77,7 +74,7 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
       const name = width + " || " + height + " || " +  molString + " || " + scaffoldMolString;
       return rendersCache.getOrCreate(name, (s) => {
 
-        let rdkitMol = fetchMol(molString);
+        let rdkitMol = fetchMol(molString, scaffoldMolString);
         let rdkitScaffoldMol = fetchMol(scaffoldMolString);
 
         if (scaffoldMolString !== "") {
@@ -93,11 +90,12 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
               "Possibly a malformed molecule (rendering, scaffolds): `" + s + "`");
           }
         }
-        const canvasId = '_canvas-rdkit-' + canvasCounter;
+        const canvasId = '_canvas-rdkit-' + renderer.canvasCounter;
         let canvas = window.document.createElement('canvas');
         canvas.setAttribute('id', canvasId);
-        canvasCounter++;
+        renderer.canvasCounter++;
         drawMoleculeToCanvas(rdkitMol, w, h, canvas);
+
         return { canvas: canvas, canvasId: canvasId };
       });
     }
