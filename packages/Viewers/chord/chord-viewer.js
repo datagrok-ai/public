@@ -17,6 +17,7 @@ export class ChordViewer extends DG.JsViewer {
     this.chordLengthColumnName = this.float('chordLengthColumnName');
     this.colorBy = this.string('colorBy', 'source', { choices: ['source', 'target'] });
     this.sortBy = this.string('sortBy', 'frequency', { choices: ['alphabet', 'frequency', 'topology'] });
+    this.direction = this.string('direction', 'clockwise', { choices: ['clockwise', 'counterclockwise'] });
 
     this.initialized = false;
     this.numColumns = [];
@@ -35,7 +36,7 @@ export class ChordViewer extends DG.JsViewer {
     this.innerRadiusMargin = 80;
     this.outerRadiusMargin = 60;
     this.color = scaleOrdinal(DG.Color.categoricalPalette);
-    this.chordConf.color = (datum, index) => DG.Color.toRgb(this.color(datum[this.colorBy]['id']));
+    this.chordConf.color = datum => DG.Color.toRgb(this.color(datum[this.colorBy]['id']));
     this.chordConf.opacity = 0.7;
     this.labelConf = {
       innerRadius: 1.02,
@@ -151,6 +152,7 @@ export class ChordViewer extends DG.JsViewer {
     }
 
     if (this.sortBy === 'topology') this.data = topSort(this.segments);
+    if (this.direction === 'counterclockwise') this.data.reverse();
   }
 
   computeChords() {
