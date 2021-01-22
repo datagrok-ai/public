@@ -158,7 +158,7 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
     let singleScaffoldMolString = molCol ? molCol.tags['chem-scaffold'] : null;
 
     const colTags = gridCell.tableColumn.tags;
-    const molThroughSmiles = colTags && colTags['render-through-smiles'];
+    let molThroughSmiles = colTags && colTags['render-through-smiles'] === 'true';
     let scaffoldThroughSmiles = false;
 
     if (singleScaffoldMolString) {
@@ -178,7 +178,8 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
           let rowScaffoldColProbe = df.columns.byName(rowScaffoldColName);
           if (rowScaffoldColProbe !== null) {
             const scaffoldColTags = rowScaffoldColProbe.tags;
-            scaffoldThroughSmiles = scaffoldColTags && scaffoldColTags['render-through-smiles'];
+            scaffoldThroughSmiles = scaffoldColTags && scaffoldColTags['render-through-smiles'] === 'true';
+            molThroughSmiles = scaffoldThroughSmiles;
             return rowScaffoldColProbe;
           }
         }
