@@ -213,7 +213,7 @@ export function div(children = [], options = null) {
   if (children != null) {
     $(d).append(children.map(render));
   }
-  _options(d);
+  _options(d, options);
   $(d).addClass('ui-div');
   return d;
 }
