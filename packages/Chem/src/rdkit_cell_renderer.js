@@ -9,16 +9,13 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
     this.canvasCounter = 0;
     this.molCache = new DG.LruCache();
     this.molCache.onItemEvicted = function (mol) {
-      mol?.delete();
+      mol.delete();
       mol = null;
     };
     this.rendersCache = new DG.LruCache();
     this.rendersCache.onItemEvicted = function (obj) {
-      let element = document.getElementById(obj.canvasId);
-      element?.parentNode?.removeChild(element);
-      element = null;
-      obj.canvasId = null;
       obj.canvas = null;
+      obj.canvasId = null;
       obj = null;
     }
   }
@@ -40,7 +37,7 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
     let rendersCache = this.rendersCache;
 
     const fetchMol = function (molString) {
-      return molCache.getOrCreate(molString, (s) => {
+      const add = function (s) {
         let mol = emptyMol;
         try {
           mol = rdKitModule.get_mol(s);
@@ -52,7 +49,13 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
             "Possibly a malformed molecule (rendering, no scaffold): `" + s + "`");
         }
         return mol;
-      });
+      };
+      // A lightweight reference counting
+      let retMol = molCache.getOrCreate(molString, add);
+      if (retMol == null) {
+        retMol = add(molString);
+      }
+      return retMol;
     }
 
     const drawMoleculeToCanvas = function (rdkitMol, w, h, canvas) {
