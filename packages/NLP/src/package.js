@@ -55,7 +55,7 @@ async function detectEntities(comprehendMedical, params) {
 
 async function getCredentials() {
   let credentialsResponse = await _package.getCredentials();
-  if (credentialsResponse === null) {
+  if (credentialsResponse == null) {
     translationArea.value = 'Package credentials are not set.';
     entDiv.value = 'Package credentials are not set.';
     return {};
