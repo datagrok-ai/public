@@ -49,11 +49,15 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
 
   }
 
-  _fetchMolGetOrCreate(molString, molThroughSmiles) {
+  _fetchMolGetOrCreate(molString, scaffoldMolString, molThroughSmiles) {
+
     let mol = this.emptyMol;
+
     try {
+      let validMol = false;
       mol = rdKitModule.get_mol(molString);
       if (mol.is_valid()) {
+        // TODO: maybe split into 2 functions (with scaffold and without)
         if (molThroughSmiles) {
           // "drop" the coordinate information from the molecule
           if (!this._molIsInSmiles(molString, mol)) {
@@ -64,12 +68,22 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
             mol = rdKitModule.get_mol(molBlockString);
           }
         }
+        if (scaffoldMolString !== "") {
+          // only after dropping, align to a given scaffold
+          let rdkitScaffoldMol = this._fetchMol(scaffoldMolString, "", molThroughSmiles, false);
+          if (this._molIsInMolBlock(scaffoldMolString, rdkitScaffoldMol)) {
+            const substructJson = mol.get_substruct_match(rdkitScaffoldMol);
+            if (substructJson !== '{}') {
+              mol.generate_aligned_coords(rdkitScaffoldMol, true);
+            }
+          }
+        }
       } else {
         mol = emptyMol;
       }
     } catch (e) {
       console.error(
-        "Possibly a malformed molecule (rendering, no scaffold): `" + molString + "`");
+        "Possibly a malformed molecule: `" + molString + "`");
     }
     return mol;
   }
@@ -78,27 +92,12 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
     const name = molString + " || " + scaffoldMolString + " || "
       + molThroughSmiles + " || " + scaffoldThroughSmiles;
     return this.molCache.getOrCreate(name, (s) =>
-      this._fetchMolGetOrCreate(molString, molThroughSmiles));
+      this._fetchMolGetOrCreate(molString, scaffoldMolString, molThroughSmiles));
   }
 
   _rendererGetOrCreate(width, height, molString, scaffoldMolString, molThroughSmiles, scaffoldThroughSmiles) {
 
     let rdkitMol = this._fetchMol(molString, scaffoldMolString, molThroughSmiles, scaffoldThroughSmiles);
-    let rdkitScaffoldMol = this._fetchMol(scaffoldMolString, "", molThroughSmiles, scaffoldThroughSmiles);
-
-    if (scaffoldMolString !== "") {
-      try {
-        if (this._molIsInMolBlock(scaffoldMolString, rdkitScaffoldMol)) {
-          const substructJson = rdkitMol.get_substruct_match(rdkitScaffoldMol);
-          if (substructJson !== '{}') {
-            rdkitMol.generate_aligned_coords(rdkitScaffoldMol, true);
-          }
-        }
-      } catch (e) {
-        console.error(
-          "Possibly a malformed molecule (rendering, scaffolds): `" + molString + "`");
-      }
-    }
 
     const canvasId = '_canvas-rdkit-' + this.canvasCounter;
     let canvas = window.document.createElement('canvas');
@@ -107,6 +106,7 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
     this._drawMoleculeToCanvas(rdkitMol, width, height, canvas);
 
     return {canvas: canvas, canvasId: canvasId};
+
   }
 
   _fetchRender(width, height, molString, scaffoldMolString, molThroughSmiles, scaffoldThroughSmiles) {
