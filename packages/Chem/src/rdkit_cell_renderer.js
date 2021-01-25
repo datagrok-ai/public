@@ -138,6 +138,9 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
                 molString, scaffoldMolString,
                 molThroughSmiles, scaffoldThroughSmiles) {
 
+    const r = window.devicePixelRatio;
+    x = r * x; y = r * y;
+    w = r * w; h = r * h;
     const renderObj = this._fetchRender(w, h,
       molString, scaffoldMolString, molThroughSmiles, scaffoldThroughSmiles);
     let offscreenCanvas = renderObj.canvas;
