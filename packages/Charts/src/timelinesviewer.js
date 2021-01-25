@@ -6,6 +6,12 @@ export class TimelinesViewer extends EChartViewer {
     super();
     
     this.initCommonProperties();
+    this.subjectColumnName = this.string('subjectColumnName', 'USUBJID');
+    this.startColumnName = this.string('startColumnName', 'AESTDY');
+    this.endColumnName = this.string('endColumnName', 'AEENDY');
+    this.colorByColumnName = this.string('colorByColumnName', 'SEX');
+
+    this.data = [];
 
     this.option = {
       tooltip: {
@@ -53,13 +59,13 @@ export class TimelinesViewer extends EChartViewer {
               type: 'rect',
               transition: ['shape'],
               shape: rectShape,
-              style: api.style()
+              style: api.style()  // { fill: 'green' }
             };
           },
           encode: {
             x: [1, 2], 
             y: 0,
-            tooltip: [3, 4, 5]
+            tooltip: [3, 4]
           }
         },
       ]
@@ -69,15 +75,22 @@ export class TimelinesViewer extends EChartViewer {
   }
 
   getSeriesData() {
-    return [
-      ['Proj1', '2019-10-10', '2019-10-14', 320, 120, 220],
-      ['Proj2', '2019-10-12', '2019-10-16', 302, 132, 182],
-      ['Proj3', '2019-10-11', '2019-10-15', 301, 101, 191],
-      ['Proj4', '2019-10-14', '2019-10-17', 334, 134, 234],
-      ['Proj5', '2019-10-13', '2019-10-16', 390, 90, 290],
-      ['Proj6', '2019-10-12', '2019-10-13', 330, 230, 330],
-      ['Proj7', '2019-10-11', '2019-10-17', 320, 210, 310],
-    ];
+    this.data.length = 0;
+
+    let columns = this.dataFrame.columns.byNames([
+      this.subjectColumnName, this.startColumnName,
+      this.endColumnName, this.colorByColumnName
+    ]);
+
+    for (let i = 0; i < this.dataFrame.rowCount; i++) {
+      let row = [];
+      for (let j = 0; j < columns.length; j++) {
+        row.push((columns[j].type === 'datetime') ?
+          new Date(`${columns[j].get(i)}`) : columns[j].get(i));
+      }
+      this.data.push(row);
+    }
+    return this.data;
   }
   
   render() {  
