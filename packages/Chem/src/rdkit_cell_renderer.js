@@ -146,8 +146,8 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
     let offscreenCanvas = renderObj.canvas;
     let image = offscreenCanvas.getContext('2d').getImageData(0, 0, w, h);
     let context = onscreenCanvas.getContext('2d');
+    // As old zoom: context.drawImage(offscreenCanvas, x, y, w, h);
     context.putImageData(image, x, y);
-
   }
 
   render(g, x, y, w, h, gridCell, cellStyle) {
