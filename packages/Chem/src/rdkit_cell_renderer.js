@@ -48,7 +48,7 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
 
   }
 
-  _fetchMolGetOrCreate(molString, scaffoldMolString, molThroughSmiles) {
+  _fetchMolGetOrCreate(molString, scaffoldMolString, molDropCoords) {
 
     let mol = null;
 
@@ -57,7 +57,7 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
       mol = rdKitModule.get_mol(molString);
       if (mol.is_valid()) {
         // TODO: maybe split into 2 functions (with scaffold and without)
-        if (molThroughSmiles) {
+        if (molDropCoords) {
           // "drop" the coordinate information from the molecule
           if (!this._molIsInSmiles(molString, mol)) {
             let rdkitMolNoCoords = rdKitModule.get_mol(mol.get_smiles());
@@ -69,7 +69,7 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
         }
         if (scaffoldMolString !== "") {
           // only after dropping, align to a given scaffold
-          let rdkitScaffoldMol = this._fetchMol(scaffoldMolString, "", molThroughSmiles, false);
+          let rdkitScaffoldMol = this._fetchMol(scaffoldMolString, "", molDropCoords, false);
           if (this._molIsInMolBlock(scaffoldMolString, rdkitScaffoldMol)) {
             const substructJson = mol.get_substruct_match(rdkitScaffoldMol);
             if (substructJson !== '{}') {
@@ -88,16 +88,16 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
     return mol;
   }
 
-  _fetchMol(molString, scaffoldMolString, molThroughSmiles, scaffoldThroughSmiles) {
+  _fetchMol(molString, scaffoldMolString, molDropCoords, scaffoldDropCoords) {
     const name = molString + " || " + scaffoldMolString + " || "
-      + molThroughSmiles + " || " + scaffoldThroughSmiles;
+      + molDropCoords + " || " + scaffoldDropCoords;
     return this.molCache.getOrCreate(name, (s) =>
-      this._fetchMolGetOrCreate(molString, scaffoldMolString, molThroughSmiles));
+      this._fetchMolGetOrCreate(molString, scaffoldMolString, molDropCoords));
   }
 
-  _rendererGetOrCreate(width, height, molString, scaffoldMolString, molThroughSmiles, scaffoldThroughSmiles) {
+  _rendererGetOrCreate(width, height, molString, scaffoldMolString, molDropCoords, scaffoldDropCoords) {
 
-    let rdkitMol = this._fetchMol(molString, scaffoldMolString, molThroughSmiles, scaffoldThroughSmiles);
+    let rdkitMol = this._fetchMol(molString, scaffoldMolString, molDropCoords, scaffoldDropCoords);
 
     const canvasId = '_canvas-rdkit-' + this.canvasCounter;
     let canvas = window.document.createElement('canvas');
@@ -109,14 +109,14 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
 
   }
 
-  _fetchRender(width, height, molString, scaffoldMolString, molThroughSmiles, scaffoldThroughSmiles) {
+  _fetchRender(width, height, molString, scaffoldMolString, molDropCoords, scaffoldDropCoords) {
 
     const name = width + " || " + height + " || "
       + molString + " || " + scaffoldMolString  + " || "
-      + molThroughSmiles + " || " + scaffoldThroughSmiles;
+      + molDropCoords + " || " + scaffoldDropCoords;
     return this.rendersCache.getOrCreate(name, (s) =>
       this._rendererGetOrCreate(width, height,
-        molString, scaffoldMolString, molThroughSmiles, scaffoldThroughSmiles));
+        molString, scaffoldMolString, molDropCoords, scaffoldDropCoords));
 
   }
 
@@ -136,13 +136,13 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
 
   _drawMolecule(x, y, w, h, onscreenCanvas,
                 molString, scaffoldMolString,
-                molThroughSmiles, scaffoldThroughSmiles) {
+                molDropCoords, scaffoldDropCoords) {
 
     const r = window.devicePixelRatio;
     x = r * x; y = r * y;
     w = r * w; h = r * h;
     const renderObj = this._fetchRender(w, h,
-      molString, scaffoldMolString, molThroughSmiles, scaffoldThroughSmiles);
+      molString, scaffoldMolString, molDropCoords, scaffoldDropCoords);
     let offscreenCanvas = renderObj.canvas;
     let image = offscreenCanvas.getContext('2d').getImageData(0, 0, w, h);
     let context = onscreenCanvas.getContext('2d');
@@ -161,13 +161,13 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
     let singleScaffoldMolString = molCol ? molCol.tags['chem-scaffold'] : null;
 
     const colTags = gridCell.tableColumn.tags;
-    let molThroughSmiles = colTags && colTags['render-through-smiles'] === 'true';
-    let scaffoldThroughSmiles = false;
+    let molDropCoords = colTags && colTags['drop-coords'] === 'true';
+    let scaffoldDropCoords = false;
 
     if (singleScaffoldMolString) {
 
       this._drawMolecule(x, y, w, h, g.canvas,
-        molString, singleScaffoldMolString, molThroughSmiles, scaffoldThroughSmiles);
+        molString, singleScaffoldMolString, molDropCoords, scaffoldDropCoords);
 
     } else {
 
@@ -181,8 +181,8 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
           let rowScaffoldColProbe = df.columns.byName(rowScaffoldColName);
           if (rowScaffoldColProbe !== null) {
             const scaffoldColTags = rowScaffoldColProbe.tags;
-            scaffoldThroughSmiles = scaffoldColTags && scaffoldColTags['render-through-smiles'] === 'true';
-            molThroughSmiles = scaffoldThroughSmiles;
+            scaffoldDropCoords = scaffoldColTags && scaffoldColTags['drop-coords'] === 'true';
+            molDropCoords = scaffoldDropCoords;
             return rowScaffoldColProbe;
           }
         }
@@ -192,13 +192,13 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
 
       if (rowScaffoldCol == null || rowScaffoldCol.name === gridCell.tableColumn.name) {
         // regular drawing
-        this._drawMolecule(x, y, w, h, g.canvas, molString, "", molThroughSmiles, false);
+        this._drawMolecule(x, y, w, h, g.canvas, molString, "", molDropCoords, false);
       } else {
         // drawing with a per-row scaffold
         let idx = gridCell.tableRowIndex;
         let scaffoldMolString = df.get(rowScaffoldCol.name, idx);
         this._drawMolecule(x, y, w, h, g.canvas,
-          molString, scaffoldMolString, molThroughSmiles, scaffoldThroughSmiles);
+          molString, scaffoldMolString, molDropCoords, scaffoldDropCoords);
       }
     }
   }
