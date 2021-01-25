@@ -30,10 +30,11 @@ export function _TimelinesViewer() {
 //name: timelinesViewerDemo
 export function timelinesViewerDemo() {
     let adverseEvents = DG.DataFrame.fromCsv(
-        `subject, start, end
-        s1, 10/02/2018, 10/03/2018
-        s2, 10/03/2018, 10/04/2018
-        s3, 10/02/2018, 10/05/2018`);
+        `USUBJID, AESTDY, AEENDY, SEX, AGE
+        s1, 10/02/2018, 10/09/2018, F, 48
+        s2, 10/04/2018, 10/07/2018, M, 51
+        s3, 10/02/2018, 10/05/2018, F, 39
+        s4, 10/07/2018, 10/08/2018, M, 43`);
 
     let view = grok.shell.addTableView(adverseEvents);
     view.addViewer('TimelinesViewer');
