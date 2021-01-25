@@ -7,7 +7,6 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
 
     super();
     this.canvasCounter = 0;
-    this.emptyMol = rdKitModule.get_mol("");
     this.molCache = new DG.LruCache();
     this.molCache.onItemEvicted = function (mol) {
       mol.delete();
@@ -51,7 +50,7 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
 
   _fetchMolGetOrCreate(molString, scaffoldMolString, molThroughSmiles) {
 
-    let mol = this.emptyMol;
+    let mol = null;
 
     try {
       let validMol = false;
@@ -79,11 +78,12 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
           }
         }
       } else {
-        mol = emptyMol;
+        mol = rdKitModule.get_mol("");
       }
     } catch (e) {
       console.error(
         "Possibly a malformed molecule: `" + molString + "`");
+      mol = rdKitModule.get_mol("");
     }
     return mol;
   }
