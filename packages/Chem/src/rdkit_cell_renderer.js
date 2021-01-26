@@ -82,7 +82,7 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
     } catch (e) {
       console.error(
         "Possibly a malformed molecule: `" + molString + "`");
-      mol = rdKitModule.get_mol("");
+      mol = null;
     }
     return mol;
   }
@@ -102,8 +102,21 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
     let canvas = window.document.createElement('canvas');
     canvas.setAttribute('id', canvasId);
     this.canvasCounter++;
-    this._drawMoleculeToCanvas(rdkitMol, width, height, canvas);
-
+    if (rdkitMol != null) {
+      this._drawMoleculeToCanvas(rdkitMol, width, height, canvas);
+    } else {
+      let ctx = canvas.getContext("2d");
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = '#EFEFEF';
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(width, height);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(width, 0);
+      ctx.lineTo(0, height);
+      ctx.stroke();
+    }
     return {canvas: canvas, canvasId: canvasId};
 
   }
