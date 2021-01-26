@@ -1,6 +1,23 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-01-26 Dev build 0.89.15
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.89.15`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* [Ability to call the table variable from "Add new column"](https://community.datagrok.ai/t/test-topic-for-integration-testing/426) 
+* Auto generated release-notes 
+* Molecules rendering in TableViews (WIP)
+
+
 # 2020.12.03 Stable Version
 
 In this release, we have introduced new [filtering functionality](https://www.youtube.com/watch?v=GM3XixUFFUs&t=2688s) 
