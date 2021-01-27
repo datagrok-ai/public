@@ -167,7 +167,18 @@ Caching query results is quite straightforward — all you need to do is setting
 
 ## REST Endpoints
 
-Web services provide endpoints that you can programmatically connect to. There are two main options for this: the first is to use [OpenAPI/Swagger](../../access/open-api.md) format supported by Datagrok, the second one involves the [use of the platform's server](https://dev.datagrok.ai/js/samples/dapi/fetch) to send a network request.
+Web services provide endpoints that you can programmatically connect to. There are two main options for this: the first is to use [OpenAPI/Swagger](https://swagger.io/docs/specification/about/) format supported by Datagrok, the second one involves the [use of the platform's server](https://dev.datagrok.ai/js/samples/dapi/fetch) to send a network request. The details of Swagger-based connections are further explained in the [dedicated article](../../access/open-api.md). The method used to proxy requests has an interface similar to the standard `fetch` API and can be applied as follows:
+
+```javascript
+const url = 'https://jsonplaceholder.typicode.com/posts';
+const data = { name: 'username', password: 'password' };
+
+grok.dapi.fetchProxy(url, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(data)
+}).then(response => grok.shell.info(response.ok));
+```
 
 ## Reading Files
 
