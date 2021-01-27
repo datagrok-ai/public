@@ -1,6 +1,33 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-01-27 Dev build 0.89.16
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.89.16`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Converted to ui.onSizeChanged 
+* (Bug) Parser grammar: Power operation goes before multiplication 
+* Clean coordinate data by a render-through-smiles tag (WIP)
+* Auto release notes 
+* Render an envelope instead of an empty cell for failed molecules 
+* (Bug) capitalizeWords('showXAxis') should be 'Show X Axis' 
+* Viewers: Scatter Plot: axis-specific context menus 
+* Programming exercises (WIP)
+* Update exercises.md 
+* Updated fetchProxy examples 
+* Simplified package `test` function 
+* Fixed templates in datagrok-tools 
+* Chem, RDKit-based (WIP)
+
+
 # 2021-01-26 Dev build 0.89.15
 
 ## Latest Docker Images
