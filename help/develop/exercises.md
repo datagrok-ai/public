@@ -32,7 +32,10 @@ Prerequisites: basic JavaScript knowledge
 ## Semantic types
 
 Prerequisites: basic JavaScript knowledge
+
 Details: [How to Create a Semantic Type Detector](how-to/semantic-type-detector.md)
+
+You will learn: how to write semantic type detectors, how to develop context-specific data augmentation.  
 
 1. Create a `complement` function that takes a nucleotide string and returns its complement.
    Essentially, change each character to the complementary one: A<=>T, G<=>C. 
@@ -61,3 +64,43 @@ Details: [How to Create a Semantic Type Detector](how-to/semantic-type-detector.
    platform to use the `complement` function for providing additional information for string values
    of the `dna_nucleotide` semantic type. To test it, simply open our test file, click on any cell
    in the `sequence` column, and find the `complement` property in the panel on the right.
+
+## Querying databases
+
+Prerequisites: basic SQL knowledge
+
+In this exercise, we will work with a `northwind` Postgres database (in case the name sounds 
+familiar, this is the demo databases that Microsoft often uses for showcasing its technology).
+The database is already deployed anb is accessible from our server.
+
+1. Navigate to the `Open | Databases | Postgres | northwind | orders` table
+2. Make this table current by clicking on it, and explore its property panels on the right. The 
+   `Content` pane should be showing first 50 rows of that table.  
+3. Right-click on the table, and choose `New SQL Query...`
+4. Execute the query and make sure it returns results.   
+5. Modify the query to accept a `country` parameter, and return sum of freights for the specified 
+   country, grouped by `customerid`. Here is one way to do it:
+   ```sql
+   --input: string country
+   select customerid, sum(freight)
+   from public.orders
+   where shipcountry = @country
+   group by customerid
+   ```
+6. Make sure the query executes fine, when prompted enter one of the countries in the input box (such as "USA").
+   Run it the second time, notice that previously entered parameters could be quickly reused by clicking
+   on the watch icon in the left bottom corner.
+7. Give this query `ordersByCountry` name, and save it.
+8. Use different ways to execute it:
+    * Right-click on `Open | Databases | Postgres | ordersByCountry`, select `Run`
+    * Click on `Open | Databases | Postgres | ordersByCountry`, expand `Run` pane, enter the country name and run it
+    * Open console, see the results of the previous invocations. Copy-paste the corresponding command and 
+      run it from the console.
+9. Now, let's add this query to our package. As instructed here, create the '.sql' file
+   under the `queries`, and paste our query there. Give it a name by adding the 
+   `--name: ordersByCountry` line on top of it. 
+10. Deploy the package, launch the platform, find the query in the package, and run it.
+11. Create a JavaScript function that has no parameters and returns the dataframe with 
+    the results of the `ordersByCountry('USA')` call.
+
+   
