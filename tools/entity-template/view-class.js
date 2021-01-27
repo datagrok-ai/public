@@ -8,22 +8,22 @@ export class #{NAME} extends DG.ViewBase {
     this.PATH = '/notebook';
   }
 
-  // Override basic metods
+  // Override basic methods
   get type() {
-    return this.TYPE
-  };
+    return this.TYPE;
+  }
 
   get helpUrl() {
     return '/help/develop/jupyter-notebook.md';
   }
 
   get name() {
-    return 'Notebook'
-  };
+    return 'Notebook';
+  }
 
   get path() {
-    return `${this.PATH}/${this.notebookId}`
-  };
+    return `${this.PATH}/${this.notebookId}`;
+  }
 
   // Icon
   getIcon() {
@@ -32,7 +32,7 @@ export class #{NAME} extends DG.ViewBase {
     img.height = 18;
     img.width = 18;
     return img;
-  };
+  }
 
   // View state serialization/deserialization
   saveStateMap() {
