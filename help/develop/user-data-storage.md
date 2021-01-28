@@ -4,30 +4,30 @@
 # User Storage
 
 It is often the case that certain settings or inputs/outputs need to be shared between different applications or 
-different instances of the same application. This functionality is realised in the form of user data storage - a virtual
+different instances of the same application. This functionality is implemented in the form of user data storage — a virtual
 memory buffer which can be filled with new entries and from which these entries can later be retrieved.
 
 Table of contents:
-* [General structure](#General structure)
-* [JavaScript API](#JavaScript API)
-    * [saving](#Saving)
-    * [loading](#Loading)
-    * [exploring](#Exploring)
-    * [deleting](#Deleting)
-* [Examples and use cases](#Examples and use case)
+* [General Structure](#general-structure)
+* [JavaScript API](#javascript-api)
+    * [Saving](#saving)
+    * [Loading](#loading)
+    * [Exploring](#exploring)
+    * [Deleting](#deleting)
+* [Examples and Use Cases](#examples-and-use-cases)
 
-## General structure
+## General Structure
 
 The main class `grok.dapi.userDataStorage` is extended by the following 6 methods:
 
 |Method        |Parameters  |Function  |
 |--------------|------------|----------|
-| `.postValue()`|**name**: *string*, **key**: *string*, **value**: *string*, **currentUser**: *boolean*| Saves a single value to Users Data Storage|
-| `.post()`     |**name**: *string*, **data**: *Map*, **currentUser**: *boolean*|Saves a map to Users Data Storage, will be appended to existing data|
-| `.put()`      |**name**: *string*, **data**: *Map*, **currentUser**: *boolean*|Saves a map to Users Data Storage, will replace existing data|
-| `.get()`      |**name**: *string*, **currentUser**: *boolean*|Retrieves a map from Users Data Storage|
-| `.getValue()` |**name**: *string*, **key**: *string*, **currentUser**: *boolean*|Retrieves a single value from Users Data Storage|
-| `.remove()`   |**name**: *string*, **key**: *string*, **currentUser**: *boolean*|Removes a single value from Users Data Storage|
+| `.postValue()`|**name**: *string*, **key**: *string*, **value**: *string*, **currentUser**: *boolean*| Saves a single value to User Data Storage|
+| `.post()`     |**name**: *string*, **data**: *Map*, **currentUser**: *boolean*|Saves a map to User Data Storage, will be appended to existing data|
+| `.put()`      |**name**: *string*, **data**: *Map*, **currentUser**: *boolean*|Saves a map to User Data Storage, will replace existing data|
+| `.get()`      |**name**: *string*, **currentUser**: *boolean*|Retrieves a map from User Data Storage|
+| `.getValue()` |**name**: *string*, **key**: *string*, **currentUser**: *boolean*|Retrieves a single value from User Data Storage|
+| `.remove()`   |**name**: *string*, **key**: *string*, **currentUser**: *boolean*|Removes a single value from User Data Storage|
 
 Each of the above methods returns a **Promise** which has to be handled in one of the following ways:
 1. By `.then()` method
@@ -47,7 +47,7 @@ async function fun() {
 
 ### Saving
 
-When using `.postValue()` specifically the input can only be represented by a *string*. The best way to organize entries
+When using `.postValue()` specifically, the input can only be represented by a *string*. The best way to organize entries
 in user storage is by creating *objects* which can then be converted to *string* format with `JSON.stringify()`. For example:
 
 ```js
@@ -60,11 +60,11 @@ store('coordinate-storage', 'coordinates', inputObj)
 ```
 
 Please note that `JSON.stringify()` will only operate on simple *objects*, i.e. objects with `key:value` pairs where
-`value = class DG.DataFrame` will return `undefined`. We suggest using [`grok.dapi.tables.uploadDataFrame()`]() for 
-table storage.
+`value = class DG.DataFrame` will return `undefined`. We suggest using [`grok.dapi.tables.uploadDataFrame()`](https://dev.datagrok.ai/js/samples/data-access/save-and-load-df) for a table storage.
 
 ### Loading
-To return values we execute the following code:
+
+To return values, we execute the following code:
 
 ```js
 grok.dapi.userDataStorage.getValue('coordinate-storage','coordinates').then((entry) => {
@@ -76,7 +76,7 @@ grok.dapi.userDataStorage.getValue('coordinate-storage','coordinates').then((ent
 
 ### Exploring
 Unfortunately we can't explore the content of user storage without first retrieving it from the memory.
-Once retrieved we can use a standard `for` loop or a `forEach()` method to scroll through the entries:
+Once retrieved, we can use a standard `for` loop or a `forEach()` method to scroll through the entries:
 
  ```js
 grok.dapi.userDataStorage.get('coordinate-storage').then((entries) => {
@@ -97,9 +97,9 @@ or wipe the storage completely by running:
 await grok.dapi.userDataStorage.remove('coordinate-storage', null);
 ```
 
-## Examples and use cases
+## Examples and Use Cases
 User storage is especially handy when we want to save sets of input parameters, e.g. if a user wishes to reproduce
-his previous calculations in following sessions. All of the above snippets are summarized in the example below: 
+their previous calculations in following sessions. All of the above snippets are summarized in the example below: 
 
 ```js
 const STORAGE_NAME = 'user-data-storage-demo';
@@ -148,4 +148,8 @@ v.append(ui.divH([
 ]));
 ```
 Please note: here the `await` operator is not used with `remove()` and `postValue()` because both of these are attached 
-to  buttons, i.e the order of execution is controlled manually.
+to buttons, i.e the order of execution is controlled manually.
+
+See also:
+  * [JavaScript API Samples: User Data Storage](https://public.datagrok.ai/js/samples/misc/user-data-storage)
+  * [JavaScript API Samples: Dataframe Upload](https://dev.datagrok.ai/js/samples/data-access/save-and-load-df)
