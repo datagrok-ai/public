@@ -1,7 +1,7 @@
 <!-- TITLE: User Storage -->
 <!-- SUBTITLE: -->
 
-#User Storage
+# User Storage
 
 It is often the case that certain settings or inputs/outputs need to be shared between different applications or 
 different instances of the same application. This functionality is realised in the form of user data storage - a virtual
