@@ -28,7 +28,6 @@ export class ChordViewer extends DG.JsViewer {
     this.conf = layoutConf;
     this.chords = [];
     this.chordConf = {};
-    this.labels = [];
     this.segments = {};
   }
 
@@ -36,7 +35,7 @@ export class ChordViewer extends DG.JsViewer {
     this.innerRadiusMargin = 80;
     this.outerRadiusMargin = 60;
     this.color = scaleOrdinal(DG.Color.categoricalPalette);
-    this.chordConf.color = datum => DG.Color.toRgb(this.color(datum[this.colorBy]['id']));
+    this.chordConf.color = datum => DG.Color.toRgb(this.color(datum[this.colorBy]['label']));
     this.chordConf.opacity = 0.7;
     this.labelConf = {
       innerRadius: 1.02,
@@ -82,7 +81,6 @@ export class ChordViewer extends DG.JsViewer {
 
   generateData() {
     this.data.length = 0;
-    this.labels.length = 0;
 
     this.fromColumn = this.dataFrame.getCol(this.fromColumnName);
     this.toColumn = this.dataFrame.getCol(this.toColumnName);
@@ -90,8 +88,8 @@ export class ChordViewer extends DG.JsViewer {
       mouseover: (datum, index, nodes, event) => {
         select(nodes[index]).select(`#${datum.id}`).attr('stroke', 'black');
         ui.tooltip.showRowGroup(this.dataFrame, i => {
-          return this.fromColumn.get(i) === datum.id ||
-            this.toColumn.get(i) === datum.id;
+          return this.fromColumn.get(i) === datum.label ||
+            this.toColumn.get(i) === datum.label;
         }, event.x, event.y);
       },
       mouseout: (datum, index, nodes, event) => {
@@ -100,8 +98,8 @@ export class ChordViewer extends DG.JsViewer {
       },
       mousedown: (datum, index, nodes, event) => {
         this.dataFrame.selection.handleClick(i => {
-          return this.fromColumn.get(i) === datum.id ||
-            this.toColumn.get(i) === datum.id;
+          return this.fromColumn.get(i) === datum.label ||
+            this.toColumn.get(i) === datum.label;
         }, event);
       }
     };
@@ -124,10 +122,10 @@ export class ChordViewer extends DG.JsViewer {
     this.categories = Array.from(new Set(this.fromCol.categories.concat(this.toCol.categories)));
     this.data = this.categories
       .sort((this.sortBy === 'frequency') ? (a, b) => this.freqMap[b] - this.freqMap[a] : undefined)
-      .map(s => {
-        this.labels.push({ block_id: s, position: this.freqMap[s] / 2, value: s });
+      .map((s, ind) => {
         return {
-          id: s,
+          id: `id-${ind}`,
+          label: s,
           len: this.freqMap[s],
           color: DG.Color.toRgb(this.color(s))
         }
@@ -138,7 +136,7 @@ export class ChordViewer extends DG.JsViewer {
     }
 
     this.data.forEach(s => {
-      this.segments[s.id] = { datum: s, targets: [], aggTotal: null, visited: false };
+      this.segments[s.label] = { datum: s, targets: [], aggTotal: null, visited: false };
       s.pos = 0;
     });
 
@@ -163,29 +161,31 @@ export class ChordViewer extends DG.JsViewer {
     let toCatList = this.toCol.categories;
 
     for (let i = 0; i < this.rowCount; i++) {
-      let sourceId = fromCatList[source[i]];
-      let targetId = toCatList[target[i]];
-      let sourceBlock = this.segments[sourceId]['datum'];
-      let targetBlock = this.segments[targetId]['datum'];
-      let sourceStep = sourceBlock.len * (this.aggVal[i] / this.segments[sourceId]['aggTotal']);
-      let targetStep = targetBlock.len * (this.aggVal[i] / this.segments[targetId]['aggTotal']);
+      let sourceLabel = fromCatList[source[i]];
+      let targetLabel = toCatList[target[i]];
+      let sourceBlock = this.segments[sourceLabel]['datum'];
+      let targetBlock = this.segments[targetLabel]['datum'];
+      let sourceStep = sourceBlock.len * (this.aggVal[i] / this.segments[sourceLabel]['aggTotal']);
+      let targetStep = targetBlock.len * (this.aggVal[i] / this.segments[targetLabel]['aggTotal']);
 
       this.chords.push({
         source: {
-          id: sourceId,
+          id: sourceBlock.id,
           start: sourceBlock.pos,
-          end: sourceBlock.pos + sourceStep
+          end: sourceBlock.pos + sourceStep,
+          label: sourceLabel
         },
         target: {
-          id: targetId,
+          id: targetBlock.id,
           start: targetBlock.pos,
-          end: targetBlock.pos + targetStep
+          end: targetBlock.pos + targetStep,
+          label: targetLabel
         },
-        value: this.aggVal[i]
+        value: this.aggVal[i],
       });
 
       sourceBlock.pos += sourceStep;
-      if (sourceId === targetId) continue;
+      if (sourceLabel === targetLabel) continue;
       targetBlock.pos += targetStep;
     }
 
@@ -193,8 +193,8 @@ export class ChordViewer extends DG.JsViewer {
       mouseover: (datum, index, nodes, event) => {
         select(nodes[index]).attr('opacity', 0.9);
         ui.tooltip.showRowGroup(this.dataFrame, i => {
-          return this.fromColumn.get(i) === datum.source.id &&
-            this.toColumn.get(i) === datum.target.id;
+          return this.fromColumn.get(i) === datum.source.label &&
+            this.toColumn.get(i) === datum.target.label;
         }, event.x, event.y);
       },
       mouseout: (datum, index, nodes, event) => {
@@ -203,8 +203,8 @@ export class ChordViewer extends DG.JsViewer {
       },
       mousedown: (datum, index, nodes, event) => {
         this.dataFrame.selection.handleClick(i => {
-          return this.fromColumn.get(i) === datum.source.id &&
-            this.toColumn.get(i) === datum.target.id;
+          return this.fromColumn.get(i) === datum.source.label &&
+            this.toColumn.get(i) === datum.target.label;
         }, event);
       }
     };
@@ -240,7 +240,11 @@ export class ChordViewer extends DG.JsViewer {
 
     circos.layout(this.data, this.conf);
     circos.chords('chords-track', this.chords, this.chordConf);
-    circos.text('labels', this.labels, this.labelConf);
+    circos.text('labels', this.data.map(d => { return {
+      block_id: d.id,
+      position: this.freqMap[d.label] / 2,
+      value: d.label
+    }}), this.labelConf);
     circos.render();
 
     let labels = select(this.root).selectAll('.block');
@@ -256,7 +260,7 @@ export class ChordViewer extends DG.JsViewer {
     labels.selectAll('text').each((d, i, nodes) => {
       let el = select(nodes[i]);
       let textLength = el.node().getComputedTextLength();
-      let text = d.value;
+      let text = el.text();
       while (text.length && textLength > (this.outerRadiusMargin - 15)) {
         text = text.slice(0, -1);
         el.text(text + '\u2026');
