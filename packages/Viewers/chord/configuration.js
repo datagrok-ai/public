@@ -4,7 +4,7 @@ export const layoutConf = {
   cornerRadius: 0,
   gap: 0.04,
   labels: {
-    display: true,
+    display: false,
     position: 'center',
     size: '14px',
     color: '#000000',
