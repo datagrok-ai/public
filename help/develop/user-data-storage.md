@@ -8,13 +8,13 @@ different instances of the same application. This functionality is realised in t
 memory buffer which can be filled with new entries and from which these entries can later be retrieved.
 
 Table of contents:
-* [General structure](##General structure)
-* [JavaScript API](##JavaScript API)
+* [General structure](#General structure)
+* [JavaScript API](#JavaScript API)
     * [saving](#Saving)
     * [loading](#Loading)
     * [exploring](#Exploring)
     * [deleting](#Deleting)
-* [Examples and use cases](##Examples and use case)
+* [Examples and use cases](#Examples and use case)
 
 ## General structure
 
