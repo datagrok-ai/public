@@ -336,12 +336,94 @@ Just like other entities on the platform, packages are subject to [privileges](.
 
 To see packages available to you, click on `Manage | Packages`, or follow [this link](https://public.datagrok.ai/packages) from outside the platform.
 
+## Debugging
+
+Essentially, Datagrok packages are either regular webpack packages, or JS source files.
+
+There are good practices described below which we recommend you to follow with debugging package code.
+
+### Debugging with Visual Studio Code
+
+Use a `--ide=vscode` key of [grok tools](#Getting-Started) to set up a `.vscode` debugging integration with Datagrok.
+
+This command coupled with `grok create` adds an additional `.vscode` folder with two files to a package folder.
+The idea behind these files is to bring you development experience close to developing native apps, where you
+modify the code, hit the "Run", wait for application to "compile" (in our case — go through webpack, and potentially
+through linters), start it and then explore your runtime state through breakpoints, variable watches, call stacks etc.
+
+The first file, `launch.json`, has contents similar to the below:
+
+```
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "preLaunchTask": "rebuild",
+      "type": "chrome",
+      "request": "launch",
+      "name": "Launch Chrome against Dev",
+      "url": "https://dev.datagrok.ai/",
+      "webRoot": "${workspaceFolder}"
+    }
+  ]
+}
+```
+
+It allows VS Code to launch an isolated Chrome session under debugging, targeting the desired web-address from `url`.
+In case an application is being developed, it may be useful to target this address directly to the application's URL.
+
+The second file, `tasks.json`, contains the following (for Windows):
+
+```
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "type": "shell",
+      "command": "cmd.exe /c 'call webpack && call grok publish'",
+      "label": "rebuild"
+    }
+  ]
+}
+```
+
+This command provides for building your package with webpack (this helps track some syntactic errors before
+they occur in runtime), and consequently ship the package to your Datagrok server.
+
+After these two files are provided in the working folder, what is left is to set up VS Code internally.
+
+* Open `Run → Install additional debuggers...`, find `Debugger for Chrome` in the appeared list and install it; restart VS Code.
+
+* Activate `View → Appearance → Show activity bar`. This will bring the `Run` button into the view.
+You can also use `Ctrl+Shift+D` to run the application.
+
+Make sure the `.vscode` folder is inside the folder you open with VS Code via `File → Open Folder`.
+
+Now open the folder with your package, add some breakpoint to your code, and hit the `Run` button.
+You should see a view with a left-side pane and a green "Run" (play) button on top of it, with the neightbour
+dropdown repeating the name of the configuration from `launch.json`. If this is not the case, and you see some
+other names or an invitation to create a configuration, it means the pre-made `.vscode` folder isn't recognized by VS
+Code. In such case, check that you do `File → Open Folder` on the folder which contains the pre-made `.vscode` folder.
+
+First time you hit run, you'll need to enter your Datagrok credentials into the newly appeared Chrome window.
+After you have done this, close Chrome, stop debugging from VS Code and start debugging same way again.
+This time your breakpoint should work, and you'd see locals and stack traces as usual.
+
+This [video](https://youtu.be/zVVmlRorpjg?list=PLIRnAn2pMh3kvsE5apYXqX0I9bk257_eY&t=871) gives an overview of
+setting up the debugging in VS Code.
+
+### Debugging through the browser
+
+#### Webpack-based packages
+
+#### Source-code based packages
+
 ## Applications
 
 Applications are [functions](../overview/functions/function.md) tagged with the `#app` tag. A package might contain zero, one, or more apps. See our [GitHub repository](https://github.com/datagrok-ai/public/tree/master/packages) for application examples, such as [Enamine Store application](https://github.com/datagrok-ai/public/tree/master/packages/EnamineStore).
 
 To open the application launcher, click on `Functions | Apps`, or follow [this link](https://public.datagrok.ai/apps)
-from outside the platform. To launch a particular app automatically, open the following URL: `https://public.datagrok.ai/apps/<APP_NAME>`
+from outside the platform. To launch a particular app automatically, open the following URL: `https://public.datagrok.ai/apps/<APP_NAME>`.
 
 ## Documentation
 
