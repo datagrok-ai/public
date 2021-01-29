@@ -4,7 +4,7 @@
 # Custom Viewers
 
 Developers can extend Datagrok with special visual components bound to data, which are called
-[viewers](../../visualize/viewers.md).There are two major alternatives for developing viewers on
+[viewers](../../visualize/viewers.md). There are two major alternatives for developing viewers on
 Datagrok. The first one is JavaScript-based development, which lets you create interactive viewers
 via [Datagrok JavaScript API](../js-api.md). The second option would be utilizing visualizations
 available for popular programming languages, such as Python, R, or Julia. This implementation uses
@@ -21,6 +21,8 @@ Table of contents
   * [JavaScript-Based Viewers](#javascript-based-viewers)
     * [External Dependencies](#external-dependencies)
     * [Properties](#properties)
+    * [Preparing Data](#preparing-data)
+    * [Rendering](#rendering)
     * [Events](#events)
   * [Scripting Viewers](#scripting-viewers)
   * [Registering Viewers](#registering-viewers)
@@ -43,7 +45,7 @@ class is added, you can refer to it in the main JavaScript file of your package:
 ```javascript
 import {AwesomeViewer} from './awesome-viewer.js'
 
-//name: Awesome
+//name: AwesomeViewer
 //description: Creates an awesome viewer
 //tags: viewer
 //output: viewer result
@@ -213,6 +215,121 @@ class AwesomeViewer extends DG.JsViewer {
   }
 }
 ```
+### Preparing Data
+
+When rendering a visualization, it is important to draw a distinction between cases when the
+underlying data changes and when it does not (e.g., resizing). To deal with this, it is common to
+introduce a parameter representing this state to the rendering method, or even split it into two
+separate methods. In our example, we follow the first approach and (re)compute the data unless
+stated otherwise:
+
+```javascript
+class AwesomeViewer extends DG.JsViewer {
+  constructor {...}
+  init {...}
+  onTableAttached {...}
+  detach {...}
+  onPropertyChanged(property) {...}
+
+  render(computeData = true) {
+    if (computeData) {
+      // Empty the data array
+      this.data.length = 0;
+
+      // Apply aggregation solely to filtered rows
+      this.aggregatedTable = this.dataFrame
+        .groupBy([this.splitColumnName])
+        .whereRowMask(this.dataFrame.filter)
+        .add(this.valueAggrType, this.valueColumnName, 'result')
+        .aggregate();
+
+      // Prepare datum objects for further processing
+      this.splitCol = this.aggregatedTable.getCol(this.splitColumnName);
+      this.valueCol = this.aggregatedTable.getCol('result');
+      for (let i = 0; i < this.aggregatedTable.rowCount; i++) {
+        this.data.push({
+          category: this.splitCol.get(i),
+          value: this.valueCol.get(i),
+        });
+      }
+    }
+  }
+}
+```
+
+Sometimes it is better to double-check if the given data can possibly be rendered, just as with the
+`onTableAttached` method, however, here we skip this step for simplicity.
+
+The methods used for value aggregation and iteration over the dataframe deserve a subject of their
+own, so do examine these code snippets to gain a better understanding:
+[aggregation](https://public.datagrok.ai/js/samples/data-frame/aggregation), [comparative
+performance](https://public.datagrok.ai/js/samples/data-frame/performance) of different approaches
+to iteration. Apart from that, data preparation largely depends on a particular JavaScript library
+you are working with, so we will leave this to your discretion.
+
+### Rendering
+
+The chosen library determines not only the form in which data should be presented, but also, to a
+much greater extent, how it will be drawn. Since we promised an awesome bar chart and its
+centerpiece is rendering, let's quickly see what it might look like:
+
+```javascript
+class AwesomeViewer extends DG.JsViewer {
+  constructor {...}
+  init {...}
+  onTableAttached {...}
+  detach {...}
+  onPropertyChanged(property) {...}
+
+  render(computeData = true) {
+    if (computeData) {...}
+
+    // Get width and height to adjust the viewer's size
+    let width = this.root.parentElement.clientWidth;
+    let height = this.root.parentElement.clientHeight;
+    let innerWidth = width - this.margin.left - this.margin.right;
+    let innerHeight = height - this.margin.top - this.margin.bottom;
+
+    // Clear the root element and append a new `svg` to it
+    $(this.root).empty();
+    let svg = select(this.root).append("svg")
+      .attr("width", width)
+      .attr("height", height);
+    let g = svg.append("g").attr("transform", `translate(${this.margin.left}, ${this.margin.top})`);
+
+    // Set the scales for X and Y axes
+    this.xScale
+      .domain([0, this.valueCol.max])
+      .range([0, innerWidth])
+      .nice();
+    this.yScale
+      .domain(this.data.map(d => d.category))
+      .range([0, innerHeight])
+      .paddingInner(0.1);
+
+    // Add the X and Y axes
+    let yAxis = g.append("g").call(axisLeft(this.yScale));
+    yAxis.selectAll(".domain, .tick line").remove();
+
+    let xAxis = g.append("g").call(axisBottom(this.xScale).tickSize(-innerHeight))
+      .attr("transform", `translate(0, ${innerHeight})`);
+    xAxis.selectAll(".tick line").attr("stroke", "#d4d4d4");
+    xAxis.select(".domain").remove();
+    
+    // Create bars
+    let bars = g.append("g").selectAll("rect")
+      .data(this.data)
+      .join("rect")
+        .attr("y", d => this.yScale(d.category))
+        .attr("width", d => this.xScale(d.value))
+        .attr("height", this.yScale.bandwidth())
+        .attr("fill", this.color);
+  }
+}
+```
+
+With this admittedly large piece of code, our viewer is almost complete,
+all that remains is to add one final touch to it.
 
 ### Events
 
@@ -220,15 +337,52 @@ Datagrok makes working with browser events easy. For a start, you can make viewe
 by showing custom tooltips. Their content may be of any kind (see an
 [example](https://dev.datagrok.ai/js/samples/ui/tooltips/tooltips)). For instance, there are
 [special tooltips](https://dev.datagrok.ai/js/samples/ui/tooltips/row-group-tooltips) for elements
-that represent multiple rows in a dataframe. With them, users will immediately see the rows that
-match pre-defined criteria and will be able to select them on click (pay attention to the
-`handleClick` function in the [example](https://dev.datagrok.ai/js/samples/ui/tooltips/row-group-tooltips)).
-Plus, other open viewers will highlight the elements that represent the respective row group as you move the mouse
-pointer over the current viewer (you don't need to configure anything, read more about Datagrok's
-efficient visualizations [here](../../visualize/viewers.md)). This also works the other way around:
-you can show only a selected portion of the data in your viewer. To do that, you need to know which
-rows the user selected so that you can narrow the data set for rendering accordingly. And this is
-fairly simple: the method `dataFrame.filter.getSelectedIndexes()` gives you exactly the data you need.
+that represent multiple rows in a dataframe. Let's add them to our bars:
+
+```javascript
+class AwesomeViewer extends DG.JsViewer {
+  constructor {...}
+  init {...}
+  onTableAttached {...}
+  detach {...}
+  onPropertyChanged(property) {...}
+
+  render(computeData = true) {
+    // {...}
+
+    // Add event handlers
+    bars
+      .on('mouseover', (event, d) => ui.tooltip.showRowGroup(this.dataFrame, i => {
+        return d.category === this.dataFrame.getCol(this.splitColumnName).get(i);
+      }, event.x, event.y))
+      .on('mouseout', () => ui.tooltip.hide())
+      .on('mousedown', (event, d) => {
+        this.dataFrame.selection.handleClick(i => {
+          return d.category === this.dataFrame.getCol(this.splitColumnName).get(i);
+        }, event);
+      });
+  }
+}
+```
+
+With these tooltips, users will immediately see the rows that match pre-defined criteria, e.g. rows
+containing the corresponding category, and will be able to select them on click (pay attention to
+the `handleClick` function in the example). Plus, other open viewers will highlight the elements
+that represent the respective row group as you move the mouse pointer over the current viewer (you
+don't need to configure anything, read more about Datagrok's efficient visualizations
+[here](../../visualize/viewers.md)). This also works the other way around: you can show a selected
+portion of the data in your viewer. To do that, you need to know which rows the user selected so
+that you can narrow the data set for rendering accordingly. And this is fairly simple: the method
+`dataFrame.filter.getSelectedIndexes()` gives you exactly the data you need.
+
+Simple as that! Let's add a simple function to `package.js` to invoke our viewer on test data:
+
+```javascript
+//name: showChart
+export function showChart() {
+  grok.shell.addTableView(grok.data.demo.demog()).addViewer('AwesomeViewer');
+}
+```
 
 ## Scripting Viewers
 
