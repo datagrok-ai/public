@@ -42,8 +42,14 @@ export function testui2() {
 }
 ```
 
-To make this run on Datagrok, follow `grok create app` [steps](../develop/develop.md#getting-started)
+To make this run on Datagrok, follow these `grok create app` [steps](../develop/develop.md#getting-started)
 to prepare this simple package and deploy it.
+
+In very short:
+
+1. You'll be prompted to enter your API developer's token to allow pushing packages to Datagrok; this key will be stored inside `.grok` settings file on your drive
+2. You'd choose to create a package via `grok create <PACKAGE_NAME>`; this will initialize a standard directory structure for your package
+3. Then you may choose to add an app to it via `grok add app <APP_NAME>` and see the minimal default structure for it, or alternatively just copy-paste the JS snipped from the above to `package.js`
 
 After deploying this package, you'd find these 2 apps via `Functions | Apps` in the activity bar
 situated on the left side of Datagrok's main window. Run both of the apps and notice the two different
@@ -54,13 +60,28 @@ corresponding URL will be simply `https://public.datagrok.ai/apps/<APP>`, omitti
 `<PACKAGE_NAME>` part.
 
 This simple example finishes explaining the purpose of the entry points. Yet, tooltips aren't
-something one typically builds as an application. So, let's proceed to a more UI-rich kind of things.
+something one typically builds as an application. Let's proceed to a more UI-rich kind of things.
 
 ## The main view
 
 # Application Development
 
 This chapter serves as a guide to the detailed articles on key topics around applications building.
+
+## Code samples
+
+We provide a diversed set of code snippets of the API use, and sample packages with viewers, applications, etc.
+
+* For short samples of using API, go to https://public.datagrok.ai/js and observe "Samples" block, or alternatively access it via a "Help" button at the bottom of the activity bar on the left of the Datagrok's main window (then follow to `JavaScript API Samples`).
+
+* The sources of these snippets are all located at https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples.
+
+* Observe the entirety of our demo codes at `https://github.com/datagrok-ai/public/tree/master/packages`. For instance, you may find there a package [Viewers](https://github.com/datagrok-ai/public/tree/master/packages/Viewers) which showcases a variery [Chem package](https://github.com/datagrok-ai/public/tree/master/packages/Chem) 
+
+These developers who's been starting with the platform recently are telling us the samples above became a major
+source of knowledge for their daily work with the platform. We recommend you to recall these locations too,
+and resort to them for resolving your daily technical questions in addition to posting questions and suggestions
+on our [Community Forum](https://community.datagrok.ai/) at https://community.datagrok.ai/.
 
 ## Data Access
 
@@ -75,6 +96,8 @@ This chapter serves as a guide to the detailed articles on key topics around app
 ## UI and UX
 
 ## Working with packages
+
+### Package structure
 
 # Debugging applications
 
