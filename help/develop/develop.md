@@ -427,6 +427,14 @@ package sources in the `top` (root) section of the source tree by its decapitali
 Deploying such package locates it to the Datagrok host URI (such as `https://dev.datagrok.ai`) under
 `api → packages/published/flies → <PACKAGE_NAME>/<VERSION>/_/<DIGIT>`, where you'd set breakpoints. 
 
+### Debugging through other IDEs
+
+We've noticed that for some of our users native debugging (using a Chrome plugin) from JetBrains
+IDEs (ItelliJ IDEA, WebStorm) didn't work out of the box. This doesn't seem to be related to Datagrok,
+but has to do with the general environment. We are figuring out a recommendation for these encountering
+problems with WebStorm. If you've been through this yourself and found a cause, please let us know
+how you had it resolved, by posting to our Community Forums: https://community.datagrok.ai/.
+
 ### Troubleshooting debugging
 
 1. For webpack-based packages, make sure there is `devtool: 'inline-source-map'` in `module.exports =` section of
