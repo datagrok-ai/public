@@ -246,8 +246,8 @@ export class Accordion extends DartWidget {
   }
 
   /** Creates a new instance of Accordion */
-  static create() {
-    return toJs(grok_Accordion());
+  static create(key = null) {
+    return toJs(grok_Accordion(key));
   }
 
   /** @type {AccordionPane[]} */
