@@ -84,8 +84,16 @@ There we reuse a particular kind of view: a table view, and centralize the rest 
 this application you'd also find some useful techniques one needs sooner or later in many applications,
 such as modifying the app's URI or hiding the side panels of the Datagrok's main UI.
 
-With that being said, there is pretty much anything you can further do inside the application, leveraging
-a full scale of platform capabilities. However, there are certain things of utmost interest in almost any
+## Structuring code
+
+
+
+
+
+# Application Development
+
+With the above being said, there is pretty much anything you can further do inside the application, leveraging
+a full scale of platform capabilities. However, there are certain aspects of utmost interest in almost any
 application:
 
 * accessing and persisting data
@@ -95,11 +103,9 @@ application:
 * managing privileges
 * application lifecycle
 
-This is what we are going to cover further in this how-to.
-
-# Application Development
-
-This chapter serves as a guide to the detailed articles on key topics around applications building.
+The following chapter guides through these key development topics. Take it as a birds-eye overview of the
+applcation development area, and proceed to the articles and samples referenced in the guide for the
+further details.
 
 ## Code samples
 
@@ -120,16 +126,19 @@ on our [Community Forum](https://community.datagrok.ai/) at https://community.da
 
 There's a variety of data sources which Datagrok can handle out of the box:
 
-* Web Services (REST endpoints) specified via Swagger / OpenAPI ([link]())
-* Arbitrary REST APIs (including these outside host's domain) ([link]())
-* Access a file from the Datagrok server space (either shared or Home) ([link]())
-* Reading from databases: Datagrok supports more than 30 ([link]())
-* Access a file from a file share (Windows Network, SAMBA and the like) ([link]())
+* Web Services (REST endpoints) specified via Swagger / OpenAPI ([link](../access/open-api.md))
+* Arbitrary REST APIs (including these outside host's domain) ([link](./access-data.md#rest-endpoints))
+* Access a file from the Datagrok server space (either shared or Home) ([link](./access-data.md#file-shares))
+* Reading from databases: Datagrok supports more than 30 ([link](./access-data.md#parameters))
+* Access a file from a network file share (Windows Shares, SAMBA and the like) ([link](./access-data.md#file-shares))
 
 Connections to databases, respective database queries, and file shares live in Datagrok as entities.
 These may be published to only you, the package author, or to any specific user group.
 Main code work for accessing databases is concentrated around `grok.data.query` method, whereas
-accessing files from file shares and servers is made by `grok.functions.eval(`OpenServerFile("..."))`. 
+accessing files from file shares and servers is made by `grok.functions.eval('OpenServerFile("...")')`.
+
+We strongly encourage you not to store credentials directly inside your application packages.
+The chapter ["Managing privileges"](#managing-privileges) discusses credentials management in detail.
 
 ## Persisting data
 
@@ -141,11 +150,56 @@ accessing files from file shares and servers is made by `grok.functions.eval(`Op
 
 ## Managing privileges
 
+### Groups and sharing
+
+### Obtaining user info
+
+### Managing credentials
+
+We strongly advise you not to store service credentials directly inside your application packages
+in any form, whether they reside as a part of a connection string, a parameter inside a connection file in 
+Datagrok, or just login and password used in a POST request in JS code.
+
+Of course, it is suitable if one stores credentials for a database or a service from public domain
+(for instance, of publicly available datasets like Chembl) right inside the package in a connection file.
+For other types of credentials, there are suitable means in Datagrok.
+
+There are two key facilities for managing your application credentials.
+
+1. *Pushing credentials via REST API using a developer's key* ([link](./manage-credentials.md#database-connection-credentials)). It's possible to programmatically push credentials to Datagrok and deliver them in to the database connection of interest. In such scenario, credentials are stored on a secured machine, and on demand, e.g. through a deployment process, are delivered to Datagrok via a triggered bat/sh-script.
+
+2. *Storing credentials in Datagrok's Credentials Store* ([link](./manage-credentials.md#package-credentials)). This is useful for credentials which are not part of Datagrok's OpenAPI web connection, database or file share connection, but instead are used programmatically in JavaScript code of the application to access 3-rd party REST APIs and the like. In Datagrok, Credentials Store gives access to per-package key-value stores available per package and accessible from package's code.  
+Credentials Store is a physically separate entity and may be placed on a separate machine, which improves theft tolerance. It's also possible to deliver credentials to the Store programmatically same way as described in p.1.
+
 ## UI and UX
+
+Most of the UI capabilities Datagrok offers are described as samples in our [ApiSamples package]().
+You may view them all conveniently by the following link: https://public.datagrok.ai/js.
+
+The main idea behind UI composition in Datagrok is very simple: by minimal means give to both non-experts
+and professionals in JavaScript an ability to rapidly compose interfaces which look well by default. With this
+goal in mind, along with a target of high performance and low latency of the UI, we've built our UI library 
+from scratch instead of relying on one of the existing frameworks.
+
+For most HTML elements such as buttons or dropdowns, our library is very lightweight, our classes such as
+`ui.button` or `ui.choiceInput` are just tiny wrappers around regular DOM elements. In fact, you can always
+access an underlying DOM object of our UI element with `.root` property. There are also more advanced
+controls not available in browsers out of the box, such as [panes](), [accordions]() and [dock views]().
+
+With that being said, our customers do use other frameworks, such as React and Boostrap, in their applications
+built on Datagrok. The final choice is up to the applied developer.
+
+This [JavaScript API help page](./develop/js-api.md) also gives a good idea of our UI/UX capabilities.
+
+We are currently re-thinking our approach to UI composition to make it even simpler and more aligned
+to best practices of existing frameworks. For instance, we are going to provide for easy to understand
+and easy to use controls carrying of several typical application layouts, where the design has
+to do with a choice between stretching and scrolling, fixed and dynamic sizing. Soon there comes
+an updated piece of documentation and samples on the subject.
 
 ## Working with packages
 
-### Package structure
+## Application lifecycle
 
 ## Debugging applications
 
