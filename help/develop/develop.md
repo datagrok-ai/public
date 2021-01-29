@@ -193,7 +193,7 @@ Have a look at the [Webpack documentation](https://webpack.js.org/configuration/
 Continuing the topic we have just touched on, here are naming guidelines and general recommendations that you might consider:
 
   * Use upper camel case for package names, for example, `ApiSamples` and `OctaveScripts`. Package names that comply with the [rules](https://docs.npmjs.com/cli/v6/configuring-npm/package-json#name) for `npm` packages, e.g. `api-samples` and `octave-scripts`, are accepted as well. That being said, you can still write the desired name in the `fullName` field of `package.json`
-  * When defining new [views](js-api.md#custom-views) and [viewers](how-to/develop-custom-viewer.md), we recommend postfixing your classes with `View` and `Viewer` respectively
+  * When defining new [views](how-to/custom-views.md) and [viewers](how-to/develop-custom-viewer.md), we recommend postfixing your classes with `View` and `Viewer` respectively
   * The names of semantic type detectors typically start with the `detect` prefix, e.g., `detectNucleotides` or `detectRDSmiles`
   * File names can be written in lower case, with dashes between words: `tika-extractor.py` and `chord-viewer.js`
 

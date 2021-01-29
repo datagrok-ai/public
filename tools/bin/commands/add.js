@@ -246,7 +246,7 @@ function add(args) {
       contents += insertName(name, view);
       fs.writeFileSync(jsPath, contents, 'utf8');
       console.log(`The view ${name} has been added successfully`);
-      console.log('Read more at https://datagrok.ai/help/develop/js-api#custom-views');
+      console.log('Read more at https://datagrok.ai/help/develop/how-to/custom-views');
       console.log('See examples at https://github.com/datagrok-ai/public/tree/master/packages/Notebooks');
       break;
 
