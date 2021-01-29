@@ -3,7 +3,7 @@
 
 <!-- This is a developer's view on the Datagrok applications -->
 
-# Grok Application
+# Grok Applications
 
 Applications are built on top of the Datagrok platform. The Datagrok application serves a targeted
 need around a particular problem or an area. For example, this may be a bioreactor modeling application,
@@ -20,10 +20,11 @@ executed. Think of it as of the application's entry point (`Main` function and t
 
 ## Entry point
 
+Datagrok is designed highly extensible. New functionality is delivered to Datagrok instance as packages.
 A Datagrok [package]() might contain zero, one, or more Datagrok applications. These come along any other
 entities in the package, which these applications may be using, such as connections, viewers, scripts, etc.
 
-Let's consider a very simple example of a webpack-based package with just two trivial apps in one `src/package.js`:
+Consider a simple example of a webpack-based package with just two trivial apps in one `src/package.js`:
 
 ```
 import * as grok from 'datagrok-api/grok';
