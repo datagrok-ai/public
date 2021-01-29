@@ -100,8 +100,8 @@ export function h3(s) {
 }
 
 /** @returns {Accordion} */
-export function accordion() {
-  return Accordion.create();
+export function accordion(key = null) {
+  return Accordion.create(key);
 }
 
 /** @returns {TabControl}
