@@ -414,9 +414,25 @@ setting up the debugging in VS Code.
 
 ### Debugging through the browser
 
+Open Chrome Developers Console (hit `F12`) and go to `Sources` tab. 
+
 #### Webpack-based packages
 
+If you deploy package in debug mode (`--release` isn't passed to `grok publish`) and source maps are properly
+generated (thus, the setting `` of `module.exports =` section in `webpack.config.js` is present), you'd find your
+package sources in the `top` (root) section of the source tree by its decapitalized name.
+
 #### Source-code based packages
+
+Deploying such package locates it to the Datagrok host URI (such as `https://dev.datagrok.ai`) under
+`api → packages/published/flies → <PACKAGE_NAME>/<VERSION>/_/<DIGIT>`, where you'd set breakpoints. 
+
+### Troubleshooting debugging
+
+1. For webpack-based packages, make sure there is `devtool: 'inline-source-map'` in `module.exports =` section of
+`webpack.config.js`. Otherwise, source maps aren't generated and the IDE won't get source code locations.
+
+2. Make sure the required plugins / debuggers for Chrome debugging are installed in your IDE.
 
 ## Applications
 
