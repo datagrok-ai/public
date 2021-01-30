@@ -31,15 +31,15 @@ import * as grok from 'datagrok-api/grok';
 
 export let _package = new DG.Package();
 
-//name: TestUI1
+//name: Test 1
 //tags: app
-export function testui1() {
+export function test1() {
   grok.shell.info('Test 1');
 }
 
-//name: TestUI2
+//name: Test 2
 //tags: app
-export function testui2() {
+export function test2() {
   grok.shell.info('Test 2');
 }
 ```
@@ -86,7 +86,76 @@ Read more on creating custom views [here](./custom-views.md).
 
 ## Structuring code
 
+Prehaps, one of the main things to know about webpack is that it allows you to structure JavaScript code
+in a way similar to how you are used to it in enterprise-grade environments, such as Java or .NET.
 
+Let's expand our previous example leveraging an `include` capability of webpack.
+
+Create two separate files —
+
+`src/test-app-01.js`:
+
+```
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+
+export function makeTest01() {
+  let t = grok.data.demo.demog();
+  let view = grok.shell.addTableView(t);
+  let acc = view.toolboxPage.accordion;
+  acc.addPane('Demo 1', () => ui.divText(
+    `Cells count: ${t.rowCount * t.columns.length}`), true, acc.panes[0]);
+}
+```
+
+`src/test-app-02.js`:
+
+```
+import * as grok from 'datagrok-api/grok';
+
+export function makeTest02() {
+  grok.shell.info('Demo 2');
+}
+```
+
+And modify the `src/package.js`:
+
+```
+import {TestUI1} from './test-app-01.js';
+import {TestUI2} from './test-app-02.js';
+
+export let _package = new DG.Package();
+
+//name: Test 1
+//tags: app
+export function test01() {
+    return makeTest01();
+}
+
+//name: Test 2
+//tags: app
+export function test02() {
+    return makeTest02();
+}
+```
+
+That would be an overkill to structure our super-trivial apps this way, though it is a highly desired
+practice for anything real-life built for production use. Notice how we include parts of Datagrok API
+for the corresponding features in `src/test-app-01.js`. You may find this `datagrok-api` is a
+pre-defined location, as per `webpack.config.js`.
+
+## Providing for IntelliSense
+
+We recommend to restore the package dependencies before starting development with an IDE.
+After the package is created, simply invoke `npm install` inside the package folder. This
+will bring NPM modules defining the Datagrok API
+
+An alternative way to bring IntelliSense capability for Datagrok classes is by cloning
+the entire [public repo](https://github.com/datagrok-ai/public) and open this whole folder
+in the IDE. This is suitable for the case when you develop a package which is
+a [part](https://github.com/datagrok-ai/public/tree/master/packages) of our public repo.
+The folder `js-api` in the root of the public repo is a source of our JS API, that's how
+IDE discovers needed IntelliSense information.
 
 # Application Development
 
