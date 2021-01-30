@@ -11,17 +11,17 @@ an application for working with and understanding molecular sequence data, a mol
 a Covid-19 or weather info panel, etc.
 
 Datagrok applications are developed in JavaScript / TypeScript using our rich [Datagrok JavaScript API](),
-with also using any of the [scripting]() languages we support, such as R or Python, via calling scripts, and
-connecting to third-party data sources and services.
+with also using a range of the [scripting]() languages we support, such as R or Python, by calling scripts,
+and with connecting to third-party data sources and services.
 
 Technically, applications are [functions](../overview/functions/function.md) tagged with the `#app` tag.
-In this function, you take control over what the platform will let user do and see next once the app is
-executed. Think of it as of the application's entry point (`Main` function and the like).
+In this function, you take control over what the platform will let user do and see next after the app is
+executed. Think of it as of the application's entry point, such as a `Main` function in C# console app.
 
 ## Entry point
 
-Datagrok is designed highly extensible. New functionality is delivered to Datagrok instance as packages.
-A Datagrok [package]() might contain zero, one, or more Datagrok applications. These come along any other
+Datagrok is designed highly extensible. New functionality is delivered to a Datagrok instance as packages.
+A Datagrok [package]() might contain zero, one, or more Datagrok applications. These come along with other
 entities in the package, which these applications may be using, such as connections, viewers, scripts, etc.
 
 Consider a simple example of a webpack-based package with just two trivial apps in one `src/package.js`:
@@ -45,38 +45,35 @@ export function testui2() {
 ```
 
 To make this run on Datagrok, follow these `grok create` [steps](../develop/develop.md#getting-started)
-to prepare such a simple package and deploy it.
+to prepare this simple package and deploy it.
 
 In very short:
 
-1. With the first use of `grok tools` after you install it, you'll be prompted to enter your API developer's token to allow pushing packages to Datagrok; this key will be stored inside `.grok` settings file on your drive
-2. You'd choose to create a package via `grok create <PACKAGE_NAME>`; this will initialize a standard directory structure for your package
-3. Then you may choose to add an app to it via `grok add app <APP_NAME>` and see the minimal default structure for it, or alternatively just copy-paste the JS snipped from the above to `package.js`
+1. With the first use of `grok tools` after you install it, you'll be prompted to enter your API developer's token to allow pushing packages to Datagrok; this token will then be stored inside `.grok` settings file on your drive
+2. You'd choose to create a package via `grok create <PACKAGE_NAME>`; this will initialize a standard directory structure for your package, a webpack-standard kind
+3. Then you may choose to add an app to it via `grok add app <APP_NAME>` and see the minimal default structure for it, or alternatively just copy-paste the JS snippet from the above to `src/package.js`
 
 After deploying this package, you'd find these 2 apps via `Functions | Apps` in the activity bar
-situated on the left side of Datagrok's main window. Run both of the apps and notice the two different
-tooltips popping up. You'd also call these same entry points by an URL:
-`https://public.datagrok.ai/apps/<PACKAGE_NAME>/TestUI1` and a similar one for `TestUI2`.
-Note that, in case there is only one application `<APP>` defined in the package, the
-corresponding URL will be simply `https://public.datagrok.ai/apps/<APP>`, omitting the
+situated on the left side of Datagrok's main window. Run both of the apps and notice the two
+different tooltips popping up. You may also call these same entry points by an URL:
+`https://public.datagrok.ai/apps/<PACKAGE_NAME>/TestUI1`, and a similar one for `TestUI2`.
+Note that in case there is only one application `<APP>` defined in the package, the
+corresponding URL will simply be `https://public.datagrok.ai/apps/<APP>`, omitting the
 `<PACKAGE_NAME>` part.
-
-Read more on creating custom views [here](./custom-views.md).
 
 This simple example finishes explaining the purpose of the entry points. Yet, trivial popups aren't
 something one typically builds as an application. Let's look at a more UI-rich side of things.
 
 ## Main view
 
-Most applications built on Datagrok start with a view. A view is a set of visualizations grouped together.
-Typically, it is associated with a particular dataframe, then it is called a table view. However, essentially
-a view can contain pretty much anything.
+Most applications built on Datagrok start with a Datagrok's view. A view is a set of visualizations and
+controls grouped together. Typically, the view is associated with a particular dataframe, in this case it's
+called a table view. However, essentially a view can contain pretty much anything.
 
-Imagine you are composing a coherent application.
-You'd most likely start off with the root / main view, add logical blocks to it either through simple
-[div-s](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/ui/sidebar.js), or through
-[`splitH`/`splitV`](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/ui/layouts/splitters.js),
-populate these blocks with visualizations and controls, maybe add some sidebard, add event handlers and so forth.
+Imagine you are composing an application. You'd most likely start off with the root / main view,
+add logical blocks to it either through simple [div-s](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/ui/sidebar.js),
+or through [`splitH`/`splitV`](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/ui/layouts/splitters.js),
+populate these blocks with visualizations and controls, maybe add a sidebar, add event handlers and so forth.
 Our internal application [Usage Analysis](https://github.com/datagrok-ai/public/tree/master/packages/UsageAnalysis)
 demonstrates such approach.
 
@@ -85,17 +82,17 @@ There we reuse a particular kind of view: a table view, and centralize the rest 
 this application you'd also find some useful techniques one needs sooner or later in many applications,
 such as modifying the app's URI or hiding the side panels of the Datagrok's main UI.
 
+Read more on creating custom views [here](./custom-views.md).
+
 ## Structuring code
-
-
 
 
 
 # Application Development
 
-With the above being said, there is pretty much anything you can further do inside the application, leveraging
-a full scale of platform capabilities. However, there are certain aspects of utmost interest in almost any
-application:
+Having all the above in mind, there is pretty much anything you can further do inside the application,
+leveraging a full scale of platform capabilities. However, there are certain aspects of utmost interest
+in almost any application:
 
 * accessing and persisting data
 * working with [dataframes]()
@@ -105,21 +102,21 @@ application:
 * application lifecycle
 
 The following chapter guides through these key development topics. Take it as a birds-eye overview of the
-applcation development area, and proceed to the articles and samples referenced in the guide for the
-further details.
+applcation development area, grasp the major building blocks, and proceed to the articles and samples
+referenced in the guide for the further details.
 
 ## Code samples
 
-We provide a diversed set of code snippets of the API use, and sample packages with viewers, applications, etc.
+We provide a diversed set of code snippets of the API use, and sample packages with viewers, applications, and so forth.
 
-* For short samples of using API, go to https://public.datagrok.ai/js and observe "Samples" block, or alternatively access it via a "Help" button at the bottom of the activity bar on the left of the Datagrok's main window (then follow to `JavaScript API Samples`).
+* For short samples of using API, go to https://public.datagrok.ai/js and observe a "Samples" block, or alternatively — access it via the "Help" button at the bottom of the activity bar on the left of the Datagrok's main window, and then follow to `JavaScript API Samples`.
 
 * The sources of these snippets are all located at https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples.
 
-* Observe the entirety of our demo codes at `https://github.com/datagrok-ai/public/tree/master/packages`. For instance, you may find there a package [Viewers](https://github.com/datagrok-ai/public/tree/master/packages/Viewers) which showcases a variery [Chem package](https://github.com/datagrok-ai/public/tree/master/packages/Chem) 
+* Check all our demo codes at `https://github.com/datagrok-ai/public/tree/master/packages`. For instance, you may find there a package [Viewers](https://github.com/datagrok-ai/public/tree/master/packages/Viewers) which showcases a variery of viewers one can build on Datagrok, or a [Chem package](https://github.com/datagrok-ai/public/tree/master/packages/Chem), which shows how in-browser computations with WebAssembly may be organized on the platform.
 
-These developers who's been starting with the platform recently are telling us the samples above became a major
-source of knowledge for their daily work with the platform. We recommend you to recall these locations too,
+Developers who's been starting with the platform recently has shared their experience: the samples above became
+a major source of knowledge for their daily work with the platform. We recommend you to recall these locations too,
 and resort to them for resolving your daily technical questions in addition to posting questions and suggestions
 on our [Community Forum](https://community.datagrok.ai/) at https://community.datagrok.ai/.
 
@@ -133,13 +130,13 @@ There's a variety of data sources which Datagrok can handle out of the box:
 * Reading from databases: Datagrok supports more than 30 ([link](./access-data.md#parameters))
 * Access a file from a network file share (Windows Shares, SAMBA and the like) ([link](./access-data.md#file-shares))
 
-Connections to databases, respective database queries, and file shares live in Datagrok as entities.
+Connections to databases, respective database queries, and file shares connections live in Datagrok as entities.
 These may be published to only you, the package author, or to any specific user group.
-Main code work for accessing databases is concentrated around `grok.data.query` method, whereas
-accessing files from file shares and servers is made by `grok.functions.eval('OpenServerFile("...")')`.
+Main code work for accessing databases is concentrated around `grok.data.query` method ([a sample]()), whereas
+accessing files from file shares and servers is made by `grok.functions.eval('OpenServerFile("...")')` ([a sample]()).
 
-We strongly encourage you not to store credentials directly inside your application packages.
-The chapter ["Managing privileges"](#managing-privileges) discusses credentials management in detail.
+When it comes to connections, we strongly encourage you not to store their credentials directly inside your
+application packages. The chapter ["Managing privileges"](#managing-privileges) discusses credentials management in detail.
 
 ## Persisting data
 
