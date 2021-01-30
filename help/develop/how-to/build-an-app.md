@@ -156,44 +156,45 @@ application packages. The chapter ["Managing privileges"](#managing-privileges) 
 
 We strongly advise you not to store service credentials directly inside your application packages
 in any form, whether they reside as a part of a connection string, a parameter inside a connection file in 
-Datagrok, or just login and password used in a POST request in JS code.
+Datagrok, or just login and password used in a POST request in your JS code.
 
 Of course, it is suitable if one stores credentials for a database or a service from public domain
 (for instance, of publicly available datasets like Chembl) right inside the package in a connection file.
-For other types of credentials, there are suitable means in Datagrok.
+For other types of credentials, there are suitable means in Datagrok described below.
 
 There are two key facilities for managing your application credentials.
 
-1. *Pushing credentials via REST API using a developer's key* ([link](./manage-credentials.md#database-connection-credentials)). It's possible to programmatically push credentials to Datagrok and deliver them in to the database connection of interest. In such scenario, credentials are stored on a secured machine, and on demand, e.g. through a deployment process, are delivered to Datagrok via a triggered bat/sh-script.
+1. *Pushing credentials via REST API using a developer's key* ([link](./manage-credentials.md#database-connection-credentials)).
+  It's possible to programmatically push credentials to Datagrok and deliver them in to the database connection of interest. In such scenario, credentials are stored on a secured machine, and on demand, e.g. through a deployment process, are delivered to Datagrok via a triggered bat/sh-script.
 
-2. *Storing credentials in Datagrok's Credentials Store* ([link](./manage-credentials.md#package-credentials)). This is useful for credentials which are not part of Datagrok's OpenAPI web connection, database or file share connection, but instead are used programmatically in JavaScript code of the application to access 3-rd party REST APIs and the like. In Datagrok, Credentials Store gives access to per-package key-value stores available per package and accessible from package's code.  
-Credentials Store is a physically separate entity and may be placed on a separate machine, which improves theft tolerance. It's also possible to deliver credentials to the Store programmatically same way as described in p.1.
+2. *Storing credentials in Datagrok's Credentials Store* ([link](./manage-credentials.md#package-credentials)). This is useful for credentials which are not part of Datagrok's OpenAPI web connection, database or file share connection, but instead are used programmatically in JavaScript code of the application to access 3-rd party REST APIs and the like.  
+In Datagrok, Credentials Store gives access to per-package key-value stores and accessible from package's code. Credentials Store is a physically separate entity and may be placed on a separate machine, which improves theft tolerance. It's also possible to deliver credentials to the Store programmatically same way as discussed in p.1.
 
 ## UI and UX
 
 Most of the UI capabilities Datagrok offers are described as samples in our [ApiSamples package]().
-You may view them all conveniently by the following link: https://public.datagrok.ai/js.
+You may view them all conveniently by the following link: [https://public.datagrok.ai/js](https://public.datagrok.ai/js).
 
-The main idea behind UI composition in Datagrok is very simple: by minimal means give to both non-experts
+The main idea behind UI composition in Datagrok is straightforward: by minimal means, give to both non-experts
 and professionals in JavaScript an ability to rapidly compose interfaces which look well by default. With this
 goal in mind, along with a target of high performance and low latency of the UI, we've built our UI library 
 from scratch instead of relying on one of the existing frameworks.
 
 For most HTML elements such as buttons or dropdowns, our library is very lightweight, our classes such as
 `ui.button` or `ui.choiceInput` are just tiny wrappers around regular DOM elements. In fact, you can always
-access an underlying DOM object of our UI element with `.root` property. There are also more advanced
+access an underlying DOM object of our UI element with the `.root` property. There are also more advanced
 controls not available in browsers out of the box, such as [panes](), [accordions]() and [dock views]().
 
 With that being said, our customers do use other frameworks, such as React and Boostrap, in their applications
-built on Datagrok. The final choice is up to the applied developer.
+built on Datagrok. The final choice is up to the developer building on top of Datagrok.
 
 This [JavaScript API help page](./develop/js-api.md) also gives a good idea of our UI/UX capabilities.
 
-We are currently re-thinking our approach to UI composition to make it even simpler and more aligned
-to best practices of existing frameworks. For instance, we are going to provide for easy to understand
-and easy to use controls carrying of several typical application layouts, where the design has
-to do with a choice between stretching and scrolling, fixed and dynamic sizing. Soon there comes
-an updated piece of documentation and samples on the subject.
+We are currently re-thinking our approach to UI composition with making it even simpler and more aligned
+to some best practices of existing frameworks. For instance, we are going to provide for easy to understand
+and easy to use controls catering for several typical application layouts, where the design has
+to do with a choice between stretching and scrolling, fixed and dynamic sizing, and so forth.
+Soon there comes an updated piece of documentation and samples on the subject.
 
 ## Working with packages
 
@@ -207,6 +208,7 @@ As a note specifically for application developers, we recommend pointing your st
 IDE directly to the URL of your application: `https://<HOST_NAME>/apps/<APP_NAME>` for 1 app in the package
 and `https://<HOST_NAME>/apps/<PACKAGE_NAME>/<APP_NAME>` for more than 1 app in the package. For VS Code,
 this is done in `launch.json`.
+
 
 See also:
 
