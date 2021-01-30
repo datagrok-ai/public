@@ -263,6 +263,14 @@ export class DataFrame {
     return new GroupByBuilder(grok_DataFrame_GroupBy(this.d, columnNames));
   }
 
+  /**
+   * Unpivots the table (converts from 'wide' representation with many columns to 'tall and skinny').
+   * @param {String[]} copyColumnNames - columns to copy
+   * @param {String[]} mergeColumnNames - columns to merge. Column name will become a value in the [categoryColumnName] column,
+   *                                      and column value will become a value in the [valueColumnName] column.
+   * @param {String} categoryColumnName
+   * @param {String} valueColumnName
+   * */
   unpivot(copyColumnNames, mergeColumnNames, categoryColumnName = 'Category', valueColumnName = 'Value') {
     return new DataFrame(grok_DataFrame_Unpivot(this.d, copyColumnNames, mergeColumnNames, categoryColumnName, valueColumnName));
   }
@@ -282,6 +290,12 @@ export class DataFrame {
     return new DataFrame(grok_JoinTables(this.d, t2.d, keyColumns1, keyColumns2, valueColumns1, valueColumns2, joinType, inPlace));
   }
 
+  /**
+   * Appends two tables ('union' in SQL).
+   * @param {DataFrame} t2
+   * @param {boolean} inPlace - whether to create a new table, or modify 'this' one.
+   * @returns {DataFrame}
+   * */
   append(t2, inPlace = false) {
     return new DataFrame(grok_DataFrame_Append(this.d, t2.d, inPlace));
   }
