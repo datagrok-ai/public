@@ -20,7 +20,7 @@ executed. Think of it as of the application's entry point, such as a `Main` func
 
 ## Entry point
 
-The Datagrok platform is designed highly extensible. New functionality is delivered to a Datagrok instance as packages.
+The Datagrok platform is highly extensible. New functionality is delivered to a Datagrok instance as packages.
 A Datagrok [package]() might contain zero, one, or more Datagrok applications. These come along with other
 entities in the package, which these applications may be using, such as connections, viewers, scripts, etc.
 
