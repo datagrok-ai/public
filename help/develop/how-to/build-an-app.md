@@ -3,7 +3,7 @@
 
 <!-- This is a developer's view on the Datagrok applications -->
 
-# Grok Applications
+# Datagrok Applications
 
 Applications are built on top of the Datagrok platform. The Datagrok application serves a targeted
 need around a particular problem or an area. For example, this may be a bioreactor modeling application,
@@ -20,7 +20,7 @@ executed. Think of it as of the application's entry point, such as a `Main` func
 
 ## Entry point
 
-Datagrok is designed highly extensible. New functionality is delivered to a Datagrok instance as packages.
+The Datagrok platform is highly extensible. New functionality is delivered to a Datagrok instance as packages.
 A Datagrok [package]() might contain zero, one, or more Datagrok applications. These come along with other
 entities in the package, which these applications may be using, such as connections, viewers, scripts, etc.
 
@@ -47,11 +47,8 @@ export function test2() {
 To make this run on Datagrok, follow these `grok create` [steps](../develop/develop.md#getting-started)
 to prepare this simple package and deploy it.
 
-In very short:
-
-1. With the first use of `grok tools` after you install it, you'll be prompted to enter your API developer's token to allow pushing packages to Datagrok; this token will then be stored inside `.grok` settings file on your drive
-2. You'd choose to create a package via `grok create <PACKAGE_NAME>`; this will initialize a standard directory structure for your package, a webpack-standard kind
-3. Then you may choose to add an app to it via `grok add app <APP_NAME>` and see the minimal default structure for it, or alternatively just copy-paste the JS snippet from the above to `src/package.js`
+1. [Create a new package](../develop.md#getting-started)
+2. Add an app to it via `grok add app <APP_NAME>` and see the minimal default structure for it, or alternatively just copy-paste the JS snippet from the above to `src/package.js`
 
 After deploying this package, you'd find these 2 apps via `Functions | Apps` in the activity bar
 situated on the left side of Datagrok's main window. Run both of the apps and notice the two
