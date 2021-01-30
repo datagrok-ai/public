@@ -138,6 +138,8 @@ accessing files from file shares and servers is made by `grok.functions.eval('Op
 When it comes to connections, we strongly encourage you not to store their credentials directly inside your
 application packages. The chapter ["Managing privileges"](#managing-privileges) discusses credentials management in detail.
 
+## Working with dataframes
+
 ## Persisting data
 
 ## Computations
