@@ -294,10 +294,11 @@ export class DataFrame {
    * Appends two tables ('union' in SQL).
    * @param {DataFrame} t2
    * @param {boolean} inPlace - whether to create a new table, or modify 'this' one.
+   * @param {String[]} columnsToAppend
    * @returns {DataFrame}
    * */
-  append(t2, inPlace = false) {
-    return new DataFrame(grok_DataFrame_Append(this.d, t2.d, inPlace));
+  append(t2, inPlace = false, columnsToAppend = null) {
+    return new DataFrame(grok_DataFrame_Append(this.d, t2.d, inPlace, columnsToAppend));
   }
 
   /** @returns {Observable} */ _event(event) {
