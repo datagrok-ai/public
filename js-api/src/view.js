@@ -200,11 +200,20 @@ export class View extends ViewBase {
    * @returns {View} */
   static create(options) {
     let v = window.grok_View == null ? new View(null) : new View(grok_View());
-    _options(v.root, 'grok-default-view ui-panel');
+    _options(v.root, 'ui-panel');
     _options(v.root, options);
     return v;
   }
 
+  get box() {
+    return $(this.root).hasClass('ui-box');
+  }
+
+  set box(b) {
+    let r = $(this.root);
+    r.removeClass('ui-panel').removeClass('ui-box');
+    r.addClass(b ? 'ui-box' : 'ui-panel');
+  }
 
   get root() {
     if (window.grok_View_Get_Root == null)

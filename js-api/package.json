@@ -16,7 +16,8 @@
     "@types/react": "16.9.43",
     "tui-jsdoc-template": "^1.2.2",
     "css-loader": "^5.0.0",
-    "style-loader": "^2.0.0"
+    "style-loader": "^2.0.0",
+    "svg-loader": "^0.0.2"
   },
   "scripts": {
     "build-js-api": "webpack",

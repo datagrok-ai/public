@@ -3,7 +3,6 @@
  * @module ui
  **/
 
-
 import {Viewer} from "./src/viewer";
 import {VirtualView} from "./src/view";
 import {Accordion, Dialog, InputBase, Menu, TabControl, TreeViewNode, Widget, RangeSlider} from "./src/widgets";
@@ -13,8 +12,6 @@ import $ from "cash-dom";
 import {__obs} from "./src/events";
 import {_isDartium, _options} from "./src/utils.js";
 import * as rxjs from 'rxjs';
-
-import './css/ui.css';
 
 /**
  * @typedef {Object} ElementOptions
@@ -245,17 +242,17 @@ export function loader() {
 
 export function setUpdateIndicator(element, updating = true) {
   return grok_UI_SetUpdateIndicator(element, updating)
-};
+}
 
 /**
  * Creates a button with the specified text, click handler, and tooltip
- * @param {string} text
+ * @param {string | Element | Array<string | Element>} content
  * @param {Function} handler
  * @param {string} tooltip
  * @returns {HTMLButtonElement}
  * */
-export function button(text, handler, tooltip = null) {
-  return grok_UI_Button(text, handler, tooltip);
+export function button(content, handler, tooltip = null) {
+  return grok_UI_Button(content, handler, tooltip);
 }
 
 export function bigButton(text, handler, tooltip = null) {
@@ -382,8 +379,8 @@ export function popupMenu(items) {
   menu.show();
 }
 
-export function inputs(inputs) {
-  return div(inputs.map((x) => x.root), 'pure-form pure-form-aligned');
+export function inputs(inputs, options) {
+  return form(inputs, options)
 }
 
 /** Creates new nodes tree
@@ -638,60 +635,80 @@ export class JsEntityMeta {
   }
 }
 
-export function box(item) {
-  if ($(item).hasClass('ui-box')) {
-    console.log(item);
+export function box(item, options = null) {
+  if (item != null && $(item).hasClass('ui-box')) {
     return item;
   }
   let c = document.createElement('div');
+  _options(c, options);
   $(c).append(item).addClass('ui-box');
   return c;
 }
 
-export function boxFixed(item) {
-  let c = box(item);
+export function boxFixed(item, options = null) {
+  let c = box(item, options);
   $(c).addClass('ui-box-fixed');
   return c;
 }
 
 /** Div flex-box container that positions child elements horizontally.
  *  @param {object[]} items */
-export function splitV(items) {
-  let b = box();
+export function splitV(items, options = null) {
+  let b = box(null, options);
   $(b).addClass('ui-split-v').append(items.map(item => box(item)));
   return b
 }
 
 /** Div flex-box container that positions child elements horizontally.
  *  @param {object[]} items */
-export function splitH(items) {
-  let b = box();
+export function splitH(items, options = null) {
+  let b = box(null, options);
   $(b).addClass('ui-split-h').append(items.map(item => box(item)));
   return b
 }
 
-export function block(items) {
-  let c = div(items);
+export function block(items, options = null) {
+  let c = div(items, options);
   $(c).append(items).addClass('ui-block');
   return c;
 }
 
-export function block75(items) {
-  return $(block(items)).addClass('ui-block-75')[0];
+export function block75(items, options = null) {
+  return $(block(items, options)).addClass('ui-block-75')[0];
 }
-export function block25(items) {
-  return $(block(items)).addClass('ui-block-25')[0];
+export function block25(items, options = null) {
+  return $(block(items, options)).addClass('ui-block-25')[0];
 }
-export function block50(items) {
-  return $(block(items)).addClass('ui-block-50')[0];
+export function block50(items, options = null) {
+  return $(block(items, options)).addClass('ui-block-50')[0];
 }
 
-export function p(text) {
+export function p(text, options = null) {
   let c = document.createElement('p');
   c.textContent = text;
+  $(c).addClass('ui-p');
+  _options(c, options);
   return c;
 }
 
 export function panel(items, options) {
   return $(div(items, options)).addClass('ui-panel')[0];
+}
+
+export function label(text, options = null) {
+  let c = document.createElement('label');
+  c.textContent = text;
+  $(c).addClass('ui-label');
+  _options(c, options);
+  return c;
+}
+
+export function form(children = [], options = null) {
+  let d = document.createElement('div');
+  if (children != null) {
+    $(d).append(children.map(render));
+  }
+  _options(d, options);
+  $(d).addClass('ui-form');
+  return d;
 }
