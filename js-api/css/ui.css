@@ -116,7 +116,6 @@ div.ui-form {
     margin-left: auto;
 }
 
-
 .ui-input-root.ui-input-columns > div.ui-input-editor > .ui-input-column-names {
     overflow: hidden;
     text-overflow: ellipsis;
@@ -136,8 +135,11 @@ div.ui-form {
     border-radius: 0;
     border: none;
     border-bottom: 1px solid var(--grey-3);
-    padding: 0 0 0 6px;
     outline: none;
+}
+
+.ui-input-root > input.ui-input-editor {
+    padding: 0 0 0 6px;
 }
 
 .ui-input-root > .ui-input-editor:hover,
@@ -162,12 +164,13 @@ div.ui-input-root {
 
 div.ui-form .ui-input-root > .ui-input-editor {
     min-width: 150px;
-    max-width: 200px;
 }
 
-.ui-input-root > .ui-input-options {
+.ui-input-root > .ui-input-options,
+.ui-input-root > .ui-input-description {
     display: flex;
     align-items: center;
+    padding: 0 8px;
 }
 
 div.ui-form .ui-input-root > label.ui-input-label:not(:empty) {
@@ -223,8 +226,8 @@ button.ui-btn:hover {
 }
 
 
-div.ui-form .ui-input-multi-choice-checks > div > input.ui-input-editor[type="checkbox"],
-div.ui-form .ui-input-root > input.ui-input-editor[type="checkbox"] {
+.ui-input-multi-choice-checks > div > input.ui-input-editor[type="checkbox"],
+.ui-input-root > input.ui-input-editor[type="checkbox"] {
     margin: 0;
     min-width: 30px;
     height: 30px;
