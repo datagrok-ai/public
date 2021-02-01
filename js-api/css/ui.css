@@ -165,8 +165,14 @@ div.ui-form .ui-input-root > .ui-input-editor {
     max-width: 200px;
 }
 
+.ui-input-root > .ui-input-options {
+    display: flex;
+    align-items: center;
+}
+
 div.ui-form .ui-input-root > label.ui-input-label:not(:empty) {
     min-width: 150px;
+    max-width: 150px;
     text-align: right;
     padding-right: 12px;
 }
