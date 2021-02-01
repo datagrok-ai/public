@@ -175,11 +175,16 @@ referenced in the guide for the further details.
 
 We provide a diversed set of code snippets of the API use, and sample packages with viewers, applications, and so forth.
 
-* For short samples of using API, go to https://public.datagrok.ai/js and observe a "Samples" block, or alternatively — access it via the "Help" button at the bottom of the activity bar on the left of the Datagrok's main window, and then follow to `JavaScript API Samples`.
+* For short samples of using API, go to https://public.datagrok.ai/js and observe a "Samples" block, or alternatively —
+access it via the "Help" button at the bottom of the activity bar on the left of the Datagrok's main window,
+and then follow to `JavaScript API Samples`.
 
 * The sources of these snippets are all located at https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples.
 
-* Check all our demo codes at `https://github.com/datagrok-ai/public/tree/master/packages`. For instance, you may find there a package [Viewers](https://github.com/datagrok-ai/public/tree/master/packages/Viewers) which showcases a variery of viewers one can build on Datagrok, or a [Chem package](https://github.com/datagrok-ai/public/tree/master/packages/Chem), which shows how in-browser computations with WebAssembly may be organized on the platform.
+* Check all our demo codes at `https://github.com/datagrok-ai/public/tree/master/packages`. For instance, you may
+find there a package [Viewers](https://github.com/datagrok-ai/public/tree/master/packages/Viewers) which showcases
+a variery of viewers one can build on Datagrok, or a [Chem package](https://github.com/datagrok-ai/public/tree/master/packages/Chem),
+which shows how in-browser computations with WebAssembly may be organized on the platform.
 
 Developers who's been starting with the platform recently has shared their experience: the samples above became
 a major source of knowledge for their daily work with the platform. We recommend you to recall these locations too,
@@ -204,7 +209,62 @@ accessing files from file shares and servers is made by `grok.functions.eval('Op
 When it comes to connections, we strongly encourage you not to store their credentials directly inside your
 application packages. The chapter ["Managing privileges"](#managing-privileges) discusses credentials management in detail.
 
-## Working with dataframes
+## Dataframes
+
+### Creating and working with dataframes
+
+Dataframes are at the heart of Datagrok. DataFrame is a high-performance, easy to use tabular structure with
+strongly-typed columns of different types. Supported types are: string, int, float, bool, DateTime, bigint and
+[qualified numbers]().
+
+Datagrok dataframes are highly optimized. They are implemented with the proprietary, unique technology allowing
+to efficiently work with huge datasets in the browser. Essentially, it is a columnar in-memory database that was
+engineered from scratch and optimized for the purpose of exploratory data analysis, interactive visualizations,
+and machine learning.
+
+Note that Datagrok dataframes operate entirely inside the browser, but not on our [compute server]().
+However, it's possible to pass dataframes to scripts (in Python, R and others) which run on the server,
+and [get dataframes in return](#computations). 
+
+You get dataframes within your application in various ways. Dataframe may be a table rendered by a table view,
+a new dataframe constructed from a set columns, a dataframe constructed from a file in a file share, a CSV file
+uploaded to a browser, a dataframe return by a script, and so forth. You can add and delete rows and columns of
+the dataframe, view it in a table view and let viewer be attached to it to render. Dataframes can also be calculated
+on the flight for aggregations.
+
+Dataframes are comprised of [columns](). Columns may be used as Datagrok functions arguments. For columns, it's
+possible to get its underlying dataframe. In return, columns are comprised of cells, and it's possible to get cell's
+underlying column. There is also a diversed [system of events](https://datagrok.ai/js-api/DataFrame) one can
+subsrcribe on a dataframe.
+
+Let's create a dataframe and check what we can do with it.
+
+Try the below snippets in our interactive [JS playground](https://public.datagrok.ai/js), but
+don't forget to request `import * as DG from 'datagrok-api/DG'` in case you're using this code
+from a webpack package.
+
+```
+let df = DG.DataFrame.fromColumns([
+  DG.Column.fromList(DG.TYPE.STRING, 'Person', ['Alice', 'Bob', 'Susan']),
+  DG.Column.fromList(DG.TYPE.FLOAT, 'Height', [178, 190, 165])
+]);
+df.columns.addNew('City', 'string');
+df.columns.byName('City').set(0, 'New York');
+df.set('City', 1, 'Chicago');
+df.set('City', 2, 'San Francisco');
+df.rows.addNew(['John', 175, 'Dallas']);
+df.rows.removeAt(0);
+grok.shell.addTableView(df);
+```
+
+There we create a new dataframe from columns, add a column and a row, and delete a row.
+
+A good overview of dataframes capabilities is available in our [API Samples](https://dev.datagrok.ai/js/samples/data-frame/).
+Also check the API reference at [this link](https://datagrok.ai/js-api/DataFrame).
+
+### Semantic annotation and metadata
+
+### Aggregations and joining
 
 ## Persisting data
 
@@ -232,11 +292,25 @@ For other types of credentials, there are suitable means in Datagrok described b
 
 There are two key facilities for managing your application credentials.
 
-1. *Pushing credentials via REST API using a developer's key* ([link](./manage-credentials.md#database-connection-credentials)).
-  It's possible to programmatically push credentials to Datagrok and deliver them in to the database connection of interest. In such scenario, credentials are stored on a secured machine, and on demand, e.g. through a deployment process, are delivered to Datagrok via a triggered bat/sh-script.
+#### Pushing credentials by the Datagrok Server API
 
-2. *Storing credentials in Datagrok's Credentials Store* ([link](./manage-credentials.md#package-credentials)). This is useful for credentials which are not part of Datagrok's OpenAPI web connection, database or file share connection, but instead are used programmatically in JavaScript code of the application to access 3-rd party REST APIs and the like.  
-In Datagrok, Credentials Store gives access to per-package key-value stores and accessible from package's code. Credentials Store is a physically separate entity and may be placed on a separate machine, which improves theft tolerance. It's also possible to deliver credentials to the Store programmatically same way as discussed in p.1.
+It's possible to programmatically push credentials to Datagrok and deliver them in to the connection
+of interest. In such scenario, credentials are stored on a secured machine, and on demand,
+e.g. through a deployment process, are delivered to Datagrok via a triggered bat/sh-script 
+([link](./manage-credentials.md#database-connection-credentials)). For using it, you need
+to provide an API developer's key, which is available in your user info pane in the Datagrok UI.
+Access it with the user avatar button in the activity bar on the left side of Datagrok main window.
+
+#### Storing credentials in the Datagrok Credentials Store
+
+This is useful for credentials which are not part of Datagrok's OpenAPI web connection,
+database or file share connection, but instead are used programmatically in JavaScript code of
+the application to access 3-rd party REST APIs and the like ([link](./manage-credentials.md#package-credentials)).
+
+In Datagrok, Credentials Store gives access to per-package key-value stores and accessible from package's code.
+Credentials Store is a physically separate entity and may be placed on a separate machine,
+which improves theft tolerance. It's also possible to deliver credentials to the Store programmatically
+same way as discussed in p.1.
 
 ## UI and UX
 
