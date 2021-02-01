@@ -1,7 +1,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Circos from 'circos';
-import {select, scaleOrdinal} from 'd3';
+import {select, scaleOrdinal, color} from 'd3';
 import {layoutConf, topSort} from './configuration.js';
 
 
@@ -34,8 +34,10 @@ export class ChordViewer extends DG.JsViewer {
   init() {
     this.innerRadiusMargin = 80;
     this.outerRadiusMargin = 60;
-    this.color = scaleOrdinal(DG.Color.categoricalPalette);
-    this.chordConf.color = datum => DG.Color.toRgb(this.color(datum[this.colorBy]['label']));
+    this.minSegmentWidth = 10;
+    this.colorScale = scaleOrdinal(DG.Color.categoricalPalette);
+    this.color = c => DG.Color.toRgb(this.colorScale(c));
+    this.chordConf.color = datum => this.color(datum[this.colorBy]['label']);
     this.chordConf.opacity = 0.7;
     this.labelConf = {
       innerRadius: 1.02,
@@ -86,7 +88,7 @@ export class ChordViewer extends DG.JsViewer {
     this.toColumn = this.dataFrame.getCol(this.toColumnName);
     this.conf.events = {
       mouseover: (datum, index, nodes, event) => {
-        select(nodes[index]).select(`#${datum.id}`).attr('stroke', 'black');
+        select(nodes[index]).select(`#${datum.id}`).attr('stroke', color(this.color(datum.label)).darker());
         ui.tooltip.showRowGroup(this.dataFrame, i => {
           return this.fromColumn.get(i) === datum.label ||
             this.toColumn.get(i) === datum.label;
@@ -127,7 +129,7 @@ export class ChordViewer extends DG.JsViewer {
           id: `id-${ind}`,
           label: s,
           len: this.freqMap[s],
-          color: DG.Color.toRgb(this.color(s))
+          color: this.color(s)
         }
     });
 
