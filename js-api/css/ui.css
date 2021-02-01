@@ -147,6 +147,11 @@ div.ui-form {
     border-bottom: 1px solid var(--blue-1)!important;
 }
 
+.ui-input-multi-choice-checks.ui-input-editor:hover,
+.ui-input-multi-choice-checks.ui-input-editor:active {
+    border: none!important;
+}
+
 div.ui-input-root {
     padding: 4px 8px 4px 0;
     display: flex;
@@ -173,6 +178,7 @@ button.ui-btn {
     height: 30px;
     display: inline-flex;
     justify-content: center;
+    align-items: center;
     white-space: nowrap;
     vertical-align: middle;
     cursor: pointer;
