@@ -16,7 +16,7 @@ export class ChordViewer extends DG.JsViewer {
     this.aggType = this.string('aggType', 'count', { choices: ['count', 'sum'] });
     this.chordLengthColumnName = this.float('chordLengthColumnName');
     this.colorBy = this.string('colorBy', 'source', { choices: ['source', 'target'] });
-    this.sortBy = this.string('sortBy', 'frequency', { choices: ['alphabet', 'frequency', 'topology'] });
+    this.sortBy = this.string('sortBy', 'topology', { choices: ['alphabet', 'frequency', 'topology'] });
     this.direction = this.string('direction', 'clockwise', { choices: ['clockwise', 'counterclockwise'] });
 
     this.initialized = false;
@@ -234,8 +234,8 @@ export class ChordViewer extends DG.JsViewer {
       height: size
     });
 
-    this.conf.innerRadius = size/2 - this.innerRadiusMargin;
-    this.conf.outerRadius = size/2 - this.outerRadiusMargin;
+    this.conf.innerRadius = Math.max(0, size/2 - this.innerRadiusMargin);
+    this.conf.outerRadius = Math.max(0, size/2 - this.outerRadiusMargin);
     // this.chordConf.radius = d => (d.source.id === d.target.id) ? this.conf.outerRadius : null;
 
     circos.layout(this.data, this.conf);
