@@ -123,7 +123,7 @@ Details: [Scripting](develop/scripting.md), [Scripting Viewer](visualize/viewers
 *Amino acids counting task.* In this exercise, we'd use a Python script to generate a histogram
 (a distribution plot) for amino acids occurring in a column of nucleotide sequences. Amino acids are simply triples
 of nucleotides from which the nucleotide DNA sequence is made of. These are also called triplets, or codon-codes.
-As there are 4 letters `G`, `A`, `T`, `C`, there are 4 to power 3 protein amino acids: GTA, AGC, TTT, and so forth.
+As there are 4 letters `G`, `A`, `T`, `C`, there are 4 to power 3 protein amino acids: `GTA`, `AGC`, `TTT`, and so forth.
 
 We don't know at which starting point each nucleotide sequence was cut: it could either be a junction of two triplets,
 or one-third or two-third of a triplet. Therefore, we'd count in our statistics for all three possible cuts, starting
@@ -143,7 +143,7 @@ Make sure the table view with the data appears.
 4. See that the viewer appeared on the right, telling though it is "Unable to plot with current settings".
 5. Proceed to the viewer properties by hitting on the gear icon in the viewer's title.
 6. Make sure the chosen values for "Data" are `HEIGHT` for `X`, `WEIGHT` for `Y`, and `AGE` for `Color`.
-After checking this you should see a nice scatter plot for WEIGHT and HEIGHT with the color corresponding to AGE:
+After checking this you should see a nice scatter plot for `WEIGHT` and `HEIGHT` with the color corresponding to `AGE`:
 ![](exercises-scripting-viewer.png)
 7. In the property panel, proceed to modify the value of the "Script" field by clicking on a "..." icon in the text field.
 8. The Python code you see is what renders the scatter plot form p.6 on the Datagrok server. Let's walk through this code.
