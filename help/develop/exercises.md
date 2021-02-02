@@ -114,4 +114,55 @@ The database is already deployed and is accessible from our server.
     ```
     There is another way to pass a country name to the query: you can provide a default value for the input parameter (see examples in the article [Parameterized Queries](../access/parameterized-queries.md)).
 
-   
+## Creating a Scripting Viewer
+
+Prerequisites: basic Python knowledge
+
+Details: [Scripting](develop/scripting.md), [Scripting Viewer](visualize/viewers/scripting-viewer.md), [Creating a scripting viewer (video)](https://www.youtube.com/embed/jHRpOnhBAz4).
+
+*Amino acids counting task.* In this exercise, we'd use a Python script to generate a histogram
+(a distribution plot) for amino acids occurring in a column of nucleotide sequences. Amino acids are simply triples
+of nucleotides from which the nucleotide DNA sequence is made of. These are also called triplets, or codon-codes.
+As there are 4 letters `G`, `A`, `T`, `C`, there are 4 to power 3 protein amino acids: GTA, AGC, TTT, and so forth.
+
+We don't know at which starting point each nucleotide sequence was cut: it could either be a junction of two triplets,
+or one-third or two-third of a triplet. Therefore, we'd count in our statistics for all three possible cuts, starting
+the reading frame off at offsets 0, 1, and 2 from the beginning of the nucleotide sequence.
+
+Say, we are given a sequence `TTTAATTACAGACCTGAA`. We start to count triplets _without overlap_ from an offset 0 first,
+getting: `TTT`, `AAT`, `TAC`, `...`, `GAA`. Then we move to the offset 1, getting: `TTA`, `...`, `CTG`. Lastly,
+we move to the offset 2 and get: `TAA`, `...`, `TGA`. In the histogram we'd count for all these triplets.
+
+First, let's explore how scripting viewer works.
+
+1. Open a `demog` demo file with demographic data. It is located at `Data | Files | Demo Files | demog.csv`.
+`Data` corresponds to the first button from the top on the activity bar at the left of the Datagrok window.
+Make sure the table view with the data appears.
+2. Activate the top menu from the activity bar, using a `Windows | Menu` switch.
+3. In this menu, hit `Add | Scripting Viewers | Python | Scatter Plot`.
+4. See that the viewer appeared on the right, telling though it is "Unable to plot with current settings".
+5. Proceed to the viewer properties by hitting on the gear icon in the viewer's title.
+6. Make sure the chosen values for "Data" are `HEIGHT` for `X`, `WEIGHT` for `Y`, and `AGE` for `Color`.
+After checking this you should see a nice scatter plot for WEIGHT and HEIGHT with the color corresponding to AGE:
+![](exercises-scripting-viewer.png)
+7. In the property panel, proceed to modify the value of the "Script" field by clicking on a "..." icon in the text field.
+8. The Python code you see is what renders the scatter plot form p.6 on the Datagrok server. Let's walk through this code.
+   * The script takes as inputs the original dataframe and the three columns. Remember form p.6 there were
+     selectors for `X`, `Y`, and `Color` in the property panel. In fact, these three properties names are
+     delcared with the notation `<NAME>ColumnName` in the names of the three `#input` columns.
+   * The script produces an `#output` of type `graphics`. It is important the graphics appear in the end
+     of the Python script. This is exactly what happens with the `plt.show()` in the last line of the script.
+9. Modify the name of `colorColumnName` to a `temperatureColumnName`, hit `Apply` in the bottom of the window,
+   and check what happens to the `Color` field in the property panel.
+10. Add another input parameter to the script with a name `Title`. Hit `Apply` and check what appears in the 
+    property panel.
+11. Add another input column to the script with a name `SEX`. Hit `Apply` and check what appears in the property panel.
+12. Now there's all you need to create a Python scripting viewer for our amino acid histogram task.
+    Open a demo file with nucleotide sequences. It is located at `Data | Files | Demo Files | bio | sequences.csv`.
+`Data` corresponds to the first button from the top on the activity bar at the left of the Datagrok window.
+13. In the top menu you've activated at p.2, hit `Add | Scripting Viewers | New Scripting Viewer`.
+14. Follow what you've learned in the points 1 to 11 to create a scripting viewer taking a column of strings,
+    expecting to have nucleotide sequences in them, and plotting a Matplotlib's [histogram](https://matplotlib.org/api/_as_gen/matplotlib.pyplot.hist.html) with all amino acid triplets
+    occurred within all of these sequences.  
+    As you may notice, `numpy` and `matplotlib` are already available for your Python scripting in Datagrok.
+Reuse them to finish this exercise.
