@@ -138,6 +138,8 @@ select * from protein_classification
 
 SQL statements are annotated with comments, just like [scripts](../scripting.md), since the underlying mechanism is essentially the same (read more on the concept of [functions](../../overview/functions/function.md)). Here we have two header parameters: the query `name` and the `connection` to use. In fact, this particular query could have been even simpler: there is no need to specify `connection` if the package only has one. Similarly, the tag `end` is not required if there is only one query per file: the parser needs it to understand where the current query ends and the next one begins. So safely omit the name of `connection` and/or the `end` tag if these conditions are met.
 
+To use an existing connection in a query, specify its name along with the namespace in the `connection` parameter. For example, the above `chembl` connection that lives in the `Chembl` package has the following path: `chembl:chembl`. When browsing connections on the platform, you can identify such path by opening `Links` in the tab `Details` of the property panel.
+
 You can find a list of header parameters and other details related to the query annotation in [this article](../../access/parameterized-queries.md). In addition to this, examples of data queries are available in the [Chembl](https://github.com/datagrok-ai/public/tree/master/packages/Chembl/queries) package. To quickly insert a query template into your package, type `grok add query <name>` in the terminal.
 
 #### Executing Queries
