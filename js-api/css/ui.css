@@ -129,8 +129,8 @@ div.ui-form {
     margin-left: auto;
 }
 
-.ui-input-root > input.ui-input-editor,
-.ui-input-root > select.ui-input-editor {
+input.ui-input-editor,
+select.ui-input-editor {
     height: 30px;
     border-radius: 0;
     border: none;
@@ -175,9 +175,13 @@ div.ui-form .ui-input-root > .ui-input-editor {
 
 div.ui-form .ui-input-root > label.ui-input-label:not(:empty) {
     min-width: 150px;
-    max-width: 150px;
+    max-width: 200px;
     text-align: right;
     padding-right: 12px;
+}
+
+div.ui-form .ui-input-root.ui-input-map > label.ui-input-label {
+    max-width: initial;
 }
 
 button.ui-btn {
