@@ -27,7 +27,7 @@ Prerequisites: basic JavaScript knowledge
 
 1. Install the necessary tools (Node.js, npm, webpack, datagrok-tools) following [these instructions](develop.md#getting-started)
 2. Get a dev key for https://dev.datagrok.ai (you will work with this server) and add it by running `grok config`
-3. Create a default package called `<Name>Sequence` using datagrok-tools: `grok create <Name>Sequence`
+3. Create a default package called `<name>-sequence` using datagrok-tools: `grok create <name>-sequence`
 4. Upload it to the server: `grok publish dev --rebuild` (see other options [here](develop.md#deployment-modes))
 5. Launch the platform and run the package's `test` function using different methods: 
     * via the [Functions](https://dev.datagrok.ai/functions?q=test) view
