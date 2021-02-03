@@ -1,4 +1,4 @@
-//Read more about package credentials: https://datagrok.ai/help/develop/js-api#credentials
+//Read more about package credentials: https://datagrok.ai/help/develop/how-to/manage-credentials
 
 let p = new DG.Package();
 p.name = "ApiSamples";

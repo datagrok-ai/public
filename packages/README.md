@@ -15,8 +15,8 @@
 | [GrokScripts](https://github.com/datagrok-ai/public/tree/master/packages/GrokScripts) | [Scripting](https://datagrok.ai/help/develop/scripting), [Info Panels](https://datagrok.ai/help/discover/info-panels) |
 | [Impute](https://github.com/datagrok-ai/public/tree/master/packages/Impute) | [Scripting](https://datagrok.ai/help/develop/scripting), [Missing Values Imputation](https://datagrok.ai/help/transform/missing-values-imputation) |
 | [JuliaScripts](https://github.com/datagrok-ai/public/tree/master/packages/JuliaScripts) | [Scripting](https://datagrok.ai/help/develop/scripting), [Scripting Viewers](https://datagrok.ai/help/visualize/viewers/scripting-viewer) |
-| [Leaflet](https://github.com/datagrok-ai/public/tree/master/packages/Leaflet) | [Viewers](https://datagrok.ai/help/visualize/viewers), [Custom Viewers](https://datagrok.ai/help/develop/js-api#custom-viewers) |
-| [MultiForm](https://github.com/datagrok-ai/public/tree/master/packages/MultiForm) | [Viewers](https://datagrok.ai/help/visualize/viewers), [Custom Viewers](https://datagrok.ai/help/develop/js-api#custom-viewers) |
+| [Leaflet](https://github.com/datagrok-ai/public/tree/master/packages/Leaflet) | [Viewers](https://datagrok.ai/help/visualize/viewers), [Custom Viewers](https://datagrok.ai/help/develop/how-to/develop-custom-viewer) |
+| [MultiForm](https://github.com/datagrok-ai/public/tree/master/packages/MultiForm) | [Viewers](https://datagrok.ai/help/visualize/viewers), [Custom Viewers](https://datagrok.ai/help/develop/how-to/develop-custom-viewer) |
 | [NLP](https://github.com/datagrok-ai/public/tree/master/packages/NLP) | [Scripting](https://datagrok.ai/help/develop/scripting), [Info Panels](https://datagrok.ai/help/discover/info-panels) |
 | [NodeJSScripts](https://github.com/datagrok-ai/public/tree/master/packages/NodeJSScripts) | [Scripting](https://datagrok.ai/help/develop/scripting) |
 | [Notebooks](https://github.com/datagrok-ai/public/tree/master/packages/Notebooks) | [Jupyter Notebooks](https://datagrok.ai/help/develop/jupyter-notebook) |
@@ -31,12 +31,12 @@
 | [SDTM](https://github.com/datagrok-ai/public/tree/master/packages/SDTM) | [Data Connection](https://datagrok.ai/help/access/data-connection), [Data Query](https://datagrok.ai/help/access/data-query), [Application](https://datagrok.ai/help/develop/develop#applications), [View Layout](https://datagrok.ai/help/visualize/view-layout), [Info Panels](https://datagrok.ai/help/discover/info-panels), [Semantic Types](https://datagrok.ai/help/discover/semantic-types) |
 | [Sequence](https://github.com/datagrok-ai/public/tree/master/packages/Sequence) | |
 | [SPGi](https://github.com/datagrok-ai/public/tree/master/packages/SPGi) | [Data Connection](https://datagrok.ai/help/access/data-connection), [Data Query](https://datagrok.ai/help/access/data-query), [Table View](https://datagrok.ai/help/overview/table-view), [Viewers](https://datagrok.ai/help/visualize/viewers), [View Layout](https://datagrok.ai/help/visualize/view-layout), [Project](https://datagrok.ai/help/overview/project), [Info Panels](https://datagrok.ai/help/discover/info-panels) |
-| [Sunburst](https://github.com/datagrok-ai/public/tree/master/packages/Sunburst) | [Viewers](https://datagrok.ai/help/visualize/viewers), [Custom Viewers](https://datagrok.ai/help/develop/js-api#custom-viewers) |
+| [Sunburst](https://github.com/datagrok-ai/public/tree/master/packages/Sunburst) | [Viewers](https://datagrok.ai/help/visualize/viewers), [Custom Viewers](https://datagrok.ai/help/develop/how-to/develop-custom-viewer) |
 | [Swaggers](https://github.com/datagrok-ai/public/tree/master/packages/Swaggers) | [Web Connectors](https://datagrok.ai/help/access/connectors/web), [Swagger/OpenAPI](https://swagger.io/) |
 | [Test](https://github.com/datagrok-ai/public/tree/master/packages/Test) | |
 | [Tika](https://github.com/datagrok-ai/public/tree/master/packages/Tika) | [Apache Tika](https://tika.apache.org/), [Scripting](https://datagrok.ai/help/develop/scripting) |
 | [UsageAnalysis](https://github.com/datagrok-ai/public/tree/master/packages/UsageAnalysis) | |
-| [Viewers](https://github.com/datagrok-ai/public/tree/master/packages/Viewers) | [Viewers](https://datagrok.ai/help/visualize/viewers), [Custom Viewers](https://datagrok.ai/help/develop/js-api#custom-viewers) |
+| [Viewers](https://github.com/datagrok-ai/public/tree/master/packages/Viewers) | [Viewers](https://datagrok.ai/help/visualize/viewers), [Custom Viewers](https://datagrok.ai/help/develop/how-to/develop-custom-viewer) |
 | [Weather](https://github.com/datagrok-ai/public/tree/master/packages/Weather) | |
 | [Widgets](https://github.com/datagrok-ai/public/tree/master/packages/Widgets) | |
 
