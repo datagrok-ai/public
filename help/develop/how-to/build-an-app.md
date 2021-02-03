@@ -64,7 +64,7 @@ is simply `https://public.datagrok.ai/apps/<APP>`, but is has the form
 This simple example finishes explaining the purpose of the entry point. Yet, trivial popups aren't
 something one typically builds as an application. Let's look at a more UI-rich side of things.
 
-## Main view
+## Main View
 
 Most applications built on Datagrok start with a Datagrok's view. A view is a set of visualizations and
 controls grouped together. Typically, the view is associated with a particular dataframe, in this case it's
@@ -247,13 +247,34 @@ Semantic type is a special kind of a [column tag](tags.md#semantic-type).
 It could be either detected automatically by column [semantic type detectors](), or set manually
 in the JavaScript code with `.semType` property.
 
-Read more on semantic types [here](discover/).
+Read more on semantic types [here](discover/semantic-types.md).
 
 ### Aggregations and joining
 
+For those of you familiar with functional style in JavaScript (`.map`, `.filter`, etc),
+with LINQ in C# or other kinds of fluent APIs, it should be straightforward to see
+what happens to a dataframe in this snippet:
 
+```
+let agesByRace = grok.data.demo.demog()
+  .groupBy(['race', 'sex'])
+  .where('race = Asian and started after 2/2/2000')
+  .avg('age')
+  .avg('started')
+  .add('med', 'age')
+  .aggregate();
+
+grok.shell.addTableView(agesByRace);
+```
+
+We first load the `demog` dataset, filter it, and for a compound grouping by age and sex
+compute the average for `age` and `started`, and also a median for `age`.
+
+The whole set of functions available for `.add` is located [here](transform/aggregation-functions.md).
 
 ## Persisting data
+
+### User storage
 
 ## Computations
 
