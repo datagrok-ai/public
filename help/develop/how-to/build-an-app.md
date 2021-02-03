@@ -11,54 +11,57 @@ an application for working with and understanding molecular sequence data, a mol
 a Covid-19 or weather info panel, etc.
 
 Datagrok applications are developed in JavaScript / TypeScript using our rich [Datagrok JavaScript API](),
-with also using a range of the [scripting]() languages we support, such as R or Python, by calling scripts,
-and with connecting to third-party data sources and services.
+with also using a range of the [scripting]() languages we support, such as R or Python, and connecting
+to third-party data sources and services.
 
 Technically, applications are [functions](../overview/functions/function.md) tagged with the `#app` tag.
-In this function, you take control over what the platform will let user do and see next after the app is
-executed. Think of it as of the application's entry point, such as a `Main` function in C# console app.
+In this function, you take control over what the platform will let user do and see next, after the app is
+executed. Think of it as of the application's entry point, such as a `Main` function in a C# console app.
 
-## Entry point
+## The Entry Point
 
 The Datagrok platform is highly extensible. New functionality is delivered to a Datagrok instance as packages.
 A Datagrok [package]() might contain zero, one, or more Datagrok applications. These come along with other
 entities in the package, which these applications may be using, such as connections, viewers, scripts, etc.
 
-Consider a simple example of a webpack-based package with just two trivial apps in one `src/package.js`:
+Consider a simple example of a webpack-based package with just one trivial app in a `src/package.js`:
 
 ```
 import * as grok from 'datagrok-api/grok';
 
 export let _package = new DG.Package();
 
-//name: Test 1
+//name: TestApp
 //tags: app
-export function test1() {
-  grok.shell.info('Test 1');
-}
-
-//name: Test 2
-//tags: app
-export function test2() {
-  grok.shell.info('Test 2');
+export function test() {
+  grok.shell.info('An app test');
 }
 ```
 
 To make this run on Datagrok, follow these `grok create` [steps](../develop/develop.md#getting-started)
 to prepare this simple package and deploy it.
 
-1. [Create a new package](../develop.md#getting-started)
-2. Add an app to it via `grok add app <APP_NAME>` and see the minimal default structure for it, or alternatively just copy-paste the JS snippet from the above to `src/package.js`
+1. Install the [prerequisites](../develop.md#getting-started) 
+   * NPM in the default configuration
+   * `npm install webpack -g` (`-g` will make `webpack` globally available, that's convenient) 
+   * `npm install webpack-cli -g`
+   * `npm install datagrok-tools -g`
+2. [Create a new package](../develop.md#getting-started)
+   * Make a new folder for the package
+   * In this folder, call `grok create <PACKAGE_NAME> --ide=vscode`
+   * The `--ide` key will create a setup for debugging the package with VS Code
+   * In case you run this for the first time, you'd be prompted to enter your Developer Keys for
+     our Datagrok instances. Find this key in your user profile section in the Datagrok UI
+3. Add an app to the package by `grok add app <APP_NAME>`, or just copy-paste the above JS snippet into `src/package.js`
 
-After deploying this package, you'd find these 2 apps via `Functions | Apps` in the activity bar
-situated on the left side of Datagrok's main window. Run both of the apps and notice the two
-different tooltips popping up. You may also call these same entry points by an URL:
-`https://public.datagrok.ai/apps/<PACKAGE_NAME>/TestUI1`, and a similar one for `TestUI2`.
-Note that in case there is only one application `<APP>` defined in the package, the
-corresponding URL will simply be `https://public.datagrok.ai/apps/<APP>`, omitting the
-`<PACKAGE_NAME>` part.
+After deploying this package to `https://public.datagrok.ai`, you'd find the `Test App` app via `Functions | Apps`
+in the activity bar on the left side of Datagrok's main window. Run the app and notice the tooltip.
+You may also call this entry point by an URL: `https://public.datagrok.ai/apps/TestApp`.
+Note that in case there is only one application `<APP>` defined in the package, the corresponding URL
+is simply `https://public.datagrok.ai/apps/<APP>`, but is has the form
+`https://public.datagrok.ai/apps/<PACKAGE_NAME>/<APP_NAME>` for 2 and more apps in one package.
 
-This simple example finishes explaining the purpose of the entry points. Yet, trivial popups aren't
+This simple example finishes explaining the purpose of the entry point. Yet, trivial popups aren't
 something one typically builds as an application. Let's look at a more UI-rich side of things.
 
 ## Main view
@@ -67,12 +70,12 @@ Most applications built on Datagrok start with a Datagrok's view. A view is a se
 controls grouped together. Typically, the view is associated with a particular dataframe, in this case it's
 called a table view. However, essentially a view can contain pretty much anything.
 
-Imagine you are composing an application. You'd most likely start off with the root / main view,
+Imagine you are composing an application. You'd most likely start with the root / main view,
 add logical blocks to it either through simple [div-s](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/ui/sidebar.js),
 or through [`splitH`/`splitV`](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/ui/layouts/splitters.js),
 populate these blocks with visualizations and controls, maybe add a sidebar, add event handlers and so forth.
 Our internal application [Usage Analysis](https://github.com/datagrok-ai/public/tree/master/packages/UsageAnalysis)
-demonstrates such approach.
+demonstrates such an approach.
 
 Another approach is found in a [Discovery](https://github.com/datagrok-ai/public/tree/master/packages/Discovery) application.
 There we reuse a particular kind of view: a table view, and centralize the rest of the UI around it. In
@@ -81,75 +84,15 @@ such as modifying the app's URI or hiding the side panels of the Datagrok's main
 
 Read more on creating custom views [here](./custom-views.md).
 
-## Structuring code
-
-Prehaps, one of the main things to know about webpack is that it allows you to structure JavaScript code
-in a way similar to how you are used to it in enterprise-grade environments, such as Java or .NET.
-
-Let's expand our previous example leveraging an `include` capability of webpack.
-
-Create two separate files —
-
-`src/test-app-01.js`:
-
-```
-import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
-
-export function makeTest01() {
-  let t = grok.data.demo.demog();
-  let view = grok.shell.addTableView(t);
-  let acc = view.toolboxPage.accordion;
-  acc.addPane('Demo 1', () => ui.divText(
-    `Cells count: ${t.rowCount * t.columns.length}`), true, acc.panes[0]);
-}
-```
-
-`src/test-app-02.js`:
-
-```
-import * as grok from 'datagrok-api/grok';
-
-export function makeTest02() {
-  grok.shell.info('Demo 2');
-}
-```
-
-And modify the `src/package.js`:
-
-```
-import {TestUI1} from './test-app-01.js';
-import {TestUI2} from './test-app-02.js';
-
-export let _package = new DG.Package();
-
-//name: Test 1
-//tags: app
-export function test01() {
-    return makeTest01();
-}
-
-//name: Test 2
-//tags: app
-export function test02() {
-    return makeTest02();
-}
-```
-
-That would be an overkill to structure our super-trivial apps this way, though it is a highly desired
-practice for anything real-life built for production use. Notice how we include parts of Datagrok API
-for the corresponding features in `src/test-app-01.js`. You may find this `datagrok-api` is a
-pre-defined location, as per `webpack.config.js`.
-
-## Providing for IntelliSense
+## Working with IntelliSense
 
 We recommend to restore the package dependencies before starting development with an IDE.
 After the package is created, simply invoke `npm install` inside the package folder. This
-will bring NPM modules defining the Datagrok API
+will bring NPM modules defining the Datagrok API.
 
 An alternative way to bring IntelliSense capability for Datagrok classes is by cloning
 the entire [public repo](https://github.com/datagrok-ai/public) and open this whole folder
-in the IDE. This is suitable for the case when you develop a package which is
+in the IDE. This is suitable when you develop a package which is
 a [part](https://github.com/datagrok-ai/public/tree/master/packages) of our public repo.
 The folder `js-api` in the root of the public repo is a source of our JS API, that's how
 IDE discovers needed IntelliSense information.
@@ -171,7 +114,7 @@ The following chapter guides through these key development topics. Take it as a 
 applcation development area, grasp the major building blocks, and proceed to the articles and samples
 referenced in the guide for the further details.
 
-## Code samples
+## Code Samples
 
 We provide a diversed set of code snippets of the API use, and sample packages with viewers, applications, and so forth.
 
@@ -339,6 +282,66 @@ to do with a choice between stretching and scrolling, fixed and dynamic sizing, 
 Soon there comes an updated piece of documentation and samples on the subject.
 
 ## Working with packages
+
+### Structuring code
+
+Prehaps, one of the main things to know about webpack is that it allows you to structure JavaScript code
+in a way similar to how you are used to it in enterprise-grade environments, such as Java or .NET.
+
+Let's expand our previous example leveraging an `import` capability of webpack and modern JavaScript.
+
+Create two separate files:
+
+`src/test-app-01.js`:
+
+```
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+
+export function makeTest01() {
+  let t = grok.data.demo.demog();
+  let view = grok.shell.addTableView(t);
+  let acc = view.toolboxPage.accordion;
+  acc.addPane('Demo 1', () => ui.divText(
+    `Cells count: ${t.rowCount * t.columns.length}`), true, acc.panes[0]);
+}
+```
+
+`src/test-app-02.js`:
+
+```
+import * as grok from 'datagrok-api/grok';
+
+export function makeTest02() {
+  grok.shell.info('Demo 2');
+}
+```
+
+And modify the `src/package.js`:
+
+```
+import {TestUI1} from './test-app-01.js';
+import {TestUI2} from './test-app-02.js';
+
+export let _package = new DG.Package();
+
+//name: Test 1
+//tags: app
+export function test01() {
+    return makeTest01();
+}
+
+//name: Test 2
+//tags: app
+export function test02() {
+    return makeTest02();
+}
+```
+
+That would be an overkill to structure our super-trivial apps this way, though it is a highly desired
+practice for anything real-life built for production use. Notice how we include parts of Datagrok API
+for the corresponding features in `src/test-app-01.js`. You may find this `datagrok-api` is a
+pre-defined location, as per `webpack.config.js`.
 
 ## Application lifecycle
 
