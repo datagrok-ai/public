@@ -281,7 +281,7 @@ function add(args) {
       contents += insertName(name, viewer);
       fs.writeFileSync(jsPath, contents, 'utf8');
       console.log(`The viewer ${name} has been added successfully`);
-      console.log('Read more at https://datagrok.ai/help/develop/js-api#custom-viewers');
+      console.log('Read more at https://datagrok.ai/help/develop/how-to/develop-custom-viewer');
       console.log('See examples at https://github.com/datagrok-ai/public/tree/master/packages/Viewers,');
       console.log('https://public.datagrok.ai/js/samples/functions/custom-viewers/viewers');
       break;
