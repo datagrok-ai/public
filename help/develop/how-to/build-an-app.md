@@ -154,9 +154,9 @@ application packages. The chapter ["Managing privileges"](#managing-privileges) 
 
 ## Dataframes
 
-### Creating and working with dataframes
+### Creating and working with Dataframes
 
-Dataframes are at the heart of Datagrok. DataFrame is a high-performance, easy to use tabular structure with
+Dataframes are at the heart of Datagrok. Dataframe is a high-performance, easy to use tabular structure with
 strongly-typed columns of different types. Supported types are: string, int, float, bool, DateTime, bigint and
 [qualified numbers]().
 
@@ -165,7 +165,7 @@ to efficiently work with huge datasets in the browser. Essentially, it is a colu
 engineered from scratch and optimized for the purpose of exploratory data analysis, interactive visualizations,
 and machine learning.
 
-Note that Datagrok dataframes operate entirely inside the browser, but not on our [compute server]().
+Note that Datagrok dataframes live and operate entirely inside the browser, but not on our [compute server]().
 However, it's possible to pass dataframes to scripts (in Python, R and others) which run on the server,
 and [get dataframes in return](#computations). 
 
@@ -192,7 +192,8 @@ let df = DG.DataFrame.fromColumns([
   DG.Column.fromList(DG.TYPE.FLOAT, 'Height', [178, 190, 165])
 ]);
 df.columns.addNew('City', 'string');
-df.columns.byName('City').set(0, 'New York');
+let col = df.columns.byName('City');
+col.set(0, 'New York');
 df.set('City', 1, 'Chicago');
 df.set('City', 2, 'San Francisco');
 df.rows.addNew(['John', 175, 'Dallas']);
@@ -207,7 +208,50 @@ Also check the API reference at [this link](https://datagrok.ai/js-api/DataFrame
 
 ### Semantic annotation and metadata
 
+Most of the objects in Datagrok can be annotated with metadata (key-value pairs). The
+metadata could be set manually; additionally, some of it gets assigned automatically.
+Some keys affect the way an object (such as a column) interacts with the platform; other have no
+effect at all, except that you can search objects by metadata.
+
+There is a variery of metadata in Datagrok, discussed [here](discover/metadata.md).
+Out of all metadata, column tags and semantic types are of particular interest in
+application development and dataframes.
+
+#### Column tags
+
+Each column in a Datagrok dataframe has a `.tags` property, which is a JS `Map` you can read and write.
+You could use these `.tags` for any package-specific activity needed. For example, if you have a pair
+of columns containing [smiles strings]() of molecules, and one column serves as a scaffold to which
+the other column should be aligned to, it is sensible to put a `scaffold-col` tag on a column being aligned
+referencing a column with the scaffold. The renderer would make use of this tag.
+
+It's possible to [add and remove tags]() from the Datagrok UI. To edit column's metadata,
+right-click on it and select "Properties..." (or press F2 in the grid).
+
+Read more on column tags [here](discover/tags.md).
+
+#### Semantic types
+
+Unlike in Excel, table columns in Datagrok are strongly-typed, meaning all cells are of one of
+the pre-defined data types (string, int, float, datetime, bool, bytes). In addition to that, a column
+might also have semantic type associated with it. Semantic type identifies the meaning of the data.
+For instance, a column could be of the data type "string", but the semantic type would be "country".
+
+Semantic types are used in several ways. For example, OpenChemLib or RDKit [are used]()
+for rendering string columns of semantic type `'Molecule'`. Some viewers, such as Map,
+use semantic type to determine whether a viewer can be visualized against specific datasets.
+Function parameters [could be annotated]() with the semantic type. This is  used for automatic
+suggestions of applicable functions.
+
+Semantic type is a special kind of a [column tag](tags.md#semantic-type).
+It could be either detected automatically by column [semantic type detectors](), or set manually
+in the JavaScript code with `.semType` property.
+
+Read more on semantic types [here](discover/).
+
 ### Aggregations and joining
+
+
 
 ## Persisting data
 
