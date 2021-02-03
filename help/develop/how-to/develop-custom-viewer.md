@@ -424,5 +424,4 @@ See also:
   * [JavaScript API Samples](https://public.datagrok.ai/js/samples/functions/custom-viewers/viewers)
   * [JavaScript Development](../develop.md)
   * [Viewers](../../visualize/viewers.md)
-  * [Custom Viewers](../js-api.md#custom-viewers)
   * [Scripting Viewers](../../visualize/viewers/scripting-viewer.md)

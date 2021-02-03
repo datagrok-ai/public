@@ -16,7 +16,7 @@ export class TypedEventArgs {
 
 /**
  * Represents a {@link https://datagrok.ai/help/visualize/viewers | viewer}.
- See also {@link https://datagrok.ai/help/develop/js-api#pre-defined-viewers}
+ See also {@link https://datagrok.ai/help/develop/how-to/manipulate-viewers}
 
  Use Viewer to control the viewers. To develop a custom viewer, {@see JsViewer}.
  * @example
