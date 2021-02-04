@@ -302,15 +302,65 @@ a boolean `currentUser`, which is set to `true` by default.
 
 ## Computations
 
-Beside application logic enabled on the client side (in the browser) with Datagrok JavaScript API, 
+### Scripting
+
+Beside application logic enabled on the client side (in the browser) with the Datagrok JavaScript API, 
 Datagrok provides scripting, a mechanism for integration with languages for statistical/mathematical
 computing.  Scripting combines fast interactive visualizations and other features of the Datagrok platform 
 with thousands of statistical packages and visualizations available in  [R](https://www.r-project.org/about.html),
 [Python](https://www.python.org), [Octave](https://octave.org/), [Julia](https://julialang.org),
 or [JavaScript](https://www.javascript.com).
 
-Let's look at a simple script. Create an empty Python script with .. , select a default table for it
-with the star icon on the top of the Datagrok's window,  
+Let's look at a simple script. Create an empty Python script with `Functions | Scripts | New Python Script`
+(find a `Functions` button on the left side of the Datagrok main window in the activity bar). Before
+running, open some table, you may find a lot of them in the "Demo Files" section of the platform through
+the `Data` pane opened by the "folder" button on the left side of the Datagrok's window. Then let's run
+the below:
+
+```python
+#name: SimpleTestPython
+#language: python
+#input: dataframe table [Data table]
+#output: int count [Number of cells in the table]
+count = table.shape[0] * table.shape[1]
+```
+
+This script simply calculates a number of cells in the dataframe passed to the script.
+Note how the script markup in the header comments specify this script as a function
+with a signature of a name, typed inputs and outputs. This is a general notion of a function
+you'd find across the entire platform.
+
+Before reading more about Datagrok functions, let's check the output of the script.
+To see it, open Datagrok's console. As in Doom, you may find it by hitting a `~`
+anywhere inside Datagrok. There you can see the script's output, something like that:
+
+```
+> SimpleTestPython("demog")
+  count: 64350
+```
+
+Stay in this console for a little longer and try executing this script again with the command:
+
+```
+SimpleTestPython("demog")
+```
+
+When the script is run, here is what happens under the hood:
+
+* The dataframe and all other input parameters are serialized and sent to the Datagrok server
+* The Datagrok server is hosting a so-called [compute virtual machine]() with a ready-to-execute
+  instance of a [Jupyter Kernel]() for Python, as well as for [other]() supported scripting languages
+* When the request to execute a script arrives to the server along with its parameters,
+  CVM loads scripts' code from its storage and runs it with these parameters
+* The output values are assigned anywhere along the script
+* The script execution is fully stateless and isolated
+
+You can even return graphics from the script! Check it with [this excercise on Scripting Viewers]().
+
+### Datagrok functions
+
+### Calling scripts from JavaScript code
+
 
 ## Visualizations
 
