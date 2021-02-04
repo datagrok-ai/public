@@ -17,12 +17,13 @@ const confTemplate = yaml.safeLoad(fs.readFileSync(confTemplateDir));
 const curDir = process.cwd();
 const packDir = path.join(curDir, 'package.json');
 
-async function processPackage(debug, rebuild, host, devKey, packageName) {
+async function processPackage(debug, rebuild, host, devKey, packageName, suffix) {
   // Get the server timestamps
   let timestamps = {};
+  let url = `${host}/packages/dev/${devKey}/${packageName}`;
   if (debug) {
     try {
-      timestamps = await (await fetch(`${host}/packages/dev/${devKey}/${packageName}/timestamps`)).json();
+      timestamps = await (await fetch(url + '/timestamps')).json();
       if (timestamps['#type'] === 'ApiError') {
         console.log(timestamps.message);
         return 1;
@@ -91,8 +92,10 @@ async function processPackage(debug, rebuild, host, devKey, packageName) {
   zip.append(JSON.stringify(localTimestamps), {name: 'timestamps.json'});
 
   // Upload
+  url += `?debug=${debug.toString()}&rebuild=${rebuild.toString()}`;
+  if (suffix) url += `&suffix=${suffix.toString()}`;
   let uploadPromise = new Promise((resolve, reject) => {
-    fetch(`${host}/packages/dev/${devKey}/${packageName}?debug=${debug.toString()}&rebuild=${rebuild.toString()}`, {
+    fetch(url, {
       method: 'POST',
       body: zip
     }).then(async (body) => {
@@ -141,10 +144,13 @@ function publish(args) {
   const nOptions = Object.keys(args).length - 1;
   const nArgs = args['_'].length;
 
-  if (nArgs > 2 || nOptions > 4) return false;
-  if (!Object.keys(args).slice(1).every(option =>
-    ['build', 'rebuild', 'debug', 'release', 'k', 'key'].includes(option))) return false;
-  if ((args.build && args.rebuild) || (args.debug && args.release)) return console.log('You have used incompatible options');
+  if (nArgs > 2 || nOptions > 5) return false;
+  if (!Object.keys(args).slice(1).every(option => ['build', 'rebuild',
+  'debug', 'release', 'k', 'key', 'suffix'].includes(option))) return false;
+  if ((args.build && args.rebuild) || (args.debug && args.release)) {
+    console.log('You have used incompatible options');
+    return false;
+  }
 
   // Create `config.yaml` if it doesn't exist yet
   if (!fs.existsSync(grokDir)) fs.mkdirSync(grokDir);
@@ -182,7 +188,7 @@ function publish(args) {
   process.on('beforeExit', async () => {
     let code = 0;
     try {
-      code = await processPackage(!args.release, Boolean(args.rebuild), url, key, packageName)
+      code = await processPackage(!args.release, Boolean(args.rebuild), url, key, packageName, args.suffix)
 
     } catch (error) {
       console.error(error);
