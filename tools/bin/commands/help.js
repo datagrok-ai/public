@@ -78,7 +78,7 @@ Usage: grok publish [host]
 Upload a package
 
 Options:
-[--build|--rebuild] [--debug|--release] [--key]
+[--build|--rebuild] [--debug|--release] [--key] [--suffix]
 
 Running \`grok publish\` is the same as running \`grok publish defaultHost --build --debug\`
 `;
