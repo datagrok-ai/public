@@ -272,9 +272,33 @@ compute the average for `age` and `started`, and also a median for `age`.
 
 The whole set of functions available for `.add` is located [here](transform/aggregation-functions.md).
 
-## Persisting data
+## Persisting Data
 
-### User storage
+### User data storage
+
+Often application settings or its inputs/outputs need to be shared between different applications,
+different instances of the same application, or simply persisted for later use or autoload
+on application start. This functionality is available in Datagrok as user data storage —
+a Datagrok server storage which can be filled with new entries and from which these entries
+can later be retrieved.
+
+The data resides in the storage as a set of stores, each identified by a unique name,
+with a key-value map placed in each store. There are several _asyncronous_ methods for storing
+and retrieveing data from the user storage, such as `grok.dapi.userDataStorage.postValue`
+for posting a single value, or `grok.dapi.userDataStorage.get` for getting the whole map.
+Learn of all these methods [here](develop/user-data-storage.md), also check a complete example
+in [API Samples](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/misc/user-data-storage.js).
+
+As the name assumes, the storage is only seen to the user. However, it's possible to create
+stores visible to all users. This is controlled by the last argument in the above methods,
+a boolean `currentUser`, which is set to `true` by default.
+
+*See also:*
+
+* User data storage [reference](develop/user-data-storage.md)
+* User data storage [sample](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/misc/user-data-storage.js)
+
+### Storing tables
 
 ## Computations
 
