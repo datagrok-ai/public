@@ -293,7 +293,7 @@ As the name assumes, the storage is only seen to the user. However, it's possibl
 stores visible to all users. This is controlled by the last argument in the above methods,
 a boolean `currentUser`, which is set to `true` by default.
 
-*See also:*
+*References:*
 
 * User data storage [reference](develop/user-data-storage.md)
 * User data storage [sample](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/misc/user-data-storage.js)
@@ -301,6 +301,16 @@ a boolean `currentUser`, which is set to `true` by default.
 ### Storing tables
 
 ## Computations
+
+Beside application logic enabled on the client side (in the browser) with Datagrok JavaScript API, 
+Datagrok provides scripting, a mechanism for integration with languages for statistical/mathematical
+computing.  Scripting combines fast interactive visualizations and other features of the Datagrok platform 
+with thousands of statistical packages and visualizations available in  [R](https://www.r-project.org/about.html),
+[Python](https://www.python.org), [Octave](https://octave.org/), [Julia](https://julialang.org),
+or [JavaScript](https://www.javascript.com).
+
+Let's look at a simple script. Create an empty Python script with .. , select a default table for it
+with the star icon on the top of the Datagrok's window,  
 
 ## Visualizations
 
@@ -369,6 +379,65 @@ to some best practices of existing frameworks. For instance, we are going to pro
 and easy to use controls catering for several typical application layouts, where the design has
 to do with a choice between stretching and scrolling, fixed and dynamic sizing, and so forth.
 Soon there comes an updated piece of documentation and samples on the subject.
+
+## Subscribing to events
+
+We are exposing events coming out of the platform as a stream via the [Rx.JS](rxjs.dev) library
+that makes it easy to compose asynchronous or callback-based code. The API makes easy to subscribe
+to either global, or instance-related events:
+
+```javascript
+let v = grok.shell.newView('Range Slider');
+let rangeSlider = ui.rangeSlider(0, 10, 2, 5);
+rangeSlider.onValuesChanged.subscribe(
+  (_) => grok.shell.info(`Range Slider changed to [${rangeSlider.min}, ${rangeSlider.max}]`));
+v.append(rangeSlider);
+```
+
+Paste it to the [JavaScript fiddle](https://public.datagrok.ai/js), drag the range slider
+to see the tooltip with current bounds values.
+
+There are other styles of events subscription offered in Datagrok APIs. They are introduced for
+brevity in places where it's natural. For instance, here we create a dialog and subscribe
+to pressing an `OK` button:
+
+```javascript
+ui.dialog('Windows')
+  .add(ui.span(['A message']))
+  .onOK(() => grok.shell.info('OK!'))
+  .show();
+```
+
+To figure out what events are coming out of the platform, use the Inspector tool.
+Open it (`Alt+I`), go to the "Client Log" tab, and perform the action that you want
+to intercept. In the panel, you will see one or more of the events, click on them
+to inspect event parameters. To simplify the development process, we also generate
+JavaScript code for handling this particular event, copy-paste it from the
+property panel into your code if needed. 
+
+Remember that the underlying UI controls in Datagrok are still DOM elements,
+so you can always subscribe to the regular events using `.addEventListener`:
+
+```javascript
+let v = grok.shell.newView('Events');
+let button = ui.bigButton("Run");
+v.append(button);
+button.addEventListener("click", () => alert("Hello!"));
+```
+
+This is useful in case you decouple interface specification and the event handlers
+implementation into two separate files. However, we are homogenizing the current state
+of UI events subcription so that it's always possible to subcribe using rxjs
+`.subscribe` method on an event object.
+
+
+Read more about Datagrok events [here](develop/js-api.md#Events).
+
+*References:*
+
+* [Events](develop/js-api.md#Events)
+* [Global events](https://public.datagrok.ai/js/samples/events/global-events)
+* [DataFrame events](https://public.datagrok.ai/js/samples/data-frame/events)
 
 ## Working with packages
 
