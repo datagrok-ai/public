@@ -168,21 +168,18 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
     if (molString == null || molString === '')
       return;
 
-    // TODO: improve this piece
-    const molCol = gridCell.tableColumn.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
-    let singleScaffoldMolString = molCol ? molCol.tags['chem-scaffold'] : null;
-
     const colTags = gridCell.tableColumn.tags;
-    let molRegenerateCoords = colTags && colTags['regenerate-coords'] === 'true';
-    let scaffoldRegenerateCoords = false;
-
+    let singleScaffoldMolString = colTags && colTags['chem-scaffold'];
+    
     if (singleScaffoldMolString) {
 
       this._drawMolecule(x, y, w, h, g.canvas,
-        molString, singleScaffoldMolString, molRegenerateCoords, scaffoldRegenerateCoords);
+        molString, singleScaffoldMolString, false, false);
 
     } else {
 
+      let molRegenerateCoords = colTags && colTags['regenerate-coords'] === 'true';
+      let scaffoldRegenerateCoords = false;
       let df = gridCell.tableColumn.dataFrame;
       const rowScaffoldCol = (() => {
 
