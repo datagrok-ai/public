@@ -10,6 +10,8 @@ export class TimelinesViewer extends EChartViewer {
     this.startColumnName = this.string('startColumnName', 'AESTDY');
     this.endColumnName = this.string('endColumnName', 'AEENDY');
     this.colorByColumnName = this.string('colorByColumnName', 'EVENT');
+    this.markerSize = this.int('markerSize', 6);
+    this.lineWidth = this.int('lineWidth', 3);
 
     this.data = [];
 
@@ -21,7 +23,7 @@ export class TimelinesViewer extends EChartViewer {
       grid: {
         left: '3%',
         right: '4%',
-        top: '4%',
+        top: '2%',
         bottom: '3%',
         containLabel: true
       },
@@ -36,13 +38,37 @@ export class TimelinesViewer extends EChartViewer {
         axisLine: { show: false },
       },
       dataZoom: [
-        { type: 'inside', xAxisIndex: [1, 2]},
-        { type: 'inside', yAxisIndex: 0}
+      {
+        type: 'inside',
+        xAxisIndex: [1, 2],
+        start: 0,
+        end: 100
+      },
+      {
+        start: 0,
+        end: 100,
+        height: 10,
+        bottom: '1%'
+      },
+      { 
+        type: 'inside',
+        yAxisIndex: 0,
+        start: 0,
+        end: 100
+      },
+      { 
+        type: 'slider',
+        yAxisIndex: 0,
+        start: 0,
+        end: 100,
+        width: 10,
+      }
       ],
       series: [
         {
           type: 'custom',
           progressive: 0,   // Disable progressive rendering
+          animation: false,
           encode: {
             x: [1, 2], 
             y: 0,
@@ -74,9 +100,9 @@ export class TimelinesViewer extends EChartViewer {
   
       const rectShape = echarts.graphic.clipRectByRect({
         x: start[0],
-        y: start[1] - height / 2,
+        y: start[1] - this.lineWidth / 2,
         width: end[0] - start[0],
-        height: height
+        height: this.lineWidth
       }, {
         x: params.coordSys.x,
         y: params.coordSys.y,
@@ -84,11 +110,28 @@ export class TimelinesViewer extends EChartViewer {
         height: params.coordSys.height
       });
   
-      return rectShape && {
-        type: 'rect',
-        transition: ['shape'],
-        shape: rectShape,
-        style: { fill: this.colorMap[api.value(3)] }
+      return {
+        type: 'group',
+        children: [{
+          type: 'rect',
+          transition: ['shape'],
+          shape: rectShape,
+          style: { fill: isNaN(api.value(3)) ? 'blue' : this.colorMap[api.value(3)] }
+        },
+        {
+          type: 'circle',
+          shape: {
+            cx: start[0], cy: end[1], r: this.markerSize / 2
+          },
+          style: { fill: 'darkblue' }
+        }, {
+          type: 'circle',
+          shape: {
+            cx: end[0], cy: end[1], r: this.markerSize / 2
+          },
+          style: { fill: 'coral' }
+        }
+        ]
       };
     };
 
@@ -97,18 +140,24 @@ export class TimelinesViewer extends EChartViewer {
 
   getSeriesData() {
     this.data.length = 0;
-    let max = this.columns[2].max;
-    let min = this.columns[1].min;
+    let tempObj = {};
+    let getTime = (i, j) => this.columns[j].type === 'datetime' ?
+      new Date(`${this.columns[j].get(i)}`) : this.columns[j].isNone(i) ?
+      null : this.columns[j].get(i);
 
     for (let i = 0; i < this.dataFrame.rowCount; i++) {
-      let row = [];
-      for (let j = 0; j < this.columns.length; j++) {
-        row.push((this.columns[j].type === 'datetime') ?
-          new Date(`${this.columns[j].get(i)}`) : (this.columns[j].isNone(i)) ?
-          (j === 1) ? min : max : this.columns[j].get(i));
+      let id = this.columns[0].get(i);
+      let start = getTime(i, 1);
+      let end = getTime(i, 2);
+      let event = this.columns[3].get(i);
+      let key = `${id}-${start}-${end}`;
+      if (tempObj.hasOwnProperty(key)) {
+        tempObj[key][3].push(event);
+      } else {
+        tempObj[key] = [id, start, end, [event,]];
       }
-      this.data.push(row);
     }
+    this.data = Object.values(tempObj);
 
     this.chart.on('click', params => this.dataFrame.selection.handleClick(
       i => this.columns[0].get(i) === params.data[0], params.event));

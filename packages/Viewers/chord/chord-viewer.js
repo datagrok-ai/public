@@ -114,10 +114,10 @@ export class ChordViewer extends DG.JsViewer {
 
     this.freqMap = {};
     for (let i = 0; i < this.dataFrame.rowCount; i++) {
-      let key = this.fromColumn.isNone(i) ? "" : this.fromColumn.get(i);
-      this.freqMap[key] = (this.freqMap[key] || 0) + 1;
-      let key2 = this.toColumn.isNone(i) ? "" : this.toColumn.get(i);
-      this.freqMap[key2] = (this.freqMap[key2] || 0) + 1;
+      let from = this.fromColumn.isNone(i) ? "" : this.fromColumn.get(i);
+      this.freqMap[from] = (this.freqMap[from] || 0) + 1;
+      let to = this.toColumn.isNone(i) ? "" : this.toColumn.get(i);
+      this.freqMap[to] = (this.freqMap[to] || 0) + 1;
     }
 
     this.fromCol = this.aggregatedTable.getCol(this.fromColumnName);
