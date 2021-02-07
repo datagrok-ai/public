@@ -11,12 +11,12 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
     this.molCache.onItemEvicted = function (obj) {
       obj.mol.delete();
       obj.mol = null;
+      obj.substruct = null;
       obj = null;
     };
     this.rendersCache = new DG.LruCache();
     this.rendersCache.onItemEvicted = function (obj) {
       obj.canvas = null;
-      obj.canvasId = null;
       obj = null;
     }
 
@@ -42,21 +42,12 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
 
   }
 
-  _molIsInSmiles(molString, rdkitMol) {
-
-    // No, this won't always work (due to canonical)
-    const smilesMolString = rdkitMol.get_smiles();
-    return smilesMolString === molString;
-
-  }
-
   _fetchMolGetOrCreate(molString, scaffoldMolString, molRegenerateCoords) {
 
     let mol = null;
     let substructJson = "{}";
 
     try {
-      let validMol = false;
       mol = rdKitModule.get_mol(molString);
       if (mol.is_valid()) {
         // TODO: maybe split into 2 functions (with scaffold and without)
