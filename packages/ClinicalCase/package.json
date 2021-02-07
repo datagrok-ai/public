@@ -1,0 +1,19 @@
+{
+	"name": "clinicalcase",
+	"fullName": "ClinicalCase",
+	"version": "0.0.1",
+	"description": "",
+	"dependencies": {
+		"datagrok-api": "latest"
+	},
+	"scripts": {
+		"debug-clinicalcase": "grok publish --rebuild",
+		"release-clinicalcase": "grok publish --rebuild --release",
+		"build-clinicalcase": "webpack",
+		"build": "webpack",
+		"debug-clinicalcase-dev": "grok publish dev --rebuild",
+		"release-clinicalcase-dev": "grok publish dev --rebuild --release",
+		"debug-clinicalcase-public": "grok publish public --rebuild",
+		"release-clinicalcase-public": "grok publish public --rebuild --release"
+	}
+}
