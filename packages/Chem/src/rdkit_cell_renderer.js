@@ -179,7 +179,6 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
       const rowScaffoldCol = (() => {
 
         // if given, take the 'scaffold-col' col
-        let colTags = gridCell.tableColumn.tags;
         if (colTags && colTags['scaffold-col']) {
           let rowScaffoldColName = colTags['scaffold-col'];
           let rowScaffoldColProbe = df.columns.byName(rowScaffoldColName);
@@ -201,8 +200,9 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
         // drawing with a per-row scaffold
         let idx = gridCell.tableRowIndex;
         let scaffoldMolString = df.get(rowScaffoldCol.name, idx);
+        let highlightScaffold = colTags && colTags['highlight-scaffold'] === 'true';
         this._drawMolecule(x, y, w, h, g.canvas,
-          molString, scaffoldMolString, false, molRegenerateCoords, scaffoldRegenerateCoords);
+          molString, scaffoldMolString, highlightScaffold, molRegenerateCoords, scaffoldRegenerateCoords);
       }
     }
   }
