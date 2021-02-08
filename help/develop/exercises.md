@@ -20,6 +20,7 @@ Table of contents
   * [Setting up the environment](#setting-up-the-environment)
   * [Semantic types](#semantic-types)
   * [Querying databases](#querying-databases)
+  * [Creating a scripting viewer](#creating-a-scripting-viewer)
 
 ## Setting up the environment
 
@@ -73,6 +74,8 @@ You will learn: how to write semantic type detectors, how to develop context-spe
 Prerequisites: basic SQL knowledge
 
 Details: [Connecting to Databases](https://www.youtube.com/watch?v=dKrCk38A1m8&t=1048s), [How to Access Data](how-to/access-data.md)
+
+_Note_: Editing an existing data query requires the respective access permission. You might need to request one.
 
 In this exercise, we will work with a `northwind` Postgres database (in case the name sounds 
 familiar, this is a demo database that Microsoft often uses for showcasing its technology).
