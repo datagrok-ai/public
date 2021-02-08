@@ -152,6 +152,31 @@ accessing files from file shares and servers is made by `grok.functions.eval('Op
 When it comes to connections, we strongly encourage you not to store their credentials directly inside your
 application packages. The chapter ["Managing privileges"](#managing-privileges) discusses credentials management in detail.
 
+### Access REST endpoints outside the host
+
+Web services provide endpoints that you can programmatically connect to.
+There are two main options for this: the first is to use
+[OpenAPI/Swagger](https://swagger.io/docs/specification/about/) format supported
+by Datagrok, the second one involves the
+[use of the platform's server](https://dev.datagrok.ai/js/samples/dapi/fetch) to send a network request.
+The details of Swagger-based connections are further explained in the
+[dedicated article](../../access/open-api.md).
+
+It's common for JavaScript applications to query external REST endpoints. Due to
+[CORS](https://en.wikipedia.org/wiki/Cross-origin_resource_sharing),
+the Web application won't be allowed to GET/POST with resources on different hosts.
+To overcome this, you don't need to move data querying to the backend server yourself.
+Datagrok provides for a proxy server to work with such REST end-points. The method `fetchProxy` has
+an interface similar to the standard `fetch` API and described
+[here](develop/how-to/access-data.md#rest-endpoints)
+in detail.
+
+*References:*
+
+* [OpenAPI in Datagrok](access/open-api.md)
+* [fetchProxy sample](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/dapi/fetch.js)
+* [Access Data](develop/how-to/access-data.md)
+
 ## Dataframes
 
 ### Creating and working with Dataframes
@@ -361,16 +386,57 @@ You can even return graphics from the script! Check it with [this excercise on S
 
 ### Calling scripts from JavaScript code
 
-
 ## Visualizations
 
 ## Server API
 
 ## Managing privileges
 
-### Groups and sharing
+Datagrok has an enterprise-grade support for priveleges management and secure deployment.
+In the context of Datagrok application development, this covers both fine-grained access control
+to all Datagrok entities and facilities, but also security patterns for storing credentials
+and authorized access to Datagrok using popular authentication protocols.
 
-### Obtaining user info
+### Authorization, groups and sharing
+
+Datagrok has a flexible mechanism for grouping users together. A user can belong to more than one group.
+A group can be included in another group, which is useful for both reflecting organization hierarchy
+and implementing  role-based [security](security.md). 
+
+Many types of objects within the Datagrok platform can be shared with other users or
+[groups](../govern/group.md). Such shareable objects are called [entities](../overview/objects.md).
+When an object is shared, you are essentially granting a [privilege](../govern/authorization.md)
+(typically, 'view' or 'edit') to a grantee. See the [Security](../govern/security.md) article
+for details.
+
+When launching a new application on Datagrok, we recommend considering a group which members
+should have access to this application. Often this is a new group which you'd create for 
+this specific application. With the application along come the queries and connections used in it.
+This means grating access to an applicaiton implies granting access to the whole package.
+
+Therefore, etting a new user group access your applcaiton usually means just sharing
+the corresponding package to this group. When granting access to a package for a particular group,
+access to all its items is also shared to this group. 
+
+*References:*
+
+* [Sharing](/colaborate/sharing.md)
+* [Groups](/govern/groups.md)
+* [Security](/govern/security.md)
+* [Authorization](/govern/authorization.md)
+
+### Authentication
+
+*References:*
+
+* [Authentification](/govern/authentication.md)
+
+### Obtaining groups and users info
+
+It is possible to access groups info through Datagrok JavaScript API. The namespace `grok.dapi.groups`
+provides for it. Find code snippets for this topic in
+[/dapi/groups](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples/scripts/dapi)
+part of our JS API samples. 
 
 ### Managing credentials
 
@@ -403,6 +469,10 @@ In Datagrok, Credentials Store gives access to per-package key-value stores and 
 Credentials Store is a physically separate entity and may be placed on a separate machine,
 which improves theft tolerance. It's also possible to deliver credentials to the Store programmatically
 same way as discussed in p.1.
+
+*References:*
+
+* [Manage credentials](./develop/how-to/manage-credentials.md)
 
 ## UI and UX
 
