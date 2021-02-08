@@ -388,6 +388,30 @@ You can even return graphics from the script! Check it with [this excercise on S
 
 ## Visualizations
 
+Datagrok provides for rich data visualization with more than 25+ viewers out of the box, including
+[Scatter Plot](visualize/viewers/scatter-plot.md), [Histogram](visualize/viewers/histogram.md),
+Line Chart, Bar Chart, Pie Chart, Trellis, Matrix Plot, 3D Scatter, Density Plot,
+PC Plot, Word Cloud, Network, Box Plot, Tree Map, Heat Map, Statistics, Correlation, Calendar, Table Grid,
+Markup, Tiles, Form, Map, Shape, Chord, and Tree. These viewers were crafted for web from scratch, and are
+purpose-fit for life science applcations. For example, some viewers [provide for](visualize/viewers/box-plot.md)
+built-in statistical hypothesis testing and Multivariate Analysis. Based on our unique in-browser
+[data store](#creating-and-working-with-dataframes), they cater for high performance data exploration
+on datasets of 10 million rows.
+
+Viewers may be connected to other visual entities of your applciation, providing for interactive
+filtering, selection, current row, mouse-over rows and other events. All existing viewers
+are available both ad-hoc while exploring data and programmatically in applications' code.
+It's possible to expand the platform with new viewers shared through versioned packages.
+Viewers may be created in both native way in JavaScript code with Datagrok JS API, and via
+R, Python, Julia-based visualizations. 
+
+Viewers are either supplied with their own dataframes, or (more typical) are linked to
+the dataframes objects which are re-used through the application's code.
+
+*References:*
+
+* [Viewers](visualize/viewers.md)
+
 ## Server API
 
 ## Managing privileges
@@ -414,9 +438,11 @@ should have access to this application. Often this is a new group which you'd cr
 this specific application. With the application along come the queries and connections used in it.
 This means grating access to an applicaiton implies granting access to the whole package.
 
-Therefore, etting a new user group access your applcaiton usually means just sharing
-the corresponding package to this group. When granting access to a package for a particular group,
-access to all its items is also shared to this group. 
+Access to either whole package with all its content, or more fine-grained items such as applications
+or connections, is managed per-user and per-group. Therefore, letting a user group access your applcaiton
+usually means sharing the corresponding package to this group. When granting access to a package for
+a particular group, access to all its items is also shared to this group.
+
 
 *References:*
 
