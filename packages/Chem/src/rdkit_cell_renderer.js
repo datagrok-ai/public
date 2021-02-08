@@ -169,7 +169,7 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
     if (singleScaffoldMolString) {
 
       this._drawMolecule(x, y, w, h, g.canvas,
-        molString, singleScaffoldMolString, true, true, true);
+        molString, singleScaffoldMolString, true, false, false);
 
     } else {
 
