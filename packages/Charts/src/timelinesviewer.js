@@ -96,7 +96,6 @@ export class TimelinesViewer extends EChartViewer {
       const categoryIndex = api.value(0);
       const start = api.coord([api.value(1), categoryIndex]);
       const end = api.coord([api.value(2), categoryIndex]);
-      const height = api.size([0, 1])[1] * 0.4;
   
       const rectShape = echarts.graphic.clipRectByRect({
         x: start[0],
@@ -116,7 +115,8 @@ export class TimelinesViewer extends EChartViewer {
           type: 'rect',
           transition: ['shape'],
           shape: rectShape,
-          style: { fill: isNaN(api.value(3)) ? 'blue' : this.colorMap[api.value(3)] }
+          style: { fill: this.colorMap[isNaN(api.value(3)) ?
+            this.data[params.dataIndex][3][0] : api.value(3)] }
         },
         {
           type: 'circle',
@@ -145,7 +145,7 @@ export class TimelinesViewer extends EChartViewer {
       new Date(`${this.columns[j].get(i)}`) : this.columns[j].isNone(i) ?
       null : this.columns[j].get(i);
 
-    for (let i = 0; i < this.dataFrame.rowCount; i++) {
+    for (let i of this.dataFrame.filter.getSelectedIndexes()) {
       let id = this.columns[0].get(i);
       let start = getTime(i, 1);
       let end = getTime(i, 2);
@@ -162,10 +162,5 @@ export class TimelinesViewer extends EChartViewer {
     this.chart.on('click', params => this.dataFrame.selection.handleClick(
       i => this.columns[0].get(i) === params.data[0], params.event));
     return this.data;
-  }
-  
-  render() {  
-    this.option.series[0].data = this.getSeriesData();
-    this.chart.setOption(this.option);
   }
 }
