@@ -644,12 +644,12 @@ export class ViewLayout extends Entity {
     return grok_ViewLayout_Set_ViewState(this.d, state);
   }
 
-  get userData() {
-    return grok_ViewLayout_Get_UserData(this.d);
+  getUserDataValue(key) {
+    return grok_ViewLayout_Get_UserDataValue(this.d, key);
   }
 
-  set userData(data) {
-    return grok_ViewLayout_Set_UserData(this.d, data);
+  setUserDataValue(key, value) {
+    return grok_ViewLayout_Set_UserDataValue(this.d, data, value);
   }
 
   toJson() {

@@ -17,9 +17,12 @@ class BiosignalsPackageDetectors extends DG.Package {
   //output: bool result
   analysisCondition(table) {
     let columns = table.columns.toList();
-    console.log('hello');
 
-    return columns.some((c) => c.semType.includes('BioSignal'));
+    // for (let column in columns) {
+    //   grok.shell.info(column.semType.includes('BioSignal'));
+    // }
 
+    //return columns.some((c) => c.semType.includes('BioSignal'));
+    return true;
   }
 }
