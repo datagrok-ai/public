@@ -39,7 +39,8 @@ Prerequisites: basic JavaScript knowledge
 
 Prerequisites: basic JavaScript knowledge
 
-Details: [How to Create a Semantic Type Detector](how-to/semantic-type-detector.md), [How to Add an Info Panel](how-to/add-info-panel.md)
+Details: [How to Create a Semantic Type Detector](how-to/semantic-type-detector.md),
+[How to Add an Info Panel](how-to/add-info-panel.md)
 
 You will learn: how to write semantic type detectors, how to develop context-specific data augmentation.  
 
@@ -47,7 +48,9 @@ You will learn: how to write semantic type detectors, how to develop context-spe
    Essentially, change each character to the complementary one: A<=>T, G<=>C. 
    Run it and check whether everything works fine. 
 2. Now, let's specify that this function is meant to accept not any string, but nucleotides only,
-   and returns a nucleotide string as well. In order to do that, let's annotate both input and output parameters with the `dna_nucleotide` semantic type (add `{semType: dna_nucleotide}` after the parameter name). At this point, `dna_nucleotide` string does not have any meaning, but we will connect the dots later.
+   and returns a nucleotide string as well. In order to do that, let's annotate both input and output parameters
+   with the `dna_nucleotide` semantic type (add `{semType: dna_nucleotide}` after the parameter name).
+   At this point, `dna_nucleotide` string does not have any meaning, but we will connect the dots later.
 3. Define a `detectNucleotides` semantic type detector function as part of the special
    `detectors.js` file. It should check whether a column is a string column, and whether
    each string represents a nucleotide (hint: for best performance, 
@@ -65,15 +68,69 @@ You will learn: how to write semantic type detectors, how to develop context-spe
    you will see 'quality: dna_nucleotide' in the bottom of the tooltip. Alternatively, you can 
    find this information if you click on the column and expand the 'Details' pane in the property panel on the right.
 5. Now transform the previously created `complement` function into an info panel: tag it with `panel` and `widgets` tags
-   and change the output type to `widget` (see an example [here](how-to/add-info-panel.md#functions)). This will instruct the platform to use the `complement` function for providing additional information for string values
+   and change the output type to `widget` (see an example [here](how-to/add-info-panel.md#functions)).
+   This will instruct the platform to use the `complement` function for providing additional information for string values
    of the `dna_nucleotide` semantic type. To test it, simply open our test file, click on any cell
    in the `sequence` column, and find the `complement` property in the panel on the right.
+   
+## Scripting
+
+Prerequisites: basic Python knowledge
+
+Details: [Scripting](develop/scripting.md), [Dev Meeting 1 | First-class functions](https://youtu.be/p7_qOU_IzLM?t=724)
+
+_You will learn:_ how to create and invoke Datagrok scripts in data science languages like R and Python.
+
+In this exercise, we will count occurrences of a given subsequence in a nucleotide sequence, using Python.
+
+1. Open Datagrok and navigate to `Functions | Scripts | New Python Script`.
+2. Observer a default script created for you. All script attributes are specified in the beginning in comments.
+   There we have the script name, language, one input value of type [`dataframe`](),
+   and one output value of type `int`. The script simply computes number of cells in the dataframe.  
+   [Dataframe](develop/how-to/build-an-app.md) is a high-performance, easy to use tabular structure
+   with strongly-typed columns of different types (supported types are: string, int, float, bool, DateTime, bigint).
+   In this excercise, we only see a dataframe as is in the default script;
+   there is [another excercise]() to learn manipulating dataframes in JavaScript.
+3. Run the script to get a hint for creating an input file. An attribute `#sample: cars.csv`
+   is responsible for it. To open a default input file `cars`, click the "Star button" appeared on top.
+4. Run the script again and proceed to the Datagrok's console. As in Quake, it's avaialble
+   by pressing a `~` button anywhere inside Datagrok. In the console, you would see the script
+   execution result. Just one line above the result you could see the console's command to execute
+   the script. Enter it again to the console to get the same result.
+5. Let's modify the script to solve the task of counting sequence occurrences. Add a new preamble:
+   (use any `#description` you like):
+   ```python
+   #name: CountSubsequencePython
+   #language: python
+   #input: string sequence
+   #input: string subsequence
+   #output: int count
+   ```
+   In the body, implement a Python function counting all occurrences of a given `subsequece` in a `sequence`.
+   Return a `count` same way as in the default script from p. 2.
+6. Run the script function, provide input values in the dialog and get to the console to see the result.
+   Now run the script function again through the console completely, passing some other arguments values.
+7. Go back to `Functions | Scripts` and hit `New JavaScript Script`.
+8. Implement the function which does the same as `CountSubsequencePython`, now in JavaScript, named
+   `CountSubsequenceJS`. Follow the same conventions on the parameters in the comments block
+   and returning a result via a variable.
+9. Run `CountSubsequenceJS` using the play button; using the console.
+   You can notice that both Python and JS versions of our function are homogenous functions
+   in Datagrok. It's also possible to call them in a uniform fashion
+   [using our JavaScript API](develop/scripting.md#running-a-script).
+10. Don't forget to save these two scripts. We would re-use them in other exercises.
+
+The difference between the two scripts is that the first, `CountSubsequencePython`, runs on
+our server by a [compute virtual machine](develop/admin/architecture.md#compute-virtual-machine),
+whereas the second, `CountSubsequenceJS`, runs directly in the browser. To run `CountSubsequencePython`,
+Datagrok passes the script arguments over the network and fetches back the result to the browser.
 
 ## Querying databases
 
 Prerequisites: basic SQL knowledge
 
-Details: [Connecting to Databases](https://www.youtube.com/watch?v=dKrCk38A1m8&t=1048s), [How to Access Data](how-to/access-data.md)
+Details: [Connecting to Databases](https://www.youtube.com/watch?v=dKrCk38A1m8&t=1048s),
+[How to Access Data](how-to/access-data.md)
 
 _Note_: Editing an existing data query requires the respective access permission. You might need to request one.
 
@@ -119,9 +176,10 @@ The database is already deployed and is accessible from our server.
 
 ## Creating a Scripting Viewer
 
-Prerequisites: basic Python knowledge
+Prerequisites: basic Python knowledge, [matplotlib](https://matplotlib.org/) or a similar library
 
-Details: [Scripting](develop/scripting.md), [Scripting Viewer](visualize/viewers/scripting-viewer.md), [Creating a scripting viewer (video)](https://www.youtube.com/embed/jHRpOnhBAz4).
+Details: [Scripting](develop/scripting.md), [Scripting Viewer](visualize/viewers/scripting-viewer.md),
+[Creating a scripting viewer (video)](https://www.youtube.com/embed/jHRpOnhBAz4).
 
 *Amino acids counting task.* In this exercise, we'd use a Python script to generate a histogram
 (a distribution plot) for amino acids occurring in a column of nucleotide sequences. Amino acids are simply triples
