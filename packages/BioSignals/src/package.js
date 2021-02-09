@@ -158,18 +158,19 @@ export function Biosensors(table) {
     let npeaks = 10;
     let fsamp = samplingFreq.value;
     column.onChanged(async () => {
-      bsColumn = table.columns.byName(column.value[0]);
-      bsColumn = bsColumn.getRawData().slice(0, npeaks * fsamp);
-      let t = DG.DataFrame.fromColumns([DG.Column.fromList('double', 'x', bsColumn)]);
-      bsType = await typeDetector(t, npeaks, fsamp);
+      //bsColumn = column.value[0]; //table.columns.byName('ecg_data');
+      //bsColumn = bsColumn.getRawData().slice(0, npeaks * fsamp);
+      //let t = DG.DataFrame.fromColumns([DG.Column.fromList('double', 'x', bsColumn)]);
+      //bsType = await typeDetector(t, npeaks, fsamp);
+      bsType = 'ecg';
     });
 
     let node1;
     let containerOGplot = ui.div();
-    let tableView = grok.shell.getTableView("ecg_eda");
+    let tableView = grok.shell.getTableView(table.name);
     containerOGplot.appendChild(ui.bigButton('Plot Original', async () => {
 
-      let t = DG.DataFrame.fromColumns([table.columns.byName(column.value[0])]);
+      let t = DG.DataFrame.fromColumns([column.value[0]]);
       let plotOG = await importPy(t, fsamp, bsType);
       let viewer = DG.Viewer.fromType('Line chart', plotOG);
       node1 = tableView.dockManager.dock(viewer.root, 'right', null, 'Original plot');
@@ -210,7 +211,7 @@ export function Biosensors(table) {
     containerFLplot.appendChild(ui.bigButton('Plot Filtered', async () => {
 
       paramsT = paramsToTable(filtersLST, allParams);
-      let t = DG.DataFrame.fromColumns([table.columns.byName(column.value[0])]);
+      let t = DG.DataFrame.fromColumns([column.value[0]]);
       let plotFL = await applyFilter(t, fsamp, bsType, paramsT);
       // node2 = tableView.dockManager.dock(plotFL, 'fill', node1, 'Filtered plot');
 
@@ -230,7 +231,7 @@ export function Biosensors(table) {
     containerINFplot.appendChild(ui.bigButton('Extract Info', async () => {
 
       paramsT = paramsToTable(filtersLST, allParams);
-      let t = DG.DataFrame.fromColumns([table.columns.byName(column.value[0])]);
+      let t = DG.DataFrame.fromColumns([column.value[0]]);
       let plotInfo = await extractInfo(t, fsamp, bsType, paramsT, infoType);
       if (infoType.value === 'Beat from ECG') {
         node3 = tableView.dockManager.dock(plotInfo, 'fill', node2, infoType.value);
@@ -259,7 +260,7 @@ export function Biosensors(table) {
     v.add(containerIndicator).onOK(async () => {
 
       paramsT = paramsToTable(filtersLST, allParams);
-      let t = DG.DataFrame.fromColumns([table.columns.byName(column.value[0])]);
+      let t = DG.DataFrame.fromColumns([column.value[0]]);
       let indicatorDf = await toIndicators(t, fsamp, bsType, paramsT, infoType, indicator);
       grok.shell.addTableView(indicatorDf);
 
