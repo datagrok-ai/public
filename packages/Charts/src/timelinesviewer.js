@@ -5,13 +5,16 @@ export class TimelinesViewer extends EChartViewer {
   constructor() {
     super();
     
-    this.initCommonProperties();
     this.subjectColumnName = this.string('subjectColumnName', 'USUBJID');
     this.startColumnName = this.string('startColumnName', 'AESTDY');
     this.endColumnName = this.string('endColumnName', 'AEENDY');
     this.colorByColumnName = this.string('colorByColumnName', 'EVENT');
+
     this.markerSize = this.int('markerSize', 6);
     this.lineWidth = this.int('lineWidth', 3);
+    this.dateFormat = this.string('dateFormat', null, { choices: [
+      '{yyyy}-{MM}-{dd}', '{M}/{d}/{yyyy}', '{MMM} {d}', '{dd}', '{d}'
+    ]});
 
     this.data = [];
 
@@ -77,9 +80,9 @@ export class TimelinesViewer extends EChartViewer {
         }
       ]
     };
-
-    this.onPropertyChanged(null, false);
   }
+
+  onPropertyChanged(property) { this.render() }
 
   onTableAttached() {
     this.columns = this.dataFrame.columns.byNames([
@@ -146,9 +149,22 @@ export class TimelinesViewer extends EChartViewer {
   getSeriesData() {
     this.data.length = 0;
     let tempObj = {};
-    let getTime = (i, j) => this.columns[j].type === 'datetime' ?
-      new Date(`${this.columns[j].get(i)}`) : this.columns[j].isNone(i) ?
-      null : this.columns[j].get(i);
+
+    let getTime = (i, j) => {
+      if (this.columns[j].type === 'datetime') {
+        if (this.dateFormat === null) {
+          this.props.dateFormat = this.getProperty('dateFormat').choices[2];
+        }
+        this.option.xAxis = {
+          type: 'time',
+          boundaryGap: ['5%', '5%'],
+          axisLabel: { formatter: this.dateFormat }
+        };
+      }
+      return this.columns[j].type === 'datetime' ?
+        new Date(`${this.columns[j].get(i)}`) : this.columns[j].isNone(i) ?
+        null : this.columns[j].get(i);
+    }
 
     for (let i of this.dataFrame.filter.getSelectedIndexes()) {
       let id = this.columns[0].get(i);
