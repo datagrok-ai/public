@@ -1,6 +1,99 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-02-10 Dev build 0.89.17
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.89.17`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Programming exercises (WIP)
+* Updated exercises.md 
+* User Data Storage overview 
+* Update user-data-storage.md 
+* Fixed links in user-data-storage.md 
+* Js Packages: Replace GUID hash with build number
+Packages: delete debug version when user publishes release 
+* Packages: delete debug version when user publishes release 
+* Chord Diagram (WIP)
+* Wiki: applications - general, building, debugging. wip 
+* Wiki: replaced outdated links 
+* Wiki: how-to build an app. wip 
+* Wiki: debugging packages. 
+* Wiki: How to Build Custom Viewers (WIP)
+* JS API: added accordion persistence key 
+* Simplified phrasing and linked to the main article 
+* Better phrasing 
+* DataFrame: JSDocs for append and unpivot. 
+* JS API: DataFrame.append: ability to specify columns and rows to append (WIP)
+* Harmonize ui framework (WIP)
+* Wiki: how-to build an app. WIP: dataframe, credentials 
+* Wiki: Project types description 
+* Domains / NLP (WIP)
+* Wiki: Data Access 
+* Harmonize ui framework
+(Bug) JS API: column name search box disappears from ColumnComboBox (WIP)
+* Changed Redo shortcut to Ctrl+Shift+Z 
+* Wiki: switch to recommended package naming 
+* (Bug) Multiple column selector: mouse-driven selection is broken 
+* Property panel title: made the text user-selectable 
+* Wiki: URL fix 
+* Wiki: how-to build an app. WIP: restructuring 
+* Wiki: how-to build an app. WIP: Semantic annotation and metadata 
+* Charts package (WIP)
+* Wiki: how-to build an app. WIP: Dataframe aggregations 
+* Filters: Wrap filter blocks 
+* JS API: Column.init(value | indexToValueFunction) 
+* (Bug) Add New Column failed to calculate a formula if all output values are null 
+* Wiki: how-to build an app. WIP: User data storage 
+* datagrok-tools: add `suffix` key for package version hash 
+* Fixing grok_compute_test.dart: more descriptors from the latest rdkit. 
+* CVM: fixing a missing kNN. 
+* Wiki: how-to build an app. WIP: Subscribing to events 
+* Wiki: how-to build an app. WIP: Scripting 
+* (Bug) Restore CVM to normal (WIP)
+* (Bug) @AutoProperties(includeGetters: true) won't work
+(Bug) Notebooks: New notebooks are created empty 
+* Add Chem package properties 
+* Single scaffold alignment mode 'chem-scaffold': simplified 
+* (Bug) DockManager: width rounding error 
+* [(Bug) Bar Chart: null values break color-coding of stacked bars](https://community.datagrok.ai/t/bar-chart-color-by-category/516|https://community.datagrok.ai/t/bar-chart-color-by-category/516) 
+* (Bug) Scaffold highlights have offsets 
+* ClinicalCase - a plugin for analyzing SDTM-based clinical studies data (WIP)
+* Chem, RDKit-based (WIP)
+* [Histogram: add a dropdown for 'Color Aggr Type' property](https://community.datagrok.ai/t/cannot-easily-change-the-aggregation-of-the-histogram/509+|https://community.datagrok.ai/t/cannot-easily-change-the-aggregation-of-the-histogram/509) 
+* Filters: improve sizing
+Filters: add DatePicker 
+* Fixed dev documentation 
+* Show package fullName 
+* Wiki: how-to build an app. WIP: REST endpoints, groups, sharing 
+* Wiki: minor updates 
+* added GrokJsObject to Data/TableQuery as Mixin + defined className 
+* Wiki: how-to build an app. WIP: Cleaning up 
+* TestData.demog: provided a seed value to the random() functions to make results reproducible 
+* (Bug) Multiple selection and cloning will corrupt data frame 
+* Line chart: hide X and Y axes in a trellis plot when a chart is too small 
+* (Bug) Trellis Plot: the Y axis configuration of inner viewer is not shown 
+* (Bug) Grid: hiding columns leaves empty space on the right (WIP)
+* Biosignals (WIP)
+* (Bug) Viewers | Properties: Sliders move to the next row if width of the second properties is not enough
+(Bug) Table | Tooltip: After sketching form, fill of the values ​​in tooltip becomes white and their font changes 
+* (Bug) Viewers | Properties:  With long table name, the right column of properties is greatly expanded in width 
+* Ability to store data in a layout (WIP)
+* Clearing grid's background (so that it will stay white even if cell renderer fails) 
+* (Bug) Table info panels are duplicated on the PP 
+* Add column filter options are partially hidden 
+* (Bug) JS API: toJs doesn't seem to work on DataQuery objects 
+* (Bug) Opening a dialog resets the property panel 
+* Charts: Timelines (WIP)
+
+
 # 2021-01-27 Dev build 0.89.16
 
 ## Latest Docker Images
