@@ -178,7 +178,15 @@ export class TimelinesViewer extends EChartViewer {
         tempObj[key] = [id, start, end, [event,]];
       }
     }
-    this.data = Object.values(tempObj);
+
+    this.data = Object.values(tempObj).sort((a, b) => {
+      if (a[0] > b[0]) return 1;
+      if (a[0] < b[0]) return -1;
+
+      // Items with the same id are sorted based on `start` value
+      if (a[1] > b[1]) return 1;
+      if (a[1] < b[1]) return -1;
+    });
 
     this.chart.on('click', params => this.dataFrame.selection.handleClick(
       i => this.columns[0].get(i) === params.data[0], params.event));
