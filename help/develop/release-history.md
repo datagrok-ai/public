@@ -1,6 +1,21 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-02-10 Dev build 0.89.18
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.89.18`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* JS API: Ability to insert columns (WIP)
+
+
 # 2021-02-10 Dev build 0.89.17
 
 ## Latest Docker Images
