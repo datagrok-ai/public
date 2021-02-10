@@ -64,11 +64,11 @@
 * Add Chem package properties 
 * Single scaffold alignment mode 'chem-scaffold': simplified 
 * (Bug) DockManager: width rounding error 
-* [(Bug) Bar Chart: null values break color-coding of stacked bars](https://community.datagrok.ai/t/bar-chart-color-by-category/516|https://community.datagrok.ai/t/bar-chart-color-by-category/516) 
+* [(Bug) Bar Chart: null values break color-coding of stacked bars](https://community.datagrok.ai/t/bar-chart-color-by-category/516) 
 * (Bug) Scaffold highlights have offsets 
 * ClinicalCase - a plugin for analyzing SDTM-based clinical studies data (WIP)
 * Chem, RDKit-based (WIP)
-* [Histogram: add a dropdown for 'Color Aggr Type' property](https://community.datagrok.ai/t/cannot-easily-change-the-aggregation-of-the-histogram/509+|https://community.datagrok.ai/t/cannot-easily-change-the-aggregation-of-the-histogram/509) 
+* [Histogram: add a dropdown for 'Color Aggr Type' property](https://community.datagrok.ai/t/cannot-easily-change-the-aggregation-of-the-histogram/509) 
 * Filters: improve sizing
 * Filters: add DatePicker 
 * Fixed dev documentation 
