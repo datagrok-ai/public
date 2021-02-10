@@ -893,10 +893,19 @@ export class ColumnList {
   /** Adds a column, and optionally notifies the parent dataframe.
    * @param {Column} column
    * @param {boolean} notify
+   * @returns {Column} */
+  add(column, notify = true) {
+    grok_ColumnList_Add(this.d, column.d, notify);
+    return column;
+  }
+
+  /** Inserts a column, and optionally notifies the parent dataframe.
+   * @param {Column} column
+   * @param {boolean} notify
    * @param {int} index
    * @returns {Column} */
-  add(column, notify = true, index) {
-    grok_ColumnList_Add(this.d, column.d, notify, index);
+  insert(column, notify = true, index) {
+    grok_ColumnList_Insert(this.d, column.d, notify, index);
     return column;
   }
 
