@@ -96,44 +96,49 @@ export class TimelinesViewer extends EChartViewer {
       const categoryIndex = api.value(0);
       const start = api.coord([api.value(1), categoryIndex]);
       const end = api.coord([api.value(2), categoryIndex]);
-  
-      const rectShape = echarts.graphic.clipRectByRect({
-        x: start[0],
-        y: start[1] - this.lineWidth / 2,
-        width: end[0] - start[0],
-        height: this.lineWidth
-      }, {
-        x: params.coordSys.x,
-        y: params.coordSys.y,
-        width: params.coordSys.width,
-        height: params.coordSys.height
-      });
-  
-      return {
+      const width = end[0] - start[0];
+
+      let group = {
         type: 'group',
-        children: [{
+        children: []
+      };
+
+      if (isNaN(api.value(1)) || isNaN(api.value(2)) || this.markerSize > width) {
+        group.children.push({
+          type: 'circle',
+          shape: {
+            cx: isNaN(start[0]) ? end[0] : start[0],
+            cy: end[1], r: this.markerSize / 2
+          },
+          style: {
+            fill: this.colorMap[isNaN(api.value(3)) ?
+              this.data[params.dataIndex][3][0] : api.value(3)]
+          }
+        });
+      } else {
+        const rectShape = echarts.graphic.clipRectByRect({
+          x: start[0],
+          y: start[1] - this.lineWidth / 2,
+          width: width,
+          height: this.lineWidth
+        }, {
+          x: params.coordSys.x,
+          y: params.coordSys.y,
+          width: params.coordSys.width,
+          height: params.coordSys.height
+        });
+
+        group.children.push({
           type: 'rect',
           transition: ['shape'],
           shape: rectShape,
           style: { fill: this.colorMap[isNaN(api.value(3)) ?
             this.data[params.dataIndex][3][0] : api.value(3)] }
-        },
-        {
-          type: 'circle',
-          shape: {
-            cx: start[0], cy: end[1], r: this.markerSize / 2
-          },
-          style: { fill: 'darkblue' }
-        }, {
-          type: 'circle',
-          shape: {
-            cx: end[0], cy: end[1], r: this.markerSize / 2
-          },
-          style: { fill: 'coral' }
-        }
-        ]
-      };
-    };
+        });
+      }
+  
+      return group;
+    }
 
     super.onTableAttached();
   }
