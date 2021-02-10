@@ -96,6 +96,11 @@ export class TimelinesViewer extends EChartViewer {
     }, {});
 
     this.option.series[0].renderItem = (params, api) => {
+      let overlap = false;
+      if (params.dataIndex > 0 && api.value(1) <= this.data[params.dataIndex - 1][2]
+          && this.data[params.dataIndex][0] === this.data[params.dataIndex - 1][0]) {
+        overlap = true;
+      }
       const categoryIndex = api.value(0);
       const start = api.coord([api.value(1), categoryIndex]);
       const end = api.coord([api.value(2), categoryIndex]);
@@ -130,6 +135,10 @@ export class TimelinesViewer extends EChartViewer {
           width: params.coordSys.width,
           height: params.coordSys.height
         });
+        if (overlap) {
+          // Shift along the Y axis
+          rectShape.y += this.markerSize * 2;
+        }
 
         group.children.push({
           type: 'rect',
@@ -170,6 +179,7 @@ export class TimelinesViewer extends EChartViewer {
       let id = this.columns[0].get(i);
       let start = getTime(i, 1);
       let end = getTime(i, 2);
+      if (start === end && end === null) continue;
       let event = this.columns[3].get(i);
       let key = `${id}-${start}-${end}`;
       if (tempObj.hasOwnProperty(key)) {
