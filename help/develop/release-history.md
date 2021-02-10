@@ -14,27 +14,13 @@
 ## Addressed Issues
 
 * JS API: Ability to insert columns (WIP)
-
-
-# 2021-02-10 Dev build 0.89.17
-
-## Latest Docker Images
-
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.89.17`
-  *  `docker pull datagrok/datagrok:latest`
-  
-* [Docker-Compose](admin/docker-compose.md)
-
-## Addressed Issues
-
 * Programming exercises (WIP)
 * Updated exercises.md 
 * User Data Storage overview 
 * Update user-data-storage.md 
 * Fixed links in user-data-storage.md 
 * Js Packages: Replace GUID hash with build number
-Packages: delete debug version when user publishes release 
+* Packages: delete debug version when user publishes release 
 * Packages: delete debug version when user publishes release 
 * Chord Diagram (WIP)
 * Wiki: applications - general, building, debugging. wip 
@@ -53,7 +39,7 @@ Packages: delete debug version when user publishes release
 * Domains / NLP (WIP)
 * Wiki: Data Access 
 * Harmonize ui framework
-(Bug) JS API: column name search box disappears from ColumnComboBox (WIP)
+* (Bug) JS API: column name search box disappears from ColumnComboBox (WIP)
 * Changed Redo shortcut to Ctrl+Shift+Z 
 * Wiki: switch to recommended package naming 
 * (Bug) Multiple column selector: mouse-driven selection is broken 
@@ -74,7 +60,7 @@ Packages: delete debug version when user publishes release
 * Wiki: how-to build an app. WIP: Scripting 
 * (Bug) Restore CVM to normal (WIP)
 * (Bug) @AutoProperties(includeGetters: true) won't work
-(Bug) Notebooks: New notebooks are created empty 
+* (Bug) Notebooks: New notebooks are created empty 
 * Add Chem package properties 
 * Single scaffold alignment mode 'chem-scaffold': simplified 
 * (Bug) DockManager: width rounding error 
@@ -84,7 +70,7 @@ Packages: delete debug version when user publishes release
 * Chem, RDKit-based (WIP)
 * [Histogram: add a dropdown for 'Color Aggr Type' property](https://community.datagrok.ai/t/cannot-easily-change-the-aggregation-of-the-histogram/509+|https://community.datagrok.ai/t/cannot-easily-change-the-aggregation-of-the-histogram/509) 
 * Filters: improve sizing
-Filters: add DatePicker 
+* Filters: add DatePicker 
 * Fixed dev documentation 
 * Show package fullName 
 * Wiki: how-to build an app. WIP: REST endpoints, groups, sharing 
@@ -98,7 +84,7 @@ Filters: add DatePicker
 * (Bug) Grid: hiding columns leaves empty space on the right (WIP)
 * Biosignals (WIP)
 * (Bug) Viewers | Properties: Sliders move to the next row if width of the second properties is not enough
-(Bug) Table | Tooltip: After sketching form, fill of the values ​​in tooltip becomes white and their font changes 
+* (Bug) Table | Tooltip: After sketching form, fill of the values ​​in tooltip becomes white and their font changes 
 * (Bug) Viewers | Properties:  With long table name, the right column of properties is greatly expanded in width 
 * Ability to store data in a layout (WIP)
 * Clearing grid's background (so that it will stay white even if cell renderer fails) 
