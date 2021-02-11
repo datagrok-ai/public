@@ -17,6 +17,7 @@ export class TimelinesViewer extends EChartViewer {
     ]});
 
     this.data = [];
+    this.count = 0;
 
     this.option = {
       tooltip: {
@@ -97,10 +98,15 @@ export class TimelinesViewer extends EChartViewer {
 
     this.option.series[0].renderItem = (params, api) => {
       let overlap = false;
-      if (params.dataIndex > 0 && api.value(1) <= this.data[params.dataIndex - 1][2]
-          && this.data[params.dataIndex][0] === this.data[params.dataIndex - 1][0]) {
-        overlap = true;
+      if (params.dataIndex > 0) {
+        const prev = this.data[params.dataIndex - 1];
+        if (this.data[params.dataIndex][0] === prev[0] &&
+            prev[1] && prev[2] && prev[1] !== prev[2] &&
+            api.value(1) <= prev[2]) {
+              overlap = true;
+            }
       }
+
       const categoryIndex = api.value(0);
       const start = api.coord([api.value(1), categoryIndex]);
       const end = api.coord([api.value(2), categoryIndex]);
@@ -136,8 +142,12 @@ export class TimelinesViewer extends EChartViewer {
           height: params.coordSys.height
         });
         if (overlap) {
+          let height = api.size([0, 1])[1];
+          let offset = Math.max(this.markerSize * 2, this.lineWidth);
           // Shift along the Y axis
-          rectShape.y += this.markerSize * 2;
+          rectShape.y += (this.count % 3) ? (this.count % 3 === 2) ?
+            0 : offset-height/2 : height/2-offset;
+          this.count += 1;
         }
 
         group.children.push({
