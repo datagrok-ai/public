@@ -651,15 +651,15 @@ export class Files {
   };
 
   /** Check if file exists
-   * @param {File} file
-   * @returns {Promise} */
+   * @param {File | String} file
+   * @returns {Promise<Boolean>} */
   exists(file) {
     return new Promise((resolve, reject) =>
         grok_Dapi_UserFiles_Exists(file, () => resolve(), (e) => reject(e)));
   }
 
   /** Delete file
-   * @param {File} file
+   * @param {File | String} file
    * @returns {Promise} */
   delete(file) {
     return new Promise((resolve, reject) =>
@@ -667,7 +667,7 @@ export class Files {
   }
 
   /** Move file
-   * @param {File} file
+   * @param {File | String} file
    * @param {string} newPath
    * @returns {Promise} */
   move(file, newPath) {
@@ -676,8 +676,8 @@ export class Files {
   }
 
   /** List file
-   * @param {File} file
-   * @param {boolean}  recursive
+   * @param {File | String | String} file
+   * @param {boolean} recursive
    * @param {string} searchPattern
    * @returns {Promise<List<FileInfo>>} */
   list(file, recursive, searchPattern) {
@@ -686,7 +686,7 @@ export class Files {
   }
 
   /** Read file as text
-   * @param {File} file
+   * @param {File | String} file
    * @returns {Promise<String>} */
   readAsText(file) {
     return new Promise((resolve, reject) =>
@@ -694,7 +694,7 @@ export class Files {
   }
 
   /** Read file as bytes
-   * @param {File} file
+   * @param {File | String} file
    * @returns {Promise<Uint8List>} */
   readAsBytes(file) {
     return new Promise((resolve, reject) =>
@@ -702,7 +702,7 @@ export class Files {
   }
 
   /** Read file as bytes
-   * @param {File} file
+   * @param {File | String} file
    * @param {List<int>} blob
    * @returns {Promise} */
   write(file, blob) {
