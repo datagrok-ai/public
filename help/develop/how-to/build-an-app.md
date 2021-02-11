@@ -745,12 +745,20 @@ export function test02() {
 }
 ```
 
-That would be an overkill to structure our super-trivial apps this way, though it is a highly desired
+That would be an overkill to structure these super-trivial apps this way, though it is a highly desired
 practice for anything real-life built for production use. Notice how we include parts of Datagrok API
 for the corresponding features in `src/test-app-01.js`. You may find this `datagrok-api` is a
 pre-defined location, as per `webpack.config.js`.
 
 ## Application lifecycle
+
+There are two main [deployment modes](develop/develop.md#Deployment-Modes) for Daragrok packages: Debug and Release.
+
+* When you `grok publish`, the package is deployed to Datagrok in a Debug mode. This means only you
+  see this deployed version of the package, all others with proper priveleges keep seeing
+  the older version if one existed before
+  
+* When you `grok publish --release`, this replaces the currently installed version with the new one
 
 ## Debugging applications
 
