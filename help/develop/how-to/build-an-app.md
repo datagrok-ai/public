@@ -406,7 +406,7 @@ the below:
 #name: SimpleTestPython
 #language: python
 #input: dataframe table [Data table]
-#output: int count [Number of cells in the table]
+#output: int count [Number of cells in table]
 count = table.shape[0] * table.shape[1]
 ```
 
@@ -442,32 +442,44 @@ When the script is run, here is what happens under the hood:
 
 You can even return graphics from the script! Check it with [this excercise on Scripting Viewers]().
 
+To add a script (in R, Python, Julia, Octave) to the package, put it into its `scripts` folder as a separate file.
+When it comes to JavaScript scripts, simply any JavaScript function in your package may become one.
+Just add a preamble to it with a name, as we did [here](#the-entry-point), and a typed signature.
+
 *References:*:
 
 * [Datagrok architecture]()
 * [Excercises]()
 * [Scripting]()
 
-<!---
 ### Datagrok functions
 
-As you could notice in ["Scripting"]() and ["Accessing databases"](), many entities in Datagrok
+You could notice in ["Scripting"]() and ["Accessing databases"]() that many entities in Datagrok
 are callable functions. In fact, everything in Datagrok is a function. This gives powerful
 compositionality. Let's see how this paradigm allows composing scripts in Datagrok applications.
 
-### Calling scripts from JavaScript code
+### Composing functions
 
-Recall the `SimpleTestPython` script from the above. This script has only one output value.
+Recall the `SimpleTestPython` script from the above. Let's create a JavaScript function
+in our applicaiton package which calls that script:
 
+```JavaScript
+//name: SimpleFunctionJS
+//input: dataframe df
+//language: javascript
+//sample: cars.csv
+export function simpleFunctionJS(df) {
+  grok.functions.call('<PACKAGE_NAME>:SimpleTestPython', { 'table' : df }).then((c) => { alert(count); });
+}
+```
 
+What's more, you can create another JavaScript function somewhere else, even in the other package,
+which would call our `SimpleFunctionJS` in exact same way with `grok.functions.call`.
 
 *References:*
 
 * [Running a script](develop/scripting.md#running-a-script)
-* 
-* 
-
---->
+* [Functions](overview/functions/function.md)
 
 ## Visualizations
 
