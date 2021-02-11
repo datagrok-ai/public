@@ -225,7 +225,7 @@ and [get dataframes in return](#computations).
 
 You get dataframes within your application in various ways. Dataframe may be a table rendered by a table view,
 a new dataframe constructed from a set columns, a dataframe constructed from a file in a file share, a CSV file
-uploaded to a browser, a dataframe return by a script, and so forth. You can add and delete rows and columns of
+uploaded to a browser, a dataframe returned by a script, and so forth. You can add and delete rows and columns of
 the dataframe, view it in a table view and let viewer be attached to it to render. Dataframes can also be calculated
 on the flight for aggregations.
 
@@ -550,7 +550,7 @@ a particular group, access to all its items is also shared to this group.
 
 ### Authentication
 
-Out-of-the-box, Datagrok offers authentication with login-passowrd, OAuth (Google, Facebook, Github),
+Out-of-the-box, Datagrok offers authentication with login-password, OAuth (Google, Facebook, Github),
 SSO (single sign-on) and Active Directory. Enterprise customers might prefer to use a custom SSO (single sign-on)
 scheme. We can accommodate these needs by developing a customer-specific integration.
 
