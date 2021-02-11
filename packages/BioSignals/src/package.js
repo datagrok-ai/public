@@ -17,20 +17,6 @@ async function typeDetector(table, npeaks, fsamp) {
   return (bsType);
 }
 
-async function importPy(data, fsamp, bsType) {
-
-  let f = await grok.functions.eval("BioSignals:importPyphysio");
-
-  let call = f.prepare({
-    'data': data,
-    'fsamp': fsamp,
-    'signalType': bsType
-  });
-
-  await call.call();
-  return call.getParamValue('newDf');
-}
-
 async function applyFilter(data, fsamp, bsType, paramsT) {
 
   let f = await grok.functions.eval("BioSignals:filtersPyphysio");
@@ -115,22 +101,18 @@ function paramsToTable(filtersLST, allParams) {
 export function Biosensors(table) {
 
   function paramSelector(x) {
-
     let methodparams;
     if (x === 'IIR') {
       let fp = ui.floatInput('fp', 45);
       let fs = ui.floatInput('fs', 50);
       let ftype = ui.choiceInput('ftype', 'ellip', ['ellip']);
       methodparams = {'fp': fp, 'fs': fs, 'ftype': ftype};
-
     }
-    if (x === 'normalize') {
-
+    else if (x === 'normalize') {
       let normMethod = ui.choiceInput('norm_method', 'standard', ['standard']);
       methodparams = {'normMethod': normMethod};
     }
-    if (x === 'resample') {
-
+    else if (x === 'resample') {
       let fout = ui.intInput('fout', 4096);
       let kind = ui.choiceInput('kind', 'cubic', ['cubic']);
       methodparams = {'fout': fout, 'kind': kind};
@@ -144,8 +126,8 @@ export function Biosensors(table) {
     let v = ui.dialog('Demo Pipeline');
 
     //INPUTS
-    let column = ui.columnsInput('Biosensor', table);
-    column.setTooltip('Choose one column of biosensor data');
+    let column = ui.columnsInput('Columns', table);
+    column.setTooltip('Choose columns to plot');
 
     let samplingFreq = ui.intInput('Sampling frequency', 2048);
     samplingFreq.setTooltip('Number of samples taken per second');
@@ -157,25 +139,17 @@ export function Biosensors(table) {
     let bsType;
     let npeaks = 10;
     let fsamp = samplingFreq.value;
+    let node1;
+    let tableView = grok.shell.getTableView(table.name);
     column.onChanged(async () => {
+      let viewer = DG.Viewer.fromType('Line chart', table, {yColumnNames: column.value.map((c) => {return c.name})});
+      node1 = tableView.dockManager.dock(viewer, 'right', null, 'Original plot');
       //bsColumn = column.value[0]; //table.columns.byName('ecg_data');
       //bsColumn = bsColumn.getRawData().slice(0, npeaks * fsamp);
       //let t = DG.DataFrame.fromColumns([DG.Column.fromList('double', 'x', bsColumn)]);
       //bsType = await typeDetector(t, npeaks, fsamp);
       bsType = 'ecg';
     });
-
-    let node1;
-    let containerOGplot = ui.div();
-    let tableView = grok.shell.getTableView(table.name);
-    containerOGplot.appendChild(ui.bigButton('Plot Original', async () => {
-
-      let t = DG.DataFrame.fromColumns([column.value[0]]);
-      let plotOG = await importPy(t, fsamp, bsType);
-      let viewer = DG.Viewer.fromType('Line chart', plotOG);
-      node1 = tableView.dockManager.dock(viewer.root, 'right', null, 'Original plot');
-
-    }));
 
     // Filter dialogue
     let filtersLST = [];
@@ -204,8 +178,8 @@ export function Biosensors(table) {
         paramsContainer.appendChild(ui.inputs(Object.values(allParams[i - 1])));
       })
       i++;
+      accFILTER.addPane('parameters', () => paramsContainer);
     }));
-    accFILTER.addPane('parameters', () => paramsContainer)
 
     let node2;
     containerFLplot.appendChild(ui.bigButton('Plot Filtered', async () => {
@@ -250,7 +224,6 @@ export function Biosensors(table) {
     containerIndicator.appendChild(indicatorInputs);
 
     v.add(containerImport);
-    v.add(containerOGplot);
     v.add(containerFILTER);
     v.add(accFILTER);
     v.add(filterButton);
