@@ -645,3 +645,68 @@ export class TablesDataSource extends HttpDataSource {
   }
 
 }
+
+export class Files {
+  constructor() {
+  };
+
+  /** Check if file exists
+   * @param {File} file
+   * @returns {Promise} */
+  exists(file) {
+    return new Promise((resolve, reject) =>
+        grok_Dapi_UserFiles_Exists(file, () => resolve(), (e) => reject(e)));
+  }
+
+  /** Delete file
+   * @param {File} file
+   * @returns {Promise} */
+  delete(file) {
+    return new Promise((resolve, reject) =>
+        grok_Dapi_UserFiles_Delete(file, () => resolve(), (e) => reject(e)));
+  }
+
+  /** Move file
+   * @param {File} file
+   * @param {string} newPath
+   * @returns {Promise} */
+  move(file, newPath) {
+    return new Promise((resolve, reject) =>
+        grok_Dapi_UserFiles_Move(file, newPath, () => resolve(), (e) => reject(e)));
+  }
+
+  /** List file
+   * @param {File} file
+   * @param {boolean}  recursive
+   * @param {string} searchPattern
+   * @returns {Promise<List<FileInfo>>} */
+  list(file, recursive, searchPattern) {
+    return new Promise((resolve, reject) =>
+        grok_Dapi_UserFiles_List(file, recursive, searchPattern, (data) => resolve(toJs(data)), (e) => reject(e)));
+  }
+
+  /** Read file as text
+   * @param {File} file
+   * @returns {Promise<String>} */
+  readAsText(file) {
+    return new Promise((resolve, reject) =>
+        grok_Dapi_UserFiles_readAsText(file, (data) => resolve(data), (e) => reject(e)));
+  }
+
+  /** Read file as bytes
+   * @param {File} file
+   * @returns {Promise<Uint8List>} */
+  readAsBytes(file) {
+    return new Promise((resolve, reject) =>
+        grok_Dapi_UserFiles_readAsBytes(file, (data) => resolve(toJs(data)), (e) => reject(e)));
+  }
+
+  /** Read file as bytes
+   * @param {File} file
+   * @param {List<int>} blob
+   * @returns {Promise} */
+  write(file, blob) {
+    return new Promise((resolve, reject) =>
+        grok_Dapi_UserFiles_Write(file, blob, () => resolve(), (e) => reject(e)));
+  }
+}
