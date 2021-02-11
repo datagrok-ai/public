@@ -72,6 +72,36 @@ Examples:
   * [Trellis Plot](https://public.datagrok.ai/js/samples/ui/viewers/types/trellis-plot)
   * [Word Cloud](https://public.datagrok.ai/js/samples/ui/viewers/types/word-cloud)
 
+## Adding Viewers to Views
+
+You may add a viewer to any container, such as a [main application view](/develop/how-to/build-an-app.md#the-main-view) or a dialog window.
+
+Here is how to create a new [view](develop/how-to/custom-views.md) and add a plot to it:
+
+```javascript
+let v = DG.Viewer.scatterPlot(grok.data.demo.demog());
+grok.shell.newView('foo').append(v.root);
+```
+
+Our [CharPy](https://github.com/datagrok-ai/public/blob/master/packages/ChaRPy/src/package.js) package gives an example of adding some controls and viewers to a dialog box:
+
+```javascript
+
+let viewerLeft = DG.Viewer.fromType(optionsObj.type, table, optionsObj.look);
+let viewerRight = DG.Viewer.fromType('Scripting Viewer',
+  tablePreProcess([...new Set(colsFilter)],table),
+  {script: map.header + string + map.tail});
+let block =
+  $(ui.splitV([
+    ui.textArea(string),
+    ui.splitH([
+      viewerLeft,
+      viewerRight])
+  ])).css('flex-grow', '1');
+let dialog = ui.dialog('OUTPUT SCRIPT').add(block[0]);
+dialog.showModal(true);
+```
+
 ## Docking Viewers
 
 Just like other visual components that occupy a window of their own, viewers can be docked to a particular position:
