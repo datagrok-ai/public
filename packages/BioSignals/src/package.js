@@ -122,8 +122,6 @@ export function Biosensors(table) {
 
   let tempButton = ui.div();
   tempButton.appendChild(ui.button('launch', () => {
-    //CREATE DIALOGUE
-    let v = ui.dialog('Demo Pipeline');
 
     //INPUTS
     let column = ui.columnsInput('Columns', table);
@@ -143,12 +141,24 @@ export function Biosensors(table) {
     let tableView = grok.shell.getTableView(table.name);
     column.onChanged(async () => {
       let viewer = DG.Viewer.fromType('Line chart', table, {yColumnNames: column.value.map((c) => {return c.name})});
-      node1 = tableView.dockManager.dock(viewer, 'right', null, 'Original plot');
+      //node1 = tableView.dockManager.dock(viewer, 'right', null, 'Original plot');
       //bsColumn = column.value[0]; //table.columns.byName('ecg_data');
       //bsColumn = bsColumn.getRawData().slice(0, npeaks * fsamp);
       //let t = DG.DataFrame.fromColumns([DG.Column.fromList('double', 'x', bsColumn)]);
       //bsType = await typeDetector(t, npeaks, fsamp);
       bsType = 'ecg';
+
+      ui.dialog('Demo Pipeline')
+          .add(containerImport)
+          .add(viewer)
+          .add(containerFILTER)
+          .add(accFILTER)
+          .add(filterButton)
+          .add(containerFLplot)
+          // .add(containerINFO)
+          // .add(containerINFplot)
+          // .add(containerIndicator)
+          .showModal(true);
     });
 
     // Filter dialogue
@@ -188,11 +198,21 @@ export function Biosensors(table) {
       let t = DG.DataFrame.fromColumns([column.value[0]]);
       let plotFL = await applyFilter(t, fsamp, bsType, paramsT);
       // node2 = tableView.dockManager.dock(plotFL, 'fill', node1, 'Filtered plot');
-
-      let viewer = DG.Viewer.fromType('Line chart', plotFL);
-      node2 = tableView.dockManager.dock(viewer.root, 'fill', node1, 'Filtered plot');
-
-
+      let viewer1 = DG.Viewer.fromType('Line chart', table, {yColumnNames: column.value.map((c) => {return c.name})});
+      let viewer2 = DG.Viewer.fromType('Line chart', plotFL);
+      //node2 = tableView.dockManager.dock(viewer.root, 'fill', node1, 'Filtered plot');
+      ui.dialog('Demo Pipeline')
+          .add(containerImport)
+          .add(viewer1)
+          .add(containerFILTER)
+          .add(accFILTER)
+          .add(filterButton)
+          .add(containerFLplot)
+          .add(viewer2)
+          // .add(containerINFO)
+          // .add(containerINFplot)
+          // .add(containerIndicator)
+          .showModal(true);
     }));
 
     // Information extraction dialogue
@@ -223,23 +243,24 @@ export function Biosensors(table) {
     let indicatorInputs = ui.inputs([indicator]);
     containerIndicator.appendChild(indicatorInputs);
 
-    v.add(containerImport);
-    v.add(containerFILTER);
-    v.add(accFILTER);
-    v.add(filterButton);
-    v.add(containerFLplot);
-    v.add(containerINFO);
-    v.add(containerINFplot);
-    v.add(containerIndicator).onOK(async () => {
-
-      paramsT = paramsToTable(filtersLST, allParams);
-      let t = DG.DataFrame.fromColumns([column.value[0]]);
-      let indicatorDf = await toIndicators(t, fsamp, bsType, paramsT, infoType, indicator);
-      grok.shell.addTableView(indicatorDf);
-
-    }).show();
-
+    //CREATE DIALOGUE
+    ui.dialog('Demo Pipeline')
+        .add(containerImport)
+        .add(containerFILTER)
+        .add(accFILTER)
+        .add(filterButton)
+        .add(containerFLplot)
+        // .add(containerINFO)
+        // .add(containerINFplot)
+        // .add(containerIndicator).onOK(async () => {
+        //
+        //   paramsT = paramsToTable(filtersLST, allParams);
+        //   let t = DG.DataFrame.fromColumns([column.value[0]]);
+        //   let indicatorDf = await toIndicators(t, fsamp, bsType, paramsT, infoType, indicator);
+        //   grok.shell.addTableView(indicatorDf);
+        //
+        // }).show()
+        .showModal(true);
   }));
-
   return new DG.Widget(tempButton);
 }
