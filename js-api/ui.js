@@ -636,6 +636,10 @@ export class JsEntityMeta {
 }
 
 export function box(item, options = null) {
+  if (item instanceof Widget) {
+    item = item.root;
+  }
+
   if (item != null && $(item).hasClass('ui-box')) {
     return item;
   }
