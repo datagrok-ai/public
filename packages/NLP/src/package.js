@@ -10,7 +10,7 @@ export let _package = new DG.Package();
 
 // AWS service instances
 let translate;
-let comprehendMedical;
+//let comprehendMedical;
 
 // UI components for the `Translation` panel
 let sourceLangInput = ui.choiceInput('', 'Undetermined', [...Object.keys(lang2code), 'Undetermined', 'Other']);
@@ -24,8 +24,8 @@ translationArea.classList.add("translation-area");
 let mainDiv = ui.div([headerDiv, translationArea], "main-div");
 let mainWidget = new DG.Widget(mainDiv);
 // UI components for the `Entities` panel
-let entDiv = ui.divText('{}', "entity-obj");
-let entWidget = new DG.Widget(entDiv);
+// let entDiv = ui.divText('{}', "entity-obj");
+// let entWidget = new DG.Widget(entDiv);
 
 let sourceLang, sourceCode;
 let sourceText, cropped;
@@ -41,17 +41,17 @@ async function translateText(translate, params) {
   });
 }
 
-async function detectEntities(comprehendMedical, params) {
-  return new Promise((resolve, reject) => {
-    comprehendMedical.detectEntitiesV2(params, (err, data) => {
-      if (err) reject(err);
-      // Alternatively, return the `data.Entities` array
-      resolve({entities: data, error: 0});
-    })
-  }).catch((err) => {
-    return {entities: {}, error: 1}
-  });
-}
+// async function detectEntities(comprehendMedical, params) {
+//   return new Promise((resolve, reject) => {
+//     comprehendMedical.detectEntitiesV2(params, (err, data) => {
+//       if (err) reject(err);
+//       // Alternatively, return the `data.Entities` array
+//       resolve({entities: data, error: 0});
+//     })
+//   }).catch((err) => {
+//     return {entities: {}, error: 1}
+//   });
+// }
 
 async function getCredentials() {
   let credentialsResponse = await _package.getCredentials();
@@ -158,29 +158,29 @@ export async function translationPanel(textfile) {
   return mainWidget;
 }
 
-//name: Entities
-//tags: panel, widgets
-//input: file textfile
-//output: widget result
-//condition: isTextFile(textfile)
-export async function entitiesPanel(textfile) {
+// name: Entities
+// tags: panel, widgets
+// input: file textfile
+// output: widget result
+// condition: isTextFile(textfile)
+// export async function entitiesPanel(textfile) {
 
-  let text = await extractText(textfile);
-  if (!text) {
-    entDiv.innerText = 'The input text is empty.';
-    return entWidget;
-  }
+//   let text = await extractText(textfile);
+//   if (!text) {
+//     entDiv.innerText = 'The input text is empty.';
+//     return entWidget;
+//   }
 
-  let output = await detectEntities(comprehendMedical, {Text: text});
-  if (output.error === 1) {
-    entDiv.innerText = 'Error calling Comprehend Medical.';
-    return entWidget;
-  }
+//   let output = await detectEntities(comprehendMedical, {Text: text});
+//   if (output.error === 1) {
+//     entDiv.innerText = 'Error calling Comprehend Medical.';
+//     return entWidget;
+//   }
 
-  entDiv.innerText = JSON.stringify(output.entities, null, 2);
+//   entDiv.innerText = JSON.stringify(output.entities, null, 2);
 
-  return entWidget;
-}
+//   return entWidget;
+// }
 
 //name: exportFunc
 //tags: autostart
@@ -191,5 +191,5 @@ export async function initAWS() {
     region: 'us-east-2'
   });
   translate = new AWS.Translate();
-  comprehendMedical = new AWS.ComprehendMedical();
+  //comprehendMedical = new AWS.ComprehendMedical();
 }
