@@ -178,6 +178,31 @@ in detail.
 * [fetchProxy sample](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/dapi/fetch.js)
 * [Access Data](develop/how-to/access-data.md)
 
+### Working with databases
+
+A comprehensive overview of programmatic database access is [here](develop/how-to/access-data.md),
+we highly recommend you to go through this text.
+
+A short action list for accessing a database from your application:
+
+* [Add a connection](develop/how-to/access-data.md#adding-connections) to the package's `connection` folder
+* Prepare database [queries]() in one or several files in package's `queries` folder, for each query
+  referring to the corresponding database
+* Consider caching the database query results:
+  * `"cache results": true` in connection's JSON `""parameters"` section
+  * `--meta.cache: true` to the preamble of each query you want to be cached
+* After the package is deployed, verify you've delivered database [credentials]()
+* [Invoke](develop/how-to/access-data.md#executing-queries) the query in JavaScript code
+  by `await grok.data.query("<PACKAGE_NAME>:<QUERY_NAME>", { ... })` with a dictionary of query arguments
+  as the second argument. The function returns [dataframe]() as a result
+
+When you [share]() a package to a user or a group,
+its contents are shared too, so does the database connections.
+
+*References:*
+
+* [Data Access](develop/how-to/access-data.md)
+
 ## Dataframes
 
 ### Creating and working with Dataframes
@@ -230,8 +255,15 @@ grok.shell.addTableView(df);
 There we create a new dataframe from columns, add a column and a row, delete a row, and open the result
 in a table view.
 
-A good overview of dataframes capabilities is available in our [API Samples](https://dev.datagrok.ai/js/samples/data-frame/).
+A good overview of dataframes capabilities is available in our
+[API Samples](https://dev.datagrok.ai/js/samples/data-frame/).
 Also check the API reference at [this link](https://datagrok.ai/js-api/DataFrame).
+
+*References:*
+
+* [Dataframe API samples](https://dev.datagrok.ai/js/samples/data-frame/)
+* [Dataframe API reference](https://datagrok.ai/js-api/DataFrame)
+* [Datagraok JavaScript playground](https://public.datagrok.ai/js)
 
 ### Semantic annotation and metadata
 
@@ -243,6 +275,10 @@ effect at all, except that you can search objects by metadata.
 There is a variery of metadata in Datagrok, discussed [here](discover/metadata.md).
 Out of all metadata, column tags and semantic types are of particular interest in
 application development and dataframes.
+
+*References:*
+
+* [Metadata](discover/metadata.md)
 
 #### Column tags
 
@@ -332,7 +368,19 @@ a boolean `currentUser`, which is set to `true` by default.
 * User data storage [reference](develop/user-data-storage.md)
 * User data storage [sample](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/misc/user-data-storage.js)
 
-### Storing tables
+### Storing dataframes
+
+In addition to the user data storage, to where you can serialize dataframes or columns as JSONs,
+there is a facility for storing dataframes which appear in the Datagrok UI as "Tables". Check
+[this example](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/data-access/save-and-load-df.js)
+for `grok.dapi.tables.uploadDataFrame` and `grok.dapi.tables.getTable`.
+
+The saved tables are available in the "Tables" pane, which you can open with "Windows" button
+in the left sidebar in the Datagrok UI.
+
+*References:*
+
+* [Table save and load example](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/data-access/save-and-load-df.js)
 
 ## Computations
 
@@ -391,9 +439,32 @@ When the script is run, here is what happens under the hood:
 
 You can even return graphics from the script! Check it with [this excercise on Scripting Viewers]().
 
+*References:*:
+
+* [Datagrok architecture]()
+* [Excercises]()
+* [Scripting]()
+
+<!---
 ### Datagrok functions
 
+As you could notice in ["Scripting"]() and ["Accessing databases"](), many entities in Datagrok
+are callable functions. In fact, everything in Datagrok is a function. This gives powerful
+compositionality. Let's see how this paradigm allows composing scripts in Datagrok applications.
+
 ### Calling scripts from JavaScript code
+
+Recall the `SimpleTestPython` script from the above. This script has only one output value.
+
+
+
+*References:*
+
+* [Running a script](develop/scripting.md#running-a-script)
+* 
+* 
+
+--->
 
 ## Visualizations
 

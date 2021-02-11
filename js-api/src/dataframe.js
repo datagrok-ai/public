@@ -899,6 +899,16 @@ export class ColumnList {
     return column;
   }
 
+  /** Inserts a column, and optionally notifies the parent dataframe.
+   * @param {Column} column
+   * @param {boolean} notify
+   * @param {int} index
+   * @returns {Column} */
+  insert(column, notify = true, index) {
+    grok_ColumnList_Insert(this.d, column.d, notify, index);
+    return column;
+  }
+
   /** Adds an empty column of the specified type.
    * @param {string} name
    * @param {ColumnType} type
@@ -947,10 +957,10 @@ export class ColumnList {
   }
 
   /** Removes column by name (case-insensitive).
-   * @param {string} columnName
+   * @param {string} column
    * @returns {ColumnList} */
-  remove(columnName) {
-    grok_ColumnList_Remove(this.d, columnName);
+  remove(column) {
+    grok_ColumnList_Remove(this.d, column);
     return this;
   }
 
