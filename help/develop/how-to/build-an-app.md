@@ -85,6 +85,9 @@ such as modifying the app's URI or hiding the side panels of the Datagrok's main
 
 Read more on creating custom views [here](./custom-views.md).
 
+[This example](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/ui/viewers/create-viewers.js)
+shows how to add a [viewer](#visualizations) to a view.
+
 ## Working with IntelliSense
 
 We recommend restoring the package dependencies before starting development with an IDE.
@@ -475,22 +478,26 @@ PC Plot, Word Cloud, Network, Box Plot, Tree Map, Heat Map, Statistics, Correlat
 Markup, Tiles, Form, Map, Shape, Chord, and Tree. These viewers were crafted for web from scratch, and are
 purpose-fit for life science applcations. For example, some viewers [provide for](visualize/viewers/box-plot.md)
 built-in statistical hypothesis testing and Multivariate Analysis. Based on our unique in-browser
-[data store](#creating-and-working-with-dataframes), they cater for high performance data exploration
+[data store](#creating-and-working-with-dataframes), they provide for high performance data exploration
 on datasets of 10 million rows.
 
 Viewers may be connected to other visual entities of your applciation, providing for interactive
 filtering, selection, current row, mouse-over rows and other events. All existing viewers
 are available both ad-hoc while exploring data and programmatically in applications' code.
 It's possible to expand the platform with new viewers shared through versioned packages.
-Viewers may be created in both native way in JavaScript code with Datagrok JS API, and via
-R, Python, Julia-based visualizations. 
+Viewers may be created in both native way in JavaScript code with Datagrok JavaScript API, and via
+R, Python, Julia-based visualizations (see [scripting viewers](visualize/viewers/scripting-viewer.md)).
 
-Viewers are either supplied with their own dataframes, or (more typical) are linked to
-the dataframes objects which are re-used through the application's code.
+Viewers are either supplied with their own dataframes, or (more typical for the applications)
+are linked to the dataframes objects which are re-used through the application's code.
+
+[This example](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/ui/viewers/create-viewers.js)
+shows how to add a viewer to a [view](#the-main-vew).
 
 *References:*
 
 * [Viewers](visualize/viewers.md)
+* [Scripting viewers](visualize/viewers/scripting-viewer.md)
 
 ## Managing privileges
 
