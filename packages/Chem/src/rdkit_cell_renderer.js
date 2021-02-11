@@ -175,7 +175,7 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
 
       let molRegenerateCoords = colTags && colTags['regenerate-coords'] === 'true';
       let scaffoldRegenerateCoords = false;
-      let df = gridCell.tableColumn.dataFrame;
+      let df = gridCell.grid.dataFrame;
       const rowScaffoldCol = (() => {
 
         // if given, take the 'scaffold-col' col
