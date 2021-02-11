@@ -106,12 +106,6 @@ export class ChordViewer extends DG.JsViewer {
       }
     };
 
-    if (this.aggType === 'count') this.chordLengthColumnName = null;
-    this.aggregatedTable = this.dataFrame
-      .groupBy([this.fromColumnName, this.toColumnName])
-      .add(this.aggType, this.chordLengthColumnName, 'result')
-      .aggregate();
-
     this.freqMap = {};
     for (let i = 0; i < this.dataFrame.rowCount; i++) {
       let from = this.fromColumn.isNone(i) ? "" : this.fromColumn.get(i);
@@ -120,12 +114,23 @@ export class ChordViewer extends DG.JsViewer {
       this.freqMap[to] = (this.freqMap[to] || 0) + 1;
     }
 
-    this.fromCol = this.aggregatedTable.getCol(this.fromColumnName);
-    this.toCol = this.aggregatedTable.getCol(this.toColumnName);
-    this.aggVal = this.aggregatedTable.getCol('result').getRawData();
-    this.rowCount = this.aggregatedTable.rowCount;
+    if (this.aggType === 'count') this.chordLengthColumnName = null;
+    if (this.fromColumnName !== this.toColumnName) {
+      this.aggregatedTable = this.dataFrame
+        .groupBy([this.fromColumnName, this.toColumnName])
+        .add(this.aggType, this.chordLengthColumnName, 'result')
+        .aggregate();
 
-    this.categories = Array.from(new Set(this.fromCol.categories.concat(this.toCol.categories)));
+      this.fromCol = this.aggregatedTable.getCol(this.fromColumnName);
+      this.toCol = this.aggregatedTable.getCol(this.toColumnName);
+      this.aggVal = this.aggregatedTable.getCol('result').getRawData();
+      this.rowCount = this.aggregatedTable.rowCount;
+  
+      this.categories = Array.from(new Set(this.fromCol.categories.concat(this.toCol.categories)));
+    } else {
+      this.categories = Array.from(this.fromColumn.categories);
+    }
+
     this.data = this.categories
       .sort((this.sortBy === 'frequency') ? (a, b) => this.freqMap[b] - this.freqMap[a] : undefined)
       .map((s, ind) => {
@@ -137,25 +142,33 @@ export class ChordViewer extends DG.JsViewer {
         }
     });
 
-    for (const prop of Object.getOwnPropertyNames(this.segments)) {
-      delete this.segments[prop];
+    if (this.fromColumnName !== this.toColumnName) {
+      for (const prop of Object.getOwnPropertyNames(this.segments)) {
+        delete this.segments[prop];
+      }
+  
+      this.data.forEach(s => {
+        this.segments[s.label] = { datum: s, targets: [], aggTotal: null, visited: false };
+        s.pos = 0;
+      });
+  
+      for (let i = 0; i < this.rowCount; i++) {
+        let from = this.fromCol.get(i);
+        let to = this.toCol.get(i);
+  
+        this.segments[from]['targets'].push(to);
+        this.segments[from]['aggTotal'] = (this.segments[from]['aggTotal'] || 0) + this.aggVal[i];
+        if (from !== to) this.segments[to]['aggTotal'] = (this.segments[to]['aggTotal'] || 0) + this.aggVal[i];
+      }
     }
 
-    this.data.forEach(s => {
-      this.segments[s.label] = { datum: s, targets: [], aggTotal: null, visited: false };
-      s.pos = 0;
-    });
-
-    for (let i = 0; i < this.rowCount; i++) {
-      let from = this.fromCol.get(i);
-      let to = this.toCol.get(i);
-
-      this.segments[from]['targets'].push(to);
-      this.segments[from]['aggTotal'] = (this.segments[from]['aggTotal'] || 0) + this.aggVal[i];
-      if (from !== to) this.segments[to]['aggTotal'] = (this.segments[to]['aggTotal'] || 0) + this.aggVal[i];
+    if (this.sortBy === 'topology') {
+      if (this.fromColumnName === this.toColumnName) {
+        this.props.sortBy = 'alphabet';
+      } else {
+        this.data = topSort(this.segments);
+      }
     }
-
-    if (this.sortBy === 'topology') this.data = topSort(this.segments);
     if (this.direction === 'counterclockwise') this.data.reverse();
   }
 
@@ -226,7 +239,7 @@ export class ChordViewer extends DG.JsViewer {
 
     if (computeData) {
       this.generateData();
-      this.computeChords();
+      if (this.fromColumnName !== this.toColumnName) this.computeChords();
     }
 
     $(this.root).empty();
@@ -245,7 +258,11 @@ export class ChordViewer extends DG.JsViewer {
     // this.chordConf.radius = d => (d.source.id === d.target.id) ? this.conf.outerRadius : null;
 
     circos.layout(this.data, this.conf);
-    circos.chords('chords-track', this.chords, this.chordConf);
+
+    if (this.fromColumnName !== this.toColumnName) {
+      circos.chords('chords-track', this.chords, this.chordConf);
+    }
+
     circos.text('labels', this.data.map(d => { return {
       block_id: d.id,
       position: this.freqMap[d.label] / 2,

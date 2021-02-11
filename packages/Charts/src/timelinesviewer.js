@@ -5,13 +5,16 @@ export class TimelinesViewer extends EChartViewer {
   constructor() {
     super();
     
-    this.initCommonProperties();
     this.subjectColumnName = this.string('subjectColumnName', 'USUBJID');
     this.startColumnName = this.string('startColumnName', 'AESTDY');
     this.endColumnName = this.string('endColumnName', 'AEENDY');
     this.colorByColumnName = this.string('colorByColumnName', 'EVENT');
+
     this.markerSize = this.int('markerSize', 6);
     this.lineWidth = this.int('lineWidth', 3);
+    this.dateFormat = this.string('dateFormat', null, { choices: [
+      '{yyyy}-{MM}-{dd}', '{M}/{d}/{yyyy}', '{MMM} {d}', '{dd}', '{d}'
+    ]});
 
     this.data = [];
 
@@ -77,9 +80,9 @@ export class TimelinesViewer extends EChartViewer {
         }
       ]
     };
-
-    this.onPropertyChanged(null, false);
   }
+
+  onPropertyChanged(property) { this.render() }
 
   onTableAttached() {
     this.columns = this.dataFrame.columns.byNames([
@@ -93,47 +96,61 @@ export class TimelinesViewer extends EChartViewer {
     }, {});
 
     this.option.series[0].renderItem = (params, api) => {
+      let overlap = false;
+      if (params.dataIndex > 0 && api.value(1) <= this.data[params.dataIndex - 1][2]
+          && this.data[params.dataIndex][0] === this.data[params.dataIndex - 1][0]) {
+        overlap = true;
+      }
       const categoryIndex = api.value(0);
       const start = api.coord([api.value(1), categoryIndex]);
       const end = api.coord([api.value(2), categoryIndex]);
-      const height = api.size([0, 1])[1] * 0.4;
-  
-      const rectShape = echarts.graphic.clipRectByRect({
-        x: start[0],
-        y: start[1] - this.lineWidth / 2,
-        width: end[0] - start[0],
-        height: this.lineWidth
-      }, {
-        x: params.coordSys.x,
-        y: params.coordSys.y,
-        width: params.coordSys.width,
-        height: params.coordSys.height
-      });
-  
-      return {
+      const width = end[0] - start[0];
+
+      let group = {
         type: 'group',
-        children: [{
+        children: []
+      };
+
+      if (isNaN(api.value(1)) || isNaN(api.value(2)) || this.markerSize > width) {
+        group.children.push({
+          type: 'circle',
+          shape: {
+            cx: isNaN(start[0]) ? end[0] : start[0],
+            cy: end[1], r: this.markerSize / 2
+          },
+          style: {
+            fill: this.colorMap[isNaN(api.value(3)) ?
+              this.data[params.dataIndex][3][0] : api.value(3)]
+          }
+        });
+      } else {
+        const rectShape = echarts.graphic.clipRectByRect({
+          x: start[0],
+          y: start[1] - this.lineWidth / 2,
+          width: width,
+          height: this.lineWidth
+        }, {
+          x: params.coordSys.x,
+          y: params.coordSys.y,
+          width: params.coordSys.width,
+          height: params.coordSys.height
+        });
+        if (overlap) {
+          // Shift along the Y axis
+          rectShape.y += this.markerSize * 2;
+        }
+
+        group.children.push({
           type: 'rect',
           transition: ['shape'],
           shape: rectShape,
-          style: { fill: isNaN(api.value(3)) ? 'blue' : this.colorMap[api.value(3)] }
-        },
-        {
-          type: 'circle',
-          shape: {
-            cx: start[0], cy: end[1], r: this.markerSize / 2
-          },
-          style: { fill: 'darkblue' }
-        }, {
-          type: 'circle',
-          shape: {
-            cx: end[0], cy: end[1], r: this.markerSize / 2
-          },
-          style: { fill: 'coral' }
-        }
-        ]
-      };
-    };
+          style: { fill: this.colorMap[isNaN(api.value(3)) ?
+            this.data[params.dataIndex][3][0] : api.value(3)] }
+        });
+      }
+  
+      return group;
+    }
 
     super.onTableAttached();
   }
@@ -141,14 +158,28 @@ export class TimelinesViewer extends EChartViewer {
   getSeriesData() {
     this.data.length = 0;
     let tempObj = {};
-    let getTime = (i, j) => this.columns[j].type === 'datetime' ?
-      new Date(`${this.columns[j].get(i)}`) : this.columns[j].isNone(i) ?
-      null : this.columns[j].get(i);
 
-    for (let i = 0; i < this.dataFrame.rowCount; i++) {
+    let getTime = (i, j) => {
+      if (this.columns[j].type === 'datetime') {
+        if (this.dateFormat === null) {
+          this.props.dateFormat = this.getProperty('dateFormat').choices[2];
+        }
+        this.option.xAxis = {
+          type: 'time',
+          boundaryGap: ['5%', '5%'],
+          axisLabel: { formatter: this.dateFormat }
+        };
+      }
+      return this.columns[j].type === 'datetime' ?
+        new Date(`${this.columns[j].get(i)}`) : this.columns[j].isNone(i) ?
+        null : this.columns[j].get(i);
+    }
+
+    for (let i of this.dataFrame.filter.getSelectedIndexes()) {
       let id = this.columns[0].get(i);
       let start = getTime(i, 1);
       let end = getTime(i, 2);
+      if (start === end && end === null) continue;
       let event = this.columns[3].get(i);
       let key = `${id}-${start}-${end}`;
       if (tempObj.hasOwnProperty(key)) {
@@ -157,15 +188,18 @@ export class TimelinesViewer extends EChartViewer {
         tempObj[key] = [id, start, end, [event,]];
       }
     }
-    this.data = Object.values(tempObj);
+
+    this.data = Object.values(tempObj).sort((a, b) => {
+      if (a[0] > b[0]) return 1;
+      if (a[0] < b[0]) return -1;
+
+      // Items with the same id are sorted based on `start` value
+      if (a[1] > b[1]) return 1;
+      if (a[1] < b[1]) return -1;
+    });
 
     this.chart.on('click', params => this.dataFrame.selection.handleClick(
       i => this.columns[0].get(i) === params.data[0], params.event));
     return this.data;
-  }
-  
-  render() {  
-    this.option.series[0].data = this.getSeriesData();
-    this.chart.setOption(this.option);
   }
 }

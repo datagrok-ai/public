@@ -175,23 +175,20 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
 
       let molRegenerateCoords = colTags && colTags['regenerate-coords'] === 'true';
       let scaffoldRegenerateCoords = false;
-      let df = gridCell.tableColumn.dataFrame;
-      const rowScaffoldCol = (() => {
+      let df = gridCell.grid.dataFrame;
+      let rowScaffoldCol = null;
 
-        // if given, take the 'scaffold-col' col
-        if (colTags && colTags['scaffold-col']) {
-          let rowScaffoldColName = colTags['scaffold-col'];
-          let rowScaffoldColProbe = df.columns.byName(rowScaffoldColName);
-          if (rowScaffoldColProbe !== null) {
-            const scaffoldColTags = rowScaffoldColProbe.tags;
-            scaffoldRegenerateCoords = scaffoldColTags && scaffoldColTags['regenerate-coords'] === 'true';
-            molRegenerateCoords = scaffoldRegenerateCoords;
-            return rowScaffoldColProbe;
-          }
+      // if given, take the 'scaffold-col' col
+      if (colTags && colTags['scaffold-col']) {
+        let rowScaffoldColName = colTags['scaffold-col'];
+        let rowScaffoldColProbe = df.columns.byName(rowScaffoldColName);
+        if (rowScaffoldColProbe !== null) {
+          const scaffoldColTags = rowScaffoldColProbe.tags;
+          scaffoldRegenerateCoords = scaffoldColTags && scaffoldColTags['regenerate-coords'] === 'true';
+          molRegenerateCoords = scaffoldRegenerateCoords;
+          rowScaffoldCol = rowScaffoldColProbe;
         }
-        return null;
-
-      })();
+      }
 
       if (rowScaffoldCol == null || rowScaffoldCol.name === gridCell.tableColumn.name) {
         // regular drawing
