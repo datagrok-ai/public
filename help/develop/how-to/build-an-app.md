@@ -538,6 +538,10 @@ a particular group, access to all its items is also shared to this group.
 
 ### Authentication
 
+Out-of-the-box, Datagrok offers authentication with login-passowrd, OAuth (Google, Facebook, Github),
+SSO (single sign-on) and Active Directory. Enterprise customers might prefer to use a custom SSO (single sign-on)
+scheme. We can accommodate these needs by developing a customer-specific integration.
+
 *References:*
 
 * [Authentification](/govern/authentication.md)
@@ -551,39 +555,40 @@ part of our JS API samples.
 
 ### Managing credentials
 
-We strongly advise you not to store service credentials directly inside your application packages
-in any form, whether they reside as a part of a connection string, a parameter inside a connection file in 
-Datagrok, or just login and password used in a POST request in your JS code.
-
-Of course, it is suitable if one stores credentials for a database or a service from public domain
-(for instance, of publicly available datasets like Chembl) right inside the package in a connection file.
+We strongly advise you not to store service credentials directly inside your application packages,
+whether they reside as a part of a connection string, a parameter inside a connection file in 
+Datagrok, or just login and password used in a POST request in your JS code. It's suitable
+if one stores credentials for a database or a service from public domain (for instance,
+of publicly available datasets like Chembl) right inside the package in a connection file.
 For other types of credentials, there are suitable means in Datagrok described below.
-
-There are two key facilities for managing your application credentials.
 
 #### Pushing credentials by the Datagrok Server API
 
-It's possible to programmatically push credentials to Datagrok and deliver them in to the connection
-of interest. In such scenario, credentials are stored on a secured machine, and on demand,
-e.g. through a deployment process, are delivered to Datagrok via a triggered bat/sh-script 
-([link](./manage-credentials.md#database-connection-credentials)). For using it, you need
-to provide an API developer's key, which is available in your user info pane in the Datagrok UI.
-Access it with the user avatar button in the activity bar on the left side of Datagrok main window.
+It's possible to programmatically push credentials to Datagrok and deliver them to the connection
+of interest. In such scenario, credentials are stored on a secured machine and delivered
+to Datagrok via a triggered bat/sh-script. This is usually on demand, e.g. through a deployment process.
+For using this, you need to provide an API developer's key, which is available in your user info pane
+in the Datagrok UI. Access it with the user avatar button in the left sidebar of Datagrok main window.
+
+*References:*
+
+* [Database connection credentials](manage-credentials.md#database-connection-credentials)
 
 #### Storing credentials in the Datagrok Credentials Store
 
 This is useful for credentials which are not part of Datagrok's OpenAPI web connection,
 database or file share connection, but instead are used programmatically in JavaScript code of
-the application to access 3-rd party REST APIs and the like ([link](./manage-credentials.md#package-credentials)).
+the application to access 3-rd party REST APIs and the like.
 
-In Datagrok, Credentials Store gives access to per-package key-value stores and accessible from package's code.
-Credentials Store is a physically separate entity and may be placed on a separate machine,
-which improves theft tolerance. It's also possible to deliver credentials to the Store programmatically
-same way as discussed in p.1.
+In Datagrok, Credentials Store gives access to per-package key-value stores and accessible from JavaScript code.
+Credentials Store is a physically separate entity and may be placed on a separate machine, which
+improves theft tolerance. It's also possible to deliver credentials to the Store programmatically
+same way as discussed in the previous section.
 
 *References:*
 
-* [Managing credentials](./develop/how-to/manage-credentials.md)
+* [Package credentials](manage-credentials.md#package-credentials)
+* [Managing credentials](develop/how-to/manage-credentials.md)
 
 ## UI and UX
 
@@ -661,6 +666,7 @@ implementation into two separate files. However, we are homogenizing the current
 of UI events subcription so that it's always possible to subcribe using rxjs
 `.subscribe` method on an event object.
 
+Not only UI elements provide for events, but also the [dataframe](#dataframes).
 
 Read more about Datagrok events [here](develop/js-api.md#Events).
 
