@@ -217,7 +217,13 @@ export class TimelinesViewer extends EChartViewer {
     });
 
     this.chart.on('click', params => this.dataFrame.selection.handleClick(
-      i => this.columns[0].get(i) === params.data[0], params.event));
+      i => this.columns[0].get(i) === params.data[0], params.event.event));
+
+    this.chart.on('mouseover', params => ui.tooltip.showRowGroup(this.dataFrame,
+      i => this.columns[0].get(i) === params.data[0], params.event.event.x, params.event.event.y));
+
+    this.chart.on('mouseout', () => ui.tooltip.hide());
+
     return this.data;
   }
 }
