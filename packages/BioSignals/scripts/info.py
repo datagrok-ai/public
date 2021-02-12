@@ -47,4 +47,4 @@ if(info == 'Beat from ECG'):
 if(info == 'Phasic estimation'):
     extracted = ph.DriverEstim()(sig)
     phasic, tonic, _ = ph.PhasicEstim(delta=0.02)(extracted)
-    newDf = pd.DataFrame({'time':range(0,len(sig)),'sig':sig,'driver':extracted,'phasic' : phasic})
+    newDf = pd.DataFrame({'time':range(0,len(phasic)),'phasic':phasic,'tonic':tonic})
