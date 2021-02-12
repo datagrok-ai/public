@@ -3,7 +3,7 @@
 
 <!-- This is a developer's view on the Datagrok applications -->
 
-# Datagrok Applications
+# Building Datagrok Applications
 
 Applications are built on top of the Datagrok platform. The Datagrok application serves a targeted
 need around a particular problem or an area. For example, this may be a bioreactor modeling application,
@@ -522,7 +522,7 @@ and authorized access to Datagrok using popular authentication protocols.
 
 Datagrok has a flexible mechanism for grouping users together. A user can belong to more than one group.
 A group can be included in another group, which is useful for both reflecting organization hierarchy
-and implementing  role-based [security](security.md). 
+and implementing role-based [security](security.md). 
 
 Many types of objects within the Datagrok platform can be shared with other users or
 [groups](../govern/group.md). Such shareable objects are called [entities](../overview/objects.md).
@@ -530,16 +530,11 @@ When an object is shared, you are essentially granting a [privilege](../govern/a
 (typically, 'view' or 'edit') to a grantee. See the [Security](../govern/security.md) article
 for details.
 
-When launching a new application on Datagrok, we recommend considering a group which members
-should have access to this application. Often this is a new group which you'd create for 
-this specific application. With the application along come the queries and connections used in it.
-This means grating access to an application implies granting access to the whole package.
-
-Access to either whole package with all its content, or more fine-grained items such as applications
-or connections, is managed per-user and per-group. Therefore, letting a user group access your application
-usually means sharing the corresponding package to this group. When granting access to a package for
-a particular group, access to all its items is also shared to this group.
-
+Often it's a reasonable choice to create a new group for the users of your application.
+To let users access your applicaiton, share application's package with their group.
+Open the "Manage" pane in the sidebar, navigate to "Packages", right-click on your
+package and choose "Share". This will also make all the associated connections, queries,
+scripts and other package entities shared to the group.
 
 *References:*
 
@@ -567,7 +562,7 @@ part of our JS API samples.
 
 ### Managing credentials
 
-We strongly advise you not to store service credentials directly inside your application packages,
+We advise you not to store service credentials directly inside your application packages,
 whether they reside as a part of a connection string, a parameter inside a connection file in 
 Datagrok, or just login and password used in a POST request in your JS code. It's suitable
 if one stores credentials for a database or a service from public domain (for instance,
