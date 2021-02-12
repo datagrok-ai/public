@@ -5,7 +5,7 @@
 #input: string signalType = "ecg" {choices : ["ecg","eda"]}
 #input: dataframe paramsT
 #input: string info = "Beat from ECG" {choices : ["Beat from ECG"]}
-#output: graphics fig
+#output: dataframe newDf
 
 # import packages
 import numpy as np
@@ -39,11 +39,11 @@ for i in range(0,len(paramsT)):
 
 if(info == 'Beat from ECG'):
     extracted = ph.BeatFromECG()(sig)
-    fig, axs = plt.subplots(3)
-    fig.suptitle('Beat from ECG')
-    axs[0].plot(sig)
-    axs[1].plot(extracted,'.-')
-    axs[2].plot(label,'.-')
+    #fig, axs = plt.subplots(2)
+    #fig.suptitle('Beat from ECG')
+    #axs[2].plot(extracted,'.-')
+    #axs[1].plot(label,'.-')
+    newDf = pd.DataFrame({'time':range(0,len(extracted)),'extracted':extracted})
 if(info == 'Phasic estimation'):
     extracted = ph.DriverEstim()(sig)
     phasic, tonic, _ = ph.PhasicEstim(delta=0.02)(extracted)

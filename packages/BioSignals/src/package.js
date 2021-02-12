@@ -6,36 +6,29 @@ import * as DG from "datagrok-api/dg";
 export let _package = new DG.Package();
 
 async function typeDetector(table, npeaks, fsamp) {
-
   let bsType = await grok.functions.call('BioSignals:typeDetector',
     {
       'dat': table,
       'npeaks': npeaks,
       'fsamp': fsamp
     })
-
   return (bsType);
 }
 
 async function applyFilter(data, fsamp, bsType, paramsT) {
-
   let f = await grok.functions.eval("BioSignals:filtersPyphysio");
-
   let call = f.prepare({
     'data': data,
     'fsamp': fsamp,
     'signalType': bsType,
     'paramsT': paramsT
   });
-
   await call.call();
   return call.getParamValue('newDf');
 }
 
 async function extractInfo(data, fsamp, bsType, paramsT, infoType) {
-
   let f = await grok.functions.eval("BioSignals:infoPyphysio");
-
   let call = f.prepare({
     'data': data,
     'fsamp': fsamp,
@@ -43,19 +36,12 @@ async function extractInfo(data, fsamp, bsType, paramsT, infoType) {
     'paramsT': paramsT,
     'info': infoType.value
   });
-
   await call.call();
-  if (infoType.value === 'Beat from ECG') {
-    return call.getParamValue('fig');
-  } else if (infoType.value === 'Phasic estimation') {
-    return call.getParamValue('newDf');
-  }
+  return call.getParamValue('newDf');
 }
 
 async function toIndicators(data, fsamp, bsType, paramsT, infoType, indicator) {
-
   let f = await grok.functions.eval("BioSignals:indicatorsPyphysio");
-
   let call = f.prepare({
     'data': data,
     'fsamp': fsamp,
@@ -64,18 +50,15 @@ async function toIndicators(data, fsamp, bsType, paramsT, infoType, indicator) {
     'info': infoType.value,
     'preset': indicator.value
   });
-
   await call.call();
   return call.getParamValue('FD_HRV_df');
 }
 
 function paramsToTable(filtersLST, allParams) {
-
   let paramsT = DG.DataFrame.create(filtersLST.length);
   paramsT.columns.addNew('filter', 'string');
   for (let j = 0; j < filtersLST.length; j++) {
     paramsT.columns.byName('filter').set(j, filtersLST[j].value);
-
     Object.keys(allParams[j]).forEach(key => {
       if (!paramsT.columns.names().includes(key)) {
         // definitely needs reworking
@@ -205,7 +188,9 @@ export function Biosensors(table) {
       let t = DG.DataFrame.fromColumns([column.value[0]]);
       let plotInfo = await extractInfo(t, fsamp, bsType, paramsT, infoType);
       if (infoType.value === 'Beat from ECG') {
-        node3 = tableView.dockManager.dock(plotInfo, 'fill', node2, infoType.value);
+        let viewer3 = DG.Viewer.fromType('Line chart', plotInfo);
+        view.append(viewer3.root);
+        //node3 = tableView.dockManager.dock(plotInfo, 'fill', node2, infoType.value);
       } else if (infoType.value === 'Phasic estimation') {
         let newView = grok.shell.addTableView(plotInfo);
         newView.lineChart();
