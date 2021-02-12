@@ -41,6 +41,7 @@ export class TimelinesViewer extends EChartViewer {
       },
       yAxis: {
         type: 'category',
+        triggerEvent: true,
         axisTick: { show: false },
         axisLine: { show: false },
       },
@@ -97,7 +98,16 @@ export class TimelinesViewer extends EChartViewer {
     this.columns = this.dataFrame.columns.byNames([
       this.subjectColumnName, this.startColumnName,
       this.endColumnName, this.colorByColumnName
-    ]).map((col, ind) => (col === null) ? this.dataFrame.columns.byIndex(ind) : col);
+    ]).map((col, ind) => {
+      if (col === null) {
+        const propNames = ['subjectColumnName', 'startColumnName',
+          'endColumnName', 'colorByColumnName'];
+        const newColumn = this.dataFrame.columns.byIndex(ind);
+        this[propNames[ind]] = newColumn.name;
+        return newColumn;
+      }
+      return col;
+    });
 
     this.colorMap = this.columns[3].categories.reduce((colorMap, c, i) => {
       colorMap[c] = DG.Color.toRgb(DG.Color.getCategoricalColor(i));
@@ -216,11 +226,35 @@ export class TimelinesViewer extends EChartViewer {
       if (a[1] < b[1]) return -1;
     });
 
-    this.chart.on('click', params => this.dataFrame.selection.handleClick(
-      i => this.columns[0].get(i) === params.data[0], params.event.event));
+    this.chart.on('click', params => this.dataFrame.selection.handleClick( i => {
+      if (params.componentType === 'yAxis') return this.columns[0].get(i) === params.value;
+      if (params.componentType === 'series') {
+        let rowMatch = false;
+        let row = this.dataFrame.row(i);
+        row = [row[this.subjectColumnName], row[this.startColumnName], row[this.endColumnName]];
+        for (let j = 0; j < row.length; j++) {
+          rowMatch = params.value[j] === (this.columns[j].isNone(i) ? null : row[j]);
+          if (!rowMatch) return false;
+        }
+        return rowMatch;
+      }
+      return false;
+    }, params.event.event));
 
-    this.chart.on('mouseover', params => ui.tooltip.showRowGroup(this.dataFrame,
-      i => this.columns[0].get(i) === params.data[0], params.event.event.x, params.event.event.y));
+    this.chart.on('mouseover', params => ui.tooltip.showRowGroup(this.dataFrame, i => {
+      if (params.componentType === 'yAxis') return this.columns[0].get(i) === params.value;
+      if (params.componentType === 'series') {
+        let rowMatch = false;
+        let row = this.dataFrame.row(i);
+        row = [row[this.subjectColumnName], row[this.startColumnName], row[this.endColumnName]];
+        for (let j = 0; j < row.length; j++) {
+          rowMatch = params.value[j] === (this.columns[j].isNone(i) ? null : row[j]);
+          if (!rowMatch) return false;
+        }
+        return rowMatch;
+      }
+      return false;
+    }, params.event.event.x, params.event.event.y));
 
     this.chart.on('mouseout', () => ui.tooltip.hide());
 
