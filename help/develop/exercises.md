@@ -19,6 +19,7 @@ custom applications.
 Table of contents
   * [Setting up the environment](#setting-up-the-environment)
   * [Semantic types](#semantic-types)
+  * [Scripting](#scripting)
   * [Querying databases](#querying-databases)
   * [Creating a scripting viewer](#creating-a-scripting-viewer)
 
@@ -84,16 +85,16 @@ _You will learn:_ how to create and invoke Datagrok scripts in data science lang
 In this exercise, we will count occurrences of a given subsequence in a nucleotide sequence, using Python.
 
 1. Open Datagrok and navigate to `Functions | Scripts | New Python Script`.
-2. Observer a default script created for you. All script attributes are specified in the beginning in comments.
+2. Observe a default script created for you. All script attributes are specified in the beginning in comments.
    There we have the script name, language, one input value of type [`dataframe`](),
    and one output value of type `int`. The script simply computes number of cells in the dataframe.  
    [Dataframe](develop/how-to/build-an-app.md) is a high-performance, easy to use tabular structure
-   with strongly-typed columns of different types (supported types are: string, int, float, bool, DateTime, bigint).
-   In this excercise, we only see a dataframe as is in the default script;
-   there is [another excercise]() to learn manipulating dataframes in JavaScript.
+   with strongly-typed columns of different types (supported types are: `string`, `bool`, `int`, `bigint`,
+   `double`, `qnum` and `datetime`). In this exercise, we only see a dataframe as is in the default script;
+   there is [another exercise]() to learn manipulating dataframes in JavaScript.
 3. Run the script to get a hint for creating an input file. An attribute `#sample: cars.csv`
-   is responsible for it. To open a default input file `cars`, click the "Star button" appeared on top.
-4. Run the script again and proceed to the Datagrok's console. As in Quake, it's avaialble
+   is responsible for it. To open a default input file `cars`, click the `Star` icon in the top menu.
+4. Run the script again and proceed to the Datagrok's console. As in Quake, it's available
    by pressing a `~` button anywhere inside Datagrok. In the console, you would see the script
    execution result. Just one line above the result you could see the console's command to execute
    the script. Enter it again to the console to get the same result.
@@ -106,15 +107,15 @@ In this exercise, we will count occurrences of a given subsequence in a nucleoti
    #input: string subsequence
    #output: int count
    ```
-   In the body, implement a Python function counting all occurrences of a given `subsequece` in a `sequence`.
-   Return a `count` same way as in the default script from p. 2.
+   In the body, implement a Python function counting all occurrences of a given `subsequence` in a `sequence`.
+   Return a `count` the same way as in the default script from p. 2.
 6. Run the script function, provide input values in the dialog and get to the console to see the result.
-   Now run the script function again through the console completely, passing some other arguments values.
+   Now run the script function again through the console completely, passing different arguments values.
 7. Go back to `Functions | Scripts` and hit `New JavaScript Script`.
 8. Implement the function which does the same as `CountSubsequencePython`, now in JavaScript, named
    `CountSubsequenceJS`. Follow the same conventions on the parameters in the comments block
    and returning a result via a variable.
-9. Run `CountSubsequenceJS` using the play button; using the console.
+9. Run `CountSubsequenceJS` using the `Play` button; using the console.
    You can notice that both Python and JS versions of our function are homogenous functions
    in Datagrok. It's also possible to call them in a uniform fashion
    [using our JavaScript API](develop/scripting.md#running-a-script).
@@ -132,7 +133,7 @@ Prerequisites: basic SQL knowledge
 Details: [Connecting to Databases](https://www.youtube.com/watch?v=dKrCk38A1m8&t=1048s),
 [How to Access Data](how-to/access-data.md)
 
-_Note_: Editing an existing data query requires the respective access permission. You might need to request one.
+_Note:_ Editing an existing data query requires the respective access permission. You might need to request one.
 
 In this exercise, we will work with a `northwind` Postgres database (in case the name sounds 
 familiar, this is a demo database that Microsoft often uses for showcasing its technology).
@@ -209,8 +210,8 @@ After checking this you should see a nice scatter plot for `WEIGHT` and `HEIGHT`
 7. In the property panel, proceed to modify the value of the "Script" field by clicking on a "..." icon in the text field.
 8. The Python code you see is what renders the scatter plot form p.6 on the Datagrok server. Let's walk through this code.
    * The script takes as inputs the original dataframe and the three columns. Remember form p.6 there were
-     selectors for `X`, `Y`, and `Color` in the property panel. In fact, these three properties names are
-     delcared with the notation `<NAME>ColumnName` in the names of the three `#input` columns.
+     selectors for `X`, `Y`, and `Color` in the property panel. In fact, these three property names are
+     declared with the notation `<NAME>ColumnName` in the names of the three `#input` columns.
    * The script produces an `#output` of type `graphics`. It is important the graphics appear in the end
      of the Python script. This is exactly what happens with the `plt.show()` in the last line of the script.
 9. Modify the name of `colorColumnName` to a `temperatureColumnName`, hit `Apply` in the bottom of the window,
