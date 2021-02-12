@@ -147,18 +147,7 @@ export function Biosensors(table) {
       //let t = DG.DataFrame.fromColumns([DG.Column.fromList('double', 'x', bsColumn)]);
       //bsType = await typeDetector(t, npeaks, fsamp);
       bsType = 'ecg';
-
-      ui.dialog('Demo Pipeline')
-          .add(containerImport)
-          .add(viewer)
-          .add(containerFILTER)
-          .add(accFILTER)
-          .add(filterButton)
-          .add(containerFLplot)
-          // .add(containerINFO)
-          // .add(containerINFplot)
-          // .add(containerIndicator)
-          .showModal(true);
+      view.append(viewer.root);
     });
 
     // Filter dialogue
@@ -198,21 +187,9 @@ export function Biosensors(table) {
       let t = DG.DataFrame.fromColumns([column.value[0]]);
       let plotFL = await applyFilter(t, fsamp, bsType, paramsT);
       // node2 = tableView.dockManager.dock(plotFL, 'fill', node1, 'Filtered plot');
-      let viewer1 = DG.Viewer.fromType('Line chart', table, {yColumnNames: column.value.map((c) => {return c.name})});
       let viewer2 = DG.Viewer.fromType('Line chart', plotFL);
+      view.append(viewer2.root);
       //node2 = tableView.dockManager.dock(viewer.root, 'fill', node1, 'Filtered plot');
-      ui.dialog('Demo Pipeline')
-          .add(containerImport)
-          .add(viewer1)
-          .add(containerFILTER)
-          .add(accFILTER)
-          .add(filterButton)
-          .add(containerFLplot)
-          .add(viewer2)
-          // .add(containerINFO)
-          // .add(containerINFplot)
-          // .add(containerIndicator)
-          .showModal(true);
     }));
 
     // Information extraction dialogue
@@ -242,16 +219,10 @@ export function Biosensors(table) {
     let indicator = ui.choiceInput('Indicator preset', '', ['HRV']);
     let indicatorInputs = ui.inputs([indicator]);
     containerIndicator.appendChild(indicatorInputs);
-
+    let view = ui.div([containerImport, containerFILTER, accFILTER, filterButton, containerFLplot, containerINFO, containerINFplot])
     //CREATE DIALOGUE
     ui.dialog('Demo Pipeline')
-        .add(containerImport)
-        .add(containerFILTER)
-        .add(accFILTER)
-        .add(filterButton)
-        .add(containerFLplot)
-        // .add(containerINFO)
-        // .add(containerINFplot)
+        .add(view)
         // .add(containerIndicator).onOK(async () => {
         //
         //   paramsT = paramsToTable(filtersLST, allParams);
@@ -261,6 +232,8 @@ export function Biosensors(table) {
         //
         // }).show()
         .showModal(true);
+    $(view).css('height','100%');
+    $(view).css('overflow', 'scroll');
   }));
   return new DG.Widget(tempButton);
 }
