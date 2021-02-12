@@ -132,6 +132,13 @@ export class Dapi {
     return new UserDataStorage();
   }
 
+
+  /** Users Files management API endpoint
+   *  @type {Files} */
+  get files() {
+    return new Files();
+  }
+
   /** Proxies URL request via Datagrok server with same interface as "fetch".
    * @deprecated
    * @param {string} method
@@ -667,12 +674,12 @@ export class Files {
   }
 
   /** Move file
-   * @param {File | String} file
+   * @param {List<File | String>} files
    * @param {string} newPath
    * @returns {Promise} */
-  move(file, newPath) {
+  move(files, newPath) {
     return new Promise((resolve, reject) =>
-        grok_Dapi_UserFiles_Move(file, newPath, () => resolve(), (e) => reject(e)));
+        grok_Dapi_UserFiles_Move(files, newPath, () => resolve(), (e) => reject(e)));
   }
 
   /** List file
