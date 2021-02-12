@@ -229,14 +229,9 @@ export class TimelinesViewer extends EChartViewer {
     this.chart.on('click', params => this.dataFrame.selection.handleClick( i => {
       if (params.componentType === 'yAxis') return this.columns[0].get(i) === params.value;
       if (params.componentType === 'series') {
-        let rowMatch = false;
-        let row = this.dataFrame.row(i);
-        row = [row[this.subjectColumnName], row[this.startColumnName], row[this.endColumnName]];
-        for (let j = 0; j < row.length; j++) {
-          rowMatch = params.value[j] === (this.columns[j].isNone(i) ? null : row[j]);
-          if (!rowMatch) return false;
-        }
-        return rowMatch;
+        return params.value[0] === this.columns[0].get(i) &&
+               params.value[1] === (this.columns[1].isNone(i) ? null : this.columns[1].get(i)) &&
+               params.value[2] === (this.columns[2].isNone(i) ? null : this.columns[2].get(i))
       }
       return false;
     }, params.event.event));
@@ -244,14 +239,9 @@ export class TimelinesViewer extends EChartViewer {
     this.chart.on('mouseover', params => ui.tooltip.showRowGroup(this.dataFrame, i => {
       if (params.componentType === 'yAxis') return this.columns[0].get(i) === params.value;
       if (params.componentType === 'series') {
-        let rowMatch = false;
-        let row = this.dataFrame.row(i);
-        row = [row[this.subjectColumnName], row[this.startColumnName], row[this.endColumnName]];
-        for (let j = 0; j < row.length; j++) {
-          rowMatch = params.value[j] === (this.columns[j].isNone(i) ? null : row[j]);
-          if (!rowMatch) return false;
-        }
-        return rowMatch;
+        return params.value[0] === this.columns[0].get(i) &&
+               params.value[1] === (this.columns[1].isNone(i) ? null : this.columns[1].get(i)) &&
+               params.value[2] === (this.columns[2].isNone(i) ? null : this.columns[2].get(i))
       }
       return false;
     }, params.event.event.x, params.event.event.y));
