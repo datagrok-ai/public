@@ -15,6 +15,8 @@ export class TimelinesViewer extends EChartViewer {
     this.dateFormat = this.string('dateFormat', null, { choices: [
       '{yyyy}-{MM}-{dd}', '{M}/{d}/{yyyy}', '{MMM} {d}', '{dd}', '{d}'
     ]});
+    this.axisPointer = this.string('axisPointer', 'shadow',
+      { choices: ['cross', 'line', 'shadow', 'none'] });
 
     this.data = [];
     this.count = 0;
@@ -22,7 +24,8 @@ export class TimelinesViewer extends EChartViewer {
     this.option = {
       tooltip: {
         trigger: 'axis',
-        axisPointer: { type: 'shadow' }
+        showContent: false,
+        axisPointer: { type: this.axisPointer }
       },
       grid: {
         left: '3%',
@@ -83,7 +86,12 @@ export class TimelinesViewer extends EChartViewer {
     };
   }
 
-  onPropertyChanged(property) { this.render() }
+  onPropertyChanged(property) {
+    if (property.name === 'axisPointer') {
+      this.option.tooltip.axisPointer.type = property.get();
+    }
+    this.render();
+  }
 
   onTableAttached() {
     this.columns = this.dataFrame.columns.byNames([
