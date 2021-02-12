@@ -51,7 +51,7 @@ async function toIndicators(data, fsamp, bsType, paramsT, infoType, indicator) {
     'preset': indicator.value
   });
   await call.call();
-  return call.getParamValue('FD_HRV_df');
+  return call.getParamValue('out');
 }
 
 function paramsToTable(filtersLST, allParams) {
@@ -120,11 +120,8 @@ export function Biosensors(table) {
     let bsType;
     let npeaks = 10;
     let fsamp = samplingFreq.value;
-    let node1;
-    let tableView = grok.shell.getTableView(table.name);
     column.onChanged(async () => {
       let viewer = DG.Viewer.fromType('Line chart', table, {yColumnNames: column.value.map((c) => {return c.name})});
-      //node1 = tableView.dockManager.dock(viewer, 'right', null, 'Original plot');
       //bsColumn = column.value[0]; //table.columns.byName('ecg_data');
       //bsColumn = bsColumn.getRawData().slice(0, npeaks * fsamp);
       //let t = DG.DataFrame.fromColumns([DG.Column.fromList('double', 'x', bsColumn)]);
@@ -163,16 +160,13 @@ export function Biosensors(table) {
       accFILTER.addPane('parameters', () => paramsContainer);
     }));
 
-    let node2;
     containerFLplot.appendChild(ui.bigButton('Plot Filtered', async () => {
 
       paramsT = paramsToTable(filtersLST, allParams);
       let t = DG.DataFrame.fromColumns([column.value[0]]);
       let plotFL = await applyFilter(t, fsamp, bsType, paramsT);
-      // node2 = tableView.dockManager.dock(plotFL, 'fill', node1, 'Filtered plot');
       let viewer2 = DG.Viewer.fromType('Line chart', plotFL);
       view.append(viewer2.root);
-      //node2 = tableView.dockManager.dock(viewer.root, 'fill', node1, 'Filtered plot');
     }));
 
     // Information extraction dialogue
@@ -181,7 +175,6 @@ export function Biosensors(table) {
     let infoType = ui.choiceInput('To extract', 'Beat from ECG', ['Beat from ECG', 'Phasic estimation']);
     let infoInputs = ui.inputs([infoType]);
     containerINFO.appendChild(infoInputs);
-    let node3;
     containerINFplot.appendChild(ui.bigButton('Extract Info', async () => {
 
       paramsT = paramsToTable(filtersLST, allParams);
@@ -190,10 +183,9 @@ export function Biosensors(table) {
       if (infoType.value === 'Beat from ECG') {
         let viewer3 = DG.Viewer.fromType('Line chart', plotInfo);
         view.append(viewer3.root);
-        //node3 = tableView.dockManager.dock(plotInfo, 'fill', node2, infoType.value);
       } else if (infoType.value === 'Phasic estimation') {
-        let newView = grok.shell.addTableView(plotInfo);
-        newView.lineChart();
+        let viewer4 = DG.Viewer.fromType('Line chart', plotInfo);
+        view.append(viewer4.root);
       }
 
     }));
@@ -201,21 +193,25 @@ export function Biosensors(table) {
 
     // Indicators dialogue
     let containerIndicator = ui.div();
+    let calculateButton = ui.div();
     let indicator = ui.choiceInput('Indicator preset', '', ['HRV']);
     let indicatorInputs = ui.inputs([indicator]);
     containerIndicator.appendChild(indicatorInputs);
-    let view = ui.div([containerImport, containerFILTER, accFILTER, filterButton, containerFLplot, containerINFO, containerINFplot])
+    calculateButton.appendChild(ui.bigButton('Calculate', async () => {
+
+      paramsT = paramsToTable(filtersLST, allParams);
+      let t = DG.DataFrame.fromColumns([column.value[0]]);
+      let indicatorDf = await toIndicators(t, fsamp, bsType, paramsT, infoType, indicator);
+      let viewer5 = DG.Viewer.fromType('Line chart', indicatorDf);
+      view.append(viewer5.root);
+      //grok.shell.addTableView(indicatorDf);
+
+    }));
+    let view = ui.div([containerImport, containerFILTER, accFILTER, filterButton, containerFLplot, containerINFO,
+      containerINFplot, containerIndicator, calculateButton])
     //CREATE DIALOGUE
     ui.dialog('Demo Pipeline')
         .add(view)
-        // .add(containerIndicator).onOK(async () => {
-        //
-        //   paramsT = paramsToTable(filtersLST, allParams);
-        //   let t = DG.DataFrame.fromColumns([column.value[0]]);
-        //   let indicatorDf = await toIndicators(t, fsamp, bsType, paramsT, infoType, indicator);
-        //   grok.shell.addTableView(indicatorDf);
-        //
-        // }).show()
         .showModal(true);
     $(view).css('height','100%');
     $(view).css('overflow', 'scroll');

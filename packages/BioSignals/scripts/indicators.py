@@ -6,7 +6,7 @@
 #input: dataframe paramsT
 #input: string info = "Beat from ECG" {choices : ["Beat from ECG"]}
 #input: string preset = "HRV" {choices : ["HRV"]}
-#output: dataframe FD_HRV_df
+#output: dataframe out
 
 # import packages
 import numpy as np
@@ -42,7 +42,8 @@ if info == 'Beat from ECG':
     extracted = ph.BeatFromECG()(sig)
 
 if preset == 'HRV':
-    HRV_FD = ph.preset_hrv_fd()
-    fixed_length = ph.FixedSegments(step = 5, width = 10, labels = label)
-    FD_HRV_ind, col_names = ph.fmap(fixed_length, ph.preset_hrv_fd(), extracted.resample(4))
-    FD_HRV_df = pd.DataFrame(FD_HRV_ind, columns=col_names)
+    #HRV_FD = ph.preset_hrv_fd()
+    #fixed_length = ph.FixedSegments(step = 5, width = 10, labels = label)
+    #FD_HRV_ind, col_names = ph.fmap(fixed_length, ph.preset_hrv_fd(), extracted.resample(4))
+    #FD_HRV_df = pd.DataFrame(FD_HRV_ind, columns=col_names)
+    out = pd.DataFrame({'time': range(len(extracted)), 'extracted': extracted})
