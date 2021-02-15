@@ -121,6 +121,7 @@ export class ChordViewer extends DG.JsViewer {
     if (this.fromColumnName !== this.toColumnName) {
       this.aggregatedTable = this.dataFrame
         .groupBy([this.fromColumnName, this.toColumnName])
+        .whereRowMask(this.dataFrame.filter)
         .add(this.aggType, this.chordLengthColumnName, 'result')
         .aggregate();
 
