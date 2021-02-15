@@ -84,22 +84,27 @@ function paramsToTable(filtersLST, allParams) {
 export function Biosensors(table) {
 
   function paramSelector(x) {
-    let methodparams;
     if (x === 'IIR') {
-      let fp = ui.floatInput('fp', '');
-      let ftype = ui.choiceInput('ftype', 'ellip', ['ellip']);
-      methodparams = {'fp': fp, 'ftype': ftype};
+      let passFrequency = ui.floatInput('Pass frequency', '');
+      let stopFrequency = ui.floatInput('Stop frequency', '');
+      let ftype = ui.choiceInput('Filter type', '', ['butter', 'cheby1', 'cheby2', 'ellip']);
+      return {'fp': passFrequency, 'fs': stopFrequency, 'ftype': ftype};
+    }
+    else if (x === 'FIR') {
+      let passFrequency = ui.floatInput('Pass frequency', '');
+      let stopFrequency = ui.floatInput('Stop frequency', '');
+      //let ftype = ui.choiceInput('Window type', '', ['hamming']);
+      return {'fp': passFrequency, 'fs': stopFrequency};
     }
     else if (x === 'normalize') {
-      let normMethod = ui.choiceInput('norm_method', 'standard', ['standard']);
-      methodparams = {'normMethod': normMethod};
+      let normMethod = ui.choiceInput('norm_method', '', ['mean', 'standard', 'min', 'maxmin', 'custom']);
+      return {'normMethod': normMethod};
     }
     else if (x === 'resample') {
-      let fout = ui.intInput('fout', '');
-      let kind = ui.choiceInput('kind', 'cubic', ['cubic']);
-      methodparams = {'fout': fout, 'kind': kind};
+      let fout = ui.intInput('Output sampling frequency', '');
+      let kind = ui.choiceInput('Interpolation method', '', ['linear', 'nearest', 'zero', 'slinear', 'quadratic', 'cubic']);
+      return {'fout': fout, 'kind': kind};
     }
-    return methodparams;
   }
 
   let tempButton = ui.div();
@@ -109,7 +114,7 @@ export function Biosensors(table) {
     let column = ui.columnsInput('Columns', table);
     column.setTooltip('Choose columns to plot');
 
-    let samplingFreq = ui.intInput('Sampling frequency', '');
+    let samplingFreq = ui.floatInput('Sampling frequency', '');
     samplingFreq.setTooltip('Number of samples taken per second');
 
     let containerImport = ui.div();
@@ -142,7 +147,7 @@ export function Biosensors(table) {
     let i = 0;
     filterButton.appendChild(ui.button('Add Filter', async () => {
 
-      filtersLST[i] = ui.choiceInput('filter №' + (i + 1), '', ['IIR', 'normalize', 'resample']);
+      filtersLST[i] = ui.choiceInput('filter №' + (i + 1), '', ['IIR', 'FIR', 'normalize', 'resample']);
       let filterInputs1 = ui.inputs(filtersLST);
 
       containerFILTER.replaceChild(filterInputs1, filterInputs);
