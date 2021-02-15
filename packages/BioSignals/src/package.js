@@ -86,17 +86,16 @@ export function Biosensors(table) {
   function paramSelector(x) {
     let methodparams;
     if (x === 'IIR') {
-      let fp = ui.floatInput('fp', 45);
-      let fs = ui.floatInput('fs', 50);
+      let fp = ui.floatInput('fp', '');
       let ftype = ui.choiceInput('ftype', 'ellip', ['ellip']);
-      methodparams = {'fp': fp, 'fs': fs, 'ftype': ftype};
+      methodparams = {'fp': fp, 'ftype': ftype};
     }
     else if (x === 'normalize') {
       let normMethod = ui.choiceInput('norm_method', 'standard', ['standard']);
       methodparams = {'normMethod': normMethod};
     }
     else if (x === 'resample') {
-      let fout = ui.intInput('fout', 4096);
+      let fout = ui.intInput('fout', '');
       let kind = ui.choiceInput('kind', 'cubic', ['cubic']);
       methodparams = {'fout': fout, 'kind': kind};
     }
@@ -110,7 +109,7 @@ export function Biosensors(table) {
     let column = ui.columnsInput('Columns', table);
     column.setTooltip('Choose columns to plot');
 
-    let samplingFreq = ui.intInput('Sampling frequency', 2048);
+    let samplingFreq = ui.intInput('Sampling frequency', '');
     samplingFreq.setTooltip('Number of samples taken per second');
 
     let containerImport = ui.div();
@@ -119,13 +118,12 @@ export function Biosensors(table) {
     let bsColumn;
     let bsType;
     let npeaks = 10;
-    let fsamp = samplingFreq.value;
     column.onChanged(async () => {
       let viewer = DG.Viewer.fromType('Line chart', table, {yColumnNames: column.value.map((c) => {return c.name})});
       //bsColumn = column.value[0]; //table.columns.byName('ecg_data');
-      //bsColumn = bsColumn.getRawData().slice(0, npeaks * fsamp);
+      //bsColumn = bsColumn.getRawData().slice(0, npeaks * samplingFreq.value);
       //let t = DG.DataFrame.fromColumns([DG.Column.fromList('double', 'x', bsColumn)]);
-      //bsType = await typeDetector(t, npeaks, fsamp);
+      //bsType = await typeDetector(t, npeaks, samplingFreq.value);
       bsType = 'ecg';
       view.append(viewer.root);
     });
@@ -164,7 +162,7 @@ export function Biosensors(table) {
 
       paramsT = paramsToTable(filtersLST, allParams);
       let t = DG.DataFrame.fromColumns([column.value[0]]);
-      let plotFL = await applyFilter(t, fsamp, bsType, paramsT);
+      let plotFL = await applyFilter(t, samplingFreq.value, bsType, paramsT);
       let viewer2 = DG.Viewer.fromType('Line chart', plotFL);
       view.append(viewer2.root);
     }));
@@ -179,7 +177,7 @@ export function Biosensors(table) {
 
       paramsT = paramsToTable(filtersLST, allParams);
       let t = DG.DataFrame.fromColumns([column.value[0]]);
-      let plotInfo = await extractInfo(t, fsamp, bsType, paramsT, infoType);
+      let plotInfo = await extractInfo(t, samplingFreq.value, bsType, paramsT, infoType);
       if (infoType.value === 'Beat from ECG') {
         let viewer3 = DG.Viewer.fromType('Line chart', plotInfo);
         view.append(viewer3.root);
@@ -201,7 +199,7 @@ export function Biosensors(table) {
 
       paramsT = paramsToTable(filtersLST, allParams);
       let t = DG.DataFrame.fromColumns([column.value[0]]);
-      let indicatorDf = await toIndicators(t, fsamp, bsType, paramsT, infoType, indicator);
+      let indicatorDf = await toIndicators(t, samplingFreq.value, bsType, paramsT, infoType, indicator);
       let viewer5 = DG.Viewer.fromType('Line chart', indicatorDf);
       view.append(viewer5.root);
       //grok.shell.addTableView(indicatorDf);

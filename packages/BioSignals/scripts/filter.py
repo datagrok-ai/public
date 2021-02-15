@@ -1,8 +1,8 @@
 #name: filtersPyphysio
 #language: python
 #input: dataframe data
-#input: int fsamp = 2048
-#input: string signalType = "ecg" {choices : ["ecg","eda"]}
+#input: int fsamp
+#input: string signalType
 #input: dataframe paramsT
 #output: dataframe newDf
 
@@ -29,7 +29,6 @@ for i in range(0,len(paramsT)):
         sig = ph.Normalize(norm_method=paramsT['normMethod'][i])(sig)
     if paramsT['filter'][i] == 'resample':
         sig = sig.resample(fout=paramsT['fout'][i], kind=paramsT['kind'][i])
-        fsamp = 4096
 
 #fig = sig.plot()
 newDf = pd.DataFrame({'time':range(0,len(sig)),'sig':sig})
