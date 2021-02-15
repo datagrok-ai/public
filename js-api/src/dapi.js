@@ -13,7 +13,7 @@ import {
   LogEventType
 } from "./entities";
 import {ViewLayout} from "./view";
-import {toJs} from "./wrappers";
+import {toDart, toJs} from "./wrappers";
 
 /**
  * Exposes Datagrok's server-side functionality.
@@ -662,7 +662,7 @@ export class Files {
    * @returns {Promise<Boolean>} */
   exists(file) {
     return new Promise((resolve, reject) =>
-        grok_Dapi_UserFiles_Exists(file, () => resolve(), (e) => reject(e)));
+        grok_Dapi_UserFiles_Exists(file, (data) => resolve(data), (e) => reject(e)));
   }
 
   /** Delete file
@@ -679,7 +679,7 @@ export class Files {
    * @returns {Promise} */
   move(files, newPath) {
     return new Promise((resolve, reject) =>
-        grok_Dapi_UserFiles_Move(files, newPath, () => resolve(), (e) => reject(e)));
+        grok_Dapi_UserFiles_Move(toDart(files), newPath, () => resolve(), (e) => reject(e)));
   }
 
   /** List file
@@ -692,12 +692,12 @@ export class Files {
         grok_Dapi_UserFiles_List(file, recursive, searchPattern, (data) => resolve(toJs(data)), (e) => reject(e)));
   }
 
-  /** Read file as text
+  /** Read file as string
    * @param {File | String} file
    * @returns {Promise<String>} */
   readAsText(file) {
     return new Promise((resolve, reject) =>
-        grok_Dapi_UserFiles_readAsText(file, (data) => resolve(data), (e) => reject(e)));
+        grok_Dapi_UserFiles_ReadAsText(file, (data) => resolve(data), (e) => reject(e)));
   }
 
   /** Read file as bytes
@@ -705,10 +705,10 @@ export class Files {
    * @returns {Promise<Uint8List>} */
   readAsBytes(file) {
     return new Promise((resolve, reject) =>
-        grok_Dapi_UserFiles_readAsBytes(file, (data) => resolve(toJs(data)), (e) => reject(e)));
+        grok_Dapi_UserFiles_ReadAsBytes(file, (data) => resolve(toJs(data)), (e) => reject(e)));
   }
 
-  /** Read file as bytes
+  /** Write file
    * @param {File | String} file
    * @param {List<int>} blob
    * @returns {Promise} */
