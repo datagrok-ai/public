@@ -114,7 +114,10 @@ export class ChordViewer extends DG.JsViewer {
       this.freqMap[to] = (this.freqMap[to] || 0) + 1;
     }
 
-    if (this.aggType === 'count') this.chordLengthColumnName = null;
+    if (this.aggType === 'sum' && this.chordLengthColumnName === null) {
+      this.chordLengthColumnName = this.numColumns[0].name;
+    }
+
     if (this.fromColumnName !== this.toColumnName) {
       this.aggregatedTable = this.dataFrame
         .groupBy([this.fromColumnName, this.toColumnName])
@@ -133,14 +136,12 @@ export class ChordViewer extends DG.JsViewer {
 
     this.data = this.categories
       .sort((this.sortBy === 'frequency') ? (a, b) => this.freqMap[b] - this.freqMap[a] : undefined)
-      .map((s, ind) => {
-        return {
-          id: `id-${ind}`,
-          label: s,
-          len: this.freqMap[s],
-          color: this.color(s)
-        }
-    });
+      .map((s, ind) => ({
+        id: `id-${ind}`,
+        label: s,
+        len: this.freqMap[s],
+        color: this.color(s)
+      }));
 
     if (this.fromColumnName !== this.toColumnName) {
       for (const prop of Object.getOwnPropertyNames(this.segments)) {
@@ -263,11 +264,11 @@ export class ChordViewer extends DG.JsViewer {
       circos.chords('chords-track', this.chords, this.chordConf);
     }
 
-    circos.text('labels', this.data.map(d => { return {
+    circos.text('labels', this.data.map(d => ({
       block_id: d.id,
       position: this.freqMap[d.label] / 2,
       value: d.label
-    }}), this.labelConf);
+    })), this.labelConf);
     circos.render();
 
     let labels = select(this.root).selectAll('.block');
