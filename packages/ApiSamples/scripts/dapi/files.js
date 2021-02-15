@@ -8,7 +8,7 @@ grok.dapi.files.writeAsText('Demo:TestJobs:Files:DemoFiles/testFile.dat/testFile
 
 //read files
 grok.dapi.files.readAsBytes('Demo:TestJobs:Files:DemoFiles/testFile.dat');
-grok.dapi.files.readAsText('Demo:TestJobs:Files:DemoFiles/testFile.dat/testFile.txt');
+grok.dapi.files.readAsText('Demo:TestJobs:Files:DemoFiles/testFile.txt');
 
 grok.dapi.files.exists('Demo:TestJobs:Files:DemoFiles/testFile.dat')
     .then(isFile => console.log(isFile));
