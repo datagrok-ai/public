@@ -74,7 +74,7 @@ Examples:
 
 ## Adding Viewers to Views
 
-You may add a viewer to any container, such as a [main application view](/develop/how-to/build-an-app.md#the-main-view) or a dialog window.
+You can add a viewer to any container, such as a [main application view](/develop/how-to/build-an-app.md#the-main-view) or a [dialog window](https://public.datagrok.ai/js/samples/ui/dialogs/dialogs).
 
 Here is how to create a new [view](develop/how-to/custom-views.md) and add a plot to it:
 
@@ -83,24 +83,18 @@ let v = DG.Viewer.scatterPlot(grok.data.demo.demog());
 grok.shell.newView('foo').append(v.root);
 ```
 
-Our [CharPy](https://github.com/datagrok-ai/public/blob/master/packages/ChaRPy/src/package.js) package gives an example of adding some controls and viewers to a dialog box:
+Here is an example of adding controls and viewers to a dialog box:
 
 ```javascript
-
-let viewerLeft = DG.Viewer.fromType(optionsObj.type, table, optionsObj.look);
-let viewerRight = DG.Viewer.fromType('Scripting Viewer',
-  tablePreProcess([...new Set(colsFilter)],table),
-  {script: map.header + string + map.tail});
-let block =
-  $(ui.splitV([
-    ui.textArea(string),
-    ui.splitH([
-      viewerLeft,
-      viewerRight])
-  ])).css('flex-grow', '1');
-let dialog = ui.dialog('OUTPUT SCRIPT').add(block[0]);
-dialog.showModal(true);
+ui.dialog()
+  .add(ui.div([
+    "Here's a plot in the dialog",
+    DG.Viewer.scatterPlot(table)
+  ]))
+.show();
 ```
+
+Check the [CharPy](https://github.com/datagrok-ai/public/blob/master/packages/ChaRPy/src/package.js) package for a similar example.
 
 ## Docking Viewers
 
