@@ -716,4 +716,14 @@ export class Files {
     return new Promise((resolve, reject) =>
         grok_Dapi_UserFiles_Write(file, blob, () => resolve(), (e) => reject(e)));
   }
+
+
+/** Write file
+ * @param {File | String} file
+ * @param String data
+ * @returns {Promise} */
+writeAsText(file, data) {
+  return new Promise((resolve, reject) =>
+      grok_Dapi_UserFiles_WriteAsText(file, data, () => resolve(), (e) => reject(e)));
+  }
 }
