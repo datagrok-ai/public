@@ -1,6 +1,64 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-02-15 Dev build 0.89.21
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.89.21`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Charts: Timelines (WIP)
+* Fixed release history 
+* Updated public token 
+* Harmonize ui framework (WIP)
+* Fixed typo 
+* Bar Chart: includeNulls property (WIP)
+* (Bug) Trellis Plot: The viewer data will not change during filtering
+Trellis Plot: show only filtered data for linked dataframes (type: selection to filter) 
+* Trellis/filter screencast 
+* Filter layout screencast 
+* Chem, RDKit-based (WIP)
+* GROK 7836 JS API: added class files to dapi.js 
+* GROK 7836 JS API: files functions registered at grok_api.dart 
+* Wiki: how-to build an app. WIP: working with databases, storing dataframes 
+* Biosignals (WIP)
+* GROK 7836 JS API: changed FileInfo->Dynamic and connection small fix 
+* NLP package (WIP)
+* Code snippet for using viewers outside of the TableView 
+* GROK 7836 JS API: added connection GUID/path handler 
+* JS API: files 
+* Wiki: how-to build an app. WIP: adding to viewers 
+* Wiki: how-to build an app. WIP: Authentication; cleanup 
+* Wiki: how-to build an app. WIP: Functions, calling scripts 
+* Wiki: how-to build an app. WIP: Application lifecycle 
+* Wiki: Harmonization (WIP)
+* (Bug) Random error on sharing a package 
+* Fixed a typo 
+* Inspector: ignoring tooltip-related events 
+* Wiki: how-to build an app. WIP: typos, simplifications 
+* Show group tooltips 
+* Wiki: how-to build an app. WIP: simplifications 
+* GROK 7836 JS API: small fixes 
+* Wiki: docker-compose instructions update 
+* GROK 7836 JS API: made workable readaAsBytes(String), list, write, delete 
+* GROK 7836 JS API: minor fix in connectors.dart (action move part) 
+* Ability to run DG without visual root 
+* Fixed package template 
+* Overview / Navigation (WIP)
+* (Bug) Files Browser: Text file previews do not align to view width 
+* Chord Diagram (WIP)
+* Implement row selection 
+* GROK 7836 JS API: workable all ops + added tests 
+* GROK 7836 JS API: writeAsText added 
+* GROK 7836 JS API: Dapi_UserFiles_WriteAsText added 
+
+
 # 2021-02-10 Dev build 0.89.20
 
 ## Latest Docker Images
