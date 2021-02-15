@@ -156,7 +156,7 @@ There are several ways for an object to appear as a variable:
 * Direct assignment like `x = 5` in the [console](#console)
 * [Drag-and-drop](../overview/drag-and-drop.md) an object to the variables view
 
-![Variables](../uploads/navigation/variables.jpeg "Variables View")
+![Variables](../uploads/navigation/variables.png "Variables View")
 
 The view consists of four fields describing the variables: `name`, `value`, `type`, and `semantics`.
 The last field contains the semantic type, or quality, of a column value detected out of the box or
