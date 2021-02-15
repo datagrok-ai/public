@@ -1,10 +1,10 @@
 #name: infoPyphysio
 #language: python
 #input: dataframe data
-#input: int fsamp = 2048
-#input: string signalType = "ecg" {choices : ["ecg","eda"]}
+#input: int fsamp
+#input: string signalType
 #input: dataframe paramsT
-#input: string info = "Beat from ECG" {choices : ["Beat from ECG"]}
+#input: string info
 #output: dataframe newDf
 
 # import packages
@@ -35,7 +35,6 @@ for i in range(0,len(paramsT)):
         sig = ph.Normalize(norm_method=paramsT['normMethod'][i])(sig)
     if paramsT['filter'][i] == 'resample':
         sig = sig.resample(fout=paramsT['fout'][i], kind=paramsT['kind'][i])
-        fsamp = 4096
 
 if(info == 'Beat from ECG'):
     extracted = ph.BeatFromECG()(sig)
