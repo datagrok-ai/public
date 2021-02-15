@@ -636,10 +636,13 @@ export class JsEntityMeta {
 }
 
 export function box(item, options = null) {
-  if (item instanceof Widget) {
+  if (item instanceof DG.Widget) {
     item = item.root;
   }
-
+  if (item instanceof DG.InputBase) {
+    console.log('inputbase');
+    item = item.root;
+  }
   if (item != null && $(item).hasClass('ui-box')) {
     return item;
   }
