@@ -20,6 +20,7 @@ export class TimelinesViewer extends EChartViewer {
 
     this.data = [];
     this.count = 0;
+    this.selectionColor = '#FB8C28';
 
     this.option = {
       tooltip: {
@@ -143,7 +144,7 @@ export class TimelinesViewer extends EChartViewer {
             cy: end[1], r: this.markerSize / 2
           },
           style: {
-            fill: this.colorMap[isNaN(api.value(3)) ?
+            fill: api.value(4) ? this.selectionColor : this.colorMap[isNaN(api.value(3)) ?
               this.data[params.dataIndex][3][0] : api.value(3)]
           }
         });
@@ -172,7 +173,7 @@ export class TimelinesViewer extends EChartViewer {
           type: 'rect',
           transition: ['shape'],
           shape: rectShape,
-          style: { fill: this.colorMap[isNaN(api.value(3)) ?
+          style: { fill: api.value(4) ? this.selectionColor : this.colorMap[isNaN(api.value(3)) ?
             this.data[params.dataIndex][3][0] : api.value(3)] }
         });
       }
@@ -203,6 +204,8 @@ export class TimelinesViewer extends EChartViewer {
         null : this.columns[j].get(i);
     }
 
+    let selectedIndexes = this.dataFrame.selection.getSelectedIndexes();
+
     for (let i of this.dataFrame.filter.getSelectedIndexes()) {
       let id = this.columns[0].get(i);
       let start = getTime(i, 1);
@@ -213,7 +216,7 @@ export class TimelinesViewer extends EChartViewer {
       if (tempObj.hasOwnProperty(key)) {
         tempObj[key][3].push(event);
       } else {
-        tempObj[key] = [id, start, end, [event,]];
+        tempObj[key] = [id, start, end, [event,], selectedIndexes.includes(i)];
       }
     }
 
