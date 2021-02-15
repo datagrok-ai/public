@@ -14,7 +14,7 @@ markup, viewers, predictive models.
 Info panels could be developed in any language supported
 by the platform. 
 
-![Info Panel](cell-imaging-segmentation.jpg "Cell Imaging Segmentation")
+![Info Panel](cell-imaging-segmentation.png "Cell Imaging Segmentation")
 *Cell Imaging Segmentation Info Panel*
 
 ## What gets shown and when?
