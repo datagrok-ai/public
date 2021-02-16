@@ -16,10 +16,12 @@ going all the way to custom visualizations, querying relational databases,
 predictive models, integration with the external utilities, data augmentation, and 
 custom applications. 
 
-Table of contents
+## Table of contents
+
   * [Setting up the environment](#setting-up-the-environment)
   * [Semantic types](#semantic-types)
-  * [Scripting](#scripting)
+  * [Scripting and functions](#scripting-and-functions)
+  * [Composing functions](#composing-functions)
   * [Querying databases](#querying-databases)
   * [Creating a scripting viewer](#creating-a-scripting-viewer)
 
