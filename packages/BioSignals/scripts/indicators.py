@@ -40,6 +40,16 @@ for i in range(0,len(paramsT)):
         sig = ph.Normalize(norm_method=paramsT['normMethod'][i])(sig)
     elif paramsT['filter'][i] == 'resample':
         sig = sig.resample(fout=paramsT['fout'][i], kind=paramsT['kind'][i])
+    elif paramsT['filter'][i] == 'KalmanFilter':
+        sig = ph.KalmanFilter(R=paramsT['R'][i], ratio=paramsT['ratio'][i])(sig)
+    elif paramsT['filter'][i] == 'ImputeNAN':
+        sig = ph.ImputeNAN(win_len=paramsT['win_len'][i], allnan=str(paramsT['allnan'][i]))(sig)
+    elif paramsT['filter'][i] == 'RemoveSpikes':
+        sig = ph.RemoveSpikes(K=paramsT['K'][i], N=int(paramsT['N'][i]), dilate=paramsT['dilate'][i], D=paramsT['D'][i], method=paramsT['method'][i])(sig)
+    elif paramsT['filter'][i] == 'DenoiseEDA':
+        sig = ph.DenoiseEDA(win_len=paramsT['win_len'][i], threshold=paramsT['threshold'][i])(sig)
+    elif paramsT['filter'][i] == 'ConvolutionalFilter':
+        sig = ph.ConvolutionalFilter(win_len=paramsT['win_len'][i], irftype=str(paramsT['irftype'][i]))(sig)
 
 if info == 'Beat from ECG':
     extracted = ph.BeatFromECG()(sig)
