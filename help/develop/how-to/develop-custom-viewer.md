@@ -375,7 +375,7 @@ portion of the data in your viewer. To do that, you need to know which rows the 
 that you can narrow the data set for rendering accordingly. And this is fairly simple: the method
 `dataFrame.filter.getSelectedIndexes()` gives you exactly the data you need.
 
-Simple as that! Let's add a simple function to `package.js` to invoke our viewer on test data:
+Simple as that! Let's add a function to `package.js` to invoke our viewer on test data:
 
 ```javascript
 //name: showChart
@@ -383,6 +383,8 @@ export function showChart() {
   grok.shell.addTableView(grok.data.demo.demog()).addViewer('AwesomeViewer');
 }
 ```
+
+Now run `AwesomePackage:showChart()` and explore all the features our viewer has, and customize it further if you like.
 
 ## Scripting Viewers
 
@@ -422,5 +424,4 @@ See also:
   * [JavaScript API Samples](https://public.datagrok.ai/js/samples/functions/custom-viewers/viewers)
   * [JavaScript Development](../develop.md)
   * [Viewers](../../visualize/viewers.md)
-  * [Custom Viewers](../js-api.md#custom-viewers)
   * [Scripting Viewers](../../visualize/viewers/scripting-viewer.md)

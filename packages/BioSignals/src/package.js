@@ -6,50 +6,29 @@ import * as DG from "datagrok-api/dg";
 export let _package = new DG.Package();
 
 async function typeDetector(table, npeaks, fsamp) {
-
   let bsType = await grok.functions.call('BioSignals:typeDetector',
     {
       'dat': table,
       'npeaks': npeaks,
       'fsamp': fsamp
     })
-
   return (bsType);
 }
 
-async function importPy(data, fsamp, bsType) {
-
-  let f = await grok.functions.eval("BioSignals:importPyphysio");
-
-  let call = f.prepare({
-    'data': data,
-    'fsamp': fsamp,
-    'signalType': bsType
-  });
-
-  await call.call();
-  return call.getParamValue('newDf');
-}
-
 async function applyFilter(data, fsamp, bsType, paramsT) {
-
   let f = await grok.functions.eval("BioSignals:filtersPyphysio");
-
   let call = f.prepare({
     'data': data,
     'fsamp': fsamp,
     'signalType': bsType,
     'paramsT': paramsT
   });
-
   await call.call();
   return call.getParamValue('newDf');
 }
 
 async function extractInfo(data, fsamp, bsType, paramsT, infoType) {
-
   let f = await grok.functions.eval("BioSignals:infoPyphysio");
-
   let call = f.prepare({
     'data': data,
     'fsamp': fsamp,
@@ -57,19 +36,12 @@ async function extractInfo(data, fsamp, bsType, paramsT, infoType) {
     'paramsT': paramsT,
     'info': infoType.value
   });
-
   await call.call();
-  if (infoType.value === 'Beat from ECG') {
-    return call.getParamValue('fig');
-  } else if (infoType.value === 'Phasic estimation') {
-    return call.getParamValue('newDf');
-  }
+  return call.getParamValue('newDf');
 }
 
 async function toIndicators(data, fsamp, bsType, paramsT, infoType, indicator) {
-
   let f = await grok.functions.eval("BioSignals:indicatorsPyphysio");
-
   let call = f.prepare({
     'data': data,
     'fsamp': fsamp,
@@ -78,28 +50,21 @@ async function toIndicators(data, fsamp, bsType, paramsT, infoType, indicator) {
     'info': infoType.value,
     'preset': indicator.value
   });
-
   await call.call();
-  return call.getParamValue('FD_HRV_df');
+  return call.getParamValue('out');
 }
 
 function paramsToTable(filtersLST, allParams) {
-
   let paramsT = DG.DataFrame.create(filtersLST.length);
   paramsT.columns.addNew('filter', 'string');
+  let string_parameters = ['ftype', 'normMethod', 'kind', 'allnan', 'method', 'irftype'];
   for (let j = 0; j < filtersLST.length; j++) {
     paramsT.columns.byName('filter').set(j, filtersLST[j].value);
-
     Object.keys(allParams[j]).forEach(key => {
-      if (!paramsT.columns.names().includes(key)) {
-        // definitely needs reworking
-        if (key === 'fp' || key === 'fs') {
-          paramsT.columns.addNew(key, 'double');
-        } else if (key === 'fout') {
-          paramsT.columns.addNew(key, 'int');
-        } else {
-          paramsT.columns.addNew(key, typeof (allParams[j][key].value));
-        }
+      if (string_parameters.includes(key)) {
+        paramsT.columns.addNew(key, 'string');
+      } else {
+        paramsT.columns.addNew(key, 'double');
       }
       paramsT.columns.byName(key).set(j, allParams[j][key].value);
     })
@@ -115,39 +80,76 @@ function paramsToTable(filtersLST, allParams) {
 export function Biosensors(table) {
 
   function paramSelector(x) {
-
-    let methodparams;
     if (x === 'IIR') {
-      let fp = ui.floatInput('fp', 45);
-      let fs = ui.floatInput('fs', 50);
-      let ftype = ui.choiceInput('ftype', 'ellip', ['ellip']);
-      methodparams = {'fp': fp, 'fs': fs, 'ftype': ftype};
-
+      let passFrequency = ui.floatInput('Pass frequency', '');
+      let stopFrequency = ui.floatInput('Stop frequency', '');
+      let ftype = ui.choiceInput('Filter type', '', ['butter', 'cheby1', 'cheby2', 'ellip']);
+      return {'fp': passFrequency, 'fs': stopFrequency, 'ftype': ftype};
     }
-    if (x === 'normalize') {
-
-      let normMethod = ui.choiceInput('norm_method', 'standard', ['standard']);
-      methodparams = {'normMethod': normMethod};
+    else if (x === 'FIR') {
+      let passFrequency = ui.floatInput('Pass frequency', '');
+      let stopFrequency = ui.floatInput('Stop frequency', '');
+      //let ftype = ui.choiceInput('Window type', '', ['hamming']);
+      return {'fp': passFrequency, 'fs': stopFrequency};
     }
-    if (x === 'resample') {
-
-      let fout = ui.intInput('fout', 4096);
-      let kind = ui.choiceInput('kind', 'cubic', ['cubic']);
-      methodparams = {'fout': fout, 'kind': kind};
+    else if (x === 'normalize') {
+      let normMethod = ui.choiceInput('norm_method', '', ['mean', 'standard', 'min', 'maxmin', 'custom']);
+      return {'normMethod': normMethod};
     }
-    return methodparams;
+    else if (x === 'resample') {
+      let fout = ui.intInput('Output sampling frequency', '');
+      let kind = ui.choiceInput('Interpolation method', '', ['linear', 'nearest', 'zero', 'slinear', 'quadratic', 'cubic']);
+      return {'fout': fout, 'kind': kind};
+    }
+    else if (x === 'KalmanFilter') {
+      let r = ui.floatInput('R', '');
+      r.setTooltip("R should be positive");
+      let ratio = ui.floatInput('Ratio', '');
+      ratio.setTooltip("Ratio should be >1");
+      return {'R': r, 'ratio': ratio};
+    }
+    else if (x === 'ImputeNAN') {
+      let winLen = ui.floatInput('Window Length', '');
+      winLen.setTooltip('Window Length should be positive');
+      let allNan = ui.choiceInput('All NaN', '', ['zeros', 'nan']);
+      return {'win_len': winLen, 'allnan': allNan};
+    }
+    else if (x === 'RemoveSpikes') {
+      let K = ui.floatInput('K', 2);
+      K.setTooltip("K should be positive");
+      let N = ui.intInput('N', 1);
+      N.setTooltip('N should be positive integer');
+      let dilate = ui.floatInput('Dilate', 0);
+      dilate.setTooltip('dilate should be >= 0.0');
+      let D = ui.floatInput('D', 0.95);
+      D.setTooltip('D should be >= 0.0');
+      let method = ui.choiceInput('Method', '', ['linear', 'step']);
+      return {'K': K, 'N': N, 'dilate': dilate, 'D': D, 'method': method};
+    }
+    else if (x === 'DenoiseEDA') {
+      let winLen = ui.floatInput('Window Length', 2);
+      winLen.setTooltip('Window Length should be positive');
+      let threshold = ui.floatInput('Threshold', '');
+      threshold.setTooltip('Threshold should be positive');
+      return {'win_len': winLen, 'threshold': threshold};
+    }
+    else if (x === 'ConvolutionalFilter') {
+      let irftype = ui.choiceInput('irftype', '', ['gauss', 'rect', 'triang', 'dgauss', 'custom']);
+      irftype.setTooltip('Impulse response function (IRF)');
+      let winLen = ui.floatInput('Window Length', 2);
+      winLen.setTooltip('Duration of the generated IRF in seconds (if irftype is not \'custom\')');
+      return {'win_len': winLen, 'irftype': irftype};
+    }
   }
 
   let tempButton = ui.div();
   tempButton.appendChild(ui.button('launch', () => {
-    //CREATE DIALOGUE
-    let v = ui.dialog('Demo Pipeline');
 
     //INPUTS
-    let column = ui.columnsInput('Biosensor', table);
-    column.setTooltip('Choose one column of biosensor data');
+    let column = ui.columnsInput('Columns', table);
+    column.setTooltip('Choose columns to plot');
 
-    let samplingFreq = ui.intInput('Sampling frequency', 2048);
+    let samplingFreq = ui.floatInput('Sampling frequency', '');
     samplingFreq.setTooltip('Number of samples taken per second');
 
     let containerImport = ui.div();
@@ -156,25 +158,15 @@ export function Biosensors(table) {
     let bsColumn;
     let bsType;
     let npeaks = 10;
-    let fsamp = samplingFreq.value;
     column.onChanged(async () => {
-      bsColumn = table.columns.byName(column.value[0]);
-      bsColumn = bsColumn.getRawData().slice(0, npeaks * fsamp);
-      let t = DG.DataFrame.fromColumns([DG.Column.fromList('double', 'x', bsColumn)]);
-      bsType = await typeDetector(t, npeaks, fsamp);
+      let viewer = DG.Viewer.fromType('Line chart', table, {yColumnNames: column.value.map((c) => {return c.name})});
+      //bsColumn = column.value[0]; //table.columns.byName('ecg_data');
+      //bsColumn = bsColumn.getRawData().slice(0, npeaks * samplingFreq.value);
+      //let t = DG.DataFrame.fromColumns([DG.Column.fromList('double', 'x', bsColumn)]);
+      //bsType = await typeDetector(t, npeaks, samplingFreq.value);
+      bsType = 'ecg';
+      rightView.append(viewer.root);
     });
-
-    let node1;
-    let containerOGplot = ui.div();
-    let tableView = grok.shell.getTableView("ecg_eda");
-    containerOGplot.appendChild(ui.bigButton('Plot Original', async () => {
-
-      let t = DG.DataFrame.fromColumns([table.columns.byName(column.value[0])]);
-      let plotOG = await importPy(t, fsamp, bsType);
-      let viewer = DG.Viewer.fromType('Line chart', plotOG);
-      node1 = tableView.dockManager.dock(viewer.root, 'right', null, 'Original plot');
-
-    }));
 
     // Filter dialogue
     let filtersLST = [];
@@ -190,7 +182,8 @@ export function Biosensors(table) {
     let i = 0;
     filterButton.appendChild(ui.button('Add Filter', async () => {
 
-      filtersLST[i] = ui.choiceInput('filter №' + (i + 1), '', ['IIR', 'normalize', 'resample']);
+      filtersLST[i] = ui.choiceInput('Filter №' + (i + 1), '',
+          ['IIR', 'FIR', 'normalize', 'resample', 'KalmanFilter', 'ImputeNAN', 'RemoveSpikes', 'DenoiseEDA', 'ConvolutionalFilter']);
       let filterInputs1 = ui.inputs(filtersLST);
 
       containerFILTER.replaceChild(filterInputs1, filterInputs);
@@ -201,23 +194,18 @@ export function Biosensors(table) {
         let val = filtersLST[i - 1].value;
         allParams[i - 1] = paramSelector(val);
         paramsContainer.appendChild(ui.inputs(Object.values(allParams[i - 1])));
-      })
+      });
+
+      accFILTER.addPane('Parameters of Filter №' + (i + 1), () => paramsContainer);
       i++;
     }));
-    accFILTER.addPane('parameters', () => paramsContainer)
 
-    let node2;
     containerFLplot.appendChild(ui.bigButton('Plot Filtered', async () => {
-
       paramsT = paramsToTable(filtersLST, allParams);
-      let t = DG.DataFrame.fromColumns([table.columns.byName(column.value[0])]);
-      let plotFL = await applyFilter(t, fsamp, bsType, paramsT);
-      // node2 = tableView.dockManager.dock(plotFL, 'fill', node1, 'Filtered plot');
-
-      let viewer = DG.Viewer.fromType('Line chart', plotFL);
-      node2 = tableView.dockManager.dock(viewer.root, 'fill', node1, 'Filtered plot');
-
-
+      let t = DG.DataFrame.fromColumns([column.value[0]]);
+      let plotFL = await applyFilter(t, samplingFreq.value, bsType, paramsT);
+      let viewer2 = DG.Viewer.fromType('Line chart', plotFL);
+      rightView.append(viewer2.root);
     }));
 
     // Information extraction dialogue
@@ -226,46 +214,47 @@ export function Biosensors(table) {
     let infoType = ui.choiceInput('To extract', 'Beat from ECG', ['Beat from ECG', 'Phasic estimation']);
     let infoInputs = ui.inputs([infoType]);
     containerINFO.appendChild(infoInputs);
-    let node3;
     containerINFplot.appendChild(ui.bigButton('Extract Info', async () => {
-
       paramsT = paramsToTable(filtersLST, allParams);
-      let t = DG.DataFrame.fromColumns([table.columns.byName(column.value[0])]);
-      let plotInfo = await extractInfo(t, fsamp, bsType, paramsT, infoType);
+      let t = DG.DataFrame.fromColumns([column.value[0]]);
+      let plotInfo = await extractInfo(t, samplingFreq.value, bsType, paramsT, infoType);
       if (infoType.value === 'Beat from ECG') {
-        node3 = tableView.dockManager.dock(plotInfo, 'fill', node2, infoType.value);
+        let viewer3 = DG.Viewer.fromType('Line chart', plotInfo);
+        rightView.append(viewer3.root);
       } else if (infoType.value === 'Phasic estimation') {
-        let newView = grok.shell.addTableView(plotInfo);
-        newView.lineChart();
+        let viewer4 = DG.Viewer.fromType('Line chart', plotInfo);
+        rightView.append(viewer4.root);
       }
-
     }));
 
 
     // Indicators dialogue
     let containerIndicator = ui.div();
+    let calculateButton = ui.div();
     let indicator = ui.choiceInput('Indicator preset', '', ['HRV']);
     let indicatorInputs = ui.inputs([indicator]);
     containerIndicator.appendChild(indicatorInputs);
-
-    v.add(containerImport);
-    v.add(containerOGplot);
-    v.add(containerFILTER);
-    v.add(accFILTER);
-    v.add(filterButton);
-    v.add(containerFLplot);
-    v.add(containerINFO);
-    v.add(containerINFplot);
-    v.add(containerIndicator).onOK(async () => {
-
+    calculateButton.appendChild(ui.bigButton('Calculate', async () => {
       paramsT = paramsToTable(filtersLST, allParams);
-      let t = DG.DataFrame.fromColumns([table.columns.byName(column.value[0])]);
-      let indicatorDf = await toIndicators(t, fsamp, bsType, paramsT, infoType, indicator);
-      grok.shell.addTableView(indicatorDf);
+      let t = DG.DataFrame.fromColumns([column.value[0]]);
+      let indicatorDf = await toIndicators(t, samplingFreq.value, bsType, paramsT, infoType, indicator);
+      let viewer5 = DG.Viewer.fromType('Line chart', indicatorDf);
+      rightView.append(viewer5.root);
+      //grok.shell.addTableView(indicatorDf);
+    }));
 
-    }).show();
-
+    let rightView = ui.div();
+    let view = ui.splitH(
+        [ui.div([containerImport, containerFILTER, accFILTER, filterButton, containerFLplot, containerINFO,
+      containerINFplot, containerIndicator, calculateButton]), rightView]
+    );
+    //CREATE DIALOGUE
+    ui.dialog('Demo Pipeline')
+        .add(view)
+        .showModal(true);
+    $(view).css('height','100%');
+    $(rightView).css('height','100%');
+    $(rightView).css('overflow', 'scroll');
   }));
-
   return new DG.Widget(tempButton);
 }

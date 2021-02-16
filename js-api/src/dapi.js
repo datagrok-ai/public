@@ -13,7 +13,7 @@ import {
   LogEventType
 } from "./entities";
 import {ViewLayout} from "./view";
-import {toJs} from "./wrappers";
+import {toDart, toJs} from "./wrappers";
 
 /**
  * Exposes Datagrok's server-side functionality.
@@ -130,6 +130,13 @@ export class Dapi {
    *  @type {UserDataStorage} */
   get userDataStorage() {
     return new UserDataStorage();
+  }
+
+
+  /** Users Files management API endpoint
+   *  @type {Files} */
+  get files() {
+    return new Files();
   }
 
   /** Proxies URL request via Datagrok server with same interface as "fetch".
@@ -644,4 +651,79 @@ export class TablesDataSource extends HttpDataSource {
       grok_Dapi_TablesDataSource_GetTable(id, (df) => resolve(toJs(df)), (e) => reject(e)));
   }
 
+}
+
+export class Files {
+  constructor() {
+  };
+
+  /** Check if file exists
+   * @param {File | String} file
+   * @returns {Promise<Boolean>} */
+  exists(file) {
+    return new Promise((resolve, reject) =>
+        grok_Dapi_UserFiles_Exists(file, (data) => resolve(data), (e) => reject(e)));
+  }
+
+  /** Delete file
+   * @param {File | String} file
+   * @returns {Promise} */
+  delete(file) {
+    return new Promise((resolve, reject) =>
+        grok_Dapi_UserFiles_Delete(file, () => resolve(), (e) => reject(e)));
+  }
+
+  /** Move file
+   * @param {List<File | String>} files
+   * @param {string} newPath
+   * @returns {Promise} */
+  move(files, newPath) {
+    return new Promise((resolve, reject) =>
+        grok_Dapi_UserFiles_Move(toDart(files), newPath, () => resolve(), (e) => reject(e)));
+  }
+
+  /** List file
+   * @param {File | String | String} file
+   * @param {boolean} recursive
+   * @param {string} searchPattern
+   * @returns {Promise<List<FileInfo>>} */
+  list(file, recursive, searchPattern) {
+    return new Promise((resolve, reject) =>
+        grok_Dapi_UserFiles_List(file, recursive, searchPattern, (data) => resolve(toJs(data)), (e) => reject(e)));
+  }
+
+  /** Read file as string
+   * @param {File | String} file
+   * @returns {Promise<String>} */
+  readAsText(file) {
+    return new Promise((resolve, reject) =>
+        grok_Dapi_UserFiles_ReadAsText(file, (data) => resolve(data), (e) => reject(e)));
+  }
+
+  /** Read file as bytes
+   * @param {File | String} file
+   * @returns {Promise<Uint8List>} */
+  readAsBytes(file) {
+    return new Promise((resolve, reject) =>
+        grok_Dapi_UserFiles_ReadAsBytes(file, (data) => resolve(toJs(data)), (e) => reject(e)));
+  }
+
+  /** Write file
+   * @param {File | String} file
+   * @param {List<int>} blob
+   * @returns {Promise} */
+  write(file, blob) {
+    return new Promise((resolve, reject) =>
+        grok_Dapi_UserFiles_Write(file, blob, () => resolve(), (e) => reject(e)));
+  }
+
+
+/** Write file
+ * @param {File | String} file
+ * @param String data
+ * @returns {Promise} */
+writeAsText(file, data) {
+  return new Promise((resolve, reject) =>
+      grok_Dapi_UserFiles_WriteAsText(file, data, () => resolve(), (e) => reject(e)));
+  }
 }

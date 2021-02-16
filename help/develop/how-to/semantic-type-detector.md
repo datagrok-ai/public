@@ -26,9 +26,11 @@ class SequencePackageDetectors extends DG.Package {
 
 Notice how the column properties are used. Such properties as `col.name` help determine a semantic type, but `col.semType` actually assigns the detected type to the column.
 
+A column can have only one semantic type. In cases when several detectors match a column, its semantic type depends on the order in which the detectors were triggered. Standard platform detectors do not necessarily get a preference.
+
 ## Advanced Checks
 
-Semantic type detectors are uploaded separately from the rest of a package. Datagrok calls them each time the user opens a table. To quickly inspect the data, these functions have to be lightweight, simple, and efficient. Often checking the data type (`col.type`) and applying regular expressions to the column name (`col.name`) will be enough for such tests. However, there are ways to carry out a more advanced check. For instance, the following example makes use of column statistics:
+Semantic type detectors are uploaded separately from the rest of a package (therefore, you might not see webpack warnings about syntax errors in `detectors.js`). Datagrok calls detectors each time the user opens a table. To quickly inspect the data, these functions have to be lightweight, simple, and efficient. Often checking the data type (`col.type`) and applying regular expressions to the column name (`col.name`) will be enough for such tests. However, there are ways to carry out a more advanced check. For instance, the following example makes use of column statistics:
 
 ```javascript
 class ViewersPackageDetectors extends DG.Package {

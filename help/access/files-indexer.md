@@ -3,11 +3,11 @@
 
 # Indexing File Shares
 
-For data sources that supports files access dataGrok platform provides files indexing feature. 
-File indexer is Data Job with hourly recurrence, that indexing file system for 
-[supported](../access/importing-data.md#supported-file-types) files  provided via storage 
-in data connection. 
+For data sources that support file access, the Datagrok platform provides a file indexing feature. 
+File indexer is a data job with hourly recurrence that indexes files with
+[supported](importing-data.md#supported-file-types) extensions in the storage specified by data connection.
 
 See also:
+* [File Shares](file-shares.md)
 * [Data Connection](data-connection.md)
 * [Data Job](data-job.md)

@@ -4,8 +4,8 @@
 # Data Types vs Semantic Types
 
 Unlike Excel, table columns in Datagrok are strongly-typed, meaning all cells are of 
-one of the pre-defined data types (string, int, float, datetime, bool, bytes). In addition to that, 
-a column might also have semantic type associated with it. Semantic type identifies
+one of the pre-defined data types (`string`, `int`, `bigint`, `qnum`, `double`, `datetime`, `bool`).
+In addition to that, a column might also have semantic type associated with it. Semantic type identifies
 the meaning of the data. For instance, a column could be of the data type "string", but
 the semantic type would be "country".
 
@@ -21,8 +21,7 @@ Semantic types are used in several ways:
 * **Predictive models.** Just like functions, semantic type annotations are used to determine
   whether or not a model is applicable to the dataset.  
 
-Semantic type is stored in the [column tags](tags.md#semantic-type). It could be either detected automatically
-by column semantic type detectors, or set manually.
+A column can have only one semantic type. It is stored in the [column tags](tags.md#semantic-type) and can be either detected automatically by semantic type detectors or set manually.
                
 ## Manually Setting Semantic Types
 

@@ -1,7 +1,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Circos from 'circos';
-import {select, scaleOrdinal} from 'd3';
+import {select, scaleOrdinal, color} from 'd3';
 import {layoutConf, topSort} from './configuration.js';
 
 
@@ -16,7 +16,7 @@ export class ChordViewer extends DG.JsViewer {
     this.aggType = this.string('aggType', 'count', { choices: ['count', 'sum'] });
     this.chordLengthColumnName = this.float('chordLengthColumnName');
     this.colorBy = this.string('colorBy', 'source', { choices: ['source', 'target'] });
-    this.sortBy = this.string('sortBy', 'frequency', { choices: ['alphabet', 'frequency', 'topology'] });
+    this.sortBy = this.string('sortBy', 'topology', { choices: ['alphabet', 'frequency', 'topology'] });
     this.direction = this.string('direction', 'clockwise', { choices: ['clockwise', 'counterclockwise'] });
 
     this.initialized = false;
@@ -34,8 +34,10 @@ export class ChordViewer extends DG.JsViewer {
   init() {
     this.innerRadiusMargin = 80;
     this.outerRadiusMargin = 60;
-    this.color = scaleOrdinal(DG.Color.categoricalPalette);
-    this.chordConf.color = datum => DG.Color.toRgb(this.color(datum[this.colorBy]['label']));
+    this.minSegmentWidth = 10;
+    this.colorScale = scaleOrdinal(DG.Color.categoricalPalette);
+    this.color = c => DG.Color.toRgb(this.colorScale(c));
+    this.chordConf.color = datum => this.color(datum[this.colorBy]['label']);
     this.chordConf.opacity = 0.7;
     this.labelConf = {
       innerRadius: 1.02,
@@ -86,7 +88,7 @@ export class ChordViewer extends DG.JsViewer {
     this.toColumn = this.dataFrame.getCol(this.toColumnName);
     this.conf.events = {
       mouseover: (datum, index, nodes, event) => {
-        select(nodes[index]).select(`#${datum.id}`).attr('stroke', 'black');
+        select(nodes[index]).select(`#${datum.id}`).attr('stroke', color(this.color(datum.label)).darker());
         ui.tooltip.showRowGroup(this.dataFrame, i => {
           return this.fromColumn.get(i) === datum.label ||
             this.toColumn.get(i) === datum.label;
@@ -104,52 +106,71 @@ export class ChordViewer extends DG.JsViewer {
       }
     };
 
-    if (this.aggType === 'count') this.chordLengthColumnName = null;
-    this.aggregatedTable = this.dataFrame
-      .groupBy([this.fromColumnName, this.toColumnName])
-      .add(this.aggType, this.chordLengthColumnName, 'result')
-      .aggregate();
-
     this.freqMap = {};
-    this.fromColumn.toList().forEach(k => this.freqMap[k] = (this.freqMap[k] || 0) + 1);
-    this.toColumn.toList().forEach(k => this.freqMap[k] = (this.freqMap[k] || 0) + 1);
+    for (let i = 0; i < this.dataFrame.rowCount; i++) {
+      let from = this.fromColumn.isNone(i) ? "" : this.fromColumn.get(i);
+      this.freqMap[from] = (this.freqMap[from] || 0) + 1;
+      let to = this.toColumn.isNone(i) ? "" : this.toColumn.get(i);
+      this.freqMap[to] = (this.freqMap[to] || 0) + 1;
+    }
 
-    this.fromCol = this.aggregatedTable.getCol(this.fromColumnName);
-    this.toCol = this.aggregatedTable.getCol(this.toColumnName);
-    this.aggVal = this.aggregatedTable.getCol('result').getRawData();
-    this.rowCount = this.aggregatedTable.rowCount;
+    if (this.aggType === 'sum' && this.chordLengthColumnName === null) {
+      this.chordLengthColumnName = this.numColumns[0].name;
+    }
 
-    this.categories = Array.from(new Set(this.fromCol.categories.concat(this.toCol.categories)));
+    if (this.fromColumnName !== this.toColumnName) {
+      this.aggregatedTable = this.dataFrame
+        .groupBy([this.fromColumnName, this.toColumnName])
+        .whereRowMask(this.dataFrame.filter)
+        .add(this.aggType, this.chordLengthColumnName, 'result')
+        .aggregate();
+
+      this.fromCol = this.aggregatedTable.getCol(this.fromColumnName);
+      this.toCol = this.aggregatedTable.getCol(this.toColumnName);
+      this.aggVal = this.aggregatedTable.getCol('result').getRawData();
+      this.rowCount = this.aggregatedTable.rowCount;
+  
+      this.categories = Array.from(new Set(this.fromCol.categories.concat(this.toCol.categories)));
+    } else {
+      this.categories = Array.from(this.fromColumn.categories);
+    }
+
     this.data = this.categories
       .sort((this.sortBy === 'frequency') ? (a, b) => this.freqMap[b] - this.freqMap[a] : undefined)
-      .map((s, ind) => {
-        return {
-          id: `id-${ind}`,
-          label: s,
-          len: this.freqMap[s],
-          color: DG.Color.toRgb(this.color(s))
-        }
-    });
+      .map((s, ind) => ({
+        id: `id-${ind}`,
+        label: s,
+        len: this.freqMap[s],
+        color: this.color(s)
+      }));
 
-    for (const prop of Object.getOwnPropertyNames(this.segments)) {
-      delete this.segments[prop];
+    if (this.fromColumnName !== this.toColumnName) {
+      for (const prop of Object.getOwnPropertyNames(this.segments)) {
+        delete this.segments[prop];
+      }
+  
+      this.data.forEach(s => {
+        this.segments[s.label] = { datum: s, targets: [], aggTotal: null, visited: false };
+        s.pos = 0;
+      });
+  
+      for (let i = 0; i < this.rowCount; i++) {
+        let from = this.fromCol.get(i);
+        let to = this.toCol.get(i);
+  
+        this.segments[from]['targets'].push(to);
+        this.segments[from]['aggTotal'] = (this.segments[from]['aggTotal'] || 0) + this.aggVal[i];
+        if (from !== to) this.segments[to]['aggTotal'] = (this.segments[to]['aggTotal'] || 0) + this.aggVal[i];
+      }
     }
 
-    this.data.forEach(s => {
-      this.segments[s.label] = { datum: s, targets: [], aggTotal: null, visited: false };
-      s.pos = 0;
-    });
-
-    for (let i = 0; i < this.rowCount; i++) {
-      let from = this.fromCol.get(i);
-      let to = this.toCol.get(i);
-
-      this.segments[from]['targets'].push(to);
-      this.segments[from]['aggTotal'] = (this.segments[from]['aggTotal'] || 0) + this.aggVal[i];
-      if (from !== to) this.segments[to]['aggTotal'] = (this.segments[to]['aggTotal'] || 0) + this.aggVal[i];
+    if (this.sortBy === 'topology') {
+      if (this.fromColumnName === this.toColumnName) {
+        this.props.sortBy = 'alphabet';
+      } else {
+        this.data = topSort(this.segments);
+      }
     }
-
-    if (this.sortBy === 'topology') this.data = topSort(this.segments);
     if (this.direction === 'counterclockwise') this.data.reverse();
   }
 
@@ -220,7 +241,7 @@ export class ChordViewer extends DG.JsViewer {
 
     if (computeData) {
       this.generateData();
-      this.computeChords();
+      if (this.fromColumnName !== this.toColumnName) this.computeChords();
     }
 
     $(this.root).empty();
@@ -234,17 +255,21 @@ export class ChordViewer extends DG.JsViewer {
       height: size
     });
 
-    this.conf.innerRadius = size/2 - this.innerRadiusMargin;
-    this.conf.outerRadius = size/2 - this.outerRadiusMargin;
+    this.conf.innerRadius = Math.max(0, size/2 - this.innerRadiusMargin);
+    this.conf.outerRadius = Math.max(0, size/2 - this.outerRadiusMargin);
     // this.chordConf.radius = d => (d.source.id === d.target.id) ? this.conf.outerRadius : null;
 
     circos.layout(this.data, this.conf);
-    circos.chords('chords-track', this.chords, this.chordConf);
-    circos.text('labels', this.data.map(d => { return {
+
+    if (this.fromColumnName !== this.toColumnName) {
+      circos.chords('chords-track', this.chords, this.chordConf);
+    }
+
+    circos.text('labels', this.data.map(d => ({
       block_id: d.id,
       position: this.freqMap[d.label] / 2,
       value: d.label
-    }}), this.labelConf);
+    })), this.labelConf);
     circos.render();
 
     let labels = select(this.root).selectAll('.block');

@@ -624,6 +624,20 @@ export class Column {
     grok_Column_Set_Name(this.d, s);
   }
 
+  /**
+   * Initializes all values in the column to [columnInitializer].
+   * @param {string | number | Function} valueInitializer
+   * @returns {Column}
+   * */
+  init(valueInitializer) {
+    let type = typeof valueInitializer;
+    if (type === 'function')
+      grok_Column_Init(this.d, valueInitializer);
+    else if (type === 'number' || type === 'string')
+      grok_Column_SetAllValues(this.d, valueInitializer);
+    return this;
+  }
+
   /** Returns the raw buffer containing data. Return type depends on the column type:
    * {Int32Array} for ints, {@link INT_NULL} represents null.
    * {Float32Array} for floats, {@link FLOAT_NULL} represents null.
@@ -885,6 +899,16 @@ export class ColumnList {
     return column;
   }
 
+  /** Inserts a column, and optionally notifies the parent dataframe.
+   * @param {Column} column
+   * @param {boolean} notify
+   * @param {int} index
+   * @returns {Column} */
+  insert(column, notify = true, index) {
+    grok_ColumnList_Insert(this.d, column.d, notify, index);
+    return column;
+  }
+
   /** Adds an empty column of the specified type.
    * @param {string} name
    * @param {ColumnType} type
@@ -892,6 +916,36 @@ export class ColumnList {
   addNew(name, type) {
     return toJs(grok_ColumnList_AddNew(this.d, name, type));
   }
+
+  /** Adds a string column
+   * @param {string} name
+   * @returns {Column} */
+  addNewString(name) { return this.addNew(name, TYPE.STRING); }
+
+  /** Adds a new integer column
+   * @param {string} name
+   * @returns {Column} */
+  addNewInt(name) { return this.addNew(name, TYPE.INT); }
+
+  /** Adds a new float column
+   * @param {string} name
+   * @returns {Column} */
+  addNewFloat(name) { return this.addNew(name, TYPE.FLOAT); }
+
+  /** Adds a new qualified number column
+   * @param {string} name
+   * @returns {Column} */
+  addNewQnum(name) { return this.addNew(name, TYPE.QNUM); }
+
+  /** Adds a new datetime column
+   * @param {string} name
+   * @returns {Column} */
+  addNewDateTime(name) { return this.addNew(name, TYPE.DATE_TIME); }
+
+  /** Adds a new boolean column
+   * @param {string} name
+   * @returns {Column} */
+  addNewBool(name) { return this.addNew(name, TYPE.BOOL); }
 
   /** Adds a virtual column.
    * @param {string} name
@@ -903,10 +957,10 @@ export class ColumnList {
   }
 
   /** Removes column by name (case-insensitive).
-   * @param {string} columnName
+   * @param {string} column
    * @returns {ColumnList} */
-  remove(columnName) {
-    grok_ColumnList_Remove(this.d, columnName);
+  remove(column) {
+    grok_ColumnList_Remove(this.d, column);
     return this;
   }
 
