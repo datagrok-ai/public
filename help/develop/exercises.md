@@ -82,9 +82,9 @@ You will learn: how to write semantic type detectors, how to develop context-spe
 
 ### Scripting with server functions
 
-Prerequisites: basic Python knowledge, basic JavaScript knowledge.
+_Prerequisites:_ basic Python knowledge.
 
-Details: [Scripting](develop/scripting.md), [Dev Meeting 1 | First-class functions](https://youtu.be/p7_qOU_IzLM?t=724)
+_Details:_ [Scripting](develop/scripting.md), [Dev Meeting 1 | First-class functions](https://youtu.be/p7_qOU_IzLM?t=724)
 
 _You will learn:_ how to create and invoke Datagrok scripts in data science languages like R and Python.
 
@@ -121,9 +121,13 @@ In this exercise, we will count occurrences of a given subsequence in a nucleoti
 
 ### Scripting with client functions
 
-8. Implement the function which does the same as `CountSubsequencePython`, now in JavaScript, named
-   `CountSubsequenceJS`. Follow the same conventions on the parameters in the comments block
-   and returning a result via a variable.
+_Prerequisites:_ basic JavaScript knowledge.
+
+_You will learn:_ how to create and invoke Datagrok JavaScript scripts.
+
+8. Implement the function `CountSubsequenceJS` in JavaScript, which does the same as
+   [`CountSubsequencePython`](#scripting-with-server-functions). Follow the same conventions on
+   the parameters in the comments block and returning a result via a variable.
 9. Run `CountSubsequenceJS` using the `Play` button; using the console. From same console,
    run `CountSubsequencePython` yet again.  You can notice that both Python and JS versions of
    our function, implemented as scripts, are homogeneous functions in Datagrok.
