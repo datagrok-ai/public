@@ -1,2 +1,3 @@
-class ChemblBrowserPackageDetectors extends DG.Package {
+class ChemblBrowser
+PackageDetectors extends DG.Package {
 }

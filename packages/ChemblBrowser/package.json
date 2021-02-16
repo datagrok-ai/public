@@ -11,9 +11,9 @@
 		"release-chemblbrowser": "grok publish --rebuild --release",
 		"build-chemblbrowser": "webpack",
 		"build": "webpack",
-		"debug-chemblbrowser-dev": "grok publish dev --rebuild",
-		"release-chemblbrowser-dev": "grok publish dev --rebuild --release",
-		"debug-chemblbrowser-local": "grok publish local --rebuild",
-		"release-chemblbrowser-local": "grok publish local --rebuild --release"
+		"debug-chemblbrowser-public": "grok publish public --rebuild",
+		"release-chemblbrowser-public": "grok publish public --rebuild --release",
+		"debug-chemblbrowser-localhost": "grok publish localhost --rebuild",
+		"release-chemblbrowser-localhost": "grok publish localhost --rebuild --release"
 	}
 }

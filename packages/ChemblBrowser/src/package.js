@@ -11,15 +11,17 @@ let packageName = 'Chemblbrowser'
 export function test(s) {
   grok.shell.info(_package.webRoot);
 }
+//name: Browser
+//tags: app
+export function Browser() {
+  getAllChemblStructures();
+}
 
 
 
 //name: getAllChemblStructures
-//input: int molregno
 //output: dataframe df
-export async function getAllChemblStructures(molregno) {
-  let queryName = 'allChemblStructures';
-  console.log(molregno)
-  return await grok.data.query(`${packageName}:${queryName}`, {'molregno': molregno});
-}
-
+export async function getAllChemblStructures() {
+  let queryName = 'allChemblStructures'
+  return await grok.data.query(`${packageName}:${queryName}`);
+  }
