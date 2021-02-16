@@ -7,8 +7,8 @@ Datagrok was designed to be as extensible as possible, so naturally JavaScript-b
 is the preferred way to develop user-facing applications on top of the platform. 
 Use [Grok API](js-api.md) to control pretty much anything within Datagrok,
 including [data manipulation](js-api.md#data-manipulation), 
-adding [views](js-api.md#views) or [viewers](js-api.md#pre-defined-viewers), 
-[developing custom viewers](js-api.md#custom-viewers),
+adding [views](js-api.md#views) or [viewers](how-to/manipulate-viewers), 
+[developing custom viewers](how-to/develop-custom-viewer),
 [registering functions](js-api.md#registering-functions),
 training and applying [predictive models](../learn/predictive-modeling.md), 
 and even [building custom apps](#applications).

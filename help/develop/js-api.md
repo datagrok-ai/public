@@ -12,8 +12,6 @@ This document covers the following areas:
   * [API Structure](#api-structure)
   * [Data Manipulation](#data-manipulation)
   * [Views](#views)
-  * [Pre-defined Viewers](#pre-defined-viewers)
-  * [Custom Viewers](#custom-viewers)
   * [Registering Functions](#registering-functions)
   * [File Handlers](#file-handlers)
   * [Events](#events)
@@ -116,52 +114,6 @@ e.innerText = 'This element has been created in JavaScript';
 grok.shell.dockElement(e, 'JS', 'left', 0.5);
 ```
 
-## Pre-defined Viewers
-
-[Viewers](../visualize/viewers.md) are very important components of the Datagrok platform. Grok API 
-exposes functionality for manipulating pre-defined viewers 
-(such as [scatter plot](../visualize/viewers/scatter-plot.md) or [histogram](../visualize/viewers/histogram.md)), as
-well as for developing custom viewers.
-
-Add a new viewer and set up its properties:
-
-```javascript
-view = grok.addTableView(grok.testData('demog', 5000));
-hist = view.addViewer('histogram');
-hist.options({'valueColumnName': 'weight'});
-```
-
-## Custom Viewers
-
-Extend [JsViewer](/js-api/JsViewer.html) class to develop viewers that become first-class citizens in 
-the Grok platform. Once a viewer is registered, you can do the following:
-
-* Add viewer using `Add | JsDemoViewer`, or from the toolbar 'viewers' popup
-* Persist viewer as part of the project
-* Common viewer operations under the "Viewer" popup menu, such as cloning, embedding, etc
-
-The following code defines a new viewer by subclassing `JsViewer`. The viewer listens to changes
-of filter and selection in the attached table, and updates numbers of filtered/selected rows accordingly.
-
-```javascript
-class JsDemoViewer extends DG.JsViewer {
-    onTableAttached() {
-        this.subs.push(this.dataFrame.selection.onChanged.subscribe((_) => this.render()));
-        this.subs.push(this.dataFrame.filter.onChanged.subscribe((_) => this.render()));
-
-        this.render();
-    }
-
-    render() {
-        this.root.innerHTML =
-            `${this.dataFrame.toString()}<br>
-            Selected: ${this.dataFrame.selection.trueCount}<br>
-            Filtered: ${this.dataFrame.filter.trueCount}`;
-    }
-}
-
-grok.shell.registerViewer('JsDemoViewer', 'JavaScript-based viewer', () => new JsDemoViewer());
-```
 
 ## Registering Functions
 

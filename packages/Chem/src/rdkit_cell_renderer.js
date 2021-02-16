@@ -8,14 +8,15 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
     super();
     this.canvasCounter = 0;
     this.molCache = new DG.LruCache();
-    this.molCache.onItemEvicted = function (mol) {
-      mol.delete();
-      mol = null;
+    this.molCache.onItemEvicted = function (obj) {
+      obj.mol.delete();
+      obj.mol = null;
+      obj.substruct = null;
+      obj = null;
     };
     this.rendersCache = new DG.LruCache();
     this.rendersCache.onItemEvicted = function (obj) {
       obj.canvas = null;
-      obj.canvasId = null;
       obj = null;
     }
 
@@ -41,20 +42,12 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
 
   }
 
-  _molIsInSmiles(molString, rdkitMol) {
-
-    // No, this won't always work (due to canonical)
-    const smilesMolString = rdkitMol.get_smiles();
-    return smilesMolString === molString;
-
-  }
-
   _fetchMolGetOrCreate(molString, scaffoldMolString, molRegenerateCoords) {
 
     let mol = null;
+    let substructJson = "{}";
 
     try {
-      let validMol = false;
       mol = rdKitModule.get_mol(molString);
       if (mol.is_valid()) {
         // TODO: maybe split into 2 functions (with scaffold and without)
@@ -68,9 +61,9 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
         }
         if (scaffoldMolString !== "") {
           // only after dropping, align to a given scaffold
-          let rdkitScaffoldMol = this._fetchMol(scaffoldMolString, "", molRegenerateCoords, false);
+          let rdkitScaffoldMol = this._fetchMol(scaffoldMolString, "", molRegenerateCoords, false).mol;
           if (this._molIsInMolBlock(scaffoldMolString, rdkitScaffoldMol)) {
-            const substructJson = mol.get_substruct_match(rdkitScaffoldMol);
+            substructJson = mol.get_substruct_match(rdkitScaffoldMol);
             if (substructJson !== '{}') {
               mol.generate_aligned_coords(rdkitScaffoldMol, true);
             }
@@ -84,7 +77,7 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
         "Possibly a malformed molecule: `" + molString + "`");
       mol = null;
     }
-    return mol;
+    return { mol: mol, substruct: JSON.parse(substructJson) };
   }
 
   _fetchMol(molString, scaffoldMolString, molRegenerateCoords, scaffoldRegenerateCoords) {
@@ -93,17 +86,18 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
     return this.molCache.getOrCreate(name, (s) =>
       this._fetchMolGetOrCreate(molString, scaffoldMolString, molRegenerateCoords));
   }
+  
+  _rendererGetOrCreate(width, height, molString, scaffoldMolString, highlightScaffold, molRegenerateCoords, scaffoldRegenerateCoords) {
 
-  _rendererGetOrCreate(width, height, molString, scaffoldMolString, molRegenerateCoords, scaffoldRegenerateCoords) {
-
-    let rdkitMol = this._fetchMol(molString, scaffoldMolString, molRegenerateCoords, scaffoldRegenerateCoords);
+    let fetchMolObj = this._fetchMol(molString, scaffoldMolString, molRegenerateCoords, scaffoldRegenerateCoords);
+    let rdkitMol = fetchMolObj.mol;
+    const substruct = fetchMolObj.substruct;
 
     const canvasId = '_canvas-rdkit-' + this.canvasCounter;
-    let canvas = window.document.createElement('canvas');
-    canvas.setAttribute('id', canvasId);
+    let canvas = new OffscreenCanvas(width, height);
     this.canvasCounter++;
     if (rdkitMol != null) {
-      this._drawMoleculeToCanvas(rdkitMol, width, height, canvas);
+      this._drawMoleculeToCanvas(rdkitMol, width, height, canvas, substruct, highlightScaffold);
     } else {
       let ctx = canvas.getContext("2d");
       ctx.lineWidth = 1;
@@ -117,48 +111,49 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
       ctx.lineTo(0, height);
       ctx.stroke();
     }
-    return {canvas: canvas, canvasId: canvasId};
+    return {canvas: canvas};
 
   }
 
-  _fetchRender(width, height, molString, scaffoldMolString, molRegenerateCoords, scaffoldRegenerateCoords) {
+  _fetchRender(width, height, molString, scaffoldMolString, highlightScaffold, molRegenerateCoords, scaffoldRegenerateCoords) {
 
     const name = width + " || " + height + " || "
-      + molString + " || " + scaffoldMolString  + " || "
+      + molString + " || " + scaffoldMolString  + " || " + highlightScaffold + " || "
       + molRegenerateCoords + " || " + scaffoldRegenerateCoords;
     return this.rendersCache.getOrCreate(name, (s) =>
       this._rendererGetOrCreate(width, height,
-        molString, scaffoldMolString, molRegenerateCoords, scaffoldRegenerateCoords));
+        molString, scaffoldMolString, highlightScaffold, molRegenerateCoords, scaffoldRegenerateCoords));
 
   }
 
-  _drawMoleculeToCanvas(rdkitMol, w, h, canvas) {
-    const opts = {
+  _drawMoleculeToCanvas(rdkitMol, w, h, canvas, substruct, highlightScaffold) {
+    let opts = {
       "clearBackground": false,
       "offsetx": 0, "offsety": 0,
       "width": Math.floor(w),
       "height": Math.floor(h),
       "bondLineWidth": 1,
-      "minFontSize": 11
+      "minFontSize": 11,
+      'highlightBondWidthMultiplier': 12 
+    };
+    if (highlightScaffold) {
+      Object.assign(opts, substruct);
     }
-    canvas.width = w;
-    canvas.height = h;
     rdkitMol.draw_to_canvas_with_highlights(canvas, JSON.stringify(opts));
   }
 
   _drawMolecule(x, y, w, h, onscreenCanvas,
-                molString, scaffoldMolString,
+                molString, scaffoldMolString, highlightScaffold,
                 molRegenerateCoords, scaffoldRegenerateCoords) {
 
     const r = window.devicePixelRatio;
     x = r * x; y = r * y;
     w = r * w; h = r * h;
     const renderObj = this._fetchRender(w, h,
-      molString, scaffoldMolString, molRegenerateCoords, scaffoldRegenerateCoords);
+      molString, scaffoldMolString, highlightScaffold, molRegenerateCoords, scaffoldRegenerateCoords);
     let offscreenCanvas = renderObj.canvas;
     let image = offscreenCanvas.getContext('2d').getImageData(0, 0, w, h);
     let context = onscreenCanvas.getContext('2d');
-    // As old zoom: context.drawImage(offscreenCanvas, x, y, w, h);
     context.putImageData(image, x, y);
   }
 
@@ -168,49 +163,43 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
     if (molString == null || molString === '')
       return;
 
-    // TODO: improve this piece
-    const molCol = gridCell.tableColumn.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
-    let singleScaffoldMolString = molCol ? molCol.tags['chem-scaffold'] : null;
-
     const colTags = gridCell.tableColumn.tags;
-    let molRegenerateCoords = colTags && colTags['regenerate-coords'] === 'true';
-    let scaffoldRegenerateCoords = false;
-
+    let singleScaffoldMolString = colTags && colTags['chem-scaffold'];
+    
     if (singleScaffoldMolString) {
 
       this._drawMolecule(x, y, w, h, g.canvas,
-        molString, singleScaffoldMolString, molRegenerateCoords, scaffoldRegenerateCoords);
+        molString, singleScaffoldMolString, true, false, false);
 
     } else {
 
-      let df = gridCell.tableColumn.dataFrame;
-      const rowScaffoldCol = (() => {
+      let molRegenerateCoords = colTags && colTags['regenerate-coords'] === 'true';
+      let scaffoldRegenerateCoords = false;
+      let df = gridCell.grid.dataFrame;
+      let rowScaffoldCol = null;
 
-        // if given, take the 'scaffold-col' col
-        let colTags = gridCell.tableColumn.tags;
-        if (colTags && colTags['scaffold-col']) {
-          let rowScaffoldColName = colTags['scaffold-col'];
-          let rowScaffoldColProbe = df.columns.byName(rowScaffoldColName);
-          if (rowScaffoldColProbe !== null) {
-            const scaffoldColTags = rowScaffoldColProbe.tags;
-            scaffoldRegenerateCoords = scaffoldColTags && scaffoldColTags['regenerate-coords'] === 'true';
-            molRegenerateCoords = scaffoldRegenerateCoords;
-            return rowScaffoldColProbe;
-          }
+      // if given, take the 'scaffold-col' col
+      if (colTags && colTags['scaffold-col']) {
+        let rowScaffoldColName = colTags['scaffold-col'];
+        let rowScaffoldColProbe = df.columns.byName(rowScaffoldColName);
+        if (rowScaffoldColProbe !== null) {
+          const scaffoldColTags = rowScaffoldColProbe.tags;
+          scaffoldRegenerateCoords = scaffoldColTags && scaffoldColTags['regenerate-coords'] === 'true';
+          molRegenerateCoords = scaffoldRegenerateCoords;
+          rowScaffoldCol = rowScaffoldColProbe;
         }
-        return null;
-
-      })();
+      }
 
       if (rowScaffoldCol == null || rowScaffoldCol.name === gridCell.tableColumn.name) {
         // regular drawing
-        this._drawMolecule(x, y, w, h, g.canvas, molString, "", molRegenerateCoords, false);
+        this._drawMolecule(x, y, w, h, g.canvas, molString, "", false, molRegenerateCoords, false);
       } else {
         // drawing with a per-row scaffold
         let idx = gridCell.tableRowIndex;
         let scaffoldMolString = df.get(rowScaffoldCol.name, idx);
+        let highlightScaffold = colTags && colTags['highlight-scaffold'] === 'true';
         this._drawMolecule(x, y, w, h, g.canvas,
-          molString, scaffoldMolString, molRegenerateCoords, scaffoldRegenerateCoords);
+          molString, scaffoldMolString, highlightScaffold, molRegenerateCoords, scaffoldRegenerateCoords);
       }
     }
   }

@@ -1,4 +1,4 @@
-// A sample class from https://datagrok.ai/help/develop/js-api#custom-viewers
+// See also https://datagrok.ai/help/develop/how-to/develop-custom-viewer
 // This viewer does the following:
 // * listens to changes of filter and selection in the attached table,
 // * updates the number of filtered/selected rows accordingly.

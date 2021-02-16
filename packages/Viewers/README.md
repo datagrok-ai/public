@@ -17,5 +17,4 @@ See also:
   * [Datagrok JavaScript API](https://datagrok.ai/help/develop/js-api)
   * [Packages](https://datagrok.ai/help/develop/develop#packages)
   * [Viewers](https://datagrok.ai/help/visualize/viewers)
-  * [Custom Viewers](https://datagrok.ai/help/develop/js-api#custom-viewers)
   * [How to Develop Custom Viewers](https://datagrok.ai/help/develop/how-to/develop-custom-viewer)

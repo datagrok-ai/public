@@ -6,13 +6,13 @@ The Leaflet [viewer](https://datagrok.ai/help/visualize/viewers) has two renderi
 
 ![](../../help/develop/how-to/leaflet-viewer.png "Leaflet Viewer")
 
-In terms of developer experience, this package can give you a good idea of how to create your own custom viewer for the platform. To learn more technical details, please visit the [JavaScript API](https://datagrok.ai/help/develop/js-api#custom-viewers) page in our Wiki.
+In terms of developer experience, this package can give you a good idea of how to create your own custom viewer for the platform. To learn more technical details, please visit the [JavaScript API](https://datagrok.ai/help/develop/how-to/develop-custom-viewer) page in our Wiki.
 
 See also:
 
   * [Community Discussion](https://community.datagrok.ai/t/teaser-leaflet-js-based-map/133)
   * [Leaflet](https://leafletjs.com/)
   * [Viewers](https://datagrok.ai/help/visualize/viewers)
-  * [Custom Viewers](https://datagrok.ai/help/develop/js-api#custom-viewers)
+  * [Custom Viewers](https://datagrok.ai/help/develop/how-to/develop-custom-viewer)
   * [Semantic Types](https://datagrok.ai/help/discover/semantic-types)
   * [Packages](https://datagrok.ai/help/develop/develop#packages)

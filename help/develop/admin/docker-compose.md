@@ -87,6 +87,13 @@ If you want to jump-start with Datagrok on your local machine, we recommend this
    ```  
    docker-compose down --volumes  
    ```  
+6. You may use the following commands to comfortably continue working with the existing containers:
+   ```
+   docker-compose up -d
+   docker-compose stop
+   ```
+   Start in a detached mode allows running the containers in the background leaving out the logs, while the `stop`
+   command, as opposed to `docker-compose down`, does not remove the network and the stopped containers after use.
 
 See also:
 
