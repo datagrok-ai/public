@@ -20,8 +20,10 @@ custom applications.
 
   * [Setting up the environment](#setting-up-the-environment)
   * [Semantic types](#semantic-types)
-  * [Scripting and functions](#scripting-and-functions)
-  * [Composing functions](#composing-functions)
+  * [Scripting with server functions](#scripting-with-server-functions)
+  * [Scripting with client functions](#scripting-with-client-functions)
+  * [Composing a JavaScript and a Python function](#composing-a-javascript-and-a-python-function)
+  * [Composing two JavaScript functions](#composing-two-javascript-functions)
   * [Querying databases](#querying-databases)
   * [Creating a scripting viewer](#creating-a-scripting-viewer)
 
@@ -78,6 +80,8 @@ You will learn: how to write semantic type detectors, how to develop context-spe
    
 ## Scripting and functions
 
+### Scripting with server functions
+
 Prerequisites: basic Python knowledge, basic JavaScript knowledge.
 
 Details: [Scripting](develop/scripting.md), [Dev Meeting 1 | First-class functions](https://youtu.be/p7_qOU_IzLM?t=724)
@@ -114,6 +118,9 @@ In this exercise, we will count occurrences of a given subsequence in a nucleoti
 6. Run the script function, provide input values in the dialog and get to the console to see the result.
    Now run the script function again through the console completely, passing different arguments values.
 7. Go back to `Functions | Scripts` and hit `New JavaScript Script`.
+
+### Scripting with client functions
+
 8. Implement the function which does the same as `CountSubsequencePython`, now in JavaScript, named
    `CountSubsequenceJS`. Follow the same conventions on the parameters in the comments block
    and returning a result via a variable.
@@ -131,6 +138,8 @@ whereas the second, `CountSubsequenceJS`, runs directly in the browser. To run `
 Datagrok passes the script arguments over the network and fetches back the result to the browser.
 
 ## Composing functions
+
+### Composing a JavaScript and a Python function
 
 _Prerequisites:_ basic Python knowledge, basic JavaScript knowledge.
 
@@ -215,6 +224,8 @@ _You will learn:_ how to invoke arbitrary Datagrok functions in JavaScript and a
    window and leave enough space in the table to see the new column coming when running the script.
    
 5. Run the script and check the new column appears in the grid.
+
+### Composing two JavaScript functions
 
 6. Let's repeat this augmentation for a JavaScript function. First, delete the newly created
    `N(ATG)` column by clicking with a right mouse button on it and selecting `Remove`.
