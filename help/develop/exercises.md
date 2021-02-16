@@ -20,10 +20,12 @@ custom applications.
 
   * [Setting up the environment](#setting-up-the-environment)
   * [Semantic types](#semantic-types)
-  * [Scripting with server functions](#scripting-with-server-functions)
-  * [Scripting with client functions](#scripting-with-client-functions)
-  * [Composing a JavaScript and a Python function](#composing-a-javascript-and-a-python-function)
-  * [Composing two JavaScript functions](#composing-two-javascript-functions)
+  * [Scripting and functions](#scripting-and-functions)
+      * [Scripting with server functions](#scripting-with-server-functions)
+      * [Scripting with client functions](#scripting-with-client-functions)
+  * [Composing functions](#composing-functions)
+      * [Composing a JavaScript and a Python function](#composing-a-javascript-and-a-python-function)
+      * [Composing two JavaScript functions](#composing-two-javascript-functions)
   * [Querying databases](#querying-databases)
   * [Creating a scripting viewer](#creating-a-scripting-viewer)
 
