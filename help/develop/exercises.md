@@ -253,10 +253,10 @@ the function being called, we could just populate the new column in a loop insid
 the one created in ["Scripting and functions"](#scripting-and-functions):
 `CountSubsequencePython(seq, subseq)`.
 
-Trying this, you could find out it incurs substantial overhead for a Python version.
+However, this incurs substantial overhead in a Python version.
 For a table of 10 rows we'd have to call the server scripting 10 times with a network roundtrip
 to deliver parameters to [compute virtual machine](). This will be less overhead for a JavaScript version,
-as all will happen in the browser, but still not as optimal as the version where we do just one call to a
+as all will happen in the browser, but still not as optimal as the case where we do just one call to a
 nested script.
 
 ## Querying databases
