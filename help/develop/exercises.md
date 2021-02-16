@@ -74,9 +74,9 @@ You will learn: how to write semantic type detectors, how to develop context-spe
    of the `dna_nucleotide` semantic type. To test it, simply open our test file, click on any cell
    in the `sequence` column, and find the `complement` property in the panel on the right.
    
-## Scripting
+## Scripting and functions
 
-Prerequisites: basic Python knowledge
+Prerequisites: basic Python knowledge, basic JavaScript knowledge.
 
 Details: [Scripting](develop/scripting.md), [Dev Meeting 1 | First-class functions](https://youtu.be/p7_qOU_IzLM?t=724)
 
@@ -115,22 +115,155 @@ In this exercise, we will count occurrences of a given subsequence in a nucleoti
 8. Implement the function which does the same as `CountSubsequencePython`, now in JavaScript, named
    `CountSubsequenceJS`. Follow the same conventions on the parameters in the comments block
    and returning a result via a variable.
-9. Run `CountSubsequenceJS` using the `Play` button; using the console.
-   You can notice that both Python and JS versions of our function are homogenous functions
-   in Datagrok. It's also possible to call them in a uniform fashion
-   [using our JavaScript API](develop/scripting.md#running-a-script).
-10. Don't forget to save these two scripts. We would re-use them in other exercises.
+9. Run `CountSubsequenceJS` using the `Play` button; using the console. From same console,
+   run `CountSubsequencePython` yet again.  You can notice that both Python and JS versions of
+   our function, implemented as scripts, are homogeneous functions in Datagrok.
+   It's also possible to call them in a uniform fashion
+   [using our JavaScript API](develop/scripting.md#running-a-script). This is also shown
+   in the ["Composing functions and dataframes"](#composing-functions-and-dataframes) exercise.
+10. Don't forget to save these two scripts. We would re-use parts of them in the following exercises.
 
 The difference between the two scripts is that the first, `CountSubsequencePython`, runs on
 our server by a [compute virtual machine](develop/admin/architecture.md#compute-virtual-machine),
 whereas the second, `CountSubsequenceJS`, runs directly in the browser. To run `CountSubsequencePython`,
 Datagrok passes the script arguments over the network and fetches back the result to the browser.
 
+## Composing functions
+
+_Prerequisites:_ basic Python knowledge, basic JavaScript knowledge.
+
+_You will learn:_ how to invoke arbitrary Datagrok functions in JavaScript and augment tables.
+
+1. Open Datagrok and navigate to `Functions | Scripts | New Python Script`.
+2. Implement a script `CountSubsequencePython` that takes as an input:
+
+   * a dataframe with a column containing nucleotide sequences,
+   * a name of that nucleotide sequences column,
+   * a nucleotide subsequence being sought,
+   
+   and outputs a dataframe containing a column with numbers of subsequence occurrences
+   in the sequences from the nucleotide column. Say, for a table, where we are only interested
+   in the first column,
+   
+   | Sequence     | A's |
+   |--------------|-----|
+   | AACCTCACCCAT | 4   |
+   | CCTTCTCCTCCT | 0   |
+   | CTGGAAGACCTA | 3   |
+   
+   the following output should be produced for a subsequence `ACC` being sought:
+   
+   | N(ACC) |
+   |--------|
+   | 2      |
+   | 0      |
+   | 1      |
+   
+   Equip your Python script with the following header:
+   
+   ```python
+   #name: CountSubsequencePython
+   #language: python
+   #input: dataframe inputDf
+   #input: column inputColName
+   #input: string outputColName
+   #input: string subseq
+   #output: dataframe outputDf
+   ```
+   
+   In contrast to a simple script from the exercise ["Scripting and functions"](#scripting-and-functions),
+   we will now operate with dataframes:
+   * Use Pandas dataframes to access the input dataframe and create an output dataframe
+   * Use `outputDf = pd.DataFrame()` to initialize the output Pandas dataframe which you would
+     fill in with the occurrence counts
+   * You don't need to import `pandas`, Datagrok does this automatically
+   * Note that the `column inputColName` is just a column name, but not a data in some column
+   
+   You may want to borrow some code from the ["Scripting and functions"](#scripting-and-functions) exercise.
+   
+3. Let's create a wrapping function `CountSubsequenceTable` in JavaScript which would do all the technical
+   job. We would use it to give the new column with counts a proper name, and to _augment_ the input dataframe
+   with the newly computed column. Make it look like this:
+   
+    ```javascript
+    //name: CountSubsequenceTable
+    //language: javascript
+    //input: dataframe df
+    //input: column colName
+    //input: string subseq = ATG
+    
+    grok.functions.call(
+      "<YOUR_NAME>:CountSubsequencePython", {
+        'inputDf': df,
+        'inputColName': colName,
+        'outputColName': `N(${subseq})`,
+        'subseq': subseq 
+      }).then((resultDf) => {
+        df.columns.insert(resultDf.columns.byIndex(0));
+      });
+    ```
+   
+   Follow how we match input parameters to their values in `grok.functions.call` using a JSON object.
+   In the `.then` [continuation]() we manipulate the original dataframe by inserting a new column which
+   we get as a result of the script's execution.
+   
+4. Let' prepare a visual layout before running our script. Navigate to `Data | Files` and open
+   `Demo Files / bio / sequences.csv`. Then click on `Windows` and activate `Menu`, this will let
+   you move windows around. Stick the `Sequences` table to the side of the `CountSubsequenceTable`
+   window and leave enough space in the table to see the new column coming when running the script.
+   
+5. Run the script and check the new column appears in the grid.
+
+6. Let's repeat this augmentation for a JavaScript function. First, delete the newly created
+   `N(ATG)` column by clicking with a right mouse button on it and selecting `Remove`.
+
+7. Create a function `CountSubsequenceJS`, which has the following structure:
+    ```javascript
+    //name: CountSubsequenceJS
+    //language: javascript
+    //input: dataframe inputDf
+    //input: column inputColName
+    //input: string outputColName
+    //input: string subseq
+    //output: dataframe outputDf
+    
+    let newCol = DG.Column.fromType(
+      DG.COLUMN_TYPE.INT, outputColName, inputDf.rowCount);
+    for (let i = 0; i < newCol.length; ++i) { 
+      const seq = inputDf.get(inputColName, i);
+      const count = ...; // your subsequence counting here
+      newCol.set(i, count);
+    }
+    outputDf = DG.DataFrame.fromColumns([newCol]);
+    ```
+   Grasp a number of techniques with Datagrok JS API:
+   * creating a new column of a given type
+   * iterating through a dataframe by a row index
+   * crearing a dataframe from an array of columns
+   
+8. In `CountSubsequenceTable` replace `CountSubsequencePython` to `CountSubsequenceJS`
+   and run it. Check that exact same new column is produced as it was for a Python version.
+   
+9. (*) Notice that we don't need the entire input dataframe to run the script, just one column.
+   Optimize the 3 scripts of this exercise to only take this one column as an input.  
+   
+We could try another approach. Instead of passing the column to and forming the new column in
+the function being called, we could just populate the new column in a loop inside the
+`CountSubsequenceTable` by calls to a function operating on row data, such as
+the one created in ["Scripting and functions"](#scripting-and-functions):
+`CountSubsequencePython(seq, subseq)`.
+
+Trying this, you could find out it incurs substantial overhead for a Python version.
+For a table of 10 rows we'd have to call the server scripting 10 times with a network roundtrip
+to deliver parameters to [compute virtual machine](). This will be less overhead for a JavaScript version,
+as all will happen in the browser, but still not as optimal as the version where we do just one call to a
+nested script.
+
 ## Querying databases
 
-Prerequisites: basic SQL knowledge
+_Prerequisites:_ basic SQL knowledge
 
-Details: [Connecting to Databases](https://www.youtube.com/watch?v=dKrCk38A1m8&t=1048s),
+_Details:_ [Connecting to Databases](https://www.youtube.com/watch?v=dKrCk38A1m8&t=1048s),
 [How to Access Data](how-to/access-data.md)
 
 _Note:_ Editing an existing data query requires the respective access permission. You might need to request one.
@@ -177,9 +310,9 @@ The database is already deployed and is accessible from our server.
 
 ## Creating a Scripting Viewer
 
-Prerequisites: basic Python knowledge, [matplotlib](https://matplotlib.org/) or a similar library
+_Prerequisites:_ basic Python knowledge, [matplotlib](https://matplotlib.org/) or a similar library
 
-Details: [Scripting](develop/scripting.md), [Scripting Viewer](visualize/viewers/scripting-viewer.md),
+_Details:_ [Scripting](develop/scripting.md), [Scripting Viewer](visualize/viewers/scripting-viewer.md),
 [Creating a scripting viewer (video)](https://www.youtube.com/embed/jHRpOnhBAz4).
 
 *Amino acids counting task.* In this exercise, we'd use a Python script to generate a histogram
