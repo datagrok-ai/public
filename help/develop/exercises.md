@@ -118,7 +118,8 @@ In this exercise, we will count occurrences of a given subsequence in a nucleoti
    In the body, implement a Python function counting all occurrences of a given `subsequence` in a `sequence`.
    Return a `count` the same way as in the default script from p. 2.
 6. Run the script function, provide input values in the dialog and get to the console to see the result.
-   Now run the script function again through the console completely, passing different arguments values.
+   Now run the script function again through the console completely, passing different arguments values:
+   ```<UserName>:CountSubsequencePython('ATGATC', 'A')```
 7. Go back to `Functions | Scripts` and hit `New JavaScript Script`.
 
 ### Scripting with client functions
@@ -134,7 +135,7 @@ _You will learn:_ how to create and invoke Datagrok JavaScript scripts.
    run `CountSubsequencePython` yet again.  You can notice that both Python and JS versions of
    our function, implemented as scripts, are homogeneous functions in Datagrok.
    It's also possible to call them in a uniform fashion
-   [using our JavaScript API](develop/scripting.md#running-a-script). This is also shown
+   [using our JavaScript API](scripting.md#running-a-script). This is also shown
    in the ["Composing functions and dataframes"](#composing-functions-and-dataframes) exercise.
 10. Don't forget to save these two scripts. We would re-use parts of them in the following exercises.
 
