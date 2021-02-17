@@ -13,15 +13,19 @@ export function test(s) {
 }
 //name: Browser
 //tags: app
-export function Browser() {
-  getAllChemblStructures();
+export async function Browser() {
+
+  let v = grok.shell.newView('demo: ChemblBrowser');
+  let query = ui.choiceInput('query', 'allChemblStructures', ['allChemblStructures', 'allChemblIdsWithInchiKeys','proteinClassification']);
+  let container = ui.div();
+  v.append(container);
+
+  let inputs = [query]
+  container.appendChild(ui.inputs(inputs));
+
+  container.appendChild(ui.bigButton('RUN', () => {
+    grok.data.query(`${packageName}:${query.caption}`, {}).then(t => grok.shell.addTableView(t));
+  }));
+
+
 }
-
-
-
-//name: getAllChemblStructures
-//output: dataframe df
-export async function getAllChemblStructures() {
-  let queryName = 'allChemblStructures'
-  return await grok.data.query(`${packageName}:${queryName}`);
-  }
