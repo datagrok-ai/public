@@ -40,10 +40,19 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
 
     try {
       mol = rdKitModule.get_mol(molString);
+    } catch (e) {
+      console.error(
+        "In _fetchMolGetOrCreate: RDKit .get_mol crashes on a molString: `" + molString + "`");
+      mol = null;
+    }
+    try {
       if (mol.is_valid()) {
         if (this._isMolBlock(scaffoldMolString)) {
           let rdkitScaffoldMol = this._fetchMol(scaffoldMolString, "", molRegenerateCoords, false).mol;
           substructJson = mol.generate_aligned_coords(rdkitScaffoldMol, true, true);
+          if (substructJson === "") {
+            substructJson = "{}";
+          }
         } else if (molRegenerateCoords) {
           let molBlock = mol.get_new_coords(true);
           mol.delete();
@@ -51,12 +60,13 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
         }
       }
       if (!mol.is_valid()) {
-        mol = rdKitModule.get_mol("");
+        console.error(
+          "In _fetchMolGetOrCreate: RDKit mol is invalid on a molString molecule: `" + molString + "`");
+        mol = null;
       }
     } catch (e) {
       console.error(
-        "Possibly a malformed molecule: `" + molString + "`");
-      mol = null;
+        "In _fetchMolGetOrCreate: RDKit crashed, possibly a malformed molString molecule: `" + molString + "`");
     }
     return { mol: mol, substruct: JSON.parse(substructJson) };
   }
