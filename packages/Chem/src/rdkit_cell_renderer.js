@@ -27,18 +27,9 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
   get defaultWidth() { return 200; }
   get defaultHeight() { return 100; }
 
-  _molIsInMolBlock(molString, rdkitMol) {
+  _isMolBlock(molString) {
 
-    const smilesMolString = rdkitMol.get_smiles();
-    if (smilesMolString === molString)
-      return false;
-    const cxsmilesMolString = rdkitMol.get_cxsmiles();
-    if (cxsmilesMolString === molString)
-      return false;
-    const inchiMolString = rdkitMol.get_inchi();
-    if (inchiMolString === molString)
-      return false;
-    return true;
+    return molString.includes('M  END');
 
   }
 
@@ -50,26 +41,14 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
     try {
       mol = rdKitModule.get_mol(molString);
       if (mol.is_valid()) {
-        // TODO: maybe split into 2 functions (with scaffold and without)
-        if (molRegenerateCoords) {
-          // "drop" the coordinate information from the molecule
-          let rdkitMolNoCoords = rdKitModule.get_mol(mol.get_smiles());
-          let molBlockString = rdkitMolNoCoords.get_molblock();
-          rdkitMolNoCoords.delete();
-          mol.delete();
-          mol = rdKitModule.get_mol(molBlockString);
-        }
-        if (scaffoldMolString !== "") {
-          // only after dropping, align to a given scaffold
+        if (this._isMolBlock(scaffoldMolString)) {
           let rdkitScaffoldMol = this._fetchMol(scaffoldMolString, "", molRegenerateCoords, false).mol;
-          if (this._molIsInMolBlock(scaffoldMolString, rdkitScaffoldMol)) {
-            substructJson = mol.get_substruct_match(rdkitScaffoldMol);
-            if (substructJson !== '{}') {
-              mol.generate_aligned_coords(rdkitScaffoldMol, true);
-            }
-          }
+          substructJson = mol.generate_aligned_coords(rdkitScaffoldMol, true, true);
+        } else if (molRegenerateCoords) {
+          mol = rdKitModule.get_mol(mol.get_new_coords(true));
         }
-      } else {
+      }
+      if (!mol.is_valid()) {
         mol = rdKitModule.get_mol("");
       }
     } catch (e) {
