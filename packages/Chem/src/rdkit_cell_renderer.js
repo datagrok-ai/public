@@ -49,9 +49,9 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
       if (mol.is_valid()) {
         if (this._isMolBlock(scaffoldMolString)) {
           let rdkitScaffoldMol = this._fetchMol(scaffoldMolString, "", molRegenerateCoords, false).mol;
-          substructJson = mol.generate_aligned_coords(rdkitScaffoldMol, true, true);
-          if (substructJson === "") {
-            substructJson = "{}";
+          substructJson = mol.get_substruct_match(rdkitScaffoldMol);
+          if (substructJson !== '{}') {
+            mol.generate_aligned_coords(rdkitScaffoldMol, true, true);
           }
         } else if (molRegenerateCoords) {
           let molBlock = mol.get_new_coords(true);
@@ -156,6 +156,15 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
 
     const colTags = gridCell.tableColumn.tags;
     let singleScaffoldMolString = colTags && colTags['chem-scaffold'];
+    
+    if (singleScaffoldMolString && singleScaffoldMolString === `
+Actelion Java MolfileCreator 1.0
+  0  0  0  0  0  0  0  0  0  0999 V2000
+M  END
+`
+    ) {
+      singleScaffoldMolString = null;
+    }
     
     if (singleScaffoldMolString) {
 
