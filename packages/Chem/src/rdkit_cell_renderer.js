@@ -52,6 +52,7 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
           substructJson = mol.generate_aligned_coords(rdkitScaffoldMol, true, true);
         }
         if (molRegenerateCoords || (substructJson === "" && !this._isMolBlock(molString))) {
+          substructJson = "{}";
           let molBlock = mol.get_new_coords(true);
           mol.delete();
           mol = rdKitModule.get_mol(molBlock);
