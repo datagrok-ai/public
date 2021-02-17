@@ -45,7 +45,9 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
           let rdkitScaffoldMol = this._fetchMol(scaffoldMolString, "", molRegenerateCoords, false).mol;
           substructJson = mol.generate_aligned_coords(rdkitScaffoldMol, true, true);
         } else if (molRegenerateCoords) {
-          mol = rdKitModule.get_mol(mol.get_new_coords(true));
+          let molBlock = mol.get_new_coords(true);
+          mol.delete();
+          mol = rdKitModule.get_mol(molBlock);
         }
       }
       if (!mol.is_valid()) {
