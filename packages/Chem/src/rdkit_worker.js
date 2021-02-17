@@ -1,4 +1,4 @@
-importScripts('RDKit_minimal_2021.03_04.js');
+importScripts('RDKit_minimal_2021.03_05.js');
 importScripts('rdkit_substruct_library.js');
 
 let _rdKitModule = null;
