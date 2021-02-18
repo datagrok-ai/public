@@ -61,12 +61,14 @@ function paramsToTable(filtersLST, allParams) {
   for (let j = 0; j < filtersLST.length; j++) {
     paramsT.columns.byName('filter').set(j, filtersLST[j].value);
     Object.keys(allParams[j]).forEach(key => {
-      if (string_parameters.includes(key)) {
-        paramsT.columns.addNew(key, 'string');
-      } else {
-        paramsT.columns.addNew(key, 'double');
+      if (!paramsT.columns.names().includes(key)) {
+        if (string_parameters.includes(key)) {
+          paramsT.columns.addNew(key, 'string');
+        } else {
+          paramsT.columns.addNew(key, 'double');
+        }
+        paramsT.columns.byName(key).set(j, allParams[j][key].value);
       }
-      paramsT.columns.byName(key).set(j, allParams[j][key].value);
     })
   }
   return paramsT;
@@ -142,6 +144,16 @@ export function Biosensors(table) {
     }
   }
 
+  function getDescription(i, filtersLST, allParams) {
+    let a = '';
+    let j = filtersLST.length - 1;
+    a = a + filtersLST[j].value;
+    Object.keys(allParams[j]).forEach(key => {
+      a = a + ', ' + key + ': ' + allParams[j][key].value;
+    });
+    return 'Output of Filter №' + i + ': ' + a + '.';
+  }
+
   let tempButton = ui.div();
   tempButton.appendChild(ui.button('launch', () => {
 
@@ -162,7 +174,7 @@ export function Biosensors(table) {
       //bsColumn = bsColumn.getRawData().slice(0, npeaks * samplingFreq.value);
       //let t = DG.DataFrame.fromColumns([DG.Column.fromList('double', 'x', bsColumn)]);
       //bsType = await typeDetector(t, npeaks, samplingFreq.value);
-      let bsType = 'ecg';
+      bsType = 'ecg';
       accordionCharts.addPane('Raw signal', () => ui.divV([
         ui.div([DG.Viewer.fromType('Line chart', table, {yColumnNames: column.value.map((c) => {return c.name})})],
             'chart-box'
@@ -180,10 +192,11 @@ export function Biosensors(table) {
     containerFILTER.appendChild(filterInputs);
     let i = 0;
     let addFilterButton = ui.div();
-    addFilterButton.appendChild(ui.bigButton('Add filter', async ()=> {
+    addFilterButton.appendChild(ui.bigButton('Add filter', async () => {
 
       filtersLST[i] = ui.choiceInput('Filter №' + (i + 1), '',
-          ['IIR', 'FIR', 'normalize', 'resample', 'KalmanFilter', 'ImputeNAN', 'RemoveSpikes', 'DenoiseEDA', 'ConvolutionalFilter']);
+          ['IIR', 'FIR', 'normalize', 'resample', 'KalmanFilter', 'ImputeNAN', 'RemoveSpikes', 'DenoiseEDA', 'ConvolutionalFilter']
+      );
       let filterInputs1 = ui.inputs(filtersLST);
 
       containerFILTER.replaceChild(filterInputs1, filterInputs);
@@ -207,7 +220,8 @@ export function Biosensors(table) {
       paramsT = paramsToTable(filtersLST, allParams);
       let t = DG.DataFrame.fromColumns([column.value[0]]);
       let plotFL = await applyFilter(t, samplingFreq.value, bsType, paramsT);
-      accordionCharts.addPane('Output of Filter №' + i, () => ui.divV([
+      let name = getDescription(i, filtersLST, allParams);
+      accordionCharts.addPane(name, () => ui.divV([
         ui.div([DG.Viewer.fromType('Line chart', plotFL).root], 'chart-box')]),true
       );
     });

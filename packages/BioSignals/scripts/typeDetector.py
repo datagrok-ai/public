@@ -6,7 +6,6 @@
 #output: string signalType
 
 import numpy as np
-import pandas as pd
 from scipy.signal import find_peaks
 
 x = np.array(dat.iloc[:,0]).ravel()
