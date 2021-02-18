@@ -26,8 +26,21 @@ custom applications.
   * [Composing functions](#composing-functions)
       * [Composing a JavaScript and a Python function](#composing-a-javascript-and-a-python-function)
       * [Composing two JavaScript functions](#composing-two-javascript-functions)
+      <!---
+      * Composing functions in the package
+      --->
   * [Querying databases](#querying-databases)
   * [Creating a scripting viewer](#creating-a-scripting-viewer)
+  <!---
+  * Transforming dataframes
+  * Creating an application
+  * Accessing Web services with OpenAPI
+  * Accessing Web services in JavaScript with REST
+  * Enhancing Datagrok with dialog-based functions
+  * Creating a custom cell renderer
+  * Creating a custom JavaScript viewer
+  * Persisting user sessions and tables
+  --->
 
 ## Setting up the environment
 
