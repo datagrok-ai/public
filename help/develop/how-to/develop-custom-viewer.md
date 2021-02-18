@@ -452,14 +452,25 @@ export async function showChart() {
 }
 ```
 
+Now let's invoke the viewer from the interface. Add the dataset we are working on to the header
+parameters:
+
+```python
+#sample: demog.csv
+```
+
+Scripts with specified sample files have an extra `Star` icon in the top menu, which finds and opens
+these files. Proceed to the [Script Browser](https://public.datagrok.ai/scripts?q=%23viewers) and
+find your chart there. Now if you open the script and hit the icon (or use any other open table
+instead), the code can be executed on the data. Tweak the input parameters in a dialog, if you like,
+and run your script. As a result, you will see a table view with your bar chart pinned to the right.
+
 ## Registering Viewers
 
 Tagging scripts or functions as `viewers` registers them within the platform. Registering a viewer
 makes it available in the top menu and enables common viewer operations, such as cloning, docking,
 embedding, and switching to full screen mode. This also means that users can persist this viewer as
 part of a [project](../../overview/project.md).
-
-![](leaflet-menu.png "Viewer Menu")
 
 ## Examples
 
