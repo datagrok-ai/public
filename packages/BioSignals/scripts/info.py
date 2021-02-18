@@ -7,22 +7,16 @@
 #input: string info
 #output: dataframe newDf
 
-# import packages
 import numpy as np
-
-# import the Signal classes
 import pyphysio as ph
 
-# convert to numpy
 data = np.array(data.iloc[:,0])
 
-# create label
 label = np.zeros(1200)
 label[300:600] = 1
 label[900:1200] = 2
 label = ph.EvenlySignal(label, sampling_freq = 10, signal_type = 'label')
 
-# convert to signal class
 sig = ph.EvenlySignal(values = data, sampling_freq = fsamp, signal_type = signalType)
 
 for i in range(0,len(paramsT)):
@@ -47,14 +41,16 @@ for i in range(0,len(paramsT)):
     elif paramsT['filter'][i] == 'ConvolutionalFilter':
         sig = ph.ConvolutionalFilter(win_len=paramsT['win_len'][i], irftype=str(paramsT['irftype'][i]))(sig)
 
-if(info == 'Beat from ECG'):
+if info == 'Beat from ECG':
     extracted = ph.BeatFromECG()(sig)
-    #fig, axs = plt.subplots(2)
-    #fig.suptitle('Beat from ECG')
-    #axs[2].plot(extracted,'.-')
-    #axs[1].plot(label,'.-')
     newDf = pd.DataFrame({'time':range(0,len(extracted)),'extracted':extracted})
-if(info == 'Phasic estimation'):
+elif info == 'Phasic estimation' :
     extracted = ph.DriverEstim()(sig)
     phasic, tonic, _ = ph.PhasicEstim(delta=0.02)(extracted)
     newDf = pd.DataFrame({'time':range(0,len(phasic)),'phasic':phasic,'tonic':tonic})
+elif info == 'Local energy':
+    extracted = ph.Energy(win_len=2, win_step=2)(sig)
+    newDf = pd.DataFrame({'time':range(0,len(extracted)),'extracted':extracted})
+elif info == 'BeatFromBP':
+    extracted = ph.BeatFromBP()(sig)
+    newDf = pd.DataFrame({'time':range(0,len(extracted)),'extracted':extracted})

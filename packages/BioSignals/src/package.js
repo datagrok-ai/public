@@ -192,7 +192,7 @@ export function Biosensors(table) {
     containerFILTER.appendChild(filterInputs);
     let i = 0;
     let addFilterButton = ui.div();
-    addFilterButton.appendChild(ui.bigButton('Add filter', async () => {
+    addFilterButton.appendChild(ui.bigButton('Add filter', () => {
 
       filtersLST[i] = ui.choiceInput('Filter №' + (i + 1), '',
           ['IIR', 'FIR', 'normalize', 'resample', 'KalmanFilter', 'ImputeNAN', 'RemoveSpikes', 'DenoiseEDA', 'ConvolutionalFilter']
@@ -219,6 +219,8 @@ export function Biosensors(table) {
     let addChartButton = ui.bigButton('Plot', async () => {
       paramsT = paramsToTable(filtersLST, allParams);
       let t = DG.DataFrame.fromColumns([column.value[0]]);
+      let pi = DG.TaskBarProgressIndicator.create('Progress...');
+      setTimeout(() => {pi.close();}, 3000);
       let plotFL = await applyFilter(t, samplingFreq.value, bsType, paramsT);
       let name = getDescription(i, filtersLST, allParams);
       accordionCharts.addPane(name, () => ui.divV([
@@ -229,7 +231,7 @@ export function Biosensors(table) {
     // Information extraction dialogue
     let containerINFO = ui.div();
     let containerINFplot = ui.div();
-    let infoType = ui.choiceInput('To extract', '', ['Beat from ECG', 'Phasic estimation']);
+    let infoType = ui.choiceInput('To extract', '', ['Beat from ECG', 'Phasic estimation', 'Local energy', 'BeatFromBP']);
     let infoInputs = ui.inputs([infoType]);
     containerINFO.appendChild(infoInputs);
     containerINFplot.appendChild(ui.bigButton('Extract Info', async () => {
@@ -245,7 +247,7 @@ export function Biosensors(table) {
     // Indicators dialogue
     let containerIndicator = ui.div();
     let calculateButton = ui.div();
-    let indicator = ui.choiceInput('Indicator preset', '', ['HRV']);
+    let indicator = ui.choiceInput('Indicator preset', '', ['HRV time domain', 'HRV frequency domain']);
     let indicatorInputs = ui.inputs([indicator]);
     containerIndicator.appendChild(indicatorInputs);
     calculateButton.appendChild(ui.bigButton('Calculate', async () => {
@@ -261,16 +263,14 @@ export function Biosensors(table) {
     let formView = ui.divV([
       ui.inputs([
         ui.h2('Preprocessing'),
-        column,
-        samplingFreq,
+        ui.divH([column, samplingFreq]),
         ui.h2('Filtering'),
         accordionFilters
       ]),
       addFilterButton,
-      containerINFO,
-      containerINFplot,
-      containerIndicator,
-      calculateButton
+      ui.h2('Feature extraction'),
+      ui.divH([containerINFO, containerINFplot]),
+      ui.divH([containerIndicator, calculateButton])
     ],'formview');
 
     let rightView = ui.div([ui.h2('Charts'),accordionCharts],'chartview');
