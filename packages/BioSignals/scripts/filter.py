@@ -8,8 +8,6 @@
 
 # import packages
 import numpy as np
-import matplotlib.pyplot as plt
-import pandas as pd
 
 # import the Signal classes
 import pyphysio as ph
@@ -44,5 +42,4 @@ for i in range(0,len(paramsT)):
     elif paramsT['filter'][i] == 'ConvolutionalFilter':
         sig = ph.ConvolutionalFilter(win_len=paramsT['win_len'][i], irftype=str(paramsT['irftype'][i]))(sig)
 
-#fig = sig.plot()
 newDf = pd.DataFrame({'time':range(0,len(sig)),'sig':sig})
