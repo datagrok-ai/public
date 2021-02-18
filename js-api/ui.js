@@ -147,9 +147,9 @@ export function iconFA(name, handler, tooltipMsg = null) {
 export function extract(x) {
   if (x == null)
     return null;
+  if (x instanceof DG.Widget)
+    return box(x.root);
   if (typeof x.root !== 'undefined')
-    return x.root;
-  if (x instanceof Widget)
     return x.root;
   if (typeof x.wrap === 'function') {
     if (x.length === 1)
