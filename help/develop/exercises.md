@@ -31,15 +31,20 @@ custom applications.
       --->
   * [Querying databases](#querying-databases)
   * [Creating a scripting viewer](#creating-a-scripting-viewer)
+  * [Transforming dataframes](#transforming-dataframes)
   <!---
-  * Transforming dataframes
   * Creating an application
   * Accessing Web services with OpenAPI
   * Accessing Web services in JavaScript with REST
   * Enhancing Datagrok with dialog-based functions
   * Creating a custom cell renderer
   * Creating a custom JavaScript viewer
+  * Extending Datagrok with info panels
+  * Customize packages with properties
   * Persisting user sessions and tables
+  * Using WebAssembly with Datagrok functions
+  * Webpack packages with WebAssembly
+  * Using Web Workers for background computations
   --->
 
 ## Setting up the environment
@@ -394,3 +399,49 @@ After checking this you should see a nice scatter plot for `WEIGHT` and `HEIGHT`
     occurred within all of these sequences.  
     As you may notice, `numpy` and `matplotlib` are already available for your Python scripting in Datagrok.
 Reuse them to finish this exercise.
+
+## Transforming dataframes
+
+_Prerequisites:_ exercises ["Setting up the environment"](#setting-up-the-environment),
+["Semantic types"](#semantic-types).
+ 
+_You will learn:_ how to join and union dataframes using the knowledge of semantic types, and display the result. 
+
+1. Make sure the [prerequisites](#setting-up-the-environment) are installed on your machine.
+2. Create a package called `<name>-sequence` using datagrok-tools: `grok create <name>-sequence`,
+   or re-use the one you've already created in ["Prerequisites"](#setting-up-the-environment) exercise.
+3. Add a function to the package as follows:
+   ```javascript
+    //name: fuzzyJoin
+    //input: dataframe df1 
+    //input: dataframe df2
+   //input: int N
+   ...
+   ```
+4. We've already prepared semantic type detectors in the exercise ["Semantic Types"](#semantic-types).
+   Finish it first before moving forward.
+5. Implement a `fuzzyJoin` function which takes two dataframes `df1` and `df2`, and does the following:
+   * takes a first column in `df1` which has a semantic type of `dna_nucleotide`, let's say it is `col1`
+   * takes a first column in `df2` which has a semantic type of `dna_nucleotide`, let's say it is `col2`
+   * creates a dataframe `df` out of `df1` and `df2` in the following way:
+     * the content of `df2` goes after `df1`, and all columns of `df1` and `df2` are preserved  
+       — this is a UNION operation for dataframes, [as in SQL]();
+       use dataframe's [`.add`](https://public.datagrok.ai/js/samples/data-frame/append)
+     * a new column `Counts` appears in `df`, which contains:
+       * for each row `R` from `df1`, `R.counts` is a number of matches of all the subsequences in `R.col1` of length `N`
+         in _all_ the sequences of `col2`
+       * symmetrically, same for each row from `df2`  
+         — consider this as a fuzzy, programmatic JOIN of the two dataframes; use
+         [`df.columns.addNew`](https://public.datagrok.ai/js/samples/data-frame/manipulate),
+         [`col.set(i, value)`](https://public.datagrok.ai/js/samples/data-frame/advanced/data-frames-in-columns) on
+         a newly created column
+   * displays `df` with [`grok.shell.addTableView`](https://public.datagrok.ai/js/samples/data-frame/test-tables)
+6. Deploy the package with `webpack` and `grok publish dev`. Unlike with the [first excercise](), where the package
+   was built on the Datagrok server, in this one we locally build the package before sending it.
+7. Launch the platform, open the two files from `"Demo files"`: `sars-cov-2.csv` and `a-h1n1.csv`,
+   and run the package's `fuzzyJoin` function using one of the methods you've learned.
+8. Read more about joining dataframes through the case reviewed at our
+   [Community Forum](https://community.datagrok.ai/t/table-to-table-augmentation/493/4), and with
+   [a sample](https://public.datagrok.ai/js/samples/data-frame/join-tables).
+
+<!--- TODO: add linked dataframes demo here --->
