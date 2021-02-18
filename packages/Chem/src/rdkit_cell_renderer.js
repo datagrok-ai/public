@@ -47,12 +47,12 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
     }
     try {
       if (mol.is_valid()) {
-        const scaffoldHasCoords = this._isMolBlock(scaffoldMolString);
-        if (scaffoldHasCoords) {
+        const shouldAlign = this._isMolBlock(scaffoldMolString) && !molRegenerateCoords;
+        if (shouldAlign) {
           let rdkitScaffoldMol = this._fetchMol(scaffoldMolString, "", molRegenerateCoords, false).mol;
           substructJson = mol.generate_aligned_coords(rdkitScaffoldMol, true, true);
         }
-        if ((!scaffoldHasCoords && molRegenerateCoords) ||
+        if (!shouldAlign ||
             (substructJson === "" && !this._isMolBlock(molString))) {
           if (substructJson === "") {
             substructJson = "{}";
