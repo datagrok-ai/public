@@ -47,16 +47,13 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
     }
     try {
       if (mol.is_valid()) {
-        const scaffoldHasCoords = this._isMolBlock(scaffoldMolString);
-        if (scaffoldHasCoords) {
+        if (this._isMolBlock(scaffoldMolString)) {
           let rdkitScaffoldMol = this._fetchMol(scaffoldMolString, "", molRegenerateCoords, false).mol;
           substructJson = mol.generate_aligned_coords(rdkitScaffoldMol, true, true);
-        }
-        if ((!scaffoldHasCoords && molRegenerateCoords) ||
-            (substructJson === "" && !this._isMolBlock(molString))) {
           if (substructJson === "") {
             substructJson = "{}";
           }
+        } else if (molRegenerateCoords) {
           let molBlock = mol.get_new_coords(true);
           mol.delete();
           mol = rdKitModule.get_mol(molBlock);
@@ -162,6 +159,7 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
     
     if (singleScaffoldMolString && singleScaffoldMolString === `
 Actelion Java MolfileCreator 1.0
+
   0  0  0  0  0  0  0  0  0  0999 V2000
 M  END
 `
