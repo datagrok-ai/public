@@ -167,14 +167,14 @@ export function Biosensors(table) {
     samplingFreq.setTooltip('Number of samples taken per second');
 
     let bsColumn;
-    let bsType;
+    let signalType = ui.choiceInput('Signal type', 'ECG', ['ECG', 'EDA', 'Accelerometer', 'EMG', 'EEG']);
     let npeaks = 10;
     column.onChanged(async () => {
       //bsColumn = column.value[0]; //table.columns.byName('ecg_data');
       //bsColumn = bsColumn.getRawData().slice(0, npeaks * samplingFreq.value);
       //let t = DG.DataFrame.fromColumns([DG.Column.fromList('double', 'x', bsColumn)]);
       //bsType = await typeDetector(t, npeaks, samplingFreq.value);
-      bsType = 'ecg';
+      signalType = 'ecg';
       accordionCharts.addPane('Raw signal', () => ui.divV([
         ui.div([DG.Viewer.fromType('Line chart', table, {yColumnNames: column.value.map((c) => {return c.name})})],
             'chart-box'
@@ -191,8 +191,7 @@ export function Biosensors(table) {
     let filterInputs = ui.inputs(filtersLST);
     containerFILTER.appendChild(filterInputs);
     let i = 0;
-    let addFilterButton = ui.div();
-    addFilterButton.appendChild(ui.bigButton('Add filter', () => {
+    let addFilterButton = ui.bigButton('Add filter', () => {
 
       filtersLST[i] = ui.choiceInput('Filter №' + (i + 1), '',
           ['IIR', 'FIR', 'normalize', 'resample', 'KalmanFilter', 'ImputeNAN', 'RemoveSpikes', 'DenoiseEDA', 'ConvolutionalFilter']
@@ -210,22 +209,21 @@ export function Biosensors(table) {
       });
 
       accordionFilters.addPane('Filter №' + (i + 1), () => ui.inputs(
-          [filtersLST[i], paramsContainer, addChartButton]), true
+        [
+          filtersLST[i],
+          paramsContainer,
+          ui.bigButton('Plot', async () => {
+            paramsT = paramsToTable(filtersLST, allParams);
+            let t = DG.DataFrame.fromColumns([column.value[0]]);
+            let plotFL = await applyFilter(t, samplingFreq.value, signalType, paramsT);
+            let name = getDescription(i, filtersLST, allParams);
+            accordionCharts.addPane(name, () => ui.divV([
+              ui.div([DG.Viewer.fromType('Line chart', plotFL).root], 'chart-box')]),true
+            );
+          })
+        ]), true
       );
       i++;
-    }));
-
-    // Button to plot filtered signal
-    let addChartButton = ui.bigButton('Plot', async () => {
-      paramsT = paramsToTable(filtersLST, allParams);
-      let t = DG.DataFrame.fromColumns([column.value[0]]);
-      let pi = DG.TaskBarProgressIndicator.create('Progress...');
-      setTimeout(() => {pi.close();}, 3000);
-      let plotFL = await applyFilter(t, samplingFreq.value, bsType, paramsT);
-      let name = getDescription(i, filtersLST, allParams);
-      accordionCharts.addPane(name, () => ui.divV([
-        ui.div([DG.Viewer.fromType('Line chart', plotFL).root], 'chart-box')]),true
-      );
     });
 
     // Information extraction dialogue
@@ -237,7 +235,7 @@ export function Biosensors(table) {
     containerINFplot.appendChild(ui.bigButton('Extract Info', async () => {
       paramsT = paramsToTable(filtersLST, allParams);
       let t = DG.DataFrame.fromColumns([column.value[0]]);
-      let plotInfo = await extractInfo(t, samplingFreq.value, bsType, paramsT, infoType);
+      let plotInfo = await extractInfo(t, samplingFreq.value, signalType, paramsT, infoType);
       accordionCharts.addPane(infoType.value, () => ui.divV([
         ui.div([DG.Viewer.fromType('Line chart', plotInfo).root], 'chart-box')]),true
       );
@@ -253,7 +251,7 @@ export function Biosensors(table) {
     calculateButton.appendChild(ui.bigButton('Calculate', async () => {
       paramsT = paramsToTable(filtersLST, allParams);
       let t = DG.DataFrame.fromColumns([column.value[0]]);
-      let indicatorDf = await toIndicators(t, samplingFreq.value, bsType, paramsT, infoType, indicator);
+      let indicatorDf = await toIndicators(t, samplingFreq.value, signalType, paramsT, infoType, indicator);
       accordionCharts.addPane(indicator.value, () => ui.divV([
         ui.div([DG.Viewer.fromType('Line chart', indicatorDf).root], 'chart-box')]),true
       );
@@ -262,14 +260,15 @@ export function Biosensors(table) {
     //modal main view
     let formView = ui.divV([
       ui.inputs([
-        ui.h2('Preprocessing'),
+        ui.h2('Filtering and Preprocessing'),
         ui.divH([column, samplingFreq]),
-        ui.h2('Filtering'),
+        signalType,
         accordionFilters
       ]),
       addFilterButton,
-      ui.h2('Feature extraction'),
+      ui.h2('Information extraction'),
       ui.divH([containerINFO, containerINFplot]),
+      ui.h2('Physiological Indicators'),
       ui.divH([containerIndicator, calculateButton])
     ],'formview');
 
