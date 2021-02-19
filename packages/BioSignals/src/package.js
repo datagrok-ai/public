@@ -183,48 +183,42 @@ export function Biosensors(table) {
     });
 
     // Filter dialogue
-    let filtersLST = [];
-    let allParams = [];
     let paramsT;
-    let containerFILTER = ui.div();
-    let paramsContainer = ui.div();
-    let filterInputs = ui.inputs(filtersLST);
-    containerFILTER.appendChild(filterInputs);
+    let filtersList = [];
+    let paramsList = [];
+    let containerList = [];
+    let addFilterButton = ui.div();
+    let filterInputsNew = ui.inputs(filtersList);
     let i = 0;
-    let addFilterButton = ui.bigButton('Add filter', () => {
-
-      filtersLST[i] = ui.choiceInput('Filter №' + (i + 1), '',
+    addFilterButton.appendChild(ui.button('Add Filter', () => {
+      let containerFilter = ui.div();
+      containerList[i] = containerFilter;
+      filtersList[i] = ui.choiceInput('Filter №' + (i + 1), '',
           ['IIR', 'FIR', 'normalize', 'resample', 'KalmanFilter', 'ImputeNAN', 'RemoveSpikes', 'DenoiseEDA', 'ConvolutionalFilter']
       );
-      let filterInputs1 = ui.inputs(filtersLST);
-
-      containerFILTER.replaceChild(filterInputs1, filterInputs);
-      filterInputs = filterInputs1;
-
-      filtersLST[i].onChanged(function () {
-        $(paramsContainer).empty();
-        let val = filtersLST[i - 1].value;
-        allParams[i - 1] = paramSelector(val);
-        paramsContainer.appendChild(ui.inputs(Object.values(allParams[i - 1])));
+      let filterInputsOld = ui.inputs([filtersList[i]]);
+      containerList[i].appendChild(filterInputsOld);
+      filtersList[i].onChanged(function () {
+        let val = filtersList[i - 1].value;
+        paramsList[i - 1] = paramSelector(val);
+        filterInputsNew =  ui.inputs([filtersList[i - 1]].concat(Object.values(paramsList[i - 1])).concat(addChartButton));
+        containerList[i - 1].replaceChild(filterInputsNew, filterInputsOld);
+        filterInputsOld = filterInputsNew;
       });
-
-      accordionFilters.addPane('Filter №' + (i + 1), () => ui.inputs(
-        [
-          filtersLST[i],
-          paramsContainer,
-          ui.bigButton('Plot', async () => {
-            paramsT = paramsToTable(filtersLST, allParams);
-            let t = DG.DataFrame.fromColumns([column.value[0]]);
-            let plotFL = await applyFilter(t, samplingFreq.value, signalType, paramsT);
-            let name = getDescription(i, filtersLST, allParams);
-            accordionCharts.addPane(name, () => ui.divV([
-              ui.div([DG.Viewer.fromType('Line chart', plotFL).root], 'chart-box')]),true
-            );
-          })
-        ]), true
-      );
+      accordionFilters.addPane('Filter №' + (i + 1), () => containerFilter, true)
       i++;
+    }));
+
+    let addChartButton = ui.bigButton('Plot', async () => {
+      paramsT = paramsToTable(filtersList, paramsList);
+      let t = DG.DataFrame.fromColumns([column.value[0]]);
+      let plotFL = await applyFilter(t, samplingFreq.value, signalType, paramsT);
+      let name = getDescription(i, filtersList, paramsList);
+      accordionCharts.addPane(name, () => ui.divV([
+        ui.div([DG.Viewer.fromType('Line chart', plotFL).root], 'chart-box')]),true
+      );
     });
+
 
     // Information extraction dialogue
     let containerINFO = ui.div();
@@ -233,14 +227,13 @@ export function Biosensors(table) {
     let infoInputs = ui.inputs([infoType]);
     containerINFO.appendChild(infoInputs);
     containerINFplot.appendChild(ui.bigButton('Extract Info', async () => {
-      paramsT = paramsToTable(filtersLST, allParams);
+      paramsT = paramsToTable(filtersList, paramsList);
       let t = DG.DataFrame.fromColumns([column.value[0]]);
       let plotInfo = await extractInfo(t, samplingFreq.value, signalType, paramsT, infoType);
       accordionCharts.addPane(infoType.value, () => ui.divV([
         ui.div([DG.Viewer.fromType('Line chart', plotInfo).root], 'chart-box')]),true
       );
     }));
-
 
     // Indicators dialogue
     let containerIndicator = ui.div();
@@ -249,7 +242,7 @@ export function Biosensors(table) {
     let indicatorInputs = ui.inputs([indicator]);
     containerIndicator.appendChild(indicatorInputs);
     calculateButton.appendChild(ui.bigButton('Calculate', async () => {
-      paramsT = paramsToTable(filtersLST, allParams);
+      paramsT = paramsToTable(filtersList, paramsList);
       let t = DG.DataFrame.fromColumns([column.value[0]]);
       let indicatorDf = await toIndicators(t, samplingFreq.value, signalType, paramsT, infoType, indicator);
       accordionCharts.addPane(indicator.value, () => ui.divV([
