@@ -445,3 +445,56 @@ _You will learn:_ how to join and union dataframes using the knowledge of semant
    [a sample](https://public.datagrok.ai/js/samples/data-frame/join-tables).
 
 <!--- TODO: add linked dataframes demo here --->
+
+## Custom cell renderers with 3-rd party JS libraries
+
+_You will learn:_ reuse 3-rd party JavaScript libraries in your Datagrok packages; render cells by a semantic type.
+
+1. Navigate into the folder with your `<NAME>-sequence` package created in
+   ["Setting up the environment"](#setting-up-the-environment).
+2. Let's add a custom cell renderer to represent our nucleotide sequences in high density on the screen.
+   We need to render each nucleotide sequence with a monospace font in small letter sizing, fitting  
+   into a rectangular cell area and adding ellipsis to the end of the string if it won't fit.
+   This is a basis for a very useful nucleotide sequence representation in bioscience applications.  
+   Let's use a 3-rd party JavaScript library [`fusioncharts-smartlabel`]() to compute the text fit.
+   Add it to your package by navigating in its folder and calling:  
+   `npm install fusioncharts-smartlabel --save`  
+   The `--save` key updates `package.json` to add this library to your package dependencies.
+3. Add a class to `src/package.js` for the new cell renderer:
+   * use `fusioncharts-smartlabel` to break the original sequence in the current cell into lines which fit into
+     a cell's canvas rectangle; learn [here](https://medium.com/@priyanjit.dey/text-wrapping-and-ellipsis-overflow-a-platform-independent-solution-30fb737ff609)
+     how to do it, consider `SmartLabel.textToLines(...).lines` as a target array of lines to render
+   * Datagrok [grid]() is rendered through an [HTML5 Canvas](). The grid's canvas is `g.canvas`.
+     Iterate through the resulting lines and bring them to a `g.canvas` in the `render` method with
+     `g.canvas.getContext("2d").fillText`; learn [more]() about HTML Canvas if it's new for you
+   * Hint: pay attention to managing `line-height` both at computing the box and rendering text lines
+    ```javascript
+    class NucleotideBoxCellRenderer extends DG.GridCellRenderer {
+      get name() { return 'Nucleotide cell renderer'; }
+      get cellType() { return 'dna_sequence'; }
+      render(g, x, y, w, h, gridCell, cellStyle) {
+        let seq = gridCell.cell.value;
+        const sl = new SmartLabel('id', true);
+        sl.setStyle({/* ... */});
+        // ...
+        let ctx = g.canvas.getContext("2d");
+        ctx.font = '11px courier';
+        // ...
+        const lines = labelObj.lines;
+        for (let i = 0; i < lines.length; i++)
+          ctx.fillText(/* ... */);
+      }
+    }
+    ```
+4. Add the below to `src/package.js` to make the new cell renderer part of the package:
+    ```javascript
+    //name: nucleotideBoxCellRenderer
+    //tags: cellRenderer, cellRenderer-dna_sequence
+    //output: grid_cell_renderer result
+    export function nucleotideBoxCellRenderer() {
+      return new NucleotideBoxCellRenderer();
+    }
+    ```
+5. Deploy the package as usual with `grok publish dev --rebuild`. In [Datagrok](https://public.datagrok.ai),
+   navigate to a file with nucleotide sequences from `"Demo files"`, such as `sars-cov-2.csv`,
+   verify you get the desired result.
