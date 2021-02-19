@@ -34,7 +34,7 @@ for i in range(0,len(paramsT)):
     elif paramsT['filter'][i] == 'KalmanFilter':
         sig = ph.KalmanFilter(R=paramsT['R'][i], ratio=paramsT['ratio'][i])(sig)
     elif paramsT['filter'][i] == 'ImputeNAN':
-        sig = ph.ImputeNAN(win_len=paramsT['win_len'][i], allnan=str(paramsT['allnan'][i]))(sig)
+        sig = ph.ImputeNAN(win_len=paramsT['win_len'][i], allnan=paramsT['allnan'][i])(sig)
     elif paramsT['filter'][i] == 'RemoveSpikes':
         sig = ph.RemoveSpikes(K=paramsT['K'][i], N=int(paramsT['N'][i]), dilate=paramsT['dilate'][i], D=paramsT['D'][i], method=paramsT['method'][i])(sig)
     elif paramsT['filter'][i] == 'DenoiseEDA':
