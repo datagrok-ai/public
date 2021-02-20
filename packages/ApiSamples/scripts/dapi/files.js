@@ -2,25 +2,35 @@
 //description: JS API: Work with files demo
 //language: javascript
 
+(async () => {
+
+let res = null;
+
 // write files
-grok.dapi.files.write('Demo:TestJobs:Files:DemoFiles/testFile.dat', [0,1,2]);
-grok.dapi.files.writeAsText('Demo:TestJobs:Files:DemoFiles/testFile.txt', 'testString');
+await grok.dapi.files.write('Demo:TestJobs:Files:DemoFiles/testFile.dat', [0, 1, 2]);
+await grok.dapi.files.writeAsText('Demo:TestJobs:Files:DemoFiles/testFile.txt', 'testString');
 
 //rename
-grok.dapi.files.writeAsText('Demo:TestJobs:Files:DemoFiles/forRename.txt', 'testString')
-    .then(grok.dapi.files.rename('Demo:TestJobs:Files:DemoFiles/forRename.txt', 'renamed.txt'));
+await grok.dapi.files.writeAsText('Demo:TestJobs:Files:DemoFiles/forRename.txt', 'testString');
+await grok.dapi.files.rename('Demo:TestJobs:Files:DemoFiles/forRename.txt', 'renamed.txt');
 
 //read files
-grok.dapi.files.readAsBytes('Demo:TestJobs:Files:DemoFiles/testFile.dat').then(res => console.log(res));
-grok.dapi.files.readAsText('Demo:TestJobs:Files:DemoFiles/testFile.txt').then(res => console.log(res));
 
-grok.dapi.files.exists('Demo:TestJobs:Files:DemoFiles/testFile.dat').then(isFile => console.log(isFile));
+res = grok.dapi.files.readAsBytes('Demo:TestJobs:Files:DemoFiles/testFile.dat');
+console.log(`readAsBytes: ${res}`);
+res = grok.dapi.files.readAsText('Demo:TestJobs:Files:DemoFiles/testFile.txt');
+console.log(`readAsText: ${res}`);
+res = grok.dapi.files.exists('Demo:TestJobs:Files:DemoFiles/testFile.dat');
+console.log(`exists: ${res}`);
 
 let recursive = true;
 let searchPattern = "";
-grok.dapi.files.list('Demo:TestJobs:Files:DemoFiles/geo', recursive, searchPattern).then(res => console.log(res));;
+res = await grok.dapi.files.list('Demo:TestJobs:Files:DemoFiles/geo', recursive, searchPattern);
+console.log(`list: ${res}`);
 
-grok.dapi.files.move(['Demo:TestJobs:Files:DemoFiles/testFile.txt'],'/geo');
+await grok.dapi.files.move(['Demo:TestJobs:Files:DemoFiles/testFile.txt'],'/geo');
 
-grok.dapi.files.delete('Demo:TestJobs:Files:DemoFiles/geo/testFile.txt');
-grok.dapi.files.delete('Demo:TestJobs:Files:DemoFiles/testFile.dat');
+await grok.dapi.files.delete('Demo:TestJobs:Files:DemoFiles/geo/testFile.txt');
+await grok.dapi.files.delete('Demo:TestJobs:Files:DemoFiles/testFile.dat');
+
+})();

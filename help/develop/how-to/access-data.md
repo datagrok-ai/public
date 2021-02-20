@@ -246,6 +246,8 @@ All the `dapi.files` methods accept three types of inputs:
 * a variable of type `file` (see [FileInfo](https://github.com/datagrok-ai/public/blob/14eb2acd6e36b33f64c4a0d108e940f7624af479/js-api/src/entities.js#L317)) which may come, for example, from info panels working on files
 * a string with a file share connection GUID
 
+All the `dapi.files` methods are asynchronous.
+
 This [example](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/dapi/files.js) provides
 a full understanding of the `files` API.
 
