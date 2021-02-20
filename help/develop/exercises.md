@@ -32,13 +32,14 @@ custom applications.
   * [Querying databases](#querying-databases)
   * [Creating a scripting viewer](#creating-a-scripting-viewer)
   * [Transforming dataframes](#transforming-dataframes)
+  * [Custom cell renderers with 3-rd party JS libraries](#custom-cell-renderers-with-3-rd-party-js-libraries)
   <!---
   * Creating an application
   * Accessing Web services with OpenAPI
   * Accessing Web services in JavaScript with REST
   * Enhancing Datagrok with dialog-based functions
-  * Creating a custom cell renderer
   * Creating a custom JavaScript viewer
+  * Optimizing a custom cell renderer with a cache
   * Extending Datagrok with info panels
   * Customize packages with properties
   * Persisting user sessions and tables
@@ -452,7 +453,8 @@ _You will learn:_ reuse 3-rd party JavaScript libraries in your Datagrok package
 
 1. Navigate into the folder with your `<NAME>-sequence` package created in
    ["Setting up the environment"](#setting-up-the-environment).
-2. Let's add a custom cell renderer to represent our nucleotide sequences in high density on the screen.
+2. Let's add a custom cell renderer for a _nucleotide sequence box_ to represent our sequences
+   in high density on the screen.
    We need to render each nucleotide sequence with a monospace font in small letter sizing, fitting  
    into a rectangular cell area and adding ellipsis to the end of the string if it won't fit.
    This is a basis for a very useful nucleotide sequence representation in bioscience applications.  
@@ -496,5 +498,9 @@ _You will learn:_ reuse 3-rd party JavaScript libraries in your Datagrok package
     }
     ```
 5. Deploy the package as usual with `grok publish dev --rebuild`. In [Datagrok](https://public.datagrok.ai),
-   navigate to a file with nucleotide sequences from `"Demo files"`, such as `sars-cov-2.csv`,
-   verify you get the desired result.
+   navigate to a file with nucleotide sequences from `"Demo files"`, such as `sars-cov-2.csv`.
+   Verify you get the desired result, it should look similar to this:  
+   ![](exercises-custom-cell-renderer.png)  
+   Change the "Sequence" column width and rows heights to see how things adujst.
+6. (*) Implement a colored nucleotide sequence box where background of `A`, `G`, `C`, `T` vary.
+   Choose one of the popular coloring conventions, following [this link](https://www.biostars.org/p/171056/).
