@@ -144,11 +144,13 @@ class ChemPackage extends DG.Package {
   }
 
   //name: molColumnPropertyPanel
-  //input: column molColumn
+  //input: column molColumn {semType: Molecule}
   //tags: panel
   //output: widget result
   molColumnPropertyPanel(molColumn) {
-    return getMolColumnPropertyPanel(molColumn);
+    return new DG.Widget(
+      getMolColumnPropertyPanel(molColumn)
+    );
   }
 
   //tags: app
