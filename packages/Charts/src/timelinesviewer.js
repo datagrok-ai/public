@@ -22,6 +22,7 @@ export class TimelinesViewer extends EChartViewer {
     this.count = 0;
     this.selectionColor = '#FB8C28';
     this.zoomState = [[0, 100], [0, 100], [0, 100], [0, 100]];
+    this.tooltipOffset = 10;
 
     this.option = {
       tooltip: {
@@ -52,13 +53,15 @@ export class TimelinesViewer extends EChartViewer {
         type: 'inside',
         xAxisIndex: [1, 2],
         start: this.zoomState[0][0],
-        end: this.zoomState[0][1]
+        end: this.zoomState[0][1],
+        filterMode: 'weakFilter',
       },
       {
         start: this.zoomState[1][0],
         end: this.zoomState[1][1],
         height: 10,
-        bottom: '1%'
+        bottom: '1%',
+        filterMode: 'weakFilter',
       },
       { 
         type: 'inside',
@@ -149,7 +152,8 @@ export class TimelinesViewer extends EChartViewer {
           type: 'circle',
           shape: {
             cx: isNaN(start[0]) ? end[0] : start[0],
-            cy: end[1], r: this.markerSize / 2
+            cy: end[1],
+            r: this.markerSize / 2
           },
           style: {
             fill: api.value(4) ? this.selectionColor : this.colorMap[isNaN(api.value(3)) ?
@@ -255,7 +259,7 @@ export class TimelinesViewer extends EChartViewer {
                params.value[2] === (this.columns[2].isNone(i) ? null : this.columns[2].get(i))
       }
       return false;
-    }, params.event.event.x, params.event.event.y));
+    }, params.event.event.x + this.tooltipOffset, params.event.event.y + this.tooltipOffset));
 
     this.chart.on('mouseout', () => ui.tooltip.hide());
 
