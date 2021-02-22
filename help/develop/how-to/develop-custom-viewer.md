@@ -388,14 +388,89 @@ Now run `AwesomePackage:showChart()` and explore all the features our viewer has
 
 ## Scripting Viewers
 
+People keen on creating visualizations in popular data science languages can bring this
+functionality to the platform in a form of scripting viewers. To illustrate that, let's
+redesign the bar chart written in JavaScript in the previous steps. Make a new folder in
+your package and name it `scripts`. Then add a new file with `.py` extension to it and
+paste the following script:
+
+```python
+#name: Bar Chart
+#language: python
+#tags: demo, viewers
+#input: dataframe df
+#input: column splitColumnName {type: categorical}
+#input: column valueColumnName {type: numerical}
+#input: string valueAggrType = mean {choices: ["mean", "count", "sum"]}
+#input: string color = steelblue {choices: ["darkcyan", "seagreen", "steelblue"]} 
+#output: graphics
+
+import matplotlib.pyplot as plt
+
+
+df.groupby([splitColumnName]) \
+  .agg({valueColumnName: valueAggrType}) \
+  .plot.barh(color=color, legend=False)
+
+plt.ylabel(splitColumnName)
+plt.xlabel(valueColumnName)
+plt.show()
+```
+
+This is how a scripting viewer might look in Python. As with regular [scripts](../scripting.md), we
+start by annotating parameters in the header. The `viewers` tag implies that this script generates a
+visualization and can be used for search in [Script Browser](https://public.datagrok.ai/scripts?q=%23viewers).
+Then come the input parameters similar to the ones we provided in the JavaScript viewer's [properties](#properties).
+Notice that the names follow the same convention with `camelCase` and the `ColumnName` suffix. This
+has to do with their appearance in the property panel. In this respect, scripting viewers have an
+interesting feature — the platform provides a set of properties in addition to the defined ones:
+
+- `Refresh on Filter` binds the visualization with the standard filters (true by default)
+- `Title` places a caption on top
+- `Description` adds a text where one can give more details
+- `Description Position`: left, right, top, bottom, center
+- `Description Visibility Mode`: auto, always, never
+
+In terms of annotation, there are certain syntax constructs worthy of note:
+
+- default values are set via assignment `string color = steelblue`
+- column properties have a type selector (indicating the type will guarantee a sane initial value
+  and tailor the contents of the drop-down list to match the type). Supported types include
+  *numerical, categorical, dateTime*
+- for string properties, `{choices: ["mean", "count", "sum"]}` lists possible options
+
+This kind of annotation is typical for scripts, so refer to the [dedicated article](../scripting.md)
+for further explanation. The last parameter to mention is the output: scripting viewers must return
+`graphics` object. To see the produced bar chart, modify the `showChart` function, publish your
+package and run `AwesomePackage:showChart()` from the console:
+
+```javascript
+//name: showChart
+export async function showChart() {
+  grok.shell.addTableView(grok.data.demo.demog());
+  await grok.functions.call('CmdScriptingViewerPythonBarChart');
+}
+```
+
+Now let's invoke the viewer from the interface. Add the dataset we are working on to the header
+parameters:
+
+```python
+#sample: demog.csv
+```
+
+Scripts with specified sample files have an extra `Star` icon in the top menu, which finds and opens
+these files. Proceed to the [Script Browser](https://public.datagrok.ai/scripts?q=%23viewers) and
+find your chart there. Now if you open the script and hit the icon (or use any other open table
+instead), the code can be executed on the data. Tweak the input parameters in a dialog, if you like,
+and run your script. As a result, you will see a table view with your bar chart pinned to the right.
+
 ## Registering Viewers
 
 Tagging scripts or functions as `viewers` registers them within the platform. Registering a viewer
 makes it available in the top menu and enables common viewer operations, such as cloning, docking,
 embedding, and switching to full screen mode. This also means that users can persist this viewer as
 part of a [project](../../overview/project.md).
-
-![](leaflet-menu.png "Viewer Menu")
 
 ## Examples
 

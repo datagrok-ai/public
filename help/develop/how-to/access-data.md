@@ -233,11 +233,29 @@ grok.functions.eval(`OpenServerFile("${PACKAGE_NAME}:${CONNECTION_NAME}/data.csv
   .then(t => grok.shell.addTableView(t[0]));
 ```
 
+### Reading and writing files in file shares
+
+The `grok.dapi` provides for fine-grained operations on files from file shares. It's possible to write files,
+read from them, check existence, search for presence by a pattern, rename, move and delete. For example,
+here is how simple it is to create a text file in your local file share:
+
+`grok.dapi.files.writeAsText('<YOUR_NAME>:Home/testFile.txt', 'Hello, world!');`
+
+All the `dapi.files` methods accept three types of inputs:
+* a fully specified file path, as in [the examples](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/dapi/files.js)
+* a variable of type `file` (see [FileInfo](https://github.com/datagrok-ai/public/blob/14eb2acd6e36b33f64c4a0d108e940f7624af479/js-api/src/entities.js#L317)) which may come, for example, from info panels working on files
+* a string with a file share connection GUID
+
+All the `dapi.files` methods are asynchronous.
+
+This [example](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/dapi/files.js) provides
+a full understanding of the `files` API.
+
 ### Other Ways for Reading Files
 
 Finally, let's walk through other methods that can be used to open files from JavaScript:
 
-  * If you define a function that takes an input of `file` type, this creates a number of opportunities. First, you can call `file.readAsBytes()` or `file.readAsString()` methods on it. For instance, if you pass an obtained string to `grok.data.parseCsv(csv, options)`, it is possible to fine-tune the construction of dataframe from comma-separated values. Alternatively, you can pass a file to a [script](../scripting.md) to compute something and get the results back to your application's code.
+  * If you define a function that takes an input of `file` type (also see [FileInfo](https://github.com/datagrok-ai/public/blob/14eb2acd6e36b33f64c4a0d108e940f7624af479/js-api/src/entities.js#L317)), this creates a number of opportunities. First, you can call `file.readAsBytes()` or `file.readAsString()` methods on it. For instance, if you pass an obtained string to `grok.data.parseCsv(csv, options)`, it is possible to fine-tune the construction of dataframe from comma-separated values. Alternatively, you can pass a file to a [script](../scripting.md) to compute something and get the results back to your application's code.
   * The method `grok.data.openTable(id)` might come in handy when you are reproducing a process and need to open a specific table by its id. See an [example](https://public.datagrok.ai/js/samples/data-access/open-table-by-id).
 
 See also:

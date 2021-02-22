@@ -682,8 +682,17 @@ export class Files {
         grok_Dapi_UserFiles_Move(toDart(files), newPath, () => resolve(), (e) => reject(e)));
   }
 
+  /** Rename file
+   * @param { File | String} file
+   * @param {string} newName
+   * @returns {Promise} */
+  rename(file, newName) {
+    return new Promise((resolve, reject) =>
+        grok_Dapi_UserFiles_Rename(file, newName, () => resolve(), (e) => reject(e)));
+  }
+
   /** List file
-   * @param {File | String | String} file
+   * @param {File | String} file
    * @param {boolean} recursive
    * @param {string} searchPattern
    * @returns {Promise<List<FileInfo>>} */
@@ -717,13 +726,12 @@ export class Files {
         grok_Dapi_UserFiles_Write(file, blob, () => resolve(), (e) => reject(e)));
   }
 
-
-/** Write file
- * @param {File | String} file
- * @param String data
- * @returns {Promise} */
-writeAsText(file, data) {
-  return new Promise((resolve, reject) =>
+  /** Write file
+   * @param {File | String} file
+   * @param String data
+   * @returns {Promise} */
+  writeAsText(file, data) {
+    return new Promise((resolve, reject) =>
       grok_Dapi_UserFiles_WriteAsText(file, data, () => resolve(), (e) => reject(e)));
   }
 }

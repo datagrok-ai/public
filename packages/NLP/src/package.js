@@ -15,16 +15,13 @@ let translate;
 // UI components for the `Translation` panel
 let sourceLangInput = ui.choiceInput('', 'Undetermined', [...Object.keys(lang2code), 'Undetermined', 'Other']);
 let targetLangInput = ui.choiceInput('', 'English', [...Object.keys(lang2code), 'Choose...']);
-let headerDiv = ui.div([
-  ui.div([sourceLangInput.root], 'dropdown'),
-  ui.div([targetLangInput.root], 'dropdown')
-], 'header-div pure-form');
+let headerDiv = ui.divH([sourceLangInput.root, targetLangInput.root], 'nlp-header-div');
 let translationArea = ui.textArea('');
-translationArea.classList.add("translation-area");
-let mainDiv = ui.div([headerDiv, translationArea], "main-div");
+translationArea.classList.add('nlp-translation-area');
+let mainDiv = ui.divV([headerDiv, translationArea], 'nlp-main-div');
 let mainWidget = new DG.Widget(mainDiv);
 // UI components for the `Entities` panel
-// let entDiv = ui.divText('{}', "entity-obj");
+// let entDiv = ui.divText('{}', "nlp-entity-obj");
 // let entWidget = new DG.Widget(entDiv);
 
 let sourceLang, sourceCode;

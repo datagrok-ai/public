@@ -27,18 +27,9 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
   get defaultWidth() { return 200; }
   get defaultHeight() { return 100; }
 
-  _molIsInMolBlock(molString, rdkitMol) {
+  _isMolBlock(molString) {
 
-    const smilesMolString = rdkitMol.get_smiles();
-    if (smilesMolString === molString)
-      return false;
-    const cxsmilesMolString = rdkitMol.get_cxsmiles();
-    if (cxsmilesMolString === molString)
-      return false;
-    const inchiMolString = rdkitMol.get_inchi();
-    if (inchiMolString === molString)
-      return false;
-    return true;
+    return molString.includes('M  END');
 
   }
 
@@ -49,33 +40,33 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
 
     try {
       mol = rdKitModule.get_mol(molString);
+    } catch (e) {
+      console.error(
+        "In _fetchMolGetOrCreate: RDKit .get_mol crashes on a molString: `" + molString + "`");
+      mol = null;
+    }
+    try {
       if (mol.is_valid()) {
-        // TODO: maybe split into 2 functions (with scaffold and without)
-        if (molRegenerateCoords) {
-          // "drop" the coordinate information from the molecule
-          let rdkitMolNoCoords = rdKitModule.get_mol(mol.get_smiles());
-          let molBlockString = rdkitMolNoCoords.get_molblock();
-          rdkitMolNoCoords.delete();
-          mol.delete();
-          mol = rdKitModule.get_mol(molBlockString);
-        }
-        if (scaffoldMolString !== "") {
-          // only after dropping, align to a given scaffold
+        if (this._isMolBlock(scaffoldMolString)) {
           let rdkitScaffoldMol = this._fetchMol(scaffoldMolString, "", molRegenerateCoords, false).mol;
-          if (this._molIsInMolBlock(scaffoldMolString, rdkitScaffoldMol)) {
-            substructJson = mol.get_substruct_match(rdkitScaffoldMol);
-            if (substructJson !== '{}') {
-              mol.generate_aligned_coords(rdkitScaffoldMol, true);
-            }
+          substructJson = mol.generate_aligned_coords(rdkitScaffoldMol, true, true);
+          if (substructJson === "") {
+            substructJson = "{}";
           }
+        } else if (molRegenerateCoords) {
+          let molBlock = mol.get_new_coords(true);
+          mol.delete();
+          mol = rdKitModule.get_mol(molBlock);
         }
-      } else {
-        mol = rdKitModule.get_mol("");
+      }
+      if (!mol.is_valid()) {
+        console.error(
+          "In _fetchMolGetOrCreate: RDKit mol is invalid on a molString molecule: `" + molString + "`");
+        mol = null;
       }
     } catch (e) {
       console.error(
-        "Possibly a malformed molecule: `" + molString + "`");
-      mol = null;
+        "In _fetchMolGetOrCreate: RDKit crashed, possibly a malformed molString molecule: `" + molString + "`");
     }
     return { mol: mol, substruct: JSON.parse(substructJson) };
   }
@@ -165,6 +156,16 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
 
     const colTags = gridCell.tableColumn.tags;
     let singleScaffoldMolString = colTags && colTags['chem-scaffold'];
+    
+    if (singleScaffoldMolString && singleScaffoldMolString === `
+Actelion Java MolfileCreator 1.0
+
+  0  0  0  0  0  0  0  0  0  0999 V2000
+M  END
+`
+    ) {
+      singleScaffoldMolString = null;
+    }
     
     if (singleScaffoldMolString) {
 
