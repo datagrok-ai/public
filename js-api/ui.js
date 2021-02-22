@@ -264,10 +264,11 @@ export function bigButton(text, handler, tooltip = null) {
  * @param {string | HTMLElement} caption
  * @param {Array<string>} items
  * @param {Function} handler (item) => {...}
+ * @param {Function} renderer (item) => {...}
  * @returns {HTMLElement}
  * */
-export function comboPopup(caption, items, handler) {
-  return grok_UI_ComboPopup(caption, items, handler);
+export function comboPopup(caption, items, handler, renderer=null) {
+  return grok_UI_ComboPopup(caption, items, handler, renderer !== null ? (item) => renderer(toJs(item)) : null);
 }
 
 /**
