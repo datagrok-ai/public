@@ -66,3 +66,11 @@ elif preset == 'HRV frequency domain':
     FD_HRV_ind, col_names = ph.fmap(fixed_length, ph.preset_hrv_fd(), extracted.resample(4))
     out = pd.DataFrame({'time': range(len(FD_HRV_ind)), 'VLF_Pow': FD_HRV_ind[:, 3], 'LF_Pow': FD_HRV_ind[:, 4],
                         'HF_Pow': FD_HRV_ind[:, 5], 'Total_Pow': FD_HRV_ind[:, 6]})
+elif preset == 'HRV nonlinear domain':
+    hrv_indicators = [ph.PoincareSD1(name='SD1'), ph.PoincareSD2(name='SD2'), ph.PoincareSD1SD2(name='SD1/SD2')]
+    fixed_length = ph.FixedSegments(step = 5, width = 10, labels = label)
+    indicators, col_names = ph.fmap(fixed_length, hrv_indicators, extracted)
+    SD1 = indicators[:, np.where(col_names == 'SD1')[0]].ravel()
+    SD2 = indicators[:, np.where(col_names == 'SD2')[0]].ravel()
+    SD1SD2 = indicators[:, np.where(col_names == 'SD1/SD2')[0]].ravel()
+    out = pd.DataFrame({'time': range(len(SD1)), 'SD1':SD1, 'SD2':SD2, 'SD1/SD2':SD1SD2})
