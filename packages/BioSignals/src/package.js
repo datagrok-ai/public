@@ -74,6 +74,61 @@ function paramsToTable(filtersLST, allParams) {
   return paramsT;
 }
 
+function getMethodsAccordingTo(signalType) {
+  let commonFilters = ['IIR', 'FIR', 'normalize', 'resample', 'KalmanFilter', 'ImputeNAN', 'RemoveSpikes', 'ConvolutionalFilter'];
+  let commonEstimators = ['Local energy'];
+  let commonIndicators = [];
+  switch (signalType) {
+    case 'ECG':
+      return {
+        filters: commonFilters,
+        estimators: commonEstimators.concat(['Beat from ECG']),
+        indicators: commonIndicators.concat(['HRV time domain', 'HRV frequency domain'])
+      };
+    case 'EDA':
+      return {
+        filters: commonFilters.concat(['DenoiseEDA']),
+        estimators: commonEstimators.concat(['Phasic estimation']),
+        indicators: commonIndicators
+      };
+    case 'Accelerometer':
+      return {
+        filters: commonFilters,
+        estimators: commonEstimators,
+        indicators: commonIndicators
+      };
+    case 'EMG':
+      return {
+        filters: commonFilters,
+        estimators: commonEstimators,
+        indicators: commonIndicators
+      };
+    case 'EEG':
+      return {
+        filters: commonFilters,
+        estimators: commonEstimators,
+        indicators: commonIndicators
+      };
+    case 'ABP':
+      return {
+        filters: commonFilters,
+        estimators: commonEstimators.concat(['BeatFromBP']),
+        indicators: commonIndicators
+      };
+  }
+}
+
+function showTheRestOfLayout(formView, accordionCharts, accordionFilters) {
+  let rightView = ui.div([ui.h2('Charts'),accordionCharts],'chartview');
+  let view = ui.splitH([formView,rightView]);
+  ui.dialog('Demo Pipeline')
+      .add(view)
+      .showModal(true);
+  $('.chartview').css('width', '100%');
+  $(accordionFilters).css('background', '#fefefe');
+  $('.chartview').after('<style>.chart-box{width:100%;height:300px;}</style>');
+}
+
 //name: BioSignals
 //tags: panel, widgets
 //input: dataframe table
@@ -145,9 +200,8 @@ export function Biosensors(table) {
   }
 
   function getDescription(i, filtersLST, allParams) {
-    let a = '';
     let j = filtersLST.length - 1;
-    a = a + filtersLST[j].value;
+    let a = filtersLST[j].value;
     Object.keys(allParams[j]).forEach(key => {
       a = a + ', ' + key + ': ' + allParams[j][key].value;
     });
@@ -157,8 +211,9 @@ export function Biosensors(table) {
   let tempButton = ui.div();
   tempButton.appendChild(ui.button('launch', () => {
 
-    let accordionFilters = ui.accordion('keyThatGivesPersistence');
+    let accordionFilters = ui.accordion();
     let accordionCharts = ui.accordion();
+    let signalInputs = {};
 
     let column = ui.columnsInput('Columns', table);
     column.setTooltip('Choose columns to plot');
@@ -166,15 +221,8 @@ export function Biosensors(table) {
     let samplingFreq = ui.floatInput('Sampling frequency', '');
     samplingFreq.setTooltip('Number of samples taken per second');
 
-    let bsColumn;
-    let signalType = ui.choiceInput('Signal type', 'ECG', ['ECG', 'EDA', 'Accelerometer', 'EMG', 'EEG']);
-    let npeaks = 10;
-    column.onChanged(async () => {
-      //bsColumn = column.value[0]; //table.columns.byName('ecg_data');
-      //bsColumn = bsColumn.getRawData().slice(0, npeaks * samplingFreq.value);
-      //let t = DG.DataFrame.fromColumns([DG.Column.fromList('double', 'x', bsColumn)]);
-      //bsType = await typeDetector(t, npeaks, samplingFreq.value);
-      signalType = 'ecg';
+    column.onChanged(() => {
+      signalInputs = {[column.value[0]]: column};
       accordionCharts.addPane('Raw signal', () => ui.divV([
         ui.div([DG.Viewer.fromType('Line chart', table, {yColumnNames: column.value.map((c) => {return c.name})})],
             'chart-box'
@@ -182,97 +230,108 @@ export function Biosensors(table) {
       );
     });
 
-    // Filter dialogue
-    let paramsT;
-    let filtersList = [];
-    let paramsList = [];
-    let containerList = [];
-    let addFilterButton = ui.div();
-    let filterInputsNew = ui.inputs(filtersList);
-    let i = 0;
-    addFilterButton.appendChild(ui.button('Add Filter', () => {
-      let containerFilter = ui.div();
-      containerList[i] = containerFilter;
-      filtersList[i] = ui.choiceInput('Filter №' + (i + 1), '',
-          ['IIR', 'FIR', 'normalize', 'resample', 'KalmanFilter', 'ImputeNAN', 'RemoveSpikes', 'DenoiseEDA', 'ConvolutionalFilter']
-      );
-      let filterInputsOld = ui.inputs([filtersList[i]]);
-      containerList[i].appendChild(filterInputsOld);
-      filtersList[i].onChanged(function () {
-        let val = filtersList[i - 1].value;
-        paramsList[i - 1] = paramSelector(val);
-        filterInputsNew =  ui.inputs([filtersList[i - 1]].concat(Object.values(paramsList[i - 1])).concat(addChartButton));
-        containerList[i - 1].replaceChild(filterInputsNew, filterInputsOld);
-        filterInputsOld = filterInputsNew;
-      });
-      accordionFilters.addPane('Filter №' + (i + 1), () => containerFilter, true)
-      i++;
-    }));
+    let signalType = ui.choiceInput('Signal type', '', ['ECG', 'EDA', 'Accelerometer', 'EMG', 'EEG', 'ABP']);
 
-    let addChartButton = ui.bigButton('Plot', async () => {
-      paramsT = paramsToTable(filtersList, paramsList);
-      let t = DG.DataFrame.fromColumns([column.value[0]]);
-      let plotFL = await applyFilter(t, samplingFreq.value, signalType, paramsT);
-      let name = getDescription(i, filtersList, paramsList);
-      accordionCharts.addPane(name, () => ui.divV([
-        ui.div([DG.Viewer.fromType('Line chart', plotFL).root], 'chart-box')]),true
-      );
+    signalType.onChanged(() => {
+
+      let relevantMethods = getMethodsAccordingTo(signalType.stringValue);
+
+      // Filter dialogue
+      let paramsT;
+      let filtersList = [];
+      let inputsList = [];
+      let paramsList = [];
+      let containerList = [];
+      let addFilterButton = ui.div();
+      let filterInputsNew = ui.inputs(filtersList);
+      let i = 0;
+      addFilterButton.appendChild(ui.button('Add Filter', () => {
+        let containerFilter = ui.div();
+        containerList[i] = containerFilter;
+        filtersList[i] = ui.choiceInput('Filter №' + (i + 1), '', relevantMethods.filters);
+        inputsList[i] = ui.choiceInput('Input', '', Object.keys(signalInputs));
+        let filterInputsOld = ui.inputs([filtersList[i]]);
+        containerList[i].appendChild(filterInputsOld);
+        filtersList[i].onChanged(function () {
+          let val = filtersList[i - 1].value;
+          paramsList[i - 1] = paramSelector(val);
+          filterInputsNew = ui.inputs([filtersList[i - 1]].concat([inputsList[i-1]]).concat(Object.values(paramsList[i - 1])).concat(addChartButton));
+          containerList[i - 1].replaceChild(filterInputsNew, filterInputsOld);
+          filterInputsOld = filterInputsNew;
+        });
+        accordionFilters.addPane('Filter №' + (i + 1), () => containerFilter, true)
+        i++;
+      }));
+
+      let addChartButton = ui.div();
+      addChartButton.appendChild(ui.bigButton('Plot', async () => {
+        paramsT = paramsToTable(filtersList, paramsList);
+        let t = (inputsList.length === 1) ? DG.DataFrame.fromColumns([column.value[0]]) :
+                                            DG.DataFrame.fromColumns([signalInputs[inputsList[i-1].value].columns.byName('sig')]);
+        let plotFL = await applyFilter(t, samplingFreq.value, signalType.stringValue, paramsT);
+        let name = getDescription(i, filtersList, paramsList);
+        accordionCharts.addPane(name, () => ui.divV([
+          ui.div([DG.Viewer.fromType('Line chart', plotFL).root], 'chart-box')]),true
+        );
+        Object.assign(signalInputs, {['Output of Filter №' + i + ' (' + filtersList[i-1].value + ')']: plotFL});
+      }));
+
+
+      // Information extraction dialogue
+      let containerWithEstimators = ui.div();
+      let containerWithPlotsOfEstimators = ui.div();
+      let typesOfEstimators = ui.choiceInput('Estimators', '', relevantMethods.estimators);
+      let inputsToEstimators = ui.inputs([typesOfEstimators]);
+      containerWithEstimators.appendChild(inputsToEstimators);
+      containerWithPlotsOfEstimators.appendChild(ui.bigButton('Extract Info', async () => {
+        paramsT = paramsToTable(filtersList, paramsList);
+        let t = DG.DataFrame.fromColumns([column.value[0]]);
+        let plotInfo = await extractInfo(t, samplingFreq.value, signalType.stringValue, paramsT, typesOfEstimators);
+        accordionCharts.addPane(typesOfEstimators.value, () => ui.divV([
+          ui.div([DG.Viewer.fromType('Line chart', plotInfo).root], 'chart-box')]),true
+        );
+        Object.assign(signalInputs, {['Output of Estimator: ' + typesOfEstimators.value]: plotInfo});
+      }));
+
+      // Indicators dialogue
+      let containerIndicator = ui.div();
+      let calculateButton = ui.div();
+      let indicator = ui.choiceInput('Indicators', '', relevantMethods.indicators);
+      let indicatorInputs = ui.inputs([indicator]);
+      containerIndicator.appendChild(indicatorInputs);
+      calculateButton.appendChild(ui.bigButton('Calculate', async () => {
+        paramsT = paramsToTable(filtersList, paramsList);
+        let t = DG.DataFrame.fromColumns([column.value[0]]);
+        let indicatorDf = await toIndicators(t, samplingFreq.value, signalType.stringValue, paramsT, typesOfEstimators, indicator);
+        accordionCharts.addPane(indicator.value, () => ui.divV([
+          ui.div([DG.Viewer.fromType('Line chart', indicatorDf).root], 'chart-box')]),true
+        );
+        Object.assign(signalInputs, {['Output of Estimator: ' + indicator.value]: indicatorDf});
+      }));
+
+      let formView = ui.divV([
+        ui.inputs([
+          ui.h2('Filtering and Preprocessing'),
+          ui.divH([column, samplingFreq]),
+          signalType
+        ]),
+        accordionFilters,
+        addFilterButton,
+        ui.h2('Information extraction'),
+        ui.divH([containerWithEstimators, containerWithPlotsOfEstimators]),
+        ui.h2('Physiological Indicators'),
+        ui.divH([containerIndicator, calculateButton])
+      ],'formview');
+      showTheRestOfLayout(formView, accordionCharts, accordionFilters);
     });
-
-
-    // Information extraction dialogue
-    let containerINFO = ui.div();
-    let containerINFplot = ui.div();
-    let infoType = ui.choiceInput('To extract', '', ['Beat from ECG', 'Phasic estimation', 'Local energy', 'BeatFromBP']);
-    let infoInputs = ui.inputs([infoType]);
-    containerINFO.appendChild(infoInputs);
-    containerINFplot.appendChild(ui.bigButton('Extract Info', async () => {
-      paramsT = paramsToTable(filtersList, paramsList);
-      let t = DG.DataFrame.fromColumns([column.value[0]]);
-      let plotInfo = await extractInfo(t, samplingFreq.value, signalType, paramsT, infoType);
-      accordionCharts.addPane(infoType.value, () => ui.divV([
-        ui.div([DG.Viewer.fromType('Line chart', plotInfo).root], 'chart-box')]),true
-      );
-    }));
-
-    // Indicators dialogue
-    let containerIndicator = ui.div();
-    let calculateButton = ui.div();
-    let indicator = ui.choiceInput('Indicator preset', '', ['HRV time domain', 'HRV frequency domain']);
-    let indicatorInputs = ui.inputs([indicator]);
-    containerIndicator.appendChild(indicatorInputs);
-    calculateButton.appendChild(ui.bigButton('Calculate', async () => {
-      paramsT = paramsToTable(filtersList, paramsList);
-      let t = DG.DataFrame.fromColumns([column.value[0]]);
-      let indicatorDf = await toIndicators(t, samplingFreq.value, signalType, paramsT, infoType, indicator);
-      accordionCharts.addPane(indicator.value, () => ui.divV([
-        ui.div([DG.Viewer.fromType('Line chart', indicatorDf).root], 'chart-box')]),true
-      );
-    }));
-
-    //modal main view
     let formView = ui.divV([
       ui.inputs([
         ui.h2('Filtering and Preprocessing'),
         ui.divH([column, samplingFreq]),
-        signalType,
-        accordionFilters
+        signalType
       ]),
-      addFilterButton,
-      ui.h2('Information extraction'),
-      ui.divH([containerINFO, containerINFplot]),
-      ui.h2('Physiological Indicators'),
-      ui.divH([containerIndicator, calculateButton])
     ],'formview');
-
-    let rightView = ui.div([ui.h2('Charts'),accordionCharts],'chartview');
-    let view = ui.splitH([formView,rightView]);
-    ui.dialog('Demo Pipeline')
-        .add(view)
-        .showModal(true);
-    $('.chartview').css('width', '100%');
-    $(accordionFilters).css('background', '#FEFEFE');
-    $('.chartview').after('<style>.chart-box{width:100%;height:300px;}</style>');
+    showTheRestOfLayout(formView, accordionCharts, accordionFilters);
   }));
   return new DG.Widget(tempButton);
 }
