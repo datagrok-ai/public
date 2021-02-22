@@ -10,15 +10,21 @@
  Every View or Dialog is a [panel container](#panels)
 
  ## Containers
-This is a simple container. It can contain any elements, such as inputs, images, text, etc. 
+This is a simple container. It can contain any elements, such as inputs, images, text, etc.
 It doesn't have own height. The container height depends on its children.
 ```javascript
 ui.div([ui.h1('Header'), ui.p('Paragraph text'), 'just text', DG.Viewer.scatterPlot(grok.data.demo.demog())])
 ```
 If you place a container within a [box container](#boxes) , it will inherit the box size and show scroll bars automatically.
  ## Boxes
-This is a fixed-size container. It doesn't depend on children element sizes, but shrinks them to certain size. 
- ## Panels 
+This is a fixed-size container. It doesn't depend on children element sizes, but shrinks them to certain size.
+
+ ## Panels
+ The panel is a simple container similar to the [Containers]. It has full available wide and its height depends on its children. Also, panels have 10px margins for all sides.
+ ```javascript
+ ui.panel([ui.h1('Header'), ui.p('Paragraph text'), 'just text', DG.Viewer.scatterPlot(grok.data.demo.demog())])
+ ```
+
  ## Blocks
  ## Splitters
 
@@ -38,7 +44,7 @@ This is a fixed-size container. It doesn't depend on children element sizes, but
   ### Spans
  ## Inputs
  ## Forms
- ## Icons 
+ ## Icons
  ## Buttons
  ## Links
  ## Colors
