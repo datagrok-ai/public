@@ -72,25 +72,25 @@ This is a fixed-size container. It doesn't depend on children element sizes, but
 # Elements
   ## Colors
   ## Typography
-    Typography sets default styles for headings, paragraphs, spans, and divs elements.
-    ### Headers
-    ```javascript
-    ui.h1('Header 1');
-    ui.h2('Header 2');
-    ui.h3('Header 3');
-    ```
-    ### Paragraphs
-    ```javascript
-    ui.p('Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industrys standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book.');
-    ```
-    ### Spans
-    ```javascript
-    ui.span(['span element']);
-    ```
-    ### Text blocks
-    ```javascript
-    ui.divText('Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industrys standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book.');
-    ```
+  Typography sets default styles for headings, paragraphs, spans, and divs elements.
+  ### Headers
+  ```javascript
+  ui.h1('Header 1');
+  ui.h2('Header 2');
+  ui.h3('Header 3');
+  ```
+  ### Paragraphs
+  ```javascript
+  ui.p('Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industrys standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book.');
+  ```
+  ### Spans
+  ```javascript
+  ui.span(['span element']);
+  ```
+  ### Text blocks
+  ```javascript
+  ui.divText('Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industrys standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book.');
+  ```
   ## Tables
   ## Lists
   ## Buttons
