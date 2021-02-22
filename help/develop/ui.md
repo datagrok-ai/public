@@ -28,7 +28,7 @@ This is a fixed-size container. It doesn't depend on children element sizes, but
  ## Blocks
 
  ## Splitters
- Splitters - help to build the layout that contains several content areas. The content that is added to the splitter contains the [box container](#boxes) which shrinks the content to a certain size.
+ Splitters - help to build the layout that contains several content areas. Each splitter contains the [box container](#boxes) which shrinks the content to a certain size.
 
  The splitters can specify by the horizontal or vertical orientation. In order to split vertically and horizontally at the same time, splitters need to be nested.
 
