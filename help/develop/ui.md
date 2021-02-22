@@ -34,9 +34,7 @@ This is a fixed-size container. It doesn't depend on children element sizes, but
 
  ```javascript
  ui.splitH([ui.h1('Left'), ui.h1('Center'),  ui.h1('Right')])
-
  ui.splitV([ui.h1('Top'), ui.h1('Middle'), ui.h1('Bottom')])
-
  ui.splitH([ui.h1('Left'), ui.splitV([ui.h1('Right top'),ui.h1('Right bottom')])])
  ```
 
@@ -45,6 +43,29 @@ This is a fixed-size container. It doesn't depend on children element sizes, but
  ## Simple View
  ## Viewers
  ## Ribbon
+ Ribbon is a layout container that appears in the header of the view.
+
+ The ribbon panel can include text links and buttons, icons, dropdown menus, and Combobox, or any combination of those elements. Each collection with elements will be divided by a separator and evenly distributed in the container.
+ ```javascript
+ //Ribbon panel
+ let view = DG.View.create();
+ view.setRibbonPanels([
+  [
+  ui.divText('Custom panel')
+  ],
+  [
+    ui.iconFA('search', () => grok.shell.info("clicked")),
+    ui.iconFA('plus', () => grok.shell.info("plus"))
+  ]
+ ]);
+
+ //Ribbon dropdown menu
+ view.ribbonMenu = DG.Menu.create()
+  .group('Menu')
+  .item('element 1');
+ ```
+
+
  ## Toolbox
 
 # Dialogs
