@@ -50,7 +50,7 @@ class ChemPackage extends DG.Package {
     return JSON.parse(mol.get_descriptors()).CrippenClogP;
   }
 
-  //name: RDKitInfo
+  //name: RDKit Info
   //tags: panel, widgets
   //input: string smiles {semType: Molecule}
   //output: widget result
@@ -60,6 +60,16 @@ class ChemPackage extends DG.Package {
       this._svgDiv(mol),
       ui.divText(`${this.getCLogP(smiles)}`)
     ]));
+  }
+
+  //name: RDKit Settings
+  //input: column molColumn {semType: Molecule}
+  //tags: panel
+  //output: widget result
+  molColumnPropertyPanel(molColumn) {
+    return new DG.Widget(
+      getMolColumnPropertyPanel(molColumn)
+    );
   }
 
   //name: rdkitCellRenderer
@@ -141,16 +151,6 @@ class ChemPackage extends DG.Package {
       console.error("In substructureSearch: " + e.toString());
       throw e;
     }
-  }
-
-  //name: molColumnPropertyPanel
-  //input: column molColumn {semType: Molecule}
-  //tags: panel
-  //output: widget result
-  molColumnPropertyPanel(molColumn) {
-    return new DG.Widget(
-      getMolColumnPropertyPanel(molColumn)
-    );
   }
 
   //tags: app
