@@ -21,6 +21,7 @@ export class TimelinesViewer extends EChartViewer {
     this.data = [];
     this.count = 0;
     this.selectionColor = '#FB8C28';
+    this.zoomState = [[0, 100], [0, 100], [0, 100], [0, 100]];
 
     this.option = {
       tooltip: {
@@ -50,26 +51,26 @@ export class TimelinesViewer extends EChartViewer {
       {
         type: 'inside',
         xAxisIndex: [1, 2],
-        start: 0,
-        end: 100
+        start: this.zoomState[0][0],
+        end: this.zoomState[0][1]
       },
       {
-        start: 0,
-        end: 100,
+        start: this.zoomState[1][0],
+        end: this.zoomState[1][1],
         height: 10,
         bottom: '1%'
       },
       { 
         type: 'inside',
         yAxisIndex: 0,
-        start: 0,
-        end: 100
+        start: this.zoomState[2][0],
+        end: this.zoomState[2][1],
       },
       { 
         type: 'slider',
         yAxisIndex: 0,
-        start: 0,
-        end: 100,
+        start: this.zoomState[3][0],
+        end: this.zoomState[3][1],
         width: 10,
       }
       ],
@@ -86,6 +87,13 @@ export class TimelinesViewer extends EChartViewer {
         }
       ]
     };
+  
+    this.chart.on('dataZoom', () => {
+      this.chart.getOption().dataZoom.forEach((z, i) => {
+        this.zoomState[i][0] = z.start;
+        this.zoomState[i][1] = z.end;
+      });
+    });
   }
 
   onPropertyChanged(property) {
@@ -252,5 +260,14 @@ export class TimelinesViewer extends EChartViewer {
     this.chart.on('mouseout', () => ui.tooltip.hide());
 
     return this.data;
+  }
+
+  render() {
+    this.option.series[0].data = this.getSeriesData();
+    this.option.dataZoom.forEach((z, i) => {
+      z.start = this.zoomState[i][0];
+      z.end = this.zoomState[i][1];
+    });
+    this.chart.setOption(this.option);
   }
 }

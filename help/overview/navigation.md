@@ -65,6 +65,12 @@ component indicates how much space different files occupy in a shared folder, si
 partitions. Once the user selects a file, this area changes to a preview where,
 depending on the extension, you may see a table, image, or text.
 
+![](../uploads/navigation/file-browser.png "File Browser")
+
+The ribbon menu on top contains icons that highlight open views (a caret pointing down), control
+item selection (`Select all`, `Select none`, `Invert selection`), update the file view (`Refresh`)
+and toggle previews (`File preview`).
+
 Every user has a special `HOME` directory to store their files. For convenience, it is created by
 default so that users can start working with it right away. In addition, there are several ways to
 set up a new file share. First of all, users can do that from `Data | Files | Actions | New File Share`.
@@ -75,6 +81,17 @@ will extract metadata from the files, which you can later apply in the search. T
 [routing](routing.md#files) explain in more detail how to work with file shares.
 
 ### Databases
+
+In Datagrok, you can retrieve data from a variety of sources. The platform comes with data
+connectors for [30+ popular databases](../access/data-connection.md#connectors), and the list is
+constantly growing. In addition to that, it is possible to develop your own data connectors, and
+seamlessly integrate them into the platform.
+
+[Connections](../access/data-connection.md) to data sources live in [Connection Tree](https://public.datagrok.ai/connect),
+which you can reach from `Data | Databases`. Each branch corresponds to a provider and unfolds
+to show connections to the given data source. Connections, in their turn, list [data queries](../access/data-query.md)
+and, if available, [tables](../access/db-table-info.md) from the database.
+
 ### Webservices
 ### Queries
 ### Projects

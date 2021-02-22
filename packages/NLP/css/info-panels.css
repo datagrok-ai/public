@@ -1,26 +1,24 @@
-.header-div {
-    display: flex;
+.nlp-header-div > .ui-input-choice.ui-input-root {
+    flex-shrink: 1;
+    flex-basis: 50%;
+    max-width: 150px;
 }
 
-.dropdown {
-    margin: 0px 5px;
+.nlp-header-div > .ui-input-choice.ui-input-root > select.ui-input-editor {
+    width: 100%;
 }
 
-.translation-area {
+.nlp-translation-area {
     margin-top: 5px;
     padding: 5px;
     height: 200px;
 }
 
-.main-div {
-    display: flex;
-    flex-direction: column;
-    min-width: 100%;
-    overflow: hidden;
+.nlp-main-div {
     margin-left: -32px;
 }
 
-.entity-obj {
+.nlp-entity-obj {
     font-family: monospace;
     color: #000000;
     -webkit-user-select: text;

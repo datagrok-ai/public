@@ -21,7 +21,17 @@ export class Entity {
     return grok_Entity_Set_Id(this.d, x);
   }
 
-  /** Entity name
+  /** Entity friendly name
+   *  @type {string} */
+  get friendlyName() {
+    return grok_Entity_Get_FriendlyName(this.d);
+  }
+
+  set friendlyName(x) {
+    return grok_Entity_Set_FriendlyName(this.d, x);
+  }
+
+  /** Entity short name
    *  @type {string} */
   get name() {
     return grok_Entity_Get_Name(this.d);
@@ -29,6 +39,12 @@ export class Entity {
 
   set name(x) {
     return grok_Entity_Set_Name(this.d, x);
+  }
+
+  /** Entity full-qualified name
+   *  @type {string} */
+  get nqName() {
+    return grok_Entity_Get_nqName(this.d);
   }
 
   /** Entity path
@@ -97,6 +113,18 @@ export class User extends Entity {
    * @type {string} */
   get picture() {
     return grok_User_Get_Picture(this.d);
+  }
+
+  /** User home project
+   * @type {Project} */
+  get project() {
+    return toJs(grok_User_Get_Project(this.d));
+  }
+
+  /** User home folder connection
+   * @type {Project} */
+  get home() {
+    return toJs(grok_User_Get_Storage(this.d));
   }
 
   /** Login
@@ -182,19 +210,19 @@ export class Project extends Entity {
     super(d);
   }
 
-  /** Entity name
+  /** Project description
    *  @type {string} */
   get description() {
     return grok_Project_Description(this.d);
   }
 
-  /** Entity name
+  /** Project changes flag
    *  @type {string} */
   get isDirty() {
     return grok_Project_IsDirty(this.d);
   }
 
-  /** Entity name
+  /** Project is empty flag
    *  @type {string} */
   get isEmpty() {
     return grok_Project_IsEmpty(this.d);

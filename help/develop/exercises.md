@@ -16,12 +16,37 @@ going all the way to custom visualizations, querying relational databases,
 predictive models, integration with the external utilities, data augmentation, and 
 custom applications. 
 
-Table of contents
+## Table of contents
+
   * [Setting up the environment](#setting-up-the-environment)
   * [Semantic types](#semantic-types)
-  * [Scripting](#scripting)
+  * [Scripting and functions](#scripting-and-functions)
+      * [Scripting with server functions](#scripting-with-server-functions)
+      * [Scripting with client functions](#scripting-with-client-functions)
+  * [Composing functions](#composing-functions)
+      * [Composing a JavaScript and a Python function](#composing-a-javascript-and-a-python-function)
+      * [Composing two JavaScript functions](#composing-two-javascript-functions)
+      <!---
+      * Composing functions in the package
+      --->
   * [Querying databases](#querying-databases)
   * [Creating a scripting viewer](#creating-a-scripting-viewer)
+  * [Transforming dataframes](#transforming-dataframes)
+  * [Custom cell renderers with 3-rd party JS libraries](#custom-cell-renderers-with-3-rd-party-js-libraries)
+  <!---
+  * Creating an application
+  * Accessing Web services with OpenAPI
+  * Accessing Web services in JavaScript with REST
+  * Enhancing Datagrok with dialog-based functions
+  * Creating a custom JavaScript viewer
+  * Optimizing a custom cell renderer with a cache
+  * Extending Datagrok with info panels
+  * Customize packages with properties
+  * Persisting user sessions and tables
+  * Using WebAssembly with Datagrok functions
+  * Webpack packages with WebAssembly
+  * Using Web Workers for background computations
+  --->
 
 ## Setting up the environment
 
@@ -74,11 +99,13 @@ You will learn: how to write semantic type detectors, how to develop context-spe
    of the `dna_nucleotide` semantic type. To test it, simply open our test file, click on any cell
    in the `sequence` column, and find the `complement` property in the panel on the right.
    
-## Scripting
+## Scripting and functions
 
-Prerequisites: basic Python knowledge
+### Scripting with server functions
 
-Details: [Scripting](develop/scripting.md), [Dev Meeting 1 | First-class functions](https://youtu.be/p7_qOU_IzLM?t=724)
+_Prerequisites:_ basic Python knowledge.
+
+_Details:_ [Scripting](develop/scripting.md), [Dev Meeting 1 | First-class functions](https://youtu.be/p7_qOU_IzLM?t=724)
 
 _You will learn:_ how to create and invoke Datagrok scripts in data science languages like R and Python.
 
@@ -110,27 +137,172 @@ In this exercise, we will count occurrences of a given subsequence in a nucleoti
    In the body, implement a Python function counting all occurrences of a given `subsequence` in a `sequence`.
    Return a `count` the same way as in the default script from p. 2.
 6. Run the script function, provide input values in the dialog and get to the console to see the result.
-   Now run the script function again through the console completely, passing different arguments values.
+   Now run the script function again through the console completely, passing different arguments values:
+   ```<UserName>:CountSubsequencePython('ATGATC', 'A')```
 7. Go back to `Functions | Scripts` and hit `New JavaScript Script`.
-8. Implement the function which does the same as `CountSubsequencePython`, now in JavaScript, named
-   `CountSubsequenceJS`. Follow the same conventions on the parameters in the comments block
-   and returning a result via a variable.
-9. Run `CountSubsequenceJS` using the `Play` button; using the console.
-   You can notice that both Python and JS versions of our function are homogenous functions
-   in Datagrok. It's also possible to call them in a uniform fashion
-   [using our JavaScript API](develop/scripting.md#running-a-script).
-10. Don't forget to save these two scripts. We would re-use them in other exercises.
+
+### Scripting with client functions
+
+_Prerequisites:_ basic JavaScript knowledge.
+
+_You will learn:_ how to create and invoke Datagrok JavaScript scripts.
+
+8. Implement the function `CountSubsequenceJS` in JavaScript, which does the same as
+   [`CountSubsequencePython`](#scripting-with-server-functions). Follow the same conventions on
+   the parameters in the comments block and returning a result via a variable.
+9. Run `CountSubsequenceJS` using the `Play` button; using the console. From same console,
+   run `CountSubsequencePython` yet again.  You can notice that both Python and JS versions of
+   our function, implemented as scripts, are homogeneous functions in Datagrok.
+   It's also possible to call them in a uniform fashion
+   [using our JavaScript API](scripting.md#running-a-script). This is also shown
+   in the ["Composing functions and dataframes"](#composing-functions-and-dataframes) exercise.
+10. Don't forget to save these two scripts. We would re-use parts of them in the following exercises.
 
 The difference between the two scripts is that the first, `CountSubsequencePython`, runs on
 our server by a [compute virtual machine](develop/admin/architecture.md#compute-virtual-machine),
 whereas the second, `CountSubsequenceJS`, runs directly in the browser. To run `CountSubsequencePython`,
 Datagrok passes the script arguments over the network and fetches back the result to the browser.
 
+## Composing functions
+
+### Composing a JavaScript and a Python function
+
+_Prerequisites:_ basic Python knowledge, basic JavaScript knowledge.
+
+_You will learn:_ how to invoke arbitrary Datagrok functions in JavaScript and augment tables.
+
+1. Open Datagrok and navigate to `Functions | Scripts | New Python Script`.
+2. Implement a script `CountSubsequencePython` that takes as an input:
+
+   * a dataframe with a column containing nucleotide sequences,
+   * a name of that nucleotide sequences column,
+   * a nucleotide subsequence being sought,
+   
+   and outputs a dataframe containing a column with numbers of subsequence occurrences
+   in the sequences from the nucleotide column. Say, for a table, where we are only interested
+   in the first column,
+   
+   | Sequence     | A's |
+   |--------------|-----|
+   | AACCTCACCCAT | 4   |
+   | CCTTCTCCTCCT | 0   |
+   | CTGGAAGACCTA | 3   |
+   
+   the following output should be produced for a subsequence `ACC` being sought:
+   
+   | N(ACC) |
+   |--------|
+   | 2      |
+   | 0      |
+   | 1      |
+   
+   Equip your Python script with the following header:
+   
+   ```python
+   #name: CountSubsequencePython
+   #language: python
+   #input: dataframe inputDf
+   #input: column inputColName
+   #input: string outputColName
+   #input: string subseq
+   #output: dataframe outputDf
+   ```
+   
+   In contrast to a simple script from the exercise ["Scripting and functions"](#scripting-and-functions),
+   we will now operate with dataframes:
+   * Use Pandas dataframes to access the input dataframe and create an output dataframe
+   * Use `outputDf = pd.DataFrame()` to initialize the output Pandas dataframe which you would
+     fill in with the occurrence counts
+   * You don't need to import `pandas`, Datagrok does this automatically
+   * Note that the `column inputColName` is just a column name, but not a data in some column
+   
+   You may want to borrow some code from the ["Scripting and functions"](#scripting-and-functions) exercise.
+   
+3. Let's create a wrapping function `CountSubsequenceTable` in JavaScript which would do all the technical
+   job. We would use it to give the new column with counts a proper name, and to _augment_ the input dataframe
+   with the newly computed column. Make it look like this:
+   
+    ```javascript
+    //name: CountSubsequenceTable
+    //language: javascript
+    //input: dataframe df
+    //input: column colName
+    //input: string subseq = ATG
+    
+    grok.functions.call(
+      "<YOUR_NAME>:CountSubsequencePython", {
+        'inputDf': df,
+        'inputColName': colName,
+        'outputColName': `N(${subseq})`,
+        'subseq': subseq 
+      }).then((resultDf) => {
+        df.columns.insert(resultDf.columns.byIndex(0));
+      });
+    ```
+   
+   Follow how we match input parameters to their values in `grok.functions.call` using a JSON object.
+   In the `.then` [continuation]() we manipulate the original dataframe by inserting a new column which
+   we get as a result of the script's execution.
+   
+4. Let' prepare a visual layout before running our script. Navigate to `Data | Files` and open
+   `Demo Files / bio / sequences.csv`. Then click on `Windows` and activate `Menu`, this will let
+   you move windows around. Stick the `Sequences` table to the side of the `CountSubsequenceTable`
+   window and leave enough space in the table to see the new column coming when running the script.
+   
+5. Run the script and check the new column appears in the grid.
+
+### Composing two JavaScript functions
+
+6. Let's repeat this augmentation for a JavaScript function. First, delete the newly created
+   `N(ATG)` column by clicking with a right mouse button on it and selecting `Remove`.
+
+7. Create a function `CountSubsequenceJS`, which has the following structure:
+    ```javascript
+    //name: CountSubsequenceJS
+    //language: javascript
+    //input: dataframe inputDf
+    //input: column inputColName
+    //input: string outputColName
+    //input: string subseq
+    //output: dataframe outputDf
+    
+    let newCol = DG.Column.fromType(
+      DG.COLUMN_TYPE.INT, outputColName, inputDf.rowCount);
+    for (let i = 0; i < newCol.length; ++i) { 
+      const seq = inputDf.get(inputColName, i);
+      const count = ...; // your subsequence counting here
+      newCol.set(i, count);
+    }
+    outputDf = DG.DataFrame.fromColumns([newCol]);
+    ```
+   Grasp a number of techniques with Datagrok JS API:
+   * creating a new column of a given type
+   * iterating through a dataframe by a row index
+   * crearing a dataframe from an array of columns
+   
+8. In `CountSubsequenceTable` replace `CountSubsequencePython` to `CountSubsequenceJS`
+   and run it. Check that exact same new column is produced as it was for a Python version.
+   
+9. (*) Notice that we don't need the entire input dataframe to run the script, just one column.
+   Optimize the 3 scripts of this exercise to only take this one column as an input.  
+   
+We could try another approach. Instead of passing the column to and forming the new column in
+the function being called, we could just populate the new column in a loop inside the
+`CountSubsequenceTable` by calls to a function operating on row data, such as
+the one created in ["Scripting and functions"](#scripting-and-functions):
+`CountSubsequencePython(seq, subseq)`.
+
+However, this incurs substantial overhead in a Python version.
+For a table of 10 rows we'd have to call the server scripting 10 times with a network roundtrip
+to deliver parameters to [compute virtual machine](). This will be less overhead for a JavaScript version,
+as all will happen in the browser, but still not as optimal as the case where we do just one call to a
+nested script.
+
 ## Querying databases
 
-Prerequisites: basic SQL knowledge
+_Prerequisites:_ basic SQL knowledge
 
-Details: [Connecting to Databases](https://www.youtube.com/watch?v=dKrCk38A1m8&t=1048s),
+_Details:_ [Connecting to Databases](https://www.youtube.com/watch?v=dKrCk38A1m8&t=1048s),
 [How to Access Data](how-to/access-data.md)
 
 _Note:_ Editing an existing data query requires the respective access permission. You might need to request one.
@@ -177,9 +349,9 @@ The database is already deployed and is accessible from our server.
 
 ## Creating a Scripting Viewer
 
-Prerequisites: basic Python knowledge, [matplotlib](https://matplotlib.org/) or a similar library
+_Prerequisites:_ basic Python knowledge, [matplotlib](https://matplotlib.org/) or a similar library
 
-Details: [Scripting](develop/scripting.md), [Scripting Viewer](visualize/viewers/scripting-viewer.md),
+_Details:_ [Scripting](develop/scripting.md), [Scripting Viewer](visualize/viewers/scripting-viewer.md),
 [Creating a scripting viewer (video)](https://www.youtube.com/embed/jHRpOnhBAz4).
 
 *Amino acids counting task.* In this exercise, we'd use a Python script to generate a histogram
@@ -228,3 +400,107 @@ After checking this you should see a nice scatter plot for `WEIGHT` and `HEIGHT`
     occurred within all of these sequences.  
     As you may notice, `numpy` and `matplotlib` are already available for your Python scripting in Datagrok.
 Reuse them to finish this exercise.
+
+## Transforming dataframes
+
+_Prerequisites:_ exercises ["Setting up the environment"](#setting-up-the-environment),
+["Semantic types"](#semantic-types).
+ 
+_You will learn:_ how to join and union dataframes using the knowledge of semantic types, and display the result. 
+
+1. Make sure the [prerequisites](#setting-up-the-environment) are installed on your machine.
+2. Create a package called `<name>-sequence` using datagrok-tools: `grok create <name>-sequence`,
+   or re-use the one you've already created in ["Prerequisites"](#setting-up-the-environment) exercise.
+3. Add a function to the package as follows:
+   ```javascript
+    //name: fuzzyJoin
+    //input: dataframe df1 
+    //input: dataframe df2
+   //input: int N
+   ...
+   ```
+4. We've already prepared semantic type detectors in the exercise ["Semantic Types"](#semantic-types).
+   Finish it first before moving forward.
+5. Implement a `fuzzyJoin` function which takes two dataframes `df1` and `df2`, and does the following:
+   * takes a first column in `df1` which has a semantic type of `dna_nucleotide`, let's say it is `col1`
+   * takes a first column in `df2` which has a semantic type of `dna_nucleotide`, let's say it is `col2`
+   * creates a dataframe `df` out of `df1` and `df2` in the following way:
+     * the content of `df2` goes after `df1`, and all columns of `df1` and `df2` are preserved  
+       — this is a UNION operation for dataframes, [as in SQL]();
+       use dataframe's [`.add`](https://public.datagrok.ai/js/samples/data-frame/append)
+     * a new column `Counts` appears in `df`, which contains:
+       * for each row `R` from `df1`, `R.counts` is a number of matches of all the subsequences in `R.col1` of length `N`
+         in _all_ the sequences of `col2`
+       * symmetrically, same for each row from `df2`  
+         — consider this as a fuzzy, programmatic JOIN of the two dataframes; use
+         [`df.columns.addNew`](https://public.datagrok.ai/js/samples/data-frame/manipulate),
+         [`col.set(i, value)`](https://public.datagrok.ai/js/samples/data-frame/advanced/data-frames-in-columns) on
+         a newly created column
+   * displays `df` with [`grok.shell.addTableView`](https://public.datagrok.ai/js/samples/data-frame/test-tables)
+6. Deploy the package with `webpack` and `grok publish dev`. Unlike with the [first excercise](), where the package
+   was built on the Datagrok server, in this one we locally build the package before sending it.
+7. Launch the platform, open the two files from `"Demo files"`: `sars-cov-2.csv` and `a-h1n1.csv`,
+   and run the package's `fuzzyJoin` function using one of the methods you've learned.
+8. Read more about joining dataframes through the case reviewed at our
+   [Community Forum](https://community.datagrok.ai/t/table-to-table-augmentation/493/4), and with
+   [a sample](https://public.datagrok.ai/js/samples/data-frame/join-tables).
+
+<!--- TODO: add linked dataframes demo here --->
+
+## Custom cell renderers with 3-rd party JS libraries
+
+_You will learn:_ reuse 3-rd party JavaScript libraries in your Datagrok packages; render cells by a semantic type.
+
+1. Navigate into the folder with your `<NAME>-sequence` package created in
+   ["Setting up the environment"](#setting-up-the-environment).
+2. Let's add a custom cell renderer for a _nucleotide sequence box_ to represent our sequences
+   in high density on the screen.
+   We need to render each nucleotide sequence with a monospace font in small letter sizing, fitting  
+   into a rectangular cell area and adding ellipsis to the end of the string if it won't fit.
+   This is a basis for a very useful nucleotide sequence representation in bioscience applications.  
+   Let's use a 3-rd party JavaScript library [`fusioncharts-smartlabel`]() to compute the text fit.
+   Add it to your package by navigating in its folder and calling:  
+   `npm install fusioncharts-smartlabel --save`  
+   The `--save` key updates `package.json` to add this library to your package dependencies.
+3. Add a class to `src/package.js` for the new cell renderer:
+   * use `fusioncharts-smartlabel` to break the original sequence in the current cell into lines which fit into
+     a cell's canvas rectangle; learn [here](https://medium.com/@priyanjit.dey/text-wrapping-and-ellipsis-overflow-a-platform-independent-solution-30fb737ff609)
+     how to do it, consider `SmartLabel.textToLines(...).lines` as a target array of lines to render
+   * Datagrok [grid]() is rendered through an [HTML5 Canvas](). The grid's canvas is `g.canvas`.
+     Iterate through the resulting lines and bring them to a `g.canvas` in the `render` method with
+     `g.canvas.getContext("2d").fillText`; learn [more]() about HTML Canvas if it's new for you
+   * Hint: pay attention to managing `line-height` both at computing the box and rendering text lines
+    ```javascript
+    class NucleotideBoxCellRenderer extends DG.GridCellRenderer {
+      get name() { return 'Nucleotide cell renderer'; }
+      get cellType() { return 'dna_sequence'; }
+      render(g, x, y, w, h, gridCell, cellStyle) {
+        let seq = gridCell.cell.value;
+        const sl = new SmartLabel('id', true);
+        sl.setStyle({/* ... */});
+        // ...
+        let ctx = g.canvas.getContext("2d");
+        ctx.font = '11px courier';
+        // ...
+        const lines = labelObj.lines;
+        for (let i = 0; i < lines.length; i++)
+          ctx.fillText(/* ... */);
+      }
+    }
+    ```
+4. Add the below to `src/package.js` to make the new cell renderer part of the package:
+    ```javascript
+    //name: nucleotideBoxCellRenderer
+    //tags: cellRenderer, cellRenderer-dna_sequence
+    //output: grid_cell_renderer result
+    export function nucleotideBoxCellRenderer() {
+      return new NucleotideBoxCellRenderer();
+    }
+    ```
+5. Deploy the package as usual with `grok publish dev --rebuild`. In [Datagrok](https://public.datagrok.ai),
+   navigate to a file with nucleotide sequences from `"Demo files"`, such as `sars-cov-2.csv`.
+   Verify you get the desired result, it should look similar to this:  
+   ![](exercises-custom-cell-renderer.png)  
+   Change the "Sequence" column width and rows heights to see how things adujst.
+6. (*) Implement a colored nucleotide sequence box where background of `A`, `G`, `C`, `T` vary.
+   Choose one of the popular coloring conventions, following [this link](https://www.biostars.org/p/171056/).
