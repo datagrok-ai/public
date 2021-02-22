@@ -97,6 +97,14 @@ export class TimelinesViewer extends EChartViewer {
         this.zoomState[i][1] = z.end;
       });
     });
+    grok.events.onContextMenu.subscribe(args => {
+      if (args.args.context instanceof DG.Viewer) {  // Change to TimelinesViewer
+        args.args.menu.item('Reset View', () => {
+          this.zoomState = [[0, 100], [0, 100], [0, 100], [0, 100]];
+          this.render();
+        });
+      }
+    });
   }
 
   onPropertyChanged(property) {
