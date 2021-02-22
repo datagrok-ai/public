@@ -83,7 +83,7 @@ function getMethodsAccordingTo(signalType) {
       return {
         filters: commonFilters,
         estimators: commonEstimators.concat(['Beat from ECG']),
-        indicators: commonIndicators.concat(['HRV time domain', 'HRV frequency domain'])
+        indicators: commonIndicators.concat(['HRV time domain', 'HRV frequency domain', 'HRV nonlinear domain'])
       };
     case 'EDA':
       return {
@@ -113,6 +113,18 @@ function getMethodsAccordingTo(signalType) {
       return {
         filters: commonFilters,
         estimators: commonEstimators.concat(['BeatFromBP']),
+        indicators: commonIndicators
+      };
+    case 'BVP(PPG)':
+      return {
+        filters: commonFilters,
+        estimators: commonEstimators.concat(['BeatFromBP']),
+        indicators: commonIndicators
+      };
+    case 'Respiration':
+      return {
+        filters: commonFilters,
+        estimators: commonEstimators,
         indicators: commonIndicators
       };
   }
@@ -230,7 +242,7 @@ export function Biosensors(table) {
       );
     });
 
-    let signalType = ui.choiceInput('Signal type', '', ['ECG', 'EDA', 'Accelerometer', 'EMG', 'EEG', 'ABP']);
+    let signalType = ui.choiceInput('Signal type', '', ['ECG', 'EDA', 'Accelerometer', 'EMG', 'EEG', 'ABP', 'BVP(PPG)', 'Respiration']);
 
     signalType.onChanged(() => {
 
@@ -244,18 +256,25 @@ export function Biosensors(table) {
       let containerList = [];
       let addFilterButton = ui.div();
       let filterInputsNew = ui.inputs(filtersList);
+      let nameOfLastOutput = '';
       let i = 0;
-      addFilterButton.appendChild(ui.button('Add Filter', () => {
+      addFilterButton.appendChild(ui.bigButton('Add Filter', () => {
         let containerFilter = ui.div();
         containerList[i] = containerFilter;
         filtersList[i] = ui.choiceInput('Filter №' + (i + 1), '', relevantMethods.filters);
-        inputsList[i] = ui.choiceInput('Input', '', Object.keys(signalInputs));
+        let inputPreset = (Object.keys(signalInputs).length === 1) ? column.value[0] : nameOfLastOutput;
+        inputsList[i] = ui.choiceInput('Input', inputPreset, Object.keys(signalInputs));
         let filterInputsOld = ui.inputs([filtersList[i]]);
         containerList[i].appendChild(filterInputsOld);
         filtersList[i].onChanged(function () {
           let val = filtersList[i - 1].value;
           paramsList[i - 1] = paramSelector(val);
-          filterInputsNew = ui.inputs([filtersList[i - 1]].concat([inputsList[i-1]]).concat(Object.values(paramsList[i - 1])).concat(addChartButton));
+          filterInputsNew = ui.inputs(
+              [filtersList[i - 1]]
+              .concat([inputsList[i - 1]])
+              .concat(Object.values(paramsList[i - 1]))
+              .concat(addChartButton)
+          );
           containerList[i - 1].replaceChild(filterInputsNew, filterInputsOld);
           filterInputsOld = filterInputsNew;
         });
@@ -273,7 +292,8 @@ export function Biosensors(table) {
         accordionCharts.addPane(name, () => ui.divV([
           ui.div([DG.Viewer.fromType('Line chart', plotFL).root], 'chart-box')]),true
         );
-        Object.assign(signalInputs, {['Output of Filter №' + i + ' (' + filtersList[i-1].value + ')']: plotFL});
+        nameOfLastOutput = 'Output of Filter №' + i + ' (' + filtersList[i-1].value + ')';
+        Object.assign(signalInputs, {[nameOfLastOutput]: plotFL});
       }));
 
 
@@ -290,7 +310,8 @@ export function Biosensors(table) {
         accordionCharts.addPane(typesOfEstimators.value, () => ui.divV([
           ui.div([DG.Viewer.fromType('Line chart', plotInfo).root], 'chart-box')]),true
         );
-        Object.assign(signalInputs, {['Output of Estimator: ' + typesOfEstimators.value]: plotInfo});
+        nameOfLastOutput = 'Output of Estimator: ' + typesOfEstimators.value;
+        Object.assign(signalInputs, {[nameOfLastOutput]: plotInfo});
       }));
 
       // Indicators dialogue
@@ -306,7 +327,8 @@ export function Biosensors(table) {
         accordionCharts.addPane(indicator.value, () => ui.divV([
           ui.div([DG.Viewer.fromType('Line chart', indicatorDf).root], 'chart-box')]),true
         );
-        Object.assign(signalInputs, {['Output of Estimator: ' + indicator.value]: indicatorDf});
+        nameOfLastOutput = 'Output of Estimator: ' + indicator.value;
+        Object.assign(signalInputs, {[nameOfLastOutput]: indicatorDf});
       }));
 
       let formView = ui.divV([
