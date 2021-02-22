@@ -20,13 +20,25 @@ If you place a container within a [box container](#boxes) , it will inherit the 
 This is a fixed-size container. It doesn't depend on children element sizes, but shrinks them to certain size.
 
  ## Panels
- The panel is a simple container similar to the [Containers]. It has full available wide and its height depends on its children. Also, panels have 10px margins for all sides.
+ The panel is a simple container similar to the [Containers](#Containers). It has full available wide and its height depends on its children. Also, panels have 10px margins for all sides.
  ```javascript
  ui.panel([ui.h1('Header'), ui.p('Paragraph text'), 'just text', DG.Viewer.scatterPlot(grok.data.demo.demog())])
  ```
 
  ## Blocks
+
  ## Splitters
+ Splitters - help to build the layout that contains several content areas. The content that is added to the splitter contains the [box container](#boxes) which shrinks the content to a certain size.
+
+ The splitters can specify by the horizontal or vertical orientation. In order to split vertically and horizontally at the same time, splitters need to be nested.
+
+ ```javascript
+ ui.splitH([ui.h1('Left'), ui.h1('Center'),  ui.h1('Right')])
+
+ ui.splitV([ui.h1('Top'), ui.h1('Middle'), ui.h1('Bottom')])
+
+ ui.splitH([ui.h1('Left'), ui.splitV([ui.h1('Right top'),ui.h1('Right bottom')])])
+ ```
 
 # Views
  ## Table View
