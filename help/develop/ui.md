@@ -95,19 +95,19 @@ This is a fixed-size container. It doesn't depend on children element sizes, but
   ## Lists
   ## Buttons
   ## Forms
-    ### Form input
-    ### Form selection
-    ### Form group selection
-    ### Form switch
-    ### Form range slider
+  ### Form input
+  ### Form selection
+  ### Form group selection
+  ### Form switch
+  ### Form range slider
   ## Icons
   ## Images
 # Components
   ## Accordions
   ## Cards
   ## Menu
-    ## Top menu
-    ## Popup menu
+  ## Top menu
+  ## Popup menu
   ## Tabs
   ## Tag editor
   ## Sidebar
