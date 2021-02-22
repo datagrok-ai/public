@@ -258,7 +258,7 @@ export function Biosensors(table) {
       let filterInputsNew = ui.inputs(filtersList);
       let nameOfLastOutput = '';
       let i = 0;
-      addFilterButton.appendChild(ui.bigButton('Add Filter', () => {
+      addFilterButton.appendChild(ui.button('Add Filter', () => {
         let containerFilter = ui.div();
         containerList[i] = containerFilter;
         filtersList[i] = ui.choiceInput('Filter №' + (i + 1), '', relevantMethods.filters);
@@ -283,7 +283,7 @@ export function Biosensors(table) {
       }));
 
       let addChartButton = ui.div();
-      addChartButton.appendChild(ui.bigButton('Plot', async () => {
+      addChartButton.appendChild(ui.button('Plot', async () => {
         paramsT = paramsToTable(filtersList, paramsList);
         let t = (inputsList.length === 1) ? DG.DataFrame.fromColumns([column.value[0]]) :
                                             DG.DataFrame.fromColumns([signalInputs[inputsList[i-1].value].columns.byName('sig')]);
@@ -303,7 +303,7 @@ export function Biosensors(table) {
       let typesOfEstimators = ui.choiceInput('Estimators', '', relevantMethods.estimators);
       let inputsToEstimators = ui.inputs([typesOfEstimators]);
       containerWithEstimators.appendChild(inputsToEstimators);
-      containerWithPlotsOfEstimators.appendChild(ui.bigButton('Extract Info', async () => {
+      containerWithPlotsOfEstimators.appendChild(ui.button('Extract Info', async () => {
         paramsT = paramsToTable(filtersList, paramsList);
         let t = DG.DataFrame.fromColumns([column.value[0]]);
         let plotInfo = await extractInfo(t, samplingFreq.value, signalType.stringValue, paramsT, typesOfEstimators);
@@ -320,7 +320,7 @@ export function Biosensors(table) {
       let indicator = ui.choiceInput('Indicators', '', relevantMethods.indicators);
       let indicatorInputs = ui.inputs([indicator]);
       containerIndicator.appendChild(indicatorInputs);
-      calculateButton.appendChild(ui.bigButton('Calculate', async () => {
+      calculateButton.appendChild(ui.button('Calculate', async () => {
         paramsT = paramsToTable(filtersList, paramsList);
         let t = DG.DataFrame.fromColumns([column.value[0]]);
         let indicatorDf = await toIndicators(t, samplingFreq.value, signalType.stringValue, paramsT, typesOfEstimators, indicator);
