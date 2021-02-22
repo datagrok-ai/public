@@ -65,24 +65,51 @@ This is a fixed-size container. It doesn't depend on children element sizes, but
   .item('element 1');
  ```
 
-
  ## Toolbox
 
 # Dialogs
 
-# Content
- ## Typography
-  ### Headers
-  ### Paragraphs
-  ### Spans
- ## Inputs
- ## Forms
- ## Icons
- ## Buttons
- ## Links
- ## Colors
- ## Images
- ## Tab Control
- ## Menu
- ## Cards
- ## Tables
+# Elements
+  ## Colors
+  ## Typography
+    Typography sets default styles for headings, paragraphs, spans, and divs elements.
+    ### Headers
+    ```javascript
+    ui.h1('Header 1');
+    ui.h2('Header 2');
+    ui.h3('Header 3');
+    ```
+    ### Paragraphs
+    ```javascript
+    ui.p('Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industrys standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book.');
+    ```
+    ### Spans
+    ```javascript
+    ui.span(['span element']);
+    ```
+    ### Text blocks
+    ```javascript
+    ui.divText('Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industrys standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book.');
+    ```
+  ## Tables
+  ## Lists
+  ## Buttons
+  ## Forms
+    ### Form input
+    ### Form selection
+    ### Form group selection
+    ### Form switch
+    ### Form range slider
+  ## Icons
+  ## Images
+# Components
+  ## Accordions
+  ## Cards
+  ## Menu
+    ## Top menu
+    ## Popup menu
+  ## Tabs
+  ## Tag editor
+  ## Sidebar
+  ## Toasts
+  ## Tooltips
