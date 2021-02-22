@@ -35,7 +35,11 @@ This is a fixed-size container. It doesn't depend on children element sizes, but
  ```javascript
  ui.splitH([ui.h1('Left'), ui.h1('Center'),  ui.h1('Right')])
  ui.splitV([ui.h1('Top'), ui.h1('Middle'), ui.h1('Bottom')])
- ui.splitH([ui.h1('Left'), ui.splitV([ui.h1('Right top'),ui.h1('Right bottom')])])
+ ui.splitH([ui.h1('Left'), ui.splitV([
+   ui.h1('Right top'),
+   ui.h1('Right bottom')
+   ])
+ ])
  ```
 
 # Views
