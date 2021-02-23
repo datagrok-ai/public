@@ -9,6 +9,14 @@
  To start building a layout you need either a [View](#simple-view) (in most cases) or a [Dialog](#dialogs).
  Every View or Dialog is a [panel container](#panels)
 
+```javascript
+let v = grok.shell.newView('Demo View');
+v.append(ui.h1('Hello World'));
+let d = ui.dialog('Demo Dialog');
+d.add(ui.h1('Hello World'));
+d.show();
+```
+
  ## Containers
 This is a simple container. It can contain any elements, such as inputs, images, text, etc.
 It doesn't have own height. The container height depends on its children.
@@ -18,9 +26,16 @@ ui.div([ui.h1('Header'), ui.p('Paragraph text'), 'just text', DG.Viewer.scatterP
 If you place a container within a [box container](#boxes) , it will inherit the box size and show scroll bars automatically.
  ## Boxes
 This is a fixed-size container. It doesn't depend on children element sizes, but shrinks them to certain size.
-
+```javascript
+let d = ui.div();
+for (let i = 0; i < 100; i++) 
+    d.append(ui.p('More Text'));
+var box = ui.box(d);
+$(box).css('border', 'solid');
+ui.div([ui.h1('Header'), box])
+```
  ## Panels
- The panel is a simple container similar to the [Containers](#Containers). It has full available wide and its height depends on its children. Also, panels have 10px margins for all sides.
+ The panel is a simple container similar to the [Containers](#Containers). It has full available wide and its height depends on its children. Also, panels have 10px paddings for all sides.
  ```javascript
  ui.panel([ui.h1('Header'), ui.p('Paragraph text'), 'just text', DG.Viewer.scatterPlot(grok.data.demo.demog())])
  ```
