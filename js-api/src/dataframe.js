@@ -26,8 +26,15 @@ class MapProxy {
       },
       set: function (target, prop, value) {
         grok_Map_Set(d, prop, DG.toDart(value));
+        return true;
+      },
+      has: function (target, prop) {
+        return grok_Map_Has(d, DG.toDart(prop));
+      },
+      deleteProperty: function (target, prop) {
+        return grok_Map_Delete(d, DG.toDart(prop));
       }
-    })
+    });
   }
 }
 
@@ -790,10 +797,13 @@ export class Column {
   }
 
   /** An iterator over all values in this column. */
-  * values() {
-    for (let i = 0; i < this.length; i++) {
-      yield this.get(i);
-    }
+  get values() {
+    let th = this;
+    return (function * () {
+      for (let i = 0; i < th.length; i++) {
+        yield th.get(i);
+      }
+    })();
   }
 
   /** Creates and returns a new column by converting [column] to the specified [newType].
