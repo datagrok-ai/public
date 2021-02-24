@@ -31,10 +31,10 @@ class MapProxy {
       deleteProperty: function (target, prop) {
         grok_Map_Delete(d, DG.toDart(prop));
         return true;
-      }
+      },
       has: function (target, prop) {
         return grok_Map_Has(d, DG.toDart(prop));
-      },
+      }
     });
   }
 }
