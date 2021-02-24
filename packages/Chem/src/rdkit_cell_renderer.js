@@ -49,7 +49,7 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
       if (mol.is_valid()) {
         if (this._isMolBlock(scaffoldMolString)) {
           let rdkitScaffoldMol = this._fetchMol(scaffoldMolString, "", molRegenerateCoords, false).mol;
-          substructJson = mol.generate_aligned_coords(rdkitScaffoldMol, true, true);
+          substructJson = mol.generate_aligned_coords(rdkitScaffoldMol, true, true, false);
           if (substructJson === "") {
             substructJson = "{}";
           }
@@ -125,7 +125,8 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
       "height": Math.floor(h),
       "bondLineWidth": 1,
       "minFontSize": 11,
-      'highlightBondWidthMultiplier': 12 
+      "highlightBondWidthMultiplier": 12,
+      "dummyIsotopeLabels": false
     };
     if (highlightScaffold) {
       Object.assign(opts, substruct);
