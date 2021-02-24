@@ -101,6 +101,10 @@ export class TimelinesViewer extends EChartViewer {
         this.zoomState[i][1] = z.end;
       });
     });
+
+    this.chart.on('rendered', () => {
+      this.count = 0;
+    });
   }
 
   init() {
@@ -148,14 +152,21 @@ export class TimelinesViewer extends EChartViewer {
       return colorMap;
     }, {});
 
+    let prevSubj = null;
+
     this.option.series[0].renderItem = (params, api) => {
       let overlap = false;
       if (params.dataIndex > 0) {
         const prev = this.data[params.dataIndex - 1];
-        if (this.data[params.dataIndex][0] === prev[0] &&
+        const curSubj = this.data[params.dataIndex][0];
+        if (curSubj === prev[0] &&
             prev[1] && prev[2] && prev[1] !== prev[2] &&
             api.value(1) <= prev[2]) {
               overlap = true;
+              if (prevSubj !== curSubj) {
+                this.count = 0;
+                prevSubj = curSubj;
+              }
             }
       }
 
@@ -204,6 +215,7 @@ export class TimelinesViewer extends EChartViewer {
           width: params.coordSys.width,
           height: params.coordSys.height
         });
+
         if (overlap) {
           let height = api.size([0, 1])[1];
           let offset = Math.max(this.markerSize * 2, this.lineWidth);
