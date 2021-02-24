@@ -130,22 +130,18 @@ function getMethodsAccordingTo(signalType) {
   }
 }
 
-function showTheRestOfLayout(formView, accordionFilters) {
+function showTheRestOfLayout(formView) {
   ui.dialog('Demo Pipeline')
       .add(formView)
       .showModal(true);
-  $('.chartview').css('width', '100%');
-  $(accordionFilters).css('background', '#fefefe');
-  $('.chartview').after('<style>.chart-box{width:100%;height:300px;}</style>');
 }
 
-function getEmptyChart(xLabel, yLabel) {
+function getEmptyChart() {
   return DG.Viewer.fromType(
       DG.VIEWER.LINE_CHART,
       DG.DataFrame.fromColumns([
-        DG.Column.fromList(DG.TYPE.FLOAT, xLabel, []),
-        DG.Column.fromList(DG.TYPE.FLOAT, yLabel, [])
-      ]), {x: xLabel, y: yLabel}
+        DG.Column.fromList(DG.TYPE.FLOAT, 'time', [])
+      ])
   );
 }
 
@@ -225,7 +221,7 @@ export function Biosensors(table) {
     Object.keys(allParams[j]).forEach(key => {
       a = a + ', ' + key + ': ' + allParams[j][key].value;
     });
-    return 'Output of Filter №' + i + ': ' + a + '.';
+    return 'Output of Filter ' + i + ': ' + a + '.';
   }
 
   let tempButton = ui.div();
@@ -244,11 +240,18 @@ export function Biosensors(table) {
 
     column.onChanged(() => {
       signalInputs = {[column.value[0]]: column};
-      accordionFilters.addPane('Raw signal', () => ui.divV([
-        ui.div([DG.Viewer.fromType('Line chart', table, {yColumnNames: column.value.map((c) => {return c.name})})],
-            'chart-box'
-        )]),true
-      );
+
+      let formView = ui.div([ui.block25([
+        ui.inputs([
+          ui.h2('Filtering and Preprocessing'),
+          column,
+          samplingFreq,
+          signalType
+        ])],'formview'),
+        ui.block75([
+        DG.Viewer.fromType('Line chart', table, {yColumnNames: column.value.map((c) => {return c.name})})
+      ])]);
+      showTheRestOfLayout(formView);
     });
 
     let signalType = ui.choiceInput('Signal type', '', ['ECG', 'EDA', 'Accelerometer', 'EMG', 'EEG', 'ABP', 'BVP(PPG)', 'Respiration']);
@@ -271,29 +274,30 @@ export function Biosensors(table) {
       addFilterButton.appendChild(ui.button('Add Filter', () => {
         let containerFilter = ui.div();
         containerList[i] = containerFilter;
-        filtersList[i] = ui.choiceInput('Filter №' + (i + 1), '', relevantMethods.filters);
+        filtersList[i] = ui.choiceInput('Filter ' + (i + 1), '', relevantMethods.filters);
         let inputPreset = (Object.keys(signalInputs).length === 1) ? column.value[0] : nameOfLastOutput;
         inputsList[i] = ui.choiceInput('Input', inputPreset, Object.keys(signalInputs));
-        emptyCharts[i] = getEmptyChart('time', 'sig');
+        emptyCharts[i] = getEmptyChart();
         let filterInputsOld = ui.inputs([filtersList[i]]);
         containerList[i].appendChild(filterInputsOld);
         filtersList[i].onChanged(function () {
           let val = filtersList[i - 1].value;
           paramsList[i - 1] = paramSelector(val);
-          filterInputsNew = ui.divH(
-              [
-                  ui.inputs(
-                      [filtersList[i - 1]]
-                      .concat([inputsList[i - 1]])
-                      .concat(Object.values(paramsList[i - 1]))
-                      .concat(addChartButton)),
-                ui.div([emptyCharts[i - 1]])
-              ]
-          );
+          filterInputsNew = ui.div([
+            ui.block25([
+                ui.inputs(
+                    [filtersList[i - 1]]
+                    .concat([inputsList[i - 1]])
+                    .concat(Object.values(paramsList[i - 1]))
+                    .concat(addChartButton)
+                )]
+            ),
+            ui.block75([emptyCharts[i - 1]])
+          ]);
           containerList[i - 1].replaceChild(filterInputsNew, filterInputsOld);
           filterInputsOld = filterInputsNew;
         });
-        accordionFilters.addPane('Filter №' + (i + 1), () => containerFilter, true)
+        accordionFilters.addPane('Filter ' + (i + 1), () => containerFilter, true)
         i++;
       }));
 
@@ -304,7 +308,7 @@ export function Biosensors(table) {
                                             DG.DataFrame.fromColumns([signalInputs[inputsList[i-1].value].columns.byName('sig')]);
         let plotFL = await applyFilter(t, samplingFreq.value, signalType.stringValue, paramsT);
         emptyCharts[i - 1].dataFrame = plotFL;
-        nameOfLastOutput = 'Output of Filter №' + i + ' (' + filtersList[i-1].value + ')';
+        nameOfLastOutput = 'Output of Filter ' + i + ' (' + filtersList[i-1].value + ')';
         Object.assign(signalInputs, {[nameOfLastOutput]: plotFL});
       }));
 
@@ -319,10 +323,8 @@ export function Biosensors(table) {
         paramsT = paramsToTable(filtersList, paramsList);
         let t = DG.DataFrame.fromColumns([column.value[0]]);
         let plotInfo = await extractInfo(t, samplingFreq.value, signalType.stringValue, paramsT, typesOfEstimators);
-        let estimatorChart = getEmptyChart('time', 'extracted');
-        accordionEstimators.addPane(typesOfEstimators.value, () => ui.divV([
-          ui.div([estimatorChart], 'chart-box')]),true
-        );
+        let estimatorChart = getEmptyChart();
+        accordionEstimators.addPane(typesOfEstimators.value, () => ui.block(estimatorChart),true);
         estimatorChart.dataFrame = plotInfo;
         nameOfLastOutput = 'Output of Estimator: ' + typesOfEstimators.value;
         Object.assign(signalInputs, {[nameOfLastOutput]: plotInfo});
@@ -338,19 +340,24 @@ export function Biosensors(table) {
         paramsT = paramsToTable(filtersList, paramsList);
         let t = DG.DataFrame.fromColumns([column.value[0]]);
         let indicatorDf = await toIndicators(t, samplingFreq.value, signalType.stringValue, paramsT, typesOfEstimators, indicator);
-        accordionIndicators.addPane(indicator.value, () => ui.divV([
-          ui.div([DG.Viewer.fromType('Line chart', indicatorDf).root], 'chart-box')]),true
-        );
+        let indicatorChart = getEmptyChart();
+        accordionIndicators.addPane(indicator.value, () => ui.block(indicatorChart),true);
+        indicatorChart.dataFrame = indicatorDf;
         nameOfLastOutput = 'Output of Estimator: ' + indicator.value;
         Object.assign(signalInputs, {[nameOfLastOutput]: indicatorDf});
       }));
 
-      let formView = ui.divV([
-        ui.inputs([
-          ui.h2('Filtering and Preprocessing'),
-          ui.divH([column, samplingFreq]),
-          signalType
-        ]),
+      let formView = ui.div([
+        ui.block25([
+          ui.inputs([
+            ui.h2('Filtering and Preprocessing'),
+            column,
+            samplingFreq,
+            signalType
+          ])],'formview'),
+          ui.block75([
+            DG.Viewer.fromType('Line chart', table, {yColumnNames: column.value.map((c) => {return c.name})})
+          ]),
         accordionFilters,
         addFilterButton,
         ui.h2('Information extraction'),
@@ -360,16 +367,17 @@ export function Biosensors(table) {
         ui.divH([containerIndicator, calculateButton]),
         accordionIndicators
       ],'formview');
-      showTheRestOfLayout(formView, accordionFilters);
+      showTheRestOfLayout(formView);
     });
-    let formView = ui.divV([
+    let formView = ui.div([
       ui.inputs([
         ui.h2('Filtering and Preprocessing'),
-        ui.divH([column, samplingFreq]),
+        column,
+        samplingFreq,
         signalType
       ]),
     ],'formview');
-    showTheRestOfLayout(formView, accordionFilters);
+    showTheRestOfLayout(formView);
   }));
   return new DG.Widget(tempButton);
 }
