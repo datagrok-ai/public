@@ -54,7 +54,7 @@ Prerequisites: basic JavaScript knowledge
 
 1. Install the necessary tools (Node.js, npm, webpack, datagrok-tools) following [these instructions](develop.md#getting-started)
 2. Get a dev key for https://dev.datagrok.ai (you will work with this server) and add it by running `grok config`
-3. Create a default package called `<name>-sequence` using datagrok-tools: `grok create <name>-sequence`
+3. Create a default package [called](https://datagrok.ai/help/develop/develop#naming-conventions) `<name>-sequence` using datagrok-tools: `grok create <name>-sequence`
 4. Upload it to the server: `grok publish dev --rebuild` (see other options [here](develop.md#deployment-modes))
 5. Launch the platform and run the package's `test` function using different methods: 
     * via the [Functions](https://dev.datagrok.ai/functions?q=test) view
@@ -139,7 +139,6 @@ In this exercise, we will count occurrences of a given subsequence in a nucleoti
 6. Run the script function, provide input values in the dialog and get to the console to see the result.
    Now run the script function again through the console completely, passing different arguments values:
    ```<UserName>:CountSubsequencePython('ATGATC', 'A')```
-7. Go back to `Functions | Scripts` and hit `New JavaScript Script`.
 
 ### Scripting with client functions
 
@@ -147,6 +146,7 @@ _Prerequisites:_ basic JavaScript knowledge.
 
 _You will learn:_ how to create and invoke Datagrok JavaScript scripts.
 
+7. Go to `Functions | Scripts` and hit `New JavaScript Script`.
 8. Implement the function `CountSubsequenceJS` in JavaScript, which does the same as
    [`CountSubsequencePython`](#scripting-with-server-functions). Follow the same conventions on
    the parameters in the comments block and returning a result via a variable.
@@ -180,7 +180,10 @@ _You will learn:_ how to invoke arbitrary Datagrok functions in JavaScript and a
    
    and outputs a dataframe containing a column with numbers of subsequence occurrences
    in the sequences from the nucleotide column. Say, for a table, where we are only interested
-   in the first column,
+   in the column `Sequence` (on the left), the following table (on the right) should be produced
+   for a subsequence `ACC` being sought:  
+   <table>
+   <tr><td>
    
    | Sequence     | A's |
    |--------------|-----|
@@ -188,7 +191,7 @@ _You will learn:_ how to invoke arbitrary Datagrok functions in JavaScript and a
    | CCTTCTCCTCCT | 0   |
    | CTGGAAGACCTA | 3   |
    
-   the following output should be produced for a subsequence `ACC` being sought:
+   </td><td>
    
    | N(ACC) |
    |--------|
@@ -196,10 +199,12 @@ _You will learn:_ how to invoke arbitrary Datagrok functions in JavaScript and a
    | 0      |
    | 1      |
    
+   </td></tr>
+   </table>  
    Equip your Python script with the following header:
    
    ```python
-   #name: CountSubsequencePython
+   #name: CountSubsequenceTablePython
    #language: python
    #input: dataframe inputDf
    #input: column inputColName
@@ -218,19 +223,19 @@ _You will learn:_ how to invoke arbitrary Datagrok functions in JavaScript and a
    
    You may want to borrow some code from the ["Scripting and functions"](#scripting-and-functions) exercise.
    
-3. Let's create a wrapping function `CountSubsequenceTable` in JavaScript which would do all the technical
+3. Let's create a wrapping function `CountSubsequenceTableAugment` in JavaScript which would do all the technical
    job. We would use it to give the new column with counts a proper name, and to _augment_ the input dataframe
    with the newly computed column. Make it look like this:
    
     ```javascript
-    //name: CountSubsequenceTable
+    //name: CountSubsequenceTablePythonAugment
     //language: javascript
     //input: dataframe df
     //input: column colName
     //input: string subseq = ATG
     
     grok.functions.call(
-      "<YOUR_NAME>:CountSubsequencePython", {
+      "<YOUR_NAME>:CountSubsequenceTablePython", {
         'inputDf': df,
         'inputColName': colName,
         'outputColName': `N(${subseq})`,
@@ -251,18 +256,22 @@ _You will learn:_ how to invoke arbitrary Datagrok functions in JavaScript and a
    
 5. Run the script and check the new column appears in the grid.
 
-6. Notice that we don't need the entire input dataframe to run the script, just one column.
+6. Add `CountSubsequenceTablePythonAugment` and `CountSubsequenceTablePython` as part of the package
+   `<NAME>-sequence` prepared in ["Semantic types"](#semantic-types) exercise. Deploy the package,
+   reload Datagrok and run `CountSubsequenceTablePythonAugment` from the package.
+
+7. Notice that we don't need the entire input dataframe to run the script, just one column.
    Optimize the 2 scripts of this exercise to only take this one column as an input, and thus
    optimizing the data network roundtrip.
 
 ### Composing two JavaScript functions
 
-7. Let's repeat this augmentation for a JavaScript function. First, delete the newly created
+8. Let's repeat this augmentation for a JavaScript function. First, delete the newly created
    `N(ATG)` column by clicking with a right mouse button on it and selecting `Remove`.
 
-8. Create a function `CountSubsequenceJS`, which has the following structure:
+9. Create a function `CountSubsequenceTableJS`, which has the following structure:
     ```javascript
-    //name: CountSubsequenceJS
+    //name: CountSubsequenceTableJS
     //language: javascript
     //input: dataframe inputDf
     //input: column inputColName
@@ -284,14 +293,19 @@ _You will learn:_ how to invoke arbitrary Datagrok functions in JavaScript and a
    * iterating through a dataframe by a row index
    * crearing a dataframe from an array of columns
    
-9. In `CountSubsequenceTable` replace `CountSubsequencePython` to `CountSubsequenceJS`
-   and run it. Check that exact same new column is produced as it was for a Python version.
-   
-10. In contrast to `CountSubsequenceTable` running in the browser and `CountSubsequencePython`
-    running on the server, now both `CountSubsequenceTable` and `CountSubsequenceJS` run in the same browser tab,
-    and the dataframe-typed arguments passed from one JS function to another are just references to one JS object.
-    Would it make sense to optimize the 2 functions in the same fashion as in p.6 of the previous exercise
-    for `CountSubsequenceTable` and `CountSubsequencePython`? If not, show a suitable optimization.
+10. In `CountSubsequenceTablePythonAugment`, replace `CountSubsequenceTablePython` to `CountSubsequenceTableJS`,
+    rename itself to `CountSubsequenceTableJSAugment` and run it. Check that the exact same new column is produced
+    as it was for a Python version.
+  
+11. Add `CountSubsequenceTableJS` and `CountSubsequenceTableJSAugment` as part of the
+    package `<NAME>-sequence` prepared in ["Semantic types"](#semantic-types) exercise.
+    Deploy the package, reload Datagrok and run `CountSubsequenceTableJSAugment` from the package.
+ 
+12. In contrast to `CountSubsequenceTablePythonAugment` running in the browser and `CountSubsequenceTablePython`
+    running on the server, now both `CountSubsequenceTableJSAugment` and `CountSubsequenceTableJS` run
+    in the same browser tab. Also, the dataframe-typed arguments passed from one JS function to another
+    are just references to one JS object. Would it make sense to optimize the 2 functions in the same fashion
+    as in p.6 of the previous exercise? If not, show a suitable optimization.
    
 In these two exercises, we could try another approach. Instead of passing the column to
 and forming the new column in the function being called, we could just populate the new column
