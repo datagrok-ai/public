@@ -19,7 +19,12 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
       obj.canvas = null;
       obj = null;
     }
+    this.WHITE_MOLBLOCK = `
+Actelion Java MolfileCreator 1.0
 
+  0  0  0  0  0  0  0  0  0  0999 V2000
+M  END
+`;
   }
 
   get name() { return 'RDKit cell renderer'; }
@@ -148,24 +153,31 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
     context.putImageData(image, x, y);
   }
 
+  _initScaffoldString(colTags, tagName) {
+
+    let scaffoldString = colTags ? colTags[tagName] : null;
+    if (scaffoldString  === this.WHITE_MOLBLOCK) {
+      scaffoldString  = null;
+      if (colTags[tagName]) {
+        delete colTags[tagName];
+      }
+    }
+    return scaffoldString;
+
+  }
+
   render(g, x, y, w, h, gridCell, cellStyle) {
 
     let molString = gridCell.cell.value;
     if (molString == null || molString === '')
       return;
 
-    const colTags = gridCell.tableColumn.tags;
-    let singleScaffoldMolString = colTags && colTags['chem-scaffold'];
-    
-    if (singleScaffoldMolString && singleScaffoldMolString === `
-Actelion Java MolfileCreator 1.0
+    let colTags = gridCell.cell.column.tags;
 
-  0  0  0  0  0  0  0  0  0  0999 V2000
-M  END
-`
-    ) {
-      singleScaffoldMolString = null;
-    }
+    const singleScaffoldHighlightMolString = this._initScaffoldString(colTags, 'chem-scaffold');
+    const singleScaffoldFilterMolString = this._initScaffoldString(colTags, 'chem-scaffold-filter');
+    const singleScaffoldMolString = singleScaffoldFilterMolString ?? singleScaffoldHighlightMolString;
+    // TODO: make both filtering scaffold and single highlight scaffold appear
     
     if (singleScaffoldMolString) {
 
