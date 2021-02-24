@@ -94,23 +94,12 @@ export class TimelinesViewer extends EChartViewer {
         }
       ]
     };
-  
-    this.chart.on('dataZoom', () => {
-      this.chart.getOption().dataZoom.forEach((z, i) => {
-        this.zoomState[i][0] = z.start;
-        this.zoomState[i][1] = z.end;
-      });
-    });
-
-    this.chart.on('rendered', () => {
-      this.count = 0;
-    });
   }
 
   init() {
     if (!this.initialized) {
-      // FIXME: shouldn't impact the context menu of another TimelinesViewer instance (unsubscribe)
-      grok.events.onContextMenu.subscribe(args => {
+      // FIXME: shouldn't impact the context menu of another TimelinesViewer instance
+      const sub = grok.events.onContextMenu.subscribe(args => {
         if (args.args.context.type === 'TimelinesViewer') {
           args.args.menu.item('Reset View', () => {
             this.zoomState = [[0, 100], [0, 100], [0, 100], [0, 100]];
@@ -118,6 +107,40 @@ export class TimelinesViewer extends EChartViewer {
           });
         }
       });
+      this.subs.push(sub);
+
+      this.chart.on('dataZoom', () => {
+        this.chart.getOption().dataZoom.forEach((z, i) => {
+          this.zoomState[i][0] = z.start;
+          this.zoomState[i][1] = z.end;
+        });
+      });
+  
+      this.chart.on('rendered', () => {
+        this.count = 0;
+      });
+
+      this.chart.on('click', params => this.dataFrame.selection.handleClick( i => {
+        if (params.componentType === 'yAxis') return this.columns[0].get(i) === params.value;
+        if (params.componentType === 'series') {
+          return params.value[0] === this.columns[0].get(i) &&
+                 params.value[1] === (this.columns[1].isNone(i) ? null : this.columns[1].get(i)) &&
+                 params.value[2] === (this.columns[2].isNone(i) ? null : this.columns[2].get(i))
+        }
+        return false;
+      }, params.event.event));
+  
+      this.chart.on('mouseover', params => ui.tooltip.showRowGroup(this.dataFrame, i => {
+        if (params.componentType === 'yAxis') return this.columns[0].get(i) === params.value;
+        if (params.componentType === 'series') {
+          return params.value[0] === this.columns[0].get(i) &&
+                 params.value[1] === (this.columns[1].isNone(i) ? null : this.columns[1].get(i)) &&
+                 params.value[2] === (this.columns[2].isNone(i) ? null : this.columns[2].get(i))
+        }
+        return false;
+      }, params.event.event.x + this.tooltipOffset, params.event.event.y + this.tooltipOffset));
+  
+      this.chart.on('mouseout', () => ui.tooltip.hide());
 
       this.initialized = true;
     }
@@ -283,29 +306,8 @@ export class TimelinesViewer extends EChartViewer {
       // Items with the same id are sorted based on `start` value
       if (a[1] > b[1]) return 1;
       if (a[1] < b[1]) return -1;
+      return 0;
     });
-
-    this.chart.on('click', params => this.dataFrame.selection.handleClick( i => {
-      if (params.componentType === 'yAxis') return this.columns[0].get(i) === params.value;
-      if (params.componentType === 'series') {
-        return params.value[0] === this.columns[0].get(i) &&
-               params.value[1] === (this.columns[1].isNone(i) ? null : this.columns[1].get(i)) &&
-               params.value[2] === (this.columns[2].isNone(i) ? null : this.columns[2].get(i))
-      }
-      return false;
-    }, params.event.event));
-
-    this.chart.on('mouseover', params => ui.tooltip.showRowGroup(this.dataFrame, i => {
-      if (params.componentType === 'yAxis') return this.columns[0].get(i) === params.value;
-      if (params.componentType === 'series') {
-        return params.value[0] === this.columns[0].get(i) &&
-               params.value[1] === (this.columns[1].isNone(i) ? null : this.columns[1].get(i)) &&
-               params.value[2] === (this.columns[2].isNone(i) ? null : this.columns[2].get(i))
-      }
-      return false;
-    }, params.event.event.x + this.tooltipOffset, params.event.event.y + this.tooltipOffset));
-
-    this.chart.on('mouseout', () => ui.tooltip.hide());
 
     return this.data;
   }
