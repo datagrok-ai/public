@@ -23,6 +23,7 @@ export class TimelinesViewer extends EChartViewer {
     this.selectionColor = '#FB8C28';
     this.zoomState = [[0, 100], [0, 100], [0, 100], [0, 100]];
     this.tooltipOffset = 10;
+    this.initialized = false;
 
     this.option = {
       tooltip: {
@@ -97,14 +98,22 @@ export class TimelinesViewer extends EChartViewer {
         this.zoomState[i][1] = z.end;
       });
     });
-    grok.events.onContextMenu.subscribe(args => {
-      if (args.args.context instanceof DG.Viewer) {  // Change to TimelinesViewer
-        args.args.menu.item('Reset View', () => {
-          this.zoomState = [[0, 100], [0, 100], [0, 100], [0, 100]];
-          this.render();
-        });
-      }
-    });
+  }
+
+  init() {
+    if (!this.initialized) {
+      // FIXME: shouldn't impact the context menu of another TimelinesViewer instance (unsubscribe)
+      grok.events.onContextMenu.subscribe(args => {
+        if (args.args.context.type === 'TimelinesViewer') {
+          args.args.menu.item('Reset View', () => {
+            this.zoomState = [[0, 100], [0, 100], [0, 100], [0, 100]];
+            this.render();
+          });
+        }
+      });
+
+      this.initialized = true;
+    }
   }
 
   onPropertyChanged(property) {
@@ -115,6 +124,8 @@ export class TimelinesViewer extends EChartViewer {
   }
 
   onTableAttached() {
+    this.init();
+
     this.columns = this.dataFrame.columns.byNames([
       this.subjectColumnName, this.startColumnName,
       this.endColumnName, this.colorByColumnName
