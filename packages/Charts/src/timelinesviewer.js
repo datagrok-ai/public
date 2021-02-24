@@ -10,7 +10,10 @@ export class TimelinesViewer extends EChartViewer {
     this.endColumnName = this.string('endColumnName', 'AEENDY');
     this.colorByColumnName = this.string('colorByColumnName', 'EVENT');
 
+    this.marker = this.string('marker', 'circle', { choices: ['circle', 'rect'] });
     this.markerSize = this.int('markerSize', 6);
+    this.markerPosition = this.string('markerPosition', 'main line',
+      { choices: ['main line', 'above main line', 'scatter'] });
     this.lineWidth = this.int('lineWidth', 3);
     this.dateFormat = this.string('dateFormat', null, { choices: [
       '{yyyy}-{MM}-{dd}', '{M}/{d}/{yyyy}', '{MMM} {d}', '{dd}', '{d}'
@@ -167,12 +170,22 @@ export class TimelinesViewer extends EChartViewer {
       };
 
       if (isNaN(api.value(1)) || isNaN(api.value(2)) || this.markerSize > width) {
+        const xPos = shift => isNaN(start[0]) ? end[0] : start[0] - shift;
+        const yPos = shift => end[1] - (this.markerPosition === 'main line' ? shift :
+          this.markerPosition === 'above main line' ? Math.max(this.markerSize, this.lineWidth) + shift :
+          (Math.round(Math.random()) * 2 - 1)*(this.markerSize * 3));
+
         group.children.push({
-          type: 'circle',
-          shape: {
-            cx: isNaN(start[0]) ? end[0] : start[0],
-            cy: end[1],
+          type: this.marker,
+          shape: this.marker === 'circle' ? {
+            cx: xPos(0),
+            cy: yPos(0),
             r: this.markerSize / 2
+          } : {
+            x: xPos(this.markerSize / 2),
+            y: yPos(this.markerSize / 2),
+            width: this.markerSize,
+            height: this.markerSize
           },
           style: {
             fill: api.value(4) ? this.selectionColor : this.colorMap[isNaN(api.value(3)) ?
