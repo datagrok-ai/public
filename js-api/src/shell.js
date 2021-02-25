@@ -258,6 +258,16 @@ export class Shell {
   clearDirtyFlag() {
     grok_ClearDirtyFlag();
   }
+
+  /** Saves audit record to Datagrok back-end
+   * @param {string} message
+   * @param {object} params
+   * @param {string} type = 'log'*/
+  log(message, params, type) {
+    if (type == null)
+      type = 'log';
+    grok_Audit(type, message, toDart(params));
+  }
 }
 
 
