@@ -304,7 +304,7 @@
       "targets": [
         ["name=button-Upload", "name"],
         ["css=button[name=\"button-Upload\"]", "css"],
-        ["css=.btn-raised", "css:finder"],
+        ["css=.ui-btn-raised", "css:finder"],
         ["xpath=//button[@name='button-Upload']", "xpath:attributes"],
         ["xpath=//button", "xpath:position"]
       ],
