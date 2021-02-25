@@ -41,9 +41,11 @@ export function toJs(d, check = false) {
     return paramsToJs(d);
   } else if (type === 'DG.TypedEventArgs')
     return new TypedEventArgs(d);
+
   let wrapper = grok_GetWrapper(d);
   if (wrapper != null)
     return wrapper;
+
   if (type === TYPE.PROPERTY)
     return new Property(d);
   if (check)

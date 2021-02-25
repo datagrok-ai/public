@@ -16,7 +16,7 @@ export * from './src/viewer.js';
 export * from './src/docking.js';
 export * from './src/wrappers_impl';
 export {time, timeAsync, Utils, LruCache} from './src/utils.js';
-export {JsEntityMeta} from './ui';
+export {JsEntityMeta, EntityMetaDartProxy} from './ui';
 
 export let chem = _chem;
 export let ml = _ml;
