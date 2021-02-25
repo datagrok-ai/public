@@ -165,7 +165,7 @@
       "target": "name=button-btn-DONE",
       "targets": [
         ["name=button-btn-DONE", "name"],
-        ["css=.btn-raised", "css:finder"],
+        ["css=.ui-btn-raised", "css:finder"],
         ["xpath=//button[@name='button-btn-DONE']", "xpath:attributes"],
         ["xpath=//div[@id='elementContent']/div/div/div/button[3]", "xpath:idRelative"],
         ["xpath=//button[3]", "xpath:position"],
