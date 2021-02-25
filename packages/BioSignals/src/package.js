@@ -145,6 +145,197 @@ function getEmptyChart() {
   );
 }
 
+function showMainDialog(table, signalType, column, samplingFreq) {
+
+  let accordionFilters = ui.accordion();
+  let accordionEstimators = ui.accordion();
+  let accordionIndicators = ui.accordion();
+
+  let relevantMethods = getMethodsAccordingTo(signalType.stringValue);
+  let signalInputs = {[column.value[0]]: column};
+
+  // Filter dialogue
+  let paramsT;
+  let filtersList = [];
+  let inputsList = [];
+  let paramsList = [];
+  let containerList = [];
+  let emptyCharts = [];
+  let addFilterButton = ui.div();
+  let filterInputsNew = ui.inputs(filtersList);
+  let nameOfLastOutput = '';
+  let i = 0;
+  addFilterButton.appendChild(ui.button('Add Filter', () => {
+    let containerFilter = ui.div();
+    containerList[i] = containerFilter;
+    filtersList[i] = ui.choiceInput('Filter ' + (i + 1), '', relevantMethods.filters);
+    let inputPreset = (Object.keys(signalInputs).length === 1) ? column.value[0] : nameOfLastOutput;
+    inputsList[i] = ui.choiceInput('Input', inputPreset, Object.keys(signalInputs));
+    emptyCharts[i] = getEmptyChart();
+    let filterInputsOld = ui.inputs([filtersList[i]]);
+    containerList[i].appendChild(filterInputsOld);
+    filtersList[i].onChanged(function () {
+      let val = filtersList[i - 1].value;
+      paramsList[i - 1] = paramSelector(val);
+      filterInputsNew = ui.div([
+        ui.block25([
+          ui.inputs(
+              [filtersList[i - 1]]
+                  .concat([inputsList[i - 1]])
+                  .concat(Object.values(paramsList[i - 1]))
+                  .concat(addChartButton)
+          )]
+        ),
+        ui.block75([emptyCharts[i - 1]])
+      ]);
+      containerList[i - 1].replaceChild(filterInputsNew, filterInputsOld);
+      filterInputsOld = filterInputsNew;
+    });
+    accordionFilters.addPane('Filter ' + (i + 1), () => containerFilter, true)
+    i++;
+  }));
+
+  let addChartButton = ui.div();
+  addChartButton.appendChild(ui.button('Plot', async () => {
+    paramsT = paramsToTable(filtersList, paramsList);
+    let t = (inputsList.length === 1) ? DG.DataFrame.fromColumns([column.value[0]]) :
+        DG.DataFrame.fromColumns([signalInputs[inputsList[i-1].value].columns.byName('sig')]);
+    let plotFL = await applyFilter(t, samplingFreq.value, signalType.stringValue, paramsT);
+    emptyCharts[i - 1].dataFrame = plotFL;
+    nameOfLastOutput = 'Output of Filter ' + i + ' (' + filtersList[i-1].value + ')';
+    Object.assign(signalInputs, {[nameOfLastOutput]: plotFL});
+  }));
+
+
+  // Information extraction dialogue
+  let containerWithEstimators = ui.div();
+  let containerWithPlotsOfEstimators = ui.div();
+  let typesOfEstimators = ui.choiceInput('Estimators', '', relevantMethods.estimators);
+  let inputsToEstimators = ui.inputs([typesOfEstimators]);
+  containerWithEstimators.appendChild(inputsToEstimators);
+  containerWithPlotsOfEstimators.appendChild(ui.button('Extract Info', async () => {
+    paramsT = paramsToTable(filtersList, paramsList);
+    let t = DG.DataFrame.fromColumns([column.value[0]]);
+    let plotInfo = await extractInfo(t, samplingFreq.value, signalType.stringValue, paramsT, typesOfEstimators);
+    let estimatorChart = getEmptyChart();
+    accordionEstimators.addPane(typesOfEstimators.value, () => ui.block(estimatorChart),true);
+    estimatorChart.dataFrame = plotInfo;
+    nameOfLastOutput = 'Output of Estimator: ' + typesOfEstimators.value;
+    Object.assign(signalInputs, {[nameOfLastOutput]: plotInfo});
+  }));
+
+  // Indicators dialogue
+  let containerIndicator = ui.div();
+  let calculateButton = ui.div();
+  let indicator = ui.choiceInput('Indicators', '', relevantMethods.indicators);
+  let indicatorInputs = ui.inputs([indicator]);
+  containerIndicator.appendChild(indicatorInputs);
+  calculateButton.appendChild(ui.button('Calculate', async () => {
+    paramsT = paramsToTable(filtersList, paramsList);
+    let t = DG.DataFrame.fromColumns([column.value[0]]);
+    let indicatorDf = await toIndicators(t, samplingFreq.value, signalType.stringValue, paramsT, typesOfEstimators, indicator);
+    let indicatorChart = getEmptyChart();
+    accordionIndicators.addPane(indicator.value, () => ui.block(indicatorChart),true);
+    indicatorChart.dataFrame = indicatorDf;
+    nameOfLastOutput = 'Output of Estimator: ' + indicator.value;
+    Object.assign(signalInputs, {[nameOfLastOutput]: indicatorDf});
+  }));
+
+  let formView = ui.div([
+    ui.block25([
+      ui.inputs([
+        ui.h2('Filtering and Preprocessing'),
+        column,
+        samplingFreq,
+        signalType
+      ])],'formview'),
+    ui.block75([
+      DG.Viewer.fromType('Line chart', table, {yColumnNames: column.value.map((c) => {return c.name})})
+    ]),
+    accordionFilters,
+    addFilterButton,
+    ui.h2('Information extraction'),
+    ui.divH([containerWithEstimators, containerWithPlotsOfEstimators]),
+    accordionEstimators,
+    ui.h2('Physiological Indicators'),
+    ui.divH([containerIndicator, calculateButton]),
+    accordionIndicators
+  ],'formview');
+  showTheRestOfLayout(formView);
+}
+
+function paramSelector(x) {
+  if (x === 'IIR') {
+    let passFrequency = ui.floatInput('Pass frequency', '');
+    let stopFrequency = ui.floatInput('Stop frequency', '');
+    let ftype = ui.choiceInput('Filter type', '', ['butter', 'cheby1', 'cheby2', 'ellip']);
+    return {'fp': passFrequency, 'fs': stopFrequency, 'ftype': ftype};
+  }
+  else if (x === 'FIR') {
+    let passFrequency = ui.floatInput('Pass frequency', '');
+    let stopFrequency = ui.floatInput('Stop frequency', '');
+    //let ftype = ui.choiceInput('Window type', '', ['hamming']);
+    return {'fp': passFrequency, 'fs': stopFrequency};
+  }
+  else if (x === 'normalize') {
+    let normMethod = ui.choiceInput('norm_method', '', ['mean', 'standard', 'min', 'maxmin', 'custom']);
+    return {'normMethod': normMethod};
+  }
+  else if (x === 'resample') {
+    let fout = ui.intInput('Output sampling frequency', '');
+    let kind = ui.choiceInput('Interpolation method', '', ['linear', 'nearest', 'zero', 'slinear', 'quadratic', 'cubic']);
+    return {'fout': fout, 'kind': kind};
+  }
+  else if (x === 'KalmanFilter') {
+    let r = ui.floatInput('R', '');
+    r.setTooltip("R should be positive");
+    let ratio = ui.floatInput('Ratio', '');
+    ratio.setTooltip("Ratio should be >1");
+    return {'R': r, 'ratio': ratio};
+  }
+  else if (x === 'ImputeNAN') {
+    let winLen = ui.floatInput('Window Length', '');
+    winLen.setTooltip('Window Length should be positive');
+    let allNan = ui.choiceInput('All NaN', '', ['zeros', 'nan']);
+    return {'win_len': winLen, 'allnan': allNan};
+  }
+  else if (x === 'RemoveSpikes') {
+    let K = ui.floatInput('K', 2);
+    K.setTooltip("K should be positive");
+    let N = ui.intInput('N', 1);
+    N.setTooltip('N should be positive integer');
+    let dilate = ui.floatInput('Dilate', 0);
+    dilate.setTooltip('dilate should be >= 0.0');
+    let D = ui.floatInput('D', 0.95);
+    D.setTooltip('D should be >= 0.0');
+    let method = ui.choiceInput('Method', '', ['linear', 'step']);
+    return {'K': K, 'N': N, 'dilate': dilate, 'D': D, 'method': method};
+  }
+  else if (x === 'DenoiseEDA') {
+    let winLen = ui.floatInput('Window Length', 2);
+    winLen.setTooltip('Window Length should be positive');
+    let threshold = ui.floatInput('Threshold', '');
+    threshold.setTooltip('Threshold should be positive');
+    return {'win_len': winLen, 'threshold': threshold};
+  }
+  else if (x === 'ConvolutionalFilter') {
+    let irftype = ui.choiceInput('irftype', '', ['gauss', 'rect', 'triang', 'dgauss', 'custom']);
+    irftype.setTooltip('Impulse response function (IRF)');
+    let winLen = ui.floatInput('Window Length', 2);
+    winLen.setTooltip('Duration of the generated IRF in seconds (if irftype is not \'custom\')');
+    return {'win_len': winLen, 'irftype': irftype};
+  }
+}
+
+function getDescription(i, filtersLST, allParams) {
+  let j = filtersLST.length - 1;
+  let a = filtersLST[j].value;
+  Object.keys(allParams[j]).forEach(key => {
+    a = a + ', ' + key + ': ' + allParams[j][key].value;
+  });
+  return 'Output of Filter ' + i + ': ' + a + '.';
+}
+
 //name: BioSignals
 //tags: panel, widgets
 //input: dataframe table
@@ -152,85 +343,8 @@ function getEmptyChart() {
 //condition: analysisCondition(table)
 export function Biosensors(table) {
 
-  function paramSelector(x) {
-    if (x === 'IIR') {
-      let passFrequency = ui.floatInput('Pass frequency', '');
-      let stopFrequency = ui.floatInput('Stop frequency', '');
-      let ftype = ui.choiceInput('Filter type', '', ['butter', 'cheby1', 'cheby2', 'ellip']);
-      return {'fp': passFrequency, 'fs': stopFrequency, 'ftype': ftype};
-    }
-    else if (x === 'FIR') {
-      let passFrequency = ui.floatInput('Pass frequency', '');
-      let stopFrequency = ui.floatInput('Stop frequency', '');
-      //let ftype = ui.choiceInput('Window type', '', ['hamming']);
-      return {'fp': passFrequency, 'fs': stopFrequency};
-    }
-    else if (x === 'normalize') {
-      let normMethod = ui.choiceInput('norm_method', '', ['mean', 'standard', 'min', 'maxmin', 'custom']);
-      return {'normMethod': normMethod};
-    }
-    else if (x === 'resample') {
-      let fout = ui.intInput('Output sampling frequency', '');
-      let kind = ui.choiceInput('Interpolation method', '', ['linear', 'nearest', 'zero', 'slinear', 'quadratic', 'cubic']);
-      return {'fout': fout, 'kind': kind};
-    }
-    else if (x === 'KalmanFilter') {
-      let r = ui.floatInput('R', '');
-      r.setTooltip("R should be positive");
-      let ratio = ui.floatInput('Ratio', '');
-      ratio.setTooltip("Ratio should be >1");
-      return {'R': r, 'ratio': ratio};
-    }
-    else if (x === 'ImputeNAN') {
-      let winLen = ui.floatInput('Window Length', '');
-      winLen.setTooltip('Window Length should be positive');
-      let allNan = ui.choiceInput('All NaN', '', ['zeros', 'nan']);
-      return {'win_len': winLen, 'allnan': allNan};
-    }
-    else if (x === 'RemoveSpikes') {
-      let K = ui.floatInput('K', 2);
-      K.setTooltip("K should be positive");
-      let N = ui.intInput('N', 1);
-      N.setTooltip('N should be positive integer');
-      let dilate = ui.floatInput('Dilate', 0);
-      dilate.setTooltip('dilate should be >= 0.0');
-      let D = ui.floatInput('D', 0.95);
-      D.setTooltip('D should be >= 0.0');
-      let method = ui.choiceInput('Method', '', ['linear', 'step']);
-      return {'K': K, 'N': N, 'dilate': dilate, 'D': D, 'method': method};
-    }
-    else if (x === 'DenoiseEDA') {
-      let winLen = ui.floatInput('Window Length', 2);
-      winLen.setTooltip('Window Length should be positive');
-      let threshold = ui.floatInput('Threshold', '');
-      threshold.setTooltip('Threshold should be positive');
-      return {'win_len': winLen, 'threshold': threshold};
-    }
-    else if (x === 'ConvolutionalFilter') {
-      let irftype = ui.choiceInput('irftype', '', ['gauss', 'rect', 'triang', 'dgauss', 'custom']);
-      irftype.setTooltip('Impulse response function (IRF)');
-      let winLen = ui.floatInput('Window Length', 2);
-      winLen.setTooltip('Duration of the generated IRF in seconds (if irftype is not \'custom\')');
-      return {'win_len': winLen, 'irftype': irftype};
-    }
-  }
-
-  function getDescription(i, filtersLST, allParams) {
-    let j = filtersLST.length - 1;
-    let a = filtersLST[j].value;
-    Object.keys(allParams[j]).forEach(key => {
-      a = a + ', ' + key + ': ' + allParams[j][key].value;
-    });
-    return 'Output of Filter ' + i + ': ' + a + '.';
-  }
-
   let tempButton = ui.div();
   tempButton.appendChild(ui.button('launch', () => {
-
-    let accordionFilters = ui.accordion();
-    let accordionEstimators = ui.accordion();
-    let accordionIndicators = ui.accordion();
-    let signalInputs = {};
 
     let column = ui.columnsInput('Columns', table);
     column.setTooltip('Choose columns to plot');
@@ -238,146 +352,39 @@ export function Biosensors(table) {
     let samplingFreq = ui.floatInput('Sampling frequency', '');
     samplingFreq.setTooltip('Number of samples taken per second');
 
-    column.onChanged(() => {
-      signalInputs = {[column.value[0]]: column};
-
-      let formView = ui.div([ui.block25([
-        ui.inputs([
-          ui.h2('Filtering and Preprocessing'),
-          column,
-          samplingFreq,
-          signalType
-        ])],'formview'),
-        ui.block75([
-        DG.Viewer.fromType('Line chart', table, {yColumnNames: column.value.map((c) => {return c.name})})
-      ])]);
-      showTheRestOfLayout(formView);
-    });
-
     let signalType = ui.choiceInput('Signal type', '', ['ECG', 'EDA', 'Accelerometer', 'EMG', 'EEG', 'ABP', 'BVP(PPG)', 'Respiration']);
+    signalType.onChanged(() => {showMainDialog(table, signalType, column, samplingFreq);});
 
-    signalType.onChanged(() => {
-
-      let relevantMethods = getMethodsAccordingTo(signalType.stringValue);
-
-      // Filter dialogue
-      let paramsT;
-      let filtersList = [];
-      let inputsList = [];
-      let paramsList = [];
-      let containerList = [];
-      let emptyCharts = [];
-      let addFilterButton = ui.div();
-      let filterInputsNew = ui.inputs(filtersList);
-      let nameOfLastOutput = '';
-      let i = 0;
-      addFilterButton.appendChild(ui.button('Add Filter', () => {
-        let containerFilter = ui.div();
-        containerList[i] = containerFilter;
-        filtersList[i] = ui.choiceInput('Filter ' + (i + 1), '', relevantMethods.filters);
-        let inputPreset = (Object.keys(signalInputs).length === 1) ? column.value[0] : nameOfLastOutput;
-        inputsList[i] = ui.choiceInput('Input', inputPreset, Object.keys(signalInputs));
-        emptyCharts[i] = getEmptyChart();
-        let filterInputsOld = ui.inputs([filtersList[i]]);
-        containerList[i].appendChild(filterInputsOld);
-        filtersList[i].onChanged(function () {
-          let val = filtersList[i - 1].value;
-          paramsList[i - 1] = paramSelector(val);
-          filterInputsNew = ui.div([
-            ui.block25([
-                ui.inputs(
-                    [filtersList[i - 1]]
-                    .concat([inputsList[i - 1]])
-                    .concat(Object.values(paramsList[i - 1]))
-                    .concat(addChartButton)
-                )]
-            ),
-            ui.block75([emptyCharts[i - 1]])
-          ]);
-          containerList[i - 1].replaceChild(filterInputsNew, filterInputsOld);
-          filterInputsOld = filterInputsNew;
-        });
-        accordionFilters.addPane('Filter ' + (i + 1), () => containerFilter, true)
-        i++;
-      }));
-
-      let addChartButton = ui.div();
-      addChartButton.appendChild(ui.button('Plot', async () => {
-        paramsT = paramsToTable(filtersList, paramsList);
-        let t = (inputsList.length === 1) ? DG.DataFrame.fromColumns([column.value[0]]) :
-                                            DG.DataFrame.fromColumns([signalInputs[inputsList[i-1].value].columns.byName('sig')]);
-        let plotFL = await applyFilter(t, samplingFreq.value, signalType.stringValue, paramsT);
-        emptyCharts[i - 1].dataFrame = plotFL;
-        nameOfLastOutput = 'Output of Filter ' + i + ' (' + filtersList[i-1].value + ')';
-        Object.assign(signalInputs, {[nameOfLastOutput]: plotFL});
-      }));
-
-
-      // Information extraction dialogue
-      let containerWithEstimators = ui.div();
-      let containerWithPlotsOfEstimators = ui.div();
-      let typesOfEstimators = ui.choiceInput('Estimators', '', relevantMethods.estimators);
-      let inputsToEstimators = ui.inputs([typesOfEstimators]);
-      containerWithEstimators.appendChild(inputsToEstimators);
-      containerWithPlotsOfEstimators.appendChild(ui.button('Extract Info', async () => {
-        paramsT = paramsToTable(filtersList, paramsList);
-        let t = DG.DataFrame.fromColumns([column.value[0]]);
-        let plotInfo = await extractInfo(t, samplingFreq.value, signalType.stringValue, paramsT, typesOfEstimators);
-        let estimatorChart = getEmptyChart();
-        accordionEstimators.addPane(typesOfEstimators.value, () => ui.block(estimatorChart),true);
-        estimatorChart.dataFrame = plotInfo;
-        nameOfLastOutput = 'Output of Estimator: ' + typesOfEstimators.value;
-        Object.assign(signalInputs, {[nameOfLastOutput]: plotInfo});
-      }));
-
-      // Indicators dialogue
-      let containerIndicator = ui.div();
-      let calculateButton = ui.div();
-      let indicator = ui.choiceInput('Indicators', '', relevantMethods.indicators);
-      let indicatorInputs = ui.inputs([indicator]);
-      containerIndicator.appendChild(indicatorInputs);
-      calculateButton.appendChild(ui.button('Calculate', async () => {
-        paramsT = paramsToTable(filtersList, paramsList);
-        let t = DG.DataFrame.fromColumns([column.value[0]]);
-        let indicatorDf = await toIndicators(t, samplingFreq.value, signalType.stringValue, paramsT, typesOfEstimators, indicator);
-        let indicatorChart = getEmptyChart();
-        accordionIndicators.addPane(indicator.value, () => ui.block(indicatorChart),true);
-        indicatorChart.dataFrame = indicatorDf;
-        nameOfLastOutput = 'Output of Estimator: ' + indicator.value;
-        Object.assign(signalInputs, {[nameOfLastOutput]: indicatorDf});
-      }));
-
-      let formView = ui.div([
-        ui.block25([
-          ui.inputs([
-            ui.h2('Filtering and Preprocessing'),
-            column,
-            samplingFreq,
-            signalType
-          ])],'formview'),
-          ui.block75([
-            DG.Viewer.fromType('Line chart', table, {yColumnNames: column.value.map((c) => {return c.name})})
-          ]),
-        accordionFilters,
-        addFilterButton,
-        ui.h2('Information extraction'),
-        ui.divH([containerWithEstimators, containerWithPlotsOfEstimators]),
-        accordionEstimators,
-        ui.h2('Physiological Indicators'),
-        ui.divH([containerIndicator, calculateButton]),
-        accordionIndicators
-      ],'formview');
-      showTheRestOfLayout(formView);
-    });
     let formView = ui.div([
       ui.inputs([
         ui.h2('Filtering and Preprocessing'),
-        column,
-        samplingFreq,
-        signalType
+        column
       ]),
     ],'formview');
     showTheRestOfLayout(formView);
+
+    column.onChanged(() => {
+      if (table.col(column.stringValue).semType) {
+        signalType.stringValue = table.col(column.stringValue).semType.split('-')[1];
+        showMainDialog(table, signalType, column, samplingFreq);
+      }
+      else {
+        let formView = ui.div([
+            ui.block25([
+                ui.inputs([
+                    ui.h2('Filtering and Preprocessing'),
+                  column,
+                  samplingFreq,
+                  signalType
+                ])
+            ],'formview'),
+          ui.block75([
+            DG.Viewer.fromType('Line chart', table, {yColumnNames: column.value.map((c) => {return c.name})})
+          ])
+        ]);
+        showTheRestOfLayout(formView);
+      }
+    });
   }));
   return new DG.Widget(tempButton);
 }
