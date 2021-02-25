@@ -556,16 +556,16 @@ export function Biosensors(table) {
       }
     });
 
-    let formView = ui.div([
-      ui.inputs([
-        ui.h2('Filtering and Preprocessing'),
-        column
-      ]),
-    ],'formview');
-    showTheRestOfLayout(formView);
+    let formView = ui.dialog('Demo Pipeline')
+        .add(ui.h2('Filtering and Preprocessing'))
+        .add(ui.inputs([column]))
+        .showModal(true);
 
     let IsSignalTypeDetectedAutomatically = null;
     column.onChanged(() => {
+
+      formView.close();
+
       if (table.col(column.stringValue).semType) {
         IsSignalTypeDetectedAutomatically = true;
         signalType.stringValue = table.col(column.stringValue).semType.split('-')[1];
