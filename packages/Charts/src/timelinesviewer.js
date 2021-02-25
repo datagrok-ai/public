@@ -121,21 +121,21 @@ export class TimelinesViewer extends EChartViewer {
       });
 
       this.chart.on('click', params => this.dataFrame.selection.handleClick( i => {
-        if (params.componentType === 'yAxis') return this.columns[0].get(i) === params.value;
+        if (params.componentType === 'yAxis') return this.subjects[this.subjBuf[i]] === params.value;
         if (params.componentType === 'series') {
-          return params.value[0] === this.columns[0].get(i) &&
-                 params.value[1] === (this.columns[1].isNone(i) ? null : this.columns[1].get(i)) &&
-                 params.value[2] === (this.columns[2].isNone(i) ? null : this.columns[2].get(i))
+          return params.value[0] === this.subjects[this.subjBuf[i]] &&
+                 params.value[1] === (this.startCol.isNone(i) ? null : this.startBuf[i]) &&
+                 params.value[2] === (this.endCol.isNone(i) ? null : this.endBuf[i]);
         }
         return false;
       }, params.event.event));
   
       this.chart.on('mouseover', params => ui.tooltip.showRowGroup(this.dataFrame, i => {
-        if (params.componentType === 'yAxis') return this.columns[0].get(i) === params.value;
+        if (params.componentType === 'yAxis') return this.subjects[this.subjBuf[i]] === params.value;
         if (params.componentType === 'series') {
-          return params.value[0] === this.columns[0].get(i) &&
-                 params.value[1] === (this.columns[1].isNone(i) ? null : this.columns[1].get(i)) &&
-                 params.value[2] === (this.columns[2].isNone(i) ? null : this.columns[2].get(i))
+          return params.value[0] === this.subjects[this.subjBuf[i]] &&
+                 params.value[1] === (this.startCol.isNone(i) ? null : this.startBuf[i]) &&
+                 params.value[2] === (this.endCol.isNone(i) ? null : this.endBuf[i]);
         }
         return false;
       }, params.event.event.x + this.tooltipOffset, params.event.event.y + this.tooltipOffset));
@@ -149,14 +149,36 @@ export class TimelinesViewer extends EChartViewer {
   onPropertyChanged(property) {
     if (property.name === 'axisPointer') {
       this.option.tooltip.axisPointer.type = property.get();
+    } else if (property.name === 'subjectColumnName') {
+      this.subjectCol = this.dataFrame.getCol(property.get());
+      this.subjects = this.subjectCol.categories;
+      this.subjBuf = this.subjectCol.getRawData();
+    } else if (property.name === 'startColumnName') {
+      this.startCol = this.dataFrame.getCol(property.get());
+      this.startBuf = this.startCol.getRawData();
+    } else if (property.name === 'endColumnName') {
+      this.endCol = this.dataFrame.getCol(property.get());
+      this.endBuf = this.endCol.getRawData();
+    } else if (property.name === 'colorByColumnName') {
+      this.colorByCol = this.dataFrame.getCol(property.get());
+      this.colorCats = this.colorByCol.categories;
+      this.colorBuf = this.colorByCol.getRawData();
+      this.colorMap = this.getColorMap();
     }
     this.render();
+  }
+
+  getColorMap() {
+    return this.colorCats.reduce((colorMap, c, i) => {
+      colorMap[c] = DG.Color.toRgb(DG.Color.getCategoricalColor(i));
+      return colorMap;
+    }, {});
   }
 
   onTableAttached() {
     this.init();
 
-    this.columns = this.dataFrame.columns.byNames([
+    [this.subjectCol, this.startCol, this.endCol, this.colorByCol] = this.dataFrame.columns.byNames([
       this.subjectColumnName, this.startColumnName,
       this.endColumnName, this.colorByColumnName
     ]).map((col, ind) => {
@@ -170,10 +192,13 @@ export class TimelinesViewer extends EChartViewer {
       return col;
     });
 
-    this.colorMap = this.columns[3].categories.reduce((colorMap, c, i) => {
-      colorMap[c] = DG.Color.toRgb(DG.Color.getCategoricalColor(i));
-      return colorMap;
-    }, {});
+    this.subjects = this.subjectCol.categories;
+    this.subjBuf = this.subjectCol.getRawData();
+    this.startBuf = this.startCol.getRawData();
+    this.endBuf = this.endCol.getRawData();
+    this.colorCats = this.colorByCol.categories;
+    this.colorBuf = this.colorByCol.getRawData();
+    this.colorMap = this.getColorMap();
 
     let prevSubj = null;
 
@@ -207,7 +232,7 @@ export class TimelinesViewer extends EChartViewer {
         const xPos = shift => isNaN(start[0]) ? end[0] : start[0] - shift;
         const yPos = shift => end[1] - (this.markerPosition === 'main line' ? shift :
           this.markerPosition === 'above main line' ? Math.max(this.markerSize, this.lineWidth) + shift :
-          (Math.round(Math.random()) * 2 - 1)*(this.markerSize * 3));
+          ((params.dataIndex % 2) * 2 - 1)*(this.markerSize * 3));
 
         group.children.push({
           type: this.marker,
@@ -267,8 +292,8 @@ export class TimelinesViewer extends EChartViewer {
     this.data.length = 0;
     let tempObj = {};
 
-    let getTime = (i, j) => {
-      if (this.columns[j].type === 'datetime') {
+    let getTime = (i, col, buf) => {
+      if (col.type === 'datetime') {
         if (this.dateFormat === null) {
           this.props.dateFormat = this.getProperty('dateFormat').choices[2];
         }
@@ -278,19 +303,17 @@ export class TimelinesViewer extends EChartViewer {
           axisLabel: { formatter: this.dateFormat }
         };
       }
-      return this.columns[j].type === 'datetime' ?
-        new Date(`${this.columns[j].get(i)}`) : this.columns[j].isNone(i) ?
-        null : this.columns[j].get(i);
+      return col.type === 'datetime' ? new Date(`${col.get(i)}`) : col.isNone(i) ? null : buf[i];
     }
 
     let selectedIndexes = this.dataFrame.selection.getSelectedIndexes();
 
     for (let i of this.dataFrame.filter.getSelectedIndexes()) {
-      let id = this.columns[0].get(i);
-      let start = getTime(i, 1);
-      let end = getTime(i, 2);
+      let id = this.subjects[this.subjBuf[i]];
+      let start = getTime(i, this.startCol, this.startBuf);
+      let end = getTime(i, this.endCol, this.endBuf);
       if (start === end && end === null) continue;
-      let event = this.columns[3].get(i);
+      let event = this.colorCats[this.colorBuf[i]];
       let key = `${id}-${start}-${end}`;
       if (tempObj.hasOwnProperty(key)) {
         tempObj[key][3].push(event);
