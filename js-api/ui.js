@@ -148,7 +148,7 @@ export function extract(x) {
   if (x == null)
     return null;
   if (x instanceof DG.Widget)
-    return box(x.root);
+    return x.root;
   if (typeof x.root !== 'undefined')
     return x.root;
   if (typeof x.wrap === 'function') {
@@ -206,6 +206,8 @@ export function span(x) {
  * @returns {HTMLElement}
  * */
 export function div(children = [], options = null) {
+  if (!Array.isArray(children))
+    children = [children];
   let d = document.createElement('div');
   if (children != null) {
     $(d).append(children.map(render));
@@ -264,10 +266,11 @@ export function bigButton(text, handler, tooltip = null) {
  * @param {string | HTMLElement} caption
  * @param {Array<string>} items
  * @param {Function} handler (item) => {...}
+ * @param {Function} renderer (item) => {...}
  * @returns {HTMLElement}
  * */
-export function comboPopup(caption, items, handler) {
-  return grok_UI_ComboPopup(caption, items, handler);
+export function comboPopup(caption, items, handler, renderer=null) {
+  return grok_UI_ComboPopup(caption, items, handler, renderer !== null ? (item) => renderer(toJs(item)) : null);
 }
 
 /**
@@ -676,7 +679,7 @@ export function splitH(items, options = null) {
 
 export function block(items, options = null) {
   let c = div(items, options);
-  $(c).append(items).addClass('ui-block');
+  $(c).addClass('ui-block');
   return c;
 }
 

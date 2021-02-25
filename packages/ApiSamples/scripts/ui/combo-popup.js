@@ -5,5 +5,5 @@ grok.shell.newView('tables', [
     'Foo': () => grok.shell.info('Foo!'),
     'Bar': () => grok.shell.info('Bar!'),
   })]),
-  ui.div([ui.comboPopup('SpamEggs', ['Spam', 'Eggs'], (_) => grok.shell.info(_))])
+  ui.div([ui.comboPopup('SpamEggs', ['Spam', 'Eggs'], (item) => grok.shell.info(item), (item) => ui.span([`Item: ${item}`]))])
 ]);

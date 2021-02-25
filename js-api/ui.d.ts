@@ -149,9 +149,10 @@ export function bigButton(text: string, handler: Function, tooltip?: string | nu
  * @param {HTMLElement} icon
  * @param {Array<string>} items
  * @param {Function} handler (item) => {...}
+ * @param {Function} renderer (item) => {...}
  * @returns {HTMLElement}
  * */
-export function comboPopup(icon: HTMLElement, items: string[], handler: (item: any) => void): HTMLElement
+export function comboPopup(icon: HTMLElement, items: string[], handler: (item: any) => void, renderer: (item: any) => HTMLElement | null): HTMLElement
 
 /** Creates a visual table based on [map]. */
 //TODO: what is this?
