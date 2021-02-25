@@ -15,75 +15,33 @@ export function test(s) {
 //tags: app
 export async function Browser() {
 
-  let v = grok.shell.newView('demo: ChemblBrowser');
-    let proteinClassification = ui.divV([
-        ui.divH([
-            ui.divText('Protein Classification'),
 
-            ui.bigButton('RUN', () => {
-                grok.data.query(`${packageName}:proteinClassification`, {}).then(t => grok.shell.addTableView(t));
-            }),
+        async function molregnoView(molregno) {
+            let data = grok.data.query(`${packageName}:CompoundProperties`, {'molregno': parseInt(molregno)})
+            let view = grok.shell.addTableView(data);
+        }
 
-            ui.bigButton('RUN in cards', async () => {
-             let data = await grok.data.query(`${packageName}:proteinClassification`, {});
-                grok.shell.newView( "Protein Classification", [ ui.virtualView(data.rowCount, (i) => ui.card(ui.tableFromMap({
-                pref_name: data.row(i).pref_name,
-                definition: data.row(i).definition,
-                class_level: data.row(i).class_level,
-            }))).root]
-                )})])]);
+        async function initView()  {
 
+        let data = await grok.data.query(`${packageName}:allChemblStructures`, {});
+        let container = ui.divH([],'card-container');
+        for (let i=0; i<data.rowCount; i++){
+            let h2 = ui.h2(`molregno: ${data.col('molregno').get(i)}`);
+            let h3 = ui.h3(`standard_inchi: ${data.col('standard_inchi').get(i)}`);
+            h2.addEventListener('click', e => molregnoView(h2.innerText))
+            h2.addEventListener('dblclick', e => grok.shell.info(h3.innerText))
+            container.append(ui.card(ui.div([
+                h2, grok.chem.svgMol(data.col('canonical_smiles').get(i),150, 100)]
+            )))
+        }
+        grok.shell.newView( "demo: ChemblBrowser", [container])
+        $('.card-container').css('flex-wrap','wrap');
+    }
 
-
-    let allChemblStructures = ui.divV([
-        ui.divH([
-            ui.divText('Chembl Structures'),
-            ui.bigButton('RUN', () => {
-                grok.data.query(`${packageName}:allChemblStructures`, {}).then(t => grok.shell.addTableView(t));
-            }),
-
-            ui.bigButton('RUN in cards', async () => {
-                let data = await grok.data.query(`${packageName}:allChemblStructures`, {});
-                grok.shell.newView( "Chembl Structures", [ ui.virtualView(data.rowCount, (i) => ui.card(ui.tableFromMap({
-                        canonical_smiles: data.row(i).canonical_smiles,
-                        molregno: data.row(i).molregno,
-                    }))).root]
-                )}),
-        ])]);
-
-    let target = ui.stringInput('Target', 'CHEMBL1827');
-
-    let compoundActivityDetailsForTarget = ui.divV([
-     ui.divH([
-         ui.divText('Compound activity details for @target'),
-         target,
-         ui.bigButton('RUN', () => {
-             grok.data.query(`${packageName}:compoundActivityDetailsForTarget`, {'target':target.stringValue}).then(t => grok.shell.addTableView(t));
-         })
-     ])]);
-
-
-    let selectiveForTarget = ui.stringInput(' Selective For Target', 'CHEMBL301');
-    let OverTarget = ui.stringInput('Over Target', 'CHEMBL4036');
-
-    let compoundsSelectiveToOneTargetOverSecond = ui.divV([
-        ui.divH([
-            ui.divText('Compounds which are selective to one target over a second target'),
-            selectiveForTarget, OverTarget,
-            ui.bigButton('RUN', () => {
-                grok.data.query(`${packageName}:compoundsSelectiveToOneTargetOverSecond`, {'selectiveFor':selectiveForTarget.stringValue, 'over': OverTarget.stringValue}).then(t => grok.shell.addTableView(t));
-            })
-        ])]);
-
-
-
-
-
-    v.append(ui.divV([
-        proteinClassification,  allChemblStructures, compoundActivityDetailsForTarget, compoundsSelectiveToOneTargetOverSecond]));
-
-
+    initView();
 }
+
+
 
 
 

@@ -1,10 +1,10 @@
 --name: allChemblStructures
 --connection: chembl:chembl
 select
-  canonical_smiles, molregno
+  canonical_smiles, molregno, standard_inchi
 from
   compound_structures
-limit 1000
+limit 100
 --end
 
 --name: proteinClassification
@@ -22,6 +22,14 @@ from
   molecule_dictionary
   left join compound_structures on molecule_dictionary.molregno = compound_structures.molregno
 limit 1000
+--end
+
+--name: CompoundProperties
+--connection: chembl:chembl
+--input: int molregno
+select * from
+  compound_properties
+where molregno = @molregno
 --end
 
 
