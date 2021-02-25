@@ -616,11 +616,25 @@ export class JsEntityMeta {
   }
 
   /** Gets called once upon the registration of meta export class. */
-  init() {
-  }
+  init() { }
 
+  /** Registers entity handler.
+   * @param {JsEntityMeta} meta */
   static register(meta) {
     grok_Meta_Register(meta);
+  }
+
+  /** @returns {JsEntityMeta[]} */
+  static list() {
+    return toJs(grok_Meta_List());
+  }
+
+  /**
+   * @param {Object} x
+   * @returns {JsEntityMeta}
+   * */
+  static forEntity(x) {
+    return toJs(grok_Meta_ForEntity(toDart(x)));
   }
 
   /**
@@ -636,6 +650,24 @@ export class JsEntityMeta {
   registerParamFunc(name, run) {
     new Functions().registerParamFunc(name, this.type, run, this.isApplicable);
   }
+}
+
+export class EntityMetaDartProxy extends JsEntityMeta {
+  constructor(d) {
+    super();
+    this.d = d;
+  }
+
+  get type() { return grok_Meta_Get_Type(this.d); }
+  isApplicable(x) { return grok_Meta_IsApplicable(this.d, toDart(x)); }
+  getCaption(x) { return grok_Meta_Get_Name(this.d); };
+
+  renderIcon(x) { return grok_Meta_RenderIcon(x); }
+  renderMarkup(x) { return grok_Meta_RenderMarkup(x); }
+  renderTooltip(x) { return grok_Meta_RenderTooltip(x); }
+  renderCard(x) { return grok_Meta_RenderCard(x); }
+  renderProperties(x) { return grok_Meta_RenderProperties(x); }
+  renderView(x) { return grok_Meta_RenderProperties(x); }
 }
 
 export function box(item, options = null) {
