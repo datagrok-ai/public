@@ -798,13 +798,10 @@ export class Column {
   }
 
   /** An iterator over all values in this column. */
-  get values() {
-    let th = this;
-    return (function * () {
-      for (let i = 0; i < th.length; i++) {
-        yield th.get(i);
-      }
-    })();
+  * values() {
+    for (let i = 0; i < this.length; i++) {
+      yield this.get(i);
+    }
   }
 
   /** Creates and returns a new column by converting [column] to the specified [newType].
