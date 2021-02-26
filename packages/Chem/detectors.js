@@ -7,7 +7,9 @@ class ChemPackageDetectors extends DG.Package {
     if ((
       col.name === 'smiles' ||
       col.name === 'rdkit' ||
-      col.name === 'scaffold'
+      col.name === 'molecule' ||
+      col.name === 'scaffold' ||
+      col.name === 'Scaffold'
     ) && col.type === DG.TYPE.STRING) {
       col.semType = DG.SEMTYPE.MOLECULE;
       return col.semType;
