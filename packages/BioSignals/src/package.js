@@ -105,16 +105,6 @@ async function SMA_filter(data, columnToFilter, windowSize) {
     });
 }
 
-async function typeDetector(table, npeaks, fsamp) {
-  let bsType = await grok.functions.call('BioSignals:typeDetector',
-    {
-      'dat': table,
-      'npeaks': npeaks,
-      'fsamp': fsamp
-    })
-  return (bsType);
-}
-
 async function applyFilter(data, fsamp, bsType, paramsT) {
   let f = await grok.functions.eval("BioSignals:filtersPyphysio");
   let call = f.prepare({
@@ -251,7 +241,7 @@ function showMainDialog(table, signalType, column, samplingFreq) {
   let accordionEstimators = ui.accordion();
   let accordionIndicators = ui.accordion();
 
-  let dspMethods = ['SMA_filter', 'Exp_filter', 'MinMax_transform', 'Zscore_transform', 'box_cox_transform', 'get_trend', 'remove_trend', 'fourier_filter', 'spectral_density', 'subsample', 'asample'];
+  let dspMethods = ['Moving Average Filter', 'Exponential Filter', 'Min Max Normalization', 'Z-score Normalization', 'Box Cox Transform', 'Get Trend', 'Detrend', 'Fourier Filter', 'Spectral Density', 'Subsample', 'Averaging Downsampling'];
   let relevantMethods = getMethodsAccordingTo(signalType.stringValue, dspMethods);
   let signalInputs = {[column.value[0]]: column};
 
@@ -304,8 +294,8 @@ function showMainDialog(table, signalType, column, samplingFreq) {
     if (inputsList.length === 1) {
       t = DG.DataFrame.fromColumns([column.value[0]]);
     }
-    else if (signalInputs[inputsList[i-1].value].columns.byName(nameOfLastOutput)){
-      t = DG.DataFrame.fromColumns([signalInputs[inputsList[i-1].value].columns.byName(nameOfLastOutput)]);
+    else if (signalInputs[inputsList[i-1].value].columns.byName(inputsList[i-1].value)) {
+      t = DG.DataFrame.fromColumns([signalInputs[inputsList[i-1].value].columns.byName(inputsList[i-1].value)]);
     }
     else {
       t = DG.DataFrame.fromColumns([signalInputs[inputsList[i-1].value].columns.byName('sig')]);
@@ -314,57 +304,57 @@ function showMainDialog(table, signalType, column, samplingFreq) {
     let plotFL = '';
     let currentlyChosenFilterType = filtersList[filtersList.length-1].value;
     switch (currentlyChosenFilterType) {
-      case 'SMA_filter':
+      case 'Moving Average Filter':
         await SMA_filter(t, column.value[0], paramsList[i-1].win_len.value);
         nameOfLastOutput = column.stringValue + ' SMA Filtered';
         plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastOutput)]);
         break;
-      case 'Exp_filter':
+      case 'Exponential Filter':
         await Exp_filter(t, column.value[0], paramsList[i-1].filter_ratio.value);
         nameOfLastOutput = column.stringValue + ' Exponentially Filtered';
         plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastOutput)]);
         break;
-      case 'MinMax_transform':
+      case 'Min Max Normalization':
         await MinMax_transform(t, column.value[0]);
         nameOfLastOutput = column.stringValue + ' Min Max Normalized';
         plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastOutput)]);
         break;
-      case 'Zscore_transform':
+      case 'Z-score Normalization':
         await Zscore_transform(t, column.value[0]);
         nameOfLastOutput = column.stringValue + ' Z-score Normalized';
         plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastOutput)]);
         break;
-      case 'box_cox_transform':
+      case 'Box Cox Transform':
         await box_cox_transform(t, column.value[0], paramsList[i-1].lambda.value, paramsList[i-1].ofset.value);
         nameOfLastOutput = column.stringValue + ' Box Cox Transformed';
         plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastOutput)]);
         break;
-      case 'get_trend':
+      case 'Get Trend':
         await get_trend(t, column.value[0]);
         nameOfLastOutput = column.stringValue + ' Trend';
         plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastOutput)]);
         break;
-      case 'remove_trend':
+      case 'Detrend':
         await remove_trend(t, column.value[0]);
         nameOfLastOutput = column.stringValue + ' Detrended';
         plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastOutput)]);
         break;
-      case 'fourier_filter':
+      case 'Fourier Filter':
         await fourier_filter(t, column.value[0], paramsList[i-1].lowcut.value, paramsList[i-1].hicut.value, paramsList[i-1].observationTime.value);
         nameOfLastOutput = column.stringValue + ' Fourier Filtered (L: ' + paramsList[i-1].lowcut.value + '; H: ' + paramsList[i-1].hicut.value + ')';
         plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastOutput)]);
         break;
-      case 'spectral_density':
+      case 'Spectral Density':
         await spectral_density(t, column.value[0], paramsList[i-1].observationTime.value);
         nameOfLastOutput = column.stringValue + ' Density';
         plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastOutput)]);
         break;
-      case 'subsample':
+      case 'Subsample':
         await subsample(t, column.value[0], paramsList[i-1].subsampleSize.value, paramsList[i-1].offset.value);
         nameOfLastOutput = column.stringValue + ' Subsample';
         plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastOutput)]);
         break;
-      case 'asample':
+      case 'Averaging Downsampling':
         await asample(t, column.value[0], paramsList[i-1].windowSize.value, paramsList[i-1].offset.value);
         nameOfLastOutput = column.stringValue + ' Subsample';
         plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastOutput)]);
@@ -496,48 +486,48 @@ function paramSelector(x) {
     winLen.setTooltip('Duration of the generated IRF in seconds (if irftype is not \'custom\')');
     return {'win_len': winLen, 'irftype': irftype};
   }
-  else if (x === 'SMA_filter') {
+  else if (x === 'Moving Average Filter') {
     let winLen = ui.floatInput('Window Length', '');
     winLen.setTooltip('Order of filtering');
     return {'win_len': winLen};
   }
-  else if (x === 'Exp_filter') {
+  else if (x === 'Exponential Filter') {
     let filterRatio = ui.floatInput('Filter ratio', '');
     return {'filter_ratio': filterRatio};
   }
-  else if (x === 'MinMax_transform') {
+  else if (x === 'Min Max Normalization') {
     return {};
   }
-  else if (x === 'Zscore_transform') {
+  else if (x === 'Z-score Normalization') {
     return {};
   }
-  else if (x === 'box_cox_transform') {
+  else if (x === 'Box Cox Transform') {
     let lambda = ui.floatInput('lambda', '');
     let ofset = ui.floatInput('ofset', '');
     return {'lambda': lambda, 'ofset': ofset};
   }
-  else if (x === 'get_trend') {
+  else if (x === 'Get Trend') {
     return {};
   }
-  else if (x === 'remove_trend') {
+  else if (x === 'Detrend') {
     return {};
   }
-  else if (x === 'fourier_filter') {
+  else if (x === 'Fourier Filter') {
     let lowcut = ui.floatInput('lowcut', '');
     let hicut = ui.floatInput('hicut', '');
     let observationTime = ui.floatInput('Observation time', '');
     return {'lowcut': lowcut, 'hicut': hicut, 'observationTime': observationTime};
   }
-  else if (x === 'spectral_density') {
+  else if (x === 'Spectral Density') {
     let observationTime = ui.floatInput('Observation time', '');
     return {'observationTime': observationTime};
   }
-  else if (x === 'subsample') {
+  else if (x === 'Subsample') {
     let subsampleSize = ui.floatInput('Subsample size', '');
     let offset = ui.floatInput('Offset', '');
     return {'subsampleSize': subsampleSize, 'offset': offset};
   }
-  else if (x === 'asample') {
+  else if (x === 'Averaging Downsampling') {
     let windowSize = ui.floatInput('Window size', '');
     let offset = ui.floatInput('Offset', '');
     return {'windowSize': windowSize, 'offset': offset};
@@ -561,7 +551,7 @@ function getDescription(i, filtersLST, allParams) {
 export function Biosensors(table) {
 
   let tempButton = ui.div();
-  tempButton.appendChild(ui.button('launch', () => {
+  tempButton.appendChild(ui.bigButton('launch', () => {
 
     let column = ui.columnsInput('Columns', table);
     column.setTooltip('Choose columns to plot');
