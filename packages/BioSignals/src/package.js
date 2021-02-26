@@ -299,61 +299,81 @@ function showMainDialog(table, signalType, column, samplingFreq) {
   let addChartButton = ui.div();
   addChartButton.appendChild(ui.button('Plot', async () => {
     paramsT = paramsToTable(filtersList, paramsList);
-    let t = (inputsList.length === 1) ? DG.DataFrame.fromColumns([column.value[0]]) :
-        DG.DataFrame.fromColumns([signalInputs[inputsList[i-1].value].columns.byName('sig')]);
+
+    let t;
+    if (inputsList.length === 1) {
+      t = DG.DataFrame.fromColumns([column.value[0]]);
+    }
+    else if (signalInputs[inputsList[i-1].value].columns.byName(nameOfLastOutput)){
+      t = DG.DataFrame.fromColumns([signalInputs[inputsList[i-1].value].columns.byName(nameOfLastOutput)]);
+    }
+    else {
+      t = DG.DataFrame.fromColumns([signalInputs[inputsList[i-1].value].columns.byName('sig')]);
+    }
 
     let plotFL = '';
     let currentlyChosenFilterType = filtersList[filtersList.length-1].value;
     switch (currentlyChosenFilterType) {
       case 'SMA_filter':
         await SMA_filter(t, column.value[0], paramsList[i-1].win_len.value);
-        plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(column.stringValue + ' SMA Filtered')]);
+        nameOfLastOutput = column.stringValue + ' SMA Filtered';
+        plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastOutput)]);
         break;
       case 'Exp_filter':
         await Exp_filter(t, column.value[0], paramsList[i-1].filter_ratio.value);
-        plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(column.stringValue + ' Exponentially Filtered')]);
+        nameOfLastOutput = column.stringValue + ' Exponentially Filtered';
+        plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastOutput)]);
         break;
       case 'MinMax_transform':
         await MinMax_transform(t, column.value[0]);
-        plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(column.stringValue + ' Min Max Normalized')]);
+        nameOfLastOutput = column.stringValue + ' Min Max Normalized';
+        plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastOutput)]);
         break;
       case 'Zscore_transform':
         await Zscore_transform(t, column.value[0]);
-        plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(column.stringValue + ' Z-score Normalized')]);
+        nameOfLastOutput = column.stringValue + ' Z-score Normalized';
+        plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastOutput)]);
         break;
       case 'box_cox_transform':
         await box_cox_transform(t, column.value[0], paramsList[i-1].lambda.value, paramsList[i-1].ofset.value);
-        plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(column.stringValue + ' Box Cox Transformed')]);
+        nameOfLastOutput = column.stringValue + ' Box Cox Transformed';
+        plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastOutput)]);
         break;
       case 'get_trend':
         await get_trend(t, column.value[0]);
-        plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(column.stringValue + ' Trend')]);
+        nameOfLastOutput = column.stringValue + ' Trend';
+        plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastOutput)]);
         break;
       case 'remove_trend':
         await remove_trend(t, column.value[0]);
-        plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(column.stringValue + ' Detrended')]);
+        nameOfLastOutput = column.stringValue + ' Detrended';
+        plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastOutput)]);
         break;
       case 'fourier_filter':
         await fourier_filter(t, column.value[0], paramsList[i-1].lowcut.value, paramsList[i-1].hicut.value, paramsList[i-1].observationTime.value);
-        plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(column.stringValue + ' Fourier Filtered (L: ' + paramsList[i-1].lowcut.value + '; H: ' + paramsList[i-1].hicut.value + ')')]);
+        nameOfLastOutput = column.stringValue + ' Fourier Filtered (L: ' + paramsList[i-1].lowcut.value + '; H: ' + paramsList[i-1].hicut.value + ')';
+        plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastOutput)]);
         break;
       case 'spectral_density':
         await spectral_density(t, column.value[0], paramsList[i-1].observationTime.value);
-        plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(column.stringValue + ' Density')]);
+        nameOfLastOutput = column.stringValue + ' Density';
+        plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastOutput)]);
         break;
       case 'subsample':
         await subsample(t, column.value[0], paramsList[i-1].subsampleSize.value, paramsList[i-1].offset.value);
-        plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(column.stringValue + ' Subsample')]);
+        nameOfLastOutput = column.stringValue + ' Subsample';
+        plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastOutput)]);
         break;
       case 'asample':
         await asample(t, column.value[0], paramsList[i-1].windowSize.value, paramsList[i-1].offset.value);
-        plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(column.stringValue + ' Subsample')]);
+        nameOfLastOutput = column.stringValue + ' Subsample';
+        plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastOutput)]);
         break;
       default:
+        nameOfLastOutput = 'Output of Filter ' + i + ' (' + filtersList[i-1].value + ')';
         plotFL = await applyFilter(t, samplingFreq.value, signalType.stringValue, paramsT);
     }
     emptyCharts[i - 1].dataFrame = plotFL;
-    nameOfLastOutput = 'Output of Filter ' + i + ' (' + filtersList[i-1].value + ')';
     Object.assign(signalInputs, {[nameOfLastOutput]: plotFL});
   }));
 
