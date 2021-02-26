@@ -1,12 +1,12 @@
 // Different ways of iterating over column values have drastic impacts on performance
 
-// Naive: 1124ms
-// Values iterator: 1300ms
-// Column instance: 78ms
-// Column instance and length: 38ms
+// Naive: 85ms
+// Values iterator: 16ms
+// Column instance: 14ms
+// Column instance and length: 9ms
 // Raw number array: 1ms
 
-let t = grok.data.demo.demog(10000);
+let t = grok.data.demo.demog(100000);
 let sum = 0;
 
 DG.time('Naive', () => {
