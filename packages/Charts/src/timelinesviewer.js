@@ -10,7 +10,7 @@ export class TimelinesViewer extends EChartViewer {
     this.endColumnName = this.string('endColumnName', 'AEENDY');
     this.colorByColumnName = this.string('colorByColumnName', 'EVENT');
 
-    this.marker = this.string('marker', 'circle', { choices: ['circle', 'rect'] });
+    this.marker = this.string('marker', 'circle', { choices: ['circle', 'rect', 'ring', 'diamond'] });
     this.markerSize = this.int('markerSize', 6);
     this.markerPosition = this.string('markerPosition', 'main line',
       { choices: ['main line', 'above main line', 'scatter'] });
@@ -234,12 +234,17 @@ export class TimelinesViewer extends EChartViewer {
           this.markerPosition === 'above main line' ? Math.max(this.markerSize, this.lineWidth) + shift :
           ((params.dataIndex % 2) * 2 - 1)*(this.markerSize * 3));
 
-        group.children.push({
+        let marker = {
           type: this.marker,
           shape: this.marker === 'circle' ? {
             cx: xPos(0),
             cy: yPos(0),
-            r: this.markerSize / 2
+            r: this.markerSize / 2,
+          } : this.marker === 'ring' ? {
+            cx: xPos(0),
+            cy: yPos(0),
+            r: this.markerSize / 2,
+            r0: this.markerSize / 4,
           } : {
             x: xPos(this.markerSize / 2),
             y: yPos(this.markerSize / 2),
@@ -250,7 +255,19 @@ export class TimelinesViewer extends EChartViewer {
             fill: api.value(4) ? this.selectionColor : this.colorMap[isNaN(api.value(3)) ?
               this.data[params.dataIndex][3][0] : api.value(3)]
           }
-        });
+        };
+
+        if (this.marker === 'diamond') {
+          marker.type = 'rect';
+          marker.x = xPos(0);
+          marker.y = yPos(0);
+          marker.shape.x = -this.markerSize / 2;
+          marker.shape.y = -this.markerSize / 2;
+          marker.shape.r = this.markerSize / 4;
+          marker.rotation = 0.785398;
+        }
+
+        group.children.push(marker);
       } else {
         const rectShape = echarts.graphic.clipRectByRect({
           x: start[0],
