@@ -235,7 +235,7 @@ export class ChordViewer extends DG.JsViewer {
   render(computeData = true) {
 
     if (!this.testColumns()) {
-      this.root.innerText = 'Not enough data to produce the result.';
+      this.root.appendChild(ui.divText('Not enough data to produce the result.', 'd4-viewer-error'));
       return;
     }
 
@@ -260,6 +260,12 @@ export class ChordViewer extends DG.JsViewer {
     // this.chordConf.radius = d => (d.source.id === d.target.id) ? this.conf.outerRadius : null;
 
     circos.layout(this.data, this.conf);
+
+    let smallBlocks = this.data.some(d => d.end - d.start < 0.002); 
+    if (smallBlocks) {
+      this.root.appendChild(ui.divText('Too many categories to render.', 'd4-viewer-error'));
+      return;
+    }
 
     if (this.fromColumnName !== this.toColumnName) {
       circos.chords('chords-track', this.chords, this.chordConf);
