@@ -222,6 +222,26 @@ This package contains our Swagger demo files. It contains enough Swagger example
 
 In this variant  of storing Swagger files, they will be imported to the platform (new [data connections](data-connection.md) will appear) at the same time as the corresponding package is published.
 
+## Troubleshooting
+
+In case you can't discover a link to a Swagger JSON/yaml file, try to introspect the page with a [Swagger-UI browser](https://swagger.io/tools/swagger-ui/) corresponding to the API service in question with a "Network" tab of
+the Chrome Developer tools. The file in question is usually hidden under a link including `/v1` or `/v2`,
+a version of the API.
+
+Sometimes you may want to only keep certain pieces of the Swagger file originally provided by the service.
+We advise [Postman](https://www.postman.com/) to manipulate the Swagger/OpenAPI spec files. Import a Swagger
+JSON/yaml into Postman for introspection, manipulation and pruning with its "Import" button.
+
+Usually a Swagger file downloaded from the Swagger UI of the API service works well with Datagrok or Postman
+out of the box. This typically has to do with Swagger versions and their parsers deviations. Both Datagrok
+and Postman Swagger parsers are strict. If you encounter import errors, the following two steps could help.
+
+1. In the JSON file beginning, change `"swagger": "2.0"` to `"openapi": "2.0"`
+
+2. Add a `"version"` section with an arbitrary version to the `"info"` section, if the `"version"` isn't present:  
+```
+"version": "1.0.0"
+```
 
 ## Videos
 
