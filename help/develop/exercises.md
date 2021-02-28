@@ -33,9 +33,9 @@ custom applications.
   * [Creating a scripting viewer](#creating-a-scripting-viewer)
   * [Transforming dataframes](#transforming-dataframes)
   * [Custom cell renderers with 3-rd party JS libraries](#custom-cell-renderers-with-3-rd-party-js-libraries)
+  * [Accessing Web services with OpenAPI](#accessing-web-services-with-openapi)
   <!---
   * Creating an application
-  * Accessing Web services with OpenAPI
   * Accessing Web services in JavaScript with REST
   * Enhancing Datagrok with dialog-based functions
   * Creating a custom JavaScript viewer
