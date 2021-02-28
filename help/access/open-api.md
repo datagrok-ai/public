@@ -229,9 +229,11 @@ the Chrome Developer Tools. The desired file is usually hidden under a link incl
 alternative is to try adding a suffix to the original service URI: to a `<URI>` append `/api/v2/api-docs`,
 which is a default location for Swagger JSON data in Swagger-UI browsers.
 
-Sometimes you may want to only keep certain pieces of the Swagger file originally provided by the service.
-We advise [Postman](https://www.postman.com/) to manipulate the Swagger/OpenAPI spec files. Import a Swagger
-JSON/yaml into Postman for introspection, manipulation and pruning with its "Import" button.
+Sometimes you may want to only keep a few pieces of the Swagger file originally provided by the service,
+or enhance the file with some simpler queries not present in the original Swagger. In this case,
+we advise [Postman](https://www.postman.com/) to manipulate the Swagger/OpenAPI spec files. Import a Swagger
+JSON/yaml into Postman for introspection, manipulation and pruning with its "Import" button. If you need
+to remove a few of the Swagger items, do it directly in Datagrok after loading the file inside the platform.
 
 Usually a Swagger file downloaded from the Swagger UI of the API service works well with Datagrok or Postman
 out of the box. If problems with import occur, this often has to do with Swagger versions and their parsers

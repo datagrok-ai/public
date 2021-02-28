@@ -527,3 +527,26 @@ _Prerequisites:_ exercises ["Setting up the environment"](#setting-up-the-enviro
    Change the "Sequence" column width and rows heights with a mouse to see how things adujst.
 6. (*) Implement a colored nucleotide sequence box where backgrounds of `A`, `G`, `C`, `T` vary.
    Choose one of the popular coloring conventions, following [this link](https://www.biostars.org/p/171056/).
+   
+   
+## Accessing web services with OpenAPI
+
+Web services often provide their API specs in an [OpenAPI (Swagger)]() format in a JSON or a yaml file.
+Because OpenAPI spec file is standardized, the API may now be directly loaded and later queried.
+Datagrok provides for connecting to API data sources and fetching API querying results as dataframes.
+In this lesson we will connect to the [European Nucleotide Archive (ENA)](https://www.ebi.ac.uk/ena/) and
+fetch some nucleotide data regarding coronavirus.
+
+1. Obtain a ENA's Swagger file for the [ENA Browser](https://www.ebi.ac.uk/ena/browser),
+   following [this link](https://www.ebi.ac.uk/ena/browser/api/).
+   It would take some effort to reach the JSON Swagger at the link.
+   Follow recommendations [here](access/open-api.md#Troubleshooting).
+   Save this file to a desktop with a name, say, `ENA.json`.
+2. Load the Swagger into Datarok by drag and drop into the platform window.
+3. Modify the resulting connection's `Name` to `ENA`, `Url` to `https://www.ebi.ac.uk/ena/browser/api/`.
+4. Check the connection is valid with the `Test` button, and hit `Ok` to save the edit.
+5. In the expanded view of the `ENA` connection, locate `Perform a text search and download data in XML format` and hit `Run`
+   or double-click it.
+6. Enter the parameter values: set `Query` to `coronavirus`, `Result` to `assembly`. Hit `Ok`.
+   As a result, you'd find a table, which was prepared from the received XML file by Datagrok.
+7. Close the table, locate the saved query in the list and run it.
