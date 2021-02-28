@@ -225,7 +225,9 @@ In this variant  of storing Swagger files, they will be imported to the platform
 ## Troubleshooting
 
 In case you can't discover a link to a Swagger JSON/yaml file, try to introspect the page of a [Swagger-UI browser](https://swagger.io/tools/swagger-ui/) corresponding to the API service in question using a "Network" tab of
-the Chrome Developer Tools. The desired file is usually hidden under a link including `/v1` or `/v2`.
+the Chrome Developer Tools. The desired file is usually hidden under a link including `/v1` or `/v2`. An
+alternative is to try adding a suffix to the original service URI: to a `<URI>` append `/api/v2/api-docs`,
+which is a default location for Swagger JSON data in Swagger-UI browsers.
 
 Sometimes you may want to only keep certain pieces of the Swagger file originally provided by the service.
 We advise [Postman](https://www.postman.com/) to manipulate the Swagger/OpenAPI spec files. Import a Swagger
