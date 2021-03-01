@@ -10,7 +10,7 @@ import {
   TableInfo,
   User,
   LogEvent,
-  LogEventType
+  LogEventType, Package
 } from "./entities";
 import {ViewLayout} from "./view";
 import {toDart, toJs} from "./wrappers";

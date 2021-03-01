@@ -669,12 +669,14 @@ export class LogEventParameterValue extends Entity {
 /**
  * Represents a package, which is a unit of distribution of content in the Datagrok platform.
  */
-export class Package {
-  constructor(webRoot) {
-    this.webRoot = webRoot;
-    this.name = "";
+export class Package extends Entity {
+  constructor(d) {
+    super(d);
+    if (d instanceof String) this.webRoot = d;
     this.version = "";
   }
+
+
 
   /** Override init() method to provide package-specific initialization.
    * It is guaranteed to get called exactly once before the execution of any function below.
@@ -684,6 +686,15 @@ export class Package {
   init() {
     return Promise.resolve(null);
   }
+
+  /** load package
+   * @returns {Promise<Package>} */
+  async load() {
+    return new Promise((resolve, reject) =>
+        grok_Dapi_Packages_Load(this.name, (data) => resolve(data), (e) => reject(e)));
+  }
+
+
 
   /** Returns credentials for package
    * @returns {Promise<Credentials>} */
