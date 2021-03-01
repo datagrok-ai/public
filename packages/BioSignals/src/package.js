@@ -543,6 +543,19 @@ function getDescription(i, filtersLST, allParams) {
   return 'Output of Filter ' + i + ': ' + a + '.';
 }
 
+//tags: fileViewer, fileViewer-csv
+//input: file file
+//output: view view
+//condition: fileViewerCondition(file)
+export async function bioSignalViewer(file) {
+  let view = DG.View.create();
+  let res = await grok.dapi.files.readAsText(file.fullPath);
+  let t = DG.DataFrame.fromCsv(res);
+  var host = ui.block([DG.Viewer.lineChart(t)], 'd4-ngl-viewer');
+  view.append(host);
+  return view;
+}
+
 //name: BioSignals
 //tags: panel, widgets
 //input: dataframe table
