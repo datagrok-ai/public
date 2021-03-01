@@ -11,7 +11,7 @@ col.format =
   <div>
     <div>sex: <b>#{t.row[sex]}</b></div>
     <div> height: <span style="background-color:#{t.color(height)}"><b>#{t.row[height]}</b></span> </div>
-    <button class="btn d4-btn-ok btn-raised">CONTACT</button>
+    <button class="ui-btn ui-btn-ok ui-btn-raised">CONTACT</button>
   </div>
 </div>`;
 col.cellType = 'html';

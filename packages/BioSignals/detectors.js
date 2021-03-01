@@ -37,6 +37,14 @@ class BiosignalsPackageDetectors extends DG.Package {
 
   //input: dataframe table
   //output: bool result
+  fileViewerCondition(file) {
+    const name = file.name().toLowerCase();
+    return !!(name.match(/ecg/i) || name.match(/eda/i) || name.match(/accel/i) || name.match(/emg/i) ||
+        name.match(/eeg/i) || name.match(/abp/i) || name.match(/bvp/i) || name.match(/ppg/i) || name.match(/resp/i));
+  }
+
+  //input: dataframe table
+  //output: bool result
   analysisCondition(table) {
     let columns = table.columns.toList();
 

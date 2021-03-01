@@ -86,12 +86,14 @@ export class ChordViewer extends DG.JsViewer {
 
     this.fromColumn = this.dataFrame.getCol(this.fromColumnName);
     this.toColumn = this.dataFrame.getCol(this.toColumnName);
+
+    let indexes = this.dataFrame.filter.getSelectedIndexes();
     this.conf.events = {
       mouseover: (datum, index, nodes, event) => {
         select(nodes[index]).select(`#${datum.id}`).attr('stroke', color(this.color(datum.label)).darker());
         ui.tooltip.showRowGroup(this.dataFrame, i => {
-          return this.fromColumn.get(i) === datum.label ||
-            this.toColumn.get(i) === datum.label;
+          return indexes.includes(i) && (this.fromColumn.get(i) === datum.label ||
+            this.toColumn.get(i) === datum.label);
         }, event.x, event.y);
       },
       mouseout: (datum, index, nodes, event) => {
@@ -100,8 +102,8 @@ export class ChordViewer extends DG.JsViewer {
       },
       mousedown: (datum, index, nodes, event) => {
         this.dataFrame.selection.handleClick(i => {
-          return this.fromColumn.get(i) === datum.label ||
-            this.toColumn.get(i) === datum.label;
+          return indexes.includes(i) && (this.fromColumn.get(i) === datum.label ||
+            this.toColumn.get(i) === datum.label);
         }, event);
       }
     };
@@ -132,7 +134,13 @@ export class ChordViewer extends DG.JsViewer {
   
       this.categories = Array.from(new Set(this.fromCol.categories.concat(this.toCol.categories)));
     } else {
-      this.categories = Array.from(this.fromColumn.categories);
+      this.categories = Array.from(this.dataFrame
+        .groupBy([this.fromColumnName])
+        .whereRowMask(this.dataFrame.filter)
+        .count()
+        .aggregate()
+        .col(this.fromColumnName)
+        .categories);
     }
 
     this.data = this.categories
@@ -235,7 +243,7 @@ export class ChordViewer extends DG.JsViewer {
   render(computeData = true) {
 
     if (!this.testColumns()) {
-      this.root.innerText = 'Not enough data to produce the result.';
+      this.root.appendChild(ui.divText('Not enough data to produce the result.', 'd4-viewer-error'));
       return;
     }
 
@@ -260,6 +268,12 @@ export class ChordViewer extends DG.JsViewer {
     // this.chordConf.radius = d => (d.source.id === d.target.id) ? this.conf.outerRadius : null;
 
     circos.layout(this.data, this.conf);
+
+    let smallBlocks = this.data.some(d => d.end - d.start < 0.002); 
+    if (smallBlocks) {
+      this.root.appendChild(ui.divText('Too many categories to render.', 'd4-viewer-error'));
+      return;
+    }
 
     if (this.fromColumnName !== this.toColumnName) {
       circos.chords('chords-track', this.chords, this.chordConf);

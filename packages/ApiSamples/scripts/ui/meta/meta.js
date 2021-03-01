@@ -43,7 +43,24 @@ class FruitMeta extends DG.JsEntityMeta {
 // Register meta class with the platform
 DG.JsEntityMeta.register(new FruitMeta());
 
-grok.shell.newView().append(ui.div([
+let v = grok.shell.newView();
+
+// automatic rendering
+v.append(ui.div([
+  ui.h1('Automatic rendering'),
   ui.renderCard(new Fruit('apple')),
   ui.renderCard(new Fruit('banana')),
+]));
+
+// manual rendering
+let orange = new Fruit('orange');
+let meta = DG.JsEntityMeta.forEntity(orange);
+v.append(ui.div([
+  ui.h1('Manual rendering'),
+  ui.tableFromMap({
+    'icon': meta.renderCard(orange),
+    'card': meta.renderCard(orange),
+    'tooltip': meta.renderTooltip(orange),
+    'properties': meta.renderProperties(orange),
+  })
 ]));

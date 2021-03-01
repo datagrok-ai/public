@@ -48,7 +48,7 @@ async function testCase(title, f) {
   const tScroll = 100;
   const nSample = 10;
 
-  let df = await grok.data.getDemoTable('chem/chembl/chembl_100k.csv');
+  let df = await grok.data.getDemoTable('chem/chembl/chembl-100k.csv');
   // For using with your HOME files in Datagrok:
   // let df = (await grok.functions.eval('OpenServerFile("UserName:Home/Chembl_100K.csv")'))[0];
   // An alternative data source for testing (~40K+ molecules): chem/zbb/99_p3_4.5-6.csv

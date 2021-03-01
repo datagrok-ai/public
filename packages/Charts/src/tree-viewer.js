@@ -12,8 +12,8 @@ export class TreeViewer extends EChartViewer {
     this.orient = this.string('orient', 'LR', { choices: ['LR', 'RL', 'TB', 'BT'] });
     this.expandAndCollapse = this.bool('expandAndCollapse', true);
     this.animationDuration = this.int('animationDuration', 750);
-    this.edgeShape = this.string('curve', '', { choices: ['curve', 'polyline'] });
-    this.symbol = this.string('symbol', 'emptyCircle', { choices: ['circle', 'rect', 'roundRect', 'triangle', 'diamond', 'pin', 'arrow', 'none'] });
+    this.edgeShape = this.string('edgeShape', 'curve', { choices: ['curve', 'polyline'] });
+    this.symbol = this.string('symbol', 'emptyCircle', { choices: ['circle', 'emptyCircle', 'rect', 'roundRect', 'triangle', 'diamond', 'pin', 'arrow', 'none'] });
     this.symbolSize = this.int('symbolSize', 7);
 
     this.option = {
