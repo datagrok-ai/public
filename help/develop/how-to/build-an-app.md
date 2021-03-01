@@ -268,6 +268,16 @@ Also check the API reference at [this link](https://datagrok.ai/js-api/DataFrame
 * [Dataframe API reference](https://datagrok.ai/js-api/DataFrame)
 * [Datagraok JavaScript playground](https://public.datagrok.ai/js)
 
+### Iterating over a dataframe
+
+The means for dataframes iteration are summarized in [this sample](https://public.datagrok.ai/js/samples/data-frame/performance).
+Consider performance: run the sample to verify these means come at different costs.
+
+Note that the `.values()` method is chosen over a possible `.values` property
+on purpose to indicate it is relatively heavy. Use it with  caution,
+only in contexts where you need to pass a column to iterate over it with
+`for (... of ...)` once and outside of nested loops. 
+
 ### Semantic annotation and metadata
 
 Most of the objects in Datagrok can be annotated with metadata (key-value pairs). The
