@@ -787,16 +787,13 @@ export function buttonsInput(children = []) {
     children = [children];
 
   let d = document.createElement('div');
-  $(d).addClass('ui-input-root ui-input-buttons');
   let l = document.createElement('label');
-  $(l).addClass('ui-label ui-input-label');
-  l.textContent = ' ';
-  d.append(l);
   let e = document.createElement('div');
   $(e).addClass('ui-input-editor');
-  if (children != null) {
+  if (children != null)
     $(e).append(children.map(render));
-  }
-  d.append(e);
+  l.textContent = ' ';
+  $(l).addClass('ui-label ui-input-label');
+  $(d).addClass('ui-input-root ui-input-buttons').append(l).append(e);
   return d;
 }
