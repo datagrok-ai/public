@@ -15,6 +15,14 @@ class FruitCanvasRenderer extends DG.CanvasRenderer {
   }
 }
 
+class FruitGridCellRenderer extends DG.GridCellRenderer {
+  get cellType() { return 'fruit'; }
+  render(g, x, y, w, h, cell, style) {
+    g.fillStyle = cell.cell.value.color;
+    g.fillText(cell.cell.value.name, x + 10, y + 10);
+  }
+}
+
 // Defines the way Datagrok handles entities of the specified type
 class FruitMeta extends DG.JsEntityMeta {
   get type() { return 'fruit' }
@@ -23,6 +31,7 @@ class FruitMeta extends DG.JsEntityMeta {
   isApplicable(x) { return x instanceof Fruit; }
 
   getCanvasRenderer(x) { return new FruitCanvasRenderer(); }
+  getGridCellRenderer(x) { return new FruitGridCellRenderer(); }
 
   renderIcon(x) { return ui.iconFA('apple-alt'); }
   renderMarkup(x) { let m = ui.span([this.renderIcon(), ' ', x.name]); $(m).css('color', x.color); return m; }
@@ -81,3 +90,12 @@ v.append(ui.div([
   ui.h1('Canvas rendering'),
   canvas
 ]));
+
+let fruitColumn = DG.Column.fromType(DG.TYPE.OBJECT, 'fruits', 2);
+fruitColumn.init((i) => [apple, orange][i]);
+fruitColumn.semType = 'fruit';
+let table = DG.DataFrame.fromColumns([fruitColumn]);
+v.append(ui.h1('Grid'));
+v.append(DG.Viewer.grid(table).root);
+
+grok.shell.addTableView(table);

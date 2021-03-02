@@ -646,6 +646,9 @@ export class JsEntityMeta {
    * @param {JsEntityMeta} meta */
   static register(meta) {
     grok_Meta_Register(meta);
+    let cellRenderer = meta.getGridCellRenderer();
+    if (cellRenderer != null)
+      DG.GridCellRenderer.register(cellRenderer);
   }
 
   /** @returns {JsEntityMeta[]} */

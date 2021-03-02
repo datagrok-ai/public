@@ -508,4 +508,8 @@ export class GridCellRenderer extends CanvasRenderer {
   renderInternal(g, x, y, w, h, gridCell, cellStyle) {
     this.render(g, x, y, w, h, new GridCell(gridCell), new GridCellStyle(cellStyle));
   }
+
+  static register(renderer) {
+    grok_GridCellRenderer_Register(renderer);
+  }
 }
