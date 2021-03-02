@@ -781,3 +781,22 @@ export function form(children = [], options = null) {
   $(d).addClass('ui-form');
   return d;
 }
+
+export function buttonsInput(children = []) {
+  if (!Array.isArray(children))
+    children = [children];
+
+  let d = document.createElement('div');
+  $(d).addClass('ui-input-root ui-input-buttons');
+  let l = document.createElement('label');
+  $(l).addClass('ui-label ui-input-label');
+  l.textContent = ' ';
+  d.append(l);
+  let e = document.createElement('div');
+  $(e).addClass('ui-input-editor');
+  if (children != null) {
+    $(e).append(children.map(render));
+  }
+  d.append(e);
+  return d;
+}
