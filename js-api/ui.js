@@ -73,8 +73,15 @@ export function _backColor(x, s) {
 }
 
 /** @returns {HTMLCanvasElement} */
-export function canvas() {
-  return element("CANVAS");
+export function canvas(height = null, width = null) {
+  let result = element("CANVAS");
+  if (height == null && width == null) {
+    $(result).height(height);
+    $(result).width(width);
+    $(result).prop('height', `${height}px`);
+    $(result).prop('width', `${width}px`);
+  }
+  return result;
 }
 
 /** @returns {HTMLHeadingElement} */
@@ -198,6 +205,13 @@ export function renderCard(x) {
  * @returns {HTMLElement}. */
 export function span(x) {
   return grok_UI_Span(x);
+}
+
+/** Renders inline text, calling [renderMarkup] for each non-HTMLElement
+ * @param {object[]} objects
+ * @returns {HTMLElement}. */
+export function inlineText(objects) {
+  return span(objects.map((item) => render(item)));
 }
 
 /**
@@ -573,45 +587,55 @@ export class JsEntityMeta {
     return `${x}`;
   };
 
+  /** @returns {CanvasRenderer} */
+  getCanvasRenderer() {
+    return null;
+  }
+
+  /** @returns {GridCellRenderer} */
+  getGridCellRenderer() {
+    return null;
+  }
+
   /** Renders icon for the item.
    * @param x - item
    * @returns {Element} */
-  renderIcon(x) {
+  renderIcon(x, context = null) {
     return ui.divText(this.getCaption(x));
   }
 
   /** Renders markup for the item.
    * @param x - item
    * @returns {Element} */
-  renderMarkup(x) {
+  renderMarkup(x, context = null) {
     return ui.divText(this.getCaption(x));
   }
 
   /** Renders tooltip for the item.
    * @param x - item
    * @returns {Element} */
-  renderTooltip(x) {
+  renderTooltip(x, context = null) {
     return ui.divText(this.getCaption(x));
   }
 
   /** Renders card div for the item.
    * @param x - item
    * @returns {Element} */
-  renderCard(x) {
+  renderCard(x, context = null) {
     return ui.divText(this.getCaption(x));
   }
 
   /** Renders properties list for the item.
    * @param x - item
    * @returns {Element} */
-  renderProperties(x) {
+  renderProperties(x, context = null) {
     return ui.divText(this.getCaption(x));
   }
 
   /** Renders view for the item.
    * @param x - item
    * @returns {Element} */
-  renderView(x) {
+  renderView(x, context = null) {
     return this.renderProperties(x);
   }
 
@@ -662,12 +686,12 @@ export class EntityMetaDartProxy extends JsEntityMeta {
   isApplicable(x) { return grok_Meta_IsApplicable(this.d, toDart(x)); }
   getCaption(x) { return grok_Meta_Get_Name(this.d); };
 
-  renderIcon(x) { return grok_Meta_RenderIcon(x); }
-  renderMarkup(x) { return grok_Meta_RenderMarkup(x); }
-  renderTooltip(x) { return grok_Meta_RenderTooltip(x); }
-  renderCard(x) { return grok_Meta_RenderCard(x); }
-  renderProperties(x) { return grok_Meta_RenderProperties(x); }
-  renderView(x) { return grok_Meta_RenderProperties(x); }
+  renderIcon(x, context = null) { return grok_Meta_RenderIcon(x); }
+  renderMarkup(x, context = null) { return grok_Meta_RenderMarkup(x); }
+  renderTooltip(x, context = null) { return grok_Meta_RenderTooltip(x); }
+  renderCard(x, context = null) { return grok_Meta_RenderCard(x); }
+  renderProperties(x, context = null) { return grok_Meta_RenderProperties(x); }
+  renderView(x, context = null) { return grok_Meta_RenderProperties(x); }
 }
 
 export function box(item, options = null) {
