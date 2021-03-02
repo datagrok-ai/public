@@ -1,6 +1,22 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-03-02 Dev build 0.89.23
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.89.23`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Harmonize ui framework (WIP)
+* (Bug) DG throws error on startup 
+
+
 # 2021-03-02 Dev build 0.89.22
 
 ## Latest Docker Images
