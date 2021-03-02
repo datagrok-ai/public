@@ -3,34 +3,36 @@
 // Right-clicking allows to use context actions
 
 class Fruit {
-  constructor(name) {
+  constructor(name, color) {
     this.name = name;
+    this.color = color;
+  }
+}
+
+class FruitCanvasRenderer extends DG.CanvasRenderer {
+  render(g, x, y, w, h, fruit, context) {
+    g.fillText(fruit.name, x + 10, y + 10);
   }
 }
 
 // Defines the way Datagrok handles entities of the specified type
 class FruitMeta extends DG.JsEntityMeta {
-  get type() {
-    return 'fruit'
-  }
+  get type() { return 'fruit' }
 
   // Checks whether this meta class is the handler for [x]
-  isApplicable(x) {
-    return x instanceof Fruit;
-  }
+  isApplicable(x) { return x instanceof Fruit; }
 
-  renderCard(x) {
-    return ui.bind(x, ui.divText(`Fruit: ${x.name}`));
-  }
+  getCanvasRenderer(x) { return new FruitCanvasRenderer(); }
 
-  // Renders properties in the property panel
-  renderProperties(x) {
-    return ui.divText(`Properties for ${x.name}`);
-  }
-
-  // Renders tooltip
-  renderTooltip(x) {
-    return ui.divText(`${x.name} is in the air!`);
+  renderIcon(x) { return ui.iconFA('apple-alt'); }
+  renderMarkup(x) { let m = ui.span([this.renderIcon(), ' ', x.name]); $(m).css('color', x.color); return m; }
+  renderProperties(x) { return ui.divText(`Properties for ${x.name}`); }
+  renderTooltip(x) { return ui.divText(`${x.name} is in the air!`); }
+  renderCard(x, context) {
+    return ui.bind(x, ui.divV([
+      this.renderMarkup(x),
+      ui.divText(`Context: ${context}`)
+    ]), 'd4-gallery-item');
   }
 
   init() {
@@ -43,24 +45,39 @@ class FruitMeta extends DG.JsEntityMeta {
 // Register meta class with the platform
 DG.JsEntityMeta.register(new FruitMeta());
 
+let apple = new Fruit('apple', 'red');
+let orange = new Fruit('orange', 'orange');
 let v = grok.shell.newView();
+
 
 // automatic rendering
 v.append(ui.div([
   ui.h1('Automatic rendering'),
-  ui.renderCard(new Fruit('apple')),
-  ui.renderCard(new Fruit('banana')),
+  ui.renderCard(apple),
+  ui.renderCard(orange),
 ]));
 
 // manual rendering
-let orange = new Fruit('orange');
 let meta = DG.JsEntityMeta.forEntity(orange);
 v.append(ui.div([
   ui.h1('Manual rendering'),
   ui.tableFromMap({
-    'icon': meta.renderCard(orange),
+    'icon': meta.renderIcon(orange),
+    'markup': meta.renderMarkup(orange,  'myContext'),
     'card': meta.renderCard(orange),
     'tooltip': meta.renderTooltip(orange),
     'properties': meta.renderProperties(orange),
   })
+]));
+
+v.append(ui.div([
+  ui.h1('Inline rendering'),
+  ui.inlineText(['I like to eat ', orange, ' in the morning'])
+]));
+
+let canvas = ui.canvas(200, 100);
+meta.getCanvasRenderer().render(canvas.getContext('2d'), 0, 0, 200, 100, apple, null);
+v.append(ui.div([
+  ui.h1('Canvas rendering'),
+  canvas
 ]));

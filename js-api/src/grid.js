@@ -472,15 +472,7 @@ export class GridCellRenderArgs extends EventData {
 }
 
 
-export class GridCellRenderer {
-  get name() {
-    throw 'Not implemented';
-  }
-
-  get cellType() {
-    throw 'Not implemented';
-  }
-
+export class CanvasRenderer {
   get defaultWidth() {
     return null;
   }
@@ -495,10 +487,21 @@ export class GridCellRenderer {
    * @param {number} y
    * @param {number} w
    * @param {number} h
-   * @param {GridCell} gridCell
-   * @param {GridCellStyle} cellStyle
+   * @param {Object} value
+   * @param {Object} context
    **/
-  render(g, x, y, w, h, gridCell, cellStyle) {
+  render(g, x, y, w, h, value, context) {
+    throw 'Not implemented';
+  }
+}
+
+
+export class GridCellRenderer extends CanvasRenderer {
+  get name() {
+    throw 'Not implemented';
+  }
+
+  get cellType() {
     throw 'Not implemented';
   }
 
