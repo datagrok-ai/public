@@ -1,6 +1,99 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-03-02 Dev build 0.89.22
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.89.22`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* JS API: files 
+* Added new users to Developers team 
+* Viewers: retired Dumbbell 
+* Biosignals (WIP)
+* (Bug) Query Transformations:  Actions cannot be edited in already saved queries 
+* Harmonize ui framework (WIP)
+* Package: Chembl Browser (WIP)
+* Wiki: How to Build Custom Viewers 
+* Programming exercises (WIP)
+* Wiki: Harmonization (WIP)
+* * bumped RDKit_minimal version number to 2021.03_05 * simplified _molIsInMolBlock function to detect if the passed molString is a molblock and renamed to _isMolBlock * now generate_aligned-coords will return the matched substructure JSON if successful and empty string if not, so no need to to call get_substruct_match beforehand * get_new_coords is used to generate new coordinates rather than roundtripping through SMILES. This is more efficient and ensures that CoordGen is used for coordinate generation 
+* delete the WASM object before reassignment 
+* Chem, RDKit-based (WIP)
+* (Bug) Chem: Keep mol rendering on a malformed scaffold 
+* if generate_aligned_coords() returns "" and mol has no coordinates, fall back to get_new_coords() 
+* (Bug) Chem: Single scaffold and column scaffolds interfere 
+* Do not overwrite existing coordinates if substructure match fails 
+* Disable zoom reset on click 
+* Overview / Navigation (WIP)
+* NLP package (WIP)
+* (Bug) Direct link to file leads to 404 error 
+* Default dimensions for viewers 
+* Wiki improvements 
+* Nucleotide sequences for exercises: a-h1n1, sars-cov-2 
+* GROK 8056 JS API: added and tested rename method 
+* Check or uncheck the checkbox by clicking on their label 
+* GROK 8056 JS API: added example 
+* Wiki: UI (WIP) 
+* Update ui.md 
+* GROK 8057 JS API: Search pattern implementation on server-side 
+* GROK 8057 JS API: typo 
+* Updated public token 
+* GROK 8056 JS API: samples grooming 
+* JS API samples: indentation fix 
+* JS API: Ability to access user home connection and project 
+* (Bug) JS-based column property panels are not shown 
+* S3: Correct URI depending on region 
+* Chem: Column features 
+* updated public token 
+* JS API: add renderer to ComboPopup 
+* (Bug) Grid | Tooltip: After sketching from, the tooltip loses its style 
+* Charts: Timelines (WIP)
+* (Bug) "Converting object to an encodable object failed" returning a dataframe in JS 
+* JS API: Ability to post audit record 
+* (Bug) Filter: category not available as a Filter to add (world_mortality) 
+* (Bug) Docking sizes/coordinates recalculation are incorrect after View is removed from a split 
+* Small MD edits to remove ending dots and add notes on MacOS dev.setup 
+* added script to help run pub get for setup dev environment 
+* MapProxy: Tags deletion; Falsish traps on read 
+* Chem: Highlight a filtering scaffold 
+* Datlas: give a meaningful error description when a required environment variable is not found 
+* Updates to dev. setup documentation 
+* Added script to build/deploy dart sub-projects (work-in-progress) 
+* Added unix +x permission to service script 
+* - set the acceptFailure parameter to false when calling generate_aligned_coords - set the dummyIsotopeLabels parameter to false to hide isotopic labels on R groups and other dummy atoms 
+* Got rid of the deprecated GROK_WEB_ROOT. 
+* GROK 8331 UI: name setter of AccordionPane fixed 
+* (Bug) name setter of TabControl works in the consol but not in UI 
+* GROK 7949 Rendered ui cards with svg molecules inside and added eventListeners 
+* (Bug) UI: ui.button on property panel looks like ui.bigButton 
+* (Bug) Train Model View: Button with style "disabled" available for clicking 
+* Improvements to env.settings docs 
+* Improved dev.env install documentation 
+* JS API: EntityMeta (WIP)
+* Better build helper scripts 
+* Improved tech.docs on dev.env setup 
+* Samples: iterating over a dataframe with .values(). 
+* Wiki: how-to build an app. WIP: dataframe iteration 
+* Chord Diagram (WIP)
+* (Bug) Core: Cell selection triggers column selection with no visual result 
+* Improved (minor) dev environment setup docs 
+* Charts: Tree Viewer (WIP)
+* Chem: demo file for scaffold alignments, selected from Chembl by @ptosco 
+* Chem: demo file for scaffold alignments 
+* GROK 7543 JS API: Entity fixed 
+* public token updated 
+* Established stricker dependencies on packages 
+* Improved script to check for errors 
+* Improved script error handling 
+
+
 # 2021-02-15 Dev build 0.89.21
 
 ## Latest Docker Images
