@@ -15,52 +15,46 @@ export function test(s) {
 //tags: app
 export async function Browser() {
 
-    async function FindBySubstructure() {
-        let sub = molecule.stringValue;
-        let query = await grok.data.query(`${packageName}:FindBySubstructure`, {'sub': sub});
-        grok.shell.addTableView(query);
-
+    async function initView()
+    {   let data = await grok.data.query(`${packageName}:allChemblStructures`, {});
+        let v = grok.shell.newView('Chembl Browser');
+        let r = DG.Viewer.fromType(DG.VIEWER.TILE_VIEWER, data);
+        v.append(ui.divV([controlPanel, r]));
+        v.box = true;
     }
 
-    async function FindByName() {
-        let query = await grok.data.query(`${packageName}:FindByName`, {'sub': subName.stringValue});
-        grok.shell.addTableView(query);
-
+    async function update(queryName, queryParameters) {
+        let query = await grok.data.query(`${packageName}:${queryName}`, queryParameters);
+        let v = grok.shell.newView('Chembl Browser');
+        let r = DG.Viewer.fromType(DG.VIEWER.TILE_VIEWER, query);
+        v.append(ui.divV([controlPanel, r]));
+        v.box = true;
     }
 
+    async function clearFilters(){
+        molecule.value = '';
+        subName.value = '';
+        molregno.value = null;
 
-    async function FindByMolregno() {
-        let query = await grok.data.query(`${packageName}:FindByMolregno`, {'sub': molregno.value});
-        grok.shell.addTableView(query);
+
     }
-
 
 
     let molecule = ui.moleculeInput('', '');
     let subName = ui.stringInput('Find by name', '');
-    let molregno = ui.intInput('Find by molregno');
+    let molregno = ui.intInput('Find by molregno', );
+    let clear = ui.bigButton('Clear filters', () => clearFilters());
 
-    molecule.onChanged(() => FindBySubstructure());
-    subName.onChanged(() => FindByName());
-    molregno.onChanged(() => FindByMolregno());
+    molecule.onChanged(() => update("FindBySubstructure", {'sub': molecule.stringValue}));
+    subName.onChanged(() => update("FindByName", {'sub': subName.stringValue}));
+    molregno.onChanged(() => update("FindByMolregno", {'molregno': molregno.value}));
 
 
 
-    let inputs = [molecule, subName,molregno];
+    let inputs = [molecule, subName,molregno, clear];
     let controlPanel = ui.divV([ui.h2("Find By Substructure"), ui.inputs(inputs)]);
 
-    let data = await grok.data.query(`${packageName}:allChemblStructures`, {});
-    let v = grok.shell.newView('Chembl Browser');
-    let r = DG.Viewer.fromType(DG.VIEWER.TILE_VIEWER, data);
-
-    v.append(ui.divV([controlPanel, r]));
-
-
-    v.box = true;
-
-
-
-
+    initView();
 
 }
 
