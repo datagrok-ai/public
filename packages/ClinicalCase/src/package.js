@@ -6,6 +6,13 @@ import * as meta from './sdtm-meta';
 
 export let _package = new DG.Package();
 
+let links = {
+  ae: { key: 'USUBJID', start: 'AESTDY', end: 'AEENDY', event: 'AETERM'},
+  cm: { key: 'USUBJID', start: 'VISITDY', event: 'CMTRT'},
+  ex: { key: 'USUBJID', start: 'EXSTDY', end: 'EXENDY', event: 'EXTRT'},
+  lb: { key: 'USUBJID', start: 'LBDY', event: 'LBTEST'}
+};
+
 //name: Clinical Case
 //tags: app
 export function clinicalCaseApp() {
@@ -20,21 +27,20 @@ export function clinicalCaseInit() {
     if (domain) {
       for (let variableName in domain)
         if (t.columns.contains(variableName)) {
-          t.col(variableName).semType = t.name.toLowerCase() + '-' + variableName;
+          t.col(variableName).semType = 'sdtm-' + t.name.toLowerCase() + '-' + variableName;
           t.col(variableName).setTag(DG.TAGS.DESCRIPTION, domain[variableName]);
         }
+    }
+
+    grok.shell.info('foo!');
+    if (Object.keys(links).every((key) => grok.shell.tableByName(key))) {
+      grok.shell.topMenu.group('Clin').item('Timelines', () => clinicalCaseTimelines());
     }
   });
 }
 
 //name: clinicalCaseTimelines
 export function clinicalCaseTimelines() {
-  let links = {
-    ae: { key: 'USUBJID', start: 'AESTDY', end: 'AEENDY', event: 'AETERM'},
-    cm: { key: 'USUBJID', start: 'VISITDY', event: 'CMTRT'},
-    ex: { key: 'USUBJID', start: 'EXSTDY', end: 'EXENDY', event: 'EXTRT'},
-    lb: { key: 'USUBJID', start: 'LBDY', event: 'LBTEST'}
-  };
 
   let result = null;
 

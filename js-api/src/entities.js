@@ -676,15 +676,28 @@ export class Package extends Entity {
     this.version = "";
   }
 
-
-
   /** Override init() method to provide package-specific initialization.
    * It is guaranteed to get called exactly once before the execution of any function below.
    * */
-
   /*async*/
   init() {
     return Promise.resolve(null);
+  }
+
+  /** Package short name
+   *  @type {string} */
+  get name() {
+    if (this.d != null)
+      return grok_Entity_Get_Name(this.d);
+    else
+      return this._name;
+  }
+
+  set name(x) {
+    if (this.d != null)
+      return grok_Entity_Set_Name(this.d, x);
+    else
+      this._name = x;
   }
 
   /** load package
@@ -693,8 +706,6 @@ export class Package extends Entity {
     return new Promise((resolve, reject) =>
         grok_Dapi_Packages_Load(this.name, (data) => resolve(data), (e) => reject(e)));
   }
-
-
 
   /** Returns credentials for package
    * @returns {Promise<Credentials>} */

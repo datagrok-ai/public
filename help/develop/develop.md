@@ -24,6 +24,7 @@ Table of contents
   * [Package Structure](#package-structure)
   * [Development](#development)
   * [Publishing](#publishing)
+  * [Debugging](#debugging)
   * [Applications](#applications)
   * [Documentation](#documentation)
 
@@ -260,7 +261,7 @@ Multiple versions of a package can be deployed at one moment, and the administra
 will only see objects that belong to the current package version.
 
 There is a special `debug` version that can be deployed for each package. If the developer applies it, it becomes 
-active for the current package until the developer deletes it or changes their developer key. In this case, the developer can see objects from their version of package, and changes will not affect other users package representation. 
+active for the current package until the developer deletes it or changes their developer key. In this case, the developer can see objects from their version of package, and changes will not affect other users package representation. This version will no longer exist after the developer releases their package.
 
 ### Deployment Modes
 
@@ -412,22 +413,23 @@ This time your breakpoint should work, and you'd see locals and stack traces as 
 This [video](https://youtu.be/zVVmlRorpjg?list=PLIRnAn2pMh3kvsE5apYXqX0I9bk257_eY&t=871) gives an overview of
 setting up the debugging in VS Code.
 
-### Debugging through the browser
+### Debugging through the Browser
 
 Open Chrome Developers Console (hit `F12`) and go to `Sources` tab. 
 
-#### Webpack-based packages
+#### Webpack-Based Packages
 
-If you deploy package in debug mode (`--release` isn't passed to `grok publish`) and source maps are properly
-generated (thus, the setting `` of `module.exports =` section in `webpack.config.js` is present), you'd find your
-package sources in the `top` (root) section of the source tree by its decapitalized name.
+If you deploy package in debug mode (`--release` isn't passed to `grok publish`) and source maps are
+properly generated (thus, the setting [devtool](https://webpack.js.org/configuration/devtool/) of
+`module.exports =` section in `webpack.config.js` is present), you'd find your package sources in
+the `top` (root) section of the source tree by its decapitalized name.
 
-#### Source-code based packages
+#### Source-Based Packages
 
 Deploying such package locates it to the Datagrok host URI (such as `https://dev.datagrok.ai`) under
 `api → packages/published/flies → <PACKAGE_NAME>/<VERSION>/_/<DIGIT>`, where you'd set breakpoints. 
 
-### Debugging through other IDEs
+### Debugging through Other IDEs
 
 We've noticed that for some of our users native debugging (using a Chrome plugin) from JetBrains
 IDEs (ItelliJ IDEA, WebStorm) didn't work out of the box. This doesn't seem to be related to Datagrok,
@@ -435,7 +437,7 @@ but has to do with the general environment. We are figuring out a recommendation
 problems with WebStorm. If you've been through this yourself and found a cause, please let us know
 how you had it resolved, by posting to our Community Forums: https://community.datagrok.ai/.
 
-### Troubleshooting debugging
+### Troubleshooting Debugging
 
 1. For webpack-based packages, make sure there is `devtool: 'inline-source-map'` in `module.exports =` section of
 `webpack.config.js`. Otherwise, source maps aren't generated and the IDE won't get source code locations.
