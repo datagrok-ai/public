@@ -1,3 +1,2 @@
-class ClinicalCase
-PackageDetectors extends DG.Package {
+class ClinicalCasePackageDetectors extends DG.Package {
 }
