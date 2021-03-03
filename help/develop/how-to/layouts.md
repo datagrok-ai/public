@@ -9,6 +9,12 @@ contrast to the programmatic step-by-step construction of the view in the code (
 for [viewers](manipulate-viewers.md) and [grid](customize-grid.md)). Layouts contain viewer settings,
 positions, and relevant metadata that determine where a layout can be further suggested.
 
+Table of contents:
+  - [Creating Layouts](#creating-layouts)
+  - [Working with Layouts via Server API](#server-api)
+  - [Applying Layouts to New Data](#applying-layouts-to-new-data)
+  - [Storing Metadata in Layouts](#storing-metadata)
+
 ## Creating Layouts
 
 Layouts are created from views, and views, in turn, can be restored from layouts. When you save a
@@ -50,7 +56,33 @@ grok.data.openTable(tableId).then(t => {
   view.loadLayout(DG.ViewLayout.fromJson(layoutJson));
 });
 ```
-<!-- TODO: grok.dapi.layouts entrypoint, applying layouts to new data, storing metadata in layouts -->
+
+## Server API
+
+The `grok.dapi.layouts` endpoint provides common functionality inherited from
+[HttpDataSource](https://datagrok.ai/js-api/HttpDataSource) that is responsible for handling collections
+of entities stored on the server. Developers can save layouts, find them by id, filter the list of entities
+according to [certain criteria](../../overview/smart-search.md), and so on.
+
+## Applying Layouts to New Data
+
+Since layouts are designed to be reusable, it is essential to determine whether they can be applied
+to a new dataset. There is a special method that finds a list of appropriate layouts for a given table:
+
+```js
+let df = grok.data.demo.demog();
+let view = grok.shell.addTableView(df);
+grok.dapi.layouts.getApplicable(df).then(layouts => view.loadLayout(layouts[0]));
+```
+
+This method checks whether all the columns the layout was originally applied to can be mapped
+to the columns of the specified table. The matching mechanism consists of the following steps:
+
+  1. Column names and column types match
+  2. Both columns have the same [layout-id](../../discover/tags.md#layout-id)
+  3. Both columns have the same [semantic type](../../discover/tags.md#quality)
+
+<!-- ## Storing Metadata -->
 
 See also:
   - [View Layout](../../visualize/view-layout.md)
