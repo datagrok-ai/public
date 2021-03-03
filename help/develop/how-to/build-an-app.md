@@ -320,7 +320,7 @@ use the semantic type to determine whether a viewer can be visualized against sp
 Function parameters [could be annotated]() with the semantic type. This is  used for automatic
 suggestions of applicable functions.
 
-Semantic type is a special kind of a [column tag](tags.md#semantic-type).
+Semantic type is a special kind of a [column tag](tags.md#quality).
 It could be either detected automatically by column [semantic type detectors](), or set manually
 in the JavaScript code with `.semType` property.
 

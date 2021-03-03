@@ -10,7 +10,7 @@ effect at all, except that you can search objects by metadata.
 Below are some of the standard tags related to tables or columns. To edit 
 column's metadata, right-click on it and select "Properties..." (or press F2 in the grid).
 
-## semantic-type
+## quality
 
 Applicable to columns. Determines column's [semantic type](semantic-types.md); used for
 making automatic suggestions on functions, layouts, and predictive models
@@ -19,7 +19,7 @@ applicable to the current context. Also, see [units](#units)
 ## units
 
 Applicable to columns. Determines units in which the values are stored. 
-Also, see [semantic-type](#semantic-type).
+Also, see [quality](#quality).
 
 ## format
 
@@ -96,7 +96,7 @@ In case you need to define a different date format, proceed to column properties
 Formula used for creating a derived column. Edit it in the "Formula" section on the property panel
 to recalculate. Note that changing the `formula` tag does not cause recalculation.
 
-## layout_id
+## layout-id
 
 Applicable to columns. Used for matching layout columns with table columns when a layout is applied.
 See [layout suggestions](../visualize/view-layout.md#layout-suggestions) for details.

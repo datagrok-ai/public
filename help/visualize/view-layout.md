@@ -43,8 +43,8 @@ layout column gets mapped to the table column, which are evaluated in the follow
 
 1. Column names AND column types match
 2. Both columns have the same [layout-id](../discover/tags.md#layout-id) 
-3. Both columns have the same [semantic-type](../discover/tags.md#semantic-type) 
+3. Both columns have the same [semantic type](../discover/tags.md#quality)
  
 See also:
-* [Table view](../overview/table-view.md)
-* [Self-learning platform](../learn/self-learning-platform.md)
+* [Table View](../overview/table-view.md)
+* [Self-Learning Platform](../learn/self-learning-platform.md)
