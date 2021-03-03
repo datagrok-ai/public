@@ -21,7 +21,7 @@ Semantic types are used in several ways:
 * **Predictive models.** Just like functions, semantic type annotations are used to determine
   whether or not a model is applicable to the dataset.  
 
-A column can have only one semantic type. It is stored in the [column tags](tags.md#semantic-type) and can be either detected automatically by semantic type detectors or set manually.
+A column can have only one semantic type. It is stored in the [column tags](tags.md#quality) and can be either detected automatically by semantic type detectors or set manually.
                
 ## Manually Setting Semantic Types
 
