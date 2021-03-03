@@ -67,9 +67,7 @@ class ChemPackage extends DG.Package {
   //tags: panel
   //output: widget result
   molColumnPropertyPanel(molColumn) {
-    return new DG.Widget(
-      getMolColumnPropertyPanel(molColumn)
-    );
+    return getMolColumnPropertyPanel(molColumn);
   }
 
   //name: rdkitCellRenderer
