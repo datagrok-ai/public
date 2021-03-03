@@ -17,7 +17,7 @@ from
   compound_structures
 where
   canonical_smiles ilike '%' || @sub || '%'
-limit 10000
+limit 1000
 --end
 
 --name: FindByName
@@ -28,7 +28,7 @@ FROM compound_records
 INNER JOIN compound_structures
 ON compound_records.molregno = compound_structures.molregno
 WHERE compound_name ilike '%' || @sub || '%'
-limit 10000
+limit 1000
 --end
 
 
@@ -40,7 +40,7 @@ select
 from
   compound_structures
 where molregno = @molregno
-limit 10000
+limit 1000
 --end
 
 
