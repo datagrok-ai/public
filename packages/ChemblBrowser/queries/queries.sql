@@ -4,7 +4,7 @@ select
   canonical_smiles, molregno
 from
   compound_structures
-limit 100
+limit 1000
 --end
 
 
@@ -17,16 +17,18 @@ from
   compound_structures
 where
   canonical_smiles ilike '%' || @sub || '%'
+limit 10000
 --end
 
 --name: FindByName
 --connection: chembl:chembl
 --input: string sub
-SELECT *
+SELECT compound_records.molregno,  compound_structures.canonical_smiles, compound_records.compound_name
 FROM compound_records
-WHERE compound_name ilike '%' || @sub || '%'
-LEFT JOIN compound_structures
+INNER JOIN compound_structures
 ON compound_records.molregno = compound_structures.molregno
+WHERE compound_name ilike '%' || @sub || '%'
+limit 10000
 --end
 
 
@@ -38,6 +40,7 @@ select
 from
   compound_structures
 where molregno = @molregno
+limit 10000
 --end
 
 
