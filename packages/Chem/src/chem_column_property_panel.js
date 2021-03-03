@@ -1,3 +1,5 @@
+let subscr = null;
+
 function getMolColumnPropertyPanel(col) {
 
   const NONE = 'None';
@@ -12,24 +14,59 @@ function getMolColumnPropertyPanel(col) {
   let columnsSet = new Set(columnsList);
   columnsSet.delete(col.name);
 
-  let choiceScaffoldColumn = ui.choiceInput(
+  let scaffoldColumnChoice = ui.choiceInput(
     'Scaffold column',
      scaffoldColName,
     [NONE].concat([...columnsSet].sort()));
-  choiceScaffoldColumn.onChanged(_ => {
-    const scaffoldColName = choiceScaffoldColumn.stringValue;
+  scaffoldColumnChoice.onChanged(_ => {
+    const scaffoldColName = scaffoldColumnChoice.stringValue;
     col.tags['scaffold-col'] = scaffoldColName === NONE ? null : scaffoldColName;
   });
-  return ui.div([
+  let highlightScaffoldsCheckbox = ui.boolInput(
+    'Highlight from column', col?.tags && col.tags['highlight-scaffold'] === 'true',
+    v => { col.tags['highlight-scaffold'] = v.toString(); });
+  let regenerateCoordsCheckbox = ui.boolInput(
+    'Regenerate coords', col?.tags && col.tags['regenerate-coords'] === 'true',
+    v => { col.tags['regenerate-coords'] = v.toString(); })
+
+  subscr?.unsubscribe();
+  subscr = col.dataFrame.onMetadataChanged.subscribe((a) => {
+    // Handling scaffold column
+    let scaffoldColumnChoiceValue = scaffoldColumnChoice.stringValue;
+    const scaffoldColumnTag = col.tags && col.tags['scaffold-col'] ? col.tags['scaffold-col'] : NONE;
+    if (scaffoldColumnChoiceValue !== scaffoldColumnTag) {
+      if (scaffoldColumnTag === NONE) {
+        scaffoldColumnChoice.root.children[1].value = NONE;
+      } else if (columnsSet.has(scaffoldColumnTag)) {
+        scaffoldColumnChoice.root.children[1].value = scaffoldColumnTag;
+      } else {
+        // TODO: handle a selection of a non-molecule column
+      }
+    }
+    // handling highlight scaffolds selection
+    const highlightScaffoldsCheckboxValue = highlightScaffoldsCheckbox.value;
+    const highlightScaffoldsTagPresent = col.tags && col.tags['highlight-scaffold'] === 'true';
+    if (highlightScaffoldsCheckboxValue != highlightScaffoldsTagPresent) {
+      highlightScaffoldsCheckbox.root.children[1].checked = highlightScaffoldsTagPresent;
+    }
+    // handling regenerate coords selection
+    const regenerateCoordsCheckboxValue = regenerateCoordsCheckbox.value;
+    const regenerateCoordsTagPresent = col.tags && col.tags['regenerate-coords'] === 'true';
+    if (regenerateCoordsCheckboxValue != regenerateCoordsTagPresent) {
+      regenerateCoordsCheckbox.root.children[1].checked = regenerateCoordsTagPresent;
+    }
+
+  });
+
+  let widget = new DG.Widget(ui.div([
     ui.inputs([
-      choiceScaffoldColumn,
-      ui.boolInput('Highlight scaffolds', col?.tags && col.tags['highlight-scaffold'] === 'true',
-        v => { col.tags['highlight-scaffold'] = v.toString(); }),
-      ui.boolInput('Regenerate coords', col?.tags && col.tags['regenerate-coords'] === 'true',
-        v => { col.tags['regenerate-coords'] = v.toString(); })
+      scaffoldColumnChoice,
+      highlightScaffoldsCheckbox,
+      regenerateCoordsCheckbox
     ])
-  ]);
+  ]));
 
-  // TODO: react to changing the tags, GROK-8093
+  widget.subs.push(subscr);
 
+  return widget;
 }

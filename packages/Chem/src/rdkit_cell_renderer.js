@@ -182,6 +182,7 @@ M  END
     
     if (singleScaffoldMolString) {
 
+
       this._drawMolecule(x, y, w, h, g.canvas,
         molString, singleScaffoldMolString, true, false, false);
 
@@ -204,7 +205,7 @@ M  END
         }
       }
 
-      if (rowScaffoldCol == null || rowScaffoldCol.name === gridCell.tableColumn.name) {
+      if (rowScaffoldCol == null || rowScaffoldCol.name === gridCell.cell.column.name) {
         // regular drawing
         this._drawMolecule(x, y, w, h, g.canvas, molString, "", false, molRegenerateCoords, false);
       } else {
