@@ -72,14 +72,17 @@ export function _backColor(x, s) {
   return x;
 }
 
-/** @returns {HTMLCanvasElement} */
-export function canvas(height = null, width = null) {
+/** @returns {HTMLCanvasElement}
+ * @param {number} height
+ * @param {number} width
+ * */
+export function canvas(width = null, height = null) {
   let result = element("CANVAS");
-  if (height == null && width == null) {
+  if (height != null && width != null) {
     $(result).height(height);
     $(result).width(width);
-    $(result).prop('height', `${height}px`);
-    $(result).prop('width', `${width}px`);
+    $(result).prop('height', `${height}`);
+    $(result).prop('width', `${width}`);
   }
   return result;
 }
@@ -207,11 +210,17 @@ export function span(x) {
   return grok_UI_Span(x);
 }
 
+export function renderInline(x) {
+  let handler = ObjectHandler.forEntity(x);
+  return handler == null ? render(x) : handler.renderMarkup(x);
+}
+
+
 /** Renders inline text, calling [renderMarkup] for each non-HTMLElement
  * @param {object[]} objects
  * @returns {HTMLElement}. */
 export function inlineText(objects) {
-  return span(objects.map((item) => render(item)));
+  return span(objects.map((item) => renderInline(item)));
 }
 
 /**
@@ -559,12 +568,18 @@ export class Tooltip {
 export let tooltip = new Tooltip();
 
 /**
- * Override this class, and {@link register} an instance to integrate the platform with custom
- * types and objects.
+ * Override the corresponding methods, and {@link register} an instance to
+ * let Datagrok know how to handle objects of the specified type.
+ *
+ * {@link isApplicable} is used to associate an object with the handler.
+ * When handling an object x, the platform uses the first registered handler that
+ * claims that it is applicable to that object.
+ *
+ * TODO: search, destructuring to properties
  *
  * Samples: {@link https://public.datagrok.ai/js/samples/ui/meta/meta}
  * */
-export class JsEntityMeta {
+export class ObjectHandler {
 
   /** Type of the object that this meta handles. */
   get type() {
@@ -643,7 +658,7 @@ export class JsEntityMeta {
   init() { }
 
   /** Registers entity handler.
-   * @param {JsEntityMeta} meta */
+   * @param {ObjectHandler} meta */
   static register(meta) {
     grok_Meta_Register(meta);
     let cellRenderer = meta.getGridCellRenderer();
@@ -651,14 +666,14 @@ export class JsEntityMeta {
       DG.GridCellRenderer.register(cellRenderer);
   }
 
-  /** @returns {JsEntityMeta[]} */
+  /** @returns {ObjectHandler[]} */
   static list() {
     return toJs(grok_Meta_List());
   }
 
   /**
    * @param {Object} x
-   * @returns {JsEntityMeta}
+   * @returns {ObjectHandler}
    * */
   static forEntity(x) {
     return toJs(grok_Meta_ForEntity(toDart(x)));
@@ -679,7 +694,7 @@ export class JsEntityMeta {
   }
 }
 
-export class EntityMetaDartProxy extends JsEntityMeta {
+export class EntityMetaDartProxy extends ObjectHandler {
   constructor(d) {
     super();
     this.d = d;
@@ -687,7 +702,7 @@ export class EntityMetaDartProxy extends JsEntityMeta {
 
   get type() { return grok_Meta_Get_Type(this.d); }
   isApplicable(x) { return grok_Meta_IsApplicable(this.d, toDart(x)); }
-  getCaption(x) { return grok_Meta_Get_Name(this.d); };
+  getCaption(x) { return grok_Meta_Get_Name(this.d, x); };
 
   renderIcon(x, context = null) { return grok_Meta_RenderIcon(x); }
   renderMarkup(x, context = null) { return grok_Meta_RenderMarkup(x); }

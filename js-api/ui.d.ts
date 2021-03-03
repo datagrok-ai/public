@@ -234,12 +234,12 @@ export class tools {
  *
  * Samples: {@link https://public.datagrok.ai/js/samples/ui/meta/meta}
  * */
-export class JsEntityMeta {
+export class ObjectHandler {
 
     /** Type of the object that this meta handles. */
     get type(): string
 
-    static register(meta: JsEntityMeta): void
+    static register(meta: ObjectHandler): void
 
     /**
      * Override this method to check whether this meta class should handle the specified object.

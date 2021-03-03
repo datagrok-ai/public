@@ -1,4 +1,4 @@
-// Custom meta classes
+// Custom object handlers
 // Clicking on the item shows its properties in the property panel
 // Right-clicking allows to use context actions
 
@@ -24,10 +24,10 @@ class FruitGridCellRenderer extends DG.GridCellRenderer {
 }
 
 // Defines the way Datagrok handles entities of the specified type
-class FruitMeta extends DG.JsEntityMeta {
+class FruitHandler extends DG.ObjectHandler {
   get type() { return 'fruit' }
 
-  // Checks whether this meta class is the handler for [x]
+  // Checks whether this is the handler for [x]
   isApplicable(x) { return x instanceof Fruit; }
 
   getCanvasRenderer(x) { return new FruitCanvasRenderer(); }
@@ -51,13 +51,12 @@ class FruitMeta extends DG.JsEntityMeta {
   }
 }
 
-// Register meta class with the platform
-DG.JsEntityMeta.register(new FruitMeta());
+// Register handler with the platform
+DG.ObjectHandler.register(new FruitHandler());
 
 let apple = new Fruit('apple', 'red');
 let orange = new Fruit('orange', 'orange');
 let v = grok.shell.newView();
-
 
 // automatic rendering
 v.append(ui.div([
@@ -67,15 +66,15 @@ v.append(ui.div([
 ]));
 
 // manual rendering
-let meta = DG.JsEntityMeta.forEntity(orange);
+let handler = DG.ObjectHandler.forEntity(orange);
 v.append(ui.div([
   ui.h1('Manual rendering'),
   ui.tableFromMap({
-    'icon': meta.renderIcon(orange),
-    'markup': meta.renderMarkup(orange,  'myContext'),
-    'card': meta.renderCard(orange),
-    'tooltip': meta.renderTooltip(orange),
-    'properties': meta.renderProperties(orange),
+    'icon': handler.renderIcon(orange),
+    'markup': handler.renderMarkup(orange,  'myContext'),
+    'card': handler.renderCard(orange),
+    'tooltip': handler.renderTooltip(orange),
+    'properties': handler.renderProperties(orange),
   })
 ]));
 
@@ -85,17 +84,16 @@ v.append(ui.div([
 ]));
 
 let canvas = ui.canvas(200, 100);
-meta.getCanvasRenderer().render(canvas.getContext('2d'), 0, 0, 200, 100, apple, null);
+handler.getCanvasRenderer().render(canvas.getContext('2d'), 0, 0, 200, 100, apple, null);
 v.append(ui.div([
   ui.h1('Canvas rendering'),
   canvas
 ]));
 
+// A column gets associated with the handler via semType
 let fruitColumn = DG.Column.fromType(DG.TYPE.OBJECT, 'fruits', 2);
 fruitColumn.init((i) => [apple, orange][i]);
 fruitColumn.semType = 'fruit';
 let table = DG.DataFrame.fromColumns([fruitColumn]);
 v.append(ui.h1('Grid'));
 v.append(DG.Viewer.grid(table).root);
-
-grok.shell.addTableView(table);
