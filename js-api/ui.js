@@ -797,6 +797,12 @@ export function form(children = [], options = null) {
   return d;
 }
 
+export function narrowForm(children = [], options = null) {
+  let d = form(children, options);
+  $(d).addClass('ui-form-condensed');
+  return d;
+}
+
 export function buttonsInput(children = []) {
   if (!Array.isArray(children))
     children = [children];
