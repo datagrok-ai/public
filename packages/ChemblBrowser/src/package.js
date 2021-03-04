@@ -19,18 +19,23 @@ let v = null;
 //tags: app
 export async function Browser() {
 
+
+    // Filter inputs
     let molecule = ui.moleculeInput('', '');
     let subName = ui.stringInput('Find by name', '');
     let molregno = ui.intInput('Find by molregno',);
+    let ro5Violation = ui.choiceInput('#RO5 Violations', '', ['0','1','2','3','4'] );
     let clear = ui.button('Clear filters', () => clearFilters());
 
+    let inputs = [molecule, subName, ro5Violation, molregno, clear];
+    let controlPanel = ui.divV([ui.h2("Find By Substructure"), ui.inputs(inputs)]);
+
+    // Filter handlers
     molecule.onChanged(() => update("FindBySubstructure", {'sub': molecule.stringValue}));
     subName.onChanged(() => update("FindByName", {'sub': subName.stringValue}));
     molregno.onChanged(() => update("FindByMolregno", {'molregno': molregno.value}));
+    ro5Violation.onChanged(() => update("FindByRO5", {'num_ro5_violations': parseInt(ro5Violation.value)}));
 
-
-    let inputs = [molecule, subName, molregno, clear];
-    let controlPanel = ui.divV([ui.h2("Find By Substructure"), ui.inputs(inputs)]);
 
     async function initView() {
         let data = await grok.data.query(`${packageName}:allChemblStructures`, {});
@@ -55,6 +60,7 @@ export async function Browser() {
     async function clearFilters() {
         molecule.value = '';
         subName.value = '';
+        ro5Violation.value = '';
         molregno.value = null;
     }
 
