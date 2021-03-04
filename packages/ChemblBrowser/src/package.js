@@ -21,20 +21,37 @@ export async function Browser() {
 
 
     // Filter inputs
-    let molecule = ui.moleculeInput('', '');
-    let subName = ui.stringInput('Find by name', '');
-    let molregno = ui.intInput('Find by molregno',);
-    let ro5Violation = ui.choiceInput('#RO5 Violations', '', ['0','1','2','3','4'] );
+    let molecule = ui.moleculeInput('', 'C1CCCCC1');
+    let subName = ui.stringInput('', 'aspirin');
+    let molregno = ui.intInput('', 42);
+    let ro5Violation = ui.choiceInput('', '0', ['0','1','2','3','4'] );
+    let molecule_types = ['Protein','Oligonucleotide','Unknown','Antibody','Oligosaccharide','Unclassified','Enzyme','Cell',''];
+    let molecule_type = ui.choiceInput('', '', molecule_types );
+    let showSynonyms = ui.divH([ui.boolInput('', false, () => update("ShowSynonyms", {}))]);
+    $(showSynonyms).css('align-items','center');
+    let showChemblID = ui.divH([ui.boolInput('', false, () => update("ShowChemblID", {}))]);
+    $(showChemblID).css('align-items','center');
     let clear = ui.button('Clear filters', () => clearFilters());
 
-    let inputs = [molecule, subName, ro5Violation, molregno, clear];
-    let controlPanel = ui.divV([ui.h2("Find By Substructure"), ui.inputs(inputs)]);
+
+
+    let controlPanel = ui.divV([
+        ui.panel([ui.label('Find by molecular substructure'), molecule]),
+        ui.panel([ui.label('Find by subname'), subName]),
+        ui.panel([ui.label('Find by molregno'), molregno]),
+        ui.panel([ui.label('Find by RO5 Violations'), ro5Violation]),
+        ui.panel([ui.label('Filter by molecule type'), molecule_type]),
+        ui.panel([ui.label('Show synonyms'), showSynonyms]),
+        ui.panel([ui.label('Show ChemblID'), showChemblID]),
+        ui.panel([clear])
+    ]);
 
     // Filter handlers
     molecule.onChanged(() => update("FindBySubstructure", {'sub': molecule.stringValue}));
     subName.onChanged(() => update("FindByName", {'sub': subName.stringValue}));
     molregno.onChanged(() => update("FindByMolregno", {'molregno': molregno.value}));
     ro5Violation.onChanged(() => update("FindByRO5", {'num_ro5_violations': parseInt(ro5Violation.value)}));
+    molecule_type.onChanged(() => update("FilterByMoleculeType", {'molecule_type': molecule_type.value}));
 
 
     async function initView() {
