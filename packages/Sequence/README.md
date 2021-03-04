@@ -1,0 +1,2 @@
+Sequence is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.
+It showcases various bioinformatics functionality related to sequences with using 3-rd party libraries.
