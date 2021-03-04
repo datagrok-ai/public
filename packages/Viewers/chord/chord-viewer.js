@@ -1,7 +1,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Circos from 'circos';
-import {select, scaleOrdinal, color} from 'd3';
+import {select, scaleLinear, scaleOrdinal, color} from 'd3';
 import {layoutConf, topSort} from './configuration.js';
 
 
@@ -36,6 +36,7 @@ export class ChordViewer extends DG.JsViewer {
     this.outerRadiusMargin = 60;
     this.minSegmentWidth = 10;
     this.colorScale = scaleOrdinal(DG.Color.categoricalPalette);
+    this.gapScale = scaleLinear([1, 100], [0.04, 0]).clamp(true);
     this.color = c => DG.Color.toRgb(this.colorScale(c));
     this.chordConf.color = datum => this.color(datum[this.colorBy]['label']);
     this.chordConf.opacity = 0.7;
@@ -142,6 +143,7 @@ export class ChordViewer extends DG.JsViewer {
         .col(this.fromColumnName)
         .categories);
     }
+    this.conf.gap = this.gapScale(this.categories.length);
 
     this.data = this.categories
       .sort((this.sortBy === 'frequency') ? (a, b) => this.freqMap[b] - this.freqMap[a] : undefined)
