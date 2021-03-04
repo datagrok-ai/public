@@ -21,32 +21,29 @@ export async function Browser() {
 
 
     // Filter inputs
-    let molecule = ui.moleculeInput('', 'C1CCCCC1');
-    let subName = ui.stringInput('', 'aspirin');
-    let molregno = ui.intInput('', 42);
-    let ro5Violation = ui.choiceInput('', '0', ['0','1','2','3','4'] );
-    let maxPhase = ui.choiceInput('', '0', ['0','1','2','3','4'] );
+    let molecule = ui.moleculeInput('Substructure', 'C1CCCCC1');
+    let subName = ui.stringInput('Subname', 'aspirin');
+    let molregno = ui.intInput('Molregno', 42);
+    let ro5Violation = ui.choiceInput('RO5 Violations', '0', ['0','1','2','3','4'] );
+    let maxPhase = ui.choiceInput('Max Phase', '0', ['0','1','2','3','4'] );
     let molecule_types = ['Protein','Oligonucleotide','Unknown','Antibody','Oligosaccharide','Unclassified','Enzyme','Cell'];
-    let molecule_type = ui.choiceInput('', '', molecule_types );
-    let showSynonyms = ui.divH([ui.boolInput('', false, () => update("ShowSynonyms", {}))]);
-    $(showSynonyms).css('align-items','center');
-    let showChemblID = ui.divH([ui.boolInput('', false, () => update("ShowChemblID", {}))]);
-    $(showChemblID).css('align-items','center');
-    let clear = ui.button('Clear filters', () => clearFilters());
+    let molecule_type = ui.choiceInput('Molecule type', '', molecule_types );
+    let showSynonyms = ui.boolInput('Show synonyms', false, () => update("ShowSynonyms", {}));
+    let showChemblID = ui.boolInput('Show ChemblID', false, () => update("ShowChemblID", {}));
+    let clear = ui.button([ui.iconFA('trash-alt'), 'Clear filters'], () => clearFilters());
 
-
-
-    let controlPanel = ui.divV([
-        ui.panel([ui.label('Find by molecular substructure'), molecule]),
-        ui.panel([ui.label('Find by subname'), subName]),
-        ui.panel([ui.label('Find by molregno'), molregno]),
-        ui.panel([ui.label('Find by RO5 Violations'), ro5Violation]),
-        ui.panel([ui.label('Find by Max Phase'), maxPhase]),
-        ui.panel([ui.label('Filter by molecule type'), molecule_type]),
-        ui.panel([ui.label('Show synonyms'), showSynonyms]),
-        ui.panel([ui.label('Show ChemblID'), showChemblID]),
-        ui.panel([clear])
+    let controlPanel = ui.form([
+        molecule,
+        subName,
+        molregno,
+        ro5Violation,
+        maxPhase,
+        molecule_type,
+        showSynonyms,
+        showChemblID,
+        clear
     ]);
+    $(controlPanel).addClass('ui-form-condensed'); //TODO: use ui.smallForm instead
 
     // Filter handlers
     molecule.onChanged(() => update("FindBySubstructure", {'sub': molecule.stringValue}));
