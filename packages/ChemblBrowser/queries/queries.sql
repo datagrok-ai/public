@@ -79,7 +79,18 @@ SELECT compound_structures.molregno, compound_structures.canonical_smiles, molec
 FROM compound_structures
 INNER JOIN molecule_dictionary
 ON compound_structures.molregno = molecule_dictionary.molregno
-WHERE molecule_dictionary.molecule_type = @molecule_type
+WHERE molecule_type = @molecule_type
+limit 1000
+--end
+
+--name: FilterByMaxPhase
+--connection: chembl:chembl
+--input: int max_phase
+SELECT compound_structures.molregno, compound_structures.canonical_smiles, molecule_dictionary.max_phase
+FROM compound_structures
+INNER JOIN molecule_dictionary
+ON compound_structures.molregno = molecule_dictionary.molregno
+WHERE max_phase = @max_phase
 limit 1000
 --end
 

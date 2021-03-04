@@ -25,7 +25,8 @@ export async function Browser() {
     let subName = ui.stringInput('', 'aspirin');
     let molregno = ui.intInput('', 42);
     let ro5Violation = ui.choiceInput('', '0', ['0','1','2','3','4'] );
-    let molecule_types = ['Protein','Oligonucleotide','Unknown','Antibody','Oligosaccharide','Unclassified','Enzyme','Cell',''];
+    let maxPhase = ui.choiceInput('', '0', ['0','1','2','3','4'] );
+    let molecule_types = ['Protein','Oligonucleotide','Unknown','Antibody','Oligosaccharide','Unclassified','Enzyme','Cell'];
     let molecule_type = ui.choiceInput('', '', molecule_types );
     let showSynonyms = ui.divH([ui.boolInput('', false, () => update("ShowSynonyms", {}))]);
     $(showSynonyms).css('align-items','center');
@@ -40,6 +41,7 @@ export async function Browser() {
         ui.panel([ui.label('Find by subname'), subName]),
         ui.panel([ui.label('Find by molregno'), molregno]),
         ui.panel([ui.label('Find by RO5 Violations'), ro5Violation]),
+        ui.panel([ui.label('Find by Max Phase'), maxPhase]),
         ui.panel([ui.label('Filter by molecule type'), molecule_type]),
         ui.panel([ui.label('Show synonyms'), showSynonyms]),
         ui.panel([ui.label('Show ChemblID'), showChemblID]),
@@ -51,6 +53,7 @@ export async function Browser() {
     subName.onChanged(() => update("FindByName", {'sub': subName.stringValue}));
     molregno.onChanged(() => update("FindByMolregno", {'molregno': molregno.value}));
     ro5Violation.onChanged(() => update("FindByRO5", {'num_ro5_violations': parseInt(ro5Violation.value)}));
+    maxPhase.onChanged(() => update("FilterByMaxPhase", {'max_phase': parseInt(maxPhase.value)}));
     molecule_type.onChanged(() => update("FilterByMoleculeType", {'molecule_type': molecule_type.value}));
 
 
@@ -78,10 +81,12 @@ export async function Browser() {
         molecule.value = '';
         subName.value = '';
         ro5Violation.value = '';
+        maxPhase.value = '';
+        molecule_type.value = '';
         molregno.value = null;
     }
 
-    initView();
+    await initView();
 
 }
 
