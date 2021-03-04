@@ -164,7 +164,8 @@ function paramsToTable(filtersLST, allParams) {
   return paramsT;
 }
 
-function getMethodsAccordingTo(signalType, dspMethods) {
+function getMethodsAccordingTo(signalType) {
+  const dspMethods = ['Moving Average Filter', 'Exponential Filter', 'Min Max Normalization', 'Z-score Normalization', 'Box Cox Transform', 'Get Trend', 'Detrend', 'Fourier Filter', 'Spectral Density', 'Subsample', 'Averaging Downsampling'];
   let commonFilters = dspMethods.concat(['IIR', 'FIR', 'normalize', 'resample', 'KalmanFilter', 'ImputeNAN', 'RemoveSpikes', 'ConvolutionalFilter']);
   let commonEstimators = ['Local energy'];
   let commonIndicators = [];
@@ -241,8 +242,7 @@ function showMainDialog(table, signalType, column, samplingFreq) {
   let accordionEstimators = ui.accordion();
   let accordionIndicators = ui.accordion();
 
-  let dspMethods = ['Moving Average Filter', 'Exponential Filter', 'Min Max Normalization', 'Z-score Normalization', 'Box Cox Transform', 'Get Trend', 'Detrend', 'Fourier Filter', 'Spectral Density', 'Subsample', 'Averaging Downsampling'];
-  let relevantMethods = getMethodsAccordingTo(signalType.stringValue, dspMethods);
+  let relevantMethods = getMethodsAccordingTo(signalType.stringValue);
   let signalInputs = {[column.value[0]]: column};
 
   // Filter dialogue
@@ -543,19 +543,25 @@ function getDescription(i, filtersLST, allParams) {
   return 'Output of Filter ' + i + ': ' + a + '.';
 }
 
-//tags: fileViewer, fileViewer-csv
+async function readPhysionetRecord(file) {
+  let f = await grok.functions.eval("BioSignals:readPhysionetRecord");
+  let call = f.prepare({
+    'file': file,
+    'record_name': file.name
+  });
+  await call.call();
+  return call.getParamValue('df');
+}
+
+//tags: fileViewer, fileViewer-tar
 //input: file file
 //output: view view
 export async function bioSignalViewer(file) {
-  const name = file.name.toLowerCase();
-  if (name.match(/ecg/i) || name.match(/eda/i) || name.match(/accel/i) || name.match(/emg/i) ||
-      name.match(/eeg/i) || name.match(/abp/i) || name.match(/bvp/i) || name.match(/ppg/i) || name.match(/resp/i)) {
-    let view = DG.View.create();
-    let res = await grok.dapi.files.readAsText(file.fullPath);
-    const host = ui.block([DG.Viewer.lineChart(DG.DataFrame.fromCsv(res))], 'd4-ngl-viewer');
-    view.append(host);
-    return view;
-  }
+  let view = DG.View.create();
+  let t = await readPhysionetRecord(file);
+  var host = ui.block([DG.Viewer.lineChart(t)], 'd4-ngl-viewer');
+  view.append(host);
+  return view;
 }
 
 //name: BioSignals

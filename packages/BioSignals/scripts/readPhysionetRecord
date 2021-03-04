@@ -1,0 +1,27 @@
+#name: readPhysionetRecord
+#language: python
+#tags: demo, files, panel, fileViewer, fileViewer-tar
+#input: file file
+#input: string record_name
+#output: dataframe df
+
+import wfdb
+import tarfile
+import shutil
+
+# unpack tar archive into './my_folder'
+my_tar = tarfile.open(file)
+my_tar.extractall('./my_folder')
+my_tar.close()
+
+# read Physionet record without file name's extension(wfdb requirement), and remove folder with it's content
+rec = wfdb.rdrecord('./my_folder/' + record_name[:-4])
+shutil.rmtree('./my_folder')
+
+# plot first 10000 samples of first two channels
+plot_num = 10000
+df = pd.DataFrame({
+    'time': range(plot_num),
+    rec.sig_name[0]: rec.p_signal[:plot_num, 0],
+    rec.sig_name[1]: rec.p_signal[:plot_num, 1]
+})
