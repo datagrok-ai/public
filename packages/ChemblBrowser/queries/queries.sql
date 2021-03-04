@@ -54,5 +54,34 @@ WHERE num_ro5_violations = @num_ro5_violations
 limit 1000
 --end
 
+--name: ShowSynonyms
+--connection: chembl:chembl
+SELECT compound_structures.molregno, compound_structures.canonical_smiles, molecule_synonyms.synonyms
+FROM compound_structures
+INNER JOIN molecule_synonyms
+ON compound_structures.molregno = molecule_synonyms.molregno
+limit 1000
+--end
+
+--name: ShowChemblID
+--connection: chembl:chembl
+SELECT compound_structures.molregno, compound_structures.canonical_smiles, molecule_dictionary.chembl_id
+FROM compound_structures
+INNER JOIN molecule_dictionary
+ON compound_structures.molregno = molecule_dictionary.molregno
+limit 1000
+--end
+
+--name: FilterByMoleculeType
+--connection: chembl:chembl
+--input: string molecule_type
+SELECT compound_structures.molregno, compound_structures.canonical_smiles, molecule_dictionary.molecule_type
+FROM compound_structures
+INNER JOIN molecule_dictionary
+ON compound_structures.molregno = molecule_dictionary.molregno
+WHERE molecule_dictionary.molecule_type = @molecule_type
+limit 1000
+--end
+
 
 
