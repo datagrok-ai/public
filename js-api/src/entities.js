@@ -672,7 +672,7 @@ export class LogEventParameterValue extends Entity {
 export class Package extends Entity {
   constructor(d) {
     super(d);
-    if (d instanceof String) {
+    if (typeof d === 'string' || d instanceof String) {
       this.webRoot = d;
       this.d = null;
     }
