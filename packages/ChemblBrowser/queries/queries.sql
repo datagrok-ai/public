@@ -43,4 +43,16 @@ where molregno = @molregno
 limit 1000
 --end
 
+--name: FindByRO5
+--connection: chembl:chembl
+--input: int num_ro5_violations
+SELECT compound_structures.molregno, compound_structures.canonical_smiles, compound_properties.num_ro5_violations
+FROM compound_structures
+INNER JOIN compound_properties
+ON compound_structures.molregno = compound_properties.molregno
+WHERE num_ro5_violations = @num_ro5_violations
+limit 1000
+--end
+
+
 
