@@ -108,37 +108,33 @@ async function SMA_filter(data, columnToFilter, windowSize) {
     });
 }
 
-async function applyFilter(data, fsamp, bsType, paramsT) {
+async function applyFilter(data, fsamp, paramsT) {
   let f = await grok.functions.eval("BioSignals:filters");
   let call = f.prepare({
     'data': data,
     'fsamp': fsamp,
-    'signalType': bsType,
     'paramsT': paramsT
   });
   await call.call();
   return call.getParamValue('newDf');
 }
 
-async function applyExtractor(data, fsamp, bsType, paramsT, infoType) {
+async function applyExtractor(data, fsamp, infoType) {
   let f = await grok.functions.eval("BioSignals:extractors");
   let call = f.prepare({
     'data': data,
     'fsamp': fsamp,
-    'signalType': bsType,
-    'paramsT': paramsT,
     'info': infoType.value
   });
   await call.call();
   return call.getParamValue('newDf');
 }
 
-async function getIndicator(data, fsamp, bsType, paramsT, infoType, indicator) {
+async function getIndicator(data, fsamp, paramsT, infoType, indicator) {
   let f = await grok.functions.eval("BioSignals:indicators");
   let call = f.prepare({
     'data': data,
     'fsamp': fsamp,
-    'signalType': bsType,
     'paramsT': paramsT,
     'info': infoType.value,
     'preset': indicator.value
@@ -307,7 +303,7 @@ function showMainDialog(table, signalType, column, samplingFreq) {
         break;
       default:
         nameOfLastOutput = 'Output of Filter ' + i + ' (' + filtersList[i-1].value + ')';
-        plotFL = await applyFilter(t, samplingFreq.value, signalType.stringValue, paramsT);
+        plotFL = await applyFilter(t, samplingFreq.value, paramsT);
     }
     emptyCharts[i - 1].dataFrame = plotFL;
     Object.assign(signalInputs, {[nameOfLastOutput]: plotFL});
@@ -322,8 +318,8 @@ function showMainDialog(table, signalType, column, samplingFreq) {
   containerWithEstimators.appendChild(inputsToEstimators);
   containerWithPlotsOfEstimators.appendChild(ui.button('Extract Info', async () => {
     paramsT = paramsToTable(filtersList, paramsList);
-    let t = DG.DataFrame.fromColumns([column.value[0]]);
-    let plotInfo = await applyExtractor(t, samplingFreq.value, signalType.stringValue, paramsT, typesOfEstimators);
+    let t = DG.DataFrame.fromColumns([signalInputs[inputsList[i-1].value].columns.byName(inputsList[i-1].value)]);
+    let plotInfo = await applyExtractor(t, samplingFreq.value, typesOfEstimators);
     let estimatorChart = getEmptyChart();
     accordionEstimators.addPane(typesOfEstimators.value, () => ui.block(estimatorChart),true);
     estimatorChart.dataFrame = plotInfo;
@@ -340,7 +336,7 @@ function showMainDialog(table, signalType, column, samplingFreq) {
   calculateButton.appendChild(ui.button('Calculate', async () => {
     paramsT = paramsToTable(filtersList, paramsList);
     let t = DG.DataFrame.fromColumns([column.value[0]]);
-    let indicatorDf = await getIndicator(t, samplingFreq.value, signalType.stringValue, paramsT, typesOfEstimators, indicator);
+    let indicatorDf = await getIndicator(t, samplingFreq.value, paramsT, typesOfEstimators, indicator);
     let indicatorChart = getEmptyChart();
     accordionIndicators.addPane(indicator.value, () => ui.block(indicatorChart),true);
     indicatorChart.dataFrame = indicatorDf;
