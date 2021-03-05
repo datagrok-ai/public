@@ -45,11 +45,11 @@ In the above code snippet, we modify the view after saving its initial layout, s
 
 In addition, there is a way to create a layout from `JSON`. The `JSON` describing it may come from a
 [user data storage](https://public.datagrok.ai/js/samples/ui/views/layouts), a file containing a
-downloaded layout, or from directly serializing an instance via `layout.toJson()`.
+downloaded layout, or directly from serializing an instance via `layout.toJson()`.
 
 ```js
-let tableId = '';
-let layoutJson = '';
+let layoutJson = ''; // a JSON string
+let tableId = '';    // e.g. JSON.parse(layoutJson).viewStateMap.tableId
 
 grok.data.openTable(tableId).then(t => {
   let view = grok.shell.addTableView(t);
@@ -63,6 +63,10 @@ The `grok.dapi.layouts` endpoint provides common functionality inherited from
 [HttpDataSource](https://datagrok.ai/js-api/HttpDataSource) that is responsible for handling collections
 of entities stored on the server. Developers can save layouts, find them by id, filter the list of entities
 according to [certain criteria](../../overview/smart-search.md), and so on.
+
+```js
+grok.dapi.layouts.list().then(layouts => grok.shell.info(`Total: ${layouts.length}`));
+```
 
 ## Applying Layouts to New Data
 
@@ -82,7 +86,13 @@ to the columns of the specified table. The matching mechanism consists of the fo
   2. Both columns have the same [layout-id](../../discover/tags.md#layout-id)
   3. Both columns have the same [semantic type](../../discover/tags.md#quality)
 
-<!-- ## Storing Metadata -->
+## Storing Metadata
+
+Layouts remember the columns they were constructed from (the field `columns`) and the metadata
+associated with those columns so that they can be applied to the original or similar data. In
+particular, metadata includes column names, types, and tags (such as `layout-id` or `quality`).
+This is what the mapping rules described above rely on. Apart from that, layouts as
+[entities](../../overview/objects.md) are capable of storing metadata in a form of properties.
 
 See also:
   - [View Layout](../../visualize/view-layout.md)
