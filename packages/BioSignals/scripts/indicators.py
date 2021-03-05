@@ -2,7 +2,6 @@
 #language: python
 #input: dataframe data
 #input: int fsamp
-#input: string signalType
 #input: dataframe paramsT
 #input: string info
 #input: string preset
@@ -11,14 +10,7 @@
 import numpy as np
 import pyphysio as ph
 
-data = np.array(data.iloc[:,0])
-
-label = np.zeros(1200)
-label[300:600] = 1
-label[900:1200] = 2
-label = ph.EvenlySignal(label, sampling_freq = 10, signal_type = 'label')
-
-sig = ph.EvenlySignal(values = data, sampling_freq = fsamp, signal_type = signalType)
+sig = ph.EvenlySignal(values = np.array(data.iloc[:,0]), sampling_freq = fsamp)
 
 i = len(paramsT) - 1
 if paramsT['filter'][i] == 'IIR':
@@ -53,24 +45,33 @@ elif info == 'BeatFromBP':
 
 if preset == 'HRV time domain':
     hrv_indicators = [ph.Mean(name='RRmean'), ph.StDev(name='RRstd'), ph.RMSSD(name='rmsSD'), ph.SDSD(name='sdsd'), ph.Triang(name='Triang'), ph.TINN(name='TINN')]
-    fixed_length = ph.FixedSegments(step = 5, width = 10, labels = label)
+    fixed_length = ph.FixedSegments(step = 5, width = 10)
     indicators, col_names = ph.fmap(fixed_length, hrv_indicators, extracted)
-    RRmean = indicators[:, np.where(col_names == 'RRmean')[0]].ravel()
-    RRstd = indicators[:, np.where(col_names == 'RRstd')[0]].ravel()
-    rmsSD = indicators[:, np.where(col_names == 'rmsSD')[0]].ravel()
-    sdsd = indicators[:, np.where(col_names == 'sdsd')[0]].ravel()
-    Triang = indicators[:, np.where(col_names == 'Triang')[0]].ravel()
-    tinn = indicators[:, np.where(col_names == 'TINN')[0]].ravel()
-    out = pd.DataFrame({'time': range(len(RRmean)), 'RRmean': RRmean, 'RRstd': RRstd, 'rmsSD': rmsSD, 'sdsd': sdsd, 'Triang': Triang, 'TINN': tinn})
+    out = pd.DataFrame({
+        'time': range(len(indicators)),
+        'RRmean': indicators[:, np.where(col_names == 'RRmean')[0]].ravel(),
+        'RRstd': indicators[:, np.where(col_names == 'RRstd')[0]].ravel(),
+        'rmsSD': indicators[:, np.where(col_names == 'rmsSD')[0]].ravel(),
+        'sdsd': indicators[:, np.where(col_names == 'sdsd')[0]].ravel(),
+        'Triang': indicators[:, np.where(col_names == 'Triang')[0]].ravel(),
+        'TINN': indicators[:, np.where(col_names == 'TINN')[0]].ravel()
+    })
 elif preset == 'HRV frequency domain':
     FD_HRV_ind, col_names = ph.fmap(fixed_length, ph.preset_hrv_fd(), extracted.resample(4))
-    out = pd.DataFrame({'time': range(len(FD_HRV_ind)), 'VLF_Pow': FD_HRV_ind[:, 3], 'LF_Pow': FD_HRV_ind[:, 4],
-                        'HF_Pow': FD_HRV_ind[:, 5], 'Total_Pow': FD_HRV_ind[:, 6]})
+    out = pd.DataFrame({
+        'time': range(len(FD_HRV_ind)),
+        'VLF_Pow': FD_HRV_ind[:, 3],
+        'LF_Pow': FD_HRV_ind[:, 4],
+        'HF_Pow': FD_HRV_ind[:, 5],
+        'Total_Pow': FD_HRV_ind[:, 6]
+    })
 elif preset == 'HRV nonlinear domain':
     hrv_indicators = [ph.PoincareSD1(name='SD1'), ph.PoincareSD2(name='SD2'), ph.PoincareSD1SD2(name='SD1/SD2')]
-    fixed_length = ph.FixedSegments(step = 5, width = 10, labels = label)
+    fixed_length = ph.FixedSegments(step = 5, width = 10)
     indicators, col_names = ph.fmap(fixed_length, hrv_indicators, extracted)
-    SD1 = indicators[:, np.where(col_names == 'SD1')[0]].ravel()
-    SD2 = indicators[:, np.where(col_names == 'SD2')[0]].ravel()
-    SD1SD2 = indicators[:, np.where(col_names == 'SD1/SD2')[0]].ravel()
-    out = pd.DataFrame({'time': range(len(SD1)), 'SD1':SD1, 'SD2':SD2, 'SD1/SD2':SD1SD2})
+    out = pd.DataFrame({
+        'time': range(len(SD1)),
+        'SD1': indicators[:, np.where(col_names == 'SD1')[0]].ravel(),
+        'SD2': indicators[:, np.where(col_names == 'SD2')[0]].ravel(),
+        'SD1/SD2': indicators[:, np.where(col_names == 'SD1/SD2')[0]].ravel()
+    })

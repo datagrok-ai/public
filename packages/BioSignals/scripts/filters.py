@@ -2,23 +2,14 @@
 #language: python
 #input: dataframe data
 #input: int fsamp
-#input: string signalType
 #input: dataframe paramsT
 #output: dataframe newDf
 
-# import packages
 import numpy as np
-
-# import the Signal classes
 import pyphysio as ph
 
 
-# convert to numpy
-# ecg_data = np.array(ecg_data.ecg_data)
-data = np.array(data.iloc[:,0])
-
-# convert to signal class
-sig = ph.EvenlySignal(values = data, sampling_freq = fsamp, signal_type = signalType)
+sig = ph.EvenlySignal(values = np.array(data.iloc[:,0]), sampling_freq = fsamp)
 
 i = len(paramsT) - 1
 if paramsT['filter'][i] == 'IIR':
