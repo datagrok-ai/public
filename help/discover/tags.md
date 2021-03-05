@@ -14,7 +14,7 @@ column's metadata, right-click on it and select "Properties..." (or press F2 in 
 
 Applicable to columns. Determines column's [semantic type](semantic-types.md); used for
 making automatic suggestions on functions, layouts, and predictive models
-applicable to the current context. Also, see [units](#units)
+applicable to the current context. Also, see [units](#units).
 
 ## units
 
@@ -90,6 +90,15 @@ In case you need to define a different date format, proceed to column properties
 | ff     | Second fraction (2 digits)       | 00, 01, ..., 99            |
 | fff    | Second fraction (3 digits)       | 000, 001, ..., 999         |
 | tt     | 12-hour periods                  | AM, PM                     |
+
+## color-coding-type
+
+Indicates on what basis the columns are colored. Numerical columns have the options `Off`,
+`Linear`, and `Conditional`, while categorical columns are limited to `Off` and `Conditional`.
+
+## color-coding-conditional
+
+Applies conditional formatting to numeric and categorical columns. See an [example](https://public.datagrok.ai/js/samples/grid/color-coding-conditional).
 
 ## formula
 
