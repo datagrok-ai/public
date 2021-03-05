@@ -391,9 +391,9 @@ we move to the offset 2 and get: `TAA`, `...`, `TGA`. In the histogram we'd coun
 First, let's explore how scripting viewer works.
 
 1. Open a `demog` demo file with demographic data. It is located at `Data | Files | Demo Files | demog.csv`.
-`Data` corresponds to the first button from the top on the activity bar at the left of the Datagrok window.
+`Data` corresponds to the first button from the top of the Datagrok [sidebar]().
 Make sure the table view with the data appears.
-2. Activate the top menu from the activity bar, using a `Windows | Menu` switch.
+2. Activate the top menu from the sidebar, using a `Windows | Menu` switch.
 3. In this menu, hit `Add | Scripting Viewers | Python | Scatter Plot`.
 4. See that the viewer appeared on the right, telling though it is "Unable to plot with current settings".
 5. Proceed to the viewer properties by hitting on the gear icon in the viewer's title.
@@ -414,7 +414,7 @@ After checking this you should see a nice scatter plot for `WEIGHT` and `HEIGHT`
 11. Add another input column to the script with a name `SEX`. Hit `Apply` and check what appears in the property panel.
 12. Now there's all you need to create a Python scripting viewer for our amino acid histogram task.
     Open a demo file with nucleotide sequences. It is located at `Data | Files | Demo Files | bio | sequences.csv`.
-`Data` corresponds to the first button from the top on the activity bar at the left of the Datagrok window.
+`Data` corresponds to the first button from the top on the Datagrok sidebar.
 13. In the top menu you've activated at p.2, hit `Add | Scripting Viewers | New Scripting Viewer`.
 14. Follow what you've learned in the points 1 to 11 to create a scripting viewer taking a column of strings,
     expecting to have nucleotide sequences in them, and plotting a Matplotlib's [histogram](https://matplotlib.org/api/_as_gen/matplotlib.pyplot.hist.html) with all amino acid triplets
@@ -531,6 +531,8 @@ _Prerequisites:_ exercises ["Setting up the environment"](#setting-up-the-enviro
    
 ## Accessing web services with OpenAPI
 
+_Details:_ [OpenAPI access](access/open-api.md)
+
 Web services often provide their API specs in an [OpenAPI (Swagger)]() format in a JSON or a yaml file.
 Because OpenAPI spec file is standardized, the API may now be directly loaded and later queried.
 Datagrok provides for connecting to API data sources and fetching API querying results as dataframes.
@@ -550,3 +552,7 @@ fetch some nucleotide data regarding coronavirus.
 6. Enter the parameter values: set `Query` to `coronavirus`, `Result` to `assembly`. Hit `Ok`.
    As a result, you'd find a table, which was prepared from the received XML file by Datagrok.
 7. Close the table, locate the saved query in the list and run it.
+
+We provide a handful of demo Swaggers, check their source JSON files
+[here](https://github.com/datagrok-ai/public/tree/master/packages/Swaggers/swaggers)
+and see in action in Datagrok at [`Web Services`](https://public.datagrok.ai/webservices).

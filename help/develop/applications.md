@@ -26,7 +26,7 @@ One [Datagrok package](../develop/develop.md) may contain zero, one or several a
 # Launching applications
 
 To open the application launcher and see all [available](https://public.datagrok.ai/apps) applications,
-follow to `Functions | Apps` from the left-side activity bar, or follow [this link](https://public.datagrok.ai/apps).
+follow to `Functions | Apps` from the Datagrok sidebar, or follow [this link](https://public.datagrok.ai/apps).
 To launch a particular app automatically, open the following URL: `https://public.datagrok.ai/apps/<APP_NAME>`,
 if there is only one app in the package, or `https://public.datagrok.ai/apps/<PACKAGE_NAME>/<APP_NAME>`,
 if there are several. You'd learn the right URL first time you run the app from within the application launcher,
