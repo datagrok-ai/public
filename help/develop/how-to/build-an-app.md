@@ -40,7 +40,7 @@ export function test() {
 ```
 
 To make this run on Datagrok, follow these `grok create` [steps](../develop/develop.md#getting-started)
-to prepare this simple package and deploy it.
+to prepare our simple package and deploy it.
 
 1. Install the [prerequisites](../develop.md#getting-started): 
    * A regular [Node.js](https://nodejs.org/en/download/) and [npm](https://docs.npmjs.com/about-npm) (comes with Node.js)
@@ -50,13 +50,13 @@ to prepare this simple package and deploy it.
 2. [Create a new package](../develop.md#getting-started):
    * Make a new folder for the package
    * In this folder, call `grok create <PACKAGE_NAME> --ide=vscode`
-   * The `--ide` key will create a setup for debugging the package with VS Code (currently only works on Windows)
+   * The `--ide` key will create a setup for [debugging the package with VS Code]() (currently only works on Windows)
    * If you run this for the first time, you'd be prompted to enter your Developer Keys for
      our Datagrok instances. Find this key in your [User Profile]() section in the Datagrok UI
 3. Add an app to the package by `grok add app <APP_NAME>`, or just copy-paste the above JS snippet into `src/package.js`
 
 After deploying this package to `https://public.datagrok.ai`, you'd find the `Test App` app via `Functions | Apps`
-in the activity bar on the left side of Datagrok's main window. Run the app and notice the tooltip.
+in the Datagrok's [sidebar](). Run the app and notice the tooltip.
 You may also call this entry point by a URL: `https://public.datagrok.ai/apps/TestApp`.
 Note that in case there is only one application `<APP>` defined in the package, the corresponding URL
 is simply `https://public.datagrok.ai/apps/<APP>`, but has the form of
@@ -74,7 +74,7 @@ in this case it's called a [Table View](). However, essentially a view can conta
 Imagine you are composing an application. You likely start with the root / main view,
 add logical blocks to it either through simple [div-s](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/ui/sidebar.js),
 or through [`splitH`/`splitV`](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/ui/layouts/splitters.js),
-populate these blocks with visualizations and controls, maybe add a sidebar, add event handlers and so forth.
+populate these blocks with visualizations and controls, maybe add a sidebar, add event handlers, and so forth.
 Our internal application [Usage Analysis](https://github.com/datagrok-ai/public/tree/master/packages/UsageAnalysis)
 demonstrates such an approach.
 
@@ -92,7 +92,7 @@ shows how to add a [viewer](#visualizations) to a view.
 
 We recommend restoring the package dependencies before starting development with an IDE.
 After the package is created, simply invoke `npm install` inside the package folder. This
-will bring NPM modules defining the Datagrok API.
+will bring NPM modules with the Datagrok API.
 
 An alternative way to IntelliSense capability for Datagrok classes is by cloning
 the entire [public repo](https://github.com/datagrok-ai/public) and opening its whole folder
@@ -107,12 +107,12 @@ Starting with the above, there is pretty much anything you can further do inside
 leveraging a full scale of platform capabilities. However, there are certain aspects of interest
 in almost any application:
 
-* Accessing and persisting data
-* Working with dataframes
-* Performing computations
-* Interactive visualizations
-* Managing privileges
-* Managing application lifecycle
+* [Accessing and persisting data](#persisting-data)
+* [Working with dataframes](#dataframes)
+* [Performing computations](#scripting)
+* [Interactive visualizations](#visualizations)
+* [Managing privileges](#managing-privileges)
+* [Managing application lifecycle](#application-lifecycle)
 
 The following chapter guides through these key development topics. Take it as a birds-eye overview of the
 application development area, grasp the major building blocks, and proceed to the articles and samples
@@ -123,7 +123,7 @@ referenced in the guide for the further details.
 We provide a diverse set of code snippets of the API use, and sample packages with viewers, applications, and so forth.
 
 * For short samples of using API, go to https://public.datagrok.ai/js and observe a "Samples" block, or alternatively —
-access it via the "Help" button at the bottom of the activity bar on the left of the Datagrok's main window,
+access it via the "Help" button at the bottom of the Datagrok's sidebar,
 and then follow to `JavaScript API Samples`
 
 * The sources of these snippets are all located at https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples
@@ -407,7 +407,7 @@ with thousands of statistical packages and visualizations available in  [R](http
 or [JavaScript](https://www.javascript.com).
 
 Let's look at a simple script. Create an empty Python script with `Functions | Scripts | New Python Script`
-(find a `Functions` button on the left side of the Datagrok main window in the activity bar). Before
+(find a `Functions` button in the Datagrok sidebar). Before
 running, open some table, you may find a lot of them in the "Demo Files" section of the platform through
 the `Data` pane opened by the "folder" button on the left side of the Datagrok's window. Then let's run
 the below:
