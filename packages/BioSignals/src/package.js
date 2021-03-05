@@ -4,6 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from "datagrok-api/dg";
 
 import {getMethodsAccordingTo} from "./getMethodsAccordingToSignalType.js";
+import {getParametersAccordingTo} from "./getParametersAccordingToFilterType.js"
 
 export let _package = new DG.Package();
 
@@ -108,7 +109,7 @@ async function SMA_filter(data, columnToFilter, windowSize) {
 }
 
 async function applyFilter(data, fsamp, bsType, paramsT) {
-  let f = await grok.functions.eval("BioSignals:filtersPyphysio");
+  let f = await grok.functions.eval("BioSignals:filters");
   let call = f.prepare({
     'data': data,
     'fsamp': fsamp,
@@ -119,8 +120,8 @@ async function applyFilter(data, fsamp, bsType, paramsT) {
   return call.getParamValue('newDf');
 }
 
-async function extractInfo(data, fsamp, bsType, paramsT, infoType) {
-  let f = await grok.functions.eval("BioSignals:infoPyphysio");
+async function applyExtractor(data, fsamp, bsType, paramsT, infoType) {
+  let f = await grok.functions.eval("BioSignals:extractors");
   let call = f.prepare({
     'data': data,
     'fsamp': fsamp,
@@ -132,8 +133,8 @@ async function extractInfo(data, fsamp, bsType, paramsT, infoType) {
   return call.getParamValue('newDf');
 }
 
-async function toIndicators(data, fsamp, bsType, paramsT, infoType, indicator) {
-  let f = await grok.functions.eval("BioSignals:indicatorsPyphysio");
+async function getIndicator(data, fsamp, bsType, paramsT, infoType, indicator) {
+  let f = await grok.functions.eval("BioSignals:indicators");
   let call = f.prepare({
     'data': data,
     'fsamp': fsamp,
@@ -211,8 +212,8 @@ function showMainDialog(table, signalType, column, samplingFreq) {
     let filterInputsOld = ui.inputs([filtersList[i]]);
     containerList[i].appendChild(filterInputsOld);
     filtersList[i].onChanged(function () {
-      let val = filtersList[i - 1].value;
-      paramsList[i - 1] = paramSelector(val);
+      let filterType = filtersList[i - 1].value;
+      paramsList[i - 1] = getParametersAccordingTo(filterType);
       filterInputsNew = ui.div([
         ui.block25([
           ui.inputs(
@@ -322,7 +323,7 @@ function showMainDialog(table, signalType, column, samplingFreq) {
   containerWithPlotsOfEstimators.appendChild(ui.button('Extract Info', async () => {
     paramsT = paramsToTable(filtersList, paramsList);
     let t = DG.DataFrame.fromColumns([column.value[0]]);
-    let plotInfo = await extractInfo(t, samplingFreq.value, signalType.stringValue, paramsT, typesOfEstimators);
+    let plotInfo = await applyExtractor(t, samplingFreq.value, signalType.stringValue, paramsT, typesOfEstimators);
     let estimatorChart = getEmptyChart();
     accordionEstimators.addPane(typesOfEstimators.value, () => ui.block(estimatorChart),true);
     estimatorChart.dataFrame = plotInfo;
@@ -339,7 +340,7 @@ function showMainDialog(table, signalType, column, samplingFreq) {
   calculateButton.appendChild(ui.button('Calculate', async () => {
     paramsT = paramsToTable(filtersList, paramsList);
     let t = DG.DataFrame.fromColumns([column.value[0]]);
-    let indicatorDf = await toIndicators(t, samplingFreq.value, signalType.stringValue, paramsT, typesOfEstimators, indicator);
+    let indicatorDf = await getIndicator(t, samplingFreq.value, signalType.stringValue, paramsT, typesOfEstimators, indicator);
     let indicatorChart = getEmptyChart();
     accordionIndicators.addPane(indicator.value, () => ui.block(indicatorChart),true);
     indicatorChart.dataFrame = indicatorDf;
@@ -368,115 +369,6 @@ function showMainDialog(table, signalType, column, samplingFreq) {
     accordionIndicators
   ],'formview');
   showTheRestOfLayout(formView);
-}
-
-function paramSelector(x) {
-  if (x === 'IIR') {
-    let passFrequency = ui.floatInput('Pass frequency', '');
-    let stopFrequency = ui.floatInput('Stop frequency', '');
-    let ftype = ui.choiceInput('Filter type', '', ['butter', 'cheby1', 'cheby2', 'ellip']);
-    return {'fp': passFrequency, 'fs': stopFrequency, 'ftype': ftype};
-  }
-  else if (x === 'FIR') {
-    let passFrequency = ui.floatInput('Pass frequency', '');
-    let stopFrequency = ui.floatInput('Stop frequency', '');
-    //let ftype = ui.choiceInput('Window type', '', ['hamming']);
-    return {'fp': passFrequency, 'fs': stopFrequency};
-  }
-  else if (x === 'normalize') {
-    let normMethod = ui.choiceInput('norm_method', '', ['mean', 'standard', 'min', 'maxmin', 'custom']);
-    return {'normMethod': normMethod};
-  }
-  else if (x === 'resample') {
-    let fout = ui.intInput('Output sampling frequency', '');
-    let kind = ui.choiceInput('Interpolation method', '', ['linear', 'nearest', 'zero', 'slinear', 'quadratic', 'cubic']);
-    return {'fout': fout, 'kind': kind};
-  }
-  else if (x === 'KalmanFilter') {
-    let r = ui.floatInput('R', '');
-    r.setTooltip("R should be positive");
-    let ratio = ui.floatInput('Ratio', '');
-    ratio.setTooltip("Ratio should be >1");
-    return {'R': r, 'ratio': ratio};
-  }
-  else if (x === 'ImputeNAN') {
-    let winLen = ui.floatInput('Window Length', '');
-    winLen.setTooltip('Window Length should be positive');
-    let allNan = ui.choiceInput('All NaN', '', ['zeros', 'nan']);
-    return {'win_len': winLen, 'allnan': allNan};
-  }
-  else if (x === 'RemoveSpikes') {
-    let K = ui.floatInput('K', 2);
-    K.setTooltip("K should be positive");
-    let N = ui.intInput('N', 1);
-    N.setTooltip('N should be positive integer');
-    let dilate = ui.floatInput('Dilate', 0);
-    dilate.setTooltip('dilate should be >= 0.0');
-    let D = ui.floatInput('D', 0.95);
-    D.setTooltip('D should be >= 0.0');
-    let method = ui.choiceInput('Method', '', ['linear', 'step']);
-    return {'K': K, 'N': N, 'dilate': dilate, 'D': D, 'method': method};
-  }
-  else if (x === 'DenoiseEDA') {
-    let winLen = ui.floatInput('Window Length', 2);
-    winLen.setTooltip('Window Length should be positive');
-    let threshold = ui.floatInput('Threshold', '');
-    threshold.setTooltip('Threshold should be positive');
-    return {'win_len': winLen, 'threshold': threshold};
-  }
-  else if (x === 'ConvolutionalFilter') {
-    let irftype = ui.choiceInput('irftype', '', ['gauss', 'rect', 'triang', 'dgauss', 'custom']);
-    irftype.setTooltip('Impulse response function (IRF)');
-    let winLen = ui.floatInput('Window Length', 2);
-    winLen.setTooltip('Duration of the generated IRF in seconds (if irftype is not \'custom\')');
-    return {'win_len': winLen, 'irftype': irftype};
-  }
-  else if (x === 'Moving Average Filter') {
-    let winLen = ui.floatInput('Window Length', '');
-    winLen.setTooltip('Order of filtering');
-    return {'win_len': winLen};
-  }
-  else if (x === 'Exponential Filter') {
-    let filterRatio = ui.floatInput('Filter ratio', '');
-    return {'filter_ratio': filterRatio};
-  }
-  else if (x === 'Min Max Normalization') {
-    return {};
-  }
-  else if (x === 'Z-score Normalization') {
-    return {};
-  }
-  else if (x === 'Box Cox Transform') {
-    let lambda = ui.floatInput('lambda', '');
-    let ofset = ui.floatInput('ofset', '');
-    return {'lambda': lambda, 'ofset': ofset};
-  }
-  else if (x === 'Get Trend') {
-    return {};
-  }
-  else if (x === 'Detrend') {
-    return {};
-  }
-  else if (x === 'Fourier Filter') {
-    let lowcut = ui.floatInput('lowcut', '');
-    let hicut = ui.floatInput('hicut', '');
-    let observationTime = ui.floatInput('Observation time', '');
-    return {'lowcut': lowcut, 'hicut': hicut, 'observationTime': observationTime};
-  }
-  else if (x === 'Spectral Density') {
-    let observationTime = ui.floatInput('Observation time', '');
-    return {'observationTime': observationTime};
-  }
-  else if (x === 'Subsample') {
-    let subsampleSize = ui.floatInput('Subsample size', '');
-    let offset = ui.floatInput('Offset', '');
-    return {'subsampleSize': subsampleSize, 'offset': offset};
-  }
-  else if (x === 'Averaging Downsampling') {
-    let windowSize = ui.floatInput('Window size', '');
-    let offset = ui.floatInput('Offset', '');
-    return {'windowSize': windowSize, 'offset': offset};
-  }
 }
 
 function getDescription(i, filtersLST, allParams) {

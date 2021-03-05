@@ -1,4 +1,4 @@
-#name: filtersPyphysio
+#name: filters
 #language: python
 #input: dataframe data
 #input: int fsamp

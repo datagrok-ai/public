@@ -1,4 +1,4 @@
-#name: indicatorsPyphysio
+#name: indicators
 #language: python
 #input: dataframe data
 #input: int fsamp

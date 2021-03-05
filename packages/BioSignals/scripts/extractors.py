@@ -1,4 +1,4 @@
-#name: infoPyphysio
+#name: extractors
 #language: python
 #input: dataframe data
 #input: int fsamp
