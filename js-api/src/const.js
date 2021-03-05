@@ -196,7 +196,8 @@ export const TAGS = {
    Applicable for string columns only.
    See also [TAGS_CHOICES]. */
   AUTO_CHOICES: '.auto-choices',
-  ID: '.id'
+  ID: '.id',
+  COLOR_CODING_CONDITIONAL: 'color-coding-conditional'
 }
 
 ////// Viewers
