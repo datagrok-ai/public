@@ -44,9 +44,27 @@ elif info == 'BeatFromBP':
     extracted = ph.BeatFromBP()(sig)
 
 if preset == 'HRV time domain':
-    hrv_indicators = [ph.Mean(name='RRmean'), ph.StDev(name='RRstd'), ph.RMSSD(name='rmsSD'), ph.SDSD(name='sdsd'), ph.Triang(name='Triang'), ph.TINN(name='TINN')]
-    fixed_length = ph.FixedSegments(step = 5, width = 10)
-    indicators, col_names = ph.fmap(fixed_length, hrv_indicators, extracted)
+
+    hrv_indicators = [
+        ph.Mean(name='RRmean'),
+        ph.StDev(name='RRstd'),
+        ph.RMSSD(name='rmsSD'),
+        ph.SDSD(name='sdsd'),
+        ph.Triang(name='Triang'),
+        ph.TINN(name='TINN')
+    ]
+
+    fixed_length = ph.FixedSegments(
+        step = paramsT['step'][i],
+        width = paramsT['width'][i]
+    )
+
+    indicators, col_names = ph.fmap(
+        fixed_length,
+        hrv_indicators,
+        extracted
+    )
+
     out = pd.DataFrame({
         'time': range(len(indicators)),
         'RRmean': indicators[:, np.where(col_names == 'RRmean')[0]].ravel(),
@@ -56,8 +74,15 @@ if preset == 'HRV time domain':
         'Triang': indicators[:, np.where(col_names == 'Triang')[0]].ravel(),
         'TINN': indicators[:, np.where(col_names == 'TINN')[0]].ravel()
     })
+
 elif preset == 'HRV frequency domain':
-    FD_HRV_ind, col_names = ph.fmap(fixed_length, ph.preset_hrv_fd(), extracted.resample(4))
+
+    FD_HRV_ind, col_names = ph.fmap(
+        fixed_length,
+        ph.preset_hrv_fd(),
+        extracted.resample(paramsT['resampling_frequency'][i])
+    )
+
     out = pd.DataFrame({
         'time': range(len(FD_HRV_ind)),
         'VLF_Pow': FD_HRV_ind[:, 3],
@@ -65,10 +90,26 @@ elif preset == 'HRV frequency domain':
         'HF_Pow': FD_HRV_ind[:, 5],
         'Total_Pow': FD_HRV_ind[:, 6]
     })
+
 elif preset == 'HRV nonlinear domain':
-    hrv_indicators = [ph.PoincareSD1(name='SD1'), ph.PoincareSD2(name='SD2'), ph.PoincareSD1SD2(name='SD1/SD2')]
-    fixed_length = ph.FixedSegments(step = 5, width = 10)
-    indicators, col_names = ph.fmap(fixed_length, hrv_indicators, extracted)
+
+    hrv_indicators = [
+        ph.PoincareSD1(name='SD1'),
+        ph.PoincareSD2(name='SD2'),
+        ph.PoincareSD1SD2(name='SD1/SD2')
+    ]
+
+    fixed_length = ph.FixedSegments(
+        step = paramsT['step'][i],
+        width = paramsT['width'][i]
+    )
+
+    indicators, col_names = ph.fmap(
+        fixed_length,
+        hrv_indicators,
+        extracted
+    )
+
     out = pd.DataFrame({
         'time': range(len(indicators)),
         'SD1': indicators[:, np.where(col_names == 'SD1')[0]].ravel(),

@@ -5,7 +5,7 @@ export function getExtractorParameters(extractorType) {
         case 'Local energy':
             let winLen = ui.floatInput('Window Length', 2);
             winLen.setTooltip('Length of the window in seconds');
-            let winStep = ui.floatInput('Window Step', 0.1);
+            let winStep = ui.floatInput('Window Step', 2);
             winStep.setTooltip('Shift of the window to start the next window');
             return {'win_len': winLen, 'win_step': winStep};
         case 'Beat from ECG':
