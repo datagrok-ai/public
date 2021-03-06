@@ -3,8 +3,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from "datagrok-api/dg";
 
-import {getMethodsAccordingTo} from "./getMethodsAccordingToSignalType.js";
-import {getParametersAccordingTo} from "./getParametersAccordingToFilterType.js"
+import {getRelevantMethods} from "./getRelevantMethods.js";
+import {getFilterParameters} from "./getFilterParameters.js";
+import {getExtractorParameters} from "./getExtractorParameters.js";
 
 export let _package = new DG.Package();
 
@@ -119,12 +120,12 @@ async function applyFilter(data, fsamp, paramsT) {
   return call.getParamValue('newDf');
 }
 
-async function applyExtractor(data, fsamp, infoType) {
+async function applyExtractor(data, fsamp, paramsT) {
   let f = await grok.functions.eval("BioSignals:extractors");
   let call = f.prepare({
     'data': data,
     'fsamp': fsamp,
-    'info': infoType.value
+    'paramsT': paramsT
   });
   await call.call();
   return call.getParamValue('newDf');
@@ -136,19 +137,19 @@ async function getIndicator(data, fsamp, paramsT, infoType, indicator) {
     'data': data,
     'fsamp': fsamp,
     'paramsT': paramsT,
-    'info': infoType.value,
+    'info': infoType[infoType.length-1].value,
     'preset': indicator.value
   });
   await call.call();
   return call.getParamValue('out');
 }
 
-function paramsToTable(filtersLST, allParams) {
+function parametersToDataFrame(filtersLST, allParams) {
   let paramsT = DG.DataFrame.create(filtersLST.length);
-  paramsT.columns.addNew('filter', 'string');
+  paramsT.columns.addNew('type', 'string');
   let string_parameters = ['ftype', 'normMethod', 'kind', 'allnan', 'method', 'irftype'];
   for (let j = 0; j < filtersLST.length; j++) {
-    paramsT.columns.byName('filter').set(j, filtersLST[j].value);
+    paramsT.columns.byName('type').set(j, filtersLST[j].value);
     Object.keys(allParams[j]).forEach(key => {
       if (!paramsT.columns.names().includes(key)) {
         if (string_parameters.includes(key)) {
@@ -181,150 +182,183 @@ function getEmptyChart() {
 function showMainDialog(table, signalType, column, samplingFreq) {
 
   let accordionFilters = ui.accordion();
-  let accordionEstimators = ui.accordion();
+  let accordionExtractors = ui.accordion();
   let accordionIndicators = ui.accordion();
 
-  let relevantMethods = getMethodsAccordingTo(signalType.stringValue);
-  let signalInputs = {[column.value[0]]: column};
+  let relevantMethods = getRelevantMethods(signalType.stringValue);
 
   // Filter dialogue
   let paramsT;
-  let filtersList = [];
-  let inputsList = [];
-  let paramsList = [];
-  let containerList = [];
-  let emptyCharts = [];
+  let filterTypesList = [];
+  let filterInputsList = [];
+  let filterParametersList = [];
+  let filterContainerList = [];
+  let filterChartsList = [];
   let addFilterButton = ui.div();
-  let filterInputsNew = ui.inputs(filtersList);
-  let nameOfLastOutput = '';
+  let addFilterChartButton = ui.div();
+  let filterInputsNew = ui.inputs(filterTypesList);
+  let filterInputsDFs = {[column.value[0]]: column};
+  let nameOfLastFiltersOutput = '';
   let i = 0;
   addFilterButton.appendChild(ui.button('Add Filter', () => {
     let containerFilter = ui.div();
-    containerList[i] = containerFilter;
-    filtersList[i] = ui.choiceInput('Filter ' + (i + 1), '', relevantMethods.filters);
-    let inputPreset = (Object.keys(signalInputs).length === 1) ? column.value[0] : nameOfLastOutput;
-    inputsList[i] = ui.choiceInput('Input', inputPreset, Object.keys(signalInputs));
-    emptyCharts[i] = getEmptyChart();
-    let filterInputsOld = ui.inputs([filtersList[i]]);
-    containerList[i].appendChild(filterInputsOld);
-    filtersList[i].onChanged(function () {
-      let filterType = filtersList[i - 1].value;
-      paramsList[i - 1] = getParametersAccordingTo(filterType);
+    filterContainerList[i] = containerFilter;
+    let filterInputPreset = (Object.keys(filterInputsDFs).length === 1) ? column.value[0] : nameOfLastFiltersOutput;
+    filterInputsList[i] = ui.choiceInput('Input', filterInputPreset, Object.keys(filterInputsDFs));
+    filterChartsList[i] = getEmptyChart();
+    filterTypesList[i] = ui.choiceInput('Filter ' + (i + 1), '', relevantMethods.filters);
+    let filterInputsOld = ui.inputs([filterTypesList[i]]);
+    filterContainerList[i].appendChild(filterInputsOld);
+    filterTypesList[i].onChanged(function () {
+      let filterType = filterTypesList[i - 1].value;
+      filterParametersList[i - 1] = getFilterParameters(filterType);
       filterInputsNew = ui.div([
         ui.block25([
           ui.inputs(
-              [filtersList[i - 1]]
-                  .concat([inputsList[i - 1]])
-                  .concat(Object.values(paramsList[i - 1]))
-                  .concat(addChartButton)
+              [filterTypesList[i - 1]]
+                  .concat([filterInputsList[i - 1]])
+                  .concat(Object.values(filterParametersList[i - 1]))
+                  .concat(addFilterChartButton)
           )]
         ),
-        ui.block75([emptyCharts[i - 1]])
+        ui.block75([filterChartsList[i - 1]])
       ]);
-      containerList[i - 1].replaceChild(filterInputsNew, filterInputsOld);
+      filterContainerList[i - 1].replaceChild(filterInputsNew, filterInputsOld);
       filterInputsOld = filterInputsNew;
     });
     accordionFilters.addPane('Filter ' + (i + 1), () => containerFilter, true)
     i++;
   }));
 
-  let addChartButton = ui.div();
-  addChartButton.appendChild(ui.button('Plot', async () => {
-    paramsT = paramsToTable(filtersList, paramsList);
+  addFilterChartButton.appendChild(ui.button('Plot', async () => {
 
     let t;
-    if (inputsList.length === 1) {
+    if (filterInputsList.length === 1) {
       t = DG.DataFrame.fromColumns([column.value[0]]);
     }
-    else if (signalInputs[inputsList[i-1].value].columns.byName(inputsList[i-1].value)) {
-      t = DG.DataFrame.fromColumns([signalInputs[inputsList[i-1].value].columns.byName(inputsList[i-1].value)]);
+    else if (filterInputsDFs[filterInputsList[i-1].value].columns.byName(filterInputsList[i-1].value)) {
+      t = DG.DataFrame.fromColumns([filterInputsDFs[filterInputsList[i-1].value].columns.byName(filterInputsList[i-1].value)]);
     }
     else {
-      t = DG.DataFrame.fromColumns([signalInputs[inputsList[i-1].value].columns.byName('sig')]);
+      t = DG.DataFrame.fromColumns([filterInputsDFs[filterInputsList[i-1].value].columns.byName('sig')]);
     }
 
     let plotFL = '';
-    let currentlyChosenFilterType = filtersList[filtersList.length-1].value;
+    let currentlyChosenFilterType = filterTypesList[filterTypesList.length-1].value;
     switch (currentlyChosenFilterType) {
       case 'Moving Average Filter':
-        await SMA_filter(t, column.value[0], paramsList[i-1].win_len.value);
-        nameOfLastOutput = column.stringValue + ' SMA Filtered';
-        plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastOutput)]);
+        await SMA_filter(t, column.value[0], filterParametersList[i-1].win_len.value);
+        nameOfLastFiltersOutput = column.stringValue + ' SMA Filtered';
+        plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastFiltersOutput)]);
         break;
       case 'Exponential Filter':
-        await Exp_filter(t, column.value[0], paramsList[i-1].filter_ratio.value);
-        nameOfLastOutput = column.stringValue + ' Exponentially Filtered';
-        plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastOutput)]);
+        await Exp_filter(t, column.value[0], filterParametersList[i-1].filter_ratio.value);
+        nameOfLastFiltersOutput = column.stringValue + ' Exponentially Filtered';
+        plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastFiltersOutput)]);
         break;
       case 'Min Max Normalization':
         await MinMax_transform(t, column.value[0]);
-        nameOfLastOutput = column.stringValue + ' Min Max Normalized';
-        plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastOutput)]);
+        nameOfLastFiltersOutput = column.stringValue + ' Min Max Normalized';
+        plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastFiltersOutput)]);
         break;
       case 'Z-score Normalization':
         await Zscore_transform(t, column.value[0]);
-        nameOfLastOutput = column.stringValue + ' Z-score Normalized';
-        plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastOutput)]);
+        nameOfLastFiltersOutput = column.stringValue + ' Z-score Normalized';
+        plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastFiltersOutput)]);
         break;
       case 'Box Cox Transform':
-        await box_cox_transform(t, column.value[0], paramsList[i-1].lambda.value, paramsList[i-1].ofset.value);
-        nameOfLastOutput = column.stringValue + ' Box Cox Transformed';
-        plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastOutput)]);
+        await box_cox_transform(t, column.value[0], filterParametersList[i-1].lambda.value, filterParametersList[i-1].ofset.value);
+        nameOfLastFiltersOutput = column.stringValue + ' Box Cox Transformed';
+        plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastFiltersOutput)]);
         break;
       case 'Get Trend':
         await get_trend(t, column.value[0]);
-        nameOfLastOutput = column.stringValue + ' Trend';
-        plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastOutput)]);
+        nameOfLastFiltersOutput = column.stringValue + ' Trend';
+        plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastFiltersOutput)]);
         break;
       case 'Detrend':
         await remove_trend(t, column.value[0]);
-        nameOfLastOutput = column.stringValue + ' Detrended';
-        plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastOutput)]);
+        nameOfLastFiltersOutput = column.stringValue + ' Detrended';
+        plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastFiltersOutput)]);
         break;
       case 'Fourier Filter':
-        await fourier_filter(t, column.value[0], paramsList[i-1].lowcut.value, paramsList[i-1].hicut.value, paramsList[i-1].observationTime.value);
-        nameOfLastOutput = column.stringValue + ' Fourier Filtered (L: ' + paramsList[i-1].lowcut.value + '; H: ' + paramsList[i-1].hicut.value + ')';
-        plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastOutput)]);
+        await fourier_filter(t, column.value[0], filterParametersList[i-1].lowcut.value, filterParametersList[i-1].hicut.value, filterParametersList[i-1].observationTime.value);
+        nameOfLastFiltersOutput = column.stringValue + ' Fourier Filtered (L: ' + filterParametersList[i-1].lowcut.value + '; H: ' + filterParametersList[i-1].hicut.value + ')';
+        plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastFiltersOutput)]);
         break;
       case 'Spectral Density':
-        await spectral_density(t, column.value[0], paramsList[i-1].observationTime.value);
-        nameOfLastOutput = column.stringValue + ' Density';
-        plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastOutput)]);
+        await spectral_density(t, column.value[0], filterParametersList[i-1].observationTime.value);
+        nameOfLastFiltersOutput = column.stringValue + ' Density';
+        plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastFiltersOutput)]);
         break;
       case 'Subsample':
-        await subsample(t, column.value[0], paramsList[i-1].subsampleSize.value, paramsList[i-1].offset.value);
-        nameOfLastOutput = column.stringValue + ' Subsample';
-        plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastOutput)]);
+        await subsample(t, column.value[0], filterParametersList[i-1].subsampleSize.value, filterParametersList[i-1].offset.value);
+        nameOfLastFiltersOutput = column.stringValue + ' Subsample';
+        plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastFiltersOutput)]);
         break;
       case 'Averaging Downsampling':
-        await asample(t, column.value[0], paramsList[i-1].windowSize.value, paramsList[i-1].offset.value);
-        nameOfLastOutput = column.stringValue + ' Subsample';
-        plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastOutput)]);
+        await asample(t, column.value[0], filterParametersList[i-1].windowSize.value, filterParametersList[i-1].offset.value);
+        nameOfLastFiltersOutput = column.stringValue + ' Subsample';
+        plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastFiltersOutput)]);
         break;
       default:
-        nameOfLastOutput = 'Output of Filter ' + i + ' (' + filtersList[i-1].value + ')';
+        paramsT = parametersToDataFrame(filterTypesList, filterParametersList);
+        nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + filterTypesList[i-1].value + ')';
         plotFL = await applyFilter(t, samplingFreq.value, paramsT);
     }
-    emptyCharts[i - 1].dataFrame = plotFL;
-    Object.assign(signalInputs, {[nameOfLastOutput]: plotFL});
+    filterChartsList[i - 1].dataFrame = plotFL;
+    Object.assign(filterInputsDFs, {[nameOfLastFiltersOutput]: plotFL});
   }));
 
 
   // Information extraction dialogue
-  let containerWithEstimators = ui.div();
-  let containerWithPlotsOfEstimators = ui.div();
-  let typesOfEstimators = ui.choiceInput('Estimators', '', relevantMethods.estimators);
-  let inputsToEstimators = ui.inputs([typesOfEstimators]);
-  containerWithEstimators.appendChild(inputsToEstimators);
-  containerWithPlotsOfEstimators.appendChild(ui.button('Extract Info', async () => {
-    paramsT = paramsToTable(filtersList, paramsList);
-    let t = DG.DataFrame.fromColumns([signalInputs[inputsList[i-1].value].columns.byName(inputsList[i-1].value)]);
-    let plotInfo = await applyExtractor(t, samplingFreq.value, typesOfEstimators);
-    let estimatorChart = getEmptyChart();
-    accordionEstimators.addPane(typesOfEstimators.value, () => ui.block(estimatorChart),true);
-    estimatorChart.dataFrame = plotInfo;
-    nameOfLastOutput = 'Output of Estimator: ' + typesOfEstimators.value;
-    Object.assign(signalInputs, {[nameOfLastOutput]: plotInfo});
+  let extractorTypesList = [];
+  let extractorChartsList = [];
+  let extractorInputsList = [];
+  let extractorParametersList = [];
+  let extractorContainerList = [];
+  let addExtractorButton = ui.div();
+  let addExtractorChartButton = ui.div();
+  let extractorInputsNew = ui.inputs(extractorTypesList);
+  let j = 0;
+  addExtractorButton.appendChild(ui.button('Add Extractor', () => {
+    let containerExtractor = ui.div();
+    extractorContainerList[j] = containerExtractor;
+    let extractorInputPreset = (Object.keys(filterInputsDFs).length === 1) ? filterInputsList[0].value : nameOfLastFiltersOutput;
+    extractorInputsList[j] = ui.choiceInput('Input', extractorInputPreset, Object.keys(filterInputsDFs));
+    extractorChartsList[j] = getEmptyChart();
+    extractorTypesList[j] = ui.choiceInput('Extractor ' + (j + 1), '', relevantMethods.extractors);
+    let extractorInputsOld = ui.inputs([extractorTypesList[j]]);
+    extractorContainerList[j].appendChild(extractorInputsOld);
+    extractorTypesList[j].onChanged(function () {
+      let extractorType = extractorTypesList[j - 1].value;
+      extractorParametersList[j - 1] = getExtractorParameters(extractorType);
+      extractorInputsNew = ui.div([
+        ui.block25([
+          ui.inputs(
+              [extractorTypesList[j - 1]]
+                  .concat([extractorInputsList[j - 1]])
+                  .concat(Object.values(extractorParametersList[j - 1]))
+                  .concat(addExtractorChartButton)
+          )]
+        ),
+        ui.block75([extractorChartsList[j - 1]])
+      ]);
+      extractorContainerList[j - 1].replaceChild(extractorInputsNew, extractorInputsOld);
+      extractorInputsOld = extractorInputsNew;
+    });
+    accordionExtractors.addPane('Extractor ' + (j + 1), () => containerExtractor, true)
+    j++;
+  }));
+
+  let extractorInputsDFs = {};
+  addExtractorChartButton.appendChild(ui.button('Plot', async () => {
+    let extractorParametersDF = parametersToDataFrame(extractorTypesList, extractorParametersList);
+    let t = DG.DataFrame.fromColumns([filterInputsDFs[filterInputsList[i-1].value].columns.byName(filterInputsList[i-1].value)]);
+    let plotInfo = await applyExtractor(t, samplingFreq.value, extractorParametersDF);
+    let nameOfLastExtractorsOutput = 'Output of Extractor ' + j + ' (' + extractorTypesList[j-1].value + ')';
+    extractorChartsList[j-1].dataFrame = plotInfo;
+    Object.assign(extractorInputsDFs, {[nameOfLastExtractorsOutput]: plotInfo});
   }));
 
   // Indicators dialogue
@@ -333,15 +367,17 @@ function showMainDialog(table, signalType, column, samplingFreq) {
   let indicator = ui.choiceInput('Indicators', '', relevantMethods.indicators);
   let indicatorInputs = ui.inputs([indicator]);
   containerIndicator.appendChild(indicatorInputs);
+  let nameOfLastIndicatorsOutput = '';
+  let indicatorInputsDf = {};
   calculateButton.appendChild(ui.button('Calculate', async () => {
-    paramsT = paramsToTable(filtersList, paramsList);
+    paramsT = parametersToDataFrame(filterTypesList, filterParametersList);
     let t = DG.DataFrame.fromColumns([column.value[0]]);
-    let indicatorDf = await getIndicator(t, samplingFreq.value, paramsT, typesOfEstimators, indicator);
+    let indicatorDf = await getIndicator(t, samplingFreq.value, paramsT, extractorTypesList, indicator);
     let indicatorChart = getEmptyChart();
     accordionIndicators.addPane(indicator.value, () => ui.block(indicatorChart),true);
     indicatorChart.dataFrame = indicatorDf;
-    nameOfLastOutput = 'Output of Estimator: ' + indicator.value;
-    Object.assign(signalInputs, {[nameOfLastOutput]: indicatorDf});
+    nameOfLastIndicatorsOutput = 'Output of Indicator: ' + indicator.value;
+    Object.assign(indicatorInputsDf, {[nameOfLastIndicatorsOutput]: indicatorDf});
   }));
 
   let formView = ui.div([
@@ -358,8 +394,8 @@ function showMainDialog(table, signalType, column, samplingFreq) {
     accordionFilters,
     addFilterButton,
     ui.h2('Information extraction'),
-    ui.divH([containerWithEstimators, containerWithPlotsOfEstimators]),
-    accordionEstimators,
+    accordionExtractors,
+    addExtractorButton,
     ui.h2('Physiological Indicators'),
     ui.divH([containerIndicator, calculateButton]),
     accordionIndicators

@@ -1,5 +1,5 @@
-export function getMethodsAccordingTo(signalType) {
-    const dspPackageMethods = [
+export function getRelevantMethods(signalType) {
+    const dspPackageFilters = [
         'Moving Average Filter',
         'Exponential Filter',
         'Min Max Normalization',
@@ -12,7 +12,7 @@ export function getMethodsAccordingTo(signalType) {
         'Subsample',
         'Averaging Downsampling'
     ];
-    const pyphysioMethods = [
+    const pyphysioFilters = [
         'IIR',
         'FIR',
         'normalize',
@@ -22,14 +22,14 @@ export function getMethodsAccordingTo(signalType) {
         'RemoveSpikes',
         'ConvolutionalFilter'
     ];
-    let commonFilters = dspPackageMethods.concat(pyphysioMethods);
-    let commonEstimators = ['Local energy'];
+    let commonFilters = dspPackageFilters.concat(pyphysioFilters);
+    let commonExtractors = ['Local energy'];
     let commonIndicators = [];
     switch (signalType) {
         case 'ECG':
             return {
                 filters: commonFilters,
-                estimators: commonEstimators.concat([
+                extractors: commonExtractors.concat([
                     'Beat from ECG'
                 ]),
                 indicators: commonIndicators.concat([
@@ -43,7 +43,7 @@ export function getMethodsAccordingTo(signalType) {
                 filters: commonFilters.concat([
                     'DenoiseEDA'
                 ]),
-                estimators: commonEstimators.concat([
+                extractors: commonExtractors.concat([
                     'Phasic estimation'
                 ]),
                 indicators: commonIndicators
@@ -51,42 +51,42 @@ export function getMethodsAccordingTo(signalType) {
         case 'Accelerometer':
             return {
                 filters: commonFilters,
-                estimators: commonEstimators,
+                extractors: commonExtractors,
                 indicators: commonIndicators
             };
         case 'EMG':
             return {
                 filters: commonFilters,
-                estimators: commonEstimators,
+                extractors: commonExtractors,
                 indicators: commonIndicators
             };
         case 'EEG':
             return {
                 filters: commonFilters,
-                estimators: commonEstimators,
+                extractors: commonExtractors,
                 indicators: commonIndicators
             };
         case 'ABP':
             return {
-              filters: commonFilters,
-              estimators: commonEstimators.concat([
-                  'BeatFromBP'
-              ]),
-              indicators: commonIndicators
+                filters: commonFilters,
+                extractors: commonExtractors.concat([
+                    'BeatFromBP'
+                ]),
+                indicators: commonIndicators
             };
         case 'BVP(PPG)':
             return {
-              filters: commonFilters,
-              estimators: commonEstimators.concat([
-                  'BeatFromBP'
-              ]),
-              indicators: commonIndicators
+                filters: commonFilters,
+                extractors: commonExtractors.concat([
+                    'BeatFromBP'
+                ]),
+                indicators: commonIndicators
             };
         case 'Respiration':
             return {
-              filters: commonFilters,
-              estimators: commonEstimators,
-              indicators: commonIndicators
+                filters: commonFilters,
+                extractors: commonExtractors,
+                indicators: commonIndicators
             };
     }
 }
