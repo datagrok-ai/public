@@ -1,6 +1,6 @@
 import * as ui from "datagrok-api/ui";
 
-export function getParametersAccordingTo(filterType) {
+export function getFilterParameters(filterType) {
     switch (filterType) {
         case 'IIR':
             let passFrequency = ui.floatInput('Pass frequency', '');
