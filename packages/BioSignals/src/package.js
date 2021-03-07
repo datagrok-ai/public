@@ -446,15 +446,25 @@ function getDescription(i, filtersLST, allParams) {
 
 async function readPhysionetRecord(file) {
   let f = await grok.functions.eval("BioSignals:readPhysionetRecord");
-  let call = f.prepare({
-    'file': file,
-    'record_name': file.name
-  });
-  await call.call();
-  return call.getParamValue('df');
+  const currentFolder = file.fullPath.substring(0, file.fullPath.length - file.name.length);
+  const isRecursive = false;
+  const fileNameWithoutExtension = file.name.substring(0, file.name.length-4);
+  let fileInfos = await grok.dapi.files.list(currentFolder, isRecursive, fileNameWithoutExtension);
+  if (fileInfos.length === 3) {
+    let call = f.prepare({
+      'fileATR': fileInfos[0],
+      'fileDAT': fileInfos[1],
+      'fileHEA': fileInfos[2],
+      'record_name': file.name
+    });
+    await call.call();
+    return call.getParamValue('df');
+  }
+  alert('In order to view this Physionet recording you need to have \'.atr\', \'.dat\', \'.hea\' in the same folder!');
+  return;
 }
 
-//tags: fileViewer, fileViewer-tar
+//tags: fileViewer, fileViewer-atr, fileViewer-dat, fileViewer-hea
 //input: file file
 //output: view view
 export async function bioSignalViewer(file) {
