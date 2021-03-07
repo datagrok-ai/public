@@ -1,6 +1,45 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-03-07 Dev build 0.89.24
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.89.24`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* fixes RDKit GitHub issue #3852 
+* Functions: minor performance improvements 
+* (Bug) TileViewer doesn't work from JS 
+* Harmonize ui framework (WIP)
+* JS API: EntityMeta (WIP)
+* Wiki: Layout management 
+* Wiki: Harmonization (WIP)
+* Chem: react in panels to tags changes 
+* Package: Chembl Browser (WIP)
+* Optimize population of a dataframe with calculated columns (WIP)
+* (Bug) DG throws error on startup 
+* Chord Diagram (WIP)
+* (Bug) PostFileToCvm doesn't load credentials 
+* Harmonized form 
+* Create Physionet records fileViewer (WIP)
+* CONTRIB.md tweaks. 
+* A sample on combining several variables in one line chart. 
+* Wiki: create descriptions for all packages 
+* A sample for settings up conditional color coding. 
+* Wiki: how-to build an app. Terminology cleanup 
+* New example code 
+* New example 
+* Biosignals (WIP)
+* Customer OAUTH integration (WIP)
+* Fixed analyzer warning 
+
+
 # 2021-03-02 Dev build 0.89.23
 
 ## Latest Docker Images
