@@ -415,46 +415,45 @@ export function tree() {
   return TreeViewNode.tree();
 }
 
-export function intInput(name, value) {
-  return new InputBase(grok_IntInput(name, value));
+export function intInput(name, value, onValueChanged = null) {
+  return new InputBase(grok_IntInput(name, value), onValueChanged);
 }
 
-export function choiceInput(name, selected, items) {
-  return new InputBase(grok_ChoiceInput(name, selected, items));
+export function choiceInput(name, selected, items, onValueChanged = null) {
+  return new InputBase(grok_ChoiceInput(name, selected, items), onValueChanged);
 }
 
-export function multiChoiceInput(name, value, items) {
-  return new InputBase(grok_MultiChoiceInput(name, value, items));
+export function multiChoiceInput(name, value, items, onValueChanged = null) {
+  return new InputBase(grok_MultiChoiceInput(name, value, items), onValueChanged);
 }
 
-export function stringInput(name, value) {
-  return new InputBase(grok_StringInput(name, value));
+export function stringInput(name, value, onValueChanged = null) {
+  return new InputBase(grok_StringInput(name, value), onValueChanged);
 }
 
-export function floatInput(name, value) {
-  return new InputBase(grok_FloatInput(name, value));
+export function floatInput(name, value, onValueChanged = null) {
+  return new InputBase(grok_FloatInput(name, value), onValueChanged);
 }
 
-export function dateInput(name, value) {
-  return new InputBase(grok_DateInput(name, value.d));
+export function dateInput(name, value, onValueChanged = null) {
+  return new InputBase(grok_DateInput(name, value.d), onValueChanged);
 }
 
-export function boolInput(name, value, callback = null) {
-  return new InputBase(grok_BoolInput(name, value), callback);
+export function boolInput(name, value, onValueChanged = null) {
+  return new InputBase(grok_BoolInput(name, value), onValueChanged);
 }
 
-export function moleculeInput(name, value) {
-  return new InputBase(grok_MoleculeInput(name, value));
+export function moleculeInput(name, value, onValueChanged = null) {
+  return new InputBase(grok_MoleculeInput(name, value), onValueChanged);
 }
 
-export function columnInput(name, table, value) {
-  return new InputBase(grok_ColumnInput(name, table.d, value.d));
+export function columnInput(name, table, value, onValueChanged = null) {
+  return new InputBase(grok_ColumnInput(name, table.d, value.d), onValueChanged);
 }
 
-export function columnsInput(name, table) {
-  return new InputBase(grok_ColumnsInput(name, table.d));
+export function columnsInput(name, table, onValueChanged = null) {
+  return new InputBase(grok_ColumnsInput(name, table.d), onValueChanged);
 }
-
 
 /**
  * @param {HTMLElement} element
