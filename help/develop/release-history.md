@@ -1,6 +1,23 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-03-07 Dev build 0.89.25
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.89.25`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* JS API: onValueChanged for all controls 
+* Create Physionet records fileViewer (WIP)
+* Harmonize ui framework (WIP)
+
+
 # 2021-03-07 Dev build 0.89.24
 
 ## Latest Docker Images
