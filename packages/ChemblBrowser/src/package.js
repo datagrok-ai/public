@@ -27,9 +27,7 @@ export async function Browser() {
     let ro5Violation = ui.choiceInput('RO5 Violations', '0', ['0','1','2','3','4'] );
     let maxPhase = ui.choiceInput('Max Phase', '0', ['0','1','2','3','4'] );
     let molecule_types = ['Protein','Oligonucleotide','Unknown','Antibody','Oligosaccharide','Unclassified','Enzyme','Cell'];
-    let molecule_type = ui.choiceInput('Molecule type', '', molecule_types );
-    let showSynonyms = ui.boolInput('Show synonyms', false, () => update("ShowSynonyms", {}));
-    let showChemblID = ui.boolInput('Show ChemblID', false, () => update("ShowChemblID", {}));
+    let molecule_type = ui.choiceInput('Molecule type', molecule_types[0], molecule_types );
     let clear = ui.button([ui.iconFA('trash-alt'), 'Clear filters'], () => clearFilters());
 
     let controlPanel = ui.form([
@@ -39,23 +37,22 @@ export async function Browser() {
         ro5Violation,
         maxPhase,
         molecule_type,
-        showSynonyms,
-        showChemblID,
         clear
     ]);
     $(controlPanel).addClass('ui-form-condensed'); //TODO: use ui.smallForm instead
 
     // Filter handlers
-    molecule.onChanged(() => update("FindBySubstructure", {'sub': molecule.stringValue}));
-    subName.onChanged(() => update("FindByName", {'sub': subName.stringValue}));
-    molregno.onChanged(() => update("FindByMolregno", {'molregno': molregno.value}));
-    ro5Violation.onChanged(() => update("FindByRO5", {'num_ro5_violations': parseInt(ro5Violation.value)}));
-    maxPhase.onChanged(() => update("FilterByMaxPhase", {'max_phase': parseInt(maxPhase.value)}));
-    molecule_type.onChanged(() => update("FilterByMoleculeType", {'molecule_type': molecule_type.value}));
+    molecule.onChanged(() => update());
+    subName.onChanged(() => update());
+    molregno.onChanged(() => update());
+    ro5Violation.onChanged(() => update());
+    maxPhase.onChanged(() => update());
+    molecule_type.onChanged(() => update());
 
 
     async function initView() {
-        let data = await grok.data.query(`${packageName}:allChemblStructures`, {});
+        let queryParameters = {'substructure': molecule.value, 'subname': subName.value,'molregno': molregno.value,'num_ro5_violations': parseInt(ro5Violation.value),'max_phase': parseInt(maxPhase.value),'molecule_type': molecule_type.value};
+        let data = await grok.data.query(`${packageName}:ChemblBrowserQuery`, queryParameters);
         data.col('canonical_smiles').semType = DG.SEMTYPE.MOLECULE;
         v = grok.shell.newView('Chembl Browser');
         r = DG.Viewer.fromType(DG.VIEWER.TILE_VIEWER, data);
@@ -64,8 +61,9 @@ export async function Browser() {
         v.box = true;
     }
 
-    async function update(queryName, queryParameters) {
-        let query = await grok.data.query(`${packageName}:${queryName}`, queryParameters);
+    async function update() {
+        let queryParameters = {'substructure': molecule.value, 'subname': subName.value,'molregno': molregno.value,'num_ro5_violations': parseInt(ro5Violation.value),'max_phase': parseInt(maxPhase.value),'molecule_type': molecule_type.value};
+        let query = await grok.data.query(`${packageName}:ChemblBrowserQuery`, queryParameters);
         query.col('canonical_smiles').semType = DG.SEMTYPE.MOLECULE;
         v.root.children[0].remove();
         r = DG.Viewer.fromType(DG.VIEWER.TILE_VIEWER, query);
