@@ -233,7 +233,7 @@ function showMainDialog(table, signalType, column, samplingFreq) {
   }));
 
   addFilterChartButton.appendChild(ui.button('Plot', async () => {
-
+    let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting filter\'s output...');
     let t;
     if (filterInputsList.length === 1) {
       t = DG.DataFrame.fromColumns([column.value[0]]);
@@ -308,6 +308,7 @@ function showMainDialog(table, signalType, column, samplingFreq) {
         nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + filterTypesList[i-1].value + ')';
         plotFL = await applyFilter(t, samplingFreq.value, paramsT);
     }
+    pi.close();
     filterChartsList[i - 1].dataFrame = plotFL;
     Object.assign(filterOutputsObj, {[nameOfLastFiltersOutput]: plotFL});
   }));
@@ -355,10 +356,12 @@ function showMainDialog(table, signalType, column, samplingFreq) {
 
   let nameOfLastExtractorsOutput = '';
   addExtractorChartButton.appendChild(ui.button('Plot', async () => {
+    let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting extractor...');
     let extractorParametersDF = parametersToDataFrame(extractorTypesList, extractorParametersList);
     let t = DG.DataFrame.fromColumns([filterOutputsObj[filterInputsList[i-1].value].columns.byName(filterInputsList[i-1].value)]);
     let plotInfo = await applyExtractor(t, samplingFreq.value, extractorParametersDF);
     nameOfLastExtractorsOutput = 'Output of Extractor ' + j + ' (' + extractorTypesList[j-1].value + ')';
+    pi.close();
     extractorChartsList[j-1].dataFrame = plotInfo;
     Object.assign(extractorOutputsObj, {[nameOfLastExtractorsOutput]: plotInfo});
   }));
@@ -404,11 +407,13 @@ function showMainDialog(table, signalType, column, samplingFreq) {
   }));
 
   addIndicatorChartButton.appendChild(ui.button('Plot', async () => {
+    let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting indicator...');
     let indicatorParametersDF = parametersToDataFrame(indicatorTypesList, indicatorParametersList);
     let t = DG.DataFrame.fromColumns([extractorOutputsObj[indicatorInputsList[k-1].value].columns.byName('RR intervals')]);
     let indicatorDf = await getIndicator(t, samplingFreq.value, indicatorParametersDF, indicatorTypesList, indicatorTypesList[k-1]);
     let nameOfLastIndicatorsOutput = 'Output of Indicator ' + k + ' (' + indicatorTypesList[k-1].value + ')';
     indicatorChartsList[k-1].dataFrame = indicatorDf;
+    pi.close();
     Object.assign(extractorOutputsObj, {[nameOfLastIndicatorsOutput]: indicatorDf});
   }));
 
@@ -449,12 +454,13 @@ function getDescription(i, filtersLST, allParams) {
 //output: view view
 export async function bioSignalViewer(file) {
   let view = DG.View.create();
-  let f = await grok.functions.eval("BioSignals:readPhysionetRecord");
   const currentFolder = file.fullPath.substring(0, file.fullPath.length - file.name.length);
   const isRecursive = false;
   const fileNameWithoutExtension = file.name.substring(0, file.name.length - 3);
-  let fileInfos = await grok.dapi.files.list(currentFolder, isRecursive, fileNameWithoutExtension);
+  const fileInfos = await grok.dapi.files.list(currentFolder, isRecursive, fileNameWithoutExtension);
   if (fileInfos.length === 3) {
+    let pi = DG.TaskBarProgressIndicator.create('Reading Physionet record...');
+    let f = await grok.functions.eval("BioSignals:readPhysionetRecord");
     let call = f.prepare({
       'fileATR': fileInfos.find( ({extension}) => extension === 'atr'),
       'fileDAT': fileInfos.find( ({extension}) => extension === 'dat'),
@@ -462,7 +468,8 @@ export async function bioSignalViewer(file) {
       'record_name': file.name
     });
     await call.call();
-    let t = call.getParamValue('df');
+    const t = call.getParamValue('df');
+    pi.close();
     view.append(ui.block([DG.Viewer.lineChart(t)], 'd4-ngl-viewer'));
   }
   else {
