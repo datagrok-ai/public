@@ -444,34 +444,30 @@ function getDescription(i, filtersLST, allParams) {
   return 'Output of Filter ' + i + ': ' + a + '.';
 }
 
-async function readPhysionetRecord(file) {
-  let f = await grok.functions.eval("BioSignals:readPhysionetRecord");
-  const currentFolder = file.fullPath.substring(0, file.fullPath.length - file.name.length);
-  const isRecursive = false;
-  const fileNameWithoutExtension = file.name.substring(0, file.name.length-4);
-  let fileInfos = await grok.dapi.files.list(currentFolder, isRecursive, fileNameWithoutExtension);
-  if (fileInfos.length === 3) {
-    let call = f.prepare({
-      'fileATR': fileInfos[0],
-      'fileDAT': fileInfos[1],
-      'fileHEA': fileInfos[2],
-      'record_name': file.name
-    });
-    await call.call();
-    return call.getParamValue('df');
-  }
-  alert('In order to view this Physionet recording you need to have \'.atr\', \'.dat\', \'.hea\' in the same folder!');
-  return;
-}
-
 //tags: fileViewer, fileViewer-atr, fileViewer-dat, fileViewer-hea
 //input: file file
 //output: view view
 export async function bioSignalViewer(file) {
   let view = DG.View.create();
-  let t = await readPhysionetRecord(file);
-  var host = ui.block([DG.Viewer.lineChart(t)], 'd4-ngl-viewer');
-  view.append(host);
+  let f = await grok.functions.eval("BioSignals:readPhysionetRecord");
+  const currentFolder = file.fullPath.substring(0, file.fullPath.length - file.name.length);
+  const isRecursive = false;
+  const fileNameWithoutExtension = file.name.substring(0, file.name.length - 3);
+  let fileInfos = await grok.dapi.files.list(currentFolder, isRecursive, fileNameWithoutExtension);
+  if (fileInfos.length === 3) {
+    let call = f.prepare({
+      'fileATR': fileInfos.find( ({extension}) => extension === 'atr'),
+      'fileDAT': fileInfos.find( ({extension}) => extension === 'dat'),
+      'fileHEA': fileInfos.find( ({extension}) => extension === 'hea'),
+      'record_name': file.name
+    });
+    await call.call();
+    let t = call.getParamValue('df');
+    view.append(ui.block([DG.Viewer.lineChart(t)], 'd4-ngl-viewer'));
+  }
+  else {
+    view.append(ui.divText('In order to view this Physionet recording you need to have \'.atr\', \'.dat\', \'.hea\' in the same folder!'));
+  }
   return view;
 }
 
