@@ -544,14 +544,30 @@ fetch some nucleotide data regarding coronavirus.
    It would take some effort to reach the JSON Swagger at the link.
    Follow recommendations [here](access/open-api.md#Troubleshooting).
    Save this file to a desktop with a name, say, `ENA.json`.
-2. Load the Swagger into Datarok by drag and drop into the platform window.
-3. Modify the resulting connection's `Name` to `ENA`, `Url` to `https://www.ebi.ac.uk/ena/browser/api/`.
-4. Check the connection is valid with the `Test` button, and hit `Ok` to save the edit.
-5. In the expanded view of the `ENA` connection, locate `Perform a text search and download data in XML format` and hit `Run`
+3. Load the Swagger into Datarok by drag and drop into the platform window.
+4. Modify the resulting connection's `Name` to `ENA`, `Url` to `https://www.ebi.ac.uk/ena/browser/api/`.
+5. Check the connection is valid with the `Test` button, and hit `Ok` to save the edit.
+6. In the expanded view of the `ENA` connection, locate `Perform a text search and download data in XML format` and hit `Run`
    or double-click it.
-6. Enter the parameter values: set `Query` to `coronavirus`, `Result` to `assembly`. Hit `Ok`.
+7. Enter the parameter values: set `Query` to `coronavirus`, `Result` to `assembly`. Hit `Ok`.
    As a result, you'd find a table, which was prepared from the received XML file by Datagrok.
-7. Close the table, locate the saved query in the list and run it.
+8. Close the table, locate the saved query in the list and run it.
+9. Bring the connection to the package:
+   * Put the Swagger file in a `swaggers` folder of the package. Make sure it ships the `basePath` and `host`
+   * Add the following function to `package.js`:
+   ```
+   //name: testENASwagger
+   export async function testENASwagger() {
+     let data = await grok.data.query('<Name>sequence:PerformATextSearchAndDownloadDataInXMLFormat',
+       {'query': 'coronavirus', 'result': 'assembly'});
+     grok.shell.addTableView(data);
+   }
+   ```
+   * Note how the Swagger's query name translates into a package query name
+   * You can obtain this query name with the Datagrok UI. Click on the query
+     of interest, `"Perform a text search and download data in XML format"` in our
+     case, and find a `Links...` section. Click it and copy a function's name from the URI.
+   * Deploy the package and make sure `testENASwagger` function works in Datagrok.
 
 We provide a handful of demo Swaggers, check their source JSON files
 [here](https://github.com/datagrok-ai/public/tree/master/packages/Swaggers/swaggers)
