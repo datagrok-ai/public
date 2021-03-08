@@ -240,12 +240,22 @@ out of the box. If problems with import occur, this often has to do with Swagger
 deviations or mismatch. Both Datagrok and Postman Swagger parsers are strict in this sense.
 If you encounter import errors, the following two steps can help.
 
-1. In the JSON file beginning, change `"swagger": "2.0"` to `"openapi": "2.0"`
+1. If Datagrok loads the Swagger file successfully, but the `basePath`or `host` aren't present along with
+   the Swagger icon, add the following section to the file:
+   ```
+   "schemes": [
+     "https",
+     "http"
+   ]
+   ```
 
-2. Add a `"version"` section with an arbitrary version to the `"info"` section, if the `"version"` isn't present:  
-```
-"version": "1.0.0"
-```
+2. If Postman doesn't open the file, try changing `"swagger": "2.0"` to `"openapi": "2.0"`
+
+3. If Postman or Datagrok cannot open the file, add a `"version"` section with an arbitrary version
+   to the `"info"` section, if the `"version"` isn't present:  
+   ```
+   "version": "1.0.0"
+   ```
 
 ## Videos
 
