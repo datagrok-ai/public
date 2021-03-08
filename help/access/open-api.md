@@ -256,6 +256,8 @@ If you encounter import errors, the following two steps can help.
    ```
    "version": "1.0.0"
    ```
+   
+4. It's a good practice to include Swagger's name, if not present. It is under `"info" -> "title"` section.
 
 ## Videos
 
