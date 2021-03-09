@@ -265,6 +265,13 @@ export class TimelinesViewer extends EChartViewer {
           marker.shape.y = -this.markerSize / 2;
           marker.shape.r = this.markerSize / 4;
           marker.rotation = 0.785398;
+        } else if (this.marker === 'rect') {
+          marker.x = 0;
+          marker.y = 0;
+          marker.shape.x = xPos(this.markerSize / 2);
+          marker.shape.y = yPos(this.markerSize / 2);
+          marker.shape.r = 0;
+          marker.rotation = 0;
         }
 
         group.children.push(marker);
