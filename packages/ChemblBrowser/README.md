@@ -10,3 +10,7 @@ The package reinforces following functionality from the original UI:
     * [MAX phases](https://en.wikipedia.org/wiki/MAX_phases)
     * molecule types - 'Protein', 'Oligonucleotide', 'Unknown', 'Antibody', 'Oligosaccharide', 'Unclassified', 'Enzyme', 'Cell'
     * Subname and Substructure (which can be written in canonical smiles as String or drawed by datagrok tool `ui.moleculeInput`)
+* Routing system (share URL to reproduce search results)
+
+
+![Application](images/application.gif)
