@@ -31,11 +31,13 @@ Currently, the project is in its early stages, and we welcome you to contribute 
 [Pyphysio](https://github.com/MPBA/pyphysio) is a library that contains the implementations of the most important algorithms for the analysis of physiological data.
 The latter methods are divided into the following categories:
 
-* **estimators**: from a signal produce a signal of a different type;
-* **filters**: from a signal produce a filtered signal of the same type;
-* **indicators**: from a signal produce a value;
-* **segmentation**: from a signal produce a series of segments;
-* **tools**: from a signal produce arbitrary data;
+| Category | Input | Output | Examples |
+|----|----|----|----|
+| **Filters** | Signal | Filtered signal of the same type | Apply [elliptic filter](https://en.wikipedia.org/wiki/Elliptic_filter) to raw ECG signal |
+| **Estimators** | Signal | Signal of a different type | Get [inter beat intervals (IBI)](https://en.wikipedia.org/wiki/Heart_rate_variability#Variation) from ECG signal |
+| **Segmentators** | Signal | Series of segments | Cut 24-hour [Holter monitor](https://en.wikipedia.org/wiki/Holter_monitor) record into 10-minute segments to compute how many arrhythmias occurred over different time intervals |
+| **Indicators** | Signal | Value | Compute sequence of HRV indicators from segmented RR intervals |
+| **Tools** | Signal | Arbitrary data | Detects outliers in the [IBI signal](https://en.wikipedia.org/wiki/Heart_rate_variability#Variation), compute rising slope of [R peaks](https://en.wikipedia.org/wiki/QRS_complex), estimate the power spectral density (PSD) of the signal |
 
 # A unique approach to every signal
 Key signal types:
