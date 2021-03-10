@@ -135,7 +135,7 @@
       "id": "6474a6e0-0d07-48c5-95f1-50a2f7742d78",
       "comment": "",
       "command": "executeScript",
-      "target": "element=document.querySelector(\"div[name=viewer-Filters] div[name=viewer-Grid]:nth-child(2) > canvas:nth-child(4)\"); event = new MouseEvent(\"click\", {     bubbles: true,     cancelable: false,     view: window,     button: 2,     buttons: 0,     clientX: element.getBoundingClientRect().x+5,     clientY: element.getBoundingClientRect().y+25}); element.dispatchEvent(event);",
+      "target": "element=document.querySelector(\"div[name=viewer-Filters] div[name=viewer-Grid]:nth-child(2) > canvas:nth-child(4)\"); event = new MouseEvent(\"click\", {     bubbles: true,     cancelable: false,     view: window,     button: 2,     buttons: 0,     clientX: element.getBoundingClientRect().x+35,     clientY: element.getBoundingClientRect().y+45}); element.dispatchEvent(event);",
       "targets": [],
       "value": ""
     }, {
@@ -179,7 +179,7 @@
       "id": "5f906b3b-755b-4114-9cbe-94a6db9851cf",
       "comment": "",
       "command": "executeScript",
-      "target": "element=document.querySelector(\"div[name=viewer-Filters] div[name=viewer-Grid]:nth-child(3) > canvas:nth-child(4)\"); event = new MouseEvent(\"click\", {     bubbles: true,     cancelable: false,     view: window,     button: 2,     buttons: 0,     clientX: element.getBoundingClientRect().x+5,     clientY: element.getBoundingClientRect().y+30}); element.dispatchEvent(event);",
+      "target": "element=document.querySelector(\"div[name=viewer-Filters] .d4-flex-col:nth-child(3) div[name=viewer-Grid] canvas:nth-child(4)\"); event = new MouseEvent(\"click\", {     bubbles: true,     cancelable: false,     view: window,     button: 2,     buttons: 0,     clientX: element.getBoundingClientRect().x+30,     clientY: element.getBoundingClientRect().y+45}); element.dispatchEvent(event);",
       "targets": [],
       "value": ""
     }, {
@@ -187,13 +187,6 @@
       "comment": "",
       "command": "pause",
       "target": "1000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "fa1bc6cf-62b9-4b24-8d43-72fb7b12488c",
-      "comment": "",
-      "command": "executeScript",
-      "target": "element=document.querySelector(\"div[name=viewer-Filters] div[name=viewer-Grid]:nth-child(3) > canvas:nth-child(4)\"); event = new MouseEvent(\"click\", {     bubbles: true,     cancelable: false,     view: window,     button: 2,     buttons: 0,     clientX: element.getBoundingClientRect().x+5,     clientY: element.getBoundingClientRect().y+115}); element.dispatchEvent(event);",
       "targets": [],
       "value": ""
     }, {
@@ -225,7 +218,7 @@
         ["xpath=//div[@id='elementContent']/div/div/div/div/span/span", "xpath:idRelative"],
         ["xpath=//div[3]/div/div[2]/div/div/div/div/div/span/span", "xpath:position"]
       ],
-      "value": "2497 filtered rows"
+      "value": "53 filtered rows"
     }, {
       "id": "3d1f97f0-9497-4c47-9bc6-5ea5ca90dbce",
       "comment": "",
@@ -237,19 +230,40 @@
       "id": "a49890df-4b64-45d1-a991-a3bac366542c",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//td[contains(.,'RACE: Black,Caucasian')]",
+      "target": "xpath=//td[contains(.,'RACE: Black')]",
       "targets": [
-        ["css=.d4-table tr:nth-child(2) > td", "css:finder"],
+        ["css=tbody:nth-child(1) > tr:nth-child(2) > td", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[2]/table/tbody/tr[2]/td", "xpath:idRelative"],
         ["xpath=//tr[2]/td", "xpath:position"],
-        ["xpath=//td[contains(.,'RACE: Black,Caucasian')]", "xpath:innerText"]
+        ["xpath=//td[contains(.,'RACE: Black')]", "xpath:innerText"]
       ],
+      "value": ""
+    }, {
+      "id": "47910473-abb7-4eb3-8c9b-a18620923256",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "5b999f3e-9527-4c07-afc8-1af6e54b57b3",
+      "comment": "",
+      "command": "executeScript",
+      "target": "element = window; event = new KeyboardEvent(\"keydown\", {keyCode: 27}); element.dispatchEvent(event);",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "350bd935-b387-423a-bd4f-cd6f60036c44",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "50a86cde-6b97-4492-a1b7-f57435ef7a0d",
       "comment": "",
       "command": "executeScript",
-      "target": "element=document.querySelector(\".d4-filter-histogram:nth-child(6) div[name=viewer-Histogram] #center canvas\"); event = new MouseEvent(\"mousedown\", {     bubbles: true,     cancelable: false,     view: window,     button: 2,     buttons: 0,     clientX: element.getBoundingClientRect().x+73,     clientY: element.getBoundingClientRect().y+30}); element.dispatchEvent(event);",
+      "target": "element=document.querySelector(\"div[name=viewer-Filters] .d4-flex-col:nth-child(6) div[name=viewer-Histogram] canvas\"); event = new MouseEvent(\"mousedown\", {     bubbles: true,     cancelable: false,     view: window,     button: 2,     buttons: 0,     clientX: element.getBoundingClientRect().x+73,     clientY: element.getBoundingClientRect().y+30}); element.dispatchEvent(event);",
       "targets": [],
       "value": ""
     }, {
@@ -281,21 +295,7 @@
         ["xpath=//div[@id='elementContent']/div/div/div/div/span/span", "xpath:idRelative"],
         ["xpath=//div[3]/div/div[2]/div/div/div/div/div/span/span", "xpath:position"]
       ],
-      "value": "269 selected rows"
-    }, {
-      "id": "3084f6d3-925f-4234-b358-7e1837e8aae7",
-      "comment": "",
-      "command": "executeScript",
-      "target": "element=document.querySelector(\"div[name=viewer-Filters] div[name=viewer-Grid]:nth-child(4) > canvas:nth-child(4)\"); event = new MouseEvent(\"click\", {     bubbles: true,     cancelable: false,     view: window,     button: 2,     buttons: 0,     clientX: element.getBoundingClientRect().x+20,     clientY: element.getBoundingClientRect().y+150}); element.dispatchEvent(event);",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "4cf435f1-4297-4372-b72a-d96270b44356",
-      "comment": "",
-      "command": "pause",
-      "target": "1000",
-      "targets": [],
-      "value": ""
+      "value": "597 selected rows"
     }, {
       "id": "8369a5b3-ee23-449d-aab0-417faa8f4207",
       "comment": "",
@@ -308,17 +308,6 @@
         ["xpath=//div[2]/i", "xpath:position"]
       ],
       "value": ""
-    }, {
-      "id": "0f1d611d-b12b-48a8-af11-83b32a30b95e",
-      "comment": "",
-      "command": "verifyText",
-      "target": "name=span-selected",
-      "targets": [
-        ["css=.d4-link-label > span", "css:finder"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div/span/span", "xpath:idRelative"],
-        ["xpath=//div[3]/div/div[2]/div/div/div/div/div/span/span", "xpath:position"]
-      ],
-      "value": "2550 selected rows"
     }, {
       "id": "1c8d39c6-978a-4477-ba6a-74d8aaab6cfe",
       "comment": "",
@@ -368,21 +357,129 @@
       ],
       "value": ""
     }, {
-      "id": "9b34b630-0476-457f-abac-39e36e8a3f86",
-      "comment": "",
-      "command": "executeScript",
-      "target": "element=document.querySelector(\"div[name=viewer-Filters] div[name=viewer-Grid]:nth-child(5) > canvas:nth-child(4)\");  event = new MouseEvent(\"click\", {     bubbles: true,     cancelable: false,     view: window,     button: 2,     buttons: 0,     clientX: element.getBoundingClientRect().x+5,     clientY: element.getBoundingClientRect().y+30});  element.dispatchEvent(event);",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "bd810286-a127-4e96-8c21-e8ab9deaf022",
+      "id": "0547c0cf-70ec-48b0-9725-81b7750fe896",
       "comment": "",
       "command": "pause",
       "target": "1000",
       "targets": [],
       "value": ""
     }, {
-      "id": "c9662045-74f5-4e04-adec-37399e4e915f",
+      "id": "000f2ed7-7d92-4391-9a86-875bf4075569",
+      "comment": "",
+      "command": "executeScript",
+      "target": "let element = window; let event = new KeyboardEvent(\"keydown\", {keyCode: 192}); element.dispatchEvent(event);",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "bedb1a25-46fe-4d69-94ff-3095c33eef52",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "eb865d54-c86f-49f8-88f0-9aff28d32fdc",
+      "comment": "",
+      "command": "click",
+      "target": "css=.d4-console-input > .ui-input-editor",
+      "targets": [
+        ["css=.d4-console-input > .ui-input-editor", "css:finder"],
+        ["xpath=(//input[@type='text'])[4]", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div[3]/input", "xpath:idRelative"],
+        ["xpath=//div[3]/input", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "5c2ea171-f280-4ff0-9a52-87b771230e3d",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "73b74981-08f9-4776-886c-e21c86023320",
+      "comment": "",
+      "command": "type",
+      "target": "css=.d4-console-input > .ui-input-editor",
+      "targets": [
+        ["css=.d4-console-input > .ui-input-editor", "css:finder"],
+        ["xpath=(//input[@type='text'])[4]", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div[3]/input", "xpath:idRelative"],
+        ["xpath=//div[3]/input", "xpath:position"]
+      ],
+      "value": "SelectRows(, CellEquals(\"SEX\", \"M\"))"
+    }, {
+      "id": "67e02f5d-6408-4d44-b0e1-2903d8bff744",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "68fd6ad3-0c7e-4f2c-b08c-dcdeae699785",
+      "comment": "",
+      "command": "sendKeys",
+      "target": "css=.d4-console-input > .ui-input-editor",
+      "targets": [
+        ["css=.d4-console-input > .ui-input-editor", "css:finder"],
+        ["xpath=(//input[@type='text'])[4]", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div[3]/input", "xpath:idRelative"],
+        ["xpath=//div[3]/input", "xpath:position"]
+      ],
+      "value": "${KEY_ENTER}"
+    }, {
+      "id": "e282ab9d-cbdc-4ca8-9d04-7cdb6795ecf5",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "590ab2d1-c498-41f9-a0ed-42876819bf92",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//label[contains(.,'Delete Rows')]",
+      "targets": [
+        ["css=.d4-entity-markup-row:nth-child(1) > .d4-link-action", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div[2]/div/span/label", "xpath:idRelative"],
+        ["xpath=//span/label", "xpath:position"],
+        ["xpath=//label[contains(.,'Delete Rows')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "4b30dd5e-2358-4273-b064-ac6a9be6b671",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "75d00ec7-9c87-4dd7-aec6-8f2976db8179",
+      "comment": "",
+      "command": "executeScript",
+      "target": "element=document.querySelector(\"div[name=viewer-Filters] div[name=viewer-Grid]:nth-child(2) > canvas:nth-child(4)\"); event = new MouseEvent(\"click\", {     bubbles: true,     cancelable: false,     view: window,     button: 2,     buttons: 0,     clientX: element.getBoundingClientRect().x+35,     clientY: element.getBoundingClientRect().y+45}); element.dispatchEvent(event);",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "7ec8d813-f043-4db7-89aa-708ae6b65ce8",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "a97fc35a-76d8-43fa-909b-4504d5a893bf",
+      "comment": "",
+      "command": "verifyElementNotPresent",
+      "target": "name=span-filtered",
+      "targets": [
+        ["css=.d4-link-label > span", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div/span/span", "xpath:idRelative"],
+        ["xpath=//div[3]/div/div[2]/div/div/div/div/div/span/span", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "16c88a12-7462-4852-bb90-9f3df3087ace",
       "comment": "",
       "command": "verifyElementNotPresent",
       "target": "xpath=//i[@name='icon-exclamation-circle']",
@@ -392,6 +489,13 @@
         ["xpath=//div[@id='rootDiv']/div/div[2]/i", "xpath:idRelative"],
         ["xpath=//div[2]/i", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "233d283f-a581-4294-8d4c-140bc25efde0",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
+      "targets": [],
       "value": ""
     }]
   }],
