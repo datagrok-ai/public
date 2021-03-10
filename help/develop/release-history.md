@@ -15,7 +15,7 @@
 
 * Wiki: BioSignals types update 
 * Wiki: Harmonization (WIP)
-* Programming exercises (WIP)
+* Wiki: Programming exercises (WIP)
 * Package: Chembl Browser (WIP)
 * Biosignals (WIP)
 * Charts: Timelines (WIP)
@@ -25,18 +25,13 @@
 * (Bug) Package Properties ignored on repository publish 
 * (Bug) Grid View: Selection display is drawing incorrect on high res.displays (MacOS) 
 * (Bug) error: NullError: method not found: '_ddt$_name' on null 
-* Improvement (minor) in internal docs 
 * Improved bitset notification logic to respect current level of notifications (aka updateLevel) 
-* CMD script for getting all Dart dependencies 
-* [Bar Chart: add setting for excluding null values category on bar segments](https://community.datagrok.ai/t/bar-chart-color-by-category/516|https://community.datagrok.ai/t/bar-chart-color-by-category/516/4) 
+* [Bar Chart: add setting for excluding null values category on bar segments](https://community.datagrok.ai/t/bar-chart-color-by-category/516)
 * (Bug) Filters: deletion of rows in grid/df results in incorrect filters 
-* Viewers (Bar Chart, etc) tooltips improvements (Novartis UX/UI) (WIP)
-* empty file, delete, woring around some stupid git issue 
-* Auto-generated code. 
+* Viewers tooltips improvements (WIP)
 * Add annotator functionality (WIP)
 * JS API: preserve metadata while changing column type (WIP)
 * Trellis Plot: show more granular X and Y axis ticks on line charts 
-* Fixed tests 
 
 
 # 2021-03-07 Dev build 0.89.25
