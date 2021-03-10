@@ -1,6 +1,25 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-03-10 Dev build 0.89.27
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.89.27`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Release notes fix 
+* Add annotator functionality (WIP)
+* Packages: Init function 
+* Harmonize ui framework (WIP)
+* /info/packages route 
+
+
 # 2021-03-10 Dev build 0.89.26
 
 ## Latest Docker Images
