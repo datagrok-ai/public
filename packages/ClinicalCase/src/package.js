@@ -32,7 +32,6 @@ export function clinicalCaseInit() {
         }
     }
 
-    grok.shell.info('foo!');
     if (Object.keys(links).every((key) => grok.shell.tableByName(key))) {
       grok.shell.topMenu.group('Clin').item('Timelines', () => clinicalCaseTimelines());
     }
