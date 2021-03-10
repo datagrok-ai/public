@@ -7,8 +7,16 @@ import {getRelevantMethods} from "./getRelevantMethods.js";
 import {getFilterParameters} from "./getFilterParameters.js";
 import {getExtractorParameters} from "./getExtractorParameters.js";
 import {getIndicatorParameters} from "./getIndicatorParameters.js";
+import {Annotator} from "./annotator.js";
 
 export let _package = new DG.Package();
+
+//name: Annotator
+//tags: viewer
+//output: viewer result
+export function annotator() {
+  return new Annotator();
+}
 
 async function asample(data, col, windowSize, offset) {
   return await grok.functions.call('Dsp:asample',
@@ -425,7 +433,7 @@ function showMainDialog(table, signalType, column, samplingFreq) {
         signalType
       ])],'formview'),
     ui.block75([
-      DG.Viewer.fromType('Line chart', table, {yColumnNames: column.value.map((c) => {return c.name})})
+      DG.Viewer.fromType('Annotator', table, {yColumnNames: column.value.map((c) => {return c.name})})
     ]),
     ui.h2('Filtering and Preprocessing'),
     accordionFilters,

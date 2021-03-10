@@ -4,7 +4,8 @@
 	"version": "0.0.1",
 	"description": "",
 	"dependencies": {
-		"datagrok-api": "latest"
+		"datagrok-api": "latest",
+		"echarts": "^5.0.2"
 	},
 	"scripts": {
 		"debug-biosignals": "grok publish --rebuild",
