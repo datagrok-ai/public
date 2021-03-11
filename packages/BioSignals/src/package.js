@@ -433,7 +433,7 @@ function showMainDialog(table, signalType, column, samplingFreq) {
         signalType
       ])],'formview'),
     ui.block75([
-      DG.Viewer.fromType('Annotator', table, {yColumnNames: column.value.map((c) => {return c.name})})
+      DG.Viewer.fromType('Annotator', table)
     ]),
     ui.h2('Filtering and Preprocessing'),
     accordionFilters,
