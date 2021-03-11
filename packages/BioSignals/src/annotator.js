@@ -9,13 +9,43 @@ export class Annotator extends DG.JsViewer {
     constructor() {
         super();
 
-        let my_data = [[0, 9], [1, 40], [2, 100], [3, 20], [4, 30], [5, 10], [6, 30], [7, 10]];
-        let option = { xAxis: {}, yAxis: {}, series: [{data: my_data, type: 'line'}]};
-
         let chartDiv = ui.div(null, { style: { position: 'absolute', left: '0', right: '0', top: '0', bottom: '0'}} );
         this.root.appendChild(chartDiv);
         this.chart = echarts.init(chartDiv);
-        this.chart.setOption(option);
         this.subs.push(ui.onSizeChanged(chartDiv).subscribe((_) => this.chart.resize()));
     }
+
+    onTableAttached() {
+        this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
+        this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => this.render(false)));
+
+        let columnToPlot = this.dataFrame.columns.byName('testEcg');
+        let arrayToPlot = new Array(columnToPlot.length);
+        for (let i = 0; i < columnToPlot.length; i++) {
+            arrayToPlot[i] = [i, columnToPlot.get(i)];
+        }
+        let option = {
+            xAxis: {},
+            yAxis: {},
+            series: [
+                {
+                    data: arrayToPlot,
+                    type: 'line',
+                    symbolSize: 1,
+                    lineStyle: {
+                        width: 0.5,
+                        type: "dotted"
+                    }
+                }
+            ]
+        };
+
+        this.chart.setOption(option);
+        this.render();
+    }
+
+    detach() {
+        this.subs.forEach(sub => sub.unsubscribe());
+    }
+
 }
