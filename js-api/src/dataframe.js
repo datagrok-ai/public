@@ -17,28 +17,66 @@ import {_getIterator, _toIterable} from "./utils";
  * @typedef {function(String): boolean} StringPredicate
  */
 
-class MapProxy {
-  constructor(d) {
-    this.d = d;
-    return new Proxy({}, {
-      get: function (target, prop) {
-        return DG.toJs(grok_Map_Get(d, prop));
-      },
-      set: function (target, prop, value) {
-        grok_Map_Set(d, prop, DG.toDart(value));
-        return true;
-      },
-      deleteProperty: function (target, prop) {
-        grok_Map_Delete(d, DG.toDart(prop));
-        return true;
-      },
-      has: function (target, prop) {
-        return grok_Map_Has(d, DG.toDart(prop));
-      }
-    });
-  }
-}
+/**
+ * Proxies a Dart Map, API-compliant to ES 2015+
+ */
 
+const MapProxy = new Proxy(class {
+    constructor(d) {
+      this.d = d;
+    }
+    keys() {
+      return _toIterable(grok_Map_Keys(this.d));
+    }
+    values() {
+      return _toIterable(grok_Map_Values(this.d));
+    }
+    * [Symbol.iterator] () {
+      for (let key of this.keys()) {
+        const value = DG.toJs(grok_Map_Get(this.d, key));
+        yield [key, value];
+      }
+    }
+    entries() {
+      return this;
+    }
+  }, {
+    construct(target, args) {
+      return new Proxy(new target(...args), {
+        get: function (target, prop) {
+          const val = target[prop];
+          if (typeof val === "function") {
+            return function (...args) {
+              return val.apply(target, args);
+            };
+          } else {
+            return DG.toJs(grok_Map_Get(target.d, prop));
+          }
+        },
+        set: function (target, prop, value) {
+          grok_Map_Set(target.d, prop, DG.toDart(value));
+          return true;
+        },
+        deleteProperty: function (target, prop) {
+          grok_Map_Delete(target.d, DG.toDart(prop));
+          return true;
+        },
+        has: function (target, prop) {
+          return grok_Map_Has(target.d, DG.toDart(prop));
+        },
+        getOwnPropertyDescriptor(target, prop) {
+          return {
+            enumerable: true,
+            configurable: true
+          };
+        },
+        ownKeys: function (target) {
+          return Array.from(target.keys());
+        }
+      });
+    }
+  }
+);
 
 /**
  * DataFrame is a high-performance, easy to use tabular structure with
