@@ -16,36 +16,67 @@ export class Annotator extends DG.JsViewer {
     }
 
     onTableAttached() {
-        this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
-        this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => this.render(false)));
-
         let columnToPlot = this.dataFrame.columns.byName('testEcg');
-        let arrayToPlot = new Array(columnToPlot.length);
+        let base = +new Date();
+        let samplingPeriod = 24 * 3600 * 1000;
+
+        let data = new Array(columnToPlot.length);
         for (let i = 0; i < columnToPlot.length; i++) {
-            arrayToPlot[i] = [i, columnToPlot.get(i)];
+            let now = new Date(base += samplingPeriod);
+            data[i] = [
+                [now.getFullYear(), now.getMonth() + 1, now.getDate()].join('/'),
+                columnToPlot.get(i)
+            ];
         }
+
         let option = {
-            xAxis: {},
-            yAxis: {},
+            tooltip: {
+                trigger: 'axis',
+                position: function (pt) {
+                    return [pt[0], '10%'];
+                }
+            },
+            title: {
+                left: 'center',
+                text: 'Input signal',
+            },
+            toolbox: {
+                feature: {
+                    dataZoom: {
+                        yAxisIndex: 'none'
+                    },
+                    restore: {},
+                    saveAsImage: {}
+                }
+            },
+            xAxis: {
+                type: 'time',
+                boundaryGap: false
+            },
+            yAxis: {
+                type: 'value',
+                boundaryGap: [0, '100%']
+            },
+            dataZoom: [
+                {
+                    type: 'inside',
+                    start: 0,
+                    end: 10
+                },
+                {
+                    start: 0,
+                    end: 10
+                }
+            ],
             series: [
                 {
-                    data: arrayToPlot,
                     type: 'line',
-                    symbolSize: 1,
-                    lineStyle: {
-                        width: 0.5,
-                        type: "dotted"
-                    }
+                    symbol: 'none',
+                    data: data
                 }
             ]
         };
 
         this.chart.setOption(option);
-        this.render();
     }
-
-    detach() {
-        this.subs.forEach(sub => sub.unsubscribe());
-    }
-
 }
