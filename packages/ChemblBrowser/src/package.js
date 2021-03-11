@@ -15,6 +15,7 @@ export function test(s) {
 let r = null;
 let v = null;
 
+
 //name: Browser
 //tags: app
 export async function Browser() {
@@ -57,7 +58,7 @@ export async function Browser() {
 
 
         // if we came to app by link with molregno in URL
-        if (pathSegments.length == 2 && pathSegments[1].includes("molregno")) {
+        if (pathSegments.length === 2 && pathSegments[1].includes("molregno")) {
             let parsedMolregno = parseInt(pathSegments[1].split("=")[1]);
             molregno.value = parsedMolregno;
             let data = await grok.data.query(`${packageName}:FindByMolregno`, {'molregno': parsedMolregno});
@@ -86,8 +87,6 @@ export async function Browser() {
                 'molecule_type': parsedMoleculeType
             };
 
-            console.log(queryParameters);
-
             molecule.value = parsedSubstructure;
             subName.value = parsedSubname;
             ro5Violation.value = parsedRo5;
@@ -114,7 +113,7 @@ export async function Browser() {
 
     async function update() {
         let ro5 = ro5Violation.value == 'All' ? -1 : parseInt(ro5Violation.value);
-        let max_phase = ro5Violation.value == 'All' ? -1 : parseInt(maxPhase.value);
+        let max_phase = maxPhase.value == 'All' ? -1 : parseInt(maxPhase.value);
         let queryParameters = {
             'substructure': molecule.value,
             'subname': subName.value,
@@ -129,6 +128,8 @@ export async function Browser() {
             query.col('canonical_smiles').semType = DG.SEMTYPE.MOLECULE;
             v.root.children[0].remove();
             r = DG.Viewer.fromType(DG.VIEWER.TILE_VIEWER, query);
+            r.setOptions({look:look});
+            console.log(r.getOptions());
             v.toolbox = ui.div(controlPanel);
             v.append(ui.divV([r]));
             v.box = true;
@@ -165,6 +166,159 @@ export async function Browser() {
     await initView();
 
 }
+
+
+const look = {
+    "sketchState": {
+        "#type": "SketchState",
+        "elementStates": [
+            {
+                "left": 142,
+                "top": 94,
+                "width": 100,
+                "height": 20,
+                "type": "field",
+                "viewerSettings": {
+                    "table": "FindByMolregno",
+                    "column": "molregno",
+                    "format": null
+                }
+            },
+            {
+                "left": 142,
+                "top": 118,
+                "width": 100,
+                "height": 20,
+                "type": "field",
+                "viewerSettings": {
+                    "table": "FindByMolregno",
+                    "column": "compound_name",
+                    "format": null
+                }
+            },
+            {
+                "left": 10,
+                "top": 190,
+                "width": 112,
+                "height": 20,
+                "type": "html",
+                "viewerSettings": {
+                    "markup": "<label class=\"d4-sketch-column-name\">max_phase</label>"
+                }
+            },
+            {
+                "left": 142,
+                "top": 214,
+                "width": 100,
+                "height": 20,
+                "type": "field",
+                "viewerSettings": {
+                    "table": "FindByMolregno",
+                    "column": "chembl_id",
+                    "format": null
+                }
+            },
+            {
+                "left": 10,
+                "top": 118,
+                "width": 112,
+                "height": 20,
+                "type": "html",
+                "viewerSettings": {
+                    "markup": "<label class=\"d4-sketch-column-name\">compound_name</label>"
+                }
+            },
+            {
+                "left": 142,
+                "top": 142,
+                "width": 100,
+                "height": 20,
+                "type": "field",
+                "viewerSettings": {
+                    "table": "FindByMolregno",
+                    "column": "num_ro5_violations",
+                    "format": null
+                }
+            },
+            {
+                "left": 10,
+                "top": 142,
+                "width": 112,
+                "height": 20,
+                "type": "html",
+                "viewerSettings": {
+                    "markup": "<label class=\"d4-sketch-column-name\">num_ro5_violations</label>"
+                }
+            },
+            {
+                "left": 10,
+                "top": 94,
+                "width": 112,
+                "height": 20,
+                "type": "html",
+                "viewerSettings": {
+                    "markup": "<label class=\"d4-sketch-column-name\">molregno</label>"
+                }
+            },
+            {
+                "left": 142,
+                "top": 166,
+                "width": 100,
+                "height": 20,
+                "type": "field",
+                "viewerSettings": {
+                    "table": "FindByMolregno",
+                    "column": "synonyms",
+                    "format": null
+                }
+            },
+            {
+                "left": 10,
+                "top": 166,
+                "width": 112,
+                "height": 20,
+                "type": "html",
+                "viewerSettings": {
+                    "markup": "<label class=\"d4-sketch-column-name\">synonyms</label>"
+                }
+            },
+            {
+                "left": 10,
+                "top": 214,
+                "width": 112,
+                "height": 20,
+                "type": "html",
+                "viewerSettings": {
+                    "markup": "<label class=\"d4-sketch-column-name\">chembl_id</label>"
+                }
+            },
+            {
+                "left": 142,
+                "top": 190,
+                "width": 100,
+                "height": 20,
+                "type": "field",
+                "viewerSettings": {
+                    "table": "FindByMolregno",
+                    "column": "max_phase",
+                    "format": null
+                }
+            },
+            {
+                "left": 7,
+                "top": 20,
+                "width": 235,
+                "height": 70,
+                "type": "field",
+                "viewerSettings": {
+                    "table": "FindByMolregno",
+                    "column": "canonical_smiles",
+                    "format": null
+                }
+            }
+        ]
+    }
+};
 
 
 
