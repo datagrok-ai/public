@@ -2,7 +2,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Circos from 'circos';
 import {select, scaleLinear, scaleOrdinal, color} from 'd3';
-import {layoutConf, topSort} from './configuration.js';
+import {layoutConf, topSort} from './utils.js';
 
 
 export class ChordViewer extends DG.JsViewer {
@@ -20,34 +20,37 @@ export class ChordViewer extends DG.JsViewer {
     this.direction = this.string('direction', 'clockwise', { choices: ['clockwise', 'counterclockwise'] });
 
     this.initialized = false;
-    this.numColumns = [];
-    this.strColumns = [];
-    this.fromCol;
-    this.toCol;
     this.data = [];
-    this.conf = layoutConf;
     this.chords = [];
-    this.chordConf = {};
     this.segments = {};
   }
 
   init() {
     this.innerRadiusMargin = 80;
     this.outerRadiusMargin = 60;
-    this.minSegmentWidth = 10;
-    this.colorScale = scaleOrdinal(DG.Color.categoricalPalette);
+
     this.gapScale = scaleLinear([1, 100], [0.04, 0]).clamp(true);
+    this.colorScale = scaleOrdinal(DG.Color.categoricalPalette);
     this.color = c => DG.Color.toRgb(this.colorScale(c));
-    this.chordConf.color = datum => this.color(datum[this.colorBy]['label']);
-    this.chordConf.opacity = 0.7;
+
+    this.chordOpacity = 0.7;
+    this.highlightedChordOpacity = 0.9;
+
+    this.conf = layoutConf;
+    this.chordConf = {
+      color: datum => this.color(datum[this.colorBy]['label']),
+      opacity: this.chordOpacity,
+    };
+
     this.labelConf = {
       innerRadius: 1.02,
       style: { 'font-size': 12, fill: '#7f7f7f' }
     };
+
     this.initialized = true;
   }
 
-  testColumns() {
+  _testColumns() {
     return (this.strColumns.length >= 2 && this.numColumns.length >= 1);
   }
 
@@ -60,7 +63,7 @@ export class ChordViewer extends DG.JsViewer {
     this.numColumns = [...this.dataFrame.columns.numerical];
 
     // TODO: Choose the most relevant columns
-    if (this.testColumns()) {
+    if (this._testColumns()) {
       this.fromColumnName = this.strColumns[0].name;
       this.toColumnName = this.strColumns[1].name;
       this.chordLengthColumnName = this.numColumns[0].name;
@@ -74,26 +77,76 @@ export class ChordViewer extends DG.JsViewer {
   }
 
   onPropertyChanged(property) {
-    super.onPropertyChanged(property);
-    if (this.initialized && this.testColumns()) this.render();
+    if (this.initialized && this._testColumns()) {
+      if (property.name === 'colorBy' && this.chords.length) this.render(false);
+      else this.render();
+    }
   }
 
   detach() {
     this.subs.forEach(sub => sub.unsubscribe());
   }
 
-  generateData() {
-    this.data.length = 0;
+  _getFrequencies(sourceCol, targetCol, indexes) {
+    let map = {};
+    for (let i of indexes) {
+      let from = sourceCol.isNone(i) ? "" : sourceCol.get(i);
+      map[from] = (map[from] || 0) + 1;
+      let to = targetCol.isNone(i) ? "" : targetCol.get(i);
+      map[to] = (map[to] || 0) + 1;
+    }
+    return map;
+  }
 
+  _aggregate() {
+    this.aggregatedTable = this.dataFrame
+      .groupBy([this.fromColumnName, (this.distinctCols) ? this.toColumnName : null])
+      .whereRowMask(this.dataFrame.filter)
+      .add(this.aggType, this.chordLengthColumnName, 'result')
+      .aggregate();
+
+    this.fromColumnAggr = this.aggregatedTable.getCol(this.fromColumnName);
+    this.toColumnAggr = this.aggregatedTable.getCol(this.toColumnName);
+    this.chordWeights = this.aggregatedTable.getCol('result').getRawData();
+    this.rowCountAggr = this.aggregatedTable.rowCount;
+
+    this.categories = Array.from(new Set(this.fromColumnAggr.categories.concat(this.toColumnAggr.categories)));
+  }
+
+  _updateBlockMap() {
+    for (const prop of Object.getOwnPropertyNames(this.segments)) {
+      delete this.segments[prop];
+    }
+
+    this.data.forEach(s => {
+      this.segments[s.label] = { datum: s, targets: [], aggTotal: null, visited: false };
+      s.pos = 0;
+    });
+
+    for (let i = 0; i < this.rowCountAggr; i++) {
+      let from = this.fromColumnAggr.get(i);
+      let to = this.toColumnAggr.get(i);
+
+      this.segments[from]['targets'].push(to);
+      this.segments[from]['aggTotal'] = (this.segments[from]['aggTotal'] || 0) + this.chordWeights[i];
+      if (from !== to) this.segments[to]['aggTotal'] = (this.segments[to]['aggTotal'] || 0) + this.chordWeights[i];
+    }
+  }
+
+  _generateData() {
+    this.data.length = 0;
     this.fromColumn = this.dataFrame.getCol(this.fromColumnName);
     this.toColumn = this.dataFrame.getCol(this.toColumnName);
+    this.distinctCols = this.fromColumnName !== this.toColumnName;
 
-    let indexes = this.dataFrame.filter.getSelectedIndexes();
+    this.indexes = this.dataFrame.filter.getSelectedIndexes();
+    this.freqMap = this._getFrequencies(this.fromColumn, this.toColumn, this.indexes);
+
     this.conf.events = {
       mouseover: (datum, index, nodes, event) => {
         select(nodes[index]).select(`#${datum.id}`).attr('stroke', color(this.color(datum.label)).darker());
         ui.tooltip.showRowGroup(this.dataFrame, i => {
-          return indexes.includes(i) && (this.fromColumn.get(i) === datum.label ||
+          return this.indexes.includes(i) && (this.fromColumn.get(i) === datum.label ||
             this.toColumn.get(i) === datum.label);
         }, event.x, event.y);
       },
@@ -103,79 +156,36 @@ export class ChordViewer extends DG.JsViewer {
       },
       mousedown: (datum, index, nodes, event) => {
         this.dataFrame.selection.handleClick(i => {
-          return indexes.includes(i) && (this.fromColumn.get(i) === datum.label ||
+          return this.indexes.includes(i) && (this.fromColumn.get(i) === datum.label ||
             this.toColumn.get(i) === datum.label);
         }, event);
       }
     };
 
-    this.freqMap = {};
-    for (let i = 0; i < this.dataFrame.rowCount; i++) {
-      let from = this.fromColumn.isNone(i) ? "" : this.fromColumn.get(i);
-      this.freqMap[from] = (this.freqMap[from] || 0) + 1;
-      let to = this.toColumn.isNone(i) ? "" : this.toColumn.get(i);
-      this.freqMap[to] = (this.freqMap[to] || 0) + 1;
-    }
-
     if (this.aggType === 'sum' && this.chordLengthColumnName === null) {
       this.chordLengthColumnName = this.numColumns[0].name;
     }
 
-    if (this.fromColumnName !== this.toColumnName) {
-      this.aggregatedTable = this.dataFrame
-        .groupBy([this.fromColumnName, this.toColumnName])
-        .whereRowMask(this.dataFrame.filter)
-        .add(this.aggType, this.chordLengthColumnName, 'result')
-        .aggregate();
-
-      this.fromCol = this.aggregatedTable.getCol(this.fromColumnName);
-      this.toCol = this.aggregatedTable.getCol(this.toColumnName);
-      this.aggVal = this.aggregatedTable.getCol('result').getRawData();
-      this.rowCount = this.aggregatedTable.rowCount;
+    this._aggregate();
   
-      this.categories = Array.from(new Set(this.fromCol.categories.concat(this.toCol.categories)));
-    } else {
-      this.categories = Array.from(this.dataFrame
-        .groupBy([this.fromColumnName])
-        .whereRowMask(this.dataFrame.filter)
-        .count()
-        .aggregate()
-        .col(this.fromColumnName)
-        .categories);
-    }
     this.conf.gap = this.gapScale(this.categories.length);
 
-    this.data = this.categories
-      .sort((this.sortBy === 'frequency') ? (a, b) => this.freqMap[b] - this.freqMap[a] : undefined)
-      .map((s, ind) => ({
+    if (this.sortBy !== 'topology') {
+      this.categories.sort((this.sortBy === 'frequency') ?
+        (a, b) => this.freqMap[b] - this.freqMap[a] : undefined);
+    }
+
+    this.data = this.categories.map((s, ind) => ({
         id: `id-${ind}`,
         label: s,
         len: this.freqMap[s],
         color: this.color(s)
       }));
 
-    if (this.fromColumnName !== this.toColumnName) {
-      for (const prop of Object.getOwnPropertyNames(this.segments)) {
-        delete this.segments[prop];
-      }
-  
-      this.data.forEach(s => {
-        this.segments[s.label] = { datum: s, targets: [], aggTotal: null, visited: false };
-        s.pos = 0;
-      });
-  
-      for (let i = 0; i < this.rowCount; i++) {
-        let from = this.fromCol.get(i);
-        let to = this.toCol.get(i);
-  
-        this.segments[from]['targets'].push(to);
-        this.segments[from]['aggTotal'] = (this.segments[from]['aggTotal'] || 0) + this.aggVal[i];
-        if (from !== to) this.segments[to]['aggTotal'] = (this.segments[to]['aggTotal'] || 0) + this.aggVal[i];
-      }
-    }
+    if (this.distinctCols) this._updateBlockMap();
 
     if (this.sortBy === 'topology') {
-      if (this.fromColumnName === this.toColumnName) {
+      if (!this.distinctCols) {
         this.props.sortBy = 'alphabet';
       } else {
         this.data = topSort(this.segments);
@@ -184,20 +194,20 @@ export class ChordViewer extends DG.JsViewer {
     if (this.direction === 'counterclockwise') this.data.reverse();
   }
 
-  computeChords() {
+  _computeChords() {
     this.chords.length = 0;
-    let source = this.fromCol.getRawData();
-    let fromCatList = this.fromCol.categories;
-    let target = this.toCol.getRawData();
-    let toCatList = this.toCol.categories;
+    let source = this.fromColumnAggr.getRawData();
+    let fromCatList = this.fromColumnAggr.categories;
+    let target = this.toColumnAggr.getRawData();
+    let toCatList = this.toColumnAggr.categories;
 
-    for (let i = 0; i < this.rowCount; i++) {
+    for (let i = 0; i < this.rowCountAggr; i++) {
       let sourceLabel = fromCatList[source[i]];
       let targetLabel = toCatList[target[i]];
       let sourceBlock = this.segments[sourceLabel]['datum'];
       let targetBlock = this.segments[targetLabel]['datum'];
-      let sourceStep = sourceBlock.len * (this.aggVal[i] / this.segments[sourceLabel]['aggTotal']);
-      let targetStep = targetBlock.len * (this.aggVal[i] / this.segments[targetLabel]['aggTotal']);
+      let sourceStep = sourceBlock.len * (this.chordWeights[i] / this.segments[sourceLabel]['aggTotal']);
+      let targetStep = targetBlock.len * (this.chordWeights[i] / this.segments[targetLabel]['aggTotal']);
 
       this.chords.push({
         source: {
@@ -212,7 +222,7 @@ export class ChordViewer extends DG.JsViewer {
           end: targetBlock.pos + targetStep,
           label: targetLabel
         },
-        value: this.aggVal[i],
+        value: this.chordWeights[i],
       });
 
       sourceBlock.pos += sourceStep;
@@ -222,19 +232,21 @@ export class ChordViewer extends DG.JsViewer {
 
     this.chordConf.events = {
       mouseover: (datum, index, nodes, event) => {
-        select(nodes[index]).attr('opacity', 0.9);
+        select(nodes[index]).attr('opacity', this.highlightedChordOpacity);
         ui.tooltip.showRowGroup(this.dataFrame, i => {
-          return this.fromColumn.get(i) === datum.source.label &&
+          return this.indexes.includes(i) &&
+            this.fromColumn.get(i) === datum.source.label &&
             this.toColumn.get(i) === datum.target.label;
         }, event.x, event.y);
       },
       mouseout: (datum, index, nodes, event) => {
-        select(nodes[index]).attr('opacity', 0.7);
+        select(nodes[index]).attr('opacity', this.chordOpacity);
         ui.tooltip.hide()
       },
       mousedown: (datum, index, nodes, event) => {
         this.dataFrame.selection.handleClick(i => {
-          return this.fromColumn.get(i) === datum.source.label &&
+          return this.indexes.includes(i) &&
+            this.fromColumn.get(i) === datum.source.label &&
             this.toColumn.get(i) === datum.target.label;
         }, event);
       }
@@ -244,14 +256,14 @@ export class ChordViewer extends DG.JsViewer {
 
   render(computeData = true) {
 
-    if (!this.testColumns()) {
+    if (!this._testColumns()) {
       this.root.appendChild(ui.divText('Not enough data to produce the result.', 'd4-viewer-error'));
       return;
     }
 
     if (computeData) {
-      this.generateData();
-      if (this.fromColumnName !== this.toColumnName) this.computeChords();
+      this._generateData();
+      if (this.distinctCols) this._computeChords();
     }
 
     $(this.root).empty();
@@ -277,7 +289,7 @@ export class ChordViewer extends DG.JsViewer {
       return;
     }
 
-    if (this.fromColumnName !== this.toColumnName) {
+    if (this.distinctCols) {
       circos.chords('chords-track', this.chords, this.chordConf);
     }
 
