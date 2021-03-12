@@ -2,7 +2,7 @@ export const layoutConf = {
   innerRadius: 250,
   outerRadius: 300,
   cornerRadius: 0,
-  gap: 0.04,
+  gap: 0.04, // check NaN occurrence with no gaps between blocks
   labels: {
     display: false,
     position: 'center',
