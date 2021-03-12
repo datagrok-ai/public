@@ -1,8 +1,8 @@
 import {TreeViewer} from './tree-viewer.js';
 import {TreeMapViewer} from './tree-map-viewer.js';
 import {SunburstViewer} from './sunburst-viewer.js';
-import {RadarViewer} from './radarviewer.js';
-import {TimelinesViewer} from './timelinesviewer.js';
+import {RadarViewer} from './radar-viewer.js';
+import {TimelinesViewer} from './timelines-viewer.js';
 import {SankeyViewer} from './sankey-viewer.js';
 import {ChordViewer} from './chord-viewer.js';
 
