@@ -54,12 +54,12 @@ Prerequisites: basic JavaScript knowledge
 
 1. Install the necessary tools (Node.js, npm, webpack, datagrok-tools) following [these instructions](develop.md#getting-started)
 2. Get a dev key for https://dev.datagrok.ai (you will work with this server) and add it by running `grok config`
-3. Create a default package [called](https://datagrok.ai/help/develop/develop#naming-conventions) `<name>-sequence` using datagrok-tools: `grok create <name>-sequence`
+3. Create a default package [called](https://datagrok.ai/help/develop/develop#naming-conventions) `<yourName>-sequence` using datagrok-tools: `grok create <yourName>-sequence`
 4. Upload it to the server: `grok publish dev --rebuild` (see other options [here](develop.md#deployment-modes))
 5. Launch the platform and run the package's `test` function using different methods: 
     * via the [Functions](https://dev.datagrok.ai/functions?q=test) view
     * via the [Packages](https://dev.datagrok.ai/packages?) menu (find your package and run `test` from the 'Content' pane in the property panel)
-    * via the console: press `~` and type `<Name>Sequence:test()` (note that the function's namespace corresponds to the package name)
+    * via the [console](): press `~` key anywhere inside Datagrok, the Console will appear to the right; execute `<yourName>Sequence:test()` there
 
 ## Semantic types
 
@@ -70,20 +70,49 @@ Details: [How to Create a Semantic Type Detector](how-to/semantic-type-detector.
 
 You will learn: how to write semantic type detectors, how to develop context-specific data augmentation.  
 
-1. Create a `complement` function that takes a nucleotide string and returns its complement.
+1. Create a `complement` function in `src/package.js` which takes a nucleotide string and returns its complement:
+   ```javascript
+    //name: complement
+    //input: string nucleotides
+    //output: string result
+    export function complement(nucleotides) {
+        // your code goes here
+    }
+    ```
    Essentially, change each character to the complementary one: A<=>T, G<=>C. 
    Run it and check whether everything works fine. 
+
+
 2. Now, let's specify that this function is meant to accept not any string, but nucleotides only,
-   and returns a nucleotide string as well. In order to do that, let's annotate both input and output parameters
-   with the `dna_nucleotide` semantic type (add `{semType: dna_nucleotide}` after the parameter name).
+   and to return a nucleotide string as well. In order to do that, let's annotate both input and output parameters
+   with the `dna_nucleotide` semantic type:
+   ```javascript
+    //input: string nucleotides {semType: dna_nucleotide}
+    //output: string result {semType: dna_nucleotide}
+   ```
    At this point, `dna_nucleotide` string does not have any meaning, but we will connect the dots later.
+
+
 3. Define a `detectNucleotides` semantic type detector function as part of the special
-   `detectors.js` file. It should check whether a column is a string column, and whether
-   each string represents a nucleotide (hint: for best performance, 
-   don't iterate over all column values, instead iterate on `column.categories`). When everything is done
-   correctly, the `detectors.js` file will get loaded by the platform automatically, and the
+   `detectors.js` file. 
+    ```javascript
+   class '<yourName>'SequencePackageDetectors extends DG.Package {
+
+     //tags: semTypeDetector
+     //input: column col
+     //output: string semType
+     detectNucleotides(col) {
+         // your code goes here
+     }
+   }
+    ```   
+   It should check whether a column is a string column, and whether each string represents a nucleotide (hint: for best 
+   performance, don't iterate over all column values, instead iterate on `column.categories`). 
+   When everything is done correctly, the `detectors.js` file will get loaded by the platform automatically, and the 
    `detectNucleotides` function will be executed against every column in a newly added table.
-4. Test your implementation by opening the following CSV file (or go Data | Text, and paste it there):
+
+
+4. Test your implementation by opening the following CSV or TXT file (or go Data | Text, and paste it there):
    ```
    sequence, id
    GATTACA, 1997
@@ -91,8 +120,10 @@ You will learn: how to write semantic type detectors, how to develop context-spe
    TTTAGGC, 2021 
    ```
    Hover over the `sequence` column header after the data is imported — if everything is done correctly,
-   you will see 'quality: dna_nucleotide' in the bottom of the tooltip. Alternatively, you can 
+   you will see `quality: dna_nucleotide` in the bottom of the tooltip. Alternatively, you can 
    find this information if you click on the column and expand the 'Details' pane in the property panel on the right.
+   
+
 5. Now transform the previously created `complement` function into an info panel: tag it with `panel` and `widgets` tags
    and change the output type to `widget` (see an example [here](how-to/add-info-panel.md#functions)).
    This will instruct the platform to use the `complement` function for providing additional information for string values
