@@ -34,6 +34,7 @@ custom applications.
   * [Transforming dataframes](#transforming-dataframes)
   * [Custom cell renderers with 3-rd party JS libraries](#custom-cell-renderers-with-3-rd-party-js-libraries)
   * [Accessing Web services with OpenAPI](#accessing-web-services-with-openapi)
+  * [Creating an info panel with a REST web service](#creating-an-info-panel-with-a-rest-web-service)
   <!---
   * Creating an application
   * Accessing Web services in JavaScript with REST
@@ -82,7 +83,6 @@ You will learn: how to write semantic type detectors, how to develop context-spe
    Essentially, change each character to the complementary one: A<=>T, G<=>C. 
    Run it and check whether everything works fine. 
 
-
 2. Now, let's specify that this function is meant to accept not any string, but nucleotides only,
    and to return a nucleotide string as well. In order to do that, let's annotate both input and output parameters
    with the `dna_nucleotide` semantic type:
@@ -92,8 +92,7 @@ You will learn: how to write semantic type detectors, how to develop context-spe
    ```
    At this point, `dna_nucleotide` string does not have any meaning, but we will connect the dots later.
 
-
-3. Define a `detectNucleotides` semantic type detector function as part of the special
+3. <a name="detectors"></a> Define a `detectNucleotides` semantic type detector function as part of the special
    `detectors.js` file. 
     ```javascript
    class '<yourName>'SequencePackageDetectors extends DG.Package {
@@ -111,7 +110,6 @@ You will learn: how to write semantic type detectors, how to develop context-spe
    When everything is done correctly, the `detectors.js` file will get loaded by the platform automatically, and the 
    `detectNucleotides` function will be executed against every column in a newly added table.
 
-
 4. Test your implementation by opening the following CSV or TXT file (or go Data | Text, and paste it there):
    ```
    sequence, id
@@ -123,8 +121,7 @@ You will learn: how to write semantic type detectors, how to develop context-spe
    you will see `quality: dna_nucleotide` in the bottom of the tooltip. Alternatively, you can 
    find this information if you click on the column and expand the 'Details' pane in the property panel on the right.
    
-
-5. Now transform the previously created `complement` function into an info panel: tag it with `panel` and `widgets` tags
+5. Now transform the previously created `complement` function into an [info panel](): tag it with `panel` and `widgets` tags
    and change the output type to `widget` (see an example [here](how-to/add-info-panel.md#functions)).
    This will instruct the platform to use the `complement` function for providing additional information for string values
    of the `dna_nucleotide` semantic type. To test it, simply open our test file, click on any cell
@@ -572,11 +569,12 @@ fetch some nucleotide data regarding coronavirus.
 
 1. Obtain a ENA's Swagger file for the [ENA Browser](https://www.ebi.ac.uk/ena/browser),
    following [this link](https://www.ebi.ac.uk/ena/browser/api/).
-   It would take some effort to reach the JSON Swagger at the link.
-   Follow recommendations [here](access/open-api.md#Troubleshooting).
+   It would take you some effort to reach the JSON Swagger at the link.
+   It's also possible to understand the API through its [Swagger API tester](https://www.ebi.ac.uk/ena/browser/api/).
+   Follow recommendations [here](access/open-api.md#Troubleshooting). In particular,
+   modify the connection's `Name` to `ENA`, `Url` to `https://www.ebi.ac.uk/ena/browser/api/`.
    Save this file to a desktop with a name, say, `ENA.json`.
 3. Load the Swagger into Datarok by drag and drop into the platform window.
-4. Modify the resulting connection's `Name` to `ENA`, `Url` to `https://www.ebi.ac.uk/ena/browser/api/`.
 5. Check the connection is valid with the `Test` button, and hit `Ok` to save the edit.
 6. In the expanded view of the `ENA` connection, locate `Perform a text search and download data in XML format` and hit `Run`
    or double-click it.
@@ -603,3 +601,69 @@ fetch some nucleotide data regarding coronavirus.
 We provide a handful of demo Swaggers, check their source JSON files
 [here](https://github.com/datagrok-ai/public/tree/master/packages/Swaggers/swaggers)
 and see in action in Datagrok at [`Web Services`](https://public.datagrok.ai/webservices).
+
+## Creating an info panel with a REST web service
+
+We will use the ENA REST API to output sequences and associated data in the info panel,
+based on the ENA sequence ID contained in a currently selected grid cell.
+
+1. Searching through [the ENA archive](https://www.ebi.ac.uk/ena/browser/text-search?query=coronavirus),
+   you may notice the sequences' IDs have a format of `[A-Z]{2}[0-9]{6}` (two capital letters + six digits).
+   Go to the [detectors file](#detectors) of your package and add a detector which recognizes a string
+   of this form:
+   
+   ```javascript
+   //input: string str
+   //output: bool result
+   isPotentialENAId(str) {
+     // returns true, if name is of the form [A-Z]{2}[0-9]{6}
+   }
+   ```
+
+2. Use [`fetchProxy`](develop/how-to/access-data.md#rest-endpoints) to get a sequence for the potential
+   corresponding ENA ID in fasta format. For example, this GET fetches the sequence for the `ID=AA046425`:  
+   [`https://www.ebi.ac.uk/ena/browser/api/fasta/AA046425`](https://www.ebi.ac.uk/ena/browser/api/fasta/AA046425)  
+   Use the following structure for the into panel function in your `src/package.js`:
+   
+   ```javascript
+    //name: ENA Sequence
+    //tags: panel, widgets
+    //input: string cellText
+    //output: widget result
+    //condition: isPotentialENAId(cellText)
+    export async function enaSequence(cellText) {
+      const url = `https://www.ebi.ac.uk/ena/browser/api/fasta/{$cellText}`;     
+      const fasta = await grok.dapi.fetchProxy(url).text();
+      return new DG.Widget(ui.box(
+        // ... the widget controls are composed here
+      ));
+    }
+   ```
+   
+   Incorporate a [`textarea`](https://github.com/datagrok-ai/public/packages/ApiSamples/scripts/ui/accordion.js)
+   control to display a sequence in a scrollable fashion. Add a caption to that text area to display
+   an ENA's name for this sequence, which also comes in the fasta file. Use a
+   [`splitV`](https://github.com/datagrok-ai/public/packages/ApiSamples/scripts/ui/layouts/splitters.js)
+   control to nicely locate the caption at the top and the text area at the bottom.
+   
+`fetchProxy` mimics the regular `fetch` method of ECMAScript, but solves a [CORS]() limitation of
+JavaScript. In this panel, you'd query the external domain from your web page, whereas CORS prevents
+you from querying anything outside a reach of your web page's domain. Thus Datagrok provides a proxy facility in the
+neat `fetchProxy` wrapper.
+
+<!---
+
+## Enhancing Datagrok with dialog-based functions
+
+Search for a keyword to form a table with limits
+https://www.ebi.ac.uk/ena/browser/api/
+
+## Persisting user sessions and tables
+
+Saving the search parameters
+
+## Creating an application
+
+A simple keyword search in the ENA database (with navigation)
+
+-->
