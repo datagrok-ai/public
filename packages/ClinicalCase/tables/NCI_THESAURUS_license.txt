@@ -1,0 +1,111 @@
+NCI THESAURUS Terms of Use
+
+
+NCI THESAURUS TM is a registered trademark of the National Cancer Institute.
+
+Permission is hereby granted in perpetuity, without payment of license fees
+or royalties, to use, copy, or distribute the NCI THESAURUS TM ontology, NCI
+THESAURUS TM Users' Guide, and the NCI THESAURUS TM database for any
+commercial or non-commercial purpose, subject to the following terms and
+conditions:
+
+1) To further the purpose of the NCI THESAURUS ontology and NCI THESAURUS
+database of providing a ontology and taxonomy specialized for modeling
+concepts relevant to cancer science, treatment and prevention, the only
+source of  the NCI THESAURUS Users' Guide, the NCI THESAURUS ontology, its
+codes, and/or the NCI THESAURUS database shall be the National Cancer
+Institute.
+
+2) Users may freely modify the content of the NCI THESAURUS ontology,
+database or documentation.  However any such modified content may not be
+identified or represented as being the NCI Thesaurus ontology, database or
+documentation, or part of the NCI Thesaurus ontology, database or
+documentation. Users are prohibited from using the NCI THESAURUS trademarks
+in conjunction with such modified content or work derived from the NCI
+THESAURUS, except to provide acknowledgement that the content was derived
+from the NCI THESAURUS.
+
+3) NCI THESAURUS concept names, concept codes and other information from
+the NCI THESAURUS ontology and database may be used in tagging records in
+users� databases and electronic messages, without the need to include any
+NCI THESAURUS License.  When the NCI THESAURUS concept identifier is used
+in tagging records in users� databases and electronic messages, users are
+encouraged, but not required, to include the corresponding NCI THESAURUS
+Preferred Name (from the Preferred_Name attribute) if the database or
+message provides a place for a text name representation of the code.
+
+4) Users may make and distribute an unlimited number of copies of the
+unmodified NCI THESAURUS database. Each copy of the unmodified NCI
+THESAURUS database must include this NCI THESAURUS License, and must
+include the version number of the database. This NCI THESAURUS License must
+appear on every printed copy of the NCI THESAURUS database. Where the NCI
+THESAURUS database is distributed on a fixed storage medium (such as
+DVD-ROM or CD-ROM), a printed copy of this NCI THESAURUS License must be
+included on or with the storage medium, and a text file containing this
+information also must be stored on the storage medium in a file called
+"NCI_THESAURUS_license.txt". Where the NCI THESAURUS database is
+distributed via the Internet, this NCI THESAURUS License must be accessible
+on the same Internet page from which the NCI THESAURUS database is
+available for download.
+
+5) Users may incorporate in toto the NCI THESAURUS database into another
+ontology or vocabulary database or software program.
+
+Every copy of the NCI THESAURUS database incorporated into or distributed
+in conjunction with another database or software program must include the
+following notice:
+
+"This product includes the NCI THESAURUS TM database, or is derived from the
+NCI THESAURUS TM database, subject to a license from the National Cancer
+Institute. Your use of the NCI THESAURUS database and NCI THESAURUS
+ontology also is subject to this license, a copy of which is available at
+ftp://ftp1.nci.nih.gov/pub/cacore/EVS/NCI_THESAURUS_license.txt. The
+current complete NCI THESAURUS database and Users' Guide are available for
+download at ftp://ftp1.nci.nih.gov/pub/cacore/EVS. The NCI THESAURUS
+DATABASE IS PROVIDED "AS IS." ANY EXPRESS OR IMPLIED WARRANTIES ARE
+DISCLAIMED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. NCI THESAURUS TM is a
+registered trademark of the National Cancer Institute."
+
+If the NCI THESAURUS database or software program containing the NCI
+THESAURUS database is distributed with a printed license, this statement
+must appear in the printed license. Where the NCI THESAURUS database or
+software program containing the NCI THESAURUS database is distributed on a
+fixed storage medium, a text file containing this information also must be
+stored on the storage medium in a file called
+"NCI_THESAURUS_short_license.txt". Where the NCI THESAURUS or software
+program containing the NCI THESAURUS database is distributed via the
+Internet, this information must be accessible on the same Internet page
+from which the product is available for download.
+
+6) Use and distribution of the NCI THESAURUS concept codes and NCI
+THESAURUS database in ways that are not specifically discussed herein shall
+be accompanied by the notice provided in Section 6 hereof. The guidelines
+for providing the notice that are contained in the last paragraph of
+Section 6 also shall apply. If a user has a question about whether a
+particular use of the NCI THESAURUS ontology and/or the NCI THESAURUS
+database is permissible, the user is invited to contact the National Cancer
+Institute by e-mail at ncievs.project@mail.nih.gov.
+
+7) The names "National Cancer Institute", "NCI" and "NCI Thesaurus" may not
+be used in a way that could be interpreted as an endorsement or a promotion
+of any product or service without prior written permission of the National
+Cancer Institute. To request written permission; please contact the
+National Cancer Institute by e-mail at ncievs.project@mail.nih.gov.
+
+DISCLAIMER: THE NATIONAL CANCER INSITUTE DOES NOT ACCEPT LIABILITY FOR ANY
+OMISSIONS OR ERRORS IN THE NCI THESAURUS, NCI THESAURUS USERS' GUIDE OR THE
+NCI THESAURUS DATABASE. THE NCI THESAURUS, NCI THESAURUS USERS' GUIDE AND
+NCI THESAURUS DATABASE ARE PROVIDED "AS IS," WITHOUT WARRANTY OF ANY KIND.
+ANY EXPRESS OR IMPLIED WARRANTIES ARE DISCLAIMED, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+PARTICULAR PURPOSE. IN NO EVENT SHALL THE NATIONAL CANCER INSTITUTE OR
+CONTRIBUTORS TO THE NCI THESAURUS BE LIABLE FOR ANY DIRECT, INDIRECT,
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+OF LIABILITY WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF NCI THESAURUS
+USERS' GUIDE OR THE NCI THESAURUS DATABASE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+
