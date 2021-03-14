@@ -18,6 +18,7 @@ export class ChordViewer extends DG.JsViewer {
     this.colorBy = this.string('colorBy', 'source', { choices: ['source', 'target'] });
     this.sortBy = this.string('sortBy', 'topology', { choices: ['alphabet', 'frequency', 'topology'] });
     this.direction = this.string('direction', 'clockwise', { choices: ['clockwise', 'counterclockwise'] });
+    this.includeNulls = this.bool('includeNulls', true);
 
     this.initialized = false;
     this.data = [];
@@ -30,8 +31,11 @@ export class ChordViewer extends DG.JsViewer {
     this.outerRadiusMargin = 60;
 
     this.gapScale = scaleLinear([1, 100], [0.04, 0]).clamp(true);
-    this.colorScale = scaleOrdinal(DG.Color.categoricalPalette);
-    this.color = c => DG.Color.toRgb(this.colorScale(c));
+    this.reservedColor = 'rgb(127,127,127)';
+    let colors = DG.Color.categoricalPalette.slice();
+    colors.splice(colors.indexOf(4286545791), 1); // represents the reserved color
+    this.colorScale = scaleOrdinal(colors);
+    this.color = c => c ? DG.Color.toRgb(this.colorScale(c)) : this.reservedColor;
 
     this.chordOpacity = 0.7;
     this.highlightedChordOpacity = 0.9;
@@ -44,7 +48,7 @@ export class ChordViewer extends DG.JsViewer {
 
     this.labelConf = {
       innerRadius: 1.02,
-      style: { 'font-size': 12, fill: '#7f7f7f' }
+      style: { 'font-size': 12, fill: this.reservedColor }
     };
 
     this.initialized = true;
@@ -90,6 +94,7 @@ export class ChordViewer extends DG.JsViewer {
   _getFrequencies(sourceCol, targetCol, indexes) {
     let map = {};
     for (let i of indexes) {
+      if (!this.includeNulls && (sourceCol.isNone(i) || targetCol.isNone(i))) continue;
       let from = sourceCol.isNone(i) ? "" : sourceCol.get(i);
       map[from] = (map[from] || 0) + 1;
       let to = targetCol.isNone(i) ? "" : targetCol.get(i);
@@ -104,6 +109,12 @@ export class ChordViewer extends DG.JsViewer {
       .whereRowMask(this.dataFrame.filter)
       .add(this.aggType, this.chordLengthColumnName, 'result')
       .aggregate();
+
+    if (!this.includeNulls) {
+      this.aggregatedTable = this.aggregatedTable.rows
+        .match(`${this.fromColumnName} regex .+ and ${this.toColumnName} regex .+`)
+        .toDataFrame();
+    }
 
     this.fromColumnAggr = this.aggregatedTable.getCol(this.fromColumnName);
     this.toColumnAggr = this.aggregatedTable.getCol(this.toColumnName);
