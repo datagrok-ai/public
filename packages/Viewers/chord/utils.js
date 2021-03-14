@@ -34,16 +34,16 @@ export const layoutConf = {
 export function topSort(graph) {
   let stack = [];
 
-  function visit(id, node, stack) {
+  function visit(node, stack) {
     node.visited = true;
     for (let target of node.targets) {
-      if (!graph[target].visited) visit(target, graph[target], stack);
+      if (!graph[target].visited) visit(graph[target], stack);
     }
     stack.unshift(node.datum);
   }
 
-  for (let [id, node] of Object.entries(graph)) {
-    if (!node.visited) visit(id, node, stack);
+  for (let node of Object.values(graph)) {
+    if (!node.visited) visit(node, stack);
   }
 
   return stack;
