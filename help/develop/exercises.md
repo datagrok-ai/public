@@ -35,10 +35,10 @@ custom applications.
   * [Custom cell renderers with 3-rd party JS libraries](#custom-cell-renderers-with-3-rd-party-js-libraries)
   * [Accessing Web services with OpenAPI](#accessing-web-services-with-openapi)
   * [Creating an info panel with a REST web service](#creating-an-info-panel-with-a-rest-web-service)
+  * [Enhancing Datagrok with dialog-based functions](#enhancing-datagrok-with-dialog-based-functions)
   <!---
   * Creating an application
   * Accessing Web services in JavaScript with REST
-  * Enhancing Datagrok with dialog-based functions
   * Creating a custom JavaScript viewer
   * Optimizing a custom cell renderer with a cache
   * Extending Datagrok with info panels
@@ -651,9 +651,81 @@ JavaScript. In this panel, you'd query the external domain from your web page, w
 you from querying anything outside a reach of your web page's domain. Thus Datagrok provides a proxy facility in the
 neat `fetchProxy` wrapper.
 
+## Enhancing Datagrok with dialog-based functions
+
+In the previous exercises we've learned how the Datagrok function inputs are offered in a dialog window
+automatically once you run the function. In this exercise we find how to expand these dialogs with the behaviour
+beyond simple arguments-to-inputs mapping.
+
+So, in some previous exercises we've used the files `a-h1n1.csv` and `sars-cov-2.csv` which we prepared
+in advance. These files contain ENA sequence ID along with the first 60 letters of the sequence by ID.
+Let's construct a dialog-based function which forms such files automatically by a given search input.
+The search topic may be `coronavirus`, `influenza` etc.
+
+1. This `GET` query performs a text search in the EMBL database, returning a `limit` first results (`10` in this case):  
+    `
+    https://www.ebi.ac.uk/ena/browser/api/embl/textsearch?result=sequence&query=coronavirus&limit=10
+    `  
+    By the way, you could discover this API endpoint via a Swagger API navigator [at this link](https://www.ebi.ac.uk/ena/browser/api/).
+    Let's assume the result we want is always of type `sequence`. Create a function `_fetchENASequence` which takes
+    as parameters a `query` ad a `limit` and returns a dataframe with two string columns `ID` and `Sequence`.
+    Use this structure for dataframe construction:  
+    ```javascript
+    df = DG.DataFrame.fromColumns([
+      DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'ID', [ /* a list of IDs you've parsed from a ENA output */ ]),
+      DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'Sequence', [ /* corresponding list of sequences */ ])
+    ]);
+    ```  
+   The output from `ebi.ac.uk` is a raw text, and you need to parse it to get the desired pieces.
+   Trim the sequence so that isn't longer than 60 characters. Use your previous knowledge about
+   [`fetchProxy`](#creating-an-info-panel-with-a-rest-web-service) to do the `GET` query.
+
+2. Make a function `formENADataTable` which constructs a dialog giving the user a two-step process
+   for constructing a dataframe with ENA sequence data in it.
+   
+   * First, the user can type in the query (`coronavirus` is the default setting) and see the first 10 results
+     in the grid right in this window after clicking the "Search" button. Consider this as a preview before
+     the actual dataframe is produced.
+   * Second, when the user is happy with what's in the preview, he/she proceeds to the "Ok" button
+     to get the actual dataframe with the ENA data on the screen in the Datagrok's grid view. This table
+     shall consist of the number of rows the user chooses (`100` set as a default). 
+   
+   Here is the code scaffold for the `formENADataTable` function:
+   
+    ```javascript
+    let grid = DG.Viewer.grid(df);
+    let limitInput = ui.intInput('How many rows: ', 100);
+    let queryInput = ui.stringInput('Query: ', 'coronavirus');
+    let button = ui.button('Search');
+    ui.dialog('Create sequences table')
+      .add(ui.splitV([
+        ui.splitH([
+          ui.span([queryInput.root]),
+          button
+        ]),
+        ui.div([grid]),
+        ui.div([limitInput])
+      ]))
+      .onOK(_ => {
+        /* Handle table creation */
+        // Display the resulting table
+        grok.shell.addTableView(df);
+      })
+      .show();
+    ```  
+    Re-use twice the `_fetchENASequence` function you've prepared previously.
+
+3. In this first version we fetched `60` characters for a sequence. Add a new text field called `Sequece length`
+  to let the user specify this trim length, set it `60` as a default.
+  
+4. Make your function set a proper [semantic type](#semantic-types) for the `Sequence` column.
+
+5. (*) You may notice the sequences you get in this order are not too different. Add more diversity
+  to these tables. For example, you can use the `offset` parameter of the `GET` query.
+
 <!---
 
-## Enhancing Datagrok with dialog-based functions
+
 
 Search for a keyword to form a table with limits
 https://www.ebi.ac.uk/ena/browser/api/
