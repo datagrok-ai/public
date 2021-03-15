@@ -18,7 +18,7 @@
   res = await grok.dapi.files.readAsText('Demo:TestJobs:Files:DemoFiles/testFile.txt');
   console.log(`readAsText: ${res}`);
   res = await grok.dapi.files.exists('Demo:TestJobs:Files:DemoFiles/testFile.dat');
-  console.log(`exists: ${res}`);
+  console.log(`testFile.dat exists: ${res}`);
 
   // Search files
   let recursive = true;
@@ -26,7 +26,10 @@
   res = await grok.dapi.files.list('Demo:TestJobs:Files:DemoFiles/geo', recursive, searchPattern);
   console.log(`list: ${res}`);
 
-  await grok.dapi.files.move(['Demo:TestJobs:Files:DemoFiles/testFile.txt'], '/geo');
+  await grok.dapi.files.move(['Demo:TestJobs:Files:DemoFiles/testFile.txt'], 'geo');
+  res = await grok.dapi.files.exists('Demo:TestJobs:Files:DemoFiles/geo/testFile.txt');
+  console.log(`testFile.txt was moved to geo: ${res}`);
+
 
   await grok.dapi.files.delete('Demo:TestJobs:Files:DemoFiles/geo/testFile.txt');
   await grok.dapi.files.delete('Demo:TestJobs:Files:DemoFiles/testFile.dat');
