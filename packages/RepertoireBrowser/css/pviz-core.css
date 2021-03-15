@@ -1,0 +1,229 @@
+@media print {
+    svg.pviz rect.background {
+        fill: white;
+    }
+    line.x-bar {
+        display: none;
+    }
+}
+
+div.header {
+    height: 2em;
+    width: 100%;
+    background: #eee;
+    position: static;
+    top: 0px;
+}
+
+div#main {
+}
+footer {
+    height: 2em;
+    width: 100%;
+    background: #eee;
+    opacity: .7;
+    position: fixed;
+    bottom: 0px;
+}
+
+text.sequence {
+    text-anchor: middle;
+    font-family: monospace;
+}
+line.sequence-bg{
+    stroke-width:3px;
+    stroke:#aaa;
+}
+
+g.axis-bubble text {
+    text-anchor: middle;
+    alignment-baseline: middle;
+    font-family: monospace;
+}
+g.axis-bubble rect {
+    stroke: #777;
+    fill: white;
+}
+svg.pviz rect.background {
+    fill: #f5f5f5;
+}
+
+rect.layer-background {
+    fill: white;
+    opacity: 0;
+    border-bottom-color: black;
+    border-bottom-style: solid;
+    border-bottom-width: 1px;
+}
+
+g.layer:hover rect.layer-background {
+    opacity: 1.0;
+}
+
+/**
+ *     color brewer 7 class paired #a6cee3 #1f78b4 #b2df8a #33a02c #fb9a99 #e31a1c #fdbf6f
+ */
+g.feature rect.feature {
+    fill: #a6cee3;
+    fill-opacity: 0.9;
+    stroke: #555;
+    stroke-opacity: 0.6;
+}
+
+g.feature text {
+    alignment-baseline: middle;
+    opacity: 0.75;
+}
+
+g.feature.Region rect.feature {
+    fill: #1f78b4;
+}
+g.feature.Molecule_processing rect.feature {
+    fill: #b2df8a;
+}
+
+g.layer g.strikeout line {
+    stroke: #bbb;
+    stroke-width: 2px;
+}
+
+/*menu*/
+
+g.layer-menu text.layer-category {
+    alignment-baseline: hanging;
+    font-weight: bold;
+    font-size: 75%;
+    fill: #777;
+}
+
+g.one-hidden-layer {
+    cursor: pointer;
+}
+
+g.one-hidden-layer rect {
+    stroke: #555;
+    fill: none;
+}
+
+g.one-hidden-layer:hover rect {
+    stroke: #222;
+    fill: #eee;
+}
+
+g.one-hidden-layer text {
+    alignment-baseline: middle;
+}
+
+/*
+ * axis
+ */
+g.axis g.tick line {
+    stroke: black;
+}
+g.axis path.domain {
+    stroke: black;
+    fill: none;
+}
+
+/* icons sections!! */
+g.icon path {
+    fill: #d00;
+    cursor: pointer;
+}
+
+line.x-bar {
+    stroke: #555;
+}
+
+rect.brush {
+    fill: black;
+    fill-opacity: 0.3;
+}
+/*
+ *
+ g.icon:hover path{
+ opacity: 1;
+ stroke-width:1px;
+ stroke:#f00;
+ }
+ */
+
+/*custom features
+ *
+ */
+
+g.feature.secondary_structure line.beta_strand {
+    stroke: green;
+    stroke-width: 3
+}
+g.feature.secondary_structure path.beta_strand {
+    stroke: green;
+    fill: green
+}
+g.feature.secondary_structure path.turn {
+    stroke: green;
+    fill: none;
+    stroke-width: 2;
+}
+
+g.feature.secondary_structure path.helix {
+    stroke: green;
+    stroke-width: 3;
+    fill: none;
+}
+
+/** OneLiner
+ *
+ */
+svg.one-liner line {
+    stroke: black;
+    stroke-width: 1px;
+}
+svg.one-liner rect {
+    fill: blue;
+    fill-opacity: 0.7;
+}
+svg.one-liner rect.subline-0 {
+    fill: blue;
+}
+svg.one-liner rect.subline-1 {
+    fill: red;
+}
+svg.one-liner rect.subline-2 {
+    fill: green;
+}
+
+/** collapser
+ *
+ */
+g.groupset-title > polygon.collapse_expand {
+    fill: #7F7F7F;
+    border:1px solid #ccc;
+}
+g.layers > g.hidden {
+    display: none;
+}
+line.category-separator-line {
+    display:none;
+    pointer-events:none;
+}
+/** select
+ *
+ */
+g.select {
+     fill:7f7f7f;
+     fill-opacity:0.3;
+ }
+g.feature.data > .feature.selected {
+    stroke: none;
+    color: #3FFFFF;
+    fill: #3FFFFF;
+}
+g.feature.data > rect.feature.tooltip-bg {
+    fill-opacity: 0;
+    stroke-opacity: 0;
+}
+g>rect.groupset-background {
+    fill-opacity: 0;
+    stroke-opacity: 0;
+}

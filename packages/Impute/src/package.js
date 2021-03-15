@@ -460,3 +460,5 @@ export async function byMethod() {
     //endregion
     //endregion
 }
+
+grid.onCellPrepare()
