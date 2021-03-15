@@ -7,15 +7,15 @@ import {getRelevantMethods} from "./getRelevantMethods.js";
 import {getFilterParameters} from "./getFilterParameters.js";
 import {getExtractorParameters} from "./getExtractorParameters.js";
 import {getIndicatorParameters} from "./getIndicatorParameters.js";
-import {Annotator} from "./annotator.js";
+import {AnnotatorViewer} from "./annotatorViewer.js";
 
 export let _package = new DG.Package();
 
-//name: Annotator
+//name: AnnotatorViewer
 //tags: viewer
 //output: viewer result
 export function annotator() {
-  return new Annotator();
+  return new AnnotatorViewer();
 }
 
 async function asample(data, col, windowSize, offset) {
@@ -433,7 +433,7 @@ function showMainDialog(table, signalType, column, samplingFreq) {
         signalType
       ])],'formview'),
     ui.block75([
-      DG.Viewer.fromType('Annotator', table)
+      DG.Viewer.fromType('AnnotatorViewer', table)
     ]),
     ui.h2('Filtering and Preprocessing'),
     accordionFilters,

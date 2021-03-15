@@ -5,14 +5,14 @@ import * as DG from "datagrok-api/dg";
 
 import * as echarts from 'echarts';
 
-export class Annotator extends DG.JsViewer {
+export class AnnotatorViewer extends DG.JsViewer {
     constructor() {
         super();
 
-        let chartDiv = ui.div(null, { style: { position: 'absolute', left: '0', right: '0', top: '0', bottom: '0'}} );
-        this.root.appendChild(chartDiv);
-        this.chart = echarts.init(chartDiv);
-        this.subs.push(ui.onSizeChanged(chartDiv).subscribe((_) => this.chart.resize()));
+        this.chartDiv = ui.div(null, { style: { position: 'absolute', left: '0', right: '0', top: '0', bottom: '0'}} );
+        this.root.appendChild(this.chartDiv);
+        this.chart = echarts.init(this.chartDiv);
+        this.subs.push(ui.onSizeChanged(this.chartDiv).subscribe((_) => this.chart.resize()));
     }
 
     onTableAttached() {
@@ -28,6 +28,7 @@ export class Annotator extends DG.JsViewer {
                 columnToPlot.get(i)
             ];
         }
+        this.data = data;
 
         let option = {
             tooltip: {
@@ -78,5 +79,36 @@ export class Annotator extends DG.JsViewer {
         };
 
         this.chart.setOption(option);
+        this.render();
+    }
+
+    render() {
+        function getDateStringFromUnixTimestamp(unix_timestamp) {
+            let now = new Date(unix_timestamp);
+            return [now.getFullYear(), now.getMonth() + 1, now.getDate()].join('/');
+        }
+        let markedPoints = [];
+        this.chartDiv.addEventListener('click', event => {
+            let pointInPixel = [event.offsetX, event.offsetY];
+            if (this.chart.containPixel('grid', pointInPixel)) {
+                let pointInGrid = this.chart.convertFromPixel('grid', pointInPixel);
+                let dateString = getDateStringFromUnixTimestamp(pointInGrid[0]);
+                markedPoints.push([dateString, this.data.find((c) => c[0] === dateString)[1]]);
+                this.chart.setOption({
+                    series: [
+                        {
+                            data: this.data,
+                            type: 'line'
+                        },
+                        {
+                            type: 'scatter',
+                            symbolSize: 20,
+                            symbol: 'circle',
+                            data: markedPoints
+                        }
+                    ]
+                })
+            }
+        })
     }
 }
