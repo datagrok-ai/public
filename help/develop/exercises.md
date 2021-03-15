@@ -55,12 +55,12 @@ Prerequisites: basic JavaScript knowledge
 
 1. Install the necessary tools (Node.js, npm, webpack, datagrok-tools) following [these instructions](develop.md#getting-started)
 2. Get a dev key for https://dev.datagrok.ai (you will work with this server) and add it by running `grok config`
-3. Create a default package [called](https://datagrok.ai/help/develop/develop#naming-conventions) `<yourName>-sequence` using datagrok-tools: `grok create <yourName>-sequence`
+3. Create a default package [called](https://datagrok.ai/help/develop/develop#naming-conventions) `<yourFirstName>-sequence` using datagrok-tools: `grok create <yourFirstName>-sequence`
 4. Upload it to the server: `grok publish dev --rebuild` (see other options [here](develop.md#deployment-modes))
 5. Launch the platform and run the package's `test` function using different methods: 
     * via the [Functions](https://dev.datagrok.ai/functions?q=test) view
     * via the [Packages](https://dev.datagrok.ai/packages?) menu (find your package and run `test` from the 'Content' pane in the property panel)
-    * via the [console](): press `~` key anywhere inside Datagrok, the Console will appear to the right; execute `<yourName>Sequence:test()` there
+    * via the [console](): press `~` key anywhere inside Datagrok, the Console will appear to the right; execute `<yourFirstName>Sequence:test()` there
 
 ## Semantic types
 
@@ -95,7 +95,7 @@ You will learn: how to write semantic type detectors, how to develop context-spe
 3. <a name="detectors"></a> Define a `detectNucleotides` semantic type detector function as part of the special
    `detectors.js` file. 
     ```javascript
-   class '<yourName>'SequencePackageDetectors extends DG.Package {
+   class <yourFirstName>SequencePackageDetectors extends DG.Package {
 
      //tags: semTypeDetector
      //input: column col
@@ -110,7 +110,7 @@ You will learn: how to write semantic type detectors, how to develop context-spe
    When everything is done correctly, the `detectors.js` file will get loaded by the platform automatically, and the 
    `detectNucleotides` function will be executed against every column in a newly added table.
 
-4. Test your implementation by opening the following CSV or TXT file (or go Data | Text, and paste it there):
+4. Test your implementation by opening the following CSV or TXT file (or go `Data | Text`, and paste it there):
    ```
    sequence, id
    GATTACA, 1997
@@ -139,7 +139,7 @@ _You will learn:_ how to create and invoke Datagrok scripts in data science lang
 
 In this exercise, we will count occurrences of a given subsequence in a nucleotide sequence, using Python.
 
-1. Open Datagrok and navigate to `Functions | Scripts | New Python Script`.
+1. Open Datagrok and navigate to `Functions | Scripts | Actions | New Python Script`.
 2. Observe a default script created for you. All script attributes are specified in the beginning in comments.
    There we have the script name, language, one input value of type [`dataframe`](),
    and one output value of type `int`. The script simply computes number of cells in the dataframe.  
@@ -166,7 +166,9 @@ In this exercise, we will count occurrences of a given subsequence in a nucleoti
    Return a `count` the same way as in the default script from p. 2.
 6. Run the script function, provide input values in the dialog and get to the console to see the result.
    Now run the script function again through the console completely, passing different arguments values:
-   ```<UserName>:CountSubsequencePython('ATGATC', 'A')```
+   ```<yourLogin>:CountSubsequencePython('ATGATC', 'A')```.
+   You can find your login inside the profile page between name and email (under avatar), or in the profile URL: 
+   `https://dev.datagrok.ai/u/<yourLogin>/summary`.
 
 ### Scripting with client functions
 
@@ -263,7 +265,7 @@ _You will learn:_ how to invoke arbitrary Datagrok functions in JavaScript and a
     //input: string subseq = ATG
     
     grok.functions.call(
-      "<YOUR_NAME>:CountSubsequenceTablePython", {
+      "<yourLogin>:CountSubsequenceTablePython", {
         'inputDf': df,
         'inputColName': colName,
         'outputColName': `N(${subseq})`,
@@ -285,7 +287,7 @@ _You will learn:_ how to invoke arbitrary Datagrok functions in JavaScript and a
 5. Run the script and check the new column appears in the grid.
 
 6. Add `CountSubsequenceTablePythonAugment` and `CountSubsequenceTablePython` as part of the package
-   `<NAME>-sequence` prepared in ["Semantic types"](#semantic-types) exercise. Deploy the package,
+   `<yourFirstName>-sequence` prepared in ["Semantic types"](#semantic-types) exercise. Deploy the package,
    reload Datagrok and run `CountSubsequenceTablePythonAugment` from the package.
 
 7. Notice that we don't need the entire input dataframe to run the script, just one column.
@@ -326,7 +328,7 @@ _You will learn:_ how to invoke arbitrary Datagrok functions in JavaScript and a
     as it was for a Python version.
   
 11. Add `CountSubsequenceTableJS` and `CountSubsequenceTableJSAugment` as part of the
-    package `<NAME>-sequence` prepared in ["Semantic types"](#semantic-types) exercise.
+    package `<yourFirstName>-sequence` prepared in ["Semantic types"](#semantic-types) exercise.
     Deploy the package, reload Datagrok and run `CountSubsequenceTableJSAugment` from the package.
  
 12. In contrast to `CountSubsequenceTablePythonAugment` running in the browser and `CountSubsequenceTablePython`
@@ -356,17 +358,17 @@ _Details:_ [Connecting to Databases](https://www.youtube.com/watch?v=dKrCk38A1m8
 
 _Note:_ Editing an existing data query requires the respective access permission. You might need to request one.
 
-In this exercise, we will work with a `northwind` Postgres database (in case the name sounds 
+In this exercise, we will work with a `northwind` PostgreSQL database (in case the name sounds 
 familiar, this is a demo database that Microsoft often uses for showcasing its technology).
 The database is already deployed and is accessible from our server.
 
-1. Navigate to the `Data | Databases | Postgres | northwind | orders` table
-2. Make this table current by clicking on it, and explore its property panels on the right. The 
+1. Navigate to the `Data | Databases | PostgreSQL | northwind | Tables | orders` table
+2. Make this table current by left-clicking on it, and explore its property panels on the right. The 
    `Content` pane should be showing first 50 rows of that table.  
 3. Right-click on the table, and choose `New SQL Query...`
 4. Execute the query and make sure it returns results.   
 5. Modify the query to accept a `country` parameter, and return the sum of freights for the specified 
-   country, grouped by `customerid`. Here is one way to do it:
+   country, grouped by `customerid`:
    ```sql
    --input: string country
    select customerid, sum(freight)
@@ -374,18 +376,19 @@ The database is already deployed and is accessible from our server.
    where shipcountry = @country
    group by customerid
    ```
-6. Make sure the query executes fine, when prompted, enter one of the countries in the input box (such as "USA").
+6. Run the query, enter one of the countries in the input box (such as `USA`, without quotation marks or apostrophes).
    Run it the second time, notice that previously entered parameters could be quickly reused by clicking
-   on the watch icon in the left bottom corner.
-7. Give this query `ordersByCountry` name, and save it.
-8. Use different ways to execute it:
-    * Right-click on `Data | Databases | Postgres | northwind | ordersByCountry`, select `Run` from the menu
-    * Click on `Data | Databases | Postgres | northwind | ordersByCountry`, expand the `Run` pane on the right, enter the country name and run it
-    * Open console, see the results of the previous invocations. Copy-paste the corresponding command and 
-      run it from the console.
-9. Now, let's add this query to our package. Create a connection by running `grok add connection <name>`, then, as instructed [here](how-to/access-data.md#creating-queries), create the '.sql' file under the `queries` folder, and paste our query there. Give it a name by adding the `--name: ordersByCountry` line on top of it.
+   on the watch icon in the left bottom corner of the dialog window.
+7. Rename this query from your name to `ordersByCountry`, and save it.
+8. Try different ways to execute it:
+    * Right-click on `Data | Databases | PostgreSQL | northwind | ordersByCountry`, select `Run` from the context
+      menu, enter the country name, and run it
+    * Click on `Data | Databases | PostgreSQL | northwind | ordersByCountry`, expand the `Run` pane on the right, enter the country name and run it
+    * Open console by pressing `~` key, see the results of the previous invocations. Copy-paste the corresponding
+      command and run it from the console.
+9. Now, let's add this query to our package. Create a connection by running `grok add connection <yourFirstName>`, then, as instructed [here](how-to/access-data.md#creating-queries), create the '.sql' file under the `queries` folder, and paste our query there. Give it a name by adding the `--name: ordersByCountry` line on top of it.
 10. Deploy the package, launch the platform, find the query in the package, and run it.
-11. Create a JavaScript function that has no parameters and returns a dataframe with 
+11. Create a JavaScript function (in `src/package.js`) that has no parameters and returns a dataframe with 
     the results of the `ordersByCountry('USA')` call:
     ```javascript
     //name: getOrders
@@ -432,7 +435,7 @@ After checking this you should see a nice scatter plot for `WEIGHT` and `HEIGHT`
 8. The Python code you see is what renders the scatter plot form p.6 on the Datagrok server. Let's walk through this code.
    * The script takes as inputs the original dataframe and the three columns. Remember form p.6 there were
      selectors for `X`, `Y`, and `Color` in the property panel. In fact, these three property names are
-     declared with the notation `<NAME>ColumnName` in the names of the three `#input` columns.
+     declared with the notation `<yourFirstName>ColumnName` in the names of the three `#input` columns.
    * The script produces an `#output` of type `graphics`. It is important the graphics appear in the end
      of the Python script. This is exactly what happens with the `plt.show()` in the last line of the script.
 9. Modify the name of `colorColumnName` to a `temperatureColumnName`, hit `Apply` in the bottom of the window,
@@ -458,7 +461,7 @@ _Prerequisites:_ exercises ["Setting up the environment"](#setting-up-the-enviro
 _You will learn:_ how to join and union dataframes using the knowledge of semantic types, and display the result. 
 
 1. Make sure the [prerequisites](#setting-up-the-environment) are prepared on your machine, including
-   the package called `<name>-sequence` Assure the package carries a relevant semantic type detector
+   the package called `<yourFirstName>-sequence` Assure the package carries a relevant semantic type detector
    from the exercise ["Semantic Types"](#semantic-types).
 2. Add a function to the package as follows:
    ```javascript
@@ -502,7 +505,7 @@ _You will learn:_ reuse 3-rd party JavaScript libraries in your Datagrok package
 _Prerequisites:_ exercises ["Setting up the environment"](#setting-up-the-environment),
 ["Semantic types"](#semantic-types).
 
-1. Navigate into the folder with your `<NAME>-sequence` package created in
+1. Navigate into the folder with your `<yourFirstName>-sequence` package created in
    ["Setting up the environment"](#setting-up-the-environment).
 2. Let's add a custom cell renderer for a _nucleotide sequence box_ to represent our sequences
    in high density on the screen.
@@ -587,7 +590,7 @@ fetch some nucleotide data regarding coronavirus.
    ```
    //name: testENASwagger
    export async function testENASwagger() {
-     let data = await grok.data.query('<Name>sequence:PerformATextSearchAndDownloadDataInXMLFormat',
+     let data = await grok.data.query('<yourFirstName>sequence:PerformATextSearchAndDownloadDataInXMLFormat',
        {'query': 'coronavirus', 'result': 'assembly'});
      grok.shell.addTableView(data);
    }
