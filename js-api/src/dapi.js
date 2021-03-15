@@ -679,7 +679,7 @@ export class Files {
    * @returns {Promise} */
   move(files, newPath) {
     return new Promise((resolve, reject) =>
-        grok_Dapi_UserFiles_Move(toDart(files), newPath, () => resolve(), (e) => reject(e)));
+        grok_Dapi_UserFiles_Move(files, newPath, () => resolve(), (e) => reject(e)));
   }
 
   /** Rename file
