@@ -1,0 +1,14 @@
+#name: loadPhysionetRecord
+#language: python
+#input: string chosenDatabase
+#input: string chosenRecord
+#output: dataframe df
+
+import wfdb
+
+record = wfdb.rdrecord(chosenRecord, pn_dir=chosenDatabase)
+
+df = pd.DataFrame({
+    'time': range(record.sig_len),
+    'testEcg': record.p_signal[:, 0]
+})
