@@ -631,6 +631,10 @@ export class ViewLayout extends Entity {
     return new ViewLayout(grok_ViewLayout_FromJson(json));
   }
 
+  static fromViewState(state) {
+    return new ViewLayout(grok_ViewLayout_FromViewState(state));
+  }
+
   /** Only defined within the context of the OnViewLayoutXXX events */
   get view() {
     return grok_ViewLayout_Get_View(this.d);
