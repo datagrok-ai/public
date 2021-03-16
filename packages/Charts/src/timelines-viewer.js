@@ -98,17 +98,6 @@ export class TimelinesViewer extends EChartViewer {
 
   init() {
     if (!this.initialized) {
-      // FIXME: shouldn't impact the context menu of another TimelinesViewer instance
-      const sub = grok.events.onContextMenu.subscribe(args => {
-        if (args.args.context.type === 'TimelinesViewer') {
-          args.args.menu.item('Reset View', () => {
-            this.zoomState = [[0, 100], [0, 100], [0, 100], [0, 100]];
-            this.render();
-          });
-        }
-      });
-      this.subs.push(sub);
-
       this.chart.on('dataZoom', () => {
         this.chart.getOption().dataZoom.forEach((z, i) => {
           this.zoomState[i][0] = z.start;
