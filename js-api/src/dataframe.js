@@ -40,16 +40,43 @@ const MapProxy = new Proxy(class {
     entries() {
       return this;
     }
+    forEach(callback) {
+      for (const [key, value] of this) {
+        callback(key, value);
+      }
+    }
+    delete(key) {
+      return DG.toJs(grok_Map_Delete(this.d, DG.toDart(key)));
+    }
+    get(key) {
+      return DG.toJs(grok_Map_Get(this.d, key));
+    }
+    has(key) {
+      return grok_Map_Has(this.d, DG.toDart(key));
+    }
+    set(key, value) {
+      grok_Map_Set(this.d, key, DG.toDart(value));
+      return this;
+    }
+    clear() {
+      grok_Map_Clear(this.d);
+    }
+    size() {
+      return DG.toJs(grok_Map_Size(this.d));
+    }
   }, {
     construct(target, args) {
       return new Proxy(new target(...args), {
         get: function (target, prop) {
           const val = target[prop];
-          if (typeof val === "function") {
+          if (typeof val === 'function') {
             return function (...args) {
               return val.apply(target, args);
             };
-          } else {
+          } /* else if (typeof val === 'number') {
+            // for the case of a getter like name
+            return val;
+          } */ else {
             return DG.toJs(grok_Map_Get(target.d, prop));
           }
         },

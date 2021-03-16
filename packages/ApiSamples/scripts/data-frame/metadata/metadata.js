@@ -64,3 +64,15 @@ for (const [key, value] of Object.entries(demog.tags))
   console.log(key, ':', value);
 for (const key in demog.tags)
   console.log(key, ':', demog.tags[key]);
+
+// Hint: other JS Map methods are also supported
+
+demog.tags.forEach((key, value) => console.log(key, ':', value));
+console.log(`foo is in tags: ${demog.tags.has('foo')}`);
+demog.tags.set('foo', 'buzz');
+console.log(`foo value is ${demog.tags.get('foo')}`);
+console.log(`foo was deleted: ${demog.tags.delete('foo')}`);
+console.log(`foo is in tags: ${demog.tags.has('foo')}`);
+demog.tags.clear();
+// the only difference is .size(), that is because you may have a tag called `size`
+console.log(`Number of tags is now ${demog.tags.size()}`);
