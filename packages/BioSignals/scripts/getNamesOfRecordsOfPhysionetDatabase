@@ -1,0 +1,10 @@
+#name: getNamesOfRecordsOfPhysionetDatabase
+#language: python
+#input: string chosenDatabase
+#output: dataframe df
+
+import wfdb
+
+df = pd.DataFrame({
+    'recordList': wfdb.get_record_list(chosenDatabase)
+})

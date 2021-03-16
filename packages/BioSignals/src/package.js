@@ -188,7 +188,9 @@ function getEmptyChart() {
   );
 }
 
-function showMainDialog(table, signalType, column, samplingFreq) {
+function showMainDialog(table, signalType, column, samplingFreq, isDataFrameLocal) {
+
+  let inputCase = (isDataFrameLocal) ? column.value[0] : table.columns.byName('testEcg');
 
   let accordionFilters = ui.accordion();
   let accordionExtractors = ui.accordion();
@@ -207,13 +209,13 @@ function showMainDialog(table, signalType, column, samplingFreq) {
   let addFilterButton = ui.div();
   let addFilterChartButton = ui.div();
   let filterInputsNew = ui.inputs(filterTypesList);
-  let filterOutputsObj = {[column.value[0]]: column};
+  let filterOutputsObj = {[inputCase]: column};
   let nameOfLastFiltersOutput = '';
   let i = 0;
   addFilterButton.appendChild(ui.button('Add Filter', () => {
     let containerFilter = ui.div();
     filterContainerList[i] = containerFilter;
-    let filterInputPreset = (Object.keys(filterOutputsObj).length === 1) ? column.value[0] : nameOfLastFiltersOutput;
+    let filterInputPreset = (Object.keys(filterOutputsObj).length === 1) ? inputCase : nameOfLastFiltersOutput;
     filterInputsList[i] = ui.choiceInput('Input', filterInputPreset, Object.keys(filterOutputsObj));
     filterChartsList[i] = getEmptyChart();
     filterTypesList[i] = ui.choiceInput('Filter ' + (i + 1), '', relevantMethods.filters);
@@ -244,7 +246,7 @@ function showMainDialog(table, signalType, column, samplingFreq) {
     let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting filter\'s output...');
     let t;
     if (filterInputsList.length === 1) {
-      t = DG.DataFrame.fromColumns([column.value[0]]);
+      t = DG.DataFrame.fromColumns([inputCase]);
     }
     else if (filterOutputsObj[filterInputsList[i-1].value].columns.byName(filterInputsList[i-1].value)) {
       t = DG.DataFrame.fromColumns([filterOutputsObj[filterInputsList[i-1].value].columns.byName(filterInputsList[i-1].value)]);
@@ -257,58 +259,58 @@ function showMainDialog(table, signalType, column, samplingFreq) {
     let currentlyChosenFilterType = filterTypesList[filterTypesList.length-1].value;
     switch (currentlyChosenFilterType) {
       case 'Moving Average Filter':
-        await SMA_filter(t, column.value[0], filterParametersList[i-1].win_len.value);
-        nameOfLastFiltersOutput = column.stringValue + ' SMA Filtered';
+        await SMA_filter(t, inputCase, filterParametersList[i-1].win_len.value);
+        nameOfLastFiltersOutput = inputCase.name + ' SMA Filtered';
         plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastFiltersOutput)]);
         break;
       case 'Exponential Filter':
-        await Exp_filter(t, column.value[0], filterParametersList[i-1].filter_ratio.value);
-        nameOfLastFiltersOutput = column.stringValue + ' Exponentially Filtered';
+        await Exp_filter(t, inputCase, filterParametersList[i-1].filter_ratio.value);
+        nameOfLastFiltersOutput = inputCase.name + ' Exponentially Filtered';
         plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastFiltersOutput)]);
         break;
       case 'Min Max Normalization':
-        await MinMax_transform(t, column.value[0]);
-        nameOfLastFiltersOutput = column.stringValue + ' Min Max Normalized';
+        await MinMax_transform(t, inputCase);
+        nameOfLastFiltersOutput = inputCase.name + ' Min Max Normalized';
         plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastFiltersOutput)]);
         break;
       case 'Z-score Normalization':
-        await Zscore_transform(t, column.value[0]);
-        nameOfLastFiltersOutput = column.stringValue + ' Z-score Normalized';
+        await Zscore_transform(t, inputCase);
+        nameOfLastFiltersOutput = inputCase.name + ' Z-score Normalized';
         plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastFiltersOutput)]);
         break;
       case 'Box Cox Transform':
-        await box_cox_transform(t, column.value[0], filterParametersList[i-1].lambda.value, filterParametersList[i-1].ofset.value);
-        nameOfLastFiltersOutput = column.stringValue + ' Box Cox Transformed';
+        await box_cox_transform(t, inputCase, filterParametersList[i-1].lambda.value, filterParametersList[i-1].ofset.value);
+        nameOfLastFiltersOutput = inputCase.name + ' Box Cox Transformed';
         plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastFiltersOutput)]);
         break;
       case 'Get Trend':
-        await get_trend(t, column.value[0]);
-        nameOfLastFiltersOutput = column.stringValue + ' Trend';
+        await get_trend(t, inputCase);
+        nameOfLastFiltersOutput = inputCase.name + ' Trend';
         plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastFiltersOutput)]);
         break;
       case 'Detrend':
-        await remove_trend(t, column.value[0]);
-        nameOfLastFiltersOutput = column.stringValue + ' Detrended';
+        await remove_trend(t, inputCase);
+        nameOfLastFiltersOutput = inputCase.name + ' Detrended';
         plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastFiltersOutput)]);
         break;
       case 'Fourier Filter':
-        await fourier_filter(t, column.value[0], filterParametersList[i-1].lowcut.value, filterParametersList[i-1].hicut.value, filterParametersList[i-1].observationTime.value);
-        nameOfLastFiltersOutput = column.stringValue + ' Fourier Filtered (L: ' + filterParametersList[i-1].lowcut.value + '; H: ' + filterParametersList[i-1].hicut.value + ')';
+        await fourier_filter(t, inputCase, filterParametersList[i-1].lowcut.value, filterParametersList[i-1].hicut.value, filterParametersList[i-1].observationTime.value);
+        nameOfLastFiltersOutput = inputCase.name + ' Fourier Filtered (L: ' + filterParametersList[i-1].lowcut.value + '; H: ' + filterParametersList[i-1].hicut.value + ')';
         plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastFiltersOutput)]);
         break;
       case 'Spectral Density':
-        await spectral_density(t, column.value[0], filterParametersList[i-1].observationTime.value);
-        nameOfLastFiltersOutput = column.stringValue + ' Density';
+        await spectral_density(t, inputCase, filterParametersList[i-1].observationTime.value);
+        nameOfLastFiltersOutput = inputCase.name + ' Density';
         plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastFiltersOutput)]);
         break;
       case 'Subsample':
-        await subsample(t, column.value[0], filterParametersList[i-1].subsampleSize.value, filterParametersList[i-1].offset.value);
-        nameOfLastFiltersOutput = column.stringValue + ' Subsample';
+        await subsample(t, inputCase, filterParametersList[i-1].subsampleSize.value, filterParametersList[i-1].offset.value);
+        nameOfLastFiltersOutput = inputCase.name + ' Subsample';
         plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastFiltersOutput)]);
         break;
       case 'Averaging Downsampling':
-        await asample(t, column.value[0], filterParametersList[i-1].windowSize.value, filterParametersList[i-1].offset.value);
-        nameOfLastFiltersOutput = column.stringValue + ' Subsample';
+        await asample(t, inputCase, filterParametersList[i-1].windowSize.value, filterParametersList[i-1].offset.value);
+        nameOfLastFiltersOutput = inputCase.name + ' Subsample';
         plotFL = DG.DataFrame.fromColumns([table.columns.byName('time'), t.columns.byName(nameOfLastFiltersOutput)]);
         break;
       default:
@@ -505,12 +507,60 @@ export function Biosensors(table) {
     let signalType = ui.choiceInput('Signal type', '', ['ECG', 'EDA', 'Accelerometer', 'EMG', 'EEG', 'ABP', 'BVP(PPG)', 'Respiration']);
     signalType.onChanged(() => {
       if (!IsSignalTypeDetectedAutomatically) {
-        showMainDialog(table, signalType, column, samplingFreq);
+        let isDataFrameLocal = true;
+        showMainDialog(table, signalType, column, samplingFreq, isDataFrameLocal);
       }
     });
 
+    let dataFrameWithListOfPhysionetDatabases = -1;
+    let getListOfPhysionetDatabasesButton = ui.div();
+    getListOfPhysionetDatabasesButton.appendChild(ui.button('Load files from Physionet', async () => {
+      let pi = DG.TaskBarProgressIndicator.create('Getting list of current Physionet databases...');
+      let f = await grok.functions.eval("BioSignals:getNamesOfPhysionetDatabases");
+      let call = f.prepare({'namesOption': 'shortNames'});
+      await call.call();
+      dataFrameWithListOfPhysionetDatabases = call.getParamValue('df');
+      let databases = dataFrameWithListOfPhysionetDatabases.columns.byName('listOfNamesOfPhysionetDatabases').categories;
+      let chosenDatabase = ui.choiceInput('Choose database', '', databases);
+      pi.close();
+      formView = ui.dialog('Demo Pipeline')
+          .add(ui.inputs([column, chosenDatabase]))
+          .showModal(true);
+      showTheRestOfLayout(formView);
+
+      chosenDatabase.onInput(async () => {
+        f = await grok.functions.eval("BioSignals:getNamesOfRecordsOfPhysionetDatabase");
+        call = f.prepare({'chosenDatabase': chosenDatabase.stringValue});
+        await call.call();
+        let dataFrameWithNamesOfRecords = call.getParamValue('df');
+        let recordNames = dataFrameWithNamesOfRecords.columns.byName('recordList').categories;
+        let chosenRecord = ui.choiceInput('Choose record', '', recordNames);
+        formView = ui.dialog('Demo Pipeline')
+            .add(ui.inputs([column, chosenDatabase, chosenRecord]))
+            .showModal(true);
+        showTheRestOfLayout(formView);
+
+        chosenRecord.onInput(async () => {
+          f = await grok.functions.eval("BioSignals:loadPhysionetRecord");
+          call = f.prepare({
+            'chosenDatabase': chosenDatabase.stringValue,
+            'chosenRecord': chosenRecord.stringValue
+          });
+          await call.call();
+          let table = call.getParamValue('df');
+          IsSignalTypeDetectedAutomatically = false;
+          signalType.stringValue = 'ECG';
+          let isDataFrameLocal = false;
+          showMainDialog(table, signalType, table.columns.byName('testEcg'), samplingFreq, isDataFrameLocal);
+        })
+      });
+    }));
+
+
+
     let formView = ui.dialog('Demo Pipeline')
         .add(ui.inputs([column]))
+        .add(getListOfPhysionetDatabasesButton)
         .showModal(true);
 
     let IsSignalTypeDetectedAutomatically = null;
@@ -521,7 +571,8 @@ export function Biosensors(table) {
       if (table.col(column.stringValue).semType) {
         IsSignalTypeDetectedAutomatically = true;
         signalType.stringValue = table.col(column.stringValue).semType.split('-')[1];
-        showMainDialog(table, signalType, column, samplingFreq);
+        let isDataFrameLocal = true;
+        showMainDialog(table, signalType, column, samplingFreq, isDataFrameLocal);
       }
       else {
         IsSignalTypeDetectedAutomatically = false;

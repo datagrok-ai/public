@@ -1,0 +1,13 @@
+#name: getNamesOfPhysionetDatabases
+#language: python
+#input: string namesOption
+#output: dataframe df
+
+import wfdb
+
+listOfNamesOfPhysionetDatabases = wfdb.io.get_dbs()
+nameIndex = 1 if namesOption == 'longNames' else 0
+
+df = pd.DataFrame({
+    'listOfNamesOfPhysionetDatabases': [name[nameIndex] for name in listOfNamesOfPhysionetDatabases]
+})
