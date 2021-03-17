@@ -13,3 +13,5 @@ t.col('cylinders').init(4);
 
 // index-based initializer
 t.columns.addNewInt('index').init((i) => i * 2);
+
+grok.shell.addTableView(t);
