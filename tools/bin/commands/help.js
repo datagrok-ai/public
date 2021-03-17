@@ -36,7 +36,7 @@ Supported languages for scripts:
 javascript, julia, node, octave, python, r
 
 Available tags:
-panel
+panel, init
 `;
 
 const HELP_CONFIG = `

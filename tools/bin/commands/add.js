@@ -25,7 +25,7 @@ function add(args) {
   if (!fs.existsSync(packagePath)) return console.log('`package.json` not found');
   try {
     const package = JSON.parse(fs.readFileSync(packagePath));
-    if (package.fullName !== curFolder) {
+    if (package.friendlyName !== curFolder) {
       return console.log('The package name differs from the one in `package.json`');
     }
   } catch (error) {
@@ -141,21 +141,18 @@ function add(args) {
 
       if (!validateName(name)) return false;
 
-      if (tag && tag !== 'panel') return console.log('Currently, you can only add the `panel` tag');
+      if (tag && tag !== 'panel' && tag !== 'init') {
+        return console.log('Currently, you can only add the `panel` or `init` tag');
+      }
 
       // Create src/package.js if it doesn't exist yet
       createJsFile();
 
       // Add a function to package.js
-      let func;
-      if (tag) {
-        func = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
-          'entity-template', 'panel.js'), 'utf8');
-      } else {
-        func = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
-          'entity-template', 'function.js'), 'utf8');
-      }
+      let func = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)), 'entity-template',
+        (tag === 'panel' ? 'panel.js' : tag === 'init' ? 'init.js' : 'function.js')), 'utf8');
       fs.appendFileSync(jsPath, insertName(name, func));
+
       console.log(`The function ${name} has been added successfully`);
       console.log('Read more at https://datagrok.ai/help/overview/functions/function');
       console.log('See examples at https://public.datagrok.ai/functions');

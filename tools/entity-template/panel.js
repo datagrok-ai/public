@@ -1,3 +1,4 @@
+
 //name: #{NAME}
 //description: Creates an info panel
 //tags: panel
