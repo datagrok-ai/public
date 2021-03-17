@@ -1,3 +1,4 @@
+
 //name: #{NAME}
 //description: Creates #{NAME} view
 //tags: view
