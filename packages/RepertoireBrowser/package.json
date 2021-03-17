@@ -6,6 +6,13 @@
 	"dependencies": {
 		"datagrok-api": "latest"
 	},
+	"sources": [
+		"css/ngl.css",
+		"css/pviz-core.css",
+		"css/additionalStyles.css",
+		"src/pviz-bundle.min.js",
+		"common/ngl_viewer/ngl.js"
+	],
 	"scripts": {
 		"debug-repertoirebrowser": "grok publish --rebuild",
 		"release-repertoirebrowser": "grok publish --rebuild --release",
@@ -13,7 +20,7 @@
 		"build": "webpack",
 		"debug-repertoirebrowser-public": "grok publish public --rebuild",
 		"release-repertoirebrowser-public": "grok publish public --rebuild --release",
-		"debug-repertoirebrowser-local": "grok publish local --rebuild",
-		"release-repertoirebrowser-local": "grok publish local --rebuild --release"
+		"debug-repertoirebrowser-local": "grok publish dev --rebuild",
+		"release-repertoirebrowser-local": "grok publish dev --rebuild --release"
 	}
 }
