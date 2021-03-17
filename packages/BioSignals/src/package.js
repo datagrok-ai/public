@@ -90,7 +90,6 @@ function showMainDialog(table, signalType, column, samplingFreq, isDataFrameLoca
   let relevantMethods = getRelevantMethods(signalType.stringValue);
 
   // Filter dialogue
-  let paramsT;
   let filterTypesList = [];
   let filterInputsList = [];
   let filterParametersList = [];
@@ -336,11 +335,11 @@ export function Biosensors(table) {
       await call.call();
       dataFrameWithListOfPhysionetDatabases = call.getParamValue('df');
       let databases = dataFrameWithListOfPhysionetDatabases.columns.byName('listOfNamesOfPhysionetDatabases').categories;
-      let chosenDatabase = ui.choiceInput('Choose database', '', databases);
+      let chosenDatabase = ui.choiceInput('Physionet database', '', databases);
       pi.close();
-      formView = ui.dialog('Demo Pipeline')
-          .add(ui.inputs([column, chosenDatabase]))
-          .showModal(true);
+      formView = ui.div(
+        ui.inputs([column, chosenDatabase])
+      );
       showTheRestOfLayout(formView);
 
       chosenDatabase.onInput(async () => {
@@ -349,10 +348,10 @@ export function Biosensors(table) {
         await call.call();
         let dataFrameWithNamesOfRecords = call.getParamValue('df');
         let recordNames = dataFrameWithNamesOfRecords.columns.byName('recordList').categories;
-        let chosenRecord = ui.choiceInput('Choose record', '', recordNames);
-        formView = ui.dialog('Demo Pipeline')
-            .add(ui.inputs([column, chosenDatabase, chosenRecord]))
-            .showModal(true);
+        let chosenRecord = ui.choiceInput('Physionet record', '', recordNames);
+        formView = ui.div(
+          ui.inputs([column, chosenDatabase, chosenRecord])
+        );
         showTheRestOfLayout(formView);
 
         chosenRecord.onInput(async () => {
