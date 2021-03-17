@@ -728,10 +728,33 @@ export class Files {
 
   /** Write file
    * @param {File | String} file
-   * @param String data
+   * @param string data
    * @returns {Promise} */
   writeAsText(file, data) {
     return new Promise((resolve, reject) =>
       grok_Dapi_UserFiles_WriteAsText(file, data, () => resolve(), (e) => reject(e)));
   }
+}
+
+export class Logger {
+
+  constructor(putCallback) {
+    this.putCallback = putCallback;
+  }
+
+  /** Saves audit record to Datagrok back-end
+   * @param {string} message
+   * @param {object} params
+   * @param {string} type = 'log'
+   * */
+  log(message, params, type) {
+    if (type == null)
+      type = 'log';
+    let msg = {message: message, params: params, type: type};
+    if (this.putCallback != null)
+      this.putCallback(msg);
+
+    grok_Audit(msg.type, msg.message, toDart(msg.params));
+  }
+
 }
