@@ -1,3 +1,7 @@
+.seq-entry-annot-interactive {
+	width: 100% !important;
+}
+
 g.feature.ADA rect.feature {}
 
 g.feature.ADA text {
