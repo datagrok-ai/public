@@ -114,11 +114,11 @@ export async function launchBrowser(s) {
     ///// MAIN BODY ////
 
 
-    // let chain = ui.choiceInput('Chain', '',Object.keys(scheme.ptm_predictions));
-    // let ptm_predictions = [...new Set([...Object.keys(scheme.ptm_predictions.H), ...Object.keys(scheme.ptm_predictions.L)])];
-    // let ptm_choice = ui.choiceInput('PTMs', '', ptm_predictions);
+    let chain_choice = ui.choiceInput('Chain', '',Object.keys(scheme.ptm_predictions));
+    let ptm_predictions = [...new Set([...Object.keys(scheme.ptm_predictions.H), ...Object.keys(scheme.ptm_predictions.L)])];
+    let ptm_choice = ui.choiceInput('PTMs', '', ptm_predictions);
     let reps = ['cartoon','backbone','ball+stick','licorice','hyperball', 'surface'];
-    let repChoice = ui.choiceInput('Representation', 'cartoon',reps);
+    let repChoice = ui.choiceInput('Representation', 'cartoon', reps);
     repChoice.onChanged(async () => {
         $(ngl_host).empty();
         stage = new NGL.Stage(ngl_host);
@@ -127,107 +127,126 @@ export async function launchBrowser(s) {
     });
 
 
-    let view = grok.shell.newView('ABody_model');
+    // let view = grok.shell.newView('ABody_model');
+    let tname = grok.shell.tableNames;
+    let view = grok.shell.getTableView(tname[0]);
+
     var ngl_host = ui.div([],'d4-ngl-viewer');
     ngl_host.style.backgroundColor ='black';
     view.box = true;
-    view.append(ngl_host);
-    grok.shell.v = view;
+    view.dockManager.dock(ngl_host, 'right');
+
+    function handleResize(host, stage) {
+        let canvas = host.querySelector('canvas');
+        function resize() {
+            canvas.width = Math.floor(canvas.clientWidth * window.devicePixelRatio);
+            canvas.height = Math.floor(canvas.clientHeight * window.devicePixelRatio);
+            stage.handleResize();
+        }
+
+        ui.onSizeChanged(host).subscribe((_) => resize());
+        resize();
+    }
 
     let root = ui.div();
     root.appendChild(ui.h2('NGL options'));
-    root.appendChild(ui.inputs([repChoice]));
+    root.appendChild(ui.inputs([repChoice, chain_choice, ptm_choice]));
     grok.shell.o = root;
-
 
     var stage = new NGL.Stage(ngl_host);
     let path = _package.webRoot + 'pdbfiles/' + 'TPP000153303.pdb';
     await loadFile(path, repChoice);
+    handleResize(ngl_host,stage);
 
 
-    // let chain = 'H';
-    // let mutations = [
-    //     "ADA", "AI", "FR", "HYL", "HYP", "LG",
-    //     "MA",'MLY',"MeO","N6AL","NG", "NtG","OlG",
-    //     "PP","PTB","PCA","SPC",'SUMO','TO','UB'
-    // ];
-    // var mutcodes = {
-    //     "Asndeamidation(NGNSNT)":"ADA",
-    //     "Aspisomerisation(DGDSDTDDDH)":"AI",
-    //     "Fragmentation(DP)":"FR",
-    //     "Hydroxylysine":"HYL",
-    //     "Hydroxyproline":"HYP",
-    //     "LysineGlycation(KEKDEKED)": "LG",
-    //     "Methylarginine": "MA",
-    //     "Methyllysine":"MLY",
-    //     "Metoxidation(M)":"MeO",
-    //     "N6-acetyllysine": "N6AL",
-    //     "N-linked_glycosylation":"NG",
-    //     "N-terminalglutamate(VHandVL)(E)":"NtG",
-    //     "O-linked_glycosylation": "OlG",
-    //     "Phosphoserine_Phosphothreonine": "PP",
-    //     "Phosphotyrosine":"PTB",
-    //     "Pyrrolidone_carboxylic_acid":"PCA",
-    //     "S-palmitoyl_cysteine":"SPC",
-    //     "SUMOylation": "SUMO",
-    //     "Trpoxidation(W)":"TO",
-    //     "Ubiquitination": "UB",
+    let chain = 'H';
+    let mutations = [
+        "ADA", "AI", "FR", "HYL", "HYP", "LG",
+        "MA",'MLY',"MeO","N6AL","NG", "NtG","OlG",
+        "PP","PTB","PCA","SPC",'SUMO','TO','UB'
+    ];
+    var mutcodes = {
+        "Asndeamidation(NGNSNT)":"ADA",
+        "Aspisomerisation(DGDSDTDDDH)":"AI",
+        "Fragmentation(DP)":"FR",
+        "Hydroxylysine":"HYL",
+        "Hydroxyproline":"HYP",
+        "LysineGlycation(KEKDEKED)": "LG",
+        "Methylarginine": "MA",
+        "Methyllysine":"MLY",
+        "Metoxidation(M)":"MeO",
+        "N6-acetyllysine": "N6AL",
+        "N-linked_glycosylation":"NG",
+        "N-terminalglutamate(VHandVL)(E)":"NtG",
+        "O-linked_glycosylation": "OlG",
+        "Phosphoserine_Phosphothreonine": "PP",
+        "Phosphotyrosine":"PTB",
+        "Pyrrolidone_carboxylic_acid":"PCA",
+        "S-palmitoyl_cysteine":"SPC",
+        "SUMOylation": "SUMO",
+        "Trpoxidation(W)":"TO",
+        "Ubiquitination": "UB",
+    }
+    // let mutations = Object.keys(mutcodes).filter((key) => {return (ptm_choice.value).includes(key)});
+    // var seq;
+    // if (chain.value === 'H') {
+    //     seq = data.heavy_seq
+    // } else {
+    //     seq = data.light_seq
     // }
-    // // let mutations = Object.keys(mutcodes).filter((key) => {return (ptm_choice.value).includes(key)});
-    // // var seq;
-    // // if (chain.value === 'H') {
-    // //     seq = data.heavy_seq
-    // // } else {
-    // //     seq = data.light_seq
-    // // }
-    //
-    // var seq = scheme.heavy_seq
-    // var rawlist = mutationsTolist(mutcodes, scheme, chain);
-    // let cl = mutationsToFeatures(rawlist, mutations, 0.2);
-    // var gradient = cl[0];
-    // var features = cl[1];
-    // var den_gradient = cl[2];
-    // var den_feature = cl[3];
-    //
-    // var pviz = window.pviz;
-    // var seqEntry = new pviz.SeqEntry({
-    //     sequence : scheme.heavy_seq
-    // });
 
-    // setTimeout(function () {
-    //
-    //     new pviz.SeqEntryAnnotInteractiveView({
-    //         model : seqEntry,
-    //         el : '#pViz-host'
-    //     }).render();
-    //
-    //     mutations.forEach((mut) => {pviz.FeatureDisplayer.trackHeightPerCategoryType[mut] = 1.5});
-    //     mutations.forEach((mut) => {pviz.FeatureDisplayer.setStrikeoutCategory(mut)});
-    //     seqEntry.addFeatures(features.map(function(ft) {
-    //         return {
-    //             groupSet: 'PTMs',
-    //             category : ft[1],
-    //             type : ft[1],
-    //             start : ft[0],
-    //             end : ft[0],
-    //             text : ft[1],
-    //             improbable : true
-    //         }
-    //     }));
-    //     seqEntry.addFeatures(den_feature.map(function(ft) {
-    //         return {
-    //             category: 'PTM density',
-    //             type : 'D',
-    //             start : ft,
-    //             end : ft,
-    //             text : '',
-    //             improbable : true
-    //         }
-    //     }));
-    //
-    //     applyGradient(gradient, chain.value, mutations);
-    //     applyGradient(den_gradient, chain.value, ['D']);
-    //
-    //     // grok.shell.v = view;
-    // }, 1000);
+    let pViz_host = ui.box();
+    pViz_host.id = 'pViz-host';
+    // view.box = true;
+    view.dockManager.dock(pViz_host, 'down');
+
+    var seq = scheme.heavy_seq;
+    var rawlist = mutationsTolist(mutcodes, scheme, chain);
+    let cl = mutationsToFeatures(rawlist, mutations, 0.2);
+    var gradient = cl[0];
+    var features = cl[1];
+    var den_gradient = cl[2];
+    var den_feature = cl[3];
+
+    var pviz = window.pviz;
+    var seqEntry = new pviz.SeqEntry({
+        sequence : scheme.heavy_seq
+    });
+
+    setTimeout(function () {
+
+        new pviz.SeqEntryAnnotInteractiveView({
+            model : seqEntry,
+            el : pViz_host
+        }).render();
+
+        mutations.forEach((mut) => {pviz.FeatureDisplayer.trackHeightPerCategoryType[mut] = 1.5});
+        mutations.forEach((mut) => {pviz.FeatureDisplayer.setStrikeoutCategory(mut)});
+        seqEntry.addFeatures(features.map(function(ft) {
+            return {
+                groupSet: 'PTMs',
+                category : ft[1],
+                type : ft[1],
+                start : ft[0],
+                end : ft[0],
+                text : ft[1],
+                improbable : true
+            }
+        }));
+        seqEntry.addFeatures(den_feature.map(function(ft) {
+            return {
+                category: 'PTM density',
+                type : 'D',
+                start : ft,
+                end : ft,
+                text : '',
+                improbable : true
+            }
+        }));
+
+        applyGradient(gradient, chain.value, mutations);
+        applyGradient(den_gradient, chain.value, ['D']);
+
+        // grok.shell.v = view;
+    }, 0);
 }
