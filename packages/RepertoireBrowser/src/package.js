@@ -3,7 +3,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from "datagrok-api/dg";
 import scheme from "./TPP000153303.json";
-// import pviz from "./pviz-bundle.min.js";
+import mutcodes from "./mutcodes.json";
+
 
 export let _package = new DG.Package();
 
@@ -56,7 +57,7 @@ export async function launchBrowser(s) {
         return l;
     }
 
-    function mutationsToFeatures(rawlist, mutations, prob) {
+    function mutationsToFeatures(seq, rawlist, mutations, prob) {
         let l_mut = [];
         let c_mut = [];
         let l_den = [];
@@ -101,127 +102,64 @@ export async function launchBrowser(s) {
         })
     }
 
+    function CDR3(scheme){
+        let schemeId;
+        let baseH = 'darkblue';
+        let baseL = 'darkred';
+        if (schemeChoice.value === 'chothina') {
+            schemeId = NGL.ColormakerRegistry.addSelectionScheme([
+                ["yellow", "25-31 and :H or 51-56 and :H or 98-110 and :H"],
+                [baseH, "* and :H"],
+                ["green", "22-34 and :L or 50-56 and :L or 89-100 and :L"],
+                [baseL, "* and :L"]
+            ]);
+        } else {
+            schemeId = NGL.ColormakerRegistry.addSelectionScheme([
+                [baseH, "* and :H"],
+                [baseL, "* and :L"]
+            ]);
+        }
+        return {color: schemeId};
+    }
+
     // ngl loading
-    async function loadFile(bytes, repChoice) {
+    async function loadPdb(bytes, repChoice) {
         stage.loadFile(bytes).then(function (o) {
             o.addRepresentation(repChoice.value);
             o.autoView();
         });
     }
 
+    // sequence loading
+    function loadSequecne(chain_choice, ptm_choice){
 
-
-    ///// MAIN BODY ////
-
-
-    let chain_choice = ui.choiceInput('Chain', '',Object.keys(scheme.ptm_predictions));
-    let ptm_predictions = [...new Set([...Object.keys(scheme.ptm_predictions.H), ...Object.keys(scheme.ptm_predictions.L)])];
-    let ptm_choice = ui.choiceInput('PTMs', '', ptm_predictions);
-    let reps = ['cartoon','backbone','ball+stick','licorice','hyperball', 'surface'];
-    let repChoice = ui.choiceInput('Representation', 'cartoon', reps);
-    repChoice.onChanged(async () => {
-        $(ngl_host).empty();
-        stage = new NGL.Stage(ngl_host);
-        // schemeObj = fromJson(schemeChoice);
-        await loadFile(path, repChoice);
-    });
-
-
-    // let view = grok.shell.newView('ABody_model');
-    let tname = grok.shell.tableNames;
-    let view = grok.shell.getTableView(tname[0]);
-
-    var ngl_host = ui.div([],'d4-ngl-viewer');
-    ngl_host.style.backgroundColor ='black';
-    view.box = true;
-    view.dockManager.dock(ngl_host, 'right');
-
-    function handleResize(host, stage) {
-        let canvas = host.querySelector('canvas');
-        function resize() {
-            canvas.width = Math.floor(canvas.clientWidth * window.devicePixelRatio);
-            canvas.height = Math.floor(canvas.clientHeight * window.devicePixelRatio);
-            stage.handleResize();
+        let seq;
+        if (chain_choice.value === 'H') {
+            seq = scheme.heavy_seq
+        } else {
+            seq = scheme.light_seq
         }
 
-        ui.onSizeChanged(host).subscribe((_) => resize());
-        resize();
-    }
+        let mutations = [mutcodes[ptm_choice.value]];
+        let rawlist = mutationsTolist(mutcodes, scheme, chain_choice.value);
+        let cl = mutationsToFeatures(seq, rawlist, mutations, 0.2);
+        let gradient = cl[0];
+        let features = cl[1];
+        let den_gradient = cl[2];
+        let den_feature = cl[3];
 
-    let root = ui.div();
-    root.appendChild(ui.h2('NGL options'));
-    root.appendChild(ui.inputs([repChoice, chain_choice, ptm_choice]));
-    grok.shell.o = root;
-
-    var stage = new NGL.Stage(ngl_host);
-    let path = _package.webRoot + 'pdbfiles/' + 'TPP000153303.pdb';
-    await loadFile(path, repChoice);
-    handleResize(ngl_host,stage);
-
-
-    let chain = 'H';
-    let mutations = [
-        "ADA", "AI", "FR", "HYL", "HYP", "LG",
-        "MA",'MLY',"MeO","N6AL","NG", "NtG","OlG",
-        "PP","PTB","PCA","SPC",'SUMO','TO','UB'
-    ];
-    var mutcodes = {
-        "Asndeamidation(NGNSNT)":"ADA",
-        "Aspisomerisation(DGDSDTDDDH)":"AI",
-        "Fragmentation(DP)":"FR",
-        "Hydroxylysine":"HYL",
-        "Hydroxyproline":"HYP",
-        "LysineGlycation(KEKDEKED)": "LG",
-        "Methylarginine": "MA",
-        "Methyllysine":"MLY",
-        "Metoxidation(M)":"MeO",
-        "N6-acetyllysine": "N6AL",
-        "N-linked_glycosylation":"NG",
-        "N-terminalglutamate(VHandVL)(E)":"NtG",
-        "O-linked_glycosylation": "OlG",
-        "Phosphoserine_Phosphothreonine": "PP",
-        "Phosphotyrosine":"PTB",
-        "Pyrrolidone_carboxylic_acid":"PCA",
-        "S-palmitoyl_cysteine":"SPC",
-        "SUMOylation": "SUMO",
-        "Trpoxidation(W)":"TO",
-        "Ubiquitination": "UB",
-    }
-    // let mutations = Object.keys(mutcodes).filter((key) => {return (ptm_choice.value).includes(key)});
-    // var seq;
-    // if (chain.value === 'H') {
-    //     seq = data.heavy_seq
-    // } else {
-    //     seq = data.light_seq
-    // }
-
-    let pViz_host = ui.box();
-    pViz_host.id = 'pViz-host';
-    // view.box = true;
-    view.dockManager.dock(pViz_host, 'down');
-
-    var seq = scheme.heavy_seq;
-    var rawlist = mutationsTolist(mutcodes, scheme, chain);
-    let cl = mutationsToFeatures(rawlist, mutations, 0.2);
-    var gradient = cl[0];
-    var features = cl[1];
-    var den_gradient = cl[2];
-    var den_feature = cl[3];
-
-    var pviz = window.pviz;
-    var seqEntry = new pviz.SeqEntry({
-        sequence : scheme.heavy_seq
-    });
-
-    setTimeout(function () {
-
+        let seqEntry = new pviz.SeqEntry({
+            sequence : seq
+        });
         new pviz.SeqEntryAnnotInteractiveView({
             model : seqEntry,
             el : pViz_host
         }).render();
 
-        mutations.forEach((mut) => {pviz.FeatureDisplayer.trackHeightPerCategoryType[mut] = 1.5});
-        mutations.forEach((mut) => {pviz.FeatureDisplayer.setStrikeoutCategory(mut)});
+        mutations.forEach((mut) => {
+            pviz.FeatureDisplayer.trackHeightPerCategoryType[mut] = 1.5;
+            pviz.FeatureDisplayer.setStrikeoutCategory(mut);
+        });
         seqEntry.addFeatures(features.map(function(ft) {
             return {
                 groupSet: 'PTMs',
@@ -244,9 +182,64 @@ export async function launchBrowser(s) {
             }
         }));
 
-        applyGradient(gradient, chain.value, mutations);
-        applyGradient(den_gradient, chain.value, ['D']);
+        applyGradient(gradient, chain_choice.value, mutations);
+        applyGradient(den_gradient, chain_choice.value, ['D']);
 
-        // grok.shell.v = view;
-    }, 0);
+    }
+
+    ///// MAIN BODY ////
+
+
+    let reps = ['cartoon','backbone','ball+stick','licorice','hyperball', 'surface'];
+    let repChoice = ui.choiceInput('Representation', 'cartoon', reps);
+
+    let CDR3_choice = ui.choiceInput('CDR3 Scheme', '', Object.keys(scheme.cdr_ranges));
+
+    let chain_choice = ui.choiceInput('Chain', 'H',Object.keys(scheme.ptm_predictions));
+    let ptm_predictions = [...new Set([...Object.keys(scheme.ptm_predictions.H), ...Object.keys(scheme.ptm_predictions.L)])];
+    let ptm_choice = ui.choiceInput('PTMs', 'Phosphoserine_Phosphothreonine', ptm_predictions);
+
+    repChoice.onChanged(async () => {
+        $(ngl_host).empty();
+        stage = new NGL.Stage(ngl_host);
+        // schemeObj = fromJson(schemeChoice);
+        await loadPdb(path, repChoice);
+    });
+
+    ptm_choice.onChanged(() => {
+        loadSequecne(chain_choice, ptm_choice);
+    });
+
+    chain_choice.onChanged(() => {
+        loadSequecne(chain_choice, ptm_choice);
+    });
+
+    let tname = grok.shell.tableNames;
+    let view = grok.shell.getTableView(tname[0]);
+
+    let root = ui.div();
+    root.appendChild(ui.h2('NGL options'));
+    root.appendChild(ui.inputs([repChoice, CDR3_choice, chain_choice, ptm_choice]));
+    grok.shell.o = root;
+
+    var ngl_host = ui.div([],'d4-ngl-viewer');
+    ngl_host.style.backgroundColor ='black';
+    view.box = true;
+    view.dockManager.dock(ngl_host, 'right');
+    var stage = new NGL.Stage(ngl_host);
+    let path = _package.webRoot + 'pdbfiles/' + 'TPP000153303.pdb';
+    await loadPdb(path, repChoice);
+
+    let pViz_host = ui.box();
+    view.dockManager.dock(pViz_host, 'down');
+    var pviz = window.pviz;
+    loadSequecne(chain_choice, ptm_choice);
+
 }
+
+// let mutations = [
+//     "ADA", "AI", "FR", "HYL", "HYP", "LG",
+//     "MA",'MLY',"MeO","N6AL","NG", "NtG","OlG",
+//     "PP","PTB","PCA","SPC",'SUMO','TO','UB'
+// ];
+// let mutations = Object.keys(mutcodes).filter((key) => {return (ptm_choice.value).includes(key)});
