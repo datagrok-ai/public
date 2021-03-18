@@ -263,19 +263,24 @@ export async function launchBrowser(s) {
     let view = grok.shell.getTableView(tname[0]);
     let table = view.table;
 
-    // let logger = new DG.Logger((m) => m.params['log_param'] = 'ig-repert');
-    // var last_row = 0;
-    // table.onCurrentRowChanged.subscribe(function () {
-    //     if (table.currentRow.idx >= 0) {
-    //         if (last_row !== table.currentRow.idx) { // row really changed
-    //             var table_name = table.name;
-    //             var row_str = table.currentRow.idx.toString();
-    //             // send row selection event to the logger
-    //             logger.log('row-selection', {lparam: table_name, seq_id: row_str}, 'rlog');
-    //             last_row = table.currentRow.idx; // update last row
-    //         }
-    //     }
-    // });
+    // --------------------------------------------
+    // Event logging
+    //
+    let logger = new DG.Logger((m) => m.params['log_param'] = 'ig-repert');
+    table.onCurrentRowChanged.subscribe(function () {
+         if (table.currentRow.idx >= 0) {
+             var row_str = table.currentRow.idx.toString();
+             logger.log('row-change', {lparam: table.name, seq_id: row_str}, 'rlog');
+         }
+    });
+    table.onCurrentCellChanged.subscribe(function () {
+        if (table.currentRow.idx >= 0) {
+            // grok.shell.info(`Cell: ${t.currentCell.rowIndex}, ${t.currentCell.column.name}`));
+            logger.log('cell-change', {lparam: table.name, col: table.currentCell.column.name}, 'rlog');
+        }
+    });
+    // --------------------------------------------
+
 
     let root = ui.div();
     root.appendChild(ui.h2('NGL options'));
