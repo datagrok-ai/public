@@ -21,7 +21,7 @@ Layouts are created from views, and views, in turn, can be restored from layouts
 layout to a server repository (by choosing `View | Layout | Save to Gallery` in the top menu or
 hitting _Ctrl + S_) or download it as a file (`View | Layout | Download`), internally you are
 working with objects of `ViewLayout` class. There are several ways to obtain its instance: saving
-existing views and constructing layouts from `JSON`. Let's start by getting a layout of the
+existing view layouts and constructing them from `JSON` strings. Let's start by getting a layout of the
 currently open view:
 
 ```js
@@ -55,6 +55,31 @@ grok.data.openTable(tableId).then(t => {
   let view = grok.shell.addTableView(t);
   view.loadLayout(DG.ViewLayout.fromJson(layoutJson));
 });
+```
+
+The `JSON` representation of a layout has the following main fields:
+
+```json
+{
+  "#type": "ViewLayout",
+  "viewStateMap": {...},
+  "columns": [...],
+  "name": "LayoutName",
+  "friendlyName": "Layout Name",
+  "author": {...},
+  "createdOn": "YYYY-MM-DDTHH:mm:ss.sssZ"
+}
+```
+
+Some of these attributes are common to all [entities](../../overview/objects.md), so we will mention
+only the layout-specific ones. The `viewStateMap` field contains the essential part describing in
+which positions viewers are docked and which viewer properties are set. The metadata needed for further
+layout application is stored in `columns`. However, a bare view state is enough to reuse the layout:
+
+```js
+let layout = view.saveLayout();
+// Reapply the layout after a series of changes
+view.loadLayout(DG.ViewLayout.fromViewState(layout.viewState));
 ```
 
 ## Server API
