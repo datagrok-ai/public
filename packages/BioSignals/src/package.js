@@ -302,6 +302,40 @@ export async function bioSignalViewer(file) {
   return view;
 }
 
+export async function getNamesOfPhysionetDatabases() {
+  let f = await grok.functions.eval("BioSignals:getNamesOfPhysionetDatabases");
+  let call = f.prepare({'namesOption': 'shortNames'});
+  await call.call();
+  return call.getParamValue('df');
+}
+
+export async function getNamesOfRecordsOfPhysionetDatabase(chosenDatabase) {
+  let f = await grok.functions.eval("BioSignals:getNamesOfRecordsOfPhysionetDatabase");
+  let call = f.prepare({'chosenDatabase': chosenDatabase.stringValue});
+  await call.call();
+  return call.getParamValue('df');
+}
+
+export async function loadPhysionetRecord(chosenDatabase, chosenRecord) {
+  let f = await grok.functions.eval("BioSignals:loadPhysionetRecord");
+  let call = f.prepare({
+    'chosenDatabase': chosenDatabase.stringValue,
+    'chosenRecord': chosenRecord.stringValue
+  });
+  await call.call();
+  return call.getParamValue('df');
+}
+
+export async function loadPhysionetAnnotations(chosenDatabase, chosenRecord) {
+  let f = await grok.functions.eval("BioSignals:loadPhysionetAnnotations");
+  let call = f.prepare({
+    'chosenDatabase': chosenDatabase.stringValue,
+    'chosenRecord': chosenRecord.stringValue
+  });
+  await call.call();
+  return call.getParamValue('df');
+}
+
 //name: BioSignals
 //tags: panel, widgets
 //input: dataframe table
@@ -330,10 +364,7 @@ export function Biosensors(table) {
     let getListOfPhysionetDatabasesButton = ui.div();
     getListOfPhysionetDatabasesButton.appendChild(ui.button('Load files from Physionet', async () => {
       let pi = DG.TaskBarProgressIndicator.create('Getting list of current Physionet databases...');
-      let f = await grok.functions.eval("BioSignals:getNamesOfPhysionetDatabases");
-      let call = f.prepare({'namesOption': 'shortNames'});
-      await call.call();
-      dataFrameWithListOfPhysionetDatabases = call.getParamValue('df');
+      dataFrameWithListOfPhysionetDatabases = await getNamesOfPhysionetDatabases();
       let databases = dataFrameWithListOfPhysionetDatabases.columns.byName('listOfNamesOfPhysionetDatabases').categories;
       let chosenDatabase = ui.choiceInput('Physionet database', '', databases);
       pi.close();
@@ -345,10 +376,7 @@ export function Biosensors(table) {
 
       chosenDatabase.onInput(async () => {
         let pi = DG.TaskBarProgressIndicator.create('Getting names of records from chosen Physionet database...');
-        let f = await grok.functions.eval("BioSignals:getNamesOfRecordsOfPhysionetDatabase");
-        let call = f.prepare({'chosenDatabase': chosenDatabase.stringValue});
-        await call.call();
-        let dataFrameWithNamesOfRecords = call.getParamValue('df');
+        let dataFrameWithNamesOfRecords = await getNamesOfRecordsOfPhysionetDatabase(chosenDatabase);
         let recordNames = dataFrameWithNamesOfRecords.columns.byName('recordList').categories;
         let chosenRecord = ui.choiceInput('Physionet record', '', recordNames);
         pi.close();
@@ -359,26 +387,14 @@ export function Biosensors(table) {
 
         chosenRecord.onInput(async () => {
           let pi = DG.TaskBarProgressIndicator.create('Loading record from Physionet...');
-          f = await grok.functions.eval("BioSignals:loadPhysionetRecord");
-          call = f.prepare({
-            'chosenDatabase': chosenDatabase.stringValue,
-            'chosenRecord': chosenRecord.stringValue
-          });
-          await call.call();
-          let table = call.getParamValue('df');
+          let table = await loadPhysionetRecord(chosenDatabase, chosenRecord);
           IsSignalTypeDetectedAutomatically = true;
           signalType.stringValue = 'ECG';
           let isDataFrameLocal = false;
           pi.close();
 
           pi = DG.TaskBarProgressIndicator.create('Loading annotations of chosen record from Physionet...');
-          f = await grok.functions.eval("BioSignals:loadPhysionetAnnotations");
-          call = f.prepare({
-            'chosenDatabase': chosenDatabase.stringValue,
-            'chosenRecord': chosenRecord.stringValue
-          });
-          await call.call();
-          let dataFrameWithAnnotations = call.getParamValue('df');
+          let dataFrameWithAnnotations = await loadPhysionetAnnotations(chosenDatabase, chosenRecord);
           table = table.append(dataFrameWithAnnotations);
           showMainDialog(table, signalType, table.columns.byName('testEcg'), samplingFreq, isDataFrameLocal);
           pi.close();
