@@ -14,6 +14,9 @@ let links = {
 };
 
 let typeMap = { 'Char': 'string', 'Num': 'int' };
+let datetimeFormat = 'ISO 8601';
+let checkType = (column, variable) => (column.type === typeMap[variable.type] ||
+  (column.type === 'datetime' && variable.format === datetimeFormat));
 
 let terminology, submissionValueCol;
 let submissionValues = [];
@@ -29,8 +32,7 @@ export function sdtmSummaryPanel(df) {
   for (let column of df.columns) {
     let name = column.name;
     let variable = meta.domains[domain][name];
-    text += `${name} ${variable ?
-      typeMap[variable.type] === column.type ?
+    text += `${name} ${variable ? checkType(column, variable) ?
       'valid' : 'invalid' : 'unknown variable'}\n`;
   }
   return new DG.Widget(ui.divText(text));
@@ -45,7 +47,7 @@ export function sdtmVariablePanel(varCol) {
   let domain = meta.domains[varCol.dataFrame.getTag('sdtm-domain')];
   let variable = domain[varCol.name];
   let text = `${varCol.name}\n${variable ?
-    variable.label + '\nType: ' + (typeMap[variable.type] === varCol.type ?
+    variable.label + '\nType: ' + (checkType(varCol, variable) ?
     'valid' : 'invalid') : 'Unknown variable'}\n`;
   let convertButton, outliers;
 
