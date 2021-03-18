@@ -116,10 +116,10 @@ function showMainDialog(table, signalType, column, samplingFreq, isDataFrameLoca
       filterInputsNew = ui.div([
         ui.block25([
           ui.inputs(
-              [filterTypesList[i - 1]]
-                  .concat([filterInputsList[i - 1]])
-                  .concat(Object.values(filterParametersList[i - 1]))
-                  .concat(addFilterChartButton)
+            [filterTypesList[i - 1]]
+                .concat([filterInputsList[i - 1]])
+                .concat(Object.values(filterParametersList[i - 1]))
+                .concat(addFilterChartButton)
           )]
         ),
         ui.block75([filterChartsList[i - 1]])
@@ -163,10 +163,10 @@ function showMainDialog(table, signalType, column, samplingFreq, isDataFrameLoca
       extractorInputsNew = ui.div([
         ui.block25([
           ui.inputs(
-              [extractorTypesList[j - 1]]
-                  .concat([extractorInputsList[j - 1]])
-                  .concat(Object.values(extractorParametersList[j - 1]))
-                  .concat(addExtractorChartButton)
+            [extractorTypesList[j - 1]]
+                .concat([extractorInputsList[j - 1]])
+                .concat(Object.values(extractorParametersList[j - 1]))
+                .concat(addExtractorChartButton)
           )]
         ),
         ui.block75([extractorChartsList[j - 1]])
@@ -215,10 +215,10 @@ function showMainDialog(table, signalType, column, samplingFreq, isDataFrameLoca
       indicatorInputsNew = ui.div([
         ui.block25([
           ui.inputs(
-              [indicatorTypesList[k - 1]]
-                  .concat([indicatorInputsList[k - 1]])
-                  .concat(Object.values(indicatorParametersList[k - 1]))
-                  .concat(addIndicatorChartButton)
+            [indicatorTypesList[k - 1]]
+                .concat([indicatorInputsList[k - 1]])
+                .concat(Object.values(indicatorParametersList[k - 1]))
+                .concat(addIndicatorChartButton)
           )]
         ),
         ui.block75([indicatorChartsList[k - 1]])
@@ -337,24 +337,28 @@ export function Biosensors(table) {
       let databases = dataFrameWithListOfPhysionetDatabases.columns.byName('listOfNamesOfPhysionetDatabases').categories;
       let chosenDatabase = ui.choiceInput('Physionet database', '', databases);
       pi.close();
+      formView.close()
       formView = ui.div(
         ui.inputs([column, chosenDatabase])
       );
       showTheRestOfLayout(formView);
 
       chosenDatabase.onInput(async () => {
-        f = await grok.functions.eval("BioSignals:getNamesOfRecordsOfPhysionetDatabase");
-        call = f.prepare({'chosenDatabase': chosenDatabase.stringValue});
+        let pi = DG.TaskBarProgressIndicator.create('Getting names of records from chosen Physionet database...');
+        let f = await grok.functions.eval("BioSignals:getNamesOfRecordsOfPhysionetDatabase");
+        let call = f.prepare({'chosenDatabase': chosenDatabase.stringValue});
         await call.call();
         let dataFrameWithNamesOfRecords = call.getParamValue('df');
         let recordNames = dataFrameWithNamesOfRecords.columns.byName('recordList').categories;
         let chosenRecord = ui.choiceInput('Physionet record', '', recordNames);
+        pi.close();
         formView = ui.div(
           ui.inputs([column, chosenDatabase, chosenRecord])
         );
         showTheRestOfLayout(formView);
 
         chosenRecord.onInput(async () => {
+          let pi = DG.TaskBarProgressIndicator.create('Loading record from Physionet...');
           f = await grok.functions.eval("BioSignals:loadPhysionetRecord");
           call = f.prepare({
             'chosenDatabase': chosenDatabase.stringValue,
@@ -362,10 +366,22 @@ export function Biosensors(table) {
           });
           await call.call();
           let table = call.getParamValue('df');
-          IsSignalTypeDetectedAutomatically = false;
+          IsSignalTypeDetectedAutomatically = true;
           signalType.stringValue = 'ECG';
           let isDataFrameLocal = false;
+          pi.close();
+
+          pi = DG.TaskBarProgressIndicator.create('Loading annotations of chosen record from Physionet...');
+          f = await grok.functions.eval("BioSignals:loadPhysionetAnnotations");
+          call = f.prepare({
+            'chosenDatabase': chosenDatabase.stringValue,
+            'chosenRecord': chosenRecord.stringValue
+          });
+          await call.call();
+          let dataFrameWithAnnotations = call.getParamValue('df');
+          table = table.append(dataFrameWithAnnotations);
           showMainDialog(table, signalType, table.columns.byName('testEcg'), samplingFreq, isDataFrameLocal);
+          pi.close();
         })
       });
     }));
@@ -388,15 +404,16 @@ export function Biosensors(table) {
       }
       else {
         IsSignalTypeDetectedAutomatically = false;
+        formView.close()
         let formView = ui.div([
-            ui.block25([
-                ui.inputs([
-                    ui.h2('Filtering and Preprocessing'),
-                  column,
-                  samplingFreq,
-                  signalType
-                ])
-            ],'formview'),
+          ui.block25([
+            ui.inputs([
+              ui.h2('Filtering and Preprocessing'),
+              column,
+              samplingFreq,
+              signalType
+            ])
+          ],'formview'),
           ui.block75([
             DG.Viewer.fromType('Line chart', table, {yColumnNames: column.value.map((c) => {return c.name})})
           ])

@@ -16,22 +16,40 @@ export class AnnotatorViewer extends DG.JsViewer {
   }
 
   onTableAttached() {
-    let columnToPlot = this.dataFrame.columns.byName('testEcg');
+    let signalValues = this.dataFrame.columns.byName('testEcg');
     let base = +new Date();
     this.timeOfFirstSample = new Date();
     this.samplingPeriod = 24 * 3600 * 1000;
 
-    let data = new Array(columnToPlot.length);
-    for (let i = 0; i < columnToPlot.length; i++) {
+    let data = new Array(signalValues.length);
+    for (let i = 0; i < signalValues.length; i++) {
       let now = new Date(base += this.samplingPeriod);
       data[i] = [
         [now.getFullYear(), now.getMonth() + 1, now.getDate()].join('/'),
-        columnToPlot.get(i)
+        signalValues.get(i)
       ];
     }
+
+    let indicesOfRPeak = this.dataFrame.columns.byName('indicesOfRPeak');
+    let numberOfPointAnnotations = indicesOfRPeak.stats.valueCount;
+    indicesOfRPeak = indicesOfRPeak.getRawData();
+    indicesOfRPeak = indicesOfRPeak.slice(indicesOfRPeak.length - numberOfPointAnnotations);
+
+    this.markedPoints = new Array(numberOfPointAnnotations);
+    base = +new Date();
+    let samplingPeriod = 24 * 3600 * 1000;
+    let now = new Date(base += indicesOfRPeak[0] * samplingPeriod);
+    for (let i = 1; i < numberOfPointAnnotations; i++) {
+      now = new Date(base += (indicesOfRPeak[i] - indicesOfRPeak[i-1]) * samplingPeriod);
+      this.markedPoints[i] = [
+        [now.getFullYear(), now.getMonth() + 1, now.getDate()].join('/'),
+        signalValues.get(indicesOfRPeak[i])
+      ];
+    }
+
     this.data = data;
 
-    let option = {
+    this.option = {
       tooltip: {
         trigger: 'axis',
         position: function (pt) {
@@ -75,11 +93,17 @@ export class AnnotatorViewer extends DG.JsViewer {
           type: 'line',
           symbol: 'none',
           data: data
+        },
+        {
+          type: 'scatter',
+          symbolSize: 20,
+          symbol: 'circle',
+          data: this.markedPoints
         }
       ]
     };
 
-    this.chart.setOption(option);
+    this.chart.setOption(this.option);
     this.render();
   }
 
@@ -119,14 +143,13 @@ export class AnnotatorViewer extends DG.JsViewer {
       return [now.getFullYear(), now.getMonth() + 1, now.getDate()].join('/');
     }
 
-    let markedPoints = [];
     let deltaToSearchMaximum = 10;
     this.chartDiv.addEventListener('click', event => {
       let pointInPixel = [event.offsetX, event.offsetY];
       if (this.chart.containPixel('grid', pointInPixel)) {
         let pointInGrid = this.chart.convertFromPixel('grid', pointInPixel);
         let dateString = getTimeOfMaximumValueNearClick(this.samplingPeriod, this.data, pointInGrid[0], deltaToSearchMaximum, this.timeOfFirstSample);
-        markedPoints.push([dateString, this.data.find((c) => c[0] === dateString)[1]]);
+        this.markedPoints.push([dateString, this.data.find((c) => c[0] === dateString)[1]]);
         this.chart.setOption({
           series: [
             {
@@ -137,7 +160,7 @@ export class AnnotatorViewer extends DG.JsViewer {
               type: 'scatter',
               symbolSize: 20,
               symbol: 'circle',
-              data: markedPoints
+              data: this.markedPoints
             }
           ]
         })

@@ -1,0 +1,14 @@
+#name: loadPhysionetAnnotations
+#language: python
+#input: string chosenDatabase
+#input: string chosenRecord
+#output: dataframe df
+
+import wfdb
+
+annotations = wfdb.rdann(chosenRecord, 'atr', pn_dir=chosenDatabase)
+
+df = pd.DataFrame({
+    'indicesOfRPeak': annotations.sample,
+    'symbolsOfBeatClasses': annotations.symbol
+})
