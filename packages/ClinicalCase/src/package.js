@@ -47,6 +47,7 @@ export function sdtmVariablePanel(varCol) {
   let text = `${varCol.name}\n${variable ?
     variable.label + '\nType: ' + (typeMap[variable.type] === varCol.type ?
     'valid' : 'invalid') : 'Unknown variable'}\n`;
+  let convertButton, outliers;
 
   let isTerm = submissionValues.includes(varCol.name);
   text += `CDISC Submission Value: ${isTerm}\n`;
@@ -60,16 +61,31 @@ export function sdtmVariablePanel(varCol) {
     let relatedRecords = terminology.rows.match({ 'Codelist Code': match.get('Code', 0) }).toDataFrame();
     let rowCount = relatedRecords.rowCount;
     if (rowCount) {
-      text += `CDISC Value | CDISC Synonym | NCI Preferred Term\n`;
       let valueCol = relatedRecords.getCol('CDISC Submission Value');
       let synCol = relatedRecords.getCol('CDISC Synonym(s)');
       let nciTermCol = relatedRecords.getCol('NCI Preferred Term');
+      let synonyms = {};
+
       for (let i = 0; i < rowCount; i++) {
-        text += `${valueCol.get(i)} | ${synCol.get(i)} | ${nciTermCol.get(i)}\n`;
+        let submissionValue = valueCol.get(i);
+        [...synCol.get(i).split('; '), nciTermCol.get(i)].forEach(s => {
+          if (s) synonyms[s.toLowerCase()] = submissionValue;
+        });
+      }
+
+      let valuesToConvert = varCol.categories.filter(v => v && !valueCol.categories.includes(v));
+      if (valuesToConvert.length) {
+        outliers = ui.divText('Out-of-vocabulary values:\n' + valuesToConvert.join(', '));
+        outliers.style = 'color: red';
+        convertButton = ui.button('Convert', () => {
+          varCol.init(i => synonyms[varCol.get(i).toLowerCase()] || varCol.get(i));
+        }, 'Convert to CDISC submission values');
       }
     }
   }
-  return new DG.Widget(ui.divText(text));
+  let container = [ui.divText(text)];
+  if (outliers) container.push(outliers, convertButton);
+  return new DG.Widget(ui.divV(container));
 }
 
 
