@@ -1,6 +1,78 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-03-18 Dev build 0.89.28
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.89.28`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Add to selenium test for Filters check for deleting rows 
+* (Bug) Detectors load on each table open 
+* Viewers (Bar Chart, etc) tooltips improvements (N UX/UI) (WIP)
+* more tests for group-by ops 
+* Add annotator functionality (WIP)
+* Auto-generated release-history tweaking 
+* JS API: Make tags keys / objects available 
+* Typos and spaces fixes in samples. 
+* IntelliSense for the JS fiddle 
+* Package: Chembl Browser (WIP)
+* (Bug) Layout apply doesn't work on renamed columns 
+* Harmonize ui framework (WIP)
+* (Bug) dapi.log.events returns empty array 
+* (Bug) Chem: Column width with structures is not correct when using OCL 
+* wrap script in async in JsEditorView 
+* Renamed files 
+* Programming exercises (WIP)
+* Chord Diagram (WIP)
+* Grid: Usability: delete selected rows resets the current grid position to top (WIP)
+* Clicking on icons should not change currently focused element 
+* Wiki: BioSignals goals and signal types described in table 
+* Preserve filter state when closing filter panel (WIP)
+* Grid: Harmonize popup menu (WIP)
+* (Bug) "Normalize" action does not work 
+* Improved code comments (minor) 
+* Chord Diagram: `include nulls` property 
+* ClinicalCase \- a plugin for analyzing SDTM-based clinical studies data (WIP)
+* Color coding (WIP)
+* Categorical color coding editor: ability to bin values 
+* Document the Datagrok release process protocol 
+* NumericMatcher: allowing spaces in range definitions 
+* /info/packages route 
+* Improve error handling mechanism for visualizations 
+* (Bug) files method rename doesnt work properly  
+* (Bug) Saved function annotation doesn't delete old parameters from database 
+* (Bug) Settings apply drops password parameters 
+* GROK: quality-of-life updates 
+* GROK: repo cleanup 
+* (Bug) User can't login with OpenId if someone shared something to him by email 
+* Improved comments on DataFrameViewer::onFrameAttached(..) 
+* Clinical Case: validate values on column level (WIP)
+* Chem: docs updates. 
+* Chem package version 0.9.0, bump. 
+* JS API: pass JsViewer in onContextMenu events 
+* (Bug) tabControl with ui.wait will concatenate contents of tabs and show loader after second tab click 
+* Adjusted the color coding example. 
+* Download Physionet record through package (WIP)
+* JS: Ability to create ViewLayout from ViewState 
+* Timelines: Add `Reset View` item to context menu 
+* Biosignals (WIP)
+* Limit panel drag-and-drop so that the header always remains visible (WIP)
+* [(Bug) Histogram: duplicated Y axis](https://community.datagrok.ai/t/cannot-easily-change-the-aggregation-of-the-histogram/509/4) 
+* datagrok-tools: add package `init` function template 
+* Improving the choice-input.js example. 
+* JS: Log API 
+* Adjusted init-column.js example 
+* GROK: new sequence viewer added 
+* JSDoc fix 
+
+
 # 2021-03-10 Dev build 0.89.27
 
 ## Latest Docker Images
