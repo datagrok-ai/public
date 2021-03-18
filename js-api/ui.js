@@ -734,7 +734,7 @@ export function boxFixed(item, options = null) {
   return c;
 }
 
-/** Div flex-box container that positions child elements horizontally.
+/** Div flex-box container that positions child elements vertically.
  *  @param {object[]} items */
 export function splitV(items, options = null) {
   let b = box(null, options);
