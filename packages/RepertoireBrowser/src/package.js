@@ -102,15 +102,46 @@ export async function launchBrowser(s) {
         })
     }
 
-    function CDR3(scheme){
+    // pulling CDR3 regions
+    function CDR3(crd_choice){
         let schemeId;
         let baseH = 'darkblue';
         let baseL = 'darkred';
-        if (schemeChoice.value === 'chothina') {
+
+
+        if (crd_choice.value === 'chothia') {
             schemeId = NGL.ColormakerRegistry.addSelectionScheme([
-                ["yellow", "25-31 and :H or 51-56 and :H or 98-110 and :H"],
+                ["yellow", "25-31 and :H or 51-56 and :H or 98-106 and :H"],
                 [baseH, "* and :H"],
-                ["green", "22-34 and :L or 50-56 and :L or 89-100 and :L"],
+                ["green", "23-38 and :L or 54-60 and :L or 93-101 and :L"],
+                [baseL, "* and :L"]
+            ]);
+        } else if (crd_choice.value === 'contact') {
+            schemeId = NGL.ColormakerRegistry.addSelectionScheme([
+                ["yellow", "29-34 and :H or 46-58 and :H or 96-105 and :H"],
+                [baseH, "* and :H"],
+                ["green", "34-40 and :L or 50-59 and :L or 93-100 and :L"],
+                [baseL, "* and :L"]
+            ]);
+        } else if (crd_choice.value === 'imgt') {
+            schemeId = NGL.ColormakerRegistry.addSelectionScheme([
+                ["yellow", "25-32 and :H or 50-57 and :H or 96-106 and :H"],
+                [baseH, "* and :H"],
+                ["green", "26-36 and :L or 54-56 and :L or 93-101 and :L"],
+                [baseL, "* and :L"]
+            ]);
+        } else if (crd_choice.value === 'kabat') {
+            schemeId = NGL.ColormakerRegistry.addSelectionScheme([
+                ["yellow", "30-34 and :H or 49-65 and :H or 98-106 and :H"],
+                [baseH, "* and :H"],
+                ["green", "23-38 and :L or 54-60 and :L or 93-101 and :L"],
+                [baseL, "* and :L"]
+            ]);
+        } else if (crd_choice.value === 'north') {
+            schemeId = NGL.ColormakerRegistry.addSelectionScheme([
+                ["yellow", "22-34 and :H or 49-58 and :H or 96-106 and :H"],
+                [baseH, "* and :H"],
+                ["green", "23-38 and :L or 53-60 and :L or 93-101 and :L"],
                 [baseL, "* and :L"]
             ]);
         } else {
@@ -123,15 +154,15 @@ export async function launchBrowser(s) {
     }
 
     // ngl loading
-    async function loadPdb(bytes, repChoice) {
+    async function loadPdb(bytes, repChoice, schemeObj) {
         stage.loadFile(bytes).then(function (o) {
-            o.addRepresentation(repChoice.value);
+            o.addRepresentation(repChoice.value, schemeObj);
             o.autoView();
         });
     }
 
     // sequence loading
-    function loadSequecne(chain_choice, ptm_choice){
+    function loadSequecne(chain_choice, ptm_choice, ptm_prob){
 
         let seq;
         if (chain_choice.value === 'H') {
@@ -142,7 +173,7 @@ export async function launchBrowser(s) {
 
         let mutations = [mutcodes[ptm_choice.value]];
         let rawlist = mutationsTolist(mutcodes, scheme, chain_choice.value);
-        let cl = mutationsToFeatures(seq, rawlist, mutations, 0.2);
+        let cl = mutationsToFeatures(seq, rawlist, mutations, ptm_prob.value);
         let gradient = cl[0];
         let features = cl[1];
         let den_gradient = cl[2];
@@ -193,33 +224,62 @@ export async function launchBrowser(s) {
     let reps = ['cartoon','backbone','ball+stick','licorice','hyperball', 'surface'];
     let repChoice = ui.choiceInput('Representation', 'cartoon', reps);
 
-    let CDR3_choice = ui.choiceInput('CDR3 Scheme', '', Object.keys(scheme.cdr_ranges));
+    let CDR3_choice = ui.choiceInput('CDR3 Scheme', 'default', ['default','chothia','contact','imgt','kabat','north']);
 
     let chain_choice = ui.choiceInput('Chain', 'H',Object.keys(scheme.ptm_predictions));
     let ptm_predictions = [...new Set([...Object.keys(scheme.ptm_predictions.H), ...Object.keys(scheme.ptm_predictions.L)])];
     let ptm_choice = ui.choiceInput('PTMs', 'Phosphoserine_Phosphothreonine', ptm_predictions);
 
+    let ptm_prob = ui.floatInput('Pr threshold', 0.2);
+
     repChoice.onChanged(async () => {
         $(ngl_host).empty();
         stage = new NGL.Stage(ngl_host);
-        // schemeObj = fromJson(schemeChoice);
-        await loadPdb(path, repChoice);
+        let schemeObj = CDR3(CDR3_choice);
+        await loadPdb(path, repChoice, schemeObj);
     });
 
-    ptm_choice.onChanged(() => {
-        loadSequecne(chain_choice, ptm_choice);
+    CDR3_choice.onChanged(async () => {
+        $(ngl_host).empty();
+        stage = new NGL.Stage(ngl_host);
+        let schemeObj = CDR3(CDR3_choice);
+        await loadPdb(path, repChoice, schemeObj);
     });
 
     chain_choice.onChanged(() => {
-        loadSequecne(chain_choice, ptm_choice);
+        loadSequecne(chain_choice, ptm_choice, ptm_prob);
     });
+
+    ptm_choice.onChanged(() => {
+        loadSequecne(chain_choice, ptm_choice, ptm_prob);
+    });
+
+    ptm_prob.onChanged(() => {
+        loadSequecne(chain_choice, ptm_choice, ptm_prob);
+    });
+
 
     let tname = grok.shell.tableNames;
     let view = grok.shell.getTableView(tname[0]);
+    let table = view.table;
+
+    // let logger = new DG.Logger((m) => m.params['log_param'] = 'ig-repert');
+    // var last_row = 0;
+    // table.onCurrentRowChanged.subscribe(function () {
+    //     if (table.currentRow.idx >= 0) {
+    //         if (last_row !== table.currentRow.idx) { // row really changed
+    //             var table_name = table.name;
+    //             var row_str = table.currentRow.idx.toString();
+    //             // send row selection event to the logger
+    //             logger.log('row-selection', {lparam: table_name, seq_id: row_str}, 'rlog');
+    //             last_row = table.currentRow.idx; // update last row
+    //         }
+    //     }
+    // });
 
     let root = ui.div();
     root.appendChild(ui.h2('NGL options'));
-    root.appendChild(ui.inputs([repChoice, CDR3_choice, chain_choice, ptm_choice]));
+    root.appendChild(ui.inputs([repChoice, CDR3_choice, chain_choice, ptm_choice, ptm_prob]));
     grok.shell.o = root;
 
     var ngl_host = ui.div([],'d4-ngl-viewer');
@@ -228,12 +288,13 @@ export async function launchBrowser(s) {
     view.dockManager.dock(ngl_host, 'right');
     var stage = new NGL.Stage(ngl_host);
     let path = _package.webRoot + 'pdbfiles/' + 'TPP000153303.pdb';
-    await loadPdb(path, repChoice);
+    let schemeObj = CDR3(CDR3_choice);
+    await loadPdb(path, repChoice, schemeObj);
 
     let pViz_host = ui.box();
     view.dockManager.dock(pViz_host, 'down');
     var pviz = window.pviz;
-    loadSequecne(chain_choice, ptm_choice);
+    loadSequecne(chain_choice, ptm_choice, ptm_prob);
 
 }
 
