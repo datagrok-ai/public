@@ -566,6 +566,16 @@ export class Tooltip {
 
 export let tooltip = new Tooltip();
 
+export class ObjectHandlerResolutionArgs {
+  constructor(object, context) {
+    this.object = object;
+    this.context = context;
+    this.handler = null;
+  }
+}
+
+let _objectHandlerSubject = new rxjs.Subject();
+
 /**
  * Override the corresponding methods, and {@link register} an instance to
  * let Datagrok know how to handle objects of the specified type.
@@ -670,12 +680,22 @@ export class ObjectHandler {
     return toJs(grok_Meta_List());
   }
 
+  static onResolve(observer) {
+    return _objectHandlerSubject.subscribe(observer);
+  }
+
   /**
-   * @param {Object} x
+   * @param {Object} object
+   * @param {Object} context
    * @returns {ObjectHandler}
    * */
-  static forEntity(x) {
-    return toJs(grok_Meta_ForEntity(toDart(x)));
+  static forEntity(object, context = null) {
+    let args = new ObjectHandlerResolutionArgs(object, context);
+    _objectHandlerSubject.next(args);
+    if (args.handler !== null)
+      return args.handler;
+
+    return toJs(grok_Meta_ForEntity(toDart(object)));
   }
 
   /**
