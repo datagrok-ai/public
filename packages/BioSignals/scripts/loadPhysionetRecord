@@ -6,7 +6,12 @@
 
 import wfdb
 
-record = wfdb.rdrecord(chosenRecord, pn_dir=chosenDatabase)
+if chosenDatabase == 'ecgiddb':
+    person_id, record_name = chosenRecord.split('/')
+    physionet_directory = ''.join((chosenDatabase, '/', person_id))
+    record = wfdb.rdrecord(record_name, pn_dir=physionet_directory)
+else:
+    record = wfdb.rdrecord(chosenRecord, pn_dir=chosenDatabase)
 
 df = pd.DataFrame({
     'time': range(record.sig_len),
