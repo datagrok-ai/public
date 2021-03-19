@@ -21,27 +21,23 @@ export function annotator() {
 }
 
 async function applyExtractor(data, fsamp, paramsT) {
-  let f = await grok.functions.eval("BioSignals:extractors");
-  let call = f.prepare({
+  return grok.functions.call("BioSignals:extractors",
+  {
     'data': data,
     'fsamp': fsamp,
     'paramsT': paramsT
   });
-  await call.call();
-  return call.getParamValue('newDf');
 }
 
 async function getIndicator(data, fsamp, paramsT, infoType, indicator) {
-  let f = await grok.functions.eval("BioSignals:indicators");
-  let call = f.prepare({
+  return grok.functions.call("BioSignals:indicators",
+  {
     'data': data,
     'fsamp': fsamp,
     'paramsT': paramsT,
     'info': infoType[infoType.length-1].value,
     'preset': indicator.value
   });
-  await call.call();
-  return call.getParamValue('out');
 }
 
 export function parametersToDataFrame(filtersLST, allParams) {
@@ -303,20 +299,6 @@ export async function bioSignalViewer(file) {
   return view;
 }
 
-export async function getNamesOfPhysionetDatabases() {
-  let f = await grok.functions.eval("BioSignals:getNamesOfPhysionetDatabases");
-  let call = f.prepare({'namesOption': 'shortNames'});
-  await call.call();
-  return call.getParamValue('df');
-}
-
-export async function getNamesOfRecordsOfPhysionetDatabase(chosenDatabase) {
-  let f = await grok.functions.eval("BioSignals:getNamesOfRecordsOfPhysionetDatabase");
-  let call = f.prepare({'chosenDatabase': chosenDatabase.stringValue});
-  await call.call();
-  return call.getParamValue('df');
-}
-
 export async function loadPhysionetRecord(chosenDatabase, chosenRecord) {
   let f = await grok.functions.eval("BioSignals:loadPhysionetRecord");
   let call = f.prepare({
@@ -324,7 +306,9 @@ export async function loadPhysionetRecord(chosenDatabase, chosenRecord) {
     'chosenRecord': chosenRecord.stringValue
   });
   await call.call();
-  return call.getParamValue('df');
+  let df = call.getParamValue('df');
+  let sampling_frequency = call.getParamValue('sampling_frequency');
+  return [df, sampling_frequency];
 }
 
 export async function loadPhysionetAnnotations(chosenDatabase, chosenRecord) {
@@ -371,7 +355,8 @@ export function Biosensors(table) {
       chosenRecord.onInput(async () => {
         let pi = DG.TaskBarProgressIndicator.create('Loading record from Physionet...');
         let chosenDatabaseShortName = physionetDatabasesDictionary[chosenDatabase.stringValue].short_name;
-        let table = await loadPhysionetRecord(chosenDatabaseShortName, chosenRecord);
+        let [table, samplingFrequency] = await loadPhysionetRecord(chosenDatabaseShortName, chosenRecord);
+        samplingFreq.value = samplingFrequency;
         IsSignalTypeDetectedAutomatically = true;
         signalType.stringValue = 'ECG';
         let isDataFrameLocal = false;
