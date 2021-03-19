@@ -8,6 +8,7 @@ import {getFilterParameters} from "./getFilterParameters.js";
 import {getExtractorParameters} from "./getExtractorParameters.js";
 import {getIndicatorParameters} from "./getIndicatorParameters.js";
 import {applyFilter} from "./applyFilter.js";
+import {physionetDatabasesDictionary} from "./physionetDatabasesDictionary.js";
 import {AnnotatorViewer} from "./annotatorViewer.js";
 
 export let _package = new DG.Package();
@@ -319,7 +320,7 @@ export async function getNamesOfRecordsOfPhysionetDatabase(chosenDatabase) {
 export async function loadPhysionetRecord(chosenDatabase, chosenRecord) {
   let f = await grok.functions.eval("BioSignals:loadPhysionetRecord");
   let call = f.prepare({
-    'chosenDatabase': chosenDatabase.stringValue,
+    'chosenDatabase': chosenDatabase,
     'chosenRecord': chosenRecord.stringValue
   });
   await call.call();
@@ -329,7 +330,7 @@ export async function loadPhysionetRecord(chosenDatabase, chosenRecord) {
 export async function loadPhysionetAnnotations(chosenDatabase, chosenRecord) {
   let f = await grok.functions.eval("BioSignals:loadPhysionetAnnotations");
   let call = f.prepare({
-    'chosenDatabase': chosenDatabase.stringValue,
+    'chosenDatabase': chosenDatabase,
     'chosenRecord': chosenRecord.stringValue
   });
   await call.call();
@@ -360,51 +361,33 @@ export function Biosensors(table) {
       }
     });
 
-    let dataFrameWithListOfPhysionetDatabases = -1;
-    let getListOfPhysionetDatabasesButton = ui.div();
-    getListOfPhysionetDatabasesButton.appendChild(ui.button('Load files from Physionet', async () => {
-      let pi = DG.TaskBarProgressIndicator.create('Getting list of current Physionet databases...');
-      dataFrameWithListOfPhysionetDatabases = await getNamesOfPhysionetDatabases();
-      let databases = dataFrameWithListOfPhysionetDatabases.columns.byName('listOfNamesOfPhysionetDatabases').categories;
-      let chosenDatabase = ui.choiceInput('Physionet database', '', databases);
-      pi.close();
-      formView.close()
+    let chosenDatabase = ui.choiceInput('Physionet database', '', Object.keys(physionetDatabasesDictionary));
+    chosenDatabase.onInput(() => {
+      let chosenRecord = ui.choiceInput('Physionet record', '', physionetDatabasesDictionary[chosenDatabase.stringValue].record_names);
       formView = ui.div(
-        ui.inputs([column, chosenDatabase])
+        ui.inputs([column, chosenDatabase, chosenRecord])
       );
       showTheRestOfLayout(formView);
-
-      chosenDatabase.onInput(async () => {
-        let pi = DG.TaskBarProgressIndicator.create('Getting names of records from chosen Physionet database...');
-        let dataFrameWithNamesOfRecords = await getNamesOfRecordsOfPhysionetDatabase(chosenDatabase);
-        let recordNames = dataFrameWithNamesOfRecords.columns.byName('recordList').categories;
-        let chosenRecord = ui.choiceInput('Physionet record', '', recordNames);
+      chosenRecord.onInput(async () => {
+        let pi = DG.TaskBarProgressIndicator.create('Loading record from Physionet...');
+        let chosenDatabaseShortName = physionetDatabasesDictionary[chosenDatabase.stringValue].short_name;
+        let table = await loadPhysionetRecord(chosenDatabaseShortName, chosenRecord);
+        IsSignalTypeDetectedAutomatically = true;
+        signalType.stringValue = 'ECG';
+        let isDataFrameLocal = false;
         pi.close();
-        formView = ui.div(
-          ui.inputs([column, chosenDatabase, chosenRecord])
-        );
-        showTheRestOfLayout(formView);
 
-        chosenRecord.onInput(async () => {
-          let pi = DG.TaskBarProgressIndicator.create('Loading record from Physionet...');
-          let table = await loadPhysionetRecord(chosenDatabase, chosenRecord);
-          IsSignalTypeDetectedAutomatically = true;
-          signalType.stringValue = 'ECG';
-          let isDataFrameLocal = false;
-          pi.close();
-
-          pi = DG.TaskBarProgressIndicator.create('Loading annotations of chosen record from Physionet...');
-          let dataFrameWithAnnotations = await loadPhysionetAnnotations(chosenDatabase, chosenRecord);
-          table = table.append(dataFrameWithAnnotations);
-          showMainDialog(table, signalType, table.columns.byName('testEcg'), samplingFreq, isDataFrameLocal);
-          pi.close();
-        })
+        pi = DG.TaskBarProgressIndicator.create('Loading annotations of chosen record from Physionet...');
+        let dataFrameWithAnnotations = await loadPhysionetAnnotations(chosenDatabaseShortName, chosenRecord);
+        table = table.append(dataFrameWithAnnotations);
+        showMainDialog(table, signalType, table.columns.byName('testEcg'), samplingFreq, isDataFrameLocal);
+        pi.close();
       });
-    }));
+    });
 
     let formView = ui.dialog('Demo Pipeline')
         .add(ui.inputs([column]))
-        .add(getListOfPhysionetDatabasesButton)
+        .add(chosenDatabase)
         .showModal(true);
 
     let IsSignalTypeDetectedAutomatically = null;
