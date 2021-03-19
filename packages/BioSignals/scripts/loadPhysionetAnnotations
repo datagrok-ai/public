@@ -6,7 +6,12 @@
 
 import wfdb
 
-annotations = wfdb.rdann(chosenRecord, 'atr', pn_dir=chosenDatabase)
+if chosenDatabase == 'ecgiddb':
+    person_id, record_name = chosenRecord.split('/')
+    physionet_directory = ''.join((chosenDatabase, '/', person_id))
+    annotations = wfdb.rdann(record_name, 'atr', pn_dir=physionet_directory)
+else:
+    annotations = wfdb.rdann(chosenRecord, 'atr', pn_dir=chosenDatabase)
 
 df = pd.DataFrame({
     'indicesOfRPeak': annotations.sample,
