@@ -1,3 +1,16 @@
 # ClinicalCase
 
-ClinicalCase is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.
+ClinicalCase [package](https://datagrok.ai/help/develop/develop#packages) provides
+support for dealing with clinical data, which is often represented in the SDTM format.
+
+* Explaining attribute names ()
+* Domains: CV -> Cardiovascular System Findings
+    * Attributes: AEMODIFY -> 'Modified Reported Term'
+* Content validation
+    * Completeness (expected columns)
+    * Type
+    * Controlled vocabulary
+    * Out-of-range values
+* Pre-defined views
+* Timelines view
+* Subject profile view (in progress)
