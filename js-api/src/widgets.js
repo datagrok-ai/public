@@ -421,18 +421,18 @@ export class Dialog {
   // onClose(handler) { let s = _sub(grok_Dialog_OnClose(this.d, () => { handler(); s.cancel(); })); return this; }
 
   /** @returns {Dialog}
-   * @param {{modal: boolean, fullScreen: boolean, x: number, y: number}|{}} options
+   * @param {{modal: boolean, fullScreen: boolean, center: boolean, centerAt: Element, x: number, y: number, width: number, height: number}|{}} options
    * */
   show(options) {
     options = options || {};
-    grok_Dialog_Show(this.d, options.modal, options.fullScreen, options.x, options.y);
+    grok_Dialog_Show(this.d, options.modal, options.fullScreen, options.center, options.centerAt, options.x, options.y, options.width, options.height);
     return this;
   }
 
   /** @returns {Dialog}
    * @param {boolean} fullScreen  */
   showModal(fullScreen) {
-    grok_Dialog_Show(this.d, true, fullScreen, null, null);
+    grok_Dialog_Show(this.d, true, fullScreen, false, null, null, null, null, null);
     return this;
   }
 
