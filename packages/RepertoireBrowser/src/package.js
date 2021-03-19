@@ -102,53 +102,81 @@ export async function launchBrowser(s) {
         })
     }
 
+    // peritope processing
+    function paratopeToList(chain_choice, paratopes) {
+        let l = [];
+        let c = [];
+        let palette = interpolateColors('(255, 255, 255)','(255, 0, 255)',100);
+        if (paratopes === true) {
+            Object.keys(scheme.parapred_predictions[chain_choice]).forEach((index) => {
+                l.push(index);
+                c.push(palette[Math.round(scheme.parapred_predictions[chain_choice][index]*100)]);
+            })
+        }
+        return [c,l];
+    }
+
     // pulling CDR3 regions
-    function CDR3(crd_choice){
+    function CDR3(crd_choice, paratopes){
         let schemeId;
         let baseH = 'darkblue';
         let baseL = 'darkred';
 
 
-        if (crd_choice.value === 'chothia') {
-            schemeId = NGL.ColormakerRegistry.addSelectionScheme([
-                ["yellow", "25-31 and :H or 51-56 and :H or 98-106 and :H"],
-                [baseH, "* and :H"],
-                ["green", "23-38 and :L or 54-60 and :L or 93-101 and :L"],
-                [baseL, "* and :L"]
-            ]);
-        } else if (crd_choice.value === 'contact') {
-            schemeId = NGL.ColormakerRegistry.addSelectionScheme([
-                ["yellow", "29-34 and :H or 46-58 and :H or 96-105 and :H"],
-                [baseH, "* and :H"],
-                ["green", "34-40 and :L or 50-59 and :L or 93-100 and :L"],
-                [baseL, "* and :L"]
-            ]);
-        } else if (crd_choice.value === 'imgt') {
-            schemeId = NGL.ColormakerRegistry.addSelectionScheme([
-                ["yellow", "25-32 and :H or 50-57 and :H or 96-106 and :H"],
-                [baseH, "* and :H"],
-                ["green", "26-36 and :L or 54-56 and :L or 93-101 and :L"],
-                [baseL, "* and :L"]
-            ]);
-        } else if (crd_choice.value === 'kabat') {
-            schemeId = NGL.ColormakerRegistry.addSelectionScheme([
-                ["yellow", "30-34 and :H or 49-65 and :H or 98-106 and :H"],
-                [baseH, "* and :H"],
-                ["green", "23-38 and :L or 54-60 and :L or 93-101 and :L"],
-                [baseL, "* and :L"]
-            ]);
-        } else if (crd_choice.value === 'north') {
-            schemeId = NGL.ColormakerRegistry.addSelectionScheme([
-                ["yellow", "22-34 and :H or 49-58 and :H or 96-106 and :H"],
-                [baseH, "* and :H"],
-                ["green", "23-38 and :L or 53-60 and :L or 93-101 and :L"],
-                [baseL, "* and :L"]
-            ]);
+        if (paratopes.value === true) {
+            let palette = interpolateColors('(255, 255, 255)','(255, 0, 255)',100);
+            let selectionScheme = [];
+            Object.keys(scheme.parapred_predictions).forEach((chain) => {
+                Object.keys(scheme.parapred_predictions[chain]).forEach((index) => {
+                    selectionScheme.push([
+                        palette[Math.round(scheme.parapred_predictions[chain][index]*100)],
+                        `${index} and :${chain}`
+                    ]);
+                })
+            })
+            schemeId = NGL.ColormakerRegistry.addSelectionScheme(selectionScheme);
         } else {
-            schemeId = NGL.ColormakerRegistry.addSelectionScheme([
-                [baseH, "* and :H"],
-                [baseL, "* and :L"]
-            ]);
+            if (crd_choice.value === 'chothia') {
+                schemeId = NGL.ColormakerRegistry.addSelectionScheme([
+                    ["yellow", "25-31 and :H or 51-56 and :H or 98-106 and :H"],
+                    [baseH, "* and :H"],
+                    ["green", "23-38 and :L or 54-60 and :L or 93-101 and :L"],
+                    [baseL, "* and :L"]
+                ]);
+            } else if (crd_choice.value === 'contact') {
+                schemeId = NGL.ColormakerRegistry.addSelectionScheme([
+                    ["yellow", "29-34 and :H or 46-58 and :H or 96-105 and :H"],
+                    [baseH, "* and :H"],
+                    ["green", "34-40 and :L or 50-59 and :L or 93-100 and :L"],
+                    [baseL, "* and :L"]
+                ]);
+            } else if (crd_choice.value === 'imgt') {
+                schemeId = NGL.ColormakerRegistry.addSelectionScheme([
+                    ["yellow", "25-32 and :H or 50-57 and :H or 96-106 and :H"],
+                    [baseH, "* and :H"],
+                    ["green", "26-36 and :L or 54-56 and :L or 93-101 and :L"],
+                    [baseL, "* and :L"]
+                ]);
+            } else if (crd_choice.value === 'kabat') {
+                schemeId = NGL.ColormakerRegistry.addSelectionScheme([
+                    ["yellow", "30-34 and :H or 49-65 and :H or 98-106 and :H"],
+                    [baseH, "* and :H"],
+                    ["green", "23-38 and :L or 54-60 and :L or 93-101 and :L"],
+                    [baseL, "* and :L"]
+                ]);
+            } else if (crd_choice.value === 'north') {
+                schemeId = NGL.ColormakerRegistry.addSelectionScheme([
+                    ["yellow", "22-34 and :H or 49-58 and :H or 96-106 and :H"],
+                    [baseH, "* and :H"],
+                    ["green", "23-38 and :L or 53-60 and :L or 93-101 and :L"],
+                    [baseL, "* and :L"]
+                ]);
+            } else {
+                schemeId = NGL.ColormakerRegistry.addSelectionScheme([
+                    [baseH, "* and :H"],
+                    [baseL, "* and :L"]
+                ]);
+            }
         }
         return {color: schemeId};
     }
@@ -162,7 +190,7 @@ export async function launchBrowser(s) {
     }
 
     // sequence loading
-    function loadSequecne(chain_choice, ptm_choice, ptm_prob){
+    function loadSequecne(chain_choice, ptm_choice, ptm_prob, paratopes){
 
         let seq;
         if (chain_choice.value === 'H') {
@@ -173,11 +201,14 @@ export async function launchBrowser(s) {
 
         let mutations = [mutcodes[ptm_choice.value]];
         let rawlist = mutationsTolist(mutcodes, scheme, chain_choice.value);
-        let cl = mutationsToFeatures(seq, rawlist, mutations, ptm_prob.value);
-        let gradient = cl[0];
-        let features = cl[1];
-        let den_gradient = cl[2];
-        let den_feature = cl[3];
+        let ml = mutationsToFeatures(seq, rawlist, mutations, ptm_prob.value);
+        let pl = paratopeToList(chain_choice.value, paratopes.value);
+        let gradient = ml[0];
+        let features = ml[1];
+        let den_gradient = ml[2];
+        let den_feature = ml[3];
+        let par_gradient = pl[0];
+        let par_features = pl[1];
 
         let seqEntry = new pviz.SeqEntry({
             sequence : seq
@@ -202,12 +233,22 @@ export async function launchBrowser(s) {
                 improbable : true
             }
         }));
-        seqEntry.addFeatures(den_feature.map(function(ft) {
+        seqEntry.addFeatures(par_features.map(function(pft) {
+            return {
+                category: 'Paratope predictions',
+                type : 'P',
+                start : pft,
+                end : pft,
+                text : '',
+                improbable : true
+            }
+        }));
+        seqEntry.addFeatures(den_feature.map(function(dft) {
             return {
                 category: 'PTM density',
                 type : 'D',
-                start : ft,
-                end : ft,
+                start : dft,
+                end : dft,
                 text : '',
                 improbable : true
             }
@@ -215,6 +256,7 @@ export async function launchBrowser(s) {
 
         applyGradient(gradient, chain_choice.value, mutations);
         applyGradient(den_gradient, chain_choice.value, ['D']);
+        applyGradient(par_gradient, chain_choice.value, ['P']);
 
     }
 
@@ -232,30 +274,40 @@ export async function launchBrowser(s) {
 
     let ptm_prob = ui.floatInput('Pr threshold', 0.2);
 
+    let paratopes = ui.boolInput('Paratopes', false);
+
     repChoice.onChanged(async () => {
         $(ngl_host).empty();
         stage = new NGL.Stage(ngl_host);
-        let schemeObj = CDR3(CDR3_choice);
+        let schemeObj = CDR3(CDR3_choice, paratopes);
         await loadPdb(path, repChoice, schemeObj);
     });
 
     CDR3_choice.onChanged(async () => {
         $(ngl_host).empty();
         stage = new NGL.Stage(ngl_host);
-        let schemeObj = CDR3(CDR3_choice);
+        let schemeObj = CDR3(CDR3_choice, paratopes);
         await loadPdb(path, repChoice, schemeObj);
     });
 
+    paratopes.onChanged(async () => {
+        $(ngl_host).empty();
+        stage = new NGL.Stage(ngl_host);
+        let schemeObj = CDR3(CDR3_choice, paratopes);
+        await loadPdb(path, repChoice, schemeObj);
+        loadSequecne(chain_choice, ptm_choice, ptm_prob, paratopes);
+    });
+
     chain_choice.onChanged(() => {
-        loadSequecne(chain_choice, ptm_choice, ptm_prob);
+        loadSequecne(chain_choice, ptm_choice, ptm_prob, paratopes);
     });
 
     ptm_choice.onChanged(() => {
-        loadSequecne(chain_choice, ptm_choice, ptm_prob);
+        loadSequecne(chain_choice, ptm_choice, ptm_prob, paratopes);
     });
 
     ptm_prob.onChanged(() => {
-        loadSequecne(chain_choice, ptm_choice, ptm_prob);
+        loadSequecne(chain_choice, ptm_choice, ptm_prob, paratopes);
     });
 
 
@@ -284,7 +336,7 @@ export async function launchBrowser(s) {
 
     let root = ui.div();
     root.appendChild(ui.h2('NGL options'));
-    root.appendChild(ui.inputs([repChoice, CDR3_choice, chain_choice, ptm_choice, ptm_prob]));
+    root.appendChild(ui.inputs([repChoice, CDR3_choice, chain_choice, ptm_choice, ptm_prob, paratopes]));
     grok.shell.o = root;
 
     var ngl_host = ui.div([],'d4-ngl-viewer');
@@ -293,19 +345,12 @@ export async function launchBrowser(s) {
     view.dockManager.dock(ngl_host, 'right');
     var stage = new NGL.Stage(ngl_host);
     let path = _package.webRoot + 'pdbfiles/' + 'TPP000153303.pdb';
-    let schemeObj = CDR3(CDR3_choice);
+    let schemeObj = CDR3(CDR3_choice, paratopes);
     await loadPdb(path, repChoice, schemeObj);
 
     let pViz_host = ui.box();
     view.dockManager.dock(pViz_host, 'down');
     var pviz = window.pviz;
-    loadSequecne(chain_choice, ptm_choice, ptm_prob);
+    loadSequecne(chain_choice, ptm_choice, ptm_prob, paratopes);
 
 }
-
-// let mutations = [
-//     "ADA", "AI", "FR", "HYL", "HYP", "LG",
-//     "MA",'MLY',"MeO","N6AL","NG", "NtG","OlG",
-//     "PP","PTB","PCA","SPC",'SUMO','TO','UB'
-// ];
-// let mutations = Object.keys(mutcodes).filter((key) => {return (ptm_choice.value).includes(key)});
