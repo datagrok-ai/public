@@ -8,8 +8,17 @@ import mutcodes from "./mutcodes.json";
 
 export let _package = new DG.Package();
 
+//name: Repertoire Browser
+//tags: app
+export async function RepertoireBrowserApp() {
+    let tname = grok.shell.tableNames;
+    let view = grok.shell.getTableView(tname[0]);
+    grok.shell.v = view;
+    launchBrowser(view);
+}
+
 //name: launchBrowser
-export async function launchBrowser(s) {
+export async function launchBrowser(view) {
 
     // palette generation
     function interpolateColor(color1, color2, factor) {
@@ -311,8 +320,8 @@ export async function launchBrowser(s) {
     });
 
 
-    let tname = grok.shell.tableNames;
-    let view = grok.shell.getTableView(tname[0]);
+    // let tname = grok.shell.tableNames;
+    // let view = grok.shell.getTableView(tname[0]);
     let table = view.table;
 
     // --------------------------------------------
