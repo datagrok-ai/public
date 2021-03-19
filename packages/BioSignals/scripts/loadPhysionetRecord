@@ -3,6 +3,7 @@
 #input: string chosenDatabase
 #input: string chosenRecord
 #output: dataframe df
+#output: int sampling_frequency
 
 import wfdb
 
@@ -12,6 +13,8 @@ if chosenDatabase == 'ecgiddb':
     record = wfdb.rdrecord(record_name, pn_dir=physionet_directory)
 else:
     record = wfdb.rdrecord(chosenRecord, pn_dir=chosenDatabase)
+
+sampling_frequency = record.fs
 
 df = pd.DataFrame({
     'time': range(record.sig_len),
