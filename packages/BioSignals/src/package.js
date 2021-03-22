@@ -96,11 +96,11 @@ function showMainDialog(table, signalType, column, samplingFreq, isDataFrameLoca
   let addFilterChartButton = ui.div();
   let filterInputsNew = ui.inputs(filterTypesList);
   let filterOutputsObj = {[inputCase]: column};
-  let nameOfLastFiltersOutput = '';
   let i = 0;
   addFilterButton.appendChild(ui.button('Add Filter', () => {
     let containerFilter = ui.div();
     filterContainerList[i] = containerFilter;
+    let nameOfLastFiltersOutput = Object.keys(filterOutputsObj)[Object.keys(filterOutputsObj).length - 1];
     let filterInputPreset = (Object.keys(filterOutputsObj).length === 1) ? inputCase : nameOfLastFiltersOutput;
     filterInputsList[i] = ui.choiceInput('Input', filterInputPreset, Object.keys(filterOutputsObj));
     filterChartsList[i] = getEmptyChart();
@@ -148,6 +148,7 @@ function showMainDialog(table, signalType, column, samplingFreq, isDataFrameLoca
   addExtractorButton.appendChild(ui.button('Add Extractor', () => {
     let containerExtractor = ui.div();
     extractorContainerList[j] = containerExtractor;
+    let nameOfLastFiltersOutput = Object.keys(filterOutputsObj)[Object.keys(filterOutputsObj).length - 1];
     let extractorInputPreset = (Object.keys(filterOutputsObj).length === 1) ? filterInputsList[0].value : nameOfLastFiltersOutput;
     extractorInputsList[j] = ui.choiceInput('Input', extractorInputPreset, Object.keys(filterOutputsObj));
     extractorChartsList[j] = getEmptyChart();
@@ -270,31 +271,31 @@ function getDescription(i, filtersLST, allParams) {
   return 'Output of Filter ' + i + ': ' + a + '.';
 }
 
-async function readPhysionetRecord(fileInfos, file_name) {
+async function readPhysionetRecord(fileInfos, fileNameWithoutExtension) {
   return grok.functions.call("BioSignals:readPhysionetRecord",
   {
-    'fileATR': fileInfos.find((({extension}) => extension === 'atr')),
-    'fileDAT': fileInfos.find((({extension}) => extension === 'dat')),
-    'fileHEA': fileInfos.find((({extension}) => extension === 'hea')),
-    'record_name': file_name
+    'fileATR': fileInfos.find((({name}) => name === fileNameWithoutExtension + '.atr')),
+    'fileDAT': fileInfos.find((({name}) => name === fileNameWithoutExtension + '.dat')),
+    'fileHEA': fileInfos.find((({name}) => name === fileNameWithoutExtension + '.hea')),
+    'record_name_without_extension': fileNameWithoutExtension
   });
 }
 
-async function readPhysionetAnnotations(fileInfos, file_name) {
+async function readPhysionetAnnotations(fileInfos, fileNameWithoutExtension) {
   let f = await grok.functions.eval("BioSignals:readPhysionetAnnotations");
   let call = f.prepare({
-    'fileATR': fileInfos.find((({extension}) => extension === 'atr')),
-    'fileDAT': fileInfos.find((({extension}) => extension === 'dat')),
-    'fileHEA': fileInfos.find((({extension}) => extension === 'hea')),
-    'record_name': file_name
+    'fileATR': fileInfos.find((({name}) => name === fileNameWithoutExtension + '.atr')),
+    'fileDAT': fileInfos.find((({name}) => name === fileNameWithoutExtension + '.dat')),
+    'fileHEA': fileInfos.find((({name}) => name === fileNameWithoutExtension + '.hea')),
+    'record_name_without_extension': fileNameWithoutExtension
   });
   await call.call();
   const df = call.getParamValue('df');
   const age = call.getParamValue('age');
   const sex = call.getParamValue('sex');
-  const date = call.getParamValue('date');
-  const fs = call.getParamValue('fs');
-  return [df, age, sex, date, fs];
+  const dateOfRecording = call.getParamValue('date_of_recording');
+  const samplingFrequency = call.getParamValue('sampling_frequency');
+  return [df, age, sex, dateOfRecording, samplingFrequency];
 }
 
 //tags: fileViewer, fileViewer-atr, fileViewer-dat, fileViewer-hea
@@ -308,7 +309,7 @@ export async function bioSignalViewer(file) {
   const fileInfos = await grok.dapi.files.list(currentFolder, isRecursive, fileNameWithoutExtension);
   if (fileInfos.length === 3) {
     let pi = DG.TaskBarProgressIndicator.create('Reading Physionet record...');
-    const t = readPhysionetRecord(fileInfos, file.name);
+    const t = await readPhysionetRecord(fileInfos, file.name.slice(0, -4));
     pi.close();
     view.append(ui.block([DG.Viewer.lineChart(t)], 'd4-ngl-viewer'));
   }
@@ -391,37 +392,36 @@ export function Biosensors(table) {
 
     let folderName = ui.stringInput('Path to folder', 'a');
     folderName.onInput(async () => {
-      let personalFolders, filesInPersonalFolder, filesAndFolders;
+
       grok.dapi.users.current().then(async(user) => {
+        let pi = DG.TaskBarProgressIndicator.create('Calculating table...');
+
         const pathToFolder = user.login + ':Home/' + folderName.value + '/';
-        filesAndFolders = await grok.dapi.files.list(pathToFolder, true, '');
-        personalFolders = filesAndFolders.filter(obj => {return obj.extension === ''});
-        let dataFrameWithPatientsInfo = DG.DataFrame.fromColumns(personalFolders.length);
-        dataFrameWithPatientsInfo.columns.addNew('Person', 'string');
-        dataFrameWithPatientsInfo.columns.addNew('Sex', 'string');
-        dataFrameWithPatientsInfo.columns.addNew('Age', 'int');
-        dataFrameWithPatientsInfo.columns.addNew('Date', 'string');
-        dataFrameWithPatientsInfo.columns.addNew('Heart Rate', 'float');
-        let sex, age, date, fs, heartRate;
-        sex = age = date = fs = heartRate = new Array(personalFolders.length);
-        for (let i = 0; i < personalFolders.length; i++) {
-          filesInPersonalFolder = await grok.dapi.files.list(pathToFolder + personalFolders[i].name + '/', true, '');
-          let uniqueFileNamesInPersonalFolder = new Set(filesInPersonalFolder.map((o) => o.name));
-          uniqueFileNamesInPersonalFolder = Array.from(uniqueFileNamesInPersonalFolder)
-          let annotationsDF = new Array(uniqueFileNamesInPersonalFolder.size);
-          for (let j = 0; j < annotationsDF.length; j++) {
-            [annotationsDF[j], age[i], sex[i], date[i], fs[i]] =
-                await readPhysionetAnnotations(filesInPersonalFolder, uniqueFileNamesInPersonalFolder[j]);
-            let indices = annotationsDF[j].columns.byName('indicesOfRPeak');
-            heartRate[i] = 60 / (indices.stats.avg / fs[i]);
+        const personalFoldersInfos = await grok.dapi.files.list(pathToFolder, false, '');
+        const personalFoldersNames = personalFoldersInfos.map((folder) => folder.name)
+        let subjectsTable = DG.DataFrame.create(personalFoldersNames.length);
+
+        subjectsTable.columns.addNewString('Person');
+        subjectsTable.columns.addNewString('Sex');
+        subjectsTable.columns.addNewInt('Age');
+        subjectsTable.columns.addNewString('Date');
+
+        let sex, age, dateOfRecording, samplingFrequency, annotationsDF, heartRate;
+        let indexCounter = 0;
+        for (const personalFolderName of personalFoldersNames) {
+          let filesInPersonalFolder = await grok.dapi.files.list(pathToFolder + personalFolderName, false, '');
+          let uniqueFileNamesWithoutExtension = Array.from(new Set(filesInPersonalFolder.map((file) => file.name.slice(0, -4))));
+          for (const fileNameWithoutExtension of uniqueFileNamesWithoutExtension) {
+            [annotationsDF, age, sex, dateOfRecording, samplingFrequency] = await readPhysionetAnnotations(filesInPersonalFolder, fileNameWithoutExtension);
+            subjectsTable.columns.byName('Person').set(indexCounter, personalFolderName);
+            subjectsTable.columns.byName('Sex').set(indexCounter, sex);
+            subjectsTable.columns.byName('Age').set(indexCounter, age);
+            subjectsTable.columns.byName('Date').set(indexCounter, dateOfRecording);
+            indexCounter++;
           }
-          dataFrameWithPatientsInfo.columns.byName('Person').set(i, personalFolders[i].name);
-          dataFrameWithPatientsInfo.columns.byName('Sex').set(i, sex[i]);
-          dataFrameWithPatientsInfo.columns.byName('Age').set(i, age[i]);
-          dataFrameWithPatientsInfo.columns.byName('Date').set(i, date[i]);
-          dataFrameWithPatientsInfo.columns.byName('Heart Rate').set(i, heartRate[i]);
         }
-        grok.shell.addTableView(dataFrameWithPatientsInfo);
+        grok.shell.addTableView(subjectsTable);
+        pi.close();
       });
     });
 
