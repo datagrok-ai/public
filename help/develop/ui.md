@@ -18,6 +18,7 @@ d.show();
 ```
 
  ## Containers
+ ![Container preview](https://raw.githubusercontent.com/datagrok-ai/public/master/help/develop/img/container.jpg)
 This is a simple container. It can contain any elements, such as inputs, images, text, etc.
 It doesn't have own height. The container height depends on its children.
 ```javascript
@@ -25,6 +26,7 @@ ui.div([ui.h1('Header'), ui.p('Paragraph text'), 'just text', DG.Viewer.scatterP
 ```
 If you place a container within a [box container](#boxes) , it will inherit the box size and show scroll bars automatically.
  ## Boxes
+  ![Box container preview](https://raw.githubusercontent.com/datagrok-ai/public/master/help/develop/img/box-container.jpg)
 This is a fixed-size container. It doesn't depend on children element sizes, but shrinks them to certain size.
 ```javascript
 let d = ui.div();
@@ -35,12 +37,14 @@ $(box).css('border', 'solid');
 ui.div([ui.h1('Header'), box])
 ```
  ## Panels
+ ![Panel preview](https://raw.githubusercontent.com/datagrok-ai/public/master/help/develop/img/panel.jpg)
  The panel is a simple container similar to the [Containers](#Containers). It has full available wide and its height depends on its children. Also, panels have 10px paddings for all sides.
  ```javascript
  ui.panel([ui.h1('Header'), ui.p('Paragraph text'), 'just text', DG.Viewer.scatterPlot(grok.data.demo.demog())])
  ```
 
  ## Blocks
+ ![Blocks preview](https://raw.githubusercontent.com/datagrok-ai/public/master/help/develop/img/blocks.jpg)
  The block layout is divided into horizontal sections, which take on the full width of the available screen. Their screen height is determined by their inner content. The width of sections can also be set to the following predefined ratios:
  - 1 block: 100%
  - 2 blocks:
@@ -70,6 +74,7 @@ ui.div([ui.h1('Header'), box])
  ```
 
  ## FlexBox Grid
+ ![Flexbox preview](https://raw.githubusercontent.com/datagrok-ai/public/master/help/develop/img/flexbox.jpg)
  Flexbox grid allow to divide a layout into multiple columns and rows. The Flexbox container take the full available width, and their height is determined by their inner content. A Flexbox layout has a direction in which child elements are laid out. The main axis is defined by rows or columns.
  ```javascript
  ui.divH([ui.span('item 1'),ui.span('item 2'),ui.span('item 3')]); //rows
@@ -78,6 +83,7 @@ ui.div([ui.h1('Header'), box])
  ```
 
  ## Splitters
+  ![Splitters preview](https://raw.githubusercontent.com/datagrok-ai/public/master/help/develop/img/splitters.jpg)
  Splitters - help to build the layout that contains several content areas. Each splitter contains the [box container](#boxes) which shrinks the content to a certain size.
 
  The splitters can specify by the horizontal or vertical orientation. In order to split vertically and horizontally at the same time, splitters need to be nested.
