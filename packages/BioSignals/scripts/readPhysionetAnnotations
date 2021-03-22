@@ -4,12 +4,12 @@
 #input: file fileATR
 #input: file fileDAT
 #input: file fileHEA
-#input: string record_name
+#input: string record_name_without_extension
 #output: dataframe df
 #output: int age
 #output: string sex
-#output: string date
-#output: int fs
+#output: string date_of_recording
+#output: int sampling_frequency
 
 import wfdb
 import shutil
@@ -19,23 +19,24 @@ folder_name = './my_folder/'
 
 # make folder and copy files into it
 if not os.path.exists(folder_name): os.mkdir(folder_name)
-shutil.copyfile(fileATR, folder_name + record_name[:-3] + 'atr')
-shutil.copyfile(fileDAT, folder_name + record_name[:-3] + 'dat')
-shutil.copyfile(fileHEA, folder_name + record_name[:-3] + 'hea')
+shutil.copyfile(fileATR, folder_name + record_name_without_extension + '.atr')
+shutil.copyfile(fileDAT, folder_name + record_name_without_extension + '.dat')
+shutil.copyfile(fileHEA, folder_name + record_name_without_extension + '.hea')
 
-# read Physionet record without file name's extension(wfdb requirement), and remove folder with it's content
+# read Physionet record, and remove folder with it's content
 annotations = wfdb.rdann(
-    record_name=folder_name + record_name[:-4],
+    record_name=folder_name + record_name_without_extension,
     extension='atr'
 )
 signals, fields = wfdb.rdsamp(
-    record_name=folder_name + record_name[:-4]
+    record_name=folder_name + record_name_without_extension
 )
 shutil.rmtree(folder_name)
 
-age = int(fields['comments'][0][5:])
+age = fields['comments'][0][5:]
 sex = fields['comments'][1][5:]
-date = fields['comments'][2][10:]
+date_of_recording = fields['comments'][2][10:]
+sampling_frequency = fields['fs']
 
 df = pd.DataFrame({
     'indicesOfRPeak': annotations.sample,
