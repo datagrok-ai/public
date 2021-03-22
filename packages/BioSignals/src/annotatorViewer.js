@@ -29,22 +29,25 @@ export class AnnotatorViewer extends DG.JsViewer {
         signalValues.get(i)
       ];
     }
+    if (this.dataFrame.columns.byName('indicesOfRPeak')) {
+      let indicesOfRPeak = this.dataFrame.columns.byName('indicesOfRPeak');
+      let numberOfPointAnnotations = indicesOfRPeak.stats.valueCount;
+      indicesOfRPeak = indicesOfRPeak.getRawData();
+      indicesOfRPeak = indicesOfRPeak.slice(indicesOfRPeak.length - numberOfPointAnnotations);
 
-    let indicesOfRPeak = this.dataFrame.columns.byName('indicesOfRPeak');
-    let numberOfPointAnnotations = indicesOfRPeak.stats.valueCount;
-    indicesOfRPeak = indicesOfRPeak.getRawData();
-    indicesOfRPeak = indicesOfRPeak.slice(indicesOfRPeak.length - numberOfPointAnnotations);
-
-    this.markedPoints = new Array(numberOfPointAnnotations);
-    base = +new Date();
-    let samplingPeriod = 24 * 3600 * 1000;
-    let now = new Date(base += indicesOfRPeak[0] * samplingPeriod);
-    for (let i = 1; i < numberOfPointAnnotations; i++) {
-      now = new Date(base += (indicesOfRPeak[i] - indicesOfRPeak[i-1]) * samplingPeriod);
-      this.markedPoints[i] = [
-        [now.getFullYear(), now.getMonth() + 1, now.getDate()].join('/'),
-        signalValues.get(indicesOfRPeak[i])
-      ];
+      this.markedPoints = new Array(numberOfPointAnnotations);
+      base = +new Date();
+      let samplingPeriod = 24 * 3600 * 1000;
+      let now = new Date(base += indicesOfRPeak[0] * samplingPeriod);
+      for (let i = 1; i < numberOfPointAnnotations; i++) {
+        now = new Date(base += (indicesOfRPeak[i] - indicesOfRPeak[i-1]) * samplingPeriod);
+        this.markedPoints[i] = [
+          [now.getFullYear(), now.getMonth() + 1, now.getDate()].join('/'),
+          signalValues.get(indicesOfRPeak[i])
+        ];
+      }
+    } else {
+      this.markedPoints = [];
     }
 
     this.data = data;
