@@ -81,5 +81,9 @@ export const physionetDatabasesDictionary = {
       'Person_86/rec_2', 'Person_87/rec_1', 'Person_87/rec_2', 'Person_88/rec_1', 'Person_88/rec_2', 'Person_88/rec_3',
       'Person_89/rec_1', 'Person_89/rec_2', 'Person_90/rec_1', 'Person_90/rec_2'
     ]
+  },
+  'AHA Database Sample Excluded Record': {
+    'short_name': 'ahadb',
+    'record_names': ['0001', '0201']
   }
 }
