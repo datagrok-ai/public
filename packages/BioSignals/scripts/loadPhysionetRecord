@@ -7,12 +7,15 @@
 
 import wfdb
 
+# 'ECG-ID Database'
 if chosenDatabase == 'ecgiddb':
-    person_id, record_name = chosenRecord.split('/')
-    physionet_directory = ''.join((chosenDatabase, '/', person_id))
-    record = wfdb.rdrecord(record_name, pn_dir=physionet_directory)
-else:
-    record = wfdb.rdrecord(chosenRecord, pn_dir=chosenDatabase)
+    person_id, chosenRecord = chosenRecord.split('/')
+    chosenDatabase = ''.join((chosenDatabase, '/', person_id))
+
+record = wfdb.rdrecord(
+    record_name=chosenRecord,
+    pn_dir=chosenDatabase
+)
 
 sampling_frequency = record.fs
 
