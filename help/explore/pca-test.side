@@ -283,7 +283,7 @@
       "id": "e93c6e50-0d9b-4eec-ab66-1a461ec97d72",
       "comment": "",
       "command": "click",
-      "target": "name=button-PCA---Features",
+      "target": "name=div-PCA---Features",
       "targets": [
         ["name=button-PCA---Features", "name"],
         ["css=button[name=\"button-PCA---Features\"]", "css"],

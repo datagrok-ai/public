@@ -290,7 +290,7 @@
       "id": "5f3509ec-084c-43b0-9746-1227609d2752",
       "comment": "",
       "command": "click",
-      "target": "name=span-~t1-row-(min-2,-max-4)",
+      "target": "name=span-~t1-row",
       "targets": [
         ["css=span[name=\"span-~t1 row-(min-2,-max-4)\"]", "css"],
         ["css=tr:nth-child(2) .markup", "css:finder"],
@@ -353,7 +353,7 @@
       "id": "13415f61-5140-439f-8bf5-a486eb17cf31",
       "comment": "",
       "command": "click",
-      "target": "name=span-~t2-row-(min-7,-max-9)",
+      "target": "name=span-~t2-row",
       "targets": [
         ["css=span[name=\"span-~t2 row-(min-7,-max-9)\"]", "css"],
         ["css=tr:nth-child(3) .markup", "css:finder"],

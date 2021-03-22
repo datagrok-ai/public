@@ -185,7 +185,7 @@
       "id": "2ffb098e-d53a-4615-a975-3bae538ff011",
       "comment": "",
       "command": "executeScript",
-      "target": "let element = document.querySelector(\".d4-input-column .d4-root div[name=viewer-Grid] canvas:nth-child(4)\"); let event = new MouseEvent(\"click\", {     bubbles: true,     cancelable: false,     view: window,     button: 2,     buttons: 0,     clientX: element.getBoundingClientRect().x+20,     clientY: element.getBoundingClientRect().y+40}); element.dispatchEvent(event);",
+      "target": "let element = document.querySelector(\".grok-data-categorizer .d4-root div[name=viewer-Grid] canvas:nth-child(4)\"); let event = new MouseEvent(\"click\", {     bubbles: true,     cancelable: false,     view: window,     button: 2,     buttons: 0,     clientX: element.getBoundingClientRect().x+20,     clientY: element.getBoundingClientRect().y+40}); element.dispatchEvent(event);",
       "targets": [],
       "value": ""
     }, {
@@ -373,7 +373,7 @@
       "id": "c78037eb-8bd8-47e0-af66-e31da4a44b21",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span->50-(min-0,-max-1)",
+      "target": "name=span->50",
       "targets": [],
       "value": ""
     }, {
@@ -435,7 +435,7 @@
       "id": "9b45f294-7d92-4851-afac-d5f069cd25d2",
       "comment": "",
       "command": "executeScript",
-      "target": "let element = document.querySelector(\".d4-input-column .d4-root div[name=viewer-Grid] canvas:nth-child(4)\"); let event = new MouseEvent(\"click\", {     bubbles: true,     cancelable: false,     view: window,     button: 2,     buttons: 0,     clientX: element.getBoundingClientRect().x+20,     clientY: element.getBoundingClientRect().y+60}); element.dispatchEvent(event);",
+      "target": "let element = document.querySelector(\".grok-data-categorizer .d4-root div[name=viewer-Grid] canvas:nth-child(4)\"); let event = new MouseEvent(\"click\", {     bubbles: true,     cancelable: false,     view: window,     button: 2,     buttons: 0,     clientX: element.getBoundingClientRect().x+20,     clientY: element.getBoundingClientRect().y+60}); element.dispatchEvent(event);",
       "targets": [],
       "value": ""
     }, {

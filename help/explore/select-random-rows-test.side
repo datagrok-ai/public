@@ -182,14 +182,13 @@
       "id": "a9ce1865-ee7c-4bfb-90ec-cd417e3416fb",
       "comment": "",
       "command": "verifyValue",
-      "target": "id=editor",
+      "target": "name=input-Select-Random-Rows---#-rows",
       "targets": [
-        ["id=editor", "id"],
-        ["name=input-Select Random Rows---# rows", "name"],
-        ["css=#editor", "css"],
-        ["css=#editor", "css:finder"],
-        ["xpath=//input[@id='editor']", "xpath:attributes"],
-        ["xpath=//div[7]/div[2]/div/input", "xpath:position"]
+        ["id=82", "id"],
+        ["name=input-Select-Random-Rows---#-rows", "name"],
+        ["css=#\\38 2", "css:finder"],
+        ["xpath=//input[@id='82']", "xpath:attributes"],
+        ["xpath=//div[2]/div/input", "xpath:position"]
       ],
       "value": "2925"
     }, {
@@ -221,7 +220,7 @@
       "id": "747b9397-93b7-490f-944d-22b27d06e58f",
       "comment": "",
       "command": "verifyValue",
-      "target": "id=editor",
+      "target": "name=input-Select-Random-Rows---#-rows",
       "targets": [
         ["id=editor", "id"],
         ["name=input-Select Random Rows---# rows", "name"],
@@ -260,7 +259,7 @@
       "id": "37c09c53-59f5-4b9b-a489-c57b191c3379",
       "comment": "",
       "command": "verifyValue",
-      "target": "id=editor",
+      "target": "name=input-Select-Random-Rows---#-rows",
       "targets": [
         ["id=editor", "id"],
         ["name=input-Select Random Rows---# rows", "name"],
@@ -274,7 +273,7 @@
       "id": "b3c263d9-e9f3-4dc6-a814-a73a1c8a94a1",
       "comment": "",
       "command": "type",
-      "target": "id=editor",
+      "target": "name=input-Select-Random-Rows---#-rows",
       "targets": [
         ["id=editor", "id"],
         ["name=input-Select Random Rows---# rows", "name"],
@@ -405,7 +404,7 @@
       "id": "8b1c2d47-a1ee-4ce1-ae49-31caa8ba200c",
       "comment": "",
       "command": "verifyValue",
-      "target": "id=editor",
+      "target": "name=input-Select-Random-Rows---#-rows",
       "targets": [
         ["id=editor", "id"],
         ["name=input-Select Random Rows---# rows", "name"],

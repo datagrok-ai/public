@@ -344,6 +344,13 @@
       ],
       "value": ""
     }, {
+      "id": "40d70d00-2342-4d75-a349-247680b84c21",
+      "comment": "",
+      "command": "pause",
+      "target": "1500",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "a1f73872-3e3d-4580-b83e-ed451791f39c",
       "comment": "",
       "command": "verifyText",
