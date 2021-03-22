@@ -226,14 +226,20 @@
       "id": "88602026-d955-4482-a9e9-c7e8e5fd1f48",
       "comment": "",
       "command": "click",
-      "target": "name=button-Missing-Values-Imputation---Impute",
+      "target": "name=div-Missing-Values-Imputation---Impute",
       "targets": [
-        ["name=button-Missing-Values-Imputation---Impute", "name"],
-        ["css=button[name=\"button-Missing-Values-Imputation---Impute\"]", "css"],
-        ["css=.pure-control-group:nth-child(2) button", "css:finder"],
-        ["xpath=//button[@name='button-Missing-Values-Imputation---Impute']", "xpath:attributes"],
-        ["xpath=//button", "xpath:position"]
+        ["id=115", "id"],
+        ["css=#\\31 15", "css:finder"],
+        ["xpath=//div[@id='115']", "xpath:attributes"],
+        ["xpath=//div[9]/div[2]/div[2]/div", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "0b724d9a-b640-4cf8-af8e-95bed9406c10",
+      "comment": "",
+      "command": "pause",
+      "target": "500",
+      "targets": [],
       "value": ""
     }, {
       "id": "89d1e5a6-421d-4b69-aca2-3ace4fe50767",
@@ -280,7 +286,7 @@
       "id": "98a84809-1099-4f2c-9a63-31162639bc28",
       "comment": "",
       "command": "click",
-      "target": "name=button-Missing-Values-Imputation---Data",
+      "target": "name=div-Missing-Values-Imputation---Data",
       "targets": [
         ["name=button-Missing-Values-Imputation---Data", "name"],
         ["css=button[name=\"button-Missing-Values-Imputation---Data\"]", "css"],
@@ -531,7 +537,7 @@
       "id": "02130791-cf30-484a-b272-2e82dcfcb58f",
       "comment": "",
       "command": "verifyText",
-      "target": "id=column-names",
+      "target": "name=div-Missing-Values-Imputation---Impute",
       "targets": [
         ["id=column-names", "id"],
         ["css=#column-names", "css"],
@@ -544,7 +550,7 @@
       "id": "403325fb-d85a-4d19-9023-288877d02ef5",
       "comment": "",
       "command": "verifyText",
-      "target": "css=.pure-control-group:nth-child(3) #column-names",
+      "target": "name=div-Missing-Values-Imputation---Data",
       "targets": [
         ["css=.pure-control-group:nth-child(3) #column-names", "css:finder"],
         ["xpath=(//div[@id='column-names'])[2]", "xpath:attributes"],

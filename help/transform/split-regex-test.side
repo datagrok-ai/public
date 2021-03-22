@@ -187,8 +187,14 @@
       "id": "7125d453-99ce-4f31-bc77-1fcd1b09720f",
       "comment": "",
       "command": "select",
-      "target": "id=editor",
-      "targets": [],
+      "target": "name=input-Extract-RegExp---Column",
+      "targets": [
+        ["id=82", "id"],
+        ["name=input-Extract-RegExp---Column", "name"],
+        ["css=#\\38 2", "css:finder"],
+        ["xpath=//select[@id='82']", "xpath:attributes"],
+        ["xpath=//select", "xpath:position"]
+      ],
       "value": "label=DEMOG"
     }, {
       "id": "c8f47818-92d1-4a5c-8696-9cbd97d0ee01",

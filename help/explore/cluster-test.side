@@ -263,7 +263,7 @@
       "id": "056c936a-80e7-4ca6-9f44-f1d1ad26558b",
       "comment": "",
       "command": "click",
-      "target": "name=button-Cluster-Data---Features",
+      "target": "name=div-Cluster-Data---Features",
       "targets": [
         ["name=button-Cluster-Data---Features", "name"],
         ["css=button[name=\"button-Cluster-Data---Features\"]", "css"],
@@ -427,13 +427,11 @@
       "id": "0d1bba29-2d2b-435c-981a-dfd4d39656c7",
       "comment": "",
       "command": "verifyText",
-      "target": "id=column-names",
+      "target": "css=.ui-input-column-names",
       "targets": [
-        ["id=column-names", "id"],
-        ["css=#column-names", "css"],
-        ["css=#column-names", "css:finder"],
-        ["xpath=//div[@id='column-names']", "xpath:attributes"],
-        ["xpath=//div[8]/div[2]/div/div/div", "xpath:position"]
+        ["css=.ui-input-column-names", "css:finder"],
+        ["xpath=//div[@id='167']/div", "xpath:idRelative"],
+        ["xpath=//body/div[6]/div[2]/div/div/div", "xpath:position"]
       ],
       "value": "(4) All"
     }, {

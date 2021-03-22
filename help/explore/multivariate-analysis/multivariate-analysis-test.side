@@ -219,7 +219,7 @@
       "id": "423cb81b-96d4-4a25-bbf3-20e553c5f04b",
       "comment": "",
       "command": "click",
-      "target": "name=button-Multivariate-Analysis-(PLS)---Features",
+      "target": "name=div-Multivariate-Analysis-(PLS)---Features",
       "targets": [
         ["name=button-Multivariate-Analysis (PLS)---Features", "name"],
         ["css=.d4-input-columns > button", "css:finder"],
@@ -275,7 +275,7 @@
       "id": "912bad3c-09a7-428b-968c-79cc51be5db7",
       "comment": "",
       "command": "verifyText",
-      "target": "id=column-names",
+      "target": "name=div-Multivariate-Analysis-(PLS)---Features",
       "targets": [
         ["id=column-names", "id"],
         ["css=#column-names", "css"],

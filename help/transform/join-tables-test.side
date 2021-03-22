@@ -353,7 +353,7 @@
       "id": "1be2bae7-e35d-4dd8-88cc-d2b46e81e64d",
       "comment": "",
       "command": "select",
-      "target": "id=editor",
+      "target": "name=input-Join-Tables---Join-Type",
       "targets": [],
       "value": "label=outer"
     }, {
@@ -553,7 +553,7 @@
       "id": "295d38d2-5dc4-459d-82e8-6769faee7d47",
       "comment": "",
       "command": "select",
-      "target": "id=editor",
+      "target": "name=input-Join-Tables---Join-Type",
       "targets": [],
       "value": "label=left"
     }, {
@@ -812,7 +812,7 @@
       "id": "7d6da787-a578-4acd-aba0-4c54d6bfbc1b",
       "comment": "",
       "command": "select",
-      "target": "id=editor",
+      "target": "name=input-Join-Tables---Join-Type",
       "targets": [],
       "value": "label=right"
     }, {
@@ -900,16 +900,11 @@
       ],
       "value": "4"
     }, {
-      "id": "6d0ee632-486d-44b0-8d46-623864e39a29",
+      "id": "da0dd96b-dc62-47f8-a5ea-a33ac794fcf7",
       "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@name='div-section--Properties']",
-      "targets": [
-        ["css=.d4-accordion:nth-child(1) > .d4-accordion-pane:nth-child(3) > .d4-accordion-pane-header", "css:finder"],
-        ["xpath=//div[@name='div-section--Properties']", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div", "xpath:idRelative"],
-        ["xpath=//div[3]/div/div[2]/div/div/div/div/div[3]/div", "xpath:position"]
-      ],
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }]
   }],

@@ -472,8 +472,13 @@
       "id": "d4dd909a-2a01-4f0e-81ac-dbb9aa152e13",
       "comment": "",
       "command": "select",
-      "target": "id=editor",
-      "targets": [],
+      "target": "xpath=//select[@id='115']",
+      "targets": [
+        ["id=115", "id"],
+        ["css=#\\31 15", "css:finder"],
+        ["xpath=//select[@id='115']", "xpath:attributes"],
+        ["xpath=//select", "xpath:position"]
+      ],
       "value": "label=Can edit"
     }, {
       "id": "cfeb2499-1002-416d-8953-b4f7ba6e8b08",

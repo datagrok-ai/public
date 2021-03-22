@@ -195,14 +195,14 @@
       "id": "fc11fe2c-289a-4da2-ab12-9e2866074485",
       "comment": "",
       "command": "type",
-      "target": "xpath=//input[@id='editor']",
+      "target": "name=input-Name",
       "targets": [
-        ["id=editor", "id"],
+        ["id=82", "id"],
         ["name=input-Name", "name"],
-        ["css=#editor", "css:finder"],
-        ["xpath=//input[@id='editor']", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div[2]/div[2]/div/div/input", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/input", "xpath:position"]
+        ["css=#\\38 2", "css:finder"],
+        ["xpath=//input[@id='82']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div[2]/div/div/div/div/input", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/input", "xpath:position"]
       ],
       "value": "Test_Query_By_Selenium_MariaDB"
     }, {
@@ -485,6 +485,13 @@
       ],
       "value": ""
     }, {
+      "id": "70098223-cc9c-44a3-9954-2d626042e6dc",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "a558b1f3-f487-4e5f-a5bc-f1bfafec98f9",
       "comment": "",
       "command": "click",
@@ -550,12 +557,11 @@
       "id": "8a70cf7a-e51c-484a-927c-d3ad9901cd67",
       "comment": "",
       "command": "type",
-      "target": "css=input.type-ahead-input",
+      "target": "css=.ui-input-editor:nth-child(1)",
       "targets": [
-        ["css=input.type-ahead-input", "css"],
-        ["css=.type-ahead-input", "css:finder"],
+        ["css=.ui-input-editor:nth-child(1)", "css:finder"],
         ["xpath=(//input[@type='text'])[2]", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div/div[2]/div/input", "xpath:idRelative"],
+        ["xpath=//div[@id='elementContent']/div/div[2]/div/input", "xpath:idRelative"],
         ["xpath=//div[2]/div/input", "xpath:position"]
       ],
       "value": "name =\"Test_Query_By_Selenium_MariaDB\" and connection.name = \"northwind\""
@@ -614,7 +620,7 @@
       "id": "4ed73d31-fadd-42f3-8fcf-07b1f4ff1de8",
       "comment": "",
       "command": "click",
-      "target": "name=div-TestQueryBySeleniumMariaDB",
+      "target": "name=span-TestQueryBySeleniumMariaDB",
       "targets": [
         ["css=span[name=\"span-Test_Query_By_Selenium_MariaDB\"]", "css"],
         ["css=tr:nth-child(1) .markup", "css:finder"],
@@ -881,7 +887,7 @@
       "id": "24233ae8-ef76-4804-88a1-a366e5066261",
       "comment": "",
       "command": "click",
-      "target": "name=div-TestQueryBySeleniumMariaDB",
+      "target": "name=span-TestQueryBySeleniumMariaDB",
       "targets": [
         ["css=span[name=\"span-Test_Query_By_Selenium_MariaDB\"]", "css"],
         ["css=tr:nth-child(1) .markup", "css:finder"],
@@ -889,6 +895,13 @@
         ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div[2]/div/div/table/tbody/tr/td/span", "xpath:idRelative"],
         ["xpath=//div[3]/div[2]/div/div/table/tbody/tr/td/span", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "99c966d7-d350-45ea-889f-265cc5bb5232",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "3c725ca0-d666-45a7-b559-38e61edeefd5",
@@ -904,6 +917,13 @@
       ],
       "value": ""
     }, {
+      "id": "4689ac95-ed8d-4c0f-a0ca-f628fed5a88d",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "02101035-2fbd-494c-8de1-75c75349e64d",
       "comment": "",
       "command": "click",
@@ -914,6 +934,13 @@
         ["xpath=//div[@name='div-Delete']", "xpath:attributes"],
         ["xpath=//div[7]/div[7]", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "032fab75-0054-456d-98bf-6c0b9dae5d2a",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "fb179e49-5630-4d4e-ab0a-253a385979ef",
@@ -932,7 +959,7 @@
       "id": "00205b10-1b4f-448a-89b1-e04a2f21de14",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {
@@ -967,12 +994,11 @@
       "id": "634ce02c-745c-49af-9ef4-2a93c8a283c3",
       "comment": "",
       "command": "type",
-      "target": "css=input.type-ahead-input",
+      "target": "css=.ui-input-editor:nth-child(1)",
       "targets": [
-        ["css=input.type-ahead-input", "css"],
-        ["css=.type-ahead-input", "css:finder"],
+        ["css=.ui-input-editor:nth-child(1)", "css:finder"],
         ["xpath=(//input[@type='text'])[2]", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div/div[2]/div/input", "xpath:idRelative"],
+        ["xpath=//div[@id='elementContent']/div/div[2]/div/input", "xpath:idRelative"],
         ["xpath=//div[2]/div/input", "xpath:position"]
       ],
       "value": "name =\"Test_Query_By_Selenium_MariaDB\" and connection.name = \"northwind\""

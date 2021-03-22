@@ -195,14 +195,14 @@
       "id": "fc11fe2c-289a-4da2-ab12-9e2866074485",
       "comment": "",
       "command": "type",
-      "target": "xpath=//input[@id='editor']",
+      "target": "name=input-Name",
       "targets": [
-        ["id=editor", "id"],
+        ["id=82", "id"],
         ["name=input-Name", "name"],
-        ["css=#editor", "css:finder"],
-        ["xpath=//input[@id='editor']", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div[2]/div[2]/div/div/input", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/input", "xpath:position"]
+        ["css=#\\38 2", "css:finder"],
+        ["xpath=//input[@id='82']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div[2]/div/div/div/div/input", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/input", "xpath:position"]
       ],
       "value": "Test_Query_By_Selenium_PostresNet"
     }, {
@@ -486,6 +486,13 @@
       ],
       "value": ""
     }, {
+      "id": "911fc5b4-97e7-4049-bdc5-eb047a5568b0",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "a558b1f3-f487-4e5f-a5bc-f1bfafec98f9",
       "comment": "",
       "command": "click",
@@ -496,6 +503,13 @@
         ["xpath=//div[@id='elementContent']/div/div/div/div[5]/div", "xpath:idRelative"],
         ["xpath=//div[3]/div/div[2]/div/div/div/div/div[5]/div", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "376e1509-7aff-4be4-af54-40c29557f6d4",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "2073b211-1bbb-4209-84cf-91d6641cfb96",
@@ -551,12 +565,11 @@
       "id": "8a70cf7a-e51c-484a-927c-d3ad9901cd67",
       "comment": "",
       "command": "type",
-      "target": "css=input.type-ahead-input",
+      "target": "css=.ui-input-editor:nth-child(1)",
       "targets": [
-        ["css=input.type-ahead-input", "css"],
-        ["css=.type-ahead-input", "css:finder"],
+        ["css=.ui-input-editor:nth-child(1)", "css:finder"],
         ["xpath=(//input[@type='text'])[2]", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div/div[2]/div/input", "xpath:idRelative"],
+        ["xpath=//div[@id='elementContent']/div/div[2]/div/input", "xpath:idRelative"],
         ["xpath=//div[2]/div/input", "xpath:position"]
       ],
       "value": "name =\"Test_Query_By_Selenium_PostresNet\" and connection.name = \"northwind\""
@@ -632,10 +645,9 @@
       "command": "click",
       "target": "name=span-TestQueryBySeleniumPostresNet",
       "targets": [
-        ["css=.d4-flex-col tr:nth-child(1) > td:nth-child(2)", "css:finder"],
-        ["xpath=//div[@id='elementContent']/div/div[4]/div/div/div/table/tbody/tr/td[2]", "xpath:idRelative"],
-        ["xpath=//td[2]", "xpath:position"],
-        ["xpath=//td[contains(.,'northwind')]", "xpath:innerText"]
+        ["css=.d4-entity-markup-row:nth-child(1) label", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div[2]/div/div/div/div/span/span/label", "xpath:idRelative"],
+        ["xpath=//div/span/span/label", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -921,6 +933,13 @@
       ],
       "value": ""
     }, {
+      "id": "da4e8ce5-1040-4359-9eb0-96570fed6e6f",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "02101035-2fbd-494c-8de1-75c75349e64d",
       "comment": "",
       "command": "click",
@@ -956,7 +975,7 @@
       "id": "00205b10-1b4f-448a-89b1-e04a2f21de14",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {
@@ -991,12 +1010,11 @@
       "id": "634ce02c-745c-49af-9ef4-2a93c8a283c3",
       "comment": "",
       "command": "type",
-      "target": "css=input.type-ahead-input",
+      "target": "css=.ui-input-editor:nth-child(1)",
       "targets": [
-        ["css=input.type-ahead-input", "css"],
-        ["css=.type-ahead-input", "css:finder"],
+        ["css=.ui-input-editor:nth-child(1)", "css:finder"],
         ["xpath=(//input[@type='text'])[2]", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div/div[2]/div/input", "xpath:idRelative"],
+        ["xpath=//div[@id='elementContent']/div/div[2]/div/input", "xpath:idRelative"],
         ["xpath=//div[2]/div/input", "xpath:position"]
       ],
       "value": "name =\"Test_Query_By_Selenium_PostresNet\" and connection.name = \"northwind\""
