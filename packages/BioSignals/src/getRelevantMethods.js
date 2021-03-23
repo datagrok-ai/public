@@ -13,8 +13,8 @@ export function getRelevantMethods(signalType) {
         'Averaging Downsampling'
     ];
     const pyphysioFilters = [
-        'IIR',
-        'FIR',
+        'IIRFilter',
+        'FIRFilter',
         'normalize',
         'resample',
         'KalmanFilter',
