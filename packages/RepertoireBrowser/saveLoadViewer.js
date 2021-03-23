@@ -18,19 +18,13 @@ class SaveLoadRows extends DG.JsViewer {
 
     async saveSelectedRows() {
 
-        let indeces = this.dataFrame
+        let indexes = this.dataFrame
             .groupBy([`${this.uniqueId.value}`])
             .whereRowMask(this.dataFrame.selection)
             .aggregate();
 
-        let data = {
-            'tableName': this.dataFrame.toString(),
-            'uniqueId': this.uniqueId.stringValue,
-            'selectedRowsbyUniqueId': indeces.col(0).toList(),
-            'timestamp': Date.now()
-        };
-
-        await grok.dapi.files.writeAsText(`${this.connection}${this.fileToSave.value}.json`, JSON.stringify(data));
+        let data = `${this.dataFrame.toString()}\n${this.uniqueId.stringValue}\n${indexes.col(0).toList()}`;
+        await grok.dapi.files.writeAsText(`${this.connection}${this.fileToSave.value}.txt`, data);
     }
 
 
@@ -38,8 +32,9 @@ class SaveLoadRows extends DG.JsViewer {
     async loadSelectedRows() {
 
         let res = await grok.dapi.files.readAsText(`${this.connection}${this.savedFilesList.value}`);
-        let values = JSON.parse(res)['selectedRowsbyUniqueId'];
-        let uniqueColumnName = JSON.parse(res)['uniqueId'];
+        res = res.split("\n");
+        let uniqueColumnName = res[1];
+        let values = JSON.parse("[" + res[2] + "]");
         values = values.map((e) => parseInt(e));
         this.dataFrame.rows.select((row) => values.includes(row[`${uniqueColumnName}`]));
 
@@ -82,7 +77,7 @@ class SaveLoadRows extends DG.JsViewer {
         loadRowsButton.addEventListener("click", this.loadDialog);
 
 
-        this.root.appendChild(ui.div([saveRowsButton, loadRowsButton]));
+        this.root.appendChild(ui.div(ui.inputs([saveRowsButton, loadRowsButton])));
 
     }
 
