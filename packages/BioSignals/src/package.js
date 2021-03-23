@@ -75,6 +75,20 @@ function getEmptyChart() {
   );
 }
 
+function createPipelineObject(pipeline, functionCategory, typesList, parametersList) {
+  let c = 0;
+  const typeList = typesList.map((choiceInput) => choiceInput.value);
+  for (const type of typeList) {
+    pipeline[functionCategory][type] = {};
+    let keys = Object.keys(parametersList[c]).map(function(key) {return key;});
+    for (const key of keys) {
+      pipeline[functionCategory][type][key] = parametersList[c][key].value;
+    }
+    c++;
+  }
+  return pipeline;
+}
+
 function showMainDialog(table, signalType, column, samplingFreq, isDataFrameLocal) {
 
   let inputCase = (isDataFrameLocal) ? column.value[0] : table.columns.byName('testEcg');
@@ -201,6 +215,7 @@ function showMainDialog(table, signalType, column, samplingFreq, isDataFrameLoca
   addIndicatorButton.appendChild(ui.button('Add Indicator', () => {
     let containerIndicator = ui.div();
     indicatorContainerList[k] = containerIndicator;
+    let nameOfLastExtractorsOutput = Object.keys(extractorOutputsObj)[Object.keys(extractorOutputsObj).length - 1];
     let indicatorInputPreset = (Object.keys(extractorOutputsObj).length === 1) ? extractorInputsList[0].value : nameOfLastExtractorsOutput;
     indicatorInputsList[k] = ui.choiceInput('Input', indicatorInputPreset, Object.keys(extractorOutputsObj));
     indicatorChartsList[k] = getEmptyChart();
@@ -239,12 +254,30 @@ function showMainDialog(table, signalType, column, samplingFreq, isDataFrameLoca
     Object.assign(extractorOutputsObj, {[nameOfLastIndicatorsOutput]: indicatorDf});
   }));
 
+  let savePipelineButton = ui.div();
+  savePipelineButton.appendChild(ui.button('Save pipeline', () => {
+
+    let pipeline = {'Filters': {}, 'Estimators': {}, 'Indicators': {}};
+
+    pipeline = createPipelineObject(pipeline, 'Filters', filterTypesList, filterParametersList);
+    pipeline = createPipelineObject(pipeline, 'Estimators', extractorTypesList, extractorParametersList);
+    pipeline = createPipelineObject(pipeline, 'Indicators', indicatorTypesList, indicatorParametersList);
+
+    pipeline = JSON.stringify(pipeline);
+
+    grok.dapi.users.current().then(async(user) => {
+      const pathToFolder = user.login + ':Home/';
+      grok.dapi.files.writeAsText(pathToFolder + 'pipeline.txt', pipeline);
+    });
+  }));
+
   let formView = ui.div([
     ui.block25([
       ui.inputs([
         column,
         samplingFreq,
-        signalType
+        signalType,
+        savePipelineButton
       ])],'formview'),
     ui.block75([
       DG.Viewer.fromType('AnnotatorViewer', table)
@@ -403,6 +436,7 @@ export function Biosensors(table) {
         let subjectsTable = DG.DataFrame.create(personalFoldersNames.length);
 
         subjectsTable.columns.addNewString('Person');
+        subjectsTable.columns.addNewString('Record');
         subjectsTable.columns.addNewString('Sex');
         subjectsTable.columns.addNewInt('Age');
         subjectsTable.columns.addNewString('Date');
@@ -416,6 +450,7 @@ export function Biosensors(table) {
           for (const fileNameWithoutExtension of uniqueFileNamesWithoutExtension) {
             [annotationsDF, age, sex, dateOfRecording, samplingFrequency, heartRate] = await readPhysionetAnnotations(filesInPersonalFolder, fileNameWithoutExtension);
             subjectsTable.columns.byName('Person').set(indexCounter, personalFolderName);
+            subjectsTable.columns.byName('Record').set(indexCounter, fileNameWithoutExtension);
             subjectsTable.columns.byName('Sex').set(indexCounter, sex);
             subjectsTable.columns.byName('Age').set(indexCounter, age);
             subjectsTable.columns.byName('Date').set(indexCounter, dateOfRecording);
