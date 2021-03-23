@@ -2,6 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from "datagrok-api/dg";
+import {PlateHandler, PlateGridCellRenderer} from "./plate-handler.js";
 
 export let _package = new DG.Package();
 let carsView;
@@ -63,6 +64,8 @@ export function startApp() {
   parser.href = window.location;
   let pathSegments = parser.pathname.split('/');
 
+  grok.shell.addTableView(grok.data.testData("wells"));
+
   let v = grok.shell.addTableView(grok.data.testData("demog"));
   v.scatterPlot();
   grok.shell.v = v;
@@ -86,7 +89,6 @@ function setFilter(str) {
 
   for (let i = 0; i < carsView.dataFrame.rowCount; i++)
     carsView.dataFrame.filter.set(i, str === 'All' || carsView.dataFrame.get('Make', i) === str);
-
 }
 
 
@@ -103,4 +105,18 @@ export async function countToTen(s, progress) {
     await new Promise(resolve => setTimeout(resolve, 1000));
   }
   return `result: ${s}`
+}
+
+//name: plateCellRenderer
+//tags: cellRenderer, cellRenderer-demo_plate
+//meta-cell-renderer-sem-type: demo_plate
+//output: grid_cell_renderer result
+export function plateCellRenderer() {
+  return new PlateGridCellRenderer();
+}
+
+//tags: objectHandler, objectHandler-plate
+//output: object_handler result
+export function getPlateHandler() {
+  return new PlateHandler();
 }
