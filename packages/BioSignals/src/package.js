@@ -143,10 +143,12 @@ function showMainDialog(table, signalType, column, samplingFreq, isDataFrameLoca
   }));
 
   addFilterChartButton.appendChild(ui.button('Plot', async () => {
+    let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting filter\'s output...');
     let [plotFL, nameOfLastFiltersOutput] =
         await applyFilter(i, table.columns.byName('time'), inputCase, filterInputsList, filterOutputsObj, filterTypesList, filterParametersList, samplingFreq.value);
     filterChartsList[i - 1].dataFrame = plotFL;
     Object.assign(filterOutputsObj, {[nameOfLastFiltersOutput]: plotFL});
+    pi.close();
   }));
 
   // Information extraction dialogue

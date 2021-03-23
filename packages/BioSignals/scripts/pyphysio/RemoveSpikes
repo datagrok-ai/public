@@ -1,0 +1,28 @@
+#name: RemoveSpikes
+#language: python
+#input: dataframe input_signals
+#input: int sampling_frequency
+#input: dataframe parameters
+#output: dataframe df
+
+import numpy as np
+import pyphysio as ph
+
+sig = ph.EvenlySignal(
+    values=np.array(input_signals.iloc[:,0]),
+    sampling_freq=sampling_frequency
+)
+
+i = len(parameters) - 1
+sig = ph.RemoveSpikes(
+    K=parameters['K'][i],
+    N=int(parameters['N'][i]),
+    dilate=parameters['dilate'][i],
+    D=parameters['D'][i],
+    method=parameters['method'][i]
+)(sig)
+
+df = pd.DataFrame({
+    'time': range(len(sig)),
+    'sig': sig
+})

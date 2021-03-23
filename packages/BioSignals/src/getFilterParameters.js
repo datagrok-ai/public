@@ -2,12 +2,12 @@ import * as ui from "datagrok-api/ui";
 
 export function getFilterParameters(filterType) {
     switch (filterType) {
-        case 'IIR':
+        case 'IIRFilter':
             let passFrequency = ui.floatInput('Pass frequency', '');
             let stopFrequency = ui.floatInput('Stop frequency', '');
             let ftype = ui.choiceInput('Filter type', '', ['butter', 'cheby1', 'cheby2', 'ellip']);
             return {'fp': passFrequency, 'fs': stopFrequency, 'ftype': ftype};
-        case 'FIR':
+        case 'FIRFilter':
             let passFreq = ui.floatInput('Pass frequency', '');
             let stopFreq = ui.floatInput('Stop frequency', '');
             let windowType = ui.choiceInput('Window type', 'hamming', ['hamming']);
