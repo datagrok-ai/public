@@ -10,10 +10,13 @@
 #output: string sex
 #output: string date_of_recording
 #output: int sampling_frequency
+#output: int heart_rate
 
 import wfdb
+from wfdb import processing
 import shutil
 import os
+import numpy as np
 
 folder_name = './my_folder/'
 
@@ -37,6 +40,9 @@ age = fields['comments'][0][5:]
 sex = fields['comments'][1][5:]
 date_of_recording = fields['comments'][2][10:]
 sampling_frequency = fields['fs']
+
+qrs_inds = processing.qrs.gqrs_detect(signals[:,1], fs=fields['fs'])
+heart_rate = int(np.mean(60/(np.diff(qrs_inds)/fields['fs'])))
 
 df = pd.DataFrame({
     'indicesOfRPeak': annotations.sample,
