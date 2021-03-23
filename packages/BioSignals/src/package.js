@@ -295,7 +295,8 @@ async function readPhysionetAnnotations(fileInfos, fileNameWithoutExtension) {
   const sex = call.getParamValue('sex');
   const dateOfRecording = call.getParamValue('date_of_recording');
   const samplingFrequency = call.getParamValue('sampling_frequency');
-  return [df, age, sex, dateOfRecording, samplingFrequency];
+  const heartRate = call.getParamValue('heart_rate');
+  return [df, age, sex, dateOfRecording, samplingFrequency, heartRate];
 }
 
 //tags: fileViewer, fileViewer-atr, fileViewer-dat, fileViewer-hea
@@ -405,6 +406,7 @@ export function Biosensors(table) {
         subjectsTable.columns.addNewString('Sex');
         subjectsTable.columns.addNewInt('Age');
         subjectsTable.columns.addNewString('Date');
+        subjectsTable.columns.addNewInt('Heart Rate');
 
         let sex, age, dateOfRecording, samplingFrequency, annotationsDF, heartRate;
         let indexCounter = 0;
@@ -412,15 +414,17 @@ export function Biosensors(table) {
           let filesInPersonalFolder = await grok.dapi.files.list(pathToFolder + personalFolderName, false, '');
           let uniqueFileNamesWithoutExtension = Array.from(new Set(filesInPersonalFolder.map((file) => file.name.slice(0, -4))));
           for (const fileNameWithoutExtension of uniqueFileNamesWithoutExtension) {
-            [annotationsDF, age, sex, dateOfRecording, samplingFrequency] = await readPhysionetAnnotations(filesInPersonalFolder, fileNameWithoutExtension);
+            [annotationsDF, age, sex, dateOfRecording, samplingFrequency, heartRate] = await readPhysionetAnnotations(filesInPersonalFolder, fileNameWithoutExtension);
             subjectsTable.columns.byName('Person').set(indexCounter, personalFolderName);
             subjectsTable.columns.byName('Sex').set(indexCounter, sex);
             subjectsTable.columns.byName('Age').set(indexCounter, age);
             subjectsTable.columns.byName('Date').set(indexCounter, dateOfRecording);
+            subjectsTable.columns.byName('Heart Rate').set(indexCounter, heartRate);
             indexCounter++;
           }
         }
-        grok.shell.addTableView(subjectsTable);
+        let view = grok.shell.addTableView(subjectsTable);
+        view.boxPlot({x:'Sex', y:'Heart Rate'});
         pi.close();
       });
     });
