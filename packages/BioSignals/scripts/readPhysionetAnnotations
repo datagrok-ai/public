@@ -11,6 +11,7 @@
 #output: string date_of_recording
 #output: int sampling_frequency
 #output: int heart_rate
+#output: float rr_std
 
 import wfdb
 from wfdb import processing
@@ -42,7 +43,9 @@ date_of_recording = fields['comments'][2][10:]
 sampling_frequency = fields['fs']
 
 qrs_inds = processing.qrs.gqrs_detect(signals[:,1], fs=fields['fs'])
-heart_rate = int(np.mean(60/(np.diff(qrs_inds)/fields['fs'])))
+rr_intervals = np.diff(qrs_inds)/fields['fs']
+heart_rate = int(np.mean(60/rr_intervals))
+rr_std = np.std(rr_intervals)
 
 df = pd.DataFrame({
     'indicesOfRPeak': annotations.sample,
