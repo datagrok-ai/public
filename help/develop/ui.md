@@ -42,9 +42,9 @@ ui.div([ui.h1('Header'), box])
 ```
  ## Panels
  The panel is a simple container similar to the [Containers](#Containers). It has full available wide and its height depends on its children. Also, panels have 10px paddings for all sides.
- 
+
  ![Panel preview](https://raw.githubusercontent.com/datagrok-ai/public/master/help/develop/img/panel.jpg)
- 
+
  ```javascript
  ui.panel([ui.h1('Header'), ui.p('Paragraph text'), 'just text', DG.Viewer.scatterPlot(grok.data.demo.demog())])
  ```
@@ -64,7 +64,7 @@ ui.div([ui.h1('Header'), box])
  Use the block layout if you want to display section-based content by placing elements next to each other.
 
 ![Blocks preview](https://raw.githubusercontent.com/datagrok-ai/public/master/help/develop/img/blocks.jpg)
-  
+
  ```javascript
  ui.block([ui.h1('100% block width')]);
  //two blocks next to each other
@@ -85,7 +85,7 @@ ui.div([ui.h1('Header'), box])
  Flexbox grid allow to divide a layout into multiple columns and rows. The Flexbox container take the full available width, and their height is determined by their inner content. A Flexbox layout has a direction in which child elements are laid out. The main axis is defined by rows or columns.
 
 ![Flexbox preview](https://raw.githubusercontent.com/datagrok-ai/public/master/help/develop/img/flexbox.jpg)
- 
+
  ```javascript
  ui.divH([ui.span('item 1'),ui.span('item 2'),ui.span('item 3')]); //rows
  ui.divV([ui.span('item 1'),ui.span('item 2'),ui.span('item 3')]); //collumns
@@ -274,7 +274,10 @@ ui.dialog('Modal dialog')
   ui.inputs([
     ui.stringInput('Name'),
     ui.intInput('Age'),
-    ui.button('Apply')
+    ui.buttonsInput([
+      ui.bigButton('Apply'),
+      ui.button('Cancel')
+    ])  
   ]);
   ```
   ### Inputs
