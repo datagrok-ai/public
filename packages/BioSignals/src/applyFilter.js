@@ -108,7 +108,8 @@ async function ConvolutionalFilter(data, paramsT, samplingFrequency) {
     {
       'inputSignals': data,
       'sampling_frequency': samplingFrequency,
-      'parameters': paramsT
+      'win_len': paramsT.columns.byName('win_len').max,
+      'irftype': paramsT.columns.byName('irftype').categories.find(({name}) => name !== '')
     });
 }
 
@@ -117,7 +118,8 @@ async function DenoiseEDA(data, paramsT, samplingFrequency) {
     {
       'input_signals': data,
       'sampling_frequency': samplingFrequency,
-      'parameters': paramsT
+      'win_len': paramsT.columns.byName('win_len').max,
+      'threshold': paramsT.columns.byName('threshold').max
     });
 }
 
@@ -126,7 +128,9 @@ async function IIRFilter(data, paramsT, samplingFrequency) {
     {
       'input_signals': data,
       'sampling_frequency': samplingFrequency,
-      'parameters': paramsT
+      'fs': paramsT.columns.byName('fs').max,
+      'fp': paramsT.columns.byName('fp').max,
+      'ftype': paramsT.columns.byName('ftype').categories.find(({name}) => name !== '')
     });
 }
 
@@ -135,7 +139,8 @@ async function FIRFilter(data, paramsT, samplingFrequency) {
     {
       'input_signals': data,
       'sampling_frequency': samplingFrequency,
-      'parameters': paramsT
+      'fs': paramsT.columns.byName('fs').max,
+      'fp': paramsT.columns.byName('fp').max
     });
 }
 
@@ -144,7 +149,7 @@ async function normalize(data, paramsT, samplingFrequency) {
     {
       'input_signals': data,
       'sampling_frequency': samplingFrequency,
-      'parameters': paramsT
+      'norm_method': paramsT.columns.byName('normMethod').categories.find(({name}) => name !== '')
     });
 }
 
@@ -153,7 +158,8 @@ async function resample(data, paramsT, samplingFrequency) {
     {
       'input_signals': data,
       'sampling_frequency': samplingFrequency,
-      'parameters': paramsT
+      'fout': paramsT.columns.byName('fout').max,
+      'kind': paramsT.columns.byName('kind').categories.find(({name}) => name !== '')
     });
 }
 
@@ -162,7 +168,8 @@ async function KalmanFilter(data, paramsT, samplingFrequency) {
     {
       'input_signals': data,
       'sampling_frequency': samplingFrequency,
-      'parameters': paramsT
+      'R': paramsT.columns.byName('R').max,
+      'ratio': paramsT.columns.byName('ratio').max
     });
 }
 
@@ -171,7 +178,7 @@ async function ImputeNAN(data, paramsT, samplingFrequency) {
     {
       'input_signals': data,
       'sampling_frequency': samplingFrequency,
-      'parameters': paramsT
+      'allnan': paramsT.columns.byName('allnan').categories.find(({name}) => name !== '')
     });
 }
 
@@ -180,7 +187,11 @@ async function RemoveSpikes(data, paramsT, samplingFrequency) {
     {
       'input_signals': data,
       'sampling_frequency': samplingFrequency,
-      'parameters': paramsT
+      'K': paramsT.columns.byName('K').max,
+      'N': paramsT.columns.byName('N').max,
+      'dilate': paramsT.columns.byName('dilate').max,
+      'D': paramsT.columns.byName('D').max,
+      'method': paramsT.columns.byName('method').categories.find(({name}) => name !== '')
     });
 }
 

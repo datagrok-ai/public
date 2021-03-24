@@ -2,22 +2,16 @@
 #language: python
 #input: dataframe input_signals
 #input: int sampling_frequency
-#input: dataframe parameters
+#input: double win_len
+#input: string irftype
 #output: dataframe df
 
 import numpy as np
 import pyphysio as ph
 
-sig = ph.EvenlySignal(
-    values=np.array(input_signals.iloc[:,0]),
-    sampling_freq=sampling_frequency
-)
+sig = ph.EvenlySignal(values=np.array(input_signals.iloc[:,0]), sampling_freq=sampling_frequency)
 
-i = len(parameters) - 1
-sig = ph.ConvolutionalFilter(
-    win_len=parameters['win_len'][i],
-    irftype=parameters['irftype'][i]
-)(sig)
+sig = ph.ConvolutionalFilter(win_len=win_len, irftype=irftype)(sig)
 
 df = pd.DataFrame({
     'time': range(len(sig)),

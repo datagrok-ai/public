@@ -2,23 +2,17 @@
 #language: python
 #input: dataframe input_signals
 #input: int sampling_frequency
-#input: dataframe parameters
+#input: double fp
+#input: double fs
+#input: string ftype
 #output: dataframe df
 
 import numpy as np
 import pyphysio as ph
 
-sig = ph.EvenlySignal(
-    values=np.array(input_signals.iloc[:,0]),
-    sampling_freq=sampling_frequency
-)
+sig = ph.EvenlySignal(values=np.array(input_signals.iloc[:,0]), sampling_freq=sampling_frequency)
 
-i = len(parameters) - 1
-sig = ph.IIRFilter(
-    fp=parameters['fp'][i],
-    fs=parameters['fs'][i],
-    ftype=parameters['ftype'][i]
-)(sig)
+sig = ph.IIRFilter(fp=fp, fs=fs, ftype=ftype)(sig)
 
 df = pd.DataFrame({
     'time': range(len(sig)),
