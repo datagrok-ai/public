@@ -331,7 +331,8 @@ async function readPhysionetAnnotations(fileInfos, fileNameWithoutExtension) {
   const dateOfRecording = call.getParamValue('date_of_recording');
   const samplingFrequency = call.getParamValue('sampling_frequency');
   const heartRate = call.getParamValue('heart_rate');
-  return [df, age, sex, dateOfRecording, samplingFrequency, heartRate];
+  const rrStd = call.getParamValue('rr_std');
+  return [df, age, sex, dateOfRecording, samplingFrequency, heartRate, rrStd];
 }
 
 //tags: fileViewer, fileViewer-atr, fileViewer-dat, fileViewer-hea
@@ -443,21 +444,25 @@ export function Biosensors(table) {
         subjectsTable.columns.addNewInt('Age');
         subjectsTable.columns.addNewString('Date');
         subjectsTable.columns.addNewInt('Heart Rate');
+        subjectsTable.columns.addNewFloat('rrStd');
 
-        let sex, age, dateOfRecording, samplingFrequency, annotationsDF, heartRate;
+        let sex, age, dateOfRecording, samplingFrequency, annotationsDF, heartRate, rrStd;
         let indexCounter = 0;
         for (const personalFolderName of personalFoldersNames) {
+          console.log(personalFolderName);
           let filesInPersonalFolder = await grok.dapi.files.list(pathToFolder + personalFolderName, false, '');
           let uniqueFileNamesWithoutExtension = Array.from(new Set(filesInPersonalFolder.map((file) => file.name.slice(0, -4))));
           for (const fileNameWithoutExtension of uniqueFileNamesWithoutExtension) {
-            [annotationsDF, age, sex, dateOfRecording, samplingFrequency, heartRate] = await readPhysionetAnnotations(filesInPersonalFolder, fileNameWithoutExtension);
+            [annotationsDF, age, sex, dateOfRecording, samplingFrequency, heartRate, rrStd] = await readPhysionetAnnotations(filesInPersonalFolder, fileNameWithoutExtension);
             subjectsTable.columns.byName('Person').set(indexCounter, personalFolderName);
             subjectsTable.columns.byName('Record').set(indexCounter, fileNameWithoutExtension);
             subjectsTable.columns.byName('Sex').set(indexCounter, sex);
             subjectsTable.columns.byName('Age').set(indexCounter, age);
             subjectsTable.columns.byName('Date').set(indexCounter, dateOfRecording);
             subjectsTable.columns.byName('Heart Rate').set(indexCounter, heartRate);
+            subjectsTable.columns.byName('rrStd').set(indexCounter, rrStd);
             indexCounter++;
+            console.log(fileNameWithoutExtension);
           }
         }
         let view = grok.shell.addTableView(subjectsTable);
