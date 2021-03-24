@@ -141,6 +141,7 @@ export class TimelinesViewer extends EChartViewer {
   }
 
   onPropertyChanged(property) {
+    if (!this.initialized) return;
     if (property.name === 'axisPointer') {
       this.option.tooltip.axisPointer.type = property.get();
     } else if (property.name === 'subjectColumnName') {
