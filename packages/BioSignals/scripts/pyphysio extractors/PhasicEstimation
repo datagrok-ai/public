@@ -1,0 +1,26 @@
+#name: PhasicEstimation
+#language: python
+#input: dataframe data
+#input: int sampling_frequency
+#input: double t1
+#input: double t2
+#input: double delta
+#input: double grid_size
+#input: double win_pre
+#input: double win_post
+#output: dataframe newDf
+
+import numpy as np
+import pyphysio as ph
+
+sig = ph.EvenlySignal(values=np.array(data.iloc[:,0]), sampling_freq=sampling_frequency)
+
+extracted = ph.DriverEstim(t1=t1, t2=t2)(sig)
+
+phasic, tonic, _ = ph.PhasicEstim(delta=delta, grid_size=grid_size, win_pre=win_pre, win_post=win_post)(extracted)
+
+newDf = pd.DataFrame({
+    'time': range(len(phasic)),
+    'phasic': phasic,
+    'tonic': tonic
+})

@@ -11,7 +11,7 @@
 #output: string date_of_recording
 #output: int sampling_frequency
 #output: int heart_rate
-#output: float rr_std
+#output: double rr_std
 
 import wfdb
 from wfdb import processing

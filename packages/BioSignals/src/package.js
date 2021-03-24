@@ -8,6 +8,7 @@ import {getFilterParameters} from "./getFilterParameters.js";
 import {getExtractorParameters} from "./getExtractorParameters.js";
 import {getIndicatorParameters} from "./getIndicatorParameters.js";
 import {applyFilter} from "./applyFilter.js";
+import {applyExtractor} from "./applyExtractor.js";
 import {physionetDatabasesDictionary} from "./physionetDatabasesDictionary.js";
 import {AnnotatorViewer} from "./annotatorViewer.js";
 
@@ -18,15 +19,6 @@ export let _package = new DG.Package();
 //output: viewer result
 export function annotator() {
   return new AnnotatorViewer();
-}
-
-async function applyExtractor(data, fsamp, paramsT) {
-  return grok.functions.call("BioSignals:extractors",
-  {
-    'data': data,
-    'fsamp': fsamp,
-    'paramsT': paramsT
-  });
 }
 
 async function getIndicator(data, fsamp, paramsT, infoType, indicator) {
