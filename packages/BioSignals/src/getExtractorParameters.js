@@ -25,11 +25,11 @@ export function getExtractorParameters(extractorType) {
             t2.setTooltip('Value of the T2 parameter of the bateman function (>0)');
             let grid_size = ui.floatInput('Grid size', 1);
             grid_size.setTooltip('Sampling size of the interpolation grid (>0)');
-            let pre_max = ui.floatInput('Pre max', 2);
-            pre_max.setTooltip('Duration (in seconds) of interval before the peak where to search the start of the peak (>0)');
-            let post_max = ui.floatInput('Post max', 2);
-            post_max.setTooltip('Duration (in seconds) of interval after the peak where to search the end of the peak (>0)');
-            return {'delta': delta1, 't1': t1, 't2': t2, 'grid_size': grid_size, 'pre_max': pre_max, 'post_max': post_max};
+            let win_pre1 = ui.floatInput('Pre max', 2);
+            win_pre1.setTooltip('Duration (in seconds) of interval before the peak where to search the start of the peak (>0)');
+            let win_post1 = ui.floatInput('Post max', 2);
+            win_post1.setTooltip('Duration (in seconds) of interval after the peak where to search the end of the peak (>0)');
+            return {'delta': delta1, 't1': t1, 't2': t2, 'grid_size': grid_size, 'win_pre': win_pre1, 'win_post': win_post1};
         case 'BeatFromBP':
             let bpm_max1 = ui.intInput('BPM max', 120);
             bpm_max1.setTooltip('Maximal expected heart rate (in beats per minute), should be in range (1, 400]');

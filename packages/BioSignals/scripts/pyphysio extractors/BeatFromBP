@@ -1,0 +1,20 @@
+#name: BeatFromBP
+#language: python
+#input: dataframe data
+#input: int sampling_frequency
+#input: double bpm_max
+#input: double win_pre
+#input: double win_post
+#output: dataframe newDf
+
+import numpy as np
+import pyphysio as ph
+
+sig = ph.EvenlySignal(values=np.array(data.iloc[:,0]), sampling_freq=sampling_frequency)
+
+extracted = ph.BeatFromBP(bpm_max=bpm_max, win_pre=win_pre, win_post=win_post)(sig)
+
+newDf = pd.DataFrame({
+    'Index': range(len(extracted)),
+    'Interbeat intervals': extracted
+})
