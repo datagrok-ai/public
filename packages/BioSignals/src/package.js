@@ -9,6 +9,7 @@ import {getExtractorParameters} from "./getExtractorParameters.js";
 import {getIndicatorParameters} from "./getIndicatorParameters.js";
 import {applyFilter} from "./applyFilter.js";
 import {applyExtractor} from "./applyExtractor.js";
+import {applyIndicator} from "./applyIndicator.js";
 import {physionetDatabasesDictionary} from "./physionetDatabasesDictionary.js";
 import {AnnotatorViewer} from "./annotatorViewer.js";
 
@@ -19,17 +20,6 @@ export let _package = new DG.Package();
 //output: viewer result
 export function annotator() {
   return new AnnotatorViewer();
-}
-
-async function getIndicator(data, fsamp, paramsT, infoType, indicator) {
-  return grok.functions.call("BioSignals:indicators",
-    {
-      'data': data,
-      'fsamp': fsamp,
-      'paramsT': paramsT,
-      'info': infoType[infoType.length - 1].value,
-      'preset': indicator.value
-    });
 }
 
 export function parametersToDataFrame(filtersLST, allParams) {
@@ -243,7 +233,7 @@ function showMainDialog(table, signalType, column, samplingFreq, isDataFrameLoca
     let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting indicator...');
     let indicatorParametersDF = parametersToDataFrame(indicatorTypesList, indicatorParametersList);
     let t = DG.DataFrame.fromColumns([extractorOutputsObj[indicatorInputsList[k - 1].value].columns.byName('RR intervals')]);
-    let indicatorDf = await getIndicator(t, samplingFreq.value, indicatorParametersDF, indicatorTypesList, indicatorTypesList[k - 1]);
+    let indicatorDf = await applyIndicator(t, indicatorParametersDF, indicatorTypesList[k - 1].value);
     let nameOfLastIndicatorsOutput = 'Output of Indicator ' + k + ' (' + indicatorTypesList[k - 1].value + ')';
     indicatorChartsList[k - 1].dataFrame = indicatorDf;
     pi.close();
