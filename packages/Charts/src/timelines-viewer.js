@@ -5,10 +5,10 @@ export class TimelinesViewer extends EChartViewer {
   constructor() {
     super();
 
-    this.subjectColumnName = this.string('subjectColumnName', 'USUBJID');
-    this.startColumnName = this.string('startColumnName', 'AESTDY');
-    this.endColumnName = this.string('endColumnName', 'AEENDY');
-    this.colorByColumnName = this.string('colorByColumnName', 'EVENT');
+    this.subjectColumnName = this.string('subjectColumnName');
+    this.startColumnName = this.string('startColumnName');
+    this.endColumnName = this.string('endColumnName');
+    this.colorByColumnName = this.string('colorByColumnName');
 
     this.marker = this.string('marker', 'circle', { choices: ['circle', 'rect', 'ring', 'diamond'] });
     this.markerSize = this.int('markerSize', 6);
@@ -20,6 +20,11 @@ export class TimelinesViewer extends EChartViewer {
     ]});
     this.axisPointer = this.string('axisPointer', 'shadow',
       { choices: ['cross', 'line', 'shadow', 'none'] });
+
+    this.subjectRegex = /^USUBJID$/;
+    this.eventRegex = /^([A-Z]{2}(TERM|TEST|TRT|VAL)|(ACT)?ARM|MIDS(TYPE)?|VISIT)$/;
+    this.startRegex = /^((VISIT|[A-Z]{2}(ST)?)DY)$/;
+    this.endRegex = /^((VISIT|[A-Z]{2}(EN)?)DY)$/;
 
     this.data = [];
     this.count = 0;
@@ -136,6 +141,7 @@ export class TimelinesViewer extends EChartViewer {
   }
 
   onPropertyChanged(property) {
+    if (!this.initialized) return;
     if (property.name === 'axisPointer') {
       this.option.tooltip.axisPointer.type = property.get();
     } else if (property.name === 'subjectColumnName') {
@@ -167,19 +173,26 @@ export class TimelinesViewer extends EChartViewer {
   onTableAttached() {
     this.init();
 
+    const columns = this.dataFrame.columns.toList();
+    const names = this.dataFrame.columns.names();
+
+    const strColumns = columns.filter(col => col.type === 'string')
+      .sort((a, b) => a.categories.length - b.categories.length);
+
+    const intColumns = columns.filter(col => col.type === 'int')
+      .sort((a, b) => a.stats.avg - b.stats.avg);
+
+    const matches = [this.subjectRegex, this.startRegex, this.endRegex,
+      this.eventRegex].map(regex => names.filter(name => name.match(regex)));
+
+    this.subjectColumnName = matches[0].length ? matches[0][0] : strColumns[strColumns.length - 1].name;
+    this.startColumnName = matches[1].length ? matches[1][0] : intColumns[0].name;
+    this.endColumnName = matches[2].length ? matches[2][0] : intColumns[intColumns.length - 1].name;
+    this.colorByColumnName = matches[3].length ? matches[3][0] : strColumns[0].name;
+
     [this.subjectCol, this.startCol, this.endCol, this.colorByCol] = this.dataFrame.columns.byNames([
-      this.subjectColumnName, this.startColumnName,
-      this.endColumnName, this.colorByColumnName
-    ]).map((col, ind) => {
-      if (col === null) {
-        const propNames = ['subjectColumnName', 'startColumnName',
-          'endColumnName', 'colorByColumnName'];
-        const newColumn = this.dataFrame.columns.byIndex(ind);
-        this[propNames[ind]] = newColumn.name;
-        return newColumn;
-      }
-      return col;
-    });
+      this.subjectColumnName, this.startColumnName, this.endColumnName, this.colorByColumnName
+    ]);
 
     this.subjects = this.subjectCol.categories;
     this.subjBuf = this.subjectCol.getRawData();

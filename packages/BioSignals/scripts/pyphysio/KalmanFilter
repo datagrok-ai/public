@@ -1,0 +1,20 @@
+#name: KalmanFilter
+#description: Kalman filtering, also known as linear quadratic estimation (LQE)
+#language: python
+#tags: biosignals, filters, pyphysio
+#input: dataframe input_signals
+#input: double sampling_frequency
+#input: double R [R > 0]
+#input: double ratio [default=1]
+#output: dataframe df
+
+import pyphysio as ph
+
+sig = ph.EvenlySignal(values=input_signals.iloc[:,0], sampling_freq=sampling_frequency)
+
+sig = ph.KalmanFilter(R=R, ratio=ratio)(sig)
+
+df = pd.DataFrame({
+    'time': range(len(sig)),
+    'sig': sig
+})

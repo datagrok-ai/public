@@ -10,4 +10,4 @@ grok.shell.newView('virtual view', [
     height: data.row(i).height,
     weight: data.row(i).weight
   }))).root
-]);
+]).box = true;

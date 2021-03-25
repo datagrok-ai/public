@@ -27,6 +27,7 @@ export class ChordViewer extends DG.JsViewer {
   }
 
   init() {
+    this.minLengthThreshold = 0.002;
     this.innerRadiusMargin = 80;
     this.outerRadiusMargin = 60;
 
@@ -265,6 +266,27 @@ export class ChordViewer extends DG.JsViewer {
 
   }
 
+  _rotateLabels(labels) {
+    labels.filter((d, i, nodes) => {
+      return +(select(nodes[i]).attr('transform').match(/\d+\.?\d*/g)[0]) >= 180;
+    }).selectAll('text')
+      .attr('transform', (d, i, nodes) => select(nodes[i]).attr('transform') + ' rotate(180) ')
+      .attr('text-anchor', 'end');
+  }
+
+  _cropLabels(labels) {
+    labels.selectAll('text').each((d, i, nodes) => {
+      let el = select(nodes[i]);
+      let textLength = el.node().getComputedTextLength();
+      let text = el.text();
+      while (text.length && textLength > (this.outerRadiusMargin - 15)) {
+        text = text.slice(0, -1);
+        el.text(text + '\u2026');
+        textLength = el.node().getComputedTextLength();
+      }
+    });
+  }
+
   render(computeData = true) {
 
     if (!this._testColumns()) {
@@ -294,7 +316,7 @@ export class ChordViewer extends DG.JsViewer {
 
     circos.layout(this.data, this.conf);
 
-    let smallBlocks = this.data.some(d => d.end - d.start < 0.002); 
+    let smallBlocks = this.data.some(d => d.end - d.start < this.minLengthThreshold); 
     if (smallBlocks) {
       this.root.appendChild(ui.divText('Too many categories to render.', 'd4-viewer-error'));
       return;
@@ -312,25 +334,8 @@ export class ChordViewer extends DG.JsViewer {
     circos.render();
 
     let labels = select(this.root).selectAll('.block');
-
-    // fix label rotation past 180
-    labels.filter((d, i, nodes) => {
-      return +(select(nodes[i]).attr('transform').match(/\d+\.?\d*/g)[0]) >= 180;
-    }).selectAll('text')
-        .attr('transform', (d, i, nodes) => select(nodes[i]).attr('transform') + ' rotate(180) ')
-        .attr('text-anchor', 'end');
-
-    // ellipsis
-    labels.selectAll('text').each((d, i, nodes) => {
-      let el = select(nodes[i]);
-      let textLength = el.node().getComputedTextLength();
-      let text = el.text();
-      while (text.length && textLength > (this.outerRadiusMargin - 15)) {
-        text = text.slice(0, -1);
-        el.text(text + '\u2026');
-        textLength = el.node().getComputedTextLength();
-      }
-    });
+    this._rotateLabels(labels); // fix label rotation past 180
+    this._cropLabels(labels);
 
     this.root.firstChild.style = 'position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);';
   }

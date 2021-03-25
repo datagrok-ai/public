@@ -1,13 +1,11 @@
 #name: getNamesOfPhysionetDatabases
+#description: Get a list of all the PhysioNet databases available
 #language: python
-#input: string namesOption
+#tags: files, physionet, biosignals
 #output: dataframe df
 
 import wfdb
 
-listOfNamesOfPhysionetDatabases = wfdb.io.get_dbs()
-nameIndex = 1 if namesOption == 'longNames' else 0
-
 df = pd.DataFrame({
-    'listOfNamesOfPhysionetDatabases': [name[nameIndex] for name in listOfNamesOfPhysionetDatabases]
+    'Physionet Databases': wfdb.io.get_dbs()
 })

@@ -1,5 +1,4 @@
 /* Do not change these import lines. Datagrok will import API library in exactly the same manner */
-import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from "datagrok-api/dg";
 
@@ -9,7 +8,7 @@ export class AnnotatorViewer extends DG.JsViewer {
   constructor() {
     super();
 
-    this.chartDiv = ui.div(null, { style: { position: 'absolute', left: '0', right: '0', top: '0', bottom: '0'}} );
+    this.chartDiv = ui.div(null, {style: {position: 'absolute', left: '0', right: '0', top: '0', bottom: '0'}});
     this.root.appendChild(this.chartDiv);
     this.chart = echarts.init(this.chartDiv);
     this.subs.push(ui.onSizeChanged(this.chartDiv).subscribe((_) => this.chart.resize()));
@@ -40,7 +39,7 @@ export class AnnotatorViewer extends DG.JsViewer {
       let samplingPeriod = 24 * 3600 * 1000;
       let now = new Date(base += indicesOfRPeak[0] * samplingPeriod);
       for (let i = 1; i < numberOfPointAnnotations; i++) {
-        now = new Date(base += (indicesOfRPeak[i] - indicesOfRPeak[i-1]) * samplingPeriod);
+        now = new Date(base += (indicesOfRPeak[i] - indicesOfRPeak[i - 1]) * samplingPeriod);
         this.markedPoints[i] = [
           [now.getFullYear(), now.getMonth() + 1, now.getDate()].join('/'),
           signalValues.get(indicesOfRPeak[i])
@@ -139,7 +138,7 @@ export class AnnotatorViewer extends DG.JsViewer {
       let segment = data.slice(indexToSearchFrom, indexToSearchTo);
       let valuesInSearchSegment = [];
       for (let i = 0; i < segment.length; i++) {
-        valuesInSearchSegment.push( segment[i][1] );
+        valuesInSearchSegment.push(segment[i][1]);
       }
       let indexOfMax = getIndexOfMaximumValue(valuesInSearchSegment);
       let now = new Date(timeOfFirstSample.getTime() + (indexToSearchFrom + indexOfMax + 1) * samplingPeriod);

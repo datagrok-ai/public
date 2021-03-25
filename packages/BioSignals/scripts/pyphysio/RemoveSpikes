@@ -1,0 +1,23 @@
+#name: RemoveSpikes
+#description: Remove spikes of specified parameters
+#language: python
+#tags: biosignals, filters, pyphysio
+#input: dataframe input_signals
+#input: double sampling_frequency
+#input: double K
+#input: double N
+#input: double dilate
+#input: double D
+#input: string method {choices: ['linear', 'step']}
+#output: dataframe df
+
+import pyphysio as ph
+
+sig = ph.EvenlySignal(values=input_signals.iloc[:,0], sampling_freq=sampling_frequency)
+
+sig = ph.RemoveSpikes(K=K, N=N, dilate=dilate, D=D, method=method)(sig)
+
+df = pd.DataFrame({
+    'time': range(len(sig)),
+    'sig': sig
+})

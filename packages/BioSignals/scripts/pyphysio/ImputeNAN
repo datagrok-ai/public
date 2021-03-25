@@ -1,0 +1,19 @@
+#name: ImputeNAN
+#description: Data imputation
+#language: python
+#tags: biosignals, filters, pyphysio
+#input: dataframe input_signals
+#input: double sampling_frequency
+#input: string allnan {choices: ['zeros', 'nan']}
+#output: dataframe df
+
+import pyphysio as ph
+
+sig = ph.EvenlySignal(values=input_signals.iloc[:,0], sampling_freq=sampling_frequency)
+
+sig = ph.ImputeNAN(win_len=win_len, allnan=allnan)(sig)
+
+df = pd.DataFrame({
+    'time': range(len(sig)),
+    'sig': sig
+})
