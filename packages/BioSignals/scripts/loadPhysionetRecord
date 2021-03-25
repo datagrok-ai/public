@@ -1,9 +1,11 @@
 #name: loadPhysionetRecord
+#description: Download WFDB record from physionet.org
 #language: python
+#tags: files, physionet, biosignals
 #input: string chosenDatabase
 #input: string chosenRecord
 #output: dataframe df
-#output: int sampling_frequency
+#output: double sampling_frequency
 
 import wfdb
 

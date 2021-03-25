@@ -1,9 +1,11 @@
 #name: DenoiseEDA
+#description: Remove noise due to sensor displacement from the EDA signal
 #language: python
+#tags: biosignals, filters, pyphysio
 #input: dataframe input_signals
-#input: int sampling_frequency
-#input: double win_len
-#input: double threshold
+#input: double sampling_frequency
+#input: double win_len [Length of the window]
+#input: double threshold [Threshold to detect the noise, value should be positive]
 #output: dataframe df
 
 import pyphysio as ph

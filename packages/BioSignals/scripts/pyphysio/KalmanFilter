@@ -1,9 +1,11 @@
 #name: KalmanFilter
+#description: Kalman filtering, also known as linear quadratic estimation (LQE)
 #language: python
+#tags: biosignals, filters, pyphysio
 #input: dataframe input_signals
-#input: int sampling_frequency
-#input: double R
-#input: double ratio
+#input: double sampling_frequency
+#input: double R [R > 0]
+#input: double ratio [default=1]
 #output: dataframe df
 
 import pyphysio as ph

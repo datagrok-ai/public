@@ -1,8 +1,10 @@
 #name: ImputeNAN
+#description: Data imputation
 #language: python
+#tags: biosignals, filters, pyphysio
 #input: dataframe input_signals
-#input: int sampling_frequency
-#input: string allnan
+#input: double sampling_frequency
+#input: string allnan {choices: ['zeros', 'nan']}
 #output: dataframe df
 
 import pyphysio as ph
