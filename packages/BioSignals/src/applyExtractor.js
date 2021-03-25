@@ -49,9 +49,13 @@ async function BeatFromBP(data, paramsT, samplingFrequency) {
 export async function applyExtractor(t, samplingFrequency, parametersTable) {
   const extractorType = parametersTable.getCol('type').categories[0];
   switch (extractorType) {
-    case 'Local energy': return LocalEnergy(t, parametersTable, samplingFrequency);
-    case 'Beat from ECG': return BeatfromECG(t, parametersTable, samplingFrequency);
-    case 'Phasic estimation': return PhasicEstimation(t, parametersTable, samplingFrequency);
-    case 'BeatFromBP': return BeatFromBP(t, parametersTable, samplingFrequency);
+    case 'Local energy':
+      return LocalEnergy(t, parametersTable, samplingFrequency);
+    case 'Beat from ECG':
+      return BeatfromECG(t, parametersTable, samplingFrequency);
+    case 'Phasic estimation':
+      return PhasicEstimation(t, parametersTable, samplingFrequency);
+    case 'BeatFromBP':
+      return BeatFromBP(t, parametersTable, samplingFrequency);
   }
 }
