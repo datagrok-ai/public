@@ -179,7 +179,7 @@ export class JsViewer extends Widget {
     super();
 
     /** @type {HTMLElement} */
-    this.root = ui.div();
+    this.root = ui.box();
 
     /** @type {DataFrame} */
     this.dataFrame = null;

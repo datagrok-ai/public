@@ -60,3 +60,41 @@ All audit records have fixed types:
 * error
 * tutorial-completed
 * viewer-rendered
+* log
+
+## JavaScript API
+
+You can create a Logger object to put Audit Records to Datagrok server:
+```javascript
+// Create logger
+let logger = new DG.Logger();
+// You can pass a callback that sets predefined parameters
+let logger = new DG.Logger((m) => m.params['persistent']= 'value');
+```
+
+Use `logger.log()` method to save records:
+```javascript
+// Default type is "log"
+logger.log('HELLO WORLD', {test: 'value', 'foo': 'bar'});
+// But you can specify another
+logger.log('HELLO WORLD', {test: 'value', 'foo': 'bar'}, 'my_log');
+```
+
+All errors are automatically logged to Datagrok, but you can log store them explicitly:
+```javascript
+// Specify Stack Trace to be able to group errors
+logger.log('Error!', {'stackTrace': '...'}, 'error');
+```
+
+## Amazon Cloud Watch export 
+
+Configure automated export Amazon Cloud Watch Log in `Settings -> Log`.
+
+Specify settings:
+
+### Cloud Watch Log Group  
+Fill with AWS CWL log group name
+### Events To Cloud Watch Streams Map
+Choose which audit types go to log streams. For example `log => datagrok_log`, `error => datagrok_errors`, etc. 
+### Cloud Watch Access Key,  Cloud Watch Secret Key, Cloud Watch Region
+Amazon Access and secret keys and region

@@ -1,0 +1,36 @@
+#name: hrvNonlinearDomain
+#description: Heart Rate Variability (HRV) indicators, nonlinear domain
+#language: python
+#tags: biosignals, indicators, pyphysio, hrv
+#input: dataframe signal_values
+#input: double step
+#input: double width
+#output: dataframe out
+
+import numpy as np
+import pyphysio as ph
+
+extracted = ph.UnevenlySignal(
+    values=signal_values.iloc[:,0],
+    signal_type='ibi',
+    start_time=0,
+    x_values=np.cumsum(signal_values.iloc[:,0]),
+    x_type='instants'
+)
+
+hrv_indicators = [
+    ph.PoincareSD1(name='SD1'),
+    ph.PoincareSD2(name='SD2'),
+    ph.PoincareSD1SD2(name='SD1/SD2')
+]
+
+fixed_length = ph.FixedSegments(step=step, width=width)
+
+indicators, col_names = ph.fmap(fixed_length, hrv_indicators, extracted)
+
+out = pd.DataFrame({
+    'time': range(len(indicators)),
+    'SD1': indicators[:, np.where(col_names == 'SD1')[0]].ravel(),
+    'SD2': indicators[:, np.where(col_names == 'SD2')[0]].ravel(),
+    'SD1/SD2': indicators[:, np.where(col_names == 'SD1/SD2')[0]].ravel()
+})

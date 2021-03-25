@@ -1,0 +1,27 @@
+#name: PhasicEstimation
+#description: Estimates the phasic and tonic components of a EDA driver function. It uses a detection algorithm based on the derivative of the driver.
+#language: python
+#tags: biosignals, extractors, pyphysio
+#input: dataframe data
+#input: double sampling_frequency
+#input: double t1 [Value of the T1 parameter of the bateman function, default = 0.75]
+#input: double t2 [Value of the T2 parameter of the bateman function, default = 2]
+#input: double delta [Minimum amplitude of the peaks in the driver]
+#input: double grid_size [Sampling size of the interpolation grid, default = 1]
+#input: double win_pre [Duration (in seconds) of interval before the peak where to search the start of the peak, default = 2]
+#input: double win_post [Duration (in seconds) of interval after the peak where to search the end of the peak, default = 2]
+#output: dataframe newDf
+
+import pyphysio as ph
+
+sig = ph.EvenlySignal(values=data.iloc[:,0], sampling_freq=sampling_frequency)
+
+extracted = ph.DriverEstim(t1=t1, t2=t2)(sig)
+
+phasic, tonic, _ = ph.PhasicEstim(delta=delta, grid_size=grid_size, win_pre=win_pre, win_post=win_post)(extracted)
+
+newDf = pd.DataFrame({
+    'time': range(len(phasic)),
+    'phasic': phasic,
+    'tonic': tonic
+})
