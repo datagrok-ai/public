@@ -1,5 +1,7 @@
 #name: hrvTimeDomain
+#description: Heart Rate Variability (HRV) indicators, time domain
 #language: python
+#tags: biosignals, indicators, pyphysio, hrv
 #input: dataframe signal_values
 #input: double step
 #input: double width

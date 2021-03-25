@@ -1,10 +1,12 @@
 #name: BeatFromECG
+#description: Identify the beats in an ECG signal and compute the IBIs
 #language: python
+#tags: biosignals, extractors, pyphysio
 #input: dataframe data
-#input: int sampling_frequency
-#input: double bpm_max
-#input: double delta
-#input: double k
+#input: double sampling_frequency
+#input: int bpm_max [Maximal expected heart rate (in beats per minute): (1 < bpm_max <= 400), default=120]
+#input: double delta [Threshold for the peak detection. By default it is computed from the signal (adaptive thresholding), default=0]
+#input: double k [Ratio at which the signal range is multiplied (when delta = 0), (0 < k < 1), default=0.7]
 #output: dataframe newDf
 
 import pyphysio as ph

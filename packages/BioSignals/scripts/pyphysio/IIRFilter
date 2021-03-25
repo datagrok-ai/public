@@ -1,10 +1,12 @@
 #name: IIRFilter
+#description: Filter the input signal using an Infinite Impulse Response filter
 #language: python
+#tags: biosignals, filters, pyphysio
 #input: dataframe input_signals
-#input: int sampling_frequency
-#input: double fp
-#input: double fs
-#input: string ftype
+#input: double sampling_frequency
+#input: double fp [The pass frequencies]
+#input: double fs [The stop frequencies]
+#input: string ftype {choices: ['butter', 'cheby1', 'cheby2', 'ellip', 'bessel']} [Type of filter, default = 'butter']
 #output: dataframe df
 
 import pyphysio as ph

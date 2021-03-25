@@ -1,9 +1,11 @@
 #name: ConvolutionalFilter
+#description: Filter a signal by convolution with a given impulse response function (IRF)
 #language: python
+#tags: biosignals, filters, pyphysio
 #input: dataframe input_signals
-#input: int sampling_frequency
-#input: double win_len
-#input: string irftype
+#input: double sampling_frequency
+#input: double win_len [Duration of the generated IRF in seconds (if irftype is not 'custom'), >0 (> 8/fsamp for 'gaussian')]
+#input: string irftype {choices: ['gauss', 'rect', 'triang', 'dgauss', 'custom']} [Type of IRF to be generated]
 #output: dataframe df
 
 import pyphysio as ph
