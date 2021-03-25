@@ -1,5 +1,7 @@
 #name: loadPhysionetAnnotations
+#description: Download a WFDB annotation file from physionet.org
 #language: python
+#tags: files, physionet, biosignals
 #input: string chosenDatabase
 #input: string chosenRecord
 #output: dataframe df

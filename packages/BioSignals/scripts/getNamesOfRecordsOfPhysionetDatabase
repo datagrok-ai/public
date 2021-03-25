@@ -1,5 +1,7 @@
 #name: getNamesOfRecordsOfPhysionetDatabase
+#description: Get a list of records belonging to a database
 #language: python
+#tags: physionet, biosignals
 #input: string chosenDatabase
 #output: dataframe df
 

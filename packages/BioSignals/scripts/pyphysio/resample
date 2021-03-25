@@ -1,9 +1,11 @@
 #name: resample
+#description: Change sampling frequency of signal
 #language: python
+#tags: biosignals, filters, pyphysio
 #input: dataframe input_signals
-#input: int sampling_frequency
-#input: double fout
-#input: string kind
+#input: double sampling_frequency [Input sampling frequency]
+#input: double fout [The sampling frequency for resampling]
+#input: string kind {choices: ['linear', 'nearest', 'zero', 'slinear', 'quadratic, 'cubic']} [Method for interpolation]
 #output: dataframe df
 
 import pyphysio as ph

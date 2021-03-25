@@ -1,8 +1,10 @@
 #name: normalize
+#description: Normalized the input signal using the general formula: ( signal - BIAS ) / RANGE
 #language: python
+#tags: biosignals, filters, pyphysio
 #input: dataframe input_signals
-#input: int sampling_frequency
-#input: string norm_method
+#input: double sampling_frequency
+#input: string norm_method {choices: ['mean', 'standard', 'min', 'maxmin', 'custom']} [Method for the normalization]
 #output: dataframe df
 
 import pyphysio as ph
