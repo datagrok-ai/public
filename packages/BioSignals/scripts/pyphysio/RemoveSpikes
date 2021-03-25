@@ -1,12 +1,14 @@
 #name: RemoveSpikes
+#description: Remove spikes of specified parameters
 #language: python
+#tags: biosignals, filters, pyphysio
 #input: dataframe input_signals
-#input: int sampling_frequency
+#input: double sampling_frequency
 #input: double K
 #input: double N
 #input: double dilate
 #input: double D
-#input: string method
+#input: string method {choices: ['linear', 'step']}
 #output: dataframe df
 
 import pyphysio as ph

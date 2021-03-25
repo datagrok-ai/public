@@ -1,6 +1,7 @@
 #name: readPhysionetRecord
+#description: read WFDB record from files, located on Datagrok platform
 #language: python
-#tags: demo, files, panel, fileViewer, fileViewer-atr, fileViewer-dat, fileViewer-hea
+#tags: files, physionet, biosignals
 #input: file fileATR
 #input: file fileDAT
 #input: file fileHEA

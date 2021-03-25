@@ -1,8 +1,10 @@
 #name: LocalEnergy
+#description: Estimate the local energy of the signal, by windowing
 #language: python
+#tags: biosignals, extractors, pyphysio
 #input: dataframe data
-#input: int sampling_frequency
-#input: double win_len
+#input: double sampling_frequency
+#input: double win_len [Length of the window]
 #input: double win_step
 #output: dataframe newDf
 
