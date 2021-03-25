@@ -199,24 +199,22 @@ export async function applyFilter(i, col, inputCase, filterInputsList, filterOut
   let t, nameOfLastFiltersOutput, plotFL;
   if (filterInputsList.length === 1) {
     t = DG.DataFrame.fromColumns([inputCase]);
-  }
-  else if (filterOutputsObj[filterInputsList[i-1].value].columns.byName(filterInputsList[i-1].value)) {
-    t = DG.DataFrame.fromColumns([filterOutputsObj[filterInputsList[i-1].value].columns.byName(filterInputsList[i-1].value)]);
-  }
-  else {
-    t = DG.DataFrame.fromColumns([filterOutputsObj[filterInputsList[i-1].value].columns.byName('sig')]);
+  } else if (filterOutputsObj[filterInputsList[i - 1].value].columns.byName(filterInputsList[i - 1].value)) {
+    t = DG.DataFrame.fromColumns([filterOutputsObj[filterInputsList[i - 1].value].columns.byName(filterInputsList[i - 1].value)]);
+  } else {
+    t = DG.DataFrame.fromColumns([filterOutputsObj[filterInputsList[i - 1].value].columns.byName('sig')]);
   }
 
   const parametersTable = parametersToDataFrame(filterTypesList, filterParametersList);
-  let currentlyChosenFilterType = filterTypesList[filterTypesList.length-1].value;
+  let currentlyChosenFilterType = filterTypesList[filterTypesList.length - 1].value;
   switch (currentlyChosenFilterType) {
     case 'Moving Average Filter':
-      await SMA_filter(t, inputCase, filterParametersList[i-1].win_len.value);
+      await SMA_filter(t, inputCase, filterParametersList[i - 1].win_len.value);
       nameOfLastFiltersOutput = inputCase.name + ' SMA Filtered';
       plotFL = DG.DataFrame.fromColumns([col, t.columns.byName(nameOfLastFiltersOutput)]);
       return [plotFL, nameOfLastFiltersOutput];
     case 'Exponential Filter':
-      await Exp_filter(t, inputCase, filterParametersList[i-1].filter_ratio.value);
+      await Exp_filter(t, inputCase, filterParametersList[i - 1].filter_ratio.value);
       nameOfLastFiltersOutput = inputCase.name + ' Exponentially Filtered';
       plotFL = DG.DataFrame.fromColumns([col, t.columns.byName(nameOfLastFiltersOutput)]);
       return [plotFL, nameOfLastFiltersOutput];
@@ -231,7 +229,7 @@ export async function applyFilter(i, col, inputCase, filterInputsList, filterOut
       plotFL = DG.DataFrame.fromColumns([col, t.columns.byName(nameOfLastFiltersOutput)]);
       return [plotFL, nameOfLastFiltersOutput];
     case 'Box Cox Transform':
-      await box_cox_transform(t, inputCase, filterParametersList[i-1].lambda.value, filterParametersList[i-1].ofset.value);
+      await box_cox_transform(t, inputCase, filterParametersList[i - 1].lambda.value, filterParametersList[i - 1].ofset.value);
       nameOfLastFiltersOutput = inputCase.name + ' Box Cox Transformed';
       plotFL = DG.DataFrame.fromColumns([col, t.columns.byName(nameOfLastFiltersOutput)]);
       return [plotFL, nameOfLastFiltersOutput];
@@ -246,59 +244,59 @@ export async function applyFilter(i, col, inputCase, filterInputsList, filterOut
       plotFL = DG.DataFrame.fromColumns([col, t.columns.byName(nameOfLastFiltersOutput)]);
       return [plotFL, nameOfLastFiltersOutput];
     case 'Fourier Filter':
-      await fourier_filter(t, inputCase, filterParametersList[i-1].lowcut.value, filterParametersList[i-1].hicut.value, filterParametersList[i-1].observationTime.value);
-      nameOfLastFiltersOutput = inputCase.name + ' Fourier Filtered (L: ' + filterParametersList[i-1].lowcut.value + '; H: ' + filterParametersList[i-1].hicut.value + ')';
+      await fourier_filter(t, inputCase, filterParametersList[i - 1].lowcut.value, filterParametersList[i - 1].hicut.value, filterParametersList[i - 1].observationTime.value);
+      nameOfLastFiltersOutput = inputCase.name + ' Fourier Filtered (L: ' + filterParametersList[i - 1].lowcut.value + '; H: ' + filterParametersList[i - 1].hicut.value + ')';
       plotFL = DG.DataFrame.fromColumns([col, t.columns.byName(nameOfLastFiltersOutput)]);
       return [plotFL, nameOfLastFiltersOutput];
     case 'Spectral Density':
-      await spectral_density(t, inputCase, filterParametersList[i-1].observationTime.value);
+      await spectral_density(t, inputCase, filterParametersList[i - 1].observationTime.value);
       nameOfLastFiltersOutput = inputCase.name + ' Density';
       plotFL = DG.DataFrame.fromColumns([col, t.columns.byName(nameOfLastFiltersOutput)]);
       return [plotFL, nameOfLastFiltersOutput];
     case 'Subsample':
-      await subsample(t, inputCase, filterParametersList[i-1].subsampleSize.value, filterParametersList[i-1].offset.value);
+      await subsample(t, inputCase, filterParametersList[i - 1].subsampleSize.value, filterParametersList[i - 1].offset.value);
       nameOfLastFiltersOutput = inputCase.name + ' Subsample';
       plotFL = DG.DataFrame.fromColumns([col, t.columns.byName(nameOfLastFiltersOutput)]);
       return [plotFL, nameOfLastFiltersOutput];
     case 'Averaging Downsampling':
-      await asample(t, inputCase, filterParametersList[i-1].windowSize.value, filterParametersList[i-1].offset.value);
+      await asample(t, inputCase, filterParametersList[i - 1].windowSize.value, filterParametersList[i - 1].offset.value);
       nameOfLastFiltersOutput = inputCase.name + ' Subsample';
       plotFL = DG.DataFrame.fromColumns([col, t.columns.byName(nameOfLastFiltersOutput)]);
       return [plotFL, nameOfLastFiltersOutput];
     case 'ConvolutionalFilter':
-      nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + filterTypesList[i-1].value + ')';
+      nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + filterTypesList[i - 1].value + ')';
       plotFL = await ConvolutionalFilter(t, parametersTable, fsamp);
       return [plotFL, nameOfLastFiltersOutput];
     case 'DenoiseEDA':
-      nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + filterTypesList[i-1].value + ')';
+      nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + filterTypesList[i - 1].value + ')';
       plotFL = await DenoiseEDA(t, parametersTable, fsamp);
       return [plotFL, nameOfLastFiltersOutput];
     case 'IIRFilter':
-      nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + filterTypesList[i-1].value + ')';
+      nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + filterTypesList[i - 1].value + ')';
       plotFL = await IIRFilter(t, parametersTable, fsamp);
       return [plotFL, nameOfLastFiltersOutput];
     case 'FIRFilter':
-      nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + filterTypesList[i-1].value + ')';
+      nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + filterTypesList[i - 1].value + ')';
       plotFL = await FIRFilter(t, parametersTable, fsamp);
       return [plotFL, nameOfLastFiltersOutput];
     case 'normalize':
-      nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + filterTypesList[i-1].value + ')';
+      nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + filterTypesList[i - 1].value + ')';
       plotFL = await normalize(t, parametersTable, fsamp);
       return [plotFL, nameOfLastFiltersOutput];
     case 'resample':
-      nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + filterTypesList[i-1].value + ')';
+      nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + filterTypesList[i - 1].value + ')';
       plotFL = await resample(t, parametersTable, fsamp);
       return [plotFL, nameOfLastFiltersOutput];
     case 'KalmanFilter':
-      nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + filterTypesList[i-1].value + ')';
+      nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + filterTypesList[i - 1].value + ')';
       plotFL = await KalmanFilter(t, parametersTable, fsamp);
       return [plotFL, nameOfLastFiltersOutput];
     case 'ImputeNAN':
-      nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + filterTypesList[i-1].value + ')';
+      nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + filterTypesList[i - 1].value + ')';
       plotFL = await ImputeNAN(t, parametersTable, fsamp);
       return [plotFL, nameOfLastFiltersOutput];
     case 'RemoveSpikes':
-      nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + filterTypesList[i-1].value + ')';
+      nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + filterTypesList[i - 1].value + ')';
       plotFL = await RemoveSpikes(t, parametersTable, fsamp);
       return [plotFL, nameOfLastFiltersOutput];
   }

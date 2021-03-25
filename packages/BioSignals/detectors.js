@@ -8,26 +8,19 @@ class BiosignalsPackageDetectors extends DG.Package {
       const columnName = col.name.toLowerCase();
       if (columnName.match(/ecg/i)) {
         col.semType = 'BioSignal-ECG';
-      }
-      else if (columnName.match(/eda/i)) {
+      } else if (columnName.match(/eda/i)) {
         col.semType = 'BioSignal-EDA';
-      }
-      else if (columnName.match(/accel/i)) {
+      } else if (columnName.match(/accel/i)) {
         col.semType = 'BioSignal-Accelerometer';
-      }
-      else if (columnName.match(/emg/i)) {
+      } else if (columnName.match(/emg/i)) {
         col.semType = 'BioSignal-EMG';
-      }
-      else if (columnName.match(/eeg/i)) {
+      } else if (columnName.match(/eeg/i)) {
         col.semType = 'BioSignal-EEG';
-      }
-      else if (columnName.match(/abp/i)) {
+      } else if (columnName.match(/abp/i)) {
         col.semType = 'BioSignal-ABP';
-      }
-      else if (columnName.match(/bvp/i) || columnName.match(/ppg/i)) {
+      } else if (columnName.match(/bvp/i) || columnName.match(/ppg/i)) {
         col.semType = 'BioSignal-BVP(PPG)';
-      }
-      else if (columnName.match(/resp/i)) {
+      } else if (columnName.match(/resp/i)) {
         col.semType = 'BioSignal-Respiration';
       }
       return col.semType;
@@ -45,7 +38,7 @@ class BiosignalsPackageDetectors extends DG.Package {
     }
 
     return (check('BioSignal-ECG') || check('BioSignal-EDA') || check('BioSignal-Accelerometer')
-    || check('BioSignal-EMG') || check('BioSignal-EEG') || check('BioSignal-ABP') ||
-        check('BioSignal-BVP(PPG)') || check('BioSignal-Respiration'));
+      || check('BioSignal-EMG') || check('BioSignal-EEG') || check('BioSignal-ABP') ||
+      check('BioSignal-BVP(PPG)') || check('BioSignal-Respiration'));
   }
 }
