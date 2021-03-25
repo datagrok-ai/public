@@ -1,0 +1,40 @@
+#name: hrvTimeDomain
+#language: python
+#input: dataframe signal_values
+#input: double step
+#input: double width
+#output: dataframe out
+
+import numpy as np
+import pyphysio as ph
+
+extracted = ph.UnevenlySignal(
+    values=signal_values.iloc[:,0],
+    signal_type='ibi',
+    start_time=0,
+    x_values=np.cumsum(signal_values.iloc[:,0]),
+    x_type='instants'
+)
+
+hrv_indicators = [
+    ph.Mean(name='RRmean'),
+    ph.StDev(name='RRstd'),
+    ph.RMSSD(name='rmsSD'),
+    ph.SDSD(name='sdsd'),
+    ph.Triang(name='Triang'),
+    ph.TINN(name='TINN')
+]
+
+fixed_length = ph.FixedSegments(step=step, width=width)
+
+indicators, col_names = ph.fmap(fixed_length, hrv_indicators, extracted)
+
+out = pd.DataFrame({
+    'time': range(len(indicators)),
+    'RRmean': indicators[:, np.where(col_names == 'RRmean')[0]].ravel(),
+    'RRstd': indicators[:, np.where(col_names == 'RRstd')[0]].ravel(),
+    'rmsSD': indicators[:, np.where(col_names == 'rmsSD')[0]].ravel(),
+    'sdsd': indicators[:, np.where(col_names == 'sdsd')[0]].ravel(),
+    'Triang': indicators[:, np.where(col_names == 'Triang')[0]].ravel(),
+    'TINN': indicators[:, np.where(col_names == 'TINN')[0]].ravel()
+})
