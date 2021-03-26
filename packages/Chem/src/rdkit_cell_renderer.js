@@ -190,7 +190,7 @@ M  END
 
       let molRegenerateCoords = colTags && colTags['regenerate-coords'] === 'true';
       let scaffoldRegenerateCoords = false;
-      let df = gridCell.grid.dataFrame;
+      let df = gridCell.cell.dataFrame;
       let rowScaffoldCol = null;
 
       // if given, take the 'scaffold-col' col

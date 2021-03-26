@@ -30,7 +30,7 @@ export class PlateGridCellRenderer extends DG.GridCellRenderer {
 
 // Defines the way Datagrok handles entities of the specified type
 export class PlateHandler extends DG.ObjectHandler {
-  get type() { return 'demo_plate' }
+  get type() { return 'demo_plate'; }
 
   // Checks whether this is the handler for [x]
   isApplicable(x) { return x instanceof Plate; }
