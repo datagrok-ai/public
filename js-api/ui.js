@@ -586,7 +586,13 @@ let _objectHandlerSubject = new rxjs.Subject();
  *
  * TODO: search, destructuring to properties
  *
- * Samples: {@link https://public.datagrok.ai/js/samples/ui/meta/meta}
+ * Samples: {@link https://public.datagrok.ai/js/sampl
+ *
+ *
+ *
+ *
+ *
+ * es/ui/meta/meta}
  * */
 export class ObjectHandler {
 
