@@ -42,12 +42,6 @@ export function parametersToDataFrame(filtersLST, allParams) {
   return paramsT;
 }
 
-function showTheRestOfLayout(formView) {
-  ui.dialog('Demo Pipeline')
-    .add(formView)
-    .showModal(true);
-}
-
 function getEmptyChart() {
   return DG.Viewer.fromType(
     DG.VIEWER.LINE_CHART,
@@ -73,7 +67,7 @@ function createPipelineObject(pipeline, functionCategory, typesList, parametersL
   return pipeline;
 }
 
-function showMainDialog(table, signalType, column, samplingFreq, isDataFrameLocal) {
+function showMainDialog(view, table, tableWithAnnotations, signalType, column, samplingFreq, isDataFrameLocal) {
 
   let inputCase = (isDataFrameLocal) ? column.value[0] : table.columns.byName('testEcg');
 
@@ -82,7 +76,7 @@ function showMainDialog(table, signalType, column, samplingFreq, isDataFrameLoca
   let accordionIndicators = ui.accordion();
   let extractorOutputsObj = {};
 
-  let relevantMethods = getRelevantMethods(signalType.stringValue);
+  let relevantMethods = getRelevantMethods(signalType);
 
   // Filter dialogue
   let filterTypesList = [];
@@ -129,7 +123,7 @@ function showMainDialog(table, signalType, column, samplingFreq, isDataFrameLoca
   addFilterChartButton.appendChild(ui.button('Plot', async () => {
     let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting filter\'s output...');
     let [plotFL, nameOfLastFiltersOutput] =
-      await applyFilter(i, table.columns.byName('time'), inputCase, filterInputsList, filterOutputsObj, filterTypesList, filterParametersList, samplingFreq.value);
+      await applyFilter(i, table.columns.byName('time'), inputCase, filterInputsList, filterOutputsObj, filterTypesList, filterParametersList, samplingFreq);
     filterChartsList[i - 1].dataFrame = plotFL;
     Object.assign(filterOutputsObj, {[nameOfLastFiltersOutput]: plotFL});
     pi.close();
@@ -181,7 +175,7 @@ function showMainDialog(table, signalType, column, samplingFreq, isDataFrameLoca
     let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting extractor...');
     let extractorParametersDF = parametersToDataFrame(extractorTypesList, extractorParametersList);
     let t = DG.DataFrame.fromColumns([filterOutputsObj[filterInputsList[i - 1].value].columns.byName(filterInputsList[i - 1].value)]);
-    let plotInfo = await applyExtractor(t, samplingFreq.value, extractorParametersDF);
+    let plotInfo = await applyExtractor(t, samplingFreq, extractorParametersDF);
     nameOfLastExtractorsOutput = 'Output of Extractor ' + j + ' (' + extractorTypesList[j - 1].value + ')';
     pi.close();
     extractorChartsList[j - 1].dataFrame = plotInfo;
@@ -258,15 +252,10 @@ function showMainDialog(table, signalType, column, samplingFreq, isDataFrameLoca
   }));
 
   let formView = ui.div([
-    ui.block25([
-      ui.inputs([
-        column,
-        samplingFreq,
-        signalType,
-        savePipelineButton
-      ])], 'formview'),
-    ui.block75([
-      DG.Viewer.fromType('AnnotatorViewer', table)
+    ui.divText('Sampling frequency: ' + samplingFreq),
+    ui.divText('Signal type: ' + signalType),
+    ui.block([
+      DG.Viewer.fromType('AnnotatorViewer', tableWithAnnotations)
     ]),
     ui.h2('Filtering and Preprocessing'),
     accordionFilters,
@@ -277,8 +266,9 @@ function showMainDialog(table, signalType, column, samplingFreq, isDataFrameLoca
     ui.h2('Physiological Indicators'),
     accordionIndicators,
     addIndicatorButton
-  ], 'formview');
-  showTheRestOfLayout(formView);
+  ]);
+  view = grok.shell.newView('BioSignals', []);
+  view.append(formView);
 }
 
 function getDescription(i, filtersLST, allParams) {
@@ -362,137 +352,34 @@ export async function loadPhysionetAnnotations(chosenDatabase, chosenRecord) {
 }
 
 //name: BioSignals
-//tags: panel, widgets
-//input: dataframe table
-//output: widget result
-//condition: analysisCondition(table)
-export function Biosensors(table) {
+//tags: app
+export function BioSignals() {
+  let view = grok.shell.newView('BioSignals', []);
+  let windows = grok.shell.windows;
+  windows.showProperties = false;
+  windows.showToolbox = false;
+  windows.showHelp = false;
+  let chosenDatabase = ui.choiceInput('Physionet database', '', Object.keys(physionetDatabasesDictionary));
+  chosenDatabase.onInput(() => {
+    let chosenRecord = ui.choiceInput('Physionet record', '', physionetDatabasesDictionary[chosenDatabase.stringValue].record_names);
+    view.append(ui.div(chosenRecord));
+    chosenRecord.onInput(async () => {
+      let pi = DG.TaskBarProgressIndicator.create('Loading record from Physionet...');
+      let chosenDatabaseShortName = physionetDatabasesDictionary[chosenDatabase.stringValue].short_name;
+      let [table, samplingFrequency] = await loadPhysionetRecord(chosenDatabaseShortName, chosenRecord);
+      let signalType = 'ECG';
+      let isDataFrameLocal = false;
+      pi.close();
 
-  let tempButton = ui.div();
-  tempButton.appendChild(ui.bigButton('launch', () => {
-
-    let column = ui.columnsInput('Columns', table);
-    column.setTooltip('Choose columns to plot');
-
-    let samplingFreq = ui.floatInput('Sampling frequency', '');
-    samplingFreq.setTooltip('Number of samples taken per second');
-
-    let signalType = ui.choiceInput('Signal type', '', ['ECG', 'EDA', 'Accelerometer', 'EMG', 'EEG', 'ABP', 'BVP(PPG)', 'Respiration']);
-    signalType.onChanged(() => {
-      if (!IsSignalTypeDetectedAutomatically) {
-        let isDataFrameLocal = true;
-        showMainDialog(table, signalType, column, samplingFreq, isDataFrameLocal);
-      }
+      pi = DG.TaskBarProgressIndicator.create('Loading annotations of chosen record from Physionet...');
+      let dataFrameWithAnnotations = await loadPhysionetAnnotations(chosenDatabaseShortName, chosenRecord);
+      let col = table.columns.byName('testEcg');
+      let tableWithAnnotations = table.append(dataFrameWithAnnotations);
+      showMainDialog(view, table, tableWithAnnotations, signalType, col, samplingFrequency, isDataFrameLocal);
+      pi.close();
     });
+  });
 
-    let chosenDatabase = ui.choiceInput('Physionet database', '', Object.keys(physionetDatabasesDictionary));
-    chosenDatabase.onInput(() => {
-      let chosenRecord = ui.choiceInput('Physionet record', '', physionetDatabasesDictionary[chosenDatabase.stringValue].record_names);
-      formView = ui.div(
-        ui.inputs([column, chosenDatabase, chosenRecord])
-      );
-      showTheRestOfLayout(formView);
-      chosenRecord.onInput(async () => {
-        let pi = DG.TaskBarProgressIndicator.create('Loading record from Physionet...');
-        let chosenDatabaseShortName = physionetDatabasesDictionary[chosenDatabase.stringValue].short_name;
-        let [table, samplingFrequency] = await loadPhysionetRecord(chosenDatabaseShortName, chosenRecord);
-        samplingFreq.value = samplingFrequency;
-        IsSignalTypeDetectedAutomatically = true;
-        signalType.stringValue = 'ECG';
-        let isDataFrameLocal = false;
-        pi.close();
-
-        pi = DG.TaskBarProgressIndicator.create('Loading annotations of chosen record from Physionet...');
-        let dataFrameWithAnnotations = await loadPhysionetAnnotations(chosenDatabaseShortName, chosenRecord);
-        table = table.append(dataFrameWithAnnotations);
-        showMainDialog(table, signalType, table.columns.byName('testEcg'), samplingFreq, isDataFrameLocal);
-        pi.close();
-      });
-    });
-
-    let folderName = ui.stringInput('Path to folder', 'a');
-    folderName.onInput(async () => {
-
-      grok.dapi.users.current().then(async (user) => {
-        let pi = DG.TaskBarProgressIndicator.create('Calculating table...');
-
-        const pathToFolder = user.login + ':Home/' + folderName.value + '/';
-        const personalFoldersInfos = await grok.dapi.files.list(pathToFolder, false, '');
-        const personalFoldersNames = personalFoldersInfos.map((folder) => folder.name)
-        let subjectsTable = DG.DataFrame.create(personalFoldersNames.length);
-
-        subjectsTable.columns.addNewString('Person');
-        subjectsTable.columns.addNewString('Record');
-        subjectsTable.columns.addNewString('Sex');
-        subjectsTable.columns.addNewInt('Age');
-        subjectsTable.columns.addNewString('Date');
-        subjectsTable.columns.addNewInt('Heart Rate');
-        subjectsTable.columns.addNewFloat('rrStd');
-
-        let sex, age, dateOfRecording, samplingFrequency, annotationsDF, heartRate, rrStd;
-        let indexCounter = 0;
-        for (const personalFolderName of personalFoldersNames) {
-          console.log(personalFolderName);
-          let filesInPersonalFolder = await grok.dapi.files.list(pathToFolder + personalFolderName, false, '');
-          let uniqueFileNamesWithoutExtension = Array.from(new Set(filesInPersonalFolder.map((file) => file.name.slice(0, -4))));
-          for (const fileNameWithoutExtension of uniqueFileNamesWithoutExtension) {
-            [annotationsDF, age, sex, dateOfRecording, samplingFrequency, heartRate, rrStd] = await readPhysionetAnnotations(filesInPersonalFolder, fileNameWithoutExtension);
-            subjectsTable.columns.byName('Person').set(indexCounter, personalFolderName);
-            subjectsTable.columns.byName('Record').set(indexCounter, fileNameWithoutExtension);
-            subjectsTable.columns.byName('Sex').set(indexCounter, sex);
-            subjectsTable.columns.byName('Age').set(indexCounter, age);
-            subjectsTable.columns.byName('Date').set(indexCounter, dateOfRecording);
-            subjectsTable.columns.byName('Heart Rate').set(indexCounter, heartRate);
-            subjectsTable.columns.byName('rrStd').set(indexCounter, rrStd);
-            indexCounter++;
-            console.log(fileNameWithoutExtension);
-          }
-        }
-        let view = grok.shell.addTableView(subjectsTable);
-        view.boxPlot({x: 'Sex', y: 'Heart Rate'});
-        pi.close();
-      });
-    });
-
-    let formView = ui.dialog('Demo Pipeline')
-      .add(ui.inputs([column]))
-      .add(chosenDatabase)
-      .add(folderName)
-      .showModal(true);
-
-    let IsSignalTypeDetectedAutomatically = null;
-    column.onChanged(() => {
-
-      formView.close();
-
-      if (table.col(column.stringValue).semType) {
-        IsSignalTypeDetectedAutomatically = true;
-        signalType.stringValue = table.col(column.stringValue).semType.split('-')[1];
-        let isDataFrameLocal = true;
-        showMainDialog(table, signalType, column, samplingFreq, isDataFrameLocal);
-      } else {
-        IsSignalTypeDetectedAutomatically = false;
-        formView.close()
-        let formView = ui.div([
-          ui.block25([
-            ui.inputs([
-              ui.h2('Filtering and Preprocessing'),
-              column,
-              samplingFreq,
-              signalType
-            ])
-          ], 'formview'),
-          ui.block75([
-            DG.Viewer.fromType('Line chart', table, {
-              yColumnNames: column.value.map((c) => {
-                return c.name
-              })
-            })
-          ])
-        ]);
-        showTheRestOfLayout(formView);
-      }
-    });
-  }));
-  return new DG.Widget(tempButton);
+  view
+    .append(ui.divV([chosenDatabase]));
 }

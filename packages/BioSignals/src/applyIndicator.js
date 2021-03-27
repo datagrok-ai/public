@@ -1,4 +1,3 @@
-import * as ui from "datagrok-api/ui";
 import * as grok from "datagrok-api/grok";
 
 async function hrvTimeDomain(t, indicatorParametersDF) {
