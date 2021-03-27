@@ -1088,6 +1088,36 @@ export class RowMatcher {
 }
 
 /**
+ * Value matcher.
+ * */
+export class ValueMatcher {
+
+  constructor(d) { this.d = d; }
+
+  static forColumn(column, pattern) {
+    return new ValueMatcher(grok_ValueMatcher_ForColumn(column.d, pattern));
+  }
+
+  /** @returns {ValueMatcher} */
+  static numerical(pattern) { return new ValueMatcher(grok_ValueMatcher_Numerical(pattern)); }
+
+  /** @returns {ValueMatcher} */
+  static string(pattern) { return new ValueMatcher(grok_ValueMatcher_String(pattern)); }
+
+  /** @returns {ValueMatcher} */
+  static dateTime(pattern) { return new ValueMatcher(grok_ValueMatcher_DateTime(pattern)); }
+
+  /** @returns {ValueMatcher} */
+  static bool(pattern) { return new ValueMatcher(grok_ValueMatcher_ValueMatcher(pattern)); }
+
+  get pattern() { return grok_ValueMatcher_Get_Pattern(this.d); }
+  get operator() { return grok_ValueMatcher_Get_Operator(this.d); }
+
+  match(value) { return grok_ValueMatcher_Match(this.d, value); }
+  validate(value) { return grok_ValueMatcher_Validate(this.d, value); }
+}
+
+/**
  * Represents rows of the [DataFrame].
  *
  * Refrain from accessing data via [RowList] and [Row] in performance-critical scenarios.
