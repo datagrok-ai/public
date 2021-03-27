@@ -1108,7 +1108,7 @@ export class ValueMatcher {
   static dateTime(pattern) { return new ValueMatcher(grok_ValueMatcher_DateTime(pattern)); }
 
   /** @returns {ValueMatcher} */
-  static bool(pattern) { return new ValueMatcher(grok_ValueMatcher_ValueMatcher(pattern)); }
+  static bool(pattern) { return new ValueMatcher(grok_ValueMatcher_BoolMatcher(pattern)); }
 
   get pattern() { return grok_ValueMatcher_Get_Pattern(this.d); }
   get operator() { return grok_ValueMatcher_Get_Operator(this.d); }
