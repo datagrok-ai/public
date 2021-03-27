@@ -104,9 +104,9 @@ export class Shell {
   }
 
   /** Shows information message (green background)
-   * @param {string} s - message */
-  info(s) {
-    grok_Balloon(s, 'info');
+   * @param {object} x - message */
+  info(x) {
+    grok_Balloon(JSON.stringify(x), 'info');
   }
 
   /** Shows information message (red background)
