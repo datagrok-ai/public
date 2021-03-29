@@ -156,7 +156,7 @@ ui.div([ui.h1('Header'), box])
   });
   ```
   ### Density plot
-  Unlike [scatter plot](###Sacetter plot) that visualizes each individual data point, density plot splits 2D area by bins, and color-codes it depending on the number of points that fall within this bin. The darker the color, the more points it contains.
+  Unlike [scatter plot](### Scatter plot) that visualizes each individual data point, density plot splits 2D area by bins, and color-codes it depending on the number of points that fall within this bin. The darker the color, the more points it contains.
   ```javascript
   let view = grok.shell.addTableView(grok.data.demo.demog());
   view.densityPlot();
