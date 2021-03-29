@@ -22,24 +22,17 @@ export function annotator() {
   return new AnnotatorViewer();
 }
 
-export function parametersToDataFrame(filtersLST, allParams) {
-  let paramsT = DG.DataFrame.create(filtersLST.length);
-  paramsT.columns.addNew('type', 'string');
-  let string_parameters = ['ftype', 'normMethod', 'kind', 'allnan', 'method', 'irftype'];
-  for (let j = 0; j < filtersLST.length; j++) {
-    paramsT.columns.byName('type').set(j, filtersLST[j].value);
-    Object.keys(allParams[j]).forEach(key => {
-      if (!paramsT.columns.names().includes(key)) {
-        if (string_parameters.includes(key)) {
-          paramsT.columns.addNew(key, 'string');
-        } else {
-          paramsT.columns.addNew(key, 'double');
-        }
-        paramsT.columns.byName(key).set(j, allParams[j][key].value);
-      }
-    })
+function getArrayOfParameterObjects(functionNames, functionParameters, samplingFrequency) {
+  let arrayOfParameterObjects = new Array(functionNames.length);
+  for (let j = 0; j < functionNames.length; j++) {
+    arrayOfParameterObjects[j] = {};
+    arrayOfParameterObjects[j]['inputSamplingFrequency'] = samplingFrequency;
+    arrayOfParameterObjects[j]['type'] = functionNames[j].value;
+    Object.keys(functionParameters[j]).forEach(key => {
+      arrayOfParameterObjects[j][key] = functionParameters[j][key].value;
+    });
   }
-  return paramsT;
+  return arrayOfParameterObjects;
 }
 
 function getEmptyChart() {
@@ -122,8 +115,18 @@ function showMainDialog(view, table, tableWithAnnotations, signalType, column, s
 
   addFilterChartButton.appendChild(ui.button('Plot', async () => {
     let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting filter\'s output...');
+    let t;
+    if (filterInputsList.length === 1) {
+      t = DG.DataFrame.fromColumns([inputCase]);
+    } else if (filterOutputsObj[filterInputsList[i - 1].value].columns.byName(filterInputsList[i - 1].value)) {
+      t = DG.DataFrame.fromColumns([filterOutputsObj[filterInputsList[i - 1].value].columns.byName(filterInputsList[i - 1].value)]);
+    } else {
+      t = DG.DataFrame.fromColumns([filterOutputsObj[filterInputsList[i - 1].value].columns.byName('sig')]);
+    }
+
+    const parameters = getArrayOfParameterObjects(filterTypesList, filterParametersList, samplingFreq);
     let [plotFL, nameOfLastFiltersOutput] =
-      await applyFilter(i, table.columns.byName('time'), inputCase, filterInputsList, filterOutputsObj, filterTypesList, filterParametersList, samplingFreq);
+      await applyFilter(t, parameters[i - 1], i, table.columns.byName('time'), inputCase);
     filterChartsList[i - 1].dataFrame = plotFL;
     Object.assign(filterOutputsObj, {[nameOfLastFiltersOutput]: plotFL});
     pi.close();
@@ -172,9 +175,9 @@ function showMainDialog(view, table, tableWithAnnotations, signalType, column, s
   let nameOfLastExtractorsOutput = '';
   addExtractorChartButton.appendChild(ui.button('Plot', async () => {
     let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting extractor...');
-    let extractorParametersDF = parametersToDataFrame(extractorTypesList, extractorParametersList);
+    let extractorParameters = getArrayOfParameterObjects(extractorTypesList, extractorParametersList, samplingFreq);
     let t = DG.DataFrame.fromColumns([filterOutputsObj[filterInputsList[i - 1].value].columns.byName(filterInputsList[i - 1].value)]);
-    let plotInfo = await applyExtractor(t, samplingFreq, extractorParametersDF);
+    let plotInfo = await applyExtractor(t, extractorParameters[j - 1]);
     nameOfLastExtractorsOutput = 'Output of Extractor ' + j + ' (' + extractorTypesList[j - 1].value + ')';
     pi.close();
     extractorChartsList[j - 1].dataFrame = plotInfo;
@@ -223,9 +226,9 @@ function showMainDialog(view, table, tableWithAnnotations, signalType, column, s
 
   addIndicatorChartButton.appendChild(ui.button('Plot', async () => {
     let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting indicator...');
-    let indicatorParametersDF = parametersToDataFrame(indicatorTypesList, indicatorParametersList);
+    let indicatorParameters = getArrayOfParameterObjects(indicatorTypesList, indicatorParametersList, samplingFreq);
     let t = DG.DataFrame.fromColumns([extractorOutputsObj[indicatorInputsList[k - 1].value].columns.byName('RR intervals')]);
-    indicatorChartsList[k - 1].dataFrame = await applyIndicator(t, indicatorParametersDF, indicatorTypesList[k - 1].value);
+    indicatorChartsList[k - 1].dataFrame = await applyIndicator(t, indicatorParameters[k - 1]);
     pi.close();
   }));
 
