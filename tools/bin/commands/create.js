@@ -24,7 +24,7 @@ function kebabToCamelCase(s) {
   return s[0].toUpperCase() + s.slice(1);
 }
 
-function createDirectoryContents(name, config, templateDir, packageDir, ide = '') {
+function createDirectoryContents(name, config, templateDir, packageDir, ide = '', ts = false) {
   const filesToCreate = fs.readdirSync(templateDir);
 
   filesToCreate.forEach(file => {
@@ -36,7 +36,8 @@ function createDirectoryContents(name, config, templateDir, packageDir, ide = ''
         fs.writeFileSync(copyFilePath, fs.readFileSync(origFilePath, 'base64'), 'base64');
         return false;
       }
-      let contents = fs.readFileSync(origFilePath, 'utf8');
+      let contents = fs.readFileSync((file === 'webpack.config.js' && ts) ?
+        path.join(templateDir, 'ts.webpack.config.js') : origFilePath, 'utf8');
       contents = contents.replace(/#{PACKAGE_NAME}/g, name);
       contents = contents.replace(/#{PACKAGE_DETECTORS_NAME}/g, kebabToCamelCase(name));
       contents = contents.replace(/#{PACKAGE_NAME_LOWERCASE}/g, name.toLowerCase());
@@ -52,8 +53,11 @@ function createDirectoryContents(name, config, templateDir, packageDir, ide = ''
           package['scripts'][`debug-${name.toLowerCase()}-${server}`] = `grok publish ${server} --rebuild`;
           package['scripts'][`release-${name.toLowerCase()}-${server}`] = `grok publish ${server} --rebuild --release`;
         }
+        if (ts) Object.assign(package.dependencies, { 'ts-loader': 'latest', 'typescript': 'latest' });
         contents = JSON.stringify(package, null, '\t');
       }
+      if (file === 'tsconfig.json' && !ts) return false;
+      if (file === 'ts.webpack.config.js') return false;
       // In the next version, we do not need the `upload.keys.json` file
       if (file === 'upload.keys.json') return false;
       if (file === 'npmignore') copyFilePath = path.join(packageDir, '.npmignore');
@@ -75,8 +79,8 @@ function isEmpty(dir) {
 function create(args) {
   const nOptions = Object.keys(args).length - 1;
   const nArgs = args['_'].length;
-  if (nArgs > 2 || nOptions > 1) return false;
-  if (nOptions && !args.hasOwnProperty('ide')) return false;
+  if (nArgs > 2 || nOptions > 2) return false;
+  if (nOptions && !Object.keys(args).slice(1).every(op => op == 'ide' || op == 'ts')) return false;
 
   // Create `config.yaml` if it doesn't exist yet
   if (!fs.existsSync(grokDir)) fs.mkdirSync(grokDir);
@@ -84,11 +88,9 @@ function create(args) {
 
   const config = yaml.safeLoad(fs.readFileSync(confPath));
 
-  let name = curFolder;
-  if (nArgs === 2) {
-    name = args['_'][1];
-  }
+  const name = nArgs === 2 ? args['_'][1] : curFolder;
   const validName = /^([A-Za-z\-_\d])+$/.test(name);
+
   if (validName) {
     let packageDir = curDir;
     if (curFolder !== name) {
@@ -102,7 +104,7 @@ function create(args) {
       console.log('The package directory should be empty');
       return false;
     }
-    createDirectoryContents(name, config, templateDir, packageDir, args.ide);
+    createDirectoryContents(name, config, templateDir, packageDir, args.ide, args.ts);
   } else {
     console.log('Package name may only include letters, numbers, underscores, or hyphens');
   }
