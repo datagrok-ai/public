@@ -168,7 +168,7 @@ ui.div([ui.h1('Header'), box])
   view.filters();
   ```
   ### Form
-  Form allows you to customize the appearance of the row by manually positioning the fields, and adding other visual elements, such as pictures or panels. A form can be used either as a stand-alone viewer, or as a row template of the [Tile viewer](### Tile viewer).
+  Form allows you to customize the appearance of the row by manually positioning the fields, and adding other visual elements, such as pictures or panels. A form can be used either as a stand-alone viewer, or as a row template of the Tile viewer.
   ```javascript
   let view = grok.shell.addTableView(grok.data.demo.demog());
   view.form();
