@@ -156,7 +156,7 @@ ui.div([ui.h1('Header'), box])
   });
   ```
   ### Density plot
-  Unlike [scatter plot](### Scatter plot) that visualizes each individual data point, density plot splits 2D area by bins, and color-codes it depending on the number of points that fall within this bin. The darker the color, the more points it contains.
+  Unlike [Scatter plot](### Scatter plot) that visualizes each individual data point, density plot splits 2D area by bins, and color-codes it depending on the number of points that fall within this bin. The darker the color, the more points it contains.
   ```javascript
   let view = grok.shell.addTableView(grok.data.demo.demog());
   view.densityPlot();
@@ -168,7 +168,7 @@ ui.div([ui.h1('Header'), box])
   view.filters();
   ```
   ### Form
-  Form allows you to customize the appearance of the row by manually positioning the fields, and adding other visual elements, such as pictures or panels. A form can be used either as a stand-alone viewer, or as a row template of the Tile viewer.
+  Form allows you to customize the appearance of the row by manually positioning the fields, and adding other visual elements, such as pictures or panels. A form can be used either as a stand-alone viewer, or as a row template of the [Tile viewer](###Tile viewer).
   ```javascript
   let view = grok.shell.addTableView(grok.data.demo.demog());
   view.form();
