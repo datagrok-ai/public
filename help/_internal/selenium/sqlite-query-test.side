@@ -201,14 +201,14 @@
       "id": "fc11fe2c-289a-4da2-ab12-9e2866074485",
       "comment": "",
       "command": "type",
-      "target": "xpath=//input[@id='editor']",
+      "target": "name=input-Name",
       "targets": [
-        ["id=editor", "id"],
+        ["id=82", "id"],
         ["name=input-Name", "name"],
-        ["css=#editor", "css:finder"],
-        ["xpath=//input[@id='editor']", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div[2]/div[2]/div/div/input", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/input", "xpath:position"]
+        ["css=#\\38 2", "css:finder"],
+        ["xpath=//input[@id='82']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div[2]/div/div/div/div/input", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/input", "xpath:position"]
       ],
       "value": "Test_Query_By_Selenium_SQLite"
     }, {
@@ -557,12 +557,11 @@
       "id": "8a70cf7a-e51c-484a-927c-d3ad9901cd67",
       "comment": "",
       "command": "type",
-      "target": "css=input.type-ahead-input",
+      "target": "css=.ui-input-editor:nth-child(1)",
       "targets": [
-        ["css=input.type-ahead-input", "css"],
-        ["css=.type-ahead-input", "css:finder"],
+        ["css=.ui-input-editor:nth-child(1)", "css:finder"],
         ["xpath=(//input[@type='text'])[2]", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div/div[2]/div/input", "xpath:idRelative"],
+        ["xpath=//div[@id='elementContent']/div/div[2]/div/input", "xpath:idRelative"],
         ["xpath=//div[2]/div/input", "xpath:position"]
       ],
       "value": "name =\"Test_Query_By_Selenium_SQLite\" "
@@ -621,7 +620,7 @@
       "id": "4ed73d31-fadd-42f3-8fcf-07b1f4ff1de8",
       "comment": "",
       "command": "click",
-      "target": "name=div-TestQueryBySeleniumSQLite",
+      "target": "name=span-TestQueryBySeleniumSQLite",
       "targets": [
         ["css=span[name=\"span-Test_Query_By_Selenium_SQLite\"]", "css"],
         ["css=tr:nth-child(1) .markup", "css:finder"],
@@ -873,10 +872,17 @@
       ],
       "value": ""
     }, {
+      "id": "ae901eb9-299d-4542-ade2-c7666c65c60c",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "24233ae8-ef76-4804-88a1-a366e5066261",
       "comment": "",
       "command": "click",
-      "target": "name=div-TestQueryBySeleniumSQLite",
+      "target": "name=span-TestQueryBySeleniumSQLite",
       "targets": [
         ["css=span[name=\"span-Test_Query_By_Selenium_SQLite\"]", "css"],
         ["css=tr:nth-child(1) .markup", "css:finder"],
@@ -884,6 +890,13 @@
         ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div[2]/div/div/table/tbody/tr/td/span", "xpath:idRelative"],
         ["xpath=//div[3]/div[2]/div/div/table/tbody/tr/td/span", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "4b417657-bac5-4bb3-a87d-fac597be34d7",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "3c725ca0-d666-45a7-b559-38e61edeefd5",
@@ -962,12 +975,11 @@
       "id": "634ce02c-745c-49af-9ef4-2a93c8a283c3",
       "comment": "",
       "command": "type",
-      "target": "css=input.type-ahead-input",
+      "target": "css=.ui-input-editor:nth-child(1)",
       "targets": [
-        ["css=input.type-ahead-input", "css"],
-        ["css=.type-ahead-input", "css:finder"],
+        ["css=.ui-input-editor:nth-child(1)", "css:finder"],
         ["xpath=(//input[@type='text'])[2]", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div/div[2]/div/input", "xpath:idRelative"],
+        ["xpath=//div[@id='elementContent']/div/div[2]/div/input", "xpath:idRelative"],
         ["xpath=//div[2]/div/input", "xpath:position"]
       ],
       "value": "name =\"Test_Query_By_Selenium_SQLite\" and connection.name = \"northwind.sl3\""
@@ -983,6 +995,13 @@
       "comment": "",
       "command": "verifyElementNotPresent",
       "target": "name=div-TestQueryBySeleniumSQLite",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "7154f0d9-ca8f-41db-b3ec-b1bb96614245",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
       "targets": [],
       "value": ""
     }]
