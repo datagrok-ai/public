@@ -135,11 +135,14 @@
       "id": "28f417ad-4ea6-4e6a-945e-1c43a7b5ac72",
       "comment": "",
       "command": "click",
-      "target": "name=radio0",
+      "target": "name=radio52",
       "targets": [
-        ["css=div:nth-child(4) input", "css:finder"],
-        ["name=radio0", "xpath:attributes"],
-        ["xpath=//div[4]/label/input", "xpath:position"]
+        ["id=53", "id"],
+        ["name=radio52", "name"],
+        ["css=#\\35 3", "css:finder"],
+        ["xpath=//input[@id='53']", "xpath:attributes"],
+        ["xpath=//div[@id='65']/label/input", "xpath:idRelative"],
+        ["xpath=//label/input", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -197,12 +200,12 @@
       "id": "a9d41a1e-2110-4b29-ba2d-810229ee9449",
       "comment": "",
       "command": "type",
-      "target": "id=editor",
+      "target": "name=input-Add-New-Column---Name",
       "targets": [
-        ["id=editor", "id"],
+        ["id=106", "id"],
         ["name=input-Add-New-Column---Name", "name"],
-        ["css=.d4-input-text > #editor", "css:finder"],
-        ["xpath=//input[@id='editor']", "xpath:attributes"],
+        ["css=#\\31 06", "css:finder"],
+        ["xpath=//input[@id='106']", "xpath:attributes"],
         ["xpath=//div[2]/div/input", "xpath:position"]
       ],
       "value": "JSDup"
@@ -361,6 +364,13 @@
         ["xpath=//tr[3]/td[2]/span", "xpath:position"]
       ],
       "value": "10"
+    }, {
+      "id": "858db4b8-49fc-4570-b78f-ccdb71412917",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
     }]
   }],
   "suites": [{
