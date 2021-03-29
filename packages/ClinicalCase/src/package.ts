@@ -15,10 +15,11 @@ let links = {
 
 let typeMap = { 'Char': 'string', 'Num': 'int' };
 let datetimeFormat = 'ISO 8601';
-let checkType = (column, variable) => (column.type === typeMap[variable.type] ||
+let checkType = (column: DG.Column, variable) => (column.type === typeMap[variable.type] ||
   (column.type === 'datetime' && variable.format === datetimeFormat));
 
-let terminology, submissionValueCol;
+let terminology: DG.DataFrame;
+let submissionValueCol: DG.Column;
 let submissionValues = [];
 
 //name: SDTM Summary
@@ -26,15 +27,17 @@ let submissionValues = [];
 //input: dataframe df
 //output: widget result
 //condition: df.tags.get("sdtm")
-export function sdtmSummaryPanel(df) {
+export function sdtmSummaryPanel(df: DG.DataFrame): DG.Widget {
   let domain = df.getTag('sdtm-domain');
   let text = `SDTM domain: ${domain.toUpperCase()}\n`;
+  // @ts-ignore: Type 'ColumnList' must have a '[Symbol.iterator]()' method that returns an iterator.
   for (let column of df.columns) {
     let name = column.name;
     let variable = meta.domains[domain][name];
     text += `${name} ${variable ? checkType(column, variable) ?
       'valid' : 'invalid' : 'unknown variable'}\n`;
   }
+  // @ts-ignore: Expected 0 arguments, but got 1.
   return new DG.Widget(ui.divText(text));
 }
 
@@ -43,7 +46,7 @@ export function sdtmSummaryPanel(df) {
 //input: column varCol
 //output: widget result
 //condition: t.tags.get("sdtm")
-export function sdtmVariablePanel(varCol) {
+export function sdtmVariablePanel(varCol: DG.Column): DG.Widget {
   let domain = meta.domains[varCol.dataFrame.getTag('sdtm-domain')];
   let variable = domain[varCol.name];
   let text = `${varCol.name}\n${variable ?
@@ -55,11 +58,13 @@ export function sdtmVariablePanel(varCol) {
   text += `CDISC Submission Value: ${isTerm}\n`;
 
   if (isTerm) {
+    // @ts-ignore: Property 'match' does not exist on type 'RowList'.
     let match = terminology.rows.match({ 'CDISC Submission Value': varCol.name }).toDataFrame();
     text += `CDISC Synonym(s): ${match.get('CDISC Synonym(s)', 0)}\n`;
     text += `CDISC Definition: ${match.get('CDISC Definition', 0)}\n`;
     text += `NCI Preferred Term: ${match.get('NCI Preferred Term', 0)}\n`;
 
+    // @ts-ignore: Property 'match' does not exist on type 'RowList'.
     let relatedRecords = terminology.rows.match({ 'Codelist Code': match.get('Code', 0) }).toDataFrame();
     let rowCount = relatedRecords.rowCount;
     if (rowCount) {
@@ -80,6 +85,7 @@ export function sdtmVariablePanel(varCol) {
         outliers = ui.divText('Out-of-vocabulary values:\n' + valuesToConvert.join(', '));
         outliers.style = 'color: red';
         convertButton = ui.button('Convert', () => {
+          // @ts-ignore: Property 'init' does not exist on type 'Column'.
           varCol.init(i => synonyms[varCol.get(i).toLowerCase()] || varCol.get(i));
         }, 'Convert to CDISC submission values');
       }
@@ -87,18 +93,19 @@ export function sdtmVariablePanel(varCol) {
   }
   let container = [ui.divText(text)];
   if (outliers) container.push(outliers, convertButton);
+  // @ts-ignore: Expected 0 arguments, but got 1.
   return new DG.Widget(ui.divV(container));
 }
 
 
 //name: Clinical Case
 //tags: app
-export function clinicalCaseApp() {
+export function clinicalCaseApp(): void {
   grok.shell.info('This is clinical.');
 }
 
 //tags: autostart
-export async function clinicalCaseInit() {
+export async function clinicalCaseInit(): Promise<void> {
   terminology = await grok.data.loadTable(`${_package.webRoot}tables/sdtm-terminology.csv`);
   submissionValueCol = terminology.getCol('CDISC Submission Value');
   submissionValues = submissionValueCol.categories;
@@ -123,15 +130,16 @@ export async function clinicalCaseInit() {
 }
 
 //name: clinicalCaseTimelines
-export function clinicalCaseTimelines() {
+export function clinicalCaseTimelines(): void {
 
   let result = null;
 
-  let getTable = function(domain) {
+  let getTable = function(domain: string) {
     let info = links[domain];
     let t = grok.shell
       .tableByName(domain)
       .clone(null, Object.keys(info).map(e => info[e]));
+    // @ts-ignore: Property 'init' does not exist on type 'Column'.
     t.columns.addNew('domain', DG.TYPE.STRING).init(domain);
     for (let name in info)
       t.col(info[name]).name = name;
@@ -145,7 +153,7 @@ export function clinicalCaseTimelines() {
     else
       result.append(t, true);
   }
-
+  // @ts-ignore: Expected 2-3 arguments, but got 1.
   let v = grok.shell.addTableView(result);
   v.addViewer('TimelinesViewer');
 }
