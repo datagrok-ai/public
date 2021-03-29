@@ -192,6 +192,13 @@
       ],
       "value": "2925"
     }, {
+      "id": "f6b5391f-a79f-43bc-82b5-b23598875ebb",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "d1f65080-d583-425a-acdf-b960f9846c94",
       "comment": "",
       "command": "click",
@@ -202,6 +209,13 @@
         ["xpath=//label[@name='label-25%']", "xpath:attributes"],
         ["xpath=//td[2]/label", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "7da666e7-f739-4b94-8c49-a055080c8602",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "a306031b-b24c-4779-8448-96f52a40af75",
@@ -231,6 +245,13 @@
       ],
       "value": "1462"
     }, {
+      "id": "651f7ae0-4ca8-48d4-9a42-c9f5a15beebd",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "2233bb9e-5f68-4caa-9859-3046b65e95d4",
       "comment": "",
       "command": "click",
@@ -241,6 +262,13 @@
         ["xpath=//label[@name='label-0%']", "xpath:attributes"],
         ["xpath=//div[6]/div[2]/table/tbody/tr/td/label", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "c3998923-76d0-4b5b-a296-b8cb991de217",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "f9f029d4-fa24-4cbc-89d4-d373f4a744f5",

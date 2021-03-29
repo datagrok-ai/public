@@ -4,7 +4,7 @@ import {StreamSubscription} from "./events";
 import {DateTime, Property} from "./entities";
 import {Observable, Subscription} from "rxjs";
 import {toJs} from "./wrappers";
-import {Widget} from "./widgets";
+import {ObjectPropertyBag, Widget} from "./widgets";
 
 export class TypedEventArgs {
     constructor(d: any)
@@ -76,16 +76,13 @@ export class Viewer {
     close(): void;
 }
 
-export class ObjectPropertyBag {
-    constructor(x: any);
-}
-
 /**
  * Subclass JsViewer to implement a DataFrame-bound Datagrok viewer in JavaScript.
  See an example on github: {@link https://github.com/datagrok-api/public/tree/master/packages/Leaflet}
  */
 export class JsViewer extends Widget {
-    root: HTMLElement;
+    public get root();
+    public set root(value: HTMLElement);
     dataFrame: DataFrame;
     subs: Subscription[];
     obs: Observable<any>[];

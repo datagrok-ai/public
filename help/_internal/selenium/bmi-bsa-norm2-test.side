@@ -103,9 +103,9 @@
       "id": "18e1519f-32f8-4121-979f-312189f0bf22",
       "comment": "",
       "command": "type",
-      "target": "css=.type-ahead-input",
+      "target": "css=.ui-input-editor:nth-child(1)",
       "targets": [
-        ["css=.type-ahead-input", "css:finder"],
+        ["css=.ui-input-editor:nth-child(1)", "css:finder"],
         ["xpath=(//input[@type='text'])[2]", "xpath:attributes"],
         ["xpath=//div[@id='elementContent']/div/div[2]/div/input", "xpath:idRelative"],
         ["xpath=//div[2]/div/input", "xpath:position"]
@@ -261,9 +261,9 @@
       "id": "d372a756-af3f-461a-9709-29cb24e5eac0",
       "comment": "",
       "command": "type",
-      "target": "css=.type-ahead-input",
+      "target": "css=.ui-input-editor:nth-child(1)",
       "targets": [
-        ["css=.type-ahead-input", "css:finder"],
+        ["css=.ui-input-editor:nth-child(1)", "css:finder"],
         ["xpath=(//input[@type='text'])[2]", "xpath:attributes"],
         ["xpath=//div[@id='elementContent']/div/div[2]/div/input", "xpath:idRelative"],
         ["xpath=//div[2]/div/input", "xpath:position"]
@@ -306,12 +306,12 @@
       "id": "9e03ef6a-71b0-4fde-9b51-e2aee41db194",
       "comment": "",
       "command": "click",
-      "target": "id=editor",
+      "target": "name=input-Add-New-Column---Name",
       "targets": [
-        ["id=editor", "id"],
+        ["id=242", "id"],
         ["name=input-Add-New-Column---Name", "name"],
-        ["css=.d4-input-text > #editor", "css:finder"],
-        ["xpath=//input[@id='editor']", "xpath:attributes"],
+        ["css=#\\32 42", "css:finder"],
+        ["xpath=//input[@id='242']", "xpath:attributes"],
         ["xpath=//div[2]/div/input", "xpath:position"]
       ],
       "value": ""
@@ -319,12 +319,12 @@
       "id": "36691148-5432-475b-8841-ddf347d15732",
       "comment": "",
       "command": "type",
-      "target": "id=editor",
+      "target": "name=input-Add-New-Column---Name",
       "targets": [
-        ["id=editor", "id"],
+        ["id=242", "id"],
         ["name=input-Add-New-Column---Name", "name"],
-        ["css=.d4-input-text > #editor", "css:finder"],
-        ["xpath=//input[@id='editor']", "xpath:attributes"],
+        ["css=#\\32 42", "css:finder"],
+        ["xpath=//input[@id='242']", "xpath:attributes"],
         ["xpath=//div[2]/div/input", "xpath:position"]
       ],
       "value": "Index"

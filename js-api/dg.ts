@@ -3,6 +3,7 @@ import * as _ml from './src/ml.js';
 // @ts-ignore
 import * as _utils from './src/utils.js';
 import $ from 'cash-dom';
+
 export * from './src/const.js';
 export * from './src/events.js';
 export * from './src/dapi.js';
@@ -16,12 +17,14 @@ export * from './src/viewer.js';
 export * from './src/docking.js';
 export * from './src/wrappers_impl';
 // @ts-ignore
-export { time, timeAsync, Utils, LruCache } from './src/utils.js';
+export {time, timeAsync, Utils, LruCache} from './src/utils.js';
 // @ts-ignore
-export { ObjectHandler, EntityMetaDartProxy } from './ui';
+export {ObjectHandler, EntityMetaDartProxy} from './ui';
+
 export let chem = _chem;
 export let ml = _ml;
 export let utils = _utils;
+
 $(function () {
-    window.$ = $;
+  (<any>window).$ = $;
 });

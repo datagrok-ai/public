@@ -418,9 +418,9 @@
       "id": "69836ef0-293d-42be-989e-6ca90b5d81b6",
       "comment": "",
       "command": "type",
-      "target": "css=.type-ahead-input",
+      "target": "css=.ui-input-editor:nth-child(1)",
       "targets": [
-        ["css=.type-ahead-input", "css:finder"],
+        ["css=.ui-input-editor:nth-child(1)", "css:finder"],
         ["xpath=(//input[@type='text'])[2]", "xpath:attributes"],
         ["xpath=//div[@id='elementContent']/div/div[2]/div/input", "xpath:idRelative"],
         ["xpath=//div[2]/div/input", "xpath:position"]

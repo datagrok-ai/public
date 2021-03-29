@@ -253,9 +253,7 @@ export class GroupsDataSource extends HttpDataSource<Group> {
  * */
 export class EntitiesDataSource extends HttpDataSource<Entity> {
     /** @constructs CredentialsDataSource*/
-    constructor(s: any, instance: any) {
-        super(s, instance);
-    }
+    constructor(s: any, instance: any);
 
     /** Allows to set properties for entities
      * @param {List<Map>} props

@@ -111,11 +111,11 @@
       "id": "b69cb51b-3f63-4be6-b81a-acbbb3c15c4c",
       "comment": "",
       "command": "type",
-      "target": "css=.type-ahead-input",
+      "target": "css=.ui-input-editor:nth-child(1)",
       "targets": [
-        ["css=.type-ahead-input", "css:finder"],
+        ["css=.ui-input-editor:nth-child(1)", "css:finder"],
         ["xpath=(//input[@type='text'])[2]", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div/div[2]/div/input", "xpath:idRelative"],
+        ["xpath=//div[@id='elementContent']/div/div[2]/div/input", "xpath:idRelative"],
         ["xpath=//div[2]/div/input", "xpath:position"]
       ],
       "value": "func"
@@ -393,12 +393,12 @@
       "id": "d25000d2-fe92-4bf2-8510-3280b6620140",
       "comment": "",
       "command": "click",
-      "target": "id=editor",
+      "target": "name=input-Func-Params-Test---Country",
       "targets": [
-        ["id=editor", "id"],
-        ["name=input-Func Params Test---Country", "name"],
-        ["css=.d4-input-text > #editor", "css:finder"],
-        ["xpath=//input[@id='editor']", "xpath:attributes"],
+        ["id=178", "id"],
+        ["name=input-Func-Params-Test---Country", "name"],
+        ["css=#\\31 78", "css:finder"],
+        ["xpath=//input[@id='178']", "xpath:attributes"],
         ["xpath=//div[2]/div/input", "xpath:position"]
       ],
       "value": ""
@@ -406,12 +406,12 @@
       "id": "633104ca-db95-49c1-af77-927664ff1783",
       "comment": "",
       "command": "type",
-      "target": "id=editor",
+      "target": "name=input-Func-Params-Test---Country",
       "targets": [
-        ["id=editor", "id"],
-        ["name=input-Func Params Test---Country", "name"],
-        ["css=.d4-input-text > #editor", "css:finder"],
-        ["xpath=//input[@id='editor']", "xpath:attributes"],
+        ["id=178", "id"],
+        ["name=input-Func-Params-Test---Country", "name"],
+        ["css=#\\31 78", "css:finder"],
+        ["xpath=//input[@id='178']", "xpath:attributes"],
         ["xpath=//div[2]/div/input", "xpath:position"]
       ],
       "value": "bel"
