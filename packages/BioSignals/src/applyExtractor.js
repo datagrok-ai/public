@@ -1,61 +1,60 @@
 import * as grok from "datagrok-api/grok";
 
-async function BeatfromECG(data, paramsT, samplingFrequency) {
+async function BeatfromECG(data, parameters) {
   return await grok.functions.call('BioSignals:BeatfromECG',
     {
       'data': data,
-      'sampling_frequency': samplingFrequency,
-      'bpm_max': paramsT.columns.byName('bpm_max').max,
-      'delta': paramsT.columns.byName('delta').max,
-      'k': paramsT.columns.byName('k').max
+      'sampling_frequency': parameters['inputSamplingFrequency'],
+      'bpm_max': parameters['bpm_max'],
+      'delta': parameters['delta'],
+      'k': parameters['k']
     });
 }
 
-async function PhasicEstimation(data, paramsT, samplingFrequency) {
+async function PhasicEstimation(data, parameters) {
   return await grok.functions.call('BioSignals:PhasicEstimation',
     {
       'data': data,
-      'sampling_frequency': samplingFrequency,
-      't1': paramsT.columns.byName('t1').max,
-      't2': paramsT.columns.byName('t2').max,
-      'delta': paramsT.columns.byName('delta').max,
-      'grid_size': paramsT.columns.byName('grid_size').max,
-      'win_pre': paramsT.columns.byName('win_pre').max,
-      'win_post': paramsT.columns.byName('win_post').max
+      'sampling_frequency': parameters['inputSamplingFrequency'],
+      't1': parameters['t1'],
+      't2': parameters['t2'],
+      'delta': parameters['delta'],
+      'grid_size': parameters['grid_size'],
+      'win_pre': parameters['win_pre'],
+      'win_post': parameters['win_post']
     });
 }
 
-async function LocalEnergy(data, paramsT, samplingFrequency) {
+async function LocalEnergy(data, parameters) {
   return await grok.functions.call('BioSignals:LocalEnergy',
     {
       'data': data,
-      'sampling_frequency': samplingFrequency,
-      'win_len': paramsT.columns.byName('win_len').max,
-      'win_step': paramsT.columns.byName('win_step').max
+      'sampling_frequency': parameters['inputSamplingFrequency'],
+      'win_len': parameters['win_len'],
+      'win_step': parameters['win_step']
     });
 }
 
-async function BeatFromBP(data, paramsT, samplingFrequency) {
+async function BeatFromBP(data, parameters) {
   return await grok.functions.call('BioSignals:BeatFromBP',
     {
       'data': data,
-      'sampling_frequency': samplingFrequency,
-      'bpm_max': paramsT.columns.byName('bpm_max').max,
-      'win_pre': paramsT.columns.byName('win_pre').max,
-      'win_post': paramsT.columns.byName('win_post').max
+      'sampling_frequency': parameters['inputSamplingFrequency'],
+      'bpm_max': parameters['bpm_max'],
+      'win_pre': parameters['win_pre'],
+      'win_post': parameters['win_post']
     });
 }
 
-export async function applyExtractor(t, samplingFrequency, parametersTable) {
-  const extractorType = parametersTable.getCol('type').categories[0];
-  switch (extractorType) {
+export async function applyExtractor(t, parameters) {
+  switch (parameters['type']) {
     case 'Local energy':
-      return LocalEnergy(t, parametersTable, samplingFrequency);
+      return LocalEnergy(t, parameters);
     case 'Beat from ECG':
-      return BeatfromECG(t, parametersTable, samplingFrequency);
+      return BeatfromECG(t, parameters);
     case 'Phasic estimation':
-      return PhasicEstimation(t, parametersTable, samplingFrequency);
+      return PhasicEstimation(t, parameters);
     case 'BeatFromBP':
-      return BeatFromBP(t, parametersTable, samplingFrequency);
+      return BeatFromBP(t, parameters);
   }
 }
