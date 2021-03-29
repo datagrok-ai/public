@@ -20,7 +20,8 @@
     "svg-loader": "^0.0.2"
   },
   "scripts": {
-    "build-js-api": "webpack",
-    "build": "webpack"
+    "built-ts": "tsc",
+    "build-js-api": "tsc && webpack",
+    "build": "tsc && webpack"
   }
 }
