@@ -1,5 +1,6 @@
 import {SEMTYPE, TYPE} from "./const";
 import {toJs} from "./wrappers";
+
 declare var grok: any;
 
 /** @class
@@ -381,7 +382,9 @@ export class FileInfo extends Entity {
   }
 
   /** @returns {string} */
-  get url() { return (<any>window).grok_FileInfo_Get_Url(this.d); }
+  get url() {
+    return (<any>window).grok_FileInfo_Get_Url(this.d);
+  }
 
   /** @returns {Promise<string>} */
   readAsString() {
@@ -403,43 +406,43 @@ export class Group extends Entity {
     super(d);
   }
 
-  static create(name :string) {
+  static create(name: string) {
     return new Group((<any>window).grok_Group(name));
   }
 
   /** Adds a member to the group
    * @param {Group} m */
-  addMember(m :Group) {
+  addMember(m: Group) {
     (<any>window).grok_Group_Add_Member(this.d, m.d, false);
   }
 
   /** Adds an admin member to the group
    * @param {Group} m */
-  addAdminMember(m :Group) {
+  addAdminMember(m: Group) {
     (<any>window).grok_Group_Add_Member(this.d, m.d, true);
   }
 
   /** Removes a member from the group
    * @param {Group} m */
-  removeMember(m :Group) {
+  removeMember(m: Group) {
     (<any>window).grok_Group_Remove_Member(this.d, m.d);
   }
 
   /** Adds the group to another one
    * @param {Group} m */
-  includeTo(m :Group) {
+  includeTo(m: Group) {
     (<any>window).grok_Group_Add_Membership(this.d, m.d, false);
   }
 
   /** Adds the group to another one as an admin
    * @param {Group} m */
-  includeAdminTo(m :Group) {
+  includeAdminTo(m: Group) {
     (<any>window).grok_Group_Add_Membership(this.d, m.d, true);
   }
 
   /** Removes membership from another group
    * @param {Group} m */
-  excludeFrom(m :Group) {
+  excludeFrom(m: Group) {
     (<any>window).grok_Group_Remove_Membership(this.d, m.d);
   }
 
@@ -451,7 +454,7 @@ export class Group extends Entity {
 
   /** Returns list of groups that belong to group, with admin permissions
    * @type {Array<Group>} */
-  get adminMembers() :Group[] {
+  get adminMembers(): Group[] {
     return toJs((<any>window).grok_Group_Get_Members(this.d, true));
   }
 
@@ -498,7 +501,7 @@ export class Script extends Func {
     super(d);
   }
 
-  static create(script :string) {
+  static create(script: string) {
     return new Script((<any>window).grok_Script_Create(script));
   }
 
@@ -540,7 +543,7 @@ export class ScriptEnvironment extends Entity {
    * @param {string} name
    * @returns {ScriptEnvironment}
    * */
-  static create(name :string) {
+  static create(name: string) {
     return new ScriptEnvironment((<any>window).grok_ScriptEnvironment_Create(name));
   }
 
@@ -676,6 +679,7 @@ export class LogEventParameterValue extends Entity {
 export class Package extends Entity {
   public webRoot: any | undefined;
   public version: string;
+
   constructor(d: any) {
     super(d);
     if (typeof d === 'string' || d instanceof String) {
@@ -688,6 +692,7 @@ export class Package extends Entity {
   /** Override init() method to provide package-specific initialization.
    * It is guaranteed to get called exactly once before the execution of any function below.
    * */
+
   /*async*/
   init() {
     return Promise.resolve(null);
@@ -714,13 +719,13 @@ export class Package extends Entity {
    * @returns {Promise<Package>} */
   async load() {
     return new Promise((resolve, reject) =>
-        (<any>window).grok_Dapi_Packages_Load(this.name, (data :any) => resolve(data), (e: any) => reject(e)));
+      (<any>window).grok_Dapi_Packages_Load(this.name, (data: any) => resolve(data), (e: any) => reject(e)));
   }
 
   /** Returns credentials for package
    * @returns {Promise<Credentials>} */
   getCredentials() {
-    return new Promise((resolve, reject) => (<any>window).grok_Package_Get_Credentials(this.name, (c :any) => {
+    return new Promise((resolve, reject) => (<any>window).grok_Package_Get_Credentials(this.name, (c: any) => {
       let cred = toJs(c);
       resolve(cred);
     }, (e: any) => reject(e)));
@@ -729,7 +734,7 @@ export class Package extends Entity {
   /** Returns properties for package
    * @returns {Promise<object>} */
   getProperties() {
-    return new Promise((resolve, reject) => (<any>window).grok_Package_Get_Properties(this.name, (c :any) => {
+    return new Promise((resolve, reject) => (<any>window).grok_Package_Get_Properties(this.name, (c: any) => {
       resolve(c);
     }, (e: any) => reject(e)));
   }
@@ -743,6 +748,7 @@ export class Package extends Entity {
  */
 export class Property {
   protected readonly d: any;
+
   constructor(d: any) {
     this.d = d;
   }
@@ -842,7 +848,7 @@ export class Property {
    * @param {function} setter
    * @param {object} defaultValue
    * @returns Property*/
-  static create(name :string, type :TYPE, getter :Function, setter :Function, defaultValue = null) {
+  static create(name: string, type: TYPE, getter: Function, setter: Function, defaultValue = null) {
     return new Property((<any>window).grok_Property(name, type, getter, setter, defaultValue));
   }
 
@@ -852,7 +858,7 @@ export class Property {
    * @param {function} setter
    * @param {object} defaultValue
    * @returns Property*/
-  static int(name :string, getter :Function, setter :Function, defaultValue :any) {
+  static int(name: string, getter: Function, setter: Function, defaultValue: any) {
     return Property.create(name, TYPE.INT, getter, setter, defaultValue);
   }
 
@@ -862,7 +868,7 @@ export class Property {
    * @param {function} setter
    * @param {object} defaultValue
    * @returns Property*/
-  static float(name :string, getter :Function, setter :Function, defaultValue :any) {
+  static float(name: string, getter: Function, setter: Function, defaultValue: any) {
     return Property.create(name, TYPE.FLOAT, getter, setter, defaultValue);
   }
 
@@ -872,18 +878,19 @@ export class Property {
    * @param {function} setter
    * @param {object} defaultValue
    * @returns Property*/
-  static string(name :string, getter :Function, setter :Function, defaultValue :any) {
+  static string(name: string, getter: Function, setter: Function, defaultValue: any) {
     return Property.create(name, TYPE.STRING, getter, setter, defaultValue);
   }
 }
 
 export class SemanticValue {
   private readonly d: any;
+
   constructor(d: any) {
     this.d = d;
   }
 
-  static fromValueType(value:any, semType: SEMTYPE) {
+  static fromValueType(value: any, semType: SEMTYPE) {
     return new SemanticValue((<any>window).grok_SemanticValue(value, semType));
   }
 
@@ -906,11 +913,12 @@ export class SemanticValue {
 
 export class DateTime {
   private d: any;
+
   constructor(d: any) {
     this.d = d;
   }
 
-  static fromDate(date :any) {
+  static fromDate(date: any) {
     return DateTime.fromMillisecondsSinceEpoch(date.getTime());
   }
 
