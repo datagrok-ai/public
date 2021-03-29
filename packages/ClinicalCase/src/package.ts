@@ -7,10 +7,10 @@ import * as meta from './sdtm-meta';
 export let _package = new DG.Package();
 
 let links = {
-  ae: { key: 'USUBJID', start: 'AESTDY', end: 'AEENDY', event: 'AETERM'},
-  cm: { key: 'USUBJID', start: 'VISITDY', event: 'CMTRT'},
-  ex: { key: 'USUBJID', start: 'EXSTDY', end: 'EXENDY', event: 'EXTRT'},
-  lb: { key: 'USUBJID', start: 'LBDY', event: 'LBTEST'}
+  ae: { key: 'USUBJID', start: 'AESTDY', end: 'AEENDY', event: 'AETERM' },
+  cm: { key: 'USUBJID', start: 'VISITDY', event: 'CMTRT' },
+  ex: { key: 'USUBJID', start: 'EXSTDY', end: 'EXENDY', event: 'EXTRT' },
+  lb: { key: 'USUBJID', start: 'LBDY', event: 'LBTEST' }
 };
 
 let typeMap = { 'Char': 'string', 'Num': 'int' };
@@ -51,7 +51,7 @@ export function sdtmVariablePanel(varCol: DG.Column): DG.Widget {
   let variable = domain[varCol.name];
   let text = `${varCol.name}\n${variable ?
     variable.label + '\nType: ' + (checkType(varCol, variable) ?
-    'valid' : 'invalid') : 'Unknown variable'}\n`;
+      'valid' : 'invalid') : 'Unknown variable'}\n`;
   let convertButton, outliers;
 
   let isTerm = submissionValues.includes(varCol.name);
@@ -134,7 +134,7 @@ export function clinicalCaseTimelines(): void {
 
   let result = null;
 
-  let getTable = function(domain: string) {
+  let getTable = function (domain: string) {
     let info = links[domain];
     let t = grok.shell
       .tableByName(domain)
