@@ -3,7 +3,15 @@ const path = require('path');
 module.exports = {
   mode: 'development',
   entry: {
-    package: './src/package.js'
+    package: './src/package.ts'
+  },
+  resolve: {
+    extensions: ['.js', '.json', '.ts'],
+  },
+  module: {
+    rules: [
+      { test: /\.ts$/, loader: 'ts-loader' }
+    ],
   },
   devtool: 'inline-source-map',
   externals: {

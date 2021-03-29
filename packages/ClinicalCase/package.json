@@ -4,7 +4,9 @@
 	"version": "0.0.1",
 	"description": "",
 	"dependencies": {
-		"datagrok-api": "latest"
+		"datagrok-api": "latest",
+		"ts-loader": "^8.1.0",
+		"typescript": "^4.2.3"
 	},
 	"scripts": {
 		"debug-clinicalcase": "grok publish --rebuild",
