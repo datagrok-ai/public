@@ -18,6 +18,20 @@ let datetimeFormat = 'ISO 8601';
 let checkType = (column: DG.Column, variable) => (column.type === typeMap[variable.type] ||
   (column.type === 'datetime' && variable.format === datetimeFormat));
 
+let applyRule = (column: DG.Column, variable) => {
+  // let matcher = (variable.type === 'Char') ? DG.ValueMatcher.string(variable.rule) : DG.ValueMatcher.numerical(variable.rule);
+  if (variable.type === 'Char') {
+    // @ts-ignore: Property 'ValueMatcher' does not exist
+    let matcher = DG.ValueMatcher.string(variable.rule);
+
+    for (let i = 0; i < column.length; i++) {
+      if (!matcher.match(column.get(i))) return false;
+    }
+    return true;
+  }
+  return false;
+};
+
 let terminology: DG.DataFrame;
 let submissionValueCol: DG.Column;
 let submissionValues = [];
@@ -29,13 +43,18 @@ let submissionValues = [];
 //condition: df.tags.get("sdtm")
 export function sdtmSummaryPanel(df: DG.DataFrame): DG.Widget {
   let domain = df.getTag('sdtm-domain');
-  let text = `SDTM domain: ${domain.toUpperCase()}\n`;
+  let domainUpper = domain.toUpperCase();
+  let text = `SDTM domain: ${domainUpper}\n`;
+  for (let [c, v] of Object.entries(meta.classes)) {
+    if (v[domainUpper]) text += `${v[domainUpper]}\nClass: ${c}\n`;
+  }
   // @ts-ignore: Type 'ColumnList' must have a '[Symbol.iterator]()' method that returns an iterator.
   for (let column of df.columns) {
     let name = column.name;
     let variable = meta.domains[domain][name];
     text += `${name} ${variable ? checkType(column, variable) ?
       'valid' : 'invalid' : 'unknown variable'}\n`;
+    if (variable.rule) text += `Passed tests: ${applyRule(column, variable)}\n`;
   }
   // @ts-ignore: Expected 0 arguments, but got 1.
   return new DG.Widget(ui.divText(text));
@@ -52,6 +71,7 @@ export function sdtmVariablePanel(varCol: DG.Column): DG.Widget {
   let text = `${varCol.name}\n${variable ?
     variable.label + '\nType: ' + (checkType(varCol, variable) ?
       'valid' : 'invalid') : 'Unknown variable'}\n`;
+  let missingValueCount = varCol.stats.missingValueCount;
   let convertButton, outliers;
 
   let isTerm = submissionValues.includes(varCol.name);
@@ -75,7 +95,7 @@ export function sdtmVariablePanel(varCol: DG.Column): DG.Widget {
 
       for (let i = 0; i < rowCount; i++) {
         let submissionValue = valueCol.get(i);
-        [...synCol.get(i).split('; '), nciTermCol.get(i)].forEach(s => {
+        [...synCol.get(i).split('; '), nciTermCol.get(i), submissionValue].forEach(s => {
           if (s) synonyms[s.toLowerCase()] = submissionValue;
         });
       }
@@ -92,6 +112,7 @@ export function sdtmVariablePanel(varCol: DG.Column): DG.Widget {
     }
   }
   let container = [ui.divText(text)];
+  if (missingValueCount) container.push(ui.divText(`Missing values: ${missingValueCount}`));
   if (outliers) container.push(outliers, convertButton);
   // @ts-ignore: Expected 0 arguments, but got 1.
   return new DG.Widget(ui.divV(container));
