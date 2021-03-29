@@ -2,7 +2,6 @@ import {Cell, Column, Row} from "./dataframe";
 import {Viewer} from "./viewer";
 import {Observable} from 'rxjs';
 import {EventData, StreamSubscription} from "./events";
-import {_identityInt32} from "./utils";
 
 export class Point {
     constructor(x: number, y: number);
