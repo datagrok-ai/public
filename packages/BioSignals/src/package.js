@@ -142,8 +142,7 @@ function showMainDialog(view, table, tableWithAnnotations, signalType, column, s
   addExtractorButton.appendChild(ui.button('Add Extractor', () => {
     let containerExtractor = ui.div();
     extractorContainerList[j] = containerExtractor;
-    let nameOfLastFiltersOutput = Object.keys(filterOutputsObj)[Object.keys(filterOutputsObj).length - 1];
-    let extractorInputPreset = (Object.keys(filterOutputsObj).length === 1) ? filterInputsList[0].value : nameOfLastFiltersOutput;
+    let extractorInputPreset = Object.keys(filterOutputsObj)[Object.keys(filterOutputsObj).length - 1];
     extractorInputsList[j] = ui.choiceInput('Input', extractorInputPreset, Object.keys(filterOutputsObj));
     extractorChartsList[j] = getEmptyChart();
     extractorTypesList[j] = ui.choiceInput('Extractor ' + (j + 1), '', relevantMethods.extractors);
@@ -195,8 +194,7 @@ function showMainDialog(view, table, tableWithAnnotations, signalType, column, s
   addIndicatorButton.appendChild(ui.button('Add Indicator', () => {
     let containerIndicator = ui.div();
     indicatorContainerList[k] = containerIndicator;
-    let nameOfLastExtractorsOutput = Object.keys(extractorOutputsObj)[Object.keys(extractorOutputsObj).length - 1];
-    let indicatorInputPreset = (Object.keys(extractorOutputsObj).length === 1) ? extractorInputsList[0].value : nameOfLastExtractorsOutput;
+    let indicatorInputPreset = Object.keys(extractorOutputsObj)[Object.keys(extractorOutputsObj).length - 1];
     indicatorInputsList[k] = ui.choiceInput('Input', indicatorInputPreset, Object.keys(extractorOutputsObj));
     indicatorChartsList[k] = getEmptyChart();
     indicatorTypesList[k] = ui.choiceInput('Indicator ' + (k + 1), '', relevantMethods.indicators);
@@ -227,11 +225,8 @@ function showMainDialog(view, table, tableWithAnnotations, signalType, column, s
     let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting indicator...');
     let indicatorParametersDF = parametersToDataFrame(indicatorTypesList, indicatorParametersList);
     let t = DG.DataFrame.fromColumns([extractorOutputsObj[indicatorInputsList[k - 1].value].columns.byName('RR intervals')]);
-    let indicatorDf = await applyIndicator(t, indicatorParametersDF, indicatorTypesList[k - 1].value);
-    let nameOfLastIndicatorsOutput = 'Output of Indicator ' + k + ' (' + indicatorTypesList[k - 1].value + ')';
-    indicatorChartsList[k - 1].dataFrame = indicatorDf;
+    indicatorChartsList[k - 1].dataFrame = await applyIndicator(t, indicatorParametersDF, indicatorTypesList[k - 1].value);
     pi.close();
-    Object.assign(extractorOutputsObj, {[nameOfLastIndicatorsOutput]: indicatorDf});
   }));
 
   let savePipelineButton = ui.div();
