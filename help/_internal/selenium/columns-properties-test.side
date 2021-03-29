@@ -226,12 +226,12 @@
       "id": "fa3c4aff-2a2c-4aa5-bbff-dcf70853b971",
       "comment": "",
       "command": "click",
-      "target": "id=editor",
+      "target": "name=input-SEX---New-name--",
       "targets": [
-        ["id=editor", "id"],
-        ["name=input-USUBJID---New-name--", "name"],
-        ["css=.d4-input-text > #editor", "css:finder"],
-        ["xpath=//input[@id='editor']", "xpath:attributes"],
+        ["id=82", "id"],
+        ["name=input-SEX---New-name--", "name"],
+        ["css=#\\38 2", "css:finder"],
+        ["xpath=//input[@id='82']", "xpath:attributes"],
         ["xpath=//div[2]/div/input", "xpath:position"]
       ],
       "value": ""
@@ -239,12 +239,12 @@
       "id": "83bf0930-9156-4f57-9d65-c95d726d8863",
       "comment": "",
       "command": "type",
-      "target": "id=editor",
+      "target": "name=input-SEX---New-name--",
       "targets": [
-        ["id=editor", "id"],
-        ["name=input-USUBJID---New-name--", "name"],
-        ["css=.d4-input-text > #editor", "css:finder"],
-        ["xpath=//input[@id='editor']", "xpath:attributes"],
+        ["id=82", "id"],
+        ["name=input-SEX---New-name--", "name"],
+        ["css=#\\38 2", "css:finder"],
+        ["xpath=//input[@id='82']", "xpath:attributes"],
         ["xpath=//div[2]/div/input", "xpath:position"]
       ],
       "value": "NewName"
@@ -626,14 +626,14 @@
       "id": "ad087d13-2697-4097-9a12-5ca7c6f67223",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span-num(USUBJID)-(min-273,-max-273)",
+      "target": "name=span-num(USUBJID)",
       "targets": [],
       "value": ""
     }, {
       "id": "a640c89f-83dc-41a3-9e19-41999cab1545",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span-num(USUBJID)-(2)-(min-21000100001,-max-51080200023)",
+      "target": "name=span-num(USUBJID)-(2)",
       "targets": [],
       "value": ""
     }, {
@@ -699,8 +699,14 @@
       "id": "eed29554-3427-488f-a5ea-21a2758e827f",
       "comment": "",
       "command": "select",
-      "target": "id=editor",
-      "targets": [],
+      "target": "name=input-New-type",
+      "targets": [
+        ["id=187", "id"],
+        ["name=input-New-type", "name"],
+        ["css=#\\31 87", "css:finder"],
+        ["xpath=//select[@id='187']", "xpath:attributes"],
+        ["xpath=//div[3]/select", "xpath:position"]
+      ],
       "value": "label=int"
     }, {
       "id": "10e09d00-b0c1-4114-871c-20dbd3938a64",
@@ -713,7 +719,7 @@
       "id": "239928a6-0fdd-4a86-b099-c8609131e449",
       "comment": "",
       "command": "executeScript",
-      "target": "document.querySelector('#editor').dispatchEvent(new Event('input'))",
+      "target": "document.querySelector('[name=input-New-type]').dispatchEvent(new Event('input'))",
       "targets": [],
       "value": ""
     }, {

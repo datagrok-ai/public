@@ -158,21 +158,27 @@
       "id": "4ade0f7b-b2a1-4b93-bb31-6cf3e6cf7dd9",
       "comment": "",
       "command": "click",
-      "target": "id=editor",
+      "target": "name=input-Link-Tables---Link-Type",
       "targets": [
-        ["id=editor", "id"],
+        ["id=108", "id"],
         ["name=input-Link-Tables---Link-Type", "name"],
-        ["css=#editor", "css:finder"],
-        ["xpath=//select[@id='editor']", "xpath:attributes"],
-        ["xpath=//div[3]/select", "xpath:position"]
+        ["css=#\\31 08", "css:finder"],
+        ["xpath=//select[@id='108']", "xpath:attributes"],
+        ["xpath=//div[2]/select", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "e94318c4-1b7c-47f4-8cc2-dd1b69f74e12",
       "comment": "",
       "command": "select",
-      "target": "id=editor",
-      "targets": [],
+      "target": "name=input-Link-Tables---Link-Type",
+      "targets": [
+        ["id=108", "id"],
+        ["name=input-Link-Tables---Link-Type", "name"],
+        ["css=#\\31 08", "css:finder"],
+        ["xpath=//select[@id='108']", "xpath:attributes"],
+        ["xpath=//div[2]/select", "xpath:position"]
+      ],
       "value": "label=row to filter"
     }, {
       "id": "cb57a3d6-edc2-49bc-8bc3-92032f0e61f3",

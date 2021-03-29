@@ -223,13 +223,12 @@
       "id": "1a2b8b2c-d916-4833-822e-da843de593e0",
       "comment": "",
       "command": "click",
-      "target": "name=button-ADD",
+      "target": "xpath=(//i[@name='icon-plus'])[2]",
       "targets": [
-        ["name=button-ADD", "name"],
-        ["css=.btn:nth-child(3)", "css:finder"],
-        ["xpath=//button[@name='button-ADD']", "xpath:attributes"],
-        ["xpath=//button[3]", "xpath:position"],
-        ["xpath=//button[contains(.,'ADD')]", "xpath:innerText"]
+        ["css=.fa-plus:nth-child(1)", "css:finder"],
+        ["xpath=(//i[@name='icon-plus'])[2]", "xpath:attributes"],
+        ["xpath=//table[@id='72']/tbody/tr/td[3]/div/button/i", "xpath:idRelative"],
+        ["xpath=//button/i", "xpath:position"]
       ],
       "value": ""
     }, {

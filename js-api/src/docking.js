@@ -127,7 +127,7 @@ export class DockManager {
    * @param {string=} title - Name of the resulting column. Default value is agg(colName).
    * @returns {DockNode}
    * */
-  dock(element, dockType = DG.DOCK_TYPE.LEFT, refNode = null, title = '', ratio = 0.5) {
+  dock(element, dockType = DG.DOCK_TYPE.LEFT, refNode = null, title, ratio = 0.5) {
     return new DockNode(grok_DockManager_Dock(this.d, refNode === null ? null : refNode.d, element, dockType, title, ratio));
   }
 

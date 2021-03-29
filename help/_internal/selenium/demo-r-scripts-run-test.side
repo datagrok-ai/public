@@ -98,12 +98,11 @@
       "id": "3931016d-0ced-421e-bd65-32bc762ff14c",
       "comment": "",
       "command": "type",
-      "target": "css=input.type-ahead-input",
+      "target": "css=.ui-input-editor:nth-child(1)",
       "targets": [
-        ["css=input.type-ahead-input", "css"],
-        ["css=.type-ahead-input", "css:finder"],
+        ["css=.ui-input-editor:nth-child(1)", "css:finder"],
         ["xpath=(//input[@type='text'])[2]", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div/div[2]/div/input", "xpath:idRelative"],
+        ["xpath=//div[@id='elementContent']/div/div[2]/div/input", "xpath:idRelative"],
         ["xpath=//div[2]/div/input", "xpath:position"]
       ],
       "value": "Demo Scripts Run Test"
@@ -1627,7 +1626,7 @@
       "id": "a479741e-924a-4ebc-8636-82da601bb1b7",
       "comment": "",
       "command": "click",
-      "target": "css=span[name=\"span-AGE-(min-18,-max-89)\"] > label",
+      "target": "css=span[name=\"span-AGE\\\"] > label",
       "targets": [
         ["css=span[name=\"span-AGE-(min-18,-max-89)\"] > label", "css"],
         ["css=.d4-entity-markup-row:nth-child(8) label", "css:finder"],
