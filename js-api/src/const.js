@@ -7,6 +7,13 @@
  * @typedef {string} ObjectType
  * @typedef {string} ViewerPropertyType
  **/
+`${AGG}`;
+`${SYNC_TYPE}`;
+`${JOIN_TYPE}`;
+`${COLUMN_TYPE}`;
+`${VIEWER}`;
+`${TYPE}`;
+`${SIMILARITY_METRIC}`;
 /** @enum {AggregationType} */
 export var AGG;
 (function (AGG) {
@@ -188,7 +195,7 @@ export const TAGS = {
      See also [TAGS_CHOICES]. */
     AUTO_CHOICES: '.auto-choices',
     ID: '.id',
-    COLOR_CODING_CONDITIONAL: 'color-coding-conditional'
+    COLOR_CODING_CONDITIONAL: '.color-coding-conditional'
 };
 ////// Viewers
 /** @enum {VIEWER} */
