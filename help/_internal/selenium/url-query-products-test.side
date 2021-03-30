@@ -72,7 +72,7 @@
       "id": "f9e9aaec-d85f-4d2b-b967-d9a7a5df345f",
       "comment": "",
       "command": "pause",
-      "target": "8000",
+      "target": "10000",
       "targets": [],
       "value": ""
     }, {
@@ -98,7 +98,7 @@
       "id": "3ed48b3e-5234-4046-bf7a-d95820dc6273",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "2000",
       "targets": [],
       "value": ""
     }, {
@@ -117,7 +117,7 @@
       "id": "97b93aad-3d94-4544-8e14-1a50f5876fb1",
       "comment": "",
       "command": "pause",
-      "target": "500",
+      "target": "1000",
       "targets": [],
       "value": ""
     }, {

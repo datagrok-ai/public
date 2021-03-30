@@ -174,13 +174,13 @@
       "id": "fc11fe2c-289a-4da2-ab12-9e2866074485",
       "comment": "",
       "command": "verifyValue",
-      "target": "id=editor",
+      "target": "name=input-Title",
       "targets": [
-        ["id=editor", "id"],
+        ["id=66", "id"],
         ["name=input-Title", "name"],
-        ["css=#editor", "css:finder"],
-        ["xpath=//select[@id='editor']", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div[2]/div/div/select", "xpath:idRelative"],
+        ["css=#\\36 6", "css:finder"],
+        ["xpath=//select[@id='66']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div[2]/div/div/div/div/div/select", "xpath:idRelative"],
         ["xpath=//select", "xpath:position"]
       ],
       "value": "The Matrix"

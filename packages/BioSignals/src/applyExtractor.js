@@ -1,9 +1,10 @@
 import * as grok from "datagrok-api/grok";
 
-async function BeatfromECG(data, parameters) {
+async function BeatfromECG(data, column, parameters) {
   return await grok.functions.call('BioSignals:BeatfromECG',
     {
       'data': data,
+      'column': column,
       'sampling_frequency': parameters['inputSamplingFrequency'],
       'bpm_max': parameters['bpm_max'],
       'delta': parameters['delta'],
@@ -11,10 +12,11 @@ async function BeatfromECG(data, parameters) {
     });
 }
 
-async function PhasicEstimation(data, parameters) {
+async function PhasicEstimation(data, column, parameters) {
   return await grok.functions.call('BioSignals:PhasicEstimation',
     {
       'data': data,
+      'column': column,
       'sampling_frequency': parameters['inputSamplingFrequency'],
       't1': parameters['t1'],
       't2': parameters['t2'],
@@ -25,20 +27,22 @@ async function PhasicEstimation(data, parameters) {
     });
 }
 
-async function LocalEnergy(data, parameters) {
+async function LocalEnergy(data, column, parameters) {
   return await grok.functions.call('BioSignals:LocalEnergy',
     {
       'data': data,
+      'column': column,
       'sampling_frequency': parameters['inputSamplingFrequency'],
       'win_len': parameters['win_len'],
       'win_step': parameters['win_step']
     });
 }
 
-async function BeatFromBP(data, parameters) {
+async function BeatFromBP(data, column, parameters) {
   return await grok.functions.call('BioSignals:BeatFromBP',
     {
       'data': data,
+      'column': column,
       'sampling_frequency': parameters['inputSamplingFrequency'],
       'bpm_max': parameters['bpm_max'],
       'win_pre': parameters['win_pre'],
@@ -46,15 +50,15 @@ async function BeatFromBP(data, parameters) {
     });
 }
 
-export async function applyExtractor(t, parameters) {
+export async function applyExtractor(t, column, parameters) {
   switch (parameters['type']) {
     case 'Local energy':
-      return LocalEnergy(t, parameters);
+      return LocalEnergy(t, column, parameters);
     case 'Beat from ECG':
-      return BeatfromECG(t, parameters);
+      return BeatfromECG(t, column, parameters);
     case 'Phasic estimation':
-      return PhasicEstimation(t, parameters);
+      return PhasicEstimation(t, column, parameters);
     case 'BeatFromBP':
-      return BeatFromBP(t, parameters);
+      return BeatFromBP(t, column, parameters);
   }
 }

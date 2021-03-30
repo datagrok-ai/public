@@ -194,14 +194,14 @@
       "id": "fc11fe2c-289a-4da2-ab12-9e2866074485",
       "comment": "",
       "command": "type",
-      "target": "xpath=//input[@id='editor']",
+      "target": "name=input-Name",
       "targets": [
-        ["id=editor", "id"],
+        ["id=82", "id"],
         ["name=input-Name", "name"],
-        ["css=#editor", "css:finder"],
-        ["xpath=//input[@id='editor']", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div[2]/div[2]/div/div/input", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/input", "xpath:position"]
+        ["css=#\\38 2", "css:finder"],
+        ["xpath=//input[@id='82']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div[2]/div/div/div/div/input", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div/div/input", "xpath:position"]
       ],
       "value": "Test_Query_By_Selenium_MongoDB"
     }, {
@@ -564,12 +564,11 @@
       "id": "8a70cf7a-e51c-484a-927c-d3ad9901cd67",
       "comment": "",
       "command": "type",
-      "target": "css=input.type-ahead-input",
+      "target": "css=.ui-input-editor:nth-child(1)",
       "targets": [
-        ["css=input.type-ahead-input", "css"],
-        ["css=.type-ahead-input", "css:finder"],
+        ["css=.ui-input-editor:nth-child(1)", "css:finder"],
         ["xpath=(//input[@type='text'])[2]", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div/div[2]/div/input", "xpath:idRelative"],
+        ["xpath=//div[@id='elementContent']/div/div[2]/div/input", "xpath:idRelative"],
         ["xpath=//div[2]/div/input", "xpath:position"]
       ],
       "value": "name =\"Test_Query_By_Selenium_MongoDB\""
@@ -693,7 +692,7 @@
       "id": "00205b10-1b4f-448a-89b1-e04a2f21de14",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {
@@ -728,12 +727,11 @@
       "id": "634ce02c-745c-49af-9ef4-2a93c8a283c3",
       "comment": "",
       "command": "type",
-      "target": "css=input.type-ahead-input",
+      "target": "css=.ui-input-editor:nth-child(1)",
       "targets": [
-        ["css=input.type-ahead-input", "css"],
-        ["css=.type-ahead-input", "css:finder"],
+        ["css=.ui-input-editor:nth-child(1)", "css:finder"],
         ["xpath=(//input[@type='text'])[2]", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div/div[2]/div/input", "xpath:idRelative"],
+        ["xpath=//div[@id='elementContent']/div/div[2]/div/input", "xpath:idRelative"],
         ["xpath=//div[2]/div/input", "xpath:position"]
       ],
       "value": "name =\"Test_Query_By_Selenium_MongoDB\""

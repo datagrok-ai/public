@@ -3,6 +3,7 @@
 #language: python
 #tags: biosignals, filters, pyphysio
 #input: dataframe input_signals
+#input: column column
 #input: double sampling_frequency [Input sampling frequency]
 #input: double fout [The sampling frequency for resampling]
 #input: string kind {choices: ['linear', 'nearest', 'zero', 'slinear', 'quadratic, 'cubic']} [Method for interpolation]
@@ -10,7 +11,7 @@
 
 import pyphysio as ph
 
-sig = ph.EvenlySignal(values=input_signals.iloc[:,0], sampling_freq=sampling_frequency)
+sig = ph.EvenlySignal(values=input_signals[column], sampling_freq=sampling_frequency)
 
 sig = sig.resample(fout=fout, kind=kind)
 

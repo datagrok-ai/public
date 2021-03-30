@@ -3,6 +3,7 @@
 #language: python
 #tags: biosignals, extractors, pyphysio
 #input: dataframe data
+#input: column column
 #input: double sampling_frequency
 #input: double win_len [Length of the window]
 #input: double win_step
@@ -10,7 +11,7 @@
 
 import pyphysio as ph
 
-sig = ph.EvenlySignal(values=data.iloc[:,0], sampling_freq=sampling_frequency)
+sig = ph.EvenlySignal(values=data[column], sampling_freq=sampling_frequency)
 
 extracted = ph.Energy(win_len=win_len, win_step=win_step)(sig)
 

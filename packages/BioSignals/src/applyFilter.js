@@ -101,30 +101,33 @@ async function SMA_filter(data, columnToFilter, parameters) {
     });
 }
 
-async function ConvolutionalFilter(data, parameters) {
+async function ConvolutionalFilter(data, columnToFilter, parameters) {
   return await grok.functions.call('BioSignals:ConvolutionalFilter',
     {
       'inputSignals': data,
+      'column': columnToFilter,
       'sampling_frequency': parameters['inputSamplingFrequency'],
       'win_len': parameters['win_len'],
       'irftype': parameters['irftype']
     });
 }
 
-async function DenoiseEDA(data, parameters) {
+async function DenoiseEDA(data, columnToFilter, parameters) {
   return await grok.functions.call('BioSignals:DenoiseEDA',
     {
       'input_signals': data,
+      'column': columnToFilter,
       'sampling_frequency': parameters['inputSamplingFrequency'],
       'win_len': parameters['win_len'],
       'threshold': parameters['threshold']
     });
 }
 
-async function IIRFilter(data, parameters) {
+async function IIRFilter(data, columnToFilter, parameters) {
   return await grok.functions.call('BioSignals:IIRFilter',
     {
       'input_signals': data,
+      'column': columnToFilter,
       'sampling_frequency': parameters['inputSamplingFrequency'],
       'fs': parameters['fs'],
       'fp': parameters['fp'],
@@ -132,58 +135,64 @@ async function IIRFilter(data, parameters) {
     });
 }
 
-async function FIRFilter(data, parameters) {
+async function FIRFilter(data, columnToFilter, parameters) {
   return await grok.functions.call('BioSignals:FIRFilter',
     {
       'input_signals': data,
+      'column': columnToFilter,
       'sampling_frequency': parameters['inputSamplingFrequency'],
       'fs': parameters['fs'],
       'fp': parameters['fp']
     });
 }
 
-async function normalize(data, parameters) {
+async function normalize(data, columnToFilter, parameters) {
   return await grok.functions.call('BioSignals:normalize',
     {
       'input_signals': data,
+      'column': columnToFilter,
       'sampling_frequency': parameters['inputSamplingFrequency'],
       'norm_method': parameters['normMethod']
     });
 }
 
-async function resample(data, parameters) {
+async function resample(data, columnToFilter, parameters) {
   return await grok.functions.call('BioSignals:resample',
     {
       'input_signals': data,
+      'column': columnToFilter,
       'sampling_frequency': parameters['inputSamplingFrequency'],
       'fout': parameters['fout'],
       'kind': parameters['kind']
     });
 }
 
-async function KalmanFilter(data, parameters) {
+async function KalmanFilter(data, columnToFilter, parameters) {
   return await grok.functions.call('BioSignals:KalmanFilter',
     {
       'input_signals': data,
+      'column': columnToFilter,
       'sampling_frequency': parameters['inputSamplingFrequency'],
       'R': parameters['R'],
       'ratio': parameters['ratio']
     });
 }
 
-async function ImputeNAN(data, parameters) {
+async function ImputeNAN(data, columnToFilter, parameters) {
   return await grok.functions.call('BioSignals:ImputeNAN',
     {
       'input_signals': data,
+      'column': columnToFilter,
       'sampling_frequency': parameters['inputSamplingFrequency'],
       'allnan': parameters['allnan']
     });
 }
 
-async function RemoveSpikes(data, parameters) {
+async function RemoveSpikes(data, columnToFilter, parameters) {
   return await grok.functions.call('BioSignals:RemoveSpikes',
     {
       'input_signals': data,
+      'column': columnToFilter,
       'sampling_frequency': parameters['inputSamplingFrequency'],
       'K': parameters['K'],
       'N': parameters['N'],
@@ -253,39 +262,39 @@ export async function applyFilter(t, parameters, i, col, inputCase) {
       return [plotFL, nameOfLastFiltersOutput];
     case 'ConvolutionalFilter':
       nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + parameters['type'] + ')';
-      plotFL = await ConvolutionalFilter(t, parameters);
+      plotFL = await ConvolutionalFilter(t, inputCase, parameters);
       return [plotFL, nameOfLastFiltersOutput];
     case 'DenoiseEDA':
       nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + parameters['type'] + ')';
-      plotFL = await DenoiseEDA(t, parameters);
+      plotFL = await DenoiseEDA(t, inputCase, parameters);
       return [plotFL, nameOfLastFiltersOutput];
     case 'IIRFilter':
       nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + parameters['type'] + ')';
-      plotFL = await IIRFilter(t, parameters);
+      plotFL = await IIRFilter(t, inputCase, parameters);
       return [plotFL, nameOfLastFiltersOutput];
     case 'FIRFilter':
       nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + parameters['type'] + ')';
-      plotFL = await FIRFilter(t, parameters);
+      plotFL = await FIRFilter(t, inputCase, parameters);
       return [plotFL, nameOfLastFiltersOutput];
     case 'normalize':
       nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + parameters['type'] + ')';
-      plotFL = await normalize(t, parameters);
+      plotFL = await normalize(t, inputCase, parameters);
       return [plotFL, nameOfLastFiltersOutput];
     case 'resample':
       nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + parameters['type'] + ')';
-      plotFL = await resample(t, parameters);
+      plotFL = await resample(t, inputCase, parameters);
       return [plotFL, nameOfLastFiltersOutput];
     case 'KalmanFilter':
       nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + parameters['type'] + ')';
-      plotFL = await KalmanFilter(t, parameters);
+      plotFL = await KalmanFilter(t, inputCase, parameters);
       return [plotFL, nameOfLastFiltersOutput];
     case 'ImputeNAN':
       nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + parameters['type'] + ')';
-      plotFL = await ImputeNAN(t, parameters);
+      plotFL = await ImputeNAN(t, inputCase, parameters);
       return [plotFL, nameOfLastFiltersOutput];
     case 'RemoveSpikes':
       nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + parameters['type'] + ')';
-      plotFL = await RemoveSpikes(t, parameters);
+      plotFL = await RemoveSpikes(t, inputCase, parameters);
       return [plotFL, nameOfLastFiltersOutput];
   }
 }

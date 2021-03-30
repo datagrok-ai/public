@@ -369,25 +369,6 @@
       ],
       "value": ""
     }, {
-      "id": "12f5a255-6890-4c83-aea8-88ef54ff8da1",
-      "comment": "",
-      "command": "click",
-      "target": "name=span-null--5339435",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "f3742284-265c-4a5b-9e75-9aa31f80053e",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//i[@name='icon-home']",
-      "targets": [
-        ["css=.fa-home:nth-child(1)", "css:finder"],
-        ["xpath=//i[@name='icon-home']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div/i", "xpath:idRelative"],
-        ["xpath=//i", "xpath:position"]
-      ],
-      "value": ""
-    }, {
       "id": "881a6eca-e3c1-4567-a344-e0a0a706cbf4",
       "comment": "",
       "command": "pause",
@@ -549,13 +530,6 @@
         ["xpath=//div[@id='elementContent']/div/div/div/div[2]/div[2]/table/tbody/tr/td[2]/span/span", "xpath:idRelative"],
         ["xpath=//span/span", "xpath:position"]
       ],
-      "value": ""
-    }, {
-      "id": "929d520a-c8ae-42a8-b0c2-3bd5d352f378",
-      "comment": "",
-      "command": "verifyElementPresent",
-      "target": "name=span-null--13509",
-      "targets": [],
       "value": ""
     }, {
       "id": "91c1ac74-2907-49b2-82bf-2c094a6da1c6",
