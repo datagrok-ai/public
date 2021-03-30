@@ -378,6 +378,57 @@ export function BioSignals() {
     });
   });
 
+  let folderName = ui.stringInput('Path to folder', '');
+  let runPipelineButton = ui.div();
+  runPipelineButton.appendChild(ui.button('Run pipeline', async () => {
+
+    grok.dapi.users.current().then(async (user) => {
+      let pi = DG.TaskBarProgressIndicator.create('Calculating table...');
+
+      const pathToFolder = user.login + ':Home/' + folderName.value + '/';
+      const personalFoldersInfos = await grok.dapi.files.list(pathToFolder, false, '');
+      const personalFoldersNames = personalFoldersInfos.map((folder) => folder.name)
+      let subjectsTable = DG.DataFrame.create(personalFoldersNames.length);
+
+      subjectsTable.columns.addNewString('Person');
+      subjectsTable.columns.addNewString('Record');
+      subjectsTable.columns.addNewString('Sex');
+      subjectsTable.columns.addNewInt('Age');
+      subjectsTable.columns.addNewString('Date');
+      subjectsTable.columns.addNewInt('Heart Rate');
+      subjectsTable.columns.addNewFloat('rrStd');
+
+      let sex, age, dateOfRecording, samplingFrequency, annotationsDF, heartRate, rrStd;
+      let indexCounter = 0;
+      for (const personalFolderName of personalFoldersNames.slice(0,6)) {
+        console.log(personalFolderName);
+        let filesInPersonalFolder = await grok.dapi.files.list(pathToFolder + personalFolderName, false, '');
+        let uniqueFileNamesWithoutExtension = Array.from(new Set(filesInPersonalFolder.map((file) => file.name.slice(0, -4))));
+        for (const fileNameWithoutExtension of uniqueFileNamesWithoutExtension) {
+          [annotationsDF, age, sex, dateOfRecording, samplingFrequency, heartRate, rrStd] = await readPhysionetAnnotations(filesInPersonalFolder, fileNameWithoutExtension);
+          subjectsTable.columns.byName('Person').set(indexCounter, personalFolderName);
+          subjectsTable.columns.byName('Record').set(indexCounter, fileNameWithoutExtension);
+          subjectsTable.columns.byName('Sex').set(indexCounter, sex);
+          subjectsTable.columns.byName('Age').set(indexCounter, age);
+          subjectsTable.columns.byName('Date').set(indexCounter, dateOfRecording);
+          subjectsTable.columns.byName('Heart Rate').set(indexCounter, heartRate);
+          subjectsTable.columns.byName('rrStd').set(indexCounter, rrStd);
+          indexCounter++;
+          console.log(fileNameWithoutExtension);
+        }
+      }
+      let view = grok.shell.addTableView(subjectsTable);
+      view.boxPlot({x: 'Sex', y: 'Heart Rate'});
+      pi.close();
+    });
+  }));
+
   view
-    .append(ui.divV([chosenDatabase]));
+    .append(
+      ui.divV([
+        chosenDatabase,
+        folderName,
+        runPipelineButton
+      ])
+    );
 }
