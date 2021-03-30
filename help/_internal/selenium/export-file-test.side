@@ -282,19 +282,6 @@
       ],
       "value": "Save as CSV"
     }, {
-      "id": "8ca1b1ad-f572-426f-9145-55676c412ba3",
-      "comment": "",
-      "command": "select",
-      "target": "id=editor",
-      "targets": [
-        ["id=editor", "id"],
-        ["name=input-Save as CSV---Delimiter", "name"],
-        ["css=.d4-input-choice:nth-child(1) > #editor", "css:finder"],
-        ["xpath=//select[@id='editor']", "xpath:attributes"],
-        ["xpath=//select", "xpath:position"]
-      ],
-      "value": "label=Tab"
-    }, {
       "id": "47af3c3f-eda8-4ad1-9371-a71d54e1ce45",
       "comment": "",
       "command": "click",

@@ -232,7 +232,7 @@
       "id": "2e95788d-16fc-4588-9bf6-c3edb4d8fdb7",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span-clusters-(min-0,-max-301)",
+      "target": "name=span-clusters",
       "targets": [
         ["css=div:nth-child(1) > .d4-flex-col > .d4-entity-markup-row:nth-child(4)", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div[2]/div/div/span[4]", "xpath:idRelative"],
@@ -357,7 +357,7 @@
       "id": "3d3082ff-fe2e-4bb6-b799-62272394b172",
       "comment": "",
       "command": "pause",
-      "target": "20000",
+      "target": "25000",
       "targets": [],
       "value": ""
     }, {
@@ -531,7 +531,7 @@
       "id": "19476b9f-4f04-483a-a1b0-eca35d187066",
       "comment": "",
       "command": "pause",
-      "target": "20000",
+      "target": "30000",
       "targets": [],
       "value": ""
     }, {
@@ -832,7 +832,7 @@
       "id": "42622d90-7c6d-474a-a653-0f4e32845dbc",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span-BRENK-(min-0,-max-1)",
+      "target": "name=span-BRENK",
       "targets": [],
       "value": ""
     }, {

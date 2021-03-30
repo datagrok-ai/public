@@ -211,9 +211,9 @@
       "id": "0832e604-d1fa-41c2-9080-90c4701751ca",
       "comment": "",
       "command": "type",
-      "target": "css=.type-ahead-input",
+      "target": "css=.ui-input-editor:nth-child(1)",
       "targets": [
-        ["css=.type-ahead-input", "css:finder"],
+        ["css=.ui-input-editor:nth-child(1)", "css:finder"],
         ["xpath=(//input[@type='text'])[2]", "xpath:attributes"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[2]/div[2]/div/table/tbody/tr[2]/td[2]/div/input", "xpath:idRelative"],
         ["xpath=//td[2]/div/input", "xpath:position"]
@@ -279,10 +279,10 @@
       "id": "f869a4b6-5ccb-4245-af52-d6d30d0ccb59",
       "comment": "",
       "command": "verifyValue",
-      "target": "css=tr:nth-child(3) > td:nth-child(2) > .d4-input-editor",
+      "target": "css=tr:nth-child(3) > td:nth-child(2) > .ui-input-editor",
       "targets": [
-        ["css=tr:nth-child(3) > td:nth-child(2) > .d4-input-editor", "css:finder"],
-        ["xpath=//table[@id='editor']/tbody/tr[3]/td[2]/input", "xpath:idRelative"],
+        ["css=tr:nth-child(3) > td:nth-child(2) > .ui-input-editor", "css:finder"],
+        ["xpath=//table[@id='97']/tbody/tr[3]/td[2]/input", "xpath:idRelative"],
         ["xpath=//tr[3]/td[2]/input", "xpath:position"]
       ],
       "value": "age-sem-type-selenium"
@@ -294,19 +294,18 @@
       "targets": [],
       "value": ""
     }, {
-      "id": "a50a8972-959c-4cd4-8b74-454389be8518",
+      "id": "2bfe4128-3072-46f2-81cd-6ba407981129",
       "comment": "",
-      "command": "click",
-      "target": "xpath=(//label[@name='label--'])[3]",
+      "command": "type",
+      "target": "css=tr:nth-child(3) > td:nth-child(2) > .ui-input-editor",
       "targets": [
-        ["css=tr:nth-child(3) > td:nth-child(4) > .d4-link-label", "css:finder"],
-        ["xpath=(//label[@name='label--'])[3]", "xpath:attributes"],
-        ["xpath=//table[@id='editor']/tbody/tr[3]/td[4]/label", "xpath:idRelative"],
-        ["xpath=//tr[3]/td[4]/label", "xpath:position"]
+        ["css=tr:nth-child(3) > td:nth-child(2) > .ui-input-editor", "css:finder"],
+        ["xpath=//table[@id='120']/tbody/tr[3]/td[2]/input", "xpath:idRelative"],
+        ["xpath=//tr[3]/td[2]/input", "xpath:position"]
       ],
       "value": ""
     }, {
-      "id": "1b51b65c-8a54-480a-8134-99213bf28a8b",
+      "id": "dacd2bc8-7235-4847-8eae-ab40cf57fe23",
       "comment": "",
       "command": "pause",
       "target": "500",
@@ -379,9 +378,9 @@
       "id": "22bfacde-1d73-426f-b39d-c5b4bce3b22a",
       "comment": "",
       "command": "verifyValue",
-      "target": "css=.type-ahead-input",
+      "target": "css=.ui-input-editor:nth-child(1)",
       "targets": [
-        ["css=.type-ahead-input", "css:finder"],
+        ["css=.ui-input-editor:nth-child(1)", "css:finder"],
         ["xpath=(//input[@type='text'])[2]", "xpath:attributes"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[2]/div[2]/div/table/tbody/tr[2]/td[2]/div/input", "xpath:idRelative"],
         ["xpath=//td[2]/div/input", "xpath:position"]

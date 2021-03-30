@@ -193,13 +193,13 @@
       "id": "a92d98ad-51e4-4436-81a2-fc475c27e2b4",
       "comment": "",
       "command": "click",
-      "target": "id=editor",
+      "target": "name=input-All-on",
       "targets": [
-        ["id=editor", "id"],
+        ["id=82", "id"],
         ["name=input-All-on", "name"],
-        ["css=#editor", "css:finder"],
-        ["xpath=//input[@id='editor']", "xpath:attributes"],
-        ["xpath=//label/input", "xpath:position"]
+        ["css=#\\38 2", "css:finder"],
+        ["xpath=//input[@id='82']", "xpath:attributes"],
+        ["xpath=//div[2]/div/input", "xpath:position"]
       ],
       "value": ""
     }, {

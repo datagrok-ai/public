@@ -245,7 +245,7 @@
       "id": "a3ee4148-2970-4467-8693-191ca36fb91c",
       "comment": "",
       "command": "click",
-      "target": "name=button-Stochastic-Proximity-Embedding---Columns",
+      "target": "name=div-Stochastic-Proximity-Embedding---Columns",
       "targets": [
         ["name=button-Stochastic-Proximity-Embedding---Columns", "name"],
         ["css=.d4-input-columns > button", "css:finder"],

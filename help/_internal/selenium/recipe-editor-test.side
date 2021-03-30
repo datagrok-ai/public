@@ -202,9 +202,9 @@
       "target": "name=button-SAVE",
       "targets": [
         ["name=button-SAVE", "name"],
-        ["css=.btn", "css:finder"],
+        ["css=.ui-btn", "css:finder"],
         ["xpath=//button[@name='button-SAVE']", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div[5]/div[2]/div/div/button", "xpath:idRelative"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[5]/div[2]/div/div/div/button", "xpath:idRelative"],
         ["xpath=//button", "xpath:position"],
         ["xpath=//button[contains(.,'SAVE')]", "xpath:innerText"]
       ],
@@ -308,13 +308,13 @@
       "id": "2e5efb63-c1c5-47df-8c9d-01808cb5da36",
       "comment": "",
       "command": "type",
-      "target": "xpath=//input[@id='editor']",
+      "target": "name=input-State",
       "targets": [
-        ["id=editor", "id"],
+        ["id=140", "id"],
         ["name=input-State", "name"],
-        ["css=.d4-input-text:nth-child(1) > #editor", "css:finder"],
-        ["xpath=//input[@id='editor']", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div/div/table/tbody/tr/td/div/div/div[2]/div/div/input", "xpath:idRelative"],
+        ["css=#\\31 40", "css:finder"],
+        ["xpath=//input[@id='140']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div[2]/div/div/div/div/div/div/div/div[2]/div/div/input", "xpath:idRelative"],
         ["xpath=//div[2]/div/div/input", "xpath:position"]
       ],
       "value": "NY"
@@ -406,9 +406,9 @@
       "id": "3014745f-aa9f-47d6-8727-d2fd9162030c",
       "comment": "",
       "command": "type",
-      "target": "xpath=(//input[@type='text'])[3]",
+      "target": "css=.ui-input-type-ahead > .ui-input-editor",
       "targets": [
-        ["css=.type-ahead-input", "css:finder"],
+        ["css=.ui-input-type-ahead > .ui-input-editor", "css:finder"],
         ["xpath=(//input[@type='text'])[3]", "xpath:attributes"],
         ["xpath=//div[@id='elementContent']/div[2]/div/div[2]/div/div/input", "xpath:idRelative"],
         ["xpath=//div[2]/div/div[2]/div/div/input", "xpath:position"]
@@ -555,12 +555,12 @@
       "id": "1ef7bba8-e61c-4068-b968-d47aa650a2cf",
       "comment": "",
       "command": "type",
-      "target": "xpath=//input[@id='editor']",
+      "target": "name=input-stores-in-@state---State",
       "targets": [
-        ["id=editor", "id"],
-        ["name=input-stores in @state---State", "name"],
-        ["css=#editor", "css:finder"],
-        ["xpath=//input[@id='editor']", "xpath:attributes"],
+        ["id=232", "id"],
+        ["name=input-stores-in-@state---State", "name"],
+        ["css=#\\32 32", "css:finder"],
+        ["xpath=//input[@id='232']", "xpath:attributes"],
         ["xpath=//div[2]/div/input", "xpath:position"]
       ],
       "value": "NY"
@@ -574,8 +574,8 @@
     }, {
       "id": "1e76f602-8d1a-4c40-8dd2-9fe61c8bd3f2",
       "comment": "",
-      "command": "executeScript",
-      "target": "document.querySelector(\"#editor\").dispatchEvent(new Event('input'))",
+      "command": "//executeScript",
+      "target": "document.querySelector(\"#\\\\32 32\").dispatchEvent(new Event('input'))",
       "targets": [],
       "value": ""
     }, {
@@ -602,7 +602,7 @@
       "id": "f2fbcfe2-50ec-4179-86cd-bc907320a52c",
       "comment": "",
       "command": "pause",
-      "target": "40000",
+      "target": "50000",
       "targets": [],
       "value": ""
     }, {
@@ -781,7 +781,7 @@
       "id": "0110558b-0f2b-4f7e-92ae-eb036b306ebf",
       "comment": "",
       "command": "executeScript",
-      "target": "document.querySelector(\"#elementContent > div > div > div > div:nth-child(5) > div.d4-accordion-pane-content.expanded > div > textarea\").dispatchEvent(new Event('input'))",
+      "target": "document.querySelector('.d4-pane-transformations textarea').dispatchEvent(new Event('input'))",
       "targets": [],
       "value": ""
     }, {
