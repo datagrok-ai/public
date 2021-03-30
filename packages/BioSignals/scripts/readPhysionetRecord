@@ -11,6 +11,7 @@
 import wfdb
 import shutil
 import os
+import numpy as np
 
 folder_name = './my_folder/'
 
@@ -28,6 +29,6 @@ shutil.rmtree(folder_name)
 plot_num = 10000
 df = pd.DataFrame({
     'time': range(plot_num),
-    rec.sig_name[0]: rec.p_signal[:plot_num, 0],
-    rec.sig_name[1]: rec.p_signal[:plot_num, 1]
+    rec.sig_name[0]: np.around(rec.p_signal[:plot_num, 0], decimals=4),
+    rec.sig_name[1]: np.around(rec.p_signal[:plot_num, 1], decimals=4)
 })
