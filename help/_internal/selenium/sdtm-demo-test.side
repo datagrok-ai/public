@@ -96,7 +96,7 @@
       "id": "7bb11714-6b63-49c1-8e67-2caeebf395ab",
       "comment": "",
       "command": "pause",
-      "target": "10000",
+      "target": "15000",
       "targets": [],
       "value": ""
     }, {
@@ -138,12 +138,13 @@
       "id": "0df8a6f8-baf7-426a-a912-5f3ab09d01d7",
       "comment": "",
       "command": "click",
-      "target": "xpath=//button[contains(.,'...')]",
+      "target": "xpath=//div[@id='102']",
       "targets": [
-        ["css=.d4-flex-col:nth-child(6) button", "css:finder"],
-        ["xpath=//div[@id='grok-viewers-toolbox']/div[2]/div/div[2]/div/div[6]/div/div/button", "xpath:idRelative"],
-        ["xpath=//div[6]/div/div/button", "xpath:position"],
-        ["xpath=//button[contains(.,'...')]", "xpath:innerText"]
+        ["id=102", "id"],
+        ["css=#\\31 02", "css:finder"],
+        ["xpath=//div[@id='102']", "xpath:attributes"],
+        ["xpath=//div[@id='grok-viewers-toolbox']/div[2]/div/div[2]/div/div[6]/div/div", "xpath:idRelative"],
+        ["xpath=//div[6]/div/div", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -175,18 +176,20 @@
       "id": "a756d361-2b81-4b17-a332-1fe86c9c0855",
       "comment": "",
       "command": "pause",
-      "target": "3000",
+      "target": "5000",
       "targets": [],
       "value": ""
     }, {
-      "id": "8adddcca-c815-4dad-b768-a64e758d4372",
+      "id": "e0b9b45f-3b86-4c1f-bf6f-949de254de83",
       "comment": "",
       "command": "click",
-      "target": "css=.d4-flex-col:nth-child(7) button",
+      "target": "xpath=//div[@id='105']",
       "targets": [
-        ["css=.d4-flex-col:nth-child(7) button", "css:finder"],
-        ["xpath=//div[@id='grok-viewers-toolbox']/div[2]/div/div[2]/div/div[7]/div/div/button", "xpath:idRelative"],
-        ["xpath=//div[7]/div/div/button", "xpath:position"]
+        ["id=102", "id"],
+        ["css=#\\31 02", "css:finder"],
+        ["xpath=//div[@id='102']", "xpath:attributes"],
+        ["xpath=//div[@id='grok-viewers-toolbox']/div[2]/div/div[2]/div/div[6]/div/div", "xpath:idRelative"],
+        ["xpath=//div[6]/div/div", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -218,18 +221,20 @@
       "id": "0e82017b-04c1-4a12-82d8-6a6db555bff2",
       "comment": "",
       "command": "pause",
-      "target": "10000",
+      "target": "12000",
       "targets": [],
       "value": ""
     }, {
-      "id": "b84f78e0-721d-4512-8961-06f73e05aa2d",
+      "id": "ef28d311-6e9a-4910-b2c7-d95591344d1e",
       "comment": "",
       "command": "click",
-      "target": "css=.d4-flex-col:nth-child(8) button",
+      "target": "xpath=//div[@id='107']",
       "targets": [
-        ["css=.d4-flex-col:nth-child(8) button", "css:finder"],
-        ["xpath=//div[@id='grok-viewers-toolbox']/div[2]/div/div[2]/div/div[8]/div/div/button", "xpath:idRelative"],
-        ["xpath=//div[8]/div/div/button", "xpath:position"]
+        ["id=102", "id"],
+        ["css=#\\31 02", "css:finder"],
+        ["xpath=//div[@id='102']", "xpath:attributes"],
+        ["xpath=//div[@id='grok-viewers-toolbox']/div[2]/div/div[2]/div/div[6]/div/div", "xpath:idRelative"],
+        ["xpath=//div[6]/div/div", "xpath:position"]
       ],
       "value": ""
     }, {
