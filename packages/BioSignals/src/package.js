@@ -241,17 +241,16 @@ function showMainDialog(view, table, tableWithAnnotations, signalType, column, s
     pipeline = createPipelineObject(pipeline, 'Estimators', extractorTypesList, extractorParametersList);
     pipeline = createPipelineObject(pipeline, 'Indicators', indicatorTypesList, indicatorParametersList);
 
-    pipeline = JSON.stringify(pipeline);
-
     grok.dapi.users.current().then(async (user) => {
       const pathToFolder = user.login + ':Home/';
-      grok.dapi.files.writeAsText(pathToFolder + 'pipeline.txt', pipeline);
+      grok.dapi.files.writeAsText(pathToFolder + 'pipeline.txt', JSON.stringify(pipeline));
     });
   }));
 
   let formView = ui.div([
     ui.divText('Sampling frequency: ' + samplingFreq),
     ui.divText('Signal type: ' + signalType),
+    savePipelineButton,
     ui.block([
       DG.Viewer.fromType('AnnotatorViewer', tableWithAnnotations)
     ]),
@@ -360,7 +359,11 @@ export function BioSignals() {
   let chosenDatabase = ui.choiceInput('Physionet database', '', Object.keys(physionetDatabasesDictionary));
   chosenDatabase.onInput(() => {
     let chosenRecord = ui.choiceInput('Physionet record', '', physionetDatabasesDictionary[chosenDatabase.stringValue].record_names);
-    view.append(ui.div(chosenRecord));
+
+    let formView = ui.divV([chosenDatabase, chosenRecord]);
+    view = grok.shell.newView('BioSignals', []);
+    view.append(formView);
+
     chosenRecord.onInput(async () => {
       let pi = DG.TaskBarProgressIndicator.create('Loading record from Physionet...');
       let chosenDatabaseShortName = physionetDatabasesDictionary[chosenDatabase.stringValue].short_name;
@@ -400,7 +403,7 @@ export function BioSignals() {
 
       let sex, age, dateOfRecording, samplingFrequency, annotationsDF, heartRate, rrStd;
       let indexCounter = 0;
-      for (const personalFolderName of personalFoldersNames.slice(0,6)) {
+      for (const personalFolderName of personalFoldersNames) {
         console.log(personalFolderName);
         let filesInPersonalFolder = await grok.dapi.files.list(pathToFolder + personalFolderName, false, '');
         let uniqueFileNamesWithoutExtension = Array.from(new Set(filesInPersonalFolder.map((file) => file.name.slice(0, -4))));
@@ -423,12 +426,7 @@ export function BioSignals() {
     });
   }));
 
-  view
-    .append(
-      ui.divV([
-        chosenDatabase,
-        folderName,
-        runPipelineButton
-      ])
-    );
+  let formView = ui.divV([chosenDatabase, folderName, runPipelineButton]);
+  view = grok.shell.newView('BioSignals', []);
+  view.append(formView);
 }
