@@ -351,24 +351,6 @@ export function showPopup(element, anchor, vertical = false) {
   return grok_UI_ShowPopup(element, anchor, vertical);
 }
 
-/**
- * @param {string} value
- * @param {boolean} autoSize
- * @param {boolean} resizable
- * @returns {HTMLTextAreaElement} */
-export function textArea(value, autoSize = false, resizable = true) {
-  return grok_UI_TextArea(value, autoSize, resizable);
-}
-
-/**
- * @param {string} value
- * @returns {HTMLInputElement} */
-export function textInput(value) {
-  var input = element('input');
-  input.value = value;
-  return input;
-}
-
 export function rangeSlider(minRange, maxRange, min, max) {
   let rs = RangeSlider.create();
   rs.setValues(minRange, maxRange, min, max);
@@ -453,6 +435,10 @@ export function columnInput(name, table, value, onValueChanged = null) {
 
 export function columnsInput(name, table, onValueChanged = null) {
   return new InputBase(grok_ColumnsInput(name, table.d), onValueChanged);
+}
+
+export function textInput(name, value, onValueChanged = null) {
+  return new InputBase(grok_TextInput(name, value), onValueChanged);
 }
 
 /**
