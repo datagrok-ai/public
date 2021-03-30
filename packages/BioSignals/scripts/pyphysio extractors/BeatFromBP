@@ -3,6 +3,7 @@
 #language: python
 #tags: biosignals, extractors, pyphysio
 #input: dataframe data
+#input: column column
 #input: double sampling_frequency
 #input: int bpm_max [Maximal expected heart rate (in beats per minute): (1, 400], default=120]
 #input: double win_pre [Portion (in seconds) to consider before the candidate beat position where to look for the beat: (0, 1], default=0.25]
@@ -11,7 +12,7 @@
 
 import pyphysio as ph
 
-sig = ph.EvenlySignal(values=data.iloc[:,0], sampling_freq=sampling_frequency)
+sig = ph.EvenlySignal(values=data[column], sampling_freq=sampling_frequency)
 
 extracted = ph.BeatFromBP(bpm_max=bpm_max, win_pre=win_pre, win_post=win_post)(sig)
 

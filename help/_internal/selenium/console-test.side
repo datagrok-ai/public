@@ -177,9 +177,9 @@
       "id": "5e644485-594b-4c29-847d-48ee0856ee4e",
       "comment": "",
       "command": "type",
-      "target": "css=.type-ahead-input",
+      "target": "css=.ui-input-root > .ui-input-editor",
       "targets": [
-        ["css=.type-ahead-input", "css:finder"],
+        ["css=.ui-input-root > .ui-input-editor", "css:finder"],
         ["xpath=(//input[@type='text'])[2]", "xpath:attributes"],
         ["xpath=//div[@id='elementContent']/div/div[2]/div/input", "xpath:idRelative"],
         ["xpath=//div[2]/div/input", "xpath:position"]
@@ -618,7 +618,7 @@
       "id": "9fef016d-c150-404f-91d9-9fc721546f13",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "2000",
       "targets": [],
       "value": ""
     }, {
@@ -674,7 +674,7 @@
       "id": "9d9da829-8c6d-48bd-9b03-f267e794cccd",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "2000",
       "targets": [],
       "value": ""
     }, {
@@ -722,43 +722,6 @@
       "command": "pause",
       "target": "1000",
       "targets": [],
-      "value": ""
-    }, {
-      "id": "d0834f6b-89de-4a1f-be1b-90f3644b353f",
-      "comment": "",
-      "command": "executeScript",
-      "target": "let element = window; let event = new KeyboardEvent(\"keydown\", {keyCode: 192}); element.dispatchEvent(event);",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "fc377c51-5ee1-47b4-a697-367de365919a",
-      "comment": "",
-      "command": "pause",
-      "target": "1000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "5a855105-8c4e-4388-9a5d-6b1413aec2a4",
-      "comment": "",
-      "command": "verifyElementNotPresent",
-      "target": "css=.d4-console-wrapper",
-      "targets": [
-        ["css=.panel-base:nth-child(3) > .panel-titlebar", "css:finder"],
-        ["xpath=//div[@id='rootDiv']/div[2]/div[2]/div/div/div[3]/div[3]/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div[3]/div[3]/div", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "a6a6a59f-bcc9-4d76-b735-6c0ee5645221",
-      "comment": "",
-      "command": "verifyElementNotPresent",
-      "target": "xpath=//i[@name='icon-exclamation-circle']",
-      "targets": [
-        ["css=.fa-exclamation-circle", "css:finder"],
-        ["xpath=//i[@name='icon-exclamation-circle']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[2]/i", "xpath:idRelative"],
-        ["xpath=//div[2]/i", "xpath:position"]
-      ],
       "value": ""
     }]
   }],

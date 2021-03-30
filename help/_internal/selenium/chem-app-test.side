@@ -1,11 +1,11 @@
 {
   "id": "b390008b-1b39-4405-bcfd-6b03f9f4d568",
   "version": "2.0",
-  "name": "rdkit-app-test",
+  "name": "chem-app-test",
   "url": "https://dev.datagrok.ai/",
   "tests": [{
     "id": "1e1a7755-4e26-458c-9783-60348afe35cf",
-    "name": "rdkit-app-test",
+    "name": "chem-app-test",
     "commands": [{
       "id": "8ff604b9-81db-4083-8663-4b119b7492f9",
       "comment": "",
@@ -122,12 +122,12 @@
       "id": "488420f5-d357-47bd-ad65-515cb7e20466",
       "comment": "",
       "command": "doubleClick",
-      "target": "name=div-RDKitDemo",
+      "target": "xpath=(//div[@name='div-Chem'])[2]",
       "targets": [
-        ["css=span:nth-child(1) > label", "css:finder"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div[2]/div[2]/div/table/tbody/tr/td[2]/span/span/label", "xpath:idRelative"],
-        ["xpath=//td[2]/span/span/label", "xpath:position"],
-        ["xpath=//label[contains(.,'SPGi v.0.4')]", "xpath:innerText"]
+        ["css=.grok-wait:nth-child(3) > .grok-gallery-grid-item-wrapper", "css:finder"],
+        ["xpath=(//div[@name='div-Chem'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div[3]/div[3]/div", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div[3]/div[3]/div", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -412,7 +412,7 @@
   }],
   "suites": [{
     "id": "ec967ec6-1191-47c4-9144-a537f982d65b",
-    "name": "rdkit-app-test",
+    "name": "chem-app-test",
     "persistSession": false,
     "parallel": false,
     "timeout": 300,

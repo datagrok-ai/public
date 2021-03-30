@@ -125,6 +125,7 @@ function showMainDialog(view, table, tableWithAnnotations, signalType, column, s
     }
 
     const parameters = getArrayOfParameterObjects(filterTypesList, filterParametersList, samplingFreq);
+    inputCase = t.columns.byIndex(0);
     let [plotFL, nameOfLastFiltersOutput] =
       await applyFilter(t, parameters[i - 1], i, table.columns.byName('time'), inputCase);
     filterChartsList[i - 1].dataFrame = plotFL;
@@ -177,7 +178,7 @@ function showMainDialog(view, table, tableWithAnnotations, signalType, column, s
     let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting extractor...');
     let extractorParameters = getArrayOfParameterObjects(extractorTypesList, extractorParametersList, samplingFreq);
     let t = DG.DataFrame.fromColumns([filterOutputsObj[filterInputsList[i - 1].value].columns.byName(filterInputsList[i - 1].value)]);
-    let plotInfo = await applyExtractor(t, extractorParameters[j - 1]);
+    let plotInfo = await applyExtractor(t, t.columns.byName(filterInputsList[i - 1].value), extractorParameters[j - 1]);
     nameOfLastExtractorsOutput = 'Output of Extractor ' + j + ' (' + extractorTypesList[j - 1].value + ')';
     pi.close();
     extractorChartsList[j - 1].dataFrame = plotInfo;
@@ -228,7 +229,7 @@ function showMainDialog(view, table, tableWithAnnotations, signalType, column, s
     let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting indicator...');
     let indicatorParameters = getArrayOfParameterObjects(indicatorTypesList, indicatorParametersList, samplingFreq);
     let t = DG.DataFrame.fromColumns([extractorOutputsObj[indicatorInputsList[k - 1].value].columns.byName('RR intervals')]);
-    indicatorChartsList[k - 1].dataFrame = await applyIndicator(t, indicatorParameters[k - 1]);
+    indicatorChartsList[k - 1].dataFrame = await applyIndicator(t, t.columns.byName('RR intervals'), indicatorParameters[k - 1]);
     pi.close();
   }));
 
@@ -241,17 +242,16 @@ function showMainDialog(view, table, tableWithAnnotations, signalType, column, s
     pipeline = createPipelineObject(pipeline, 'Estimators', extractorTypesList, extractorParametersList);
     pipeline = createPipelineObject(pipeline, 'Indicators', indicatorTypesList, indicatorParametersList);
 
-    pipeline = JSON.stringify(pipeline);
-
     grok.dapi.users.current().then(async (user) => {
       const pathToFolder = user.login + ':Home/';
-      grok.dapi.files.writeAsText(pathToFolder + 'pipeline.txt', pipeline);
+      grok.dapi.files.writeAsText(pathToFolder + 'pipeline.txt', JSON.stringify(pipeline));
     });
   }));
 
   let formView = ui.div([
     ui.divText('Sampling frequency: ' + samplingFreq),
     ui.divText('Signal type: ' + signalType),
+    savePipelineButton,
     ui.block([
       DG.Viewer.fromType('AnnotatorViewer', tableWithAnnotations)
     ]),
@@ -360,7 +360,11 @@ export function BioSignals() {
   let chosenDatabase = ui.choiceInput('Physionet database', '', Object.keys(physionetDatabasesDictionary));
   chosenDatabase.onInput(() => {
     let chosenRecord = ui.choiceInput('Physionet record', '', physionetDatabasesDictionary[chosenDatabase.stringValue].record_names);
-    view.append(ui.div(chosenRecord));
+
+    let formView = ui.divV([chosenDatabase, chosenRecord]);
+    view = grok.shell.newView('BioSignals', []);
+    view.append(formView);
+
     chosenRecord.onInput(async () => {
       let pi = DG.TaskBarProgressIndicator.create('Loading record from Physionet...');
       let chosenDatabaseShortName = physionetDatabasesDictionary[chosenDatabase.stringValue].short_name;
@@ -378,6 +382,52 @@ export function BioSignals() {
     });
   });
 
-  view
-    .append(ui.divV([chosenDatabase]));
+  let folderName = ui.stringInput('Path to folder', '');
+  let runPipelineButton = ui.div();
+  runPipelineButton.appendChild(ui.button('Run pipeline', async () => {
+
+    grok.dapi.users.current().then(async (user) => {
+      let pi = DG.TaskBarProgressIndicator.create('Calculating table...');
+
+      const pathToFolder = user.login + ':Home/' + folderName.value + '/';
+      const personalFoldersInfos = await grok.dapi.files.list(pathToFolder, false, '');
+      const personalFoldersNames = personalFoldersInfos.map((folder) => folder.name)
+      let subjectsTable = DG.DataFrame.create(personalFoldersNames.length);
+
+      subjectsTable.columns.addNewString('Person');
+      subjectsTable.columns.addNewString('Record');
+      subjectsTable.columns.addNewString('Sex');
+      subjectsTable.columns.addNewInt('Age');
+      subjectsTable.columns.addNewString('Date');
+      subjectsTable.columns.addNewInt('Heart Rate');
+      subjectsTable.columns.addNewFloat('rrStd');
+
+      let sex, age, dateOfRecording, samplingFrequency, annotationsDF, heartRate, rrStd;
+      let indexCounter = 0;
+      for (const personalFolderName of personalFoldersNames) {
+        console.log(personalFolderName);
+        let filesInPersonalFolder = await grok.dapi.files.list(pathToFolder + personalFolderName, false, '');
+        let uniqueFileNamesWithoutExtension = Array.from(new Set(filesInPersonalFolder.map((file) => file.name.slice(0, -4))));
+        for (const fileNameWithoutExtension of uniqueFileNamesWithoutExtension) {
+          [annotationsDF, age, sex, dateOfRecording, samplingFrequency, heartRate, rrStd] = await readPhysionetAnnotations(filesInPersonalFolder, fileNameWithoutExtension);
+          subjectsTable.columns.byName('Person').set(indexCounter, personalFolderName);
+          subjectsTable.columns.byName('Record').set(indexCounter, fileNameWithoutExtension);
+          subjectsTable.columns.byName('Sex').set(indexCounter, sex);
+          subjectsTable.columns.byName('Age').set(indexCounter, age);
+          subjectsTable.columns.byName('Date').set(indexCounter, dateOfRecording);
+          subjectsTable.columns.byName('Heart Rate').set(indexCounter, heartRate);
+          subjectsTable.columns.byName('rrStd').set(indexCounter, rrStd);
+          indexCounter++;
+          console.log(fileNameWithoutExtension);
+        }
+      }
+      let view = grok.shell.addTableView(subjectsTable);
+      view.boxPlot({x: 'Sex', y: 'Heart Rate'});
+      pi.close();
+    });
+  }));
+
+  let formView = ui.divV([chosenDatabase, folderName, runPipelineButton]);
+  view = grok.shell.newView('BioSignals', []);
+  view.append(formView);
 }

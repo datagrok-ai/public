@@ -3,6 +3,7 @@
 #language: python
 #tags: biosignals, filters, pyphysio
 #input: dataframe input_signals
+#input: column column
 #input: double sampling_frequency
 #input: double win_len [Length of the window]
 #input: double threshold [Threshold to detect the noise, value should be positive]
@@ -10,7 +11,7 @@
 
 import pyphysio as ph
 
-sig = ph.EvenlySignal(values=input_signals.iloc[:,0], sampling_freq=sampling_frequency)
+sig = ph.EvenlySignal(values=input_signals[column], sampling_freq=sampling_frequency)
 
 sig = ph.DenoiseEDA(win_len=win_len, threshold=threshold)(sig)
 
