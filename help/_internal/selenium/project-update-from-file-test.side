@@ -310,10 +310,10 @@
       "id": "5d4c384d-df24-47d1-92a1-69f0d02aea38",
       "comment": "",
       "command": "click",
-      "target": "css=.d4-input-switch",
+      "target": "css=.ui-input-switch",
       "targets": [
-        ["css=.d4-input-switch", "css:finder"],
-        ["xpath=//div[@id='right']/div/div/div/div[2]/div/div/div/span/div/div/div", "xpath:idRelative"],
+        ["css=.ui-input-switch", "css:finder"],
+        ["xpath=//div[@id='right']/div/div/div/div[2]/div/div/div/div/span/div/div/div", "xpath:idRelative"],
         ["xpath=//span/div/div/div", "xpath:position"]
       ],
       "value": ""
@@ -413,7 +413,7 @@
       "id": "a7bd560c-1a21-431d-96ca-fce49bf76a05",
       "comment": "",
       "command": "pause",
-      "target": "3000",
+      "target": "4000",
       "targets": [],
       "value": ""
     }, {
@@ -471,7 +471,7 @@
       "id": "586da239-d4a8-460e-86db-06250cec20af",
       "comment": "",
       "command": "pause",
-      "target": "5000",
+      "target": "7000",
       "targets": [],
       "value": ""
     }, {
