@@ -3,6 +3,7 @@
 #language: python
 #tags: biosignals, extractors, pyphysio
 #input: dataframe data
+#input: column column
 #input: double sampling_frequency
 #input: double t1 [Value of the T1 parameter of the bateman function, default = 0.75]
 #input: double t2 [Value of the T2 parameter of the bateman function, default = 2]
@@ -14,7 +15,7 @@
 
 import pyphysio as ph
 
-sig = ph.EvenlySignal(values=data.iloc[:,0], sampling_freq=sampling_frequency)
+sig = ph.EvenlySignal(values=data[column], sampling_freq=sampling_frequency)
 
 extracted = ph.DriverEstim(t1=t1, t2=t2)(sig)
 

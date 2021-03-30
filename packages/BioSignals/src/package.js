@@ -125,6 +125,7 @@ function showMainDialog(view, table, tableWithAnnotations, signalType, column, s
     }
 
     const parameters = getArrayOfParameterObjects(filterTypesList, filterParametersList, samplingFreq);
+    inputCase = t.columns.byIndex(0);
     let [plotFL, nameOfLastFiltersOutput] =
       await applyFilter(t, parameters[i - 1], i, table.columns.byName('time'), inputCase);
     filterChartsList[i - 1].dataFrame = plotFL;
@@ -177,7 +178,7 @@ function showMainDialog(view, table, tableWithAnnotations, signalType, column, s
     let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting extractor...');
     let extractorParameters = getArrayOfParameterObjects(extractorTypesList, extractorParametersList, samplingFreq);
     let t = DG.DataFrame.fromColumns([filterOutputsObj[filterInputsList[i - 1].value].columns.byName(filterInputsList[i - 1].value)]);
-    let plotInfo = await applyExtractor(t, extractorParameters[j - 1]);
+    let plotInfo = await applyExtractor(t, t.columns.byName(filterInputsList[i - 1].value), extractorParameters[j - 1]);
     nameOfLastExtractorsOutput = 'Output of Extractor ' + j + ' (' + extractorTypesList[j - 1].value + ')';
     pi.close();
     extractorChartsList[j - 1].dataFrame = plotInfo;
@@ -228,7 +229,7 @@ function showMainDialog(view, table, tableWithAnnotations, signalType, column, s
     let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting indicator...');
     let indicatorParameters = getArrayOfParameterObjects(indicatorTypesList, indicatorParametersList, samplingFreq);
     let t = DG.DataFrame.fromColumns([extractorOutputsObj[indicatorInputsList[k - 1].value].columns.byName('RR intervals')]);
-    indicatorChartsList[k - 1].dataFrame = await applyIndicator(t, indicatorParameters[k - 1]);
+    indicatorChartsList[k - 1].dataFrame = await applyIndicator(t, t.columns.byName('RR intervals'), indicatorParameters[k - 1]);
     pi.close();
   }));
 

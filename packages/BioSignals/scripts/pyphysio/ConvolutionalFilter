@@ -3,6 +3,7 @@
 #language: python
 #tags: biosignals, filters, pyphysio
 #input: dataframe input_signals
+#input: column column
 #input: double sampling_frequency
 #input: double win_len [Duration of the generated IRF in seconds (if irftype is not 'custom'), >0 (> 8/fsamp for 'gaussian')]
 #input: string irftype {choices: ['gauss', 'rect', 'triang', 'dgauss', 'custom']} [Type of IRF to be generated]
@@ -10,7 +11,7 @@
 
 import pyphysio as ph
 
-sig = ph.EvenlySignal(values=input_signals.iloc[:,0], sampling_freq=sampling_frequency)
+sig = ph.EvenlySignal(values=input_signals[column], sampling_freq=sampling_frequency)
 
 sig = ph.ConvolutionalFilter(win_len=win_len, irftype=irftype)(sig)
 
