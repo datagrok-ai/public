@@ -125,9 +125,9 @@ async function showMainDialog(view, table, tableWithAnnotations, signalType, col
     }
 
     const parameters = getArrayOfParameterObjects(filterTypesList, filterParametersList, samplingFreq);
-    inputCase = t.columns.byIndex(0);
+    t.columns.byIndex(0).setTag('selectedFilterInput', undefined);
     let [plotFL, nameOfLastFiltersOutput] =
-      await applyFilter(t, parameters[i - 1], i, table.columns.byName('time'), inputCase);
+      await applyFilter(t, parameters[i - 1], i, table.columns.byName('time'));
     filterChartsList[i - 1].dataFrame = plotFL;
     Object.assign(filterOutputsObj, {[nameOfLastFiltersOutput]: plotFL});
     pi.close();

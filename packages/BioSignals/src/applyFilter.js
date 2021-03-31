@@ -202,8 +202,10 @@ async function RemoveSpikes(data, columnToFilter, parameters) {
     });
 }
 
-export async function applyFilter(t, parameters, i, col, inputCase) {
-  let nameOfLastFiltersOutput, plotFL;
+export async function applyFilter(t, parameters, i, col) {
+  let nameOfLastFiltersOutput, plotFL, inputCase;
+  for (let column of t.columns.byTags({'selectedFilterInput': undefined}))
+    inputCase = t.columns.byName(column.name);
   switch (parameters['type']) {
     case 'Moving Average Filter':
       await SMA_filter(t, inputCase, parameters);
