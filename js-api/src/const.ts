@@ -23,6 +23,7 @@ export type Type = `${TYPE}`;
 export type SemType = string;
 export type SimilarityMetric = `${SIMILARITY_METRIC}`;
 export type ColorType = number;
+export type DemoDatasetName = `${DEMO_DATASET}`;
 
 /** @enum {AggregationType} */
 export enum AGG {
@@ -259,4 +260,12 @@ export enum SIMILARITY_METRIC {
   MC_CONNAUGHEY = 'mc-connaughey',
   ASYMMETRIC = 'asymmetric',
   BRAUN_BLANQUET = 'braun-blanquet'
+}
+
+export enum DEMO_DATASET {
+  WELLS = 'wells',
+  DEMOG = 'demog',
+  BIOSENSOR = 'biosensor',
+  RANDOM_WALK = 'random walk',
+  GEO = 'geo',
 }
