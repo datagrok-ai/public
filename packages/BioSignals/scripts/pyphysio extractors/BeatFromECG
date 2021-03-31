@@ -1,7 +1,7 @@
 #name: BeatFromECG
 #description: Identify the beats in an ECG signal and compute the IBIs
 #language: python
-#tags: biosignals, extractors, pyphysio
+#tags: biosignals, extractors, pyphysio, ecg_signal
 #input: dataframe data
 #input: column column
 #input: double sampling_frequency

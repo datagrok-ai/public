@@ -12,10 +12,10 @@ export function getFilterParameters(filterType) {
       let stopFreq = ui.floatInput('Stop frequency', '');
       let windowType = ui.choiceInput('Window type', 'hamming', ['hamming']);
       return {'fp': passFreq, 'fs': stopFreq, 'windowType': windowType};
-    case 'normalize':
+    case 'Normalize':
       let normMethod = ui.choiceInput('norm_method', '', ['mean', 'standard', 'min', 'maxmin', 'custom']);
       return {'normMethod': normMethod};
-    case 'resample':
+    case 'Resample':
       let fout = ui.intInput('Output sampling frequency', '');
       let kind = ui.choiceInput('Interpolation method', '', ['linear', 'nearest', 'zero', 'slinear', 'quadratic', 'cubic']);
       return {'fout': fout, 'kind': kind};

@@ -1,4 +1,9 @@
-export function getRelevantMethods(signalType) {
+async function getScriptsNames(tag) {
+  const scripts = await grok.dapi.scripts.filter(tag).list();
+  return await scripts.map((script) => script.name);
+}
+
+export async function getRelevantMethods(signalType) {
   const dspPackageFilters = [
     'Moving Average Filter',
     'Exponential Filter',
@@ -12,81 +17,10 @@ export function getRelevantMethods(signalType) {
     'Subsample',
     'Averaging Downsampling'
   ];
-  const pyphysioFilters = [
-    'IIRFilter',
-    'FIRFilter',
-    'normalize',
-    'resample',
-    'KalmanFilter',
-    'ImputeNAN',
-    'RemoveSpikes',
-    'ConvolutionalFilter'
-  ];
-  let commonFilters = dspPackageFilters.concat(pyphysioFilters);
-  let commonExtractors = ['Local energy'];
-  let commonIndicators = [];
-  switch (signalType) {
-    case 'ECG':
-      return {
-        filters: commonFilters,
-        extractors: commonExtractors.concat([
-          'Beat from ECG'
-        ]),
-        indicators: commonIndicators.concat([
-          'HRV time domain',
-          'HRV frequency domain',
-          'HRV nonlinear domain'
-        ])
-      };
-    case 'EDA':
-      return {
-        filters: commonFilters.concat([
-          'DenoiseEDA'
-        ]),
-        extractors: commonExtractors.concat([
-          'Phasic estimation'
-        ]),
-        indicators: commonIndicators
-      };
-    case 'Accelerometer':
-      return {
-        filters: commonFilters,
-        extractors: commonExtractors,
-        indicators: commonIndicators
-      };
-    case 'EMG':
-      return {
-        filters: commonFilters,
-        extractors: commonExtractors,
-        indicators: commonIndicators
-      };
-    case 'EEG':
-      return {
-        filters: commonFilters,
-        extractors: commonExtractors,
-        indicators: commonIndicators
-      };
-    case 'ABP':
-      return {
-        filters: commonFilters,
-        extractors: commonExtractors.concat([
-          'BeatFromBP'
-        ]),
-        indicators: commonIndicators
-      };
-    case 'BVP(PPG)':
-      return {
-        filters: commonFilters,
-        extractors: commonExtractors.concat([
-          'BeatFromBP'
-        ]),
-        indicators: commonIndicators
-      };
-    case 'Respiration':
-      return {
-        filters: commonFilters,
-        extractors: commonExtractors,
-        indicators: commonIndicators
-      };
-  }
+  const pyphysioFilters = await getScriptsNames('#filters');
+  return {
+    filters: dspPackageFilters.concat(pyphysioFilters),
+    extractors: await getScriptsNames('#extractors'),
+    indicators: await getScriptsNames('#indicators')
+  };
 }

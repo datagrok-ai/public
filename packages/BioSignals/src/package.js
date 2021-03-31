@@ -60,16 +60,16 @@ function createPipelineObject(pipeline, functionCategory, typesList, parametersL
   return pipeline;
 }
 
-function showMainDialog(view, table, tableWithAnnotations, signalType, column, samplingFreq, isDataFrameLocal) {
+async function showMainDialog(view, table, tableWithAnnotations, signalType, column, samplingFreq) {
 
-  let inputCase = (isDataFrameLocal) ? column.value[0] : table.columns.byName('testEcg');
+  let inputCase = table.columns.byName('testEcg');
 
   let accordionFilters = ui.accordion();
   let accordionExtractors = ui.accordion();
   let accordionIndicators = ui.accordion();
   let extractorOutputsObj = {};
 
-  let relevantMethods = getRelevantMethods(signalType);
+  let relevantMethods = await getRelevantMethods(signalType);
 
   // Filter dialogue
   let filterTypesList = [];
@@ -370,14 +370,13 @@ export function BioSignals() {
       let chosenDatabaseShortName = physionetDatabasesDictionary[chosenDatabase.stringValue].short_name;
       let [table, samplingFrequency] = await loadPhysionetRecord(chosenDatabaseShortName, chosenRecord);
       let signalType = 'ECG';
-      let isDataFrameLocal = false;
       pi.close();
 
       pi = DG.TaskBarProgressIndicator.create('Loading annotations of chosen record from Physionet...');
       let dataFrameWithAnnotations = await loadPhysionetAnnotations(chosenDatabaseShortName, chosenRecord);
       let col = table.columns.byName('testEcg');
       let tableWithAnnotations = table.append(dataFrameWithAnnotations);
-      showMainDialog(view, table, tableWithAnnotations, signalType, col, samplingFrequency, isDataFrameLocal);
+      showMainDialog(view, table, tableWithAnnotations, signalType, col, samplingFrequency);
       pi.close();
     });
   });
