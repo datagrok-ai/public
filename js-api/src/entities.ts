@@ -751,7 +751,7 @@ export class Package extends Entity {
  * Samples:
  */
 export class Property {
-  protected readonly d: any;
+  public readonly d: any;
 
   constructor(d: any) {
     this.d = d;
