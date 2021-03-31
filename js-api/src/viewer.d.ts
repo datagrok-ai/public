@@ -84,7 +84,7 @@ export class JsViewer extends Widget {
     public get root();
     public set root(value: HTMLElement);
     dataFrame: DataFrame;
-    subs: Subscription[];
+    subs: StreamSubscription[];
     obs: Observable<any>[];
     props: ObjectPropertyBag;
 
