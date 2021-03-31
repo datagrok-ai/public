@@ -47,7 +47,7 @@ acc.addPane('menus', () => ui.button('SHOW', () => {
   });
 }));
 
-acc.addPane('text area', () => ui.textArea('multi\nline\ntext'));
+acc.addPane('text area', () => ui.textInput('', 'multi\nline\ntext').root);
 
 acc.addPane('range ', () => ui.rangeSlider(0, 10, 2, 5).root);
 
