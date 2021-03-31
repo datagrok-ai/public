@@ -440,7 +440,7 @@ export class Dialog {
   }
 
   /** @returns {Observable} */
-  get onClose(): Observable {
+  get onClose(): Observable<any> {
     return __obs('d4-dialog-closed', this.d);
   }
 
@@ -1168,7 +1168,7 @@ export class RangeSlider extends DartWidget {
   };
 
   /** @returns {Observable} */
-  get onValuesChanged(): Observable {
+  get onValuesChanged(): Observable<any> {
     return observeStream(api.grok_RangeSlider_Get_OnValuesChanged(this.d));
   }
 }
