@@ -6,6 +6,10 @@
  * @typedef {string} ViewerType
  * @typedef {string} ObjectType
  * @typedef {string} ViewerPropertyType
+ * @typedef {string} Type
+ * @typedef {string} SemType
+ * @typedef {string} SimilarityMetric
+ * @typedef {string} ColorType
  **/
 
 export type AggregationType = `${AGG}`;
@@ -18,6 +22,7 @@ export type ViewerPropertyType = string;
 export type Type = `${TYPE}`;
 export type SemType = string;
 export type SimilarityMetric = `${SIMILARITY_METRIC}`;
+export type ColorType = number;
 
 /** @enum {AggregationType} */
 export enum AGG {

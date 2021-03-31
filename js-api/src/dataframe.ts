@@ -131,7 +131,7 @@ const MapProxy = new Proxy(class {
  * See usage samples: https://public.datagrok.ai/js/samples/data-frame/manipulate
  */
 export class DataFrame {
-  private readonly d: any;
+  public readonly d: any;
   private columns: ColumnList;
   private rows: RowList;
   private filter: BitSet;
