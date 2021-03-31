@@ -81,6 +81,7 @@ export class StreamSubscription {
     constructor(d: DartStream);
 
     cancel(): void;
+    unsubscribe(): void;
 }
 
 /** Event arguments. {@see args} contains event details.
