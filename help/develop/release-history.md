@@ -1,6 +1,103 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-03-31 Dev build 0.89.29
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.89.29`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Add annotator functionality (WIP)
+* GROK: new sequence viewer added 
+* Wiki: Layout management 
+* JS API: EntityMeta: dynamic resolution of object handlers (WIP)
+* Added logging 
+* Biosignals (WIP)
+* Ability to set dialog position and size 
+* JS API: width and height parameters for dialogs 
+* (Bug) JS Editor: tail comment leads to exception 
+* GROK: paratopes added 
+* GROK: RepertoireBrowser: save and load rows functionality 
+* ClinicalCase: features 
+* Update ui.md 
+* ClinicalCase readme update 
+* (Bug) JS API: tabControl.clear() doesn't remove tabs content 
+* GROK: RepertoireBrowser: improved load rows combobox  with async filelit updates 
+* TabControl: Calling Widget.clear on panels that are about to get removed 
+* "Selection to Filter" command 
+* Show indicators box plot by taking folder with signals as input 
+* images for ui.md 
+* Selenium: Edit UI tests relative to new "id" and "name" for elements (WIP)
+* Updated public token 
+* Adapter to export logs into CloudWatch (WIP)
+* Trellis: virtual scrolling 
+* Trellis: updating the viewer type indicator when loaded from the project 
+* Bio: Create SaveLoadRows Viewer for jbio project  
+* (Bug) Box Plot does not work on demo dataset beer 
+* Molecules rendering in tooltips (WIP)
+* [Scatter Plot: ability to show only selected rows](https://community.datagrok.ai/t/allow-to-show-only-marked-selected-rows-in-the-scatterplot/512) 
+* Chem: Reverted full name to 'Chem', it looks better this way. 'Cheminformatics support' is in the description. 
+* Chord Diagram (WIP)
+* (Bug) UX: Credentials management UI regressed 
+* Adding utils library. 
+* Timelines: refine column selection mechanism for SDTM variables 
+* Charts: Timelines (WIP)
+* Ability to add email to the group 
+* Fixed a typo 
+* UI Doc small changes 
+* (Bug) VirtualView hides scrollbar 
+* Js Viewer: grow to all available space 
+* Property panel: fixed the appearance of the search icon 
+* Grid: "settings" icon improvement 
+* (Bug) Viewers: Tooltip | Edit view tooltip... does not have any effect 
+* HtmlCellRenderer: Fixed function signatures. 
+* Property: added tags 
+* Harmonized viewer menus. 
+* (Bug) setOptions({ viewerType: ... }); does not work as expected for Trellis plots  
+* Always show dock panel header  
+* Create BioSignals app with same functionality as in dialog 
+* (Bug) Viewers: Exception when adding "Box Plot" and "Tree Map" if table has one row 
+* JS API: Matchers 
+* (Bug) Box Plot \- marker size becomes too small, impossible to show tooltips on hi-res display 
+* ClinicalCase \- a plugin for analyzing SDTM-based clinical studies data (WIP)
+* (Bug) BioSignals: No input preset when adding new Indicator 
+* Ability to create TypeScript packages (grok create PackageName -ts) 
+* datagrok-tools: package templates compatibility 
+* (Bug) BioSignals: executes extractor with alphabetically first name, instead of chosen 
+* Wiki: link fix 
+* JS API: Migrate to Typescript (WIP)
+* (Bug) Exception after adding Histogram to "TSLA" test dataset  
+* Code formatting 
+* Utils: table content validation engine (WIP)
+* datagrok-tools: version bump 
+* Biosignals: scripts should take column as input 
+* Biosignals: round values of signal to 4 digits after comma 
+* Trellis Plot: show R group columns in the dropdown list 
+* (Bug) Trellis Plot: can't select a column with 100+ categories from the column menu 
+* (Bug) Chem: RDKit renderer: tooltip does not work 
+* "Set default tooltip" menu item 
+* Made colorcoding-related tags hidden (prefixed with '.'). 
+* Tags: make `color-coding-type` and `color-coding-conditional` private 
+* update images format jpg to png 
+* (Bug) Bar Chart: unexpected indent on plots with many categories 
+* NumericalMatcher: ability to match empty values 
+* TextArea inside the ui.inputs: Fix the ui.textArea left-margin size 
+* Conditional color coding editor: input validation 
+* Conditional color coding: improve performance 
+* (Bug) Grid: empty cells are colored with conditional color-coding on 
+* (Bug) Visual Query does not work for all supported providers 
+* Custom HTML-based cell renderers: investigate performance issues (WIP)
+* CVM: NLOpt + Octave 6.2.0 (WIP)
+* (Bug) Query View: Incorrect display of line numbering 
+* (Bug) UX: Flickering scroll bars (WIP)
+
+
 # 2021-03-18 Dev build 0.89.28
 
 ## Latest Docker Images
