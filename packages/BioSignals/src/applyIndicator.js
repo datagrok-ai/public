@@ -1,7 +1,7 @@
 import * as grok from "datagrok-api/grok";
 
 async function hrvTimeDomain(t, column, parameters) {
-  return await grok.functions.call('BioSignals:hrvTimeDomain',
+  return await grok.functions.call('BioSignals:HRVTimeDomain',
     {
       'signal_values': t,
       'column': column,
@@ -11,7 +11,7 @@ async function hrvTimeDomain(t, column, parameters) {
 }
 
 async function hrvFrequencyDomain(t, column, parameters) {
-  return await grok.functions.call('BioSignals:hrvFrequencyDomain',
+  return await grok.functions.call('BioSignals:HRVFrequencyDomain',
     {
       'signal_values': t,
       'column': column,
@@ -22,7 +22,7 @@ async function hrvFrequencyDomain(t, column, parameters) {
 }
 
 async function hrvNonlinearDomain(t, column, parameters) {
-  return await grok.functions.call('BioSignals:hrvNonlinearDomain',
+  return await grok.functions.call('BioSignals:HRVNonlinearDomain',
     {
       'signal_values': t,
       'column': column,
@@ -33,11 +33,11 @@ async function hrvNonlinearDomain(t, column, parameters) {
 
 export async function applyIndicator(t, column, parameters) {
   switch (parameters['type']) {
-    case 'HRV time domain':
+    case 'HRVTimeDomain':
       return hrvTimeDomain(t, column, parameters);
-    case 'HRV frequency domain':
+    case 'HRVFrequencyDomain':
       return hrvFrequencyDomain(t, column, parameters);
-    case 'HRV nonlinear domain':
+    case 'HRVNonlinearDomain':
       return hrvNonlinearDomain(t, column, parameters);
   }
 }
