@@ -684,7 +684,7 @@ export class Package extends Entity {
   public webRoot: any | undefined;
   public version: string;
 
-  constructor(d: any) {
+  constructor(d: any | undefined = undefined) {
     super(d);
     if (typeof d === 'string' || d instanceof String) {
       this.webRoot = d;
