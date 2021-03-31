@@ -224,4 +224,4 @@ A [molecular fingerprinter](../domains/chem/fingerprints.md) used for calculatin
 
 See also:
 * [Metadata](metadata.md)
-* [JS API: metadata]()
+* [JS API: metadata](https://public.datagrok.ai/js/samples/data-frame/metadata)
