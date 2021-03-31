@@ -1,4 +1,4 @@
-#name: normalize
+#name: Normalize
 #description: Normalized the input signal using the general formula: ( signal - BIAS ) / RANGE
 #language: python
 #tags: biosignals, filters, pyphysio

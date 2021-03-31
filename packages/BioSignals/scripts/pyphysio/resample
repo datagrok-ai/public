@@ -1,4 +1,4 @@
-#name: resample
+#name: Resample
 #description: Change sampling frequency of signal
 #language: python
 #tags: biosignals, filters, pyphysio

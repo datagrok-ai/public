@@ -1,7 +1,7 @@
 #name: PhasicEstimation
 #description: Estimates the phasic and tonic components of a EDA driver function. It uses a detection algorithm based on the derivative of the driver.
 #language: python
-#tags: biosignals, extractors, pyphysio
+#tags: biosignals, extractors, pyphysio, eda_signal
 #input: dataframe data
 #input: column column
 #input: double sampling_frequency

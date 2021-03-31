@@ -1,7 +1,7 @@
 #name: DenoiseEDA
 #description: Remove noise due to sensor displacement from the EDA signal
 #language: python
-#tags: biosignals, filters, pyphysio
+#tags: biosignals, filters, pyphysio, eda_signal
 #input: dataframe input_signals
 #input: column column
 #input: double sampling_frequency

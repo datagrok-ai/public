@@ -147,7 +147,7 @@ async function FIRFilter(data, columnToFilter, parameters) {
 }
 
 async function normalize(data, columnToFilter, parameters) {
-  return await grok.functions.call('BioSignals:normalize',
+  return await grok.functions.call('BioSignals:Normalize',
     {
       'input_signals': data,
       'column': columnToFilter,
@@ -157,7 +157,7 @@ async function normalize(data, columnToFilter, parameters) {
 }
 
 async function resample(data, columnToFilter, parameters) {
-  return await grok.functions.call('BioSignals:resample',
+  return await grok.functions.call('BioSignals:Resample',
     {
       'input_signals': data,
       'column': columnToFilter,
@@ -276,11 +276,11 @@ export async function applyFilter(t, parameters, i, col, inputCase) {
       nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + parameters['type'] + ')';
       plotFL = await FIRFilter(t, inputCase, parameters);
       return [plotFL, nameOfLastFiltersOutput];
-    case 'normalize':
+    case 'Normalize':
       nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + parameters['type'] + ')';
       plotFL = await normalize(t, inputCase, parameters);
       return [plotFL, nameOfLastFiltersOutput];
-    case 'resample':
+    case 'Resample':
       nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + parameters['type'] + ')';
       plotFL = await resample(t, inputCase, parameters);
       return [plotFL, nameOfLastFiltersOutput];

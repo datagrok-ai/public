@@ -1,7 +1,7 @@
 #name: BeatFromBP
 #description: Identify the beats in a Blood Pulse (BP) signal and compute the IBIs. Optimized to identify the percussion peak.
 #language: python
-#tags: biosignals, extractors, pyphysio
+#tags: biosignals, extractors, pyphysio, abp_signal, bvp(ppg)_signal
 #input: dataframe data
 #input: column column
 #input: double sampling_frequency
