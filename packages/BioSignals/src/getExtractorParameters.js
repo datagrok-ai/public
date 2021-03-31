@@ -2,13 +2,13 @@ import * as ui from "datagrok-api/ui";
 
 export function getExtractorParameters(extractorType) {
   switch (extractorType) {
-    case 'Local energy':
+    case 'LocalEnergy':
       let winLen = ui.floatInput('Window Length', 2);
       winLen.setTooltip('Length of the window in seconds');
       let winStep = ui.floatInput('Window Step', 2);
       winStep.setTooltip('Shift of the window to start the next window');
       return {'win_len': winLen, 'win_step': winStep};
-    case 'Beat from ECG':
+    case 'BeatFromECG':
       let bpm_max = ui.intInput('BPM max', 120);
       bpm_max.setTooltip('Maximal expected heart rate (in beats per minute), should be in range (1, 400]');
       let delta = ui.floatInput('Delta', 0);
@@ -16,7 +16,7 @@ export function getExtractorParameters(extractorType) {
       let k = ui.floatInput('k', 0.7);
       k.setTooltip('Ratio (0,1) at which the signal range is multiplied (when delta = 0)');
       return {'bpm_max': bpm_max, 'delta': delta, 'k': k};
-    case 'Phasic estimation':
+    case 'PhasicEstimation':
       let delta1 = ui.floatInput('delta', 0.1);
       delta1.setTooltip('Minimum amplitude of the peaks in the driver');
       let t1 = ui.floatInput('t1', 0.75);

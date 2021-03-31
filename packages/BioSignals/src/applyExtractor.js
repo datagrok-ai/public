@@ -52,11 +52,11 @@ async function BeatFromBP(data, column, parameters) {
 
 export async function applyExtractor(t, column, parameters) {
   switch (parameters['type']) {
-    case 'Local energy':
+    case 'LocalEnergy':
       return LocalEnergy(t, column, parameters);
-    case 'Beat from ECG':
+    case 'BeatFromECG':
       return BeatfromECG(t, column, parameters);
-    case 'Phasic estimation':
+    case 'PhasicEstimation':
       return PhasicEstimation(t, column, parameters);
     case 'BeatFromBP':
       return BeatFromBP(t, column, parameters);
