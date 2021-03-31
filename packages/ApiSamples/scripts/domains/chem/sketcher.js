@@ -1,7 +1,7 @@
 // Sketching a molecule
 
-let molfileInput = ui.textArea();
-let smilesInput = ui.textInput();
+let molfileInput = ui.textInput();
+let smilesInput = ui.StringInput();
 
 function onChanged(smiles, molfile) {
   smilesInput.value = smiles;
@@ -10,6 +10,6 @@ function onChanged(smiles, molfile) {
 
 grok.shell.newView('sketcher', [
   grok.chem.sketcher(onChanged, 'CC(=O)Oc1ccccc1C(=O)O)'),
-  smilesInput,
-  molfileInput,
+  smilesInput.root,
+  molfileInput.root,
 ]);

@@ -131,7 +131,7 @@ async function strReplace(table,optionsObj,map,language) {
     // create a container for viewers
     let block =
         $(ui.splitV([
-            ui.textArea(string),
+            ui.textInput('', string).root,
             ui.splitH([
                 viewerLeft,
                 viewerRight])
