@@ -60,7 +60,7 @@ function createPipelineObject(pipeline, functionCategory, typesList, parametersL
   return pipeline;
 }
 
-async function showMainDialog(view, tableWithSignals, tableWithSignalsAndAnnotations, signalType, column, samplingFreq, chosenDatabase, chosenRecord) {
+async function showMainDialog(view, tableWithSignals, tableWithSignalsAndAnnotations, signalType, column, samplingFrequency, chosenDatabase, chosenRecord) {
 
   let inputCase = tableWithSignals.columns.byName('testEcg');
 
@@ -124,10 +124,12 @@ async function showMainDialog(view, tableWithSignals, tableWithSignalsAndAnnotat
       t = DG.DataFrame.fromColumns([filterOutputsObj[filterInputsList[i - 1].value].columns.byName('sig')]);
     }
 
-    const parameters = getArrayOfParameterObjects(filterTypesList, filterParametersList, samplingFreq);
+    const parameters = getArrayOfParameterObjects(filterTypesList, filterParametersList, samplingFrequency);
     t.columns.byIndex(0).setTag('selectedFilterInput', undefined);
-    let [plotFL, nameOfLastFiltersOutput] =
-      await applyFilter(t, parameters[i - 1], i, tableWithSignals.columns.byName('time'));
+    if (parameters[i - 1]['type'] === 'Resample') {
+      samplingFrequency = parameters[i - 1]['fout'];
+    }
+    let [plotFL, nameOfLastFiltersOutput] = await applyFilter(t, parameters[i - 1], i);
     filterChartsList[i - 1].dataFrame = plotFL;
     Object.assign(filterOutputsObj, {[nameOfLastFiltersOutput]: plotFL});
     pi.close();
@@ -176,7 +178,7 @@ async function showMainDialog(view, tableWithSignals, tableWithSignalsAndAnnotat
   let nameOfLastExtractorsOutput = '';
   addExtractorChartButton.appendChild(ui.button('Plot', async () => {
     let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting extractor...');
-    let extractorParameters = getArrayOfParameterObjects(extractorTypesList, extractorParametersList, samplingFreq);
+    let extractorParameters = getArrayOfParameterObjects(extractorTypesList, extractorParametersList, samplingFrequency);
     let t = DG.DataFrame.fromColumns([filterOutputsObj[filterInputsList[i - 1].value].columns.byName(filterInputsList[i - 1].value)]);
     let plotInfo = await applyExtractor(t, t.columns.byName(filterInputsList[i - 1].value), extractorParameters[j - 1]);
     nameOfLastExtractorsOutput = 'Output of Extractor ' + j + ' (' + extractorTypesList[j - 1].value + ')';
@@ -227,7 +229,7 @@ async function showMainDialog(view, tableWithSignals, tableWithSignalsAndAnnotat
 
   addIndicatorChartButton.appendChild(ui.button('Plot', async () => {
     let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting indicator...');
-    let indicatorParameters = getArrayOfParameterObjects(indicatorTypesList, indicatorParametersList, samplingFreq);
+    let indicatorParameters = getArrayOfParameterObjects(indicatorTypesList, indicatorParametersList, samplingFrequency);
     let t = DG.DataFrame.fromColumns([extractorOutputsObj[indicatorInputsList[k - 1].value].columns.byName('RR intervals')]);
     indicatorChartsList[k - 1].dataFrame = await applyIndicator(t, t.columns.byName('RR intervals'), indicatorParameters[k - 1]);
     pi.close();
@@ -251,7 +253,7 @@ async function showMainDialog(view, tableWithSignals, tableWithSignalsAndAnnotat
   let formView = ui.div([
     chosenDatabase,
     chosenRecord,
-    ui.divText('Sampling frequency: ' + samplingFreq),
+    ui.divText('Input sampling frequency: ' + samplingFrequency + ' samples per second (Hz)'),
     ui.divText('Signal type: ' + signalType),
     savePipelineButton,
     ui.block([
@@ -337,8 +339,8 @@ export async function loadPhysionetRecord(chosenDatabase, chosenRecord) {
   });
   await call.call();
   let df = call.getParamValue('df');
-  let sampling_frequency = call.getParamValue('sampling_frequency');
-  return [df, sampling_frequency];
+  let samplingFrequency = call.getParamValue('sampling_frequency');
+  return [df, samplingFrequency];
 }
 
 export async function loadPhysionetRecordWithAnnotations(chosenDatabase, chosenRecord) {
@@ -348,10 +350,10 @@ export async function loadPhysionetRecordWithAnnotations(chosenDatabase, chosenR
     'chosenRecord': chosenRecord.stringValue
   });
   await call.call();
-  const annotations_df = call.getParamValue('annotations_df');
-  const signals_df = call.getParamValue('signals_df');
-  const sampling_frequency = call.getParamValue('sampling_frequency');
-  return [signals_df, annotations_df, sampling_frequency];
+  const tableWithAnnotations = call.getParamValue('annotations_df');
+  const tableWithSignals = call.getParamValue('signals_df');
+  const samplingFrequency = call.getParamValue('sampling_frequency');
+  return [tableWithSignals, tableWithAnnotations, samplingFrequency];
 }
 
 export async function loadPhysionetAnnotations(chosenDatabase, chosenRecord) {
