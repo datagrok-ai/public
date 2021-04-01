@@ -60,9 +60,9 @@ function createPipelineObject(pipeline, functionCategory, typesList, parametersL
   return pipeline;
 }
 
-async function showMainDialog(view, table, tableWithAnnotations, signalType, column, samplingFreq) {
+async function showMainDialog(view, tableWithSignals, tableWithSignalsAndAnnotations, signalType, column, samplingFreq, chosenDatabase, chosenRecord) {
 
-  let inputCase = table.columns.byName('testEcg');
+  let inputCase = tableWithSignals.columns.byName('testEcg');
 
   let accordionFilters = ui.accordion();
   let accordionExtractors = ui.accordion();
@@ -127,7 +127,7 @@ async function showMainDialog(view, table, tableWithAnnotations, signalType, col
     const parameters = getArrayOfParameterObjects(filterTypesList, filterParametersList, samplingFreq);
     t.columns.byIndex(0).setTag('selectedFilterInput', undefined);
     let [plotFL, nameOfLastFiltersOutput] =
-      await applyFilter(t, parameters[i - 1], i, table.columns.byName('time'));
+      await applyFilter(t, parameters[i - 1], i, tableWithSignals.columns.byName('time'));
     filterChartsList[i - 1].dataFrame = plotFL;
     Object.assign(filterOutputsObj, {[nameOfLastFiltersOutput]: plotFL});
     pi.close();
@@ -249,11 +249,13 @@ async function showMainDialog(view, table, tableWithAnnotations, signalType, col
   }));
 
   let formView = ui.div([
+    chosenDatabase,
+    chosenRecord,
     ui.divText('Sampling frequency: ' + samplingFreq),
     ui.divText('Signal type: ' + signalType),
     savePipelineButton,
     ui.block([
-      DG.Viewer.fromType('AnnotatorViewer', tableWithAnnotations)
+      DG.Viewer.fromType('AnnotatorViewer', tableWithSignalsAndAnnotations)
     ]),
     ui.h2('Filtering and Preprocessing'),
     accordionFilters,
@@ -339,6 +341,19 @@ export async function loadPhysionetRecord(chosenDatabase, chosenRecord) {
   return [df, sampling_frequency];
 }
 
+export async function loadPhysionetRecordWithAnnotations(chosenDatabase, chosenRecord) {
+  let f = await grok.functions.eval("BioSignals:loadPhysionetRecordWithAnnotations");
+  let call = f.prepare({
+    'chosenDatabase': chosenDatabase,
+    'chosenRecord': chosenRecord.stringValue
+  });
+  await call.call();
+  const annotations_df = call.getParamValue('annotations_df');
+  const signals_df = call.getParamValue('signals_df');
+  const sampling_frequency = call.getParamValue('sampling_frequency');
+  return [signals_df, annotations_df, sampling_frequency];
+}
+
 export async function loadPhysionetAnnotations(chosenDatabase, chosenRecord) {
   let f = await grok.functions.eval("BioSignals:loadPhysionetAnnotations");
   let call = f.prepare({
@@ -366,17 +381,13 @@ export function BioSignals() {
     view.append(formView);
 
     chosenRecord.onInput(async () => {
-      let pi = DG.TaskBarProgressIndicator.create('Loading record from Physionet...');
+      let pi = DG.TaskBarProgressIndicator.create('Loading record with annotations from Physionet...');
       let chosenDatabaseShortName = physionetDatabasesDictionary[chosenDatabase.stringValue].short_name;
-      let [table, samplingFrequency] = await loadPhysionetRecord(chosenDatabaseShortName, chosenRecord);
+      let [tableWithSignals, tableWithAnnotations, samplingFrequency] = await loadPhysionetRecordWithAnnotations(chosenDatabaseShortName, chosenRecord);
+      let col = tableWithSignals.columns.byName('testEcg');
+      let tableWithSignalsAndAnnotations = tableWithSignals.append(tableWithAnnotations);
       let signalType = 'ECG';
-      pi.close();
-
-      pi = DG.TaskBarProgressIndicator.create('Loading annotations of chosen record from Physionet...');
-      let dataFrameWithAnnotations = await loadPhysionetAnnotations(chosenDatabaseShortName, chosenRecord);
-      let col = table.columns.byName('testEcg');
-      let tableWithAnnotations = table.append(dataFrameWithAnnotations);
-      showMainDialog(view, table, tableWithAnnotations, signalType, col, samplingFrequency);
+      await showMainDialog(view, tableWithSignals, tableWithSignalsAndAnnotations, signalType, col, samplingFrequency, chosenDatabase, chosenRecord);
       pi.close();
     });
   });
