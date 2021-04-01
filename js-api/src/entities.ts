@@ -13,7 +13,7 @@ type PropertySetter = (a: string, object:  any) => void;
  * */
 export class Entity {
 
-  protected d: any;
+  public d: any;
 
   /** @constructs Entity*/
   constructor(d: any) {
