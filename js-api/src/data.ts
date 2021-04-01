@@ -12,14 +12,14 @@ export class Files {
    * @param {string} path
    * @returns {Promise<DataFrame>}*/
   openTable(path: string): Promise<DataFrame> {
-    return new Promise((resolve, reject) => api.grok_Files_OpenTable(path, (t: any) => resolve(toJs(t)), (e: Error) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_Files_OpenTable(path, (t: any) => resolve(toJs(t)), (e: any) => reject(e)));
   }
 
   /** Reads all tables from file
    * @param {string} path
    * @returns {Promise<Array<DataFrame>>}*/
   openTables(path: string): Promise<Array<DataFrame>> {
-    return new Promise((resolve, reject) => api.grok_Files_OpenTables(path, (t: any) => resolve(t.map(toJs)), (e: Error) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_Files_OpenTables(path, (t: any) => resolve(t.map(toJs)), (e: any) => reject(e)));
   }
 
 }
@@ -76,7 +76,7 @@ export class DemoDatasets {
    * grok.data.getDemoTable("sensors/eeg.csv").then((t) => grok.shell.addTableView(t));
    * @returns {Promise<DataFrame>}*/
   loadDemoTable(path: string): Promise<DataFrame> {
-    return new Promise((resolve, reject) => api.grok_GetDemoTable(path, (t: any) => resolve(toJs(t)), (e: Error) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_GetDemoTable(path, (t: any) => resolve(toJs(t)), (e: any) => reject(e)));
   }
 }
 
@@ -106,7 +106,7 @@ export class Data {
   }
 
   getDemoTable(path: string): Promise<DataFrame> {
-    return new Promise((resolve, reject) => api.grok_GetDemoTable(path, (t: any) => resolve(toJs(t)), (e: Error) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_GetDemoTable(path, (t: any) => resolve(toJs(t)), (e: any) => reject(e)));
   }
 
   /**
@@ -132,7 +132,7 @@ export class Data {
    * @returns {Promise<DataFrame>}
    * */
   loadTable(csvUrl: string): Promise<DataFrame> {
-    return new Promise((resolve, reject) => api.grok_LoadDataFrame(csvUrl, (t: any) => resolve(toJs(t, false)), (e: Error) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_LoadDataFrame(csvUrl, (t: any) => resolve(toJs(t, false)), (e: any) => reject(e)));
   }
 
   /**
@@ -181,19 +181,19 @@ export class Data {
    * @returns {Promise<DataFrame>}
    */
   openTable(id: string): Promise<DataFrame> {
-    return new Promise((resolve, reject) => api.grok_OpenTable(id, (t: any) => resolve(new DataFrame(t)), (e: Error) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_OpenTable(id, (t: any) => resolve(new DataFrame(t)), (e: any) => reject(e)));
   }
 
   query(queryName: string, queryParameters: object | null = null, adHoc: boolean = false, pollingInterval: number = 1000): Promise<DataFrame> {
-    return new Promise((resolve, reject) => api.grok_Query(queryName, queryParameters, adHoc, pollingInterval, (t: any) => resolve(toJs(t)), (e: Error) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_Query(queryName, queryParameters, adHoc, pollingInterval, (t: any) => resolve(toJs(t)), (e: any) => reject(e)));
   }
 
   callQuery(queryName: string, queryParameters: object | null = null, adHoc: boolean = false, pollingInterval: number = 1000): Promise<FuncCall> {
-    return new Promise((resolve, reject) => api.grok_CallQuery(queryName, queryParameters, adHoc, pollingInterval, (c: any) => resolve(new FuncCall(c)), (e: Error) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_CallQuery(queryName, queryParameters, adHoc, pollingInterval, (c: any) => resolve(new FuncCall(c)), (e: any) => reject(e)));
   }
 
   detectSemanticTypes(t: any): Promise<void> {
-    return new Promise((resolve, reject) => api.grok_DetectSemanticTypes(t.d, (_: any) => resolve(), (e: Error) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_DetectSemanticTypes(t.d, (_: any) => resolve(), (e: any) => reject(e)));
   }
 }
 
