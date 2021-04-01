@@ -1,0 +1,40 @@
+#name: loadPhysionetRecordWithAnnotations
+#description: Download WFDB signal and annotations from physionet.org
+#language: python
+#tags: files, physionet, biosignals
+#input: string chosenDatabase
+#input: string chosenRecord
+#output: dataframe annotations_df
+#output: dataframe signals_df
+#output: double sampling_frequency
+
+import wfdb
+import numpy as np
+
+# 'ECG-ID Database'
+if chosenDatabase == 'ecgiddb':
+    person_id, chosenRecord = chosenRecord.split('/')
+    chosenDatabase = ''.join((chosenDatabase, '/', person_id))
+
+record = wfdb.rdrecord(
+    record_name=chosenRecord,
+    pn_dir=chosenDatabase
+)
+
+sampling_frequency = record.fs
+
+annotations = wfdb.rdann(
+    record_name=chosenRecord,
+    extension='atr',
+    pn_dir=chosenDatabase
+)
+
+annotations_df = pd.DataFrame({
+    'indicesOfRPeak': annotations.sample,
+    'symbolsOfBeatClasses': annotations.symbol
+})
+
+signals_df = pd.DataFrame({
+    'time': range(record.sig_len),
+    'testEcg': np.around(record.p_signal[:, 0], decimals=4)
+})
