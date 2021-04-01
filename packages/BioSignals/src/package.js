@@ -60,7 +60,7 @@ function createPipelineObject(pipeline, functionCategory, typesList, parametersL
   return pipeline;
 }
 
-async function showMainDialog(view, table, tableWithAnnotations, signalType, column, samplingFreq) {
+async function showMainDialog(view, table, tableWithAnnotations, signalType, column, samplingFreq, chosenDatabase, chosenRecord) {
 
   let inputCase = table.columns.byName('testEcg');
 
@@ -249,6 +249,8 @@ async function showMainDialog(view, table, tableWithAnnotations, signalType, col
   }));
 
   let formView = ui.div([
+    chosenDatabase,
+    chosenRecord,
     ui.divText('Sampling frequency: ' + samplingFreq),
     ui.divText('Signal type: ' + signalType),
     savePipelineButton,
@@ -376,7 +378,7 @@ export function BioSignals() {
       let dataFrameWithAnnotations = await loadPhysionetAnnotations(chosenDatabaseShortName, chosenRecord);
       let col = table.columns.byName('testEcg');
       let tableWithAnnotations = table.append(dataFrameWithAnnotations);
-      showMainDialog(view, table, tableWithAnnotations, signalType, col, samplingFrequency);
+      await showMainDialog(view, table, tableWithAnnotations, signalType, col, samplingFrequency, chosenDatabase, chosenRecord);
       pi.close();
     });
   });
