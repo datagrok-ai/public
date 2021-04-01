@@ -1,6 +1,7 @@
 import {paramsToJs, toDart, toJs} from "./wrappers";
 import {Type} from "./const";
-import {Func} from "./entities";
+import {Entity, Func} from "./entities";
+import {Widget} from "./widgets";
 declare let grok: any;
 declare let DG: any;
 let api = <any>window;
@@ -39,6 +40,9 @@ export class FuncCall {
     this.d = d;
   }
 
+  get func(): Func { return toJs(api.grok_FuncCall_Get_Func(this.d)); }
+  set func(func: Func) {api.grok_FuncCall_Get_Func(this.d, func.d)}
+
   /** Returns function call parameter value
    * @param {string} name
    * @returns {object} */
@@ -46,11 +50,15 @@ export class FuncCall {
     return toJs(api.grok_FuncCall_Get_Param_Value(this.d, name));
   }
 
+  setParamValue(name: string, value: any) {
+    api.grok_FuncCall_Set_Param_Value(this.d, name, toDart(value));
+  }
+
   /** Executes the function call
    * @param {boolean} showProgress
    * @param {ProgressIndicator} progress
    * @returns {Promise<FuncCall>} */
-  call(showProgress = false, progress = null) {
+  call(showProgress = false, progress = null): Promise<FuncCall> {
     return new Promise((resolve, reject) => api.grok_FuncCall_Call(this.d, (out: any) => resolve(toJs(out)), (err: any) => reject(err), showProgress, toDart(progress)));
   }
 }
@@ -58,4 +66,26 @@ export class FuncCall {
 export function callFuncWithDartParameters(f: Function, params: object) {
   let jsParams = paramsToJs(params);
   return f.apply(null, jsParams);
+}
+
+export class StepEditor extends Widget {
+  private readonly d: any;
+
+  constructor(d: any) {
+    super();
+    this.d = d;
+  }
+
+  static create(): StepEditor {
+    return toJs(api.grok_StepEditor_Create());
+  }
+
+  loadScript(script: String): Promise<void> {
+    return new Promise((resolve, reject) => api.grok_StepEditor_LoadScript(this.d, script, (out: any) => resolve(toJs(out)), (err: any) => reject(err)));
+  }
+
+  toScript(): string {
+    return api.grok_StepEditor_ToScript(this.d);
+  }
+
 }
