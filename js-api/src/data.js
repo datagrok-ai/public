@@ -181,11 +181,11 @@ export class Detector {
    * */
   static sampleCategories(column, check, min = 5, max = 10) {
     let categories = column.categories;
-    if (categories.length > min)
+    if (categories.length < min)
       return false;
     for (let i = 0; i < Math.max(max, categories.length); i++) {
       let value = Math.floor(Math.random() * categories.length);
-      if (value !== null && !check(categories[value]))
+      if (!check(categories[value]))
         return false;
     }
     return true;

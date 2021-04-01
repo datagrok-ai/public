@@ -108,7 +108,7 @@ export class ObjectPropertyBag {
 /** Base class for controls that have a visual root and a set of properties. */
 export class Widget {
   private _root: HTMLElement | null;
-  private _properties: Property[];
+  protected _properties: Property[];
   props: ObjectPropertyBag;
   subs: StreamSubscription[];
 
