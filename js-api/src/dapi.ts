@@ -158,7 +158,7 @@ export class Dapi {
    * @param {Object} headers
    * @param {Object} body
    * @returns {Promise<Object>} */
-  async proxyFetch(method: string, url: string, headers: {Accept?: string, 'original-url'?: string, 'original-method'?: string} = {}, body: object = {}): Promise<object> {
+  async proxyFetch(method: string, url: string, headers: Record<string, string>, body: object = {}): Promise<object> {
     headers['Accept'] = 'application/json';
     headers['original-url'] = `${url}`;
     headers['original-method'] = method;
@@ -754,7 +754,7 @@ export class Files {
 export class Logger {
   putCallback: any;
 
-  constructor(putCallback: any) {
+  constructor(putCallback: any | undefined | null) {
     this.putCallback = putCallback;
   }
 
@@ -763,7 +763,7 @@ export class Logger {
    * @param {object} params
    * @param {string} type = 'log'
    * */
-  log(message: string, params: object, type: string): void {
+  log(message: string, params: object, type: string | undefined | null): void {
     if (type == null)
       type = 'log';
     let msg = {message: message, params: params, type: type};
