@@ -754,7 +754,7 @@ export class Files {
 export class Logger {
   putCallback: any;
 
-  constructor(putCallback: any | undefined | null) {
+  constructor(putCallback?: any) {
     this.putCallback = putCallback;
   }
 
@@ -763,7 +763,7 @@ export class Logger {
    * @param {object} params
    * @param {string} type = 'log'
    * */
-  log(message: string, params: object, type: string | undefined | null): void {
+  log(message: string, params: object, type?: string): void {
     if (type == null)
       type = 'log';
     let msg = {message: message, params: params, type: type};
