@@ -10,6 +10,7 @@
  * @typedef {string} SemType
  * @typedef {string} SimilarityMetric
  * @typedef {string} ColorType
+ * @typedef {string} DockType
  **/
 
 export type AggregationType = `${AGG}`;
@@ -24,6 +25,7 @@ export type SemType = string;
 export type SimilarityMetric = `${SIMILARITY_METRIC}`;
 export type ColorType = number;
 export type DemoDatasetName = `${DEMO_DATASET}`;
+export type DockType = `${DOCK_TYPE}`;
 
 /** @enum {AggregationType} */
 export enum AGG {
@@ -262,10 +264,20 @@ export enum SIMILARITY_METRIC {
   BRAUN_BLANQUET = 'braun-blanquet'
 }
 
+/** @enum {DemoDatasetName} */
 export enum DEMO_DATASET {
   WELLS = 'wells',
   DEMOG = 'demog',
   BIOSENSOR = 'biosensor',
   RANDOM_WALK = 'random walk',
   GEO = 'geo',
+}
+
+/** @enum {DockType} */
+export enum DOCK_TYPE {
+  LEFT = "left",
+  RIGHT = "right",
+  TOP = "top",
+  DOWN = "down",
+  FILL = "fill",
 }

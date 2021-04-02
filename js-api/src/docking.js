@@ -1,18 +1,6 @@
 import {toJs} from "./wrappers";
 import {_toIterable} from "./utils";
-
-/**
- * @typedef {string} DockType
- **/
-
-/** @enum {DockType} */
-export const DOCK_TYPE = {
-  LEFT: "left",
-  RIGHT: "right",
-  TOP: "top",
-  DOWN: "down",
-  FILL: "fill",
-}
+import {DockType} from "./const";
 
 
 /**
