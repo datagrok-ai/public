@@ -1,6 +1,38 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-04-02 Dev build 0.89.31
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.89.31`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* (Bug) DockManager: the viewer size reduces on resize 
+* (Bug) View | Tooltip: After turning off all columns, the tooltip is still displayed (WIP)
+* Biosignals: possibility to add custom script 
+* Custom HTML-based cell renderers: investigate performance issues (WIP)
+* JS API: Migrate to Typescript (WIP)
+* Aggregation: ability to specify value transformation function 
+* Biosignals: get columns using tags instead of names 
+* Biosignals: add possibility to change input Physionet record 
+* Biosignals: speed up Physionet record loading 
+* Fixed sampleCategories method 
+* Biosignals: Update sampling frequency after resampling 
+* Data Connectors: update PostgreSQL driver version  
+* Deploy ApiSamples as part of demo projects. 
+* Sequence: WebLogoViewer (WIP)
+* ApiSamples bump to test package auto deployment. 
+* Deleted junk error logs 
+* Updated public token 
+* Fixed warning 
+
+
 # 2021-03-31 Dev build 0.89.30
 
 ## Latest Docker Images
