@@ -10,6 +10,7 @@
  * @typedef {string} SemType
  * @typedef {string} SimilarityMetric
  * @typedef {string} ColorType
+ * @typedef {string} DockType
  **/
 /** @enum {AggregationType} */
 export var AGG;
@@ -239,6 +240,7 @@ export var SIMILARITY_METRIC;
   SIMILARITY_METRIC["ASYMMETRIC"] = "asymmetric";
   SIMILARITY_METRIC["BRAUN_BLANQUET"] = "braun-blanquet";
 })(SIMILARITY_METRIC || (SIMILARITY_METRIC = {}));
+/** @enum {DemoDatasetName} */
 export var DEMO_DATASET;
 (function (DEMO_DATASET) {
   DEMO_DATASET["WELLS"] = "wells";
@@ -247,3 +249,12 @@ export var DEMO_DATASET;
   DEMO_DATASET["RANDOM_WALK"] = "random walk";
   DEMO_DATASET["GEO"] = "geo";
 })(DEMO_DATASET || (DEMO_DATASET = {}));
+/** @enum {DockType} */
+export var DOCK_TYPE;
+(function (DOCK_TYPE) {
+  DOCK_TYPE["LEFT"] = "left";
+  DOCK_TYPE["RIGHT"] = "right";
+  DOCK_TYPE["TOP"] = "top";
+  DOCK_TYPE["DOWN"] = "down";
+  DOCK_TYPE["FILL"] = "fill";
+})(DOCK_TYPE || (DOCK_TYPE = {}));

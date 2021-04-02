@@ -1,16 +1,4 @@
-/**
- * @typedef {string} DockType
- **/
-
-/** @enum {DockType} */
-export const enum DOCK_TYPE {
-    LEFT = "left",
-    RIGHT = "right",
-    TOP = "top",
-    DOWN = "down",
-    FILL = "fill",
-}
-
+import {DockType} from "./const";
 
 /**
  * Represents a dockable window.
@@ -87,7 +75,7 @@ export class DockManager {
      * @param {string=} title - Name of the resulting column. Default value is agg(colName).
      * @returns {DockNode}
      * */
-    dock(element: HTMLHtmlElement, dockType?: DOCK_TYPE, refNode?: DockNode | null, title?: string, ratio?: number): DockNode
+    dock(element: HTMLHtmlElement, dockType?: DockType, refNode?: DockNode | null, title?: string, ratio?: number): DockNode
 
     // /**
     //  * Docks the element relative to the reference node.
