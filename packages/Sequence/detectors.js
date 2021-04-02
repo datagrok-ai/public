@@ -9,12 +9,9 @@ class SequencePackageDetectors extends DG.Package {
   //input: column col
   //output: string semType
   detectNucleotides(col) {
-    if (col.name.startsWith('nuc')) {
-      col.semType = 'nucleotides';
+    const rex = /ATGC+/;
+    if (DG.Detector.sampleCategories(col, (s) => rex.test(s)))
       return 'nucleotides';
-    }
-
-    return null;
   }
 
   //tags: semTypeDetector

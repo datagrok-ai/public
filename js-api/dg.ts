@@ -20,6 +20,7 @@ export * from './src/wrappers_impl';
 export {time, timeAsync, Utils, LruCache} from './src/utils.js';
 // @ts-ignore
 export {ObjectHandler, EntityMetaDartProxy} from './ui';
+export { Detector } from './src/data.js';
 
 export let chem = _chem;
 export let ml = _ml;
