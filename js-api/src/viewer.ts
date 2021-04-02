@@ -3,6 +3,7 @@ import {TYPE, VIEWER, ViewerPropertyType, ViewerType} from "./const";
 import {Column, DataFrame} from "./dataframe.js";
 import {DateTime, Property} from "./entities";
 import {ObjectPropertyBag, Widget} from "./widgets";
+// @ts-ignore
 import {_toJson} from "./utils";
 import {toJs} from "./wrappers";
 import {StreamSubscription, __obs} from "./events";
