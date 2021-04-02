@@ -8,6 +8,14 @@ export class Utils {
     let first = iterable[Symbol.iterator]().next();
     return first.done ? null : first.value;
   }
+
+  /** Returns an 'identity' array where the element in idx-th position is equals to idx. */
+  static identity(length) {
+    let res = new Uint32Array(length);
+    for (let i = 0; i < length; i++)
+      res[i] = i;
+    return res;
+  }
 }
 
 // export class PropProxy {
@@ -59,7 +67,7 @@ export function* range(length) {
 
 /** Returns an 'identity' array where the element in idx-th position is equals to idx. */
 export function identity(length) {
-  let res = new Array(length);
+  let res = new Uint32Array(length);
   for (let i = 0; i < length; i++)
     res[i] = i;
   return res;
