@@ -7,8 +7,8 @@
  * @typedef {string} SimilarityMetric
  **/
 
-import {BitSet, DataFrame} from "./dataframe";
-import {SIMILARITY_METRIC} from "./const";
+import {BitSet, DataFrame} from './dataframe';
+import {SIMILARITY_METRIC} from './const';
 
 /** Cheminformatics-related routines */
 
@@ -25,7 +25,7 @@ import {SIMILARITY_METRIC} from "./const";
  *     sorted in descending order by the score
  * @returns {Promise<DataFrame>, if sorted; Promise<Column>, otherwise}
  * */
-export async function similarityScoring(column, molecule = "", settings = {sorted: false}) {
+export async function similarityScoring(column, molecule = '', settings = {sorted: false}) {
 
   let foo = await grok.functions.eval('Chem:similarityScoring');
   let call = await foo.prepare({
@@ -63,7 +63,7 @@ export function diversitySearch(column, metric = SIMILARITY_METRIC.TANIMOTO, lim
  * @param {string} pattern - Pattern, either one of which RDKit supports
  * @returns {Promise<BitSet>}
  * */
-export async function substructureSearch(column, pattern = "", settings = {}) {
+export async function substructureSearch(column, pattern = '', settings = {}) {
 
   let foo = await grok.functions.eval('Chem:substructureSearch');
   let call = await foo.prepare({
@@ -89,7 +89,7 @@ export async function substructureSearch(column, pattern = "", settings = {}) {
  * @param {} settings - Properties for the similarity function (type, parameters, etc.)
  * @returns {Promise<Column>} - Column of corresponding similarity scores
  * */
-export async function getSimilarities(column, molecule = "", settings = {}) {
+export async function getSimilarities(column, molecule = '', settings = {}) {
 
   let foo = await grok.functions.eval('Chem:getSimilarities');
   let call = await foo.prepare({
@@ -118,7 +118,7 @@ export async function getSimilarities(column, molecule = "", settings = {}) {
  *            DataFrame is sorted descending by this column
  *   - index: indices of the molecules in the original input column
  * */
-export async function findSimilar(column, molecule = "", settings = { limit: Number.MAX_VALUE, cutoff: 0.0 }) {
+export async function findSimilar(column, molecule = '', settings = { limit: Number.MAX_VALUE, cutoff: 0.0 }) {
 
   let foo = await grok.functions.eval('Chem:findSimilar');
   let call = await foo.prepare({
@@ -168,7 +168,7 @@ export function searchSubstructureServer(column, pattern, isSmarts = true) {
  *   smiles, cxsmiles, molblock, v3Kmolblock, and inchi
  * @returns {Promise<BitSet>}
  * */
-export async function searchSubstructure(column, molecule = "", settings = {}) {
+export async function searchSubstructure(column, molecule = '', settings = {}) {
   return substructureSearch(column, molecule, settings);
 }
 

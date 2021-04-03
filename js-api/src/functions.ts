@@ -1,7 +1,7 @@
 import {paramsToJs, toDart, toJs} from "./wrappers";
 import {Type} from "./const";
 import {Entity, Func} from "./entities";
-import {Widget} from "./widgets";
+import {DartWidget, Widget} from "./widgets";
 declare let grok: any;
 declare let DG: any;
 let api = <any>window;
@@ -68,12 +68,10 @@ export function callFuncWithDartParameters(f: Function, params: object) {
   return f.apply(null, jsParams);
 }
 
-export class StepEditor extends Widget {
-  private readonly d: any;
+export class StepEditor extends DartWidget {
 
   constructor(d: any) {
-    super();
-    this.d = d;
+    super(d);
   }
 
   static create(): StepEditor {

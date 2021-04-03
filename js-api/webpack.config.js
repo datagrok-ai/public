@@ -23,10 +23,10 @@ module.exports = {
         use: {
           loader: 'babel-loader',
           options: {
-            "presets": [
-              ["@babel/preset-env", {
-                "targets": {"browsers": ["last 2 chrome versions", "chrome 50"]},
-                "useBuiltIns": "usage"
+            'presets': [
+              ['@babel/preset-env', {
+                'targets': {'browsers': ['last 2 chrome versions', 'chrome 50']},
+                'useBuiltIns': 'usage'
               }]
             ]
           }
@@ -34,7 +34,7 @@ module.exports = {
       }
     ]
   },
-  externals: {"openchemlib/full.js": "OCL", "rxjs": "rxjs", "rxjs/operators": "rxjs.operators"},
+  externals: {'openchemlib/full.js': 'OCL', 'rxjs': 'rxjs', 'rxjs/operators': 'rxjs.operators'},
   plugins: [],
   optimization: {
     splitChunks: {

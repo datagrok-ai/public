@@ -132,9 +132,9 @@ export class Shell {
   /** Docks element in a separate window.
    * Sample: {@link https://public.datagrok.ai/js/samples/ui/docking/docking}
    * @param {HTMLElement} element
-   * @param {string=} title
-   * @param {DockType=} dockStyle
-   * @param {number=} ratio - area to take (relative to parent) */
+   * @param {string} title
+   * @param {DockType} dockStyle
+   * @param {number} ratio - area to take (relative to parent) */
   dockElement(element: HTMLElement, title: string | null = null, dockStyle: DockType = DOCK_TYPE.FILL, ratio: number = 0.5): void {
     api.grok_DockElement(element, title, dockStyle, ratio);
   }
@@ -167,8 +167,8 @@ export class Shell {
   /**
    * Adds a view.
    * @param {View} v
-   * @param {DockType=} dockType
-   * @param {number=} width
+   * @param {DockType} dockType
+   * @param {number} width
    * @returns {View}
    */
   addView(v: View, dockType: DockType = DOCK_TYPE.FILL, width: number | null = null): View {
@@ -185,13 +185,14 @@ export class Shell {
 
   /**
    * Adds a new view with the specified name.
-   * @param {string=} name - view name
-   * @param {Object[]=} children - content to be added by calling {@link ui.appendAll}
+   * @param {string} name - view name
+   * @param {Object[]} children - content to be added by calling {@link ui.appendAll}
    * @param {string | ElementOptions | null} options
    * @returns {View}
    */
   newView(name: string = 'view', children?: object[], options?: string | {} | null): View {
-    children ??= [];
+    if (children == null)
+      children = [];
     let view = View.create(options);
     view.name = name;
     ui.appendAll(view.root, children);
@@ -201,8 +202,8 @@ export class Shell {
 
   /** Adds a view for the specified table.
    * @param {DataFrame} table
-   * @param {DockType=} dockType
-   * @param {number=} width
+   * @param {DockType} dockType
+   * @param {number} width
    * @returns {TableView} */
   addTableView(table: DataFrame, dockType: DockType = DOCK_TYPE.FILL, width: number | null = null): TableView {
     return toJs(api.grok_AddTableView(table.d, dockType, width));
@@ -225,7 +226,7 @@ export class Shell {
   /** Registers a view.
    * @param {string} viewTypeName
    * @param {Function} createView - a function that returns {@link ViewBase}
-   * @param {string=} viewUrlPath */
+   * @param {string} viewUrlPath */
   registerView(viewTypeName: string, createView: (...params: any[]) => ViewBase, viewUrlPath: string = ''): void {
     api.grok_RegisterView(viewTypeName, createView, viewUrlPath);
   }

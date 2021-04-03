@@ -3,25 +3,29 @@
   "version": "0.89.31",
   "description": "",
   "dependencies": {
-    "rxjs": "^6.5.5",
+    "cash-dom": "^8.0.0",
     "openchemlib": "^7.2.3",
-    "cash-dom": "^8.0.0"
+    "rxjs": "^6.5.5",
+    "typescript": "^4.2.3"
   },
   "devDependencies": {
-    "babel-loader": "^8.1.0",
     "@babel/cli": "7.1.2",
     "@babel/core": "7.1.2",
     "@babel/polyfill": "7.0.0",
     "@babel/preset-env": "7.1.0",
     "@types/react": "16.9.43",
-    "tui-jsdoc-template": "^1.2.2",
+    "@typescript-eslint/eslint-plugin": "^4.20.0",
+    "@typescript-eslint/parser": "^4.20.0",
+    "babel-loader": "^8.1.0",
     "css-loader": "^5.0.0",
+    "eslint": "^7.23.0",
     "style-loader": "^2.0.0",
-    "svg-loader": "^0.0.2"
+    "svg-loader": "^0.0.2",
+    "tui-jsdoc-template": "^1.2.2"
   },
   "scripts": {
-    "built-ts": "tsc",
-    "build-js-api": "tsc && webpack",
-    "build": "tsc && webpack"
+    "built-ts": "tsc && eslint ./src/*.js --fix",
+    "build-js-api": "tsc && eslint ./src/*.js --fix && webpack",
+    "build": "tsc && eslint ./src/*.js --fix && webpack"
   }
 }

@@ -1,6 +1,6 @@
-import {Balloon} from "./widgets";
+import {Balloon} from './widgets';
 import * as rxjs from 'rxjs';
-import {toJs} from "./wrappers";
+import {toJs} from './wrappers';
 
 export class Utils {
   /** @param {Iterable} iterable*/
@@ -43,12 +43,12 @@ export function _getIterator(d) {
         {value: toJs(grok_Iterator_Current(iterator)), done: false} :
         {done: true};
     }
-  }
+  };
 }
 
 export function _isDartium() {
   return Array
-    .from(document.getElementsByTagName("script"))
+    .from(document.getElementsByTagName('script'))
     .some((s) => s.getAttribute('src').includes('dart.js'));
 }
 
@@ -157,7 +157,7 @@ export class LruCache {
     this.forward[pointer] = oldHead;
 
     return this;
-  };
+  }
 
 
   /**
@@ -168,7 +168,7 @@ export class LruCache {
    */
   has(key) {
     return key in this.items;
-  };
+  }
 
   /**
    * Sets the value for the given key in the cache.
@@ -212,7 +212,7 @@ export class LruCache {
     this.forward[pointer] = this.head;
     this.backward[this.head] = pointer;
     this.head = pointer;
-  };
+  }
 
   /**
    * Gets the value attached to the given key, and makes it the most recently used item.
@@ -229,7 +229,7 @@ export class LruCache {
     this.splayOnTop(pointer);
 
     return this.V[pointer];
-  };
+  }
 
   /**
    * Returns the value with the specified key, if it already exists in the cache,

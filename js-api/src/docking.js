@@ -1,6 +1,6 @@
-import {toJs} from "./wrappers";
-import {_toIterable} from "./utils";
-import {DockType} from "./const";
+import {toJs} from './wrappers';
+import {_toIterable} from './utils';
+import {DockType} from './const';
 
 
 /**

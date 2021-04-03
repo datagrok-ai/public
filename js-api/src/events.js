@@ -1,6 +1,6 @@
-import * as rxjs from "rxjs";
-import * as rxjsOperators from "rxjs/operators";
-import {toJs} from "./wrappers";
+import * as rxjs from 'rxjs';
+import * as rxjsOperators from 'rxjs/operators';
+import {toJs} from './wrappers';
 
 export function debounce(observable, milliseconds = 100) {
   return observable.pipe(rxjsOperators.debounceTime(milliseconds));
