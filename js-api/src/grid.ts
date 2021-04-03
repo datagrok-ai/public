@@ -383,6 +383,7 @@ export class Grid extends Viewer {
    *  Specify sort directions via [asc] array (true = ascending, false = descending)
    *  If [asc] is not specified, sorts in ascending order. */
   sort(columns: string[] | Column[], orders: boolean[] | null = null): Grid {
+    // @ts-ignore
     api.grok_Grid_Sort(this.d, columns.map((c: string | Column) => c instanceof Column ? c.d : c), orders);
     return this;
   }
