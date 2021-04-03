@@ -113,7 +113,7 @@ export class Shell {
 
   /** Shows information message (green background)
    * @param {string} x - message */
-  info(x: string): void {
+  info(x: any): void {
     api.grok_Balloon(typeof x == "string" ? x : JSON.stringify(x), 'info');
   }
 
@@ -190,7 +190,8 @@ export class Shell {
    * @param {string | ElementOptions | null} options
    * @returns {View}
    */
-  newView(name: string = 'view', children: object[] = [], options: string | {} | null): View {
+  newView(name: string = 'view', children?: object[], options?: string | {} | null): View {
+    children ??= [];
     let view = View.create(options);
     view.name = name;
     ui.appendAll(view.root, children);

@@ -1,5 +1,5 @@
 import { paramsToJs, toDart, toJs } from "./wrappers";
-import { Widget } from "./widgets";
+import { DartWidget } from "./widgets";
 let api = window;
 /** Grok functions */
 export class Functions {
@@ -51,10 +51,9 @@ export function callFuncWithDartParameters(f, params) {
     let jsParams = paramsToJs(params);
     return f.apply(null, jsParams);
 }
-export class StepEditor extends Widget {
+export class StepEditor extends DartWidget {
     constructor(d) {
-        super();
-        this.d = d;
+        super(d);
     }
     static create() {
         return toJs(api.grok_StepEditor_Create());

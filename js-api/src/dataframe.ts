@@ -283,7 +283,7 @@ export class DataFrame {
 
   /** Current row
    * @type {Row} */
-  get currentRow() {
+  get currentRow(): Row {
     return new Row(this, api.grok_DataFrame_Get_CurrentRowIdx(this.d));
   }
 
