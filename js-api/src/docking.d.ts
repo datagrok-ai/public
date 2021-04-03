@@ -6,6 +6,7 @@ import {DockType} from "./const";
  * Samples: {@link https://public.datagrok.ai/js/samples/ui/docking/docking}
  * */
 export class DockNode {
+    constructor(d: any)
 
     /** @returns {DockContainer} */
     get container(): DockContainer
@@ -54,6 +55,7 @@ export class DockContainer {
  * Learn more: {@link https://github.com/coderespawn/dock-spawn} for details.
  */
 export class DockManager {
+    constructor(d: any)
 
     get element(): HTMLDivElement
 

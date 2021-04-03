@@ -24,5 +24,5 @@ export let chem = _chem;
 export let ml = _ml;
 export let utils = _utils;
 $(function () {
-    window.$ = $;
+  window.$ = $;
 });
