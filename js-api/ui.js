@@ -3,14 +3,14 @@
  * @module ui
  **/
 
-import {Viewer} from "./src/viewer";
-import {VirtualView} from "./src/view";
-import {Accordion, Dialog, InputBase, Menu, TabControl, TreeViewNode, Widget, RangeSlider} from "./src/widgets";
-import {toDart, toJs} from "./src/wrappers";
-import {Functions} from "./src/functions";
-import $ from "cash-dom";
-import {__obs} from "./src/events";
-import {_isDartium, _options} from "./src/utils.js";
+import {Viewer} from './src/viewer';
+import {VirtualView} from './src/view';
+import {Accordion, Dialog, InputBase, Menu, TabControl, TreeViewNode, Widget, RangeSlider} from './src/widgets';
+import {toDart, toJs} from './src/wrappers';
+import {Functions} from './src/functions';
+import $ from 'cash-dom';
+import {__obs} from './src/events';
+import {_isDartium, _options} from './src/utils.js';
 import * as rxjs from 'rxjs';
 
 /**
@@ -77,7 +77,7 @@ export function _backColor(x, s) {
  * @param {number} width
  * */
 export function canvas(width = null, height = null) {
-  let result = element("CANVAS");
+  let result = element('CANVAS');
   if (height != null && width != null) {
     $(result).height(height);
     $(result).width(width);
@@ -148,7 +148,7 @@ export function iconFA(name, handler, tooltipMsg = null) {
   i.classList.add('grok-icon');
   i.classList.add('fal');
   i.classList.add(`fa-${name}`);
-  i.addEventListener("click", handler);
+  i.addEventListener('click', handler);
   if (tooltipMsg !== null)
     tooltip.bind(i, tooltipMsg);
   return i;
@@ -266,7 +266,7 @@ export function loader() {
 }
 
 export function setUpdateIndicator(element, updating = true) {
-  return grok_UI_SetUpdateIndicator(element, updating)
+  return grok_UI_SetUpdateIndicator(element, updating);
 }
 
 /**
@@ -388,7 +388,7 @@ export function popupMenu(items) {
 }
 
 export function inputs(inputs, options) {
-  return form(inputs, options)
+  return form(inputs, options);
 }
 
 /** Creates new nodes tree
@@ -601,7 +601,7 @@ export class ObjectHandler {
    * @returns {string} */
   getCaption(x) {
     return `${x}`;
-  };
+  }
 
   /** @returns {CanvasRenderer} */
   getCanvasRenderer() {
@@ -713,7 +713,7 @@ export class EntityMetaDartProxy extends ObjectHandler {
 
   get type() { return grok_Meta_Get_Type(this.d); }
   isApplicable(x) { return grok_Meta_IsApplicable(this.d, toDart(x)); }
-  getCaption(x) { return grok_Meta_Get_Name(this.d, x); };
+  getCaption(x) { return grok_Meta_Get_Name(this.d, x); }
 
   renderIcon(x, context = null) { return grok_Meta_RenderIcon(x); }
   renderMarkup(x, context = null) { return grok_Meta_RenderMarkup(x); }
@@ -751,7 +751,7 @@ export function boxFixed(item, options = null) {
 export function splitV(items, options = null) {
   let b = box(null, options);
   $(b).addClass('ui-split-v').append(items.map(item => box(item)));
-  return b
+  return b;
 }
 
 /** Div flex-box container that positions child elements horizontally.
@@ -759,7 +759,7 @@ export function splitV(items, options = null) {
 export function splitH(items, options = null) {
   let b = box(null, options);
   $(b).addClass('ui-split-h').append(items.map(item => box(item)));
-  return b
+  return b;
 }
 
 export function block(items, options = null) {

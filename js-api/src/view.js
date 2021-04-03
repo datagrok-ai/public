@@ -1,13 +1,13 @@
-import {VIEW_TYPE, VIEWER} from "./const";
-import {DataFrame} from "./dataframe.js";
-import * as ui from "./../ui";
-import {Viewer} from "./viewer";
-import {DockNode, DockManager} from "./docking";
-import {Grid} from "./grid";
-import {Menu, ToolboxPage} from "./widgets";
-import {Entity} from "./entities";
-import {toJs} from "./wrappers";
-import {_options, _toIterable} from "./utils.js";
+import {VIEW_TYPE, VIEWER} from './const';
+import {DataFrame} from './dataframe.js';
+import * as ui from './../ui';
+import {Viewer} from './viewer';
+import {DockNode, DockManager} from './docking';
+import {Grid} from './grid';
+import {Menu, ToolboxPage} from './widgets';
+import {Entity} from './entities';
+import {toJs} from './wrappers';
+import {_options, _toIterable} from './utils.js';
 
 
 /**
@@ -39,13 +39,13 @@ export class ViewBase {
   /** View type
    * @type {string} */
   get type() {
-    return 'js-view-base'
+    return 'js-view-base';
   }
 
   /** @returns {string|null} View help URL. */
   get helpUrl() {
     return null;
-  };
+  }
 
   /** View name. It gets shown in the tab handle.
    * @type {string} */
