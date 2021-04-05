@@ -46,6 +46,9 @@ export class FuncCall {
   call(showProgress = false, progress = null) {
     return new Promise((resolve, reject) => api.grok_FuncCall_Call(this.d, (out) => resolve(toJs(out)), (err) => reject(err), showProgress, toDart(progress)));
   }
+  getEditor(condensed) {
+    return new Promise((resolve, reject) => api.grok_FuncCall_Get_Editor(this.d, condensed, (out) => resolve(out), (err) => reject(err)));
+  }
 }
 export function callFuncWithDartParameters(f, params) {
   let jsParams = paramsToJs(params);

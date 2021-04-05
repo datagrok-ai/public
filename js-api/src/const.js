@@ -1,22 +1,4 @@
-/**
- * @typedef {string} AggregationType
- * @typedef {string} SyncType
- * @typedef {string} JoinType
- * @typedef {string} ColumnType
- * @typedef {string} ViewerType
- * @typedef {string} ObjectType
- * @typedef {string} ViewerPropertyType
- * @typedef {string} Type
- * @typedef {string} SemType
- * @typedef {string} SimilarityMetric
- * @typedef {string} ColorType
- * @typedef {string} DockType
- * @typedef {Object} ElementOptions
- * @property {string} id
- * @property {string} classes
- * @property {Object} style
- **/
-/** @enum {AggregationType} */
+/** @enum {AGG} */
 export var AGG;
 (function (AGG) {
   AGG['KEY'] = 'key';
@@ -40,7 +22,7 @@ export var AGG;
   AGG['Q3'] = 'q3';
   AGG['SELECTED_ROWS_COUNT'] = '#selected';
 })(AGG || (AGG = {}));
-/** @enum {SyncType} */
+/** @enum {SYNC_TYPE} */
 export var SYNC_TYPE;
 (function (SYNC_TYPE) {
   SYNC_TYPE['CURRENT_ROW_TO_ROW'] = 'row to row';
@@ -63,7 +45,7 @@ export var JOIN_TYPE;
   JOIN_TYPE['LEFT'] = 'left';
   JOIN_TYPE['RIGHT'] = 'right';
 })(JOIN_TYPE || (JOIN_TYPE = {}));
-/** @enum {ColumnType} */
+/** @enum {COLUMN_TYPE} */
 export var COLUMN_TYPE;
 (function (COLUMN_TYPE) {
   COLUMN_TYPE['STRING'] = 'string';
@@ -74,7 +56,7 @@ export var COLUMN_TYPE;
   COLUMN_TYPE['BIG_INT'] = 'bigint';
   COLUMN_TYPE['QNUM'] = 'qnum';
 })(COLUMN_TYPE || (COLUMN_TYPE = {}));
-/** @enum {Type} */
+/** @enum {TYPE} */
 export var TYPE;
 (function (TYPE) {
   TYPE['INT'] = 'int';
@@ -119,7 +101,7 @@ export var TYPE;
   TYPE['NOTEBOOK'] = 'Notebook';
 })(TYPE || (TYPE = {}));
 export const TYPES_SCALAR = new Set([TYPE.INT, TYPE.BIG_INT, TYPE.FLOAT, TYPE.NUM, TYPE.BOOL, TYPE.STRING]);
-/** @enum {ViewerPropertyType} */
+/** @enum {VIEWER_PROPERTY_TYPE} */
 export var VIEWER_PROPERTY_TYPE;
 (function (VIEWER_PROPERTY_TYPE) {
   VIEWER_PROPERTY_TYPE['STRING'] = 'string';
@@ -138,7 +120,7 @@ export var VIEW_TYPE;
 })(VIEW_TYPE || (VIEW_TYPE = {}));
 ;
 ///////
-/** @enum {SemType} */
+/** @enum {SEMTYPE} */
 export const SEMTYPE = {
   EMAIL: 'Email Address',
   URL: 'URL',
@@ -244,7 +226,7 @@ export var SIMILARITY_METRIC;
   SIMILARITY_METRIC['ASYMMETRIC'] = 'asymmetric';
   SIMILARITY_METRIC['BRAUN_BLANQUET'] = 'braun-blanquet';
 })(SIMILARITY_METRIC || (SIMILARITY_METRIC = {}));
-/** @enum {DemoDatasetName} */
+/** @enum {DEMO_DATASET} */
 export var DEMO_DATASET;
 (function (DEMO_DATASET) {
   DEMO_DATASET['WELLS'] = 'wells';
@@ -253,7 +235,7 @@ export var DEMO_DATASET;
   DEMO_DATASET['RANDOM_WALK'] = 'random walk';
   DEMO_DATASET['GEO'] = 'geo';
 })(DEMO_DATASET || (DEMO_DATASET = {}));
-/** @enum {DockType} */
+/** @enum {DOCK_TYPE} */
 export var DOCK_TYPE;
 (function (DOCK_TYPE) {
   DOCK_TYPE['LEFT'] = 'left';

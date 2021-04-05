@@ -560,33 +560,33 @@ export class Files {
   }
   ;
   /** Check if file exists
-     * @param {File | string} file
+     * @param {FileInfo | string} file
      * @returns {Promise<Boolean>} */
   exists(file) {
     return new Promise((resolve, reject) => api.grok_Dapi_UserFiles_Exists(file, (data) => resolve(data), (e) => reject(e)));
   }
   /** Delete file
-     * @param {File | string} file
+     * @param {FileInfo | string} file
      * @returns {Promise} */
   delete(file) {
     return new Promise((resolve, reject) => api.grok_Dapi_UserFiles_Delete(file, () => resolve(), (e) => reject(e)));
   }
   /** Move file
-     * @param {List<File | string>} files
+     * @param {List<FileInfo | string>} files
      * @param {string} newPath
      * @returns {Promise} */
   move(files, newPath) {
     return new Promise((resolve, reject) => api.grok_Dapi_UserFiles_Move(files, newPath, () => resolve(), (e) => reject(e)));
   }
   /** Rename file
-     * @param { File | string} file
+     * @param { FileInfo | string} file
      * @param {string} newName
      * @returns {Promise} */
   rename(file, newName) {
     return new Promise((resolve, reject) => api.grok_Dapi_UserFiles_Rename(file, newName, () => resolve(), (e) => reject(e)));
   }
   /** List file
-     * @param {File | string} file
+     * @param {FileInfo | string} file
      * @param {boolean} recursive
      * @param {string} searchPattern
      * @returns {Promise<List<FileInfo>>} */
@@ -594,26 +594,26 @@ export class Files {
     return new Promise((resolve, reject) => api.grok_Dapi_UserFiles_List(file, recursive, searchPattern, (data) => resolve(toJs(data)), (e) => reject(e)));
   }
   /** Read file as string
-     * @param {File | string} file
+     * @param {FileInfo | string} file
      * @returns {Promise<String>} */
   readAsText(file) {
     return new Promise((resolve, reject) => api.grok_Dapi_UserFiles_ReadAsText(file, (data) => resolve(data), (e) => reject(e)));
   }
   /** Read file as bytes
-     * @param {File | string} file
+     * @param {FileInfo | string} file
      * @returns {Promise<Uint8Array>} */
   readAsBytes(file) {
     return new Promise((resolve, reject) => api.grok_Dapi_UserFiles_ReadAsBytes(file, (data) => resolve(toJs(data)), (e) => reject(e)));
   }
   /** Write file
-     * @param {File | string} file
+     * @param {FileInfo | string} file
      * @param {Array<number>} blob
      * @returns {Promise} */
   write(file, blob) {
     return new Promise((resolve, reject) => api.grok_Dapi_UserFiles_Write(file, blob, () => resolve(), (e) => reject(e)));
   }
   /** Write file
-     * @param {File | string} file
+     * @param {FileInfo | string} file
      * @param {string} data
      * @returns {Promise} */
   writeAsText(file, data) {
