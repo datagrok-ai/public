@@ -678,75 +678,75 @@ export class Files {
   };
 
   /** Check if file exists
-   * @param {File | string} file
+   * @param {FileInfo | string} file
    * @returns {Promise<Boolean>} */
-  exists(file: File | string): Promise<boolean> {
+  exists(file: FileInfo | string): Promise<boolean> {
     return new Promise((resolve, reject) =>
         api.grok_Dapi_UserFiles_Exists(file, (data: boolean | PromiseLike<boolean>) => resolve(data), (e: any) => reject(e)));
   }
 
   /** Delete file
-   * @param {File | string} file
+   * @param {FileInfo | string} file
    * @returns {Promise} */
-  delete(file: File | string): Promise<void> {
+  delete(file: FileInfo | string): Promise<void> {
     return new Promise((resolve, reject) => api.grok_Dapi_UserFiles_Delete(file, () => resolve(), (e: any) => reject(e)));
   }
 
   /** Move file
-   * @param {List<File | string>} files
+   * @param {List<FileInfo | string>} files
    * @param {string} newPath
    * @returns {Promise} */
-  move(files: File[] | string[], newPath: string): Promise<void> {
+  move(files: FileInfo[] | string[], newPath: string): Promise<void> {
     return new Promise((resolve, reject) => api.grok_Dapi_UserFiles_Move(files, newPath, () => resolve(), (e: any) => reject(e)));
   }
 
   /** Rename file
-   * @param { File | string} file
+   * @param { FileInfo | string} file
    * @param {string} newName
    * @returns {Promise} */
-  rename(file: File | string, newName: string): Promise<void> {
+  rename(file: FileInfo | string, newName: string): Promise<void> {
     return new Promise((resolve, reject) => api.grok_Dapi_UserFiles_Rename(file, newName, () => resolve(), (e: any) => reject(e)));
   }
 
   /** List file
-   * @param {File | string} file
+   * @param {FileInfo | string} file
    * @param {boolean} recursive
    * @param {string} searchPattern
    * @returns {Promise<List<FileInfo>>} */
-  list(file: File | string, recursive: boolean, searchPattern: string): Promise<FileInfo[]> {
+  list(file: FileInfo | string, recursive: boolean, searchPattern: string): Promise<FileInfo[]> {
     return new Promise((resolve, reject) =>
         api.grok_Dapi_UserFiles_List(file, recursive, searchPattern, (data: any) => resolve(toJs(data)), (e: any) => reject(e)));
   }
 
   /** Read file as string
-   * @param {File | string} file
+   * @param {FileInfo | string} file
    * @returns {Promise<String>} */
-  readAsText(file: File | string): Promise<string> {
+  readAsText(file: FileInfo | string): Promise<string> {
     return new Promise((resolve, reject) => 
         api.grok_Dapi_UserFiles_ReadAsText(file, (data: string | PromiseLike<string>) => resolve(data), (e: any) => reject(e)));
   }
 
   /** Read file as bytes
-   * @param {File | string} file
+   * @param {FileInfo | string} file
    * @returns {Promise<Uint8Array>} */
-  readAsBytes(file: File | string): Promise<Uint8Array> {
+  readAsBytes(file: FileInfo | string): Promise<Uint8Array> {
     return new Promise((resolve, reject) =>
         api.grok_Dapi_UserFiles_ReadAsBytes(file, (data: any) => resolve(toJs(data)), (e: any) => reject(e)));
   }
 
   /** Write file
-   * @param {File | string} file
+   * @param {FileInfo | string} file
    * @param {Array<number>} blob
    * @returns {Promise} */
-  write(file: File | string, blob: number[]): Promise<void> {
+  write(file: FileInfo | string, blob: number[]): Promise<void> {
     return new Promise((resolve, reject) => api.grok_Dapi_UserFiles_Write(file, blob, () => resolve(), (e: any) => reject(e)));
   }
 
   /** Write file
-   * @param {File | string} file
+   * @param {FileInfo | string} file
    * @param {string} data
    * @returns {Promise} */
-  writeAsText(file: File | string, data: string): Promise<void> {
+  writeAsText(file: FileInfo | string, data: string): Promise<void> {
     return new Promise((resolve, reject) => api.grok_Dapi_UserFiles_WriteAsText(file, data, () => resolve(), (e: any) => reject(e)));
   }
 }
