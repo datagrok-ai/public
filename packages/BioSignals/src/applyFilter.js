@@ -203,101 +203,109 @@ async function RemoveSpikes(data, columnToFilter, parameters) {
 }
 
 export async function applyFilter(t, parameters, i) {
+  let pi = DG.TaskBarProgressIndicator.create('Calculating filter\'s output...');
   let nameOfLastFiltersOutput, plotFL, inputCase;
   for (let column of t.columns.byTags({'selectedFilterInput': undefined}))
     inputCase = t.columns.byName(column.name);
   const col = DG.Column.fromList('int', 'time', Array(inputCase.length).fill().map((_, idx) => idx));
-  switch (parameters['type']) {
-    case 'Moving Average Filter':
-      await SMA_filter(t, inputCase, parameters);
-      nameOfLastFiltersOutput = inputCase.name + ' SMA Filtered';
-      plotFL = DG.DataFrame.fromColumns([col, t.columns.byName(nameOfLastFiltersOutput)]);
-      return [plotFL, nameOfLastFiltersOutput];
-    case 'Exponential Filter':
-      await Exp_filter(t, inputCase, parameters);
-      nameOfLastFiltersOutput = inputCase.name + ' Exponentially Filtered';
-      plotFL = DG.DataFrame.fromColumns([col, t.columns.byName(nameOfLastFiltersOutput)]);
-      return [plotFL, nameOfLastFiltersOutput];
-    case 'Min Max Normalization':
-      await MinMax_transform(t, inputCase);
-      nameOfLastFiltersOutput = inputCase.name + ' Min Max Normalized';
-      plotFL = DG.DataFrame.fromColumns([col, t.columns.byName(nameOfLastFiltersOutput)]);
-      return [plotFL, nameOfLastFiltersOutput];
-    case 'Z-score Normalization':
-      await Zscore_transform(t, inputCase);
-      nameOfLastFiltersOutput = inputCase.name + ' Z-score Normalized';
-      plotFL = DG.DataFrame.fromColumns([col, t.columns.byName(nameOfLastFiltersOutput)]);
-      return [plotFL, nameOfLastFiltersOutput];
-    case 'Box Cox Transform':
-      await box_cox_transform(t, inputCase, parameters);
-      nameOfLastFiltersOutput = inputCase.name + ' Box Cox Transformed';
-      plotFL = DG.DataFrame.fromColumns([col, t.columns.byName(nameOfLastFiltersOutput)]);
-      return [plotFL, nameOfLastFiltersOutput];
-    case 'Get Trend':
-      await get_trend(t, inputCase);
-      nameOfLastFiltersOutput = inputCase.name + ' Trend';
-      plotFL = DG.DataFrame.fromColumns([col, t.columns.byName(nameOfLastFiltersOutput)]);
-      return [plotFL, nameOfLastFiltersOutput];
-    case 'Detrend':
-      await remove_trend(t, inputCase);
-      nameOfLastFiltersOutput = inputCase.name + ' Detrended';
-      plotFL = DG.DataFrame.fromColumns([col, t.columns.byName(nameOfLastFiltersOutput)]);
-      return [plotFL, nameOfLastFiltersOutput];
-    case 'Fourier Filter':
-      await fourier_filter(t, inputCase, parameters);
-      nameOfLastFiltersOutput = inputCase.name + ' Fourier Filtered (L: ' + parameters['lowcut'] + '; H: ' + parameters['hicut'] + ')';
-      plotFL = DG.DataFrame.fromColumns([col, t.columns.byName(nameOfLastFiltersOutput)]);
-      return [plotFL, nameOfLastFiltersOutput];
-    case 'Spectral Density':
-      await spectral_density(t, inputCase, parameters);
-      nameOfLastFiltersOutput = inputCase.name + ' Density';
-      plotFL = DG.DataFrame.fromColumns([col, t.columns.byName(nameOfLastFiltersOutput)]);
-      return [plotFL, nameOfLastFiltersOutput];
-    case 'Subsample':
-      await subsample(t, inputCase, parameters);
-      nameOfLastFiltersOutput = inputCase.name + ' Subsample';
-      plotFL = DG.DataFrame.fromColumns([col, t.columns.byName(nameOfLastFiltersOutput)]);
-      return [plotFL, nameOfLastFiltersOutput];
-    case 'Averaging Downsampling':
-      await asample(t, inputCase, parameters);
-      nameOfLastFiltersOutput = inputCase.name + ' Subsample';
-      plotFL = DG.DataFrame.fromColumns([col, t.columns.byName(nameOfLastFiltersOutput)]);
-      return [plotFL, nameOfLastFiltersOutput];
-    case 'ConvolutionalFilter':
-      nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + parameters['type'] + ')';
-      plotFL = await ConvolutionalFilter(t, inputCase, parameters);
-      return [plotFL, nameOfLastFiltersOutput];
-    case 'DenoiseEDA':
-      nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + parameters['type'] + ')';
-      plotFL = await DenoiseEDA(t, inputCase, parameters);
-      return [plotFL, nameOfLastFiltersOutput];
-    case 'IIRFilter':
-      nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + parameters['type'] + ')';
-      plotFL = await IIRFilter(t, inputCase, parameters);
-      return [plotFL, nameOfLastFiltersOutput];
-    case 'FIRFilter':
-      nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + parameters['type'] + ')';
-      plotFL = await FIRFilter(t, inputCase, parameters);
-      return [plotFL, nameOfLastFiltersOutput];
-    case 'Normalize':
-      nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + parameters['type'] + ')';
-      plotFL = await normalize(t, inputCase, parameters);
-      return [plotFL, nameOfLastFiltersOutput];
-    case 'Resample':
-      nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + parameters['type'] + ')';
-      plotFL = await resample(t, inputCase, parameters);
-      return [plotFL, nameOfLastFiltersOutput];
-    case 'KalmanFilter':
-      nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + parameters['type'] + ')';
-      plotFL = await KalmanFilter(t, inputCase, parameters);
-      return [plotFL, nameOfLastFiltersOutput];
-    case 'ImputeNAN':
-      nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + parameters['type'] + ')';
-      plotFL = await ImputeNAN(t, inputCase, parameters);
-      return [plotFL, nameOfLastFiltersOutput];
-    case 'RemoveSpikes':
-      nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + parameters['type'] + ')';
-      plotFL = await RemoveSpikes(t, inputCase, parameters);
-      return [plotFL, nameOfLastFiltersOutput];
+  try {
+    switch (parameters['type']) {
+      case 'Moving Average Filter':
+        await SMA_filter(t, inputCase, parameters);
+        nameOfLastFiltersOutput = inputCase.name + ' SMA Filtered';
+        plotFL = DG.DataFrame.fromColumns([col, t.columns.byName(nameOfLastFiltersOutput)]);
+        return [plotFL, nameOfLastFiltersOutput];
+      case 'Exponential Filter':
+        await Exp_filter(t, inputCase, parameters);
+        nameOfLastFiltersOutput = inputCase.name + ' Exponentially Filtered';
+        plotFL = DG.DataFrame.fromColumns([col, t.columns.byName(nameOfLastFiltersOutput)]);
+        return [plotFL, nameOfLastFiltersOutput];
+      case 'Min Max Normalization':
+        await MinMax_transform(t, inputCase);
+        nameOfLastFiltersOutput = inputCase.name + ' Min Max Normalized';
+        plotFL = DG.DataFrame.fromColumns([col, t.columns.byName(nameOfLastFiltersOutput)]);
+        return [plotFL, nameOfLastFiltersOutput];
+      case 'Z-score Normalization':
+        await Zscore_transform(t, inputCase);
+        nameOfLastFiltersOutput = inputCase.name + ' Z-score Normalized';
+        plotFL = DG.DataFrame.fromColumns([col, t.columns.byName(nameOfLastFiltersOutput)]);
+        return [plotFL, nameOfLastFiltersOutput];
+      case 'Box Cox Transform':
+        await box_cox_transform(t, inputCase, parameters);
+        nameOfLastFiltersOutput = inputCase.name + ' Box Cox Transformed';
+        plotFL = DG.DataFrame.fromColumns([col, t.columns.byName(nameOfLastFiltersOutput)]);
+        return [plotFL, nameOfLastFiltersOutput];
+      case 'Get Trend':
+        await get_trend(t, inputCase);
+        nameOfLastFiltersOutput = inputCase.name + ' Trend';
+        plotFL = DG.DataFrame.fromColumns([col, t.columns.byName(nameOfLastFiltersOutput)]);
+        return [plotFL, nameOfLastFiltersOutput];
+      case 'Detrend':
+        await remove_trend(t, inputCase);
+        nameOfLastFiltersOutput = inputCase.name + ' Detrended';
+        plotFL = DG.DataFrame.fromColumns([col, t.columns.byName(nameOfLastFiltersOutput)]);
+        return [plotFL, nameOfLastFiltersOutput];
+      case 'Fourier Filter':
+        await fourier_filter(t, inputCase, parameters);
+        nameOfLastFiltersOutput = inputCase.name + ' Fourier Filtered (L: ' + parameters['lowcut'] + '; H: ' + parameters['hicut'] + ')';
+        plotFL = DG.DataFrame.fromColumns([col, t.columns.byName(nameOfLastFiltersOutput)]);
+        return [plotFL, nameOfLastFiltersOutput];
+      case 'Spectral Density':
+        await spectral_density(t, inputCase, parameters);
+        nameOfLastFiltersOutput = inputCase.name + ' Density';
+        plotFL = DG.DataFrame.fromColumns([col, t.columns.byName(nameOfLastFiltersOutput)]);
+        return [plotFL, nameOfLastFiltersOutput];
+      case 'Subsample':
+        await subsample(t, inputCase, parameters);
+        nameOfLastFiltersOutput = inputCase.name + ' Subsample';
+        plotFL = DG.DataFrame.fromColumns([col, t.columns.byName(nameOfLastFiltersOutput)]);
+        return [plotFL, nameOfLastFiltersOutput];
+      case 'Averaging Downsampling':
+        await asample(t, inputCase, parameters);
+        nameOfLastFiltersOutput = inputCase.name + ' Subsample';
+        plotFL = DG.DataFrame.fromColumns([col, t.columns.byName(nameOfLastFiltersOutput)]);
+        return [plotFL, nameOfLastFiltersOutput];
+      case 'ConvolutionalFilter':
+        nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + parameters['type'] + ')';
+        plotFL = await ConvolutionalFilter(t, inputCase, parameters);
+        return [plotFL, nameOfLastFiltersOutput];
+      case 'DenoiseEDA':
+        nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + parameters['type'] + ')';
+        plotFL = await DenoiseEDA(t, inputCase, parameters);
+        return [plotFL, nameOfLastFiltersOutput];
+      case 'IIRFilter':
+        nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + parameters['type'] + ')';
+        plotFL = await IIRFilter(t, inputCase, parameters);
+        return [plotFL, nameOfLastFiltersOutput];
+      case 'FIRFilter':
+        nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + parameters['type'] + ')';
+        plotFL = await FIRFilter(t, inputCase, parameters);
+        return [plotFL, nameOfLastFiltersOutput];
+      case 'Normalize':
+        nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + parameters['type'] + ')';
+        plotFL = await normalize(t, inputCase, parameters);
+        return [plotFL, nameOfLastFiltersOutput];
+      case 'Resample':
+        nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + parameters['type'] + ')';
+        plotFL = await resample(t, inputCase, parameters);
+        return [plotFL, nameOfLastFiltersOutput];
+      case 'KalmanFilter':
+        nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + parameters['type'] + ')';
+        plotFL = await KalmanFilter(t, inputCase, parameters);
+        return [plotFL, nameOfLastFiltersOutput];
+      case 'ImputeNAN':
+        nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + parameters['type'] + ')';
+        plotFL = await ImputeNAN(t, inputCase, parameters);
+        return [plotFL, nameOfLastFiltersOutput];
+      case 'RemoveSpikes':
+        nameOfLastFiltersOutput = 'Output of Filter ' + i + ' (' + parameters['type'] + ')';
+        plotFL = await RemoveSpikes(t, inputCase, parameters);
+        return [plotFL, nameOfLastFiltersOutput];
+    }
+  } catch (e) {
+    pi.close();
+    alert(e);
+    throw e;
   }
+  pi.close();
 }
