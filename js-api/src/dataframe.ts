@@ -132,7 +132,7 @@ const MapProxy = new Proxy(class {
  */
 export class DataFrame {
   public readonly d: any;
-  private columns: ColumnList;
+  public columns: ColumnList;
   private rows: RowList;
   private filter: BitSet;
   private temp: any;
@@ -174,7 +174,7 @@ export class DataFrame {
    * @param {string} csv - The content of the comma-separated values file.
    * @param {CsvImportOptions} options
    * @returns {DataFrame} */
-  static fromCsv(csv: string, options: CsvImportOptions) {
+  static fromCsv(csv: string, options?: CsvImportOptions) {
     return grok.data.parseCsv(csv, options);
   }
 
