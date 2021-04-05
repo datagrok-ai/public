@@ -50,7 +50,7 @@ export class ViewBase {
   set name(s) {
     // @ts-ignore
     if (window.api.grok_View_Set_Name == null)
-      // @ts-ignore
+    // @ts-ignore
       this._name = s;
     else
       api.grok_View_Set_Name(this.d, s);
