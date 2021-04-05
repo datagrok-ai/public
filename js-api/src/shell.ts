@@ -172,8 +172,7 @@ export class Shell {
    * @returns {View}
    */
   addView(v: View, dockType: DockType = DOCK_TYPE.FILL, width: number | null = null): View {
-    // @ts-ignore
-    if (window.api.grok_AddView == null) {
+    if (api.grok_AddView == null) {
       document.body.append(v.root);
       v.root.style.width = '100vw';
       v.root.style.height = '100vh';
