@@ -3,7 +3,6 @@ import { AGG, TYPE, TAGS } from './const';
 import { __obs, observeStream } from './events';
 import { toDart, toJs } from './wrappers';
 import { SIMILARITY_METRIC } from './const';
-// @ts-ignore
 import { _getIterator, _toIterable } from './utils';
 let api = window;
 /**
@@ -551,7 +550,7 @@ export class Column {
      * @param {number[]} values
      * @param {boolean} exact - if true, strips out qualifier from [values].
      * */
-  static qnum(name, length = 0, values, exact = true) {
+  static qnum(name, length = 0, values = [], exact = true) {
     let col = Column.fromType(TYPE.QNUM, name, length);
     if (values !== null) {
       let buffer = col.getRawData();
