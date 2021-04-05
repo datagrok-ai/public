@@ -13,7 +13,6 @@ import {
 import {__obs, observeStream} from "./events";
 import {toDart, toJs} from "./wrappers";
 import {SIMILARITY_METRIC} from "./const";
-// @ts-ignore
 import {_getIterator, _toIterable} from "./utils";
 import {Observable}  from "rxjs";
 
@@ -42,7 +41,7 @@ const MapProxy = new Proxy(class {
     constructor(d: any) {
       this.d = d;
     }
-    keys() {
+    keys(): Iterable<any> {
       return _toIterable(api.grok_Map_Keys(this.d));
     }
     values() {
@@ -669,7 +668,7 @@ export class Column {
    * @param {number[]} values
    * @param {boolean} exact - if true, strips out qualifier from [values].
    * */
-  static qnum(name: string, length = 0, values: number[] | null, exact = true) {
+  static qnum(name: string, length = 0, values: number[] = [], exact = true) {
     let col = Column.fromType(TYPE.QNUM, name, length);
     if (values !== null) {
       let buffer = col.getRawData();

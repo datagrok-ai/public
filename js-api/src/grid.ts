@@ -388,10 +388,10 @@ export class Grid extends Viewer {
     return this;
   }
 
-  sortIndexes(indexComparer: (a: number, b: number) => number | undefined): Grid {
+  sortIndexes(indexComparer: (a: number, b: number) => number): Grid {
     let indexes = _identityInt32(this.table.rowCount);
     indexes.sort(indexComparer);
-    this.setRowOrder(indexes);
+    this.setRowOrder(<number[]><unknown>indexes);
     return this;
   }
 
