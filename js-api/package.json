@@ -24,8 +24,8 @@
     "tui-jsdoc-template": "^1.2.2"
   },
   "scripts": {
-    "built-ts": "tsc && eslint ./src/*.js --fix",
-    "build-js-api": "tsc && eslint ./src/*.js --fix && webpack",
-    "build": "tsc && eslint ./src/*.js --fix && webpack"
+    "built-ts": "tsc && eslint ./src/*.js ./dg.js ./ui.js ./grok.js --fix",
+    "build-js-api": "tsc && eslint ./src/*.js ./dg.js ./ui.js ./grok.js --fix && webpack",
+    "build": "tsc && eslint ./src/*.js ./dg.js ./ui.js ./grok.js --fix && webpack"
   }
 }

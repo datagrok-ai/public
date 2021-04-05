@@ -155,7 +155,7 @@ export function extract(x) {
 export function render(x) {
   x = extract(x);
   // @ts-ignore
-  if (window.api.grok_UI_Render == null)
+  if (api.grok_UI_Render == null)
     return x;
   return api.grok_UI_Render(x);
 }

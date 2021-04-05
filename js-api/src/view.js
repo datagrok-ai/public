@@ -45,11 +45,11 @@ export class ViewBase {
      * @type {string} */
   get name() {
     // @ts-ignore
-    return window.api.grok_View_Get_Name == null ? this._name : api.grok_View_Get_Name(this.d);
+    return api.grok_View_Get_Name == null ? this._name : api.grok_View_Get_Name(this.d);
   }
   set name(s) {
     // @ts-ignore
-    if (window.api.grok_View_Set_Name == null)
+    if (api.grok_View_Set_Name == null)
     // @ts-ignore
       this._name = s;
     else
@@ -172,7 +172,7 @@ export class View extends ViewBase {
      * @returns {View} */
   static create(options) {
     // @ts-ignore
-    let v = window.api.grok_View == null ? new View(null) : new View(api.grok_View());
+    let v = api.grok_View == null ? new View(null) : new View(api.grok_View());
     _options(v.root, 'ui-panel');
     _options(v.root, options);
     return v;
@@ -187,7 +187,7 @@ export class View extends ViewBase {
   }
   get root() {
     // @ts-ignore
-    if (window.api.grok_View_Get_Root == null)
+    if (api.grok_View_Get_Root == null)
       return this._root;
     return api.grok_View_Get_Root(this.d);
   }
