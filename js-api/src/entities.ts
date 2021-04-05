@@ -914,7 +914,7 @@ export class SemanticValue {
 }
 
 export class DateTime {
-  private d: any;
+  public d: any;
 
   constructor(d: any) {
     this.d = d;
