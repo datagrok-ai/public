@@ -1,4 +1,5 @@
 import * as grok from "datagrok-api/grok";
+import * as DG from "datagrok-api/dg";
 
 async function BeatfromECG(data, column, parameters) {
   return await grok.functions.call('BioSignals:BeatfromECG',
@@ -51,14 +52,22 @@ async function BeatFromBP(data, column, parameters) {
 }
 
 export async function applyExtractor(t, column, parameters) {
-  switch (parameters['type']) {
-    case 'LocalEnergy':
-      return LocalEnergy(t, column, parameters);
-    case 'BeatFromECG':
-      return BeatfromECG(t, column, parameters);
-    case 'PhasicEstimation':
-      return PhasicEstimation(t, column, parameters);
-    case 'BeatFromBP':
-      return BeatFromBP(t, column, parameters);
+  let pi = DG.TaskBarProgressIndicator.create('Calculating extractor...');
+  try {
+    switch (parameters['type']) {
+      case 'LocalEnergy':
+        return LocalEnergy(t, column, parameters);
+      case 'BeatFromECG':
+        return BeatfromECG(t, column, parameters);
+      case 'PhasicEstimation':
+        return PhasicEstimation(t, column, parameters);
+      case 'BeatFromBP':
+        return BeatFromBP(t, column, parameters);
+    }
+  } catch (e) {
+    pi.close();
+    alert(e);
+    throw e;
   }
+  pi.close();
 }
