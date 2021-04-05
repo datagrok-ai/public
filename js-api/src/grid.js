@@ -363,11 +363,7 @@ export class GridCellStyle {
 }
 /** Grid cell rendering args. */
 export class GridCellRenderArgs extends EventData {
-  d(d) {
-    throw new Error('Method not implemented.');
-  }
   constructor(d) {
-    // @ts-ignore
     super(d);
   }
   /** @returns {CanvasRenderingContext2D} */
