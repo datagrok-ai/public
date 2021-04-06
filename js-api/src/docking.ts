@@ -1,5 +1,4 @@
 import {toJs} from './wrappers';
-// @ts-ignore
 import {_toIterable} from './utils';
 import {DockType} from './const';
 import { Viewer } from './viewer';

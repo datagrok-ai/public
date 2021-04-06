@@ -11,8 +11,7 @@ import {toDart, toJs} from './src/wrappers';
 import {Functions} from './src/functions';
 import $ from 'cash-dom';
 import {__obs} from './src/events';
-// @ts-ignore
-import {_isDartium, _options} from './src/utils.js';
+import {_isDartium, _options} from './src/utils';
 import * as rxjs from 'rxjs';
 import { CanvasRenderer, GridCellRenderer } from './src/grid';
 import { DateTime } from './src/entities';

@@ -284,7 +284,7 @@ export class LruCache {
  * @returns {HTMLElement}
  * */
 export function _options(element: HTMLElement, options: any) {
-  if (options === null)
+  if (options == null)
     return element;
   if (typeof options === 'string')
     element.className += ` ${options.replace(/,/g, ' ')}`;
