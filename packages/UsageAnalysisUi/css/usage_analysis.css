@@ -1,0 +1,16 @@
+.cardbox{
+  padding: 0px 10px;
+}
+.card{
+  margin:10px;
+}
+.toolbox-inputs>div{
+  width: 180px;
+  margin:5px 0px 5px -5px;
+}
+.user-list{
+  overflow: auto;
+}
+.user-list i {
+  margin-right: 5px;
+}
