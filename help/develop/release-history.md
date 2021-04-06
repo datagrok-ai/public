@@ -1,6 +1,24 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-04-06 Dev build 0.89.33
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.89.33`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* (Bug) Bar Chart: cannot plot date columns on a categorical axis (WIP)
+* (Bug) Trellis Plot: error rendering empty molecules (empty strings) 
+* JS API: Migrate to Typescript 
+* CVM: NLOpt temporarily off to investigate the resulting image first. 
+
+
 # 2021-04-06 Dev build 0.89.32
 
 ## Latest Docker Images
