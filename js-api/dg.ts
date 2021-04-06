@@ -15,9 +15,7 @@ export * from './src/view';
 export * from './src/viewer';
 export * from './src/docking';
 export * from './src/wrappers_impl';
-// @ts-ignore
 export {time, timeAsync, Utils, LruCache} from './src/utils';
-// @ts-ignore
 export {ObjectHandler, EntityMetaDartProxy} from './ui';
 export { Detector } from './src/data';
 
