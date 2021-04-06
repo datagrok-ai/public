@@ -9,7 +9,8 @@ import {
   ColumnType,
   SimilarityMetric,
   AggregationType,
-  CsvImportOptions
+  CsvImportOptions,
+  IndexPredicate
 } from "./const";
 import {__obs, observeStream} from "./events";
 import {toDart, toJs} from "./wrappers";
@@ -27,8 +28,6 @@ type RowPredicate = (row: Row) => boolean;
  *
  * @typedef {function(Row): boolean} RowPredicate
  * @typedef {function(Column): boolean} ColumnPredicate
- * @typedef {function(number): boolean} IndexPredicate
- * @typedef {function(String): boolean} StringPredicate
  */
 
 /**
@@ -1476,7 +1475,7 @@ export class BitSet {
     return api.grok_Object_ToString(this.d);
   }
 
-  handleClick(rowIndexPredicate: any, mouseEvent: any) {
+  handleClick(rowIndexPredicate: IndexPredicate, mouseEvent: any) {
     api.grok_Utils_SelectRowsWhere(this.d, rowIndexPredicate, mouseEvent.ctrlKey, mouseEvent.shiftKey, mouseEvent.metaKey);
   }
 }

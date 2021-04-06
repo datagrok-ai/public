@@ -277,6 +277,9 @@ export enum DOCK_TYPE {
  * @property {string} delimiter
  * @property {string} decimalSeparator
  * @property {string} thousandSeparator
+ * 
+ * @typedef {function(number): boolean} IndexPredicate
+ * @typedef {function(String): boolean} StringPredicate
  **/
 
 export type AggregationType = `${AGG}`;
@@ -294,3 +297,5 @@ export type DemoDatasetName = `${DEMO_DATASET}`;
 export type DockType = `${DOCK_TYPE}`;
 export type ElementOptions = { id?: string, classes?: string, style?: object };
 export type CsvImportOptions = { delimiter?: string, decimalSeparator?: string, thousandSeparator?: string };
+export type IndexPredicate = (ind: number) => boolean;
+export type StringPredicate = (str: string) => boolean;

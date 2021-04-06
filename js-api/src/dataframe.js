@@ -10,8 +10,6 @@ let api = window;
  *
  * @typedef {function(Row): boolean} RowPredicate
  * @typedef {function(Column): boolean} ColumnPredicate
- * @typedef {function(number): boolean} IndexPredicate
- * @typedef {function(String): boolean} StringPredicate
  */
 /**
  * Proxies a Dart Map, API-compliant to ES 2015+
