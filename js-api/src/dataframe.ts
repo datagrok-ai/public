@@ -8,7 +8,8 @@ import {
   SemType,
   ColumnType,
   SimilarityMetric,
-  AggregationType
+  AggregationType,
+  CsvImportOptions
 } from "./const";
 import {__obs, observeStream} from "./events";
 import {toDart, toJs} from "./wrappers";
@@ -19,8 +20,6 @@ import {Observable}  from "rxjs";
 declare let grok: any;
 declare let DG: any;
 let api = <any>window;
-
-type CsvImportOptions = object;
 type RowPredicate = (row: Row) => boolean;
 
 /**

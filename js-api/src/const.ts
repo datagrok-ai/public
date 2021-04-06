@@ -267,10 +267,16 @@ export enum DOCK_TYPE {
  * @typedef {string} SimilarityMetric
  * @typedef {string} ColorType
  * @typedef {string} DockType
+ * 
  * @typedef {Object} ElementOptions
  * @property {string} id
  * @property {string} classes
  * @property {Object} style
+ * 
+ * @typedef {Object} CsvImportOptions
+ * @property {string} delimiter
+ * @property {string} decimalSeparator
+ * @property {string} thousandSeparator
  **/
 
 export type AggregationType = `${AGG}`;
@@ -286,4 +292,5 @@ export type SimilarityMetric = `${SIMILARITY_METRIC}`;
 export type ColorType = number;
 export type DemoDatasetName = `${DEMO_DATASET}`;
 export type DockType = `${DOCK_TYPE}`;
-export type ElementOptions = { id: string, classes: string, style: object };
+export type ElementOptions = { id?: string, classes?: string, style?: object };
+export type CsvImportOptions = { delimiter?: string, decimalSeparator?: string, thousandSeparator?: string };
