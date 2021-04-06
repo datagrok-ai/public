@@ -173,6 +173,12 @@ M  END
     if (molString == null || molString === '')
       return;
 
+    // value-based drawing (coming from HtmlCellRenderer.renderValue)
+    if (gridCell.cell.column == null) {
+      this._drawMolecule(x, y, w, h, g.canvas, molString, "", false, false, false);
+      return;
+    }
+
     let colTags = gridCell.cell.column.tags;
 
     const singleScaffoldHighlightMolString = this._initScaffoldString(colTags, 'chem-scaffold');
