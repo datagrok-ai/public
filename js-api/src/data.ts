@@ -1,7 +1,7 @@
 import {DataFrame, Column} from "./dataframe";
 import {toJs} from "./wrappers";
 import {FuncCall} from "./functions";
-import {DemoDatasetName, JoinType, SyncType} from "./const";
+import {DemoDatasetName, JoinType, SyncType, CsvImportOptions} from "./const";
 
 let api = <any>window;
 
@@ -110,19 +110,12 @@ export class Data {
   }
 
   /**
-   * @typedef {Object} CsvImportOptions
-   * @property {string} delimiter
-   * @property {string} decimalSeparator
-   * @property {Object} thousandSeparator
-   **/
-
-  /**
    * Parses the CSV string.
    * @param {string} csv - The content of the comma-separated values file.
    * @param {CsvImportOptions} options
    * @returns {DataFrame}
    * */
-  parseCsv(csv: string, options?: {delimiter?: string, decimalSeparator?: string, thousandSeparator?: string}): DataFrame {
+  parseCsv(csv: string, options?: CsvImportOptions): DataFrame {
     return new DataFrame(api.grok_ParseCsv(csv, options));
   }
 

@@ -89,12 +89,6 @@ export class Data {
     return new Promise((resolve, reject) => api.grok_GetDemoTable(path, (t) => resolve(toJs(t)), (e) => reject(e)));
   }
   /**
-     * @typedef {Object} CsvImportOptions
-     * @property {string} delimiter
-     * @property {string} decimalSeparator
-     * @property {Object} thousandSeparator
-     **/
-  /**
      * Parses the CSV string.
      * @param {string} csv - The content of the comma-separated values file.
      * @param {CsvImportOptions} options
