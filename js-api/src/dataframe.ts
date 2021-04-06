@@ -130,10 +130,10 @@ const MapProxy = new Proxy(class {
 export class DataFrame {
   public readonly d: any;
   public columns: ColumnList;
-  private rows: RowList;
-  private filter: BitSet;
-  private temp: any;
-  private readonly tags: any;
+  public rows: RowList;
+  public filter: BitSet;
+  public temp: any;
+  public tags: any;
 
   constructor(d: any) {
     this.d = d;

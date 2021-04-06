@@ -2,7 +2,6 @@ import {Cell, Column, Row} from "./dataframe";
 import {Viewer} from "./viewer";
 import {toDart, toJs} from "./wrappers";
 import {__obs, _sub, EventData, StreamSubscription} from "./events";
-// @ts-ignore
 import {_identityInt32} from "./utils";
 import { Observable } from "rxjs";
 import { RangeSlider } from "./widgets";
