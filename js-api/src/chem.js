@@ -2,9 +2,6 @@
  * Cheminformatics support
  * @module chem
  * */
-/**
- * @typedef {string} SimilarityMetric
- **/
 import { BitSet, DataFrame } from './dataframe';
 import { SIMILARITY_METRIC } from './const';
 let api = window;
@@ -17,7 +14,7 @@ let api = window;
  * @param {Column} column - Molecule column to search in
  * @param {string} molecule - Reference molecule in one of formats supported by RDKit:
  *     smiles, cxsmiles, molblock, v3Kmolblock
- * @param settings
+ * @param {Object} settings
  * @param {boolean} settings.sorted -
  *     if set, returns a two-column dataframe with molecule strings and scores,
  *     sorted in descending order by the score
@@ -76,7 +73,7 @@ export async function substructureSearch(column, pattern = '', settings) {
  * @param {Column} column - Column with molecules to search in
  * @param {string} molecule - Reference molecule in one of formats supported by RDKit:
  *   smiles, cxsmiles, molblock, v3Kmolblock, and inchi
- * @param {} settings - Properties for the similarity function (type, parameters, etc.)
+ * @param {Object} settings - Properties for the similarity function (type, parameters, etc.)
  * @returns {Promise<Column>} - Column of corresponding similarity scores
  * */
 export async function getSimilarities(column, molecule = '', settings = {}) {
@@ -96,7 +93,7 @@ export async function getSimilarities(column, molecule = '', settings = {}) {
  * @param {Column} column - Column with molecules to search in
  * @param {string} molecule - Reference molecule in one of formats supported by RDKit:
  *   smiles, cxsmiles, molblock, v3Kmolblock, and inchi
- * @param {} settings - Properties for the similarity function
+ * @param {Object} settings - Properties for the similarity function
  * @param {int} limit - Would return top limit molecules based on the score
  * @param {int} cutoff - Would drop molecules which score is lower than cutoff
  * @returns {Promise<DataFrame>} - DataFrame with 3 columns:
@@ -200,7 +197,7 @@ export function descriptorsTree() {
 }
 /**
  * Renders a molecule to SVG
- * https://public.datagrok.ai/js/samples/domains/chem/mol-rendering
+ * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/mol-rendering}
  * @param {string} smiles
  * @param {number} width
  * @param {number} height
