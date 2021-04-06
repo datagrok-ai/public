@@ -2,10 +2,22 @@ const path = require('path');
 
 module.exports = {
   mode: 'production',
-  entry: {'grok': './grok.js', 'ui': './ui.js', 'DG': './dg.js'},
+  entry: {'grok': './grok.ts', 'ui': './ui.ts', 'DG': './dg.ts'},
   devtool: 'inline-source-map',
+  resolve: {
+    extensions: ['.tsx', '.ts', '.js'],
+  },
   module: {
     rules: [
+      {
+        test: /\.ts(x?)$/,
+        exclude: /node_modules/,
+        use: [
+          {
+            loader: 'ts-loader'
+          }
+        ]
+      },
       {
         test: /\.css$/i,
         use: [{
@@ -16,8 +28,8 @@ module.exports = {
             url: false
           }
         },]
-      },
-      {
+      }
+      /*      {
         test: /\.m?js$/,
         exclude: /node_modules/,
         use: {
@@ -31,7 +43,7 @@ module.exports = {
             ]
           }
         }
-      }
+      }*/
     ]
   },
   externals: {'openchemlib/full.js': 'OCL', 'rxjs': 'rxjs', 'rxjs/operators': 'rxjs.operators'},

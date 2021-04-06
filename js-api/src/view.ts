@@ -7,8 +7,7 @@ import {Grid} from './grid';
 import {Menu, ToolboxPage} from './widgets';
 import {Entity, Script} from './entities';
 import {toJs} from './wrappers';
-// @ts-ignore
-import {_options, _toIterable} from './utils.js';
+import {_options, _toIterable} from './utils';
 import { StreamSubscription } from './events';
 import $ from "cash-dom";
 
