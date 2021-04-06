@@ -1,6 +1,40 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-04-06 Dev build 0.89.32
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.89.32`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* JS API: Migrate to Typescript 
+* Wiki: Onboarding Content (WIP)
+* GROK:8349 Improved Bar Chart to allow date-time plotting as categorical 
+* Logging: Ability to send nested JS Objects 
+* (Bug) Bar Chart: cannot plot date columns on a categorical axis (WIP)
+* Custom HTML-based cell renderers: investigate performance issues (WIP)
+* Updated public token 
+* CVM: addressing the March numpy issue. 
+* Viewers: ability to work with value functions (WIP)
+* CVM: Octave 6.2.0, compilation (GraphicsMagick issue). 
+* Wiki: Harmonization (WIP)
+* (Bug) Biosignals: TaskBarProgressIndicator continues animation after error 
+* JS: Ability to get HTML editor for function 
+* RangeSelector: fixed integer range mode (for trellis plot) 
+* NLP package: UI adjustment 
+* Trellis Plot: set upper limit for displayed categories 
+* Tile Viewer and Form: integrate with dynamic renderers (WIP)
+* CVM: NLOpt legacy package from a .deb file 
+* Usage Analysis \- New UI 
+* Added TypeScript build before publish to NPM 
+
+
 # 2021-04-02 Dev build 0.89.31
 
 ## Latest Docker Images
