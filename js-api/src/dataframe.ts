@@ -158,14 +158,14 @@ export class DataFrame {
   /** Creates a {@link DataFrame} with the specified number of rows and no columns.
    * @param {number} rowCount
    * @returns {DataFrame} */
-  static create(rowCount = 0) {
+  static create(rowCount: number = 0): DataFrame {
     return new DataFrame(api.grok_DataFrame(rowCount));
   }
 
   /** Creates a {@link DataFrame} from the specified columns. All columns should be of the same length.
    * @param {Column[]} columns
    * @returns {DataFrame} */
-  static fromColumns(columns: Column[]) {
+  static fromColumns(columns: Column[]): DataFrame {
     return new DataFrame(api.grok_DataFrame_FromColumns(columns.map((c) => c.d)));
   }
 
@@ -173,42 +173,42 @@ export class DataFrame {
    * @param {string} csv - The content of the comma-separated values file.
    * @param {CsvImportOptions} options
    * @returns {DataFrame} */
-  static fromCsv(csv: string, options?: CsvImportOptions) {
+  static fromCsv(csv: string, options?: CsvImportOptions): DataFrame {
     return grok.data.parseCsv(csv, options);
   }
 
   /** Constructs {@link DataFrame} from the specified JSON string.
    * @param {string} json - JSON document.
    * @returns {DataFrame} */
-  static fromJson(json: string) {
+  static fromJson(json: string): DataFrame {
     return new DataFrame(api.grok_DataFrame_FromJson(json));
   }
 
   /** Returns number of rows in the table.
    * @returns {number} */
-  get rowCount() {
+  get rowCount(): number {
     return api.grok_DataFrame_RowCount(this.d);
   }
 
   /** Returns a {@link BitSet} with selected rows.
    * @returns {BitSet} */
-  get selection() {
+  get selection(): BitSet {
     return new BitSet(api.grok_DataFrame_Get_Selection(this.d));
   }
 
   /** Name of the dataframe.
    * @returns {string}*/
-  get name() {
+  get name(): string {
     return api.grok_DataFrame_Get_Name(this.d);
   }
 
-  set name(s) {
+  set name(s: string) {
     api.grok_DataFrame_Set_Name(this.d, s);
   }
 
   /** Returns the value of the specified tag, or null if it does not exist.
    * @returns {string} */
-  getTag(tag: string) {
+  getTag(tag: string): string | null {
     return api.grok_DataFrame_Get_Tag(this.d, tag);
   }
 
@@ -222,14 +222,14 @@ export class DataFrame {
   /** Returns i-th row.
    * @param {number} i - Row index.
    * @returns {Row} */
-  row(i: number) {
+  row(i: number): Row {
     return new Row(this, i);
   }
 
   /** Returns idx-th value of the specified columns.
    * @param {string} name - Column name.
    * @param {number} idx - Row index. */
-  get(name: string, idx: number) {
+  get(name: string, idx: number): any {
     return this.getCol(name).get(idx);
   }
 
@@ -244,7 +244,7 @@ export class DataFrame {
   /** Returns a {@link Column} with the specified name.
    * @param {string} name - Column name.
    * @returns {Column} */
-  col(name: string) {
+  col(name: string): Column | null {
     return toJs(api.grok_DataFrame_ColumnByName(this.d, name));
   }
 
@@ -252,14 +252,14 @@ export class DataFrame {
    * @param {number} idx - Row index.
    * @param {string} name - Column name.
    * @returns {Cell} */
-  cell(idx: number, name: string) {
+  cell(idx: number, name: string): Cell {
     return new Cell(api.grok_DataFrame_Cell(this.d, idx, name));
   }
 
   /** Same as {@link col}, but throws Error if column is not found
    * @param {string} name - Column name.
    * @returns {Column} */
-  getCol(name: string) {
+  getCol(name: string): Column {
     let c = this.col(name);
     if (c === null)
       throw new Error(`No such column: ${name}`);
@@ -268,7 +268,7 @@ export class DataFrame {
 
   /** Exports the content to comma-separated-values format.
    * @returns {string} */
-  toCsv() {
+  toCsv(): string {
     return api.grok_DataFrame_ToCsv(this.d);
   }
 
@@ -276,7 +276,7 @@ export class DataFrame {
    * @param {BitSet} rowMask - Rows to include.
    * @param {string[]} columnIds - Columns to include.
    * @param {boolean} saveSelection - Whether selection should be saved. */
-  clone(rowMask = null, columnIds = null, saveSelection = false) {
+  clone(rowMask: BitSet | null = null, columnIds: string[] | null = null, saveSelection: boolean = false): DataFrame {
     return new DataFrame(api.grok_DataFrame_Clone(this.d, toDart(rowMask), columnIds, saveSelection));
   }
 
@@ -292,28 +292,28 @@ export class DataFrame {
 
   /** Current column
    * @type {Column} */
-  get currentCol() {
+  get currentCol(): Column {
     return toJs(api.grok_DataFrame_Get_CurrentCol(this.d));
   }
 
-  set currentCol(col) {
+  set currentCol(col: Column) {
     api.grok_DataFrame_Set_CurrentCol(this.d, col.d);
   }
 
   /** Current cell
    * @type {Cell} */
-  get currentCell() {
+  get currentCell(): Cell {
     return new Cell(api.grok_DataFrame_Get_CurrentCell(this.d));
   }
 
-  set currentCell(cell) {
+  set currentCell(cell: Cell) {
     api.grok_DataFrame_Set_CurrentCell(this.d, cell.d);
   }
 
   /** Creates a [DataFrame] from list of objects by using object keys as column names,
    * and object values as values.
    * @param {object[]} list - List of objects. **/
-  static fromObjects(list: object[]) {
+  static fromObjects(list: object[]): DataFrame | undefined {
     let table = DataFrame.create(list.length);
     if (list.length === 0)
       return;
@@ -336,7 +336,7 @@ export class DataFrame {
    * @param {string} newType
    * @param {string=} format
    * @returns {Column} */
-  changeColumnType(column: Column, newType: Type, format = null) {
+  changeColumnType(column: string | Column, newType: Type, format: string | null = null): Column {
     return toJs(api.grok_DataFrame_ChangeColumnType(this.d, toDart(column), newType, format));
   }
 
@@ -347,7 +347,7 @@ export class DataFrame {
    * @param {BitSet} rowMask - Mask of the rows to sort. Result array will contain [rowIndexes.length] elements.
    * @returns {Int32Array}
    * */
-  getSortedOrder(sortByColumnIds: object[], sortOrders = null, rowMask = null) {
+  getSortedOrder(sortByColumnIds: object[], sortOrders: boolean[] | null = null, rowMask: BitSet | null = null): Int32Array {
     return api.grok_DataFrame_GetSortedOrder(this.d, sortByColumnIds.map(toDart), sortOrders, toDart(rowMask));
   }
 
@@ -355,7 +355,7 @@ export class DataFrame {
    * @param {string[]} columnNames - Names of the columns to be used as keys.
    * @returns {GroupByBuilder}
    *  */
-  groupBy(columnNames = []) {
+  groupBy(columnNames: string[] = []): GroupByBuilder {
     return new GroupByBuilder(api.grok_DataFrame_GroupBy(this.d, columnNames));
   }
 
@@ -367,7 +367,7 @@ export class DataFrame {
    * @param {String} categoryColumnName
    * @param {String} valueColumnName
    * */
-  unpivot(copyColumnNames: string[], mergeColumnNames: string[], categoryColumnName = 'Category', valueColumnName = 'Value') {
+  unpivot(copyColumnNames: string[], mergeColumnNames: string[], categoryColumnName: string = 'Category', valueColumnName: string = 'Value'): DataFrame {
     return new DataFrame(api.grok_DataFrame_Unpivot(this.d, copyColumnNames, mergeColumnNames, categoryColumnName, valueColumnName));
   }
 
@@ -382,7 +382,7 @@ export class DataFrame {
    * @param {boolean} inPlace - merges content in-place into the source table
    * @returns {DataFrame}
    * */
-  join(t2: DataFrame, keyColumns1: string[], keyColumns2: string[], valueColumns1: string[], valueColumns2: string[], joinType: JoinType, inPlace: boolean) {
+  join(t2: DataFrame, keyColumns1: string[], keyColumns2: string[], valueColumns1: string[], valueColumns2: string[], joinType: JoinType, inPlace: boolean): DataFrame {
     return new DataFrame(api.grok_JoinTables(this.d, t2.d, keyColumns1, keyColumns2, valueColumns1, valueColumns2, joinType, inPlace));
   }
 
@@ -393,123 +393,123 @@ export class DataFrame {
    * @param {String[]} columnsToAppend
    * @returns {DataFrame}
    * */
-  append(t2: DataFrame, inPlace = false, columnsToAppend = null) {
+  append(t2: DataFrame, inPlace: boolean = false, columnsToAppend: string[] | null = null): DataFrame {
     return new DataFrame(api.grok_DataFrame_Append(this.d, t2.d, inPlace, columnsToAppend));
   }
 
-  /** @returns {Observable} */ _event(event: string) {
+  /** @returns {Observable} */ _event(event: string): Observable<any> {
     return __obs(event, this.d);
   }
 
-  /** @returns {Observable} */ get onValuesChanged() {
+  /** @returns {Observable} */ get onValuesChanged(): Observable<any> {
     return this._event('ddt-values-changed');
   }
 
-  /** @returns {Observable} */ get onCurrentRowChanged() {
+  /** @returns {Observable} */ get onCurrentRowChanged(): Observable<any> {
     return this._event('ddt-current-row-changed');
   }
 
-  /** @returns {Observable} */ get onMouseOverRowChanged() {
+  /** @returns {Observable} */ get onMouseOverRowChanged(): Observable<any> {
     return this._event('ddt-mouse-over-row-changed');
   }
 
-  /** @returns {Observable} */ get onCurrentColChanged() {
+  /** @returns {Observable} */ get onCurrentColChanged(): Observable<any> {
     return this._event('ddt-current-col-changed');
   }
 
-  /** @returns {Observable} */ get onMouseOverColChanged() {
+  /** @returns {Observable} */ get onMouseOverColChanged(): Observable<any> {
     return this._event('ddt-mouse-over-col-changed');
   }
 
-  /** @returns {Observable} */ get onCurrentCellChanged() {
+  /** @returns {Observable} */ get onCurrentCellChanged(): Observable<any> {
     return this._event('ddt-current-cell-changed');
   }
 
-  /** @returns {Observable} */ get onMouseOverRowGroupChanged() {
+  /** @returns {Observable} */ get onMouseOverRowGroupChanged(): Observable<any> {
     return this._event('ddt-mouse-over-row-group-changed');
   }
 
-  /** @returns {Observable} */ get onNameChanged() {
+  /** @returns {Observable} */ get onNameChanged(): Observable<any> {
     return this._event('ddt-table-name-changed');
   }
 
-  /** @returns {Observable} */ get onMetadataChanged() {
+  /** @returns {Observable} */ get onMetadataChanged(): Observable<any> {
     return this._event('ddt-table-metadata-changed');
   }
 
-  /** @returns {Observable} */ get onColumnNameChanged() {
+  /** @returns {Observable} */ get onColumnNameChanged(): Observable<any> {
     return this._event('ddt-table-column-name-changed');
   }
 
-  /** @returns {Observable} */ get onColumnSelectionChanged() {
+  /** @returns {Observable} */ get onColumnSelectionChanged(): Observable<any> {
     return this._event('ddt-column-selection-changed');
   }
 
-  /** @returns {Observable} */ get onColumnsChanged() {
+  /** @returns {Observable} */ get onColumnsChanged(): Observable<any> {
     return this._event('ddt-columns-changed');
   }
 
-  /** @returns {Observable} */ get onColumnsAdded() {
+  /** @returns {Observable} */ get onColumnsAdded(): Observable<any> {
     return this._event('ddt-columns-added');
   }
 
-  /** @returns {Observable} */ get onColumnsRemoved() {
+  /** @returns {Observable} */ get onColumnsRemoved(): Observable<any> {
     return this._event('ddt-columns-removed');
   }
 
-  /** @returns {Observable} */ get onRowsAdded() {
+  /** @returns {Observable} */ get onRowsAdded(): Observable<any> {
     return this._event('ddt-rows-added');
   }
 
-  /** @returns {Observable} */ get onRowsRemoved() {
+  /** @returns {Observable} */ get onRowsRemoved(): Observable<any> {
     return this._event('ddt-rows-removed');
   }
 
-  /** @returns {Observable} */ get onRowsFiltering() {
+  /** @returns {Observable} */ get onRowsFiltering(): Observable<any> {
     return this._event('ddt-rows-filtering');
   }
 
-  /** @returns {Observable} */ get onSemanticTypeDetecting() {
+  /** @returns {Observable} */ get onSemanticTypeDetecting(): Observable<any> {
     return this._event('ddt-semantic-type-detecting');
   }
 
-  /** @returns {Observable} */ get onSemanticTypeDetected() {
+  /** @returns {Observable} */ get onSemanticTypeDetected(): Observable<any> {
     return this._event('ddt-semantic-type-detected');
   }
 
-  /** @returns {Observable} */ get onDataChanged() {
+  /** @returns {Observable} */ get onDataChanged(): Observable<any> {
     return rxjs.concat(this.onValuesChanged, this.onColumnsAdded,
       this.onColumnsRemoved, this.onRowsAdded, this.onRowsRemoved);
   }
 
-  /** @returns {Observable} */ get onSelectionChanged() {
+  /** @returns {Observable} */ get onSelectionChanged(): Observable<any> {
     return this.selection.onChanged;
   }
 
-  /** @returns {Observable} */ get onFilterChanged() {
+  /** @returns {Observable} */ get onFilterChanged(): Observable<any> {
     return this.filter.onChanged;
   }
 
-  fireValuesChanged() {
+  fireValuesChanged(): void {
     api.grok_DataFrame_FireValuesChanged(this.d);
   }
 
   /** @returns {string} */
-  toString() {
+  toString(): string {
     return api.grok_Object_ToString(this.d);
   }
 
   /** Id of the dataframe.
    * @returns {string}*/
-  get id() {
+  get id(): string {
     return this.tags[TAGS.ID];
   }
 
-  set id(id) {
+  set id(id: string) {
     this.tags[TAGS.ID] = id;
   }
 
-  getDensity(xBins: number, yBins: number, xColName: string, yColName: string) {
+  getDensity(xBins: number, yBins: number, xColName: string, yColName: string): Int32Array {
     return api.grok_MathActions_GetDensity(this.d, xBins, yBins, xColName, yColName);
   }
 }
@@ -1845,7 +1845,7 @@ export class Qnum {
    * @param {number} x
    * @returns {number}
    * */
-  static getQ(x: number) {
+  static getQ(x: number): number {
     _qnumBuf.setFloat64(0, x);
     return _qnumBuf.getInt8(7) & 0x03;
   }
@@ -1856,7 +1856,7 @@ export class Qnum {
    * @param {number} x
    * @returns {number}
    * */
-  static getValue(x: number) {
+  static getValue(x: number): number {
     _qnumBuf.setFloat64(0, x);
     let last = _qnumBuf.getInt8(7) & 0xFC;
     _qnumBuf.setInt8(7, last);
@@ -1869,22 +1869,22 @@ export class Qnum {
    * @param {number} q
    * @returns {number}
    * */
-  static create(value: number, q = QNUM_EXACT) {
+  static create(value: number, q: number = QNUM_EXACT): number {
     _qnumBuf.setFloat64(0, value);
     let last = _qnumBuf.getInt8(7);
     _qnumBuf.setInt8(7, (last & 0xFC) | q);
     return _qnumBuf.getFloat64(0);
   }
 
-  static exact(x: number) {
+  static exact(x: number): number {
     return Qnum.create(x, QNUM_EXACT)
   };
 
-  static less(x: number) {
+  static less(x: number): number {
     return Qnum.create(x, QNUM_LESS)
   };
 
-  static greater(x: number) {
+  static greater(x: number): number {
     return Qnum.create(x, QNUM_GREATER);
   }
 
@@ -1893,7 +1893,7 @@ export class Qnum {
    * @param {string} s
    * @returns {number}
    * */
-  static parse(s: string) {
+  static parse(s: string): number {
     return api.grok_Qnum_Parse(s);
   }
 
@@ -1902,7 +1902,7 @@ export class Qnum {
    * @param {number} x
    * @returns {string}
    * */
-  static toString(x: number) {
+  static toString(x: number): string {
     return api.grok_Qnum_ToString(x);
   }
 }
