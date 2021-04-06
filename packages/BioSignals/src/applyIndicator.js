@@ -33,20 +33,12 @@ async function hrvNonlinearDomain(t, column, parameters) {
 }
 
 export async function applyIndicator(t, column, parameters) {
-  let pi = DG.TaskBarProgressIndicator.create('Calculating indicators...');
-  try {
-    switch (parameters['type']) {
-      case 'HRVTimeDomain':
-        return hrvTimeDomain(t, column, parameters);
-      case 'HRVFrequencyDomain':
-        return hrvFrequencyDomain(t, column, parameters);
-      case 'HRVNonlinearDomain':
-        return hrvNonlinearDomain(t, column, parameters);
-    }
-  } catch (e) {
-    pi.close();
-    alert(e);
-    throw e;
+  switch (parameters['type']) {
+    case 'HRVTimeDomain':
+      return hrvTimeDomain(t, column, parameters);
+    case 'HRVFrequencyDomain':
+      return hrvFrequencyDomain(t, column, parameters);
+    case 'HRVNonlinearDomain':
+      return hrvNonlinearDomain(t, column, parameters);
   }
-  pi.close();
 }
