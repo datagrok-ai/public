@@ -80,13 +80,15 @@ export class DemoDatasets {
   }
 }
 
-/** Creating, loading, querying, manipulating, joining tables. */
+/**
+ * Creating, loading, querying, manipulating, joining tables.
+ * */
+
 export class Data {
-  demo: DemoDatasets;
-  files: Files;
+  public demo: DemoDatasets;
+  public files: Files;
 
   constructor() {
-    /** @member {DemoDatasets} */
     this.demo = new DemoDatasets();
     this.files = new Files();
   }

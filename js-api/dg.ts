@@ -8,6 +8,7 @@ export * from './src/events';
 export * from './src/dapi';
 export * from './src/dataframe';
 export * from './src/entities';
+export * from './src/shell';
 export * from './src/functions';
 export * from './src/grid';
 export * from './src/widgets';
@@ -17,7 +18,7 @@ export * from './src/docking';
 export * from './src/wrappers_impl';
 export {time, timeAsync, Utils, LruCache} from './src/utils';
 export {ObjectHandler, EntityMetaDartProxy} from './ui';
-export { Detector } from './src/data';
+export * from './src/data';
 
 export let chem = _chem;
 export let ml = _ml;
