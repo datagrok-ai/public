@@ -1,7 +1,7 @@
 import {DataFrame, Column} from "./dataframe";
 import {toJs} from "./wrappers";
 import {FuncCall} from "./functions";
-import {DemoDatasetName, JoinType, SyncType, CsvImportOptions} from "./const";
+import {DemoDatasetName, JoinType, SyncType, CsvImportOptions, StringPredicate} from "./const";
 
 let api = <any>window;
 
@@ -201,7 +201,7 @@ export class Detector {
    * @param {number} max - number of checks to make
    * @returns {boolean}
    * */
-  static sampleCategories(column: Column, check: (arg0: string) => boolean, min: number = 5, max: number = 10): boolean {
+  static sampleCategories(column: Column, check: StringPredicate, min: number = 5, max: number = 10): boolean {
     let categories = column.categories;
     if (categories.length < min)
       return false;

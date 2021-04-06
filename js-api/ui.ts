@@ -3,7 +3,7 @@
  * @module ui
  **/
 
-import {ElementOptions} from './src/const';
+import {ElementOptions, IndexPredicate} from './src/const';
 import {Viewer} from './src/viewer';
 import {VirtualView} from './src/view';
 import {Accordion, Dialog, InputBase, Menu, TabControl, TreeViewNode, Widget, RangeSlider} from './src/widgets';
@@ -526,7 +526,7 @@ export class Tooltip {
     api.grok_Tooltip_Show(content, x, y);
   }
 
-  showRowGroup(dataFrame: DataFrame, indexPredicate: (i: number) => boolean, x: number, y: number): void {
+  showRowGroup(dataFrame: DataFrame, indexPredicate: IndexPredicate, x: number, y: number): void {
     api.grok_Tooltip_ShowRowGroup(dataFrame.d, indexPredicate, x, y);
   }
 
