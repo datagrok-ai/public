@@ -2,6 +2,7 @@ import {paramsToJs, toDart, toJs} from "./wrappers";
 import {Type} from "./const";
 import {Entity, Func} from "./entities";
 import {DartWidget, Widget} from "./widgets";
+import {Column} from "./dataframe";
 declare let grok: any;
 declare let DG: any;
 let api = <any>window;
@@ -31,6 +32,26 @@ export class Functions {
   }
 }
 
+export class Context {
+  readonly d: any;
+  constructor(d: any) {
+    this.d = d;
+  }
+
+  static create(): Context {
+    return toJs(api.grok_Context_Create());
+  }
+
+  setVariable(name: string, value: any) {
+    api.grok_Context_Set_Variable(this.d, name, toDart(value));
+  }
+
+  getVariable(name: string): any {
+    return toJs(api.grok_Context_Get_Variable(this.d, name));
+  }
+
+}
+
 /** Represents a function call
  * {@link https://datagrok.ai/help/overview/functions/function-call*}
  * */
@@ -48,6 +69,18 @@ export class FuncCall {
    * @returns {object} */
   getParamValue(name: string) {
     return toJs(api.grok_FuncCall_Get_Param_Value(this.d, name));
+  }
+
+  get context(): Context {
+    return toJs(api.grok_FuncCall_Get_Context(this.d));
+  }
+
+  set context(context: Context) {
+    api.grok_FuncCall_Set_Context(this.d, context.d);
+  }
+
+  getOutputParamValue() {
+    return toJs(api.grok_FuncCall_Get_Output_Param_Value(this.d));
   }
 
   setParamValue(name: string, value: any) {

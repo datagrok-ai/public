@@ -146,9 +146,9 @@ export class Dapi {
 
 
   /** Users Files management API endpoint
-   *  @type {Files} */
-  get files(): Files {
-    return new Files();
+   *  @type {FileSource} */
+  get files(): FileSource {
+    return new FileSource();
   }
 
   /** Proxies URL request via Datagrok server with same interface as "fetch".
@@ -673,7 +673,7 @@ export class TablesDataSource extends HttpDataSource<TableInfo> {
 
 }
 
-export class Files {
+export class FileSource {
   constructor() {
   };
 
