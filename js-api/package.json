@@ -28,7 +28,7 @@
     "typedoc": "^0.20.35"
   },
   "scripts": {
-    "built-ts": "tsc && eslint ./src/*.js ./dg.js ./ui.js ./grok.js --fix",
+    "build-ts": "tsc && eslint ./src/*.js ./dg.js ./ui.js ./grok.js --fix",
     "build-js-api": "webpack",
     "build": "webpack"
   }
