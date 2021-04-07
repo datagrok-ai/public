@@ -807,21 +807,21 @@ export class Column {
    * @param x
    * @param {boolean} notify
    */
-  set(i: number, x: any, notify = true) {
+  set(i: number, x: any, notify: boolean = true): void {
     api.grok_Column_SetValue(this.d, i, toDart(x), notify);
   }
 
   /** Returns whether i-th value is missing.
    * @param {number} i - Row index.
    * @returns {boolean} */
-  isNone(i: number) {
+  isNone(i: number): boolean {
     return api.grok_Column_IsNone(this.d, i);
   }
 
   /** Gets the value of the specified tag.
    *  @param {string} tag
    *  @returns {string} */
-  getTag(tag: string) {
+  getTag(tag: string): string {
     return api.grok_Column_Get_Tag(this.d, tag);
   }
 
@@ -829,7 +829,7 @@ export class Column {
    * @param {string} tag - Key.
    * @param {string} value - Value.
    * @returns {Column}. * */
-  setTag(tag: string, value: any) {
+  setTag(tag: string, value: string): Column {
     api.grok_Column_Set_Tag(this.d, tag, value);
     return this;
   }
@@ -900,12 +900,12 @@ export class Column {
    *  @param {string} newType
    *  @param {string} format
    *  @returns {Column} */
-  convertTo(newType: string, format = null) {
+  convertTo(newType: string, format: string | null = null): Column {
     return toJs(api.grok_Column_ConvertTo(this.d, newType, format));
   }
 
   /** @returns {string} */
-  toString() {
+  toString(): string {
     return api.grok_Object_ToString(this.d);
   }
 }
@@ -914,47 +914,47 @@ export class Column {
 export class ColumnList {
   private readonly d: any;
 
-constructor(d: any) {
+  constructor(d: any) {
     this.d = d;
   }
 
   /** Number of elements in the column.
    * @returns {number} */
-  get length() {
+  get length(): number {
     return api.grok_ColumnList_Length(this.d);
   }
 
   /** Column with the corresponding name (case-insensitive).
    * @param {string} name - Column name
    * @returns {Column} */
-  byName(name: string) {
+  byName(name: string): Column {
     return toJs(api.grok_ColumnList_ByName(this.d, name));
   }
 
   /** Maps names to columns.
    * @param {string[]} names - Column names
    * @returns {Column[]} */
-  byNames(names: string[]) {
+  byNames(names: string[]): Column[] {
     return names.map(name => this.byName(name));
   }
 
   /** Column by index.
    * @param {number} index - Index of the column.
    * @returns {Column} */
-  byIndex(index: number) {
+  byIndex(index: number): Column {
     return toJs(api.grok_ColumnList_ByIndex(this.d, index));
   }
 
   /** First column of [semType], or null.
    * @returns {Column} */
-  bySemType(semType: SemType) {
+  bySemType(semType: SemType): Column | null {
     let col = api.grok_ColumnList_BySemType(this.d, semType);
-    return col == null ? null:  toJs(col);
+    return col == null ? null : toJs(col);
   }
 
   /** Finds columns by the corresponding semTypes, or null, if any of the sem types could not be found.
    * @returns {Column[]} */
-  bySemTypesExact(semTypes: SemType[]) {
+  bySemTypesExact(semTypes: SemType[]): Column[] | null {
     let columns = [];
     for (let semType of semTypes) {
       let col = this.bySemType(semType);
@@ -966,29 +966,29 @@ constructor(d: any) {
   }
 
   /** @returns {Iterable.<Column>} */
-  byTags(tags: string[]) {
+  byTags(tags: string[]): Iterable<Column> {
     return _toIterable(api.grok_ColumnList_ByTags(this.d, tags));
   }
 
   /** @returns {Iterable.<Column>} */
-  get categorical() {
+  get categorical(): Iterable<Column> {
     return _toIterable(api.grok_ColumnList_Categorical(this.d));
   }
 
   /** @returns {Iterable.<Column>} */
-  get numerical() {
+  get numerical(): Iterable<Column> {
     return _toIterable(api.grok_ColumnList_Numerical(this.d));
   }
 
   /** Array containing column names.
    * @returns {string[]} */
-  names() {
+  names(): string[] {
     return api.grok_ColumnList_Names(this.d);
   }
 
   /** Creates an array of columns.
    * @returns {Column[]} */
-  toList() {
+  toList(): Column[] {
     return this.names().map((name: string) => this.byName(name));
   }
 
@@ -996,7 +996,7 @@ constructor(d: any) {
    * @param {Column} column
    * @param {boolean} notify
    * @returns {Column} */
-  add(column: Column, notify = true) {
+  add(column: Column, notify: boolean = true): Column {
     api.grok_ColumnList_Add(this.d, column.d, notify);
     return column;
   }
@@ -1006,7 +1006,7 @@ constructor(d: any) {
    * @param {boolean} notify
    * @param {int} index
    * @returns {Column} */
-  insert(column: Column, notify = true, index: number) {
+  insert(column: Column, notify: boolean = true, index: number): Column {
     api.grok_ColumnList_Insert(this.d, column.d, notify, index);
     return column;
   }
@@ -1015,7 +1015,7 @@ constructor(d: any) {
    * @param {string} name
    * @param {ColumnType} type
    * @returns {Column} */
-  addNew(name: string, type: ColumnType) {
+  addNew(name: string, type: ColumnType): Column {
     return toJs(api.grok_ColumnList_AddNew(this.d, name, type));
   }
 
@@ -1025,67 +1025,67 @@ constructor(d: any) {
    * @param {ColumnType} type
    * @param {bool} treatAsString
    * @returns {Column} */
-  addNewCalculated(name: string, expression: string, type: ColumnType | null, treatAsString: boolean | null) {
+  addNewCalculated(name: string, expression: string, type: ColumnType | null, treatAsString: boolean | null): Promise<Column> {
     return new Promise((resolve, reject) => toJs(api.grok_ColumnList_AddNewCalculated(this.d, name, expression, type, treatAsString, (c: any) => resolve(c), (e: any) => reject(e))));
   }
 
   /** Adds a string column
    * @param {string} name
    * @returns {Column} */
-  addNewString(name: string) { return this.addNew(name, TYPE.STRING); }
+  addNewString(name: string): Column { return this.addNew(name, TYPE.STRING); }
 
   /** Adds a new integer column
    * @param {string} name
    * @returns {Column} */
-  addNewInt(name: string) { return this.addNew(name, TYPE.INT); }
+  addNewInt(name: string): Column { return this.addNew(name, TYPE.INT); }
 
   /** Adds a new float column
    * @param {string} name
    * @returns {Column} */
-  addNewFloat(name: string) { return this.addNew(name, TYPE.FLOAT); }
+  addNewFloat(name: string): Column { return this.addNew(name, TYPE.FLOAT); }
 
   /** Adds a new qualified number column
    * @param {string} name
    * @returns {Column} */
-  addNewQnum(name: string) { return this.addNew(name, TYPE.QNUM); }
+  addNewQnum(name: string): Column { return this.addNew(name, TYPE.QNUM); }
 
   /** Adds a new datetime column
    * @param {string} name
    * @returns {Column} */
-  addNewDateTime(name: string) { return this.addNew(name, TYPE.DATE_TIME); }
+  addNewDateTime(name: string): Column { return this.addNew(name, TYPE.DATE_TIME); }
 
   /** Adds a new boolean column
    * @param {string} name
    * @returns {Column} */
-  addNewBool(name: string) { return this.addNew(name, TYPE.BOOL); }
+  addNewBool(name: string): Column { return this.addNew(name, TYPE.BOOL); }
 
   /** Adds a virtual column.
    * @param {string} name
    * @param {Function} getValue - value constructor function that accepts int index and returns value
    * @param {String} type - column type
    * @returns {Column} */
-  addNewVirtual(name: string, getValue: Function, type = TYPE.OBJECT) {
+  addNewVirtual(name: string, getValue: (ind: number) => any, type = TYPE.OBJECT): Column {
     return toJs(api.grok_ColumnList_AddNewVirtual(this.d, name, getValue, type));
   }
 
   /** Removes column by name (case-insensitive).
    * @param {string} column
    * @returns {ColumnList} */
-  remove(column: string) {
+  remove(column: string): ColumnList {
     api.grok_ColumnList_Remove(this.d, column);
     return this;
   }
 
-  /** Checks wheter this list contains a column with the specified name. The check is case-insensitive.
+  /** Checks whether this list contains a column with the specified name. The check is case-insensitive.
    * @returns {boolean} */
-  contains(columnName: string) {
+  contains(columnName: string): boolean {
     return api.grok_ColumnList_Contains(this.d, columnName);
   }
 
   /** Replaces the column with the new column.
    * @param {Column} columnToReplace
    * @param {Column} newColumn */
-  replace(columnToReplace: Column | string, newColumn: Column) {
+  replace(columnToReplace: Column | string, newColumn: Column): void {
     api.grok_ColumnList_Replace(this.d, (typeof columnToReplace === 'string') ? columnToReplace:  columnToReplace.d, newColumn.d);
   }
 
@@ -1097,7 +1097,7 @@ constructor(d: any) {
   }
 
   /** @returns {string} */
-  toString() {
+  toString(): string {
     return api.grok_Object_ToString(this.d);
   }
 }
@@ -1168,7 +1168,7 @@ export class RowList {
    * @param {number} idx
    * @param {number} [count=1] - Number of rows to remove.
    * @param notify - Whether a change notification should be fired. */
-  removeAt(idx: number, count = 1, notify = true) {
+  removeAt(idx: number, count: number = 1, notify: boolean = true): void {
     api.grok_RowList_RemoveAt(this.d, idx, count, notify);
   }
 
@@ -1176,7 +1176,7 @@ export class RowList {
    * @param {number} idx
    * @param {number} [count=1] - Number of rows to insert.
    * @param notify - Whether a change notification should be fired. */
-  insertAt(idx: number, count = 1, notify = true) {
+  insertAt(idx: number, count: number = 1, notify: boolean = true): void {
     api.grok_RowList_InsertAt(this.d, idx, count, notify);
   }
 
@@ -1184,7 +1184,7 @@ export class RowList {
    * @param values - List of values (length and types should match columns)
    * @param notify - Whether a change notification should be fired.
    * @returns {Row} */
-  addNew(values = null, notify = true) {
+  addNew(values: any[] | null = null, notify: boolean = true): Row {
     return new Row(this.table, api.grok_RowList_AddNew(this.d, values, notify));
   }
 
@@ -1199,7 +1199,7 @@ export class RowList {
   /** Sets values for the specified row.
    * @param {number} idx - Row index.
    * @param values - List of values (length and types should match columns) */
-  setValues(idx: number, values: any[]) {
+  setValues(idx: number, values: any[]): void {
     api.grok_RowList_SetValues(this.d, idx, values);
   }
 
@@ -1208,7 +1208,7 @@ export class RowList {
    * @param {String|Object} query
    * @returns {RowMatcher}
    * */
-  match(query: string | object) {
+  match(query: string | object): RowMatcher {
     return toJs(api.grok_RowList_Match(this.d, query));
   }
 
@@ -1216,7 +1216,7 @@ export class RowList {
    * @param {BitSet} bitset
    * @param {RowPredicate} rowPredicate
    * */
-  _applyPredicate(bitset: BitSet, rowPredicate: RowPredicate) {
+  _applyPredicate(bitset: BitSet, rowPredicate: RowPredicate): void {
     for (let row of this) {
       bitset.set(row.idx, rowPredicate(row), false);
     }
@@ -1225,25 +1225,25 @@ export class RowList {
   /**
    * @param {RowPredicate} rowPredicate
    * */
-  select(rowPredicate: RowPredicate) {
+  select(rowPredicate: RowPredicate): void {
     this._applyPredicate(this.table.selection, rowPredicate);
   }
 
   /**
    * @param {RowPredicate} rowPredicate
    * */
-  filter(rowPredicate: RowPredicate) {
+  filter(rowPredicate: RowPredicate): void {
     this._applyPredicate(this.table.filter, rowPredicate);
   }
 
   /** Viewers that filter rows should subscribe to DataFrame.onRowsFiltering event.
    * When filtering conditions are changed, viewers should call requestFilter(). */
-  requestFilter() {
+  requestFilter(): void {
     api.grok_RowList_RequestFilter(this.d);
   }
 
   /** @returns {string} */
-  toString() {
+  toString(): string {
     return api.grok_Object_ToString(this.d);
   }
 }
@@ -1258,36 +1258,36 @@ constructor(d: any) {
 
   /** Corresponding table.
    * @returns {DataFrame} */
-  get dataFrame() {
+  get dataFrame(): DataFrame {
     return new DataFrame(api.grok_Cell_Get_DataFrame(this.d));
   }
 
   /** Corresponding row.
    * @returns {Row} */
-  get row() {
+  get row(): Row {
     return new Row(this.dataFrame, this.rowIndex);
   }
 
   /** Index of the corresponding row.
    * @returns {number} */
-  get rowIndex() {
+  get rowIndex(): number {
     return api.grok_Cell_Get_RowIndex(this.d);
   }
 
   /** Corresponding column.
    * @returns {Column} */
-  get column() {
+  get column(): Column {
     return toJs(api.grok_Cell_Get_Column(this.d));
   }
 
   /** Cell value.
    * @returns {*} */
-  get value() {
+  get value(): any {
     return api.grok_Cell_Get_Value(this.d);
   }
 
   /** @returns {string} */
-  toString() {
+  toString(): string {
     return api.grok_Object_ToString(this.d);
   }
 }
