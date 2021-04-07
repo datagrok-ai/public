@@ -1,7 +1,7 @@
 const path = require('path');
 
 module.exports = {
-  mode: 'production',
+  mode: 'development',
   entry: {'grok': './grok.ts', 'ui': './ui.ts', 'DG': './dg.ts'},
   devtool: 'inline-source-map',
   resolve: {
