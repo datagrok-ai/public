@@ -2,18 +2,18 @@
 #description: Filter a signal by convolution with a given impulse response function (IRF)
 #language: python
 #tags: biosignals, filters, pyphysio
-#input: dataframe input_signals
+#input: dataframe dataframe
 #input: column column
 #input: double sampling_frequency
-#input: double win_len [Duration of the generated IRF in seconds (if irftype is not 'custom'), >0 (> 8/fsamp for 'gaussian')]
+#input: double window_length = 2 [Duration of the generated IRF in seconds (if irftype is not 'custom'), >0 (> 8/fsamp for 'gaussian')]
 #input: string irftype {choices: ['gauss', 'rect', 'triang', 'dgauss', 'custom']} [Type of IRF to be generated]
 #output: dataframe df
 
 import pyphysio as ph
 
-sig = ph.EvenlySignal(values=input_signals[column], sampling_freq=sampling_frequency)
+sig = ph.EvenlySignal(values=dataframe[column], sampling_freq=sampling_frequency)
 
-sig = ph.ConvolutionalFilter(win_len=win_len, irftype=irftype)(sig)
+sig = ph.ConvolutionalFilter(win_len=window_length, irftype=irftype)(sig)
 
 df = pd.DataFrame({
     'time': range(len(sig)),

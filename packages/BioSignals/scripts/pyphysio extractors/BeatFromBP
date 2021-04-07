@@ -2,17 +2,17 @@
 #description: Identify the beats in a Blood Pulse (BP) signal and compute the IBIs. Optimized to identify the percussion peak.
 #language: python
 #tags: biosignals, extractors, pyphysio, abp_signal, bvp(ppg)_signal
-#input: dataframe data
+#input: dataframe dataframe
 #input: column column
 #input: double sampling_frequency
-#input: int bpm_max [Maximal expected heart rate (in beats per minute): (1, 400], default=120]
-#input: double win_pre [Portion (in seconds) to consider before the candidate beat position where to look for the beat: (0, 1], default=0.25]
-#input: double win_post [Portion (in seconds) to consider after the candidate beat position where to look for the beat: (0, 1], default=0.05]
+#input: int bpm_max = 120 [Maximal expected heart rate (in beats per minute): (1, 400)]
+#input: double win_pre = 0.25 [Portion (in seconds) to consider before the candidate beat position where to look for the beat: (0, 1)]
+#input: double win_post = 0.05 [Portion (in seconds) to consider after the candidate beat position where to look for the beat: (0, 1)]
 #output: dataframe newDf
 
 import pyphysio as ph
 
-sig = ph.EvenlySignal(values=data[column], sampling_freq=sampling_frequency)
+sig = ph.EvenlySignal(values=dataframe[column], sampling_freq=sampling_frequency)
 
 extracted = ph.BeatFromBP(bpm_max=bpm_max, win_pre=win_pre, win_post=win_post)(sig)
 

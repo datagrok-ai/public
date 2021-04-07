@@ -2,19 +2,19 @@
 #description: Filter the input signal using an Infinite Impulse Response filter
 #language: python
 #tags: biosignals, filters, pyphysio
-#input: dataframe input_signals
+#input: dataframe dataframe
 #input: column column
 #input: double sampling_frequency
-#input: double fp [The pass frequencies]
-#input: double fs [The stop frequencies]
-#input: string ftype {choices: ['butter', 'cheby1', 'cheby2', 'ellip', 'bessel']} [Type of filter, default = 'butter']
+#input: double pass_frequencies [The pass frequencies]
+#input: double stop_frequencies [The stop frequencies]
+#input: string filter_type = 'butter' {choices: ['butter', 'cheby1', 'cheby2', 'ellip', 'bessel']} [Type of filter]
 #output: dataframe df
 
 import pyphysio as ph
 
-sig = ph.EvenlySignal(values=input_signals[column], sampling_freq=sampling_frequency)
+sig = ph.EvenlySignal(values=dataframe[column], sampling_freq=sampling_frequency)
 
-sig = ph.IIRFilter(fp=fp, fs=fs, ftype=ftype)(sig)
+sig = ph.IIRFilter(fp=pass_frequencies, fs=stop_frequencies, ftype=filter_type)(sig)
 
 df = pd.DataFrame({
     'time': range(len(sig)),
