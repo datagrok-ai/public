@@ -1,6 +1,30 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-04-07 Dev build 0.89.34
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.89.34`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* JS API: Migrate to Typescript 
+* JS: Ability to get HTML editor for function 
+* Fixed analyzer warnings 
+* Fixed NGL Viewer size 
+* (Bug) Bar Chart: category axis labels overlap with the column selector 
+* (Bug) Core: importDemoPackages won't work if there's already DemoPackages 
+* (Bug) Property panel won't open when viewer properties are reached from the context menu 
+* Shell: added table(name) and view(name) functions 
+* (Bug) Heat Map: columns do not resize 
+* Fixed a typo 
+
+
 # 2021-04-06 Dev build 0.89.33
 
 ## Latest Docker Images
