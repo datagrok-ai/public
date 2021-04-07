@@ -410,12 +410,10 @@ export class Grid extends Viewer {
     return new Grid(api.grok_Grid_Create(table.d));
   }
 
-  /** @returns {RangeSlider} */
   get vertScroll(): RangeSlider {
     return toJs(api.grok_Grid_Get_VertScroll(this.d));
   }
 
-  /** @returns {RangeSlider} */
   get horzScroll(): RangeSlider {
     return toJs(api.grok_Grid_Get_HorzScroll(this.d));
   }
@@ -424,6 +422,10 @@ export class Grid extends Viewer {
    * Call it in case the client code changes column widths and needs to access the new recalculated layout. */
   runPostponedComputations(): void {
     api.grok_CanvasViewer_RunPostponedComputations(this.d);
+  }
+
+  get onColumnResized(): Observable<any> {
+    return __obs('d4-grid-column-resized', this.d);
   }
 }
 
