@@ -49,9 +49,9 @@ class SequencePackageDetectors extends DG.Package {
   //input: string seq { semType: sequence }
   //input: string seqUnits { semType: sequenceUnits }
   //output: string seq { semType: sequence }
-  sequenceTranslator(nuc) {
-    nuc.dataFrame.columns
-      .addNewString('robot')
-      .init((i) => 'converted ' + nuc.get(i));
-  }
+  // sequenceTranslator(nuc) {
+  //   nuc.dataFrame.columns
+  //     .addNewString('robot')
+  //     .init((i) => 'converted ' + nuc.get(i));
+  // }
 }
