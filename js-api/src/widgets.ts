@@ -213,7 +213,6 @@ export class Widget {
   }
 
   /** Creates a {@see Widget} from the specified React component. */
-  // @ts-ignore
   static react(reactComponent: React.DOMElement<any, any> | Array<React.DOMElement<any, any>> | React.CElement<any, any> | Array<React.CElement<any, any>> | React.ReactElement | Array<React.ReactElement>): Widget {
     let widget = Widget.fromRoot(ui.div());
     // @ts-ignore
@@ -802,12 +801,10 @@ export class TagEditor {
   }
 
   set acceptsDragDrop(predicate: (...params: any[]) => boolean) {
-    // @ts-ignore
     api.grok_TagEditor_Set_AcceptsDragDrop(this.d, (x: any) => predicate(toJs(x, false)));
   };
 
   set doDrop(action: Function) {
-    // @ts-ignore
     api.grok_TagEditor_Set_DoDrop(this.d, (x: any) => action(toJs(x, false)));
   }
 

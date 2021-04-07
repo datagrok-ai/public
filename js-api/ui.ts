@@ -177,7 +177,6 @@ export function extract(x: any): any {
  * @returns {HTMLElement} */
 export function render(x: any): HTMLElement {
   x = extract(x);
-  // @ts-ignore
   if (api.grok_UI_Render == null)
     return x;
   return api.grok_UI_Render(x);
