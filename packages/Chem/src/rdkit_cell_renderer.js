@@ -46,9 +46,13 @@ M  END
     try {
       mol = rdKitModule.get_mol(molString);
     } catch (e) {
-      console.error(
-        "In _fetchMolGetOrCreate: RDKit .get_mol crashes on a molString: `" + molString + "`");
-      mol = null;
+      try {
+        mol = rdKitModule.get_mol(molString, false);
+      } catch (e2) {
+        console.error(
+          "In _fetchMolGetOrCreate: RDKit .get_mol crashes on a molString: `" + molString + "`");
+        mol = null;
+      }
     }
     try {
       if (mol.is_valid()) {
