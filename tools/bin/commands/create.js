@@ -56,6 +56,7 @@ function createDirectoryContents(name, config, templateDir, packageDir, ide = ''
         if (ts) Object.assign(package.dependencies, { 'ts-loader': 'latest', 'typescript': 'latest' });
         contents = JSON.stringify(package, null, '\t');
       }
+      if (file === 'package.js' && ts) copyFilePath = path.join(packageDir, 'package.ts');
       if (file === 'tsconfig.json' && !ts) return false;
       if (file === 'ts.webpack.config.js') return false;
       // In the next version, we do not need the `upload.keys.json` file
@@ -67,7 +68,7 @@ function createDirectoryContents(name, config, templateDir, packageDir, ide = ''
       if (file === '.vscode' && !(ide == 'vscode' && platform == 'win32')) return;
       fs.mkdirSync(copyFilePath);
       // recursive call
-      createDirectoryContents(name, config, origFilePath, copyFilePath);
+      createDirectoryContents(name, config, origFilePath, copyFilePath, ide, ts);
     }
   })
 }
@@ -105,6 +106,7 @@ function create(args) {
       return false;
     }
     createDirectoryContents(name, config, templateDir, packageDir, args.ide, args.ts);
+    console.log('Successfully created package', name);
   } else {
     console.log('Package name may only include letters, numbers, underscores, or hyphens');
   }
