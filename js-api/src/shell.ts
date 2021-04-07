@@ -239,6 +239,18 @@ export class Shell {
     api.grok_RegisterViewer(viewerTypeName, description, createViewer);
   }
 
+  table(tableName: string): DataFrame {
+    return this.tableByName(tableName);
+  }
+
+  view(tableName: string): View {
+    return this.getTableView(tableName);
+  }
+
+  tableView(tableName: string): TableView {
+    return this.getTableView(tableName);
+  }
+
   /** Returns a table by its name. Search is case-insensitive.
    * @param {string} tableName
    * @returns {DataFrame} */
