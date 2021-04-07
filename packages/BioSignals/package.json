@@ -4,7 +4,7 @@
   "version": "0.0.1",
   "description": "",
   "dependencies": {
-    "datagrok-api": "latest",
+    "datagrok-api": "^0.89.33",
     "echarts": "^5.0.2"
   },
   "scripts": {

@@ -3,14 +3,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from "datagrok-api/dg";
 
-import {getFilterParameters} from "./getFilterParameters.js";
-import {getExtractorParameters} from "./getExtractorParameters.js";
-import {getIndicatorParameters} from "./getIndicatorParameters.js";
-
-import {applyFilter} from "./applyFilter.js";
-import {applyExtractor} from "./applyExtractor.js";
-import {applyIndicator} from "./applyIndicator.js";
-
 import {physionetDatabasesDictionary} from "./physionetDatabasesDictionary.js";
 import {AnnotatorViewer} from "./annotatorViewer.js";
 
@@ -21,24 +13,6 @@ export let _package = new DG.Package();
 //output: viewer result
 export function annotator() {
   return new AnnotatorViewer();
-}
-
-async function getScriptsNames(tag) {
-  const scripts = await grok.dapi.scripts.filter(tag).list();
-  return scripts.map((script) => script.name);
-}
-
-function getArrayOfParameterObjects(functionNames, functionParameters, samplingFrequency) {
-  let arrayOfParameterObjects = new Array(functionNames.length);
-  for (let j = 0; j < functionNames.length; j++) {
-    arrayOfParameterObjects[j] = {};
-    arrayOfParameterObjects[j]['inputSamplingFrequency'] = samplingFrequency;
-    arrayOfParameterObjects[j]['type'] = functionNames[j].value;
-    Object.keys(functionParameters[j]).forEach(key => {
-      arrayOfParameterObjects[j][key] = functionParameters[j][key].value;
-    });
-  }
-  return arrayOfParameterObjects;
 }
 
 function getEmptyChart() {
@@ -82,7 +56,6 @@ function showMainDialog(view, tableWithSignals, tableWithSignalsAndAnnotations, 
   let filterContainerList = [];
   let filterChartsList = [];
   let addFilterButton = ui.div();
-  let addFilterChartButton = ui.div();
   let filterInputsNew = ui.inputs(filterTypesList);
   let filterOutputsObj = {[inputCase]: column};
   const dspPackageFilters = ['Moving Average Filter', 'Exponential Filter', 'Min Max Normalization', 'Z-score Normalization',
@@ -95,22 +68,46 @@ function showMainDialog(view, tableWithSignals, tableWithSignalsAndAnnotations, 
     let filterInputPreset = (Object.keys(filterOutputsObj).length === 1) ? inputCase : nameOfLastFiltersOutput;
     filterInputsList[i] = ui.choiceInput('Input', filterInputPreset, Object.keys(filterOutputsObj));
     filterChartsList[i] = getEmptyChart();
-    let filtersNames = await getScriptsNames('#filters');
-    filterTypesList[i] = ui.choiceInput('Filter ' + (i + 1), '', dspPackageFilters.concat(filtersNames));
+    let filters = await grok.dapi.scripts.filter('#filters').list();
+    filterTypesList[i] = ui.choiceInput('Filter ' + (i + 1), '', filters);
     let filterInputsOld = ui.inputs([filterTypesList[i]]);
     filterContainerList[i].appendChild(filterInputsOld);
-    filterTypesList[i].onChanged(function () {
-      let filterType = filterTypesList[i - 1].value;
-      filterParametersList[i - 1] = getFilterParameters(filterType);
+    filterTypesList[i].onChanged(async function () {
+      let call = filterTypesList[i - 1].value.prepare();
+      let t;
+      if (filterInputsList.length === 1) {
+        t = DG.DataFrame.fromColumns([inputCase]);
+      } else if (filterOutputsObj[filterInputsList[i - 1].value].columns.byName(filterInputsList[i - 1].value)) {
+        t = DG.DataFrame.fromColumns([filterOutputsObj[filterInputsList[i - 1].value].columns.byName(filterInputsList[i - 1].value)]);
+      } else {
+        t = DG.DataFrame.fromColumns([filterOutputsObj[filterInputsList[i - 1].value].columns.byName('sig')]);
+      }
+      let context = DG.Context.create();
+      t.name = 'dataframe';
+      context.setVariable('table', t);
+      call.context = context;
       filterInputsNew = ui.div([
         ui.block25([
-          ui.inputs(
-            [filterTypesList[i - 1]]
-              .concat([filterInputsList[i - 1]])
-              .concat(Object.values(filterParametersList[i - 1]))
-              .concat(addFilterChartButton)
-          )]
-        ),
+          await call.getEditor(),
+          ui.inputs([
+            ui.buttonsInput([
+              ui.button('Plot', async () => {
+                let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting filter\'s output...');
+                try {
+                  await call.call();
+                  let df = call.getParamValue('df');
+                  filterChartsList[i - 1].dataFrame = df;
+                  Object.assign(filterOutputsObj, {[nameOfLastFiltersOutput]: df});
+                } catch (e) {
+                  alert(e);
+                  throw e;
+                } finally {
+                  pi.close();
+                }
+              })
+            ])
+          ])
+        ]),
         ui.block75([filterChartsList[i - 1]])
       ]);
       filterContainerList[i - 1].replaceChild(filterInputsNew, filterInputsOld);
@@ -120,34 +117,6 @@ function showMainDialog(view, tableWithSignals, tableWithSignalsAndAnnotations, 
     i++;
   }));
 
-  addFilterChartButton.appendChild(ui.button('Plot', async () => {
-    let t;
-    if (filterInputsList.length === 1) {
-      t = DG.DataFrame.fromColumns([inputCase]);
-    } else if (filterOutputsObj[filterInputsList[i - 1].value].columns.byName(filterInputsList[i - 1].value)) {
-      t = DG.DataFrame.fromColumns([filterOutputsObj[filterInputsList[i - 1].value].columns.byName(filterInputsList[i - 1].value)]);
-    } else {
-      t = DG.DataFrame.fromColumns([filterOutputsObj[filterInputsList[i - 1].value].columns.byName('sig')]);
-    }
-
-    const parameters = getArrayOfParameterObjects(filterTypesList, filterParametersList, samplingFrequency);
-    t.columns.byIndex(0).setTag('selectedFilterInput', undefined);
-    if (parameters[i - 1]['type'] === 'Resample') {
-      samplingFrequency = parameters[i - 1]['fout'];
-    }
-    let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting filter\'s output...');
-    try {
-      let [plotFL, nameOfLastFiltersOutput] = await applyFilter(t, parameters[i - 1], i);
-      filterChartsList[i - 1].dataFrame = plotFL;
-      Object.assign(filterOutputsObj, {[nameOfLastFiltersOutput]: plotFL});
-    } catch (e) {
-      pi.close();
-      alert(e);
-      throw e;
-    }
-    pi.close();
-  }));
-
   // Information extraction dialogue
   let extractorTypesList = [];
   let extractorChartsList = [];
@@ -155,7 +124,6 @@ function showMainDialog(view, tableWithSignals, tableWithSignalsAndAnnotations, 
   let extractorParametersList = [];
   let extractorContainerList = [];
   let addExtractorButton = ui.div();
-  let addExtractorChartButton = ui.div();
   let extractorInputsNew = ui.inputs(extractorTypesList);
   let j = 0;
   addExtractorButton.appendChild(ui.button('Add Extractor', async () => {
@@ -164,22 +132,40 @@ function showMainDialog(view, tableWithSignals, tableWithSignalsAndAnnotations, 
     let extractorInputPreset = Object.keys(filterOutputsObj)[Object.keys(filterOutputsObj).length - 1];
     extractorInputsList[j] = ui.choiceInput('Input', extractorInputPreset, Object.keys(filterOutputsObj));
     extractorChartsList[j] = getEmptyChart();
-    let extractorsNames = await getScriptsNames('#extractors');
-    extractorTypesList[j] = ui.choiceInput('Extractor ' + (j + 1), '', extractorsNames);
+    let extractors = await grok.dapi.scripts.filter('#extractors').list();
+    extractorTypesList[j] = ui.choiceInput('Extractor ' + (j + 1), '', extractors);
     let extractorInputsOld = ui.inputs([extractorTypesList[j]]);
     extractorContainerList[j].appendChild(extractorInputsOld);
-    extractorTypesList[j].onChanged(function () {
-      let extractorType = extractorTypesList[j - 1].value;
-      extractorParametersList[j - 1] = getExtractorParameters(extractorType);
+    extractorTypesList[j].onChanged(async function () {
+      let call = extractorTypesList[j - 1].value.prepare();
+      let context = DG.Context.create();
+      let t = DG.DataFrame.fromColumns([filterOutputsObj[filterInputsList[i - 1].value].columns.byName('sig')]);
+      t.name = 'dataframe';
+      context.setVariable('table', t);
+      call.context = context;
       extractorInputsNew = ui.div([
         ui.block25([
-          ui.inputs(
-            [extractorTypesList[j - 1]]
-              .concat([extractorInputsList[j - 1]])
-              .concat(Object.values(extractorParametersList[j - 1]))
-              .concat(addExtractorChartButton)
-          )]
-        ),
+          await call.getEditor(),
+          ui.inputs([
+            ui.buttonsInput([
+              ui.button('Plot', async () => {
+                let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting extractor\'s output...');
+                try {
+                  await call.call();
+                  let df = call.getParamValue('newDf');
+                  extractorChartsList[j - 1].dataFrame = df;
+                  let nameOfLastExtractorsOutput = 'Output of Extractor ' + j + ' (' + extractorTypesList[j - 1].value + ')';
+                  Object.assign(extractorOutputsObj, {[nameOfLastExtractorsOutput]: df});
+                } catch (e) {
+                  alert(e);
+                  throw e;
+                } finally {
+                  pi.close();
+                }
+              })
+            ])
+          ])
+        ]),
         ui.block75([extractorChartsList[j - 1]])
       ]);
       extractorContainerList[j - 1].replaceChild(extractorInputsNew, extractorInputsOld);
@@ -189,24 +175,6 @@ function showMainDialog(view, tableWithSignals, tableWithSignalsAndAnnotations, 
     j++;
   }));
 
-  let nameOfLastExtractorsOutput = '';
-  addExtractorChartButton.appendChild(ui.button('Plot', async () => {
-    let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting extractor\'s output...');
-    let extractorParameters = getArrayOfParameterObjects(extractorTypesList, extractorParametersList, samplingFrequency);
-    let t = DG.DataFrame.fromColumns([filterOutputsObj[filterInputsList[i - 1].value].columns.byName(filterInputsList[i - 1].value)]);
-    try {
-      let plotInfo = await applyExtractor(t, t.columns.byName(filterInputsList[i - 1].value), extractorParameters[j - 1]);
-      nameOfLastExtractorsOutput = 'Output of Extractor ' + j + ' (' + extractorTypesList[j - 1].value + ')';
-      extractorChartsList[j - 1].dataFrame = plotInfo;
-      Object.assign(extractorOutputsObj, {[nameOfLastExtractorsOutput]: plotInfo});
-    } catch (e) {
-      pi.close();
-      alert(e);
-      throw e;
-    }
-    pi.close();
-  }));
-
   // Indicators dialogue
   let indicatorTypesList = [];
   let indicatorChartsList = [];
@@ -214,7 +182,6 @@ function showMainDialog(view, tableWithSignals, tableWithSignalsAndAnnotations, 
   let indicatorParametersList = [];
   let indicatorContainerList = [];
   let addIndicatorButton = ui.div();
-  let addIndicatorChartButton = ui.div();
   let indicatorInputsNew = ui.inputs(indicatorTypesList);
   let k = 0;
   addIndicatorButton.appendChild(ui.button('Add Indicator', async () => {
@@ -223,22 +190,37 @@ function showMainDialog(view, tableWithSignals, tableWithSignalsAndAnnotations, 
     let indicatorInputPreset = Object.keys(extractorOutputsObj)[Object.keys(extractorOutputsObj).length - 1];
     indicatorInputsList[k] = ui.choiceInput('Input', indicatorInputPreset, Object.keys(extractorOutputsObj));
     indicatorChartsList[k] = getEmptyChart();
-    let indicatorsNames = await getScriptsNames('#indicators');
+    let indicatorsNames = await grok.dapi.scripts.filter('#indicators').list();
     indicatorTypesList[k] = ui.choiceInput('Indicator ' + (k + 1), '', indicatorsNames);
     let indicatorInputsOld = ui.inputs([indicatorTypesList[k]]);
     indicatorContainerList[k].appendChild(indicatorInputsOld);
-    indicatorTypesList[k].onChanged(function () {
-      let indicatorType = indicatorTypesList[k - 1].value;
-      indicatorParametersList[k - 1] = getIndicatorParameters(indicatorType);
+    indicatorTypesList[k].onChanged(async function () {
+      let call = indicatorTypesList[k - 1].value.prepare();
+      let context = DG.Context.create();
+      let t = DG.DataFrame.fromColumns([extractorOutputsObj[indicatorInputsList[k - 1].value].columns.byName('RR intervals')]);
+      t.name = 'dataframe';
+      context.setVariable('table', t);
+      call.context = context;
       indicatorInputsNew = ui.div([
         ui.block25([
-          ui.inputs(
-            [indicatorTypesList[k - 1]]
-              .concat([indicatorInputsList[k - 1]])
-              .concat(Object.values(indicatorParametersList[k - 1]))
-              .concat(addIndicatorChartButton)
-          )]
-        ),
+          await call.getEditor(),
+          ui.inputs([
+            ui.buttonsInput([
+              ui.button('Plot', async () => {
+                let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting indicator\'s output...');
+                try {
+                  await call.call();
+                  indicatorChartsList[k - 1].dataFrame = call.getParamValue('out');
+                } catch (e) {
+                  alert(e);
+                  throw e;
+                } finally {
+                  pi.close();
+                }
+              })
+            ])
+          ])
+        ]),
         ui.block75([indicatorChartsList[k - 1]])
       ]);
       indicatorContainerList[k - 1].replaceChild(indicatorInputsNew, indicatorInputsOld);
@@ -246,20 +228,6 @@ function showMainDialog(view, tableWithSignals, tableWithSignalsAndAnnotations, 
     });
     accordionIndicators.addPane('Indicator ' + (k + 1), () => containerIndicator, true)
     k++;
-  }));
-
-  addIndicatorChartButton.appendChild(ui.button('Plot', async () => {
-    let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting indicator\'s output...');
-    let indicatorParameters = getArrayOfParameterObjects(indicatorTypesList, indicatorParametersList, samplingFrequency);
-    let t = DG.DataFrame.fromColumns([extractorOutputsObj[indicatorInputsList[k - 1].value].columns.byName('RR intervals')]);
-    try {
-      indicatorChartsList[k - 1].dataFrame = await applyIndicator(t, t.columns.byName('RR intervals'), indicatorParameters[k - 1]);
-    } catch (e) {
-      pi.close();
-      alert(e);
-      throw e;
-    }
-    pi.close();
   }));
 
   let savePipelineButton = ui.div();

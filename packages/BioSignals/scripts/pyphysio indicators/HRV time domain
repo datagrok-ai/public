@@ -2,7 +2,7 @@
 #description: Heart Rate Variability (HRV) indicators, time domain
 #language: python
 #tags: biosignals, indicators, pyphysio, hrv, ecg_signal
-#input: dataframe signal_values
+#input: dataframe dataframe
 #input: column column
 #input: double step
 #input: double width
@@ -12,10 +12,10 @@ import numpy as np
 import pyphysio as ph
 
 extracted = ph.UnevenlySignal(
-    values=signal_values[column],
+    values=dataframe[column],
     signal_type='ibi',
     start_time=0,
-    x_values=np.cumsum(signal_values[column]),
+    x_values=np.cumsum(dataframe[column]),
     x_type='instants'
 )
 
