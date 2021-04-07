@@ -3,7 +3,6 @@ import {
   AGG,
   TYPE,
   TAGS,
-  Type,
   JoinType,
   SemType,
   ColumnType,
@@ -213,7 +212,7 @@ export class DataFrame {
   /** Sets a tag to the specified value.
    * @param {string} tag - Key.
    * @param {string} value - Value. */
-  setTag(tag: string, value: string) {
+  setTag(tag: string, value: string): void {
     api.grok_DataFrame_Set_Tag(this.d, tag, value);
   }
 
@@ -235,7 +234,7 @@ export class DataFrame {
    * @param {string} name - Column name.
    * @param {number} idx - Row index.
    * @param value - Value. */
-  set(name: string, idx: number, value: any) {
+  set(name: string, idx: number, value: any): void {
     this.getCol(name).set(idx, value);
   }
 
@@ -334,7 +333,7 @@ export class DataFrame {
    * @param {string} newType
    * @param {string=} format
    * @returns {Column} */
-  changeColumnType(column: string | Column, newType: Type, format: string | null = null): Column {
+  changeColumnType(column: string | Column, newType: ColumnType, format: string | null = null): Column {
     return toJs(api.grok_DataFrame_ChangeColumnType(this.d, toDart(column), newType, format));
   }
 
@@ -517,10 +516,10 @@ export class Row {
   private table: DataFrame;
   readonly idx: number;
 
-  /** Creates a {@link Row} from the specified {@link DataFrame} and row index.
+  /**
+   * Creates a {@link Row} from the specified {@link DataFrame} and row index.
    * @param {DataFrame} table
-   * @param {number} idx
-   * @returns {Row} */
+   * @param {number} idx */
   constructor(table: DataFrame, idx: number) {
 
     /** @member {DataFrame} */
@@ -548,7 +547,7 @@ export class Row {
   /** Returns this row's value for the specified column
    * @param {string} columnName
    * @returns {Object} */
-  get(columnName: string) {
+  get(columnName: string): any {
     return this.table.getCol(columnName).get(this.idx);
   }
 }
@@ -574,30 +573,31 @@ export class Column {
     // });
   }
 
-  static fromStrings(name: string, list: string[]) {
+  static fromStrings(name: string, list: string[]): Column {
     return toJs(api.grok_Column_FromStrings(name, list));
   }
 
-  static fromType(type: Type, name: string | null, length = 0) {
+  static fromType(type: ColumnType, name?: string | null, length: number = 0): Column {
     return toJs(api.grok_Column_FromType(type, name, length));
   }
 
   /** [array] will be not be copied and will be used as column's storage */
-  static fromInt32Array(name: string, array: number[], length = null) {
+  static fromInt32Array(name: string, array: Int32Array, length: number | null = null): Column {
     return toJs(api.grok_Column_FromInt32Array(name, array, length));
   }
 
   /** [array] will be not be copied and will be used as column's storage */
-  static fromFloat32Array(name: string, array: number[], length = null) {
+  static fromFloat32Array(name: string, array: Float32Array, length: number | null = null): Column {
     return toJs(api.grok_Column_FromFloat32Array(name, array, length));
   }
 
-  /** Creates a {@link Column} from the list of values.
+  /**
+   * Creates a {@link Column} from the list of values.
    * @param {string} type
    * @param {string} name
    * @param {object[]} list
    * @returns {Column} */
-  static fromList(type: Type, name: string, list: object[]) {
+  static fromList(type: ColumnType, name: string, list: any[]): Column {
     return toJs(api.grok_Column_FromList(type, name, list));
   }
 
@@ -605,7 +605,7 @@ export class Column {
    * @param {string} name
    * @param {BitSet} bitset
    * @returns {Column} */
-  static fromBitSet(name: string, bitset: BitSet) {
+  static fromBitSet(name: string, bitset: BitSet): Column {
     return toJs(api.grok_Column_FromBitSet(name, bitset.d));
   }
 
@@ -613,7 +613,7 @@ export class Column {
    * @param {string} name
    * @param {number} length
    * @returns {Column} */
-  static int(name: string, length = 0): Column {
+  static int(name: string, length: number = 0): Column {
     return Column.fromType(TYPE.INT, name, length);
   }
 
@@ -621,7 +621,7 @@ export class Column {
    * @param {string} name
    * @param {number} length
    * @returns {Column} */
-  static float(name: string, length = 0): Column {
+  static float(name: string, length: number = 0): Column {
     return Column.fromType(TYPE.FLOAT, name, length);
   }
 
@@ -629,7 +629,7 @@ export class Column {
    * @param {string} name
    * @param {number} length
    * @returns {Column} */
-  static string(name: string, length = 0) {
+  static string(name: string, length: number = 0): Column {
     return Column.fromType(TYPE.STRING, name, length);
   }
 
@@ -637,7 +637,7 @@ export class Column {
    * @param {string} name
    * @param {number} length
    * @returns {Column} */
-  static bool(name: string, length = 0) {
+  static bool(name: string, length: number = 0): Column {
     return Column.fromType(TYPE.BOOL, name, length);
   }
 
@@ -645,7 +645,7 @@ export class Column {
    * @param {string} name
    * @param {number} length
    * @returns {Column} */
-  static dateTime(name: string, length = 0) {
+  static dateTime(name: string, length: number = 0): Column {
     return Column.fromType(TYPE.DATE_TIME, name, length);
   }
 
@@ -653,7 +653,7 @@ export class Column {
    * @param {string} name
    * @param {number} length
    * @returns {Column} */
-  static dataFrame(name: string, length = 0) {
+  static dataFrame(name: string, length: number = 0): Column {
     return Column.fromType(TYPE.DATA_FRAME, name, length);
   }
 
@@ -666,7 +666,7 @@ export class Column {
    * @param {number[]} values
    * @param {boolean} exact - if true, strips out qualifier from [values].
    * */
-  static qnum(name: string, length = 0, values: number[] = [], exact = true) {
+  static qnum(name: string, length: number = 0, values: number[] = [], exact: boolean = true): Column {
     let col = Column.fromType(TYPE.QNUM, name, length);
     if (values !== null) {
       let buffer = col.getRawData();
@@ -679,48 +679,48 @@ export class Column {
 
   /** Column data type.
    * @type {string} */
-  get type() {
+  get type(): ColumnType {
     return api.grok_Column_Get_Type(this.d);
   }
 
   /** Number of elements
    * @type {number} */
-  get length() {
+  get length(): number {
     return api.grok_Column_Get_Length(this.d);
   }
 
   /** Parent table
    * @type {DataFrame} */
-  get dataFrame() {
+  get dataFrame(): DataFrame {
     return toJs(api.grok_Column_Get_DataFrame(this.d));
   }
 
   /** Semantic type
    * @type {string} */
-  get semType() {
+  get semType(): SemType {
     return api.grok_Column_Get_SemType(this.d);
   }
 
-  set semType(s) {
+  set semType(s: SemType) {
     api.grok_Column_Set_SemType(this.d, s);
   }
 
   /** Layout column ID
    @type {string} */
-  get layoutColumnId() {
+  get layoutColumnId(): string {
     return api.grok_Column_Get_LayoutColumnId(this.d);
   }
 
-  set layoutColumnId(s) {
+  set layoutColumnId(s: string) {
     api.grok_Column_Set_LayoutColumnId(this.d, s);
   }
 
   /** @type {string} */
-  get name() {
+  get name(): string {
     return api.grok_Column_Get_Name(this.d);
   }
 
-  set name(s) {
+  set name(s: string) {
     api.grok_Column_Set_Name(this.d, s);
   }
 
@@ -729,7 +729,7 @@ export class Column {
    * @param {string | number | Function} valueInitializer
    * @returns {Column}
    * */
-  init(valueInitializer: string | number | Function) {
+  init(valueInitializer: string | number | ((ind: number) => any)): Column {
     let type = typeof valueInitializer;
     if (type === 'function')
       api.grok_Column_Init(this.d, valueInitializer);
@@ -746,18 +746,18 @@ export class Column {
    * {Int32Array} for strings indexes of {@link categories}.
    * {Uint32Array} bit array.
    * @returns {Array} */
-  getRawData() {
+  getRawData(): Int32Array | Float32Array | Float64Array | Uint32Array {
     return api.grok_Column_GetRawData(this.d);
   }
 
-  setRawData(rawData: any, notify = true) {
+  setRawData(rawData: Int32Array | Float32Array | Float64Array | Uint32Array, notify: boolean = true): void {
     api.grok_Column_SetRawData(this.d, rawData, notify);
   }
 
   /** Gets i-th value
    * @param {number} row - row index
    * @returns {object} - or null if isNone(i) */
-  get(row: number) {
+  get(row: number): any {
     return api.grok_Column_GetValue(this.d, row);
   }
 
@@ -785,7 +785,7 @@ export class Column {
    *  An empty string is returned if there is no value.
    * @param {number} i
    * @returns {string} */
-  getString(i: number) {
+  getString(i: number): string {
     return api.grok_Column_GetString(this.d, i);
   }
 
@@ -797,7 +797,7 @@ export class Column {
    * @param {string} str
    * @param {boolean} notify
    * @returns {boolean} */
-  setString(i: number, str: string, notify = true) {
+  setString(i: number, str: string, notify: boolean = true): void {
     api.grok_Column_SetString(this.d, i, str, notify);
   }
 
@@ -841,14 +841,14 @@ export class Column {
   }
 
   /** Copies column values to an array.
-   *  @ returns {Array} */
-  toList() {
+   *  @returns {Array} */
+  toList(): Array<any> {
     return api.grok_Column_ToList(this.d);
   }
 
   /** Returns all unique strings in a sorted order. Applicable to string column only.
    * @returns {string[]} */
-  get categories() {
+  get categories(): string[] {
     return api.grok_Column_Categories(this.d);
   }
 
@@ -866,26 +866,26 @@ export class Column {
 
   /** Column's minimum value. The result is cached.
    * @returns {number} */
-  get min() {
+  get min(): number {
     return api.grok_Column_Min(this.d);
   }
 
   /** Column's maximum value. The result is cached.
    * @returns {number} */
-  get max() {
+  get max(): number {
     return api.grok_Column_Max(this.d);
   }
 
   /** Checks whether the column passes the specified [filter].
    * [filter] can be either specific data [type] such as 'int' or 'string', more broadly - 'numerical', or 'categorical', or null for any columns.
    * @returns {boolean} */
-  matches(filter: any) {
+  matches(filter: ColumnType | 'numerical' | 'categorical' | null): boolean {
     return api.grok_Column_Matches(this.d, filter);
   }
 
   /** Basic descriptive statistics. The result is cached.
    * @returns {Stats} */
-  get stats() {
+  get stats(): Stats {
     return Stats.fromColumn(this);
   }
 
@@ -1025,7 +1025,7 @@ constructor(d: any) {
    * @param {ColumnType} type
    * @param {bool} treatAsString
    * @returns {Column} */
-  addNewCalculated(name: string, expression: string, type: Type | null, treatAsString: boolean | null) {
+  addNewCalculated(name: string, expression: string, type: ColumnType | null, treatAsString: boolean | null) {
     return new Promise((resolve, reject) => toJs(api.grok_ColumnList_AddNewCalculated(this.d, name, expression, type, treatAsString, (c: any) => resolve(c), (e: any) => reject(e))));
   }
 

@@ -55,7 +55,8 @@ export enum COLUMN_TYPE {
   BOOL = 'bool',
   DATE_TIME = 'datetime',
   BIG_INT = 'bigint',
-  QNUM = 'qnum'
+  QNUM = 'qnum',
+  DATA_FRAME = 'dataframe',
 }
 
 
