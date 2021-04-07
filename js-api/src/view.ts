@@ -65,7 +65,6 @@ export class ViewBase {
   }
 
   set name(s: string) {
-    // @ts-ignore
     if (api.grok_View_Set_Name == null)
     // @ts-ignore
       this._name = s;
@@ -215,7 +214,6 @@ export class View extends ViewBase {
    * @param {string | ElementOptions | null} options
    * @returns {View} */
   static create(options?: string | {} | null): View {
-    // @ts-ignore
     let v = api.grok_View == null ? new View(null) : new View(api.grok_View());
     _options(v.root, 'ui-panel');
     _options(v.root, options);
@@ -233,7 +231,6 @@ export class View extends ViewBase {
   }
 
   get root(): HTMLElement {
-    // @ts-ignore
     if (api.grok_View_Get_Root == null)
       return this._root;
     return api.grok_View_Get_Root(this.d);

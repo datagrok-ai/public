@@ -42,7 +42,6 @@ export class Shell {
   }
 
   set v(view: View) {
-    // @ts-ignore
     api.grok_Set_CurrentView(view.d);
   }
 
@@ -177,7 +176,6 @@ export class Shell {
       v.root.style.width = '100vw';
       v.root.style.height = '100vh';
     } else
-      // @ts-ignore
       api.grok_AddView(v.d, dockType, width);
     return v;
   }
@@ -275,7 +273,6 @@ export class Shell {
 
   /** @returns {DockManager} */
   get dockManager(): DockManager {
-    // @ts-ignore
     return new DockManager(api.grok_Get_DockManager());
   }
 
