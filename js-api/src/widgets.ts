@@ -4,6 +4,7 @@ import {Observable} from "rxjs";
 import {Property} from "./entities";
 import {DataFrame} from "./dataframe";
 import {ColorType, Type} from "./const";
+import React from "react";
 
 declare let grok: any;
 declare let DG: any;
@@ -488,6 +489,8 @@ export class Dialog {
   /** Adds command button with the specified text.
    * @param {string} text
    * @param {Function} action
+   * @param index
+   * @param tooltip
    * @returns {Dialog}
    * */
   addButton(text: string, action: Function, index: number = 0, tooltip: any = null): Dialog {
