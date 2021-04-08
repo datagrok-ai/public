@@ -4,6 +4,7 @@ import {Observable} from "rxjs";
 import {Property} from "./entities";
 import {DataFrame} from "./dataframe";
 import {ColorType, Type} from "./const";
+import React from "react";
 
 declare let grok: any;
 declare let DG: any;
@@ -213,6 +214,7 @@ export class Widget {
   }
 
   /** Creates a {@see Widget} from the specified React component. */
+  // @ts-ignore
   static react(reactComponent: React.DOMElement<any, any> | Array<React.DOMElement<any, any>> | React.CElement<any, any> | Array<React.CElement<any, any>> | React.ReactElement | Array<React.ReactElement>): Widget {
     let widget = Widget.fromRoot(ui.div());
     // @ts-ignore
@@ -487,6 +489,8 @@ export class Dialog {
   /** Adds command button with the specified text.
    * @param {string} text
    * @param {Function} action
+   * @param index
+   * @param tooltip
    * @returns {Dialog}
    * */
   addButton(text: string, action: Function, index: number = 0, tooltip: any = null): Dialog {

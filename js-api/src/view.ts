@@ -336,7 +336,7 @@ export class TableView extends View {
    * @param {string | Viewer} v
    * @param options
    * @returns {Viewer} */
-  addViewer(v: ViewerType | Viewer, options: object | null = null): Viewer {
+  addViewer(v: ViewerType | string | Viewer, options: object | null = null): Viewer {
     if (typeof v === 'string')
       v = new Viewer(api.grok_View_AddViewerByName(this.d, v));
     else
