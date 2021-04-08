@@ -69,6 +69,13 @@ class SequencePackage extends DG.Package {
     return new SeqDemoViewer();
   }
 
+  //name: WebLogoViewer
+  //tags: viewer,panel
+  //output: viewer result
+  webLogoViewer() {
+    return new WebLogoViewer();
+  }
+
   //input: string content
   //output: list tables
   //tags: file-handler

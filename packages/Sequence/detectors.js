@@ -9,12 +9,9 @@ class SequencePackageDetectors extends DG.Package {
   //input: column col
   //output: string semType
   detectNucleotides(col) {
-    if (col.name.startsWith('nuc')) {
-      col.semType = 'nucleotides';
+    const rex = /[ATGC]+/;
+    if (DG.Detector.sampleCategories(col, (s) => rex.test(s)))
       return 'nucleotides';
-    }
-
-    return null;
   }
 
   //tags: semTypeDetector
@@ -41,4 +38,20 @@ class SequencePackageDetectors extends DG.Package {
   dup(s) {
     return s + '_' + s + ' (sequence)';
   }
+
+  //input: column col { semType: nucleotides }
+  sequenceNucToRobot(nuc) {
+    nuc.dataFrame.columns
+      .addNewString('robot')
+      .init((i) => 'converted ' + nuc.get(i));
+  }
+
+  //input: string seq { semType: sequence }
+  //input: string seqUnits { semType: sequenceUnits }
+  //output: string seq { semType: sequence }
+  // sequenceTranslator(nuc) {
+  //   nuc.dataFrame.columns
+  //     .addNewString('robot')
+  //     .init((i) => 'converted ' + nuc.get(i));
+  // }
 }

@@ -1,21 +1,21 @@
 #name: PhasicEstimation
 #description: Estimates the phasic and tonic components of a EDA driver function. It uses a detection algorithm based on the derivative of the driver.
 #language: python
-#tags: biosignals, extractors, pyphysio
-#input: dataframe data
+#tags: biosignals, extractors, pyphysio, eda_signal
+#input: dataframe dataframe
 #input: column column
 #input: double sampling_frequency
-#input: double t1 [Value of the T1 parameter of the bateman function, default = 0.75]
-#input: double t2 [Value of the T2 parameter of the bateman function, default = 2]
+#input: double t1 = 0.75 [Value of the T1 parameter of the bateman function]
+#input: double t2 = 2 [Value of the T2 parameter of the bateman function]
 #input: double delta [Minimum amplitude of the peaks in the driver]
-#input: double grid_size [Sampling size of the interpolation grid, default = 1]
-#input: double win_pre [Duration (in seconds) of interval before the peak where to search the start of the peak, default = 2]
-#input: double win_post [Duration (in seconds) of interval after the peak where to search the end of the peak, default = 2]
+#input: double grid_size = 1 [Sampling size of the interpolation grid]
+#input: double win_pre = 2 [Duration (in seconds) of interval before the peak where to search the start of the peak]
+#input: double win_post = 2 [Duration (in seconds) of interval after the peak where to search the end of the peak]
 #output: dataframe newDf
 
 import pyphysio as ph
 
-sig = ph.EvenlySignal(values=data[column], sampling_freq=sampling_frequency)
+sig = ph.EvenlySignal(values=dataframe[column], sampling_freq=sampling_frequency)
 
 extracted = ph.DriverEstim(t1=t1, t2=t2)(sig)
 

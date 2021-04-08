@@ -13,7 +13,7 @@ type PropertySetter = (a: string, object:  any) => void;
  * */
 export class Entity {
 
-  protected d: any;
+  public d: any;
 
   /** @constructs Entity*/
   constructor(d: any) {
@@ -684,7 +684,7 @@ export class Package extends Entity {
   public webRoot: any | undefined;
   public version: string;
 
-  constructor(d: any) {
+  constructor(d: any | undefined = undefined) {
     super(d);
     if (typeof d === 'string' || d instanceof String) {
       this.webRoot = d;
@@ -751,7 +751,7 @@ export class Package extends Entity {
  * Samples:
  */
 export class Property {
-  protected readonly d: any;
+  public readonly d: any;
 
   constructor(d: any) {
     this.d = d;
@@ -914,7 +914,7 @@ export class SemanticValue {
 }
 
 export class DateTime {
-  private d: any;
+  public d: any;
 
   constructor(d: any) {
     this.d = d;

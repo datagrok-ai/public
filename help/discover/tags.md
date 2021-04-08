@@ -91,12 +91,12 @@ In case you need to define a different date format, proceed to column properties
 | fff    | Second fraction (3 digits)       | 000, 001, ..., 999         |
 | tt     | 12-hour periods                  | AM, PM                     |
 
-## color-coding-type
+## .color-coding-type
 
 Indicates on what basis the columns are colored. Numerical columns have the options `Off`,
 `Linear`, and `Conditional`, while categorical columns are limited to `Off` and `Conditional`.
 
-## color-coding-conditional
+## .color-coding-conditional
 
 Applies conditional formatting to numeric and categorical columns. See an [example](https://public.datagrok.ai/js/samples/grid/color-coding-conditional).
 
@@ -224,4 +224,4 @@ A [molecular fingerprinter](../domains/chem/fingerprints.md) used for calculatin
 
 See also:
 * [Metadata](metadata.md)
-* [JS API: metadata]()
+* [JS API: metadata](https://public.datagrok.ai/js/samples/data-frame/metadata)

@@ -6,14 +6,14 @@
 Datagrok was built for data scientists, by data scientists. Our goal is to let scientist focus 
 on science, not infrastructure. 
 
-Out of the box, it provides all tools necessary for 
+Out of the box, Datagrok provides all tools necessary for 
 [data ingestion](../access/importing-data.md), 
 [transformation](../transform/data-wrangling.md), 
 [visualization](../visualize/viewers.md), 
 [analysis](../explore/exploratory-data-analysis.md), 
 [modeling](predictive-modeling.md), 
 as well as [deploying models](predictive-modeling.md#deployment) 
-and scientific analyses. Scripts and models can be written in any language. 
+and scientific analyses. Scripts and models can be written in any language, such as R or Python. 
 
 ## Data munging
 
@@ -34,7 +34,10 @@ that the result depends upon.
 
 ## Data pipelines
 
-Data pipelines consist of series of [] 
+[Data pipelines](access/data-pipeline.md)  is a core component of the Datagrok platform designed to let end users
+define  jobs that would get data from disparate data sources, clean or merge the data if needed, 
+run transformations, build interactive dashboards based on the retrieved data, and publish 
+these dashboards.
 
 ## Statistical Hypothesis Testing
 

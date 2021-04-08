@@ -2,18 +2,18 @@
 #description: Filter the input signal using a Finite Impulse Response filter
 #language: python
 #tags: biosignals, filters, pyphysio
-#input: dataframe input_signals
+#input: dataframe dataframe
 #input: column column
 #input: double sampling_frequency
-#input: double fp [The pass frequencies]
-#input: double fs [The stop frequencies]
+#input: double pass_frequencies [The pass frequencies]
+#input: double stop_frequencies [The stop frequencies]
 #output: dataframe df
 
 import pyphysio as ph
 
-sig = ph.EvenlySignal(values=input_signals[column], sampling_freq=sampling_frequency)
+sig = ph.EvenlySignal(values=dataframe[column], sampling_freq=sampling_frequency)
 
-sig = ph.FIRFilter(fp=[fp], fs=[fs])(sig)
+sig = ph.FIRFilter(fp=[pass_frequencies], fs=[stop_frequencies])(sig)
 
 df = pd.DataFrame({
     'time': range(len(sig)),

@@ -1,18 +1,18 @@
-#name: normalize
+#name: Normalize
 #description: Normalized the input signal using the general formula: ( signal - BIAS ) / RANGE
 #language: python
 #tags: biosignals, filters, pyphysio
-#input: dataframe input_signals
+#input: dataframe dataframe
 #input: column column
 #input: double sampling_frequency
-#input: string norm_method {choices: ['mean', 'standard', 'min', 'maxmin', 'custom']} [Method for the normalization]
+#input: string normalization_method {choices: ['mean', 'standard', 'min', 'maxmin', 'custom']} [Method for the normalization]
 #output: dataframe df
 
 import pyphysio as ph
 
-sig = ph.EvenlySignal(values=input_signals[column], sampling_freq=sampling_frequency)
+sig = ph.EvenlySignal(values=dataframe[column], sampling_freq=sampling_frequency)
 
-sig = ph.Normalize(norm_method=norm_method)(sig)
+sig = ph.Normalize(norm_method=normalization_method)(sig)
 
 df = pd.DataFrame({
     'time': range(len(sig)),

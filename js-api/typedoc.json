@@ -1,0 +1,4 @@
+    {
+      "entryPoints": ["./dg.ts", "./ui.ts", "./grok.ts"],
+      "out": "docs"
+   }

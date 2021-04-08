@@ -17,7 +17,7 @@ Our proprietary in-memory database that runs in the browser lets us process data
 
 Data transformations, statistical computations, predictive models, and custom applications are combined together as plug-and-play blocks, allowing you to build your own blocks and enhance the ecosystem even further.
 
-Don't take our word for this – run the platform right now and see it yourself! 
+Don't take our word for this – [run the platform](https://public.datagrok.ai/) right now and see it yourself! 
 
 ## Access
 
@@ -42,7 +42,7 @@ Manage availability, usability, integrity and security of your data, all in one 
 ## Transform
 
   * [Aggregate, join, filter and edit data](transform/data-wrangling.md) right in the browser
-  * Record and apply macros
+  * Record and apply [macros](overview/navigation.md#recording-macros)
   * Use 500+ available [functions](overview/functions/function.md), or write your own in R, Python, or JavaScript
   * Visually edit [pipelines](transform/job-editor.md) and [query transformations](transform/recipe-editor.md)
 
@@ -51,7 +51,7 @@ Manage availability, usability, integrity and security of your data, all in one 
 Our unique technology lets you explore datasets faster and more efficiently than ever, allowing to find patterns that were previously impossible to spot, resulting in the acceleration of data-driven decisions.
 
   * [Proprietary in-memory database](develop/performance.md) technology allows to handle tens of millions of rows in the browser
-  * [25+ high-performance interactive viewers](visualize/viewers.md)
+  * [30+ high-performance interactive viewers](visualize/viewers.md)
   * [Powerful integration with any visualizations available in R, Python, or Julia languages](visualize/viewers/scripting-viewer.md)
   * Built-in viewers: [regression lines](visualize/viewers/scatter-plot.md), confidence intervals, correlations, [statistical tests](learn/data-science.md)
   * Automatic detection of outliers, [missing values](transform/missing-values-imputation.md), wrong data types
@@ -79,8 +79,10 @@ Turn your data into actionable insights by using state-of-the art machine learni
 
   * Build [custom applications](develop/applications.md) on top of the platform
   * [Cheminformatics](domains/chem/cheminformatics.md)
-  * Text analytics
-  * Location Analytics
+  * Text analytics, [natural language processing](https://github.com/datagrok-ai/public/tree/master/packages/NLP) with cloud-based machine translation
+  * [Location Analytics](https://github.com/datagrok-ai/public/tree/master/packages/Leaflet)
+  * [Digital signal processing](https://github.com/datagrok-ai/public/tree/master/packages/DSP)
+  * [Biosignal Processing](https://github.com/datagrok-ai/public/tree/master/packages/BioSignals)
 
 ## Deploy and Integrate
 
@@ -89,4 +91,10 @@ Turn your data into actionable insights by using state-of-the art machine learni
   * Flexible [authentication](govern/authentication.md)
   * Create [pipelines](transform/job-editor.md), schedule [jobs](access/data-job.md), and set up alerts
   * [Customizable by IT](develop/admin/it-customizations.md)
-  * Easy to learn the platform using [interactive help](overview/navigation.md#help), [forums](collaborate/forum.md), tutorials (go to [Datagrok Public](https://public.datagrok.ai/), find "Help" section and select "Tutorials") and [video lessons](video-lessons.md)
+  * Easy to learn the platform with
+  ** [interactive help](overview/navigation.md#help),
+  ** [Community Forums](https://community.datagrok.ai/),
+  ** Tutorials (go to [Datagrok Public](https://public.datagrok.ai/), find "Help" section and select "Tutorials")
+  ** [Video lessons](video-lessons.md)
+  ** Video platform overviews (full [Table of Contents](video-contents.md), selection [for developers](develop/video-walkthrough.md))
+  ** [Exercises for developers](develop/exercises.md)

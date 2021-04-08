@@ -1,25 +1,5 @@
-/**
- * @typedef {string} AggregationType
- * @typedef {string} SyncType
- * @typedef {string} JoinType
- * @typedef {string} ColumnType
- * @typedef {string} ViewerType
- * @typedef {string} ObjectType
- * @typedef {string} ViewerPropertyType
- **/
 
-export type AggregationType = `${AGG}`;
-export type SyncType = `${SYNC_TYPE}`;
-export type JoinType = `${JOIN_TYPE}`;
-export type ColumnType = `${COLUMN_TYPE}`;
-export type ViewerType = `${VIEWER}`;
-export type ObjectType = string;
-export type ViewerPropertyType = string;
-export type Type = `${TYPE}`;
-export type SemType = string;
-export type SimilarityMetric = `${SIMILARITY_METRIC}`;
-
-/** @enum {AggregationType} */
+/** @enum {AGG} */
 export enum AGG {
   KEY = "key",      // Special case= to be used in the 'group by' statement.
   PIVOT = "pivot",  // Special case= to be used as a pivot.
@@ -43,7 +23,7 @@ export enum AGG {
   SELECTED_ROWS_COUNT = "#selected"
 }
 
-/** @enum {SyncType} */
+/** @enum {SYNC_TYPE} */
 export enum SYNC_TYPE {
   CURRENT_ROW_TO_ROW = 'row to row',
   CURRENT_ROW_TO_SELECTION = 'row to selection',
@@ -67,7 +47,7 @@ export enum JOIN_TYPE {
   RIGHT = 'right'
 }
 
-/** @enum {ColumnType} */
+/** @enum {COLUMN_TYPE} */
 export enum COLUMN_TYPE {
   STRING = 'string',
   INT = 'int',
@@ -75,11 +55,12 @@ export enum COLUMN_TYPE {
   BOOL = 'bool',
   DATE_TIME = 'datetime',
   BIG_INT = 'bigint',
-  QNUM = 'qnum'
+  QNUM = 'qnum',
+  DATA_FRAME = 'dataframe',
 }
 
 
-/** @enum {Type} */
+/** @enum {TYPE} */
 export enum TYPE {
   INT = 'int',
   BIG_INT = 'bigint',
@@ -126,7 +107,7 @@ export enum TYPE {
 
 export const TYPES_SCALAR = new Set([TYPE.INT, TYPE.BIG_INT, TYPE.FLOAT, TYPE.NUM, TYPE.BOOL, TYPE.STRING]);
 
-/** @enum {ViewerPropertyType} */
+/** @enum {VIEWER_PROPERTY_TYPE} */
 export enum VIEWER_PROPERTY_TYPE {
   STRING = 'string',
   INT = 'int',
@@ -145,7 +126,7 @@ export enum VIEW_TYPE {
 };
 
 ///////
-/** @enum {SemType} */
+/** @enum {SEMTYPE} */
 export const SEMTYPE = {
   EMAIL: 'Email Address',
   URL: 'URL',
@@ -208,7 +189,7 @@ export const TAGS = {
    See also [TAGS_CHOICES]. */
   AUTO_CHOICES: '.auto-choices',
   ID: '.id',
-  COLOR_CODING_CONDITIONAL: 'color-coding-conditional'
+  COLOR_CODING_CONDITIONAL: '.color-coding-conditional'
 }
 
 ////// Viewers
@@ -255,3 +236,67 @@ export enum SIMILARITY_METRIC {
   ASYMMETRIC = 'asymmetric',
   BRAUN_BLANQUET = 'braun-blanquet'
 }
+
+/** @enum {DEMO_DATASET} */
+export enum DEMO_DATASET {
+  WELLS = 'wells',
+  DEMOG = 'demog',
+  BIOSENSOR = 'biosensor',
+  RANDOM_WALK = 'random walk',
+  GEO = 'geo',
+}
+
+/** @enum {DOCK_TYPE} */
+export enum DOCK_TYPE {
+  LEFT = "left",
+  RIGHT = "right",
+  TOP = "top",
+  DOWN = "down",
+  FILL = "fill",
+}
+
+/**
+ * @typedef {string} AggregationType
+ * @typedef {string} SyncType
+ * @typedef {string} JoinType
+ * @typedef {string} ColumnType
+ * @typedef {string} ViewerType
+ * @typedef {string} ObjectType
+ * @typedef {string} ViewerPropertyType
+ * @typedef {string} Type
+ * @typedef {string} SemType
+ * @typedef {string} SimilarityMetric
+ * @typedef {string} ColorType
+ * @typedef {string} DockType
+ * 
+ * @typedef {Object} ElementOptions
+ * @property {string} id
+ * @property {string} classes
+ * @property {Object} style
+ * 
+ * @typedef {Object} CsvImportOptions
+ * @property {string} delimiter
+ * @property {string} decimalSeparator
+ * @property {string} thousandSeparator
+ * 
+ * @typedef {function(number): boolean} IndexPredicate
+ * @typedef {function(String): boolean} StringPredicate
+ **/
+
+export type AggregationType = `${AGG}`;
+export type SyncType = `${SYNC_TYPE}`;
+export type JoinType = `${JOIN_TYPE}`;
+export type ColumnType = `${COLUMN_TYPE}`;
+export type ViewerType = `${VIEWER}`;
+export type ObjectType = string;
+export type ViewerPropertyType = string;
+export type Type = `${TYPE}`;
+export type SemType = string;
+export type SimilarityMetric = `${SIMILARITY_METRIC}`;
+export type ColorType = number;
+export type DemoDatasetName = `${DEMO_DATASET}`;
+export type DockType = `${DOCK_TYPE}`;
+export type ElementOptions = { id?: string, classes?: string, style?: object };
+export type CsvImportOptions = { delimiter?: string, decimalSeparator?: string, thousandSeparator?: string };
+export type IndexPredicate = (ind: number) => boolean;
+export type StringPredicate = (str: string) => boolean;

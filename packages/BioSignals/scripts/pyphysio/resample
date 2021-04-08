@@ -1,19 +1,19 @@
-#name: resample
+#name: Resample
 #description: Change sampling frequency of signal
 #language: python
 #tags: biosignals, filters, pyphysio
-#input: dataframe input_signals
+#input: dataframe dataframe
 #input: column column
 #input: double sampling_frequency [Input sampling frequency]
-#input: double fout [The sampling frequency for resampling]
-#input: string kind {choices: ['linear', 'nearest', 'zero', 'slinear', 'quadratic, 'cubic']} [Method for interpolation]
+#input: double output_sampling_frequency [The sampling frequency for resampling]
+#input: string interpolation_method {choices: ['linear', 'nearest', 'zero', 'slinear', 'quadratic, 'cubic']} [Method for interpolation]
 #output: dataframe df
 
 import pyphysio as ph
 
-sig = ph.EvenlySignal(values=input_signals[column], sampling_freq=sampling_frequency)
+sig = ph.EvenlySignal(values=dataframe[column], sampling_freq=sampling_frequency)
 
-sig = sig.resample(fout=fout, kind=kind)
+sig = sig.resample(fout=output_sampling_frequency, kind=interpolation_method)
 
 df = pd.DataFrame({
     'time': range(len(sig)),
