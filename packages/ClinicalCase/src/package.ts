@@ -21,7 +21,6 @@ let checkType = (column: DG.Column, variable) => (column.type === typeMap[variab
 let applyRule = (column: DG.Column, variable) => {
   // let matcher = (variable.type === 'Char') ? DG.ValueMatcher.string(variable.rule) : DG.ValueMatcher.numerical(variable.rule);
   if (variable.type === 'Char') {
-    // @ts-ignore: Property 'ValueMatcher' does not exist
     let matcher = DG.ValueMatcher.string(variable.rule);
 
     for (let i = 0; i < column.length; i++) {
@@ -48,7 +47,6 @@ export function sdtmSummaryPanel(df: DG.DataFrame): DG.Widget {
   for (let [c, v] of Object.entries(meta.classes)) {
     if (v[domainUpper]) text += `${v[domainUpper]}\nClass: ${c}\n`;
   }
-  // @ts-ignore: Type 'ColumnList' must have a '[Symbol.iterator]()' method that returns an iterator.
   for (let column of df.columns) {
     let name = column.name;
     let variable = meta.domains[domain][name];
@@ -56,7 +54,6 @@ export function sdtmSummaryPanel(df: DG.DataFrame): DG.Widget {
       'valid' : 'invalid' : 'unknown variable'}\n`;
     if (variable.rule) text += `Passed tests: ${applyRule(column, variable)}\n`;
   }
-  // @ts-ignore: Expected 0 arguments, but got 1.
   return new DG.Widget(ui.divText(text));
 }
 
@@ -78,13 +75,11 @@ export function sdtmVariablePanel(varCol: DG.Column): DG.Widget {
   text += `CDISC Submission Value: ${isTerm}\n`;
 
   if (isTerm) {
-    // @ts-ignore: Property 'match' does not exist on type 'RowList'.
     let match = terminology.rows.match({ 'CDISC Submission Value': varCol.name }).toDataFrame();
     text += `CDISC Synonym(s): ${match.get('CDISC Synonym(s)', 0)}\n`;
     text += `CDISC Definition: ${match.get('CDISC Definition', 0)}\n`;
     text += `NCI Preferred Term: ${match.get('NCI Preferred Term', 0)}\n`;
 
-    // @ts-ignore: Property 'match' does not exist on type 'RowList'.
     let relatedRecords = terminology.rows.match({ 'Codelist Code': match.get('Code', 0) }).toDataFrame();
     let rowCount = relatedRecords.rowCount;
     if (rowCount) {
@@ -105,7 +100,6 @@ export function sdtmVariablePanel(varCol: DG.Column): DG.Widget {
         outliers = ui.divText('Out-of-vocabulary values:\n' + valuesToConvert.join(', '));
         outliers.style = 'color: red';
         convertButton = ui.button('Convert', () => {
-          // @ts-ignore: Property 'init' does not exist on type 'Column'.
           varCol.init(i => synonyms[varCol.get(i).toLowerCase()] || varCol.get(i));
         }, 'Convert to CDISC submission values');
       }
@@ -114,7 +108,6 @@ export function sdtmVariablePanel(varCol: DG.Column): DG.Widget {
   let container = [ui.divText(text)];
   if (missingValueCount) container.push(ui.divText(`Missing values: ${missingValueCount}`));
   if (outliers) container.push(outliers, convertButton);
-  // @ts-ignore: Expected 0 arguments, but got 1.
   return new DG.Widget(ui.divV(container));
 }
 
@@ -160,7 +153,6 @@ export function clinicalCaseTimelines(): void {
     let t = grok.shell
       .tableByName(domain)
       .clone(null, Object.keys(info).map(e => info[e]));
-    // @ts-ignore: Property 'init' does not exist on type 'Column'.
     t.columns.addNew('domain', DG.TYPE.STRING).init(domain);
     for (let name in info)
       t.col(info[name]).name = name;
@@ -174,7 +166,7 @@ export function clinicalCaseTimelines(): void {
     else
       result.append(t, true);
   }
-  // @ts-ignore: Expected 2-3 arguments, but got 1.
+
   let v = grok.shell.addTableView(result);
   v.addViewer('TimelinesViewer');
 }
