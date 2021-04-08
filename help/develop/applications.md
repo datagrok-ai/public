@@ -13,8 +13,8 @@ The Datagrok application typically serves a targeted need around a particular pr
 * interactive applications and dashboards, such as molecular database browser (see our [Enamine Store application](https://github.com/datagrok-ai/public/tree/master/packages/EnamineStore)), a Covid-19 or weather data info panel, etc.
 * integration applications, where data from several sources is interpreted and visualised in a coherent way
 
-Datagrok applications are developed in JavaScript / TypeScript using our rich [Datagrok JavaScript API](), with using
-any of the [scripting]() languages we support, such as R or Python, via calling scripts.
+Datagrok applications are developed in JavaScript / TypeScript using our rich [Datagrok JavaScript API](), also incorporating
+ parts in scripting languages we support, such as R or Python, by calling [Datagrok scripts](scripting.md).
 
 Application is typically comprised of many UI features of the platform, including [input controls](),
 [accordion panes](), [grid viewers](), scatter plots, line charts and many other [viewers](../viewers/scatter-plot.md),

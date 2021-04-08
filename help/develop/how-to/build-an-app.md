@@ -6,13 +6,14 @@
 # Building Datagrok Applications
 
 Applications are built on top of the Datagrok platform. The Datagrok application serves a targeted
-need around a particular problem or an area. For example, this may be a bioreactor modeling application,
+need around a particular problem or an area. This may be a bioreactor modeling application,
 an application for working with and understanding molecular sequence data, a molecular database browser,
-a Covid-19 or weather info panel, etc.
+a Covid-19 or weather info panel, and so forth.
 
 Datagrok applications are developed in JavaScript / TypeScript using our rich [Datagrok JavaScript API](),
-with also using a range of the [scripting]() languages we support, such as R or Python, and connecting
-to third-party data sources and services for data integration and orchestration.
+often with utilizing a range of the [scripting languages](help/develop/scripting.md) we support,
+such as R or Python, connecting to third-party data sources and services
+for data integration and orchestration, and re-using self-made or 3-rd party Datagrok extensions.
 
 Technically, applications are [functions](../overview/functions/function.md) tagged with the `#app` tag.
 In this function, you take control over what the platform will let user do and see next, after the app is

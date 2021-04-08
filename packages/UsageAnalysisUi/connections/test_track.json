@@ -1,0 +1,14 @@
+{
+  "#type": "DataConnection",
+  "name": "TestTrack",
+  "parameters": {
+    "server": "$GROK_DB_SERVER",
+    "port": 5432,
+    "db": "test_tracking",
+    "login": "test_tracking",
+    "password": "test_tracking"
+  },
+  "dataSource": "PostgreSQL",
+  "description": "Test tracking database",
+  "tags": ["dev"]
+}

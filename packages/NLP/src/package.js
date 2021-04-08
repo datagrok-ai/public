@@ -16,9 +16,9 @@ let translate;
 let sourceLangInput = ui.choiceInput('', 'Undetermined', [...Object.keys(lang2code), 'Undetermined', 'Other']);
 let targetLangInput = ui.choiceInput('', 'English', [...Object.keys(lang2code), 'Choose...']);
 let headerDiv = ui.divH([sourceLangInput.root, targetLangInput.root], 'nlp-header-div');
-let translationArea = ui.textArea('');
-translationArea.classList.add('nlp-translation-area');
-let mainDiv = ui.divV([headerDiv, translationArea], 'nlp-main-div');
+let translationArea = ui.textInput('', '');
+translationArea.input.classList.add('nlp-translation-area');
+let mainDiv = ui.divV([headerDiv, translationArea.root], 'nlp-main-div');
 let mainWidget = new DG.Widget(mainDiv);
 // UI components for the `Entities` panel
 // let entDiv = ui.divText('{}', "nlp-entity-obj");

@@ -1,11 +1,23 @@
 const path = require('path');
 
 module.exports = {
-  mode: 'production',
-  entry: {'grok': './grok.js', 'ui': './ui.js', 'DG': './dg.js'},
+  mode: 'development',
+  entry: {'grok': './grok.ts', 'ui': './ui.ts', 'DG': './dg.ts'},
   devtool: 'inline-source-map',
+  resolve: {
+    extensions: ['.tsx', '.ts', '.js'],
+  },
   module: {
     rules: [
+      {
+        test: /\.ts(x?)$/,
+        exclude: /node_modules/,
+        use: [
+          {
+            loader: 'ts-loader'
+          }
+        ]
+      },
       {
         test: /\.css$/i,
         use: [{
@@ -16,25 +28,25 @@ module.exports = {
             url: false
           }
         },]
-      },
-      {
+      }
+      /*      {
         test: /\.m?js$/,
         exclude: /node_modules/,
         use: {
           loader: 'babel-loader',
           options: {
-            "presets": [
-              ["@babel/preset-env", {
-                "targets": {"browsers": ["last 2 chrome versions", "chrome 50"]},
-                "useBuiltIns": "usage"
+            'presets': [
+              ['@babel/preset-env', {
+                'targets': {'browsers': ['last 2 chrome versions', 'chrome 50']},
+                'useBuiltIns': 'usage'
               }]
             ]
           }
         }
-      }
+      }*/
     ]
   },
-  externals: {"openchemlib/full.js": "OCL", "rxjs": "rxjs", "rxjs/operators": "rxjs.operators"},
+  externals: {'openchemlib/full.js': 'OCL', 'rxjs': 'rxjs', 'rxjs/operators': 'rxjs.operators'},
   plugins: [],
   optimization: {
     splitChunks: {

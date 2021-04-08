@@ -1,10 +1,10 @@
-#name: hrvFrequencyDomain
+#name: HRVFrequencyDomain
 #description: Heart Rate Variability (HRV) indicators, frequency domain
 #language: python
-#tags: biosignals, indicators, pyphysio, hrv
-#input: dataframe signal_values
+#tags: biosignals, indicators, pyphysio, hrv, ecg_signal
+#input: dataframe dataframe
 #input: column column
-#input: double resampling_frequency
+#input: double resampling_frequency = 4
 #input: double step
 #input: double width
 #output: dataframe out
@@ -13,10 +13,10 @@ import numpy as np
 import pyphysio as ph
 
 extracted = ph.UnevenlySignal(
-    values=signal_values[column],
+    values=dataframe[column],
     signal_type='ibi',
     start_time=0,
-    x_values=np.cumsum(signal_values[column]),
+    x_values=np.cumsum(dataframe[column]),
     x_type='instants'
 )
 

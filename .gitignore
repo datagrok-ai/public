@@ -20,6 +20,12 @@ upload.keys.json
 # Build results
 dist/
 
+# js-api
+/js-api/src/*.js
+/js-api/grok.js
+/js-api/dg.js
+/js-api/ui.js
+
 # JSDoc
 /js-api/docs
 .DS_Store
