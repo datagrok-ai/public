@@ -1,6 +1,30 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-04-08 Dev build 0.89.35
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.89.35`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Demo data: added Chembl-4000 csv. 
+* JS API: Migrate to Typescript 
+* Biosignals: use scripting capabilities dynamically (WIP)
+* JS: Ability to get HTML editor for function 
+* display molecules or fragments that fail to kekulized with delocalized bonds rather than showing a cross 
+* (Bug) Heat Map: columns do not resize 
+* Ability to create TypeScript packages (grok create PackageName -ts) 
+* Wiki: Harmonization (WIP)
+* ClinicalCase \- a plugin for analyzing SDTM-based clinical studies data (WIP)
+* Updated public token 
+
+
 # 2021-04-07 Dev build 0.89.34
 
 ## Latest Docker Images
