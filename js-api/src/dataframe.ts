@@ -1307,7 +1307,7 @@ export class BitSet {
   /** Creates a {BitSet} from the string representing the bitset.
    * @param {string} zerosOnes - A string containing '1' and '0'.
    * @returns {BitSet} */
-  static fromString(zerosOnes: string) {
+  static fromString(zerosOnes: string): BitSet {
     return new BitSet(api.grok_BitSet_FromString(zerosOnes));
   }
 
@@ -1315,7 +1315,7 @@ export class BitSet {
    * @param {ArrayBuffer} buffer - An array containing 1 and 0.
    * @param {Number} bitLength - count of bits.
    * @returns {BitSet} */
-  static fromBytes(buffer: ArrayBuffer, bitLength: number) {
+  static fromBytes(buffer: ArrayBuffer, bitLength: number): BitSet {
     if (bitLength == null || !Number.isInteger(bitLength) || bitLength < 0)
       bitLength = buffer.byteLength * 8;
     return new BitSet(api.grok_BitSet_FromBytes(buffer, bitLength));
@@ -1325,44 +1325,44 @@ export class BitSet {
    * @param {number} length - Number of bits.
    * @param {Function} f - when specified, Sets all bits by setting i-th bit to the results of f(i)
    * @returns {BitSet} */
-  static create(length: number, f: Function | null) {
+  static create(length: number, f?: IndexPredicate | null): BitSet {
     let bitset = new BitSet(api.grok_BitSet(length));
     if (f != null)
       bitset.init(f);
     return bitset;
   }
 
-  toBinaryString() {
+  toBinaryString(): string {
     return api.grok_BitSet_ToBinaryString(this.d);
   }
 
   /** Number of bits in a bitset
    * @type {number} */
-  get length() {
+  get length(): number {
     return api.grok_BitSet_Get_Length(this.d);
   }
 
   /** Number of set bits
    * @type {number} */
-  get trueCount() {
+  get trueCount(): number {
     return api.grok_BitSet_Get_TrueCount(this.d);
   }
 
   /** Number of unset bits
    * @type {number}*/
-  get falseCount() {
+  get falseCount(): number {
     return api.grok_BitSet_Get_FalseCount(this.d);
   }
 
   /** Clones a bitset
    *  @returns {BitSet} */
-  clone() {
+  clone(): BitSet {
     return new BitSet(api.grok_BitSet_Clone(this.d));
   }
 
   /** Inverts a bitset.
    * @returns {BitSet} */
-  invert() {
+  invert(): BitSet {
     api.grok_BitSet_Invert(this.d);
     return this;
   }
@@ -1371,7 +1371,7 @@ export class BitSet {
    * @param {boolean} x
    * @param {boolean} notify
    * @returns {BitSet} */
-  setAll(x: boolean, notify = true) {
+  setAll(x: boolean, notify: boolean = true): BitSet {
     api.grok_BitSet_SetAll(this.d, x, notify);
     return this;
   }
@@ -1380,7 +1380,7 @@ export class BitSet {
    * @param {number} i - index
    * @param {boolean} x
    * @returns {number} */
-  findNext(i: number, x: boolean) {
+  findNext(i: number, x: boolean): number {
     return api.grok_BitSet_FindNext(this.d, i, x);
   }
 
@@ -1388,14 +1388,14 @@ export class BitSet {
    * @param {number} i - Index to start searching from.
    * @param {boolean} x - Value to search for.
    * @returns {number} */
-  findPrev(i: number, x: boolean) {
+  findPrev(i: number, x: boolean): number {
     return api.grok_BitSet_FindPrev(this.d, i, x);
   }
 
   /** Gets i-th bit
    * @param {number} i
    * @returns {boolean} */
-  get(i: number) {
+  get(i: number): boolean {
     return api.grok_BitSet_GetBit(this.d, i);
   }
 
@@ -1403,12 +1403,12 @@ export class BitSet {
    * @param {number} i
    * @param {boolean} x
    * @param {boolean} notify */
-  set(i: number, x: boolean, notify = true) {
+  set(i: number, x: boolean, notify: boolean = true): void {
     api.grok_BitSet_SetBit(this.d, i, x, notify);
   }
 
   /** Sets [i]-th bit to [value], does not check bounds */
-  setFast(i: number, value: boolean) {
+  setFast(i: number, value: boolean): void {
     let buf = api.grok_BitSet_GetBuffer(this.d);
     let idx = (i | 0) / 0x20;
 
@@ -1421,7 +1421,7 @@ export class BitSet {
   /** Sets all bits by setting i-th bit to the results of f(i)
    * @param {Function} f
    * @returns {BitSet} */
-  init(f: Function) {
+  init(f: IndexPredicate): BitSet {
     let buf = api.grok_BitSet_Get_Buffer(this.d);
     let length = this.length;
 
@@ -1441,24 +1441,24 @@ export class BitSet {
 
   /** Indexes of all set bits. The result is cached.
    *  @returns {Int32Array} */
-  getSelectedIndexes() {
+  getSelectedIndexes(): Int32Array {
     return api.grok_BitSet_GetSelectedIndexes(this.d);
   }
 
   /** Copies the content from the other {BitSet}.
    * @param {BitSet} b - BitSet to copy from.
    * @returns {BitSet} */
-  copyFrom(b: BitSet) {
+  copyFrom(b: BitSet): BitSet {
     api.grok_BitSet_CopyFrom(this.d, b.d);
     return this;
   }
 
-  fireChanged() {
+  fireChanged(): void {
     api.grok_BitSet_FireChanged(this.d);
   }
 
   /** @returns {Observable} - fires when the bitset gets changed. */
-  get onChanged() {
+  get onChanged(): Observable<any> {
     return observeStream(api.grok_BitSet_Changed(this.d));
   }
 
@@ -1466,12 +1466,12 @@ export class BitSet {
    * @param {BitSet} b - second BitSet.
    * @param {SimilarityMetric} metric - similarity metric to use.
    * @returns {number} */
-  similarityTo(b: BitSet, metric: SimilarityMetric = SIMILARITY_METRIC.TANIMOTO) {
+  similarityTo(b: BitSet, metric: SimilarityMetric = SIMILARITY_METRIC.TANIMOTO): number {
     return api.grok_BitSet_SimilarityTo(this.d, b.d, metric);
   }
 
   /** @returns {string} */
-  toString() {
+  toString(): string {
     return api.grok_Object_ToString(this.d);
   }
 
@@ -1486,7 +1486,7 @@ export class BitSet {
 export class Stats {
   private readonly d: any;
 
-constructor(d: any) {
+  constructor(d: any) {
     this.d = d;
   }
 
@@ -1494,97 +1494,97 @@ constructor(d: any) {
    * @param {Column} col
    * @param {BitSet} mask
    * @returns {Stats} */
-  static fromColumn(col: Column, mask = null) {
+  static fromColumn(col: Column, mask: BitSet | null = null): Stats {
     return new Stats(api.grok_Stats_FromColumn(col.d, toDart(mask)));
   }
 
   /** Total number of values (including missing values). */
-  get totalCount() {
+  get totalCount(): number {
     return api.grok_Stats_Get_TotalCount(this.d);
   }
 
   /** Number of missing (empty) values. */
-  get missingValueCount() {
+  get missingValueCount(): number {
     return api.grok_Stats_Get_MissingValueCount(this.d);
   }
 
   /** Number of non-empty values. */
-  get valueCount() {
+  get valueCount(): number {
     return api.grok_Stats_Get_ValueCount(this.d);
   }
 
   /** @returns {number} - minimum */
-  get min() {
+  get min(): number {
     return api.grok_Stats_Get_Min(this.d);
   }
 
   /** @returns {number} - maximum */
-  get max() {
+  get max(): number {
     return api.grok_Stats_Get_Max(this.d);
   }
 
   /** @returns {number} - sum */
-  get sum() {
+  get sum(): number {
     return api.grok_Stats_Get_Sum(this.d);
   }
 
   /** @returns {number} - average */
-  get avg() {
+  get avg(): number {
     return api.grok_Stats_Get_Avg(this.d);
   }
 
   /** @returns {number} - standard deviation */
-  get stdev() {
+  get stdev(): number {
     return api.grok_Stats_Get_Stdev(this.d);
   }
 
   /** @returns {number} - variance */
-  get variance() {
+  get variance(): number {
     return api.grok_Stats_Get_Variance(this.d);
   }
 
   /** @returns {number} - skewness */
-  get skew() {
+  get skew(): number {
     return api.grok_Stats_Get_Skew(this.d);
   }
 
   /** @returns {number} - kurtosis */
-  get kurt() {
+  get kurt(): number {
     return api.grok_Stats_Get_Kurt(this.d);
   }
 
   /** @returns {number} - median value */
-  get med() {
+  get med(): number {
     return api.grok_Stats_Get_Med(this.d);
   }
 
   /** @returns {number} - first quartile */
-  get q1() {
+  get q1(): number {
     return api.grok_Stats_Get_Q1(this.d);
   }
 
   /** @returns {number} - second quartile */
-  get q2() {
+  get q2(): number {
     return api.grok_Stats_Get_Q2(this.d);
   }
 
   /** @returns {number} - third quartile */
-  get q3() {
+  get q3(): number {
     return api.grok_Stats_Get_Q3(this.d);
   }
 
   /** Pearson correlation
    * @param {Column} otherColumn
    * @returns {number} */
-  corr(otherColumn: Column) { return api.grok_Stats_Corr(this.d, otherColumn.d); }
+  corr(otherColumn: Column): number { return api.grok_Stats_Corr(this.d, otherColumn.d); }
 
   /** Spearman correlation
    * @param {Column} otherColumn
    * @returns {number} */
-  spearmanCorr(otherColumn: Column) { return api.grok_Stats_SpearmanCorr(this.d, otherColumn.d); }
+  spearmanCorr(otherColumn: Column): number { return api.grok_Stats_SpearmanCorr(this.d, otherColumn.d); }
 
   /** @returns {string} */
-  toString() {
+  toString(): string {
     return api.grok_Object_ToString(this.d);
   }
 }
@@ -1595,7 +1595,7 @@ constructor(d: any) {
  * {@link uniqueCount}, {@link missingValueCount}, {@link valueCount}, {@link min}, {@link max}, {@link sum},
  * {@link avg}, {@link stdev}, {@link variance}, {@link q1}, {@link q2}, {@link q3}.
  *
- * When the query is constructured, execute it by calling {@link aggregate}, which will
+ * When the query is constructed, execute it by calling {@link aggregate}, which will
  * produce a {@link DataFrame}.
  *
  * See samples: {@link https://public.datagrok.ai/js/samples/data-frame/aggregation}
@@ -1609,13 +1609,13 @@ constructor(d: any) {
 export class GroupByBuilder {
   private readonly d: any;
 
-constructor(d: any) {
+  constructor(d: any) {
     this.d = d;
   }
 
   /** Performs the aggregation
    *  @returns {DataFrame} */
-  aggregate() {
+  aggregate(): DataFrame {
     return new DataFrame(api.grok_GroupByBuilder_Aggregate(this.d));
   }
 
@@ -1626,24 +1626,26 @@ constructor(d: any) {
    * @param {string} resultColName - Name of the resulting column. Default value is agg(colName).
    * @returns {GroupByBuilder}
    * */
-  add(agg: AggregationType, colName: string | null, resultColName: string | null) {
+  add(agg: AggregationType, colName?: string | null, resultColName?: string | null): GroupByBuilder {
     api.grok_GroupByBuilder_Add(this.d, agg, colName, resultColName);
     return this;
   }
 
-  /** Adds a key column to group values on. Call {@link aggregate} when the query is constructed.
+  /** Adds a key column to group values on.
+   * Call {@link aggregate} when the query is constructed.
    * @param {string} srcColName - column name in the source table
    * @param {string} [resultColName] - column name in the resulting DataFrame
    * @returns {GroupByBuilder} */
-  key(srcColName: string, resultColName = null) {
+  key(srcColName: string, resultColName: string | null = null): GroupByBuilder {
     return this.add(AGG.KEY, srcColName, resultColName);
   }
 
-  /** Adds a column to pivot values on. Call {@link aggregate} when the query is constructed.
+  /** Adds a column to pivot values on.
+   * Call {@link aggregate} when the query is constructed.
    * @param {string} srcColName - column name in the source table
    * @param {string} [resultColName] - column name in the resulting DataFrame
    * @returns {GroupByBuilder} */
-  pivot(srcColName: string, resultColName = null) {
+  pivot(srcColName: string, resultColName: string | null = null): GroupByBuilder {
     return this.add(AGG.PIVOT, srcColName, resultColName);
   }
 
@@ -1652,7 +1654,7 @@ constructor(d: any) {
    * Call {@link aggregate} when the query is constructed.
    * @param {string} [resultColName] - column name in the resulting DataFrame
    * @returns {GroupByBuilder} */
-  count(resultColName = 'count') {
+  count(resultColName: string = 'count'): GroupByBuilder {
     return this.add(AGG.TOTAL_COUNT, null, resultColName);
   }
 
@@ -1662,17 +1664,17 @@ constructor(d: any) {
    * @param {string} srcColName - column name in the source table
    * @param {string} [resultColName] - column name in the resulting DataFrame
    * @returns {GroupByBuilder} */
-  uniqueCount(srcColName: string, resultColName = null) {
+  uniqueCount(srcColName: string, resultColName: string | null = null): GroupByBuilder {
     return this.add(AGG.UNIQUE_COUNT, srcColName, resultColName);
   }
 
-  /** Adds an aggregation that counts number of missing values in the speficied column.
+  /** Adds an aggregation that counts number of missing values in the specified column.
    * See also {@link count}, {@link valueCount}, {@link uniqueCount}, {@link missingValueCount}
    * Call {@link aggregate} when the query is constructed.
    * @param {string} srcColName - column name in the source table
    * @param {string} [resultColName] - column name in the resulting DataFrame
    * @returns {GroupByBuilder} */
-  missingValueCount(srcColName: string, resultColName = null) {
+  missingValueCount(srcColName: string, resultColName: string | null = null): GroupByBuilder {
     return this.add(AGG.MISSING_VALUE_COUNT, srcColName, resultColName);
   }
 
@@ -1682,7 +1684,7 @@ constructor(d: any) {
    * @param {string} srcColName - column name in the source table
    * @param {string} [resultColName] - column name in the resulting DataFrame
    * @returns {GroupByBuilder} */
-  valueCount(srcColName: string, resultColName = null) {
+  valueCount(srcColName: string, resultColName: string | null = null): GroupByBuilder {
     return this.add(AGG.VALUE_COUNT, srcColName, resultColName);
   }
 
@@ -1691,7 +1693,7 @@ constructor(d: any) {
    * @param {string} srcColName - column name in the source table
    * @param {string} [resultColName] - column name in the resulting DataFrame
    * @returns {GroupByBuilder} */
-  min(srcColName: string, resultColName = null) {
+  min(srcColName: string, resultColName: string | null = null): GroupByBuilder {
     return this.add(AGG.MIN, srcColName, resultColName);
   }
 
@@ -1700,7 +1702,7 @@ constructor(d: any) {
    * @param {string} srcColName - column name in the source table
    * @param {string} [resultColName] - column name in the resulting DataFrame
    * @returns {GroupByBuilder} */
-  max(srcColName: string, resultColName = null) {
+  max(srcColName: string, resultColName: string | null = null): GroupByBuilder {
     return this.add(AGG.MAX, srcColName, resultColName);
   }
 
@@ -1709,7 +1711,7 @@ constructor(d: any) {
    * @param {string} srcColName - column name in the source table
    * @param {string} [resultColName] - column name in the resulting DataFrame
    * @returns {GroupByBuilder} */
-  sum(srcColName: string, resultColName = null) {
+  sum(srcColName: string, resultColName: string | null = null): GroupByBuilder {
     return this.add(AGG.SUM, srcColName, resultColName);
   }
 
@@ -1718,7 +1720,7 @@ constructor(d: any) {
    * @param {string} srcColName - column name in the source table
    * @param {string} [resultColName] - column name in the resulting DataFrame
    * @returns {GroupByBuilder} */
-  med(srcColName: string, resultColName = null) {
+  med(srcColName: string, resultColName: string | null = null): GroupByBuilder {
     return this.add(AGG.MED, srcColName, resultColName);
   }
 
@@ -1727,7 +1729,7 @@ constructor(d: any) {
    * @param {string} srcColName - column name in the source table
    * @param {string} [resultColName] - column name in the resulting DataFrame
    * @returns {GroupByBuilder} */
-  avg(srcColName: string, resultColName = null) {
+  avg(srcColName: string, resultColName: string | null = null): GroupByBuilder {
     return this.add(AGG.AVG, srcColName, resultColName);
   }
 
@@ -1736,7 +1738,7 @@ constructor(d: any) {
    * @param {string} srcColName - column name in the source table
    * @param {string} [resultColName] - column name in the resulting DataFrame
    * @returns {GroupByBuilder} */
-  stdev(srcColName: string, resultColName = null) {
+  stdev(srcColName: string, resultColName: string | null = null): GroupByBuilder {
     return this.add(AGG.STDEV, srcColName, resultColName);
   }
 
@@ -1745,7 +1747,7 @@ constructor(d: any) {
    * @param {string} srcColName - column name in the source table
    * @param {string} [resultColName] - column name in the resulting DataFrame
    * @returns {GroupByBuilder} */
-  variance(srcColName: string, resultColName = null) {
+  variance(srcColName: string, resultColName: string | null = null): GroupByBuilder {
     return this.add(AGG.VARIANCE, srcColName, resultColName);
   }
 
@@ -1754,7 +1756,7 @@ constructor(d: any) {
    * @param {string} srcColName - column name in the source table
    * @param {string} [resultColName] - column name in the resulting DataFrame
    * @returns {GroupByBuilder} */
-  q1(srcColName: string, resultColName = null) {
+  q1(srcColName: string, resultColName: string | null = null): GroupByBuilder {
     return this.add(AGG.Q1, srcColName, resultColName);
   }
 
@@ -1763,7 +1765,7 @@ constructor(d: any) {
    * @param {string} srcColName - column name in the source table
    * @param {string} [resultColName] - column name in the resulting DataFrame
    * @returns {GroupByBuilder} */
-  q2(srcColName: string, resultColName = null) {
+  q2(srcColName: string, resultColName: string | null = null): GroupByBuilder {
     return this.add(AGG.Q2, srcColName, resultColName);
   }
 
@@ -1772,7 +1774,7 @@ constructor(d: any) {
    * @param {string} srcColName - column name in the source table
    * @param {string} [resultColName] - column name in the resulting DataFrame
    * @returns {GroupByBuilder} */
-  q3(srcColName: string, resultColName = null) {
+  q3(srcColName: string, resultColName: string | null = null): GroupByBuilder {
     return this.add(AGG.Q3, srcColName, resultColName);
   }
 
@@ -1781,13 +1783,13 @@ constructor(d: any) {
    * @param {string} srcColName - column name in the source table
    * @param {string} [resultColName] - column name in the resulting DataFrame
    * @returns {GroupByBuilder} */
-  first(srcColName: string, resultColName = null) {
+  first(srcColName: string, resultColName: string | null = null): GroupByBuilder {
     return this.add(AGG.FIRST, srcColName, resultColName);
   }
 
   /** Gets groups of DataFrames
    * @returns {Map} - where keys are stings in format 'columnName=value' and values are DataFrames */
-  getGroups() {
+  getGroups(): Map<string, DataFrame> {
     return api.grok_GroupByBuilder_GetGroups(this.d);
   }
 
@@ -1796,7 +1798,7 @@ constructor(d: any) {
    * @input {String|Object} pattern
    * @returns {GroupByBuilder}
    **/
-  where(pattern: string) {
+  where(pattern: string | object): GroupByBuilder {
     api.grok_GroupByBuilder_Where(this.d, pattern);
     return this;
   }
@@ -1804,14 +1806,14 @@ constructor(d: any) {
   /**
    * @param {BitSet} bitset
    * @returns {GroupByBuilder} */
-  whereRowMask(bitset: BitSet) {
+  whereRowMask(bitset: BitSet): GroupByBuilder {
     if (bitset != null)
       api.grok_GroupByBuilder_WhereBitSet(this.d, bitset.d);
     return this;
   }
 
   /** @returns {string} */
-  toString() {
+  toString(): string {
     return api.grok_Object_ToString(this.d);
   }
 }
