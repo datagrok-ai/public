@@ -2,7 +2,7 @@
 
 let grid = grok.shell.addTableView(grok.data.demo.demog()).grid;
 
-grid.onRowResized.subscribe((ev) => {
+grid.onRowsResized.subscribe((ev) => {
   grok.shell.info("Resizing row height: " + (ev.args.dragging ? "in progress" : "done"));
 });
 
