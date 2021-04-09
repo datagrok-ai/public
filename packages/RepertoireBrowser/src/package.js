@@ -11,10 +11,24 @@ export let _package = new DG.Package();
 //name: Repertoire Browser
 //tags: app
 export async function RepertoireBrowserApp() {
-    let tname = grok.shell.tableNames;
-    let view = grok.shell.getTableView(tname[0]);
-    grok.shell.v = view;
-    launchBrowser(view);
+    let loaded;
+    if (loaded == undefined) {
+        let tname = grok.shell.tableNames;
+        let view = null;
+        if (tname === null || tname.length === 0) {
+            let df = (await grok.functions.eval('OpenServerFile("Dskatov:RepertoireBrowser/RepertoireBrowserSample.csv")'))[0];
+            view = grok.shell.addTableView(df);
+        } else {
+            view = grok.shell.getTableView(tname[0]);
+        }
+        grok.shell.v = view;
+        await launchBrowser(view);
+        loaded = true;
+    }
+    // let tname = grok.shell.tableNames;
+    // let view = grok.shell.getTableView(tname[0]);
+    // grok.shell.v = view;
+    // launchBrowser(view);
 }
 
 //name: launchBrowser
@@ -515,8 +529,8 @@ export async function launchBrowser(view) {
     acc_ptm.addPane('ptm list', () => ui.inputs([ptm_choice]));
     root.append(acc_ptm.root);
 
-    root.appendChild(ui.h3('Save/Load'));
-    await save_load(table, root);
+    // root.appendChild(ui.h3('Save/Load'));
+    // await save_load(table, root);
     grok.shell.o = root;
 
     var ngl_host = ui.div([],'d4-ngl-viewer');
