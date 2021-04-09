@@ -427,6 +427,9 @@ export class Grid extends Viewer {
   get onColumnResized(): Observable<any> {
     return __obs('d4-grid-column-resized', this.d);
   }
+  get onRowsResized(): Observable<any> {
+    return __obs('d4-grid-rows-resized', this.d);
+  }
 }
 
 
