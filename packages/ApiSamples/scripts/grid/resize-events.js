@@ -1,23 +1,11 @@
-//name: event-on-grid-resize
-//tags: demo
-//language: javascript
-//
-let t = grok.data.demo.demog()
-let view = grok.shell.addTableView(t);
+// Handling of column and row resizing
 
-view.grid.onRowResized.subscribe(function (ev) {
-  if (ev.args.dragging)
-    console.log("Row resize in progress");
-  else
-    grok.shell.info("Row Resized!");
+let grid = grok.shell.addTableView(grok.data.demo.demog()).grid;
+
+grid.onRowResized.subscribe((ev) => {
+  grok.shell.info("Resizing row height: " + (ev.args.dragging ? "in progress" : "done"));
 });
 
-
-view.grid.onColumnResized.subscribe(function (ev) {
-  if (ev.args.dragging)
-    console.log("Col resize in progress");
-  else
-    grok.shell.info("Column resized!");
+grid.onColumnResized.subscribe((ev) => {
+  grok.shell.info(`Resizing ${ev.args.column.name}: ` + (ev.args.dragging ? "in progress" : "done"));
 });
-
-
