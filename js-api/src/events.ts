@@ -2,6 +2,7 @@ import * as rxjs from 'rxjs';
 import * as rxjsOperators from 'rxjs/operators';
 import {toJs} from './wrappers';
 import {Observable} from "rxjs";
+import { Package } from './entities';
 
 let api = <any>window;
 
@@ -191,6 +192,8 @@ export class Events {
   /** @returns {rxjs.Observable} */ get onViewerClosed() {
     return __obs('d4-viewer-closed');
   }
+
+  get onPackageLoaded(): rxjs.Observable<Package> { return __obs('d4-package-loaded'); }
 }
 
 /*

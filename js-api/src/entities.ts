@@ -22,62 +22,36 @@ export class Entity {
 
   /** Entity ID (GUID)
    *  @type {string} */
-  get id() {
-    return api.grok_Entity_Get_Id(this.d);
-  }
-
-  set id(x) {
-    api.grok_Entity_Set_Id(this.d, x);
-  }
+  get id(): string { return api.grok_Entity_Get_Id(this.d); }
+  set id(x: string) { api.grok_Entity_Set_Id(this.d, x); }
 
   /** Entity friendly name
    *  @type {string} */
-  get friendlyName() {
-    return api.grok_Entity_Get_FriendlyName(this.d);
-  }
+  get friendlyName(): string { return api.grok_Entity_Get_FriendlyName(this.d); }
+  set friendlyName(x: string) { api.grok_Entity_Set_FriendlyName(this.d, x); }
 
-  set friendlyName(x) {
-    api.grok_Entity_Set_FriendlyName(this.d, x);
-  }
+  /** Entity short name */
+  get name(): string { return api.grok_Entity_Get_Name(this.d); }
+  set name(x: string) { api.grok_Entity_Set_Name(this.d, x); }
 
-  /** Entity short name
-   *  @type {string} */
-  get name() {
-    return api.grok_Entity_Get_Name(this.d);
-  }
+  /** Entity full-qualified name */
+  get nqName(): string { return api.grok_Entity_Get_nqName(this.d); }
 
-  set name(x) {
-    api.grok_Entity_Set_Name(this.d, x);
-  }
+  /** Entity path */
+  get path(): string { return api.grok_Entity_Path(this.d); }
 
-  /** Entity full-qualified name
-   *  @type {string} */
-  get nqName() {
-    return api.grok_Entity_Get_nqName(this.d);
-  }
-
-  /** Entity path
-   *  @type {string} */
-  get path() {
-    return api.grok_Entity_Path(this.d);
-  }
-
-  /** Returns entity properties
-   * @returns {Promise<Map>} props */
-  getProperties() {
+  /** Entity properties */
+  getProperties(): Promise<Map<string, any>> {
     return new Promise((resolve, reject) => api.grok_EntitiesDataSource_GetProperties(grok.dapi.entities.s, this.d, (p: any) => resolve(p), (e: any) => reject(e)));
   }
 
-  /** Allows to set properties for entity
-   * @param {Map} props
-   * @returns Promise */
-  setProperties(props: Map<string, any>) {
+  /** Sets entity properties */
+  setProperties(props: Map<string, any>): Promise<any> {
     return new Promise((resolve, reject) => api.grok_EntitiesDataSource_SetProperties(grok.dapi.entities.s, this.d, props, (_: any) => resolve(_), (e: any) => reject(e)));
   }
 
-  /** Returns a string representing the object
-   * @returns {string} */
-  toString() {
+  /** Returns a string representing the object */
+  toString(): string {
     return api.grok_Object_ToString(this.d);
   }
 }
@@ -737,7 +711,7 @@ export class Package extends Entity {
 
   /** Returns properties for package
    * @returns {Promise<object>} */
-  getProperties() {
+  getProperties(): Promise<Map<string, any>> {
     return new Promise((resolve, reject) => api.grok_Package_Get_Properties(this.name, (c: any) => {
       resolve(c);
     }, (e: any) => reject(e)));
@@ -885,33 +859,6 @@ export class Property {
   }
 }
 
-export class SemanticValue {
-  private readonly d: any;
-
-  constructor(d: any) {
-    this.d = d;
-  }
-
-  static fromValueType(value: any, semType: SemType) {
-    return new SemanticValue(api.grok_SemanticValue(value, semType));
-  }
-
-  get value() {
-    return api.grok_SemanticValue_Get_Value(this.d);
-  }
-
-  set value(x) {
-    api.grok_SemanticValue_Set_Value(this.d, x);
-  }
-
-  get semType() {
-    return api.grok_SemanticValue_Get_SemType(this.d);
-  }
-
-  set semType(x) {
-    api.grok_SemanticValue_Set_SemType(this.d, x);
-  }
-}
 
 export class DateTime {
   public d: any;
