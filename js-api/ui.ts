@@ -13,7 +13,7 @@ import $ from 'cash-dom';
 import {__obs} from './src/events';
 import {_isDartium, _options} from './src/utils';
 import * as rxjs from 'rxjs';
-import { CanvasRenderer, GridCellRenderer } from './src/grid';
+import { CanvasRenderer, GridCellRenderer, SemanticValue } from './src/grid';
 import { DateTime } from './src/entities';
 import { Column, DataFrame } from './src/dataframe';
 
@@ -558,18 +558,20 @@ export class Tooltip {
 export let tooltip = new Tooltip();
 
 export class ObjectHandlerResolutionArgs {
-  object: object;
+  semValue: SemanticValue;
   context: object | null;
-  handler: null;
+  handler: ObjectHandler | null;
 
-  constructor(object: object, context: object | null) {
-    this.object = object;
+  get value(): any { return this.semValue.value; }
+
+  constructor(semValue: SemanticValue, context: object | null) {
+    this.semValue = semValue;
     this.context = context;
     this.handler = null;
   }
 }
 
-let _objectHandlerSubject = new rxjs.Subject();
+let _objectHandlerSubject = new rxjs.Subject<ObjectHandlerResolutionArgs>();
 
 /**
  * Override the corresponding methods, and {@link register} an instance to
@@ -589,6 +591,10 @@ export class ObjectHandler {
   get type(): string {
     throw 'Not defined.';
   }
+
+  get name(): string { return `${this.type} handler`; }
+
+  toString(): string { return this.name; }
 
   /**
    * Override this method to check whether this meta class should handle the specified object.
@@ -616,44 +622,32 @@ export class ObjectHandler {
     return null;
   }
 
-  /** Renders icon for the item.
-   * @param x - item
-   * @returns {Element} */
+  /** Renders icon for the item. */
   renderIcon(x: any, context: any = null): HTMLDivElement {
     return divText(this.getCaption(x));
   }
 
-  /** Renders markup for the item.
-   * @param x - item
-   * @returns {Element} */
+  /** Renders markup for the item. */
   renderMarkup(x: any, context: any = null): HTMLDivElement {
     return divText(this.getCaption(x));
   }
 
-  /** Renders tooltip for the item.
-   * @param x - item
-   * @returns {Element} */
+  /** Renders tooltip for the item. */
   renderTooltip(x: any, context: any = null): HTMLDivElement {
     return divText(this.getCaption(x));
   }
 
-  /** Renders card div for the item.
-   * @param x - item
-   * @returns {Element} */
+  /** Renders card div for the item. */
   renderCard(x: any, context: any = null): HTMLDivElement {
     return divText(this.getCaption(x));
   }
 
-  /** Renders properties list for the item.
-   * @param x - item
-   * @returns {Element} */
+  /** Renders properties list for the item. */
   renderProperties(x: any, context: any = null): HTMLDivElement {
     return divText(this.getCaption(x));
   }
 
-  /** Renders view for the item.
-   * @param x - item
-   * @returns {Element} */
+  /** Renders view for the item. */
   renderView(x: any, context: any = null): HTMLDivElement {
     return this.renderProperties(x);
   }
@@ -661,8 +655,7 @@ export class ObjectHandler {
   /** Gets called once upon the registration of meta export class. */
   init(): void { }
 
-  /** Registers entity handler.
-   * @param {ObjectHandler} meta */
+  /** Registers entity handler. */
   static register(meta: ObjectHandler): void {
     api.grok_Meta_Register(meta);
     let cellRenderer = meta.getGridCellRenderer();
@@ -670,27 +663,27 @@ export class ObjectHandler {
       GridCellRenderer.register(cellRenderer);
   }
 
-  /** @returns {ObjectHandler[]} */
   static list(): ObjectHandler[] {
     return toJs(api.grok_Meta_List());
   }
 
-  static onResolve(observer: rxjs.PartialObserver<unknown> | undefined): rxjs.Subscription {
+  static onResolve(observer: rxjs.PartialObserver<ObjectHandlerResolutionArgs>): rxjs.Subscription {
     return _objectHandlerSubject.subscribe(observer);
   }
 
-  /**
-   * @param {Object} object
-   * @param {Object} context
-   * @returns {ObjectHandler}
-   * */
   static forEntity(object: object, context: object | null = null): ObjectHandler | null {
-    let args = new ObjectHandlerResolutionArgs(object, context);
+    let semValue = object instanceof SemanticValue ? object : SemanticValue.fromValueType(object, null);
+
+    let args = new ObjectHandlerResolutionArgs(semValue, context);
     _objectHandlerSubject.next(args);
     if (args.handler !== null)
       return args.handler;
 
     return toJs(api.grok_Meta_ForEntity(toDart(object)));
+  }
+
+  static forSemType(semType: string): Promise<ObjectHandler[]> {
+    return new Promise((resolve, reject) => api.grok_Meta_ForSemType(semType, (t: any) => resolve(toJs(t)), (e: any) => reject(e)));
   }
 
   /**

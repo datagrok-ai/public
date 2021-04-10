@@ -1,4 +1,5 @@
-// Programmatically resolving an ObjectHandler
+// Synchronous programmatic ObjectHandler resolution.
+// See dynamic-loading.js for dynamic resolution based on the semType
 
 class AppleHandler extends DG.ObjectHandler {
   get type() { return 'fruit / apple' }
@@ -9,9 +10,9 @@ class OrangeHandler extends DG.ObjectHandler {
 }
 
 DG.ObjectHandler.onResolve((args) => {
-  if (args.object === 'apple')
+  if (args.value === 'apple')
     args.handler = new AppleHandler();
-  if (args.object === 'orange')
+  if (args.value === 'orange')
     args.handler = new OrangeHandler();
 })
 

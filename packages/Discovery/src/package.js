@@ -2,7 +2,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from "datagrok-api/dg";
-import {PlateHandler, PlateGridCellRenderer} from "./plate-handler.js";
+import * as plt from "./plate-handler.js";
+import {BriefPlateHandler, BriefPlateRenderer, FullPlateHandler, FullPlateRenderer} from "./plate-handler.js";
 
 export let _package = new DG.Package();
 let carsView;
@@ -10,6 +11,10 @@ let carsView;
 //name: Discovery
 //tags: app
 export function startApp() {
+
+  // todo: figure out why it auto-starts
+  return;
+
   grok.shell.windows.showToolbox = false;
   grok.shell.windows.showHelp = false;
   grok.shell.windows.showConsole = false;
@@ -107,16 +112,32 @@ export async function countToTen(s, progress) {
   return `result: ${s}`
 }
 
+
+
+//name: fullPlateRenderer
+//tags: cellRenderer, cellRenderer-demo_plate
+//meta-cell-renderer-sem-type: demo_plate
+//output: grid_cell_renderer result
+export function fullPlateRenderer() {
+  return new plt.FullPlateRenderer();
+}
+
 //name: plateCellRenderer
 //tags: cellRenderer, cellRenderer-demo_plate
 //meta-cell-renderer-sem-type: demo_plate
 //output: grid_cell_renderer result
-export function plateCellRenderer() {
-  return new PlateGridCellRenderer();
+export function briefPlateCellRenderer() {
+  return new plt.BriefPlateRenderer();
 }
 
 //tags: objectHandler, objectHandler-plate
 //output: object_handler result
 export function getPlateHandler() {
-  return new PlateHandler();
+  return new plt.FullPlateHandler();
+}
+
+//tags: objectHandler, objectHandler-plate
+//output: object_handler result
+export function getBriefPlateHandler() {
+  return new plt.BriefPlateHandler();
 }

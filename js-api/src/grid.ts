@@ -5,6 +5,7 @@ import {__obs, _sub, EventData, StreamSubscription} from "./events";
 import {_identityInt32} from "./utils";
 import { Observable } from "rxjs";
 import { RangeSlider } from "./widgets";
+import {SemType} from "./const";
 
 
 let api = <any>window;
@@ -538,4 +539,30 @@ export class GridCellRenderer extends CanvasRenderer {
   static register(renderer: any) {
     api.grok_GridCellRenderer_Register(renderer);
   }
+}
+
+
+export class SemanticValue {
+  private readonly d: any;
+
+  constructor(d: any) {
+    this.d = d;
+  }
+
+  static fromValueType(value: any, semType: SemType | null) {
+    return new SemanticValue(api.grok_SemanticValue(value, semType));
+  }
+
+  get value(): any { return api.grok_SemanticValue_Get_Value(this.d); }
+  set value(x: any) { api.grok_SemanticValue_Set_Value(this.d, x); }
+
+  get semType(): string { return api.grok_SemanticValue_Get_SemType(this.d); }
+  set semType(x: string) { api.grok_SemanticValue_Set_SemType(this.d, x); }
+
+  getMeta(name: string): any { return api.grok_SemanticValue_Get_Meta(name); }
+  setMeta(name: string, value: any): void { api.grok_SemanticValue_Set_Meta(name, toDart(value)); }
+
+  get cell(): Cell { return api.grok_SemanticValue_Get_Cell(this.d); }
+  get gridCell(): GridCell { return this.getMeta('gridCell'); }
+  get viewer(): Viewer { return this.getMeta('viewer'); }
 }
