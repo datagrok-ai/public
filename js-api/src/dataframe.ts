@@ -528,7 +528,7 @@ export class Row {
     this.idx = idx;
 
     return new Proxy(this, {
-      set(target, name:string, value) {
+      set(target, name: string, value) {
         if (target.hasOwnProperty(name)) {
           Object.entries(target)[<any>name] = value;
           return true;
@@ -1158,6 +1158,7 @@ export class ValueMatcher {
 export class RowList {
   private readonly d: any;
   private readonly table: any;
+
   constructor(table: DataFrame, d: any) {
     /** @member {DataFrame} */
     this.table = table;
@@ -1252,7 +1253,7 @@ export class RowList {
 export class Cell {
   public d: any;
 
-constructor(d: any) {
+  constructor(d: any) {
     this.d = d;
   }
 

@@ -166,7 +166,7 @@ export class ViewBase {
   /** 
    * Appends an item to this view. Use {@link appendAll} for appending multiple elements.
    * @param {Object} item */
-  append(item: HTMLElement): HTMLElement {
+  append(item: any): HTMLElement {
     return this.appendAll([ui.render(item)]);
   }
 
