@@ -1,4 +1,5 @@
-import {SemType, Type, TYPE} from "./const";
+import {ColumnType, SemType, Type, TYPE} from "./const";
+import { FuncCall } from "./functions";
 import {toJs} from "./wrappers";
 
 declare var grok: any;
@@ -51,9 +52,8 @@ export class Entity {
   }
 
   /** Returns a string representing the object */
-  toString(): string {
-    return api.grok_Object_ToString(this.d);
-  }
+  toString(): string { return api.grok_Object_ToString(this.d); }
+
 }
 
 /**
@@ -66,67 +66,35 @@ export class User extends Entity {
     super(d);
   }
 
-  static fromId(id: string) {
-    return new User(api.grok_User_From_Id(id));
-  }
+  static fromId(id: string): User { return new User(api.grok_User_From_Id(id)); }
 
-  static current() {
-    return new User(api.grok_User());
-  }
+  static current(): User { return new User(api.grok_User()); }
 
-  /** First name
-   * @type {string} */
-  get firstName() {
-    return api.grok_User_Get_FirstName(this.d);
-  }
+  /** First name */
+  get firstName(): string { return api.grok_User_Get_FirstName(this.d); }
 
-  /** Last name
-   * @type {string} */
-  get lastName() {
-    return api.grok_User_Get_LastName(this.d);
-  }
+  /** Last name */
+  get lastName(): string { return api.grok_User_Get_LastName(this.d); }
 
-  /** Email
-   * @type {string} */
-  get email() {
-    return api.grok_User_Get_Email(this.d);
-  }
+  /** Email */
+  get email(): string | null { return api.grok_User_Get_Email(this.d); }
 
-  /** Picture URL
-   * @type {string} */
-  get picture() {
-    return api.grok_User_Get_Picture(this.d);
-  }
+  /** Picture URL */
+  get picture(): string | object { return api.grok_User_Get_Picture(this.d); }
 
-  /** User home project
-   * @type {Project} */
-  get project() {
-    return toJs(api.grok_User_Get_Project(this.d));
-  }
+  /** User home project */
+  get project(): Project { return toJs(api.grok_User_Get_Project(this.d)); }
 
-  /** User home folder connection
-   * @type {Project} */
-  get home() {
-    return toJs(api.grok_User_Get_Storage(this.d));
-  }
+  /** User home folder connection */
+  get home(): DataConnection { return toJs(api.grok_User_Get_Storage(this.d)); }
 
-  /** Login
-   *  @type {string} */
-  get login() {
-    return api.grok_User_Get_Login(this.d);
-  }
+  /** Login */
+  get login(): string { return api.grok_User_Get_Login(this.d); }
 
-  /** */
-  toMarkup() {
-    return api.grok_User_ToMarkup(this.d);
-  }
+  toMarkup(): string { return api.grok_User_ToMarkup(this.d); }
 
-  /** Security Group
-   * @type Group
-   */
-  get group() {
-    return toJs(api.grok_User_Get_Group(this.d))
-  }
+  /** Security Group */
+  get group(): Group { return toJs(api.grok_User_Get_Group(this.d)); }
 }
 
 
@@ -140,33 +108,17 @@ export class UserSession extends Entity {
     super(d);
   }
 
-  /** Entity ID (GUID)
-   *  @type {string} */
-  get id() {
-    return api.grok_Entity_Get_Id(this.d);
-  }
+  /** Entity ID (GUID) */
+  get id(): string { return api.grok_Entity_Get_Id(this.d); }
+  set id(x: string) { api.grok_Entity_Set_Id(this.d, x); }
 
-  set id(x) {
-    api.grok_Entity_Set_Id(this.d, x);
-  }
+  get type(): string { return api.grok_UserSession_Get_Type(this.d); }
 
-  /** Login
-   *  @type {string} */
-  get type() {
-    return api.grok_UserSession_Get_Type(this.d);
-  }
+  /** External Token */
+  get externalToken(): string { return api.grok_UserSession_Get_ExternalToken(this.d); }
 
-  /** External Token
-   *  @type {string} */
-  get externalToken() {
-    return api.grok_UserSession_Get_ExternalToken(this.d);
-  }
-
-  /** User
-   *  @type {User} */
-  get user() {
-    return toJs(api.grok_UserSession_Get_User(this.d));
-  }
+  /** User */
+  get user(): User { return toJs(api.grok_UserSession_Get_User(this.d)); }
 }
 
 /** Represents a function
@@ -182,7 +134,7 @@ export class Func extends Entity {
   /** Returns {@link FuncCall} object in a stand-by state
    * @param {object} parameters
    * @returns {FuncCall} */
-  prepare(parameters = {}) {
+  prepare(parameters: object = {}): FuncCall {
     return toJs(api.grok_Func_Prepare(this.d, parameters));
   };
 }
@@ -193,27 +145,16 @@ export class Project extends Entity {
     super(d);
   }
 
-  /** Project description
-   *  @type {string} */
-  get description() {
-    return api.grok_Project_Description(this.d);
-  }
+  /** Project description */
+  get description(): string { return api.grok_Project_Description(this.d); }
 
-  /** Project changes flag
-   *  @type {string} */
-  get isDirty() {
-    return api.grok_Project_IsDirty(this.d);
-  }
+  /** Project changes flag */
+  get isDirty(): boolean { return api.grok_Project_IsDirty(this.d); }
 
-  /** Project is empty flag
-   *  @type {string} */
-  get isEmpty() {
-    return api.grok_Project_IsEmpty(this.d);
-  }
+  /** Project is empty flag */
+  get isEmpty(): boolean { return api.grok_Project_IsEmpty(this.d); }
 
-  toMarkup() {
-    return api.grok_Project_ToMarkup(this.d);
-  }
+  toMarkup(): string { return api.grok_Project_ToMarkup(this.d); }
 }
 
 /** Represents a data query
@@ -226,11 +167,8 @@ export class DataQuery extends Func {
     super(d);
   }
 
-  /** Query text
-   *  @type {string} */
-  get query() {
-    return api.grok_Query_Query(this.d);
-  }
+  /** Query text */
+  get query(): string { return api.grok_Query_Query(this.d); }
 }
 
 /** Represents a data job
@@ -254,11 +192,8 @@ export class DataConnection extends Entity {
     super(d);
   }
 
-  /** Collection of parameters: server, database, endpoint, etc.
-   *  @type {object} */
-  get parameters() {
-    return api.grok_DataConnection_Parameters(this.d);
-  }
+  /** Collection of parameters: server, database, endpoint, etc. */
+  get parameters(): object { return api.grok_DataConnection_Parameters(this.d); }
 }
 
 /** Represents a predictive model
@@ -284,33 +219,21 @@ export class Notebook extends Entity {
 
   /** Create Notebook on server for edit.
    * @returns {Promise<string>} Current notebook's name */
-  edit() {
+  edit(): Promise<string> {
     return new Promise((resolve, reject) => api.grok_Notebook_Edit(this.d, (f: any) => resolve(f), (e: any) => reject(e)));
   }
 
-  /** Environment name
-   * @type {string} */
-  get environment() {
-    return api.grok_Notebook_Get_Environment(this.d);
-  }
+  /** Environment name */
+  get environment(): string { return api.grok_Notebook_Get_Environment(this.d); }
+  set environment(e: string) { api.grok_Notebook_Set_Environment(this.d, e); }
 
-  set environment(e) {
-    api.grok_Notebook_Set_Environment(this.d, e);
-  }
-
-  /** Description
-   * @type {string} */
-  get description() {
-    return api.grok_Notebook_Get_Description(this.d);
-  }
-
-  set description(e) {
-    api.grok_Notebook_Set_Description(this.d, e);
-  }
+  /** Description */
+  get description(): string { return api.grok_Notebook_Get_Description(this.d); }
+  set description(e: string) { api.grok_Notebook_Set_Description(this.d, e); }
 
   /** Converts Notebook to HTML code
    * @returns {Promise<string>} */
-  toHtml() {
+  toHtml(): Promise<string> {
     return new Promise((resolve, reject) => api.grok_Notebook_ToHtml(this.d, (html: any) => resolve(html), (e: any) => reject(e)));
   }
 }
@@ -335,42 +258,28 @@ export class FileInfo extends Entity {
     super(d);
   }
 
-  /** Returns path, i.e. `geo/dmv_offices.csv`
-   * @type {string} */
-  get path() {
-    return api.grok_FileInfo_Get_Path(this.d);
-  }
+  /** Returns path, i.e. `geo/dmv_offices.csv` */
+  get path(): string { return api.grok_FileInfo_Get_Path(this.d); }
 
-  /** Returns full path, i.e. `Demo:TestJobs:Files:DemoFiles/geo/dmv_offices.csv`
-   * @type {string} */
-  get fullPath() {
-    return api.grok_FileInfo_Get_FullPath(this.d);
-  }
+  /** Returns full path, i.e. `Demo:TestJobs:Files:DemoFiles/geo/dmv_offices.csv` */
+  get fullPath(): string { return api.grok_FileInfo_Get_FullPath(this.d); }
 
-  /** Returns file extension, i.e. `csv`
-   * @type {string} */
-  get extension() {
-    return api.grok_FileInfo_Get_Extension(this.d);
-  }
+  /** Returns file extension, i.e. `csv` */
+  get extension(): string { return api.grok_FileInfo_Get_Extension(this.d); }
 
-  /** Returns file name, i.e. `dmv_offices.csv`
-   * @type {string} */
-  get fileName() {
-    return api.grok_FileInfo_Get_FileName(this.d);
-  }
+  /** Returns file name, i.e. `dmv_offices.csv` */
+  get fileName(): string { return api.grok_FileInfo_Get_FileName(this.d); }
 
-  /** @returns {string} */
-  get url() {
-    return api.grok_FileInfo_Get_Url(this.d);
-  }
+  /** Returns file URL */
+  get url(): string { return api.grok_FileInfo_Get_Url(this.d); }
 
   /** @returns {Promise<string>} */
-  readAsString() {
+  readAsString(): Promise<string> {
     return new Promise((resolve, reject) => api.grok_FileInfo_ReadAsString(this.d, (x: any) => resolve(x), (x: any) => reject(x)));
   }
 
   /** @returns {Promise<Uint8Array>} */
-  readAsBytes() {
+  readAsBytes(): Promise<Uint8Array> {
     return new Promise((resolve, reject) => api.grok_FileInfo_ReadAsBytes(this.d, (x: any) => resolve(x), (x: any) => reject(x)));
   }
 }
@@ -384,89 +293,55 @@ export class Group extends Entity {
     super(d);
   }
 
-  static create(name: string) {
-    return new Group(api.grok_Group(name));
-  }
+  static create(name: string): Group { return new Group(api.grok_Group(name)); }
 
   /** Adds a member to the group
    * @param {Group} m */
-  addMember(m: Group) {
-    api.grok_Group_Add_Member(this.d, m.d, false);
-  }
+  addMember(m: Group): void { api.grok_Group_Add_Member(this.d, m.d, false); }
 
   /** Adds an admin member to the group
    * @param {Group} m */
-  addAdminMember(m: Group) {
-    api.grok_Group_Add_Member(this.d, m.d, true);
-  }
+  addAdminMember(m: Group): void { api.grok_Group_Add_Member(this.d, m.d, true); }
 
   /** Removes a member from the group
    * @param {Group} m */
-  removeMember(m: Group) {
-    api.grok_Group_Remove_Member(this.d, m.d);
-  }
+  removeMember(m: Group): void { api.grok_Group_Remove_Member(this.d, m.d); }
 
   /** Adds the group to another one
    * @param {Group} m */
-  includeTo(m: Group) {
-    api.grok_Group_Add_Membership(this.d, m.d, false);
-  }
+  includeTo(m: Group): void { api.grok_Group_Add_Membership(this.d, m.d, false); }
 
   /** Adds the group to another one as an admin
    * @param {Group} m */
-  includeAdminTo(m: Group) {
-    api.grok_Group_Add_Membership(this.d, m.d, true);
-  }
+  includeAdminTo(m: Group): void { api.grok_Group_Add_Membership(this.d, m.d, true); }
 
   /** Removes membership from another group
    * @param {Group} m */
-  excludeFrom(m: Group) {
-    api.grok_Group_Remove_Membership(this.d, m.d);
-  }
+  excludeFrom(m: Group): void { api.grok_Group_Remove_Membership(this.d, m.d); }
 
   /** Returns list of groups that belong to group, with no admin permissions
    * @type {Array<Group>} */
-  get members() {
-    return toJs(api.grok_Group_Get_Members(this.d, false));
-  }
+  get members(): Group[] { return toJs(api.grok_Group_Get_Members(this.d, false)); }
 
   /** Returns list of groups that belong to group, with admin permissions
    * @type {Array<Group>} */
-  get adminMembers(): Group[] {
-    return toJs(api.grok_Group_Get_Members(this.d, true));
-  }
+  get adminMembers(): Group[] { return toJs(api.grok_Group_Get_Members(this.d, true)); }
 
   /** Returns list of groups that group belongs to, with no admin permissions
    * @type {Array<Group>} */
-  get memberships() {
-    return toJs(api.grok_Group_Get_Memberships(this.d, false));
-  }
+  get memberships(): Group[] { return toJs(api.grok_Group_Get_Memberships(this.d, false)); }
 
   /** Returns list of groups that group belongs to, with admin permissions
    * @type {list<Group>} */
-  get adminMemberships() {
-    return toJs(api.grok_Group_Get_Memberships(this.d, true));
-  }
+  get adminMemberships(): Group[] { return toJs(api.grok_Group_Get_Memberships(this.d, true)); }
 
-  /** Personal user group
-   * @type {boolean} */
-  get personal() {
-    return api.grok_Group_Get_Personal(this.d);
-  }
+  /** Personal user group */
+  get personal(): boolean { return api.grok_Group_Get_Personal(this.d); }
+  set personal(e: boolean) { api.grok_Group_Set_Personal(this.d, e); }
 
-  set personal(e) {
-    api.grok_Group_Set_Personal(this.d, e);
-  }
-
-  /** Hidden group
-   * @type {boolean} */
-  get hidden() {
-    return api.grok_Group_Get_Hidden(this.d);
-  }
-
-  set hidden(e) {
-    api.grok_Group_Set_Hidden(this.d, e);
-  }
+  /** Hidden group */
+  get hidden(): boolean { return api.grok_Group_Get_Hidden(this.d); }
+  set hidden(e: boolean) { api.grok_Group_Set_Hidden(this.d, e); }
 
 }
 
@@ -479,19 +354,11 @@ export class Script extends Func {
     super(d);
   }
 
-  static create(script: string) {
-    return new Script(api.grok_Script_Create(script));
-  }
+  static create(script: string): Script { return new Script(api.grok_Script_Create(script)); }
 
-  /** Script
-   * @type {string} */
-  get script() {
-    return api.grok_Script_GetScript(this.d);
-  }
-
-  set script(s) {
-    api.grok_Script_SetScript(this.d, s);
-  }
+  /** Script */
+  get script(): string { return api.grok_Script_GetScript(this.d); }
+  set script(s: string) { api.grok_Script_SetScript(this.d, s); }
 }
 
 /** Represents connection credentials
@@ -504,11 +371,8 @@ export class Credentials extends Entity {
     super(d);
   }
 
-  /** Collection of parameters: login, password, API key, etc.
-   *  @type {object} */
-  get parameters() {
-    return api.grok_Credentials_Parameters(this.d);
-  }
+  /** Collection of parameters: login, password, API key, etc. */
+  get parameters(): object { return api.grok_Credentials_Parameters(this.d); }
 }
 
 /** Represents a script environment */
@@ -521,19 +385,16 @@ export class ScriptEnvironment extends Entity {
    * @param {string} name
    * @returns {ScriptEnvironment}
    * */
-  static create(name: string) {
+  static create(name: string): ScriptEnvironment {
     return new ScriptEnvironment(api.grok_ScriptEnvironment_Create(name));
   }
 
-  /** Environment yaml file content
-   * @type {string} */
-  get environment() {
-    return api.grok_ScriptEnvironment_Environment(this.d);
-  }
+  /** Environment yaml file content */
+  get environment(): string { return api.grok_ScriptEnvironment_Environment(this.d); }
 
   /** Setup environment */
-  setup() {
-    return new Promise<void>((resolve, reject) => api.grok_ScriptEnvironment_Setup(this.d, () => resolve(), (e: any) => reject(e)));
+  setup(): Promise<void> {
+    return new Promise((resolve, reject) => api.grok_ScriptEnvironment_Setup(this.d, () => resolve(), (e: any) => reject(e)));
   }
 }
 
@@ -542,11 +403,8 @@ export class LogEventType extends Entity {
     super(d);
   }
 
-  /** Friendly name of the event type
-   * @type {string} */
-  get name() {
-    return api.grok_LogEventType_Get_Name(this.d);
-  }
+  /** Friendly name of the event type */
+  get name(): string { return api.grok_LogEventType_Get_Name(this.d); }
 }
 
 export class LogEvent extends Entity {
@@ -554,41 +412,25 @@ export class LogEvent extends Entity {
     super(d);
   }
 
-  /** Description of the event
-   * @type {string} */
-  get description() {
-    return api.grok_LogEvent_Get_Description(this.d);
-  }
+  /** Description of the event */
+  get description(): string { return api.grok_LogEvent_Get_Description(this.d); }
 
-  /** Friendly name of the event
-   * @type {string} */
-  get name() {
-    return api.grok_LogEvent_Get_Name(this.d);
-  }
+  /** Friendly name of the event */
+  get name(): string { return api.grok_LogEvent_Get_Name(this.d); }
 
-  /** Source of the event
-   * @type {string} */
-  get source() {
-    return api.grok_LogEvent_Get_Source(this.d);
-  }
+  /** Source of the event */
+  get source(): string { return api.grok_LogEvent_Get_Source(this.d); }
 
-  /** Session id of the event
-   * @type {UserSession} */
-  get session() {
-    return toJs(api.grok_LogEvent_Get_Session(this.d));
-  }
+  /** Session id of the event */
+  get session(): UserSession | string { return toJs(api.grok_LogEvent_Get_Session(this.d)); }
 
   /** Parameters of the event
    * @type {Array<LogEventParameterValue>} */
-  get parameters() {
-    return api.grok_LogEvent_Get_Parameters(this.d);
-  }
+  get parameters(): LogEventParameterValue[] { return api.grok_LogEvent_Get_Parameters(this.d); }
 
   /** Type of the event
    * @type {LogEventType} */
-  get eventType() {
-    return toJs(api.grok_LogEvent_Get_Type(this.d));
-  }
+  get eventType(): LogEventType { return toJs(api.grok_LogEvent_Get_Type(this.d)); }
 }
 
 export class LogEventParameter extends Entity {
@@ -596,35 +438,20 @@ export class LogEventParameter extends Entity {
     super(d);
   }
 
-  /** Name of the parameter
-   * @type {string} */
-  get name() {
-    return api.grok_LogEventParameter_Get_Name(this.d);
-  }
+  /** Name of the parameter */
+  get name(): string { return api.grok_LogEventParameter_Get_Name(this.d); }
 
-  /** Type of the parameter
-   * @type {string} */
-  get type() {
-    return api.grok_LogEventParameter_Get_Type(this.d);
-  }
+  /** Type of the parameter */
+  get type(): string { return api.grok_LogEventParameter_Get_Type(this.d); }
 
-  /** Description of the parameter
-   * @type {string} */
-  get description() {
-    return api.grok_LogEventParameter_Get_Description(this.d);
-  }
+  /** Description of the parameter */
+  get description(): string { return api.grok_LogEventParameter_Get_Description(this.d); }
 
-  /** Is the parameter input
-   * @type {Boolean} */
-  get isInput() {
-    return api.grok_LogEventParameter_Get_IsInput(this.d);
-  }
+  /** Is the parameter input */
+  get isInput(): boolean { return api.grok_LogEventParameter_Get_IsInput(this.d); }
 
-  /** Is the parameter optional
-   * @type {Boolean} */
-  get isOptional() {
-    return api.grok_LogEventParameter_Get_IsOptional(this.d);
-  }
+  /** Is the parameter optional */
+  get isOptional(): boolean { return api.grok_LogEventParameter_Get_IsOptional(this.d); }
 }
 
 export class LogEventParameterValue extends Entity {
@@ -634,19 +461,19 @@ export class LogEventParameterValue extends Entity {
 
   /** Event of the parameter value
    * @type {LogEvent} */
-  get event() {
+  get event(): LogEvent {
     return toJs(api.grok_LogEventParameterValue_Get_Event(this.d));
   }
 
   /** Parameter of the parameter value
    * @type {LogEventParameter} */
-  get parameter() {
+  get parameter(): LogEventParameter {
     return toJs(api.grok_LogEventParameterValue_Get_Parameter(this.d));
   }
 
   /** Parameter value
    * @type {string} */
-  get value() {
+  get value(): string {
     return api.grok_LogEventParameterValue_Get_Value(this.d);
   }
 }
@@ -655,7 +482,7 @@ export class LogEventParameterValue extends Entity {
  * Represents a package, which is a unit of distribution of content in the Datagrok platform.
  */
 export class Package extends Entity {
-  public webRoot: any | undefined;
+  public webRoot: string | String | undefined;
   public version: string;
 
   constructor(d: any | undefined = undefined) {
@@ -669,12 +496,8 @@ export class Package extends Entity {
 
   /** Override init() method to provide package-specific initialization.
    * It is guaranteed to get called exactly once before the execution of any function below.
-   * */
-
-  /*async*/
-  init() {
-    return Promise.resolve(null);
-  }
+   */
+  init(): Promise<null> { return Promise.resolve(null); }
 
   private _name: string | undefined;
   /** Package short name
@@ -693,16 +516,16 @@ export class Package extends Entity {
       this._name = x;
   }
 
-  /** load package
+  /** Loads package
    * @returns {Promise<Package>} */
-  async load() {
+  async load(): Promise<Package> {
     return new Promise((resolve, reject) =>
       api.grok_Dapi_Packages_Load(this.name, (data: any) => resolve(data), (e: any) => reject(e)));
   }
 
   /** Returns credentials for package
    * @returns {Promise<Credentials>} */
-  getCredentials() {
+  getCredentials(): Promise<Credentials> {
     return new Promise((resolve, reject) => api.grok_Package_Get_Credentials(this.name, (c: any) => {
       let cred = toJs(c);
       resolve(cred);
@@ -735,85 +558,41 @@ export class Property {
    * and returns the property value.
    *
    * @returns {PropertyGetter} */
-  get get() {
-    return api.grok_Property_Get_Get(this.d);
-  }
+  get get(): PropertyGetter { return api.grok_Property_Get_Get(this.d); }
+  set get(x: PropertyGetter) { api.grok_Property_Set_Get(this.d, x); }
 
-  /** @param {PropertyGetter} x */
-  set get(x: PropertyGetter){
-    api.grok_Property_Set_Get(this.d, x);
-  }
+  /** Property setter */
+  get set(): PropertySetter { return api.grok_Property_Get_Set(this.d); }
+  set set(x: PropertySetter) { api.grok_Property_Set_Set(this.d, x); }
 
-  get set() {
-    return api.grok_Property_Get_Set(this.d);
-  }
+  /** Property name */
+  get name(): string { return api.grok_Property_Get_Name(this.d); }
+  set name(s: string) { api.grok_Property_Set_Name(this.d, s); }
 
-  set set(x) {
-    api.grok_Property_Set_Set(this.d, x);
-  }
+  /** Property type */
+  get propertyType(): string { return api.grok_Property_Get_PropertyType(this.d); }
+  set propertyType(s: string) { api.grok_Property_Set_PropertyType(this.d, s); }
 
-  /** Property name
-   *  @type {string} */
-  get name() {
-    return api.grok_Property_Get_Name(this.d);
-  }
-
-  set name(s) {
-    api.grok_Property_Set_Name(this.d, s);
-  }
-
-  /** Property type
-   *  @type {string} */
-  get propertyType() {
-    return api.grok_Property_Get_PropertyType(this.d);
-  }
-
-  set propertyType(s) {
-    api.grok_Property_Set_PropertyType(this.d, s);
-  }
-
-  /** Semantic type
-   *  @type {string} */
-  get semType() {
-    return api.grok_Property_Get_SemType(this.d);
-  }
-
-  set semType(s) {
-    api.grok_Property_Set_SemType(this.d, s);
-  }
+  /** Semantic type */
+  get semType(): SemType | string { return api.grok_Property_Get_SemType(this.d); }
+  set semType(s: SemType | string) { api.grok_Property_Set_SemType(this.d, s); }
 
   /** Description */
-  get description() {
-    return api.grok_Property_Get_Description(this.d);
-  }
-
-  set description(s) {
-    api.grok_Property_Set_Description(this.d, s);
-  }
+  get description(): string { return api.grok_Property_Get_Description(this.d); }
+  set description(s: string) { api.grok_Property_Set_Description(this.d, s); }
 
   /** Default value */
-  get defaultValue() {
-    return api.grok_Property_Get_DefaultValue(this.d);
-  }
-
-  set defaultValue(s) {
-    api.grok_Property_Set_DefaultValue(this.d, s);
-  }
+  get defaultValue(): any { return api.grok_Property_Get_DefaultValue(this.d); }
+  set defaultValue(s: any) { api.grok_Property_Set_DefaultValue(this.d, s); }
 
   /** List of possible values of that property.
    *  PropertyGrid will use it to populate combo boxes.
-   *  @returns ArrayList<string>*/
-  get choices() {
-    return api.grok_Property_Get_Choices(this.d);
-  }
+   *  @returns {Array<string>} */
+  get choices(): string[] { return api.grok_Property_Get_Choices(this.d); }
+  set choices(x: string[]) { api.grok_Property_Set_Choices(this.d, x); }
 
-  set choices(x) {
-    api.grok_Property_Set_Choices(this.d, x);
-  }
-
-  /** Column type filter
-   * @type {string}*/
-  get columnFilter() {
+  /** Column type filter */
+  get columnFilter(): ColumnType | 'numerical' | 'categorical' | null {
     return api.grok_Property_Get_ColumnTypeFilter(this.d);
   }
 
@@ -824,7 +603,7 @@ export class Property {
    * @param {function} setter
    * @param {object} defaultValue
    * @returns Property*/
-  static create(name: string, type: Type, getter: Function, setter: Function, defaultValue = null) {
+  static create(name: string, type: Type, getter: PropertyGetter, setter: PropertySetter, defaultValue: any = null): Property {
     return new Property(api.grok_Property(name, type, getter, setter, defaultValue));
   }
 
@@ -834,7 +613,7 @@ export class Property {
    * @param {function} setter
    * @param {object} defaultValue
    * @returns Property*/
-  static int(name: string, getter: Function, setter: Function, defaultValue: any) {
+  static int(name: string, getter: PropertyGetter, setter: PropertySetter, defaultValue: any): Property {
     return Property.create(name, TYPE.INT, getter, setter, defaultValue);
   }
 
@@ -844,7 +623,7 @@ export class Property {
    * @param {function} setter
    * @param {object} defaultValue
    * @returns Property*/
-  static float(name: string, getter: Function, setter: Function, defaultValue: any) {
+  static float(name: string, getter: PropertyGetter, setter: PropertySetter, defaultValue: any): Property {
     return Property.create(name, TYPE.FLOAT, getter, setter, defaultValue);
   }
 
@@ -854,7 +633,7 @@ export class Property {
    * @param {function} setter
    * @param {object} defaultValue
    * @returns Property*/
-  static string(name: string, getter: Function, setter: Function, defaultValue: any) {
+  static string(name: string, getter: PropertyGetter, setter: PropertySetter, defaultValue: any): Property {
     return Property.create(name, TYPE.STRING, getter, setter, defaultValue);
   }
 }
@@ -867,11 +646,11 @@ export class DateTime {
     this.d = d;
   }
 
-  static fromDate(date: any) {
+  static fromDate(date: Date): DateTime {
     return DateTime.fromMillisecondsSinceEpoch(date.getTime());
   }
 
-  static fromMillisecondsSinceEpoch(millisecondsSinceEpoch: number) {
+  static fromMillisecondsSinceEpoch(millisecondsSinceEpoch: number): DateTime {
     return new DateTime(api.grok_DateTime_FromMillisecondsSinceEpoch(millisecondsSinceEpoch));
   }
 }
