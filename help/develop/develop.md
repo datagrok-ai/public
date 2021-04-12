@@ -442,16 +442,15 @@ Fill this configuration with the following:
 
 ![WebStorm: Shell Script configuration content](webstorm-debugging-03.png)
 
-_Note._ This configuration may look controversial: why would we set the trailing `echo` command the `Interpreter options`,
-and why would we set `cmd.exe` twice in both `Script path` and `Interpreter path`? The reason are known problems in WebStorm.
-It turns out both interpreter and script parameters have to be specified. Though in our case we only need the interpreter with
-certain keys, omitting the script parameter will work if you run the `Webpack & Publish` configuration standalone, but this _won't_
-work as part of the other's configuration build step, which we'd need later. As for the trailing `echo`, it is simply due to the way
-this build step is implemented in WebStorm: it concatenates the interpreter line with the script call line, and we use it to
-suppress the redundant script call line.
+_Note._ This configuration looks controversial, but this is so only to overcome the known problems in WebStorm.
+It turns out both interpreter and script parameters have to be specified. Omitting the script parameter will work
+if you run the `Webpack & Publish` configuration standalone, but _won't_ work as part of the other's configuration
+build step, which we'd need later. As for the trailing `echo`, it is simply due to the way this build step works in WebStorm:
+it concatenates the interpreter line with the script call line, and we use it to suppress the redundant script call line.
 
-This configuration shall become a step running a webpack on your package and publishing it to a configuration of your choice.
-In the above screenshot we've chosen a `dev` configuration, declared in your grok config file at `%USERPROFILE%/.grok/config.yaml`:
+This `Webpack & Publish` configuration shall become a step running a webpack on your package and publishing it
+to a configuration of your choice. In the above screenshot we've chosen a `dev` configuration, declared in your
+grok config file at `%USERPROFILE%/.grok/config.yaml`:
 
 ![grok config settings](webstorm-debugging-04.png)
 
