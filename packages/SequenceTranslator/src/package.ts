@@ -52,3 +52,27 @@ export function GCRSToClassic(nucleotides: string) {
   const obj: {[index: string]: string} = {"moe": "", "5mC": "", "n": "", "ps": "", "U": "T"};
   return nucleotides.replace(/(moe|5mC|n|ps|U)/g, function (x: string) {return obj[x];});
 }
+
+//name: classicComplement
+//input: string nucleotides {semType: dna_sequence/classic code}
+//output: string result {semType: dna_sequence/classic code}
+export function classicComplement(nucleotides: string) {
+  const obj: {[index: string]: string} = {"A": "T", "T": "A", "G": "C", "C": "G"};
+  return nucleotides.replace(/[ATGC]/g, function (x: string) {return obj[x];});
+}
+
+//name: bioSpringComplement
+//input: string nucleotides {semType: BioSpring Code For ASO Gapmers}
+//output: string result {semType: BioSpring Code For ASO Gapmers}
+export function bioSpringComplement(nucleotides: string) {
+  const obj: {[index: string]: string} = {"A": "T", "T": "A", "G": "C", "C": "G", "5":"6", "6":"5", "7":"8", "8":"9", "9":"8"};
+  return nucleotides.replace(/[56789ATGC]/g, function (x: string) {return obj[x];});
+}
+
+//name: GCRSComplement
+//input: string nucleotides {semType: Janssen GCRS code For ASO Gapmers}
+//output: string result {semType: Janssen GCRS code For ASO Gapmers}
+export function GCRSComplement(nucleotides: string) {
+  const obj: {[index: string]: string} = {"A": "T", "T": "A", "G": "C", "C": "G", "U":"A"};
+  return nucleotides.replace(/[ACGTU]/g, function (x: string) {return obj[x];});
+}
