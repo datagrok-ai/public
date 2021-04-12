@@ -1,0 +1,19 @@
+{
+	"name": "nwkviewer",
+	"friendlyName": "NwkViewer",
+	"version": "0.0.1",
+	"description": "",
+	"dependencies": {
+	  "datagrok-api": "latest"
+	 },
+	"scripts": {
+		"debug-nwkviewer": "grok publish --rebuild",
+		"release-nwkviewer": "grok publish --rebuild --release",
+		"build-nwkviewer": "webpack",
+		"build": "webpack",
+		"debug-nwkviewer-public": "grok publish public --rebuild",
+		"release-nwkviewer-public": "grok publish public --rebuild --release",
+		"debug-nwkviewer-local": "grok publish local --rebuild",
+		"release-nwkviewer-local": "grok publish local --rebuild --release"
+	}
+}
