@@ -5,23 +5,50 @@ import * as DG from 'datagrok-api/dg';
 
 export let _package = new DG.Package();
 
-function r2C(nucleotide: string) {
-  switch (nucleotide) {
-    case "5": return "T";
-    case "6": return "A";
-    case "7": return "C";
-    case "8": return "G";
-    case "9": return "C";
-    default: return nucleotide;
-  }
+//name: classicToBioSpring
+//input: string nucleotides {semType: dna_sequence/classic code}
+//output: string result {semType: BioSpring Code For ASO Gapmers}
+export function classicToBioSpring(nucleotides: string) {
+  return nucleotides;
 }
 
-//name: robotToClassic
-//input: string nucleotides {semType: dna_sequence/robot}
-//output: string result {semType: dna_sequence/classic}
-export function robotToClassic(nucleotides: string) {
-  return nucleotides
-      .split("*")
-      .map(r2C)
-      .join("");
+//name: classicToGCRS
+//input: string nucleotides {semType: dna_sequence/classic code}
+//output: string result {semType: Janssen GCRS code For ASO Gapmers}
+export function classicToGCRS(nucleotides: string) {
+  return nucleotides;
+}
+
+//name: bioSpringToClassic
+//input: string nucleotides {semType: BioSpring Code For ASO Gapmers}
+//output: string result {semType: dna_sequence/classic code}
+export function bioSpringToClassic(nucleotides: string) {
+  const obj: {[index: string]: string} = {"*": "", 5: "T", 6: "A", 7: "C", 8: "G", 9: "C"};
+  return nucleotides.replace(/[*56789]/g, function (x: string) {return obj[x];});
+}
+
+//name: bioSpringToGCRS
+//input: string nucleotides {semType: BioSpring Code For ASO Gapmers}
+//output: string result {semType: Janssen GCRS code For ASO Gapmers}
+export function bioSpringToGCRS(nucleotides: string) {
+  const obj: {[index: string]: string} = {"*": "ps", 5: "moeT", 6: "moeA", 7: "moe5mC", 8: "moeG", 9: "5mC"};
+  return nucleotides.replace(/[*56789]/g, function (x: string) {return obj[x];});
+}
+
+//name: GCRSToBioSpring
+//input: string nucleotides {semType: Janssen GCRS code For ASO Gapmers}
+//output: string result {semType: BioSpring Code For ASO Gapmers}
+export function GCRSToBioSpring(nucleotides: string) {
+  const obj: {[index: string]: string} = {
+    "moeT": "5", "moeA": "6", "moe5mC": "7", "moeG": "8", "5mC": "9", "ps": "*", "nps": "*", "U": "T"
+  };
+  return nucleotides.replace(/(moeT|moeA|moe5mC|moeG|5mC|ps|nps|U)/g, function (x: string) {return obj[x];});
+}
+
+//name: GCRSToClassic
+//input: string nucleotides {semType: Janssen GCRS code For ASO Gapmers}
+//output: string result {semType: dna_sequence/classic code}
+export function GCRSToClassic(nucleotides: string) {
+  const obj: {[index: string]: string} = {"moe": "", "5mC": "", "n": "", "ps": "", "U": "T"};
+  return nucleotides.replace(/(moe|5mC|n|ps|U)/g, function (x: string) {return obj[x];});
 }
