@@ -69,7 +69,7 @@ Beside a regular CSS-based customization, here are some of the things which you 
 
 ## Getting Started
 
-Let's get a taste of plugin development with a simple extension, which embeds to Datagrok through the main menu.
+Let's get a taste of plugin development with a simple extension, which embeds to Datagrok as an [info panel](develop/how-to/build-info-panel.md).
 
 ## Creating your First Plugin
 
