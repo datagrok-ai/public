@@ -99,7 +99,7 @@ function showMainDialog(view, tableWithSignals, tableWithSignalsAndAnnotations, 
                   filterChartsList[i - 1].dataFrame = df;
                   Object.assign(filterOutputsObj, {[nameOfLastFiltersOutput]: df});
                 } catch (e) {
-                  alert(e);
+                  grok.shell.info(e);
                   throw e;
                 } finally {
                   pi.close();
@@ -157,7 +157,7 @@ function showMainDialog(view, tableWithSignals, tableWithSignalsAndAnnotations, 
                   let nameOfLastExtractorsOutput = 'Output of Extractor ' + j + ' (' + extractorTypesList[j - 1].value + ')';
                   Object.assign(extractorOutputsObj, {[nameOfLastExtractorsOutput]: df});
                 } catch (e) {
-                  alert(e);
+                  grok.shell.info(e);
                   throw e;
                 } finally {
                   pi.close();
@@ -212,7 +212,7 @@ function showMainDialog(view, tableWithSignals, tableWithSignalsAndAnnotations, 
                   await call.call();
                   indicatorChartsList[k - 1].dataFrame = call.getParamValue('out');
                 } catch (e) {
-                  alert(e);
+                  grok.shell.info(e);
                   throw e;
                 } finally {
                   pi.close();
@@ -351,7 +351,7 @@ export async function loadPhysionetRecordWithAnnotations(chosenDatabase, chosenR
     const samplingFrequency = call.getParamValue('sampling_frequency');
     return [tableWithSignals, tableWithAnnotations, samplingFrequency];
   } catch (e) {
-    alert(e);
+    grok.shell.info(e);
     throw e;
   }
 }

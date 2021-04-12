@@ -1,26 +1,26 @@
 {
-	"name": "sequencetranslator",
-	"friendlyName": "SequenceTranslator",
-	"version": "0.0.1",
-	"description": "",
-	"dependencies": {
-		"datagrok-api": "latest",
-		"ts-loader": "latest",
-		"typescript": "latest",
-		"@types/react": "latest"
-	},
-	"scripts": {
-		"debug-sequencetranslator": "grok publish --rebuild",
-		"release-sequencetranslator": "grok publish --rebuild --release",
-		"build-sequencetranslator": "webpack",
-		"build": "webpack",
-		"debug-sequencetranslator-public": "grok publish public --rebuild",
-		"release-sequencetranslator-public": "grok publish public --rebuild --release",
-		"debug-sequencetranslator-local": "grok publish local --rebuild",
-		"release-sequencetranslator-local": "grok publish local --rebuild --release"
-	},
-	"devDependencies": {
-		"webpack": "^5.31.0",
-		"webpack-cli": "^4.6.0"
-	}
+  "name": "sequencetranslator",
+  "friendlyName": "SequenceTranslator",
+  "version": "0.0.1",
+  "description": "",
+  "dependencies": {
+    "datagrok-api": "latest",
+    "ts-loader": "latest",
+    "typescript": "latest",
+    "@types/react": "latest"
+  },
+  "scripts": {
+    "debug-sequencetranslator": "grok publish --rebuild",
+    "release-sequencetranslator": "grok publish --rebuild --release",
+    "build-sequencetranslator": "webpack",
+    "build": "webpack",
+    "debug-sequencetranslator-public": "grok publish public --rebuild",
+    "release-sequencetranslator-public": "grok publish public --rebuild --release",
+    "debug-sequencetranslator-local": "grok publish local --rebuild",
+    "release-sequencetranslator-local": "grok publish local --rebuild --release"
+  },
+  "devDependencies": {
+    "webpack": "^5.31.0",
+    "webpack-cli": "^4.6.0"
+  }
 }
