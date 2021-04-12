@@ -1,7 +1,7 @@
 !-- TITLE: Extending and customizing Datagrok -->
 <!-- SUBTITLE: -->
 
-# Extending and customizing Datagrok
+# Extending and Customizing Datagrok
 
 Datagrok is built highly extensible, composable and customizable. Many parts of the Datagrok platform can be
 enhanced by plugins using our [JavaScript API](js-api.md). The plugins are structured and delivered to the platform
@@ -44,21 +44,39 @@ With using our [JavaScript API](js-api.md), you can create your own:
   and filtering through one viewer shall reflect the state in all the other active viewers
 * [accordion sections](develop/ui.md#accordions) — accordion is an area on the left of the Datagrok UI,
   useful for additional custom functionality
+  
+You could spot other aspects in Datagrok that allow for customization while getting introduced to the platform.
 
 ## What can be customized
 
-## Getting started
+Beside a regular CSS-based customization, here are some of the things which you can customize both programmatically and through the UI:
+
+* Every viewer exposes a diverse set of [properties](overview/navigation.md#properties), accessible on the right side in the Datagrok's
+  `Property Panel`. Often you need to modify these properties programmatically. The mapping is straightforward: take the property's name,
+  say, `"Col Header Height"`, modify it to the camel case: `colHeaderHeight`, and apply the property to your viewer via `.setOptions`.
+  Say, for the grid `grid` call `grid.setOptions({ colHeaderHeight: 50 });`. Read more about this
+  [here](develop/how-to/develop-custom-viewer.md)
+  
+* You can control the platform's shell aspects programmatically. Study [this sample](https://public.datagrok.ai/js/samples/shell/ui-parts)
+  to learn how to hide the Datagrok's sidebar or the toolbox, which is often useful in the [Datagrok applications](develop/how-to/build-an-app.md)
+  
+* Use features like [conditional color coding](https://dev.datagrok.ai/js/samples/grid/color-coding-conditional) for making
+  your views appear indicative to the data they exhibit
+
+* Use the [dock system](develop/how-to/manipulate-viewers.md#docking-viewers) and [custom views](develop/how-to/custom-views.md)
+  to provide for completely custom layouts composed inside the Datagrok platform, tailored to your specific use cases. Learn
+  more about Datagrok's composable UI [here](develop/ui.md)
+
+## Getting Started
 
 Let's get a taste of plugin development with a simple extension, which embeds to Datagrok through the main menu.
 
-## Creating your first plugin
+## Creating your First Plugin
 
-## The main function
+## The Main Function
 
-## Deploying the plugin
+## Deploying the Plugin
 
 ## Overview of the API
 
-## Overview of some examples
-
-<!-- Grid properties, etc. TBD -->
+## Overview of Some Examples
