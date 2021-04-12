@@ -339,18 +339,26 @@ To see packages available to you, click on `Manage | Packages`, or follow [this 
 
 ## Debugging
 
-Essentially, Datagrok packages are either regular webpack packages, or JS source files.
+Essentially, Datagrok packages are either regular webpack packages, or sets JS source files.
 
-There are good practices described below which we recommend you to follow with debugging package code.
+We recommend you the practices below with debugging your package code.
 
-### Debugging with Visual Studio Code
+### One-click debugging with Visual Studio Code
 
-Use a `--ide=vscode` key of [grok tools](#Getting-Started) to set up a `.vscode` debugging integration with Datagrok.
+Use an `--ide=vscode` key of [grok tools](#Getting-Started) to set up a `.vscode` debugging integration with Datagrok.
 
-This command coupled with `grok create` adds an additional `.vscode` folder with two files to a package folder.
-The idea behind these files is to bring you development experience close to developing native apps, where you
-modify the code, hit the "Run", wait for application to "compile" (in our case — go through webpack, and potentially
-through linters), start it and then explore your runtime state through breakpoints, variable watches, call stacks etc.
+This parameter coupled with `grok create` adds an additional `.vscode` folder with two files to your package folder.
+These files bring you development experience close to building native apps, where you modify the code, hit the "Run",
+wait for application to "compile" (in our case — go through webpack, and potentiallythrough linters), start it and
+then explore your runtime state through breakpoints, variable watches, call stacks etc.
+
+With this setting, you would be able to "compile" and "run" the package in one click from the left sidebar of
+Visual Studio Code under the `Run` section (4-th button from the top) by the `Start Debugging` button at the top.
+The steps added with grok tools `--vscode` key will prepare a webpack package locally (showing occurring errors
+accordingly), deploy it to the selected Datagrok instance, and run the browser in a IDE-debugging mode.
+
+Below we explain how this debugging works under the hood. As of today, you'd also need to repeat these steps
+for VS Code on Linux and MacOS, as we don't support automatically created configurations for them yet.
 
 The first file, `launch.json`, has contents similar to the below:
 
@@ -370,8 +378,8 @@ The first file, `launch.json`, has contents similar to the below:
 }
 ```
 
-It allows VS Code to launch an isolated Chrome session under debugging, targeting the desired web-address from `url`.
-In case an application is being developed, it may be useful to target this address directly to the application's URL.
+It allows VS Code to launch an isolated Chrome session in debugging mode linked to IDE, targeting the desired
+web-address from `url`. In case an application is being developed, it may be useful to target the application's URL.
 
 The second file, `tasks.json`, contains the following (for Windows):
 
@@ -388,8 +396,12 @@ The second file, `tasks.json`, contains the following (for Windows):
 }
 ```
 
-This command provides for building your package with webpack (this helps track some syntactic errors before
-they occur in runtime), and consequently ship the package to your Datagrok server.
+This command builds your package with webpack. The webpack step helps track some syntactic errors before
+they occur in runtime, and consequently ship the package to your Datagrok server. In this example,
+a default server would be chosen to deploy to. The server configurations are pre-created by you
+with `grok config` eariler and stored in `%USERPROFILE%/.grok/config.yaml`, where you can modify them,
+and choose the default configuration. To override the default configuration, call `grok publish`
+with an explicit configuration name: i.e. `grok publish dev`.
 
 After these two files are provided in the working folder, what is left is to set up VS Code internally.
 
@@ -400,18 +412,74 @@ You can also use `Ctrl+Shift+D` to run the application.
 
 Make sure the `.vscode` folder is inside the folder you open with VS Code via `File → Open Folder`.
 
-Now open the folder with your package, add some breakpoint to your code, and hit the `Run` button.
-You should see a view with a left-side pane and a green "Run" (play) button on top of it, with the neightbour
-dropdown repeating the name of the configuration from `launch.json`. If this is not the case, and you see some
-other names or an invitation to create a configuration, it means the pre-made `.vscode` folder isn't recognized by VS
-Code. In such case, check that you do `File → Open Folder` on the folder which contains the pre-made `.vscode` folder.
+Now open the folder with your package with `File → Open Folder`, add some breakpoint to your code,
+and hit the `Run` button. You should see a view with a left-side pane and a green "Run" (play) button on top of it,
+with the neightbour dropdown repeating the name of the configuration from `launch.json`. If this is not the case,
+and you see some other names or an invitation to create a configuration, it means the pre-made `.vscode` folder
+isn't recognized by VS Code. In such case, check that you do `File → Open Folder` on the folder
+which _contains_ the pre-made `.vscode` folder.
 
 First time you hit run, you'll need to enter your Datagrok credentials into the newly appeared Chrome window.
 After you have done this, close Chrome, stop debugging from VS Code and start debugging same way again.
-This time your breakpoint should work, and you'd see locals and stack traces as usual.
+This time your breakpoints should work, and you'd see locals and stack traces as usual.
 
 This [video](https://youtu.be/zVVmlRorpjg?list=PLIRnAn2pMh3kvsE5apYXqX0I9bk257_eY&t=871) gives an overview of
 setting up the debugging in VS Code.
+
+### One-click debugging with JetBrains IDEs
+
+Below we use WebStorm IDE on Windows as an example, this practice should extrapolate to IntelliJ IDEA, and to other OS.
+
+Open the `Edit Configurations...` dialog in WebStorm:
+
+![WebStorm: Edit Configurations](webstorm-debugging-01.png)
+
+In this dialog, add a new `Shell Script` configuration by the `+` button:
+
+![WebStorm: Adding a Shell Script configuration](webstorm-debugging-02.png)
+
+Fill this configuration with the following:
+
+![WebStorm: Shell Script configuration content](webstorm-debugging-03.png)
+
+This configuration shall become a step running a webpack on your package and publishing it to a configuration of your choice.
+In the above screenshot we've chosen a `dev` configuration, declared in your grok config file at `%USERPROFILE%/.grok/config.yaml`:
+
+![grok config settings](webstorm-debugging-04.png)
+
+Use the configuration of your choice in the `Shell Script` configuration instead of `dev`.
+
+Proceed to creating the actual JavaScript debug configuration. Using the same `+` button, add a `JavaScript Debug`
+configuration, and fill it with the following:
+
+![WebStorm: JavaScript Debug configuration content](webstorm-debugging-05.png)
+
+Basically, you need to add the previously created `Shell Script` configuration as a `Before Launch` step. After this step
+is executed on hitting the `Debug` button and displaying the `webpack` log and errors in the WebStorm tool output window,
+WebStorm will launch the browser in the debugging mode and let you hit your breakpoints:
+
+![WebStorm: a debugging session](webstorm-debugging-06.png)
+
+*Troubleshooting.* Many users reported inability to employ any kind of JavaScript debugging from the WebStorm IDE after
+it initially worked. As of 2021, this is a [known issue](https://intellij-support.jetbrains.com/hc/en-us/community/posts/360009567459-Webstorm-2020-2-1-Remote-Debugging-do-not-work)
+of WebStorm IDEs. To fix it, remove these two files and restart the IDE (replace the IDE version with yours):
+
+* `%USERPROFILE%\AppData\Roaming\JetBrains\WebStorm2020.1\options\web-browsers.xml`
+* `%USERPROFILE%\AppData\Roaming\JetBrains\WebStorm2020.1\options\other.xml`
+
+*Note 1.* You may notice there's an option to add a `Run External tool` step, which could serve us this `Webpack & Publish`
+step. Unfortunately, this step won't work due to a [known issue](https://youtrack.jetbrains.com/issue/IDEA-229467)
+in WebStorm IDEs. We broke the run step into two steps intentionally to alleviate this problem.
+ 
+*Note 2.* Since 2017 the JetBrains IDE Support plugin is
+[no longer required](https://intellij-support.jetbrains.com/hc/en-us/community/posts/360010507240-where-is-JETBRAINS-IDE-SUPPORT-chrome-extension-it-cant-be-found-anywhere-now-on-the-internet)
+to debug JavaScript from JetBrains IDEs. In February 2021 JetBrains has removed this plugin from the Chrome store.
+
+_See also:_
+
+* Debugging JavaScript in WebStorm ([1](https://www.youtube.com/watch?v=Qcqnmle6Wu8),
+[2](https://www.youtube.com/watch?v=YNNDMpoGV0w))
+* IntelliJ IJEA JavaScript debugging ([link](https://www.jetbrains.com/help/idea/debugging-javascript-in-chrome.html))
 
 ### Debugging through the Browser
 
@@ -428,14 +496,6 @@ the `top` (root) section of the source tree by its decapitalized name.
 
 Deploying such package locates it to the Datagrok host URI (such as `https://dev.datagrok.ai`) under
 `api → packages/published/flies → <PACKAGE_NAME>/<VERSION>/_/<DIGIT>`, where you'd set breakpoints. 
-
-### Debugging through Other IDEs
-
-We've noticed that for some of our users native debugging (using a Chrome plugin) from JetBrains
-IDEs (ItelliJ IDEA, WebStorm) didn't work out of the box. This doesn't seem to be related to Datagrok,
-but has to do with the general environment. We are figuring out a recommendation for these encountering
-problems with WebStorm. If you've been through this yourself and found a cause, please let us know
-how you had it resolved, by posting to our Community Forums: https://community.datagrok.ai/.
 
 ### Troubleshooting Debugging
 
