@@ -6,7 +6,7 @@ import { Package } from './entities';
 
 let api = <any>window;
 
-export function debounce(observable: rxjs.Observable<any>, milliseconds = 100) {
+export function debounce<T>(observable: rxjs.Observable<T>, milliseconds: number = 100): rxjs.Observable<T> {
   return observable.pipe(rxjsOperators.debounceTime(milliseconds));
 }
 
@@ -70,14 +70,14 @@ export class Events {
 
   /** Observes platform events with the specified eventId.
    * @returns {rxjs.Observable} */
-  onEvent(eventId: string) {
+  onEvent(eventId: string): rxjs.Observable<any> {
     return __obs(eventId);
   }
 
   /** Observes custom events with the specified eventId.
    * {@link https://public.datagrok.ai/js/samples/events/custom-events}
    * @returns {rxjs.Observable} */
-  onCustomEvent(eventId: string) {
+  onCustomEvent(eventId: string): rxjs.Observable<any> {
     return this.customEventBus.onEvent(eventId);
   }
 
@@ -85,9 +85,7 @@ export class Events {
    * {@link https://public.datagrok.ai/js/samples/events/custom-events}
    * @param {string} eventId
    * @param args - event arguments*/
-  fireCustomEvent(eventId: string, args: any) {
-    return this.customEventBus.fire(eventId, args);
-  }
+  fireCustomEvent(eventId: string, args: any): void { this.customEventBus.fire(eventId, args); }
 
   /** @returns {rxjs.Observable} */ get onContextMenu() {
     return __obs('d4-context-menu');
@@ -232,13 +230,9 @@ export class StreamSubscription {
     this.d = d;
   }
 
-  unsubscribe() {
-    this.cancel();
-  }
+  unsubscribe(): void { this.cancel(); }
 
-  cancel() {
-    api.grok_Subscription_Cancel(this.d);
-  }
+  cancel(): void { api.grok_Subscription_Cancel(this.d); }
 }
 
 /** Event arguments. {@see args} contains event details.
@@ -251,25 +245,25 @@ export class EventData {
   }
 
   /** @type {UIEvent} */
-  get causedBy() {
+  get causedBy(): UIEvent {
     return api.grok_EventData_Get_CausedBy(this.d);
   }
 
   /** Whether the default event handling is prevented. See also {@link preventDefault}
    * @returns {boolean} */
-  get isDefaultPrevented() {
+  get isDefaultPrevented(): boolean {
     return api.grok_EventData_Get_IsDefaultPrevented(this.d);
   }
 
   /** Prevents default handling. See also {@link isDefaultPrevented} */
-  preventDefault() {
+  preventDefault(): void {
     api.grok_EventData_PreventDefault(this.d);
   }
 
   /** Event details. */
-  get args() {
+  get args(): { [index: string]: any } {
     let x = api.grok_EventData_Get_Args(this.d);
-    let result: {[index: string]:any}= {};
+    let result: { [index: string]: any } = {};
     for (const property in x)
       if (x.hasOwnProperty(property))
         result[property] = toJs(x[property]);
@@ -285,7 +279,7 @@ export class EventBus {
     this._streams = new Map();
   }
 
-  onEvent(type: string) {
+  onEvent(type: string): rxjs.Observable<any> {
     let subject = this._getSubject(type);
 
     return new rxjs.Observable(function subscribe(observer) {
@@ -297,7 +291,7 @@ export class EventBus {
     });
   }
 
-  _getSubject(type: string) {
+  _getSubject(type: string): any {
     if (!this._streams.has(type)) {
       let s = new rxjs.Subject();
       this._streams.set(type, s);
@@ -307,13 +301,13 @@ export class EventBus {
     return this._streams.get(type);
   }
 
-  fire(type: string, data: any) {
+  fire(type: string, data: any): void {
     let subject = this._getSubject(type);
     subject.next(data);
   }
 
 }
 
-export function _sub(d: any) {
+export function _sub(d: any): StreamSubscription {
   return new StreamSubscription(d);
 }

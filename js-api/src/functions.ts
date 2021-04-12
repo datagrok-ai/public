@@ -1,7 +1,7 @@
 import {paramsToJs, toDart, toJs} from "./wrappers";
 import {Type} from "./const";
 import {Entity, Func} from "./entities";
-import {DartWidget, Widget} from "./widgets";
+import {DartWidget, ProgressIndicator, Widget} from "./widgets";
 import {Column} from "./dataframe";
 declare let grok: any;
 declare let DG: any;
@@ -9,25 +9,25 @@ let api = <any>window;
 
 /** Grok functions */
 export class Functions {
-  register(func: Func) {
+  register(func: Func): void {
     api.grok_RegisterFunc(func);
   }
 
-  registerParamFunc(name: string, type: Type, run: Function, check: boolean | null = null, description: string | null = null) {
+  registerParamFunc(name: string, type: Type, run: Function, check: boolean | null = null, description: string | null = null): void {
     api.grok_RegisterParamFunc(name, type, run, check, description);
   }
 
-  call(name: string, parameters = {}, showProgress = false, progress = null) {
+  call(name: string, parameters: object = {}, showProgress: boolean = false, progress: ProgressIndicator | null = null): Promise<any> {
     return new Promise((resolve, reject) => api.grok_CallFunc(name, parameters, (out: any) => resolve(toJs(out)), (err: any) => reject(err), showProgress, toDart(progress)));
   }
 
-  eval(name: string) {
+  eval(name: string): Promise<any> {
     return new Promise((resolve, reject) => api.grok_EvalFunc(name, function (out: any) {
       return resolve(toJs(out));
     }, (err: any) => reject(err)));
   }
 
-  scriptSync(s: string) {
+  scriptSync(s: string): any {
     return toJs(api.grok_ScriptSync(s));
   }
 }
@@ -42,7 +42,7 @@ export class Context {
     return toJs(api.grok_Context_Create());
   }
 
-  setVariable(name: string, value: any) {
+  setVariable(name: string, value: any): void {
     api.grok_Context_Set_Variable(this.d, name, toDart(value));
   }
 
@@ -67,23 +67,18 @@ export class FuncCall {
   /** Returns function call parameter value
    * @param {string} name
    * @returns {object} */
-  getParamValue(name: string) {
+  getParamValue(name: string): any {
     return toJs(api.grok_FuncCall_Get_Param_Value(this.d, name));
   }
 
-  get context(): Context {
-    return toJs(api.grok_FuncCall_Get_Context(this.d));
-  }
+  get context(): Context { return toJs(api.grok_FuncCall_Get_Context(this.d)); }
+  set context(context: Context) { api.grok_FuncCall_Set_Context(this.d, context.d); }
 
-  set context(context: Context) {
-    api.grok_FuncCall_Set_Context(this.d, context.d);
-  }
-
-  getOutputParamValue() {
+  getOutputParamValue(): any {
     return toJs(api.grok_FuncCall_Get_Output_Param_Value(this.d));
   }
 
-  setParamValue(name: string, value: any) {
+  setParamValue(name: string, value: any): void {
     api.grok_FuncCall_Set_Param_Value(this.d, name, toDart(value));
   }
 
@@ -91,7 +86,7 @@ export class FuncCall {
    * @param {boolean} showProgress
    * @param {ProgressIndicator} progress
    * @returns {Promise<FuncCall>} */
-  call(showProgress = false, progress = null): Promise<FuncCall> {
+  call(showProgress: boolean = false, progress: ProgressIndicator | null = null): Promise<FuncCall> {
     return new Promise((resolve, reject) => api.grok_FuncCall_Call(this.d, (out: any) => resolve(toJs(out)), (err: any) => reject(err), showProgress, toDart(progress)));
   }
 
@@ -100,7 +95,7 @@ export class FuncCall {
   }
 }
 
-export function callFuncWithDartParameters(f: Function, params: object) {
+export function callFuncWithDartParameters<T>(f: (...params: any[]) => T, params: object): T {
   let jsParams = paramsToJs(params);
   return f.apply(null, jsParams);
 }

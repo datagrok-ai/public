@@ -5,7 +5,7 @@ import {TypedEventArgs} from "./viewer";
 /** Converts list of Dart objects to JavaScript objects by calling {@link toJs}
  * @param {object[]} params
  * @returns {object[]} - list of JavaScript objects */
-export function paramsToJs(params :any) :any {
+export function paramsToJs(params: any): any {
   let result = [];
   for (let i = 0; i < params.length; i++) {
     let type = (<any>window).grok_GetType(params[i]);
@@ -25,7 +25,7 @@ export function paramsToJs(params :any) :any {
  * @param {boolean} check - when true, throws an exception if the object can't be converted to JS.
  * @returns JavaScript wrapper for the Dart object
  * */
-export function toJs(d :any, check = false) :any {
+export function toJs(d: any, check: boolean = false): any {
   let type = (<any>window).grok_GetType(d);
   if (type === TYPE.MAP) {
     let wrapper = (<any>window).grok_GetWrapper(d);
@@ -55,7 +55,7 @@ export function toJs(d :any, check = false) :any {
 }
 
 /** Extracts a Dart handle from the JavaScript wrapper. See also {@link toJs} */
-export function toDart(x :any) :any {
+export function toDart(x: any): any {
   if (x === undefined || x === null)
     return x;
   return (typeof x.d !== 'undefined') ? x.d : x;
