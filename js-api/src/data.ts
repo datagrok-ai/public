@@ -210,7 +210,7 @@ export class Detector {
 
     for (let i = 0; i < Math.max(max, categories.length); i++) {
       let value = Math.floor(Math.random() * categories.length);
-      if (!check(categories[value]))
+      if (categories[value] && !check(categories[value]))
         return false;
     }
 
