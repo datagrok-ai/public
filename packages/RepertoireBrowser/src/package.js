@@ -11,24 +11,24 @@ export let _package = new DG.Package();
 //name: Repertoire Browser
 //tags: app
 export async function RepertoireBrowserApp() {
-    let loaded;
-    if (loaded == undefined) {
-        let tname = grok.shell.tableNames;
-        let view = null;
-        if (tname === null || tname.length === 0) {
-            let df = (await grok.functions.eval('OpenServerFile("Dskatov:RepertoireBrowser/RepertoireBrowserSample.csv")'))[0];
-            view = grok.shell.addTableView(df);
-        } else {
-            view = grok.shell.getTableView(tname[0]);
-        }
-        grok.shell.v = view;
-        await launchBrowser(view);
-        loaded = true;
-    }
-    // let tname = grok.shell.tableNames;
-    // let view = grok.shell.getTableView(tname[0]);
-    // grok.shell.v = view;
-    // launchBrowser(view);
+    // let loaded;
+    // if (loaded == undefined) {
+    //     let tname = grok.shell.tableNames;
+    //     let view = null;
+    //     if (tname === null || tname.length === 0) {
+    //         let df = (await grok.functions.eval('OpenServerFile("Dskatov:RepertoireBrowser/RepertoireBrowserSample.csv")'))[0];
+    //         view = grok.shell.addTableView(df);
+    //     } else {
+    //         view = grok.shell.getTableView(tname[0]);
+    //     }
+    //     grok.shell.v = view;
+    //     await launchBrowser(view);
+    //     loaded = true;
+    // }
+    let tname = grok.shell.tableNames;
+    let view = grok.shell.getTableView(tname[0]);
+    grok.shell.v = view;
+    launchBrowser(view);
 }
 
 //name: launchBrowser
@@ -516,22 +516,14 @@ export async function launchBrowser(view) {
     });
     // endregion
 
-    let root = ui.div();
+    // tweak the App page properties
+    {
+        let windows = grok.shell.windows;
+        windows.showProperties = false;
+        windows.showHelp = false;
+        windows.showConsole = false;
+    }
 
-    root.appendChild(ui.h1('Repertoire viewer options'));
-
-    root.appendChild(ui.h3('NGL settings'));
-    root.appendChild(ui.inputs([repChoice, CDR3_choice]));
-
-    root.appendChild(ui.h3('Sequence settings'));
-    root.appendChild(ui.inputs([chain_choice, paratopes, ptm_prob]));
-    let acc_ptm = ui.accordion();
-    acc_ptm.addPane('ptm list', () => ui.inputs([ptm_choice]));
-    root.append(acc_ptm.root);
-
-    // root.appendChild(ui.h3('Save/Load'));
-    // await save_load(table, root);
-    grok.shell.o = root;
 
     var ngl_host = ui.div([],'d4-ngl-viewer');
     ngl_host.style.backgroundColor ='black';
@@ -548,4 +540,24 @@ export async function launchBrowser(view) {
     let ptm_features_obj = {};
     ptm_features_obj.ft = loadSequence(chain_choice, ptm_choice, ptm_prob, paratopes ,CDR3_choice);
 
+
+    
+    let root = ui.div();
+
+    root.appendChild(ui.h1('Repertoire viewer options'));
+
+    root.appendChild(ui.h3('NGL settings'));
+    root.appendChild(ui.inputs([repChoice, CDR3_choice]));
+
+    root.appendChild(ui.h3('Sequence settings'));
+    root.appendChild(ui.inputs([chain_choice, paratopes, ptm_prob]));
+    let acc_ptm = ui.accordion();
+    acc_ptm.addPane('ptm list', () => ui.inputs([ptm_choice]));
+    root.append(acc_ptm.root);
+
+    // root.appendChild(ui.h3('Save/Load'));
+    // await save_load(table, root);
+
+    view.dockManager.dock(root, 'right');
+    grok.shell.o = root;
 }
