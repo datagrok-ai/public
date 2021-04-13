@@ -1,0 +1,22 @@
+{
+	"name": "grokcache",
+	"friendlyName": "GrokCache",
+	"version": "0.0.1",
+	"description": "Collection of runtime caching functions and tools",
+	"dependencies": {
+		"datagrok-api": "latest"
+	},
+	"scripts": {
+		"debug-grokcache": "grok publish --rebuild",
+		"release-grokcache": "grok publish --rebuild --release",
+		"build-grokcache": "webpack",
+		"build": "webpack",
+		"debug-grokcache-dev": "grok publish dev --rebuild",
+		"release-grokcache-dev": "grok publish dev --rebuild --release",
+		"debug-grokcache-public": "grok publish public --rebuild",
+		"release-grokcache-public": "grok publish public --rebuild --release",
+		"debug-grokcache-local": "grok publish local --rebuild",
+		"debug-grokcache-localhost": "grok publish localhost --rebuild",
+		"release-grokcache-local": "grok publish local --rebuild --release"
+	}
+}
