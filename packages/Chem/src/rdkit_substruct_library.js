@@ -28,6 +28,7 @@ class RdKitSubstructLibrary {
   search(query) {
 
     const queryMol = this.rdKitModule.get_mol(query);
+    queryMol.merge_hs_as_queries();
     const matches = this.library.get_matches(queryMol, false, 1, -1);
     queryMol.delete();
     return matches;
