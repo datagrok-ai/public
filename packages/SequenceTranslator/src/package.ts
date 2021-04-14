@@ -31,8 +31,11 @@ export function bioSpringToClassic(nucleotides: string) {
 //input: string nucleotides {semType: BioSpring / Gapmers}
 //output: string result {semType: GCRS / Gapmers}
 export function bioSpringToGCRS(nucleotides: string) {
-  const obj: {[index: string]: string} = {"*": "nps", "5": "moeU", "6": "moeA", "7": "moe5mC", "8": "moeG", "9": "5mC"};
-  return nucleotides.replace(/[*56789]/g, function (x: string) {return obj[x];});
+  const obj: {[index: string]: string} = {
+    "5*": "moeUnps", "6*": "moeAnps", "7*": "moe5mCnps", "8*": "moeGnps", "9*": "5mCps", "A*": "Aps", "T*": "Tps",
+    "G*": "Gps", "C*": "Cps", "5": "moeU", "6": "moeA", "7": "moe5mC", "8": "moeG"
+  };
+  return nucleotides.replace(/(5\*|6\*|7\*|8\*|9\*|A\*|T\*|G\*|C\*|5|6|7|8])/g, function (x: string) {return obj[x];});
 }
 
 //name: GCRSToBioSpring
@@ -40,9 +43,9 @@ export function bioSpringToGCRS(nucleotides: string) {
 //output: string result {semType: BioSpring / Gapmers}
 export function GCRSToBioSpring(nucleotides: string) {
   const obj: {[index: string]: string} = {
-    "moeT": "5", "moeA": "6", "moe5mC": "7", "moeG": "8", "5mC": "9", "nps": "*", "ps": "*", "U": "T"
+    "moeT": "5", "moeA": "6", "moe5mC": "7", "moeG": "8", "moeU": "5", "5mC": "9", "nps": "*", "ps": "*", "U": "T"
   };
-  return nucleotides.replace(/(moeT|moeA|moe5mC|moeG|5mC|nps|ps|U)/g, function (x: string) {return obj[x];});
+  return nucleotides.replace(/(moeT|moeA|moe5mC|moeG|moeU|5mC|nps|ps|U)/g, function (x: string) {return obj[x];});
 }
 
 //name: GCRSToClassic
