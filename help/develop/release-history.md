@@ -2,18 +2,18 @@
 <!-- SUBTITLE: -->
 
 # 2021-04-14 Dev build 0.89.36 (updates since 0.89.27)
-​
+
 ## Highlights
-​
+
 * Grid: custom cell renderers as a first-class citizen in [many contexts](https://community.datagrok.ai/t/cheminformatics-updates/457/8)
 * Tooltips: Rendering of chemical molecules with RDKit
 * Bar Chart: support for DateTime [columns categorization](https://community.datagrok.ai/t/visualization-related-updates/521/10)
 * New [Timelines Viewer](https://community.datagrok.ai/t/visualization-related-updates/521/4)
 * JS API improvements (new events and methods, Typescript support)
 * Better JS editing in the [JS fiddle](https://public.datagrok.ai/js) with IntelliSense and `async/await`
-​
+
 ## Major features and Improvements
-​
+
 * Grid: Custom cell renderers (including RDKit molecules renders) support [in several contexts](https://community.datagrok.ai/t/cheminformatics-updates/457/8), including tooltips, tile viewer, form, other viewers' axes
 * Bar Chart: [categorizes DateTime columns using functions of Year, Month, Quarter, Year - Quarter, etc.](https://community.datagrok.ai/t/visualization-related-updates/521/10)
 * Bar Chart: [add setting for excluding null values category on bar segments](https://community.datagrok.ai/t/bar-chart-color-by-category/516)
@@ -31,10 +31,10 @@
 * Trellis Plot: show more granular X and Y axis ticks on line charts
 * [Selection of data subsets to display on scatter plots](https://community.datagrok.ai/t/visualization-related-updates/521/8)
 * Filter state is preserved when closing filter panel
-​* Chem: 10x faster CoordGen-based alignment, flag to hide isotopic labels in RDKit rendering
+* Chem: 10x faster CoordGen-based alignment, flag to hide isotopic labels in RDKit rendering
 
 ## Bug fixes
-​
+
 * Histogram: [duplicated Y axis](https://community.datagrok.ai/t/cannot-easily-change-the-aggregation-of-the-histogram/509/4)
 * User can't login with OpenId if someone shared something to him by email
 * Detectors load on each table open
@@ -50,9 +50,9 @@
 * Grid: empty cells are colored with conditional color-coding on
 * error: NullError: method not found: '_ddt$_name' on null
 * Visual Query does not work for all supported providers
-​
+
 ## Miscellaneous
-​
+
 * Improved comments on DataFrameViewer::onFrameAttached(..)
 * JS API: pass JsViewer in onContextMenu events
 * JS API: Ability to create ViewLayout from ViewState
