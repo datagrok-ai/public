@@ -6,6 +6,14 @@
 	"dependencies": {
 	  "datagrok-api": "latest"
 	 },
+	"sources": [
+    "phylotree/phylotree.css",
+		"phylotree/jquery.js",
+		"phylotree/bootstrap.min.js",
+		"phylotree/d3.v3.min.js",
+		"phylotree/phylotree.js",
+		"phylotree/underscore-min.js"
+  ],
 	"scripts": {
 		"debug-nwkviewer": "grok publish --rebuild",
 		"release-nwkviewer": "grok publish --rebuild --release",
