@@ -5,11 +5,19 @@ import * as DG from 'datagrok-api/dg';
 
 export let _package = new DG.Package();
 
-//name: classicToBioSpring {semType: nucleotides}
-//input: string nucleotides {semType: BioSpring / Gapmers}
-//output: string result
+//name: classicToBioSpring
+//input: string nucleotides {semType: nucleotides}
+//output: string result {semType: BioSpring / Gapmers}
 export function classicToBioSpring(nucleotides: string) {
-  return nucleotides;
+  let count: number = -1;
+  const objForEdges: {[index: string]: string} = {"T": "5*", "A": "6*", "C": "7*", "G": "8*"};
+  const objForCenter: {[index: string]: string} = {"C": "9*", "A": "A*", "T": "T*", "G": "G*"};
+  return nucleotides.replace(/[ATCG]/g, function (x: string) {
+    count ++;
+    if (count < 5) return objForEdges[x];
+    if (count < 15) return objForCenter[x];
+    return objForEdges[x];
+  }).slice(0, 2 * count + 1);
 }
 
 //name: classicToGCRS
