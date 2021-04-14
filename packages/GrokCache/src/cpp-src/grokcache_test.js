@@ -1,4 +1,4 @@
-var grokCache = {}
+let grokCache = {};
 
 
 async function grokCacheModuleInit() {
@@ -21,6 +21,21 @@ function grokCacheTestStart() {
       const htmlMStatus = document.querySelector('#gk_module_status');
       let greeting = grokCache.wasm_version();
       htmlMStatus.textContent = greeting;
+    }
+    {
+      const htmlEStatus = document.querySelector('#gk_enums_status');
+      if (grokCache.CompressMethod) {
+        console.log(grokCache.CompressMethod);
+
+        if (grokCache.CompressMethod.NONE.value == 0 && grokCache.CompressMethod.ZIP.value == 1)
+          htmlEStatus.textContent = "Ok";
+        else
+          htmlEStatus.textContent = "CompressMethod enum failure";
+      }
+    }
+    {
+      let cr = grokCache.getCacheRecord();
+      console.log(cr);
     }
   });
 }
