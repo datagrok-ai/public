@@ -89,7 +89,7 @@
 * Bar Chart: tooltips on category labels 
 * Bar Chart: disable zoom on the X axis
 * [Filters: split categories containing a list of values by pipes](https://community.datagrok.ai/t/visualization-related-updates/521/11)
-* * Color Coding | Conditional: Ranges "20-30" and ">40" are always automatically determined for any numeric columns
+* Conditional Color Coding: Ranges "20-30" and ">40" are always automatically determined for any numeric columns
 
 *Note:* this summary accumulates updates after 0.89.27.
 
