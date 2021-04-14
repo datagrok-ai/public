@@ -1,7 +1,7 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
-# 2021-04-14 Dev build 0.89.36 (updates since 0.89.27)
+# 2021-04-14 Dev build 0.89.36
 
 ## Highlights
 
@@ -69,6 +69,8 @@
 * HeatMap: automatically adjust header font size as column width gets smaller
 * Query View: Incorrect display of line numbering
 * UX: Flickering of scroll bars fixed
+
+*Note:* this summary accumulates updates after 0.89.27. 
 
 # 2021-04-14 Dev build 0.89.36
 
