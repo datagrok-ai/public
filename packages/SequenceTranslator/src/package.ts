@@ -13,7 +13,7 @@ export function classicToBioSpring(nucleotides: string) {
   const objForEdges: {[index: string]: string} = {"T": "5*", "A": "6*", "C": "7*", "G": "8*"};
   const objForCenter: {[index: string]: string} = {"C": "9*", "A": "A*", "T": "T*", "G": "G*"};
   return nucleotides.replace(/[ATCG]/g, function (x: string) {
-    count ++;
+    count++;
     if (count < 5) return objForEdges[x];
     if (count < 15) return objForCenter[x];
     return objForEdges[x];
@@ -24,7 +24,15 @@ export function classicToBioSpring(nucleotides: string) {
 //input: string nucleotides {semType: nucleotides}
 //output: string result {semType: GCRS / Gapmers}
 export function classicToGCRS(nucleotides: string) {
-  return nucleotides;
+  let count: number = -1;
+  const objForEdges: {[index: string]: string} = {"T": "moeUnps", "A": "moeAnps", "C": "moe5mCnps", "G": "moeGnps"};
+  const objForCenter: {[index: string]: string} = {"C": "Cps", "A": "Aps", "T": "Tps", "G": "Gps"};
+  return nucleotides.replace(/[ATCG]/g, function (x: string) {
+    count++;
+    if (count < 5) return objForEdges[x];
+    if (count < 15) return objForCenter[x];
+    return objForEdges[x];
+  }).slice(0, -3);
 }
 
 //name: bioSpringToClassic
