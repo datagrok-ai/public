@@ -14,7 +14,7 @@
 
 ## Major features and Improvements
 
-* Grid: Custom cell renderers (including RDKit molecules renders) support [in several contexts](https://community.datagrok.ai/t/cheminformatics-updates/457/8), including tooltips, tile viewer, form, other viewers' axes
+* Grid: Custom cell renderers, including RDKit molecules, [in several contexts](https://community.datagrok.ai/t/cheminformatics-updates/457/8): tooltips, tile viewer, form, other viewers' axes
 * Bar Chart: [categorizes DateTime columns using functions of Year, Month, Quarter, Year - Quarter, etc.](https://community.datagrok.ai/t/visualization-related-updates/521/10)
 * Bar Chart: [add setting for excluding null values category on bar segments](https://community.datagrok.ai/t/bar-chart-color-by-category/516)
 * Heatmap: [Improved adaptive rendering of the column names in the heatmap](https://community.datagrok.ai/t/visualization-related-updates/521/9)
