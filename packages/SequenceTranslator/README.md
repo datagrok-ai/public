@@ -3,6 +3,24 @@
 SequenceTranslator is a [package](https://datagrok.ai/help/develop/develop#packages) for
 the [Datagrok](https://datagrok.ai) platform.
 
+Examples of supported converters:
+
+| Nucleotide type | Classic Code | BioSpring Code | Axolabs Code | Janssen GCRS code |
+|---|---|---|---|---|
+| ASO Gapmers                    | TTGTCCAGATGACTTCGGCC | 5\*5\*8\*5\*7\*9\*A\*G\*A\*T\*G\*A\*9\*T\*T\*7\*8\*8\*7\*7 |-|moeUnpsmoeUnpsmoeGnpsmoeUnpsmoe5mCps5mCpsApsGpsApsTpsGpsAps5mCpsTpsTnpsmoe5mCnpsmoeGnpsmoeGnpsmoe5mCnpsmoe5mC |
+| 2'-OMe and 2'-F modified siRNA | GUUUAAUCAGAAGAGGAUU | 8\*5\*15261728264648252\*5\*5 | gsusUfuAfaUfcAfgAfaGfaGfgAfuAfsusu | mGpsmUpsfUmUfAmAfUmCfAmGfAmAfGmAfGmGfAmUfApsmUpsmU |
+
+| Function | Input | Output | 
+|---|---|---|
+| classicToBioSpring | TTGTCCAGATGACTTCGGCC | 5\*5\*8\*5\*7\*9\*A\*G\*A\*T\*G\*A\*9\*T\*T\*7\*8\*8\*7\*7 |
+| classicToGCRS | TTGTCCAGATGACTTCGGCC | moeUnpsmoeUnpsmoeGnpsmoeUnpsmoe5mCps5mCpsApsGpsApsTpsGpsAps5mCpsTpsTnpsmoe5mCnpsmoeGnpsmoeGnpsmoe5mCnpsmoe5mC | 
+| bioSpringToClassic | 5\*5\*8\*5\*7\*9\*A\*G\*A\*T\*G\*A\*9\*T\*T\*7\*8\*8\*7\*7 | TTGTCCAGATGACTTCGGCC |
+| bioSpringToGCRS | 5\*5\*8\*5\*7\*9\*A\*G\*A\*T\*G\*A\*9\*T\*T\*7\*8\*8\*7\*7 | moeUnpsmoeUnpsmoeGnpsmoeUnpsmoe5mCps5mCpsApsGpsApsTpsGpsAps5mCpsTpsTnpsmoe5mCnpsmoeGnpsmoeGnpsmoe5mCnpsmoe5mC |
+| GCRSToBioSpring | moeUnpsmoeUnpsmoeGnpsmoeUnpsmoe5mCps5mCpsApsGpsApsTpsGpsAps5mCpsTpsTnpsmoe5mCnpsmoeGnpsmoeGnpsmoe5mCnpsmoe5mC | 5\*5\*8\*5\*7\*9\*A\*G\*A\*T\*G\*A\*9\*T\*T\*7\*8\*8\*7\*7 |
+| GCRSToClassic | moeUnpsmoeUnpsmoeGnpsmoeUnpsmoe5mCps5mCpsApsGpsApsTpsGpsAps5mCpsTpsTnpsmoe5mCnpsmoeGnpsmoeGnpsmoe5mCnpsmoe5mC | TTGTCCAGATGACTTCGGCC | 
+
+Tables of codes accordance:
+
 | CMO Codes For ASO Gapmers | BioSpring Code | Axolabs Code | Janssen GCRS code |
 |---|---|---|---|
 | 2'MOE-5Me-rU | 5 | | moeT |
