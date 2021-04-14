@@ -5,12 +5,11 @@
 
 ## Highlights
 
-* Tooltips: Rendering of chemical molecules with RDKit
-* Custom cell renderers in [contexts](https://community.datagrok.ai/t/cheminformatics-updates/457/8) like viewers' axes and forms
+* Rendering of chemical molecules with RDKit [in tooltips, forms, viewers' axis and tile viewer](https://community.datagrok.ai/t/cheminformatics-updates/457/8)
 * Bar Chart: support for DateTime [columns categorization](https://community.datagrok.ai/t/visualization-related-updates/521/10), functional improvements
 * [Conditional color coding](https://dev.datagrok.ai/js/samples/grid/color-coding-conditional) for the grid, scatter plot, box plot
 * New [Timelines Viewer](https://community.datagrok.ai/t/visualization-related-updates/521/4)
-* JS API improvements: Typescript support, new events and methods
+* JS API improvements: Typescript support, new [events](https://community.datagrok.ai/t/javascript-api-updates/526/8) and [methods](https://community.datagrok.ai/t/javascript-api-updates/526/5)
 * Better JS editing in the [JS fiddle](https://public.datagrok.ai/js) with IntelliSense and `async/await`
 
 ## Major features and Improvements
