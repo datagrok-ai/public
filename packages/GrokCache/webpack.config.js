@@ -32,10 +32,6 @@ module.exports = {
     'datagrok-api/grok': 'grok',
     'datagrok-api/ui': 'ui',
   },
-  experiments: {
-    asyncWebAssembly: true,
-    topLevelAwait: true
-  },
   output: {
     filename: '[name].js',
     library: 'grokcache',
