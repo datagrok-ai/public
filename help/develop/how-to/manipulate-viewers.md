@@ -108,10 +108,10 @@ view.addViewer(viewer);
 view.dockManager.dock(viewer, 'right');
 ```
 
-The list of positions consists of the following options: `left | right | top | bottom | fill`. Notice that here the viewer will be placed independently of the table view:
+The list of positions consists of the following options: `left | right | top | down | fill`. You can refer to them from the `DG` namespace, e.g., `DG.DOCK_TYPE.RIGHT`. Notice that here the viewer will be placed independently of the table view:
 
 ```javascript
-grok.shell.dockManager.dock(viewer, 'right');
+grok.shell.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT);
 ```
 
 Examples:

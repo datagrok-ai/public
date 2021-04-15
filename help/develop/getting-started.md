@@ -1,4 +1,4 @@
-<!-- TITLE: Getting Started with Building on Datagrok -->
+<!-- TITLE: &#8204;Getting Started-->
 <!-- SUBTITLE: -->
 
 # Getting Started with Building on Datagrok
