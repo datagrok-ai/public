@@ -77,8 +77,20 @@ function draw(inputSeq: DG.InputBase, outputValues: {type: string; classic: stri
   $('.sequenceInput select').attr('placeholder','');
 }
 
+export function isClassicCode(sequence: string): boolean {return /^[ATGCU]{10,}$/.test(sequence);}
+
+export function isAsoGapmerBioSpringCode(sequence: string): boolean {return /^[*56789ATGC]{30,}$/.test(sequence);}
+
+export function isAsoGapmerGCRSCode(sequence: string): boolean {return /^(?=.*moe)(?=.*5mC)(?=.*ps){30,}/.test(sequence);}
+
+export function isSiRnaBioSpringCode(sequence: string): boolean {return /^[*1-8]{30,}$/.test(sequence);}
+
+export function isSiRnaAxolabsCode(sequence: string): boolean {return /^[fsACGUacgu]{30,}$/.test(sequence);}
+
+export function isSiRnaGCRSCode(sequence: string): boolean {return /^[fmpsACGU]{30,}$/.test(sequence);}
+
 function convertSequence(seq: string) {
-  if (/^[ATGCU]{10,}$/.test(seq))
+  if (isClassicCode(seq))
     return {
       type: "ASO Gapmers / Classic Code",
       classic: seq,
@@ -87,7 +99,7 @@ function convertSequence(seq: string) {
       gcrs: asoGapmersClassicToGCRS(seq),
       complement: asoGapmersClassicComplement(seq)
   };
-  if (/^[*56789ATGC]{30,}$/.test(seq))
+  if (isAsoGapmerBioSpringCode(seq))
     return {
       type: "ASO Gapmers / BioSpring Code",
       classic: asoGapmersBioSpringToClassic(seq),
@@ -96,7 +108,7 @@ function convertSequence(seq: string) {
       gcrs: asoGapmersBioSpringToGCRS(seq),
       complement: asoGapmersBioSpringComplement(seq)
     };
-  if (/^(?=.*moe)(?=.*5mC)(?=.*ps){30,}/.test(seq))
+  if (isAsoGapmerGCRSCode(seq))
     return {
       type: "ASO Gapmers / GCRS Code",
       classic: asoGapmersGCRSToClassic(seq),
@@ -105,7 +117,7 @@ function convertSequence(seq: string) {
       gcrs: seq,
       complement: asoGapmersGCRSComplement(seq)
     };
-  if (/^[*1-8]{30,}$/.test(seq))
+  if (isSiRnaBioSpringCode(seq))
     return {
       type: "siRNA / bioSpring Code",
       classic: "coming soon",
@@ -114,7 +126,7 @@ function convertSequence(seq: string) {
       gcrs: "coming soon",
       complement: "coming soon"
     };
-  if (/^[fsACGUacgu]{30,}$/.test(seq))
+  if (isSiRnaAxolabsCode(seq))
     return {
       type: "siRNA / Axolabs Code",
       classic: siRnaAxolabsToClassic(seq),
@@ -123,7 +135,7 @@ function convertSequence(seq: string) {
       gcrs: siRnaAxolabsToGCRS(seq),
       complement: "coming soon"
     };
-  if (/^[fmpsACGU]{30,}$/.test(seq))
+  if (isSiRnaGCRSCode(seq))
     return {
       type: "siRNA / GCRS Code",
       classic: "coming soon",
