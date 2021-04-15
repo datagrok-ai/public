@@ -21,6 +21,7 @@ declare let grok: any;
 declare let DG: any;
 let api = <any>window;
 type RowPredicate = (row: Row) => boolean;
+type Comparer = (a: any, b: any) => number;
 
 /**
  * Finds the item by its unique id.
@@ -339,6 +340,7 @@ export class DataFrame {
 
   /**
    * Returns [Int32Array] that contains sorted order, or null for unsorted (original) order.
+   * See also Column.getSortedOrder.
    * @param {Object[]} sortByColumnIds - Collection of [Column]s to use as keys for sorting.
    * @param {boolean[]} sortOrders - List of sort orders for [sortByCols]. True == ascending.
    * @param {BitSet} rowMask - Mask of the rows to sort. Result array will contain [rowIndexes.length] elements.
@@ -858,11 +860,15 @@ export class Column {
     api.grok_Column_SetCategoryOrder(this.d, order);
   }
 
-  /** Gets order of categories
-   * @returns string[] */
-  getCategoryOrder() {
-    return api.grok_Column_GetCategoryOrder(this.d);
-  }
+  /** Gets order of categories */
+  getCategoryOrder(): string[] { return api.grok_Column_GetCategoryOrder(this.d); }
+
+  /** Returns an array of indexes sorted using [valueComparer]. */
+  getSortedOrder(): Int32Array { return api.grok_Column_GetSortedOrder(this.d); }
+
+  /** Value comparison function to be used for sorting. Null means default sorting. */
+  get valueComparer(): Comparer | null { return api.grok_Column_Get_ValueComparer(this.d); }
+  set valueComparer( cmp: Comparer | null) { api.grok_Column_Set_ValueComparer(this.d, cmp); }
 
   /** Column's minimum value. The result is cached.
    * @returns {number} */
