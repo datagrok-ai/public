@@ -210,8 +210,8 @@ its contents are shared too, so does the database connections.
 ### Namespacing connections
 
 Often one application is built per several customers. As part of per-customer tailoring there are in-house data sources.
-You typically don't want to mention connections to these data sources or their names, as they are proprietary.
-Sometimes your application is in public domain, but the customer data is special.
+You typically don't want to mention connections to these data sources or their names in the shared code, as they are proprietary.
+Or, sometimes your application is in public domain, but the customer data resides isolated on their side.
 
 Usually it isn't desired to handle customers' specifics in the shared application code.
 To handle these cases, we recommend you to use Datagrok's namespaces (also called "Root Projects").
@@ -237,6 +237,16 @@ let's create a namespace for it.
 6. *Left*-click on the `<CONNECTION>` under the project's name (without leaving the `Projects` section),
    and observe its property panel on the right. Find `Links...` and left-click on it. You should find
    that the link to the connection is now suffixed by `NewNamespace:<CONNECTION>`.
+   
+<!--
+### Pushing credentials to connections
+
+Another popular case is when you actually host the application's code in the customer's repository,
+but the credentials to proprietary data sources remain as what you won't put there along the code.
+For this scenario, consider [pushing credentials](govern/security.md#credentials) to your Datagrok instance
+as part of the package deployment process.
+
+-->
 
 ## Dataframes
 
@@ -613,11 +623,16 @@ For other types of credentials, there are suitable means in Datagrok described b
 
 #### Pushing credentials by the Datagrok Server API
 
-It's possible to programmatically push credentials to Datagrok and deliver them to the connection
+It's possible to programmatically push credentials to Datagrok and deliver them to the package
 of interest. In such scenario, credentials are stored on a secured machine and delivered
-to Datagrok via a triggered bat/sh-script. This is usually on demand, e.g. through a deployment process.
-For using this, you need to provide an API developer's key, which is available in your user info pane
+to Datagrok via a triggered bat/sh-script. This is usually on demand, e.g. through a deployment
+process — the `webpack && grok publish && ...` cycle.
+
+For using this option, you need to provide an API developer's key, which is available in your user info pane
 in the Datagrok UI. Access it with the user avatar button in the left sidebar of Datagrok main window.
+[This script](https://github.com/datagrok-ai/public/blob/47ca6254149972fd7c4b8f71b64967b41e92093c/packages/NLP/aws/nlp-user.py#L45)
+gives a great idea for doing this completely programmatically. Once the credentials are there, they are
+memorized by the platform and sustain package versions updates.
 
 *References:*
 
