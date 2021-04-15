@@ -107,7 +107,9 @@ export async function exportToDf(file) {
   mainDf.currentRow = fileIndex;
 
   const view = grok.shell.addTableView(mainDf);
-  view.addViewer('PhyloTree');
+  const viewer = DG.Viewer.fromType('PhyloTree', mainDf);
+  view.addViewer(viewer);
+  view.dockManager.dock(viewer, DG.DOCK_TYPE.DOWN);
 
   view.grid.columns.byName('links').cellType = 'html';
   view.grid.onCellPrepare(gc => {
