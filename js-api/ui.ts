@@ -323,6 +323,13 @@ export function wait(getElement: () => HTMLElement): any {
   return toJs(api.grok_UI_Wait(getElement));
 }
 
+/** Waits for Future<Element> function to complete and collect its result as a ui.box.*/
+export function waitBox(getElement: () => HTMLElement): any {
+  let d = toJs(api.grok_UI_Wait(getElement));
+  $(d).css('ui-box');
+  return d;
+}
+
 /** Creates a visual element representing list of [items]. */
 export function list(items: any[]): HTMLElement[] {
   return api.grok_UI_List(Array.from(items).map(toDart));
