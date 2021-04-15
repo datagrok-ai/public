@@ -38,7 +38,7 @@ export async function launchBrowser(view) {
     function extract_schemes() {
         let raw_scheme_names = Object.keys(scheme.cdr_ranges);
         let schemes_lst = ['default'];
-        raw_scheme_names.forEach((str)=>{
+        raw_scheme_names.forEach((str) => {
             str = str.split('_')
             if (schemes_lst.includes(str[0]) === false) {
                 schemes_lst.push(str[0]);
@@ -67,7 +67,7 @@ export async function launchBrowser(view) {
         color1 = color1.match(/\d+/g).map(Number);
         color2 = color2.match(/\d+/g).map(Number);
 
-        for(var i = 0; i < steps; i++) {
+        for (var i = 0; i < steps; i++) {
             interpolatedColorArray.push(interpolateColor(color1, color2, stepFactor * i));
         }
 
@@ -98,7 +98,7 @@ export async function launchBrowser(view) {
         let c_mut = [];
         let l_den = [];
         let c_den = new Array(seq.length).fill(1);
-        let palette = interpolateColors('(255, 255, 0)','(255, 0, 0)',5);
+        let palette = interpolateColors('(255, 255, 0)', '(255, 0, 0)', 5);
         for (let i = 0; i < rawlist.length; i++) {
 
             if (rawlist[i][1] !== 100) {
@@ -106,33 +106,35 @@ export async function launchBrowser(view) {
                 if (l_den.includes(rawlist[i][0][0]) === false) {
                     l_den.push(rawlist[i][0][0]);
                 }
-                c_den[l_den.indexOf(rawlist[i][0][0])] = c_den[l_den.indexOf(rawlist[i][0][0])]*(1-rawlist[i][1]);
+                c_den[l_den.indexOf(rawlist[i][0][0])] = c_den[l_den.indexOf(rawlist[i][0][0])] * (1 - rawlist[i][1]);
 
                 if (mutations.includes(rawlist[i][0][1]) && rawlist[i][1] > prob) {
                     l_mut.push(rawlist[i][0]);
-                    c_mut.push(palette[Math.round(rawlist[i][1]*4)]);
+                    c_mut.push(palette[Math.round(rawlist[i][1] * 4)]);
                 }
 
             }
         }
 
-        c_den = c_den.filter((x) => {return x !== 1});
+        c_den = c_den.filter((x) => {
+            return x !== 1
+        });
         for (let i = 0; i < c_den.length; i++) {
-            c_den[i] = palette[Math.round((1-c_den[i])*4)];
+            c_den[i] = palette[Math.round((1 - c_den[i]) * 4)];
         }
 
-        return [c_mut,l_mut,c_den,l_den];
+        return [c_mut, l_mut, c_den, l_den];
     }
 
     // applying gradients to sequence viewer
-    function applyGradient(gradient, chain, mutations){
+    function applyGradient(gradient, chain, mutations) {
 
         let j = -1;
         mutations.forEach((mut) => {
             let selectorStr = 'g.feature.' + mut + ' rect.feature';
             let el = document.querySelectorAll(selectorStr);
             for (let i = 1; i <= el.length; i++) {
-                el[i-1].style.fill = gradient[j+i];
+                el[i - 1].style.fill = gradient[j + i];
             }
             j = j + el.length;
         })
@@ -142,21 +144,21 @@ export async function launchBrowser(view) {
     function paratopeToList(chain_choice, paratopes) {
         let l = [];
         let c = [];
-        let palette = interpolateColors('(255, 255, 255)','(255, 0, 255)',100);
+        let palette = interpolateColors('(255, 255, 255)', '(255, 0, 255)', 100);
         if (paratopes === true) {
             Object.keys(scheme.parapred_predictions[chain_choice]).forEach((index) => {
                 l.push(index);
-                c.push(palette[Math.round(scheme.parapred_predictions[chain_choice][index]*100)]);
+                c.push(palette[Math.round(scheme.parapred_predictions[chain_choice][index] * 100)]);
             })
         }
-        return [c,l];
+        return [c, l];
     }
 
     // cdr track to sequence view
-    function cdrToList(chain_choice, crd_choice){
+    function cdrToList(chain_choice, crd_choice) {
 
         let cdr_features = [];
-        if(crd_choice !== 'default') {
+        if (crd_choice !== 'default') {
             if (chain_choice === 'H') {
                 Object.keys(scheme.cdr_ranges).forEach((str) => {
                     if (str.includes(crd_choice + '_CDRH')) {
@@ -182,26 +184,24 @@ export async function launchBrowser(view) {
     }
 
     // pulling CDR3 regions
-    function CDR3(crd_choice, paratopes){
+    function CDR3(crd_choice, paratopes) {
         let schemeId;
         let baseH = 'darkblue';
         let baseL = 'darkred';
 
-
         if (paratopes.value === true) {
-            let palette = interpolateColors('(255, 255, 255)','(255, 0, 255)',100);
+            let palette = interpolateColors('(255, 255, 255)', '(255, 0, 255)', 100);
             let selectionScheme = [];
             Object.keys(scheme.parapred_predictions).forEach((chain) => {
                 Object.keys(scheme.parapred_predictions[chain]).forEach((index) => {
                     selectionScheme.push([
-                        palette[Math.round(scheme.parapred_predictions[chain][index]*100)],
+                        palette[Math.round(scheme.parapred_predictions[chain][index] * 100)],
                         `${index} and :${chain}`
                     ]);
                 })
             })
             schemeId = NGL.ColormakerRegistry.addSelectionScheme(selectionScheme);
         } else {
-
             if (crd_choice.value === 'default') {
                 schemeId = NGL.ColormakerRegistry.addSelectionScheme([
                     [baseH, "* and :H"],
@@ -212,7 +212,7 @@ export async function launchBrowser(view) {
                 Object.keys(scheme.cdr_ranges).forEach((str) => {
                     if (str.includes(crd_choice.value + '_CDRH')) {
                         let str_buffer = ''
-                        for(let i = 0; i < Object.keys(scheme.cdr_ranges[str]).length; i++) {
+                        for (let i = 0; i < Object.keys(scheme.cdr_ranges[str]).length; i++) {
                             str_buffer = str_buffer + ` or ${scheme.cdr_ranges[str][i][0]}-${scheme.cdr_ranges[str][i][1]} and :H`;
                         }
                         str_buffer = str_buffer.slice(4);
@@ -221,7 +221,7 @@ export async function launchBrowser(view) {
 
                     } else if (str.includes(crd_choice.value + '_CDRL')) {
                         let str_buffer = ''
-                        for( let i = 0; i < Object.keys(scheme.cdr_ranges[str]).length; i++) {
+                        for (let i = 0; i < Object.keys(scheme.cdr_ranges[str]).length; i++) {
                             str_buffer = str_buffer + ` or ${scheme.cdr_ranges[str][i][0]}-${scheme.cdr_ranges[str][i][1]} and :L`;
                         }
                         str_buffer = str_buffer.slice(4);
@@ -239,10 +239,12 @@ export async function launchBrowser(view) {
     function sidechain_select(ptm_features, chain_choice) {
         let sidechains = '';
         ptm_features = ptm_features.flat();
-        ptm_features = ptm_features.filter(function(el) {return typeof el !== 'string'});
+        ptm_features = ptm_features.filter(function (el) {
+            return typeof el !== 'string'
+        });
         ptm_features = [...new Set(ptm_features)];
 
-        for (let i=0; i < ptm_features.length; i++) {
+        for (let i = 0; i < ptm_features.length; i++) {
             sidechains = sidechains + `${ptm_features[i] + 1} and :${chain_choice.value} and (not backbone or .CA or (PRO and .N))`
             if (i !== ptm_features.length - 1) {
                 sidechains = sidechains + ' or ';
@@ -257,99 +259,199 @@ export async function launchBrowser(view) {
         stage.loadFile(bytes).then(function (o) {
             o.addRepresentation(repChoice.value, schemeObj);
             if (sidechains.length > 0) {
-                o.addRepresentation( "ball+stick", { sele: sidechains} );
+                o.addRepresentation("ball+stick", {sele: sidechains});
             }
             o.autoView();
         });
     }
 
     // sequence loading
-    function loadSequence(chain_choice, ptm_choice, ptm_prob, paratopes, crd_choice){
+    function loadSequence(chain, ptm_choice, ptm_prob, paratopes, crd_choice) {
 
-        let seq;
-        if (chain_choice.value === 'H') {
-            seq = scheme.heavy_seq
-        } else {
-            seq = scheme.light_seq
-        }
+        let all_ptm_features = [];
+        ['H','L'].forEach((chain_choice) => {
 
-        let mutations = []
-        let ptm_choices_lst = ptm_choice.value;
-        ptm_choices_lst.forEach((ptm) => {
-            mutations.push(mutcodes[ptm]);
+            let seq;
+            let pViz_host;
+            let pviz;
+            if (chain_choice === 'H') {
+                seq = scheme.heavy_seq;
+                pViz_host = pViz_host_heavy;
+                pviz = pviz_h;
+            } else {
+                seq = scheme.light_seq;
+                pViz_host = pViz_host_light;
+                pviz = pviz_l;
+            }
+
+            let mutations = []
+            let ptm_choices_lst = ptm_choice.value;
+            ptm_choices_lst.forEach((ptm) => {
+                mutations.push(mutcodes[ptm]);
+            })
+
+            let rawlist = mutationsTolist(mutcodes, scheme, chain_choice);
+            let ml = mutationsToFeatures(seq, rawlist, mutations, ptm_prob.value);
+            let pl = paratopeToList(chain_choice, paratopes.value);
+            let cdr_features = cdrToList(chain_choice, crd_choice.value);
+            let ptm_gradient = ml[0];
+            let ptm_features = ml[1];
+            let den_gradient = ml[2];
+            let den_features = ml[3];
+            let par_gradient = pl[0];
+            let par_features = pl[1];
+
+
+            let seqEntry = new pviz.SeqEntry({
+                sequence: seq
+            });
+            new pviz.SeqEntryAnnotInteractiveView({
+                model: seqEntry,
+                el: pViz_host
+            }).render();
+
+            mutations.forEach((mut) => {
+                pviz.FeatureDisplayer.trackHeightPerCategoryType[mut] = 1.5;
+                pviz.FeatureDisplayer.setStrikeoutCategory(mut);
+            });
+            seqEntry.addFeatures(ptm_features.map(function (ft) {
+                return {
+                    groupSet: 'PTMs',
+                    category: ft[1],
+                    type: ft[1],
+                    start: ft[0],
+                    end: ft[0],
+                    text: ft[1],
+                    improbable: true
+                }
+            }));
+            seqEntry.addFeatures(par_features.map(function (pft) {
+                return {
+                    category: 'Paratope predictions',
+                    type: 'P',
+                    start: pft,
+                    end: pft,
+                    text: '',
+                    improbable: true
+                }
+            }));
+            seqEntry.addFeatures(den_features.map(function (dft) {
+                return {
+                    category: 'PTM density',
+                    type: 'D',
+                    start: dft,
+                    end: dft,
+                    text: '',
+                    improbable: true
+                }
+            }));
+            seqEntry.addFeatures(cdr_features.map(function (cft) {
+                return {
+                    category: 'CDR region',
+                    type: 'CDR',
+                    start: cft[0],
+                    end: cft[1],
+                    text: '',
+                    improbable: true
+                }
+            }));
+
+            applyGradient(ptm_gradient, chain_choice, mutations);
+            applyGradient(den_gradient, chain_choice, ['D']);
+            applyGradient(par_gradient, chain_choice, ['P']);
+
+            all_ptm_features.push(ptm_features);
         })
 
-        let rawlist = mutationsTolist(mutcodes, scheme, chain_choice.value);
-        let ml = mutationsToFeatures(seq, rawlist, mutations, ptm_prob.value);
-        let pl = paratopeToList(chain_choice.value, paratopes.value);
-        let cdr_features = cdrToList(chain_choice.value, crd_choice.value);
-        let ptm_gradient = ml[0];
-        let ptm_features = ml[1];
-        let den_gradient = ml[2];
-        let den_features = ml[3];
-        let par_gradient = pl[0];
-        let par_features = pl[1];
 
+        // let seq;
+        // let pViz_host;
+        // if (chain_choice.value === 'H') {
+        //     seq = scheme.heavy_seq
+        //     pViz_host = pViz_host_heavy
+        // } else {
+        //     seq = scheme.light_seq
+        //     pViz_host = pViz_host_light
+        // }
+        //
+        // let mutations = []
+        // let ptm_choices_lst = ptm_choice.value;
+        // ptm_choices_lst.forEach((ptm) => {
+        //     mutations.push(mutcodes[ptm]);
+        // })
+        //
+        // let rawlist = mutationsTolist(mutcodes, scheme, chain_choice.value);
+        // let ml = mutationsToFeatures(seq, rawlist, mutations, ptm_prob.value);
+        // let pl = paratopeToList(chain_choice.value, paratopes.value);
+        // let cdr_features = cdrToList(chain_choice.value, crd_choice.value);
+        // let ptm_gradient = ml[0];
+        // let ptm_features = ml[1];
+        // let den_gradient = ml[2];
+        // let den_features = ml[3];
+        // let par_gradient = pl[0];
+        // let par_features = pl[1];
+        //
+        //
+        // let seqEntry = new pviz.SeqEntry({
+        //     sequence: seq
+        // });
+        // new pviz.SeqEntryAnnotInteractiveView({
+        //     model: seqEntry,
+        //     el: pViz_host
+        // }).render();
+        //
+        // mutations.forEach((mut) => {
+        //     pviz.FeatureDisplayer.trackHeightPerCategoryType[mut] = 1.5;
+        //     pviz.FeatureDisplayer.setStrikeoutCategory(mut);
+        // });
+        // seqEntry.addFeatures(ptm_features.map(function (ft) {
+        //     return {
+        //         groupSet: 'PTMs',
+        //         category: ft[1],
+        //         type: ft[1],
+        //         start: ft[0],
+        //         end: ft[0],
+        //         text: ft[1],
+        //         improbable: true
+        //     }
+        // }));
+        // seqEntry.addFeatures(par_features.map(function (pft) {
+        //     return {
+        //         category: 'Paratope predictions',
+        //         type: 'P',
+        //         start: pft,
+        //         end: pft,
+        //         text: '',
+        //         improbable: true
+        //     }
+        // }));
+        // seqEntry.addFeatures(den_features.map(function (dft) {
+        //     return {
+        //         category: 'PTM density',
+        //         type: 'D',
+        //         start: dft,
+        //         end: dft,
+        //         text: '',
+        //         improbable: true
+        //     }
+        // }));
+        // seqEntry.addFeatures(cdr_features.map(function (cft) {
+        //     return {
+        //         category: 'CDR region',
+        //         type: 'CDR',
+        //         start: cft[0],
+        //         end: cft[1],
+        //         text: '',
+        //         improbable: true
+        //     }
+        // }));
+        //
+        // applyGradient(ptm_gradient, chain_choice.value, mutations);
+        // applyGradient(den_gradient, chain_choice.value, ['D']);
+        // applyGradient(par_gradient, chain_choice.value, ['P']);
 
-        let seqEntry = new pviz.SeqEntry({
-            sequence : seq
-        });
-        new pviz.SeqEntryAnnotInteractiveView({
-            model : seqEntry,
-            el : pViz_host
-        }).render();
-
-        mutations.forEach((mut) => {
-            pviz.FeatureDisplayer.trackHeightPerCategoryType[mut] = 1.5;
-            pviz.FeatureDisplayer.setStrikeoutCategory(mut);
-        });
-        seqEntry.addFeatures(ptm_features.map(function(ft) {
-            return {
-                groupSet: 'PTMs',
-                category : ft[1],
-                type : ft[1],
-                start : ft[0],
-                end : ft[0],
-                text : ft[1],
-                improbable : true
-            }
-        }));
-        seqEntry.addFeatures(par_features.map(function(pft) {
-            return {
-                category: 'Paratope predictions',
-                type : 'P',
-                start : pft,
-                end : pft,
-                text : '',
-                improbable : true
-            }
-        }));
-        seqEntry.addFeatures(den_features.map(function(dft) {
-            return {
-                category: 'PTM density',
-                type : 'D',
-                start : dft,
-                end : dft,
-                text : '',
-                improbable : true
-            }
-        }));
-        seqEntry.addFeatures(cdr_features.map(function(cft) {
-            return {
-                category: 'CDR region',
-                type : 'CDR',
-                start : cft[0],
-                end : cft[1],
-                text : '',
-                improbable : true
-            }
-        }));
-
-        applyGradient(ptm_gradient, chain_choice.value, mutations);
-        applyGradient(den_gradient, chain_choice.value, ['D']);
-        applyGradient(par_gradient, chain_choice.value, ['P']);
-
-        return ptm_features;
+        all_ptm_features = all_ptm_features.flat();
+        return all_ptm_features;
     }
 
     // selection saving
@@ -417,15 +519,39 @@ export async function launchBrowser(view) {
         root.append(acc_save.root);
     }
 
+    function handleResize(host, stage) {
+        let canvas = host.querySelector('canvas');
+
+        function resize() {
+            canvas.width = Math.floor(host.clientWidth * window.devicePixelRatio);
+            canvas.height = Math.floor(host.clientHeight * window.devicePixelRatio);
+            stage.handleResize();
+        }
+
+        ui.onSizeChanged(host).subscribe((_) => resize());
+        resize();
+    }
+
+    function setDockSize(node, nodeContent){
+        let nodeContentHeight = 0;
+        let rootNodeHeight = view.dockManager.rootNode.container.containerElement.clientHeight;
+        let newHeight = 0;
+        newHeight = $("#feature-viewer").outerHeight(true) + 55;
+        newHeight = 1/(rootNodeHeight/newHeight);
+        // newHeight = Math.ceil(newHeight*100)/100;
+
+        return view.dockManager.dock(nodeContent, 'down', node, 'Sequence', newHeight.toFixed(2));
+    }
+
     ///// MAIN BODY ////
 
-    let reps = ['cartoon','backbone','ball+stick','licorice','hyperball', 'surface'];
+    let reps = ['cartoon', 'backbone', 'ball+stick', 'licorice', 'hyperball', 'surface'];
     let repChoice = ui.choiceInput('Representation', 'cartoon', reps);
 
     let schemes_lst = extract_schemes();
     let CDR3_choice = ui.choiceInput('CDR3 Scheme', 'default', schemes_lst);
 
-    let chain_choice = ui.choiceInput('Chain', 'H',Object.keys(scheme.ptm_predictions));
+    let chain_choice = ui.choiceInput('Chain', 'H', Object.keys(scheme.ptm_predictions));
     let ptm_predictions = [...new Set([...Object.keys(scheme.ptm_predictions.H), ...Object.keys(scheme.ptm_predictions.L)])];
     let ptm_choice = ui.multiChoiceInput('', [], ptm_predictions);
 
@@ -450,6 +576,9 @@ export async function launchBrowser(view) {
         stage = new NGL.Stage(ngl_host);
         let schemeObj = CDR3(CDR3_choice, paratopes);
         await loadPdb(path, repChoice, schemeObj, sidechains);
+
+        setDockSize(ngl_node, sequence_tabs);
+        handleResize(ngl_host, stage);
     });
 
     paratopes.onChanged(async () => {
@@ -465,6 +594,9 @@ export async function launchBrowser(view) {
         let schemeObj = CDR3(CDR3_choice, paratopes);
         await loadPdb(path, repChoice, schemeObj, sidechains);
         loadSequence(chain_choice, ptm_choice, ptm_prob, paratopes, CDR3_choice);
+
+        setDockSize(ngl_node, sequence_tabs);
+        handleResize(ngl_host, stage);
     });
 
     chain_choice.onChanged(async () => {
@@ -485,6 +617,9 @@ export async function launchBrowser(view) {
         stage = new NGL.Stage(ngl_host);
         let schemeObj = CDR3(CDR3_choice, paratopes);
         await loadPdb(path, repChoice, schemeObj, sidechains);
+
+        setDockSize(ngl_node, sequence_tabs);
+        handleResize(ngl_host, stage);
     });
 
     ptm_prob.onChanged(async () => {
@@ -495,26 +630,30 @@ export async function launchBrowser(view) {
         stage = new NGL.Stage(ngl_host);
         let schemeObj = CDR3(CDR3_choice, paratopes);
         await loadPdb(path, repChoice, schemeObj, sidechains);
+
+        setDockSize(ngl_node, sequence_tabs);
+        handleResize(ngl_host, stage);
     });
 
 
     let table = view.table;
 
-    // region Logging ---------------
-    let logger = new DG.Logger((m) => m.params['log_param'] = 'ig-repert');
-    table.onCurrentRowChanged.subscribe(function () {
-         if (table.currentRow.idx >= 0) {
-             var row_str = table.currentRow.idx.toString();
-             logger.log('row-change', {lparam: table.name, seq_id: row_str}, 'rlog');
-         }
-    });
-    table.onCurrentCellChanged.subscribe(function () {
-        if (table.currentRow.idx >= 0) {
-            // grok.shell.info(`Cell: ${t.currentCell.rowIndex}, ${t.currentCell.column.name}`));
-            logger.log('cell-change', {lparam: table.name, col: table.currentCell.column.name}, 'rlog');
-        }
-    });
-    // endregion
+    // region Logging
+    {
+        let logger = new DG.Logger((m) => m.params['log_param'] = 'ig-repert');
+        table.onCurrentRowChanged.subscribe(function () {
+            if (table.currentRow.idx >= 0) {
+                var row_str = table.currentRow.idx.toString();
+                logger.log('row-change', {lparam: table.name, seq_id: row_str}, 'rlog');
+            }
+        });
+        table.onCurrentCellChanged.subscribe(function () {
+            if (table.currentRow.idx >= 0) {
+                // grok.shell.info(`Cell: ${t.currentCell.rowIndex}, ${t.currentCell.column.name}`));
+                logger.log('cell-change', {lparam: table.name, col: table.currentCell.column.name}, 'rlog');
+            }
+        });
+    }
 
     // tweak the App page properties
     {
@@ -524,40 +663,43 @@ export async function launchBrowser(view) {
         windows.showConsole = false;
     }
 
+    let root = ui.div();
+    let acc_ptm = ui.accordion();
+    root.appendChild(ui.h1('Repertoire viewer options'));
+    root.appendChild(ui.h3('NGL settings'));
+    root.appendChild(ui.inputs([repChoice, CDR3_choice]));
+    root.appendChild(ui.h3('Sequence settings'));
+    root.appendChild(ui.inputs([chain_choice, paratopes, ptm_prob]));
+    acc_ptm.addPane('ptm list', () => ui.inputs([ptm_choice]));
+    root.append(acc_ptm.root);
+    // root.appendChild(ui.h3('Save/Load'));
+    // await save_load(table, root);
+    let panel_node = view.dockManager.dock(root, 'right', null, 'NGL');
 
     var ngl_host = ui.div([],'d4-ngl-viewer');
     ngl_host.style.backgroundColor ='black';
     view.box = true;
-    view.dockManager.dock(ngl_host, 'right');
+    let ngl_node = view.dockManager.dock(ngl_host, 'left', panel_node, 'NGL');
     var stage = new NGL.Stage(ngl_host);
     let path = _package.webRoot + 'pdbfiles/' + 'TPP000153303.pdb';
     let schemeObj = CDR3(CDR3_choice, paratopes);
     await loadPdb(path, repChoice, schemeObj);
 
-    let pViz_host = ui.box();
-    view.dockManager.dock(pViz_host, 'down');
-    var pviz = window.pviz;
+    let pViz_host_light = ui.box();
+    let pViz_host_heavy = ui.box();
+    // let pViz_host = ui.box();
+    let sequence_tabs = ui.block([
+        ui.tabControl({
+            'LIGHT': pViz_host_light,
+            'HEAVY': pViz_host_heavy
+        }).root
+    ]);
+    let sequence_node = view.dockManager.dock(sequence_tabs, 'down', ngl_node, 'Sequence', 0.225);
+    var pviz_h = window.pviz;
+    var pviz_l = window.pviz;
     let ptm_features_obj = {};
     ptm_features_obj.ft = loadSequence(chain_choice, ptm_choice, ptm_prob, paratopes ,CDR3_choice);
 
-
-    
-    let root = ui.div();
-
-    root.appendChild(ui.h1('Repertoire viewer options'));
-
-    root.appendChild(ui.h3('NGL settings'));
-    root.appendChild(ui.inputs([repChoice, CDR3_choice]));
-
-    root.appendChild(ui.h3('Sequence settings'));
-    root.appendChild(ui.inputs([chain_choice, paratopes, ptm_prob]));
-    let acc_ptm = ui.accordion();
-    acc_ptm.addPane('ptm list', () => ui.inputs([ptm_choice]));
-    root.append(acc_ptm.root);
-
-    // root.appendChild(ui.h3('Save/Load'));
-    // await save_load(table, root);
-
-    view.dockManager.dock(root, 'right');
-    grok.shell.o = root;
+    handleResize(ngl_host, stage);
+    $(sequence_tabs).children().css("height","100%");
 }
