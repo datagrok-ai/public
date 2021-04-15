@@ -1,4 +1,4 @@
-!-- TITLE: Extending and customizing Datagrok -->
+<!-- TITLE: Extending Datagrok -->
 <!-- SUBTITLE: -->
 
 # Extending and Customizing Datagrok
