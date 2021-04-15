@@ -6,6 +6,14 @@ GrokCache implements a RAM cache for resources based on WASM for compression
 and memory isolation safety.
 
 
+## Build 
+
+### Dependencies
+General dependencies are: npm and webpack v5 (to have v5 looks important)
+
+### WASM build
+Wasm sources are in 'src/cpp' 
+
 
 ## Stash
 
