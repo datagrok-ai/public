@@ -207,6 +207,37 @@ its contents are shared too, so does the database connections.
 
 * [Data Access](develop/how-to/access-data.md)
 
+### Namespacing connections
+
+Often one application is built per several customers. As part of per-customer tailoring there are in-house data sources.
+You typically don't want to mention connections to these data sources or their names, as they are proprietary.
+Sometimes your application is in public domain, but the customer data is special.
+
+Usually it isn't desired to handle customers' specifics in the shared application code.
+To handle these cases, we recommend you to use Datagrok's namespaces (also called "Root Projects").
+As described below, this technique will provide for an unique `<NAMESPACE>` within one Datagrok instance,
+so that in your application code you'd now _always_ refer to your `<CONNECTION>` as `<NAMESPACE>::<CONNECTION>`,
+in addition to always available `<PACKAGE>::<CONNECTION>` and `<YOUR_NAME>::<CONNECTION>`.
+
+Let's have a `<CONNECTION>` created (say, to a database or a file share) under your Datagrok account, so that
+it's now available as `<YOUR_NAME>::<CONNECTION>`. To not use this token to call to a connection in an applcation,
+let's create a namespace for it.
+
+1. Right-click on the connection and select `Add to Project`.
+2. Proceed to the `Projects` section in the Datagrok's left sidebar. Find that the selected connection is now
+   part of the `Scratchpad` project. This is an "unsaved" project, which should save with the `UPLOAD` button.  
+   _Note:_ alternatively to p.1, you could drag-and-drop the connection onto the `Projects` list.
+3. Give the project a name, say, `NewNamespace`, hit `Ok`. Share it to the groups and users of interest.
+4. Now, without leaving the `Projects` pane, left-click on the project's name, `NewNamespace`. You'd see
+   the property panel on the right. Find there `Convert to root project` command and left-click on it.
+   Verify the status nearby the button is now saying "This is a root project".
+5. What's left is a tweak to harmonize the newly given project's names. Right-click on the project name
+   `NewNamespace` on the left side of the window, again, and select `Rename...`. Provide that both
+   `Name` or `Function Name` are `NewNamespace`, and hit `Ok`.
+6. *Left*-click on the `<CONNECTION>` under the project's name (without leaving the `Projects` section),
+   and observe its property panel on the right. Find `Links...` and left-click on it. You should find
+   that the link to the connection is now suffixed by `NewNamespace:<CONNECTION>`.
+
 ## Dataframes
 
 ### Creating and working with Dataframes
