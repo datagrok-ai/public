@@ -2,20 +2,31 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import { PhyloTreeViewer } from './tree-viewer.js';
 
 
 export const _package = new DG.Package();
+let mainDf, folderPath, fileNames;
+
+//name: PhyloTree
+//description: Phylogenetic tree visualization
+//tags: viewer
+//output: viewer result
+export function tree() {
+  return new PhyloTreeViewer();
+}
 
 //tags: fileViewer, fileViewer-nwk
 //input: file file
 //output: view v
 export async function nwkTreeViewer(file) {
-  const newick = await file.readAsString();
+  if (!mainDf) await prepareData(file);
+  mainDf.currentRow = fileNames.indexOf(file.fileName);
 
   const view = DG.View.create();
-  const host = ui.div([
+  const host = ui.splitH([
     ui.button('Load dataframe', () => exportToDf(file), 'Export to dataframe'),
-    (await grok.functions.call('TreeViewer:treePreview', { newick })) // DG.Viewer
+    DG.Viewer.fromType('PhyloTree', mainDf).root
   ], 'd4-ngl-viewer');
 
   view.append(host);
@@ -65,25 +76,41 @@ function newickToDf(newick, filename) {
   return df;
 };
 
+async function prepareData(file) {
+  const currentFolderPath = file.fullPath.slice(0, -file.name.length);
+
+  if (!folderPath || folderPath !== currentFolderPath) {
+    folderPath = currentFolderPath;
+    const fileInfos = (await grok.dapi.files.list(currentFolderPath, false, '')).filter(f => f.extension === 'nwk');
+    const newickStrings = await Promise.all(fileInfos.map(f => f.readAsString()));
+    fileNames = fileInfos.map(f => f.fileName);
+    const rowCount = newickStrings.length;
+
+    const fileNameCol = DG.Column.fromList('string', 'file', fileNames);
+    const newickCol = DG.Column.fromList('string', 'newick', newickStrings);
+    const dfCol = DG.Column.dataFrame('dataframe', rowCount);
+    const linkCol = DG.Column.string('links', rowCount);
+    const df = DG.DataFrame.fromColumns([fileNameCol, newickCol, dfCol, linkCol]);
+  
+    newickCol.semType = 'newick';
+    for (let i = 0; i < rowCount; i++) dfCol.set(i, newickToDf(newickCol.get(i), fileNameCol.get(i)));
+    mainDf = df;
+  }
+
+  return fileNames.indexOf(file.fileName);
+}
 
 //input: file file
 //output: view view
 export async function exportToDf(file) {
-  const currentFolderPath = file.fullPath.slice(0, -file.name.length);
-  const fileInfos = (await grok.dapi.files.list(currentFolderPath, false, '')).filter(f => f.extension === 'nwk');
-  const newickStrings = await Promise.all(fileInfos.map(f => f.readAsString()));
+  const fileIndex = await prepareData(file);
+  mainDf.currentRow = fileIndex;
 
-  const rowCount = newickStrings.length;
-  const fileNameCol = DG.Column.fromList('string', 'file', fileInfos.map(f => f.fileName));
-  const newickCol = DG.Column.fromList('string', 'newick', newickStrings);
-  const dfCol = DG.Column.dataFrame('dataframe', rowCount);
-  const linkCol = DG.Column.string('links', rowCount);
-  const df = DG.DataFrame.fromColumns([fileNameCol, newickCol, dfCol, linkCol]);
+  const view = grok.shell.addTableView(mainDf);
+  const viewer = DG.Viewer.fromType('PhyloTree', mainDf);
+  view.addViewer(viewer);
+  view.dockManager.dock(viewer, DG.DOCK_TYPE.DOWN);
 
-  newickCol.semType = 'newick';
-  for (let i = 0; i < rowCount; i++) dfCol.set(i, newickToDf(newickCol.get(i), fileNameCol.get(i)));
-
-  const view = grok.shell.addTableView(df);
   view.grid.columns.byName('links').cellType = 'html';
   view.grid.onCellPrepare(gc => {
     if (gc.isTableCell && gc.gridColumn.name === 'links') {

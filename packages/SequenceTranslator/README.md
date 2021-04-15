@@ -3,7 +3,34 @@
 SequenceTranslator is a [package](https://datagrok.ai/help/develop/develop#packages) for
 the [Datagrok](https://datagrok.ai) platform.
 
-| CMO Codes For ASO Gapmers | BioSpring Code | Axolabs Code | Janssen GCRS code |
+Examples of supported converters:
+
+| CMO Codes |  Example of ASO Gapmers  |
+|---|---|
+| Classic Code | AGGTCTTCATGACTTCGGCC |
+| BioSpring Code | 6\*8\*8\*5\*7\*T\*T\*9\*A\*T\*G\*A\*9\*T\*T\*7\*8\*8\*7\*7 |
+| Axolabs Code | - |
+| GCRS code | moeAnpsmoeGnpsmoeGnpsmoeUnpsmoe5mCnpsTpsTpsCpsApsTpsGpsApsCpsTpsTpsmoe5mCnpsmoeGnpsmoeGnpsmoe5mCnpsmoe5mC |
+
+| CMO Codes |  Example of 2'-OMe and 2'-F modified siRNA  |
+|---|---|
+| Classic Code | UUCAACUGCUUACGUCUUU |
+| BioSpring Code | 5\*1\*766354715274575\*5\*5 |
+| Axolabs Code | usUfscaaCfuGfcUfuAfcGfucususu |
+| GCRS code | mUpsfUpsmCmAmAfCmUfGmCfUmUfAmCfGmUmCmUpsmUpsmU |
+
+| Function | Input | Output | 
+|---|---|---|
+| classicToBioSpring | TTGTCCAGATGACTTCGGCC | 5\*5\*8\*5\*7\*9\*A\*G\*A\*T\*G\*A\*9\*T\*T\*7\*8\*8\*7\*7 |
+| classicToGCRS | TTGTCCAGATGACTTCGGCC | moeUnpsmoeUnpsmoeGnpsmoeUnpsmoe5mCps5mCpsApsGpsApsTpsGpsAps5mCpsTpsTnpsmoe5mCnpsmoeGnpsmoeGnpsmoe5mCnpsmoe5mC | 
+| bioSpringToClassic | 5\*5\*8\*5\*7\*9\*A\*G\*A\*T\*G\*A\*9\*T\*T\*7\*8\*8\*7\*7 | TTGTCCAGATGACTTCGGCC |
+| bioSpringToGCRS | 5\*5\*8\*5\*7\*9\*A\*G\*A\*T\*G\*A\*9\*T\*T\*7\*8\*8\*7\*7 | moeUnpsmoeUnpsmoeGnpsmoeUnpsmoe5mCps5mCpsApsGpsApsTpsGpsAps5mCpsTpsTnpsmoe5mCnpsmoeGnpsmoeGnpsmoe5mCnpsmoe5mC |
+| GCRSToBioSpring | moeUnpsmoeUnpsmoeGnpsmoeUnpsmoe5mCps5mCpsApsGpsApsTpsGpsAps5mCpsTpsTnpsmoe5mCnpsmoeGnpsmoeGnpsmoe5mCnpsmoe5mC | 5\*5\*8\*5\*7\*9\*A\*G\*A\*T\*G\*A\*9\*T\*T\*7\*8\*8\*7\*7 |
+| GCRSToClassic | moeUnpsmoeUnpsmoeGnpsmoeUnpsmoe5mCps5mCpsApsGpsApsTpsGpsAps5mCpsTpsTnpsmoe5mCnpsmoeGnpsmoeGnpsmoe5mCnpsmoe5mC | TTGTCCAGATGACTTCGGCC | 
+
+Tables of codes accordance:
+
+| CMO Codes For ASO Gapmers | BioSpring Code | Axolabs Code | GCRS code |
 |---|---|---|---|
 | 2'MOE-5Me-rU | 5 | | moeT |
 | 2'MOE-rA     | 6 | | moeA |
@@ -16,7 +43,7 @@ the [Datagrok](https://datagrok.ai) platform.
 | dG           | G | | T |
 | dT           | T | | G |
 
-| CMO Codes For 2'-OMe and 2'-F modified siRNA  | BioSpring Code | Axolabs Code | Janssen GCRS code |
+| CMO Codes For 2'-OMe and 2'-F modified siRNA  | BioSpring Code | Axolabs Code | GCRS code |
 |---|---|---|---|
 | 2'-fluoro-U | 1 | Uf | fU |
 | 2'-fluoro-A | 2 | Af | fA |
