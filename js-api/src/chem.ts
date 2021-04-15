@@ -66,7 +66,7 @@ export function diversitySearch(column: Column, metric: SimilarityMetric = SIMIL
  * */
 export async function substructureSearch(column: Column, pattern: string = '', settings: {
   substructLibrary?: boolean;
-}): Promise<BitSet> {
+} = {}): Promise<BitSet> {
 
   let foo = await grok.functions.eval('Chem:substructureSearch');
   let call = await foo.prepare({

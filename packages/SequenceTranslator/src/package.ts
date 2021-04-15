@@ -8,50 +8,54 @@ export let _package = new DG.Package();
 //name: Sequence Translator
 //tags: app
 export function sequenceTranslator(): void {
-  let inputField = ui.textInput('', "");
-  let outputValues = {type: 'Input', classic: '', bioSpring: '', axolabs: '', gcrs: '', complement: ''}
-  draw(inputField, outputValues);
-  inputField.onChanged(() => {
-    let pi = DG.TaskBarProgressIndicator.create('Converting sequences...');
-    outputValues = convertSequence(inputField.value);
-    draw(inputField, outputValues);
-    pi.close();
+
+  let inp = ui.textInput("", "", (seq: string) => {
+    let outputValues = convertSequence(seq);
+    resultsGrid.set('Code', 0, 'Classic');
+    resultsGrid.set('Sequence', 0, outputValues.classic);
+    resultsGrid.set('Code', 1, 'BioSpring');
+    resultsGrid.set('Sequence', 1, outputValues.bioSpring);
+    resultsGrid.set('Code', 2, 'Axolabs');
+    resultsGrid.set('Sequence', 2, outputValues.axolabs);
+    resultsGrid.set('Code', 3, 'GCRS');
+    resultsGrid.set('Sequence', 3, outputValues.gcrs);
+    table.dataFrame = resultsGrid;
   });
-}
 
-function copyToClipboard(text: string) {
-  let dummy = document.createElement("textarea");
-  document.body.appendChild(dummy);
-  dummy.value = text;
-  dummy.select();
-  document.execCommand("copy");
-  document.body.removeChild(dummy);
-}
+  let inputContorls = ui.div([
+    ui.h1('Input sequence'),
+    ui.div([
+      inp.root
+    ],'input-base')
+  ], 'sequenceInput');
 
-function draw(inputSeq: DG.InputBase, outputValues: {type: string; classic: string; bioSpring: string; complement: string; gcrs: string; axolabs: string;}) {
-  let view = grok.shell.newView('Sequence Translator: ' + inputSeq.value, []);
+  let resultsGrid = DG.DataFrame.fromColumns([
+    DG.Column.string('Code', 4),
+    DG.Column.string('Sequence', 4)
+  ]);
+
+  let table = DG.Viewer.grid(resultsGrid);
+
+  let appDescription = ui.div([
+    ui.h1('Convert oligonucleotide sequences between Nucleotides, BioSpring, Axolabs, and GCRS representations.'),
+    ui.divText('\n How to convert one sequence:',{style:{'font-weight':'bolder'}}),
+    ui.divText("Paste sequence into the text field below and press 'Convert' button"),
+    ui.divText('\n How to convert many sequences:',{style:{'font-weight':'bolder'}}),
+    ui.divText("1. Drag & drop an Excel or CSV file with sequences into Datagrok. The platform will automatically detect columns with sequences"),
+    ui.divText('2. Right-click on the column header, then see the \'Convert\' menu'),
+    ui.divText("This will add the result column to the right of the table"),
+  ], 'grok-datajob-publish-alert');
+
+  let view = grok.shell.newView('Sequence Translator', []);
   view.append(
     ui.divV([
-      ui.divText('Paste sequence in text field below', 'grok-datajob-publish-alert'),
-      ui.divH([
-        ui.div([
-          ui.h1("Input description: " + outputValues.type),
-          ui.inputs([
-            inputSeq,
-          ], {})
-        ], 'sequenceInput'),
-        ui.div([
-          ui.divH([ui.h1('Classic Code'), ui.iconFA('copy', () => copyToClipboard(outputValues.classic))]),
-          ui.divText(outputValues.classic),
-          ui.divH([ui.h1('BioSpring Code'), ui.iconFA('copy', () => copyToClipboard(outputValues.bioSpring))]),
-          ui.divText(outputValues.bioSpring),
-          ui.divH([ui.h1('Axolabs Code'), ui.iconFA('copy', () => copyToClipboard(outputValues.axolabs))]),
-          ui.divText(outputValues.axolabs),
-          ui.divH([ui.h1('GCRS Code'), ui.iconFA('copy', () => copyToClipboard(outputValues.gcrs))]),
-          ui.divText(outputValues.gcrs),
-          ui.divH([ui.h1('Complement'), ui.iconFA('copy', () => copyToClipboard(outputValues.complement))]),
-          ui.divText(outputValues.complement)
-        ],'sequenceOutput')
+      appDescription,
+      ui.divV([
+        inputContorls,
+        ui.block([
+          ui.h1('Output'),
+          table.root
+        ])
       ], 'sequence')
     ])
   );
@@ -72,73 +76,78 @@ function draw(inputSeq: DG.InputBase, outputValues: {type: string; classic: stri
   // @ts-ignore
   $('.sequenceInput select').css('width','100%');
   // @ts-ignore
-  $('.sequenceInput textarea').attr('placeholder','Type here');
+  $('.sequenceInput textarea').attr('placeholder','Paste here');
   // @ts-ignore
   $('.sequenceInput select').attr('placeholder','');
 }
 
+export function isClassicCode(sequence: string): boolean {return /^[ATGCU]{10,}$/.test(sequence);}
+
+export function isAsoGapmerBioSpringCode(sequence: string): boolean {return /^[*56789ATGC]{30,}$/.test(sequence);}
+
+export function isAsoGapmerGCRSCode(sequence: string): boolean {return /^(?=.*moe)(?=.*5mC)(?=.*ps){30,}/.test(sequence);}
+
+export function isSiRnaBioSpringCode(sequence: string): boolean {return /^[*1-8]{30,}$/.test(sequence);}
+
+export function isSiRnaAxolabsCode(sequence: string): boolean {return /^[fsACGUacgu]{30,}$/.test(sequence);}
+
+export function isSiRnaGCRSCode(sequence: string): boolean {return /^[fmpsACGU]{30,}$/.test(sequence);}
+
 function convertSequence(seq: string) {
-  if (/^[ATGCU]{10,}$/.test(seq))
+  if (isClassicCode(seq))
     return {
       type: "ASO Gapmers / Classic Code",
       classic: seq,
       bioSpring: asoGapmersClassicToBioSpring(seq),
-      axolabs: "No code accordance provided",
-      gcrs: asoGapmersClassicToGCRS(seq),
-      complement: asoGapmersClassicComplement(seq)
+      axolabs: "No translation table available",
+      gcrs: asoGapmersClassicToGCRS(seq)
   };
-  if (/^[*56789ATGC]{30,}$/.test(seq))
+  if (isAsoGapmerBioSpringCode(seq))
     return {
       type: "ASO Gapmers / BioSpring Code",
       classic: asoGapmersBioSpringToClassic(seq),
       bioSpring: seq,
-      axolabs: "No code accordance provided",
-      gcrs: asoGapmersBioSpringToGCRS(seq),
-      complement: asoGapmersBioSpringComplement(seq)
+      axolabs: "No translation table available",
+      gcrs: asoGapmersBioSpringToGCRS(seq)
     };
-  if (/^(?=.*moe)(?=.*5mC)(?=.*ps){30,}/.test(seq))
+  if (isAsoGapmerGCRSCode(seq))
     return {
       type: "ASO Gapmers / GCRS Code",
       classic: asoGapmersGCRSToClassic(seq),
       bioSpring: asoGapmersGCRSToBioSpring(seq),
-      axolabs: "No code accordance provided",
-      gcrs: seq,
-      complement: asoGapmersGCRSComplement(seq)
+      axolabs: "No translation table available",
+      gcrs: seq
     };
-  if (/^[*1-8]{30,}$/.test(seq))
+  if (isSiRnaBioSpringCode(seq))
     return {
       type: "siRNA / bioSpring Code",
       classic: "coming soon",
       bioSpring: seq,
       axolabs: "coming soon",
-      gcrs: "coming soon",
-      complement: "coming soon"
+      gcrs: "coming soon"
     };
-  if (/^[fsACGUacgu]{30,}$/.test(seq))
+  if (isSiRnaAxolabsCode(seq))
     return {
       type: "siRNA / Axolabs Code",
       classic: siRnaAxolabsToClassic(seq),
       bioSpring: siRnaAxolabsToBioSpring(seq),
       axolabs: seq,
-      gcrs: siRnaAxolabsToGCRS(seq),
-      complement: "coming soon"
+      gcrs: siRnaAxolabsToGCRS(seq)
     };
-  if (/^[fmpsACGU]{30,}$/.test(seq))
+  if (isSiRnaGCRSCode(seq))
     return {
       type: "siRNA / GCRS Code",
       classic: "coming soon",
       bioSpring: "coming soon",
       axolabs: siRnaGCRSToAxolabs(seq),
-      gcrs: seq,
-      complement: "coming soon"
+      gcrs: seq
     };
   return {
     type: "Type of input sequence is undefined",
     classic: "Type of input sequence is undefined",
     bioSpring: "Type of input sequence is undefined",
     axolabs: "Type of input sequence is undefined",
-    gcrs: "Type of input sequence is undefined",
-    complement: "Type of input sequence is undefined"
+    gcrs: "Type of input sequence is undefined"
   };
 }
 
@@ -247,28 +256,4 @@ export function siRnaAxolabsToClassic(nucleotides: string) {
     "Uf": "U", "Af": "A", "Cf": "C", "Gf": "G", "u": "U", "a": "A", "c": "C", "g": "G", "s": ""
   };
   return nucleotides.replace(/(Uf|Af|Cf|Gf|u|a|c|g|s)/g, function (x: string) {return obj[x];});
-}
-
-//name: asoGapmersClassicComplement
-//input: string nucleotides {semType: nucleotides}
-//output: string result {semType: nucleotides}
-export function asoGapmersClassicComplement(nucleotides: string) {
-  const obj: {[index: string]: string} = {"A": "T", "T": "A", "G": "C", "C": "G"};
-  return nucleotides.replace(/[ATGC]/g, function (x: string) {return obj[x];});
-}
-
-//name: asoGapmersBioSpringComplement
-//input: string nucleotides {semType: BioSpring / Gapmers}
-//output: string result {semType: BioSpring / Gapmers}
-export function asoGapmersBioSpringComplement(nucleotides: string) {
-  const obj: {[index: string]: string} = {"A": "T", "T": "A", "G": "C", "C": "G", "5": "6", "6": "5", "7": "8", "8": "9", "9": "8"};
-  return nucleotides.replace(/[56789ATGC]/g, function (x: string) {return obj[x];});
-}
-
-//name: asoGapmersGCRSComplement
-//input: string nucleotides {semType: GCRS / Gapmers}
-//output: string result {semType: GCRS / Gapmers}
-export function asoGapmersGCRSComplement(nucleotides: string) {
-  const obj: {[index: string]: string} = {"A": "T", "T": "A", "G": "C", "C": "G", "U": "A"};
-  return nucleotides.replace(/[ACGTU]/g, function (x: string) {return obj[x];});
 }
