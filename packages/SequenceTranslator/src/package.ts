@@ -130,7 +130,9 @@ export function sequenceTranslator(): void {
     .attr('placeholder','');
 }
 
-export function isNucleotidesCode(sequence: string): boolean {return /^[ATGCU]{10,}$/.test(sequence);}
+export function isDnaNucleotidesCode(sequence: string): boolean {return /^[ATGC]{10,}$/.test(sequence);}
+
+export function isRnaNucleotidesCode(sequence: string): boolean {return /^[AUGC]{10,}$/.test(sequence);}
 
 export function isAsoGapmerBioSpringCode(sequence: string): boolean {return /^[*56789ATGC]{30,}$/.test(sequence);}
 
@@ -143,9 +145,9 @@ export function isSiRnaAxolabsCode(sequence: string): boolean {return /^[fsACGUa
 export function isSiRnaGcrsCode(sequence: string): boolean {return /^[fmpsACGU]{30,}$/.test(sequence);}
 
 function convertSequence(seq: string) {
-  if (isNucleotidesCode(seq))
+  if (isDnaNucleotidesCode(seq))
     return {
-      type: "Nucleotides Code",
+      type: "DNA Nucleotides Code",
       nucleotides: seq,
       bioSpring: asoGapmersNucleotidesToBioSpring(seq),
       axolabs: "No translation table available",
@@ -166,6 +168,14 @@ function convertSequence(seq: string) {
       bioSpring: asoGapmersGcrsToBioSpring(seq),
       axolabs: "No translation table available",
       gcrs: seq
+    };
+  if (isRnaNucleotidesCode(seq))
+    return {
+      type: "RNA Nucleotides Code",
+      nucleotides: seq,
+      bioSpring: 'coming soon', //siRnaNucleotideToBioSpring(seq),
+      axolabs: 'coming soon', //siRnaNucleotideToAxolabs(seq),
+      gcrs: 'coming soon' //siRnaNucleotideToGcrs(seq)
     };
   if (isSiRnaBioSpringCode(seq))
     return {
@@ -339,7 +349,7 @@ export function siRnaGcrsToNucleotides(nucleotides: string) {
   const obj: {[index: string]: string} = {
     "fU": "U", "fA": "A", "fC": "C", "fG": "G", "mU": "U", "mA": "A", "mC": "C", "mG": "G", "ps": ""
   };
-  return nucleotides.replace(/(Uf|Af|Cf|Gf|u|a|c|g|s)/g, function (x: string) {return obj[x];});
+  return nucleotides.replace(/(fU|fA|fC|fG|mU|mA|mC|mG|ps)/g, function (x: string) {return obj[x];});
 }
 
 //name: siRnaGcrsToBioSpring
