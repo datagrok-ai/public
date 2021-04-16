@@ -13,6 +13,16 @@ async function grokCacheModuleInit() {
   }
 }
 
+async function getCanvasBlob(canvas) {
+  return new Promise(function (resolve, reject) {
+    canvas.toBlob(function (blob) {
+      resolve(blob);
+    });
+  });
+}
+
+
+
 // Test entry point
 //
 function grokCacheTestStart() {
@@ -106,7 +116,31 @@ function grokCacheTestStart() {
       var buf1 = imageData.data;
       console.log(buf1.length);
 
+      getCanvasBlob(canvas)
+        .then( (imageBlob) => imageBlob.arrayBuffer())
+        .then( (imageBlobBuf) => {
+          let blobLen = imageBlobBuf.byteLength;
+          const imageBlobView = new Uint8Array(imageBlobBuf); // get view of buffer
+          let bufferS = grokCache.create_ByteBufferStore();
+          let buf_p = bufferS.add_buffer(blobLen);
+          let buf_arr = new Uint8Array(grokCache.HEAPF32.buffer, buf_p, blobLen);
+          buf_arr.set(imageBlobView); // copy memory to WASM
 
+          // round trip the data from the cached location
+          //
+          console.log(buf_arr);
+          var newImageBlob = new Blob([buf_arr]);
+          url = URL.createObjectURL(newImageBlob);
+          img = new Image();
+          img.onload = function () {
+            URL.revokeObjectURL(this.src); // URL not needed anymore
+            const canvas3 = document.getElementById('canvas3');
+            const ctx3 = canvas3.getContext('2d');
+            ctx3.drawImage(this, 0, 0);
+          }
+          img.src = url;
+          delete bufferS;
+        });
 
       {
         let bufferStore = grokCache.create_ByteBufferStore();
