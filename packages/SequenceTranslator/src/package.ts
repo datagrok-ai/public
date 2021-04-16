@@ -9,16 +9,18 @@ export let _package = new DG.Package();
 //tags: app
 export function sequenceTranslator(): void {
 
+  let detectedSequenceSemType = ui.divText('');
   let inp = ui.textInput("", "", (seq: string) => {
-    let outputValues = convertSequence(seq);
-    resultsGrid.set('Code', 0, 'Classic');
-    resultsGrid.set('Sequence', 0, outputValues.classic);
+    let outputValues = convertSequence(seq.replace(/\s/g, ''));
+    resultsGrid.set('Code', 0, 'Nucleotides');
+    resultsGrid.set('Sequence', 0, outputValues.nucleotides);
     resultsGrid.set('Code', 1, 'BioSpring');
     resultsGrid.set('Sequence', 1, outputValues.bioSpring);
     resultsGrid.set('Code', 2, 'Axolabs');
     resultsGrid.set('Sequence', 2, outputValues.axolabs);
     resultsGrid.set('Code', 3, 'GCRS');
     resultsGrid.set('Sequence', 3, outputValues.gcrs);
+    detectedSequenceSemType.textContent = 'Detected input type: ' + outputValues.type;
     table.dataFrame = resultsGrid;
   });
 
@@ -35,11 +37,15 @@ export function sequenceTranslator(): void {
   ]);
 
   let table = DG.Viewer.grid(resultsGrid);
+  // @ts-ignore
+  table.columns.byName('Code').width = 80;
+  // @ts-ignore
+  table.columns.byName('Sequence').width = 850;
 
   let appDescription = ui.div([
     ui.h1('Convert oligonucleotide sequences between Nucleotides, BioSpring, Axolabs, and GCRS representations.'),
     ui.divText('\n How to convert one sequence:',{style:{'font-weight':'bolder'}}),
-    ui.divText("Paste sequence into the text field below and press 'Convert' button"),
+    ui.divText("Paste sequence into the text field below"),
     ui.divText('\n How to convert many sequences:',{style:{'font-weight':'bolder'}}),
     ui.divText("1. Drag & drop an Excel or CSV file with sequences into Datagrok. The platform will automatically detect columns with sequences"),
     ui.divText('2. Right-click on the column header, then see the \'Convert\' menu'),
@@ -52,76 +58,73 @@ export function sequenceTranslator(): void {
       appDescription,
       ui.divV([
         inputContorls,
+        detectedSequenceSemType,
         ui.block([
           ui.h1('Output'),
-          table.root
+          ui.div([table.root], 'table')
         ])
       ], 'sequence')
     ])
   );
-  // @ts-ignore
-  $('.sequence').css('padding','20px 0');
-  // @ts-ignore
-  $('.sequence').children().css('padding','0 10px');
-  // @ts-ignore
-  $('.sequenceOutput').attr('style','word-break:break-word');
-  // @ts-ignore
-  $('.sequenceInput .input-base').css('margin','15px 0');
-  // @ts-ignore
-  $('.sequenceInput textarea').css('resize','none');
-  // @ts-ignore
-  $('.sequenceInput textarea').css('min-height','100px');
-  // @ts-ignore
-  $('.sequenceInput textarea').css('width','100%');
-  // @ts-ignore
-  $('.sequenceInput select').css('width','100%');
-  // @ts-ignore
-  $('.sequenceInput textarea').attr('placeholder','Paste here');
-  // @ts-ignore
-  $('.sequenceInput select').attr('placeholder','');
+
+  $('.table .d4-grid')
+      .css('height','150px')
+      .css('width','100%');
+  $('.sequence')
+      .css('padding','20px 0')
+      .children().css('padding','5px 0');
+  $('.sequenceInput .input-base').css('margin','0');
+  $('.sequenceInput textarea')
+      .attr('placeholder','Paste here')
+      .css('resize','none')
+      .css('min-height','50px')
+      .css('width','100%');
+  $('.sequenceInput select')
+      .css('width','100%')
+      .attr('placeholder','');
 }
 
-export function isClassicCode(sequence: string): boolean {return /^[ATGCU]{10,}$/.test(sequence);}
+export function isNucleotidesCode(sequence: string): boolean {return /^[ATGCU]{10,}$/.test(sequence);}
 
 export function isAsoGapmerBioSpringCode(sequence: string): boolean {return /^[*56789ATGC]{30,}$/.test(sequence);}
 
-export function isAsoGapmerGCRSCode(sequence: string): boolean {return /^(?=.*moe)(?=.*5mC)(?=.*ps){30,}/.test(sequence);}
+export function isAsoGapmerGcrsCode(sequence: string): boolean {return /^(?=.*moe)(?=.*5mC)(?=.*ps){30,}/.test(sequence);}
 
 export function isSiRnaBioSpringCode(sequence: string): boolean {return /^[*1-8]{30,}$/.test(sequence);}
 
 export function isSiRnaAxolabsCode(sequence: string): boolean {return /^[fsACGUacgu]{30,}$/.test(sequence);}
 
-export function isSiRnaGCRSCode(sequence: string): boolean {return /^[fmpsACGU]{30,}$/.test(sequence);}
+export function isSiRnaGcrsCode(sequence: string): boolean {return /^[fmpsACGU]{30,}$/.test(sequence);}
 
 function convertSequence(seq: string) {
-  if (isClassicCode(seq))
+  if (isNucleotidesCode(seq))
     return {
-      type: "ASO Gapmers / Classic Code",
-      classic: seq,
-      bioSpring: asoGapmersClassicToBioSpring(seq),
+      type: "ASO Gapmers / Nucleotides Code",
+      nucleotides: seq,
+      bioSpring: asoGapmersNucleotidesToBioSpring(seq),
       axolabs: "No translation table available",
-      gcrs: asoGapmersClassicToGCRS(seq)
+      gcrs: asoGapmersNucleotidesToGcrs(seq)
   };
   if (isAsoGapmerBioSpringCode(seq))
     return {
       type: "ASO Gapmers / BioSpring Code",
-      classic: asoGapmersBioSpringToClassic(seq),
+      nucleotides: asoGapmersBioSpringToNucleotides(seq),
       bioSpring: seq,
       axolabs: "No translation table available",
-      gcrs: asoGapmersBioSpringToGCRS(seq)
+      gcrs: asoGapmersBioSpringToGcrs(seq)
     };
-  if (isAsoGapmerGCRSCode(seq))
+  if (isAsoGapmerGcrsCode(seq))
     return {
       type: "ASO Gapmers / GCRS Code",
-      classic: asoGapmersGCRSToClassic(seq),
-      bioSpring: asoGapmersGCRSToBioSpring(seq),
+      nucleotides: asoGapmersGcrsToNucleotides(seq),
+      bioSpring: asoGapmersGcrsToBioSpring(seq),
       axolabs: "No translation table available",
       gcrs: seq
     };
   if (isSiRnaBioSpringCode(seq))
     return {
       type: "siRNA / bioSpring Code",
-      classic: "coming soon",
+      nucleotides: "coming soon",
       bioSpring: seq,
       axolabs: "coming soon",
       gcrs: "coming soon"
@@ -129,32 +132,32 @@ function convertSequence(seq: string) {
   if (isSiRnaAxolabsCode(seq))
     return {
       type: "siRNA / Axolabs Code",
-      classic: siRnaAxolabsToClassic(seq),
+      nucleotides: siRnaAxolabsToNucleotides(seq),
       bioSpring: siRnaAxolabsToBioSpring(seq),
       axolabs: seq,
-      gcrs: siRnaAxolabsToGCRS(seq)
+      gcrs: siRnaAxolabsToGcrs(seq)
     };
-  if (isSiRnaGCRSCode(seq))
+  if (isSiRnaGcrsCode(seq))
     return {
       type: "siRNA / GCRS Code",
-      classic: "coming soon",
+      nucleotides: "coming soon",
       bioSpring: "coming soon",
-      axolabs: siRnaGCRSToAxolabs(seq),
+      axolabs: siRnaGcrsToAxolabs(seq),
       gcrs: seq
     };
   return {
     type: "Type of input sequence is undefined",
-    classic: "Type of input sequence is undefined",
+    nucleotides: "Type of input sequence is undefined",
     bioSpring: "Type of input sequence is undefined",
     axolabs: "Type of input sequence is undefined",
     gcrs: "Type of input sequence is undefined"
   };
 }
 
-//name: asoGapmersClassicToBioSpring
+//name: asoGapmersNucleotidesToBioSpring
 //input: string nucleotides {semType: nucleotides}
 //output: string result {semType: BioSpring / Gapmers}
-export function asoGapmersClassicToBioSpring(nucleotides: string) {
+export function asoGapmersNucleotidesToBioSpring(nucleotides: string) {
   let count: number = -1;
   const objForEdges: {[index: string]: string} = {"T": "5*", "A": "6*", "C": "7*", "G": "8*"};
   const objForCenter: {[index: string]: string} = {"C": "9*", "A": "A*", "T": "T*", "G": "G*"};
@@ -166,10 +169,10 @@ export function asoGapmersClassicToBioSpring(nucleotides: string) {
   }).slice(0, 2 * count + 1);
 }
 
-//name: asoGapmersClassicToGCRS
+//name: asoGapmersNucleotidesToGcrs
 //input: string nucleotides {semType: nucleotides}
 //output: string result {semType: GCRS / Gapmers}
-export function asoGapmersClassicToGCRS(nucleotides: string) {
+export function asoGapmersNucleotidesToGcrs(nucleotides: string) {
   let count: number = -1;
   const objForEdges: {[index: string]: string} = {"T": "moeUnps", "A": "moeAnps", "C": "moe5mCnps", "G": "moeGnps"};
   const objForCenter: {[index: string]: string} = {"C": "Cps", "A": "Aps", "T": "Tps", "G": "Gps"};
@@ -181,18 +184,18 @@ export function asoGapmersClassicToGCRS(nucleotides: string) {
   }).slice(0, -3);
 }
 
-//name: asoGapmersBioSpringToClassic
+//name: asoGapmersBioSpringToNucleotides
 //input: string nucleotides {semType: BioSpring / Gapmers}
 //output: string result {semType: nucleotides}
-export function asoGapmersBioSpringToClassic(nucleotides: string) {
+export function asoGapmersBioSpringToNucleotides(nucleotides: string) {
   const obj: {[index: string]: string} = {"*": "", "5": "T", "6": "A", "7": "C", "8": "G", "9": "C"};
   return nucleotides.replace(/[*56789]/g, function (x: string) {return obj[x];});
 }
 
-//name: asoGapmersBioSpringToGCRS
+//name: asoGapmersBioSpringToGcrs
 //input: string nucleotides {semType: BioSpring / Gapmers}
 //output: string result {semType: GCRS / Gapmers}
-export function asoGapmersBioSpringToGCRS(nucleotides: string) {
+export function asoGapmersBioSpringToGcrs(nucleotides: string) {
   const obj: {[index: string]: string} = {
     "5*": "moeUnps", "6*": "moeAnps", "7*": "moe5mCnps", "8*": "moeGnps", "9*": "5mCps", "A*": "Aps", "T*": "Tps",
     "G*": "Gps", "C*": "Cps", "5": "moeU", "6": "moeA", "7": "moe5mC", "8": "moeG"
@@ -200,38 +203,38 @@ export function asoGapmersBioSpringToGCRS(nucleotides: string) {
   return nucleotides.replace(/(5\*|6\*|7\*|8\*|9\*|A\*|T\*|G\*|C\*|5|6|7|8])/g, function (x: string) {return obj[x];});
 }
 
-//name: asoGapmersGCRSToBioSpring
+//name: asoGapmersGcrsToBioSpring
 //input: string nucleotides {semType: GCRS / Gapmers}
 //output: string result {semType: BioSpring / Gapmers}
-export function asoGapmersGCRSToBioSpring(nucleotides: string) {
+export function asoGapmersGcrsToBioSpring(nucleotides: string) {
   const obj: {[index: string]: string} = {
     "moeT": "5", "moeA": "6", "moe5mC": "7", "moeG": "8", "moeU": "5", "5mC": "9", "nps": "*", "ps": "*", "U": "T"
   };
   return nucleotides.replace(/(moeT|moeA|moe5mC|moeG|moeU|5mC|nps|ps|U)/g, function (x: string) {return obj[x];});
 }
 
-//name: asoGapmersGCRSToClassic
+//name: asoGapmersGcrsToNucleotides
 //input: string nucleotides {semType: GCRS / Gapmers}
 //output: string result {semType: nucleotides}
-export function asoGapmersGCRSToClassic(nucleotides: string) {
+export function asoGapmersGcrsToNucleotides(nucleotides: string) {
   const obj: {[index: string]: string} = {"moe": "", "5m": "", "n": "", "ps": "", "U": "T"};
   return nucleotides.replace(/(moe|5m|n|ps|U)/g, function (x: string) {return obj[x];});
 }
 
-//name: siRnaGCRSToAxolabs
+//name: siRnaGcrsToAxolabs
 //input: string nucleotides {semType: GCRS / siRNA}
 //output: string result {semType: Axolabs / siRNA}
-export function siRnaGCRSToAxolabs(nucleotides: string) {
+export function siRnaGcrsToAxolabs(nucleotides: string) {
   const obj: {[index: string]: string} = {
     "fU": "Uf", "fA": "Af", "fC": "Cf", "fG": "Gf", "mU": "u", "mA": "a", "mC": "c", "mG": "g", "ps": "s"
   };
   return nucleotides.replace(/(fU|fA|fC|fG|mU|mA|mC|mG|ps)/g, function (x: string) {return obj[x];});
 }
 
-//name: siRnaAxolabsToGCRS
+//name: siRnaAxolabsToGcrs
 //input: string nucleotides {semType: Axolabs / siRNA}
 //output: string result {semType: GCRS / siRNA}
-export function siRnaAxolabsToGCRS(nucleotides: string) {
+export function siRnaAxolabsToGcrs(nucleotides: string) {
   const obj: {[index: string]: string} = {
     "Uf": "fU", "Af": "fA", "Cf": "fC", "Gf": "fG", "u": "mU", "a": "mA", "c": "mC", "g": "mG", "s": "ps"
   };
@@ -248,10 +251,10 @@ export function siRnaAxolabsToBioSpring(nucleotides: string) {
   return nucleotides.replace(/(Uf|Af|Cf|Gf|u|a|c|g|s)/g, function (x: string) {return obj[x];});
 }
 
-//name: siRnaAxolabsToClassic
+//name: siRnaAxolabsToNucleotides
 //input: string nucleotides {semType: Axolabs / siRNA}
 //output: string result {semType: nucleotides}
-export function siRnaAxolabsToClassic(nucleotides: string) {
+export function siRnaAxolabsToNucleotides(nucleotides: string) {
   const obj: {[index: string]: string} = {
     "Uf": "U", "Af": "A", "Cf": "C", "Gf": "G", "u": "U", "a": "A", "c": "C", "g": "G", "s": ""
   };
