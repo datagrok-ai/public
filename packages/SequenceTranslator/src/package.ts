@@ -242,11 +242,17 @@ export function asoGapmersBioSpringToNucleotides(nucleotides: string) {
 //input: string nucleotides {semType: BioSpring / Gapmers}
 //output: string result {semType: GCRS / Gapmers}
 export function asoGapmersBioSpringToGcrs(nucleotides: string) {
+  let count: number = -1;
   const obj: {[index: string]: string} = {
     "5*": "moeUnps", "6*": "moeAnps", "7*": "moe5mCnps", "8*": "moeGnps", "9*": "5mCps", "A*": "Aps", "T*": "Tps",
     "G*": "Gps", "C*": "Cps", "5": "moeU", "6": "moeA", "7": "moe5mC", "8": "moeG"
   };
-  return nucleotides.replace(/(5\*|6\*|7\*|8\*|9\*|A\*|T\*|G\*|C\*|5|6|7|8])/g, function (x: string) {return obj[x];});
+  return nucleotides.replace(/(5\*|6\*|7\*|8\*|9\*|A\*|T\*|G\*|C\*|5|6|7|8)/g, function (x: string) {
+    count += 1;
+    if (count == 4) return obj[x].slice(0, -3) + 'ps';
+    if (count == 14) return obj[x].slice(0, -2) + 'nps';
+    return obj[x];
+  });
 }
 
 //name: asoGapmersGcrsToBioSpring
