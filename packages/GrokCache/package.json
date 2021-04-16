@@ -6,9 +6,7 @@
 	"dependencies": {
 		"datagrok-api": "latest",
 		"exports-loader": "^2.0.0",
-		"file-loader": "^6.2.0",
-		"fs": "^0.0.1-security",
-		"worker-loader": "^3.0.8"
+		"file-loader": "^6.2.0"
 	},
 	"packages": {
 		"": {
@@ -33,7 +31,7 @@
 		"release-grokcache-local": "grok publish local --rebuild --release"
 	},
 	"devDependencies": {
-		"webpack": "^5.32.0",
+		"webpack": "^5.33.2",
 		"webpack-cli": "^4.6.0"
 	}
 }
