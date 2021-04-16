@@ -73,7 +73,7 @@ export async function substructureSearch(column: Column, pattern: string = '', s
     'molStringsColumn': column,
     'molString': pattern,
     'substructLibrary':
-      !(settings.hasOwnProperty('substructLibrary') && !settings.substructLibrary)
+      !(settings?.hasOwnProperty('substructLibrary') && !settings.substructLibrary)
   });
   await call.call();
   // unpacking our BitSet object from a synthetic column
