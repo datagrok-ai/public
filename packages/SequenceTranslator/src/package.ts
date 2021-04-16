@@ -221,11 +221,16 @@ export function asoGapmersNucleotidesToBioSpring(nucleotides: string) {
 export function asoGapmersNucleotidesToGcrs(nucleotides: string) {
   let count: number = -1;
   const objForEdges: {[index: string]: string} = {"T": "moeUnps", "A": "moeAnps", "C": "moe5mCnps", "G": "moeGnps"};
-  const objForCenter: {[index: string]: string} = {"C": "Cps", "A": "Aps", "T": "Tps", "G": "Gps"};
+  const objForCenter: {[index: string]: string} = {"C": "5mCps", "A": "Aps", "T": "Tps", "G": "Gps"};
   return nucleotides.replace(/[ATCG]/g, function (x: string) {
     count++;
-    if (count < 5) return objForEdges[x];
-    if (count < 15) return objForCenter[x];
+    if (count < 5) {
+      if (count == 4) return objForEdges[x].slice(0, -3) + 'ps';
+      return objForEdges[x];
+    } else if (count < 15) {
+      if (count == 14) return objForCenter[x].slice(0, -2) + 'nps';
+      return objForCenter[x];
+    }
     return objForEdges[x];
   }).slice(0, -3);
 }
