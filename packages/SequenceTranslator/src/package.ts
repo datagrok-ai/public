@@ -10,6 +10,7 @@ export let _package = new DG.Package();
 export function sequenceTranslator(): void {
 
   let detectedSequenceSemType = ui.divText('');
+  let output = ui.h1('Output (example)');
   let inp = ui.textInput("", "", (seq: string) => {
     let outputValues = convertSequence(seq.replace(/\s/g, ''));
     resultsGrid.set('Code', 0, 'Nucleotides');
@@ -21,6 +22,7 @@ export function sequenceTranslator(): void {
     resultsGrid.set('Code', 3, 'GCRS');
     resultsGrid.set('Sequence', 3, outputValues.gcrs);
     detectedSequenceSemType.textContent = 'Detected input type: ' + outputValues.type;
+    output.textContent = 'Output';
     table.dataFrame = resultsGrid;
   });
 
@@ -35,6 +37,15 @@ export function sequenceTranslator(): void {
     DG.Column.string('Code', 4),
     DG.Column.string('Sequence', 4)
   ]);
+
+  resultsGrid.set('Code', 0, 'Nucleotides');
+  resultsGrid.set('Sequence', 0, 'UUCAACUGCUUACGUCUUU');
+  resultsGrid.set('Code', 1, 'BioSpring');
+  resultsGrid.set('Sequence', 1, '5\*1\*766354715274575\*5\*5');
+  resultsGrid.set('Code', 2, 'Axolabs');
+  resultsGrid.set('Sequence', 2, 'usUfscaaCfuGfcUfuAfcGfucususu');
+  resultsGrid.set('Code', 3, 'GCRS');
+  resultsGrid.set('Sequence', 3, 'mUpsfUpsmCmAmAfCmUfGmCfUmUfAmCfGmUmCmUpsmUpsmU');
 
   let table = DG.Viewer.grid(resultsGrid);
   // @ts-ignore
@@ -52,6 +63,40 @@ export function sequenceTranslator(): void {
     ui.divText("This will add the result column to the right of the table"),
   ], 'grok-datajob-publish-alert');
 
+  const codes1 = DG.Viewer.grid(DG.DataFrame.fromCsv(
+    'For ASO Gapmers\tBioSpring\tAxolabs\tGCRS\n' +
+    '2\'MOE-5Me-rU\t5\t\tmoeT\n' +
+    '2\'MOE-rA\t6\t\tmoeA\n' +
+    '2\'MOE-5Me-rC\t7\t\tmoe5mC\n' +
+    '2\'MOE-rG\t8\t\tmoeG\n' +
+    '5-Methyl-dC\t9\t\t5mC\n' +
+    'ps linkage\t*\t\tps\n' +
+    'dA\tA\t\tA\n' +
+    'dC\tC\t\tC\n' +
+    'dG\tG\t\tG\n' +
+    'dT\tT\t\tT\n'));
+  const codes2 = DG.Viewer.grid(DG.DataFrame.fromCsv(
+    'For 2\'-OMe and 2\'-F modified siRNA\tBioSpring\tAxolabs\tGCRS\n' +
+    '2\'-fluoro-U\t1\tUf\tfU\n' +
+    '2\'-fluoro-A\t2\tAf\tfA\n' +
+    '2\'-fluoro-C\t3\tCf\tfC\n' +
+    '2\'-fluoro-G\t4\tGf\tfG\n' +
+    '2\'OMe-rU\t5\tu\tmU\n' +
+    '2\'OMe-rA\t6\ta\tmA\n' +
+    '2\'OMe-rC\t7\tc\tmC\n' +
+    '2\'OMe-rG\t8\tg\tmG\n' +
+    'ps linkage\t*\ts\tps\n'));
+  // @ts-ignore
+  codes2.columns.byName('For 2\'-OMe and 2\'-F modified siRNA').width = 213;
+  // @ts-ignore
+  codes2.columns.byName('BioSpring').width = 68;
+  // @ts-ignore
+  codes2.columns.byName('Axolabs').width = 55;
+  // @ts-ignore
+  codes2.columns.byName('GCRS').width = 40;
+  let acc = ui.accordion();
+  acc.addPane('CMO Codes', () => ui.div([codes1.root, codes2.root]), false);
+
   let view = grok.shell.newView('Sequence Translator', []);
   view.append(
     ui.divV([
@@ -60,28 +105,29 @@ export function sequenceTranslator(): void {
         inputContorls,
         detectedSequenceSemType,
         ui.block([
-          ui.h1('Output'),
+          output,
           ui.div([table.root], 'table')
-        ])
+        ]),
+        acc.root
       ], 'sequence')
     ])
   );
 
   $('.table .d4-grid')
-      .css('height','150px')
-      .css('width','100%');
+    .css('height','150px')
+    .css('width','100%');
   $('.sequence')
-      .css('padding','20px 0')
-      .children().css('padding','5px 0');
+    .css('padding','20px 0')
+    .children().css('padding','5px 0');
   $('.sequenceInput .input-base').css('margin','0');
   $('.sequenceInput textarea')
-      .attr('placeholder','Paste here')
-      .css('resize','none')
-      .css('min-height','50px')
-      .css('width','100%');
+    .attr('placeholder','Paste here')
+    .css('resize','none')
+    .css('min-height','50px')
+    .css('width','100%');
   $('.sequenceInput select')
-      .css('width','100%')
-      .attr('placeholder','');
+    .css('width','100%')
+    .attr('placeholder','');
 }
 
 export function isNucleotidesCode(sequence: string): boolean {return /^[ATGCU]{10,}$/.test(sequence);}
@@ -99,7 +145,7 @@ export function isSiRnaGcrsCode(sequence: string): boolean {return /^[fmpsACGU]{
 function convertSequence(seq: string) {
   if (isNucleotidesCode(seq))
     return {
-      type: "ASO Gapmers / Nucleotides Code",
+      type: "Nucleotides Code",
       nucleotides: seq,
       bioSpring: asoGapmersNucleotidesToBioSpring(seq),
       axolabs: "No translation table available",
