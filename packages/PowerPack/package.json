@@ -1,0 +1,21 @@
+{
+	"name": "powerpack",
+	"friendlyName": "PowerPack",
+	"version": "0.0.1",
+	"description": "",
+	"dependencies": {
+		"datagrok-api": "latest",
+		"ts-loader": "latest",
+		"typescript": "latest"
+	},
+	"scripts": {
+		"debug-powerpack": "grok publish --rebuild",
+		"release-powerpack": "grok publish --rebuild --release",
+		"build-powerpack": "webpack",
+		"build": "webpack",
+		"debug-powerpack-dev": "grok publish dev --rebuild",
+		"release-powerpack-dev": "grok publish dev --rebuild --release",
+		"debug-powerpack-public": "grok publish public --rebuild",
+		"release-powerpack-public": "grok publish public --rebuild --release"
+	}
+}
