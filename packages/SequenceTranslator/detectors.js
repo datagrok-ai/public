@@ -12,7 +12,7 @@ class SequencetranslatorPackageDetectors extends DG.Package {
         return 'GCRS / Gapmers';
       if (DG.Detector.sampleCategories(col, (s) => /^[*1-8]{30,}$/.test(s)))
         return 'BioSpring / siRNA';
-      if (DG.Detector.sampleCategories(col, (s) => /^[fsACGUacgu]{30,}$/.test(s)))
+      if (DG.Detector.sampleCategories(col, (s) => /^[fsACGUacgu]{20,}$/.test(s)))
         return 'Axolabs / siRNA';
       if (DG.Detector.sampleCategories(col, (s) => /^[fmpsACGU]{30,}$/.test(s)))
         return 'GCRS / siRNA';

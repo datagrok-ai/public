@@ -1,6 +1,62 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-04-16 Dev build 0.89.37
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.89.37`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Create sequenceTranslator app with instructions (WIP)
+* (Bug) Bar chart: Error after opening project with bar chart 
+* (Bug) Column Context Menu: `format` submenu is empty when the first value in a column is null 
+* JS API: Object Handlers (WIP)
+* [(Bug) Scatter Plot: Properties: Value of the "Color" and "Size" properties change when you just hover over the columns from the list](https://community.datagrok.ai/t/changing-the-marker-size-in-the-scatterplot-closes-the-properties-panel/511) 
+* (Bug) Scatter Plot: selected color should override custom conditional color 
+* (Bug) Filters: Selected rows indication is not updated as selection changes 
+* Release Notes: 0.89.36. 
+* Release Notes: removing strange line-breaks. 
+* Update release-history.md 
+* Release Notes: 0.89.36 
+* (Bug) Query View: Multiple vertical scrolls appear in query area 
+* Edit tooltip: close the dialog when "Sketch form" is clicked 
+* CVM: adopting the newer version of Miniconda 
+* NwkViewer: JS-based phylogenetic tree visualisation (WIP)
+* Prepare a proposal for WASM use and adoption in Datagrok core (WIP)
+* (Bug) Filters: categorical column filters still handle "selection.changed" event after being manually detached 
+* (Bug) Filters: significant performance degradation when resetting the filter (ESC key) 
+* (Bug) Filters: clicking on a category name does not always select it 
+* Filters: show tooltip with a category name on mouseover 
+* Dock type clarification 
+* Wiki: Harmonization (WIP)
+* Wiki: how-to build an app. Namespacing connections 
+* Wiki: how-to build an app. Pushing credentials (updates) 
+* Wiki: Getting Started. Moving the item to the top 
+* UI: ui.wait should act as ui.box 
+* Wiki: Onboarding Content (WIP)
+* NGL viewer (WIP)
+* Bar Chart: enable selection on Shift + drag 
+* Update chem.ts 
+* (Bug) Chem | Info Panels: 3D panel displayed empty (WIP)
+* Column: Custom value comparers 
+* JS API: Column: Custom value comparers (WIP)
+* ignore files 
+* Wiki: best practices for working with data (WIP)
+* Comment clean-up 
+* enables including explicit Hs in substructure searches 
+* ClinicalCase \- a plugin for analyzing SDTM-based clinical studies data (WIP)
+* (Bug) Qualified Numbers: Export to JSON loses the qualifier 
+* Chem, RDKit-based (WIP)
+* Chem package version 0.9.3, bump. 
+* (Bug) Vertical scrolling won't appear on vertical growth 
+
+
 # 2021-04-14 Dev build 0.89.36
 
 In this release, we've focused on enriching both the experience of the platform end-users and on-platform developers, as well as on connecting these two groups. For instance, custom-built cell renderers, useful for displaying molecules, nucleotide sequences or experiments results, now expand the platform in many places such as [tooltips and tile viewers](https://community.datagrok.ai/t/cheminformatics-updates/457/8). There are also [new viewers](https://community.datagrok.ai/t/visualization-related-updates/521/4), [several bar chart](https://community.datagrok.ai/t/bar-chart-color-by-category/516) [features](https://community.datagrok.ai/t/visualization-related-updates/521/10), [color coding features](https://dev.datagrok.ai/js/samples/grid/color-coding-conditional), and a few dozen of [JS API]((https://datagrok.ai/help/govern/audit#javascript-api)) [enhancements](https://community.datagrok.ai/t/javascript-api-updates/526/8) and [bug fixes](##bug-fixes).
