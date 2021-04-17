@@ -1,4 +1,4 @@
-<!-- TITLE: JavaScript API -->
+<!-- TITLE: &#65279;JavaScript API -->
 <!-- SUBTITLE: -->
 
 # JavaScript API

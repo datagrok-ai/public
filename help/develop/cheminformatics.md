@@ -1,4 +1,4 @@
-<!-- TITLE: Cheminformatics Development -->
+<!-- TITLE: Cheminformatics -->
 <!-- SUBTITLE: -->
  
 # Cheminformatics Development
