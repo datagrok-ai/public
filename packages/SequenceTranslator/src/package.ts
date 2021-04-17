@@ -9,9 +9,8 @@ export let _package = new DG.Package();
 //tags: app
 export function sequenceTranslator(): void {
 
-  let detectedSequenceSemType = ui.divText('');
-  let output = ui.h1('Output (example)');
-  let inp = ui.textInput("", "", (seq: string) => {
+  let detectedSequenceSemType = ui.divText('Detected input type: RNA Nucleotides Code');
+  let inp = ui.textInput("", "UUCAACUGCUUACGUCUUU", (seq: string) => {
     let outputValues = convertSequence(seq.replace(/\s/g, ''));
     resultsGrid.set('Code', 0, 'Nucleotides');
     resultsGrid.set('Sequence', 0, outputValues.nucleotides);
@@ -22,7 +21,6 @@ export function sequenceTranslator(): void {
     resultsGrid.set('Code', 3, 'GCRS');
     resultsGrid.set('Sequence', 3, outputValues.gcrs);
     detectedSequenceSemType.textContent = 'Detected input type: ' + outputValues.type;
-    output.textContent = 'Output';
     table.dataFrame = resultsGrid;
   });
 
@@ -105,7 +103,7 @@ export function sequenceTranslator(): void {
         inputContorls,
         detectedSequenceSemType,
         ui.block([
-          output,
+          ui.h1('Output'),
           ui.div([table.root], 'table')
         ]),
         acc.root
@@ -140,7 +138,7 @@ export function isAsoGapmerGcrsCode(sequence: string): boolean {return /^(?=.*mo
 
 export function isSiRnaBioSpringCode(sequence: string): boolean {return /^[*1-8]{30,}$/.test(sequence);}
 
-export function isSiRnaAxolabsCode(sequence: string): boolean {return /^[fsACGUacgu]{30,}$/.test(sequence);}
+export function isSiRnaAxolabsCode(sequence: string): boolean {return /^[fsACGUacgu]{20,}$/.test(sequence);}
 
 export function isSiRnaGcrsCode(sequence: string): boolean {return /^[fmpsACGU]{30,}$/.test(sequence);}
 
