@@ -1,4 +1,4 @@
-<!-- TITLE: JavaScript Development -->
+<!-- TITLE: &#8205;JavaScript Development -->
 <!-- SUBTITLE: -->
 
 # JavaScript Development
