@@ -1,9 +1,9 @@
-<!-- TITLE: Grok Application -->
+<!-- TITLE: &#65279;Applications-->
 <!-- SUBTITLE: -->
 
 <!-- This is a user-centric view on the Datagrok applications -->
 
-# Grok Application
+# Datagrok Applications
 
 A Datagrok application is built on top of the Datagrok platform.
 
@@ -27,7 +27,7 @@ accessing external web services in JavaScript via
 
 One [Datagrok package](../develop/develop.md#packages) may contain zero, one or several applications.
 
-# Launching applications
+# Launching Applications
 
 To open the application launcher and see all [available](https://public.datagrok.ai/apps) applications,
 follow to `Functions | Apps` from the Datagrok sidebar, or follow [this link](https://public.datagrok.ai/apps).
@@ -35,7 +35,7 @@ To launch a particular app automatically, open the following URL: `https://publi
 if there is only one app in the package, or `https://public.datagrok.ai/apps/<PACKAGE_NAME>/<APP_NAME>`,
 if there are several. You'd learn the right URL first time you run the app from within the application launcher; we recommend you to bookmark it for later use.
 
-# Developing applications
+# Developing Applications
 
 There's a handful of concepts and patterns in Datagrok especially useful
 for building applications. The application building story is curated in
