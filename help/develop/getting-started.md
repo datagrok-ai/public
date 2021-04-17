@@ -1,4 +1,4 @@
-<!-- TITLE: &#8204;📌 Getting Started-->
+<!-- TITLE: &#8203;Getting Started-->
 <!-- SUBTITLE: -->
 
 # Getting Started with Building on Datagrok
@@ -147,14 +147,16 @@ We recommend the following:
 ## Datagrok Architecture
  
 We are highly interested in helping developers building on top of Datagrok deliver the best experience
-to their end-users. That's why we highly encourage you to go through this article on architecture,
+to their end-users. That's why we highly encourage you to go through these two articles on architecture,
 either before or after doing the Exercises:
 
 [https://datagrok.ai/help/develop/admin/architecture](develop/admin/architecture.md)
 
-There are some architectural pillars, for instance regarding accessing data and its overheads and
-leveraging the power of our in-memory columnar data store. This understanding is crucial for
-making your applications and plugins low-latency and smooth in operation.
+[https://datagrok.ai/help/develop/performance](develop/performance.md)
+
+There are architectural pillars regarding accessing data and leveraging the power of our
+in-memory columnar data store. This understanding is crucial for making your applications
+and plugins low-latency and smooth in operation.
 
 ## Extending and customizing Datagrok
 
