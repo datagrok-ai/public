@@ -4,10 +4,15 @@ export class PhyloTreeViewer extends DG.JsViewer {
     this.radialLayout = this.bool('radialLayout', true);
     this.fontSize = this.string('fontSize', '6px');
     this.defaultSize = 400;
+    this.root.style = 'position: absolute; left: 0; right: 0; top: 0; bottom: 0;';
+    this.nodeSelectionSourceColumnName = this.string('nodeSelectionSourceColumnName', 'node');
   }
 
   onTableAttached() {
     this.newick = this.dataFrame.getTag('.newick');
+    this.parsedNewick = JSON.parse(this.dataFrame.getTag('.newickJson'));
+    this.nodeSourceColumn = this.dataFrame.col(this.nodeSelectionSourceColumnName);
+    this.subs.push(this.dataFrame.onCurrentRowChanged.subscribe(() => this.render()));
     this.render();
   }
 
@@ -33,10 +38,17 @@ export class PhyloTreeViewer extends DG.JsViewer {
         this.root.parentElement.clientHeight || this.defaultSize,
         this.root.parentElement.clientWidth || this.defaultSize
       ])
-      .font_size(Number.parseInt(this.fontSize))
+      .font_size(parseInt(this.fontSize))
       .radial(this.radialLayout);
-  
-    tree(d3.layout.newick_parser(this.newick)).layout();
-    this.root.style = 'position: absolute; left: 0; right: 0; top: 0; bottom: 0;';
+
+    tree(this.parsedNewick).layout();
+
+    if (this.nodeSourceColumn) {
+      const node = this.nodeSourceColumn.get(this.dataFrame.currentRow.idx);
+      if (node) {
+        tree.modify_selection(node => false);
+        tree.modify_selection(tree.path_to_root(tree.get_node_by_name(node)));
+      }
+    }
   }
 }

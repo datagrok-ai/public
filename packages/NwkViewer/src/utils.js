@@ -1,19 +1,18 @@
-// https://github.com/jasondavies/newick.js
-export function parseNewick(a) {for(var e=[],r={},s=a.split(/\s*(;|\(|\)|,|:)\s*/),t=0;t<s.length;t++){var n=s[t];switch(n){case"(":var c={};r.branchset=[c],e.push(r),r=c;break;case",":var child={};e[e.length-1].branchset.push(child),r=child;break;case")":r=e.pop();break;case":":break;default:var h=s[t-1];")"==h||"("==h||","==h?r.name=n:":"==h&&(r.length=parseFloat(n))}}return r};
-
 export function newickToDf(newick, filename) {
-  let parent = 'root';
+  let parent = null;
   let i = 0;
-  const obj = parseNewick(newick);
-  const nodes = [], parents = [], distances = [];
+  const parsedNewick = d3.layout.newick_parser(newick);
+  const obj = parsedNewick.json;
+  const nodes = [], parents = [], distances = [], annotations = [];
 
   function traverse(obj) {
-    if (obj === null || typeof obj != "object" ) return;
+    if (obj === null || typeof obj != 'object' ) return;
     if (!Array.isArray(obj)) {
       let name = obj.name;
-      if (!name) name = `node-${i}`, i += 1;
+      if (!name) name = obj.name = `node-${i}`, i++;
       nodes.push(name);
-      distances.push(obj.length);
+      distances.push(obj.attribute ? parseFloat(obj.attribute) : null);
+      annotations.push(obj.annotation);
       parents.push(parent);
       parent = name;
     }
@@ -25,7 +24,12 @@ export function newickToDf(newick, filename) {
     DG.Column.fromList('string', 'node', nodes),
     DG.Column.fromList('string', 'parent', parents),
     DG.Column.fromList('double', 'distance', distances),
+    DG.Column.fromList('string', 'annotation', annotations),
   ]);
+
   df.name = `df-${filename.slice(0, -4)}`;
+  df.setTag('.newick', newick);
+  df.setTag('.newickJson', JSON.stringify(parsedNewick));
+
   return df;
 };
