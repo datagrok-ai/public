@@ -173,7 +173,7 @@ function convertSequence(seq: string) {
       nucleotides: seq,
       bioSpring: 'coming soon', //siRnaNucleotideToBioSpring(seq),
       axolabs: 'coming soon', //siRnaNucleotideToAxolabs(seq),
-      gcrs: 'coming soon' //siRnaNucleotideToGcrs(seq)
+      gcrs: siRnaNucleotidesToGcrs(seq)
     };
   if (isSiRnaBioSpringCode(seq))
     return {
@@ -368,4 +368,21 @@ export function siRnaGcrsToAxolabs(nucleotides: string) {
     "fU": "Uf", "fA": "Af", "fC": "Cf", "fG": "Gf", "mU": "u", "mA": "a", "mC": "c", "mG": "g", "ps": "s"
   };
   return nucleotides.replace(/(fU|fA|fC|fG|mU|mA|mC|mG|ps)/g, function (x: string) {return obj[x];});
+}
+
+//name: siRnaNucleotidesToGcrs
+//input: string nucleotides {semType: nucleotides}
+//output: string result {semType: GCRS / siRNA}
+export function siRnaNucleotidesToGcrs(nucleotides: string) {
+  let count: number = -1;
+  const objForLeftEdge: {[index: string]: string} = {"A": "mAps", "U": "mUps", "G": "mGps", "C": "mCps"};
+  const objForRightEdge: {[index: string]: string} = {"A": "psmA", "U": "psmU", "G": "psmG", "C": "psmC"};
+  const objForEvenIndices: {[index: string]: string} = {"A": "fA", "U": "fU", "G": "fG", "C": "fC"};
+  const objForOddIndices: {[index: string]: string} = {"A": "mA", "U": "mU", "G": "mG", "C": "mC"};
+  return nucleotides.replace(/[AUGC]/g, function (x: string) {
+    count++;
+    if (count < 2) return objForLeftEdge[x];
+    if (count > 18) return objForRightEdge[x];
+    return (count % 2 == 0) ? objForEvenIndices[x] : objForOddIndices[x];
+  });
 }
