@@ -39,11 +39,11 @@ export function sequenceTranslator(): void {
   resultsGrid.set('Code', 0, 'Nucleotides');
   resultsGrid.set('Sequence', 0, 'UUCAACUGCUUACGUCUUU');
   resultsGrid.set('Code', 1, 'BioSpring');
-  resultsGrid.set('Sequence', 1, '5\*1\*766354715274575\*5\*5');
+  resultsGrid.set('Sequence', 1, '5\*5\*362718351638171\*5\*5');
   resultsGrid.set('Code', 2, 'Axolabs');
-  resultsGrid.set('Sequence', 2, 'usUfscaaCfuGfcUfuAfcGfucususu');
+  resultsGrid.set('Sequence', 2, 'coming soon');
   resultsGrid.set('Code', 3, 'GCRS');
-  resultsGrid.set('Sequence', 3, 'mUpsfUpsmCmAmAfCmUfGmCfUmUfAmCfGmUmCmUpsmUpsmU');
+  resultsGrid.set('Sequence', 3, 'mUpsmUpsfCmAfAmCfUmGfCmUfUmAfCmGfUmCfUpsmUpsmU');
 
   let table = DG.Viewer.grid(resultsGrid);
   // @ts-ignore
@@ -375,7 +375,7 @@ export function siRnaNucleotideToBioSpringSenseStrand(nucleotides: string) {
   return nucleotides.replace(/[AUGC]/g, function (x: string) {
     count++;
     if (count < 2) return objForLeftEdge[x];
-    if (count > 18) return objForRightEdge[x];
+    if (count > nucleotides.length - 3) return objForRightEdge[x];
     return (count % 2 == 0) ? objForEvenIndices[x] : objForOddIndices[x];
   });
 }
@@ -392,7 +392,7 @@ export function siRnaNucleotidesToGcrs(nucleotides: string) {
   return nucleotides.replace(/[AUGC]/g, function (x: string) {
     count++;
     if (count < 2) return objForLeftEdge[x];
-    if (count > 18) return objForRightEdge[x];
+    if (count > nucleotides.length - 3) return objForRightEdge[x];
     return (count % 2 == 0) ? objForEvenIndices[x] : objForOddIndices[x];
   });
 }

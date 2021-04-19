@@ -14,18 +14,23 @@ export function newickToDf(newick, filename) {
       distances.push(obj.attribute ? parseFloat(obj.attribute) : null);
       annotations.push(obj.annotation);
       parents.push(parent);
-      parent = name;
+      if (obj.children) parent = name;
     }
     Object.values(obj).forEach(value => traverse(value));
   }
   traverse(obj);
 
-  const df = DG.DataFrame.fromColumns([
+  const columns = [
     DG.Column.fromList('string', 'node', nodes),
     DG.Column.fromList('string', 'parent', parents),
     DG.Column.fromList('double', 'distance', distances),
-    DG.Column.fromList('string', 'annotation', annotations),
-  ]);
+  ];
+
+  if (annotations.some(a => !!a)) {
+    columns.push(DG.Column.fromList('string', 'annotation', annotations));
+  }
+
+  const df = DG.DataFrame.fromColumns(columns);
 
   df.name = `df-${filename.slice(0, -4)}`;
   df.setTag('.newick', newick);
