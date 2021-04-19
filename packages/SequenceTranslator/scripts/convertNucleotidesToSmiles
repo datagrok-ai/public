@@ -1,9 +1,0 @@
-#name: convertMoleculeToSmiles
-#description: Converts molecule to smiles
-#language: python
-#tags: demo, chem, rdkit
-#input: string molecule
-#output: string smiles
-
-from rdkit import Chem
-smiles = Chem.MolToSmiles(Chem.MolFromFASTA(molecule))
