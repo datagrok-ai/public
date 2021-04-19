@@ -1,4 +1,4 @@
-<!-- TITLE: &#65279;Applications-->
+<!-- TITLE: &#8204;Applications-->
 <!-- SUBTITLE: -->
 
 <!-- This is a user-centric view on the Datagrok applications -->
