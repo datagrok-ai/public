@@ -120,8 +120,11 @@ class ChemPackage extends DG.Package {
   //input: column molColumn
   //output: column result [fingerprints]
   getMorganFingerprints(molColumn) {
-    let fps = molColumn.toList().map((smiles) => DG.BitSet.fromString(_morganFP(smiles)).d);
-    return DG.Column.fromList('object', 'fingerprints', fps);
+    let col = _moleculesToFingerprints(molColumn);
+    for (let i = 0; i < col.length; ++i) {
+      col.set(i, col.get(i).d);
+    }
+    return col;
   }
 
   //name: findSimilar

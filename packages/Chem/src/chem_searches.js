@@ -52,7 +52,7 @@ function _morganFP(molString, fp_length = 128, fp_radius = 2) {
 
 }
 
-function _moleculesToFingerprints(molStringsColumn, settings) {
+function _moleculesToFingerprints(molStringsColumn, settings = {}) {
   const len = molStringsColumn.length;
   const fpLength = settings.hasOwnProperty('fpLength') ? settings.fpLength : 128;
   const fpRadius = settings.hasOwnProperty('fpRadius') ? settings.fpRadius : 2;
