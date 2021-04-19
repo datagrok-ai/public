@@ -575,10 +575,26 @@ export class Column {
     // });
   }
 
+  /** Creates a {@link Column} from the list of string values
+   * Please note that method performs type promotion if all listed values are numeric
+   *
+   * @param {string} name - Column name
+   * @param {Array} list - List of column values
+   *
+   */
   static fromStrings(name: string, list: string[]): Column {
     return toJs(api.grok_Column_FromStrings(name, list));
   }
 
+  /** Creates a {@link Column} with explicitly specified type
+   *
+   * @param type - column type code {@link COLUMN_TYPE}
+   * @param {string} name - Column name
+   * @param length - Column length (should match row count of the data frame )
+   *
+   * {@link DataFrame.create}
+   * {@see COLUMN_TYPE}
+   */
   static fromType(type: ColumnType, name?: string | null, length: number = 0): Column {
     return toJs(api.grok_Column_FromType(type, name, length));
   }
