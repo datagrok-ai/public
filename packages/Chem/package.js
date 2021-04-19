@@ -115,6 +115,13 @@ class ChemPackage extends DG.Package {
       throw e;
     }
   }
+  
+  //name: getMorganFingerprints
+  //input: column molColumn
+  //output: column result [fingerprints]
+  getMorganFingerprints(molColumn) {
+    return _moleculesToFingerprints(molColumn);
+  }
 
   //name: findSimilar
   //input: column molStringsColumn
@@ -132,14 +139,12 @@ class ChemPackage extends DG.Package {
     }
   }
 
-  //name: substructureSearch
+  //name: searchSubstructure
   //input: column molStringsColumn
   //input: string molString
   //input: bool substructLibrary
   //output: column result
-  // deprecated
-  async substructureSearch(molStringsColumn, molString, substructLibrary) {
-
+  async searchSubstructure(molStringsColumn, molString, substructLibrary) {
     try {
       let result =
         substructLibrary ?
@@ -150,6 +155,16 @@ class ChemPackage extends DG.Package {
       console.error("In substructureSearch: " + e.toString());
       throw e;
     }
+  }
+
+  //name: substructureSearch
+  //input: column molStringsColumn
+  //input: string molString
+  //input: bool substructLibrary
+  //output: column result
+  // deprecated
+  async substructureSearch(molStringsColumn, molString, substructLibrary) {
+    return this.searchSubstructure(molStringsColumn, molString, substructLibrary);
   }
 
   //tags: app

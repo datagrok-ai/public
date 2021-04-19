@@ -22,7 +22,6 @@ export function tree() {
 export async function nwkTreeViewer(file) {
   const newickString = await file.readAsString();
   const df = newickToDf(newickString, file.fileName);
-  df.setTag('.newick', newickString);
 
   const preview = DG.View.create();
   const host = ui.divH([

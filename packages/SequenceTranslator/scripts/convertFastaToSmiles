@@ -1,0 +1,24 @@
+#name: convertFastaToSmiles
+#description: Converts FASTA format to smiles
+#language: python
+#tags: demo, chem, rdkit, smiles
+#input: string sequence_in_fasta_format = AGGTCTTCATGACTTCGGCC {semType: nucleotides}
+#input: string flavor = DNA_no_cap {choices: ["Protein_L_amino_acids","Protein_D_amino_acids","RNA_no_cap","RNA_5_cap","RNA_3_cap","RNA_both_caps","DNA_no_cap","DNA_5_cap","DNA_3_cap","DNA_both_caps"]}
+#output: string smiles {semType: Molecule}
+
+from rdkit import Chem
+
+flavors = {
+    "Protein_L_amino_acids": 0,
+    "Protein_D_amino_acids": 1,
+    "RNA_no_cap": 2,
+    "RNA_5_cap": 3,
+    "RNA_3_cap": 4,
+    "RNA_both_caps": 5,
+    "DNA_no_cap": 6,
+    "DNA_5_cap": 7,
+    "DNA_3_cap": 8,
+    "DNA_both_caps": 9
+}
+
+smiles = Chem.MolToSmiles(Chem.MolFromFASTA(text=sequence_in_fasta_format, flavor=flavors[flavor]))
