@@ -33,7 +33,8 @@ export function sequenceTranslator(): void {
     detectedSequenceSemType.textContent = 'Detected input type: ' + outputValues.type;
     table.dataFrame = resultsGrid;
     cont.innerHTML = "";
-    cont.append(grok.chem.svgMol(<string> await nucleotidesToSmiles(seq.replace(/\s/g, '')), 900, 300));
+    let flavor: string = (outputValues.nucleotides.includes('U')) ? "RNA_no_cap" : "DNA_no_cap";
+    cont.append(grok.chem.svgMol(<string> await nucleotidesToSmiles(seq.replace(/\s/g, ''), flavor), 900, 300));
   });
 
   let inputContorls = ui.div([
@@ -142,8 +143,11 @@ export function sequenceTranslator(): void {
   $('.molecule').css('margin-top','-100px');
 }
 
-export async function nucleotidesToSmiles(nucleotides: string) {
-  return await grok.functions.call('SequenceTranslator:convertMoleculeToSmiles', {'molecule': nucleotides});
+export async function nucleotidesToSmiles(nucleotides: string, flavor: string) {
+  return await grok.functions.call('SequenceTranslator:convertFastaToSmiles', {
+    'sequence_in_fasta_format': nucleotides,
+    'flavor': flavor
+  });
 }
 
 export function isDnaNucleotidesCode(sequence: string): boolean {return /^[ATGC]{10,}$/.test(sequence);}
