@@ -333,4 +333,45 @@ class ChemPackage extends DG.Package {
     while (node.firstChild)
       node.removeChild(node.firstChild);
   }
+
+  //name: saveAsSdf
+  //description: Save as SDF
+  //tags: fileExporter
+  saveAsSdf() {
+    //todo: load OpenChemLib (or use RDKit?)
+    //todo: open dialog
+    //todo: UI for choosing structure column if necessary
+    //todo: UI for choosing columns with properties
+
+    let table = grok.shell.t;
+    let structureColumn = table.columns.bySemType('Molecule');
+    if (structureColumn == null)
+      return;
+
+    let result = '';
+
+    for (let i = 0; i < table.rowCount; i++) {
+      try {
+        let mol = new OCL.Molecule.fromSmiles(structureColumn.get(i));
+        result += mol.toMolfile();
+        result += '\n';
+
+        // properties
+        for (let col of table.columns)
+          if (col !== structureColumn) {
+            result += `>  <${col.name}>\n${col.get(i)}\n\n`;
+          }
+
+        result += '$$$$\n'
+      }
+      catch (error) {
+        console.error(error);
+      }
+    }
+
+    var element = document.createElement('a');
+    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(result));
+    element.setAttribute('download', table.name + '.sdf');
+    element.click();
+  }
 }
