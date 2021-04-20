@@ -57,18 +57,22 @@ function showMainDialog(view, tableWithSignals, tableWithSignalsAndAnnotations, 
   let filterChartsList = [];
   let addFilterButton = ui.div();
   let filterInputsNew = ui.inputs(filterTypesList);
-  let filterOutputsObj = {[inputCase]: column};
-  const dspPackageFilters = ['Moving Average Filter', 'Exponential Filter', 'Min Max Normalization', 'Z-score Normalization',
-    'Box Cox Transform', 'Get Trend', 'Detrend', 'Fourier Filter', 'Spectral Density', 'Subsample', 'Averaging Downsampling'];
+  let filterOutputsObj = {[inputCase.name]: column};
+  const dspPackageFilters = ['DSP:SMA_filter', 'DSP:Exp_filter', 'DSP:Kalman_filter', 'DSP:MinMax_transform',
+    'DSP:Zscore_transform', 'DSP:box_cox_transform', 'DSP:get_trend', 'DSP:remove_trend', 'DSP:fourier_filter',
+    'DSP:spectral_density', 'DSP:subsample', 'DSP:asample'];
   let i = 0;
   addFilterButton.appendChild(ui.button('Add Filter', async () => {
     let containerFilter = ui.div();
     filterContainerList[i] = containerFilter;
     let nameOfLastFiltersOutput = Object.keys(filterOutputsObj)[Object.keys(filterOutputsObj).length - 1];
-    let filterInputPreset = (Object.keys(filterOutputsObj).length === 1) ? inputCase : nameOfLastFiltersOutput;
+    let filterInputPreset = (Object.keys(filterOutputsObj).length === 1) ? inputCase.name : nameOfLastFiltersOutput;
     filterInputsList[i] = ui.choiceInput('Input', filterInputPreset, Object.keys(filterOutputsObj));
     filterChartsList[i] = getEmptyChart();
     let filters = await grok.dapi.scripts.filter('#filters').list();
+    for (let ind = 0; ind < dspPackageFilters.length; ind++) {
+      filters.push(await grok.functions.eval(dspPackageFilters[ind]));
+    }
     filterTypesList[i] = ui.choiceInput('Filter ' + (i + 1), '', filters);
     let filterInputsOld = ui.inputs([filterTypesList[i]]);
     filterContainerList[i].appendChild(filterInputsOld);
@@ -77,10 +81,10 @@ function showMainDialog(view, tableWithSignals, tableWithSignalsAndAnnotations, 
       let t;
       if (filterInputsList.length === 1) {
         t = DG.DataFrame.fromColumns([inputCase]);
-      } else if (filterOutputsObj[filterInputsList[i - 1].value].columns.byName(filterInputsList[i - 1].value)) {
-        t = DG.DataFrame.fromColumns([filterOutputsObj[filterInputsList[i - 1].value].columns.byName(filterInputsList[i - 1].value)]);
-      } else {
+      } else if (filterOutputsObj[filterInputsList[i - 1].value].columns.byName('sig')) {
         t = DG.DataFrame.fromColumns([filterOutputsObj[filterInputsList[i - 1].value].columns.byName('sig')]);
+      } else {
+        t = DG.DataFrame.fromColumns([filterOutputsObj[filterInputsList[i - 1].value].columns.byIndex(i - 1)]);
       }
       let context = DG.Context.create();
       t.name = 'dataframe';
@@ -95,7 +99,13 @@ function showMainDialog(view, tableWithSignals, tableWithSignalsAndAnnotations, 
                 let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting filter\'s output...');
                 try {
                   await call.call();
-                  let df = call.getParamValue('df');
+                  let df = call.getOutputParamValue();
+                  if (df == null) {
+                    df = DG.DataFrame.fromColumns([
+                      DG.Column.fromList('int', 'time', Array(t.columns.byIndex(0).length).fill().map((_, idx) => idx)),
+                      t.columns.byIndex(t.columns.length - 1)
+                    ]);
+                  }
                   filterChartsList[i - 1].dataFrame = df;
                   Object.assign(filterOutputsObj, {[nameOfLastFiltersOutput]: df});
                 } catch (e) {
@@ -152,7 +162,10 @@ function showMainDialog(view, tableWithSignals, tableWithSignalsAndAnnotations, 
                 let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting extractor\'s output...');
                 try {
                   await call.call();
-                  let df = call.getParamValue('newDf');
+                  let df = call.getOutputParamValue();
+                  if (df == null) {
+                    df = t;
+                  }
                   extractorChartsList[j - 1].dataFrame = df;
                   let nameOfLastExtractorsOutput = 'Output of Extractor ' + j + ' (' + extractorTypesList[j - 1].value + ')';
                   Object.assign(extractorOutputsObj, {[nameOfLastExtractorsOutput]: df});
@@ -210,7 +223,7 @@ function showMainDialog(view, tableWithSignals, tableWithSignalsAndAnnotations, 
                 let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting indicator\'s output...');
                 try {
                   await call.call();
-                  indicatorChartsList[k - 1].dataFrame = call.getParamValue('out');
+                  indicatorChartsList[k - 1].dataFrame = call.getOutputParamValue();
                 } catch (e) {
                   grok.shell.info(e);
                   throw e;
