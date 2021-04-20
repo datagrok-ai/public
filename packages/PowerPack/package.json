@@ -6,7 +6,8 @@
 	"dependencies": {
 		"datagrok-api": "latest",
 		"ts-loader": "latest",
-		"typescript": "latest"
+		"typescript": "latest",
+		"webpack": "^5.33.2"
 	},
 	"scripts": {
 		"debug-powerpack": "grok publish --rebuild",

@@ -2,9 +2,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from "datagrok-api/dg";
-import scheme from "./TPP000153303.json";
+import json from "./TPP000153303.json";
 import mutcodes from "./mutcodes.json";
-
 
 export let _package = new DG.Package();
 
@@ -36,7 +35,7 @@ export async function launchBrowser(view) {
 
     // processes JSON to derive scheme names
     function extract_schemes() {
-        let raw_scheme_names = Object.keys(scheme.cdr_ranges);
+        let raw_scheme_names = Object.keys(json.cdr_ranges);
         let schemes_lst = ['default'];
         raw_scheme_names.forEach((str) => {
             str = str.split('_')
@@ -47,144 +46,216 @@ export async function launchBrowser(view) {
         return schemes_lst;
     }
 
-    // palette generation
-    function interpolateColor(color1, color2, factor) {
-        if (arguments.length < 3) {
-            factor = 0.5;
-        }
-        var result = color1.slice();
-        for (var i = 0; i < 3; i++) {
-            result[i] = Math.round(result[i] + factor * (color2[i] - color1[i]));
-        }
-        let hex_col = "#" + ((1 << 24) + (result[0] << 16) + (result[1] << 8) + result[2]).toString(16).slice(1);
-        return hex_col;
-    };
-
+    // ---- pViz ----
+    // color interpolation
     function interpolateColors(color1, color2, steps) {
+
+        function interpolateColor(color1, color2, factor) {
+            if (arguments.length < 3) {
+                factor = 0.5;
+            }
+            var result = color1.slice();
+            for (var i = 0; i < 3; i++) {
+                result[i] = Math.round(result[i] + factor * (color2[i] - color1[i]));
+            }
+            let hex_col = "#" + ((1 << 24) + (result[0] << 16) + (result[1] << 8) + result[2]).toString(16).slice(1);
+            return hex_col;
+        };
+
         var stepFactor = 1 / (steps - 1),
             interpolatedColorArray = [];
 
         color1 = color1.match(/\d+/g).map(Number);
         color2 = color2.match(/\d+/g).map(Number);
 
-        for (var i = 0; i < steps; i++) {
+        for(var i = 0; i < steps; i++) {
             interpolatedColorArray.push(interpolateColor(color1, color2, stepFactor * i));
         }
 
         return interpolatedColorArray;
     }
 
-    // convert JSON to feature vector
-    function mutationsTolist(mutcodes, obj, chain) {
-        let l = [];
-        Object.keys(obj.ptm_predictions[chain]).forEach((mut) => {
-            Object.keys(obj.ptm_predictions[chain][mut]).forEach((i) => {
-                let single_mut = [];
-                let single_mut_capsule = [];
+    // mapping objects for sequence rendering
+    function ptmMapping(ptm_choices, prob) {
 
-                single_mut[0] = obj.ptm_predictions[chain][mut][i][0]
-                single_mut[1] = mutcodes[mut];
-                single_mut_capsule.push(single_mut);
-                single_mut_capsule.push(obj.ptm_predictions[chain][mut][i][1]);
+        let ptmMap = {}
+        let chains = Object.keys(pVizParams.seq);
+        chains.forEach((chain) => {
+            let ptm_feature_map = [];
+            let ptm_color_obj = {};
+            let palette = interpolateColors('(255, 255, 0)','(255, 0, 0)',5);
 
-                l.push(single_mut_capsule);
+            ptm_choices.forEach(ptm => {
+                let ptm_array = json.ptm_predictions[chain][ptm];
+                if (ptm_array !== undefined) {
+
+                    let ptm_color_arr = [];
+                    ptm_array.forEach(point => {
+                        if(point[1] > prob) {
+
+                            ptm_feature_map.push({
+                                groupSet: 'PTMs',
+                                category : mutcodes[ptm],
+                                type : mutcodes[ptm],
+                                start : point[0],
+                                end : point[0],
+                                text : mutcodes[ptm],
+                                improbable : true
+                            })
+                            ptm_color_arr.push(palette[Math.round(point[1]*4)])
+                        }
+                    })
+                    if (ptm_color_arr.length > 0) {
+                        ptm_color_obj[mutcodes[ptm]] = ptm_color_arr;
+                    }
+                }
             })
+            ptmMap[chain] = {ptm_feature_map: ptm_feature_map, ptm_color_obj: ptm_color_obj}
         })
-        return l;
+
+        return(ptmMap);
     }
 
-    function mutationsToFeatures(seq, rawlist, mutations, prob) {
-        let l_mut = [];
-        let c_mut = [];
-        let l_den = [];
-        let c_den = new Array(seq.length).fill(1);
-        let palette = interpolateColors('(255, 255, 0)', '(255, 0, 0)', 5);
-        for (let i = 0; i < rawlist.length; i++) {
+    function ptmDenMapping() {
 
-            if (rawlist[i][1] !== 100) {
+        let denMap = {}
+        let chains = Object.keys(pVizParams.seq);
+        chains.forEach((chain) => {
+            let den_feature_map = [];
+            let den_color_arr = new Array(pVizParams.seq[chain].length).fill(1);
+            let palette = interpolateColors('(255, 255, 0)', '(255, 0, 0)', 5);
 
-                if (l_den.includes(rawlist[i][0][0]) === false) {
-                    l_den.push(rawlist[i][0][0]);
+            Object.values(json.ptm_predictions[chain]).forEach((ptm_array) => {
+                ptm_array.forEach(point => {
+                    if (!(den_feature_map.includes(point[0]))) {
+                        den_feature_map.push(point[0]);
+                    }
+                    den_color_arr[point[0]] = den_color_arr[point[0]] * (1 - point[1])
+                })
+            })
+
+            den_feature_map.sort((a, b) => a - b);
+            den_feature_map = den_feature_map.map(function (ft) {
+                return {
+                    category: 'PTM density',
+                    type: 'D',
+                    start: ft,
+                    end: ft,
+                    text: '',
+                    improbable: true
                 }
-                c_den[l_den.indexOf(rawlist[i][0][0])] = c_den[l_den.indexOf(rawlist[i][0][0])] * (1 - rawlist[i][1]);
+            });
 
-                if (mutations.includes(rawlist[i][0][1]) && rawlist[i][1] > prob) {
-                    l_mut.push(rawlist[i][0]);
-                    c_mut.push(palette[Math.round(rawlist[i][1] * 4)]);
-                }
-
+            den_color_arr = den_color_arr.filter((x) => {
+                return x !== 1
+            });
+            for (let i = 0; i < den_color_arr.length; i++) {
+                den_color_arr[i] = palette[Math.round((1 - den_color_arr[i]) * 4)];
             }
-        }
 
-        c_den = c_den.filter((x) => {
-            return x !== 1
-        });
-        for (let i = 0; i < c_den.length; i++) {
-            c_den[i] = palette[Math.round((1 - c_den[i]) * 4)];
-        }
+            denMap[chain] = {den_feature_map: den_feature_map, den_color_obj: {'D': den_color_arr}}
+        })
 
-        return [c_mut, l_mut, c_den, l_den];
+
+        return (denMap)
     }
 
-    // applying gradients to sequence viewer
-    function applyGradient(gradient, chain, mutations) {
+    function paratopeMapping() {
 
-        let j = -1;
-        mutations.forEach((mut) => {
-            let selectorStr = 'g.feature.' + mut + ' rect.feature';
+        let parMap = {}
+        let chains = Object.keys(pVizParams.seq);
+        chains.forEach((chain) => {
+            let par_feature_map = [];
+            let par_color_arr = [];
+            let palette = interpolateColors('(255, 255, 255)', '(255, 0, 255)', 100);
+
+            Object.keys(json.parapred_predictions[chain]).forEach((index) => {
+                par_feature_map.push({
+                    category: 'Paratope predictions',
+                    type: 'P',
+                    start: index,
+                    end: index,
+                    text: '',
+                    improbable: true
+                })
+                par_color_arr.push(palette[Math.round(json.parapred_predictions[chain][index] * 100)]);
+            })
+
+            parMap[chain] = {par_feature_map: par_feature_map, par_color_obj: {'P': par_color_arr}}
+        })
+
+        return(parMap)
+    }
+
+    function cdrMapping(cdr_scheme) {
+
+        let cdrMap = {}
+        let chains = Object.keys(pVizParams.seq);
+        chains.forEach((chain) => {
+            let cdr_feature_map = [];
+            let cdr_ranges = json.cdr_ranges[cdr_scheme + '_CDR' + chain + '_ranges']
+            if (cdr_scheme !== 'default') {
+                Object.values(cdr_ranges).forEach((range) => {
+                    cdr_feature_map.push({
+                        category: 'CDR region',
+                        type: 'CDR',
+                        start: range[0],
+                        end: range[1],
+                        text: '',
+                        improbable: true
+                    })
+                })
+            }
+            cdrMap[chain] = {cdr_feature_map: cdr_feature_map}
+        })
+
+        return (cdrMap)
+    }
+
+    function applyGradient(gradient_obj){
+        Object.keys(gradient_obj).forEach((ptm_track) => {
+            let selectorStr = 'g.feature.' + ptm_track + ' rect.feature';
             let el = document.querySelectorAll(selectorStr);
-            for (let i = 1; i <= el.length; i++) {
-                el[i - 1].style.fill = gradient[j + i];
+            for (let i = 0; i < el.length; i++) {
+                el[i].style.fill = gradient_obj[ptm_track][i];
             }
-            j = j + el.length;
         })
     }
 
-    // peritope processing
-    function paratopeToList(chain_choice, paratopes) {
-        let l = [];
-        let c = [];
-        let palette = interpolateColors('(255, 255, 255)', '(255, 0, 255)', 100);
+    // main sequence rendering func
+    function loadSequence(host, chain, paratopes) {
+        let seq = pVizParams.seq[chain]
+
+        let seqEntry = new pviz.SeqEntry({
+            sequence: seq
+        });
+        new pviz.SeqEntryAnnotInteractiveView({
+            model: seqEntry,
+            el: host
+        }).render();
+
+        let mod_codes = Object.keys(pVizParams.ptmMap[chain].ptm_color_obj);
+
+        mod_codes.forEach((mod) => {
+            pviz.FeatureDisplayer.trackHeightPerCategoryType[mod] = 1.5;
+            pviz.FeatureDisplayer.setStrikeoutCategory(mod);
+        });
+
         if (paratopes === true) {
-            Object.keys(scheme.parapred_predictions[chain_choice]).forEach((index) => {
-                l.push(index);
-                c.push(palette[Math.round(scheme.parapred_predictions[chain_choice][index] * 100)]);
-            })
+            seqEntry.addFeatures(pVizParams.parMap[chain].par_feature_map);
         }
-        return [c, l];
+        seqEntry.addFeatures(pVizParams.ptmMap[chain].ptm_feature_map);
+        seqEntry.addFeatures(pVizParams.denMap[chain].den_feature_map);
+        seqEntry.addFeatures(pVizParams.cdrMap[chain].cdr_feature_map);
+        applyGradient(pVizParams.ptmMap[chain].ptm_color_obj);
+        applyGradient(pVizParams.denMap[chain].den_color_obj);
+        applyGradient(pVizParams.parMap[chain].par_color_obj);
     }
 
-    // cdr track to sequence view
-    function cdrToList(chain_choice, crd_choice) {
 
-        let cdr_features = [];
-        if (crd_choice !== 'default') {
-            if (chain_choice === 'H') {
-                Object.keys(scheme.cdr_ranges).forEach((str) => {
-                    if (str.includes(crd_choice + '_CDRH')) {
-                        for (let i = 0; i < Object.keys(scheme.cdr_ranges[str]).length; i++) {
-                            cdr_features.push([scheme.cdr_ranges[str][i][0], scheme.cdr_ranges[str][i][1]]);
-                        }
-                    }
-                });
-
-
-            } else if (chain_choice === 'L') {
-                Object.keys(scheme.cdr_ranges).forEach((str) => {
-                    if (str.includes(crd_choice + '_CDRL')) {
-                        for (let i = 0; i < Object.keys(scheme.cdr_ranges[str]).length; i++) {
-                            cdr_features.push([scheme.cdr_ranges[str][i][0], scheme.cdr_ranges[str][i][1]]);
-                        }
-                    }
-                });
-
-            }
-        }
-        return cdr_features;
-    }
-
-    // pulling CDR3 regions
-    function CDR3(crd_choice, paratopes) {
+    // ---- NGL ----
+    // create a color scheme for CDR3 regions
+    function CDR3(cdr_scheme, paratopes) {
         let schemeId;
         let baseH = 'darkblue';
         let baseL = 'darkred';
@@ -192,37 +263,37 @@ export async function launchBrowser(view) {
         if (paratopes.value === true) {
             let palette = interpolateColors('(255, 255, 255)', '(255, 0, 255)', 100);
             let selectionScheme = [];
-            Object.keys(scheme.parapred_predictions).forEach((chain) => {
-                Object.keys(scheme.parapred_predictions[chain]).forEach((index) => {
+            Object.keys(json.parapred_predictions).forEach((chain) => {
+                Object.keys(json.parapred_predictions[chain]).forEach((index) => {
                     selectionScheme.push([
-                        palette[Math.round(scheme.parapred_predictions[chain][index] * 100)],
+                        palette[Math.round(json.parapred_predictions[chain][index] * 100)],
                         `${index} and :${chain}`
                     ]);
                 })
             })
             schemeId = NGL.ColormakerRegistry.addSelectionScheme(selectionScheme);
         } else {
-            if (crd_choice.value === 'default') {
+            if (cdr_scheme.value === 'default') {
                 schemeId = NGL.ColormakerRegistry.addSelectionScheme([
                     [baseH, "* and :H"],
                     [baseL, "* and :L"]
                 ]);
             } else {
                 let scheme_buffer = [];
-                Object.keys(scheme.cdr_ranges).forEach((str) => {
-                    if (str.includes(crd_choice.value + '_CDRH')) {
+                Object.keys(json.cdr_ranges).forEach((str) => {
+                    if (str.includes(cdr_scheme.value + '_CDRH')) {
                         let str_buffer = ''
-                        for (let i = 0; i < Object.keys(scheme.cdr_ranges[str]).length; i++) {
-                            str_buffer = str_buffer + ` or ${scheme.cdr_ranges[str][i][0]}-${scheme.cdr_ranges[str][i][1]} and :H`;
+                        for (let i = 0; i < Object.keys(json.cdr_ranges[str]).length; i++) {
+                            str_buffer = str_buffer + ` or ${json.cdr_ranges[str][i][0]}-${json.cdr_ranges[str][i][1]} and :H`;
                         }
                         str_buffer = str_buffer.slice(4);
                         scheme_buffer.push(["limegreen", str_buffer]);
                         scheme_buffer.push([baseH, "* and :H"]);
 
-                    } else if (str.includes(crd_choice.value + '_CDRL')) {
+                    } else if (str.includes(cdr_scheme.value + '_CDRL')) {
                         let str_buffer = ''
-                        for (let i = 0; i < Object.keys(scheme.cdr_ranges[str]).length; i++) {
-                            str_buffer = str_buffer + ` or ${scheme.cdr_ranges[str][i][0]}-${scheme.cdr_ranges[str][i][1]} and :L`;
+                        for (let i = 0; i < Object.keys(json.cdr_ranges[str]).length; i++) {
+                            str_buffer = str_buffer + ` or ${json.cdr_ranges[str][i][0]}-${json.cdr_ranges[str][i][1]} and :L`;
                         }
                         str_buffer = str_buffer.slice(4);
                         scheme_buffer.push(["limegreen", str_buffer]);
@@ -235,291 +306,17 @@ export async function launchBrowser(view) {
         return {color: schemeId};
     }
 
-    // sidechain selection
-    function sidechain_select(ptm_features, chain_choice) {
-        let sidechains = '';
-        ptm_features = ptm_features.flat();
-        ptm_features = ptm_features.filter(function (el) {
-            return typeof el !== 'string'
-        });
-        ptm_features = [...new Set(ptm_features)];
-
-        for (let i = 0; i < ptm_features.length; i++) {
-            sidechains = sidechains + `${ptm_features[i] + 1} and :${chain_choice.value} and (not backbone or .CA or (PRO and .N))`
-            if (i !== ptm_features.length - 1) {
-                sidechains = sidechains + ' or ';
-            }
-        }
-
-        return sidechains;
-    }
-
-    // ngl loading
-    async function loadPdb(bytes, repChoice, schemeObj, sidechains = '') {
+    // load the 3D model
+    async function loadPdb(bytes, repChoice, schemeObj) {
         stage.loadFile(bytes).then(function (o) {
             o.addRepresentation(repChoice.value, schemeObj);
-            if (sidechains.length > 0) {
-                o.addRepresentation("ball+stick", {sele: sidechains});
-            }
             o.autoView();
         });
     }
 
-    // sequence loading
-    function loadSequence(chain, ptm_choice, ptm_prob, paratopes, crd_choice) {
 
-        let all_ptm_features = [];
-        ['H','L'].forEach((chain_choice) => {
-
-            let seq;
-            let pViz_host;
-            let pviz;
-            if (chain_choice === 'H') {
-                seq = scheme.heavy_seq;
-                pViz_host = pViz_host_heavy;
-                pviz = pviz_h;
-            } else {
-                seq = scheme.light_seq;
-                pViz_host = pViz_host_light;
-                pviz = pviz_l;
-            }
-
-            let mutations = []
-            let ptm_choices_lst = ptm_choice.value;
-            ptm_choices_lst.forEach((ptm) => {
-                mutations.push(mutcodes[ptm]);
-            })
-
-            let rawlist = mutationsTolist(mutcodes, scheme, chain_choice);
-            let ml = mutationsToFeatures(seq, rawlist, mutations, ptm_prob.value);
-            let pl = paratopeToList(chain_choice, paratopes.value);
-            let cdr_features = cdrToList(chain_choice, crd_choice.value);
-            let ptm_gradient = ml[0];
-            let ptm_features = ml[1];
-            let den_gradient = ml[2];
-            let den_features = ml[3];
-            let par_gradient = pl[0];
-            let par_features = pl[1];
-
-
-            let seqEntry = new pviz.SeqEntry({
-                sequence: seq
-            });
-            new pviz.SeqEntryAnnotInteractiveView({
-                model: seqEntry,
-                el: pViz_host
-            }).render();
-
-            mutations.forEach((mut) => {
-                pviz.FeatureDisplayer.trackHeightPerCategoryType[mut] = 1.5;
-                pviz.FeatureDisplayer.setStrikeoutCategory(mut);
-            });
-            seqEntry.addFeatures(ptm_features.map(function (ft) {
-                return {
-                    groupSet: 'PTMs',
-                    category: ft[1],
-                    type: ft[1],
-                    start: ft[0],
-                    end: ft[0],
-                    text: ft[1],
-                    improbable: true
-                }
-            }));
-            seqEntry.addFeatures(par_features.map(function (pft) {
-                return {
-                    category: 'Paratope predictions',
-                    type: 'P',
-                    start: pft,
-                    end: pft,
-                    text: '',
-                    improbable: true
-                }
-            }));
-            seqEntry.addFeatures(den_features.map(function (dft) {
-                return {
-                    category: 'PTM density',
-                    type: 'D',
-                    start: dft,
-                    end: dft,
-                    text: '',
-                    improbable: true
-                }
-            }));
-            seqEntry.addFeatures(cdr_features.map(function (cft) {
-                return {
-                    category: 'CDR region',
-                    type: 'CDR',
-                    start: cft[0],
-                    end: cft[1],
-                    text: '',
-                    improbable: true
-                }
-            }));
-
-            applyGradient(ptm_gradient, chain_choice, mutations);
-            applyGradient(den_gradient, chain_choice, ['D']);
-            applyGradient(par_gradient, chain_choice, ['P']);
-
-            all_ptm_features.push(ptm_features);
-        })
-
-
-        // let seq;
-        // let pViz_host;
-        // if (chain_choice.value === 'H') {
-        //     seq = scheme.heavy_seq
-        //     pViz_host = pViz_host_heavy
-        // } else {
-        //     seq = scheme.light_seq
-        //     pViz_host = pViz_host_light
-        // }
-        //
-        // let mutations = []
-        // let ptm_choices_lst = ptm_choice.value;
-        // ptm_choices_lst.forEach((ptm) => {
-        //     mutations.push(mutcodes[ptm]);
-        // })
-        //
-        // let rawlist = mutationsTolist(mutcodes, scheme, chain_choice.value);
-        // let ml = mutationsToFeatures(seq, rawlist, mutations, ptm_prob.value);
-        // let pl = paratopeToList(chain_choice.value, paratopes.value);
-        // let cdr_features = cdrToList(chain_choice.value, crd_choice.value);
-        // let ptm_gradient = ml[0];
-        // let ptm_features = ml[1];
-        // let den_gradient = ml[2];
-        // let den_features = ml[3];
-        // let par_gradient = pl[0];
-        // let par_features = pl[1];
-        //
-        //
-        // let seqEntry = new pviz.SeqEntry({
-        //     sequence: seq
-        // });
-        // new pviz.SeqEntryAnnotInteractiveView({
-        //     model: seqEntry,
-        //     el: pViz_host
-        // }).render();
-        //
-        // mutations.forEach((mut) => {
-        //     pviz.FeatureDisplayer.trackHeightPerCategoryType[mut] = 1.5;
-        //     pviz.FeatureDisplayer.setStrikeoutCategory(mut);
-        // });
-        // seqEntry.addFeatures(ptm_features.map(function (ft) {
-        //     return {
-        //         groupSet: 'PTMs',
-        //         category: ft[1],
-        //         type: ft[1],
-        //         start: ft[0],
-        //         end: ft[0],
-        //         text: ft[1],
-        //         improbable: true
-        //     }
-        // }));
-        // seqEntry.addFeatures(par_features.map(function (pft) {
-        //     return {
-        //         category: 'Paratope predictions',
-        //         type: 'P',
-        //         start: pft,
-        //         end: pft,
-        //         text: '',
-        //         improbable: true
-        //     }
-        // }));
-        // seqEntry.addFeatures(den_features.map(function (dft) {
-        //     return {
-        //         category: 'PTM density',
-        //         type: 'D',
-        //         start: dft,
-        //         end: dft,
-        //         text: '',
-        //         improbable: true
-        //     }
-        // }));
-        // seqEntry.addFeatures(cdr_features.map(function (cft) {
-        //     return {
-        //         category: 'CDR region',
-        //         type: 'CDR',
-        //         start: cft[0],
-        //         end: cft[1],
-        //         text: '',
-        //         improbable: true
-        //     }
-        // }));
-        //
-        // applyGradient(ptm_gradient, chain_choice.value, mutations);
-        // applyGradient(den_gradient, chain_choice.value, ['D']);
-        // applyGradient(par_gradient, chain_choice.value, ['P']);
-
-        all_ptm_features = all_ptm_features.flat();
-        return all_ptm_features;
-    }
-
-    // selection saving
-    async function save_load(table, root) {
-
-        async function saveSelectedRows(table, uniqueId, connection, fileToSave) {
-
-            let indexes = table
-                .groupBy([`${uniqueId.value}`])
-                .whereRowMask(table.selection)
-                .aggregate();
-
-            let data = `${table.toString()}\n${uniqueId.stringValue}\n${indexes.col(0).toList()}`;
-            await grok.dapi.files.writeAsText(`${connection}${fileToSave.value}.txt`, data);
-        }
-
-        async function loadSelectedRows(table, connection, savedFilesList) {
-
-            let res = await grok.dapi.files.readAsText(`${connection}${savedFilesList.value}`);
-            res = res.split("\n");
-            let uniqueColumnName = res[1];
-            let values = JSON.parse("[" + res[2] + "]");
-            values = values.map((e) => parseInt(e));
-            table.rows.select((row) => values.includes(row[`${uniqueColumnName}`]));
-
-        }
-
-
-        let fileToSave = ui.stringInput('FileName', 'filename');
-        let connection = 'Demo:TestJobs:Files:DemoFiles/';
-
-        let files = await grok.dapi.files.list(connection, false, '');
-        files = files.map((e) => e.path);
-        let savedFilesList = await ui.choiceInput('Saved Rows', ' ', files)
-        // please define here you primary key column
-        // let uniqueId = ui.columnInput('Unique id column', table, table.col('tenx_barcode'));
-        let uniqueId = ui.stringInput('Unique id column', 'tenx_barcode');
-
-
-        let saveDialog = () => {
-            ui.dialog('Save rows to file')
-                .add(uniqueId).add(fileToSave)
-                .onOK(() => saveSelectedRows(table, uniqueId, connection, fileToSave)).show();
-        };
-
-        let loadDialog = async () => {
-            let files = await grok.dapi.files.list(connection, false, '');
-            files = files.map((e) => e.path);
-            let savedFilesList = await ui.choiceInput('Saved Rows', ' ', files)
-
-            ui.dialog('Load rows from file')
-                .add(savedFilesList)
-                .onOK(() => loadSelectedRows(table, connection, savedFilesList)).show();
-        };
-
-
-        let saveRowsButton = ui.button('SAVE');
-        saveRowsButton.addEventListener("click", saveDialog);
-
-        let loadRowsButton = ui.button('LOAD')
-        loadRowsButton.addEventListener("click", loadDialog);
-
-        let acc_save = ui.accordion();
-        acc_save.addPane('save row selection', () => ui.divH([saveRowsButton, loadRowsButton]));
-        root.append(acc_save.root);
-    }
-
-    function handleResize(host, stage) {
+    // ---- resizing ----
+    function nglResize(host, stage) {
         let canvas = host.querySelector('canvas');
 
         function resize() {
@@ -530,6 +327,10 @@ export async function launchBrowser(view) {
 
         ui.onSizeChanged(host).subscribe((_) => resize());
         resize();
+    }
+
+    function pvizResize(host, chain) {
+        ui.onSizeChanged(host).subscribe((_) => loadSequence(host, chain, paratopes.value));
     }
 
     function setDockSize(node, nodeContent){
@@ -549,111 +350,65 @@ export async function launchBrowser(view) {
     let repChoice = ui.choiceInput('Representation', 'cartoon', reps);
 
     let schemes_lst = extract_schemes();
-    let CDR3_choice = ui.choiceInput('CDR3 Scheme', 'default', schemes_lst);
+    let cdr_scheme = ui.choiceInput('CDR3 Scheme', 'default', schemes_lst);
 
-    let chain_choice = ui.choiceInput('Chain', 'H', Object.keys(scheme.ptm_predictions));
-    let ptm_predictions = [...new Set([...Object.keys(scheme.ptm_predictions.H), ...Object.keys(scheme.ptm_predictions.L)])];
-    let ptm_choice = ui.multiChoiceInput('', [], ptm_predictions);
+    let ptm_predictions = [...new Set([...Object.keys(json.ptm_predictions.H), ...Object.keys(json.ptm_predictions.L)])];
+    let ptm_choices = ui.multiChoiceInput('', [], ptm_predictions);
 
     let ptm_prob = ui.floatInput('PTM probability', 0.2);
 
     let paratopes = ui.boolInput('Paratopes', false);
 
     repChoice.onChanged(async () => {
-        let sidechains = sidechain_select(ptm_features_obj.ft, chain_choice);
 
-        $(ngl_host).empty();
-        stage = new NGL.Stage(ngl_host);
-        let schemeObj = CDR3(CDR3_choice, paratopes);
-        await loadPdb(path, repChoice, schemeObj, sidechains);
+        stage.removeAllComponents();
+        let schemeObj = CDR3(cdr_scheme, paratopes);
+        await loadPdb(path, repChoice, schemeObj);
     });
 
-    CDR3_choice.onChanged(async () => {
-        loadSequence(chain_choice, ptm_choice, ptm_prob, paratopes, CDR3_choice);
-        let sidechains = sidechain_select(ptm_features_obj.ft, chain_choice);
+    cdr_scheme.onChanged(async () => {
 
-        $(ngl_host).empty();
-        stage = new NGL.Stage(ngl_host);
-        let schemeObj = CDR3(CDR3_choice, paratopes);
-        await loadPdb(path, repChoice, schemeObj, sidechains);
+        stage.removeAllComponents();
+        let schemeObj = CDR3(cdr_scheme, paratopes);
+        await loadPdb(path, repChoice, schemeObj);
+
+        pVizParams.cdrMap = cdrMapping(cdr_scheme.value)
+        loadSequence(pViz_host_H, 'H', paratopes.value)
+        loadSequence(pViz_host_L, 'L', paratopes.value)
 
         setDockSize(ngl_node, sequence_tabs);
-        handleResize(ngl_host, stage);
     });
 
     paratopes.onChanged(async () => {
-        let sidechains;
-        if (paratopes.value === true) {
-            sidechains = '';
-        } else {
-            sidechains = sidechain_select(ptm_features_obj.ft, chain_choice);
-        }
 
-        $(ngl_host).empty();
-        stage = new NGL.Stage(ngl_host);
-        let schemeObj = CDR3(CDR3_choice, paratopes);
-        await loadPdb(path, repChoice, schemeObj, sidechains);
-        loadSequence(chain_choice, ptm_choice, ptm_prob, paratopes, CDR3_choice);
+        stage.removeAllComponents();
+        let schemeObj = CDR3(cdr_scheme, paratopes);
+        await loadPdb(path, repChoice, schemeObj);
+        loadSequence(pViz_host_H, 'H', paratopes.value)
+        loadSequence(pViz_host_L, 'L', paratopes.value)
 
         setDockSize(ngl_node, sequence_tabs);
-        handleResize(ngl_host, stage);
     });
 
-    chain_choice.onChanged(async () => {
-        ptm_features_obj.ft = loadSequence(chain_choice, ptm_choice, ptm_prob, paratopes, CDR3_choice);
-        let sidechains = sidechain_select(ptm_features_obj.ft, chain_choice);
+    ptm_choices.onChanged(async () => {
 
-        $(ngl_host).empty();
-        stage = new NGL.Stage(ngl_host);
-        let schemeObj = CDR3(CDR3_choice, paratopes);
-        await loadPdb(path, repChoice, schemeObj, sidechains);
-    });
-
-    ptm_choice.onChanged(async () => {
-        ptm_features_obj.ft = loadSequence(chain_choice, ptm_choice, ptm_prob, paratopes, CDR3_choice);
-        let sidechains = sidechain_select(ptm_features_obj.ft, chain_choice);
-
-        $(ngl_host).empty();
-        stage = new NGL.Stage(ngl_host);
-        let schemeObj = CDR3(CDR3_choice, paratopes);
-        await loadPdb(path, repChoice, schemeObj, sidechains);
+        pVizParams.ptmMap = ptmMapping(ptm_choices.value, ptm_prob.value)
+        loadSequence(pViz_host_H, 'H', paratopes.value)
+        loadSequence(pViz_host_L, 'L', paratopes.value)
 
         setDockSize(ngl_node, sequence_tabs);
-        handleResize(ngl_host, stage);
     });
 
     ptm_prob.onChanged(async () => {
-        ptm_features_obj.ft = loadSequence(chain_choice, ptm_choice, ptm_prob, paratopes, CDR3_choice);
-        let sidechains = sidechain_select(ptm_features_obj.ft, chain_choice);
 
-        $(ngl_host).empty();
-        stage = new NGL.Stage(ngl_host);
-        let schemeObj = CDR3(CDR3_choice, paratopes);
-        await loadPdb(path, repChoice, schemeObj, sidechains);
+        pVizParams.ptmMap = ptmMapping(ptm_choices.value, ptm_prob.value)
+        loadSequence(pViz_host_H, 'H', paratopes.value)
+        loadSequence(pViz_host_L, 'L', paratopes.value)
 
         setDockSize(ngl_node, sequence_tabs);
-        handleResize(ngl_host, stage);
     });
 
-
     let table = view.table;
-
-    // region Logging
-    {
-        let logger = new DG.Logger((m) => m.params['log_param'] = 'ig-repert');
-        table.onCurrentRowChanged.subscribe(function () {
-            if (table.currentRow.idx >= 0) {
-                var row_str = table.currentRow.idx.toString();
-                logger.log('row-change', {lparam: table.name, seq_id: row_str}, 'rlog');
-            }
-        });
-        table.onCurrentCellChanged.subscribe(function () {
-            if (table.currentRow.idx >= 0) {
-                // grok.shell.info(`Cell: ${t.currentCell.rowIndex}, ${t.currentCell.column.name}`));
-                logger.log('cell-change', {lparam: table.name, col: table.currentCell.column.name}, 'rlog');
-            }
-        });
-    }
 
     // tweak the App page properties
     {
@@ -667,39 +422,47 @@ export async function launchBrowser(view) {
     let acc_ptm = ui.accordion();
     root.appendChild(ui.h1('Repertoire viewer options'));
     root.appendChild(ui.h3('NGL settings'));
-    root.appendChild(ui.inputs([repChoice, CDR3_choice]));
+    root.appendChild(ui.inputs([repChoice, cdr_scheme]));
     root.appendChild(ui.h3('Sequence settings'));
-    root.appendChild(ui.inputs([chain_choice, paratopes, ptm_prob]));
-    acc_ptm.addPane('ptm list', () => ui.inputs([ptm_choice]));
+    root.appendChild(ui.inputs([paratopes, ptm_prob]));
+    acc_ptm.addPane('ptm list', () => ui.inputs([ptm_choices]));
     root.append(acc_ptm.root);
-    // root.appendChild(ui.h3('Save/Load'));
-    // await save_load(table, root);
-    let panel_node = view.dockManager.dock(root, 'right', null, 'NGL');
 
     var ngl_host = ui.div([],'d4-ngl-viewer');
     ngl_host.style.backgroundColor ='black';
     view.box = true;
-    let ngl_node = view.dockManager.dock(ngl_host, 'left', panel_node, 'NGL');
     var stage = new NGL.Stage(ngl_host);
     let path = _package.webRoot + 'pdbfiles/' + 'TPP000153303.pdb';
-    let schemeObj = CDR3(CDR3_choice, paratopes);
+    let schemeObj = CDR3(cdr_scheme, paratopes);
     await loadPdb(path, repChoice, schemeObj);
 
-    let pViz_host_light = ui.box();
-    let pViz_host_heavy = ui.box();
+
     // let pViz_host = ui.box();
+    let pViz_host_H = ui.box();
+    let pViz_host_L = ui.box();
     let sequence_tabs = ui.block([
         ui.tabControl({
-            'LIGHT': pViz_host_light,
-            'HEAVY': pViz_host_heavy
+            'LIGHT': pViz_host_L,
+            'HEAVY': pViz_host_H
         }).root
     ]);
-    let sequence_node = view.dockManager.dock(sequence_tabs, 'down', ngl_node, 'Sequence', 0.225);
-    var pviz_h = window.pviz;
-    var pviz_l = window.pviz;
-    let ptm_features_obj = {};
-    ptm_features_obj.ft = loadSequence(chain_choice, ptm_choice, ptm_prob, paratopes ,CDR3_choice);
+    var pviz = window.pviz;
+    let pVizParams = {};
+    pVizParams.seq = {'H':json.heavy_seq, 'L': json.light_seq}
+    pVizParams.ptmMap = ptmMapping(ptm_choices.value, ptm_prob.value)
+    pVizParams.denMap = ptmDenMapping()
+    pVizParams.parMap = paratopeMapping()
+    pVizParams.cdrMap = cdrMapping(cdr_scheme.value)
+    loadSequence(pViz_host_H, 'H', paratopes.value)
+    loadSequence(pViz_host_L, 'L', paratopes.value)
 
-    handleResize(ngl_host, stage);
+
+    let panel_node = view.dockManager.dock(root, 'right', null, 'NGL');
+    let ngl_node = view.dockManager.dock(ngl_host, 'left', panel_node, 'NGL');
+    let sequence_node = view.dockManager.dock(sequence_tabs, 'down', ngl_node, 'Sequence', 0.225);
+
+    nglResize(ngl_host, stage);
+    pvizResize(pViz_host_H, 'H');
+    pvizResize(pViz_host_L, 'L');
     $(sequence_tabs).children().css("height","100%");
 }
