@@ -9,7 +9,7 @@ class SequencePackageDetectors extends DG.Package {
   //input: column col
   //output: string semType
   detectNucleotides(col) {
-    const rex = /^[ATGC]{30,}$/;
+    const rex = /^[ATGCNM-]{30,}$/;
     if (DG.Detector.sampleCategories(col, (s) => rex.test(s)))
       return 'nucleotides';
   }
