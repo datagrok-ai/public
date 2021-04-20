@@ -18,7 +18,7 @@ export function tree() {
 
 //tags: fileViewer, fileViewer-nwk
 //input: file file
-//output: view v
+//output: view preview
 export async function nwkTreeViewer(file) {
   const newickString = await file.readAsString();
   const df = newickToDf(newickString, file.fileName);

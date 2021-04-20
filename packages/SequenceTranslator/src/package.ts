@@ -33,7 +33,7 @@ export function sequenceTranslator(): void {
     detectedSequenceSemType.textContent = 'Detected input type: ' + outputValues.type;
     table.dataFrame = resultsGrid;
     cont.innerHTML = "";
-    let flavor: string = (outputValues.nucleotides.includes('U')) ? "RNA_no_cap" : "DNA_no_cap";
+    let flavor: string = (outputValues.nucleotides.includes('U')) ? "RNA_both_caps" : "DNA_both_caps";
     cont.append(grok.chem.svgMol(<string> await nucleotidesToSmiles(seq.replace(/\s/g, ''), flavor), 900, 300));
   });
 
