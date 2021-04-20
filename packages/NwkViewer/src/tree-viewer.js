@@ -1,7 +1,7 @@
 export class PhyloTreeViewer extends DG.JsViewer {
   constructor() {
     super();
-    this.radialLayout = this.bool('radialLayout', true);
+    this.radialLayout = this.bool('radialLayout', false);
     this.fontSize = this.string('fontSize', '6px');
     this.defaultSize = 400;
     this.root.style = 'position: absolute; left: 0; right: 0; top: 0; bottom: 0;';
@@ -33,6 +33,7 @@ export class PhyloTreeViewer extends DG.JsViewer {
       .options({
         'left-right-spacing': 'fit-to-size',
         'top-bottom-spacing': 'fit-to-size',
+        zoom: true,
       })
       .size([
         this.root.parentElement.clientHeight || this.defaultSize,
