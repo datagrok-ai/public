@@ -90,3 +90,46 @@ stroke: #CCC;
 
 .tree-widget {
 }
+
+#d3_layout_phylotree_context_menu.dropdown-menu {
+  z-index: 1000;
+  display: none;
+  float: left;
+  min-width: 160px;
+  padding: 5px 0px 5px 5px;
+  margin: 2px 0;
+  font-size: 14px;
+  text-align: left;
+  list-style: none;
+  background-color: #fdffe5;
+  -webkit-background-clip: padding-box;
+  background-clip: padding-box;
+  border: 1px solid #ccc;
+  border: 1px solid rgba(0,0,0,.15);
+  border-radius: 4px;
+  -webkit-box-shadow: 0 6px 12px rgb(0 0 0 / 18%);
+  box-shadow: 0 6px 12px rgb(0 0 0 / 18%);
+}
+
+#d3_layout_phylotree_context_menu > .divider {
+  height: 1px;
+  margin: 9px 0;
+  overflow: hidden;
+  background-color: #e5e5e5;
+}
+
+#d3_layout_phylotree_context_menu > .dropdown-header {
+  display: block;
+  font-size: 12px;
+  line-height: 1.42857143;
+  color: #777;
+  white-space: nowrap;
+}
+
+#d3_layout_phylotree_context_menu > li > a {
+  color: black;
+}
+
+#d3_layout_phylotree_context_menu > li:not(.divider):not(.dropdown-header):hover {
+  background-color: #ffd991;
+}
