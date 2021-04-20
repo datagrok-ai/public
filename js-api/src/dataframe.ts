@@ -477,7 +477,10 @@ export class DataFrame {
     return this._event('ddt-rows-filtering');
   }
 
-  /** @returns {Observable} */ get onSemanticTypeDetecting(): Observable<any> {
+  /** @returns {Observable}
+   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/advanced/semantic-type-detection}
+   * */
+  get onSemanticTypeDetecting(): Observable<any> {
     return this._event('ddt-semantic-type-detecting');
   }
 
@@ -1108,6 +1111,9 @@ export class ColumnList {
    * @param {Function} getValue - value constructor function that accepts int index and returns value
    * @param {String} type - column type
    * @returns {Column}
+   *
+   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/advanced/virtual-int-column}
+   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/advanced/virtual-columns}
    * */
   addNewVirtual(name: string, getValue: (ind: number) => any, type = TYPE.OBJECT): Column {
     return toJs(api.grok_ColumnList_AddNewVirtual(this.d, name, getValue, type));
