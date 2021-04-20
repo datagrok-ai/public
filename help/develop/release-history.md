@@ -1,6 +1,40 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-04-20 Dev build 0.89.38
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.89.38`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* (Bug) Filters: Saved filters do not filter rows in table after applying 
+* Ability to share files 
+* Sequence: better detection of nucleotide sequences 
+* Detector.sampleCategories: performance fix: return false immediately if a column is not a string column 
+* Create sequenceTranslator app with instructions 
+* Prepare a proposal for WASM use and adoption in Datagrok core (WIP)
+* Wiki: Onboarding Content (WIP)
+* Power Pack: a set of commonly used Datagrok tools (WIP)
+* NwkViewer: JS-based phylogenetic tree visualisation (WIP)
+* added MSA sample file (FASTA alignment) 
+* Prevent rings connected by rotatable bonds to flip when they belong to a constrained scaffold 
+* Chem: Support RDKit-JS substructure filtering 
+* sequenceTranslator: show molecule view 
+* (Bug) Scatter Plot: Filtered-out current row still visible in plot (WIP)
+* DataGrok API and system samples, add cross linking to improve connectivity (WIP)
+* Removed the obsolete demo 'Weather' application 
+* JS API: Grid: expose "invalidate" method 
+* BioSignals: call functions from DSP package after switch to dynamic scripts calling 
+* (Bug) Persist undocked viewers as part of layout (WIP)
+* NGL viewer (WIP)
+
+
 # 2021-04-16 Dev build 0.89.37
 
 ## Latest Docker Images
