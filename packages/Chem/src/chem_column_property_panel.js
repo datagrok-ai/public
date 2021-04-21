@@ -28,6 +28,30 @@ function getMolColumnPropertyPanel(col) {
   let regenerateCoordsCheckbox = ui.boolInput(
     'Regenerate coords', col?.tags && col.tags['regenerate-coords'] === 'true',
     v => { col.tags['regenerate-coords'] = v.toString(); });
+    
+    
+    const matchMoleculeFilteringToDropdown = (v) => {
+    if (v === 'categorical') return 'Categorical';
+    if (v === 'sketching') return 'Sketching';
+    return 'Dynamic';
+  };
+  
+  const matchDropdownToMoleculeFiltering = (v) => {
+    if (v === 'Categorical')
+      col.tags['.molecule-filtering'] = 'categorical';
+    else if (v === 'Sketching')
+      col.tags['.molecule-filtering'] = 'sketching';
+    else
+      col.tags.delete('.molecule-filtering');
+  };
+  
+  let moleculeFilteringChoice = ui.choiceInput('Filter Type',
+    matchMoleculeFilteringToDropdown(col.tags['.molecule-filtering']),
+    ['Dynamic', 'Categorical', 'Sketching']);
+  moleculeFilteringChoice.onChanged(_ => {
+    const v = moleculeFilteringChoice.stringValue;
+    matchDropdownToMoleculeFiltering(v);
+  });
 
   subscr?.unsubscribe();
   subscr = col.dataFrame.onMetadataChanged.subscribe((a) => {
@@ -55,20 +79,20 @@ function getMolColumnPropertyPanel(col) {
     if (regenerateCoordsCheckboxValue != regenerateCoordsTagPresent) {
       regenerateCoordsCheckbox.root.children[1].checked = regenerateCoordsTagPresent;
     }
-
+    // handling molecule filtering choice value
+    const moleculeFilteringChoiceValue = moleculeFilteringChoice.stringValue;
+    const moleculeFilteringTag = matchMoleculeFilteringToDropdown(col?.tags['.molecule-filtering']);
+    if (moleculeFilteringChoiceValue != moleculeFilteringTag) { 
+      moleculeFilteringChoice.root.children[1].value = moleculeFilteringTag;
+    }
   });
-  
-  let categoricalFilteringCheckbox = ui.boolInput(
-    'Filter by categories', col?.tags &&
-      col.tags['.categorical-filtering'] === 'true',
-    v => { col.tags['.categorical-filtering'] = v.toString(); })
 
   let widget = new DG.Widget(ui.div([
     ui.inputs([
       scaffoldColumnChoice,
       highlightScaffoldsCheckbox,
       regenerateCoordsCheckbox,
-      categoricalFilteringCheckbox
+      moleculeFilteringChoice
     ])
   ]));
 
