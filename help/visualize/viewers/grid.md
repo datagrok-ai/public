@@ -108,7 +108,7 @@ To add a custom form: **Menu | Add | Forms | Custom...**
 
 ![Molecules](../../uploads/viewers/grid-molecules.png "Molecule renderer")
 
-## Current rows
+### Current Rows
 
 Rows in a grid can not only be selected or filtered, in addition to that, the grid keeps track of a current row and highlights it in green. This indication is a neat and lightweight way to update information related to the current value and lets users explore and compare rows with ease.
 
