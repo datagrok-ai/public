@@ -27,7 +27,7 @@ function getMolColumnPropertyPanel(col) {
     v => { col.tags['highlight-scaffold'] = v.toString(); });
   let regenerateCoordsCheckbox = ui.boolInput(
     'Regenerate coords', col?.tags && col.tags['regenerate-coords'] === 'true',
-    v => { col.tags['regenerate-coords'] = v.toString(); })
+    v => { col.tags['regenerate-coords'] = v.toString(); });
 
   subscr?.unsubscribe();
   subscr = col.dataFrame.onMetadataChanged.subscribe((a) => {
@@ -57,12 +57,18 @@ function getMolColumnPropertyPanel(col) {
     }
 
   });
+  
+  let categoricalFilteringCheckbox = ui.boolInput(
+    'Filter by categories', col?.tags &&
+      col.tags['.categorical-filtering'] === 'true',
+    v => { col.tags['.categorical-filtering'] = v.toString(); })
 
   let widget = new DG.Widget(ui.div([
     ui.inputs([
       scaffoldColumnChoice,
       highlightScaffoldsCheckbox,
-      regenerateCoordsCheckbox
+      regenerateCoordsCheckbox,
+      categoricalFilteringCheckbox
     ])
   ]));
 
