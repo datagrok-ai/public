@@ -353,8 +353,7 @@ class ChemPackage extends DG.Package {
     for (let i = 0; i < table.rowCount; i++) {
       try {
         let mol = new OCL.Molecule.fromSmiles(structureColumn.get(i));
-        result += mol.toMolfile();
-        result += '\n';
+        result += `\n${mol.toMolfile()}\n`;
 
         // properties
         for (let col of table.columns)
@@ -362,7 +361,7 @@ class ChemPackage extends DG.Package {
             result += `>  <${col.name}>\n${col.get(i)}\n\n`;
           }
 
-        result += '$$$$\n'
+        result += '$$$$'
       }
       catch (error) {
         console.error(error);

@@ -230,7 +230,7 @@ export function inlineText(objects: any[]): HTMLElement {
  * @param {string | ElementOptions} options
  * @returns {HTMLDivElement}
  * */
-export function div(children: HTMLElement[] = [], options: string | ElementOptions | null = null): HTMLDivElement {
+export function div(children: HTMLElement[] | HTMLElement = [], options: string | ElementOptions | null = null): HTMLDivElement {
   if (!Array.isArray(children))
     children = [children];
   let d = document.createElement('div');
@@ -768,7 +768,7 @@ export function splitH(items: HTMLElement[], options: ElementOptions | null = nu
   return b;
 }
 
-export function block(items: HTMLElement[], options: ElementOptions | null = null): HTMLDivElement {
+export function block(items: HTMLElement[], options: string | ElementOptions | null = null): HTMLDivElement {
   let c = div(items, options);
   $(c).addClass('ui-block');
   return c;
