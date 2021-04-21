@@ -75,11 +75,13 @@ class SequencePackage extends DG.Package {
   webLogoViewer() {
     return new WebLogoViewer();
   }
-
+/*
   //input: string content
   //output: list tables
-  //tags: file-handler
-  //meta.ext: fasta
+  //tags:
+  // file-handler
+  //meta.ext:
+  // fasta
   fastaFileHandler(content) {
     let regex = /^>(.*)$/gm;
     let match;
@@ -98,6 +100,49 @@ class SequencePackage extends DG.Package {
       DG.Column.fromStrings('sequence', sequences).d
     ]).d];
   }
+*/
+
+  // TODO: condition detector to be connected with the file-handler (currently impossible)
+  //
+  //input: file file
+  //output: bool
+  //
+  isFastaFile(file) {
+    let extensions = ["fasta", "aln"];
+    return extensions.includes(file.extension);
+  }
+
+  //input: string content
+  //output: list tables
+  //tags: file-handler
+  //meta.ext: aln
+  fastaAlnFileHandler(fastaString) {
+    let fr = new FastaRead();
+    fr.read(fastaString);
+    if (fr.molCnt <= 0) {
+      return;
+    }
+
+    let t = DG.DataFrame.create(fr.molCnt);
+    t.columns.add(DG.Column.fromStrings('accession', fr.acc_));
+    t.columns.add(DG.Column.fromStrings('description', fr.descr_));
+    t.columns.add(DG.Column.fromStrings('sequence', fr.seq_));
+
+    let frc = fr.free_columns_;
+    for (let [key, value] of frc) {
+      t.columns.add(DG.Column.fromStrings(key, value));
+    }
+    return [t.d]; // .d and [] are important!
+  }
+
+  //input: string content
+  //output: list tables
+  //tags: file-handler
+  //meta.ext: fasta
+  fastaFileHandler(fastaString) {
+    return this.fastaAlnFileHandler(fastaString);
+  }
+
 }
 
 _seq = new SequencePackage(null);
