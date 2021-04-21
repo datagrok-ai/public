@@ -62,7 +62,41 @@ export function sequenceTranslator(): void {
   // @ts-ignore
   table.columns.byName('Code').width = 80;
   // @ts-ignore
-  table.columns.byName('Sequence').width = 850;
+  table.columns.byName('Sequence').width = 750;
+  // @ts-ignore
+  table.setOptions({'rowHeight': 35});
+  // @ts-ignore
+  table.columns.byName('Code').cellType = 'html';
+  // @ts-ignore
+  table.columns.byName('Sequence').cellType = 'html';
+
+  table.onCellPrepare(function (gc) {
+    if (gc.isTableCell && gc.gridColumn.name == 'Sequence') {
+      // @ts-ignore
+      let link = ui.div(ui.divText(gc.cell.value));
+      // @ts-ignore
+      gc.style.element = link;
+      link.style.cursor = 'pointer';
+      link.style.padding = '5px';
+      link.onclick = (e) => {copyToClipboard(gc.cell.value)};
+    } else {
+      // @ts-ignore
+      let link = ui.div(ui.divText(gc.cell.value));
+      // @ts-ignore
+      gc.style.element = link;
+      link.style.padding = '5px';
+    }
+  });
+
+  function copyToClipboard(text: string) {
+    let dummy = document.createElement("textarea");
+    document.body.appendChild(dummy);
+    dummy.value = text;
+    dummy.select();
+    document.execCommand("copy");
+    document.body.removeChild(dummy);
+    grok.shell.info('Sequence has been copied to clipboard');
+  }
 
   let appDescription = ui.div([
     ui.h1('Convert oligonucleotide sequences between Nucleotides, BioSpring, Axolabs, and GCRS representations.'),
@@ -126,7 +160,8 @@ export function sequenceTranslator(): void {
   );
 
   $('.table .d4-grid')
-    .css('height','150px')
+    .attr('style','word-break:break-word')
+    .css('height','170px')
     .css('width','100%');
   $('.sequence')
     .css('padding','20px 0')
