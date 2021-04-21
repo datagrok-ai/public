@@ -96,7 +96,7 @@ stroke: #CCC;
   display: none;
   float: left;
   min-width: 160px;
-  padding: 5px 0px 5px 5px;
+  padding: 5px 0;
   margin: 2px 0;
   font-size: 14px;
   text-align: left;
@@ -109,6 +109,10 @@ stroke: #CCC;
   border-radius: 4px;
   -webkit-box-shadow: 0 6px 12px rgb(0 0 0 / 18%);
   box-shadow: 0 6px 12px rgb(0 0 0 / 18%);
+}
+
+#d3_layout_phylotree_context_menu > li {
+  padding: 0 5px;
 }
 
 #d3_layout_phylotree_context_menu > .divider {
