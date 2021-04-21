@@ -472,12 +472,20 @@ public abstract class JdbcDataProvider extends DataProvider {
         return typeName.equalsIgnoreCase("number") && (scale == 0 || scale >= 127) && (precision <= 0);
     }
 
+    private static boolean isPostgresFloatNumber(String typeName) {
+        return typeName.equalsIgnoreCase("numeric");
+    }
+
     // TODO Convert following code into "List.contains() style
     private static boolean isInteger(int type, String typeName, int precision, int scale) {
         // https://docs.oracle.com/cd/E11882_01/server.112/e41084/sql_elements001.htm#sthref119
         // The absence of precision and scale designators specifies the maximum range and precision for an Oracle number.
         // We shall ignore the case where type == java.sql.Types. ... value is identified incorrectly
         if (isOracleFloatNumber(typeName, precision, scale)) return false;
+        // We need next condition because be default Postgres sets precision and scale to null for numeric type.
+        // And ResultSetMetaData.getScale() returns 0 if scale is null.
+        if (isPostgresFloatNumber(typeName)) return false;
+
         return (type == java.sql.Types.INTEGER) || (type == java.sql.Types.TINYINT) || (type == java.sql.Types.SMALLINT) ||
                 typeName.equalsIgnoreCase("int4") ||
                 typeName.equalsIgnoreCase("int2") ||
