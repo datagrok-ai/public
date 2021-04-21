@@ -15,7 +15,8 @@ share with teammates) later on.
 * [Creating](#creating)
 * [Docking](#docking)
 * [Selection](#selection)
-* [Filter](#selection)
+* [Current Rows](#current-rows)
+* [Filter](#filter)
 * [Viewers as Filters](#viewers-as-filters)
 * [Embedding](#embedding)
 * [Interaction](#interaction)
@@ -72,7 +73,7 @@ To select rows in the [grid](viewers/grid.md):
 
 ![](viewers-selection.gif)
 
-## Current rows
+## Current Rows
 
 Rows in a grid can not only be selected or filtered, in addition to that, the grid keeps track of a current row and highlights it in green. This indication is a neat and lightweight way to update information related to the current value and lets users explore and compare rows with ease.
 
