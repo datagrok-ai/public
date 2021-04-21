@@ -7,7 +7,8 @@
 		"datagrok-api": "latest",
 		"ts-loader": "latest",
 		"typescript": "latest",
-		"webpack": "^5.33.2"
+		"webpack": "^5.33.2",
+		"webpack-cli": "^4.6.0"
 	},
 	"scripts": {
 		"debug-powerpack": "grok publish --rebuild",

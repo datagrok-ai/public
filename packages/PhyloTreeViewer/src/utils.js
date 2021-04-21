@@ -23,8 +23,11 @@ export function newickToDf(newick, filename) {
   const columns = [
     DG.Column.fromList('string', 'node', nodes),
     DG.Column.fromList('string', 'parent', parents),
-    DG.Column.fromList('double', 'distance', distances),
   ];
+
+  if (distances.some(d => d !== null)) {
+    columns.push(DG.Column.fromList('double', 'distance', distances));
+  }
 
   if (annotations.some(a => !!a)) {
     columns.push(DG.Column.fromList('string', 'annotation', annotations));
