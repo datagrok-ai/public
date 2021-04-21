@@ -3,13 +3,13 @@
 
 # Viewers
 
-A viewer is a visual component associated with a [table](../overview/table.md). Unlike 
-other products, our viewers are [super fast](../develop/performance.md#viewers), 
+A viewer is a visual component associated with a [table](../overview/table.md). Unlike
+other products, our viewers are [super fast](../develop/performance.md#viewers),
 completely interactive, and are capable of handling tens of millions of rows (or millions of columns).
 
-Viewers belonging to the same [view](../overview/table-view.md) all share the same 
+Viewers belonging to the same [view](../overview/table-view.md) all share the same
 row selection and filter. Viewers are saved as part of the [project](../overview/project.md).
-Also, it is possible to save viewers and views individually, and reuse them (or 
+Also, it is possible to save viewers and views individually, and reuse them (or
 share with teammates) later on.
 
 * [Creating](#creating)
@@ -28,11 +28,11 @@ share with teammates) later on.
 
 ## Creating
 
-Once a table is open, click on the icons shown on the left pane to open the corresponding 
-viewer. 
+Once a table is open, click on the icons shown on the left pane to open the corresponding
+viewer.
 
 Viewers are docked within a view. To rearrange it, start dragging viewer's header. Drop zone
-indicators will appear; move the mouse cursor to one of them and release the mouse button to 
+indicators will appear; move the mouse cursor to one of them and release the mouse button to
 dock the viewer at that spot. To resize the viewer, drag the viewer's border.
 
 ![](viewers-interaction-main.gif)
@@ -68,14 +68,20 @@ To select rows in the [grid](viewers/grid.md):
 | (Ctrl+) Shift + ↑↓               | (Un)select rows    |
 | (Ctrl+) Shift + ←→              | (Un)select columns |
 | (Ctrl+) Shift + mouse-drag       | (Un)select rows    |
-| (Ctrl+) Shift + ENTER            | (Un)Select rows with the current value  | 
+| (Ctrl+) Shift + ENTER            | (Un)Select rows with the current value  |
 
 ![](viewers-selection.gif)
+
+##Current rows
+
+Rows in a grid can not only be selected or filtered, in addition to that, the grid keeps track of a current row and highlights it in green. This indication is a neat and lightweight way to update information related to the current value and lets users explore and compare rows with ease. To bring a row into focus, you can simply click on it or navigate up and down the grid using the cursor up and down keys. Info panels in the property panel get synchronized with the current cell. It is also integrated into Datagrok's visualizations and cheminformatics functionality, e.g., similarity search, so as you move from one row to another you immediately see where the row values belong on the chart or which molecules have the most similar structure to the reference. This also works the other way around: by first clicking on a visual element, you will see the row it represents in the grid.
+
+![](current-rows.gif "Current rows")
 
 ## Filter
 
 To open filter group, click on the funnel icon in the toolbox:
- 
+
 ![](viewers/filters.gif)
 
 Alternatively, click on the column's "hamburger icon" to filter by the individual column:
@@ -85,7 +91,7 @@ Alternatively, click on the column's "hamburger icon" to filter by the individua
 ## Viewers as Filters
 
 By default, clicking on a segment that represents multiple rows will select these rows. However,
-some viewers, such as [Bar Chart](viewers/bar-chart.md) and [Pie Chart](viewers/pie-chart.md), 
+some viewers, such as [Bar Chart](viewers/bar-chart.md) and [Pie Chart](viewers/pie-chart.md),
 could be also used for filtering of the underlying table. Such viewers are a popular choice
 for interactive dashboards.
 
@@ -96,7 +102,7 @@ desired mode. Internally, this sets two different [properties](#properties) of a
 * `row source` - specifies which rows should be visualized on the viewer (all | filtered | selected)
 * `on click` - specifies what happens when user click on a group of rows (select | filter).
 
-By setting these properties manually, it is possible to achieve different combination of 
+By setting these properties manually, it is possible to achieve different combination of
 interactivity (for instance, a viewer that shows only selected rows)  
 
 ![](viewers-as-filters.gif)
@@ -142,9 +148,9 @@ Many viewers support the following:
 | Mouse drag      | Pan   |
 
 All of the common actions are available from the context menu. To bring it up, either
-right-click, or click on the "hamburger" menu in the top left corner. The icons in the 
+right-click, or click on the "hamburger" menu in the top left corner. The icons in the
 viewer header are only visible when the mouse is hovering over the viewer.
- 
+
 The following ones are available under the **Viewer** submenu:
 
 |                 |                 |
@@ -182,7 +188,7 @@ Tooltip-related settings reside under the **Tooltip** submenu:
 One of the unique features of the Datagrok platform is the ability to quickly visualize multiple rows
 in a tooltip, using the settings of another viewer.  
 
-Once the "Use as Group Tooltip" command is executed, the original viewer is no longer required, 
+Once the "Use as Group Tooltip" command is executed, the original viewer is no longer required,
 and it is safe to close it if you choose so.
 
 The following picture illustrates the concept:
@@ -193,18 +199,18 @@ The following picture illustrates the concept:
 
 Trellis plots are useful for finding the structure and patterns in complex data.
 A Trellis plot is a layout of smaller charts in a grid with consistent scales. Each smaller chart
-represents rows that belong to a corresponding category.  The grid layout looks similar to a garden trellis, 
+represents rows that belong to a corresponding category.  The grid layout looks similar to a garden trellis,
 hence the name Trellis Chart.
 
 There are two ways to add a trellis plot:
-* click on the "Trellis Plot" icon in the toolbox, and then customize the inner chart by clicking 
+* click on the "Trellis Plot" icon in the toolbox, and then customize the inner chart by clicking
   on the "gear" icon on the left
 * create a viewer that you want to eventually become an inner chart, customize it the way you like,
   and then click on `Viewer | Use in Trellis`  
- 
+
 See [Trellis Plot](viewers/trellis-plot.md) for more details.
 
-![](viewers-as-trellis.gif) 
+![](viewers-as-trellis.gif)
 
 ## Statistical Hypothesis Testing
 
@@ -224,11 +230,11 @@ To help users analyze their data in depth, our visualizations include a number o
 View Layout contains relative positions of [viewers](../visualize/viewers.md) in a [table view](../overview/table-view.md),
 along with the viewers' properties. By separating layouts from the actual data displayed, it's possible to
 save current layout (**View | Layout | Save to Gallery**) and later apply it to a different dataset
-(**View | Layout | Open Gallery**). 
+(**View | Layout | Open Gallery**).
 
-Saved layouts that are [applicable](view-layout.md#layout-applicability) to the current table are shown in the "Layouts" pane, see picture below. 
+Saved layouts that are [applicable](view-layout.md#layout-applicability) to the current table are shown in the "Layouts" pane, see picture below.
 
-To clone current view, either do **View | Layout | Clone**, or click on the plus sign on the view header strip, 
+To clone current view, either do **View | Layout | Clone**, or click on the plus sign on the view header strip,
 and choose **Clone**.
 
 ![](layout-suggestions.gif)
@@ -264,12 +270,12 @@ and choose **Clone**.
 |                           |                        |
 |---------------------------|------------------------|
 | ![Bar Chart](../uploads/viewers/bar-chart.png "Bar Chart")        | A bar chart presents grouped data with rectangular bars with lengths proportional to the values that they represent. The bars can be plotted vertically or horizontally.<br>[Bar Chart](viewers/bar-chart.md) |
- 
+
 ## Box Plot
 
 |                           |                        |
 |---------------------------|------------------------|
-| ![Box Plot](../uploads/viewers/box-plot.png "Box Plot")         | The box plot (a.k.a. box and whisker diagram) is a standardized way of displaying the distribution of data based on the five number summary: minimum, first quartile, median, third quartile, and maximum.<br>[Box Plot](viewers/box-plot.md) | 
+| ![Box Plot](../uploads/viewers/box-plot.png "Box Plot")         | The box plot (a.k.a. box and whisker diagram) is a standardized way of displaying the distribution of data based on the five number summary: minimum, first quartile, median, third quartile, and maximum.<br>[Box Plot](viewers/box-plot.md) |
 
 ## Filters
 
@@ -300,13 +306,13 @@ and choose **Clone**.
 
 |                           |                        |
 |---------------------------|------------------------|
-| ![Calendar](../uploads/viewers/calendar.png "Calendar")  | Calendar lets you analyze longitudinal data. It needs at least one column of type DateTime.<br>[Calendar](viewers/calendar.md) | 
+| ![Calendar](../uploads/viewers/calendar.png "Calendar")  | Calendar lets you analyze longitudinal data. It needs at least one column of type DateTime.<br>[Calendar](viewers/calendar.md) |
 
 ## Google Map
 
 |                           |                        |
 |---------------------------|------------------------|
-| ![Google Map](../uploads/viewers/google-map.png "Google Map")  | Google Map Viewer overlays latitude/longitude data from the corresponding table on top of the Google Map.<br>[Google Map](viewers/google-map.md) | 
+| ![Google Map](../uploads/viewers/google-map.png "Google Map")  | Google Map Viewer overlays latitude/longitude data from the corresponding table on top of the Google Map.<br>[Google Map](viewers/google-map.md) |
 
 
 
@@ -314,88 +320,88 @@ and choose **Clone**.
 
 |                           |                        |
 |---------------------------|------------------------|
-| ![Shape Map](../uploads/viewers/shape-map-pa-counties.png "Shape Map") <br> ![Shape Map](../uploads/viewers/shape-map-plate.png "Shape Map") | Shows a map that is applicable for the specified dataset. Typically, it would represent a geographical area (countries, states, counties, etc), but also it can show an arbitrary shapes (such as a store floor plan, brain regions, or EEG electrodes).<br>[Shape Map](viewers/shape-map.md) | 
- 
+| ![Shape Map](../uploads/viewers/shape-map-pa-counties.png "Shape Map") <br> ![Shape Map](../uploads/viewers/shape-map-plate.png "Shape Map") | Shows a map that is applicable for the specified dataset. Typically, it would represent a geographical area (countries, states, counties, etc), but also it can show an arbitrary shapes (such as a store floor plan, brain regions, or EEG electrodes).<br>[Shape Map](viewers/shape-map.md) |
+
 ## Grid
 
 |                           |                        |
 |---------------------------|------------------------|
-| ![Grid](../uploads/viewers/grid.png "Grid")          | A default view for the interactive exploration of tables that might contain multiple different viewers all sharing the same row filter and row selection.<br>[Grid](viewers/grid.md) | 
+| ![Grid](../uploads/viewers/grid.png "Grid")          | A default view for the interactive exploration of tables that might contain multiple different viewers all sharing the same row filter and row selection.<br>[Grid](viewers/grid.md) |
 
 ## Matrix Plot
 
 |                           |                        |
 |---------------------------|------------------------|
-| ![Matrix Plot](../uploads/viewers/matrix-plot.png "Matrix Plot")         | Use Matrix Plot to assess the relationship among many pairs of columns at the same time.<br>[Matrix Plot](viewers/matrix-plot.md) | 
+| ![Matrix Plot](../uploads/viewers/matrix-plot.png "Matrix Plot")         | Use Matrix Plot to assess the relationship among many pairs of columns at the same time.<br>[Matrix Plot](viewers/matrix-plot.md) |
 
 ## Network Diagram
 
 |                           |                        |
 |---------------------------|------------------------|
-| ![Network Diagram](../uploads/viewers/network-diagram.png "Network Diagram")  | Network diagram is used to visualize graphs, where values of the specified two columns become nodes, and rows become edges. It is possible to color-code and size-code nodes and columns by choosing the aggregate function that would apply to the values that represent an edge or a node.<br>[Network Diagram](viewers/network-diagram.md) | 
+| ![Network Diagram](../uploads/viewers/network-diagram.png "Network Diagram")  | Network diagram is used to visualize graphs, where values of the specified two columns become nodes, and rows become edges. It is possible to color-code and size-code nodes and columns by choosing the aggregate function that would apply to the values that represent an edge or a node.<br>[Network Diagram](viewers/network-diagram.md) |
 
 ## Parallel Coordinates Plot
 
 |                           |                        |
 |---------------------------|------------------------|
-| ![PC Plot](../uploads/gifs/pc-plot.gif "PC Plot")        | Parallel coordinates is a common way of visualizing high-dimensional geometry and analyzing multivariate data.<br>[Parallel Coordinates Plot](viewers/pc-plot.md) | 
+| ![PC Plot](../uploads/gifs/pc-plot.gif "PC Plot")        | Parallel coordinates is a common way of visualizing high-dimensional geometry and analyzing multivariate data.<br>[Parallel Coordinates Plot](viewers/pc-plot.md) |
 
 ## Pie Chart
 
 |                           |                        |
 |---------------------------|------------------------|
-| ![Pie Chart](../uploads/viewers/pie-chart.png "Pie Chart")        | Pie chart is useful for reflecting numerical proportions.<br>[Pie Chart](viewers/pie-chart.md) | 
+| ![Pie Chart](../uploads/viewers/pie-chart.png "Pie Chart")        | Pie chart is useful for reflecting numerical proportions.<br>[Pie Chart](viewers/pie-chart.md) |
 
 
 ## Word Cloud
 
 |                           |                        |
 |---------------------------|------------------------|
-| ![Word Cloud](../uploads/viewers/word-cloud.png "Word Cloud")  | A word cloud is a graphical representation of word frequency. Any other aggregation function can be used as well for representing size or color of the particular word.<br>[Word Cloud](viewers/word-cloud.md)  | 
+| ![Word Cloud](../uploads/viewers/word-cloud.png "Word Cloud")  | A word cloud is a graphical representation of word frequency. Any other aggregation function can be used as well for representing size or color of the particular word.<br>[Word Cloud](viewers/word-cloud.md)  |
 
 ## Correlation Plot
 
 |                           |                        |
 |---------------------------|------------------------|
-| ![Correlation Plot](../uploads/gifs/correlation-plot.gif "Correlation plot")  | A quick way to assess correlations between all columns at once. Cells are color-coded by the [Pearsson correlation coefficient](https://en.wikipedia.org/wiki/Pearson_product-moment_correlation_coefficient). Histograms along the diagonal show the corresponding distribution. Hover over the cell to see the corresponding scatter plot. The grid is sortable. Select columns in the view by selecting corresponding rows.<br>[Correlation Plot](viewers/correlation-plot.md)  | 
+| ![Correlation Plot](../uploads/gifs/correlation-plot.gif "Correlation plot")  | A quick way to assess correlations between all columns at once. Cells are color-coded by the [Pearsson correlation coefficient](https://en.wikipedia.org/wiki/Pearson_product-moment_correlation_coefficient). Histograms along the diagonal show the corresponding distribution. Hover over the cell to see the corresponding scatter plot. The grid is sortable. Select columns in the view by selecting corresponding rows.<br>[Correlation Plot](viewers/correlation-plot.md)  |
 
 ## Density Plot
 
 |                           |                        |
 |---------------------------|------------------------|
-| ![Density Plot](../uploads/viewers/density-plot.png "Density Plot")  | Unlike [scatter plot](viewers/scatter-plot.md) that visualizes each individual data point, density plot splits 2D area by bins, and color-codes it depending on the number of points that fall within this bin. The darker the color, the more points it contains.<br>[Density Plot](viewers/density-plot.md)  | 
+| ![Density Plot](../uploads/viewers/density-plot.png "Density Plot")  | Unlike [scatter plot](viewers/scatter-plot.md) that visualizes each individual data point, density plot splits 2D area by bins, and color-codes it depending on the number of points that fall within this bin. The darker the color, the more points it contains.<br>[Density Plot](viewers/density-plot.md)  |
 
 ## Heat Map
 
 |                           |                        |
 |---------------------------|------------------------|
-| ![Heat Map](../uploads/gifs/heat-map.gif "Heat Map")  | A Heat Map is a graphical representation of table where each cell value is represented as color. It is based on grid, so all of the grid's features are applicable to the heat map as well.<br>[Heat Map](viewers/heat-map.md)  | 
+| ![Heat Map](../uploads/gifs/heat-map.gif "Heat Map")  | A Heat Map is a graphical representation of table where each cell value is represented as color. It is based on grid, so all of the grid's features are applicable to the heat map as well.<br>[Heat Map](viewers/heat-map.md)  |
 
 ## Markup Viewer
 
 |                           |                        |
 |---------------------------|------------------------|
-| ![Markup](viewers/markup-viewer.png "Markup")  | Use [Markup Viewer](viewers/markup.md) to host any text, arbitrary HTML content, or [markdown-formatted text](../features/markdown.md). In most cases, the viewer will auto-detect content type. Use the "Content Type" property to explicitly specify it.  | 
+| ![Markup](viewers/markup-viewer.png "Markup")  | Use [Markup Viewer](viewers/markup.md) to host any text, arbitrary HTML content, or [markdown-formatted text](../features/markdown.md). In most cases, the viewer will auto-detect content type. Use the "Content Type" property to explicitly specify it.  |
 
 ## Tile Viewer
 
 |                           |                        |
 |---------------------------|------------------------|
 | ![Tile viewer](../uploads/gifs/tile-viewer.gif "Tile Viewer")  | Visualizes rows as a collection of forms that are positioned as tiles.<br>[Tile Viewer](viewers/tile-viewer.md)
-  | 
+  |
 
 ## Statistics
 Provides specified descriptive [Statistics](viewers/statistics.md) for the chosen columns.
 
 ## Globe
-Visualizes magnitude and color for data on 3D globe using: latitude, longitude. Details: [Globe](viewers/globe.md) 
+Visualizes magnitude and color for data on 3D globe using: latitude, longitude. Details: [Globe](viewers/globe.md)
 
 ### Videos
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/67LzPsdNrEc" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
-See also: 
-  
+See also:
+
 * [Table View](../overview/table-view.md)
 * [Column Selectors](viewers/column-selectors.md)
 * [Chemically-Aware Viewers](../domains/chem/chemically-aware-viewers.md)
