@@ -1,0 +1,27 @@
+{
+	"name": "phylotreeviewer",
+	"friendlyName": "PhyloTreeViewer",
+	"version": "0.0.1",
+	"description": "",
+	"dependencies": {
+	  "datagrok-api": "latest"
+	 },
+	"sources": [
+    "phylotree/phylotree.css",
+		"phylotree/jquery.js",
+		"phylotree/bootstrap.min.js",
+		"phylotree/d3.v3.min.js",
+		"phylotree/phylotree.js",
+		"phylotree/underscore-min.js"
+  ],
+	"scripts": {
+		"debug-phylotreeviewer": "grok publish --rebuild",
+		"release-phylotreeviewer": "grok publish --rebuild --release",
+		"build-phylotreeviewer": "webpack",
+		"build": "webpack",
+		"debug-phylotreeviewer-public": "grok publish public --rebuild",
+		"release-phylotreeviewer-public": "grok publish public --rebuild --release",
+		"debug-phylotreeviewer-local": "grok publish local --rebuild",
+		"release-phylotreeviewer-local": "grok publish local --rebuild --release"
+	}
+}
