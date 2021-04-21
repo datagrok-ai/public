@@ -34,7 +34,14 @@ export function sequenceTranslator(): void {
     table.dataFrame = resultsGrid;
     cont.innerHTML = "";
     let flavor: string = (outputValues.nucleotides.includes('U')) ? "RNA_both_caps" : "DNA_both_caps";
-    cont.append(grok.chem.svgMol(<string> await nucleotidesToSmiles(seq.replace(/\s/g, ''), flavor), 900, 300));
+    let pi = DG.TaskBarProgressIndicator.create('Rendering molecule...');
+    try {
+      cont.append(grok.chem.svgMol(<string> await nucleotidesToSmiles(outputValues.nucleotides, flavor), 900, 300));
+    } catch(e) {
+      grok.shell.error(e);
+    } finally {
+      pi.close();
+    }
   });
 
   let inputContorls = ui.div([
