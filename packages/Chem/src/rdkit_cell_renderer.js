@@ -9,7 +9,7 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
     this.canvasCounter = 0;
     this.molCache = new DG.LruCache();
     this.molCache.onItemEvicted = function (obj) {
-      obj.mol.delete();
+      obj.mol?.delete();
       obj.mol = null;
       obj.substruct = null;
       obj = null;
