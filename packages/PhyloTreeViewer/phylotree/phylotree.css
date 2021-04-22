@@ -80,7 +80,7 @@ stroke-width: 2px;
 }
 
 .branch:hover {
-stroke-width: 4px;
+stroke-width: 3px;
 }
 
 .internal-node circle:hover, .internal-node ellipse:hover, .internal-node rect:hover {

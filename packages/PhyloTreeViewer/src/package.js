@@ -29,7 +29,7 @@ export async function nwkTreeViewer(file) {
       const view = grok.shell.addTableView(df);
       const viewer = DG.Viewer.fromType('PhyloTree', df);
       view.addViewer(viewer);
-      view.dockManager.dock(viewer, DG.DOCK_TYPE.DOWN);
+      view.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT);
       return view;
     }, 'View in a dataframe'),
     DG.Viewer.fromType('PhyloTree', df).root
