@@ -466,26 +466,8 @@ public abstract class JdbcDataProvider extends DataProvider {
         return "datetime('" + param.value.toString() + "')";
     }
 
-    private static boolean isOracleFloatNumber(String typeName, int precision, int scale) {
-        // https://markhoxey.wordpress.com/2016/05/31/maximum-number-precision/ ==>  Precision >= 38
-        // https://stackoverflow.com/questions/29537292/why-can-number-type-in-oracle-scale-up-to-127 ==> scale >= 127
-        return typeName.equalsIgnoreCase("number") && (scale == 0 || scale >= 127) && (precision <= 0);
-    }
-
-    private static boolean isPostgresFloatNumber(String typeName) {
-        return typeName.equalsIgnoreCase("numeric");
-    }
-
     // TODO Convert following code into "List.contains() style
-    private static boolean isInteger(int type, String typeName, int precision, int scale) {
-        // https://docs.oracle.com/cd/E11882_01/server.112/e41084/sql_elements001.htm#sthref119
-        // The absence of precision and scale designators specifies the maximum range and precision for an Oracle number.
-        // We shall ignore the case where type == java.sql.Types. ... value is identified incorrectly
-        if (isOracleFloatNumber(typeName, precision, scale)) return false;
-        // We need next condition because be default Postgres sets precision and scale to null for numeric type.
-        // And ResultSetMetaData.getScale() returns 0 if scale is null.
-        if (isPostgresFloatNumber(typeName)) return false;
-
+    protected boolean isInteger(int type, String typeName, int precision, int scale) {
         return (type == java.sql.Types.INTEGER) || (type == java.sql.Types.TINYINT) || (type == java.sql.Types.SMALLINT) ||
                 typeName.equalsIgnoreCase("int4") ||
                 typeName.equalsIgnoreCase("int2") ||
@@ -507,12 +489,11 @@ public abstract class JdbcDataProvider extends DataProvider {
                 typeName.equalsIgnoreCase("serial8");
     }
 
-    private static boolean isFloat(int type, String typeName, int precision, int scale) {
+    protected boolean isFloat(int type, String typeName, int precision, int scale) {
         return (type == java.sql.Types.FLOAT) || (type == java.sql.Types.DOUBLE) || (type == java.sql.Types.REAL) ||
                 typeName.equalsIgnoreCase("float8") ||
                 typeName.equalsIgnoreCase("float4") ||
-                typeName.equalsIgnoreCase("money") ||
-                isOracleFloatNumber(typeName, precision, scale);
+                typeName.equalsIgnoreCase("money");
     }
 
     private static boolean isDecimal(int type, String typeName) {
