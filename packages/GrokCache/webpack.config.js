@@ -4,7 +4,7 @@ const webpack = require('webpack');
 module.exports = {
   mode: 'development',
   entry: {
-    package: ['./src/grokcache.wasm', './src/package.js']
+    package: ['./src/grokcache.wasm',  './src/package.js']
   },
   devtool: 'inline-source-map',
   devServer: {
@@ -18,6 +18,24 @@ module.exports = {
       // file-loader -> options -> name =  '[name].[ext]'  - prevents webpack name change
       {
         test: /\.(wasm)$/i,
+        type: "javascript/auto",
+        loader: "file-loader",
+        options: {
+          publicPath: "dist/",
+          name: '[name].[ext]'
+        }
+      },/*,
+      {
+        test: /grokcache\.worker\.js$/,
+        loader: "worker-loader",
+        //use: { loader: "worker-loader" },
+        options: {
+          publicPath: "dist/",
+          filename: '[name].js'
+        }
+      },*/
+      {
+        test: /\.(worker.js)$/i,
         type: "javascript/auto",
         loader: "file-loader",
         options: {
