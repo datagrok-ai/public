@@ -112,7 +112,7 @@ To add a custom form: **Menu | Add | Forms | Custom...**
 
 Rows in a grid can not only be selected or filtered, in addition to that, the grid keeps track of a current row and highlights it in green. This indication is a neat and lightweight way to update information related to the current value and lets users explore and compare rows with ease.
 
-To bring a row into focus, you can simply click on it or navigate up and down the grid using the cursor up and down keys. Info panels in the property panel get synchronized with the current cell.
+To make a row current, simply click on it, or navigate up and down the grid using the cursor up and down keys. Info panels in the property panel get synchronized with the current cell.
 
 It is also integrated into Datagrok's visualizations and cheminformatics functionality, e.g., similarity search, so as you move from one row to another you immediately see where the row values belong on the chart or which molecules have the most similar structure to the reference. This also works the other way around: by first clicking on a visual element, you will see the row it represents in the grid.
 
