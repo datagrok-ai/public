@@ -3,6 +3,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import createGrokCache from './grokcache';
+import Worker from './grokcache.worker.js';
+//import Worker from "worker-loader!./grokcache.worker.js";
 
 export let _package = new DG.Package();
 export let grokCache = null; // WASM module to be initialized later
