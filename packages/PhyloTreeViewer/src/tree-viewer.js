@@ -13,8 +13,18 @@ export class PhyloTreeViewer extends DG.JsViewer {
     this.newick = this.dataFrame.getTag('.newick');
     this.parsedNewick = JSON.parse(this.dataFrame.getTag('.newickJson'));
     this.nodeSourceColumn = this.dataFrame.col(this.nodeIdColumnName);
+
     this.subs.push(this.dataFrame.onCurrentRowChanged.subscribe(() => this.render(false)));
     this.render();
+
+    d3.select(this.root).selectAll('.node > text')
+      .on('mouseover', d => {
+        ui.tooltip.show(
+          ui.span([`${d.name}, parent: ${d.parent.name}`]),
+          d3.event.x + this.tooltipOffset,
+          d3.event.y + this.tooltipOffset);
+      })
+      .on('mouseout', () => ui.tooltip.hide());
   }
 
   onPropertyChanged() { this.render(); }
