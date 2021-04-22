@@ -31,4 +31,26 @@ public class RedshiftDataProvider extends JdbcDataProvider {
         String port = (conn.getPort() == null) ? "" : ":" + conn.getPort();
         return "jdbc:redshift://" + conn.getServer() + port + "/" + conn.getDb();
     }
+
+    public String getSchemasSql(String db) {
+        return "SELECT DISTINCT table_schema FROM information_schema.columns ORDER BY table_schema";
+    }
+
+    public String getSchemaSql(String db, String schema, String table) {
+        List<String> filters = new ArrayList<String>() {{
+            add("table_schema = '" + ((schema != null) ? schema : "public") + "'");
+        }};
+
+        if (db != null && db.length() != 0)
+            filters.add("table_catalog = '" + db + "'");
+
+        if (table != null)
+            filters.add("table_name = '" + table + "'");
+
+        String whereClause = "WHERE " + String.join(" AND \n", filters);
+
+        return "SELECT table_schema, table_name, column_name, data_type " +
+                "FROM information_schema.columns " + whereClause +
+                " ORDER BY table_name";
+    }
 }
