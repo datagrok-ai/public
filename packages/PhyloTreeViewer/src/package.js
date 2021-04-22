@@ -32,7 +32,7 @@ export async function nwkTreeViewer(file) {
       view.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT);
       return view;
     }, 'View in a dataframe'),
-    DG.Viewer.fromType('PhyloTree', df).root
+    DG.Viewer.fromType('Tree', df).root
   ], 'd4-ngl-viewer');
 
   preview.append(host);
