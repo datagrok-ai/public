@@ -7,6 +7,7 @@ import {SankeyViewer} from '../sankey/sankey.js';
 import {GlobeViewer} from '../globe/globe-viewer.js';
 import {WordCloudViewer} from '../word-cloud/word-cloud-viewer.js';
 import {ChordViewer} from '../chord/chord-viewer.js';
+import { TreeViewer } from '../tree/tree-viewer.js';
 // import {DumbbellViewer} from '../dumbbell/dumbbell-viewer.js';
 
 import '../css/chord-viewer.css';
@@ -17,6 +18,14 @@ import {FlagCellRenderer} from './flag-cell-renderer.js';
 
 
 export const _package = new DG.Package();
+
+//name: Tree
+//description: Phylogenetic tree visualization
+//tags: viewer
+//output: viewer result
+export function tree() {
+  return new TreeViewer();
+}
 
 //name: Sankey
 //description: Creates a sankey viewer
