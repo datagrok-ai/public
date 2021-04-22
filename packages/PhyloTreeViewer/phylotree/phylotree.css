@@ -4,6 +4,10 @@
   shape-rendering: crispEdges;
 }
 
+.tree-selection-brush > .background {
+  cursor: default !important;
+}
+
 .tree-scale-bar text {
 font: sans-serif;
 }
