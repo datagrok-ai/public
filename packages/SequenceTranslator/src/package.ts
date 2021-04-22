@@ -9,6 +9,11 @@ export let _package = new DG.Package();
 //tags: app
 export function sequenceTranslator(): void {
 
+  let windows = grok.shell.windows;
+  windows.showProperties = false;
+  windows.showToolbox = false;
+  windows.showHelp = false;
+
   let detectedSequenceSemType = ui.divText('Detected input type: DNA Nucleotides Code');
 
   let cont = ui.block([
@@ -22,13 +27,9 @@ export function sequenceTranslator(): void {
 
   let inp = ui.textInput("", "AGGTCCTCTTGACTTAGGCC", async (seq: string) => {
     let outputValues = convertSequence(seq.replace(/\s/g, ''));
-    resultsGrid.set('Code', 0, 'Nucleotides');
     resultsGrid.set('Sequence', 0, outputValues.nucleotides);
-    resultsGrid.set('Code', 1, 'BioSpring');
     resultsGrid.set('Sequence', 1, outputValues.bioSpring);
-    resultsGrid.set('Code', 2, 'Axolabs');
     resultsGrid.set('Sequence', 2, outputValues.axolabs);
-    resultsGrid.set('Code', 3, 'GCRS');
     resultsGrid.set('Sequence', 3, outputValues.gcrs);
     detectedSequenceSemType.textContent = 'Detected input type: ' + outputValues.type;
     table.dataFrame = resultsGrid;
@@ -69,41 +70,7 @@ export function sequenceTranslator(): void {
   // @ts-ignore
   table.columns.byName('Code').width = 80;
   // @ts-ignore
-  table.columns.byName('Sequence').width = 750;
-  // @ts-ignore
-  table.setOptions({'rowHeight': 35});
-  // @ts-ignore
-  table.columns.byName('Code').cellType = 'html';
-  // @ts-ignore
-  table.columns.byName('Sequence').cellType = 'html';
-
-  table.onCellPrepare(function (gc) {
-    if (gc.isTableCell && gc.gridColumn.name == 'Sequence') {
-      // @ts-ignore
-      let link = ui.div(ui.divText(gc.cell.value));
-      // @ts-ignore
-      gc.style.element = link;
-      link.style.cursor = 'pointer';
-      link.style.padding = '5px';
-      link.onclick = (e) => {copyToClipboard(gc.cell.value)};
-    } else {
-      // @ts-ignore
-      let link = ui.div(ui.divText(gc.cell.value));
-      // @ts-ignore
-      gc.style.element = link;
-      link.style.padding = '5px';
-    }
-  });
-
-  function copyToClipboard(text: string) {
-    let dummy = document.createElement("textarea");
-    document.body.appendChild(dummy);
-    dummy.value = text;
-    dummy.select();
-    document.execCommand("copy");
-    document.body.removeChild(dummy);
-    grok.shell.info('Sequence has been copied to clipboard');
-  }
+  table.columns.byName('Sequence').width = 1200;
 
   let appDescription = ui.div([
     ui.h1('Convert oligonucleotide sequences between Nucleotides, BioSpring, Axolabs, and GCRS representations.'),
