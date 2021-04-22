@@ -25,6 +25,15 @@ export class PhyloTreeViewer extends DG.JsViewer {
           d3.event.y + this.tooltipOffset);
       })
       .on('mouseout', () => ui.tooltip.hide());
+
+    d3.select(this.root).selectAll('.internal-node')
+      .on('mouseover', d => {
+        ui.tooltip.show(
+          ui.span([d.name + (d.name ? `, ` : '') + `children: ${d.children.length}`]),
+          d3.event.x + this.tooltipOffset,
+          d3.event.y + this.tooltipOffset);
+      })
+      .on('mouseout', () => ui.tooltip.hide());
   }
 
   onPropertyChanged() { this.render(); }
@@ -62,9 +71,10 @@ export class PhyloTreeViewer extends DG.JsViewer {
     const nodeName = this.nodeSourceColumn.get(this.dataFrame.currentRow.idx);
     if (nodeName) {
       this.tree.modify_selection(() => false);
-      if (nodeName === 'root') return;
 
       const node = this.tree.get_node_by_name(nodeName);
+      if (nodeName === 'root' || node.depth === 0) return;
+
       this.tree.modify_selection(this.tree.path_to_root(node)
         .concat(this.tree.select_all_descendants(node, true, true)));
     }
