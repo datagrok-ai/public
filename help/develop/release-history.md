@@ -1,6 +1,64 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-04-22 Dev build 0.89.40
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.89.40`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* changed text "To bring a row..." 
+* sequenceTranslator: expand the column to see whole sequence 
+* Viewers: TreeViewer 
+* PhyloTreeViewer: JS-based phylogenetic tree visualisation (WIP)
+* Connectors: Redshift: Schema browsing (WIP)
+* GrokConnect: move JdbcDataProvider methods isFloat(), isInteger() to child classes  
+* (Bug) Closing a viewer leaves ghost panel 
+* labs token 
+
+
+# 2021-04-22 Dev build 0.89.39
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.89.39`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* DataGrok API and system samples, add cross linking to improve connectivity (WIP)
+* (Bug) Scatter Plot: Filtered-out current row still visible in plot (WIP)
+* JS API: Ability to use file exporters defined as functions from packages 
+* Chem: export .SD file 
+* Sequence package for FASTA import of alignments and features (WIP)
+* Fixed possible repository publish exception 
+* Added webpack-cli dependency 
+* PhyloTreeViewer: JS-based phylogenetic tree visualisation (WIP)
+* Chem, RDKit-based (WIP)
+* Chem: categorical filtering option for a column with molecules 
+* sequenceTranslator: expand the column to see whole sequence 
+* description of "current rows" 
+* update titles for "current rows" 
+* update "current rows" 
+* JS API: Migrate to Typescript 
+* Wiki: headings harmonization 
+* (Bug) Postgres type Numeric converts to int when using PostgresNet (WIP)
+* Chem: don't attempt to .delete() null-molecules (no-render) 
+* Core: custom cell renderers in filters (WIP)
+* Updated beta users list. 
+* (Bug) Viewers: Tooltip | Edit view tooltip... does not have any effect 
+* Trellis Plot: do not create empty plots 
+
+
 # 2021-04-20 Dev build 0.89.38
 
 ## Latest Docker Images

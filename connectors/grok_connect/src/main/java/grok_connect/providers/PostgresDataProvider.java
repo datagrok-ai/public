@@ -70,4 +70,21 @@ public class PostgresDataProvider extends JdbcDataProvider {
                 "FROM information_schema.columns " + whereClause +
                 " ORDER BY table_name";
     }
+
+    private boolean isPostgresNumeric(String typeName) {
+        // We need next condition because be default Postgres sets precision and scale to null for numeric type.
+        // And ResultSetMetaData.getScale() returns 0 if scale is null.
+        return typeName.equalsIgnoreCase("numeric");
+    }
+
+    @Override
+    protected boolean isInteger(int type, String typeName, int precision, int scale) {
+        if (isPostgresNumeric(typeName)) return false;
+        return super.isInteger(type, typeName, precision, scale);
+    }
+
+    @Override
+    protected boolean isFloat(int type, String typeName, int precision, int scale) {
+        return super.isFloat(type, typeName, precision, scale) || isPostgresNumeric(typeName);
+    }
 }
