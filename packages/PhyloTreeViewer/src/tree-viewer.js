@@ -47,14 +47,16 @@ export class PhyloTreeViewer extends DG.JsViewer {
       this.tree(this.parsedNewick).layout();
     }
 
-    if (this.nodeSourceColumn) {
-      const nodeName = this.nodeSourceColumn.get(this.dataFrame.currentRow.idx);
-      if (nodeName) {
-        const node = this.tree.get_node_by_name(nodeName);
-        this.tree.modify_selection(() => false);
-        this.tree.modify_selection(this.tree.path_to_root(node)
-          .concat(this.tree.select_all_descendants(node, true, true)));
-      }
+    if (!this.nodeSourceColumn) return;
+
+    const nodeName = this.nodeSourceColumn.get(this.dataFrame.currentRow.idx);
+    if (nodeName) {
+      this.tree.modify_selection(() => false);
+      if (nodeName === 'root') return;
+
+      const node = this.tree.get_node_by_name(nodeName);
+      this.tree.modify_selection(this.tree.path_to_root(node)
+        .concat(this.tree.select_all_descendants(node, true, true)));
     }
   }
 }
