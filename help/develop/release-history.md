@@ -1,6 +1,28 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-04-22 Dev build 0.89.40
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.89.40`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* changed text "To bring a row..." 
+* sequenceTranslator: expand the column to see whole sequence 
+* Viewers: TreeViewer 
+* PhyloTreeViewer: JS-based phylogenetic tree visualisation (WIP)
+* Connectors: Redshift: Schema browsing (WIP)
+* GrokConnect: move JdbcDataProvider methods isFloat(), isInteger() to child classes  
+* (Bug) Closing a viewer leaves ghost panel 
+* labs token 
+
+
 # 2021-04-22 Dev build 0.89.39
 
 ## Latest Docker Images
