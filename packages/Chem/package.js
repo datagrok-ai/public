@@ -76,10 +76,9 @@ class ChemPackage extends DG.Package {
   //output: grid_cell_renderer result
   async rdkitCellRenderer() {
     let props = DG.toJs(await this.getProperties());
-    // console.log(props);
-    // if (props.Renderer && props.Renderer === 'RDKit') {
+    if (props?.Renderer && props.Renderer === 'RDKit') {
       return new RDKitCellRenderer();
-//    }
+    }
   }
 
   //name: similarityScoring
