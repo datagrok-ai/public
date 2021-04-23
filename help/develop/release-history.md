@@ -1,6 +1,23 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-04-23 Dev build 0.91.1
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.91.1`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* (Bug) Chem: R-Groups Analysis with client RDKit 
+* Ability to share files 
+* StringColumn: batch editing: copying existing values 
+
+
 # 2021-04-23 Stable version 0.91.0
 
 ## Latest Docker Images
