@@ -1,6 +1,23 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-04-23 Stable version 0.91.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.91.0`
+  *  `docker pull datagrok/datagrok:stable`
+* CVM: 
+  *  `docker pull datagrok/cvm:0.91.0`
+  *  `docker pull datagrok/cvm:stable`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+
+
 # 2021-04-23 Stable version 0.90.0
 
 ## Latest Docker Images
