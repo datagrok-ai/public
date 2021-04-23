@@ -24,35 +24,13 @@ function getEmptyChart() {
   );
 }
 
-function createPipelineObject(pipeline, functionCategory, typesList, parametersList) {
-  let c = 0;
-  const typeList = typesList.map((choiceInput) => choiceInput.value);
-  for (const type of typeList) {
-    pipeline[functionCategory][type] = {};
-    let keys = Object.keys(parametersList[c]).map(function (key) {
-      return key;
-    });
-    for (const key of keys) {
-      pipeline[functionCategory][type][key] = parametersList[c][key].value;
-    }
-    c++;
-  }
-  return pipeline;
-}
-
 function showMainDialog(view, tableWithSignals, tableWithSignalsAndAnnotations, signalType, column, samplingFrequency, chosenDatabase, chosenRecord) {
 
   let inputCase = tableWithSignals.columns.byName('testEcg');
 
-  let accordionFilters = ui.accordion();
-  let accordionExtractors = ui.accordion();
-  let accordionIndicators = ui.accordion();
-  let extractorOutputsObj = {};
-
   // Filter dialogue
+  let accordionFilters = ui.accordion();
   let filterTypesList = [];
-  let filterInputsList = [];
-  let filterParametersList = [];
   let filterContainerList = [];
   let filterChartsList = [];
   let addFilterButton = ui.div();
@@ -61,61 +39,51 @@ function showMainDialog(view, tableWithSignals, tableWithSignalsAndAnnotations, 
   const dspPackageFilters = ['DSP:SMA_filter', 'DSP:Exp_filter', 'DSP:Kalman_filter', 'DSP:MinMax_transform',
     'DSP:Zscore_transform', 'DSP:box_cox_transform', 'DSP:get_trend', 'DSP:remove_trend', 'DSP:fourier_filter',
     'DSP:spectral_density', 'DSP:subsample', 'DSP:asample'];
+  let filterScripts = [];
+  (async function () {
+    for (let filter of dspPackageFilters) filterScripts.push(await grok.functions.eval(filter));
+  })();
   let i = 0;
   addFilterButton.appendChild(ui.button('Add Filter', async () => {
-    let containerFilter = ui.div();
-    filterContainerList[i] = containerFilter;
-    let nameOfLastFiltersOutput = Object.keys(filterOutputsObj)[Object.keys(filterOutputsObj).length - 1];
-    let filterInputPreset = (Object.keys(filterOutputsObj).length === 1) ? inputCase.name : nameOfLastFiltersOutput;
-    filterInputsList[i] = ui.choiceInput('Input', filterInputPreset, Object.keys(filterOutputsObj));
     filterChartsList[i] = getEmptyChart();
-    let filters = await grok.dapi.scripts.filter('#filters').list();
-    for (let ind = 0; ind < dspPackageFilters.length; ind++) {
-      filters.push(await grok.functions.eval(dspPackageFilters[ind]));
-    }
-    filterTypesList[i] = ui.choiceInput('Filter ' + (i + 1), '', filters);
-    let filterInputsOld = ui.inputs([filterTypesList[i]]);
-    filterContainerList[i].appendChild(filterInputsOld);
-    filterTypesList[i].onChanged(async function () {
+    let tag = await grok.dapi.scripts.filter('#filters').list();
+    filterTypesList[i] = ui.choiceInput('Filter ' + (i + 1), '', filterScripts.concat(tag), async function () {
       let call = filterTypesList[i - 1].value.prepare();
       let t;
-      if (filterInputsList.length === 1) {
+      if (i === 1)
         t = DG.DataFrame.fromColumns([inputCase]);
-      } else if (filterOutputsObj[filterInputsList[i - 1].value].columns.byName('sig')) {
-        t = DG.DataFrame.fromColumns([filterOutputsObj[filterInputsList[i - 1].value].columns.byName('sig')]);
-      } else {
-        t = DG.DataFrame.fromColumns([filterOutputsObj[filterInputsList[i - 1].value].columns.byIndex(i - 1)]);
-      }
+      else if (filterOutputsObj[Object.keys(filterOutputsObj)[i - 1]].columns.byName('sig'))
+        t = DG.DataFrame.fromColumns([filterOutputsObj[Object.keys(filterOutputsObj)[i - 1]].columns.byName('sig')]);
+      else
+        t = DG.DataFrame.fromColumns([filterOutputsObj[Object.keys(filterOutputsObj)[i - 1]].columns.byIndex(i - 1)]);
       let context = DG.Context.create();
-      t.name = 'dataframe';
+      t.name = tableWithSignals.name;
       context.setVariable('table', t);
       call.context = context;
       filterInputsNew = ui.div([
         ui.block25([
-          await call.getEditor(),
           ui.inputs([
-            ui.buttonsInput([
-              ui.button('Plot', async () => {
-                let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting filter\'s output...');
-                try {
-                  await call.call();
-                  let df = call.getOutputParamValue();
-                  if (df == null) {
-                    df = DG.DataFrame.fromColumns([
-                      DG.Column.fromList('int', 'time', Array(t.columns.byIndex(0).length).fill().map((_, idx) => idx)),
-                      t.columns.byIndex(t.columns.length - 1)
-                    ]);
-                  }
-                  filterChartsList[i - 1].dataFrame = df;
-                  Object.assign(filterOutputsObj, {[nameOfLastFiltersOutput]: df});
-                } catch (e) {
-                  grok.shell.info(e);
-                  throw e;
-                } finally {
-                  pi.close();
-                }
-              })
-            ])
+            filterTypesList[i - 1],
+            await call.getEditor(),
+            ui.button('Plot', async () => {
+              let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting filter\'s output...');
+              try {
+                await call.call();
+                let df = call.getOutputParamValue();
+                if (df == null)
+                  df = DG.DataFrame.fromColumns([
+                    DG.Column.fromList('int', 'time', Array(t.columns.byIndex(0).length).fill().map((_, idx) => idx)),
+                    t.columns.byIndex(t.columns.length - 1)
+                  ]);
+                filterChartsList[i - 1].dataFrame = df;
+                Object.assign(filterOutputsObj, {[Object.keys(filterOutputsObj)[i]]: df});
+              } catch (e) {
+                grok.shell.error(e);
+                throw e;
+              } finally {
+                pi.close();
+              }
+            })
           ])
         ]),
         ui.block75([filterChartsList[i - 1]])
@@ -123,15 +91,17 @@ function showMainDialog(view, tableWithSignals, tableWithSignalsAndAnnotations, 
       filterContainerList[i - 1].replaceChild(filterInputsNew, filterInputsOld);
       filterInputsOld = filterInputsNew;
     });
-    accordionFilters.addPane('Filter ' + (i + 1), () => containerFilter, true)
+    let filterInputsOld = ui.inputs([filterTypesList[i]]);
+    filterContainerList[i] = ui.div(filterInputsOld);
+    accordionFilters.addPane('Filter ' + (i + 1), () => filterContainerList[i], true)
     i++;
   }));
 
   // Information extraction dialogue
+  let accordionExtractors = ui.accordion();
+  let extractorOutputsObj = {};
   let extractorTypesList = [];
   let extractorChartsList = [];
-  let extractorInputsList = [];
-  let extractorParametersList = [];
   let extractorContainerList = [];
   let addExtractorButton = ui.div();
   let extractorInputsNew = ui.inputs(extractorTypesList);
@@ -139,8 +109,6 @@ function showMainDialog(view, tableWithSignals, tableWithSignalsAndAnnotations, 
   addExtractorButton.appendChild(ui.button('Add Extractor', async () => {
     let containerExtractor = ui.div();
     extractorContainerList[j] = containerExtractor;
-    let extractorInputPreset = Object.keys(filterOutputsObj)[Object.keys(filterOutputsObj).length - 1];
-    extractorInputsList[j] = ui.choiceInput('Input', extractorInputPreset, Object.keys(filterOutputsObj));
     extractorChartsList[j] = getEmptyChart();
     let extractors = await grok.dapi.scripts.filter('#extractors').list();
     extractorTypesList[j] = ui.choiceInput('Extractor ' + (j + 1), '', extractors);
@@ -149,7 +117,7 @@ function showMainDialog(view, tableWithSignals, tableWithSignalsAndAnnotations, 
     extractorTypesList[j].onChanged(async function () {
       let call = extractorTypesList[j - 1].value.prepare();
       let context = DG.Context.create();
-      let t = DG.DataFrame.fromColumns([filterOutputsObj[filterInputsList[i - 1].value].columns.byName('sig')]);
+      let t = DG.DataFrame.fromColumns([filterOutputsObj[Object.keys(filterOutputsObj)[i - 1]].columns.byName('sig')]);
       t.name = 'dataframe';
       context.setVariable('table', t);
       call.context = context;
@@ -170,7 +138,7 @@ function showMainDialog(view, tableWithSignals, tableWithSignalsAndAnnotations, 
                   let nameOfLastExtractorsOutput = 'Output of Extractor ' + j + ' (' + extractorTypesList[j - 1].value + ')';
                   Object.assign(extractorOutputsObj, {[nameOfLastExtractorsOutput]: df});
                 } catch (e) {
-                  grok.shell.info(e);
+                  grok.shell.error(e);
                   throw e;
                 } finally {
                   pi.close();
@@ -189,10 +157,10 @@ function showMainDialog(view, tableWithSignals, tableWithSignalsAndAnnotations, 
   }));
 
   // Indicators dialogue
+  let accordionIndicators = ui.accordion();
   let indicatorTypesList = [];
   let indicatorChartsList = [];
   let indicatorInputsList = [];
-  let indicatorParametersList = [];
   let indicatorContainerList = [];
   let addIndicatorButton = ui.div();
   let indicatorInputsNew = ui.inputs(indicatorTypesList);
@@ -225,7 +193,7 @@ function showMainDialog(view, tableWithSignals, tableWithSignalsAndAnnotations, 
                   await call.call();
                   indicatorChartsList[k - 1].dataFrame = call.getOutputParamValue();
                 } catch (e) {
-                  grok.shell.info(e);
+                  grok.shell.error(e);
                   throw e;
                 } finally {
                   pi.close();
@@ -243,27 +211,11 @@ function showMainDialog(view, tableWithSignals, tableWithSignalsAndAnnotations, 
     k++;
   }));
 
-  let savePipelineButton = ui.div();
-  savePipelineButton.appendChild(ui.button('Save pipeline', () => {
-
-    let pipeline = {'Filters': {}, 'Estimators': {}, 'Indicators': {}};
-
-    pipeline = createPipelineObject(pipeline, 'Filters', filterTypesList, filterParametersList);
-    pipeline = createPipelineObject(pipeline, 'Estimators', extractorTypesList, extractorParametersList);
-    pipeline = createPipelineObject(pipeline, 'Indicators', indicatorTypesList, indicatorParametersList);
-
-    grok.dapi.users.current().then(async (user) => {
-      const pathToFolder = user.login + ':Home/';
-      grok.dapi.files.writeAsText(pathToFolder + 'pipeline.txt', JSON.stringify(pipeline));
-    });
-  }));
-
   let formView = ui.div([
     chosenDatabase,
     chosenRecord,
     ui.divText('Input sampling frequency: ' + samplingFrequency + ' samples per second (Hz)'),
     ui.divText('Signal type: ' + signalType),
-    savePipelineButton,
     ui.block([
       DG.Viewer.fromType('AnnotatorViewer', tableWithSignalsAndAnnotations)
     ]),
@@ -279,15 +231,6 @@ function showMainDialog(view, tableWithSignals, tableWithSignalsAndAnnotations, 
   ]);
   view = grok.shell.newView('BioSignals', []);
   view.append(formView);
-}
-
-function getDescription(i, filtersLST, allParams) {
-  let j = filtersLST.length - 1;
-  let a = filtersLST[j].value;
-  Object.keys(allParams[j]).forEach(key => {
-    a = a + ', ' + key + ': ' + allParams[j][key].value;
-  });
-  return 'Output of Filter ' + i + ': ' + a + '.';
 }
 
 async function readPhysionetRecord(fileInfos, fileNameWithoutExtension) {
@@ -339,18 +282,6 @@ export async function bioSignalViewer(file) {
   return view;
 }
 
-export async function loadPhysionetRecord(chosenDatabase, chosenRecord) {
-  let f = await grok.functions.eval("BioSignals:loadPhysionetRecord");
-  let call = f.prepare({
-    'chosenDatabase': chosenDatabase,
-    'chosenRecord': chosenRecord.stringValue
-  });
-  await call.call();
-  let df = call.getParamValue('df');
-  let samplingFrequency = call.getParamValue('sampling_frequency');
-  return [df, samplingFrequency];
-}
-
 export async function loadPhysionetRecordWithAnnotations(chosenDatabase, chosenRecord) {
   try {
     let f = await grok.functions.eval("BioSignals:loadPhysionetRecordWithAnnotations");
@@ -364,36 +295,26 @@ export async function loadPhysionetRecordWithAnnotations(chosenDatabase, chosenR
     const samplingFrequency = call.getParamValue('sampling_frequency');
     return [tableWithSignals, tableWithAnnotations, samplingFrequency];
   } catch (e) {
-    grok.shell.info(e);
+    grok.shell.error(e);
     throw e;
   }
-}
-
-export async function loadPhysionetAnnotations(chosenDatabase, chosenRecord) {
-  let f = await grok.functions.eval("BioSignals:loadPhysionetAnnotations");
-  let call = f.prepare({
-    'chosenDatabase': chosenDatabase,
-    'chosenRecord': chosenRecord.stringValue
-  });
-  await call.call();
-  return call.getParamValue('df');
 }
 
 //name: BioSignals
 //tags: app
 export function BioSignals() {
   let view = grok.shell.newView('BioSignals', []);
+
   let windows = grok.shell.windows;
   windows.showProperties = false;
   windows.showToolbox = false;
   windows.showHelp = false;
-  let chosenDatabase = ui.choiceInput('Physionet database', '', Object.keys(physionetDatabasesDictionary));
-  chosenDatabase.onInput(() => {
+
+  let chosenDatabase = ui.choiceInput('Physionet database', '', Object.keys(physionetDatabasesDictionary), () => {
     let chosenRecord = ui.choiceInput('Physionet record', '', physionetDatabasesDictionary[chosenDatabase.stringValue].record_names);
 
-    let formView = ui.divV([chosenDatabase, chosenRecord]);
     view = grok.shell.newView('BioSignals', []);
-    view.append(formView);
+    view.append(ui.divV([chosenDatabase.root, chosenRecord.root]));
 
     chosenRecord.onInput(async () => {
       let pi = DG.TaskBarProgressIndicator.create('Loading record with annotations from Physionet...');
