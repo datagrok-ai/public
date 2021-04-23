@@ -244,8 +244,7 @@ export function asoGapmersNucleotidesToBioSpring(nucleotides: string) {
   const objForCenter: {[index: string]: string} = {"C": "9*", "A": "A*", "T": "T*", "G": "G*"};
   return nucleotides.replace(/[ATCG]/g, function (x: string) {
     count++;
-    if (count < 5) return objForEdges[x];
-    return (count < 15) ? objForCenter[x] : objForEdges[x];
+    return (count < 5) ? objForEdges[x] : (count < 15) ? objForCenter[x] : objForEdges[x];
   }).slice(0, 2 * count + 1);
 }
 
@@ -282,9 +281,8 @@ export function asoGapmersBioSpringToGcrs(nucleotides: string) {
     "G*": "Gps", "C*": "Cps", "5": "moeU", "6": "moeA", "7": "moe5mC", "8": "moeG"
   };
   return nucleotides.replace(/(5\*|6\*|7\*|8\*|9\*|A\*|T\*|G\*|C\*|5|6|7|8)/g, function (x: string) {
-    count += 1;
-    if (count == 4) return obj[x].slice(0, -3) + 'ps';
-    return (count == 14) ? obj[x].slice(0, -2) + 'nps' : obj[x];
+    count++;
+    return (count == 4) ? obj[x].slice(0, -3) + 'ps' : (count == 14) ? obj[x].slice(0, -2) + 'nps' : obj[x];
   });
 }
 
