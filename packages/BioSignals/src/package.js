@@ -24,9 +24,7 @@ function getEmptyChart() {
   );
 }
 
-function showMainDialog(view, tableWithSignals, tableWithSignalsAndAnnotations, signalType, column, samplingFrequency, chosenDatabase, chosenRecord) {
-
-  let inputCase = tableWithSignals.columns.byName('testEcg');
+function showMainDialog(signals, signalsWithAnnotations, signalType, samplingFrequency, chosenDatabase, chosenRecord) {
 
   // Filter dialogue
   let accordionFilters = ui.accordion();
@@ -35,7 +33,6 @@ function showMainDialog(view, tableWithSignals, tableWithSignalsAndAnnotations, 
   let filterChartsList = [];
   let addFilterButton = ui.div();
   let filterInputsNew = ui.inputs(filterTypesList);
-  let filterOutputsObj = {[inputCase.name]: column};
   const dspPackageFilters = ['DSP:SMA_filter', 'DSP:Exp_filter', 'DSP:Kalman_filter', 'DSP:MinMax_transform',
     'DSP:Zscore_transform', 'DSP:box_cox_transform', 'DSP:get_trend', 'DSP:remove_trend', 'DSP:fourier_filter',
     'DSP:spectral_density', 'DSP:subsample', 'DSP:asample'];
@@ -49,16 +46,8 @@ function showMainDialog(view, tableWithSignals, tableWithSignalsAndAnnotations, 
     let tag = await grok.dapi.scripts.filter('#filters').list();
     filterTypesList[i] = ui.choiceInput('Filter ' + (i + 1), '', filterScripts.concat(tag), async function () {
       let call = filterTypesList[i - 1].value.prepare();
-      let t;
-      if (i === 1)
-        t = DG.DataFrame.fromColumns([inputCase]);
-      else if (filterOutputsObj[Object.keys(filterOutputsObj)[i - 1]].columns.byName('sig'))
-        t = DG.DataFrame.fromColumns([filterOutputsObj[Object.keys(filterOutputsObj)[i - 1]].columns.byName('sig')]);
-      else
-        t = DG.DataFrame.fromColumns([filterOutputsObj[Object.keys(filterOutputsObj)[i - 1]].columns.byIndex(i - 1)]);
       let context = DG.Context.create();
-      t.name = tableWithSignals.name;
-      context.setVariable('table', t);
+      context.setVariable('table', signals);
       call.context = context;
       filterInputsNew = ui.div([
         ui.block25([
@@ -72,11 +61,16 @@ function showMainDialog(view, tableWithSignals, tableWithSignalsAndAnnotations, 
                 let df = call.getOutputParamValue();
                 if (df == null)
                   df = DG.DataFrame.fromColumns([
-                    DG.Column.fromList('int', 'time', Array(t.columns.byIndex(0).length).fill().map((_, idx) => idx)),
-                    t.columns.byIndex(t.columns.length - 1)
+                    DG.Column.fromList('int', 'time', Array(signals.columns.byIndex(0).length).fill().map((_, idx) => idx)),
+                    signals.columns.byIndex(signals.columns.length - 1)
+                  ]);
+                else
+                  signals = signals.append(df);
+                  df = DG.DataFrame.fromColumns([
+                    DG.Column.fromList('int', 'time', Array(signals.columns.byIndex(0).length).fill().map((_, idx) => idx)),
+                    df.columns.byIndex(0)
                   ]);
                 filterChartsList[i - 1].dataFrame = df;
-                Object.assign(filterOutputsObj, {[Object.keys(filterOutputsObj)[i]]: df});
               } catch (e) {
                 grok.shell.error(e);
                 throw e;
@@ -93,7 +87,7 @@ function showMainDialog(view, tableWithSignals, tableWithSignalsAndAnnotations, 
     });
     let filterInputsOld = ui.inputs([filterTypesList[i]]);
     filterContainerList[i] = ui.div(filterInputsOld);
-    accordionFilters.addPane('Filter ' + (i + 1), () => filterContainerList[i], true)
+    accordionFilters.addPane('Filter ' + (i + 1), () => filterContainerList[i], true);
     i++;
   }));
 
@@ -107,44 +101,34 @@ function showMainDialog(view, tableWithSignals, tableWithSignalsAndAnnotations, 
   let extractorInputsNew = ui.inputs(extractorTypesList);
   let j = 0;
   addExtractorButton.appendChild(ui.button('Add Extractor', async () => {
-    let containerExtractor = ui.div();
-    extractorContainerList[j] = containerExtractor;
     extractorChartsList[j] = getEmptyChart();
     let extractors = await grok.dapi.scripts.filter('#extractors').list();
-    extractorTypesList[j] = ui.choiceInput('Extractor ' + (j + 1), '', extractors);
-    let extractorInputsOld = ui.inputs([extractorTypesList[j]]);
-    extractorContainerList[j].appendChild(extractorInputsOld);
-    extractorTypesList[j].onChanged(async function () {
+    extractorTypesList[j] = ui.choiceInput('Extractor ' + (j + 1), '', extractors, async function () {
       let call = extractorTypesList[j - 1].value.prepare();
       let context = DG.Context.create();
-      let t = DG.DataFrame.fromColumns([filterOutputsObj[Object.keys(filterOutputsObj)[i - 1]].columns.byName('sig')]);
-      t.name = 'dataframe';
-      context.setVariable('table', t);
+      context.setVariable('table', signals);
       call.context = context;
       extractorInputsNew = ui.div([
         ui.block25([
-          await call.getEditor(),
           ui.inputs([
-            ui.buttonsInput([
-              ui.button('Plot', async () => {
-                let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting extractor\'s output...');
-                try {
-                  await call.call();
-                  let df = call.getOutputParamValue();
-                  if (df == null) {
-                    df = t;
-                  }
-                  extractorChartsList[j - 1].dataFrame = df;
-                  let nameOfLastExtractorsOutput = 'Output of Extractor ' + j + ' (' + extractorTypesList[j - 1].value + ')';
-                  Object.assign(extractorOutputsObj, {[nameOfLastExtractorsOutput]: df});
-                } catch (e) {
-                  grok.shell.error(e);
-                  throw e;
-                } finally {
-                  pi.close();
-                }
-              })
-            ])
+            extractorTypesList[j - 1],
+            await call.getEditor(),
+            ui.button('Plot', async () => {
+              let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting extractor\'s output...');
+              try {
+                await call.call();
+                let df = call.getOutputParamValue();
+                if (df == null) df = signals;
+                extractorChartsList[j - 1].dataFrame = df;
+                let nameOfLastExtractorsOutput = 'Output of Extractor ' + j + ' (' + extractorTypesList[j - 1].value + ')';
+                Object.assign(extractorOutputsObj, {[nameOfLastExtractorsOutput]: df});
+              } catch (e) {
+                grok.shell.error(e);
+                throw e;
+              } finally {
+                pi.close();
+              }
+            })
           ])
         ]),
         ui.block75([extractorChartsList[j - 1]])
@@ -152,7 +136,9 @@ function showMainDialog(view, tableWithSignals, tableWithSignalsAndAnnotations, 
       extractorContainerList[j - 1].replaceChild(extractorInputsNew, extractorInputsOld);
       extractorInputsOld = extractorInputsNew;
     });
-    accordionExtractors.addPane('Extractor ' + (j + 1), () => containerExtractor, true)
+    let extractorInputsOld = ui.inputs([extractorTypesList[j]]);
+    extractorContainerList[j] = ui.div(extractorInputsOld);
+    accordionExtractors.addPane('Extractor ' + (j + 1), () => extractorContainerList[j], true)
     j++;
   }));
 
@@ -160,46 +146,37 @@ function showMainDialog(view, tableWithSignals, tableWithSignalsAndAnnotations, 
   let accordionIndicators = ui.accordion();
   let indicatorTypesList = [];
   let indicatorChartsList = [];
-  let indicatorInputsList = [];
   let indicatorContainerList = [];
   let addIndicatorButton = ui.div();
   let indicatorInputsNew = ui.inputs(indicatorTypesList);
   let k = 0;
   addIndicatorButton.appendChild(ui.button('Add Indicator', async () => {
-    let containerIndicator = ui.div();
-    indicatorContainerList[k] = containerIndicator;
-    let indicatorInputPreset = Object.keys(extractorOutputsObj)[Object.keys(extractorOutputsObj).length - 1];
-    indicatorInputsList[k] = ui.choiceInput('Input', indicatorInputPreset, Object.keys(extractorOutputsObj));
     indicatorChartsList[k] = getEmptyChart();
     let indicatorsNames = await grok.dapi.scripts.filter('#indicators').list();
-    indicatorTypesList[k] = ui.choiceInput('Indicator ' + (k + 1), '', indicatorsNames);
-    let indicatorInputsOld = ui.inputs([indicatorTypesList[k]]);
-    indicatorContainerList[k].appendChild(indicatorInputsOld);
-    indicatorTypesList[k].onChanged(async function () {
+    indicatorTypesList[k] = ui.choiceInput('Indicator ' + (k + 1), '', indicatorsNames, async function () {
       let call = indicatorTypesList[k - 1].value.prepare();
       let context = DG.Context.create();
-      let t = DG.DataFrame.fromColumns([extractorOutputsObj[indicatorInputsList[k - 1].value].columns.byName('RR intervals')]);
+      let t = DG.DataFrame.fromColumns([extractorOutputsObj[Object.keys(extractorOutputsObj)[j - 1]].columns.byName('RR intervals')]);
       t.name = 'dataframe';
       context.setVariable('table', t);
       call.context = context;
       indicatorInputsNew = ui.div([
         ui.block25([
-          await call.getEditor(),
           ui.inputs([
-            ui.buttonsInput([
-              ui.button('Plot', async () => {
-                let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting indicator\'s output...');
-                try {
-                  await call.call();
-                  indicatorChartsList[k - 1].dataFrame = call.getOutputParamValue();
-                } catch (e) {
-                  grok.shell.error(e);
-                  throw e;
-                } finally {
-                  pi.close();
-                }
-              })
-            ])
+            indicatorTypesList[k - 1],
+            await call.getEditor(),
+            ui.button('Plot', async () => {
+              let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting indicator\'s output...');
+              try {
+                await call.call();
+                indicatorChartsList[k - 1].dataFrame = call.getOutputParamValue();
+              } catch (e) {
+                grok.shell.error(e);
+                throw e;
+              } finally {
+                pi.close();
+              }
+            })
           ])
         ]),
         ui.block75([indicatorChartsList[k - 1]])
@@ -207,17 +184,19 @@ function showMainDialog(view, tableWithSignals, tableWithSignalsAndAnnotations, 
       indicatorContainerList[k - 1].replaceChild(indicatorInputsNew, indicatorInputsOld);
       indicatorInputsOld = indicatorInputsNew;
     });
-    accordionIndicators.addPane('Indicator ' + (k + 1), () => containerIndicator, true)
+    let indicatorInputsOld = ui.inputs([indicatorTypesList[k]]);
+    indicatorContainerList[k] = ui.div(indicatorInputsOld);
+    accordionIndicators.addPane('Indicator ' + (k + 1), () => indicatorContainerList[k], true)
     k++;
   }));
 
-  let formView = ui.div([
+  grok.shell.newView('BioSignals', [
     chosenDatabase,
     chosenRecord,
     ui.divText('Input sampling frequency: ' + samplingFrequency + ' samples per second (Hz)'),
     ui.divText('Signal type: ' + signalType),
     ui.block([
-      DG.Viewer.fromType('AnnotatorViewer', tableWithSignalsAndAnnotations)
+      DG.Viewer.fromType('AnnotatorViewer', signalsWithAnnotations)
     ]),
     ui.h2('Filtering and Preprocessing'),
     accordionFilters,
@@ -229,8 +208,6 @@ function showMainDialog(view, tableWithSignals, tableWithSignalsAndAnnotations, 
     accordionIndicators,
     addIndicatorButton
   ]);
-  view = grok.shell.newView('BioSignals', []);
-  view.append(formView);
 }
 
 async function readPhysionetRecord(fileInfos, fileNameWithoutExtension) {
@@ -241,25 +218,6 @@ async function readPhysionetRecord(fileInfos, fileNameWithoutExtension) {
       'fileHEA': fileInfos.find((({name}) => name === fileNameWithoutExtension + '.hea')),
       'record_name_without_extension': fileNameWithoutExtension
     });
-}
-
-async function readPhysionetAnnotations(fileInfos, fileNameWithoutExtension) {
-  let f = await grok.functions.eval("BioSignals:readPhysionetAnnotations");
-  let call = f.prepare({
-    'fileATR': fileInfos.find((({name}) => name === fileNameWithoutExtension + '.atr')),
-    'fileDAT': fileInfos.find((({name}) => name === fileNameWithoutExtension + '.dat')),
-    'fileHEA': fileInfos.find((({name}) => name === fileNameWithoutExtension + '.hea')),
-    'record_name_without_extension': fileNameWithoutExtension
-  });
-  await call.call();
-  const df = call.getParamValue('df');
-  const age = call.getParamValue('age');
-  const sex = call.getParamValue('sex');
-  const dateOfRecording = call.getParamValue('date_of_recording');
-  const samplingFrequency = call.getParamValue('sampling_frequency');
-  const heartRate = call.getParamValue('heart_rate');
-  const rrStd = call.getParamValue('rr_std');
-  return [df, age, sex, dateOfRecording, samplingFrequency, heartRate, rrStd];
 }
 
 //tags: fileViewer, fileViewer-atr, fileViewer-dat, fileViewer-hea
@@ -303,7 +261,6 @@ export async function loadPhysionetRecordWithAnnotations(chosenDatabase, chosenR
 //name: BioSignals
 //tags: app
 export function BioSignals() {
-  let view = grok.shell.newView('BioSignals', []);
 
   let windows = grok.shell.windows;
   windows.showProperties = false;
@@ -311,69 +268,27 @@ export function BioSignals() {
   windows.showHelp = false;
 
   let chosenDatabase = ui.choiceInput('Physionet database', '', Object.keys(physionetDatabasesDictionary), () => {
-    let chosenRecord = ui.choiceInput('Physionet record', '', physionetDatabasesDictionary[chosenDatabase.stringValue].record_names);
-
-    view = grok.shell.newView('BioSignals', []);
-    view.append(ui.divV([chosenDatabase.root, chosenRecord.root]));
-
-    chosenRecord.onInput(async () => {
+    let chosenRecord = ui.choiceInput('Physionet record', '', physionetDatabasesDictionary[chosenDatabase.stringValue].record_names, async () => {
       let pi = DG.TaskBarProgressIndicator.create('Loading record with annotations from Physionet...');
       let chosenDatabaseShortName = physionetDatabasesDictionary[chosenDatabase.stringValue].short_name;
       let [tableWithSignals, tableWithAnnotations, samplingFrequency] = await loadPhysionetRecordWithAnnotations(chosenDatabaseShortName, chosenRecord);
-      let col = tableWithSignals.columns.byName('testEcg');
       let tableWithSignalsAndAnnotations = tableWithSignals.append(tableWithAnnotations);
       let signalType = 'ECG';
-      await showMainDialog(view, tableWithSignals, tableWithSignalsAndAnnotations, signalType, col, samplingFrequency, chosenDatabase, chosenRecord);
+      await showMainDialog(tableWithSignals, tableWithSignalsAndAnnotations, signalType, samplingFrequency, chosenDatabase, chosenRecord);
       pi.close();
     });
+
+    grok.shell.newView('BioSignals', [ui.divV([chosenDatabase.root, chosenRecord.root])]);
   });
 
   let folderName = ui.stringInput('Path to folder', '');
-  let runPipelineButton = ui.div();
-  runPipelineButton.appendChild(ui.button('Run pipeline', async () => {
+  let runPipelineButton = ui.div(ui.button('Run pipeline', async () => {grok.shell.info('Coming soon')}));
 
-    grok.dapi.users.current().then(async (user) => {
-      let pi = DG.TaskBarProgressIndicator.create('Calculating table...');
-
-      const pathToFolder = user.login + ':Home/' + folderName.value + '/';
-      const personalFoldersInfos = await grok.dapi.files.list(pathToFolder, false, '');
-      const personalFoldersNames = personalFoldersInfos.map((folder) => folder.name)
-      let subjectsTable = DG.DataFrame.create(personalFoldersNames.length);
-
-      subjectsTable.columns.addNewString('Person');
-      subjectsTable.columns.addNewString('Record');
-      subjectsTable.columns.addNewString('Sex');
-      subjectsTable.columns.addNewInt('Age');
-      subjectsTable.columns.addNewString('Date');
-      subjectsTable.columns.addNewInt('Heart Rate');
-      subjectsTable.columns.addNewFloat('rrStd');
-
-      let sex, age, dateOfRecording, samplingFrequency, annotationsDF, heartRate, rrStd;
-      let indexCounter = 0;
-      for (const personalFolderName of personalFoldersNames) {
-        console.log(personalFolderName);
-        let filesInPersonalFolder = await grok.dapi.files.list(pathToFolder + personalFolderName, false, '');
-        let uniqueFileNamesWithoutExtension = Array.from(new Set(filesInPersonalFolder.map((file) => file.name.slice(0, -4))));
-        for (const fileNameWithoutExtension of uniqueFileNamesWithoutExtension) {
-          [annotationsDF, age, sex, dateOfRecording, samplingFrequency, heartRate, rrStd] = await readPhysionetAnnotations(filesInPersonalFolder, fileNameWithoutExtension);
-          subjectsTable.columns.byName('Person').set(indexCounter, personalFolderName);
-          subjectsTable.columns.byName('Record').set(indexCounter, fileNameWithoutExtension);
-          subjectsTable.columns.byName('Sex').set(indexCounter, sex);
-          subjectsTable.columns.byName('Age').set(indexCounter, age);
-          subjectsTable.columns.byName('Date').set(indexCounter, dateOfRecording);
-          subjectsTable.columns.byName('Heart Rate').set(indexCounter, heartRate);
-          subjectsTable.columns.byName('rrStd').set(indexCounter, rrStd);
-          indexCounter++;
-          console.log(fileNameWithoutExtension);
-        }
-      }
-      let view = grok.shell.addTableView(subjectsTable);
-      view.boxPlot({x: 'Sex', y: 'Heart Rate'});
-      pi.close();
-    });
-  }));
-
-  let formView = ui.divV([chosenDatabase, folderName, runPipelineButton]);
-  view = grok.shell.newView('BioSignals', []);
-  view.append(formView);
+  grok.shell.newView('BioSignals', [
+    ui.divV([
+      chosenDatabase,
+      folderName,
+      runPipelineButton
+    ])
+  ]);
 }

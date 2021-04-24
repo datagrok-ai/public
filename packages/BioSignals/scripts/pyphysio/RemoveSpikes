@@ -19,6 +19,5 @@ sig = ph.EvenlySignal(values=dataframe[column], sampling_freq=sampling_frequency
 sig = ph.RemoveSpikes(K=K, N=N, dilate=dilate, D=D, method=method)(sig)
 
 df = pd.DataFrame({
-    'time': range(len(sig)),
     'sig': sig
 })

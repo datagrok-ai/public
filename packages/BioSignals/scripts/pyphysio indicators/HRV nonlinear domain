@@ -4,8 +4,8 @@
 #tags: biosignals, indicators, pyphysio, hrv, ecg_signal
 #input: dataframe dataframe
 #input: column column
-#input: double step
-#input: double width
+#input: double window_step = 5
+#input: double window_width = 10
 #output: dataframe out
 
 import numpy as np
@@ -25,7 +25,7 @@ hrv_indicators = [
     ph.PoincareSD1SD2(name='SD1/SD2')
 ]
 
-fixed_length = ph.FixedSegments(step=step, width=width)
+fixed_length = ph.FixedSegments(step=window_step, width=window_width)
 
 indicators, col_names = ph.fmap(fixed_length, hrv_indicators, extracted)
 
