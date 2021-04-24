@@ -16,6 +16,5 @@ sig = ph.EvenlySignal(values=dataframe[column], sampling_freq=sampling_frequency
 sig = ph.FIRFilter(fp=[pass_frequencies], fs=[stop_frequencies])(sig)
 
 df = pd.DataFrame({
-    'time': range(len(sig)),
     'sig': sig
 })
