@@ -15,5 +15,5 @@ sig = ph.EvenlySignal(values=dataframe[column], sampling_freq=sampling_frequency
 sig = ph.ImputeNAN(win_len=win_len, allnan=allnan)(sig)
 
 df = pd.DataFrame({
-    'sig': sig
+    column + ':ImputeNAN': sig
 })

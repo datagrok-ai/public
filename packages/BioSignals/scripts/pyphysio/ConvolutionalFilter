@@ -16,5 +16,5 @@ sig = ph.EvenlySignal(values=dataframe[column], sampling_freq=sampling_frequency
 sig = ph.ConvolutionalFilter(win_len=window_length, irftype=irftype)(sig)
 
 df = pd.DataFrame({
-    'sig': sig
+    column + ':ConvolutionalFilter': sig
 })

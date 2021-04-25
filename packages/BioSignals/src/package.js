@@ -59,17 +59,18 @@ function showMainDialog(signals, signalsWithAnnotations, signalType, samplingFre
               try {
                 await call.call();
                 let df = call.getOutputParamValue();
-                if (df == null)
+                if (df == null) {
                   df = DG.DataFrame.fromColumns([
                     DG.Column.fromList('int', 'time', Array(signals.columns.byIndex(0).length).fill().map((_, idx) => idx)),
                     signals.columns.byIndex(signals.columns.length - 1)
                   ]);
-                else
+                } else {
                   signals = signals.append(df);
                   df = DG.DataFrame.fromColumns([
-                    DG.Column.fromList('int', 'time', Array(signals.columns.byIndex(0).length).fill().map((_, idx) => idx)),
-                    df.columns.byIndex(0)
+                    DG.Column.fromList('int', 'time', Array(df.columns.byIndex(df.columns.length - 1).length).fill().map((_, idx) => idx)),
+                    df.columns.byIndex(df.columns.length - 1)
                   ]);
+                }
                 filterChartsList[i - 1].dataFrame = df;
               } catch (e) {
                 grok.shell.error(e);

@@ -15,5 +15,5 @@ sig = ph.EvenlySignal(values=dataframe[column], sampling_freq=sampling_frequency
 sig = ph.Normalize(norm_method=normalization_method)(sig)
 
 df = pd.DataFrame({
-    'sig': sig
+    column + ':Normalize': sig
 })
