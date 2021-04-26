@@ -47,6 +47,7 @@ function showMainDialog(signals, signalsWithAnnotations, signalType, samplingFre
       let call = filterTypesList[i - 1].value.prepare();
       let context = DG.Context.create();
       context.setVariable('table', signals);
+      grok.shell.tables.forEach(function (table, index) {context.setVariable('table' + index, table);});
       call.context = context;
       filterInputsNew = ui.div([
         ui.block25([
@@ -106,6 +107,7 @@ function showMainDialog(signals, signalsWithAnnotations, signalType, samplingFre
       let call = extractorTypesList[j - 1].value.prepare();
       let context = DG.Context.create();
       context.setVariable('table', signals);
+      grok.shell.tables.forEach(function (table, index) {context.setVariable('table' + index, table);});
       call.context = context;
       extractorInputsNew = ui.div([
         ui.block25([
@@ -170,6 +172,7 @@ function showMainDialog(signals, signalsWithAnnotations, signalType, samplingFre
       let context = DG.Context.create();
       extracted.name = 'Extracted';
       context.setVariable('table', extracted);
+      grok.shell.tables.forEach(function (table, index) {context.setVariable('table' + index, table);});
       call.context = context;
       indicatorInputsNew = ui.div([
         ui.block25([
@@ -260,7 +263,9 @@ export async function loadPhysionetRecordWithAnnotations(chosenDatabase, chosenR
     });
     await call.call();
     const tableWithAnnotations = call.getParamValue('annotations_df');
+    tableWithAnnotations.name = 'Annotations from ' + chosenDatabase + '/' + chosenRecord.stringValue;
     const tableWithSignals = call.getParamValue('signals_df');
+    tableWithSignals.name = 'Signals from ' + chosenDatabase + '/' + chosenRecord.stringValue;
     const samplingFrequency = call.getParamValue('sampling_frequency');
     return [tableWithSignals, tableWithAnnotations, samplingFrequency];
   } catch (e) {
