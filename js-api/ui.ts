@@ -108,7 +108,9 @@ export function h3(s: string): HTMLHeadingElement {
   return x as HTMLHeadingElement;
 }
 
-/** @returns {Accordion} */
+/** Creates an accordion with dynamically populated panes.
+ * Sample: {@link https://public.datagrok.ai/js/samples/ui/ui}
+ * @returns {Accordion} */
 export function accordion(key: any = null): Accordion {
   return Accordion.create(key);
 }
@@ -367,7 +369,8 @@ export function rangeSlider(minRange: number, maxRange: number, min: number, max
 }
 
 /**
- * Creates a virtual list widget
+ * Creates a virtual list widget.
+ * Sample: {@link https://public.datagrok.ai/js/samples/ui/virtual-view}
  * @param {number} length - number of elements
  * @param {Function} renderer
  * @param {boolean} verticalScroll - vertical or horizontal scrolling
@@ -400,7 +403,8 @@ export function inputs(inputs: InputBase[], options: {}) {
   return form(inputs, options);
 }
 
-/** Creates new nodes tree
+/** Creates new nodes tree.
+ * Sample: {@link https://public.datagrok.ai/js/samples/ui/tree-view}
  * @returns {TreeViewNode} */
 export function tree(): TreeViewNode {
   return TreeViewNode.tree();
@@ -451,6 +455,7 @@ export function textInput(name: string, value: string, onValueChanged: Function 
 }
 
 /**
+ * Sample: {@link https://public.datagrok.ai/js/samples/ui/ui-events}
  * @param {HTMLElement} element
  * @returns {rxjs.Observable} */
 export function onSizeChanged(element: HTMLElement): rxjs.Observable<any> {
