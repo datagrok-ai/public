@@ -9,7 +9,7 @@ import {
   SimilarityMetric,
   AggregationType,
   CsvImportOptions,
-  IndexPredicate
+  IndexPredicate, FLOAT_NULL
 } from "./const";
 import {__obs, observeStream} from "./events";
 import {toDart, toJs} from "./wrappers";
@@ -703,8 +703,11 @@ export class Column {
     let col = Column.fromType(TYPE.QNUM, name, length);
     if (values !== null) {
       let buffer = col.getRawData();
-      for (let i = 0; i < length; i++)
-        buffer[i] = exact ? Qnum.exact(values[i]):  values[i];
+      for (let i = 0; i < length; i++) {
+        let val = values[i] === undefined || values[i] === null ? FLOAT_NULL : values[i];
+        buffer[i] = exact ? Qnum.exact(val) : val;
+      }
+      console.log(buffer);
       col.setRawData(buffer);
     }
     return col;
