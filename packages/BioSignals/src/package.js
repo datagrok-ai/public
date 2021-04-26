@@ -124,12 +124,11 @@ function showMainDialog(signals, signalsWithAnnotations, signalType, samplingFre
                     df.columns.byIndex(0)
                   ]);
                 } else {
-                  let len = df.rowCount;
-                  let floats = new Float32Array(len);
-                  let oldColunm = df.columns.byIndex(0);
-                  for (let i = 0; i < len; i++)
-                    floats[i] = oldColunm.get(i);
-                  extracted.columns.addNewFloat(df.columns.byIndex(0).name).init(floats);
+                  let floats = new Array(extracted.columns.byIndex(extracted.columns.length - 1).length);
+                  let oldColumn = df.columns.byIndex(0);
+                  for (let i = 0; i < oldColumn.length; i++)
+                    floats[i] = oldColumn.get(i);
+                  extracted.columns.addNewFloat(df.columns.byIndex(0).name).init((i) => floats[i]);
                   df = DG.DataFrame.fromColumns([
                     DG.Column.fromList('int', 'time', Array(df.columns.byIndex(0).length).fill().map((_, idx) => idx)),
                     df.columns.byIndex(0)
