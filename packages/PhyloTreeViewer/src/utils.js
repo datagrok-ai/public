@@ -7,16 +7,24 @@ export function newickToDf(newick, filename) {
 
   function traverse(obj) {
     if (obj === null || typeof obj != 'object' ) return;
-    if (!Array.isArray(obj)) {
-      let name = obj.name;
-      if (!name) name = obj.name = `node-${i}`, i++;
-      nodes.push(name);
-      distances.push(obj.attribute ? parseFloat(obj.attribute) : null);
-      annotations.push(obj.annotation);
-      parents.push(parent);
-      if (obj.children) parent = name;
+
+    let name = obj.name;
+    if (!name) name = obj.name = `node-${i}`, i++;
+
+    nodes.push(name);
+    distances.push(obj.attribute ? parseFloat(obj.attribute) : null);
+    annotations.push(obj.annotation);
+    parents.push(parent);
+
+    if (!obj.children) return;
+    const childrenNum = obj.children.length;
+    const prevParent = parent;
+    parent = name;
+
+    for (let i = 0; i < childrenNum; i++) {
+      traverse(obj.children[i]);
+      if (i === childrenNum - 1) parent = prevParent;
     }
-    Object.values(obj).forEach(value => traverse(value));
   }
   traverse(obj);
 
