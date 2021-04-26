@@ -16,6 +16,5 @@ sig = ph.EvenlySignal(values=dataframe[column], sampling_freq=sampling_frequency
 extracted = ph.Energy(win_len=window_length, win_step=window_step)(sig)
 
 newDf = pd.DataFrame({
-    'Index': range(len(extracted)),
-    'extracted': extracted
+    column + ':LocalEnergy': extracted
 })

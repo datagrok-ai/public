@@ -22,7 +22,6 @@ extracted = ph.DriverEstim(t1=t1, t2=t2)(sig)
 phasic, tonic, _ = ph.PhasicEstim(delta=delta, grid_size=grid_size, win_pre=win_pre, win_post=win_post)(extracted)
 
 newDf = pd.DataFrame({
-    'time': range(len(phasic)),
-    'phasic': phasic,
-    'tonic': tonic
+    column + 'PhasicEstimation(phasic)': phasic,
+    column + 'PhasicEstimation(tonic)': tonic
 })

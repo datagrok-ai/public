@@ -31,7 +31,6 @@ function showMainDialog(signals, signalsWithAnnotations, signalType, samplingFre
   let filterTypesList = [];
   let filterContainerList = [];
   let filterChartsList = [];
-  let addFilterButton = ui.div();
   let filterInputsNew = ui.inputs(filterTypesList);
   const dspPackageFilters = ['DSP:SMA_filter', 'DSP:Exp_filter', 'DSP:Kalman_filter', 'DSP:MinMax_transform',
     'DSP:Zscore_transform', 'DSP:box_cox_transform', 'DSP:get_trend', 'DSP:remove_trend', 'DSP:fourier_filter',
@@ -41,7 +40,7 @@ function showMainDialog(signals, signalsWithAnnotations, signalType, samplingFre
     for (let filter of dspPackageFilters) filterScripts.push(await grok.functions.eval(filter));
   })();
   let i = 0;
-  addFilterButton.appendChild(ui.button('Add Filter', async () => {
+  let addFilterButton = ui.button('Add Filter', async () => {
     filterChartsList[i] = getEmptyChart();
     let tag = await grok.dapi.scripts.filter('#filters').list();
     filterTypesList[i] = ui.choiceInput('Filter ' + (i + 1), '', filterScripts.concat(tag), async function () {
@@ -90,18 +89,17 @@ function showMainDialog(signals, signalsWithAnnotations, signalType, samplingFre
     filterContainerList[i] = ui.div(filterInputsOld);
     accordionFilters.addPane('Filter ' + (i + 1), () => filterContainerList[i], true);
     i++;
-  }));
+  });
 
   // Information extraction dialogue
   let accordionExtractors = ui.accordion();
-  let extractorOutputsObj = {};
+  let extracted;
   let extractorTypesList = [];
   let extractorChartsList = [];
   let extractorContainerList = [];
-  let addExtractorButton = ui.div();
   let extractorInputsNew = ui.inputs(extractorTypesList);
   let j = 0;
-  addExtractorButton.appendChild(ui.button('Add Extractor', async () => {
+  let addExtractorButton = ui.button('Add Extractor', async () => {
     extractorChartsList[j] = getEmptyChart();
     let extractors = await grok.dapi.scripts.filter('#extractors').list();
     extractorTypesList[j] = ui.choiceInput('Extractor ' + (j + 1), '', extractors, async function () {
@@ -119,10 +117,25 @@ function showMainDialog(signals, signalsWithAnnotations, signalType, samplingFre
               try {
                 await call.call();
                 let df = call.getOutputParamValue();
-                if (df == null) df = signals;
+                if (extracted == null) {
+                  extracted = DG.DataFrame.fromColumns([df.columns.byIndex(0)]);
+                  df = DG.DataFrame.fromColumns([
+                    DG.Column.fromList('int', 'time', Array(df.columns.byIndex(0).length).fill().map((_, idx) => idx)),
+                    df.columns.byIndex(0)
+                  ]);
+                } else {
+                  let len = df.rowCount;
+                  let floats = new Float32Array(len);
+                  let oldColunm = df.columns.byIndex(0);
+                  for (let i = 0; i < len; i++)
+                    floats[i] = oldColunm.get(i);
+                  extracted.columns.addNewFloat(df.columns.byIndex(0).name).init(floats);
+                  df = DG.DataFrame.fromColumns([
+                    DG.Column.fromList('int', 'time', Array(df.columns.byIndex(0).length).fill().map((_, idx) => idx)),
+                    df.columns.byIndex(0)
+                  ]);
+                }
                 extractorChartsList[j - 1].dataFrame = df;
-                let nameOfLastExtractorsOutput = 'Output of Extractor ' + j + ' (' + extractorTypesList[j - 1].value + ')';
-                Object.assign(extractorOutputsObj, {[nameOfLastExtractorsOutput]: df});
               } catch (e) {
                 grok.shell.error(e);
                 throw e;
@@ -141,25 +154,23 @@ function showMainDialog(signals, signalsWithAnnotations, signalType, samplingFre
     extractorContainerList[j] = ui.div(extractorInputsOld);
     accordionExtractors.addPane('Extractor ' + (j + 1), () => extractorContainerList[j], true)
     j++;
-  }));
+  });
 
   // Indicators dialogue
   let accordionIndicators = ui.accordion();
   let indicatorTypesList = [];
   let indicatorChartsList = [];
   let indicatorContainerList = [];
-  let addIndicatorButton = ui.div();
   let indicatorInputsNew = ui.inputs(indicatorTypesList);
   let k = 0;
-  addIndicatorButton.appendChild(ui.button('Add Indicator', async () => {
+  let addIndicatorButton = ui.button('Add Indicator', async () => {
     indicatorChartsList[k] = getEmptyChart();
     let indicatorsNames = await grok.dapi.scripts.filter('#indicators').list();
     indicatorTypesList[k] = ui.choiceInput('Indicator ' + (k + 1), '', indicatorsNames, async function () {
       let call = indicatorTypesList[k - 1].value.prepare();
       let context = DG.Context.create();
-      let t = DG.DataFrame.fromColumns([extractorOutputsObj[Object.keys(extractorOutputsObj)[j - 1]].columns.byName('RR intervals')]);
-      t.name = 'dataframe';
-      context.setVariable('table', t);
+      extracted.name = 'Extracted';
+      context.setVariable('table', extracted);
       call.context = context;
       indicatorInputsNew = ui.div([
         ui.block25([
@@ -189,7 +200,7 @@ function showMainDialog(signals, signalsWithAnnotations, signalType, samplingFre
     indicatorContainerList[k] = ui.div(indicatorInputsOld);
     accordionIndicators.addPane('Indicator ' + (k + 1), () => indicatorContainerList[k], true)
     k++;
-  }));
+  });
 
   grok.shell.newView('BioSignals', [
     chosenDatabase,
