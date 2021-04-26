@@ -75,10 +75,10 @@ class ChemPackage extends DG.Package {
   //meta-cell-renderer-sem-type: Molecule
   //output: grid_cell_renderer result
   async rdkitCellRenderer() {
-    let props = DG.toJs(await this.getProperties());
-    if (props?.Renderer && props.Renderer === 'RDKit') {
-      return new RDKitCellRenderer();
-    }
+    //let props = DG.toJs(await this.getProperties());
+    // if (props?.Renderer && props.Renderer === 'RDKit') {
+    return new RDKitCellRenderer();
+    //}
   }
 
   //name: similarityScoring
