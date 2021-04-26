@@ -69,6 +69,7 @@ export class Events {
   }
 
   /** Observes platform events with the specified eventId.
+   * Sample: {@link https://public.datagrok.ai/js/samples/ui/ui-events}
    * @returns {rxjs.Observable} */
   onEvent(eventId: string): rxjs.Observable<any> {
     return __obs(eventId);
