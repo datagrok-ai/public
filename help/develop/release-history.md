@@ -1,6 +1,28 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-04-26 Dev build 0.91.2
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.91.2`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Chem: renderer selection checks. 
+* BioSignals: add possibility to change previously chosen filter script 
+* sequenceTranslator: use Ternary Operator when it brings clarity 
+* BioSignals: choose input signal from context(WIP) 
+* BioSignals: choose input signal from context (WIP)
+* Proper dependencies 
+* Ability to share files 
+* (Bug) Incorrect QNum parsing 
+
+
 # 2021-04-23 Dev build 0.91.1
 
 ## Latest Docker Images
