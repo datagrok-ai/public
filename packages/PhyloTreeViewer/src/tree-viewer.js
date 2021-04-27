@@ -21,7 +21,7 @@ export class PhyloTreeViewer extends DG.JsViewer {
     this.parentNameColumn = this.dataFrame.col('parent');
 
     this.subs.push(this.dataFrame.onCurrentRowChanged.subscribe(() => this.render(false)));
-    this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => this.render()));
+    this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => this.render(false)));
     this.render();
 
     d3.select(this.root).selectAll('.node > text')
@@ -43,67 +43,43 @@ export class PhyloTreeViewer extends DG.JsViewer {
       .on('mouseout', () => ui.tooltip.hide());
   }
 
-  onPropertyChanged() { this.render(); }
+  onPropertyChanged() { this.render(false); }
 
-  render(redraw = true) {
-    if (redraw) {
-      $(this.root).empty();
-      // this.nodes.clear();
+  _createNodeMap(nodes) {
+    this.nodes.clear();
 
-      if (this.newick == null) {
-        this.root.appendChild(ui.divText('Newick tag not found.', 'd4-viewer-error'));
-        return;
+    if (this.nodeIdColumn) {
+      for (let i = 0; i < this.dataFrame.rowCount; i++) {
+        const node = nodes[i];
+        this.nodes.set(node.id, node);
+      }
+    } else {
+      if (nodes.length === this.dataFrame.rowCount) {
+        this.dataFrame.columns.addNewInt('id').init(i => {
+          const node = nodes[i];
+
+          if (node.name === this.nodeNameColumn.get(i) && (!node.parent ||
+            node.parent.name === this.parentNameColumn.get(i))) {
+            this.nodes.set(node.id, node);
+            return node.id;
+          }
+
+          return null;
+        });
+      } else {
+        console.log('Failed to add `id` column due to node count mismatch:',
+        this.dataFrame.rowCount, 'rows and', nodes.length, 'nodes');
       }
 
-      const svg = d3.select(this.root).append("svg");
-
-      this.tree
-        .svg(svg)
-        .options({
-          'left-right-spacing': 'fit-to-size',
-          'top-bottom-spacing': 'fit-to-size',
-          zoom: true,
-        })
-        .size([
-          this.root.parentElement.clientHeight || this.defaultSize,
-          this.root.parentElement.clientWidth || this.defaultSize
-        ])
-        .font_size(parseInt(this.fontSize))
-        .radial(this.radialLayout);
-
-      this.tree(this.parsedNewick).layout();
-
-      if (!this.nodeIdColumn) {
-        const nodes = this.tree.get_nodes();
-
-        if (nodes.length === this.dataFrame.rowCount) {
-          this.dataFrame.columns.addNewInt('id').init(i => {
-            const node = nodes[i];
-
-            if (node.name === this.nodeNameColumn.get(i) && (!node.parent ||
-              node.parent.name === this.parentNameColumn.get(i))) {
-              this.nodes.set(node.id, node);
-              return node.id;
-            }
-
-            return null;
-          });
-        } else {
-          console.log('Failed to add `id` column due to node count mismatch:',
-          this.dataFrame.rowCount, 'rows and', nodes.length, 'nodes');
-        }
-
-        this.nodeIdColumn = this.dataFrame.col('id');
-      }
+      this.nodeIdColumn = this.dataFrame.col('id');
     }
+  }
 
-    if (!this.nodeIdColumn) return;
+  _updateSelection() {
+    if (this.selection === 'none') return;
 
     const nodeId = this.nodeIdColumn.get(this.dataFrame.currentRow.idx);
     if (!nodeId) return;
-
-    this.tree.modify_selection(() => false);
-    if (this.selection === 'none') return;
 
     const node = this.nodes.get(nodeId);
     if (!node || node.name === 'root' || node.depth === 0) return;
@@ -114,5 +90,36 @@ export class PhyloTreeViewer extends DG.JsViewer {
     this.tree.path_to_root(node).concat(this.tree.select_all_descendants(node, true, true)) : [];
 
     this.tree.modify_selection(selection);
+  }
+
+  render(computeData = true) {
+    $(this.root).empty();
+
+    if (this.newick == null) {
+      this.root.appendChild(ui.divText('Newick tag not found.', 'd4-viewer-error'));
+      return;
+    }
+
+    const svg = d3.select(this.root).append("svg");
+
+    this.tree
+      .svg(svg)
+      .options({
+        'left-right-spacing': 'fit-to-size',
+        'top-bottom-spacing': 'fit-to-size',
+        'is-radial': this.radialLayout,
+        zoom: true,
+      })
+      .size([
+        this.root.parentElement.clientHeight || this.defaultSize,
+        this.root.parentElement.clientWidth || this.defaultSize
+      ])
+      .font_size(parseInt(this.fontSize));
+
+    this.tree.modify_selection(() => false);
+    this.tree(this.parsedNewick).layout();
+    
+    if (computeData) this._createNodeMap(this.tree.get_nodes());
+    if (this.nodeIdColumn) this._updateSelection();
   }
 }
