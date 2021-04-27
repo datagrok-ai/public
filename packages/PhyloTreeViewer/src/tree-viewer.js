@@ -3,7 +3,7 @@ export class PhyloTreeViewer extends DG.JsViewer {
     super();
     this.radialLayout = this.bool('radialLayout', false);
     this.fontSize = this.string('fontSize', '9px');
-    this.selection = this.string('selection', 'descendants', { choices: [
+    this.selection = this.string('selection', 'path to root & descendants', { choices: [
       'none', 'path to root', 'descendants', 'path to root & descendants'
     ]});
     this.tooltipOffset = 10;
