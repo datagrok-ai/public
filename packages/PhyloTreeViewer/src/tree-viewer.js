@@ -3,7 +3,6 @@ export class PhyloTreeViewer extends DG.JsViewer {
     super();
     this.radialLayout = this.bool('radialLayout', false);
     this.fontSize = this.string('fontSize', '9px');
-    this.nodeIdColumnName = this.string('nodeIdColumnName', 'node');
     this.selection = this.string('selection', 'descendants', { choices: [
       'none', 'path to root', 'descendants', 'path to root & descendants'
     ]});
@@ -11,12 +10,15 @@ export class PhyloTreeViewer extends DG.JsViewer {
     this.defaultSize = 400;
     this.root.style = 'position: absolute; left: 0; right: 0; top: 0; bottom: 0;';
     this.tree = d3.layout.phylotree();
+    this.nodes = new Map();
   }
 
   onTableAttached() {
     this.newick = this.dataFrame.getTag('.newick');
     this.parsedNewick = JSON.parse(this.dataFrame.getTag('.newickJson'));
-    this.nodeSourceColumn = this.dataFrame.col(this.nodeIdColumnName);
+    this.nodeIdColumn = this.dataFrame.col('id');
+    this.nodeNameColumn = this.dataFrame.col('node');
+    this.parentNameColumn = this.dataFrame.col('parent');
 
     this.subs.push(this.dataFrame.onCurrentRowChanged.subscribe(() => this.render(false)));
     this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => this.render()));
@@ -46,6 +48,7 @@ export class PhyloTreeViewer extends DG.JsViewer {
   render(redraw = true) {
     if (redraw) {
       $(this.root).empty();
+      // this.nodes.clear();
 
       if (this.newick == null) {
         this.root.appendChild(ui.divText('Newick tag not found.', 'd4-viewer-error'));
@@ -69,24 +72,47 @@ export class PhyloTreeViewer extends DG.JsViewer {
         .radial(this.radialLayout);
 
       this.tree(this.parsedNewick).layout();
+
+      if (!this.nodeIdColumn) {
+        const nodes = this.tree.get_nodes();
+
+        if (nodes.length === this.dataFrame.rowCount) {
+          this.dataFrame.columns.addNewInt('id').init(i => {
+            const node = nodes[i];
+
+            if (node.name === this.nodeNameColumn.get(i) && (!node.parent ||
+              node.parent.name === this.parentNameColumn.get(i))) {
+              this.nodes.set(node.id, node);
+              return node.id;
+            }
+
+            return null;
+          });
+        } else {
+          console.log('Failed to add `id` column due to node count mismatch:',
+          this.dataFrame.rowCount, 'rows and', nodes.length, 'nodes');
+        }
+
+        this.nodeIdColumn = this.dataFrame.col('id');
+      }
     }
 
-    if (!this.nodeSourceColumn) return;
+    if (!this.nodeIdColumn) return;
 
-    const nodeName = this.nodeSourceColumn.get(this.dataFrame.currentRow.idx);
-    if (nodeName) {
-      this.tree.modify_selection(() => false);
-      if (this.selection === 'none') return;
+    const nodeId = this.nodeIdColumn.get(this.dataFrame.currentRow.idx);
+    if (!nodeId) return;
 
-      const node = this.tree.get_node_by_name(nodeName);
-      if (nodeName === 'root' || node.depth === 0) return;
+    this.tree.modify_selection(() => false);
+    if (this.selection === 'none') return;
 
-      const selection = (this.selection === 'path to root') ?
-      this.tree.path_to_root(node) : (this.selection === 'descendants') ?
-      this.tree.select_all_descendants(node, true, true) : (this.selection === 'path to root & descendants') ?
-      this.tree.path_to_root(node).concat(this.tree.select_all_descendants(node, true, true)) : [];
+    const node = this.nodes.get(nodeId);
+    if (!node || node.name === 'root' || node.depth === 0) return;
 
-      this.tree.modify_selection(selection);
-    }
+    const selection = (this.selection === 'path to root') ?
+    this.tree.path_to_root(node) : (this.selection === 'descendants') ?
+    this.tree.select_all_descendants(node, true, true) : (this.selection === 'path to root & descendants') ?
+    this.tree.path_to_root(node).concat(this.tree.select_all_descendants(node, true, true)) : [];
+
+    this.tree.modify_selection(selection);
   }
 }
