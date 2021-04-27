@@ -1,6 +1,760 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-04-26 Dev build 0.91.2
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.91.2`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Chem: renderer selection checks. 
+* BioSignals: add possibility to change previously chosen filter script 
+* sequenceTranslator: use Ternary Operator when it brings clarity 
+* BioSignals: choose input signal from context(WIP) 
+* BioSignals: choose input signal from context (WIP)
+* Proper dependencies 
+* Ability to share files 
+* (Bug) Incorrect QNum parsing 
+
+
+# 2021-04-23 Dev build 0.91.1
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.91.1`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* (Bug) Chem: R-Groups Analysis with client RDKit 
+* Ability to share files 
+* StringColumn: batch editing: copying existing values 
+
+
+# 2021-04-23 Stable version 0.91.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.91.0`
+  *  `docker pull datagrok/datagrok:stable`
+* CVM: 
+  *  `docker pull datagrok/cvm:0.91.0`
+  *  `docker pull datagrok/cvm:stable`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+
+
+# 2021-04-23 Stable version 0.90.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.90.0`
+  *  `docker pull datagrok/datagrok:stable`
+* CVM: 
+  *  `docker pull datagrok/cvm:0.90.0`
+  *  `docker pull datagrok/cvm:stable`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* JS snippets: Viewer.property and Viewer.getInfo() 
+* JS API: bitset.handleClick: a helper function that selects rows by passing a row predicate and a mouse event 
+* Globe Viewer 
+* Doing the right thing when get_mol throws; more optimal LRU cache use 
+* RDKit-based searches 
+* Viewer.grid(table) now returns an instance of Grid instead of Viewer 
+* Replaced `onFrameAttached` method 
+* Word Cloud (WIP)
+* UI tests updates 
+* Add UI test for new SPE dialog 
+* Create UI test for "Open text" feature 
+* Wiki: How to Build Custom Viewers 
+* Grid: RDKit-based structure rendering (WIP)
+* Chem package version 0.4.4, bump 
+* Chem RDKitDemoPackage -> ChemPackage 
+* Chord Diagram (WIP)
+* datagrok-tools: URL suggestion fix 
+* Chem Benchmark (WIP)
+* Wiki: Harmonization (WIP)
+* JS API: add possibility to filter columns  
+* Added filter-columns.js snippet 
+* Chem, RDKit-based (WIP)
+* Fixed a couple of links 
+* Wiki: Data Access 
+* Normalize formatting: WebStorm JS default with 2 spaces 
+* ... 
+* Viewers: Sankey Diagram (WIP)
+*  Get groups after groupBy 
+* Added GroupByBuilder.getGroups() snippet 
+* Added CONTRIB.md 
+* Fixed the Copyright date 
+* JS API: add Pearson and Spearman correlations  
+* JS API: Dialog improvements 
+* Internalize timeAsync to DG.timeAsync in DG js-api 
+* VDJ tools (WIP)
+* JS API: files 
+* File editors 
+* ui.onSizeChanged (+Dartium polyfill) 
+* onSizeChanged dmeo 
+* File editors: NGL Viewer 
+* File editors: PDF viewer 
+* (Bug) Table view slows down(or even freezes) selection 
+* JS API: Row Matcher: ability to select or filter rows using structured queries 
+* Rearranged the samples. 
+* JS API: ability to provide 'where' clause for aggregation 
+* (Bug) DateTime aggregation bug 
+* JS API: Detector: a helper class for the efficient sampling of column content 
+* NGL Viewer: added "PDB Viewer" widget 
+* Remove ProteinViewer from the core in favor of the NglViewer package 
+* Wiki: custom file viewers 
+* NglViewer: more documentation. 
+* Wiki improvements 
+* JS API: ability to enumerate viewer properties (WIP)
+* Wiki: Semantic Type Detectors 
+* Expand the OpenApi article (WIP)
+* (Bug) ui.divV(null) throws an exception 
+* (Bug) Widgets: RadioButtonFilter does not work 
+* Improved a sample code snippet. 
+* Update query-transformations.md 
+* DataFrame: virtual columns: support built-in types 
+* Fixed links 
+* fetchProxy method 
+* Updated an example 
+* Wiki: Computations 
+* Added missing semicolons 
+* Charts package (WIP)
+* Support renv 
+* Updated onSizeChanged method 
+* Versioned RDKit + wasm caching 
+* JS API: DataFrame.getSortedOrder 
+* Charts: Tree Viewer (WIP)
+* (Bug) Dialog.showModal doesn't work 
+* JS API: custom viewers: a fluent way to define property properties 
+* (Bug) Charts: Tree Map (WIP)
+* Harmonize connection parameters 
+* Wiki: Add an article about routing (WIP)
+* Wiki: Embed viewer 
+* Wiki: Table export 
+* (Bug) User storage: saves, but doesn't load 
+* UI test for new table tooltip 
+* Wiki adjustments. 
+* Updated connection parameters naming 
+* JS API: fetchProxy example 
+* Minor fixes of API examples 
+* Markdown fix 
+* fix error in routing.md 
+* Fixed typo, and simplified the language 
+* JS API: add TablesClient.uploadDataFrame() and TablesClient.getTable() 
+* Added TablesClient.uploadDataFrame() and getTable() snippet 
+* Adjust RDKit default molecule look 
+* SDTM metadata \- WIP 
+* RDKit WASM load on first use or explicitly 
+* Updated webpack.config 
+* Dumbbell Viewer 
+* JS API: add getDensity method for dataframe  
+* Commonly used Datagrok-specific libraries (that are supposed to be built into the packages that use them). 
+* Refine searches and scoring API; Server + Client RDKit 
+* RadioButtonFilter: Limited number of categories to 20 
+* Bringing Widget closer to Viewer \- WIP. Viewer.onTableAttached now gets JS DataFrame 
+* WidgetMeta (properties, events, functions) (WIP)
+* Chem Benchmark (WIP)
+* Refine searches and scoring API; Server + Client RDKit (WIP)
+* Wiki: shortened the main JS API article in favor of dedicated how-to sections 
+* Wiki: Custom Views How-To 
+* Parallelize searchSubstructure 
+* Add .vscode settings to grok create (WIP)
+* (Bug) Structure search results column: substructure column checkboxes can be checked or unchecked 
+* UI test for Projects with Data Sync from files 
+* Adjusting the Chem samples 
+* findSimilarServer won't work (WIP)
+* Harmonize ui framework (WIP)
+* Ability to get statistics for column subset: Stats.fromColumn(column, mask) (WIP)
+* Added TAGS.ID 
+* Cache molecules renders 
+* Clean coordinate data by a render-through-smiles tag 
+* Fixed a comparison 
+* Wiki: Grid Customizations 
+* Converted to ui.onSizeChanged 
+* Render an envelope instead of an empty cell for failed molecules 
+* Programming exercises (WIP)
+* Update exercises.md 
+* Updated fetchProxy examples 
+* Simplified package `test` function 
+* Fixed templates in datagrok-tools 
+* Updated exercises.md 
+* User Data Storage overview 
+* Update user-data-storage.md 
+* Fixed links in user-data-storage.md 
+* Wiki: applications \- general, building, debugging. wip 
+* Wiki: replaced outdated links 
+* Wiki: how-to build an app. wip 
+* Wiki: debugging packages. 
+* JS API: added accordion persistence key 
+* Simplified phrasing and linked to the main article 
+* Better phrasing 
+* DataFrame: JSDocs for append and unpivot. 
+* JS API: DataFrame.append: ability to specify columns and rows to append (WIP)
+* Wiki: how-to build an app. WIP: dataframe, credentials 
+* Added new package ChemblBrowser 
+* Wiki: Project types description 
+* Wiki: switch to recommended package naming 
+* draft of parametrized query by molregno setted up 
+* Wiki: URL fix 
+* Wiki: how-to build an app. WIP: restructuring 
+* Wiki: how-to build an app. WIP: Semantic annotation and metadata 
+* Wiki: how-to build an app. WIP: Dataframe aggregations 
+* JS API: Column.init(value | indexToValueFunction) 
+* Wiki: how-to build an app. WIP: User data storage 
+* datagrok-tools: add `suffix` key for package version hash 
+* Wiki: how-to build an app. WIP: Subscribing to events 
+* Wiki: how-to build an app. WIP: Scripting 
+* Single scaffold alignment mode 'chem-scaffold': simplified 
+* (Bug) Scaffold highlights have offsets 
+* ClinicalCase \- a plugin for analyzing SDTM-based clinical studies data (WIP)
+* Wiki: how-to build an app. WIP: REST endpoints, groups, sharing 
+* Wiki: minor updates 
+* Wiki: how-to build an app. WIP: Cleaning up 
+* Biosignals 
+* Ability to store data in a layout 
+* Charts: Timelines (WIP)
+* JS API: Ability to insert columns 
+* Fixed release notes 
+* Fixed URLs 
+* Fixed release history 
+* Trellis/filter screencast 
+* Filter layout screencast 
+* null 
+* Wiki: how-to build an app. WIP: working with databases, storing dataframes 
+* NLP package (WIP)
+* Code snippet for using viewers outside of the TableView 
+* Wiki: how-to build an app. WIP: adding to viewers 
+* Wiki: how-to build an app. WIP: Authentication; cleanup 
+* Wiki: how-to build an app. WIP: Functions, calling scripts 
+* Wiki: how-to build an app. WIP: Application lifecycle 
+* Fixed a typo 
+* Wiki: how-to build an app. WIP: typos, simplifications 
+* Show group tooltips 
+* Wiki: how-to build an app. WIP: simplifications 
+* Wiki: docker-compose instructions update 
+* Fixed package template 
+* Overview / Navigation (WIP)
+* Implement row selection 
+* Viewers: retired Dumbbell 
+* Package: Chembl Browser (WIP)
+* \* bumped RDKit_minimal version number to 2021.03_05 \* simplified _molIsInMolBlock function to detect if the passed molString is a molblock and renamed to _isMolBlock \* now generate_aligned-coords will return the matched substructure JSON if successful and empty string if not, so no need to to call get_substruct_match beforehand \* get_new_coords is used to generate new coordinates rather than roundtripping through SMILES. This is more efficient and ensures that CoordGen is used for coordinate generation 
+* delete the WASM object before reassignment 
+* (Bug) Chem: Keep mol rendering on a malformed scaffold 
+* if generate_aligned_coords() returns "" and mol has no coordinates, fall back to get_new_coords() 
+* (Bug) Chem: Single scaffold and column scaffolds interfere 
+* Do not overwrite existing coordinates if substructure match fails 
+* Disable zoom reset on click 
+* Default dimensions for viewers 
+* Wiki: UI (WIP) 
+* Update ui.md 
+* JS API samples: indentation fix 
+* JS API: Ability to access user home connection and project 
+* (Bug) JS-based column property panels are not shown 
+* Chem: Column features 
+* JS API: add renderer to ComboPopup 
+* JS API: Ability to post audit record 
+* MapProxy: Tags deletion; Falsish traps on read 
+* Chem: Highlight a filtering scaffold 
+* \- set the acceptFailure parameter to false when calling generate_aligned_coords \- set the dummyIsotopeLabels parameter to false to hide isotopic labels on R groups and other dummy atoms 
+* (Bug) UI: ui.button on property panel looks like ui.bigButton 
+* JS API: EntityMeta (WIP)
+* Samples: iterating over a dataframe with .values(). 
+* Wiki: how-to build an app. WIP: dataframe iteration 
+* Chem: demo file for scaffold alignments, selected from Chembl by @ptosco 
+* Chem: demo file for scaffold alignments 
+* (Bug) DG throws error on startup 
+* fixes RDKit GitHub issue #3852 
+* Wiki: Layout management 
+* Chem: react in panels to tags changes 
+* Harmonized form 
+* Create Physionet records fileViewer 
+* CONTRIB.md tweaks. 
+* A sample on combining several variables in one line chart. 
+* Wiki: create descriptions for all packages 
+* A sample for settings up conditional color coding. 
+* Optimize population of a dataframe with calculated columns 
+* Wiki: how-to build an app. Terminology cleanup 
+* New example code 
+* New example 
+* JS API: onValueChanged for all controls 
+* Wiki: BioSignals types update 
+* Wiki: BioSignals method categories described in table 
+* Add annotator functionality (WIP)
+* Release notes fix 
+* Add to selenium test for Filters check for deleting rows 
+* JS API: Make tags keys / objects available 
+* Typos and spaces fixes in samples. 
+* Renamed files 
+* Wiki: BioSignals goals and signal types described in table 
+* Chord Diagram: `include nulls` property 
+* (Bug) files method rename doesnt work properly  
+* GROK: quality-of-life updates 
+* GROK: repo cleanup 
+* Clinical Case: validate values on column level (WIP)
+* Chem: docs updates. 
+* Chem package version 0.9.0, bump. 
+* Adjusted the color coding example. 
+* Download Physionet record through package 
+* JS: Ability to create ViewLayout from ViewState 
+* Timelines: Add `Reset View` item to context menu 
+* datagrok-tools: add package `init` function template 
+* Improving the choice-input.js example. 
+* JS: Log API 
+* Adjusted init-column.js example 
+* GROK: new sequence viewer added 
+* JSDoc fix 
+* JS API: EntityMeta: dynamic resolution of object handlers (WIP)
+* Added logging 
+* Ability to set dialog position and size 
+* JS API: width and height parameters for dialogs 
+* GROK: paratopes added 
+* GROK: RepertoireBrowser: save and load rows functionality 
+* ClinicalCase: features 
+* ClinicalCase readme update 
+* GROK: RepertoireBrowser: improved load rows combobox  with async filelit updates 
+* Show indicators box plot by taking folder with signals as input 
+* images for ui.md 
+* Selenium: Edit UI tests relative to new "id" and "name" for elements (WIP)
+* Bio: Create SaveLoadRows Viewer for jbio project  
+* Chem: Reverted full name to 'Chem', it looks better this way. 'Cheminformatics support' is in the description. 
+* Adding utils library. 
+* Timelines: refine column selection mechanism for SDTM variables 
+* Adapter to export logs into CloudWatch (WIP)
+* UI Doc small changes 
+* (Bug) VirtualView hides scrollbar 
+* Js Viewer: grow to all available space 
+* Create BioSignals app with same functionality as in dialog 
+* JS API: Matchers 
+* (Bug) BioSignals: No input preset when adding new Indicator 
+* Ability to create TypeScript packages (grok create PackageName -ts) 
+* datagrok-tools: package templates compatibility 
+* (Bug) BioSignals: executes extractor with alphabetically first name, instead of chosen 
+* Wiki: link fix 
+* JS API: Migrate to Typescript 
+* Code formatting 
+* Utils: table content validation engine (WIP)
+* datagrok-tools: version bump 
+* Biosignals: scripts should take column as input 
+* Biosignals: round values of signal to 4 digits after comma 
+* Trellis Plot: show R group columns in the dropdown list 
+* (Bug) Trellis Plot: can't select a column with 100+ categories from the column menu 
+* Made colorcoding-related tags hidden (prefixed with '.'). 
+* Tags: make `color-coding-type` and `color-coding-conditional` private 
+* update images format jpg to png 
+* TextArea inside the ui.inputs: Fix the ui.textArea left-margin size 
+* Fixed warnings 
+* Biosignals: possibility to add custom script 
+* Biosignals: get columns using tags instead of names 
+* Biosignals: add possibility to change input Physionet record 
+* Biosignals: speed up Physionet record loading 
+* Fixed sampleCategories method 
+* Biosignals: Update sampling frequency after resampling 
+* Data Connectors: update PostgreSQL driver version  
+* Sequence: WebLogoViewer (WIP)
+* ApiSamples bump to test package auto deployment. 
+* Fixed warning 
+* Wiki: Onboarding Content (WIP)
+* (Bug) Biosignals: TaskBarProgressIndicator continues animation after error 
+* NLP package: UI adjustment 
+* Tile Viewer and Form: integrate with dynamic renderers (WIP)
+* Usage Analysis \- New UI 
+* Updated public token 
+* Shell: added table(name) and view(name) functions 
+* Biosignals: use scripting capabilities dynamically 
+* display molecules or fragments that fail to kekulized with delocalized bonds rather than showing a cross 
+* Sequence package: work in progress 
+* Grid: API: onColumnResized / onRowsResized events 
+* Added missing react import 
+* added missing WASM file 
+* Chem package version 0.9.1, bump. 
+* Create sequenceTranslator 
+* Added new example on how to subscribe to resize events 
+* Fixed unit-tests crash 
+* Reflect the change in event naming onRowsResized 
+* added TS API Grid::onRowsResized() 
+* Internal docs: public API autogenerated files. 
+* Cosmetics changes, addd new line between functions 
+* GROK: CDR3 regions added to sequence view 
+* cosmetics 
+* (Bug) Box Plot \- marker size becomes too small, impossible to show tooltips on hi-res display 
+* GROK: table connection added 
+* Scatter plot: conditional color-coding 
+* Box Plot: minor improvements 
+* Box plot: conditional color coding 
+* fixes the CoordGen regression that was causing 10x slower performance compared to the past 
+* JS API: onPackageLoaded event 
+* JS API: Object Handlers (WIP)
+* Ability to discover and choose JS-based grid cell renderers based on a sem type 
+* Optimization: faster BitSet construction based on logical function and two arguments 
+* Removed long-running query 
+* Wiki: debugging packages, debugging in WebStorm. 
+* Chem package version 0.9.2, bump. 
+* (Bug) Heat Map: columns do not resize 
+* (Bug) Exception after adding filters on Table View 
+* (Bug) Column format changes are not persisted in layouts 
+* (Bug) S3 AES: Cant post a file 
+* Newick file viewer 
+* (Bug) Ability to disable routing 
+* Fixed CSS 
+* (Bug) Persist undocked viewers as part of layout (WIP)
+* Empty value edge case in sampleCategories 
+* (Bug) UI boolInput: onChange event executes code twice.  
+* Fixed the bool input debouncing issue. 
+* (Bug) Filters panel opens with an error message 
+* Grid: make the color of selected rows lighter 
+* Bar Chart: ability to select categories by clicking on the category label 
+* Bar Chart: tooltips on category labels 
+* Bar Chart: disable zoom on the X axis 
+* NGL viewer (WIP)
+* Prepare a proposal for WASM use and adoption in Datagrok core (WIP)
+* [Filters: split categories containing a list of values by pipes](https://community.datagrok.ai/t/visualization-related-updates/521/11) 
+* (Bug) Color Coding | Conditional: Ranges "20-30" and ">40" are always automatically determined for any numeric columns 
+* Create sequenceTranslator app with instructions 
+* (Bug) Bar chart: Error after opening project with bar chart 
+* (Bug) Column Context Menu: `format` submenu is empty when the first value in a column is null 
+* [(Bug) Scatter Plot: Properties: Value of the "Color" and "Size" properties change when you just hover over the columns from the list](https://community.datagrok.ai/t/changing-the-marker-size-in-the-scatterplot-closes-the-properties-panel/511) 
+* (Bug) Scatter Plot: selected color should override custom conditional color 
+* (Bug) Filters: Selected rows indication is not updated as selection changes 
+* Release Notes: 0.89.36. 
+* Release Notes: removing strange line-breaks. 
+* Update release-history.md 
+* Release Notes: 0.89.36 
+* (Bug) Query View: Multiple vertical scrolls appear in query area 
+* Edit tooltip: close the dialog when "Sketch form" is clicked 
+* CVM: adopting the newer version of Miniconda 
+* PhyloTreeViewer: JS-based phylogenetic tree visualisation (WIP)
+* (Bug) Filters: categorical column filters still handle "selection.changed" event after being manually detached 
+* (Bug) Filters: significant performance degradation when resetting the filter (ESC key) 
+* (Bug) Filters: clicking on a category name does not always select it 
+* Filters: show tooltip with a category name on mouseover 
+* Dock type clarification 
+* Wiki: how-to build an app. Namespacing connections 
+* Wiki: how-to build an app. Pushing credentials (updates) 
+* Wiki: Getting Started. Moving the item to the top 
+* UI: ui.wait should act as ui.box 
+* Bar Chart: enable selection on Shift + drag 
+* Update chem.ts 
+* (Bug) Chem | Info Panels: 3D panel displayed empty (WIP)
+* Column: Custom value comparers 
+* JS API: Column: Custom value comparers (WIP)
+* ignore files 
+* Wiki: best practices for working with data (WIP)
+* Comment clean-up 
+* enables including explicit Hs in substructure searches 
+* (Bug) Qualified Numbers: Export to JSON loses the qualifier 
+* Chem package version 0.9.3, bump. 
+* (Bug) Vertical scrolling won't appear on vertical growth 
+* (Bug) Density plot: impossible to show the X axis 
+* (Bug) Filters: Saved filters do not filter rows in table after applying 
+* Ability to share files 
+* Sequence: better detection of nucleotide sequences 
+* Detector.sampleCategories: performance fix: return false immediately if a column is not a string column 
+* Power Pack: a set of commonly used Datagrok tools (WIP)
+* added MSA sample file (FASTA alignment) 
+* Prevent rings connected by rotatable bonds to flip when they belong to a constrained scaffold 
+* Chem: Support RDKit-JS substructure filtering 
+* sequenceTranslator: show molecule view 
+* (Bug) Scatter Plot: Filtered-out current row still visible in plot (WIP)
+* DataGrok API and system samples, add cross linking to improve connectivity (WIP)
+* Removed the obsolete demo 'Weather' application 
+* JS API: Grid: expose "invalidate" method 
+* BioSignals: call functions from DSP package after switch to dynamic scripts calling 
+* JS API: Ability to use file exporters defined as functions from packages 
+* Chem: export .SD file 
+* Sequence package for FASTA import of alignments and features (WIP)
+* Fixed possible repository publish exception 
+* Added webpack-cli dependency 
+* Chem: categorical filtering option for a column with molecules 
+* sequenceTranslator: expand the column to see whole sequence 
+* description of "current rows" 
+* update titles for "current rows" 
+* update "current rows" 
+* Wiki: headings harmonization 
+* (Bug) Postgres type Numeric converts to int when using PostgresNet 
+* Chem: don't attempt to .delete() null-molecules (no-render) 
+* Core: custom cell renderers in filters (WIP)
+* Updated beta users list. 
+* (Bug) Viewers: Tooltip | Edit view tooltip... does not have any effect 
+* Trellis Plot: do not create empty plots 
+* changed text "To bring a row..." 
+* Viewers: TreeViewer 
+* Connectors: Redshift: Schema browsing (WIP)
+* GrokConnect: move JdbcDataProvider methods isFloat(), isInteger() to child classes  
+* (Bug) Closing a viewer leaves ghost panel 
+* labs token 
+* Enabled MT Wasmp with pthreads and workers 
+* sequenceTranslator: use HTML tables for sequences and CMO codes 
+
+
+# 2021-04-22 Dev build 0.89.40
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.89.40`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* changed text "To bring a row..." 
+* sequenceTranslator: expand the column to see whole sequence 
+* Viewers: TreeViewer 
+* PhyloTreeViewer: JS-based phylogenetic tree visualisation (WIP)
+* Connectors: Redshift: Schema browsing (WIP)
+* GrokConnect: move JdbcDataProvider methods isFloat(), isInteger() to child classes  
+* (Bug) Closing a viewer leaves ghost panel 
+* labs token 
+
+
+# 2021-04-22 Dev build 0.89.39
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.89.39`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* DataGrok API and system samples, add cross linking to improve connectivity (WIP)
+* (Bug) Scatter Plot: Filtered-out current row still visible in plot (WIP)
+* JS API: Ability to use file exporters defined as functions from packages 
+* Chem: export .SD file 
+* Sequence package for FASTA import of alignments and features (WIP)
+* Fixed possible repository publish exception 
+* Added webpack-cli dependency 
+* PhyloTreeViewer: JS-based phylogenetic tree visualisation (WIP)
+* Chem, RDKit-based (WIP)
+* Chem: categorical filtering option for a column with molecules 
+* sequenceTranslator: expand the column to see whole sequence 
+* description of "current rows" 
+* update titles for "current rows" 
+* update "current rows" 
+* JS API: Migrate to Typescript 
+* Wiki: headings harmonization 
+* (Bug) Postgres type Numeric converts to int when using PostgresNet (WIP)
+* Chem: don't attempt to .delete() null-molecules (no-render) 
+* Core: custom cell renderers in filters (WIP)
+* Updated beta users list. 
+* (Bug) Viewers: Tooltip | Edit view tooltip... does not have any effect 
+* Trellis Plot: do not create empty plots 
+
+
+# 2021-04-20 Dev build 0.89.38
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.89.38`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* (Bug) Filters: Saved filters do not filter rows in table after applying 
+* Ability to share files 
+* Sequence: better detection of nucleotide sequences 
+* Detector.sampleCategories: performance fix: return false immediately if a column is not a string column 
+* Create sequenceTranslator app with instructions 
+* Prepare a proposal for WASM use and adoption in Datagrok core (WIP)
+* Wiki: Onboarding Content (WIP)
+* Power Pack: a set of commonly used Datagrok tools (WIP)
+* NwkViewer: JS-based phylogenetic tree visualisation (WIP)
+* added MSA sample file (FASTA alignment) 
+* Prevent rings connected by rotatable bonds to flip when they belong to a constrained scaffold 
+* Chem: Support RDKit-JS substructure filtering 
+* sequenceTranslator: show molecule view 
+* (Bug) Scatter Plot: Filtered-out current row still visible in plot (WIP)
+* DataGrok API and system samples, add cross linking to improve connectivity (WIP)
+* Removed the obsolete demo 'Weather' application 
+* JS API: Grid: expose "invalidate" method 
+* BioSignals: call functions from DSP package after switch to dynamic scripts calling 
+* (Bug) Persist undocked viewers as part of layout (WIP)
+* NGL viewer (WIP)
+
+
+# 2021-04-16 Dev build 0.89.37
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.89.37`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Create sequenceTranslator app with instructions (WIP)
+* (Bug) Bar chart: Error after opening project with bar chart 
+* (Bug) Column Context Menu: `format` submenu is empty when the first value in a column is null 
+* JS API: Object Handlers (WIP)
+* [(Bug) Scatter Plot: Properties: Value of the "Color" and "Size" properties change when you just hover over the columns from the list](https://community.datagrok.ai/t/changing-the-marker-size-in-the-scatterplot-closes-the-properties-panel/511) 
+* (Bug) Scatter Plot: selected color should override custom conditional color 
+* (Bug) Filters: Selected rows indication is not updated as selection changes 
+* Release Notes: 0.89.36. 
+* Release Notes: removing strange line-breaks. 
+* Update release-history.md 
+* Release Notes: 0.89.36 
+* (Bug) Query View: Multiple vertical scrolls appear in query area 
+* Edit tooltip: close the dialog when "Sketch form" is clicked 
+* CVM: adopting the newer version of Miniconda 
+* NwkViewer: JS-based phylogenetic tree visualisation (WIP)
+* Prepare a proposal for WASM use and adoption in Datagrok core (WIP)
+* (Bug) Filters: categorical column filters still handle "selection.changed" event after being manually detached 
+* (Bug) Filters: significant performance degradation when resetting the filter (ESC key) 
+* (Bug) Filters: clicking on a category name does not always select it 
+* Filters: show tooltip with a category name on mouseover 
+* Dock type clarification 
+* Wiki: Harmonization (WIP)
+* Wiki: how-to build an app. Namespacing connections 
+* Wiki: how-to build an app. Pushing credentials (updates) 
+* Wiki: Getting Started. Moving the item to the top 
+* UI: ui.wait should act as ui.box 
+* Wiki: Onboarding Content (WIP)
+* NGL viewer (WIP)
+* Bar Chart: enable selection on Shift + drag 
+* Update chem.ts 
+* (Bug) Chem | Info Panels: 3D panel displayed empty (WIP)
+* Column: Custom value comparers 
+* JS API: Column: Custom value comparers (WIP)
+* ignore files 
+* Wiki: best practices for working with data (WIP)
+* Comment clean-up 
+* enables including explicit Hs in substructure searches 
+* ClinicalCase \- a plugin for analyzing SDTM-based clinical studies data (WIP)
+* (Bug) Qualified Numbers: Export to JSON loses the qualifier 
+* Chem, RDKit-based (WIP)
+* Chem package version 0.9.3, bump. 
+* (Bug) Vertical scrolling won't appear on vertical growth 
+
+
+# 2021-04-14 Dev build 0.89.36
+
+In this release, we've focused on enriching both the experience of the platform end-users and on-platform developers, as well as on connecting these two groups. For instance, custom-built cell renderers, useful for displaying molecules, nucleotide sequences or experiments results, now expand the platform in many places such as [tooltips and tile viewers](https://community.datagrok.ai/t/cheminformatics-updates/457/8). There are also [new viewers](https://community.datagrok.ai/t/visualization-related-updates/521/4), [several bar chart](https://community.datagrok.ai/t/bar-chart-color-by-category/516) [features](https://community.datagrok.ai/t/visualization-related-updates/521/10), [color coding features](https://dev.datagrok.ai/js/samples/grid/color-coding-conditional), and a few dozen of [JS API]((https://datagrok.ai/help/govern/audit#javascript-api)) [enhancements](https://community.datagrok.ai/t/javascript-api-updates/526/8) and [bug fixes](##bug-fixes).
+
+## Highlights
+
+* Rendering of chemical molecules with RDKit [in tooltips, forms, viewers' axis and tile viewer](https://community.datagrok.ai/t/cheminformatics-updates/457/8)
+* Bar Chart: support for DateTime [columns categorization](https://community.datagrok.ai/t/visualization-related-updates/521/10), functional improvements
+* [Conditional color coding](https://dev.datagrok.ai/js/samples/grid/color-coding-conditional) for the grid, scatter plot, box plot
+* New [Timelines Viewer](https://community.datagrok.ai/t/visualization-related-updates/521/4)
+* JS API improvements: Typescript support, new [events](https://community.datagrok.ai/t/javascript-api-updates/526/8) and [methods](https://community.datagrok.ai/t/javascript-api-updates/526/5)
+* Better JS editing in the [JS fiddle](https://public.datagrok.ai/js) with IntelliSense and `async/await`
+
+## Major features and Improvements
+
+* Grid: Custom cell renderers, including RDKit molecules, [in several contexts](https://community.datagrok.ai/t/cheminformatics-updates/457/8): tooltips, tile viewer, form, other viewers' axes
+* Bar Chart: [categorizes DateTime columns using functions of Year, Month, Quarter, Year - Quarter, etc.](https://community.datagrok.ai/t/visualization-related-updates/521/10)
+* Bar Chart: [add setting for excluding null values category on bar segments](https://community.datagrok.ai/t/bar-chart-color-by-category/516)
+* Heatmap: [Improved adaptive rendering of the column names in the heatmap](https://community.datagrok.ai/t/visualization-related-updates/521/9)
+* JS API: Migrate to Typescript
+* JS API: [Log API](https://datagrok.ai/help/govern/audit#javascript-api)
+* JS API: Grid [onColumnResized / onRowsResized events](https://community.datagrok.ai/t/javascript-api-updates/526/8)
+* JS API: [dynamic resolution of object handlers](https://dev.datagrok.ai/js/samples/ui/handlers/dynamic-resolving)
+* JS API: Logging: New API for collecting telemetry [logging](https://datagrok.ai/help/govern/audit#javascript-api)
+* JS Fiddle: Added IntelliSense [dynamic resolution of object handlers](https://dev.datagrok.ai/js/samples/ui/handlers/dynamic-resolving)
+* JS fiddle: Use async/await inside 
+* Color coding improvements: categorical color coding with values binning, [conditional color coding](https://dev.datagrok.ai/js/samples/grid/color-coding-conditional) for the grid, scatter plot, box plot
+* [`.tags` and `.temp` now support JS-native Map-like iteration and modification](https://community.datagrok.ai/t/javascript-api-updates/526/5)
+* [New](https://community.datagrok.ai/t/javascript-api-updates/526/7) [`ValueMatcher`](https://dev.datagrok.ai/js/samples/data-frame/value-matching/value-matcher)
+* New [Timelines Viewer](https://community.datagrok.ai/t/visualization-related-updates/521/4) becomes available
+* Trellis Plot: show more granular X and Y axis ticks on line charts
+* [Selection of data subsets to display on scatter plots](https://community.datagrok.ai/t/visualization-related-updates/521/8)
+* Filter state is preserved when closing filter panel
+* Chem: 10x faster CoordGen-based alignment, flag to hide isotopic labels in RDKit rendering
+
+## Bug fixes
+
+* Histogram: [duplicated Y axis](https://community.datagrok.ai/t/cannot-easily-change-the-aggregation-of-the-histogram/509/4)
+* User can't login with OpenId if someone shared something to him by email
+* Detectors load on each table open
+* dapi.log.events returns empty array
+* Layout apply doesn't work on renamed columns
+* Chem: Column width with structures is not correct when using OCL
+* `files` method `rename` doesn't work properly
+* Saved function annotation doesn't delete old parameters from database
+* Settings: apply drops password parameters
+* tabControl with ui.wait will concatenate contents of tabs and show loader after second tab click
+* Package Properties ignored on repository publish
+* Grid: Selection display is drawing incorrect on high res.displays (MacOS)
+* Grid: empty cells are colored with conditional color-coding on
+* error: NullError: method not found: '_ddt$_name' on null
+* Visual Query does not work for all supported providers
+* Fixed the bool input debouncing issue
+* Heat Map: columns do not resize 
+* Exception after adding filters on Table View 
+* Column format changes are not persisted in layouts 
+* S3 AES: Cant post a file
+* Ability to disable routing
+* UI boolInput: onChange event executes code twice
+* Filters panel opens with an error message
+
+## Miscellaneous
+
+* Newick file viewer
+* Improved comments on DataFrameViewer::onFrameAttached(..)
+* JS API: pass JsViewer in onContextMenu events
+* JS API: Ability to create ViewLayout from ViewState
+* JS API: preserve metadata while changing column type (WIP)
+* Timelines: Add Reset View item to context menu
+* datagrok-tools: add package init function template
+* /info/packages route added
+* Improved bitset notification logic to respect current level of notifications (aka updateLevel)
+* Filters: deletion of rows in grid/df results in incorrect filters
+* Grid: Harmonize popup menu (WIP)
+* Grid: Custom HTML-based cell renderers: investigate performance issues (WIP)
+* "Normalize" action does not work
+* Improve error handling mechanism for visualizations
+* HeatMap: automatically adjust header font size as column width gets smaller
+* Query View: Incorrect display of line numbering
+* UX: Flickering of scroll bars fixed
+* Added missing react import
+* Heat Map: automatically adjust header font size as column width gets smaller 
+* JS API: onPackageLoaded event
+* Ability to discover and choose JS-based grid cell renderers based on a sem type 
+* Optimization: faster BitSet construction based on logical function and two arguments
+* Grid: make the color of selected rows lighter
+* Bar Chart: ability to select categories by clicking on the category label 
+* Bar Chart: tooltips on category labels 
+* Bar Chart: disable zoom on the X axis
+* [Filters: split categories containing a list of values by pipes](https://community.datagrok.ai/t/visualization-related-updates/521/11)
+* Conditional Color Coding: Ranges "20-30" and ">40" are always automatically determined for any numeric columns
+
+*Note:* this summary accumulates updates after 0.89.27.
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.89.36`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
 # 2021-04-08 Dev build 0.89.35
 
 ## Latest Docker Images

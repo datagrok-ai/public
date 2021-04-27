@@ -15,7 +15,7 @@ export class AnnotatorViewer extends DG.JsViewer {
   }
 
   onTableAttached() {
-    let signalValues = this.dataFrame.columns.byName('testEcg');
+    let signalValues = this.dataFrame.columns.byIndex(0);
     let base = +new Date();
     this.timeOfFirstSample = new Date();
     this.samplingPeriod = 24 * 3600 * 1000;
@@ -29,7 +29,7 @@ export class AnnotatorViewer extends DG.JsViewer {
       ];
     }
     if (this.dataFrame.columns.byName('indicesOfRPeak')) {
-      let indicesOfRPeak = this.dataFrame.columns.byName('indicesOfRPeak');
+      let indicesOfRPeak = this.dataFrame.columns.byIndex(1);
       let numberOfPointAnnotations = indicesOfRPeak.stats.valueCount;
       indicesOfRPeak = indicesOfRPeak.getRawData();
       indicesOfRPeak = indicesOfRPeak.slice(indicesOfRPeak.length - numberOfPointAnnotations);

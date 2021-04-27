@@ -344,6 +344,7 @@ export class Grid extends Viewer {
     return this.columns.byName(name);
   }
 
+  /** Returns a grid cell at the specified position. */
   cell(columnName: string, gridRow: number): GridCell {
     return GridCell.fromColumnRow(this, columnName, gridRow);
   }
@@ -375,6 +376,7 @@ export class Grid extends Viewer {
     }));
   }
 
+  /** Returns a grid cell at the specified position. */
   hitTest(x: number, y: number): GridCell {
     return new GridCell(api.grok_Grid_HitTest(this.d, x, y));
   }
@@ -387,6 +389,7 @@ export class Grid extends Viewer {
     return this;
   }
 
+  /** Sorts the rows, using the specified comparer that accepts indexes. Also, @see setSortOrder */
   sortIndexes(indexComparer: (a: number, b: number) => number): Grid {
     let indexes = _identityInt32(this.table.rowCount);
     indexes.sort(indexComparer);
@@ -394,15 +397,18 @@ export class Grid extends Viewer {
     return this;
   }
 
+  /** Sets the order or rows in the table. Also, @see sortIndexes */
   setRowOrder(indexes: number[]): Grid {
     api.grok_Grid_SetRowOrder(this.d, indexes);
     return this;
   }
 
-  scrollToCell(column: any, row: number): void {
+  /** Returns a grid cell at the specified position. */
+  scrollToCell(column: string | Column, row: number): void {
     api.grok_Grid_ScrollToCell(this.d, toDart(column), row);
   }
 
+  /** Scrolls the grid to the specified position. */
   scrollToPixels(x: number, y: number): void {
     api.grok_Grid_ScrollToPixels(this.d, x, y);
   }
@@ -411,10 +417,15 @@ export class Grid extends Viewer {
     return new Grid(api.grok_Grid_Create(table.d));
   }
 
+  /** Causes the grid to repaint. */
+  invalidate(): void { api.grok_Grid_Invalidate(this.d); }
+
+  /** Vertical scroll bar */
   get vertScroll(): RangeSlider {
     return toJs(api.grok_Grid_Get_VertScroll(this.d));
   }
 
+  /** Horizontal scroll bar */
   get horzScroll(): RangeSlider {
     return toJs(api.grok_Grid_Get_HorzScroll(this.d));
   }

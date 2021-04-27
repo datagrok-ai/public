@@ -35,6 +35,5 @@ annotations_df = pd.DataFrame({
 })
 
 signals_df = pd.DataFrame({
-    'time': range(record.sig_len),
     'testEcg': np.around(record.p_signal[:, 0], decimals=4)
 })

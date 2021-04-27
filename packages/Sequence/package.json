@@ -5,6 +5,7 @@
   "description": "Support for DNA sequences",
   "sources": [
     "ntseq/ntseq.js",
+    "readFasta/fasta_utils.js",
     "feature-viewer/feature-viewer.bundle.js",
     "msa/msa.min.gz.js",
     "common/ngl_viewer/ngl.js",

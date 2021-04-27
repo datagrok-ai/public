@@ -75,11 +75,10 @@ class ChemPackage extends DG.Package {
   //meta-cell-renderer-sem-type: Molecule
   //output: grid_cell_renderer result
   async rdkitCellRenderer() {
-    let props = DG.toJs(await this.getProperties());
-    // console.log(props);
-    // if (props.Renderer && props.Renderer === 'RDKit') {
-      return new RDKitCellRenderer();
-//    }
+    //let props = DG.toJs(await this.getProperties());
+    // if (props?.Renderer && props.Renderer === 'RDKit') {
+    return new RDKitCellRenderer();
+    //}
   }
 
   //name: similarityScoring
@@ -115,6 +114,13 @@ class ChemPackage extends DG.Package {
       throw e;
     }
   }
+  
+  //name: getMorganFingerprints
+  //input: column molColumn
+  //output: column result [fingerprints]
+  getMorganFingerprints(molColumn) {
+    return _moleculesToFingerprints(molColumn);
+  }
 
   //name: findSimilar
   //input: column molStringsColumn
@@ -132,14 +138,12 @@ class ChemPackage extends DG.Package {
     }
   }
 
-  //name: substructureSearch
+  //name: searchSubstructure
   //input: column molStringsColumn
   //input: string molString
   //input: bool substructLibrary
   //output: column result
-  // deprecated
-  async substructureSearch(molStringsColumn, molString, substructLibrary) {
-
+  async searchSubstructure(molStringsColumn, molString, substructLibrary) {
     try {
       let result =
         substructLibrary ?
@@ -150,6 +154,16 @@ class ChemPackage extends DG.Package {
       console.error("In substructureSearch: " + e.toString());
       throw e;
     }
+  }
+
+  //name: substructureSearch
+  //input: column molStringsColumn
+  //input: string molString
+  //input: bool substructLibrary
+  //output: column result
+  // deprecated
+  async substructureSearch(molStringsColumn, molString, substructLibrary) {
+    return this.searchSubstructure(molStringsColumn, molString, substructLibrary);
   }
 
   //tags: app
@@ -317,5 +331,45 @@ class ChemPackage extends DG.Package {
   static removeChildren(node) {
     while (node.firstChild)
       node.removeChild(node.firstChild);
+  }
+
+  //name: saveAsSdf
+  //description: Save as SDF
+  //tags: fileExporter
+  saveAsSdf() {
+    //todo: load OpenChemLib (or use RDKit?)
+    //todo: open dialog
+    //todo: UI for choosing structure column if necessary
+    //todo: UI for choosing columns with properties
+
+    let table = grok.shell.t;
+    let structureColumn = table.columns.bySemType('Molecule');
+    if (structureColumn == null)
+      return;
+
+    let result = '';
+
+    for (let i = 0; i < table.rowCount; i++) {
+      try {
+        let mol = new OCL.Molecule.fromSmiles(structureColumn.get(i));
+        result += `\n${mol.toMolfile()}\n`;
+
+        // properties
+        for (let col of table.columns)
+          if (col !== structureColumn) {
+            result += `>  <${col.name}>\n${col.get(i)}\n\n`;
+          }
+
+        result += '$$$$'
+      }
+      catch (error) {
+        console.error(error);
+      }
+    }
+
+    var element = document.createElement('a');
+    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(result));
+    element.setAttribute('download', table.name + '.sdf');
+    element.click();
   }
 }

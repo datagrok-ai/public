@@ -84,4 +84,24 @@ public class OracleDataProvider extends JdbcDataProvider {
         return name.startsWith(brackets.substring(0, 1)) ? name :
                 brackets.substring(0, 1) + name + brackets.substring(brackets.length() - 1, brackets.length());
     }
+
+    private boolean isOracleFloatNumber(String typeName, int precision, int scale) {
+        // https://markhoxey.wordpress.com/2016/05/31/maximum-number-precision/ ==>  Precision >= 38
+        // https://stackoverflow.com/questions/29537292/why-can-number-type-in-oracle-scale-up-to-127 ==> scale >= 127
+        return typeName.equalsIgnoreCase("number") && (scale == 0 || scale >= 127) && (precision <= 0);
+    }
+
+    @Override
+    protected boolean isInteger(int type, String typeName, int precision, int scale) {
+        // https://docs.oracle.com/cd/E11882_01/server.112/e41084/sql_elements001.htm#sthref119
+        // The absence of precision and scale designators specifies the maximum range and precision for an Oracle number.
+        // We shall ignore the case where type == java.sql.Types. ... value is identified incorrectly
+        if (isOracleFloatNumber(typeName, precision, scale)) return false;
+        return super.isInteger(type, typeName, precision, scale);
+    }
+
+    @Override
+    protected boolean isFloat(int type, String typeName, int precision, int scale) {
+        return super.isFloat(type, typeName, precision, scale) || isOracleFloatNumber(typeName, precision, scale);
+    }
 }

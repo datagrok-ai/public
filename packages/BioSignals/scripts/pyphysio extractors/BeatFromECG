@@ -17,6 +17,5 @@ sig = ph.EvenlySignal(values=dataframe[column], sampling_freq=sampling_frequency
 extracted = ph.BeatFromECG(bpm_max=bpm_max, delta=delta, k=k)(sig)
 
 newDf = pd.DataFrame({
-    'Index': range(len(extracted)),
-    'RR intervals': extracted
+    column + ':BeatFromECG': extracted
 })

@@ -52,7 +52,7 @@ export function sdtmSummaryPanel(df: DG.DataFrame): DG.Widget {
     let variable = meta.domains[domain][name];
     text += `${name} ${variable ? checkType(column, variable) ?
       'valid' : 'invalid' : 'unknown variable'}\n`;
-    if (variable.rule) text += `Passed tests: ${applyRule(column, variable)}\n`;
+    if (variable && variable.rule) text += `Passed tests: ${applyRule(column, variable)}\n`;
   }
   return new DG.Widget(ui.divText(text));
 }

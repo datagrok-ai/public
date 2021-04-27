@@ -1,3 +1,10 @@
+// API References:
+//
+// https://datagrok.ai/js-api/ColumnList
+// https://datagrok.ai/js-api/DataFrame
+// https://datagrok.ai/js-api/Column#.fromList
+// https://datagrok.ai/js-api/Column#.qnum
+//
 // Note that the "population" data type becomes int
 
 let t = DG.DataFrame.create(3);
