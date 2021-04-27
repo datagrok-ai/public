@@ -101,24 +101,26 @@ export class PhyloTreeViewer extends DG.JsViewer {
     }
 
     const svg = d3.select(this.root).append("svg");
+    const width = this.root.parentElement.clientWidth || this.defaultSize;
+    const height = this.root.parentElement.clientHeight || this.defaultSize;
+    const margin = 20;
 
     this.tree
       .svg(svg)
       .options({
-        'left-right-spacing': 'fit-to-size',
-        'top-bottom-spacing': 'fit-to-size',
+        'left-right-spacing': this.radialLayout ? 'fixed-step' : 'fit-to-size',
+        'top-bottom-spacing': this.radialLayout ? 'fixed-step' : 'fit-to-size',
         'is-radial': this.radialLayout,
+        'max-radius': Math.min(width, height) / 2 - margin,
         zoom: true,
       })
-      .size([
-        this.root.parentElement.clientHeight || this.defaultSize,
-        this.root.parentElement.clientWidth || this.defaultSize
-      ])
+      .size([height, width])
       .font_size(parseInt(this.fontSize));
 
     this.tree.modify_selection(() => false);
-    if (computeData) this.tree(this.parsedNewick);
-    this.tree.layout();
+    this.tree(this.parsedNewick).layout();
+    // if (computeData) this.tree(this.parsedNewick);
+    // this.tree.layout();
     
     if (computeData) this._createNodeMap(this.tree.get_nodes());
     if (this.nodeIdColumn) this._updateSelection();
