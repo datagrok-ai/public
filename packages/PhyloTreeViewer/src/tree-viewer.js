@@ -117,7 +117,8 @@ export class PhyloTreeViewer extends DG.JsViewer {
       .font_size(parseInt(this.fontSize));
 
     this.tree.modify_selection(() => false);
-    this.tree(this.parsedNewick).layout();
+    if (computeData) this.tree(this.parsedNewick);
+    this.tree.layout();
     
     if (computeData) this._createNodeMap(this.tree.get_nodes());
     if (this.nodeIdColumn) this._updateSelection();
