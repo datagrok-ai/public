@@ -1006,7 +1006,7 @@ export class ColumnList {
   }
 
   /** @returns {Iterable.<Column>} */
-  byTags(tags: string[]): Iterable<Column> {
+  byTags(tags: any): Iterable<Column> {
     return _toIterable(api.grok_ColumnList_ByTags(this.d, tags));
   }
 

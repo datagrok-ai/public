@@ -8,6 +8,14 @@ class WidgetsPackage extends DG.Package {
     return new RadioButtonFilter();
   }
 
+  //name: MultiValueFilter
+  //description: A filter that works with columns of multi-value cells (such as lists of identifiers)
+  //tags: filter
+  //output: filter result
+  multiValueFilter() {
+    return new MultiValueFilter();
+  }
+
   //name: TimeWidget
   //description: Shows current time
   //output: widget result

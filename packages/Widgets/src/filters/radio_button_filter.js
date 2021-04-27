@@ -32,10 +32,12 @@ class RadioButtonFilter extends DG.Filter {
     let indexes = this.column.getRawData();
     let checked = this.root.querySelector("input[type='radio']:checked");
     let categoryIdx = parseInt(checked.getAttribute('data-category-id'));
+    const filter = this.dataFrame.filter;
+    const rowCount = this.dataFrame.rowCount;
 
-    for (let i = 0; i < this.dataFrame.rowCount; i++)
+    for (let i = 0; i < rowCount; i++)
       if (indexes[i] !== categoryIdx)
-        this.dataFrame.filter.set(i, false, false);
+        filter.set(i, false, false);
 
     this.dataFrame.filter.fireChanged();
   }

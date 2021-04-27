@@ -189,7 +189,8 @@ export const TAGS = {
    See also [TAGS_CHOICES]. */
   AUTO_CHOICES: '.auto-choices',
   ID: '.id',
-  COLOR_CODING_CONDITIONAL: '.color-coding-conditional'
+  COLOR_CODING_CONDITIONAL: '.color-coding-conditional',
+  MULTI_VALUE_SEPARATOR: 'multi-value-separator'
 }
 
 ////// Viewers
