@@ -108,7 +108,9 @@ export function h3(s: string): HTMLHeadingElement {
   return x as HTMLHeadingElement;
 }
 
-/** @returns {Accordion} */
+/** Creates an accordion with dynamically populated panes.
+ * Sample: {@link https://public.datagrok.ai/js/samples/ui/ui}
+ * @returns {Accordion} */
 export function accordion(key: any = null): Accordion {
   return Accordion.create(key);
 }
@@ -230,7 +232,7 @@ export function inlineText(objects: any[]): HTMLElement {
  * @param {string | ElementOptions} options
  * @returns {HTMLDivElement}
  * */
-export function div(children: HTMLElement[] = [], options: string | ElementOptions | null = null): HTMLDivElement {
+export function div(children: HTMLElement[] | HTMLElement = [], options: string | ElementOptions | null = null): HTMLDivElement {
   if (!Array.isArray(children))
     children = [children];
   let d = document.createElement('div');
@@ -323,6 +325,13 @@ export function wait(getElement: () => HTMLElement): any {
   return toJs(api.grok_UI_Wait(getElement));
 }
 
+/** Waits for Future<Element> function to complete and collect its result as a ui.box.*/
+export function waitBox(getElement: () => HTMLElement): any {
+  let d = toJs(api.grok_UI_Wait(getElement));
+  $(d).css('ui-box');
+  return d;
+}
+
 /** Creates a visual element representing list of [items]. */
 export function list(items: any[]): HTMLElement[] {
   return api.grok_UI_List(Array.from(items).map(toDart));
@@ -360,7 +369,8 @@ export function rangeSlider(minRange: number, maxRange: number, min: number, max
 }
 
 /**
- * Creates a virtual list widget
+ * Creates a virtual list widget.
+ * Sample: {@link https://public.datagrok.ai/js/samples/ui/virtual-view}
  * @param {number} length - number of elements
  * @param {Function} renderer
  * @param {boolean} verticalScroll - vertical or horizontal scrolling
@@ -393,7 +403,8 @@ export function inputs(inputs: InputBase[], options: {}) {
   return form(inputs, options);
 }
 
-/** Creates new nodes tree
+/** Creates new nodes tree.
+ * Sample: {@link https://public.datagrok.ai/js/samples/ui/tree-view}
  * @returns {TreeViewNode} */
 export function tree(): TreeViewNode {
   return TreeViewNode.tree();
@@ -444,6 +455,7 @@ export function textInput(name: string, value: string, onValueChanged: Function 
 }
 
 /**
+ * Sample: {@link https://public.datagrok.ai/js/samples/ui/ui-events}
  * @param {HTMLElement} element
  * @returns {rxjs.Observable} */
 export function onSizeChanged(element: HTMLElement): rxjs.Observable<any> {
@@ -761,7 +773,7 @@ export function splitH(items: HTMLElement[], options: ElementOptions | null = nu
   return b;
 }
 
-export function block(items: HTMLElement[], options: ElementOptions | null = null): HTMLDivElement {
+export function block(items: HTMLElement[], options: string | ElementOptions | null = null): HTMLDivElement {
   let c = div(items, options);
   $(c).addClass('ui-block');
   return c;

@@ -49,17 +49,18 @@ export class FullPlateHandler extends DG.ObjectHandler {
   isApplicable(x) { return x.barcode; }
   getGridCellRenderer(x) { return new FullPlateRenderer(); }
   renderIcon(x) { return ui.iconFA('grip-horizontal'); }
-  renderMarkup(x) { return ui.span([this.renderIcon(), ' plate ', x.barcode]); }
+  renderMarkup(x) { return ui.span([this.renderIcon(), ' full ', x.barcode]); }
 }
 
 
 // Defines the way Datagrok handles entities of the specified type
 export class BriefPlateHandler extends DG.ObjectHandler {
   get type() { return 'brief handler'; }
+  get name() { return 'brief handler' }
 
   // Checks whether this is the handler for [x]
   isApplicable(x) { return x.barcode; }
   getGridCellRenderer(x) { return new BriefPlateRenderer(); }
   renderIcon(x) { return ui.iconFA('grip-horizontal'); }
-  renderMarkup(x) { return ui.span([this.renderIcon(), ' plate ', x.barcode]); }
+  renderMarkup(x) { return ui.span([this.renderIcon(), ' brief ', x.barcode]); }
 }

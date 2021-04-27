@@ -5,8 +5,8 @@
 #input: dataframe dataframe
 #input: column column
 #input: double resampling_frequency = 4
-#input: double step
-#input: double width
+#input: double window_step = 5
+#input: double window_width = 10
 #output: dataframe out
 
 import numpy as np
@@ -20,7 +20,7 @@ extracted = ph.UnevenlySignal(
     x_type='instants'
 )
 
-fixed_length = ph.FixedSegments(step=step, width=width)
+fixed_length = ph.FixedSegments(step=window_step, width=window_width)
 
 FD_HRV_ind, col_names = ph.fmap(
     fixed_length,

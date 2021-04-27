@@ -9,7 +9,7 @@ import {
   SimilarityMetric,
   AggregationType,
   CsvImportOptions,
-  IndexPredicate
+  IndexPredicate, FLOAT_NULL
 } from "./const";
 import {__obs, observeStream} from "./events";
 import {toDart, toJs} from "./wrappers";
@@ -21,6 +21,7 @@ declare let grok: any;
 declare let DG: any;
 let api = <any>window;
 type RowPredicate = (row: Row) => boolean;
+type Comparer = (a: any, b: any) => number;
 
 /**
  * Finds the item by its unique id.
@@ -169,14 +170,18 @@ export class DataFrame {
   /** Constructs {@link DataFrame} from a comma-separated values string
    * @param {string} csv - The content of the comma-separated values file.
    * @param {CsvImportOptions} options
-   * @returns {DataFrame} */
+   * @returns {DataFrame}
+   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/construction/create-from-csv}
+   * */
   static fromCsv(csv: string, options?: CsvImportOptions): DataFrame {
     return grok.data.parseCsv(csv, options);
   }
 
   /** Constructs {@link DataFrame} from the specified JSON string.
    * @param {string} json - JSON document.
-   * @returns {DataFrame} */
+   * @returns {DataFrame}
+   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/construction/create-from-json}
+   * */
   static fromJson(json: string): DataFrame {
     return new DataFrame(api.grok_DataFrame_FromJson(json));
   }
@@ -287,7 +292,7 @@ export class DataFrame {
     api.grok_DataFrame_Set_CurrentRowIdx(this.d, idx);
   }
 
-  /** Current column
+  /** Get Current column
    * @type {Column} */
   get currentCol(): Column {
     return toJs(api.grok_DataFrame_Get_CurrentCol(this.d));
@@ -297,8 +302,9 @@ export class DataFrame {
     api.grok_DataFrame_Set_CurrentCol(this.d, col.d);
   }
 
-  /** Current cell
-   * @type {Cell} */
+  /** Get current cell
+   * @type {Cell}
+   * */
   get currentCell(): Cell {
     return new Cell(api.grok_DataFrame_Get_CurrentCell(this.d));
   }
@@ -307,9 +313,13 @@ export class DataFrame {
     api.grok_DataFrame_Set_CurrentCell(this.d, cell.d);
   }
 
-  /** Creates a [DataFrame] from list of objects by using object keys as column names,
+  /** Creates a [DataFrame] from a list of objects by using object keys as column names,
    * and object values as values.
-   * @param {object[]} list - List of objects. **/
+   *
+   * @param {object[]} list - List of objects.
+   * @returns {DataFrame}
+   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/construction/create-from-objects}
+   * */
   static fromObjects(list: object[]): DataFrame | undefined {
     let table = DataFrame.create(list.length);
     if (list.length === 0)
@@ -339,6 +349,7 @@ export class DataFrame {
 
   /**
    * Returns [Int32Array] that contains sorted order, or null for unsorted (original) order.
+   * See also Column.getSortedOrder.
    * @param {Object[]} sortByColumnIds - Collection of [Column]s to use as keys for sorting.
    * @param {boolean[]} sortOrders - List of sort orders for [sortByCols]. True == ascending.
    * @param {BitSet} rowMask - Mask of the rows to sort. Result array will contain [rowIndexes.length] elements.
@@ -466,7 +477,10 @@ export class DataFrame {
     return this._event('ddt-rows-filtering');
   }
 
-  /** @returns {Observable} */ get onSemanticTypeDetecting(): Observable<any> {
+  /** @returns {Observable}
+   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/advanced/semantic-type-detection}
+   * */
+  get onSemanticTypeDetecting(): Observable<any> {
     return this._event('ddt-semantic-type-detecting');
   }
 
@@ -573,10 +587,29 @@ export class Column {
     // });
   }
 
+  /** Creates a {@link Column} from the list of string values
+   * Please note that method performs type promotion if all listed values are numeric
+   *
+   * @param {string} name - Column name
+   * @param {Array} list - List of column values
+   *
+   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/construction/create-from-columns}
+   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/construction/create-from-arrays}
+   *
+   */
   static fromStrings(name: string, list: string[]): Column {
     return toJs(api.grok_Column_FromStrings(name, list));
   }
 
+  /** Creates a {@link Column} with explicitly specified type
+   *
+   * @param type - column type code {@link COLUMN_TYPE}
+   * @param {string} name - Column name
+   * @param length - Column length (should match row count of the data frame )
+   *
+   * {@link DataFrame.create}
+   * {@see COLUMN_TYPE}
+   */
   static fromType(type: ColumnType, name?: string | null, length: number = 0): Column {
     return toJs(api.grok_Column_FromType(type, name, length));
   }
@@ -670,8 +703,11 @@ export class Column {
     let col = Column.fromType(TYPE.QNUM, name, length);
     if (values !== null) {
       let buffer = col.getRawData();
-      for (let i = 0; i < length; i++)
-        buffer[i] = exact ? Qnum.exact(values[i]):  values[i];
+      for (let i = 0; i < length; i++) {
+        let val = values[i] === undefined || values[i] === null ? FLOAT_NULL : values[i];
+        buffer[i] = exact ? Qnum.exact(val) : val;
+      }
+      console.log(buffer);
       col.setRawData(buffer);
     }
     return col;
@@ -858,11 +894,15 @@ export class Column {
     api.grok_Column_SetCategoryOrder(this.d, order);
   }
 
-  /** Gets order of categories
-   * @returns string[] */
-  getCategoryOrder() {
-    return api.grok_Column_GetCategoryOrder(this.d);
-  }
+  /** Gets order of categories */
+  getCategoryOrder(): string[] { return api.grok_Column_GetCategoryOrder(this.d); }
+
+  /** Returns an array of indexes sorted using [valueComparer]. */
+  getSortedOrder(): Int32Array { return api.grok_Column_GetSortedOrder(this.d); }
+
+  /** Value comparison function to be used for sorting. Null means default sorting. */
+  get valueComparer(): Comparer | null { return api.grok_Column_Get_ValueComparer(this.d); }
+  set valueComparer( cmp: Comparer | null) { api.grok_Column_Set_ValueComparer(this.d, cmp); }
 
   /** Column's minimum value. The result is cached.
    * @returns {number} */
@@ -1024,6 +1064,7 @@ export class ColumnList {
    * @param {string} expression
    * @param {ColumnType} type
    * @param {bool} treatAsString
+   *
    * @returns {Column} */
   addNewCalculated(name: string, expression: string, type: ColumnType | null, treatAsString: boolean | null): Promise<Column> {
     return new Promise((resolve, reject) => toJs(api.grok_ColumnList_AddNewCalculated(this.d, name, expression, type, treatAsString, (c: any) => resolve(c), (e: any) => reject(e))));
@@ -1036,34 +1077,47 @@ export class ColumnList {
 
   /** Adds a new integer column
    * @param {string} name
-   * @returns {Column} */
+   * @returns {Column}
+   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/construction/add-columns}
+   * */
   addNewInt(name: string): Column { return this.addNew(name, TYPE.INT); }
 
   /** Adds a new float column
    * @param {string} name
-   * @returns {Column} */
+   * @returns {Column}
+   * */
   addNewFloat(name: string): Column { return this.addNew(name, TYPE.FLOAT); }
 
   /** Adds a new qualified number column
    * @param {string} name
-   * @returns {Column} */
+   * @returns {Column}
+   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/construction/add-columns}
+   * */
   addNewQnum(name: string): Column { return this.addNew(name, TYPE.QNUM); }
 
   /** Adds a new datetime column
    * @param {string} name
-   * @returns {Column} */
+   * @returns {Column}
+   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/construction/add-columns}
+   * */
   addNewDateTime(name: string): Column { return this.addNew(name, TYPE.DATE_TIME); }
 
   /** Adds a new boolean column
    * @param {string} name
-   * @returns {Column} */
+   * @returns {Column}
+   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/construction/add-columns}
+   * */
   addNewBool(name: string): Column { return this.addNew(name, TYPE.BOOL); }
 
   /** Adds a virtual column.
    * @param {string} name
    * @param {Function} getValue - value constructor function that accepts int index and returns value
    * @param {String} type - column type
-   * @returns {Column} */
+   * @returns {Column}
+   *
+   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/advanced/virtual-int-column}
+   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/advanced/virtual-columns}
+   * */
   addNewVirtual(name: string, getValue: (ind: number) => any, type = TYPE.OBJECT): Column {
     return toJs(api.grok_ColumnList_AddNewVirtual(this.d, name, getValue, type));
   }
@@ -1084,7 +1138,8 @@ export class ColumnList {
 
   /** Replaces the column with the new column.
    * @param {Column} columnToReplace
-   * @param {Column} newColumn */
+   * @param {Column} newColumn
+   * */
   replace(columnToReplace: Column | string, newColumn: Column): void {
     api.grok_ColumnList_Replace(this.d, (typeof columnToReplace === 'string') ? columnToReplace:  columnToReplace.d, newColumn.d);
   }

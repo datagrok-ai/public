@@ -119,7 +119,7 @@ export class DockManager {
   /**
    * Docks the element relative to the reference node.
    * @param {HTMLElement | Viewer} element - Element to dock
-   * @param {DockType} dockType - Dock type (left | right | top | bottom | fill).
+   * @param {DockType} dockType - Dock type (left | right | top | down | fill).
    * @param {DockNode|null} refNode - reference node
    * @param {number} ratio - Ratio of the area to take (relative to the reference node).
    * @param {string=} title - Name of the resulting column. Default value is agg(colName).
@@ -153,7 +153,7 @@ export class DockManager {
 
   // /**
   //  * Docks the element relative to the reference node.
-  //  * @param {DockType} dockType - Dock type (left | right | top | bottom | fill).
+  //  * @param {DockType} dockType - Dock type (left | right | top | down | fill).
   //  * @param {number} ratio - Ratio of the area to take (relative to the reference node).
   //  * @param {string=} title - Name of the resulting column. Default value is agg(colName).
   //  * @returns {DockNode}

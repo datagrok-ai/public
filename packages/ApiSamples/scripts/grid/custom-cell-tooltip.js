@@ -1,4 +1,4 @@
-// Handles onCellTooltip event to customizes the tooltip for "age" column and all column headers
+// Handles onCellTooltip event to customize the tooltip for "age" column and all column headers
 
 let view = grok.shell.addTableView(grok.data.demo.demog());
 view.grid.onCellTooltip(function (cell, x, y) {
