@@ -224,32 +224,43 @@ export async function launchBrowser(view) {
 
     // main sequence rendering func
     function loadSequence(host, chain, paratopes) {
-        let seq = pVizParams.seq[chain]
 
-        let seqEntry = new pviz.SeqEntry({
-            sequence: seq
-        });
-        new pviz.SeqEntryAnnotInteractiveView({
-            model: seqEntry,
-            el: host
-        }).render();
+        if( $(host).width() !== 0) {
+            console.log(chain);
+            let seq = pVizParams.seq[chain]
 
-        let mod_codes = Object.keys(pVizParams.ptmMap[chain].ptm_color_obj);
+            let seqEntry = new pviz.SeqEntry({
+                sequence: seq
+            });
+            new pviz.SeqEntryAnnotInteractiveView({
+                model: seqEntry,
+                el: host
+            }).render();
 
-        mod_codes.forEach((mod) => {
-            pviz.FeatureDisplayer.trackHeightPerCategoryType[mod] = 1.5;
-            pviz.FeatureDisplayer.setStrikeoutCategory(mod);
-        });
+            let mod_codes = Object.keys(pVizParams.ptmMap[chain].ptm_color_obj);
 
-        if (paratopes === true) {
-            seqEntry.addFeatures(pVizParams.parMap[chain].par_feature_map);
+            mod_codes.forEach((mod) => {
+                pviz.FeatureDisplayer.trackHeightPerCategoryType[mod] = 1.5;
+                pviz.FeatureDisplayer.setStrikeoutCategory(mod);
+            });
+
+
+            pviz.FeatureDisplayer.addClickCallback (mod_codes, async function(ft) {
+                console.log(ft);
+                let sidechains = `${ft.start + 1} and :${chain} and (not backbone or .CA or (PRO and .N))`
+                await loadPdb(path, repChoice, schemeObj, sidechains);
+            })
+
+            if (paratopes === true) {
+                seqEntry.addFeatures(pVizParams.parMap[chain].par_feature_map);
+            }
+            seqEntry.addFeatures(pVizParams.ptmMap[chain].ptm_feature_map);
+            seqEntry.addFeatures(pVizParams.denMap[chain].den_feature_map);
+            seqEntry.addFeatures(pVizParams.cdrMap[chain].cdr_feature_map);
+            applyGradient(pVizParams.ptmMap[chain].ptm_color_obj);
+            applyGradient(pVizParams.denMap[chain].den_color_obj);
+            applyGradient(pVizParams.parMap[chain].par_color_obj);
         }
-        seqEntry.addFeatures(pVizParams.ptmMap[chain].ptm_feature_map);
-        seqEntry.addFeatures(pVizParams.denMap[chain].den_feature_map);
-        seqEntry.addFeatures(pVizParams.cdrMap[chain].cdr_feature_map);
-        applyGradient(pVizParams.ptmMap[chain].ptm_color_obj);
-        applyGradient(pVizParams.denMap[chain].den_color_obj);
-        applyGradient(pVizParams.parMap[chain].par_color_obj);
     }
 
 
@@ -307,9 +318,12 @@ export async function launchBrowser(view) {
     }
 
     // load the 3D model
-    async function loadPdb(bytes, repChoice, schemeObj) {
+    async function loadPdb(bytes, repChoice, schemeObj, sidechains = '') {
         stage.loadFile(bytes).then(function (o) {
             o.addRepresentation(repChoice.value, schemeObj);
+            if (sidechains.length > 0) {
+                o.addRepresentation("ball+stick", {sele: sidechains});
+            }
             o.autoView();
         });
     }
@@ -330,7 +344,9 @@ export async function launchBrowser(view) {
     }
 
     function pvizResize(host, chain) {
-        ui.onSizeChanged(host).subscribe((_) => loadSequence(host, chain, paratopes.value));
+        ui.onSizeChanged(host).subscribe((_) => {
+            loadSequence(host, chain, paratopes.value)
+        });
     }
 
     function setDockSize(node, nodeContent){
@@ -342,6 +358,70 @@ export async function launchBrowser(view) {
         // newHeight = Math.ceil(newHeight*100)/100;
 
         return view.dockManager.dock(nodeContent, 'down', node, 'Sequence', newHeight.toFixed(2));
+    }
+
+
+    // ---- Save/Load ----
+    // selection saving
+    async function save_load(table, acc) {
+
+        async function saveSelectedRows(table, uniqueId, connection, fileToSave) {
+
+            let indexes = table
+                .groupBy([`${uniqueId.value}`])
+                .whereRowMask(table.selection)
+                .aggregate();
+
+            let data = `${table.toString()}\n${uniqueId.stringValue}\n${indexes.col(0).toList()}`;
+            await grok.dapi.files.writeAsText(`${connection}${fileToSave.value}.txt`, data);
+        }
+
+        async function loadSelectedRows(table, connection, savedFilesList) {
+
+            let res = await grok.dapi.files.readAsText(`${connection}${savedFilesList.value}`);
+            res = res.split("\n");
+            let uniqueColumnName = res[1];
+            let values = res[2].split(',');
+            console.log(values);
+            table.rows.select((row) => values.includes(row[`${uniqueColumnName}`]));
+
+        }
+
+
+        let fileToSave = ui.stringInput('FileName', 'filename');
+        let connection = 'Demo:TestJobs:Files:DemoFiles/';
+
+        let files = await grok.dapi.files.list(connection, false, '');
+        files = files.map((e) => e.path);
+        let savedFilesList = await ui.choiceInput('Saved Rows', ' ', files)
+        // let uniqueId = ui.columnInput('Unique id column', table, table.col('tenx_barcode'));
+        let uniqueId = ui.stringInput('Unique id column', 'tenx_barcode');
+
+
+        let saveDialog = () => {
+            ui.dialog('Save rows to file')
+                .add(uniqueId).add(fileToSave)
+                .onOK(() => saveSelectedRows(table, uniqueId, connection, fileToSave)).show();
+        };
+
+        let loadDialog = async () => {
+            let files = await grok.dapi.files.list(connection, false, '');
+            files = files.map((e) => e.path);
+            let savedFilesList = await ui.choiceInput('Saved Rows', ' ', files)
+
+            ui.dialog('Load rows from file')
+                .add(savedFilesList)
+                .onOK(() => loadSelectedRows(table, connection, savedFilesList)).show();
+        };
+
+
+        let saveRowsButton = ui.button('SAVE');
+        saveRowsButton.addEventListener("click", saveDialog);
+
+        let loadRowsButton = ui.button('LOAD')
+        loadRowsButton.addEventListener("click", loadDialog);
+
+        acc.addPane('Save/Load', () => ui.divH([saveRowsButton, loadRowsButton]));
     }
 
     ///// MAIN BODY ////
@@ -419,14 +499,13 @@ export async function launchBrowser(view) {
     }
 
     let root = ui.div();
-    let acc_ptm = ui.accordion();
-    root.appendChild(ui.h1('Repertoire viewer options'));
-    root.appendChild(ui.h3('NGL settings'));
-    root.appendChild(ui.inputs([repChoice, cdr_scheme]));
-    root.appendChild(ui.h3('Sequence settings'));
-    root.appendChild(ui.inputs([paratopes, ptm_prob]));
-    acc_ptm.addPane('ptm list', () => ui.inputs([ptm_choices]));
-    root.append(acc_ptm.root);
+    let acc_options = ui.accordion();
+    acc_options.addPane('3D model', () => ui.inputs([repChoice, cdr_scheme]));
+    acc_options.addPane('Sequence', () => ui.inputs([paratopes, ptm_prob]));
+    acc_options.addPane('PTMs', () => ui.inputs([ptm_choices]));
+    await save_load(table, acc_options)
+    root.append(acc_options.root);
+
 
     var ngl_host = ui.div([],'d4-ngl-viewer');
     ngl_host.style.backgroundColor ='black';
@@ -437,15 +516,14 @@ export async function launchBrowser(view) {
     await loadPdb(path, repChoice, schemeObj);
 
 
-    // let pViz_host = ui.box();
-    let pViz_host_H = ui.box();
     let pViz_host_L = ui.box();
-    let sequence_tabs = ui.block([
+    let pViz_host_H = ui.box();
+    let sequence_tabs =
         ui.tabControl({
-            'LIGHT': pViz_host_L,
-            'HEAVY': pViz_host_H
-        }).root
-    ]);
+            'HEAVY': pViz_host_H,
+            'LIGHT': pViz_host_L
+        }).root;
+
     var pviz = window.pviz;
     let pVizParams = {};
     pVizParams.seq = {'H':json.heavy_seq, 'L': json.light_seq}
@@ -453,16 +531,17 @@ export async function launchBrowser(view) {
     pVizParams.denMap = ptmDenMapping()
     pVizParams.parMap = paratopeMapping()
     pVizParams.cdrMap = cdrMapping(cdr_scheme.value)
-    loadSequence(pViz_host_H, 'H', paratopes.value)
-    loadSequence(pViz_host_L, 'L', paratopes.value)
 
 
     let panel_node = view.dockManager.dock(root, 'right', null, 'NGL');
     let ngl_node = view.dockManager.dock(ngl_host, 'left', panel_node, 'NGL');
     let sequence_node = view.dockManager.dock(sequence_tabs, 'down', ngl_node, 'Sequence', 0.225);
 
+    loadSequence(pViz_host_H, 'H', paratopes.value)
+
+
     nglResize(ngl_host, stage);
     pvizResize(pViz_host_H, 'H');
     pvizResize(pViz_host_L, 'L');
-    $(sequence_tabs).children().css("height","100%");
+    // $(sequence_tabs).children().css("height","100%");
 }
