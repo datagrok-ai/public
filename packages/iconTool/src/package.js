@@ -85,6 +85,7 @@ export function starApp() {
     removeColorPicker,
   ]);
   $(removeColor).children('label').text('Remove color');
+  $(removeColor).children('label').css('padding-top','4px');
   $(removeColor).css('margin','0');
 
   let setColors = ui.buttonsInput([
