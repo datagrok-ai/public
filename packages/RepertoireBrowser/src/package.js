@@ -263,6 +263,23 @@ export async function launchBrowser(view) {
         }
     }
 
+    function msaRender(host, msa_fasta) {
+        const seqs = msa.io.fasta.parse(msa_fasta);
+        const opts = {
+            el: host,
+            vis: {
+                conserv: false,
+                overviewbox: false
+            },
+            menu: "small",
+            seqlogo: true,
+            bootstrapMenu: true,
+            seqs: seqs
+        };
+        const m = new msa.msa(opts);
+        m.render();
+    }
+
 
     // ---- NGL ----
     // create a color scheme for CDR3 regions
@@ -490,6 +507,21 @@ export async function launchBrowser(view) {
 
     let table = view.table;
 
+    let seqHeavyCol = table.col('sequence_alignment_heavy');
+    let seqLightCol = table.col('sequence_alignment_light');
+    let germHeavyCol = table.col('germline_alignment_heavy');
+    let germLightCol = table.col('germline_alignment_light');
+
+    table.onCurrentRowChanged.subscribe((_) => {
+        const idx = table.currentRow.idx;
+        if (seqHeavyCol && germHeavyCol) {
+            msaRender(msa_host_H, `>seq_align_heavy\n${seqHeavyCol.get(idx)}\n>germline_align_heavy\n${germHeavyCol.get(idx)}\n`);
+        }
+        if (seqLightCol && germLightCol) {
+            msaRender(msa_host_L, `>seq_align_light\n${seqLightCol.get(idx)}\n>germline_align_light\n${germLightCol.get(idx)}\n`);
+        }
+    });
+
     // tweak the App page properties
     {
         let windows = grok.shell.windows;
@@ -518,10 +550,14 @@ export async function launchBrowser(view) {
 
     let pViz_host_L = ui.box();
     let pViz_host_H = ui.box();
+    let msa_host_L = ui.box();
+    let msa_host_H = ui.box();
     let sequence_tabs =
         ui.tabControl({
             'HEAVY': pViz_host_H,
-            'LIGHT': pViz_host_L
+            'LIGHT': pViz_host_L,
+            'MSA HEAVY': msa_host_H,
+            'MSA LIGHT': msa_host_L,
         }).root;
 
     var pviz = window.pviz;
