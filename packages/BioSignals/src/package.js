@@ -94,6 +94,20 @@ async function getInitValues(isLocalTable, chosenDatabase, localTables, chosenRe
 //tags: app
 export function BioSignals() {
 
+  let link = ui.element('a');
+  link.href = 'https://github.com/datagrok-ai/public/tree/master/packages/BioSignals'
+  link.text = 'here';
+  link.target = '_blank';
+
+  let appDescription = ui.div([
+    ui.h1('Analyze biomedical signals using built-in and custom scripts.'),
+    ui.span(['See details ', link]),
+    ui.divText('\n How to add your script:', {style: {'font-weight': 'bolder'}}),
+    ui.divText('\n 1. Go to Functions | Scripts | Actions | New <yourScriptLanguage> Script'),
+    ui.divText('2. Write your script, and test it on files'),
+    ui.divText('3. Set tag #filters, #extractors or #indicators. Now it is available in corresponding app section')
+  ], 'grok-datajob-publish-alert');
+
   let windows = grok.shell.windows;
   windows.showProperties = false;
   windows.showToolbox = false;
@@ -111,7 +125,7 @@ export function BioSignals() {
     let items = (namesOfLocalTables.includes(chosenDatabase.stringValue)) ?
       localTables.find(({name}) => name === chosenDatabase.stringValue).columns.names() :
       physionetDatabasesDictionary[chosenDatabase.stringValue].record_names;
-    
+
     let chosenRecord = ui.choiceInput('Physionet record or local column', '', items, async () => {
       let isLocalTable = (namesOfLocalTables.includes(chosenDatabase.stringValue));
       let {signals, annotations, samplingFrequency} = await getInitValues(isLocalTable, chosenDatabase, localTables, chosenRecord);
@@ -156,31 +170,33 @@ export function BioSignals() {
               ui.inputs([
                 filterTypesList[i - 1],
                 await call.getEditor(),
-                ui.button('Plot', async () => {
-                  let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting filter\'s output...');
-                  try {
-                    await call.call();
-                    let df = call.getOutputParamValue();
-                    if (df == null) {
-                      df = DG.DataFrame.fromColumns([
-                        DG.Column.fromList('int', 'time', Array(signals.columns.byIndex(0).length).fill().map((_, idx) => idx)),
-                        signals.columns.byIndex(signals.columns.length - 1)
-                      ]);
-                    } else {
-                      signals = signals.append(df);
-                      df = DG.DataFrame.fromColumns([
-                        DG.Column.fromList('int', 'time', Array(df.columns.byIndex(df.columns.length - 1).length).fill().map((_, idx) => idx)),
-                        df.columns.byIndex(df.columns.length - 1)
-                      ]);
+                ui.buttonsInput([
+                  ui.button('Plot', async () => {
+                    let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting filter\'s output...');
+                    try {
+                      await call.call();
+                      let df = call.getOutputParamValue();
+                      if (df == null) {
+                        df = DG.DataFrame.fromColumns([
+                          DG.Column.fromList('int', 'time', Array(signals.columns.byIndex(0).length).fill().map((_, idx) => idx)),
+                          signals.columns.byIndex(signals.columns.length - 1)
+                        ]);
+                      } else {
+                        signals = signals.append(df);
+                        df = DG.DataFrame.fromColumns([
+                          DG.Column.fromList('int', 'time', Array(df.columns.byIndex(df.columns.length - 1).length).fill().map((_, idx) => idx)),
+                          df.columns.byIndex(df.columns.length - 1)
+                        ]);
+                      }
+                      filterChartsList[i - 1].dataFrame = df;
+                    } catch (e) {
+                      grok.shell.error(e);
+                      throw e;
+                    } finally {
+                      pi.close();
                     }
-                    filterChartsList[i - 1].dataFrame = df;
-                  } catch (e) {
-                    grok.shell.error(e);
-                    throw e;
-                  } finally {
-                    pi.close();
-                  }
-                })
+                  })
+                ])
               ])
             ]),
             ui.block75([filterChartsList[i - 1]])
@@ -209,43 +225,47 @@ export function BioSignals() {
           let call = extractorTypesList[j - 1].value.prepare();
           let context = DG.Context.create();
           context.setVariable('table', signals);
-          grok.shell.tables.forEach(function (table, index) {context.setVariable('table' + index, table);});
+          grok.shell.tables.forEach(function (table, index) {
+            context.setVariable('table' + index, table);
+          });
           call.context = context;
           extractorInputsNew = ui.div([
             ui.block25([
               ui.inputs([
                 extractorTypesList[j - 1],
                 await call.getEditor(),
-                ui.button('Plot', async () => {
-                  let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting extractor\'s output...');
-                  try {
-                    await call.call();
-                    let df = call.getOutputParamValue();
-                    if (extracted == null) {
-                      extracted = DG.DataFrame.fromColumns([df.columns.byIndex(0)]);
-                      df = DG.DataFrame.fromColumns([
-                        DG.Column.fromList('int', 'time', Array(df.columns.byIndex(0).length).fill().map((_, idx) => idx)),
-                        df.columns.byIndex(0)
-                      ]);
-                    } else {
-                      let floats = new Array(extracted.columns.byIndex(extracted.columns.length - 1).length);
-                      let oldColumn = df.columns.byIndex(0);
-                      for (let i = 0; i < oldColumn.length; i++)
-                        floats[i] = oldColumn.get(i);
-                      extracted.columns.addNewFloat(df.columns.byIndex(0).name).init((i) => floats[i]);
-                      df = DG.DataFrame.fromColumns([
-                        DG.Column.fromList('int', 'time', Array(df.columns.byIndex(0).length).fill().map((_, idx) => idx)),
-                        df.columns.byIndex(0)
-                      ]);
+                ui.buttonsInput([
+                  ui.button('Plot', async () => {
+                    let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting extractor\'s output...');
+                    try {
+                      await call.call();
+                      let df = call.getOutputParamValue();
+                      if (extracted == null) {
+                        extracted = DG.DataFrame.fromColumns([df.columns.byIndex(0)]);
+                        df = DG.DataFrame.fromColumns([
+                          DG.Column.fromList('int', 'time', Array(df.columns.byIndex(0).length).fill().map((_, idx) => idx)),
+                          df.columns.byIndex(0)
+                        ]);
+                      } else {
+                        let floats = new Array(extracted.columns.byIndex(extracted.columns.length - 1).length);
+                        let oldColumn = df.columns.byIndex(0);
+                        for (let i = 0; i < oldColumn.length; i++)
+                          floats[i] = oldColumn.get(i);
+                        extracted.columns.addNewFloat(df.columns.byIndex(0).name).init((i) => floats[i]);
+                        df = DG.DataFrame.fromColumns([
+                          DG.Column.fromList('int', 'time', Array(df.columns.byIndex(0).length).fill().map((_, idx) => idx)),
+                          df.columns.byIndex(0)
+                        ]);
+                      }
+                      extractorChartsList[j - 1].dataFrame = df;
+                    } catch (e) {
+                      grok.shell.error(e);
+                      throw e;
+                    } finally {
+                      pi.close();
                     }
-                    extractorChartsList[j - 1].dataFrame = df;
-                  } catch (e) {
-                    grok.shell.error(e);
-                    throw e;
-                  } finally {
-                    pi.close();
-                  }
-                })
+                  })
+                ])
               ])
             ]),
             ui.block75([extractorChartsList[j - 1]])
@@ -274,25 +294,29 @@ export function BioSignals() {
           let context = DG.Context.create();
           extracted.name = 'Extracted';
           context.setVariable('table', extracted);
-          grok.shell.tables.forEach(function (table, index) {context.setVariable('table' + index, table);});
+          grok.shell.tables.forEach(function (table, index) {
+            context.setVariable('table' + index, table);
+          });
           call.context = context;
           indicatorInputsNew = ui.div([
             ui.block25([
               ui.inputs([
                 indicatorTypesList[k - 1],
                 await call.getEditor(),
-                ui.button('Plot', async () => {
-                  let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting indicator\'s output...');
-                  try {
-                    await call.call();
-                    indicatorChartsList[k - 1].dataFrame = call.getOutputParamValue();
-                  } catch (e) {
-                    grok.shell.error(e);
-                    throw e;
-                  } finally {
-                    pi.close();
-                  }
-                })
+                ui.buttonsInput([
+                  ui.button('Plot', async () => {
+                    let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting indicator\'s output...');
+                    try {
+                      await call.call();
+                      indicatorChartsList[k - 1].dataFrame = call.getOutputParamValue();
+                    } catch (e) {
+                      grok.shell.error(e);
+                      throw e;
+                    } finally {
+                      pi.close();
+                    }
+                  })
+                ])
               ])
             ]),
             ui.block75([indicatorChartsList[k - 1]])
@@ -307,6 +331,7 @@ export function BioSignals() {
       });
 
       grok.shell.newView('BioSignals', [
+        appDescription,
         chosenDatabase,
         chosenRecordDiv,
         samplingFrequencyDiv,
@@ -327,6 +352,7 @@ export function BioSignals() {
   });
 
   grok.shell.newView('BioSignals', [
+    appDescription,
     chosenDatabase,
     chosenRecordDiv
   ]);
