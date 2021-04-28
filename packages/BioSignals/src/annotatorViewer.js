@@ -4,6 +4,14 @@ import * as DG from "datagrok-api/dg";
 
 import * as echarts from 'echarts';
 
+function getTime(now) {
+  return now.getFullYear() + '-' + (now.getMonth() + 1) + '-' + now.getDate() + 'T' + now.getHours() + ':' + now.getMinutes() +
+    ':' + now.getSeconds() + '.' + now.getMilliseconds() + 'Z'
+}
+
+const samplingPeriod = 2
+let base = +new Date();
+
 export class AnnotatorViewer extends DG.JsViewer {
   constructor() {
     super();
@@ -16,15 +24,14 @@ export class AnnotatorViewer extends DG.JsViewer {
 
   onTableAttached() {
     let signalValues = this.dataFrame.columns.byIndex(0);
-    let base = +new Date();
     this.timeOfFirstSample = new Date();
-    this.samplingPeriod = 24 * 3600 * 1000;
 
     let data = new Array(signalValues.length);
+    let base1 = base;
     for (let i = 0; i < signalValues.length; i++) {
-      let now = new Date(base += this.samplingPeriod);
+      let now = new Date(base1 += samplingPeriod);
       data[i] = [
-        [now.getFullYear(), now.getMonth() + 1, now.getDate()].join('/'),
+        getTime(now),
         signalValues.get(i)
       ];
     }
@@ -35,13 +42,11 @@ export class AnnotatorViewer extends DG.JsViewer {
       indicesOfRPeak = indicesOfRPeak.slice(indicesOfRPeak.length - numberOfPointAnnotations);
 
       this.markedPoints = new Array(numberOfPointAnnotations);
-      base = +new Date();
-      let samplingPeriod = 24 * 3600 * 1000;
       let now = new Date(base += indicesOfRPeak[0] * samplingPeriod);
       for (let i = 1; i < numberOfPointAnnotations; i++) {
         now = new Date(base += (indicesOfRPeak[i] - indicesOfRPeak[i - 1]) * samplingPeriod);
         this.markedPoints[i] = [
-          [now.getFullYear(), now.getMonth() + 1, now.getDate()].join('/'),
+          getTime(now),
           signalValues.get(indicesOfRPeak[i])
         ];
       }
@@ -142,7 +147,7 @@ export class AnnotatorViewer extends DG.JsViewer {
       }
       let indexOfMax = getIndexOfMaximumValue(valuesInSearchSegment);
       let now = new Date(timeOfFirstSample.getTime() + (indexToSearchFrom + indexOfMax + 1) * samplingPeriod);
-      return [now.getFullYear(), now.getMonth() + 1, now.getDate()].join('/');
+      return getTime(now);
     }
 
     let deltaToSearchMaximum = 10;
@@ -150,7 +155,7 @@ export class AnnotatorViewer extends DG.JsViewer {
       let pointInPixel = [event.offsetX, event.offsetY];
       if (this.chart.containPixel('grid', pointInPixel)) {
         let pointInGrid = this.chart.convertFromPixel('grid', pointInPixel);
-        let dateString = getTimeOfMaximumValueNearClick(this.samplingPeriod, this.data, pointInGrid[0], deltaToSearchMaximum, this.timeOfFirstSample);
+        let dateString = getTimeOfMaximumValueNearClick(samplingPeriod, this.data, pointInGrid[0], deltaToSearchMaximum, this.timeOfFirstSample);
         this.markedPoints.push([dateString, this.data.find((c) => c[0] === dateString)[1]]);
         this.chart.setOption({
           series: [
