@@ -110,7 +110,8 @@ You will learn: how to write semantic type detectors, how to develop context-spe
    When everything is done correctly, the `detectors.js` file will get loaded by the platform automatically, and the 
    `detectNucleotides` function will be executed against every column in a newly added table.
 
-4. Test your implementation by opening the following CSV or TXT file (or go `Data | Text`, and paste it there):
+4. Test your implementation by opening the following CSV or TXT file (or go `Data | Text`, and paste it there). Make 
+   sure you click on DONE (this will trigger semantic types detection):
    ```
    sequence, id
    GATTACA, 1997
