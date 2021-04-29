@@ -85,8 +85,7 @@ export class AnnotatorViewer extends DG.JsViewer {
         axisLabel: {
           formatter: (function(value) {
             value = new Date(value);
-            if (value.getSeconds() < 10) return value.getMinutes() + ":0" + value.getSeconds();
-            return value.getMinutes() + ":" + value.getSeconds();
+            return (value.getSeconds() < 10) ? value.getMinutes() + ":0" + value.getSeconds() : value.getMinutes() + ":" + value.getSeconds();
           })
         }
       },

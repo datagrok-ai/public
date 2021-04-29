@@ -1,21 +1,21 @@
 export const physionetDatabasesDictionary = {
   'MIT-BIH Arrhythmia Database': {
-    'short_name': 'mitdb',
-    'record_names': [
+    'shortName': 'mitdb',
+    'namesOfRecords': [
       '100', '101', '102', '103', '104', '105', '106', '107', '108', '109', '111', '112', '113', '114', '115', '116', '117', '118',
       '119', '121', '122', '123', '124', '200', '201', '202', '203', '205', '207', '208', '209', '210', '212', '213', '214', '215',
       '217', '219', '220', '221', '222', '223', '228', '230', '231', '232', '233', '234'
     ]
   },
   'MIT-BIH Noise Stress Test Database': {
-    'short_name': 'nstdb',
-    'record_names': [
+    'shortName': 'nstdb',
+    'namesOfRecords': [
       '118e00', '118e06', '118e12', '118e18', '118e24', '118e_6', '119e00', '119e06', '119e12', '119e18', '119e24', '119e_6'
     ]
   },
   'European ST-T Database': {
-    'short_name': 'edb',
-    'record_names': [
+    'shortName': 'edb',
+    'namesOfRecords': [
       'e0103', 'e0104', 'e0105', 'e0106', 'e0107', 'e0108', 'e0110', 'e0111', 'e0112', 'e0113', 'e0114', 'e0115', 'e0116',
       'e0118', 'e0119', 'e0121', 'e0122', 'e0123', 'e0124', 'e0125', 'e0126', 'e0127', 'e0129', 'e0133', 'e0136', 'e0139',
       'e0147', 'e0148', 'e0151', 'e0154', 'e0155', 'e0159', 'e0161', 'e0162', 'e0163', 'e0166', 'e0170', 'e0202', 'e0203',
@@ -26,8 +26,8 @@ export const physionetDatabasesDictionary = {
     ]
   },
   'ECG-ID Database': {
-    'short_name': 'ecgiddb',
-    'record_names': [
+    'shortName': 'ecgiddb',
+    'namesOfRecords': [
       'Person_01/rec_1', 'Person_01/rec_2', 'Person_01/rec_3', 'Person_01/rec_4', 'Person_01/rec_5', 'Person_01/rec_6',
       'Person_01/rec_7', 'Person_01/rec_8', 'Person_01/rec_9', 'Person_01/rec_10', 'Person_01/rec_11', 'Person_01/rec_12',
       'Person_01/rec_13', 'Person_01/rec_14', 'Person_01/rec_15', 'Person_01/rec_16', 'Person_01/rec_17', 'Person_01/rec_18',
@@ -83,7 +83,7 @@ export const physionetDatabasesDictionary = {
     ]
   },
   'AHA Database Sample Excluded Record': {
-    'short_name': 'ahadb',
-    'record_names': ['0001', '0201']
+    'shortName': 'ahadb',
+    'namesOfRecords': ['0001', '0201']
   }
 }

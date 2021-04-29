@@ -81,7 +81,7 @@ async function getInitValues(isLocalTable, chosenDatabase, localTables, chosenRe
     return {signals, annotations};
   } else {
     let pi = DG.TaskBarProgressIndicator.create('Loading record with annotations from Physionet...');
-    let chosenDatabaseShortName = physionetDatabasesDictionary[chosenDatabase.stringValue].short_name;
+    let chosenDatabaseShortName = physionetDatabasesDictionary[chosenDatabase.stringValue].shortName;
     let {signals, annotations} = await loadPhysionetRecordWithAnnotations(chosenDatabaseShortName, chosenRecord);
     signals.name = chosenDatabase.stringValue + '/' + chosenRecord.stringValue;
     pi.close();
@@ -113,6 +113,7 @@ export function BioSignals() {
   windows.showHelp = false;
 
   let chosenRecordDiv = ui.div();
+  let enterSamplingFrequencyDiv = ui.div();
   let samplingFrequencyDiv = ui.div();
   let annotationViewerDiv = ui.div();
 
@@ -121,15 +122,21 @@ export function BioSignals() {
   let physionetDatabases = Object.keys(physionetDatabasesDictionary);
   let tablesAndPhysionetDBs = namesOfLocalTables.concat(physionetDatabases);
   let chosenDatabase = ui.choiceInput('Physionet database or local table', '', tablesAndPhysionetDBs, () => {
+    let isLocalTable = (namesOfLocalTables.includes(chosenDatabase.stringValue));
     let items = (namesOfLocalTables.includes(chosenDatabase.stringValue)) ?
       localTables.find(({name}) => name === chosenDatabase.stringValue).columns.names() :
-      physionetDatabasesDictionary[chosenDatabase.stringValue].record_names;
-
+      physionetDatabasesDictionary[chosenDatabase.stringValue].namesOfRecords;
+    let samplingFreq = ui.floatInput('Sampling frequency: ', '');
+    if (isLocalTable) enterSamplingFrequencyDiv.append(samplingFreq.root);
     let chosenRecord = ui.choiceInput('Physionet record or local column', '', items, async () => {
-      let isLocalTable = (namesOfLocalTables.includes(chosenDatabase.stringValue));
       let {signals, annotations} = await getInitValues(isLocalTable, chosenDatabase, localTables, chosenRecord);
       let signalsWithAnnotations = signals.append(annotations);
 
+      if (isLocalTable) {
+        enterSamplingFrequencyDiv.innerHTML = '';
+        signals.columns.byIndex(0).setTag('samplingFrequency', samplingFreq.value);
+        signalsWithAnnotations.columns.byIndex(0).setTag('samplingFrequency', samplingFreq.value);
+      }
       samplingFrequencyDiv.innerHTML = '';
       samplingFrequencyDiv.append(ui.divText('Input sampling frequency: ' + signals.columns.byIndex(0).getTag('samplingFrequency') + ' samples per second (Hz)'));
       annotationViewerDiv.innerHTML = '';
@@ -332,6 +339,7 @@ export function BioSignals() {
       grok.shell.newView('BioSignals', [
         appDescription,
         chosenDatabase,
+        enterSamplingFrequencyDiv,
         chosenRecordDiv,
         samplingFrequencyDiv,
         annotationViewerDiv,
@@ -353,6 +361,7 @@ export function BioSignals() {
   grok.shell.newView('BioSignals', [
     appDescription,
     chosenDatabase,
+    enterSamplingFrequencyDiv,
     chosenRecordDiv
   ]);
 }
