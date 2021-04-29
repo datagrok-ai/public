@@ -64,8 +64,8 @@ export async function loadPhysionetRecordWithAnnotations(chosenDatabase, chosenR
     await call.call();
     const annotations = call.getParamValue('annotations_df');
     const signals = call.getParamValue('signals_df');
-    const samplingFrequency = call.getParamValue('sampling_frequency');
-    return {signals, annotations, samplingFrequency};
+    signals.columns.byIndex(0).setTag('samplingFrequency', call.getParamValue('sampling_frequency'))
+    return {signals, annotations};
   } catch (e) {
     grok.shell.error(e);
     throw e;
@@ -77,16 +77,15 @@ async function getInitValues(isLocalTable, chosenDatabase, localTables, chosenRe
   if (isLocalTable) {
     signals = DG.DataFrame.fromColumns([localTables.find(({name}) => name === chosenDatabase.stringValue).columns.byName(chosenRecord.stringValue)]);
     let annotations = DG.DataFrame.create(1);
-    let samplingFrequency = 'null';
     signals.name = chosenDatabase.stringValue;
-    return {signals, annotations, samplingFrequency};
+    return {signals, annotations};
   } else {
     let pi = DG.TaskBarProgressIndicator.create('Loading record with annotations from Physionet...');
     let chosenDatabaseShortName = physionetDatabasesDictionary[chosenDatabase.stringValue].short_name;
-    let {signals, annotations, samplingFrequency} = await loadPhysionetRecordWithAnnotations(chosenDatabaseShortName, chosenRecord);
+    let {signals, annotations} = await loadPhysionetRecordWithAnnotations(chosenDatabaseShortName, chosenRecord);
     signals.name = chosenDatabase.stringValue + '/' + chosenRecord.stringValue;
     pi.close();
-    return {signals, annotations, samplingFrequency};
+    return {signals, annotations};
   }
 }
 
@@ -128,11 +127,11 @@ export function BioSignals() {
 
     let chosenRecord = ui.choiceInput('Physionet record or local column', '', items, async () => {
       let isLocalTable = (namesOfLocalTables.includes(chosenDatabase.stringValue));
-      let {signals, annotations, samplingFrequency} = await getInitValues(isLocalTable, chosenDatabase, localTables, chosenRecord);
+      let {signals, annotations} = await getInitValues(isLocalTable, chosenDatabase, localTables, chosenRecord);
       let signalsWithAnnotations = signals.append(annotations);
 
       samplingFrequencyDiv.innerHTML = '';
-      samplingFrequencyDiv.append(ui.divText('Input sampling frequency: ' + samplingFrequency + ' samples per second (Hz)'));
+      samplingFrequencyDiv.append(ui.divText('Input sampling frequency: ' + signals.columns.byIndex(0).getTag('samplingFrequency') + ' samples per second (Hz)'));
       annotationViewerDiv.innerHTML = '';
       annotationViewerDiv.append(
         ui.block([
