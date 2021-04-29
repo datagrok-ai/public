@@ -263,8 +263,14 @@ export async function launchBrowser(view) {
         }
     }
 
-    function msaRender(m, msa_fasta) {
+    function msaRender(m, msa_fasta, gff_annots = null) {
         const seqs = msa.io.fasta.parse(msa_fasta);
+        if (gff_annots) {
+            const gffParser = msa.io.gff;
+            const features = gffParser.parseSeqs(gff_annots);
+            m.seqs.removeAllFeatures();
+            m.seqs.addFeatures(features);
+        }
         m.seqs.reset(seqs);
         m.render();
     }
@@ -501,13 +507,51 @@ export async function launchBrowser(view) {
     let germHeavyCol = table.col('germline_alignment_heavy');
     let germLightCol = table.col('germline_alignment_light');
 
+    let vStartHeavy = table.col('v_alignment_start_heavy');
+    let dStartHeavy = table.col('d_alignment_start_heavy');
+    let jStartHeavy = table.col('j_alignment_start_heavy');
+    let vEndHeavy = table.col('v_alignment_end_heavy');
+    let dEndHeavy = table.col('d_alignment_end_heavy');
+    let jEndHeavy = table.col('j_alignment_end_heavy');
+
+    let vStartLight = table.col('v_alignment_start_light');
+    let dStartLight = table.col('d_alignment_start_light');
+    let jStartLight = table.col('j_alignment_start_light');
+    let vEndLight = table.col('v_alignment_end_light');
+    let dEndLight = table.col('d_alignment_end_light');
+    let jEndLight = table.col('j_alignment_end_light');
+
+    function gffAnnotator(seqid, source, type, start, end, score, strand, phase, attributes) {
+        return `${seqid}\t${source}\t${type}\t${start}\t${end}\t${score}\t${strand}\t${phase}\t${attributes}\n`;
+    }
+
     function drawAlignments() {
         const idx = table.currentRow.idx;
         if (seqHeavyCol && germHeavyCol) {
-            msaRender(msaH, `>seq_align_heavy\n${seqHeavyCol.get(idx)}\n>germline_align_heavy\n${germHeavyCol.get(idx)}\n`);
+            const seqsH = `>seq_align_heavy\n${seqHeavyCol.get(idx)}\n>germline_align_heavy\n${germHeavyCol.get(idx)}\n`;
+
+            const gffAnnotsH = '##gff-version 3\n' + (
+                (vStartHeavy && vEndHeavy) ? gffAnnotator('germline_align_heavy', '.', 'gene',
+                vStartHeavy.get(idx), vEndHeavy.get(idx), '.', '+', '.', 'Name=V region;Color=violet') : '') + (
+                (dStartHeavy && dEndHeavy) ? gffAnnotator('germline_align_heavy', '.', 'gene',
+                dStartHeavy.get(idx), dEndHeavy.get(idx), '.', '+', '.', 'Name=D region;Color=green') : '') + (
+                (jStartHeavy && jEndHeavy) ? gffAnnotator('germline_align_heavy', '.', 'gene',
+                jStartHeavy.get(idx), jEndHeavy.get(idx), '.', '+', '.', 'Name=J region;Color=blue') : '');
+
+            msaRender(msaH, seqsH, gffAnnotsH.length > 16 ? gffAnnotsH : null);
         }
         if (seqLightCol && germLightCol) {
-            msaRender(msaL, `>seq_align_light\n${seqLightCol.get(idx)}\n>germline_align_light\n${germLightCol.get(idx)}\n`);
+            const seqsL = `>seq_align_light\n${seqLightCol.get(idx)}\n>germline_align_light\n${germLightCol.get(idx)}\n`;
+
+            const gffAnnotsL = '##gff-version 3\n' + (
+                (vStartLight && vEndLight) ? gffAnnotator('germline_align_light', '.', 'gene',
+                vStartLight.get(idx), vEndLight.get(idx), '.', '+', '.', 'Name=V region;Color=violet') : '') + (
+                (dStartLight && dEndLight) ? gffAnnotator('germline_align_light', '.', 'gene',
+                dStartLight.get(idx), dEndLight.get(idx), '.', '+', '.', 'Name=D region;Color=green') : '') + (
+                (jStartLight && jEndLight) ? gffAnnotator('germline_align_light', '.', 'gene',
+                jStartLight.get(idx), jEndLight.get(idx), '.', '+', '.', 'Name=J region;Color=blue') : '');
+
+            msaRender(msaL, seqsL, gffAnnotsL.length > 16 ? gffAnnotsL : null);
         }
     }
 
