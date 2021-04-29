@@ -18,6 +18,7 @@ public class DataSource
     public String commentStart = "--";
     public String queryLanguage = "sql";
     public boolean canBrowseSchema = false;
+    public String defaultSchema = null;
     public String nameBrackets = "[]";
     public boolean limitAtEnd = true;
 

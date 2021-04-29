@@ -54,9 +54,10 @@ public class RedshiftDataProvider extends JdbcDataProvider {
     }
 
     public String getSchemaSql(String db, String schema, String table) {
-        List<String> filters = new ArrayList<String>() {{
-            add("table_schema = '" + ((schema != null) ? schema : "public") + "'");
-        }};
+        List<String> filters = new ArrayList<>();
+
+        if (schema != null)
+            filters.add("table_schema = '" + schema + "'");
 
         if (db != null && db.length() != 0)
             filters.add("table_catalog = '" + db + "'");
