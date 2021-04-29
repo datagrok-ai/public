@@ -8,7 +8,7 @@ export let _package = new DG.Package();
 //name: LaunchApp
 export function starApp() {
 
-  let view = grok.shell.newView('Icon tool');
+  let view = grok.shell.newView('Icon Tool');
   let fileUrl = ui.stringInput('','');
   fileUrl.readOnly = true;
   fileUrl.enabled = false;
