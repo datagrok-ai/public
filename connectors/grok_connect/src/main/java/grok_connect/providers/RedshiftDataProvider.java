@@ -4,7 +4,8 @@ import java.sql.*;
 import java.util.*;
 import grok_connect.utils.*;
 import grok_connect.connectors_info.*;
-
+import serialization.Types;
+import grok_connect.table_query.*;
 
 public class RedshiftDataProvider extends JdbcDataProvider {
     public RedshiftDataProvider() {
