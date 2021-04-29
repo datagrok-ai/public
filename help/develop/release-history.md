@@ -1,6 +1,24 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-04-29 Dev build 0.91.4
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.91.4`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Update package.png 
+* (Bug) Grid: html cells are not re-rendered after sorting a column 
+* Connectors: add default schema to providers and use as condition for schema browsing  (WIP)
+* Prevent socket memory consuming (WIP)
+
+
 # 2021-04-29 Dev build 0.91.3
 
 ## Latest Docker Images
