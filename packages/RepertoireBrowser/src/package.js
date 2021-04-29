@@ -501,7 +501,7 @@ export async function launchBrowser(view) {
     let germHeavyCol = table.col('germline_alignment_heavy');
     let germLightCol = table.col('germline_alignment_light');
 
-    table.onCurrentRowChanged.subscribe((_) => {
+    function drawAlignments() {
         const idx = table.currentRow.idx;
         if (seqHeavyCol && germHeavyCol) {
             msaRender(msaH, `>seq_align_heavy\n${seqHeavyCol.get(idx)}\n>germline_align_heavy\n${germHeavyCol.get(idx)}\n`);
@@ -509,7 +509,9 @@ export async function launchBrowser(view) {
         if (seqLightCol && germLightCol) {
             msaRender(msaL, `>seq_align_light\n${seqLightCol.get(idx)}\n>germline_align_light\n${germLightCol.get(idx)}\n`);
         }
-    });
+    }
+
+    DG.debounce(table.onCurrentRowChanged, 50).subscribe(drawAlignments);
 
     // tweak the App page properties
     {
@@ -573,6 +575,7 @@ export async function launchBrowser(view) {
     const msaL = new msa.msa(msaOpts);
     msaOpts.el = msa_host_H;
     const msaH = new msa.msa(msaOpts);
+    drawAlignments();
 
     var pviz = window.pviz;
     let pVizParams = {};
