@@ -263,20 +263,9 @@ export async function launchBrowser(view) {
         }
     }
 
-    function msaRender(host, msa_fasta) {
+    function msaRender(m, msa_fasta) {
         const seqs = msa.io.fasta.parse(msa_fasta);
-        const opts = {
-            el: host,
-            vis: {
-                conserv: false,
-                overviewbox: false
-            },
-            menu: "small",
-            seqlogo: true,
-            bootstrapMenu: true,
-            seqs: seqs
-        };
-        const m = new msa.msa(opts);
+        m.seqs.reset(seqs);
         m.render();
     }
 
@@ -515,10 +504,10 @@ export async function launchBrowser(view) {
     table.onCurrentRowChanged.subscribe((_) => {
         const idx = table.currentRow.idx;
         if (seqHeavyCol && germHeavyCol) {
-            msaRender(msa_host_H, `>seq_align_heavy\n${seqHeavyCol.get(idx)}\n>germline_align_heavy\n${germHeavyCol.get(idx)}\n`);
+            msaRender(msaH, `>seq_align_heavy\n${seqHeavyCol.get(idx)}\n>germline_align_heavy\n${germHeavyCol.get(idx)}\n`);
         }
         if (seqLightCol && germLightCol) {
-            msaRender(msa_host_L, `>seq_align_light\n${seqLightCol.get(idx)}\n>germline_align_light\n${germLightCol.get(idx)}\n`);
+            msaRender(msaL, `>seq_align_light\n${seqLightCol.get(idx)}\n>germline_align_light\n${germLightCol.get(idx)}\n`);
         }
     });
 
@@ -559,6 +548,31 @@ export async function launchBrowser(view) {
             'MSA HEAVY': msa_host_H,
             'MSA LIGHT': msa_host_L,
         }).root;
+
+    const msaOpts = {
+        el: msa_host_L,
+        vis: {
+            conserv: false,
+            overviewbox: false,
+            consensus: true,
+            seqlogo: true,
+            scaleslider: false,
+        },
+        conf: {
+            dropImport: true
+        },
+        bootstrapMenu: false,
+        zoomer: {
+        boxRectHeight: 1,
+        boxRectWidth: 1,
+        labelNameLength: 110,
+        labelFontsize: 10,
+        labelIdLength: 20
+        }
+    };
+    const msaL = new msa.msa(msaOpts);
+    msaOpts.el = msa_host_H;
+    const msaH = new msa.msa(msaOpts);
 
     var pviz = window.pviz;
     let pVizParams = {};
