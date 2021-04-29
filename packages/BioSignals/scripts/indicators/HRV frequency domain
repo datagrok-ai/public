@@ -4,9 +4,9 @@
 #tags: biosignals, indicators, pyphysio, hrv, ecg_signal
 #input: dataframe dataframe
 #input: column column
-#input: double resampling_frequency = 4
-#input: double window_step = 5
-#input: double window_width = 10
+#input: double resamplingFrequency = 4
+#input: double windowStep = 5
+#input: double windowWidth = 10
 #output: dataframe out
 
 import numpy as np
@@ -20,12 +20,12 @@ extracted = ph.UnevenlySignal(
     x_type='instants'
 )
 
-fixed_length = ph.FixedSegments(step=window_step, width=window_width)
+fixed_length = ph.FixedSegments(step=windowStep, width=windowWidth)
 
 FD_HRV_ind, col_names = ph.fmap(
     fixed_length,
     ph.preset_hrv_fd(),
-    extracted.resample(resampling_frequency)
+    extracted.resample(resamplingFrequency)
 )
 
 out = pd.DataFrame({

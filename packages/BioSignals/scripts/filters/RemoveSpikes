@@ -4,7 +4,7 @@
 #tags: biosignals, filters, pyphysio
 #input: dataframe dataframe
 #input: column column
-#input: double sampling_frequency
+#input: double samplingFrequency
 #input: double K = 2
 #input: double N = 1
 #input: double dilate = 0
@@ -14,7 +14,7 @@
 
 import pyphysio as ph
 
-sig = ph.EvenlySignal(values=dataframe[column], sampling_freq=sampling_frequency)
+sig = ph.EvenlySignal(values=dataframe[column], sampling_freq=samplingFrequency)
 
 sig = ph.RemoveSpikes(K=K, N=N, dilate=dilate, D=D, method=method)(sig)
 

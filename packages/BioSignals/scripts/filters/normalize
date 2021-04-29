@@ -4,15 +4,15 @@
 #tags: biosignals, filters, pyphysio
 #input: dataframe dataframe
 #input: column column
-#input: double sampling_frequency
-#input: string normalization_method {choices: ['mean', 'standard', 'min', 'maxmin', 'custom']} [Method for the normalization]
+#input: double samplingFrequency
+#input: string normalizationMethod {choices: ['mean', 'standard', 'min', 'maxmin', 'custom']} [Method for the normalization]
 #output: dataframe df
 
 import pyphysio as ph
 
-sig = ph.EvenlySignal(values=dataframe[column], sampling_freq=sampling_frequency)
+sig = ph.EvenlySignal(values=dataframe[column], sampling_freq=samplingFrequency)
 
-sig = ph.Normalize(norm_method=normalization_method)(sig)
+sig = ph.Normalize(norm_method=normalizationMethod)(sig)
 
 df = pd.DataFrame({
     column + ':Normalize': sig

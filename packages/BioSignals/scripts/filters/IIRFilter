@@ -4,17 +4,17 @@
 #tags: biosignals, filters, pyphysio
 #input: dataframe dataframe
 #input: column column
-#input: double sampling_frequency
-#input: double pass_frequencies [The pass frequencies]
-#input: double stop_frequencies [The stop frequencies]
-#input: string filter_type = 'butter' {choices: ['butter', 'cheby1', 'cheby2', 'ellip', 'bessel']} [Type of filter]
+#input: double samplingFrequency
+#input: double passFrequencies [The pass frequencies]
+#input: double stopFrequencies [The stop frequencies]
+#input: string filterType = 'butter' {choices: ['butter', 'cheby1', 'cheby2', 'ellip', 'bessel']} [Type of filter]
 #output: dataframe df
 
 import pyphysio as ph
 
-sig = ph.EvenlySignal(values=dataframe[column], sampling_freq=sampling_frequency)
+sig = ph.EvenlySignal(values=dataframe[column], sampling_freq=samplingFrequency)
 
-sig = ph.IIRFilter(fp=pass_frequencies, fs=stop_frequencies, ftype=filter_type)(sig)
+sig = ph.IIRFilter(fp=passFrequencies, fs=stopFrequencies, ftype=filterType)(sig)
 
 df = pd.DataFrame({
     column + ':IIRFilter': sig
