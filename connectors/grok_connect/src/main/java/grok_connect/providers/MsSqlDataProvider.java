@@ -21,6 +21,7 @@ public class MsSqlDataProvider extends JdbcDataProvider {
         descriptor.connectionTemplate.add(new Property(Property.BOOL_TYPE, DbCredentials.SSL));
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
         descriptor.canBrowseSchema = true;
+        descriptor.defaultSchema = "dbo";
         descriptor.limitAtEnd = false;
 
         descriptor.typesMap = new HashMap<String, String>() {{
@@ -82,7 +83,7 @@ public class MsSqlDataProvider extends JdbcDataProvider {
 
     public String getSchemaSql(String db, String schema, String table) {
         List<String> filters = new ArrayList<String>() {{
-            add("TABLE_SCHEMA = '" + ((schema != null) ? schema : "dbo") + "'");
+            add("TABLE_SCHEMA = '" + ((schema != null) ? schema : descriptor.defaultSchema) + "'");
         }};
 
         if (db != null && db.length() != 0)

@@ -19,6 +19,7 @@ public class PostgresDataProvider extends JdbcDataProvider {
         descriptor.nameBrackets = "\"";
 
         descriptor.canBrowseSchema = true;
+        descriptor.defaultSchema = "public";
         descriptor.typesMap = new HashMap<String, String>() {{
             put("smallint", Types.INT);
             put("int", Types.INT);
@@ -55,7 +56,7 @@ public class PostgresDataProvider extends JdbcDataProvider {
     public String getSchemaSql(String db, String schema, String table)
     {
         List<String> filters = new ArrayList<String>() {{
-            add("table_schema = '" + ((schema != null) ? schema : "public") + "'");
+            add("table_schema = '" + ((schema != null) ? schema : descriptor.defaultSchema) + "'");
         }};
 
         if (db != null && db.length() != 0)
