@@ -1,6 +1,55 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-04-29 Dev build 0.91.3
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.91.3`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* BioSignals: choose input signal from context 
+* do not crash on an empty substructure library 
+* Chem: Robust invalid molecules handling in parallel Substructure Search 
+* PhyloTreeViewer: JS-based phylogenetic tree visualisation (WIP)
+* Biosignals: add opened tables to App context 
+* Connectors: Redshift: Schema browsing (WIP)
+* DataGrok API and system samples, add cross linking to improve connectivity (WIP)
+* Trellis Plot: ability to enlarge individual in-trellis viewers 
+* NGL viewer (WIP)
+* (Bug) JS API: Columns.byTags does not work 
+* Widgets: MultiValueFilter (WIP)
+* removed to LABS 
+* removed src 
+* files moved to LAB 
+* Join tables: Don't include key fields by default 
+* Icon Tooll 
+* BioSignals: added app description, and ui.buttonsInput 
+* BioSignals: rename folders with scripts to 'filters', 'extractors', 'indicators' 
+* (Bug) Queries: "Converting object to an encodable object failed" with dataframe as parameter 
+* Multi-value filters 
+* (Bug) Excel import: an empty column is created as part of the dataframe 
+* BarChart categories error (WIP)
+* (Bug) Layouts: Undocked viewer remained after "Close All" 
+* update package icons 
+* update icon 
+* JS API: BitSet: getBuffer() 
+* MSA tabs added 
+* BioSignals | AnnotatorViewer: generate timestamps from sampling frequency 
+* Fixed grok_connect imports 
+* update icons for script packages 
+* change package name 
+* RepertoireBrowser: msa rendering changed 
+* RepertoireBrowser: added debouncing 
+* Updated public toke 
+* BioSignals: add possibility to enter sampling frequency for local files 
+
+
 # 2021-04-26 Dev build 0.91.2
 
 ## Latest Docker Images
