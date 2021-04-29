@@ -4,16 +4,16 @@
 #tags: biosignals, filters, pyphysio
 #input: dataframe dataframe
 #input: column column
-#input: double sampling_frequency [Input sampling frequency]
-#input: double output_sampling_frequency [The sampling frequency for resampling]
-#input: string interpolation_method {choices: ['linear', 'nearest', 'zero', 'slinear', 'quadratic', 'cubic']} [Method for interpolation]
+#input: double samplingFrequency [Input sampling frequency]
+#input: double outputSamplingFrequency [The sampling frequency for resampling]
+#input: string interpolationMethod {choices: ['linear', 'nearest', 'zero', 'slinear', 'quadratic', 'cubic']} [Method for interpolation]
 #output: dataframe df
 
 import pyphysio as ph
 
-sig = ph.EvenlySignal(values=dataframe[column], sampling_freq=sampling_frequency)
+sig = ph.EvenlySignal(values=dataframe[column], sampling_freq=samplingFrequency)
 
-sig = sig.resample(fout=output_sampling_frequency, kind=interpolation_method)
+sig = sig.resample(fout=outputSamplingFrequency, kind=interpolationMethod)
 
 df = pd.DataFrame({
     column + ':Resample': sig

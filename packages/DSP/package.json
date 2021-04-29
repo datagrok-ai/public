@@ -15,7 +15,7 @@
 		"debug-dsp-local": "grok publish local --rebuild",
 		"deploy-dsp-local": "grok publish local --rebuild --release"
 	},
-  	"sources": [
-    	"src/dspWasm.js"
-  	]
+	"sources": [
+		"src/dspWasm.js"
+	]
 }

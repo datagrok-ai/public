@@ -119,16 +119,16 @@ export function BioSignals() {
 
   let localTables = grok.shell.tables;
   let namesOfLocalTables = localTables.map((df) => df.name)
-  let physionetDatabases = Object.keys(physionetDatabasesDictionary);
-  let tablesAndPhysionetDBs = namesOfLocalTables.concat(physionetDatabases);
-  let chosenDatabase = ui.choiceInput('Physionet database or local table', '', tablesAndPhysionetDBs, () => {
+  let tablesAndPhysionetDBs = namesOfLocalTables.concat(Object.keys(physionetDatabasesDictionary));
+  let chosenDatabase = ui.choiceInput('Database', '', tablesAndPhysionetDBs, () => {
     let isLocalTable = (namesOfLocalTables.includes(chosenDatabase.stringValue));
-    let items = (namesOfLocalTables.includes(chosenDatabase.stringValue)) ?
+    let items = (isLocalTable) ?
       localTables.find(({name}) => name === chosenDatabase.stringValue).columns.names() :
       physionetDatabasesDictionary[chosenDatabase.stringValue].namesOfRecords;
     let samplingFreq = ui.floatInput('Sampling frequency: ', '');
     if (isLocalTable) enterSamplingFrequencyDiv.append(samplingFreq.root);
-    let chosenRecord = ui.choiceInput('Physionet record or local column', '', items, async () => {
+    let columnName = (isLocalTable) ? 'Column' : 'Physionet record';
+    let chosenRecord = ui.choiceInput(columnName, '', items, async () => {
       let {signals, annotations} = await getInitValues(isLocalTable, chosenDatabase, localTables, chosenRecord);
       let signalsWithAnnotations = signals.append(annotations);
 
@@ -137,8 +137,6 @@ export function BioSignals() {
         signals.columns.byIndex(0).setTag('samplingFrequency', samplingFreq.value);
         signalsWithAnnotations.columns.byIndex(0).setTag('samplingFrequency', samplingFreq.value);
       }
-      samplingFrequencyDiv.innerHTML = '';
-      samplingFrequencyDiv.append(ui.divText('Input sampling frequency: ' + signals.columns.byIndex(0).getTag('samplingFrequency') + ' samples per second (Hz)'));
       annotationViewerDiv.innerHTML = '';
       annotationViewerDiv.append(
         ui.block([
@@ -177,31 +175,36 @@ export function BioSignals() {
                 filterTypesList[i - 1],
                 await call.getEditor(),
                 ui.buttonsInput([
-                  ui.button('Plot', async () => {
-                    let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting filter\'s output...');
-                    try {
-                      await call.call();
-                      let df = call.getOutputParamValue();
-                      if (df == null) {
-                        df = DG.DataFrame.fromColumns([
-                          DG.Column.fromList('int', 'time', Array(signals.columns.byIndex(0).length).fill().map((_, idx) => idx)),
-                          signals.columns.byIndex(signals.columns.length - 1)
-                        ]);
-                      } else {
-                        signals = signals.append(df);
-                        df = DG.DataFrame.fromColumns([
-                          DG.Column.fromList('int', 'time', Array(df.columns.byIndex(df.columns.length - 1).length).fill().map((_, idx) => idx)),
-                          df.columns.byIndex(df.columns.length - 1)
-                        ]);
+                  ui.divH([
+                    ui.button('Plot', async () => {
+                      let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting filter\'s output...');
+                      try {
+                        await call.call();
+                        let df = call.getOutputParamValue();
+                        if (df == null) {
+                          df = DG.DataFrame.fromColumns([
+                            DG.Column.fromList('int', 'time', Array(signals.columns.byIndex(0).length).fill().map((_, idx) => idx)),
+                            signals.columns.byIndex(signals.columns.length - 1)
+                          ]);
+                        } else {
+                          signals = signals.append(df);
+                          df = DG.DataFrame.fromColumns([
+                            DG.Column.fromList('int', 'time', Array(df.columns.byIndex(df.columns.length - 1).length).fill().map((_, idx) => idx)),
+                            df.columns.byIndex(df.columns.length - 1)
+                          ]);
+                        }
+                        filterChartsList[i - 1].dataFrame = df;
+                      } catch (e) {
+                        grok.shell.error(e);
+                        throw e;
+                      } finally {
+                        pi.close();
                       }
-                      filterChartsList[i - 1].dataFrame = df;
-                    } catch (e) {
-                      grok.shell.error(e);
-                      throw e;
-                    } finally {
-                      pi.close();
-                    }
-                  })
+                    }),
+                    ui.iconFA('trash', () => {
+                      filterContainerList[i - 1].innerHTML = '';
+                    })
+                  ])
                 ])
               ])
             ]),
@@ -343,13 +346,13 @@ export function BioSignals() {
         chosenRecordDiv,
         samplingFrequencyDiv,
         annotationViewerDiv,
-        ui.h2('Filtering and Preprocessing'),
+        ui.h2('Filtering and preprocessing'),
         accordionFilters,
         addFilterButton,
         ui.h2('Information extraction'),
         accordionExtractors,
         addExtractorButton,
-        ui.h2('Physiological Indicators'),
+        ui.h2('Physiological indicators'),
         accordionIndicators,
         addIndicatorButton
       ]);
