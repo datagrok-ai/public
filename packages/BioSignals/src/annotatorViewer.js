@@ -112,7 +112,7 @@ export class AnnotatorViewer extends DG.JsViewer {
         },
         {
           type: 'scatter',
-          symbolSize: 20,
+          symbolSize: 10,
           symbol: 'circle',
           data: this.markedPoints
         }
