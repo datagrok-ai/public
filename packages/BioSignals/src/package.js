@@ -249,36 +249,46 @@ export function BioSignals() {
                 extractorTypesList[j - 1],
                 await call.getEditor(),
                 ui.buttonsInput([
-                  ui.button('Plot', async () => {
-                    let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting extractor\'s output...');
-                    try {
-                      await call.call();
-                      let df = call.getOutputParamValue();
-                      if (extracted == null) {
-                        extracted = DG.DataFrame.fromColumns([df.columns.byIndex(0)]);
-                        df = DG.DataFrame.fromColumns([
-                          DG.Column.fromList('int', 'time', Array(df.columns.byIndex(0).length).fill().map((_, idx) => idx)),
-                          df.columns.byIndex(0)
-                        ]);
-                      } else {
-                        let floats = new Array(extracted.columns.byIndex(extracted.columns.length - 1).length);
-                        let oldColumn = df.columns.byIndex(0);
-                        for (let i = 0; i < oldColumn.length; i++)
-                          floats[i] = oldColumn.get(i);
-                        extracted.columns.addNewFloat(df.columns.byIndex(0).name).init((i) => floats[i]);
-                        df = DG.DataFrame.fromColumns([
-                          DG.Column.fromList('int', 'time', Array(df.columns.byIndex(0).length).fill().map((_, idx) => idx)),
-                          df.columns.byIndex(0)
-                        ]);
+                  ui.divH([
+                    ui.button('Plot', async () => {
+                      let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting extractor\'s output...');
+                      try {
+                        await call.call();
+                        let df = call.getOutputParamValue();
+                        if (extracted == null) {
+                          extracted = DG.DataFrame.fromColumns([df.columns.byIndex(0)]);
+                          df = DG.DataFrame.fromColumns([
+                            DG.Column.fromList('int', 'time', Array(df.columns.byIndex(0).length).fill().map((_, idx) => idx)),
+                            df.columns.byIndex(0)
+                          ]);
+                        } else {
+                          let floats = new Array(extracted.columns.byIndex(extracted.columns.length - 1).length);
+                          let oldColumn = df.columns.byIndex(0);
+                          for (let i = 0; i < oldColumn.length; i++)
+                            floats[i] = oldColumn.get(i);
+                          extracted.columns.addNewFloat(df.columns.byIndex(0).name).init((i) => floats[i]);
+                          df = DG.DataFrame.fromColumns([
+                            DG.Column.fromList('int', 'time', Array(df.columns.byIndex(0).length).fill().map((_, idx) => idx)),
+                            df.columns.byIndex(0)
+                          ]);
+                        }
+                        extractorChartsList[j - 1].dataFrame = df;
+                      } catch (e) {
+                        grok.shell.error(e);
+                        throw e;
+                      } finally {
+                        pi.close();
                       }
-                      extractorChartsList[j - 1].dataFrame = df;
-                    } catch (e) {
-                      grok.shell.error(e);
-                      throw e;
-                    } finally {
-                      pi.close();
-                    }
-                  })
+                    }),
+                    ui.iconFA('trash', () => {
+                      accordionExtractors.root.removeChild(accordionExtractors.root.childNodes[j - 1]);
+                      extractorContainerList = extractorContainerList.filter(e => e !== extractorContainerList[j - 1]);
+                      extractorTypesList = extractorTypesList.filter(e => e !== extractorTypesList[j - 1]);
+                      extractorChartsList = extractorChartsList.filter(e => e !== extractorChartsList[j - 1]);
+                      extracted.columns.remove(extracted.columns.byIndex(j).name);
+                      j = j - 1;
+                    })
+                  ])
                 ])
               ])
             ]),
@@ -318,18 +328,27 @@ export function BioSignals() {
                 indicatorTypesList[k - 1],
                 await call.getEditor(),
                 ui.buttonsInput([
-                  ui.button('Plot', async () => {
-                    let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting indicator\'s output...');
-                    try {
-                      await call.call();
-                      indicatorChartsList[k - 1].dataFrame = call.getOutputParamValue();
-                    } catch (e) {
-                      grok.shell.error(e);
-                      throw e;
-                    } finally {
-                      pi.close();
-                    }
-                  })
+                  ui.divH([
+                    ui.button('Plot', async () => {
+                      let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting indicator\'s output...');
+                      try {
+                        await call.call();
+                        indicatorChartsList[k - 1].dataFrame = call.getOutputParamValue();
+                      } catch (e) {
+                        grok.shell.error(e);
+                        throw e;
+                      } finally {
+                        pi.close();
+                      }
+                    }),
+                    ui.iconFA('trash', () => {
+                      accordionIndicators.root.removeChild(accordionIndicators.root.childNodes[k - 1]);
+                      indicatorContainerList = indicatorContainerList.filter(e => e !== indicatorContainerList[k - 1]);
+                      indicatorTypesList = indicatorTypesList.filter(e => e !== indicatorTypesList[k - 1]);
+                      indicatorChartsList = indicatorChartsList.filter(e => e !== indicatorChartsList[k - 1]);
+                      k = k - 1;
+                    })
+                  ])
                 ])
               ])
             ]),
