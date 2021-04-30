@@ -1,6 +1,29 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-04-30 Dev build 0.91.5
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.91.5`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* RepertoireBrowser: gff annotations 
+* BioSignals: rename input variables of scripts to camelCase to show them properly in the UI (split into words) 
+* Adjusted a unit test to reflect recent changes in the 'join' implementation 
+* Added demo files 
+* JS API: BitSet: getBuffer() 
+* RepertoireBrowser: gff annotations (slight changes) 
+* BioSignals: option to delete accordion pane (WIP)
+* DataGrok API and system samples, add cross linking to improve connectivity (WIP)
+* (Bug) Queries: "Converting object to an encodable object failed" with dataframe as parameter 
+
+
 # 2021-04-29 Dev build 0.91.4
 
 ## Latest Docker Images
