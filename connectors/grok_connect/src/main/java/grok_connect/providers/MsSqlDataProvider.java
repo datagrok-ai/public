@@ -62,7 +62,7 @@ public class MsSqlDataProvider extends JdbcDataProvider {
         String schema = conn.get("schema");
         db = (db == null || db.length() == 0) && schema != null ? schema : db;
         return "jdbc:sqlserver://" + conn.getServer() + port + ";databaseName=" + db +
-                (conn.ssl() ? "integratedSecurity=true;encrypt=true;trustServerCertificate=true;" : "");
+                (conn.ssl() ? "integratedSecurity=true;encrypt=true;trustServerCertificate=true;sslProtocol=TLS;" : "");
     }
 
     public DataFrame getSchema(DataConnection connection, String schema, String table)
