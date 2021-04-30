@@ -263,12 +263,22 @@ export async function launchBrowser(view) {
         }
     }
 
-    function msaRender(m, msa_fasta, gff_annots = null) {
+    function msaRender(m, msa_fasta, gff_annots = null,
+                       gff_aa_annots1 = null,
+                       gff_aa_annots2 = null) {
         const seqs = msa.io.fasta.parse(msa_fasta);
         m.seqs.reset(seqs);
+        m.seqs.removeAllFeatures();
         if (gff_annots) {
             const features = gffParser.parseSeqs(gff_annots);
-            m.seqs.removeAllFeatures();
+            m.seqs.addFeatures(features);
+        }
+        if (gff_aa_annots1) {
+            const features = gffParser.parseSeqs(gff_aa_annots1);
+            m.seqs.addFeatures(features);
+        }
+        if (gff_aa_annots2) {
+            const features = gffParser.parseSeqs(gff_aa_annots2);
             m.seqs.addFeatures(features);
         }
         m.render();
@@ -506,6 +516,11 @@ export async function launchBrowser(view) {
     let germHeavyCol = table.col('germline_alignment_heavy');
     let germLightCol = table.col('germline_alignment_light');
 
+    let seqAlignHeavyAACol = table.col('sequence_alignment_aa_heavy');
+    let seqAlignLightAACol = table.col('sequence_alignment_aa_light');
+    let germAlignHeavyAACol = table.col('germline_alignment_aa_heavy');
+    let germAlignLightAACol = table.col('germline_alignment_aa_light');
+
     let vStartHeavy = table.col('v_alignment_start_heavy');
     let dStartHeavy = table.col('d_alignment_start_heavy');
     let jStartHeavy = table.col('j_alignment_start_heavy');
@@ -524,6 +539,22 @@ export async function launchBrowser(view) {
         return `${seqid}\t${source}\t${type}\t${start}\t${end}\t${score}\t${strand}\t${phase}\t${attributes}\n`;
     }
 
+
+    // Translate AA sequence into a GFF formatted annotations
+    // (a hack, it should be a better way of doing it)
+    //
+    function getAA_gff(molId, aaStr) {
+        let gff = "##gff-version 3\n";
+        let pos = 2;
+        for (i = 0; i < aaStr.length; i++) {
+            let aaBase = aaStr[i];
+            let line = `${molId} . p	${pos} 	${pos}	.	.  +  Name=${aaBase};Color=gray\n`;
+            gff = gff + line;
+            pos = pos + 3;
+        }
+        return gff;
+    }
+
     function drawAlignments() {
         const idx = table.currentRow.idx;
         if (seqHeavyCol && germHeavyCol) {
@@ -537,7 +568,22 @@ export async function launchBrowser(view) {
                 (jStartHeavy && jEndHeavy) ? gffAnnotator('germline_align_heavy', '.', 'gene',
                 jStartHeavy.get(idx), jEndHeavy.get(idx), '.', '+', '.', 'Name=J region;Color=blue') : '');
 
-            msaRender(msaH, seqsH, gffAnnotsH.length > 16 ? gffAnnotsH : null);
+            let gffAASeq = null;
+            let gffAAGerm = null;
+            if (seqAlignHeavyAACol) {
+                const seqAA = seqAlignHeavyAACol.get(idx);
+                gffAASeq = getAA_gff("seq_align_heavy", seqAA);
+            }
+            if (seqAlignHeavyAACol && germAlignHeavyAACol) {
+                const germAA = germAlignHeavyAACol.get(idx);
+                gffAAGerm = getAA_gff("germline_align_heavy", germAA);
+            }
+
+            msaRender(msaH, seqsH,
+              gffAnnotsH.length > 16 ? gffAnnotsH : null,
+              gffAASeq.length > 16   ? gffAASeq : null,
+              gffAAGerm.length > 16  ? gffAAGerm : null
+              );
         }
         if (seqLightCol && germLightCol) {
             const seqsL = `>seq_align_light\n${seqLightCol.get(idx)}\n>germline_align_light\n${germLightCol.get(idx)}\n`;
@@ -550,11 +596,27 @@ export async function launchBrowser(view) {
                 (jStartLight && jEndLight) ? gffAnnotator('germline_align_light', '.', 'gene',
                 jStartLight.get(idx), jEndLight.get(idx), '.', '+', '.', 'Name=J region;Color=blue') : '');
 
-            msaRender(msaL, seqsL, gffAnnotsL.length > 16 ? gffAnnotsL : null);
+            let gffAASeq = null;
+            let gffAAGerm = null;
+            if (seqAlignLightAACol) {
+                const seqAA = seqAlignLightAACol.get(idx);
+                gffAASeq = getAA_gff("seq_align_light", seqAA);
+            }
+            if (seqAlignLightAACol && germAlignLightAACol) {
+                const germAA = germAlignLightAACol.get(idx);
+                gffAAGerm = getAA_gff("germline_align_light", germAA);
+            }
+
+            //msaRender(msaL, seqsL, gffAnnotsL.length > 16 ? gffAnnotsL : null);
+            msaRender(msaL, seqsL,
+              gffAnnotsL.length > 16 ? gffAnnotsL : null,
+              gffAASeq.length > 16   ? gffAASeq : null,
+              gffAAGerm.length > 16  ? gffAAGerm : null
+            );
         }
     }
 
-    DG.debounce(table.onCurrentRowChanged, 50).subscribe(drawAlignments);
+    DG.debounce(table.onCurrentRowChanged, 200).subscribe(drawAlignments);
 
     // tweak the App page properties
     {
