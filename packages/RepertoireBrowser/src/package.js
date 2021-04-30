@@ -269,16 +269,16 @@ export async function launchBrowser(view) {
         const seqs = msa.io.fasta.parse(msa_fasta);
         m.seqs.reset(seqs);
         m.seqs.removeAllFeatures();
-        if (gff_annots) {
-            const features = gffParser.parseSeqs(gff_annots);
-            m.seqs.addFeatures(features);
-        }
         if (gff_aa_annots1) {
             const features = gffParser.parseSeqs(gff_aa_annots1);
             m.seqs.addFeatures(features);
         }
         if (gff_aa_annots2) {
             const features = gffParser.parseSeqs(gff_aa_annots2);
+            m.seqs.addFeatures(features);
+        }
+        if (gff_annots) {
+            const features = gffParser.parseSeqs(gff_annots);
             m.seqs.addFeatures(features);
         }
         m.render();
@@ -555,6 +555,16 @@ export async function launchBrowser(view) {
         return gff;
     }
 
+    // Format AA column values into GFF annotation
+    function makeColGFF(col, rowIdx, seqId) {
+        let gff = null;
+        if (col) {
+            const seq = col.get(rowIdx);
+            gff = getAA_gff(seqId, seq);
+        }
+        return gff;
+    }
+
     function drawAlignments() {
         const idx = table.currentRow.idx;
         if (seqHeavyCol && germHeavyCol) {
@@ -568,16 +578,8 @@ export async function launchBrowser(view) {
                 (jStartHeavy && jEndHeavy) ? gffAnnotator('germline_align_heavy', '.', 'gene',
                 jStartHeavy.get(idx), jEndHeavy.get(idx), '.', '+', '.', 'Name=J region;Color=blue') : '');
 
-            let gffAASeq = null;
-            let gffAAGerm = null;
-            if (seqAlignHeavyAACol) {
-                const seqAA = seqAlignHeavyAACol.get(idx);
-                gffAASeq = getAA_gff("seq_align_heavy", seqAA);
-            }
-            if (seqAlignHeavyAACol && germAlignHeavyAACol) {
-                const germAA = germAlignHeavyAACol.get(idx);
-                gffAAGerm = getAA_gff("germline_align_heavy", germAA);
-            }
+            let gffAASeq = makeColGFF(seqAlignHeavyAACol, idx, "seq_align_heavy");
+            let gffAAGerm = makeColGFF(germAlignHeavyAACol, idx, "germline_align_heavy");
 
             msaRender(msaH, seqsH,
               gffAnnotsH.length > 16 ? gffAnnotsH : null,
@@ -596,18 +598,9 @@ export async function launchBrowser(view) {
                 (jStartLight && jEndLight) ? gffAnnotator('germline_align_light', '.', 'gene',
                 jStartLight.get(idx), jEndLight.get(idx), '.', '+', '.', 'Name=J region;Color=blue') : '');
 
-            let gffAASeq = null;
-            let gffAAGerm = null;
-            if (seqAlignLightAACol) {
-                const seqAA = seqAlignLightAACol.get(idx);
-                gffAASeq = getAA_gff("seq_align_light", seqAA);
-            }
-            if (seqAlignLightAACol && germAlignLightAACol) {
-                const germAA = germAlignLightAACol.get(idx);
-                gffAAGerm = getAA_gff("germline_align_light", germAA);
-            }
+            let gffAASeq = makeColGFF(seqAlignLightAACol, idx, "seq_align_light");
+            let gffAAGerm = makeColGFF(germAlignLightAACol, idx, "germline_align_light");
 
-            //msaRender(msaL, seqsL, gffAnnotsL.length > 16 ? gffAnnotsL : null);
             msaRender(msaL, seqsL,
               gffAnnotsL.length > 16 ? gffAnnotsL : null,
               gffAASeq.length > 16   ? gffAASeq : null,
