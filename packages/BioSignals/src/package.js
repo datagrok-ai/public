@@ -202,7 +202,12 @@ export function BioSignals() {
                       }
                     }),
                     ui.iconFA('trash', () => {
-                      filterContainerList[i - 1].innerHTML = '';
+                      accordionFilters.root.removeChild(accordionFilters.root.childNodes[i - 1]);
+                      filterContainerList = filterContainerList.filter(e => e !== filterContainerList[i - 1]);
+                      filterTypesList = filterTypesList.filter(e => e !== filterTypesList[i - 1]);
+                      filterChartsList = filterChartsList.filter(e => e !== filterChartsList[i - 1]);
+                      signals.columns.remove(signals.columns.byIndex(i).name);
+                      i = i - 1;
                     })
                   ])
                 ])
