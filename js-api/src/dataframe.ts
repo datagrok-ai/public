@@ -1389,7 +1389,7 @@ export class BitSet {
   }
 
   getBuffer(): Int32Array {
-    return api.grok_BitSet_GetBuffer(this.d);
+    return api.grok_BitSet_Get_Buffer(this.d);
   }
 
   toBinaryString(): string {
