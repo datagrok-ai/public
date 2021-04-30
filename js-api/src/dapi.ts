@@ -255,6 +255,7 @@ export class HttpDataSource<T> {
 
   /** Returns an entity with the specified id.
    *  Throws an exception if an entity does not exist, or is not accessible in the current context.
+   *  Sample: {@link https://public.datagrok.ai/js/samples/data-access/save-and-load-df}
    *  @param {string} id - GUID of the corresponding object
    *  @returns {Promise<object>} - entity. */
   find(id: string): Promise<T> {
@@ -359,7 +360,8 @@ export class AdminDataSource {
     this.s = s;
   }
 
-  /** Returns information about the services
+  /** Returns information about the services.
+   * Sample: {@link https://public.datagrok.ai/js/samples/dapi/admin}
    *  @returns {Promise<Map>} */
   getServiceInfos(): Promise<object> {
     return new Promise((resolve, reject) => api.grok_Dapi_Admin_GetServiceInfos(this.s, (q: any) => resolve(toJs(q)), (e: any) => reject(e)));
@@ -657,14 +659,18 @@ export class TablesDataSource extends HttpDataSource<TableInfo> {
     super(s, instance);
   }
 
-  /** @returns {Promise<string>} */
+  /** Saves a dataframe remotely.
+   * Sample: {@link https://public.datagrok.ai/js/samples/data-access/save-and-load-df}
+   * @param {DataFrame} dataFrame
+   * @returns {Promise<string>} */
   uploadDataFrame(dataFrame: DataFrame): Promise<string> {
     return new Promise((resolve, reject) =>
       api.grok_Dapi_TablesDataSource_UploadDataFrame(dataFrame.d, (id: string | PromiseLike<string>) => resolve(id), (e: any) => reject(e)));
   }
 
-  /**
-   * @param {string} id
+  /** Loads a dataframe by id.
+   * Sample: {@link https://public.datagrok.ai/js/samples/data-access/save-and-load-df}
+   * @param {string} id - dataframe id
    * @returns {Promise<DataFrame>} */
   getTable(id: string): Promise<DataFrame> {
     return new Promise((resolve, reject) =>

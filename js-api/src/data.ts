@@ -8,7 +8,7 @@ let api = <any>window;
 /** Provides convenient file shares access **/
 export class Files {
 
-  /** Reads table from file. If file contains more than one table - reads first
+  /** Reads a table from file. If file contains more than one table, reads the first one.
    * @param {string} path
    * @returns {Promise<DataFrame>}*/
   openTable(path: string): Promise<DataFrame> {
@@ -123,6 +123,7 @@ export class Data {
 
   /**
    * Loads table from the specified URL.
+   * Sample: {@link https://public.datagrok.ai/js/samples/data-access/load-csv}
    * @param {string} csvUrl
    * @returns {Promise<DataFrame>}
    * */
@@ -172,6 +173,7 @@ export class Data {
 
   /**
    * Opens a table by its id.
+   * Sample: {@link https://public.datagrok.ai/js/samples/data-access/open-table-by-id}
    * @param {string} id - table GUID
    * @returns {Promise<DataFrame>}
    */
@@ -179,6 +181,9 @@ export class Data {
     return new Promise((resolve, reject) => api.grok_OpenTable(id, (t: any) => resolve(new DataFrame(t)), (e: any) => reject(e)));
   }
 
+  /** Executes a parameterized query.
+   * Sample: {@link https://public.datagrok.ai/js/samples/data-access/parameterized-query} 
+   */
   query(queryName: string, queryParameters: object | null = null, adHoc: boolean = false, pollingInterval: number = 1000): Promise<DataFrame> {
     return new Promise((resolve, reject) => api.grok_Query(queryName, queryParameters, adHoc, pollingInterval, (t: any) => resolve(toJs(t)), (e: any) => reject(e)));
   }
