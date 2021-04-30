@@ -265,13 +265,12 @@ export async function launchBrowser(view) {
 
     function msaRender(m, msa_fasta, gff_annots = null) {
         const seqs = msa.io.fasta.parse(msa_fasta);
+        m.seqs.reset(seqs);
         if (gff_annots) {
-            const gffParser = msa.io.gff;
             const features = gffParser.parseSeqs(gff_annots);
             m.seqs.removeAllFeatures();
             m.seqs.addFeatures(features);
         }
-        m.seqs.reset(seqs);
         m.render();
     }
 
@@ -619,6 +618,7 @@ export async function launchBrowser(view) {
     const msaL = new msa.msa(msaOpts);
     msaOpts.el = msa_host_H;
     const msaH = new msa.msa(msaOpts);
+    const gffParser = msa.io.gff;
     drawAlignments();
 
     var pviz = window.pviz;
