@@ -201,13 +201,15 @@ export function BioSignals() {
                         pi.close();
                       }
                     }),
-                    ui.iconFA('trash', () => {
-                      accordionFilters.root.removeChild(accordionFilters.root.childNodes[i - 1]);
-                      filterContainerList = filterContainerList.filter(e => e !== filterContainerList[i - 1]);
-                      filterTypesList = filterTypesList.filter(e => e !== filterTypesList[i - 1]);
-                      filterChartsList = filterChartsList.filter(e => e !== filterChartsList[i - 1]);
-                      signals.columns.remove(signals.columns.byIndex(i).name);
-                      i = i - 1;
+                    ui.iconFA('trash', (ev) => {
+                      let id = parseInt(ev.currentTarget.offsetParent.parentElement.parentElement.parentElement.parentElement.parentElement.className.slice(41, 44));
+                      let lst = filterTypesList.map((e) => e.caption);
+                      let idx = lst.indexOf('Filter ' + id);
+                      accordionFilters.root.removeChild(accordionFilters.root.childNodes[idx]);
+                      filterContainerList = filterContainerList.filter(e => e !== filterContainerList[idx]);
+                      filterTypesList = filterTypesList.filter(e => e !== filterTypesList[idx]);
+                      filterChartsList = filterChartsList.filter(e => e !== filterChartsList[idx]);
+                      signals.columns.remove(signals.columns.byIndex(idx + 1).name);
                     })
                   ])
                 ])
@@ -280,13 +282,15 @@ export function BioSignals() {
                         pi.close();
                       }
                     }),
-                    ui.iconFA('trash', () => {
-                      accordionExtractors.root.removeChild(accordionExtractors.root.childNodes[j - 1]);
-                      extractorContainerList = extractorContainerList.filter(e => e !== extractorContainerList[j - 1]);
-                      extractorTypesList = extractorTypesList.filter(e => e !== extractorTypesList[j - 1]);
-                      extractorChartsList = extractorChartsList.filter(e => e !== extractorChartsList[j - 1]);
-                      extracted.columns.remove(extracted.columns.byIndex(j).name);
-                      j = j - 1;
+                    ui.iconFA('trash', (ev) => {
+                      let id = parseInt(ev.currentTarget.offsetParent.parentElement.parentElement.parentElement.parentElement.parentElement.className.slice(44, 47));
+                      let lst = extractorTypesList.map((e) => e.caption);
+                      let idx = lst.indexOf('Extractor ' + id);
+                      accordionExtractors.root.removeChild(accordionExtractors.root.childNodes[idx]);
+                      extractorContainerList = extractorContainerList.filter(e => e !== extractorContainerList[idx]);
+                      extractorTypesList = extractorTypesList.filter(e => e !== extractorTypesList[idx]);
+                      extractorChartsList = extractorChartsList.filter(e => e !== extractorChartsList[idx]);
+                      extracted.columns.remove(extracted.columns.byIndex(idx + 1).name);
                     })
                   ])
                 ])
@@ -341,12 +345,14 @@ export function BioSignals() {
                         pi.close();
                       }
                     }),
-                    ui.iconFA('trash', () => {
-                      accordionIndicators.root.removeChild(accordionIndicators.root.childNodes[k - 1]);
-                      indicatorContainerList = indicatorContainerList.filter(e => e !== indicatorContainerList[k - 1]);
-                      indicatorTypesList = indicatorTypesList.filter(e => e !== indicatorTypesList[k - 1]);
-                      indicatorChartsList = indicatorChartsList.filter(e => e !== indicatorChartsList[k - 1]);
-                      k = k - 1;
+                    ui.iconFA('trash', (ev) => {
+                      let id = parseInt(ev.currentTarget.offsetParent.parentElement.parentElement.parentElement.parentElement.parentElement.className.slice(44, 47));
+                      let lst = indicatorTypesList.map((e) => e.caption);
+                      let idx = lst.indexOf('Indicator ' + id);
+                      accordionIndicators.root.removeChild(accordionIndicators.root.childNodes[idx]);
+                      indicatorContainerList = indicatorContainerList.filter(e => e !== indicatorContainerList[idx]);
+                      indicatorTypesList = indicatorTypesList.filter(e => e !== indicatorTypesList[idx]);
+                      indicatorChartsList = indicatorChartsList.filter(e => e !== indicatorChartsList[idx]);
                     })
                   ])
                 ])
