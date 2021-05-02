@@ -112,9 +112,19 @@ export function BioSignals() {
   windows.showToolbox = false;
   windows.showHelp = false;
 
+  const dspPackageFilters = ['DSP:SMA_filter', 'DSP:Exp_filter', 'DSP:Kalman_filter', 'DSP:MinMax_transform',
+    'DSP:Zscore_transform', 'DSP:box_cox_transform', 'DSP:get_trend', 'DSP:remove_trend', 'DSP:fourier_filter',
+    'DSP:spectral_density', 'DSP:subsample', 'DSP:asample'];
+  let filterScripts = [];
+  (async function () {
+    for (let filter of dspPackageFilters) filterScripts.push(await grok.functions.eval(filter));
+  })();
+
   let chosenRecordDiv = ui.div();
   let enterSamplingFrequencyDiv = ui.div();
   let annotationViewerDiv = ui.div();
+
+  let context = DG.Context.create();
 
   let localTables = grok.shell.tables;
   let namesOfLocalTables = localTables.map((df) => df.name)
@@ -130,6 +140,8 @@ export function BioSignals() {
     let chosenRecord = ui.choiceInput(columnName, '', items, async () => {
       let {signals, annotations} = await getInitValues(isLocalTable, chosenDatabase, localTables, chosenRecord);
       let signalsWithAnnotations = signals.append(annotations);
+
+      context.setVariable(signals.name, signals);
 
       if (isLocalTable) {
         enterSamplingFrequencyDiv.innerHTML = '';
@@ -148,27 +160,17 @@ export function BioSignals() {
       let filterTypesList = [];
       let filterContainerList = [];
       let filterChartsList = [];
-      let filterInputsNew = ui.inputs(filterTypesList);
-      const dspPackageFilters = ['DSP:SMA_filter', 'DSP:Exp_filter', 'DSP:Kalman_filter', 'DSP:MinMax_transform',
-        'DSP:Zscore_transform', 'DSP:box_cox_transform', 'DSP:get_trend', 'DSP:remove_trend', 'DSP:fourier_filter',
-        'DSP:spectral_density', 'DSP:subsample', 'DSP:asample'];
-      let filterScripts = [];
-      await (async function () {
-        for (let filter of dspPackageFilters) filterScripts.push(await grok.functions.eval(filter));
-      })();
       let i = 0;
       let addFilterButton = ui.button('Add Filter', async () => {
         filterChartsList[i] = getEmptyChart();
         let tag = await grok.dapi.scripts.filter('#filters').list();
-        filterTypesList[i] = ui.choiceInput('Filter ' + (i + 1), '', filterScripts.concat(tag), async function () {
+        filterTypesList[i] = ui.choiceInput('Filter ' + (i + 1), '', filterScripts.concat(tag), async () => {
           let call = filterTypesList[i - 1].value.prepare();
-          let context = DG.Context.create();
-          context.setVariable('table', signals);
           for (let table of grok.shell.tables)
             if (table.name !== chosenDatabase.stringValue)
               context.setVariable(table.name, table);
           call.context = context;
-          filterInputsNew = ui.div([
+          filterContainerList[i - 1].replaceWith(ui.div([
             ui.block25([
               ui.inputs([
                 filterTypesList[i - 1],
@@ -201,13 +203,13 @@ export function BioSignals() {
                       }
                     }),
                     ui.iconFA('trash', (ev) => {
-                      let id = parseInt(ev.currentTarget.offsetParent.parentElement.parentElement.parentElement.parentElement.parentElement.className.slice(41, 44));
+                      let id = parseInt(ev.currentTarget.offsetParent.parentElement.parentElement.parentElement.parentElement.className.slice(41, 44));
                       let lst = filterTypesList.map((e) => e.caption);
                       let idx = lst.indexOf('Filter ' + id);
                       accordionFilters.root.removeChild(accordionFilters.root.childNodes[idx]);
-                      filterContainerList = filterContainerList.filter(e => e !== filterContainerList[idx]);
-                      filterTypesList = filterTypesList.filter(e => e !== filterTypesList[idx]);
-                      filterChartsList = filterChartsList.filter(e => e !== filterChartsList[idx]);
+                      filterContainerList.splice(idx, 1);
+                      filterTypesList.splice(idx, 1);
+                      filterChartsList.splice(idx, 1);
                       signals.columns.remove(signals.columns.byIndex(idx + 1).name);
                     })
                   ])
@@ -215,12 +217,9 @@ export function BioSignals() {
               ])
             ]),
             ui.block75([filterChartsList[i - 1]])
-          ]);
-          filterContainerList[i - 1].replaceChild(filterInputsNew, filterInputsOld);
-          filterInputsOld = filterInputsNew;
+          ]));
         });
-        let filterInputsOld = ui.inputs([filterTypesList[i]]);
-        filterContainerList[i] = ui.div(filterInputsOld);
+        filterContainerList[i] = ui.inputs([filterTypesList[i]]);
         accordionFilters.addPane('Filter ' + (i + 1), () => filterContainerList[i], true);
         i++;
       });
@@ -231,20 +230,19 @@ export function BioSignals() {
       let extractorTypesList = [];
       let extractorChartsList = [];
       let extractorContainerList = [];
-      let extractorInputsNew = ui.inputs(extractorTypesList);
       let j = 0;
       let addExtractorButton = ui.button('Add Extractor', async () => {
         extractorChartsList[j] = getEmptyChart();
         let extractors = await grok.dapi.scripts.filter('#extractors').list();
         extractorTypesList[j] = ui.choiceInput('Extractor ' + (j + 1), '', extractors, async function () {
           let call = extractorTypesList[j - 1].value.prepare();
-          let context = DG.Context.create();
-          context.setVariable('table', signals);
+          let contextExtractors = DG.Context.create();
+          contextExtractors.setVariable('table', signals);
           grok.shell.tables.forEach(function (table, index) {
-            context.setVariable('table' + index, table);
+            contextExtractors.setVariable('table' + index, table);
           });
-          call.context = context;
-          extractorInputsNew = ui.div([
+          call.context = contextExtractors;
+          extractorContainerList[j - 1].replaceWith(ui.div([
             ui.block25([
               ui.inputs([
                 extractorTypesList[j - 1],
@@ -282,26 +280,23 @@ export function BioSignals() {
                       }
                     }),
                     ui.iconFA('trash', (ev) => {
-                      let id = parseInt(ev.currentTarget.offsetParent.parentElement.parentElement.parentElement.parentElement.parentElement.className.slice(44, 47));
+                      let id = parseInt(ev.currentTarget.offsetParent.parentElement.parentElement.parentElement.parentElement.className.slice(44, 47));
                       let lst = extractorTypesList.map((e) => e.caption);
                       let idx = lst.indexOf('Extractor ' + id);
                       accordionExtractors.root.removeChild(accordionExtractors.root.childNodes[idx]);
-                      extractorContainerList = extractorContainerList.filter(e => e !== extractorContainerList[idx]);
-                      extractorTypesList = extractorTypesList.filter(e => e !== extractorTypesList[idx]);
-                      extractorChartsList = extractorChartsList.filter(e => e !== extractorChartsList[idx]);
-                      extracted.columns.remove(extracted.columns.byIndex(idx + 1).name);
+                      extractorContainerList.splice(idx, 0);
+                      extractorTypesList.splice(idx, 0);
+                      extractorChartsList.splice(idx, 0);
+                      extracted.columns.remove(extracted.columns.byIndex(idx).name);
                     })
                   ])
                 ])
               ])
             ]),
             ui.block75([extractorChartsList[j - 1]])
-          ]);
-          extractorContainerList[j - 1].replaceChild(extractorInputsNew, extractorInputsOld);
-          extractorInputsOld = extractorInputsNew;
+          ]));
         });
-        let extractorInputsOld = ui.inputs([extractorTypesList[j]]);
-        extractorContainerList[j] = ui.div(extractorInputsOld);
+        extractorContainerList[j] = ui.inputs([extractorTypesList[j]]);
         accordionExtractors.addPane('Extractor ' + (j + 1), () => extractorContainerList[j], true);
         j++;
       });
@@ -311,21 +306,20 @@ export function BioSignals() {
       let indicatorTypesList = [];
       let indicatorChartsList = [];
       let indicatorContainerList = [];
-      let indicatorInputsNew = ui.inputs(indicatorTypesList);
       let k = 0;
       let addIndicatorButton = ui.button('Add Indicator', async () => {
         indicatorChartsList[k] = getEmptyChart();
         let indicatorsNames = await grok.dapi.scripts.filter('#indicators').list();
         indicatorTypesList[k] = ui.choiceInput('Indicator ' + (k + 1), '', indicatorsNames, async function () {
           let call = indicatorTypesList[k - 1].value.prepare();
-          let context = DG.Context.create();
+          let contextIndicators = DG.Context.create();
           extracted.name = 'Extracted';
-          context.setVariable('table', extracted);
+          contextIndicators.setVariable('table', extracted);
           grok.shell.tables.forEach(function (table, index) {
-            context.setVariable('table' + index, table);
+            contextIndicators.setVariable('table' + index, table);
           });
-          call.context = context;
-          indicatorInputsNew = ui.div([
+          call.context = contextIndicators;
+          indicatorContainerList[k - 1].replaceWith(ui.div([
             ui.block25([
               ui.inputs([
                 indicatorTypesList[k - 1],
@@ -345,25 +339,22 @@ export function BioSignals() {
                       }
                     }),
                     ui.iconFA('trash', (ev) => {
-                      let id = parseInt(ev.currentTarget.offsetParent.parentElement.parentElement.parentElement.parentElement.parentElement.className.slice(44, 47));
+                      let id = parseInt(ev.currentTarget.offsetParent.parentElement.parentElement.parentElement.parentElement.className.slice(44, 47));
                       let lst = indicatorTypesList.map((e) => e.caption);
                       let idx = lst.indexOf('Indicator ' + id);
                       accordionIndicators.root.removeChild(accordionIndicators.root.childNodes[idx]);
-                      indicatorContainerList = indicatorContainerList.filter(e => e !== indicatorContainerList[idx]);
-                      indicatorTypesList = indicatorTypesList.filter(e => e !== indicatorTypesList[idx]);
-                      indicatorChartsList = indicatorChartsList.filter(e => e !== indicatorChartsList[idx]);
+                      indicatorContainerList.splice(idx, 0);
+                      indicatorTypesList.splice(idx, 0);
+                      indicatorChartsList.splice(idx, 0);
                     })
                   ])
                 ])
               ])
             ]),
             ui.block75([indicatorChartsList[k - 1]])
-          ]);
-          indicatorContainerList[k - 1].replaceChild(indicatorInputsNew, indicatorInputsOld);
-          indicatorInputsOld = indicatorInputsNew;
+          ]));
         });
-        let indicatorInputsOld = ui.inputs([indicatorTypesList[k]]);
-        indicatorContainerList[k] = ui.div(indicatorInputsOld);
+        indicatorContainerList[k] = ui.inputs([indicatorTypesList[k]]);
         accordionIndicators.addPane('Indicator ' + (k + 1), () => indicatorContainerList[k], true);
         k++;
       });
