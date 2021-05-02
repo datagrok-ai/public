@@ -49,3 +49,24 @@ export function newickToDf(newick, filename) {
 
   return df;
 };
+
+// https://stackoverflow.com/questions/5525071/how-to-wait-until-an-element-exists
+export function waitForElm(id, checkFrequency = 100, timeout = 1000) {
+  const startTime = Date.now();
+  return new Promise((resolve, reject) => {
+    (function loopSearch() {
+      const element = document.getElementById(id);
+
+      if (element) {
+        return resolve(element);
+      } else {
+        setTimeout(() => {
+          if ((Date.now() - startTime) > timeout) {
+            reject('Timeout');
+          }
+          loopSearch();
+        }, checkFrequency);
+      }
+    })();
+  });
+}
