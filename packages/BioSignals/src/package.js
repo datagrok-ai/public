@@ -114,7 +114,6 @@ export function BioSignals() {
 
   let chosenRecordDiv = ui.div();
   let enterSamplingFrequencyDiv = ui.div();
-  let samplingFrequencyDiv = ui.div();
   let annotationViewerDiv = ui.div();
 
   let localTables = grok.shell.tables;
@@ -140,7 +139,7 @@ export function BioSignals() {
       annotationViewerDiv.innerHTML = '';
       annotationViewerDiv.append(
         ui.block([
-          DG.Viewer.fromType('AnnotatorViewer', signalsWithAnnotations)
+          DG.Viewer.fromType('AnnotatorViewer', signalsWithAnnotations).root
         ])
       );
 
@@ -369,32 +368,31 @@ export function BioSignals() {
         k++;
       });
 
-      grok.shell.newView('BioSignals', [
-        appDescription,
-        chosenDatabase,
-        enterSamplingFrequencyDiv,
-        chosenRecordDiv,
-        samplingFrequencyDiv,
-        annotationViewerDiv,
-        ui.h2('Filtering and preprocessing'),
-        accordionFilters,
-        addFilterButton,
-        ui.h2('Information extraction'),
-        accordionExtractors,
-        addExtractorButton,
-        ui.h2('Physiological indicators'),
-        accordionIndicators,
-        addIndicatorButton
-      ]);
+      mainDiv.replaceWith(
+        ui.divV([
+          annotationViewerDiv.getRootNode(),
+          ui.h2('Filtering and preprocessing'),
+          accordionFilters,
+          addFilterButton,
+          ui.h2('Information extraction'),
+          accordionExtractors,
+          addExtractorButton,
+          ui.h2('Physiological indicators'),
+          accordionIndicators,
+          addIndicatorButton
+        ])
+      );
     });
     chosenRecordDiv.innerHTML = '';
     chosenRecordDiv.append(chosenRecord.root);
   });
 
+  let mainDiv = ui.div();
   grok.shell.newView('BioSignals', [
     appDescription,
     chosenDatabase,
     enterSamplingFrequencyDiv,
-    chosenRecordDiv
+    chosenRecordDiv,
+    mainDiv
   ]);
 }
