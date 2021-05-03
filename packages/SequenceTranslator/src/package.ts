@@ -43,7 +43,9 @@ export function sequenceTranslator(): void {
     moleculeSvg.innerHTML = "";
     let flavor: string = (outputSequencesObj.nucleotides.includes('U')) ? "RNA_both_caps" : "DNA_both_caps";
     try {
-      moleculeSvg.append(grok.chem.svgMol(<string> await nucleotidesToSmiles(outputSequencesObj.nucleotides, flavor), 900, 300));
+      if (outputSequencesObj.type != "Length of input sequence should be at least 10 characters" &&
+          outputSequencesObj.type != "Type of input sequence is undefined")
+        moleculeSvg.append(grok.chem.svgMol(<string> await nucleotidesToSmiles(outputSequencesObj.nucleotides, flavor), 900, 300));
     } catch(e) {
       grok.shell.error(e);
     } finally {
@@ -169,7 +171,15 @@ export function isSiRnaAxolabsCode(sequence: string): boolean {return /^[fsACGUa
 export function isSiRnaGcrsCode(sequence: string): boolean {return /^[fmpsACGU]{30,}$/.test(sequence);}
 
 function convertSequence(seq: string) {
-  seq.replace(/\s/g, '');
+  seq = seq.replace(/\s/g, '');
+  if (seq.length < 10)
+    return {
+      type: "Length of input sequence should be at least 10 characters",
+      nucleotides: "Length of input sequence should be at least 10 characters",
+      bioSpring: "Length of input sequence should be at least 10 characters",
+      axolabs: "Length of input sequence should be at least 10 characters",
+      gcrs: "Length of input sequence should be at least 10 characters"
+    };
   if (isDnaNucleotidesCode(seq))
     return {
       type: "DNA Nucleotides Code",
@@ -177,7 +187,7 @@ function convertSequence(seq: string) {
       bioSpring: asoGapmersNucleotidesToBioSpring(seq),
       axolabs: "No translation table available",
       gcrs: asoGapmersNucleotidesToGcrs(seq)
-  };
+    };
   if (isAsoGapmerBioSpringCode(seq))
     return {
       type: "ASO Gapmers / BioSpring Code",
@@ -244,7 +254,7 @@ export function asoGapmersNucleotidesToBioSpring(nucleotides: string) {
   const objForCenter: {[index: string]: string} = {"C": "9*", "A": "A*", "T": "T*", "G": "G*"};
   return nucleotides.replace(/[ATCG]/g, function (x: string) {
     count++;
-    return (count < 5) ? objForEdges[x] : (count < 15) ? objForCenter[x] : objForEdges[x];
+    return count > 5 && count < 15 ? objForCenter[x] : objForEdges[x];
   }).slice(0, 2 * count + 1);
 }
 
