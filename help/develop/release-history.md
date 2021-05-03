@@ -1,6 +1,34 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-05-03 Dev build 0.91.6
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.91.6`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* BioSignals: option to delete accordion pane 
+* (Bug) Grok connect: can't connect to MsSQL using TLS10 (WIP)
+* JBio;Repertoir: Added GFF annotations for protein translation, tuned debounce timeout for better perf 
+* Repertoir: code cleanup 
+* Table View: Columns pane: add search 
+* BioSignals: Preserve "Filtering, Extraction and Indicator" parameters while selecting "Physionet record" or "Column" 
+* PhyloTreeViewer: JS-based phylogenetic tree visualisation (WIP)
+* BioSignals: fixes and optimizations 
+* DataGrok API and system samples, add cross linking to improve connectivity (WIP)
+* BioSignals: AnnotatorViewer: round values and change tooltip formatter 
+* JS API: ui.info for a yellow info bar 
+* Docs: how to run Chrome with CORS disabled. 
+* Docs: info about Labs repo and importDemoPackages setting for dev.datagrok.ai. 
+* (Bug) Chem: several molecule filters won't work together (WIP)
+
+
 # 2021-04-30 Dev build 0.91.5
 
 ## Latest Docker Images
