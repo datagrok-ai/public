@@ -202,20 +202,22 @@ export function BioSignals() {
                         pi.close();
                       }
                     }),
-                    ui.iconFA('trash', (ev) => {
-                      let id = parseInt(ev.currentTarget.offsetParent.parentElement.parentElement.parentElement.parentElement.className.slice(41, 44));
-                      let lst = filterTypesList.map((e) => e.caption);
-                      let idx = lst.indexOf('Filter ' + id);
-                      accordionFilters.root.removeChild(accordionFilters.root.childNodes[idx]);
-                      filterContainerList.splice(idx, 1);
-                      filterTypesList.splice(idx, 1);
-                      filterChartsList.splice(idx, 1);
-                      signals.columns.remove(signals.columns.byIndex(idx + 1).name);
-                    })
+                    ui.button(
+                      ui.iconFA('trash-alt', (ev) => {
+                        let id = parseInt(ev.currentTarget.offsetParent.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.className.slice(41, 44));
+                        let lst = filterTypesList.map((e) => e.caption).filter(function (el) {return el != null;});
+                        let idx = lst.indexOf('Filter ' + id);
+                        accordionFilters.root.removeChild(accordionFilters.root.childNodes[idx]);
+                        filterContainerList.splice(idx, 1);
+                        filterTypesList.splice(idx, 1);
+                        filterChartsList.splice(idx, 1);
+                        signals.columns.remove(signals.columns.byIndex(idx + 1).name);
+                      })
+                    )
                   ])
                 ])
               ])
-            ]),
+            ], i),
             ui.block75([filterChartsList[i - 1]])
           ]));
         });
@@ -279,16 +281,18 @@ export function BioSignals() {
                         pi.close();
                       }
                     }),
-                    ui.iconFA('trash', (ev) => {
-                      let id = parseInt(ev.currentTarget.offsetParent.parentElement.parentElement.parentElement.parentElement.className.slice(44, 47));
-                      let lst = extractorTypesList.map((e) => e.caption);
-                      let idx = lst.indexOf('Extractor ' + id);
-                      accordionExtractors.root.removeChild(accordionExtractors.root.childNodes[idx]);
-                      extractorContainerList.splice(idx, 0);
-                      extractorTypesList.splice(idx, 0);
-                      extractorChartsList.splice(idx, 0);
-                      extracted.columns.remove(extracted.columns.byIndex(idx).name);
-                    })
+                    ui.button(
+                      ui.iconFA('trash-alt', (ev) => {
+                        let id = parseInt(ev.currentTarget.offsetParent.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.className.slice(44, 47));
+                        let lst = extractorTypesList.map((e) => e.caption).filter(function (el) {return el != null;});;
+                        let idx = lst.indexOf('Extractor ' + id);
+                        accordionExtractors.root.removeChild(accordionExtractors.root.childNodes[idx]);
+                        extractorContainerList.splice(idx, 0);
+                        extractorTypesList.splice(idx, 0);
+                        extractorChartsList.splice(idx, 0);
+                        extracted.columns.remove(extracted.columns.byIndex(idx).name);
+                      })
+                    )
                   ])
                 ])
               ])
@@ -338,15 +342,17 @@ export function BioSignals() {
                         pi.close();
                       }
                     }),
-                    ui.iconFA('trash', (ev) => {
-                      let id = parseInt(ev.currentTarget.offsetParent.parentElement.parentElement.parentElement.parentElement.className.slice(44, 47));
-                      let lst = indicatorTypesList.map((e) => e.caption);
-                      let idx = lst.indexOf('Indicator ' + id);
-                      accordionIndicators.root.removeChild(accordionIndicators.root.childNodes[idx]);
-                      indicatorContainerList.splice(idx, 0);
-                      indicatorTypesList.splice(idx, 0);
-                      indicatorChartsList.splice(idx, 0);
-                    })
+                    ui.button(
+                      ui.iconFA('trash-alt', (ev) => {
+                        let id = parseInt(ev.currentTarget.offsetParent.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.className.slice(44, 47));
+                        let lst = indicatorTypesList.map((e) => e.caption).filter(function (el) {return el != null;});;
+                        let idx = lst.indexOf('Indicator ' + id);
+                        accordionIndicators.root.removeChild(accordionIndicators.root.childNodes[idx]);
+                        indicatorContainerList.splice(idx, 0);
+                        indicatorTypesList.splice(idx, 0);
+                        indicatorChartsList.splice(idx, 0);
+                      })
+                    )
                   ])
                 ])
               ])
@@ -360,7 +366,7 @@ export function BioSignals() {
       });
 
       mainDiv.replaceWith(
-        ui.divV([
+        ui.div([
           annotationViewerDiv.getRootNode(),
           ui.h2('Filtering and preprocessing'),
           accordionFilters,
@@ -381,7 +387,10 @@ export function BioSignals() {
   let mainDiv = ui.div();
   grok.shell.newView('BioSignals', [
     appDescription,
-    chosenDatabase,
+    ui.divH([
+      chosenDatabase,
+      ui.tooltip.bind(ui.iconFA(['info-circle']), 'Choose Physionet database or your uploaded local file')
+    ]),
     enterSamplingFrequencyDiv,
     chosenRecordDiv,
     mainDiv
