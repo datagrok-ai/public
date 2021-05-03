@@ -125,7 +125,7 @@ const MapProxy = new Proxy(class {
  * strongly-typed columns of different types.
  *
  * In the API, the terms "Table" and "DataFrame" are used interchangeably.
- * See usage samples: https://public.datagrok.ai/js/samples/data-frame/manipulate
+ * See usage samples: {@link https://public.datagrok.ai/js/samples/data-frame/manipulate}
  */
 export class DataFrame {
   public readonly d: any;
@@ -350,6 +350,7 @@ export class DataFrame {
   /**
    * Returns [Int32Array] that contains sorted order, or null for unsorted (original) order.
    * See also Column.getSortedOrder.
+   * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/sorting/sorted-order}
    * @param {Object[]} sortByColumnIds - Collection of [Column]s to use as keys for sorting.
    * @param {boolean[]} sortOrders - List of sort orders for [sortByCols]. True == ascending.
    * @param {BitSet} rowMask - Mask of the rows to sort. Result array will contain [rowIndexes.length] elements.
@@ -774,7 +775,9 @@ export class Column {
     return this;
   }
 
-  /** Returns the raw buffer containing data. Return type depends on the column type:
+  /** Returns the raw buffer containing data.
+   * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/performance/access}
+   * Return type depends on the column type:
    * {Int32Array} for ints, {@link INT_NULL} represents null.
    * {Float32Array} for floats, {@link FLOAT_NULL} represents null.
    * {Float64Array} for qnums, {@link FLOAT_NULL} represents null.
@@ -900,7 +903,8 @@ export class Column {
   /** Returns an array of indexes sorted using [valueComparer]. */
   getSortedOrder(): Int32Array { return api.grok_Column_GetSortedOrder(this.d); }
 
-  /** Value comparison function to be used for sorting. Null means default sorting. */
+  /** Value comparison function to be used for sorting. Null means default sorting.
+   * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/sorting/custom-comparer}  */
   get valueComparer(): Comparer | null { return api.grok_Column_Get_ValueComparer(this.d); }
   set valueComparer( cmp: Comparer | null) { api.grok_Column_Set_ValueComparer(this.d, cmp); }
 
@@ -1175,6 +1179,7 @@ export class RowMatcher {
 
 /**
  * Value matcher.
+ * See usage example: {@link https://public.datagrok.ai/js/samples/data-frame/value-matching/value-matcher}
  * */
 export class ValueMatcher {
   private readonly d: any;
@@ -1261,6 +1266,7 @@ export class RowList {
 
   /**
    * Creates a query matcher.
+   * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/row-matching/patterns}
    * @param {String|Object} query
    * @returns {RowMatcher}
    * */
@@ -1278,14 +1284,16 @@ export class RowList {
     }
   }
 
-  /**
+  /** Selects rows by predicate.
+   * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/row-matching/select-rows}
    * @param {RowPredicate} rowPredicate
    * */
   select(rowPredicate: RowPredicate): void {
     this._applyPredicate(this.table.selection, rowPredicate);
   }
 
-  /**
+  /** Filters rows by predicate.
+   * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/row-matching/select-rows}
    * @param {RowPredicate} rowPredicate
    * */
   filter(rowPredicate: RowPredicate): void {
