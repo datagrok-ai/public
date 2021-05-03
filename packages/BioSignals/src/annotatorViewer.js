@@ -26,6 +26,7 @@ export class AnnotatorViewer extends DG.JsViewer {
 
   onTableAttached() {
     let signalValues = this.dataFrame.columns.byIndex(0);
+
     const samplingPeriodInMilliseconds = 1000 / signalValues.getTag('samplingFrequency');
     this.timeOfFirstSample = new Date('Jan 01 1970 00:00:00 GMT+0000');
 
@@ -35,7 +36,7 @@ export class AnnotatorViewer extends DG.JsViewer {
       let now = new Date(base1 += samplingPeriodInMilliseconds);
       data[i] = [
         getTime(now),
-        signalValues.get(i)
+        parseFloat(signalValues.get(i).toFixed(5))
       ];
     }
     if (this.dataFrame.columns.byName('indicesOfRPeak')) {
@@ -50,7 +51,7 @@ export class AnnotatorViewer extends DG.JsViewer {
         now = new Date(base += (indicesOfRPeak[i] - indicesOfRPeak[i - 1]) * samplingPeriodInMilliseconds);
         this.markedPoints[i] = [
           getTime(now),
-          signalValues.get(indicesOfRPeak[i])
+          parseFloat(signalValues.get(indicesOfRPeak[i]).toFixed(5))
         ];
       }
     } else {
@@ -64,6 +65,12 @@ export class AnnotatorViewer extends DG.JsViewer {
         trigger: 'axis',
         position: function (pt) {
           return [pt[0], '10%'];
+        },
+        formatter: function(params) {
+          params = params[0];
+          let chartdate = 'time: ' + params.value[0].toString().substring(11, 19);
+          let val = '<li style="list-style:none">' + params.marker + 'value: ' + '&nbsp;&nbsp;' + params.value[1] + '</li>';
+          return chartdate + val;
         }
       },
       title: {
