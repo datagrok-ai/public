@@ -8,7 +8,6 @@
 #output: double sampling_frequency
 
 import wfdb
-import numpy as np
 
 # 'ECG-ID Database'
 if chosenDatabase == 'ecgiddb':
@@ -24,5 +23,5 @@ sampling_frequency = record.fs
 
 df = pd.DataFrame({
     'time': range(record.sig_len),
-    'testEcg': np.around(record.p_signal[:, 0], decimals=4)
+    'testEcg': record.p_signal[:, 0]
 })
