@@ -257,7 +257,7 @@ export function info(children: HTMLElement[] | HTMLElement | string, header: str
     }
   }
   content = content.concat(children);
-  return div(content, 'grok-datajob-publish-alert');
+  return div(content, 'grok-info-bar');
 }
 
 /** Div flex-box container that positions child elements vertically.
