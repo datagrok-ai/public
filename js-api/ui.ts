@@ -244,6 +244,22 @@ export function div(children: HTMLElement[] | HTMLElement = [], options: string 
   return d;
 }
 
+export function info(children: HTMLElement[] | HTMLElement | string, header: string | null = null): HTMLDivElement {
+  let content: HTMLElement[] = [];
+  if (header !== null && header !== undefined) {
+    content.push(h1(header));
+  }
+  if (!Array.isArray(children)) {
+    if (children === null || typeof children === 'string') {
+      children = [divText(children)];
+    } else {
+      children = [children];
+    }
+  }
+  content = content.concat(children);
+  return div(content, 'grok-datajob-publish-alert');
+}
+
 /** Div flex-box container that positions child elements vertically.
  * @param {object[]} items
  * @param {string | ElementOptions} options
