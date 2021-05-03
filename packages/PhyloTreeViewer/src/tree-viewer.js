@@ -76,6 +76,17 @@ export class PhyloTreeViewer extends DG.JsViewer {
     this.tree.modify_selection(selection);
   }
 
+  _centerLayout(width, height) {
+    const container = d3.select('g.phylotree-container');
+    const g = container.append('g').attr('class', 'phylotree-layout');
+    container.selectAll('path.branch, g.internal-node, g.node').each(function() { g.append(() => this); });
+
+    const bbox = document.querySelector('.phylotree-layout').getBBox();
+    const x = (width - bbox.width) / 2 - Math.abs(bbox.x);
+    const y = (height - bbox.height) / 2 - Math.abs(bbox.y);
+    g.attr('transform', `translate(${x}, ${y})`);
+  }
+
   render(computeData = true) {
     $(this.root).empty();
 
@@ -141,6 +152,9 @@ export class PhyloTreeViewer extends DG.JsViewer {
           }
         }
       });
+
+      // Layout fix
+      if (this.radialLayout) this._centerLayout(width, height);
     })
     .catch(e => console.log(e));
   }
