@@ -1,9 +1,12 @@
 // Creating yellow information bars in views
 
-let appDescription = ui.info(
-  'This app fetches weather forecasts and displays them on a map',
-  'Weather Forecast');
-grok.shell.newView('New App', [appDescription]);
+grok.shell.newView('Weather App', [
+  ui.info(
+    'This application fetches weather forecasts and displays them on a map',
+    'Weather Forecast Application'
+  ),
+  ui.divText('Main Application Area')
+]);
 
 /*
   These call styles are also available:
