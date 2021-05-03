@@ -377,6 +377,7 @@ ui.dialog('Modal dialog')
 ```
 
 # Elements
+
   ## Colors
   Color palette is a predefined set of colors. The colors are fixed and do not change.
   ```javascript
@@ -398,6 +399,7 @@ ui.dialog('Modal dialog')
   ```
   ## Typography
   Typography sets default styles for headings, paragraphs, spans, and divs elements.
+  
   ### Headers
   ```javascript
   ui.h1('Header 1');
@@ -455,6 +457,15 @@ ui.dialog('Modal dialog')
   ui.button(ui.iconFA('info'));
   ui.bigButton('Big button');
   ```
+  
+  ## Info bars
+  Info bar allows adding assisting information to views, typically at their top area.
+  ```javascript
+  grok.shell.newView('View', [
+    ui.info('Info text', 'Optional header')
+  ]);
+  ```
+  
   ## Forms
   A form is used to present UI controls and allow to enter data in a structured way.
   ```javascript
