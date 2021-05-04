@@ -1,6 +1,21 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-05-04 Dev build 0.91.9
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.91.9`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* BarChart categories error 
+
+
 # 2021-05-04 Dev build 0.91.8
 
 ## Latest Docker Images
