@@ -6,7 +6,8 @@ export class PhyloTreeViewer extends DG.JsViewer {
     this.radialLayout = this.bool('radialLayout', false);
     this.fontSize = this.string('fontSize', '9px');
     this.selection = this.string('selection', 'path to root & descendants', { choices: [
-      'none', 'path to root', 'descendants', 'path to root & descendants'
+      'none', 'path to root', 'descendants', 'path to root & descendants',
+      'incident branch', 'internal branches', 'terminal branches',
     ]});
     this.tooltipOffset = 10;
     this.defaultSize = 400;
@@ -71,7 +72,10 @@ export class PhyloTreeViewer extends DG.JsViewer {
     const selection = (this.selection === 'path to root') ?
     this.tree.path_to_root(node) : (this.selection === 'descendants') ?
     this.tree.select_all_descendants(node, true, true) : (this.selection === 'path to root & descendants') ?
-    this.tree.path_to_root(node).concat(this.tree.select_all_descendants(node, true, true)) : [];
+    this.tree.path_to_root(node).concat(this.tree.select_all_descendants(node, true, true)) :
+    (this.selection === 'incident branch') ? [node] : (this.selection === 'internal branches') ?
+    this.tree.select_all_descendants(node, false, true) : (this.selection === 'terminal branches') ?
+    this.tree.select_all_descendants(node, true, false) : [];
 
     this.tree.modify_selection(selection);
   }
