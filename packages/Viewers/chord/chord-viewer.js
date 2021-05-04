@@ -285,11 +285,13 @@ export class ChordViewer extends DG.JsViewer {
     });
   }
 
+  _showErrorMessage(msg) { this.root.appendChild(ui.divText(msg, 'd4-viewer-error')); }
+
   render(computeData = true) {
     $(this.root).empty();
 
     if (!this._testColumns()) {
-      this.root.appendChild(ui.divText('Not enough data to produce the result.', 'd4-viewer-error'));
+      this._showErrorMessage('Not enough data to produce the result.');
       return;
     }
 
@@ -298,7 +300,7 @@ export class ChordViewer extends DG.JsViewer {
       this.fromColumn = this.dataFrame.getCol(this.fromColumnName);
       this.toColumn = this.dataFrame.getCol(this.toColumnName);
       if (this.fromColumn.type !== 'string' || this.toColumn.type !== 'string') {
-        this.root.appendChild(ui.divText('Data of a non-string type cannot be plotted.', 'd4-viewer-error'));
+        this._showErrorMessage('Data of a non-string type cannot be plotted.');
         return;
       }
       this._generateData();
