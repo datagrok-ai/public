@@ -1,6 +1,29 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-05-04 Dev build 0.91.7
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.91.7`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* (Bug) Core: default tooltip config is no longer saved with layout (WIP)
+* (Bug) JS Viewer: Incorrect height calculation 
+* (Bug) Bar Chart: coloring cannot be disabled 
+* BioSignals: fixes and minor changes 
+* PhyloTreeViewer: JS-based phylogenetic tree visualisation (WIP)
+* Datagrok API and system samples, add cross linking to improve connectivity (WIP)
+* sequenceTranslator: fix of line feed bug; notify if sequence length is too short 
+* (Bug) Filters: adding returns a filter for the column added previously instead of the currently selected one 
+* (Bug) Bar Chart: coloring gets only applied when editing colors in a grid column 
+
+
 # 2021-05-03 Dev build 0.91.6
 
 ## Latest Docker Images
