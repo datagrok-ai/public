@@ -147,8 +147,6 @@ export class ChordViewer extends DG.JsViewer {
 
   _generateData() {
     this.data.length = 0;
-    this.fromColumn = this.dataFrame.getCol(this.fromColumnName);
-    this.toColumn = this.dataFrame.getCol(this.toColumnName);
     this.distinctCols = this.fromColumnName !== this.toColumnName;
 
     this.indexes = this.dataFrame.filter.getSelectedIndexes();
@@ -288,6 +286,7 @@ export class ChordViewer extends DG.JsViewer {
   }
 
   render(computeData = true) {
+    $(this.root).empty();
 
     if (!this._testColumns()) {
       this.root.appendChild(ui.divText('Not enough data to produce the result.', 'd4-viewer-error'));
@@ -295,11 +294,17 @@ export class ChordViewer extends DG.JsViewer {
     }
 
     if (computeData) {
+      // TODO: change when columnFilter setter is available
+      this.fromColumn = this.dataFrame.getCol(this.fromColumnName);
+      this.toColumn = this.dataFrame.getCol(this.toColumnName);
+      if (this.fromColumn.type !== 'string' || this.toColumn.type !== 'string') {
+        this.root.appendChild(ui.divText('Data of a non-string type cannot be plotted.', 'd4-viewer-error'));
+        return;
+      }
       this._generateData();
       if (this.distinctCols) this._computeChords();
     }
 
-    $(this.root).empty();
     let width = this.root.parentElement.clientWidth;
     let height = this.root.parentElement.clientHeight;
     let size = Math.min(width, height);
