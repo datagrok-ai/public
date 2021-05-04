@@ -1,6 +1,27 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-05-04 Dev build 0.91.8
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.91.8`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* PhyloTreeViewer: JS-based phylogenetic tree visualisation (WIP)
+* Packages: beta flag (WIP)
+* Updated public token 
+* Removed debug line 
+* Chord Diagram (WIP)
+* (Bug) Chem: Tile Viewer issue (WIP)
+* sequenceTranslator: use functions to display default translations 
+
+
 # 2021-05-04 Dev build 0.91.7
 
 ## Latest Docker Images
