@@ -708,7 +708,7 @@ export class Column {
         let val = values[i] === undefined || values[i] === null ? FLOAT_NULL : values[i];
         buffer[i] = exact ? Qnum.exact(val) : val;
       }
-      console.log(buffer);
+     // console.log(buffer);
       col.setRawData(buffer);
     }
     return col;
