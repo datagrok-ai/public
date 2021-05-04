@@ -5,6 +5,11 @@ import * as DG from 'datagrok-api/dg';
 
 export let _package = new DG.Package();
 
+const undefinedInputSequence: string = "Type of input sequence is undefined";
+const smallNumberOfCharacters: string = "Length of input sequence should be at least 10 characters";
+const defaultNucleotidesInput: string = "AGGTCCTCTTGACTTAGGCC";
+const noTranslationTableAvailable: string = "No translation table available";
+
 //name: Sequence Translator
 //tags: app
 export function sequenceTranslator(): void {
@@ -24,7 +29,7 @@ export function sequenceTranslator(): void {
     ui.divText("This will add the result column to the right of the table"),
   ], 'grok-datajob-publish-alert');
 
-  let inputSequenceField = ui.textInput("", "AGGTCCTCTTGACTTAGGCC", async (seq: string) => {
+  let inputSequenceField = ui.textInput("", defaultNucleotidesInput, async (seq: string) => {
     let outputSequencesObj = convertSequence(seq);
 
     outputTableDiv.innerHTML = "";
@@ -43,8 +48,7 @@ export function sequenceTranslator(): void {
     moleculeSvg.innerHTML = "";
     let flavor: string = (outputSequencesObj.nucleotides.includes('U')) ? "RNA_both_caps" : "DNA_both_caps";
     try {
-      if (outputSequencesObj.type != "Length of input sequence should be at least 10 characters" &&
-          outputSequencesObj.type != "Type of input sequence is undefined")
+      if (outputSequencesObj.type != smallNumberOfCharacters && outputSequencesObj.type != undefinedInputSequence)
         moleculeSvg.append(grok.chem.svgMol(<string> await nucleotidesToSmiles(outputSequencesObj.nucleotides, flavor), 900, 300));
     } catch(e) {
       grok.shell.error(e);
@@ -57,10 +61,10 @@ export function sequenceTranslator(): void {
 
   let outputTableDiv = ui.div([
     DG.HtmlTable.create([
-      {key: 'Nucleotides', value: 'AGGTCCTCTTGACTTAGGCC'},
-      {key: 'BioSpring', value: '6\*8\*8\*5\*7\*9\*T\*9\*T\*T\*G\*A\*9\*T\*T\*6\*8\*8\*7\*7'},
-      {key: 'Axolabs', value: 'No translation table available'},
-      {key: 'GCRS', value: 'moeAnpsmoeGnpsmoeGnpsmoeUnpsmoe5mCps5mCpsTps5mCpsTpsTpsGpsAps5mCpsTpsTnpsmoeAnpsmoeGnpsmoeGnpsmoe5mCnpsmoe5mC'}
+      {key: 'Nucleotides', value: defaultNucleotidesInput},
+      {key: 'BioSpring', value: asoGapmersNucleotidesToBioSpring(defaultNucleotidesInput)},
+      {key: 'Axolabs', value: noTranslationTableAvailable},
+      {key: 'GCRS', value: asoGapmersNucleotidesToGcrs(defaultNucleotidesInput)}
     ], (item: {key: string; value: string;}) => [item.key, item.value], ['Code', 'Sequence']).root
   ], 'table');
 
@@ -113,27 +117,24 @@ export function sequenceTranslator(): void {
     )
   ]);
 
-  let view = grok.shell.newView('Sequence Translator', []);
-  view.append(
+  grok.shell.newView('Sequence Translator', [
+    appDescription,
     ui.divV([
-      appDescription,
-      ui.divV([
+      ui.div([
+        ui.h1('Input sequence'),
         ui.div([
-          ui.h1('Input sequence'),
-          ui.div([
-            inputSequenceField.root
-          ],'input-base')
-        ], 'sequenceInput'),
-        semTypeOfInputSequence,
-        ui.block([
-          ui.h1('Output'),
-          outputTableDiv
-        ]),
-        accordionWithCmoCodes.root
-      ], 'sequence'),
-      moleculeSvg
-    ])
-  );
+          inputSequenceField.root
+        ],'input-base')
+      ], 'sequenceInput'),
+      semTypeOfInputSequence,
+      ui.block([
+        ui.h1('Output'),
+        outputTableDiv
+      ]),
+      accordionWithCmoCodes.root
+    ], 'sequence'),
+    moleculeSvg
+  ]);
 
   $('.sequence')
     .css('padding','20px 0')
@@ -174,18 +175,18 @@ function convertSequence(seq: string) {
   seq = seq.replace(/\s/g, '');
   if (seq.length < 10)
     return {
-      type: "Length of input sequence should be at least 10 characters",
-      nucleotides: "Length of input sequence should be at least 10 characters",
-      bioSpring: "Length of input sequence should be at least 10 characters",
-      axolabs: "Length of input sequence should be at least 10 characters",
-      gcrs: "Length of input sequence should be at least 10 characters"
+      type: smallNumberOfCharacters,
+      nucleotides: smallNumberOfCharacters,
+      bioSpring: smallNumberOfCharacters,
+      axolabs: smallNumberOfCharacters,
+      gcrs: smallNumberOfCharacters
     };
   if (isDnaNucleotidesCode(seq))
     return {
       type: "DNA Nucleotides Code",
       nucleotides: seq,
       bioSpring: asoGapmersNucleotidesToBioSpring(seq),
-      axolabs: "No translation table available",
+      axolabs: noTranslationTableAvailable,
       gcrs: asoGapmersNucleotidesToGcrs(seq)
     };
   if (isAsoGapmerBioSpringCode(seq))
@@ -193,7 +194,7 @@ function convertSequence(seq: string) {
       type: "ASO Gapmers / BioSpring Code",
       nucleotides: asoGapmersBioSpringToNucleotides(seq),
       bioSpring: seq,
-      axolabs: "No translation table available",
+      axolabs: noTranslationTableAvailable,
       gcrs: asoGapmersBioSpringToGcrs(seq)
     };
   if (isAsoGapmerGcrsCode(seq))
@@ -201,7 +202,7 @@ function convertSequence(seq: string) {
       type: "ASO Gapmers / GCRS Code",
       nucleotides: asoGapmersGcrsToNucleotides(seq),
       bioSpring: asoGapmersGcrsToBioSpring(seq),
-      axolabs: "No translation table available",
+      axolabs: noTranslationTableAvailable,
       gcrs: seq
     };
   if (isRnaNucleotidesCode(seq))
@@ -237,11 +238,11 @@ function convertSequence(seq: string) {
       gcrs: seq
     };
   return {
-    type: "Type of input sequence is undefined",
-    nucleotides: "Type of input sequence is undefined",
-    bioSpring: "Type of input sequence is undefined",
-    axolabs: "Type of input sequence is undefined",
-    gcrs: "Type of input sequence is undefined"
+    type: undefinedInputSequence,
+    nucleotides: undefinedInputSequence,
+    bioSpring: undefinedInputSequence,
+    axolabs: undefinedInputSequence,
+    gcrs: undefinedInputSequence
   };
 }
 
