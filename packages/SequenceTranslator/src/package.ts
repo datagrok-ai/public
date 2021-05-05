@@ -45,13 +45,15 @@ export function sequenceTranslator(): void {
     semTypeOfInputSequence.textContent = 'Detected input type: ' + outputSequencesObj.type;
 
     let pi = DG.TaskBarProgressIndicator.create('Rendering molecule...');
-    moleculeSvg.innerHTML = "";
-    let flavor: string = (outputSequencesObj.nucleotides.includes('U')) ? "RNA_both_caps" : "DNA_both_caps";
     try {
+      let flavor: string = (outputSequencesObj.nucleotides.includes('U')) ? "RNA_both_caps" : "DNA_both_caps";
+      let mol = grok.chem.svgMol(<string> await nucleotidesToSmiles(outputSequencesObj.nucleotides, flavor), 900, 300);
+      moleculeSvg.innerHTML = "";
       if (outputSequencesObj.type != smallNumberOfCharacters && outputSequencesObj.type != undefinedInputSequence)
-        moleculeSvg.append(grok.chem.svgMol(<string> await nucleotidesToSmiles(outputSequencesObj.nucleotides, flavor), 900, 300));
+        moleculeSvg.append(mol);
     } catch(e) {
-      grok.shell.error(e);
+      moleculeSvg.innerHTML = "";
+      // grok.shell.error(e);
     } finally {
       pi.close();
     }
