@@ -39,7 +39,7 @@ let submissionValues = [];
 //tags: panel, widgets
 //input: dataframe df
 //output: widget result
-//condition: df.tags.get("sdtm")
+//condition: df.tags.get("sdtm") == "true"
 export function sdtmSummaryPanel(df: DG.DataFrame): DG.Widget {
   let domain = df.getTag('sdtm-domain');
   let domainUpper = domain.toUpperCase();
@@ -61,7 +61,7 @@ export function sdtmSummaryPanel(df: DG.DataFrame): DG.Widget {
 //tags: panel, widgets
 //input: column varCol
 //output: widget result
-//condition: t.tags.get("sdtm")
+//condition: t.tags.get("sdtm") == "true"
 export function sdtmVariablePanel(varCol: DG.Column): DG.Widget {
   let domain = meta.domains[varCol.dataFrame.getTag('sdtm-domain')];
   let variable = domain[varCol.name];
@@ -128,7 +128,7 @@ export async function clinicalCaseInit(): Promise<void> {
     let t = args.args.dataFrame;
     let domain = meta.domains[t.name.toLowerCase()];
     if (domain) {
-      t.setTag('sdtm', true);
+      t.setTag('sdtm', 'true');
       t.setTag('sdtm-domain', t.name.toLowerCase());
       for (let variableName in domain)
         if (t.columns.contains(variableName)) {
