@@ -1,6 +1,29 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-05-05 Dev build 0.91.10
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.91.10`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Chord Diagram (WIP)
+* datagrok-tools version 4.1.2, bump 
+* (Bug) sequenceTranslator: molecule SVGs append after adding/removing characters to input sequence 
+* (Bug) UI: new view appears below the current 
+* Fixed TS warnings 
+* ClinicalCase: minor adjustments 
+* sequenceTranslator: OP100 Sequence Conversion (WIP)
+* Updated public token 
+* sequenceTranslator: MM12 Sequence Conversion (WIP)
+
+
 # 2021-05-04 Dev build 0.91.9
 
 ## Latest Docker Images
