@@ -38,7 +38,9 @@ export function sequenceTranslator(): void {
         {key: 'Nucleotides', value: outputSequencesObj.nucleotides},
         {key: 'BioSpring', value: outputSequencesObj.bioSpring},
         {key: 'Axolabs', value: outputSequencesObj.axolabs},
-        {key: 'GCRS', value: outputSequencesObj.gcrs}
+        {key: 'GCRS', value: outputSequencesObj.gcrs},
+        {key: 'MM12', value: outputSequencesObj.mm12},
+        {key: 'OP100', value: outputSequencesObj.op100}
       ], (item: {key: string; value: string;}) => [item.key, item.value], ['Code', 'Sequence']).root
     ], 'table'));
 
@@ -66,7 +68,9 @@ export function sequenceTranslator(): void {
       {key: 'Nucleotides', value: defaultNucleotidesInput},
       {key: 'BioSpring', value: asoGapmersNucleotidesToBioSpring(defaultNucleotidesInput)},
       {key: 'Axolabs', value: noTranslationTableAvailable},
-      {key: 'GCRS', value: asoGapmersNucleotidesToGcrs(defaultNucleotidesInput)}
+      {key: 'GCRS', value: asoGapmersNucleotidesToGcrs(defaultNucleotidesInput)},
+      {key: 'MM12', value: noTranslationTableAvailable},
+      {key: 'OP100', value: noTranslationTableAvailable}
     ], (item: {key: string; value: string;}) => [item.key, item.value], ['Code', 'Sequence']).root
   ], 'table');
 
@@ -173,6 +177,12 @@ export function isSiRnaAxolabsCode(sequence: string): boolean {return /^[fsACGUa
 
 export function isSiRnaGcrsCode(sequence: string): boolean {return /^[fmpsACGU]{30,}$/.test(sequence);}
 
+export function isGcrsCode(sequence: string): boolean {return /^(?=.*5’-)(?=.*ps)(?=.*-3'){30,}/.test(sequence);}
+
+export function isOP100Code(sequence: string): boolean {return /^[acgu*]{10,}$/.test(sequence);}
+
+export function isMM12Code(sequence: string): boolean {return /^[IiJjKkLlEeFfGgHhQq]{10,}$/.test(sequence);}
+
 function convertSequence(seq: string) {
   seq = seq.replace(/\s/g, '');
   if (seq.length < 10)
@@ -212,7 +222,7 @@ function convertSequence(seq: string) {
       type: "RNA Nucleotides Code",
       nucleotides: seq,
       bioSpring: siRnaNucleotideToBioSpringSenseStrand(seq),
-      axolabs: 'coming soon', //siRnaNucleotideToAxolabs(seq),
+      axolabs: noTranslationTableAvailable,
       gcrs: siRnaNucleotidesToGcrs(seq)
     };
   if (isSiRnaBioSpringCode(seq))
@@ -239,12 +249,33 @@ function convertSequence(seq: string) {
       axolabs: siRnaGcrsToAxolabs(seq),
       gcrs: seq
     };
+  if (isGcrsCode(seq))
+    return {
+      type: "GCRS Code",
+      nucleotides: noTranslationTableAvailable,
+      gcrs: seq,
+      mm12: gcrsToMM12(seq),
+      op100: gcrsToOP100(seq)
+    }
+  if (isMM12Code(seq))
+    return {
+      type: "MM12 Code",
+      nucleotides: noTranslationTableAvailable,
+      gcrs: noTranslationTableAvailable,
+      mm12: seq,
+      op100: noTranslationTableAvailable
+    };
+  if (isOP100Code(seq))
+    return {
+      type: "OP100 Code",
+      nucleotides: noTranslationTableAvailable,
+      gcrs: noTranslationTableAvailable,
+      mm12: noTranslationTableAvailable,
+      op100: seq
+    };
   return {
     type: undefinedInputSequence,
-    nucleotides: undefinedInputSequence,
-    bioSpring: undefinedInputSequence,
-    axolabs: undefinedInputSequence,
-    gcrs: undefinedInputSequence
+    nucleotides: undefinedInputSequence
   };
 }
 
@@ -257,7 +288,7 @@ export function asoGapmersNucleotidesToBioSpring(nucleotides: string) {
   const objForCenter: {[index: string]: string} = {"C": "9*", "A": "A*", "T": "T*", "G": "G*"};
   return nucleotides.replace(/[ATCG]/g, function (x: string) {
     count++;
-    return count > 5 && count < 15 ? objForCenter[x] : objForEdges[x];
+    return (count > 5 && count < 15) ? objForCenter[x] : objForEdges[x];
   }).slice(0, 2 * count + 1);
 }
 
@@ -435,10 +466,10 @@ export function siRnaNucleotidesToGcrs(nucleotides: string) {
   });
 }
 
-//name: siRnaGcrsToOP100
+//name: gcrsToOP100
 //input: string nucleotides {semType: GCRS / siRNA}
 //output: string result {semType: OP100 / siRNA}
-export function siRnaGcrsToOP100(nucleotides: string) {
+export function gcrsToOP100(nucleotides: string) {
   let count: number = -1;
   const objForEvenIndicesAtLeftEdge: {[index: string]: string} = {
     "mAps": "a", "mUps": "u", "mGps": "g", "mCps": "c", "fAps": "a", "fUps": "u", "fGps": "g", "fCps": "c"
@@ -463,5 +494,23 @@ export function siRnaGcrsToOP100(nucleotides: string) {
     if (count < 3) return (count % 2 == 0) ? objForEvenIndicesAtLeftEdge[x] : objForOddIndicesAtLeftEdge[x];
     if (count == 19) return objForOddIndicesAtRightEdge[x];
     return (count % 2 == 1) ? objForEvenIndicesAtCenter[x] : objForOddIndicesAtCenter[x];
+  });
+}
+
+//name: gcrsToMM12
+//input: string nucleotides {semType: GCRS / siRNA}
+//output: string result {semType: MM12 / siRNA}
+export function gcrsToMM12(nucleotides: string) {
+  let count: number = -1;
+  const objForSmallChars: {[index: string]: string} = {
+    "mAps": "e", "mUps": "h", "mGps": "g", "mCps": "f", "fAps": "i", "fUps": "l", "fGps": "k", "fCps": "j"
+  };
+  const objForCapitalChars: {[index: string]: string} = {
+    "fU": "L", "fA": "I", "fC": "J", "fG": "K", "mU": "H", "mA": "E", "mC": "F", "mG": "G", "po": "", "(J1OPalm)": "Q"
+  };
+  return nucleotides.replace(/(mAps|mUps|mGps|mCps|fAps|fUps|fGps|fCps|fU|fA|fC|fG|mU|mA|mC|mG|po|\(J1OPalm\))/g, function (x: string) {
+    count++;
+    if ((count < 2) || (15 < count && count < 18)) return objForSmallChars[x];
+    return objForCapitalChars[x]
   });
 }
