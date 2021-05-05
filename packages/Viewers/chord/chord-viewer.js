@@ -27,7 +27,9 @@ export class ChordViewer extends DG.JsViewer {
   }
 
   init() {
-    this.minLengthThreshold = 0.002;
+    this.maxAvgNameLen = 15;
+    this.maxLinkNumber = 1500;
+    this.minLengthThreshold = 0.005;
     this.innerRadiusMargin = 80;
     this.outerRadiusMargin = 60;
 
@@ -196,6 +198,7 @@ export class ChordViewer extends DG.JsViewer {
 
     if (this.sortBy === 'topology') {
       if (!this.distinctCols) {
+        grok.shell.warning('Identical columns cannot be sorted topologically.');
         this.props.sortBy = 'alphabet';
       } else {
         this.data = topSort(this.segments);
@@ -303,6 +306,10 @@ export class ChordViewer extends DG.JsViewer {
         this._showErrorMessage('Data of a non-string type cannot be plotted.');
         return;
       }
+      if (this.fromColumn.categories.length * this.toColumn.categories.length > this.maxLinkNumber) {
+        this._showErrorMessage('Too many categories to render.');
+        return;
+      }
       this._generateData();
       if (this.distinctCols) this._computeChords();
     }
@@ -323,26 +330,34 @@ export class ChordViewer extends DG.JsViewer {
 
     circos.layout(this.data, this.conf);
 
-    let smallBlocks = this.data.some(d => d.end - d.start < this.minLengthThreshold); 
-    if (smallBlocks) {
-      this.root.appendChild(ui.divText('Too many categories to render.', 'd4-viewer-error'));
-      return;
-    }
+    // let smallBlocks = this.data.some(d => d.end - d.start < this.minLengthThreshold); 
+    // if (smallBlocks) {
+    //   this.root.appendChild(ui.divText('Too many categories to render.', 'd4-viewer-error'));
+    //   return;
+    // }
 
     if (this.distinctCols) {
       circos.chords('chords-track', this.chords, this.chordConf);
     }
 
-    circos.text('labels', this.data.map(d => ({
-      block_id: d.id,
-      position: this.freqMap[d.label] / 2,
-      value: d.label
-    })), this.labelConf);
+    let avgNameLen = this.categories.reduce((a, b) => a + b.length, 0) / this.categories.length;
+    let showLabels = avgNameLen < this.maxAvgNameLen;
+
+    if (showLabels) {
+      circos.text('labels', this.data.map(d => ({
+        block_id: d.id,
+        position: this.freqMap[d.label] / 2,
+        value: d.label
+      })), this.labelConf);
+    }
+
     circos.render();
 
-    let labels = select(this.root).selectAll('.block');
-    this._rotateLabels(labels); // fix label rotation past 180
-    this._cropLabels(labels);
+    if (showLabels) {
+      let labels = select(this.root).selectAll('.block');
+      this._rotateLabels(labels); // fix label rotation past 180
+      this._cropLabels(labels);
+    }
 
     this.root.firstChild.style = 'position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);';
   }
