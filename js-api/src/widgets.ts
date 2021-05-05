@@ -4,7 +4,7 @@ import {Observable} from "rxjs";
 import {Property} from "./entities";
 import {DataFrame} from "./dataframe";
 import {ColorType, Type} from "./const";
-import React from "react";
+import * as React from "react";
 
 declare let grok: any;
 declare let DG: any;
