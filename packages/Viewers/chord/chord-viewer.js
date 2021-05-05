@@ -33,7 +33,7 @@ export class ChordViewer extends DG.JsViewer {
     this.innerRadiusMargin = 80;
     this.outerRadiusMargin = 60;
 
-    this.gapScale = scaleLinear([1, 100], [0.04, 0]).clamp(true);
+    this.gapScale = scaleLinear([1, 100], [0.04, this.minLengthThreshold / 2]).clamp(true);
     this.reservedColor = 'rgb(127,127,127)';
     let colors = DG.Color.categoricalPalette.slice();
     colors.splice(colors.indexOf(4286545791), 1); // represents the reserved color
@@ -302,14 +302,18 @@ export class ChordViewer extends DG.JsViewer {
       // TODO: change when columnFilter setter is available
       this.fromColumn = this.dataFrame.getCol(this.fromColumnName);
       this.toColumn = this.dataFrame.getCol(this.toColumnName);
-      if (this.fromColumn.type !== 'string' || this.toColumn.type !== 'string') {
-        this._showErrorMessage('Data of a non-string type cannot be plotted.');
-        return;
-      }
-      if (this.fromColumn.categories.length * this.toColumn.categories.length > this.maxLinkNumber) {
-        this._showErrorMessage('Too many categories to render.');
-        return;
-      }
+    }
+
+    if (this.fromColumn.type !== 'string' || this.toColumn.type !== 'string') {
+      this._showErrorMessage('Data of a non-string type cannot be plotted.');
+      return;
+    }
+    if (this.fromColumn.categories.length * this.toColumn.categories.length > this.maxLinkNumber) {
+      this._showErrorMessage('Too many categories to render.');
+      return;
+    }
+
+    if (computeData) {
       this._generateData();
       if (this.distinctCols) this._computeChords();
     }
