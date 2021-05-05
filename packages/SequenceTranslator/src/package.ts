@@ -434,3 +434,34 @@ export function siRnaNucleotidesToGcrs(nucleotides: string) {
     return (count % 2 == 0) ? objForEvenIndices[x] : objForOddIndices[x];
   });
 }
+
+//name: siRnaGcrsToOP100
+//input: string nucleotides {semType: GCRS / siRNA}
+//output: string result {semType: OP100 / siRNA}
+export function siRnaGcrsToOP100(nucleotides: string) {
+  let count: number = -1;
+  const objForEvenIndicesAtLeftEdge: {[index: string]: string} = {
+    "mAps": "a", "mUps": "u", "mGps": "g", "mCps": "c", "fAps": "a", "fUps": "u", "fGps": "g", "fCps": "c"
+  };
+  const objForOddIndicesAtLeftEdge: {[index: string]: string} = {
+    "mAps": "a*", "mUps": "u*", "mGps": "g*", "mCps": "c*", "fAps": "a*", "fUps": "u*", "fGps": "g*", "fCps": "c*"
+  };
+  // const objForEvenIndicesAtRightEdge: {[index: string]: string} = {
+  //   "fU": "u*", "fA": "a*", "fC": "c*", "fG": "g*", "mU": "u*", "mA": "a*", "mC": "c*", "mG": "g*"
+  // };
+  const objForOddIndicesAtRightEdge: {[index: string]: string} = {
+    "mAps": "a", "mUps": "u", "mGps": "g", "mCps": "c", "fAps": "a", "fUps": "u", "fGps": "g", "fCps": "c"
+  };
+  const objForEvenIndicesAtCenter: {[index: string]: string} = {
+    "fU": "u*", "fA": "a*", "fC": "c*", "fG": "g*", "mU": "u*", "mA": "a*", "mC": "c*", "mG": "g*"
+  };
+  const objForOddIndicesAtCenter: {[index: string]: string} = {
+    "fU": "u", "fA": "a", "fC": "c", "fG": "g", "mU": "u", "mA": "a", "mC": "c", "mG": "g"
+  };
+  return nucleotides.replace(/(mAps|mUps|mGps|mCps|fAps|fUps|fGps|fCps|fU|fA|fC|fG|mU|mA|mC|mG)/g, function (x: string) {
+    count++;
+    if (count < 3) return (count % 2 == 0) ? objForEvenIndicesAtLeftEdge[x] : objForOddIndicesAtLeftEdge[x];
+    if (count == 19) return objForOddIndicesAtRightEdge[x];
+    return (count % 2 == 1) ? objForEvenIndicesAtCenter[x] : objForOddIndicesAtCenter[x];
+  });
+}

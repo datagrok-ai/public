@@ -18,6 +18,10 @@ class SequencetranslatorPackageDetectors extends DG.Package {
         return 'Axolabs / siRNA';
       if (DG.Detector.sampleCategories(col, (s) => /^[fmpsACGU]{30,}$/.test(s)))
         return 'GCRS / siRNA';
+      if (DG.Detector.sampleCategories(col, (s) => /^[acgu*]{10,}$/.test(s)))
+        return 'OP100 / siRNA';
+      if (DG.Detector.sampleCategories(col, (s) => /^[IiJjKkLlEeFfGgHhQq]{10,}$/.test(s)))
+        return 'MM12 / siRNA';
     }
   }
 }
