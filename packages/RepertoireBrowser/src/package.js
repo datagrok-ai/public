@@ -46,6 +46,7 @@ export async function launchBrowser(view) {
         return schemes_lst;
     }
 
+
     // ---- pViz ----
     // color interpolation
     function interpolateColors(color1, color2, steps) {
@@ -83,6 +84,8 @@ export async function launchBrowser(view) {
         chains.forEach((chain) => {
             let ptm_feature_map = [];
             let ptm_color_obj = {};
+            let ptm_el_obj = {};
+            let ptm_prob_obj = {};
             let palette = interpolateColors('(255, 255, 0)','(255, 0, 0)',5);
 
             ptm_choices.forEach(ptm => {
@@ -90,6 +93,8 @@ export async function launchBrowser(view) {
                 if (ptm_array !== undefined) {
 
                     let ptm_color_arr = [];
+                    let ptm_el_arr = [];
+                    let ptm_prob_arr = [];
                     ptm_array.forEach(point => {
                         if(point[1] > prob) {
 
@@ -103,14 +108,19 @@ export async function launchBrowser(view) {
                                 improbable : true
                             })
                             ptm_color_arr.push(palette[Math.round(point[1]*4)])
+                            ptm_el_arr.push(point[0]);
+                            ptm_prob_arr.push(point[1]);
                         }
                     })
                     if (ptm_color_arr.length > 0) {
                         ptm_color_obj[mutcodes[ptm]] = ptm_color_arr;
+                        ptm_el_obj[mutcodes[ptm]] = ptm_el_arr;
+                        ptm_prob_obj[mutcodes[ptm]] = ptm_prob_arr;
                     }
                 }
             })
-            ptmMap[chain] = {ptm_feature_map: ptm_feature_map, ptm_color_obj: ptm_color_obj}
+            ptmMap[chain] = {ptm_feature_map: ptm_feature_map, ptm_color_obj: ptm_color_obj,
+                ptm_el_obj: ptm_el_obj, ptm_prob_obj: ptm_prob_obj};
         })
 
         return(ptmMap);
@@ -137,7 +147,8 @@ export async function launchBrowser(view) {
             den_feature_map.sort((a, b) => a - b);
             den_feature_map = den_feature_map.map(function (ft) {
                 return {
-                    category: 'PTM density',
+                    groupSet: 'PTM density',
+                    category: '',
                     type: 'D',
                     start: ft,
                     end: ft,
@@ -223,10 +234,9 @@ export async function launchBrowser(view) {
     }
 
     // main sequence rendering func
-    function loadSequence(host, chain, paratopes) {
+    async function loadSequence(host, chain, paratopes) {
 
         if( $(host).width() !== 0) {
-            console.log(chain);
             let seq = pVizParams.seq[chain]
 
             let seqEntry = new pviz.SeqEntry({
@@ -234,6 +244,7 @@ export async function launchBrowser(view) {
             });
             new pviz.SeqEntryAnnotInteractiveView({
                 model: seqEntry,
+                collapsible: true,
                 el: host
             }).render();
 
@@ -244,12 +255,52 @@ export async function launchBrowser(view) {
                 pviz.FeatureDisplayer.setStrikeoutCategory(mod);
             });
 
-
+            
+            let switchObj = {'H':{}, 'L':{}}
             pviz.FeatureDisplayer.addClickCallback (mod_codes, async function(ft) {
-                console.log(ft);
+                let selectorStr = 'g.feature.' + ft.category + ' rect.feature';
+                let el = document.querySelectorAll(selectorStr);
+                let el_lst = pVizParams.ptmMap[chain].ptm_el_obj[ft.category];
+
                 let sidechains = `${ft.start + 1} and :${chain} and (not backbone or .CA or (PRO and .N))`
-                await loadPdb(path, repChoice, schemeObj, sidechains);
+                let r;
+                if (switchObj[chain][ft.start] === undefined) {
+                    r = stage.compList[0].addRepresentation("ball+stick", {sele: sidechains});
+                    switchObj[chain][ft.start] = {};
+                    switchObj[chain][ft.start]['state'] = false;
+                    switchObj[chain][ft.start]['rep'] = r
+                    el[el_lst.indexOf(ft.start)].style.fill = 'black';
+                } else {
+                    r = switchObj[chain][ft.start]['rep'];
+                    r.setVisibility(switchObj[chain][ft.start]['state']);
+                    if (switchObj[chain][ft.start]['state'] === false) {
+                        el[el_lst.indexOf(ft.start)].style.fill = pVizParams.ptmMap[chain].ptm_color_obj[ft.category][el_lst.indexOf(ft.start)];
+                    } else {
+                        el[el_lst.indexOf(ft.start)].style.fill = 'black';
+                    }
+                    switchObj[chain][ft.start]['state'] = !switchObj[chain][ft.start]['state']
+                }
+
+                console.log(switchObj);
             })
+
+            pviz.FeatureDisplayer.addMouseoverCallback(mod_codes, async function(ft) {
+                let selectorStr = 'g.feature.' + ft.category + ' rect.feature';
+                let el = document.querySelectorAll(selectorStr);
+                let el_lst = pVizParams.ptmMap[chain].ptm_el_obj[ft.category];
+                let prob_lst = pVizParams.ptmMap[chain].ptm_prob_obj[ft.category]
+                el = el[el_lst.indexOf(ft.start)];
+                let prob =  prob_lst[el_lst.indexOf(ft.start)];
+
+                console.log(el.getBoundingClientRect().top);
+                ui.tooltip.show(
+                    ui.span([`${ft.category}: Pr ~${prob.toFixed(2)}`]),
+                    el.getBoundingClientRect().left + 10,
+                    el.getBoundingClientRect().top + 10
+                );
+            }).addMouseoutCallback(mod_codes, function(ft) {
+                ui.tooltip.hide();
+            }) ;
 
             if (paratopes === true) {
                 seqEntry.addFeatures(pVizParams.parMap[chain].par_feature_map);
@@ -260,9 +311,12 @@ export async function launchBrowser(view) {
             applyGradient(pVizParams.ptmMap[chain].ptm_color_obj);
             applyGradient(pVizParams.denMap[chain].den_color_obj);
             applyGradient(pVizParams.parMap[chain].par_color_obj);
+
         }
     }
 
+
+    // ---- MSA ----
     function msaRender(m, msa_fasta, gff_annots = null,
                        gff_aa_annots1 = null,
                        gff_aa_annots2 = null) {
@@ -282,6 +336,77 @@ export async function launchBrowser(view) {
             m.seqs.addFeatures(features);
         }
         m.render();
+    }
+
+    function gffAnnotator(seqid, source, type, start, end, score, strand, phase, attributes) {
+        return `${seqid}\t${source}\t${type}\t${start}\t${end}\t${score}\t${strand}\t${phase}\t${attributes}\n`;
+    }
+
+    // Translate AA sequence into a GFF formatted annotations
+    function getAA_gff(molId, aaStr) {
+        let gff = "##gff-version 3\n";
+        let pos = 2;
+        for (i = 0; i < aaStr.length; i++) {
+            let aaBase = aaStr[i];
+            let line = `${molId} . p	${pos} 	${pos}	.	.  +  Name=${aaBase};Color=gray\n`;
+            gff = gff + line;
+            pos = pos + 3;
+        }
+        return gff;
+    }
+
+    // Format AA column values into GFF annotation
+    function makeColGFF(col, rowIdx, seqId) {
+        let gff = null;
+        if (col) {
+            const seq = col.get(rowIdx);
+            gff = getAA_gff(seqId, seq);
+        }
+        return gff;
+    }
+
+    function drawAlignments() {
+        const idx = table.currentRow.idx;
+        if (seqHeavyCol && germHeavyCol) {
+            const seqsH = `>seq_align_heavy\n${seqHeavyCol.get(idx)}\n>germline_align_heavy\n${germHeavyCol.get(idx)}\n`;
+
+            const gffAnnotsH = '##gff-version 3\n' + (
+                (vStartHeavy && vEndHeavy) ? gffAnnotator('germline_align_heavy', '.', 'gene',
+                    vStartHeavy.get(idx), vEndHeavy.get(idx), '.', '+', '.', 'Name=V region;Color=violet') : '') + (
+                (dStartHeavy && dEndHeavy) ? gffAnnotator('germline_align_heavy', '.', 'gene',
+                    dStartHeavy.get(idx), dEndHeavy.get(idx), '.', '+', '.', 'Name=D region;Color=green') : '') + (
+                (jStartHeavy && jEndHeavy) ? gffAnnotator('germline_align_heavy', '.', 'gene',
+                    jStartHeavy.get(idx), jEndHeavy.get(idx), '.', '+', '.', 'Name=J region;Color=blue') : '');
+
+            let gffAASeq = makeColGFF(seqAlignHeavyAACol, idx, "seq_align_heavy");
+            let gffAAGerm = makeColGFF(germAlignHeavyAACol, idx, "germline_align_heavy");
+
+            msaRender(msaH, seqsH,
+                gffAnnotsH.length > 16 ? gffAnnotsH : null,
+                gffAASeq.length > 16   ? gffAASeq : null,
+                gffAAGerm.length > 16  ? gffAAGerm : null
+            );
+        }
+        if (seqLightCol && germLightCol) {
+            const seqsL = `>seq_align_light\n${seqLightCol.get(idx)}\n>germline_align_light\n${germLightCol.get(idx)}\n`;
+
+            const gffAnnotsL = '##gff-version 3\n' + (
+                (vStartLight && vEndLight) ? gffAnnotator('germline_align_light', '.', 'gene',
+                    vStartLight.get(idx), vEndLight.get(idx), '.', '+', '.', 'Name=V region;Color=violet') : '') + (
+                (dStartLight && dEndLight) ? gffAnnotator('germline_align_light', '.', 'gene',
+                    dStartLight.get(idx), dEndLight.get(idx), '.', '+', '.', 'Name=D region;Color=green') : '') + (
+                (jStartLight && jEndLight) ? gffAnnotator('germline_align_light', '.', 'gene',
+                    jStartLight.get(idx), jEndLight.get(idx), '.', '+', '.', 'Name=J region;Color=blue') : '');
+
+            let gffAASeq = makeColGFF(seqAlignLightAACol, idx, "seq_align_light");
+            let gffAAGerm = makeColGFF(germAlignLightAACol, idx, "germline_align_light");
+
+            msaRender(msaL, seqsL,
+                gffAnnotsL.length > 16 ? gffAnnotsL : null,
+                gffAASeq.length > 16   ? gffAASeq : null,
+                gffAAGerm.length > 16  ? gffAAGerm : null
+            );
+        }
     }
 
 
@@ -342,15 +467,17 @@ export async function launchBrowser(view) {
     async function loadPdb(bytes, repChoice, schemeObj, sidechains = '') {
         stage.loadFile(bytes).then(function (o) {
             o.addRepresentation(repChoice.value, schemeObj);
-            if (sidechains.length > 0) {
-                o.addRepresentation("ball+stick", {sele: sidechains});
-            }
+            // if (sidechains.length > 0) {
+            //     o.addRepresentation("ball+stick", {sele: sidechains});
+            //     // let r = stage.compList[104].addRepresentation("ball+stick", {sele: sidechains});
+            //     // r.setVisibility(false);
+            // }
             o.autoView();
         });
     }
 
 
-    // ---- resizing ----
+    // ---- Resizing ----
     function nglResize(host, stage) {
         let canvas = host.querySelector('canvas');
 
@@ -364,13 +491,13 @@ export async function launchBrowser(view) {
         resize();
     }
 
-    function pvizResize(host, chain) {
-        ui.onSizeChanged(host).subscribe((_) => {
-            loadSequence(host, chain, paratopes.value)
+    async function pvizResize(host, chain) {
+        ui.onSizeChanged(host).subscribe(async (_) => {
+            await loadSequence(host, chain, paratopes.value)
         });
     }
 
-    function setDockSize(node, nodeContent){
+    function setDockSize(node, nodeContent) {
         let nodeContentHeight = 0;
         let rootNodeHeight = view.dockManager.rootNode.container.containerElement.clientHeight;
         let newHeight = 0;
@@ -445,7 +572,17 @@ export async function launchBrowser(view) {
         acc.addPane('Save/Load', () => ui.divH([saveRowsButton, loadRowsButton]));
     }
 
+
     ///// MAIN BODY ////
+
+    let table = view.table;
+    // tweak the App page properties
+    {
+        let windows = grok.shell.windows;
+        windows.showProperties = false;
+        windows.showHelp = false;
+        windows.showConsole = false;
+    }
 
     let reps = ['cartoon', 'backbone', 'ball+stick', 'licorice', 'hyperball', 'surface'];
     let repChoice = ui.choiceInput('Representation', 'cartoon', reps);
@@ -474,8 +611,8 @@ export async function launchBrowser(view) {
         await loadPdb(path, repChoice, schemeObj);
 
         pVizParams.cdrMap = cdrMapping(cdr_scheme.value)
-        loadSequence(pViz_host_H, 'H', paratopes.value)
-        loadSequence(pViz_host_L, 'L', paratopes.value)
+        await loadSequence(pViz_host_H, 'H', paratopes.value)
+        await loadSequence(pViz_host_L, 'L', paratopes.value)
 
         setDockSize(ngl_node, sequence_tabs);
     });
@@ -485,8 +622,8 @@ export async function launchBrowser(view) {
         stage.removeAllComponents();
         let schemeObj = CDR3(cdr_scheme, paratopes);
         await loadPdb(path, repChoice, schemeObj);
-        loadSequence(pViz_host_H, 'H', paratopes.value)
-        loadSequence(pViz_host_L, 'L', paratopes.value)
+        await loadSequence(pViz_host_H, 'H', paratopes.value)
+        await loadSequence(pViz_host_L, 'L', paratopes.value)
 
         setDockSize(ngl_node, sequence_tabs);
     });
@@ -494,8 +631,9 @@ export async function launchBrowser(view) {
     ptm_choices.onChanged(async () => {
 
         pVizParams.ptmMap = ptmMapping(ptm_choices.value, ptm_prob.value)
-        loadSequence(pViz_host_H, 'H', paratopes.value)
-        loadSequence(pViz_host_L, 'L', paratopes.value)
+        console.log(pVizParams);
+        await loadSequence(pViz_host_H, 'H', paratopes.value)
+        await loadSequence(pViz_host_L, 'L', paratopes.value)
 
         setDockSize(ngl_node, sequence_tabs);
     });
@@ -503,13 +641,12 @@ export async function launchBrowser(view) {
     ptm_prob.onChanged(async () => {
 
         pVizParams.ptmMap = ptmMapping(ptm_choices.value, ptm_prob.value)
-        loadSequence(pViz_host_H, 'H', paratopes.value)
-        loadSequence(pViz_host_L, 'L', paratopes.value)
+        await loadSequence(pViz_host_H, 'H', paratopes.value)
+        await loadSequence(pViz_host_L, 'L', paratopes.value)
 
         setDockSize(ngl_node, sequence_tabs);
     });
 
-    let table = view.table;
 
     let seqHeavyCol = table.col('sequence_alignment_heavy');
     let seqLightCol = table.col('sequence_alignment_light');
@@ -535,89 +672,6 @@ export async function launchBrowser(view) {
     let dEndLight = table.col('d_alignment_end_light');
     let jEndLight = table.col('j_alignment_end_light');
 
-    function gffAnnotator(seqid, source, type, start, end, score, strand, phase, attributes) {
-        return `${seqid}\t${source}\t${type}\t${start}\t${end}\t${score}\t${strand}\t${phase}\t${attributes}\n`;
-    }
-
-
-    // Translate AA sequence into a GFF formatted annotations
-    // (a hack, it should be a better way of doing it)
-    //
-    function getAA_gff(molId, aaStr) {
-        let gff = "##gff-version 3\n";
-        let pos = 2;
-        for (i = 0; i < aaStr.length; i++) {
-            let aaBase = aaStr[i];
-            let line = `${molId} . p	${pos} 	${pos}	.	.  +  Name=${aaBase};Color=gray\n`;
-            gff = gff + line;
-            pos = pos + 3;
-        }
-        return gff;
-    }
-
-    // Format AA column values into GFF annotation
-    function makeColGFF(col, rowIdx, seqId) {
-        let gff = null;
-        if (col) {
-            const seq = col.get(rowIdx);
-            gff = getAA_gff(seqId, seq);
-        }
-        return gff;
-    }
-
-    function drawAlignments() {
-        const idx = table.currentRow.idx;
-        if (seqHeavyCol && germHeavyCol) {
-            const seqsH = `>seq_align_heavy\n${seqHeavyCol.get(idx)}\n>germline_align_heavy\n${germHeavyCol.get(idx)}\n`;
-
-            const gffAnnotsH = '##gff-version 3\n' + (
-                (vStartHeavy && vEndHeavy) ? gffAnnotator('germline_align_heavy', '.', 'gene',
-                vStartHeavy.get(idx), vEndHeavy.get(idx), '.', '+', '.', 'Name=V region;Color=violet') : '') + (
-                (dStartHeavy && dEndHeavy) ? gffAnnotator('germline_align_heavy', '.', 'gene',
-                dStartHeavy.get(idx), dEndHeavy.get(idx), '.', '+', '.', 'Name=D region;Color=green') : '') + (
-                (jStartHeavy && jEndHeavy) ? gffAnnotator('germline_align_heavy', '.', 'gene',
-                jStartHeavy.get(idx), jEndHeavy.get(idx), '.', '+', '.', 'Name=J region;Color=blue') : '');
-
-            let gffAASeq = makeColGFF(seqAlignHeavyAACol, idx, "seq_align_heavy");
-            let gffAAGerm = makeColGFF(germAlignHeavyAACol, idx, "germline_align_heavy");
-
-            msaRender(msaH, seqsH,
-              gffAnnotsH.length > 16 ? gffAnnotsH : null,
-              gffAASeq.length > 16   ? gffAASeq : null,
-              gffAAGerm.length > 16  ? gffAAGerm : null
-              );
-        }
-        if (seqLightCol && germLightCol) {
-            const seqsL = `>seq_align_light\n${seqLightCol.get(idx)}\n>germline_align_light\n${germLightCol.get(idx)}\n`;
-
-            const gffAnnotsL = '##gff-version 3\n' + (
-                (vStartLight && vEndLight) ? gffAnnotator('germline_align_light', '.', 'gene',
-                vStartLight.get(idx), vEndLight.get(idx), '.', '+', '.', 'Name=V region;Color=violet') : '') + (
-                (dStartLight && dEndLight) ? gffAnnotator('germline_align_light', '.', 'gene',
-                dStartLight.get(idx), dEndLight.get(idx), '.', '+', '.', 'Name=D region;Color=green') : '') + (
-                (jStartLight && jEndLight) ? gffAnnotator('germline_align_light', '.', 'gene',
-                jStartLight.get(idx), jEndLight.get(idx), '.', '+', '.', 'Name=J region;Color=blue') : '');
-
-            let gffAASeq = makeColGFF(seqAlignLightAACol, idx, "seq_align_light");
-            let gffAAGerm = makeColGFF(germAlignLightAACol, idx, "germline_align_light");
-
-            msaRender(msaL, seqsL,
-              gffAnnotsL.length > 16 ? gffAnnotsL : null,
-              gffAASeq.length > 16   ? gffAASeq : null,
-              gffAAGerm.length > 16  ? gffAAGerm : null
-            );
-        }
-    }
-
-    DG.debounce(table.onCurrentRowChanged, 200).subscribe(drawAlignments);
-
-    // tweak the App page properties
-    {
-        let windows = grok.shell.windows;
-        windows.showProperties = false;
-        windows.showHelp = false;
-        windows.showConsole = false;
-    }
 
     let root = ui.div();
     let acc_options = ui.accordion();
@@ -649,6 +703,7 @@ export async function launchBrowser(view) {
             'MSA LIGHT': msa_host_L,
         }).root;
 
+
     const msaOpts = {
         el: msa_host_L,
         vis: {
@@ -674,7 +729,9 @@ export async function launchBrowser(view) {
     msaOpts.el = msa_host_H;
     const msaH = new msa.msa(msaOpts);
     const gffParser = msa.io.gff;
+    DG.debounce(table.onCurrentRowChanged, 200).subscribe(drawAlignments);
     drawAlignments();
+
 
     var pviz = window.pviz;
     let pVizParams = {};
@@ -684,16 +741,42 @@ export async function launchBrowser(view) {
     pVizParams.parMap = paratopeMapping()
     pVizParams.cdrMap = cdrMapping(cdr_scheme.value)
 
-
     let panel_node = view.dockManager.dock(root, 'right', null, 'NGL');
     let ngl_node = view.dockManager.dock(ngl_host, 'left', panel_node, 'NGL');
     let sequence_node = view.dockManager.dock(sequence_tabs, 'down', ngl_node, 'Sequence', 0.225);
 
-    loadSequence(pViz_host_H, 'H', paratopes.value)
+    await loadSequence(pViz_host_H, 'H', paratopes.value);
+
+
+    // Start
+    // function svgResize() {
+    //     let svgParent = document.querySelector('#feature-viewer');
+    //     let stopHandle  = ui.tools.handleResize(svgParent, (width, height) => {
+    //
+    //         console.log(width + height);
+    //         svgParent = document.querySelector('#feature-viewer');
+    //         if (width + height === 0) {
+    //             stopHandle();
+    //             svgResize();
+    //         }
+    //
+    //         setDockSize(ngl_node, sequence_tabs);
+    //     })
+    // }
+    // svgResize()
+
+
+
+
 
 
     nglResize(ngl_host, stage);
     pvizResize(pViz_host_H, 'H');
     pvizResize(pViz_host_L, 'L');
+
+    setDockSize(ngl_node, sequence_tabs);
+
+    // msaResize(msa_host_L);
+    // msaResize(msa_host_H);
     // $(sequence_tabs).children().css("height","100%");
 }
