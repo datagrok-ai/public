@@ -17,9 +17,9 @@ During this Getting Started, don't hesitate to post questions and suggestions at
 3. [Quick F.A.Q., before you start developing](#faq-frequently-asked-questions)
 4. Datagrok Tutorials ([read here first](#datagrok-tutorials-and-exercises), [start directly](https://public.datagrok.ai/))
 5. Datagrok Exercises ([read here first](#datagrok-tutorials-and-exercises), [start directly](exercises.md))
-6. Datagrok Architecture ([read here first](#datagrok-architecture), [start directly](develop/admin/architecture.md))
+6. Datagrok Architecture ([read here first](#datagrok-architecture), [start directly](admin/architecture.md))
 7. Extending and customizing Datagrok ([read here first](#extending-and-customizing-datagrok), [start directly](https://datagrok.ai/help/develop/extending-and-customizing))
-8. Building Datagrok Applications ([read here first](#datagrok-application-development), [start directly](develop/how-to/build-an-app.md))
+8. Building Datagrok Applications ([read here first](#datagrok-application-development), [start directly](how-to/build-an-app.md))
 
 ## Daily Sources of Information
 
@@ -108,8 +108,8 @@ We've learned from experience it's very likely you'd have these questions at the
 
 *Q:* How to set up an IDE (VS Code or WebStorm) for debugging on Datagrok? Debugging doesn't work for me now.  
 
-*A:* The detailed guides are here: [VS Code](develop/develop.md#one-click-debugging-with-visual-studio-code),
-[WebStorm](develop/develop.md#one-click-debugging-with-jetbrains-ides).   Post a question with details [here](https://community.datagrok.ai/), if debugging won't work after taking the above steps.
+*A:* The detailed guides are here: [VS Code](develop.md#one-click-debugging-with-visual-studio-code),
+[WebStorm](develop.md#one-click-debugging-with-jetbrains-ides).   Post a question with details [here](https://community.datagrok.ai/), if debugging won't work after taking the above steps.
 
 *Q:* I've installed `npm` and `datagrok-tools` packages, but `grok` tools aren't available on my paths.  
 
@@ -150,9 +150,9 @@ We are highly interested in helping developers building on top of Datagrok deliv
 to their end-users. That's why we highly encourage you to go through these two articles on architecture,
 either before or after doing the Exercises:
 
-[https://datagrok.ai/help/develop/admin/architecture](develop/admin/architecture.md)
+[https://datagrok.ai/help/develop/admin/architecture](admin/architecture.md)
 
-[https://datagrok.ai/help/develop/performance](develop/performance.md)
+[https://datagrok.ai/help/develop/performance](performance.md)
 
 There are architectural pillars regarding accessing data and leveraging the power of our
 in-memory columnar data store. This understanding is crucial for making your applications
@@ -174,12 +174,12 @@ It's very likely what you'd be helping your customers with building their soluti
 
 Here's a standalone how-to guide on Datagrok application development:
 
-[https://datagrok.ai/help/develop/how-to/build-an-app](develop/how-to/build-an-app.md)
+[https://datagrok.ai/help/develop/how-to/build-an-app](how-to/build-an-app.md)
 
 In a logical sequence it hilights the aspects important to this subject. Take your time to read it through
 and align the new knowledge with the examples linked from the guide. Pay attention to spin-off links in this guide
-leading to some other guides, like these about [custom views](develop/how-to/custom-views.md) or
-[database connections](develop/how-to/access-data.md).
+leading to some other guides, like these about [custom views](how-to/custom-views.md) or
+[database connections](how-to/access-data.md).
 
 ## F.A.Q.: Advanced Topics
 
