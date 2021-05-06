@@ -348,7 +348,7 @@ export async function launchBrowser(view) {
         let pos = 2;
         for (i = 0; i < aaStr.length; i++) {
             let aaBase = aaStr[i];
-            let line = `${molId} . p	${pos} 	${pos}	.	.  +  Name=${aaBase};Color=gray\n`;
+            let line = `${molId} . p	${pos} 	${pos}	.	.  +  Name=${aaBase};Color=white\n`;
             gff = gff + line;
             pos = pos + 3;
         }
