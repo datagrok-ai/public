@@ -409,6 +409,70 @@ export async function launchBrowser(view) {
         }
     }
 
+    function drawGroupAlignments(groups, tab = 'heavy', max = 5) {
+        let groupsShown = 0;
+        const tabHost = (tab === 'heavy') ? msa_group_host_H : msa_group_host_L;
+        $(tabHost).empty();
+        for (let groupData of Object.values(groups)) {
+            if (groupsShown >= max) return;
+            let seqs = '';
+            for (let i = 0, n = groupData.seqIds.length; i < n; i++) {
+                seqs += `>${groupData.seqIds[i]}_seq\n${groupData.alignedSequences[i]}\n`;
+                seqs += `>${groupData.seqIds[i]}_germ\n${groupData.alignedGermlines[i]}\n`;
+            }
+            const groupDiv = ui.div();
+            tabHost.appendChild(groupDiv);
+            msaOpts.el = groupDiv;
+            const m = new msa.msa(msaOpts);
+            msaRender(m, seqs);
+            groupsShown += 1;
+        }
+      }
+      
+    function selectGroups() {
+        const indexes = table.selection.getSelectedIndexes();
+        const heavyGroups = {};
+        const lightGroups = {};
+        for (let i of indexes) {
+            const alH = germAlignHeavyAACol.get(i);
+            const seqIdH = heavyIdCol.get(i);
+            const seqH = seqHeavyCol.get(i);
+            const germH = germHeavyCol.get(i);
+            if (alH in heavyGroups) {
+                heavyGroups[alH].aaAlignments.push(alH);
+                heavyGroups[alH].alignedSequences.push(seqH);
+                heavyGroups[alH].alignedGermlines.push(germH);
+                heavyGroups[alH].seqIds.push(seqIdH);
+            } else {
+                heavyGroups[alH] = {
+                    aaAlignments: [alH],
+                    alignedSequences: [seqH],
+                    alignedGermlines: [germH],
+                    seqIds: [seqIdH],
+                };
+            }
+            const alL = germAlignLightAACol.get(i);
+            const seqIdL = lightIdCol.get(i);
+            const seqL = seqLightCol.get(i);
+            const germL = germLightCol.get(i);
+            if (alH in lightGroups) {
+                lightGroups[alL].aaAlignments.push(alL);
+                lightGroups[alL].alignedSequences.push(seqL);
+                lightGroups[alL].alignedGermlines.push(germL);
+                lightGroups[alL].seqIds.push(seqIdL);
+            } else {
+                lightGroups[alL] = {
+                    aaAlignments: [alL],
+                    alignedSequences: [seqL],
+                    alignedGermlines: [germL],
+                    seqIds: [seqIdL],
+                };
+            }
+        }
+        drawGroupAlignments(heavyGroups, 'heavy', 2);
+        drawGroupAlignments(lightGroups, 'light', 2);
+    }
+
 
     // ---- NGL ----
     // create a color scheme for CDR3 regions
@@ -658,6 +722,9 @@ export async function launchBrowser(view) {
     let germAlignHeavyAACol = table.col('germline_alignment_aa_heavy');
     let germAlignLightAACol = table.col('germline_alignment_aa_light');
 
+    let heavyIdCol = table.col('tenx_contig_id_heavy');
+    let lightIdCol = table.col('tenx_contig_id_light');
+
     let vStartHeavy = table.col('v_alignment_start_heavy');
     let dStartHeavy = table.col('d_alignment_start_heavy');
     let jStartHeavy = table.col('j_alignment_start_heavy');
@@ -695,12 +762,16 @@ export async function launchBrowser(view) {
     let pViz_host_H = ui.box();
     let msa_host_L = ui.box();
     let msa_host_H = ui.box();
+    let msa_group_host_L = ui.divV();
+    let msa_group_host_H = ui.divV();
     let sequence_tabs =
         ui.tabControl({
             'HEAVY': pViz_host_H,
             'LIGHT': pViz_host_L,
             'MSA HEAVY': msa_host_H,
             'MSA LIGHT': msa_host_L,
+            'GRP MSA HEAVY': msa_group_host_H,
+            'GRP MSA LIGHT': msa_group_host_L,
         }).root;
 
 
@@ -729,6 +800,7 @@ export async function launchBrowser(view) {
     msaOpts.el = msa_host_H;
     const msaH = new msa.msa(msaOpts);
     const gffParser = msa.io.gff;
+    DG.debounce(table.onSelectionChanged, 200).subscribe(selectGroups);
     DG.debounce(table.onCurrentRowChanged, 200).subscribe(drawAlignments);
     drawAlignments();
 
