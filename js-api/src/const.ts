@@ -190,7 +190,12 @@ export const TAGS = {
   AUTO_CHOICES: '.auto-choices',
   ID: '.id',
   COLOR_CODING_CONDITIONAL: '.color-coding-conditional',
-  MULTI_VALUE_SEPARATOR: 'multi-value-separator'
+  MULTI_VALUE_SEPARATOR: 'multi-value-separator',
+  /** When set to a string value for a float-typed column, it is used as a number formatter
+   when saving this column, as part of the dataframe, in a CSV format. Determined when parsing
+   a CSV file into a dataframe as the number of maximum needed significant digits for this column
+   detected in the original CSV file. */
+  SOURCE_FORMAT: 'source-format'
 }
 
 ////// Viewers
