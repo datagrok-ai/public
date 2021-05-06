@@ -6,8 +6,8 @@ g.feature.ADA rect.feature {
 }
 
 g.feature.ADA:hover rect.feature {
-	fill: black;
-	fill-opacity: 0;
+	fill: black !important;
+	fill-opacity: 0.8;
 	stroke-opacity: 1;
 }
 
@@ -19,8 +19,8 @@ g.feature.ADA text {
 g.feature.AI rect.feature {
 }
 g.feature.AI:hover rect.feature {
-	fill: black;
-	fill-opacity: 0;
+	fill: black !important;
+	fill-opacity: 0.8;
 	stroke-opacity: 1;
 }
 
@@ -32,8 +32,8 @@ g.feature.AI text {
 g.feature.FR rect.feature {
 }
 g.feature.FR:hover rect.feature {
-	fill: black;
-	fill-opacity: 0;
+	fill: black !important;
+	fill-opacity: 0.8;
 	stroke-opacity: 1;
 }
 
@@ -45,8 +45,8 @@ g.feature.FR text {
 g.feature.HYL rect.feature {
 }
 g.feature.HYL:hover rect.feature {
-	fill: black;
-	fill-opacity: 0;
+	fill: black !important;
+	fill-opacity: 0.8;
 	stroke-opacity: 1;
 }
 
@@ -58,8 +58,8 @@ g.feature.HYL text {
 g.feature.HYP rect.feature {
 }
 g.feature.HYP:hover rect.feature {
-	fill: black;
-	fill-opacity: 0;
+	fill: black !important;
+	fill-opacity: 0.8;
 	stroke-opacity: 1;
 }
 
@@ -71,8 +71,8 @@ g.feature.HYP text {
 g.feature.LG rect.feature {
 }
 g.feature.LG:hover rect.feature {
-	fill: black;
-	fill-opacity: 0;
+	fill: black !important;
+	fill-opacity: 0.8;
 	stroke-opacity: 1;
 }
 
@@ -84,8 +84,8 @@ g.feature.LG text {
 g.feature.MA rect.feature {
 }
 g.feature.MA:hover rect.feature {
-	fill: black;
-	fill-opacity: 0;
+	fill: black !important;
+	fill-opacity: 0.8;
 	stroke-opacity: 1;
 }
 
@@ -97,8 +97,8 @@ g.feature.MA text {
 g.feature.MLY rect.feature {
 }
 g.feature.MLY:hover rect.feature {
-	fill: black;
-	fill-opacity: 0;
+	fill: black !important;
+	fill-opacity: 0.8;
 	stroke-opacity: 1;
 }
 
@@ -110,8 +110,8 @@ g.feature.MLY text {
 g.feature.MeO rect.feature {
 }
 g.feature.MeO:hover rect.feature {
-	fill: black;
-	fill-opacity: 0;
+	fill: black !important;
+	fill-opacity: 0.8;
 	stroke-opacity: 1;
 }
 
@@ -123,8 +123,8 @@ g.feature.MeO text {
 g.feature.N6AL rect.feature {
 }
 g.feature.N6AL:hover rect.feature {
-	fill: black;
-	fill-opacity: 0;
+	fill: black !important;
+	fill-opacity: 0.8;
 	stroke-opacity: 1;
 }
 
@@ -137,8 +137,8 @@ g.feature.N6AL text {
 g.feature.NG rect.feature {
 }
 g.feature.NG:hover rect.feature {
-	fill: black;
-	fill-opacity: 0;
+	fill: black !important;
+	fill-opacity: 0.8;
 	stroke-opacity: 1;
 }
 
@@ -150,8 +150,8 @@ g.feature.NG text {
 g.feature.NtG rect.feature {
 }
 g.feature.NtG:hover rect.feature {
-	fill: black;
-	fill-opacity: 0;
+	fill: black !important;
+	fill-opacity: 0.8;
 	stroke-opacity: 1;
 }
 
@@ -163,8 +163,8 @@ g.feature.NtG text {
 g.feature.OlG rect.feature {
 }
 g.feature.OlG:hover rect.feature {
-	fill: black;
-	fill-opacity: 0;
+	fill: black !important;
+	fill-opacity: 0.8;
 	stroke-opacity: 1;
 }
 
@@ -176,8 +176,8 @@ g.feature.OlG text {
 g.feature.PP rect.feature {
 }
 g.feature.PP:hover rect.feature {
-	fill: black;
-	fill-opacity: 0;
+	fill: black !important;
+	fill-opacity: 0.8;
 	stroke-opacity: 1;
 }
 
@@ -189,8 +189,8 @@ g.feature.PP text {
 g.feature.PTB rect.feature {
 }
 g.feature.PTB:hover rect.feature {
-	fill: black;
-	fill-opacity: 0;
+	fill: black !important;
+	fill-opacity: 0.8;
 	stroke-opacity: 1;
 }
 
@@ -202,8 +202,8 @@ g.feature.PTB text {
 g.feature.PCA rect.feature {
 }
 g.feature.PCA:hover rect.feature {
-	fill: black;
-	fill-opacity: 0;
+	fill: black !important;
+	fill-opacity: 0.8;
 	stroke-opacity: 1;
 }
 
@@ -216,8 +216,8 @@ g.feature.SPC rect.feature {
 }
 
 g.feature.SPC:hover rect.feature {
-	fill: black;
-	fill-opacity: 0;
+	fill: black !important;
+	fill-opacity: 0.8;
 	stroke-opacity: 1;
 }
 
@@ -229,8 +229,8 @@ g.feature.SPC text {
 g.feature.SUMO rect.feature {
 }
 g.feature.SUMO:hover rect.feature {
-	fill: black;
-	fill-opacity: 0;
+	fill: black !important;
+	fill-opacity: 0.8;
 	stroke-opacity: 1;
 }
 
@@ -242,8 +242,8 @@ g.feature.SUMO text {
 g.feature.TO rect.feature {
 }
 g.feature.TO:hover rect.feature {
-	fill: black;
-	fill-opacity: 0;
+	fill: black !important;
+	fill-opacity: 0.8;
 	stroke-opacity: 1;
 }
 
@@ -256,8 +256,8 @@ g.feature.UB rect.feature {
 }
 
 g.feature.UB:hover rect.feature {
-	fill: black;
-	fill-opacity: 0;
+	fill: black !important;
+	fill-opacity: 0.8;
 	stroke-opacity: 1;
 }
 
