@@ -1,5 +1,5 @@
 // Manual master-details linking of tables that are dynamically retrieved from the database
-grok.data.query('northwind:countries', {}).then((countries) => {
+grok.data.query('Demo:Northwind:Countries', {}).then((countries) => {
   let customersView = null;
   grok.shell.addTableView(countries);
   countries.onCurrentRowChanged.subscribe((_) => {
