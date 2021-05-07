@@ -64,7 +64,7 @@ export async function loadPhysionetRecordWithAnnotations(chosenDatabase, chosenR
     await call.call();
     const annotations = call.getParamValue('annotations_df');
     const signals = call.getParamValue('signals_df');
-    signals.columns.byIndex(0).setTag('samplingFrequency', call.getParamValue('sampling_frequency'))
+    signals.columns.byIndex(0).setTag('samplingFrequency', call.getParamValue('sampling_frequency').toString())
     return {signals, annotations};
   } catch (e) {
     grok.shell.error(e);
@@ -145,8 +145,8 @@ export function BioSignals() {
 
       if (isLocalTable) {
         enterSamplingFrequencyDiv.innerHTML = '';
-        signals.columns.byIndex(0).setTag('samplingFrequency', samplingFreq.value);
-        signalsWithAnnotations.columns.byIndex(0).setTag('samplingFrequency', samplingFreq.value);
+        signals.columns.byIndex(0).setTag('samplingFrequency', samplingFreq.value.toString());
+        signalsWithAnnotations.columns.byIndex(0).setTag('samplingFrequency', samplingFreq.value.toString());
       }
       annotationViewerDiv.innerHTML = '';
       annotationViewerDiv.append(
@@ -217,7 +217,7 @@ export function BioSignals() {
                   ])
                 ])
               ])
-            ], i),
+            ]),
             ui.block75([filterChartsList[i - 1]])
           ]));
         });
@@ -389,7 +389,7 @@ export function BioSignals() {
     appDescription,
     ui.divH([
       chosenDatabase,
-      ui.tooltip.bind(ui.iconFA(['info-circle']), 'Choose Physionet database or your uploaded local file')
+      ui.tooltip.bind(ui.button(ui.iconFA(['info-circle'])), 'Choose Physionet database or your uploaded local file')
     ]),
     enterSamplingFrequencyDiv,
     chosenRecordDiv,
