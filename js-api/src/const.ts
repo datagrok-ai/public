@@ -195,7 +195,9 @@ export const TAGS = {
    when saving this column, as part of the dataframe, in a CSV format. Determined when parsing
    a CSV file into a dataframe as the number of maximum needed significant digits for this column
    detected in the original CSV file. */
-  SOURCE_FORMAT: 'source-format'
+  SOURCE_FORMAT: 'source-format',
+  /** If set, used in both grid display and CSV export to format the numeric column */
+  FORMAT: 'format'
 }
 
 ////// Viewers
