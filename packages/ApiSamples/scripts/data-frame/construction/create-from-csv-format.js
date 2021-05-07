@@ -16,4 +16,4 @@ let view = grok.shell.addTableView(table);
 // By default, the `gdpPercap` column format will be set in the grid to 2 significant digits.
 // It's possible to override the grid's column formatting to the one coming from the CSV data:
 
-view.grid.col('gdpPercap').format = table.col('gdpPercap').tags[DG.TAGS.SOURCE_FORMAT];
+table.col('gdpPercap').tags[DG.TAGS.FORMAT] = table.col('gdpPercap').tags[DG.TAGS.SOURCE_FORMAT];
