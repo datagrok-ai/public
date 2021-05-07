@@ -86,6 +86,7 @@ export class ChordViewer extends DG.JsViewer {
   onPropertyChanged(property) {
     if (this.initialized && this._testColumns()) {
       if (property.name === 'colorBy' && this.chords.length) this.render(false);
+      else if (property.name === 'sortBy' && this.sortBy === 'alphabet' && !this.distinctCols) return;
       else this.render();
     }
   }
