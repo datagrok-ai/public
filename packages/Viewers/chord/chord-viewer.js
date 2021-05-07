@@ -159,17 +159,17 @@ export class ChordViewer extends DG.JsViewer {
       mouseover: (datum, index, nodes, event) => {
         select(nodes[index]).select(`#${datum.id}`).attr('stroke', color(this.color(datum.label)).darker());
         ui.tooltip.showRowGroup(this.dataFrame, i => {
-          return this.indexes.includes(i) && (this.fromColumn.get(i) === datum.label ||
+          return this.dataFrame.filter.get(i) && (this.fromColumn.get(i) === datum.label ||
             this.toColumn.get(i) === datum.label);
         }, event.x, event.y);
       },
       mouseout: (datum, index, nodes, event) => {
         select(nodes[index]).select(`#${datum.id}`).attr('stroke', 'none');
-        ui.tooltip.hide()
+        ui.tooltip.hide();
       },
       mousedown: (datum, index, nodes, event) => {
         this.dataFrame.selection.handleClick(i => {
-          return this.indexes.includes(i) && (this.fromColumn.get(i) === datum.label ||
+          return this.dataFrame.filter.get(i) && (this.fromColumn.get(i) === datum.label ||
             this.toColumn.get(i) === datum.label);
         }, event);
       }
@@ -248,18 +248,18 @@ export class ChordViewer extends DG.JsViewer {
       mouseover: (datum, index, nodes, event) => {
         select(nodes[index]).attr('opacity', this.highlightedChordOpacity);
         ui.tooltip.showRowGroup(this.dataFrame, i => {
-          return this.indexes.includes(i) &&
+          return this.dataFrame.filter.get(i) &&
             this.fromColumn.get(i) === datum.source.label &&
             this.toColumn.get(i) === datum.target.label;
         }, event.x, event.y);
       },
       mouseout: (datum, index, nodes, event) => {
         select(nodes[index]).attr('opacity', this.chordOpacity);
-        ui.tooltip.hide()
+        ui.tooltip.hide();
       },
       mousedown: (datum, index, nodes, event) => {
         this.dataFrame.selection.handleClick(i => {
-          return this.indexes.includes(i) &&
+          return this.dataFrame.filter.get(i) &&
             this.fromColumn.get(i) === datum.source.label &&
             this.toColumn.get(i) === datum.target.label;
         }, event);
