@@ -83,7 +83,10 @@ export class PhyloTreeViewer extends DG.JsViewer {
   _centerLayout(width, height) {
     const container = d3.select('g.phylotree-container');
     const g = container.append('g').attr('class', 'phylotree-layout');
-    container.selectAll('path.branch, g.internal-node, g.node').each(function() { g.append(() => this); });
+    const selection = container.selectAll('path.branch, g.internal-node, g.node');
+    const data = selection.data();
+    selection.each(function() { g.append(() => this); });
+    g.selectAll('path.branch, g.internal-node, g.node').data(data);
 
     const bbox = document.querySelector('.phylotree-layout').getBBox();
     const x = (width - bbox.width) / 2 - Math.abs(bbox.x);
