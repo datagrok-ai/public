@@ -192,6 +192,10 @@ export class Events {
     return __obs('d4-viewer-closed');
   }
 
+  /** @returns {rxjs.Observable} */ get onAccordionConstructed() {
+    return __obs('d4-accordion-constructed');
+  }
+
   get onPackageLoaded(): rxjs.Observable<Package> { return __obs('d4-package-loaded'); }
 }
 

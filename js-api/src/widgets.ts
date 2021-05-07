@@ -268,6 +268,10 @@ export class Accordion extends DartWidget {
     super(d);
   }
 
+  get context(): any {
+    return toJs(api.grok_Accordion_Get_Context(this.d));
+  }
+
   /** Creates a new instance of Accordion */
   static create(key: any = null): Accordion {
     return toJs(api.grok_Accordion(key));
