@@ -720,6 +720,12 @@ export class Column {
     return api.grok_Column_Get_Type(this.d);
   }
 
+  /** Is this column virtual
+   * @type {boolean} */
+  get isVirtual(): boolean {
+    return api.grok_Column_IsVirtual(this.d);
+  }
+
   /** Number of elements
    * @type {number} */
   get length(): number {
