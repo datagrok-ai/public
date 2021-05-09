@@ -36,8 +36,12 @@ type Comparer = (a: any, b: any) => number;
 
 const MapProxy = new Proxy(class {
     d: any;
-    constructor(d: any) {
+    objectName: string | null;
+    valueType: string | null;
+    constructor(d: any, objectName: string | null = null, valueType: string | null = null) {
       this.d = d;
+      this.objectName = objectName;
+      this.valueType = valueType;
     }
     keys(): Iterable<any> {
       return _toIterable(api.grok_Map_Keys(this.d));
@@ -96,7 +100,12 @@ const MapProxy = new Proxy(class {
           }
         },
         set: function (target, prop, value) {
-          api.grok_Map_Set(target.d, prop, DG.toDart(value));
+          const valueType = typeof(value);
+          if (!target.valueType || target.valueType === valueType) {
+            api.grok_Map_Set(target.d, prop, DG.toDart(value));
+          } else {
+            throw new Error(`Entries of ${target.objectName} require type '${target.valueType}', passed '${valueType}'`);
+          }
           return true;
         },
         deleteProperty: function (target, prop) {
@@ -141,8 +150,8 @@ export class DataFrame {
     this.rows = new RowList(this, api.grok_DataFrame_Rows(this.d));
     this.filter = new BitSet(api.grok_DataFrame_Get_Filter(this.d));
 
-    this.temp = new MapProxy(api.grok_DataFrame_Get_Temp(this.d));
-    this.tags = new MapProxy(api.grok_DataFrame_Get_Tags(this.d));
+    this.temp = new MapProxy(api.grok_DataFrame_Get_Temp(this.d), 'temp');
+    this.tags = new MapProxy(api.grok_DataFrame_Get_Tags(this.d), 'tags', 'string');
 
     // return new Proxy(this, {
     //     get(target, name) {
@@ -218,7 +227,12 @@ export class DataFrame {
    * @param {string} tag - Key.
    * @param {string} value - Value. */
   setTag(tag: string, value: string): void {
-    api.grok_DataFrame_Set_Tag(this.d, tag, value);
+    const valueType: string = typeof(value);
+    if (valueType === 'string') {
+      api.grok_DataFrame_Set_Tag(this.d, tag, value);
+    } else {
+      throw new Error(`Tags must be strings, passed '${valueType}'`);
+    }
   }
 
   /** Returns i-th row.
