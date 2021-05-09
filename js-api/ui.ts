@@ -245,19 +245,23 @@ export function div(children: HTMLElement[] | HTMLElement = [], options: string 
 }
 
 export function info(children: HTMLElement[] | HTMLElement | string, header: string | null = null): HTMLDivElement {
+  let root: HTMLDivElement | null = null;
   let content: HTMLElement[] = [];
+  let closeElement: HTMLElement = iconFA('times', () => root.style.display = 'none');
   if (header !== null && header !== undefined) {
     content.push(h1(header));
   }
   if (!Array.isArray(children)) {
-    if (children === null || typeof children === 'string') {
-      children = [divText(<string>children)];
+    if (typeof children === 'string') {
+      children = [divText(children)];
     } else {
       children = [children];
     }
   }
   content = content.concat(children);
-  return div(content, 'grok-info-bar');
+  content.push(closeElement);
+  root = div(content, 'grok-info-bar');
+  return root;
 }
 
 /** Div flex-box container that positions child elements vertically.
