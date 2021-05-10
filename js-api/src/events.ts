@@ -3,6 +3,7 @@ import * as rxjsOperators from 'rxjs/operators';
 import {toJs} from './wrappers';
 import {Observable} from "rxjs";
 import { Package } from './entities';
+import {Accordion} from "./widgets";
 
 let api = <any>window;
 
@@ -192,9 +193,7 @@ export class Events {
     return __obs('d4-viewer-closed');
   }
 
-  /** @returns {rxjs.Observable} */ get onAccordionConstructed() {
-    return __obs('d4-accordion-constructed');
-  }
+  get onAccordionConstructed(): rxjs.Observable<Accordion> { return __obs('d4-accordion-constructed'); }
 
   get onPackageLoaded(): rxjs.Observable<Package> { return __obs('d4-package-loaded'); }
 }

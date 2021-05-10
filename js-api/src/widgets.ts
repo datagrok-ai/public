@@ -268,6 +268,7 @@ export class Accordion extends DartWidget {
     super(d);
   }
 
+  /** An object this accordion is associated with */
   get context(): any {
     return toJs(api.grok_Accordion_Get_Context(this.d));
   }
