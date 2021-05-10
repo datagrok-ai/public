@@ -2,7 +2,7 @@ import {Cell, Column, Row} from "./dataframe";
 import {Viewer} from "./viewer";
 import {toDart, toJs} from "./wrappers";
 import {__obs, _sub, EventData, StreamSubscription} from "./events";
-import {_identityInt32} from "./utils";
+import {_identityInt32, _toIterable} from "./utils";
 import { Observable } from "rxjs";
 import { RangeSlider } from "./widgets";
 import {SemType} from "./const";
@@ -478,6 +478,13 @@ export class Grid extends Viewer {
    */
   get onRowsResized(): Observable<any> {
     return __obs('d4-grid-rows-resized', this.d);
+  }
+
+  /**
+   * Currently visible cells
+   */
+  getVisibleCells(): Iterable<Cell> {
+    return _toIterable(api.grok_Grid_GetVisibleCells(this.d))
   }
 }
 
