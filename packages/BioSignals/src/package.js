@@ -63,10 +63,10 @@ export async function loadPhysionetRecordWithAnnotations(chosenDatabase, chosenR
       'chosenRecord': chosenRecord.stringValue
     });
     await call.call();
-    const annotations = call.getParamValue('annotations_df');
+    //const annotations = call.getParamValue('annotations_df');
     const signals = call.getParamValue('signals_df');
     signals.columns.byIndex(0).setTag('samplingFrequency', call.getParamValue('sampling_frequency').toString())
-    return [signals, annotations];
+    return signals;
   } catch (e) {
     grok.shell.error(e);
     throw e;
@@ -75,22 +75,18 @@ export async function loadPhysionetRecordWithAnnotations(chosenDatabase, chosenR
 
 async function getInitValues(signals, isLocalTable, chosenDatabase, localTables, chosenRecord) {
   if (isLocalTable) {
-    signals.append(
-      DG.DataFrame.fromColumns([
-        localTables.find(({name}) => name === chosenDatabase.stringValue).columns.byName(chosenRecord.stringValue)
-      ])
-    );
-    let annotations = DG.DataFrame.create(1);
+    signals = DG.DataFrame.fromColumns([
+      localTables.find(({name}) => name === chosenDatabase.stringValue).columns.byName(chosenRecord.stringValue)
+    ]);
     signals.name = chosenDatabase.stringValue;
-    return [signals, annotations];
+    return signals;
   } else {
-    let annotations;
     let pi = DG.TaskBarProgressIndicator.create('Loading record with annotations from Physionet...');
     let chosenDatabaseShortName = physionetDatabasesDictionary[chosenDatabase.stringValue].shortName;
-    [signals, annotations] = await loadPhysionetRecordWithAnnotations(chosenDatabaseShortName, chosenRecord);
+    signals = await loadPhysionetRecordWithAnnotations(chosenDatabaseShortName, chosenRecord);
     signals.name = chosenDatabase.stringValue + '/' + chosenRecord.stringValue;
     pi.close();
-    return [signals, annotations];
+    return signals;
   }
 }
 
@@ -136,7 +132,7 @@ export function BioSignals() {
   let localTables = grok.shell.tables;
   let namesOfLocalTables = localTables.map((df) => df.name);
   let tablesAndPhysionetDBs = namesOfLocalTables.concat(Object.keys(physionetDatabasesDictionary));
-  let signals, annotations;
+  let signals;
   let chosenDatabase = ui.choiceInput('Database', '', tablesAndPhysionetDBs, () => {
     let isLocalTable = (namesOfLocalTables.includes(chosenDatabase.stringValue));
     let items = (isLocalTable) ?
@@ -144,22 +140,21 @@ export function BioSignals() {
       physionetDatabasesDictionary[chosenDatabase.stringValue].namesOfRecords;
     let samplingFreq = ui.floatInput('Sampling frequency: ', '');
     if (isLocalTable) enterSamplingFrequencyDiv.append(samplingFreq.root);
-    let columnName = (isLocalTable) ? 'Column' : 'Physionet record';
+    let columnName = (isLocalTable) ? 'Column' : 'Record';
     let chosenRecord = ui.choiceInput(columnName, '', items, async () => {
-      [signals, annotations] = await getInitValues(signals, isLocalTable, chosenDatabase, localTables, chosenRecord);
-      let signalsWithAnnotations = signals.append(annotations);
+      signals = await getInitValues(signals, isLocalTable, chosenDatabase, localTables, chosenRecord);
+      signals.columns.byIndex(0).setTag('displayTitle', 'true');
 
       context.setVariable(signals.name, signals);
 
       if (isLocalTable) {
         enterSamplingFrequencyDiv.innerHTML = '';
         signals.columns.byIndex(0).setTag('samplingFrequency', samplingFreq.value.toString());
-        signalsWithAnnotations.columns.byIndex(0).setTag('samplingFrequency', samplingFreq.value.toString());
       }
       annotationViewerDiv.innerHTML = '';
       annotationViewerDiv.append(
         ui.block([
-          DG.Viewer.fromType('AnnotatorViewer', signalsWithAnnotations).root
+          DG.Viewer.fromType('AnnotatorViewer', signals).root
         ])
       );
 
@@ -370,7 +365,6 @@ export function BioSignals() {
 
       mainDiv.replaceWith(
         ui.div([
-          annotationViewerDiv.getRootNode(),
           ui.h2('Filtering and preprocessing'),
           accordionFilters,
           addFilterButton,
@@ -390,12 +384,17 @@ export function BioSignals() {
   let mainDiv = ui.div();
   grok.shell.newView('BioSignals', [
     appDescription,
-    ui.divH([
-      chosenDatabase,
-      ui.tooltip.bind(ui.button(ui.iconFA(['info-circle'])), 'Choose Physionet database or your uploaded local file')
+    ui.h2('Choose Physionet database or your file'),
+    ui.div([
+      ui.block25([
+        ui.inputs([
+          chosenDatabase,
+          enterSamplingFrequencyDiv,
+          chosenRecordDiv
+        ])
+      ]),
+      ui.block75([annotationViewerDiv])
     ]),
-    enterSamplingFrequencyDiv,
-    chosenRecordDiv,
     mainDiv
   ]);
 }

@@ -27,7 +27,10 @@ export class AnnotatorViewer extends DG.JsViewer {
   onTableAttached() {
     let signalValues = this.dataFrame.columns.byIndex(0);
 
-    const samplingPeriodInMilliseconds = 1000 / signalValues.getTag('samplingFrequency');
+    const samplingFrequency = parseFloat(signalValues.getTag('samplingFrequency'));
+    const samplingPeriodInMilliseconds = 1000 / samplingFrequency;
+    const secondsToDisplay = 10;
+    const defaultZoomWindowLength = Math.min(secondsToDisplay * samplingFrequency * 100 / signalValues.length, signalValues.length);
     this.timeOfFirstSample = new Date('Jan 01 1970 00:00:00 GMT+0000');
 
     let data = new Array(signalValues.length);
@@ -75,7 +78,7 @@ export class AnnotatorViewer extends DG.JsViewer {
       },
       title: {
         left: 'center',
-        text: 'Input (' + signalValues.getTag('samplingFrequency') + ' Hz)',
+        text: signalValues.getTag('displayTitle') ? 'Input (' + signalValues.getTag('samplingFrequency') + ' Hz)' : '',
       },
       toolbox: {
         feature: {
@@ -104,11 +107,11 @@ export class AnnotatorViewer extends DG.JsViewer {
         {
           type: 'inside',
           start: 0,
-          end: 10
+          end: defaultZoomWindowLength
         },
         {
           start: 0,
-          end: 10
+          end: defaultZoomWindowLength
         }
       ],
       series: [
@@ -117,17 +120,18 @@ export class AnnotatorViewer extends DG.JsViewer {
           symbol: 'none',
           data: data
         },
-        {
-          type: 'scatter',
-          symbolSize: 10,
-          symbol: 'circle',
-          data: this.markedPoints
-        }
-      ]
+        // {
+        //   type: 'scatter',
+        //   symbolSize: 10,
+        //   symbol: 'circle',
+        //   data: this.markedPoints
+        // }
+      ],
+      animation: false
     };
 
     this.chart.setOption(this.option);
-    this.render(samplingPeriodInMilliseconds);
+    //this.render(samplingPeriodInMilliseconds);
   }
 
   render(samplingPeriodInMilliseconds) {
@@ -185,7 +189,8 @@ export class AnnotatorViewer extends DG.JsViewer {
               symbol: 'circle',
               data: this.markedPoints
             }
-          ]
+          ],
+          animation: false
         })
       }
     })
