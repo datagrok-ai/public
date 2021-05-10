@@ -19,7 +19,8 @@ function getEmptyChart() {
   return DG.Viewer.fromType(
     DG.VIEWER.LINE_CHART,
     DG.DataFrame.fromColumns([
-      DG.Column.fromList(DG.TYPE.FLOAT, 'time', [])
+      DG.Column.fromList(DG.TYPE.FLOAT, 'time', []),
+      DG.Column.fromList(DG.TYPE.FLOAT, 'values', [])
     ])
   );
 }
@@ -65,27 +66,31 @@ export async function loadPhysionetRecordWithAnnotations(chosenDatabase, chosenR
     const annotations = call.getParamValue('annotations_df');
     const signals = call.getParamValue('signals_df');
     signals.columns.byIndex(0).setTag('samplingFrequency', call.getParamValue('sampling_frequency').toString())
-    return {signals, annotations};
+    return [signals, annotations];
   } catch (e) {
     grok.shell.error(e);
     throw e;
   }
 }
 
-async function getInitValues(isLocalTable, chosenDatabase, localTables, chosenRecord) {
-  let signals;
+async function getInitValues(signals, isLocalTable, chosenDatabase, localTables, chosenRecord) {
   if (isLocalTable) {
-    signals = DG.DataFrame.fromColumns([localTables.find(({name}) => name === chosenDatabase.stringValue).columns.byName(chosenRecord.stringValue)]);
+    signals.append(
+      DG.DataFrame.fromColumns([
+        localTables.find(({name}) => name === chosenDatabase.stringValue).columns.byName(chosenRecord.stringValue)
+      ])
+    );
     let annotations = DG.DataFrame.create(1);
     signals.name = chosenDatabase.stringValue;
-    return {signals, annotations};
+    return [signals, annotations];
   } else {
+    let annotations;
     let pi = DG.TaskBarProgressIndicator.create('Loading record with annotations from Physionet...');
     let chosenDatabaseShortName = physionetDatabasesDictionary[chosenDatabase.stringValue].shortName;
-    let {signals, annotations} = await loadPhysionetRecordWithAnnotations(chosenDatabaseShortName, chosenRecord);
+    [signals, annotations] = await loadPhysionetRecordWithAnnotations(chosenDatabaseShortName, chosenRecord);
     signals.name = chosenDatabase.stringValue + '/' + chosenRecord.stringValue;
     pi.close();
-    return {signals, annotations};
+    return [signals, annotations];
   }
 }
 
@@ -129,8 +134,9 @@ export function BioSignals() {
   let context = DG.Context.create();
 
   let localTables = grok.shell.tables;
-  let namesOfLocalTables = localTables.map((df) => df.name)
+  let namesOfLocalTables = localTables.map((df) => df.name);
   let tablesAndPhysionetDBs = namesOfLocalTables.concat(Object.keys(physionetDatabasesDictionary));
+  let signals, annotations;
   let chosenDatabase = ui.choiceInput('Database', '', tablesAndPhysionetDBs, () => {
     let isLocalTable = (namesOfLocalTables.includes(chosenDatabase.stringValue));
     let items = (isLocalTable) ?
@@ -140,7 +146,7 @@ export function BioSignals() {
     if (isLocalTable) enterSamplingFrequencyDiv.append(samplingFreq.root);
     let columnName = (isLocalTable) ? 'Column' : 'Physionet record';
     let chosenRecord = ui.choiceInput(columnName, '', items, async () => {
-      let {signals, annotations} = await getInitValues(isLocalTable, chosenDatabase, localTables, chosenRecord);
+      [signals, annotations] = await getInitValues(signals, isLocalTable, chosenDatabase, localTables, chosenRecord);
       let signalsWithAnnotations = signals.append(annotations);
 
       context.setVariable(signals.name, signals);
@@ -164,7 +170,7 @@ export function BioSignals() {
       let filterChartsList = [];
       let i = 0;
       let addFilterButton = ui.button('Add Filter', async () => {
-        filterChartsList[i] = getEmptyChart();
+        filterChartsList[i] = ui.div();
         let tag = await grok.dapi.scripts.filter('#filters').list();
         filterTypesList[i] = ui.choiceInput('Filter ' + (i + 1), '', filterScripts.concat(tag), async () => {
           let call = filterTypesList[i - 1].value.prepare();
@@ -185,18 +191,13 @@ export function BioSignals() {
                         await call.call();
                         let df = call.getOutputParamValue();
                         if (df == null) {
-                          df = DG.DataFrame.fromColumns([
-                            DG.Column.fromList('int', 'time', Array(signals.columns.byIndex(0).length).fill().map((_, idx) => idx)),
-                            signals.columns.byIndex(signals.columns.length - 1)
-                          ]);
+                          df = DG.DataFrame.fromColumns([signals.columns.byIndex(signals.columns.length - 1)]);
                         } else {
                           signals = signals.append(df);
-                          df = DG.DataFrame.fromColumns([
-                            DG.Column.fromList('int', 'time', Array(df.columns.byIndex(df.columns.length - 1).length).fill().map((_, idx) => idx)),
-                            df.columns.byIndex(df.columns.length - 1)
-                          ]);
+                          df = DG.DataFrame.fromColumns([df.columns.byIndex(df.columns.length - 1)]);
                         }
-                        filterChartsList[i - 1].dataFrame = df;
+                        df.columns.byIndex(0).setTag('samplingFrequency', signals.columns.byIndex(0).getTag('samplingFrequency'));
+                        filterChartsList[i - 1].replaceWith(DG.Viewer.fromType('AnnotatorViewer', df).root);
                       } catch (e) {
                         grok.shell.error(e);
                         throw e;
