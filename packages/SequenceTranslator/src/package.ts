@@ -19,15 +19,16 @@ export function sequenceTranslator(): void {
   windows.showToolbox = false;
   windows.showHelp = false;
 
-  let appDescription = ui.div([
-    ui.h1('Convert oligonucleotide sequences between Nucleotides, BioSpring, Axolabs, and GCRS representations.'),
-    ui.divText('\n How to convert one sequence:',{style:{'font-weight':'bolder'}}),
-    ui.divText("Paste sequence into the text field below"),
-    ui.divText('\n How to convert many sequences:',{style:{'font-weight':'bolder'}}),
-    ui.divText("1. Drag & drop an Excel or CSV file with sequences into Datagrok. The platform will automatically detect columns with sequences"),
-    ui.divText('2. Right-click on the column header, then see the \'Convert\' menu'),
-    ui.divText("This will add the result column to the right of the table"),
-  ], 'grok-datajob-publish-alert');
+  let appDescription = ui.info(
+    [
+      ui.divText('\n How to convert one sequence:',{style:{'font-weight':'bolder'}}),
+      ui.divText("Paste sequence into the text field below"),
+      ui.divText('\n How to convert many sequences:',{style:{'font-weight':'bolder'}}),
+      ui.divText("1. Drag & drop an Excel or CSV file with sequences into Datagrok. The platform will automatically detect columns with sequences"),
+      ui.divText('2. Right-click on the column header, then see the \'Convert\' menu'),
+      ui.divText("This will add the result column to the right of the table"),
+    ], 'Convert oligonucleotide sequences between Nucleotides, BioSpring, Axolabs, and GCRS representations.'
+  );
 
   let inputSequenceField = ui.textInput("", defaultNucleotidesInput, async (seq: string) => {
     let outputSequencesObj = convertSequence(seq);

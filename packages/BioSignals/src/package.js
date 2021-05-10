@@ -94,18 +94,20 @@ async function getInitValues(isLocalTable, chosenDatabase, localTables, chosenRe
 export function BioSignals() {
 
   let link = ui.element('a');
-  link.href = 'https://github.com/datagrok-ai/public/tree/master/packages/BioSignals'
+  link.href = 'https://github.com/datagrok-ai/public/tree/master/packages/BioSignals#readme'
   link.text = 'here';
   link.target = '_blank';
 
-  let appDescription = ui.div([
-    ui.h1('Analyze biomedical signals using built-in and custom scripts.'),
-    ui.span(['See details ', link]),
-    ui.divText('\n How to add your script:', {style: {'font-weight': 'bolder'}}),
-    ui.divText('\n 1. Go to Functions | Scripts | Actions | New <yourScriptLanguage> Script'),
-    ui.divText('2. Write your script, and test it on files'),
-    ui.divText('3. Set tag #filters, #extractors or #indicators. Now it is available in corresponding app section')
-  ], 'grok-datajob-publish-alert');
+  let appDescription = ui.info(
+    [
+      ui.span(['See details ', link]),
+      ui.divText('\n How to add your script:', {style: {'font-weight': 'bolder'}}),
+      ui.divText('1. Go to Functions | Scripts | Actions | New <yourScriptLanguage> Script'),
+      ui.divText('2. Write your script, and test it on files'),
+      ui.divText('3. Set tag #filters, #extractors or #indicators'),
+      ui.divText('Now it is available in corresponding app section')
+    ], 'Analyze biomedical signals using built-in and custom scripts'
+  );
 
   let windows = grok.shell.windows;
   windows.showProperties = false;
