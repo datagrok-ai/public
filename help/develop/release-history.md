@@ -1,6 +1,131 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-05-10 Stable version 0.92.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.0`
+  *  `docker pull datagrok/datagrok:stable`
+* CVM: 
+  *  `docker pull datagrok/cvm:0.92.0`
+  *  `docker pull datagrok/cvm:stable`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* (Bug) Chem: R-Groups Analysis with client RDKit 
+* Ability to share files 
+* StringColumn: batch editing: copying existing values 
+* Chem: renderer selection checks. 
+* BioSignals: add possibility to change previously chosen filter script 
+* sequenceTranslator: use Ternary Operator when it brings clarity 
+* BioSignals: choose input signal from context(WIP) 
+* BioSignals: choose input signal from context 
+* Proper dependencies 
+* (Bug) Incorrect QNum parsing 
+* do not crash on an empty substructure library 
+* Chem: Robust invalid molecules handling in parallel Substructure Search 
+* PhyloTreeViewer: JS-based phylogenetic tree visualisation (WIP)
+* Bump commons-io from 2.6 to 2.7 in /connectors/grok_connect 
+* Biosignals: add opened tables to App context 
+* Connectors: Redshift: Schema browsing (WIP)
+* Datagrok API and system samples, add cross linking to improve connectivity (WIP)
+* Trellis Plot: ability to enlarge individual in-trellis viewers 
+* NGL viewer (WIP)
+* (Bug) JS API: Columns.byTags does not work 
+* Widgets: MultiValueFilter 
+* removed to LABS 
+* removed src 
+* files moved to LAB 
+* Join tables: Don't include key fields by default 
+* Icon Tooll 
+* BioSignals: added app description, and ui.buttonsInput 
+* BioSignals: rename folders with scripts to 'filters', 'extractors', 'indicators' 
+* (Bug) Queries: "Converting object to an encodable object failed" with dataframe as parameter 
+* Multi-value filters 
+* (Bug) Excel import: an empty column is created as part of the dataframe 
+* BarChart categories error 
+* (Bug) Layouts: Undocked viewer remained after "Close All" 
+* update package icons 
+* update icon 
+* JS API: BitSet: getBuffer() 
+* MSA tabs added 
+* BioSignals | AnnotatorViewer: generate timestamps from sampling frequency 
+* Fixed grok_connect imports 
+* update icons for script packages 
+* change package name 
+* RepertoireBrowser: msa rendering changed 
+* RepertoireBrowser: added debouncing 
+* Updated public toke 
+* BioSignals: add possibility to enter sampling frequency for local files 
+* Update package.png 
+* (Bug) Grid: html cells are not re-rendered after sorting a column 
+* Connectors: add default schema to providers and use as condition for schema browsing  
+* Prevent socket memory consuming 
+* RepertoireBrowser: gff annotations 
+* (Bug) BioSignals: rename input variables of scripts to camelCase to show them properly in the UI (split into words) 
+* Adjusted a unit test to reflect recent changes in the 'join' implementation 
+* Added demo files 
+* RepertoireBrowser: gff annotations (slight changes) 
+* BioSignals: option to delete accordion pane 
+* (Bug) Grok connect: can't connect to MsSQL using TLS10 
+* JBio;Repertoir: Added GFF annotations for protein translation, tuned debounce timeout for better perf 
+* Repertoir: code cleanup 
+* Table View: Columns pane: add search 
+* BioSignals: Preserve "Filtering, Extraction and Indicator" parameters while selecting "Physionet record" or "Column" 
+* BioSignals: fixes and optimizations 
+* BioSignals: AnnotatorViewer: round values and change tooltip formatter 
+* JS API: ui.info for a yellow info bar (WIP)
+* Docs: how to run Chrome with CORS disabled. 
+* Docs: info about Labs repo and importDemoPackages setting for dev.datagrok.ai. 
+* (Bug) Chem: several molecule filters won't work together (WIP)
+* (Bug) Core: default tooltip config is no longer saved with layout 
+* (Bug) JS Viewer: Incorrect height calculation 
+* (Bug) Bar Chart: coloring cannot be disabled 
+* BioSignals: fixes and minor changes 
+* sequenceTranslator: fix of line feed bug; notify if sequence length is too short 
+* (Bug) Filters: adding returns a filter for the column added previously instead of the currently selected one 
+* (Bug) Bar Chart: coloring gets only applied when editing colors in a grid column 
+* Packages: beta flag 
+* Updated public token 
+* Removed debug line 
+* Chord Diagram (WIP)
+* (Bug) Chem: Tile Viewer issue (WIP)
+* sequenceTranslator: use functions to display default translations 
+* datagrok-tools version 4.1.2, bump 
+* (Bug) sequenceTranslator: molecule SVGs append after adding/removing characters to input sequence 
+* (Bug) UI: new view appears below the current 
+* Fixed TS warnings 
+* ClinicalCase: minor adjustments 
+* SequenceTranslator: OP100 Sequence Conversion (WIP)
+* SequenceTranslator: MM12 Sequence Conversion (WIP)
+* RepertoireBrowser: MSA tabs (WIP)
+* Wiki: Harmonization (WIP)
+* Dataframe: Detect column max significant digits in CSV loading (WIP)
+* (Bug) Api Samples: "db-master-details-manual" example does not work 
+* RepertoireBrowser: code formatting 
+* Data: fixed demog redundant precision 
+* JS API: add Column.isVirtual 
+* (Bug) Chord Viewer: the diagram gets rendered twice when the same column is used for source and target 
+* PhyloTreeViewer: node/branch tooltips based on dataframe rows (WIP)
+* JS API: DG.TAGS.FORMAT tag as a preferred way to set the column format 
+* JS API: add event onAccordionConstructed and Accordion.context getter  
+* Minor cleanup 
+* (Bug) BioSignals: error after calling Python filter first 
+* Menu.fromCommand: show command description in the tooltip 
+* (Bug) Viewers: the menu item `Viewer` is not visible in uploaded projects 
+* Menu capitalization harmonization 
+* Crash when adding columns to an existing DF/Grid 
+* Grid: ShowVisibleColumnsInTooltip property 
+* (Bug) Grid: drag-and-drop column reordering: provide drop zones 
+* JS API: tags must only be strings 
+* BioSignals: SequenceTranslator: use ui.info() for yellow information bars in views 
+* Biosignals: parallel zoom for lineCharts (WIP)
+
+
 # 2021-05-05 Dev build 0.91.10
 
 ## Latest Docker Images
