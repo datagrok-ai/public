@@ -150,6 +150,8 @@ export function BioSignals() {
       if (isLocalTable) {
         enterSamplingFrequencyDiv.innerHTML = '';
         signals.columns.byIndex(0).setTag('samplingFrequency', samplingFreq.value.toString());
+      } else {
+        parent.location.hash = chosenDatabase.stringValue + '/' + chosenRecord.stringValue;
       }
       annotationViewerDiv.innerHTML = '';
       annotationViewerDiv.append(
