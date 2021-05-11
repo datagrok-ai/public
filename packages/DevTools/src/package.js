@@ -4,23 +4,19 @@ import * as DG from 'datagrok-api/dg';
 
 export const _package = new DG.Package();
 
-async function loadSnippets() {
-  return (await grok.dapi.scripts.list({ filter: '#demo and (language in ("javascript"))' }));
-}
-
-function getSnippets(ent, snippets) {
+async function loadSnippets(type) {
+  const snippets = (await grok.dapi.scripts.list({ filter: `#demo and #${type}` }));
   return snippets.slice(0, 3);
 }
 
 //tags: autostart
-export async function describeCurrentObj() {
-  const apiSnippets = await loadSnippets();
-
-  grok.events.onAccordionConstructed.subscribe(acc => {
+export function describeCurrentObj() {
+  grok.events.onAccordionConstructed.subscribe(async (acc) => {
     const ent = acc.context;
 
     if (ent) {
-      const snippets = getSnippets(ent, apiSnippets);
+      const type = ent.constructor.name;
+      const snippets = await loadSnippets(type);
       const snippetNames = snippets.map(s => ui.divText(s.name, { classes: 'd4-link-action' }));
       let editor = ui.textInput('', '');
       editor.input.style = 'width: 0; height: 0; visibility: hidden;';
