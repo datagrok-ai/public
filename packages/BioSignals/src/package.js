@@ -405,7 +405,7 @@ export function BioSignals() {
   ]);
   if (document.location.hash) {
     let s = document.location.hash.split('/');
-    let db = s[0].replace('%20', ' ').slice(1);
+    let db = s[0].replace(/%20/g, ' ').slice(1);
     let rec = (s.length === 3) ? s[1] + '/' + s[2] : s[1];
     chosenDatabase.value = db;
     chosenRecordDiv.innerHTML = '';
