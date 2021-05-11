@@ -289,6 +289,9 @@ Also it is possible to add custom parameter using "meta." prefix.
 | Option      | Value                     | Description              |
 |-------------|---------------------------|--------------------------|
 | validators  | List separated with comma | List of named validators |
+| caption     | Text string               | Custom field caption     |
+| postfix     | Text string               | Field postfix            |
+| units       | Same as postfix           |                          |
 
 Named validators:
 * containsMissingValues
