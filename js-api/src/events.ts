@@ -1,9 +1,10 @@
 import * as rxjs from 'rxjs';
 import * as rxjsOperators from 'rxjs/operators';
-import {toJs} from './wrappers';
-import {Observable} from "rxjs";
+import { toJs } from './wrappers';
+import { Observable } from "rxjs";
 import { Package } from './entities';
-import {Accordion} from "./widgets";
+import { Accordion } from "./widgets";
+import { ViewLayout } from './view';
 
 let api = <any>window;
 
@@ -77,121 +78,74 @@ export class Events {
   }
 
   /** Observes custom events with the specified eventId.
-   * {@link https://public.datagrok.ai/js/samples/events/custom-events}
+   * Sample: {@link https://public.datagrok.ai/js/samples/events/custom-events}
    * @returns {rxjs.Observable} */
   onCustomEvent(eventId: string): rxjs.Observable<any> {
     return this.customEventBus.onEvent(eventId);
   }
 
   /** Observes events with the specified eventId.
-   * {@link https://public.datagrok.ai/js/samples/events/custom-events}
+   * Sample: {@link https://public.datagrok.ai/js/samples/events/custom-events}
    * @param {string} eventId
    * @param args - event arguments*/
   fireCustomEvent(eventId: string, args: any): void { this.customEventBus.fire(eventId, args); }
 
-  /** @returns {rxjs.Observable} */ get onContextMenu() {
-    return __obs('d4-context-menu');
-  }
+  /** Sample: {@link https://public.datagrok.ai/js/samples/events/viewer-events} */
+  get onContextMenu(): rxjs.Observable<any> { return __obs('d4-context-menu'); }
 
-  /** @returns {rxjs.Observable} */ get onContextMenuClosed() {
-    return __obs('d4-menu-closed');
-  }
+  get onContextMenuClosed(): rxjs.Observable<any> { return __obs('d4-menu-closed'); }
 
-  /** @returns {rxjs.Observable} */ get onCurrentViewChanged() {
-    return __obs('d4-current-view-changed');
-  }
+  get onCurrentViewChanged(): rxjs.Observable<any> { return __obs('d4-current-view-changed'); }
 
-  /** @returns {rxjs.Observable} */ get onCurrentCellChanged() {
-    return __obs('d4-current-cell-changed');
-  }
+  get onCurrentCellChanged(): rxjs.Observable<any> { return __obs('d4-current-cell-changed'); }
 
-  /** @returns {rxjs.Observable} */ get onTableAdded() {
-    return __obs('d4-table-added');
-  }
+  /** Sample: {@link https://public.datagrok.ai/js/samples/events/global-events} */
+  get onTableAdded(): rxjs.Observable<any> { return __obs('d4-table-added'); }
 
-  /** @returns {rxjs.Observable} */ get onTableRemoved() {
-    return __obs('d4-table-removed');
-  }
+  get onTableRemoved(): rxjs.Observable<any> { return __obs('d4-table-removed'); }
 
-  /** @returns {rxjs.Observable} */ get onQueryStarted() {
-    return __obs('d4-query-started');
-  }
+  get onQueryStarted(): rxjs.Observable<any> { return __obs('d4-query-started'); }
 
-  /** @returns {rxjs.Observable} */ get onQueryFinished() {
-    return __obs('d4-query-finished');
-  }
+  get onQueryFinished(): rxjs.Observable<any> { return __obs('d4-query-finished'); }
 
-  /** @returns {rxjs.Observable} */ get onViewChanged() {
-    return __obs('grok-view-changed');
-  }
+  get onViewChanged(): rxjs.Observable<any> { return __obs('grok-view-changed'); }
 
-  /** @returns {rxjs.Observable} */ get onViewAdded() {
-    return __obs('grok-view-added');
-  }
+  get onViewAdded(): rxjs.Observable<any> { return __obs('grok-view-added'); }
 
-  /** @returns {rxjs.Observable} */ get onViewRemoved() {
-    return __obs('grok-view-removed');
-  }
+  get onViewRemoved(): rxjs.Observable<any> { return __obs('grok-view-removed'); }
 
-  /** @returns {rxjs.Observable} */ get onViewRenamed() {
-    return __obs('grok-view-renamed');
-  }
+  get onViewRenamed(): rxjs.Observable<any> { return __obs('grok-view-renamed'); }
 
-  /** @returns {rxjs.Observable} */ get onViewLayoutGenerated() {
-    return __obs('d4-view-layout-generated');
-  }
+  /** Sample: {@link https://public.datagrok.ai/js/samples/events/layout-events} */
+  get onViewLayoutGenerated(): rxjs.Observable<ViewLayout> { return __obs('d4-view-layout-generated'); }
 
-  /** @returns {rxjs.Observable} */ get onViewLayoutApplying() {
-    return __obs('d4-view-layout-applying');
-  }
+  /** Sample: {@link https://public.datagrok.ai/js/samples/events/layout-events} */
+  get onViewLayoutApplying(): rxjs.Observable<ViewLayout> { return __obs('d4-view-layout-applying'); }
 
-  /** @returns {rxjs.Observable} */ get onViewLayoutApplied() {
-    return __obs('d4-view-layout-applied');
-  }
+  /** Sample: {@link https://public.datagrok.ai/js/samples/events/layout-events} */
+  get onViewLayoutApplied(): rxjs.Observable<ViewLayout> { return __obs('d4-view-layout-applied'); }
 
-  /** @returns {rxjs.Observable} */ get onCurrentProjectChanged() {
-    return __obs('grok-current-project-changed');
-  }
+  get onCurrentProjectChanged(): rxjs.Observable<any> { return __obs('grok-current-project-changed'); }
 
-  /** @returns {rxjs.Observable} */ get onProjectUploaded() {
-    return __obs('grok-project-uploaded');
-  }
+  get onProjectUploaded(): rxjs.Observable<any> { return __obs('grok-project-uploaded'); }
 
-  /** @returns {rxjs.Observable} */ get onProjectSaved() {
-    return __obs('grok-project-saved');
-  }
+  get onProjectSaved(): rxjs.Observable<any> { return __obs('grok-project-saved'); }
 
-  /** @returns {rxjs.Observable} */ get onProjectOpened() {
-    return __obs('grok-project-opened');
-  }
+  get onProjectOpened(): rxjs.Observable<any> { return __obs('grok-project-opened'); }
 
-  /** @returns {rxjs.Observable} */ get onProjectClosed() {
-    return __obs('grok-project-closed');
-  }
+  get onProjectClosed(): rxjs.Observable<any> { return __obs('grok-project-closed'); }
 
-  /** @returns {rxjs.Observable} */ get onProjectModified() {
-    return __obs('grok-project-modified');
-  }
+  get onProjectModified(): rxjs.Observable<any> { return __obs('grok-project-modified'); }
 
-  /** @returns {rxjs.Observable} */ get onTooltipRequest() {
-    return __obs('d4-tooltip-request');
-  }
+  get onTooltipRequest(): rxjs.Observable<any> { return __obs('d4-tooltip-request'); }
 
-  /** @returns {rxjs.Observable} */ get onTooltipShown() {
-    return __obs('d4-tooltip-shown');
-  }
+  get onTooltipShown(): rxjs.Observable<any> { return __obs('d4-tooltip-shown'); }
 
-  /** @returns {rxjs.Observable} */ get onTooltipClosed() {
-    return __obs('d4-tooltip-closed');
-  }
+  get onTooltipClosed(): rxjs.Observable<any> { return __obs('d4-tooltip-closed'); }
 
-  /** @returns {rxjs.Observable} */ get onViewerAdded() {
-    return __obs('d4-viewer-added');
-  }
+  get onViewerAdded(): rxjs.Observable<any> { return __obs('d4-viewer-added'); }
 
-  /** @returns {rxjs.Observable} */ get onViewerClosed() {
-    return __obs('d4-viewer-closed');
-  }
+  get onViewerClosed(): rxjs.Observable<any> { return __obs('d4-viewer-closed'); }
 
   get onAccordionConstructed(): rxjs.Observable<Accordion> { return __obs('d4-accordion-constructed'); }
 
@@ -259,7 +213,8 @@ export class EventData {
     return api.grok_EventData_Get_IsDefaultPrevented(this.d);
   }
 
-  /** Prevents default handling. See also {@link isDefaultPrevented} */
+  /** Prevents default handling. See also {@link isDefaultPrevented}.
+   * Sample: {@link https://public.datagrok.ai/js/samples/events/prevented-event} */
   preventDefault(): void {
     api.grok_EventData_PreventDefault(this.d);
   }
