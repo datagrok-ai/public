@@ -457,16 +457,15 @@ export class Dialog {
   /** @returns {Dialog}
    * @param {{modal: boolean, fullScreen: boolean, center: boolean, centerAt: Element, x: number, y: number, width: number, height: number}|{}} options
    * */
-  show(options?: { modal?: any; fullScreen?: any; center?: any; centerAt?: any; x?: any; y?: any; width?: any; height?: any; }): Dialog {
-    options = options || {};
-    api.grok_Dialog_Show(this.d, options.modal, options.fullScreen, options.center, options.centerAt, options.x, options.y, options.width, options.height);
+  show(options?: { modal?: boolean; fullScreen?: boolean; center?: boolean; centerAt?: Element; x?: number; y?: number; width?: number; height?: number; backgroundColor: string;}): Dialog {
+    api.grok_Dialog_Show(this.d, options?.modal, options?.fullScreen, options?.center, options?.centerAt, options?.x, options?.y, options?.width, options?.height, options?.backgroundColor);
     return this;
   }
 
   /** @returns {Dialog}
    * @param {boolean} fullScreen  */
   showModal(fullScreen: boolean): Dialog {
-    api.grok_Dialog_Show(this.d, true, fullScreen, false, null, null, null, null, null);
+    api.grok_Dialog_Show(this.d, true, fullScreen, false, null, null, null, null, null, null);
     return this;
   }
 
