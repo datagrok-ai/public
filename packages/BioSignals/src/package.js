@@ -60,7 +60,7 @@ export async function loadPhysionetRecordWithAnnotations(chosenDatabase, chosenR
     let f = await grok.functions.eval("BioSignals:loadPhysionetRecordWithAnnotations");
     let call = f.prepare({
       'chosenDatabase': chosenDatabase,
-      'chosenRecord': chosenRecord.stringValue
+      'chosenRecord': chosenRecord
     });
     await call.call();
     //const annotations = call.getParamValue('annotations_df');
@@ -73,21 +73,262 @@ export async function loadPhysionetRecordWithAnnotations(chosenDatabase, chosenR
   }
 }
 
-async function getInitValues(signals, isLocalTable, chosenDatabase, localTables, chosenRecord) {
+async function getInitValues(isLocalTable, chosenDatabase, localTables, chosenRecord) {
   if (isLocalTable) {
-    signals = DG.DataFrame.fromColumns([
-      localTables.find(({name}) => name === chosenDatabase.stringValue).columns.byName(chosenRecord.stringValue)
+    let signals = DG.DataFrame.fromColumns([
+      localTables.find(({name}) => name === chosenDatabase).columns.byName(chosenRecord)
     ]);
-    signals.name = chosenDatabase.stringValue;
+    signals.name = chosenDatabase;
     return signals;
   } else {
     let pi = DG.TaskBarProgressIndicator.create('Loading record with annotations from Physionet...');
-    let chosenDatabaseShortName = physionetDatabasesDictionary[chosenDatabase.stringValue].shortName;
-    signals = await loadPhysionetRecordWithAnnotations(chosenDatabaseShortName, chosenRecord);
-    signals.name = chosenDatabase.stringValue + '/' + chosenRecord.stringValue;
+    let chosenDatabaseShortName = physionetDatabasesDictionary[chosenDatabase].shortName;
+    let signals = await loadPhysionetRecordWithAnnotations(chosenDatabaseShortName, chosenRecord);
+    signals.name = chosenDatabase + '/' + chosenRecord;
     pi.close();
     return signals;
   }
+}
+
+async function main(mainDiv, filterScripts, isLocalTable, chosenDatabase, localTables, chosenRecord, samplingFreq,
+                    annotationViewerDiv, enterSamplingFrequencyDiv) {
+
+  let signals = await getInitValues(isLocalTable, chosenDatabase, localTables, chosenRecord);
+  signals.columns.byIndex(0).setTag('displayTitle', 'true');
+  let context = DG.Context.create();
+  context.setVariable(signals.name, signals);
+
+  if (isLocalTable) {
+    enterSamplingFrequencyDiv.innerHTML = '';
+    signals.columns.byIndex(0).setTag('samplingFrequency', samplingFreq.value.toString());
+  } else {
+    parent.location.hash = chosenDatabase + '/' + chosenRecord;
+  }
+  annotationViewerDiv.innerHTML = '';
+  annotationViewerDiv.append(
+    ui.block([
+      DG.Viewer.fromType('AnnotatorViewer', signals).root
+    ])
+  );
+
+  // Filter dialogue
+  let accordionFilters = ui.accordion();
+  let filterTypesList = [];
+  let filterContainerList = [];
+  let filterChartsList = [];
+  let i = 0;
+  let addFilterButton = ui.button('Add Filter', async () => {
+    filterChartsList[i] = ui.div();
+    let tag = await grok.dapi.scripts.filter('#filters').list();
+    filterTypesList[i] = ui.choiceInput('Filter ' + (i + 1), '', filterScripts.concat(tag), async () => {
+      let call = filterTypesList[i - 1].value.prepare();
+      for (let table of grok.shell.tables)
+        if (table.name !== chosenDatabase)
+          context.setVariable(table.name, table);
+      call.context = context;
+      filterContainerList[i - 1].replaceWith(ui.div([
+        ui.block25([
+          ui.inputs([
+            filterTypesList[i - 1],
+            await call.getEditor(),
+            ui.buttonsInput([
+              ui.divH([
+                ui.button('Plot', async () => {
+                  let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting filter\'s output...');
+                  try {
+                    await call.call();
+                    let df = call.getOutputParamValue();
+                    if (df == null) {
+                      df = DG.DataFrame.fromColumns([signals.columns.byIndex(signals.columns.length - 1)]);
+                    } else {
+                      signals = signals.append(df);
+                      df = DG.DataFrame.fromColumns([df.columns.byIndex(df.columns.length - 1)]);
+                    }
+                    df.columns.byIndex(0).setTag('samplingFrequency', signals.columns.byIndex(0).getTag('samplingFrequency'));
+                    filterChartsList[i - 1].replaceWith(DG.Viewer.fromType('AnnotatorViewer', df).root);
+                  } catch (e) {
+                    grok.shell.error(e);
+                    throw e;
+                  } finally {
+                    pi.close();
+                  }
+                }),
+                ui.button(
+                  ui.iconFA('trash-alt', (ev) => {
+                    let id = parseInt(ev.currentTarget.offsetParent.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.className.slice(41, 44));
+                    let lst = filterTypesList.map((e) => e.caption).filter(function (el) {return el != null;});
+                    let idx = lst.indexOf('Filter ' + id);
+                    accordionFilters.root.removeChild(accordionFilters.root.childNodes[idx]);
+                    filterContainerList.splice(idx, 1);
+                    filterTypesList.splice(idx, 1);
+                    filterChartsList.splice(idx, 1);
+                    signals.columns.remove(signals.columns.byIndex(idx + 1).name);
+                  })
+                )
+              ])
+            ])
+          ])
+        ]),
+        ui.block75([filterChartsList[i - 1]])
+      ]));
+    });
+    filterContainerList[i] = ui.inputs([filterTypesList[i]]);
+    accordionFilters.addPane('Filter ' + (i + 1), () => filterContainerList[i], true);
+    i++;
+  });
+
+  // Information extraction dialogue
+  let accordionExtractors = ui.accordion();
+  let extracted;
+  let extractorTypesList = [];
+  let extractorChartsList = [];
+  let extractorContainerList = [];
+  let j = 0;
+  let addExtractorButton = ui.button('Add Extractor', async () => {
+    extractorChartsList[j] = getEmptyChart();
+    let extractors = await grok.dapi.scripts.filter('#extractors').list();
+    extractorTypesList[j] = ui.choiceInput('Extractor ' + (j + 1), '', extractors, async function () {
+      let call = extractorTypesList[j - 1].value.prepare();
+      let contextExtractors = DG.Context.create();
+      contextExtractors.setVariable('table', signals);
+      grok.shell.tables.forEach(function (table, index) {
+        contextExtractors.setVariable('table' + index, table);
+      });
+      call.context = contextExtractors;
+      extractorContainerList[j - 1].replaceWith(ui.div([
+        ui.block25([
+          ui.inputs([
+            extractorTypesList[j - 1],
+            await call.getEditor(),
+            ui.buttonsInput([
+              ui.divH([
+                ui.button('Plot', async () => {
+                  let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting extractor\'s output...');
+                  try {
+                    await call.call();
+                    let df = call.getOutputParamValue();
+                    if (extracted == null) {
+                      extracted = DG.DataFrame.fromColumns([df.columns.byIndex(0)]);
+                      df = DG.DataFrame.fromColumns([
+                        DG.Column.fromList('int', 'time', Array(df.columns.byIndex(0).length).fill().map((_, idx) => idx)),
+                        df.columns.byIndex(0)
+                      ]);
+                    } else {
+                      let floats = new Array(extracted.columns.byIndex(extracted.columns.length - 1).length);
+                      let oldColumn = df.columns.byIndex(0);
+                      for (let i = 0; i < oldColumn.length; i++)
+                        floats[i] = oldColumn.get(i);
+                      extracted.columns.addNewFloat(df.columns.byIndex(0).name).init((i) => floats[i]);
+                      df = DG.DataFrame.fromColumns([
+                        DG.Column.fromList('int', 'time', Array(df.columns.byIndex(0).length).fill().map((_, idx) => idx)),
+                        df.columns.byIndex(0)
+                      ]);
+                    }
+                    extractorChartsList[j - 1].dataFrame = df;
+                  } catch (e) {
+                    grok.shell.error(e);
+                    throw e;
+                  } finally {
+                    pi.close();
+                  }
+                }),
+                ui.button(
+                  ui.iconFA('trash-alt', (ev) => {
+                    let id = parseInt(ev.currentTarget.offsetParent.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.className.slice(44, 47));
+                    let lst = extractorTypesList.map((e) => e.caption).filter(function (el) {return el != null;});;
+                    let idx = lst.indexOf('Extractor ' + id);
+                    accordionExtractors.root.removeChild(accordionExtractors.root.childNodes[idx]);
+                    extractorContainerList.splice(idx, 0);
+                    extractorTypesList.splice(idx, 0);
+                    extractorChartsList.splice(idx, 0);
+                    extracted.columns.remove(extracted.columns.byIndex(idx).name);
+                  })
+                )
+              ])
+            ])
+          ])
+        ]),
+        ui.block75([extractorChartsList[j - 1]])
+      ]));
+    });
+    extractorContainerList[j] = ui.inputs([extractorTypesList[j]]);
+    accordionExtractors.addPane('Extractor ' + (j + 1), () => extractorContainerList[j], true);
+    j++;
+  });
+
+  // Indicators dialogue
+  let accordionIndicators = ui.accordion();
+  let indicatorTypesList = [];
+  let indicatorChartsList = [];
+  let indicatorContainerList = [];
+  let k = 0;
+  let addIndicatorButton = ui.button('Add Indicator', async () => {
+    indicatorChartsList[k] = getEmptyChart();
+    let indicatorsNames = await grok.dapi.scripts.filter('#indicators').list();
+    indicatorTypesList[k] = ui.choiceInput('Indicator ' + (k + 1), '', indicatorsNames, async function () {
+      let call = indicatorTypesList[k - 1].value.prepare();
+      let contextIndicators = DG.Context.create();
+      extracted.name = 'Extracted';
+      contextIndicators.setVariable('table', extracted);
+      grok.shell.tables.forEach(function (table, index) {
+        contextIndicators.setVariable('table' + index, table);
+      });
+      call.context = contextIndicators;
+      indicatorContainerList[k - 1].replaceWith(ui.div([
+        ui.block25([
+          ui.inputs([
+            indicatorTypesList[k - 1],
+            await call.getEditor(),
+            ui.buttonsInput([
+              ui.divH([
+                ui.button('Plot', async () => {
+                  let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting indicator\'s output...');
+                  try {
+                    await call.call();
+                    indicatorChartsList[k - 1].dataFrame = call.getOutputParamValue();
+                  } catch (e) {
+                    grok.shell.error(e);
+                    throw e;
+                  } finally {
+                    pi.close();
+                  }
+                }),
+                ui.button(
+                  ui.iconFA('trash-alt', (ev) => {
+                    let id = parseInt(ev.currentTarget.offsetParent.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.className.slice(44, 47));
+                    let lst = indicatorTypesList.map((e) => e.caption).filter(function (el) {return el != null;});;
+                    let idx = lst.indexOf('Indicator ' + id);
+                    accordionIndicators.root.removeChild(accordionIndicators.root.childNodes[idx]);
+                    indicatorContainerList.splice(idx, 0);
+                    indicatorTypesList.splice(idx, 0);
+                    indicatorChartsList.splice(idx, 0);
+                  })
+                )
+              ])
+            ])
+          ])
+        ]),
+        ui.block75([indicatorChartsList[k - 1]])
+      ]));
+    });
+    indicatorContainerList[k] = ui.inputs([indicatorTypesList[k]]);
+    accordionIndicators.addPane('Indicator ' + (k + 1), () => indicatorContainerList[k], true);
+    k++;
+  });
+
+  mainDiv.replaceWith(
+    ui.div([
+      ui.h2('Filtering and preprocessing'),
+      accordionFilters,
+      addFilterButton,
+      ui.h2('Information extraction'),
+      accordionExtractors,
+      addExtractorButton,
+      ui.h2('Physiological indicators'),
+      accordionIndicators,
+      addIndicatorButton
+    ])
+  );
 }
 
 //name: BioSignals
@@ -127,12 +368,10 @@ export function BioSignals() {
   let enterSamplingFrequencyDiv = ui.div();
   let annotationViewerDiv = ui.div();
 
-  let context = DG.Context.create();
-
   let localTables = grok.shell.tables;
   let namesOfLocalTables = localTables.map((df) => df.name);
   let tablesAndPhysionetDBs = namesOfLocalTables.concat(Object.keys(physionetDatabasesDictionary));
-  let signals;
+
   let chosenDatabase = ui.choiceInput('Database', '', tablesAndPhysionetDBs, () => {
     let isLocalTable = (namesOfLocalTables.includes(chosenDatabase.stringValue));
     let items = (isLocalTable) ?
@@ -142,242 +381,7 @@ export function BioSignals() {
     if (isLocalTable) enterSamplingFrequencyDiv.append(samplingFreq.root);
     let columnName = (isLocalTable) ? 'Column' : 'Record';
     let chosenRecord = ui.choiceInput(columnName, '', items, async () => {
-      signals = await getInitValues(signals, isLocalTable, chosenDatabase, localTables, chosenRecord);
-      signals.columns.byIndex(0).setTag('displayTitle', 'true');
-
-      context.setVariable(signals.name, signals);
-
-      if (isLocalTable) {
-        enterSamplingFrequencyDiv.innerHTML = '';
-        signals.columns.byIndex(0).setTag('samplingFrequency', samplingFreq.value.toString());
-      } else {
-        parent.location.hash = chosenDatabase.stringValue + '/' + chosenRecord.stringValue;
-      }
-      annotationViewerDiv.innerHTML = '';
-      annotationViewerDiv.append(
-        ui.block([
-          DG.Viewer.fromType('AnnotatorViewer', signals).root
-        ])
-      );
-
-      // Filter dialogue
-      let accordionFilters = ui.accordion();
-      let filterTypesList = [];
-      let filterContainerList = [];
-      let filterChartsList = [];
-      let i = 0;
-      let addFilterButton = ui.button('Add Filter', async () => {
-        filterChartsList[i] = ui.div();
-        let tag = await grok.dapi.scripts.filter('#filters').list();
-        filterTypesList[i] = ui.choiceInput('Filter ' + (i + 1), '', filterScripts.concat(tag), async () => {
-          let call = filterTypesList[i - 1].value.prepare();
-          for (let table of grok.shell.tables)
-            if (table.name !== chosenDatabase.stringValue)
-              context.setVariable(table.name, table);
-          call.context = context;
-          filterContainerList[i - 1].replaceWith(ui.div([
-            ui.block25([
-              ui.inputs([
-                filterTypesList[i - 1],
-                await call.getEditor(),
-                ui.buttonsInput([
-                  ui.divH([
-                    ui.button('Plot', async () => {
-                      let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting filter\'s output...');
-                      try {
-                        await call.call();
-                        let df = call.getOutputParamValue();
-                        if (df == null) {
-                          df = DG.DataFrame.fromColumns([signals.columns.byIndex(signals.columns.length - 1)]);
-                        } else {
-                          signals = signals.append(df);
-                          df = DG.DataFrame.fromColumns([df.columns.byIndex(df.columns.length - 1)]);
-                        }
-                        df.columns.byIndex(0).setTag('samplingFrequency', signals.columns.byIndex(0).getTag('samplingFrequency'));
-                        filterChartsList[i - 1].replaceWith(DG.Viewer.fromType('AnnotatorViewer', df).root);
-                      } catch (e) {
-                        grok.shell.error(e);
-                        throw e;
-                      } finally {
-                        pi.close();
-                      }
-                    }),
-                    ui.button(
-                      ui.iconFA('trash-alt', (ev) => {
-                        let id = parseInt(ev.currentTarget.offsetParent.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.className.slice(41, 44));
-                        let lst = filterTypesList.map((e) => e.caption).filter(function (el) {return el != null;});
-                        let idx = lst.indexOf('Filter ' + id);
-                        accordionFilters.root.removeChild(accordionFilters.root.childNodes[idx]);
-                        filterContainerList.splice(idx, 1);
-                        filterTypesList.splice(idx, 1);
-                        filterChartsList.splice(idx, 1);
-                        signals.columns.remove(signals.columns.byIndex(idx + 1).name);
-                      })
-                    )
-                  ])
-                ])
-              ])
-            ]),
-            ui.block75([filterChartsList[i - 1]])
-          ]));
-        });
-        filterContainerList[i] = ui.inputs([filterTypesList[i]]);
-        accordionFilters.addPane('Filter ' + (i + 1), () => filterContainerList[i], true);
-        i++;
-      });
-
-      // Information extraction dialogue
-      let accordionExtractors = ui.accordion();
-      let extracted;
-      let extractorTypesList = [];
-      let extractorChartsList = [];
-      let extractorContainerList = [];
-      let j = 0;
-      let addExtractorButton = ui.button('Add Extractor', async () => {
-        extractorChartsList[j] = getEmptyChart();
-        let extractors = await grok.dapi.scripts.filter('#extractors').list();
-        extractorTypesList[j] = ui.choiceInput('Extractor ' + (j + 1), '', extractors, async function () {
-          let call = extractorTypesList[j - 1].value.prepare();
-          let contextExtractors = DG.Context.create();
-          contextExtractors.setVariable('table', signals);
-          grok.shell.tables.forEach(function (table, index) {
-            contextExtractors.setVariable('table' + index, table);
-          });
-          call.context = contextExtractors;
-          extractorContainerList[j - 1].replaceWith(ui.div([
-            ui.block25([
-              ui.inputs([
-                extractorTypesList[j - 1],
-                await call.getEditor(),
-                ui.buttonsInput([
-                  ui.divH([
-                    ui.button('Plot', async () => {
-                      let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting extractor\'s output...');
-                      try {
-                        await call.call();
-                        let df = call.getOutputParamValue();
-                        if (extracted == null) {
-                          extracted = DG.DataFrame.fromColumns([df.columns.byIndex(0)]);
-                          df = DG.DataFrame.fromColumns([
-                            DG.Column.fromList('int', 'time', Array(df.columns.byIndex(0).length).fill().map((_, idx) => idx)),
-                            df.columns.byIndex(0)
-                          ]);
-                        } else {
-                          let floats = new Array(extracted.columns.byIndex(extracted.columns.length - 1).length);
-                          let oldColumn = df.columns.byIndex(0);
-                          for (let i = 0; i < oldColumn.length; i++)
-                            floats[i] = oldColumn.get(i);
-                          extracted.columns.addNewFloat(df.columns.byIndex(0).name).init((i) => floats[i]);
-                          df = DG.DataFrame.fromColumns([
-                            DG.Column.fromList('int', 'time', Array(df.columns.byIndex(0).length).fill().map((_, idx) => idx)),
-                            df.columns.byIndex(0)
-                          ]);
-                        }
-                        extractorChartsList[j - 1].dataFrame = df;
-                      } catch (e) {
-                        grok.shell.error(e);
-                        throw e;
-                      } finally {
-                        pi.close();
-                      }
-                    }),
-                    ui.button(
-                      ui.iconFA('trash-alt', (ev) => {
-                        let id = parseInt(ev.currentTarget.offsetParent.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.className.slice(44, 47));
-                        let lst = extractorTypesList.map((e) => e.caption).filter(function (el) {return el != null;});;
-                        let idx = lst.indexOf('Extractor ' + id);
-                        accordionExtractors.root.removeChild(accordionExtractors.root.childNodes[idx]);
-                        extractorContainerList.splice(idx, 0);
-                        extractorTypesList.splice(idx, 0);
-                        extractorChartsList.splice(idx, 0);
-                        extracted.columns.remove(extracted.columns.byIndex(idx).name);
-                      })
-                    )
-                  ])
-                ])
-              ])
-            ]),
-            ui.block75([extractorChartsList[j - 1]])
-          ]));
-        });
-        extractorContainerList[j] = ui.inputs([extractorTypesList[j]]);
-        accordionExtractors.addPane('Extractor ' + (j + 1), () => extractorContainerList[j], true);
-        j++;
-      });
-
-      // Indicators dialogue
-      let accordionIndicators = ui.accordion();
-      let indicatorTypesList = [];
-      let indicatorChartsList = [];
-      let indicatorContainerList = [];
-      let k = 0;
-      let addIndicatorButton = ui.button('Add Indicator', async () => {
-        indicatorChartsList[k] = getEmptyChart();
-        let indicatorsNames = await grok.dapi.scripts.filter('#indicators').list();
-        indicatorTypesList[k] = ui.choiceInput('Indicator ' + (k + 1), '', indicatorsNames, async function () {
-          let call = indicatorTypesList[k - 1].value.prepare();
-          let contextIndicators = DG.Context.create();
-          extracted.name = 'Extracted';
-          contextIndicators.setVariable('table', extracted);
-          grok.shell.tables.forEach(function (table, index) {
-            contextIndicators.setVariable('table' + index, table);
-          });
-          call.context = contextIndicators;
-          indicatorContainerList[k - 1].replaceWith(ui.div([
-            ui.block25([
-              ui.inputs([
-                indicatorTypesList[k - 1],
-                await call.getEditor(),
-                ui.buttonsInput([
-                  ui.divH([
-                    ui.button('Plot', async () => {
-                      let pi = DG.TaskBarProgressIndicator.create('Calculating and plotting indicator\'s output...');
-                      try {
-                        await call.call();
-                        indicatorChartsList[k - 1].dataFrame = call.getOutputParamValue();
-                      } catch (e) {
-                        grok.shell.error(e);
-                        throw e;
-                      } finally {
-                        pi.close();
-                      }
-                    }),
-                    ui.button(
-                      ui.iconFA('trash-alt', (ev) => {
-                        let id = parseInt(ev.currentTarget.offsetParent.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.className.slice(44, 47));
-                        let lst = indicatorTypesList.map((e) => e.caption).filter(function (el) {return el != null;});;
-                        let idx = lst.indexOf('Indicator ' + id);
-                        accordionIndicators.root.removeChild(accordionIndicators.root.childNodes[idx]);
-                        indicatorContainerList.splice(idx, 0);
-                        indicatorTypesList.splice(idx, 0);
-                        indicatorChartsList.splice(idx, 0);
-                      })
-                    )
-                  ])
-                ])
-              ])
-            ]),
-            ui.block75([indicatorChartsList[k - 1]])
-          ]));
-        });
-        indicatorContainerList[k] = ui.inputs([indicatorTypesList[k]]);
-        accordionIndicators.addPane('Indicator ' + (k + 1), () => indicatorContainerList[k], true);
-        k++;
-      });
-
-      mainDiv.replaceWith(
-        ui.div([
-          ui.h2('Filtering and preprocessing'),
-          accordionFilters,
-          addFilterButton,
-          ui.h2('Information extraction'),
-          accordionExtractors,
-          addExtractorButton,
-          ui.h2('Physiological indicators'),
-          accordionIndicators,
-          addIndicatorButton
-        ])
-      );
+      main(mainDiv, filterScripts, isLocalTable, chosenDatabase.stringValue, localTables, chosenRecord.stringValue, samplingFreq, annotationViewerDiv, enterSamplingFrequencyDiv);
     });
     chosenRecordDiv.innerHTML = '';
     chosenRecordDiv.append(chosenRecord.root);
@@ -399,4 +403,19 @@ export function BioSignals() {
     ]),
     mainDiv
   ]);
+  if (document.location.hash) {
+    let s = document.location.hash.split('/');
+    let db = s[0].replace('%20', ' ').slice(1);
+    let rec = (s.length === 3) ? s[1] + '/' + s[2] : s[1];
+    chosenDatabase.value = db;
+    chosenRecordDiv.innerHTML = '';
+    let chosenRecord = ui.choiceInput('Record', '', physionetDatabasesDictionary[db].namesOfRecords, async () => {
+      let isLocalTable = (namesOfLocalTables.includes(chosenDatabase.stringValue));
+      let samplingFreq = ui.floatInput('Sampling frequency: ', '');
+      if (isLocalTable) enterSamplingFrequencyDiv.append(samplingFreq.root);
+      main(mainDiv, filterScripts, isLocalTable, chosenDatabase.stringValue, localTables, chosenRecord.stringValue, samplingFreq, annotationViewerDiv, enterSamplingFrequencyDiv);
+    });
+    chosenRecordDiv.append(chosenRecord.root);
+    main(mainDiv, filterScripts, false, db, [''], rec, '', annotationViewerDiv, '');
+  }
 }
