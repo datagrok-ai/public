@@ -202,7 +202,7 @@ export class Shell {
    * @param {DockType} dockType
    * @param {number} width
    * @returns {TableView} */
-  addTableView(table: DataFrame, dockType: DockType = DOCK_TYPE.FILL, width: number | null = null): TableView {
+  addTableView(table: DataFrame, dockType: DockType | null = DOCK_TYPE.FILL, width: number | null = null): TableView {
     return toJs(api.grok_AddTableView(table.d, dockType, width));
   }
 
