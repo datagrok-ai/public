@@ -469,7 +469,7 @@ export function siRnaNucleotidesToGcrs(nucleotides: string) {
 
 //name: gcrsToOP100
 //input: string nucleotides {semType: GCRS}
-//output: string result {semType: OP100 / siRNA}
+//output: string result {semType: OP100}
 export function gcrsToOP100(nucleotides: string) {
   let count: number = -1;
   const objForEvenIndicesAtLeftEdge: {[index: string]: string} = {
@@ -492,15 +492,16 @@ export function gcrsToOP100(nucleotides: string) {
   };
   return nucleotides.replace(/(mAps|mUps|mGps|mCps|fAps|fUps|fGps|fCps|fU|fA|fC|fG|mU|mA|mC|mG)/g, function (x: string) {
     count++;
-    if (count < 3) return (count % 2 == 0) ? objForEvenIndicesAtLeftEdge[x] : objForOddIndicesAtLeftEdge[x];
-    if (count == 19) return objForOddIndicesAtRightEdge[x];
+    if (count < 2) return (count % 2 == 0) ? objForEvenIndicesAtLeftEdge[x] : objForOddIndicesAtLeftEdge[x];
+    if (count == 16) return objForOddIndicesAtLeftEdge[x];
+    if (count == 17) return objForOddIndicesAtRightEdge[x];
     return (count % 2 == 1) ? objForEvenIndicesAtCenter[x] : objForOddIndicesAtCenter[x];
   });
 }
 
 //name: gcrsToMM12
 //input: string nucleotides {semType: GCRS}
-//output: string result {semType: MM12 / siRNA}
+//output: string result {semType: MM12}
 export function gcrsToMM12(nucleotides: string) {
   const obj: {[index: string]: string} = {
     "mAps": "e", "mUps": "h", "mGps": "g", "mCps": "f", "fAps": "i", "fUps": "l", "fGps": "k", "fCps": "j", "fU": "L",
