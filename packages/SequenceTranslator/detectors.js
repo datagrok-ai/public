@@ -19,9 +19,9 @@ class SequencetranslatorPackageDetectors extends DG.Package {
       if (DG.Detector.sampleCategories(col, (s) => /^[fmpsACGU]{30,}$/.test(s)))
         return 'GCRS';
       if (DG.Detector.sampleCategories(col, (s) => /^[acgu*]{10,}$/.test(s)))
-        return 'OP100 sequences';
+        return 'OP100';
       if (DG.Detector.sampleCategories(col, (s) => /^[IiJjKkLlEeFfGgHhQq]{10,}$/.test(s)))
-        return 'MM12 sequences';
+        return 'MM12';
     }
   }
 }
