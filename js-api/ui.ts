@@ -247,7 +247,10 @@ export function div(children: HTMLElement[] | HTMLElement = [], options: string 
 export function info(children: HTMLElement[] | HTMLElement | string, header: string | null = null): HTMLDivElement {
   let root: HTMLDivElement | null = null;
   let content: HTMLElement[] = [];
-  let closeElement: HTMLElement = iconFA('times', () => root.style.display = 'none');
+  let closeElement: HTMLElement = iconFA('times', () => {
+    if (root != null)
+      root.style.display = 'none';
+  });
   if (header !== null && header !== undefined) {
     content.push(h1(header));
   }
