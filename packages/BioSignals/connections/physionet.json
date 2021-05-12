@@ -1,0 +1,17 @@
+{
+  "#type": "DataConnection",
+  "dataSource": "S3",
+  "tags": ["biosignals", "physionet"],
+  "parameters": {
+    "region": "us-east-2",
+    "bucket": "datagrok-data",
+    "dir": "Physionet",
+    "encryption": ""
+  },
+  "credentials": {
+    "parameters": {
+      "accessKey": "AKIA3FCRUQ6CFYKW6SE5",
+      "secretKey": "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"
+    }
+  }
+}
