@@ -17,9 +17,7 @@ class SequencetranslatorPackageDetectors extends DG.Package {
       if (DG.Detector.sampleCategories(col, (s) => /^[fsACGUacgu]{20,}$/.test(s)))
         return 'Axolabs / siRNA';
       if (DG.Detector.sampleCategories(col, (s) => /^[fmpsACGU]{30,}$/.test(s)))
-        return 'GCRS / siRNA';
-      if (DG.Detector.sampleCategories(col, (s) => /^(?=.*5’-)(?=.*ps)(?=.*-3'){30,}/.test(s)))
-        return 'Original GCRS sequences'
+        return 'GCRS';
       if (DG.Detector.sampleCategories(col, (s) => /^[acgu*]{10,}$/.test(s)))
         return 'OP100 sequences';
       if (DG.Detector.sampleCategories(col, (s) => /^[IiJjKkLlEeFfGgHhQq]{10,}$/.test(s)))
