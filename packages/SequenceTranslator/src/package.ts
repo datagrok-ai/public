@@ -367,7 +367,7 @@ export function siRnaBioSpringToAxolabs(nucleotides: string) {
 
 //name: siRnaBioSpringToGcrs
 //input: string nucleotides {semType: BioSpring / siRNA}
-//output: string result {semType: GCRS / siRNA}
+//output: string result {semType: GCRS}
 export function siRnaBioSpringToGcrs(nucleotides: string) {
   const obj: {[index: string]: string} = {"1": "fU", "2": "fA", "3": "fC", "4": "fG", "5": "mU", "6": "mA", "7": "mC", "8": "mG", "*": "ps"};
   return nucleotides.replace(/[12345678*]/g, function (x: string) {return obj[x];});
@@ -375,7 +375,7 @@ export function siRnaBioSpringToGcrs(nucleotides: string) {
 
 //name: siRnaAxolabsToGcrs
 //input: string nucleotides {semType: Axolabs / siRNA}
-//output: string result {semType: GCRS / siRNA}
+//output: string result {semType: GCRS}
 export function siRnaAxolabsToGcrs(nucleotides: string) {
   const obj: {[index: string]: string} = {
     "Uf": "fU", "Af": "fA", "Cf": "fC", "Gf": "fG", "u": "mU", "a": "mA", "c": "mC", "g": "mG", "s": "ps"
@@ -404,7 +404,7 @@ export function siRnaAxolabsToNucleotides(nucleotides: string) {
 }
 
 //name: siRnaGcrsToNucleotides
-//input: string nucleotides {semType: GCRS / siRNA}
+//input: string nucleotides {semType: GCRS}
 //output: string result {semType: RNA nucleotides}
 export function siRnaGcrsToNucleotides(nucleotides: string) {
   const obj: {[index: string]: string} = {
@@ -414,7 +414,7 @@ export function siRnaGcrsToNucleotides(nucleotides: string) {
 }
 
 //name: siRnaGcrsToBioSpring
-//input: string nucleotides {semType: GCRS / siRNA}
+//input: string nucleotides {semType: GCRS}
 //output: string result {semType: BioSpring / siRNA}
 export function siRnaGcrsToBioSpring(nucleotides: string) {
   const obj: {[index: string]: string} = {
@@ -424,7 +424,7 @@ export function siRnaGcrsToBioSpring(nucleotides: string) {
 }
 
 //name: siRnaGcrsToAxolabs
-//input: string nucleotides {semType: GCRS / siRNA}
+//input: string nucleotides {semType: GCRS}
 //output: string result {semType: Axolabs / siRNA}
 export function siRnaGcrsToAxolabs(nucleotides: string) {
   const obj: {[index: string]: string} = {
@@ -452,7 +452,7 @@ export function siRnaNucleotideToBioSpringSenseStrand(nucleotides: string) {
 
 //name: siRnaNucleotidesToGcrs
 //input: string nucleotides {semType: RNA nucleotides}
-//output: string result {semType: GCRS / siRNA}
+//output: string result {semType: GCRS}
 export function siRnaNucleotidesToGcrs(nucleotides: string) {
   let count: number = -1;
   const objForLeftEdge: {[index: string]: string} = {"A": "mAps", "U": "mUps", "G": "mGps", "C": "mCps"};
@@ -468,7 +468,7 @@ export function siRnaNucleotidesToGcrs(nucleotides: string) {
 }
 
 //name: gcrsToOP100
-//input: string nucleotides {semType: GCRS / siRNA}
+//input: string nucleotides {semType: GCRS}
 //output: string result {semType: OP100 / siRNA}
 export function gcrsToOP100(nucleotides: string) {
   let count: number = -1;
@@ -499,19 +499,12 @@ export function gcrsToOP100(nucleotides: string) {
 }
 
 //name: gcrsToMM12
-//input: string nucleotides {semType: GCRS / siRNA}
+//input: string nucleotides {semType: GCRS}
 //output: string result {semType: MM12 / siRNA}
 export function gcrsToMM12(nucleotides: string) {
-  let count: number = -1;
-  const objForSmallChars: {[index: string]: string} = {
-    "mAps": "e", "mUps": "h", "mGps": "g", "mCps": "f", "fAps": "i", "fUps": "l", "fGps": "k", "fCps": "j"
+  const obj: {[index: string]: string} = {
+    "mAps": "e", "mUps": "h", "mGps": "g", "mCps": "f", "fAps": "i", "fUps": "l", "fGps": "k", "fCps": "j", "fU": "L",
+    "fA": "I", "fC": "J", "fG": "K", "mU": "H", "mA": "E", "mC": "F", "mG": "G"
   };
-  const objForCapitalChars: {[index: string]: string} = {
-    "fU": "L", "fA": "I", "fC": "J", "fG": "K", "mU": "H", "mA": "E", "mC": "F", "mG": "G", "po": "", "(J1OPalm)": "Q"
-  };
-  return nucleotides.replace(/(mAps|mUps|mGps|mCps|fAps|fUps|fGps|fCps|fU|fA|fC|fG|mU|mA|mC|mG|po|\(J1OPalm\))/g, function (x: string) {
-    count++;
-    if ((count < 2) || (15 < count && count < 18)) return objForSmallChars[x];
-    return objForCapitalChars[x]
-  });
+  return nucleotides.replace(/(mAps|mUps|mGps|mCps|fAps|fUps|fGps|fCps|fU|fA|fC|fG|mU|mA|mC|mG)/g, function (x: string) {return obj[x]});
 }
