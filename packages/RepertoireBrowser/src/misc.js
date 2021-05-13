@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 // import * as DG from "datagrok-api/dg";
 import json from "./TPP000153303.json";
 
-export default class MiscMethods {
+export class MiscMethods {
 
     // processes JSON to derive scheme names
     static extract_schemes() {
