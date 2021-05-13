@@ -3,9 +3,7 @@
   "friendlyName": "datagrok",
   "parameters": {
     "server": "localhost:5432",
-    "db": "datagrok",
-    "login": "datagrok",
-    "password": "123"
+    "db": "datagrok"
   },
   "dataSource": "PostgreSQL",
   "description": "Datagrok service db",
