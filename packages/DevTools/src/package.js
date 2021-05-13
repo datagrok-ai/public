@@ -3,9 +3,15 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 export const _package = new DG.Package();
+const dfExts = ['csv'];
 
-async function loadSnippets(type) {
-  const snippets = (await grok.dapi.scripts.list({ filter: `#demo and #${type}` }));
+async function loadSnippets(ent) {
+  const type = ent.constructor.name;
+  let tags = `#demo and #${type}`;
+  if (type === 'FileInfo' && dfExts.includes(ent.extension)) {
+    tags += 'and #dataframe';
+  }
+  const snippets = (await grok.dapi.scripts.list({ filter: tags }));
   return snippets.slice(0, 3);
 }
 
@@ -15,8 +21,7 @@ export function describeCurrentObj() {
     const ent = acc.context;
 
     if (ent) {
-      const type = ent.constructor.name;
-      const snippets = await loadSnippets(type);
+      const snippets = await loadSnippets(ent);
       const snippetNames = snippets.map(s => ui.divText(s.name, { classes: 'd4-link-action' }));
       let editor = ui.textInput('', '');
       editor.input.style = 'width: 0; height: 0; visibility: hidden;';

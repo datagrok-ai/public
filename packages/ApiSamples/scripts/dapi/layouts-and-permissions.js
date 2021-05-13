@@ -1,3 +1,5 @@
+//tags: ViewLayout, Group
+//help-url: https://datagrok.ai/help/develop/how-to/layouts
 async function layoutsTest() {
   let allLayouts = await grok.dapi.layouts.list();
   grok.shell.info(`all layouts: ${allLayouts.length}`);
