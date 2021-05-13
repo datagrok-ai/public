@@ -27,6 +27,9 @@ export class LaunchBrowser {
         let pViz = new PvizMethods();
         await pViz.init(inputs, ngl);
 
+        let msa = new MsaMethods();
+        msa.init(view, inputs);
+
         inputs.repChoice.onChanged(async () => {
 
             ngl.stage.removeAllComponents();
@@ -77,6 +80,9 @@ export class LaunchBrowser {
         //     MiscMethods.setDockSize(view, inputs.ngl_node, inputs.sequence_tabs, inputs.paratopes);
         // });
 
+
+        inputs.msaContentChoice.onChanged(() => { msa.drawAlignments(); });
+        DG.debounce(view.table.onCurrentRowChanged, 200).subscribe(() => { msa.drawAlignments(); });
 
         // let seqHeavyCol = table.col('sequence_alignment_heavy');
         // let seqLightCol = table.col('sequence_alignment_light');
