@@ -23,10 +23,6 @@ smiles = data[smiles]
 length = len(smiles)
 
 standardized = np.full(length, None, dtype=object)
-kekSmiles = False
-
-if tautomerization:
-    enumerator = rdMolStandardize.TautomerEnumerator()
 
 def neutralize_atoms(mol):
     pattern = Chem.MolFromSmarts("[+1!h0!$([*]~[-1,-2,-3,-4]),-1!$([*]~[+1,+2,+3,+4])]")
@@ -42,24 +38,26 @@ def neutralize_atoms(mol):
             atom.UpdatePropertyCache()
     return mol
 
+if tautomerization:
+    enumerator = rdMolStandardize.TautomerEnumerator()
+
 for n in range(0, length):
-    mol = Chem.MolFromSmiles(smiles[n])
+    mol = Chem.MolFromSmiles(smiles[n], sanitize = True)
+
     if mol is None or mol.GetNumAtoms() == 0:
         continue
-    if kekulization:
-        Chem.Kekulize(mol)
-    if chemotypization:
-        Chem.SanitizeMol(mol)
+    if tautomerization:
+        mol = enumerator.Canonicalize(mol)
     if normalization:
         mol = rdMolStandardize.Normalize(mol)
     if reionization:
         mol = rdMolStandardize.Reionize(mol)
     if neutralization:
         neutralize_atoms(mol)
-    if tautomerization:
-        mol = enumerator.Canonicalize(mol)
     if largestFragment:
         mol = rdMolStandardize.FragmentParent(mol)
+    if kekulization:
+        Chem.Kekulize(mol)
 
     standardized[n] = Chem.MolToSmiles(mol, kekuleSmiles = kekulization)
 
