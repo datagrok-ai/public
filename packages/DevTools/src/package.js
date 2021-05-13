@@ -5,13 +5,29 @@ import * as DG from 'datagrok-api/dg';
 export const _package = new DG.Package();
 const dfExts = ['csv'];
 
+function parse(s, entInfo) {
+  const meta = s.match(/^\/\/meta\.map\:\s?(.*)$/m);
+  if (meta) {
+    const varMap = JSON.parse(meta[1]);
+    for (let [v, t] of Object.entries(varMap)) {
+      if (t === entInfo.type) {
+        const regex = new RegExp(`${v}`, 'mg');
+        s = s.replace(regex, entInfo.name);
+      }
+    }
+  }
+  return s;
+}
+
 async function loadSnippets(ent) {
+  const name = ent.name;
   const type = ent.constructor.name;
   let tags = `#demo and #${type}`;
   if (type === 'FileInfo' && dfExts.includes(ent.extension)) {
     tags += 'and #dataframe';
   }
   const snippets = (await grok.dapi.scripts.list({ filter: tags }));
+  snippets.forEach(s => console.log(parse(s.script, { name, type })));
   return snippets.slice(0, 3);
 }
 
