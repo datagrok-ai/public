@@ -4,12 +4,13 @@ import * as DG from "datagrok-api/dg";
 
 import json from "./TPP000153303.json";
 import mutcodes from "./mutcodes.json";
-import MiscMethods from "./misc.js"
+import {MiscMethods} from "./misc.js"
 
 
-export default class PvizMethods {
+export class PvizMethods {
 
-    async init(inputs, ngl) {
+    async init(view, inputs, ngl) {
+
         this.ngl = ngl
         this.pviz = window.pviz;
         this.pVizParams = {};
@@ -20,6 +21,11 @@ export default class PvizMethods {
         this.pVizParams.cdrMap = this.cdrMapping(inputs.cdr_scheme.value)
 
         await this.loadSequence(inputs.pViz_host_H, 'H', inputs.paratopes.value);
+
+        await this.pvizResize(inputs.pViz_host_H, 'H', inputs.paratopes);
+        await this.pvizResize(inputs.pViz_host_L, 'L', inputs.paratopes);
+        MiscMethods.setDockSize(view, inputs.ngl_node, inputs.sequence_tabs, inputs.paratopes);
+
     }
 
     // mapping objects for sequence rendering
@@ -201,17 +207,19 @@ export default class PvizMethods {
                 this.pviz.FeatureDisplayer.setStrikeoutCategory(mod);
             });
 
-
             let switchObj = {'H':{}, 'L':{}}
+            let pVizParams = this.pVizParams;
+            let stage = this.ngl.stage;
             this.pviz.FeatureDisplayer.addClickCallback (mod_codes, async function(ft) {
+
                 let selectorStr = 'g.feature.' + ft.category + ' rect.feature';
                 let el = document.querySelectorAll(selectorStr);
-                let el_lst = this.pVizParams.ptmMap[chain].ptm_el_obj[ft.category];
+                let el_lst = pVizParams.ptmMap[chain].ptm_el_obj[ft.category];
 
                 let sidechains = `${ft.start + 1} and :${chain} and (not backbone or .CA or (PRO and .N))`
                 let r;
                 if (switchObj[chain][ft.start] === undefined) {
-                    r = this.ngl.stage.compList[0].addRepresentation("ball+stick", {sele: sidechains});
+                    r = stage.compList[0].addRepresentation("ball+stick", {sele: sidechains});
                     switchObj[chain][ft.start] = {};
                     switchObj[chain][ft.start]['state'] = false;
                     switchObj[chain][ft.start]['rep'] = r
@@ -220,7 +228,7 @@ export default class PvizMethods {
                     r = switchObj[chain][ft.start]['rep'];
                     r.setVisibility(switchObj[chain][ft.start]['state']);
                     if (switchObj[chain][ft.start]['state'] === false) {
-                        el[el_lst.indexOf(ft.start)].style.fill = this.pVizParams.ptmMap[chain].ptm_color_obj[ft.category][el_lst.indexOf(ft.start)];
+                        el[el_lst.indexOf(ft.start)].style.fill = pVizParams.ptmMap[chain].ptm_color_obj[ft.category][el_lst.indexOf(ft.start)];
                     } else {
                         el[el_lst.indexOf(ft.start)].style.fill = 'black';
                     }
@@ -229,10 +237,11 @@ export default class PvizMethods {
             })
 
             this.pviz.FeatureDisplayer.addMouseoverCallback(mod_codes, async function(ft) {
+
                 let selectorStr = 'g.feature.' + ft.category + ' rect.feature';
                 let el = document.querySelectorAll(selectorStr);
-                let el_lst = this.pVizParams.ptmMap[chain].ptm_el_obj[ft.category];
-                let prob_lst = this.pVizParams.ptmMap[chain].ptm_prob_obj[ft.category]
+                let el_lst = pVizParams.ptmMap[chain].ptm_el_obj[ft.category];
+                let prob_lst = pVizParams.ptmMap[chain].ptm_prob_obj[ft.category]
                 el = el[el_lst.indexOf(ft.start)];
                 let prob =  prob_lst[el_lst.indexOf(ft.start)];
 
@@ -241,6 +250,7 @@ export default class PvizMethods {
                     el.getBoundingClientRect().left + 10,
                     el.getBoundingClientRect().top + 10
                 );
+
             }).addMouseoutCallback(mod_codes, function(ft) {
                 ui.tooltip.hide();
             }) ;
@@ -258,6 +268,7 @@ export default class PvizMethods {
         }
     }
 
+    // resize handle
     async pvizResize(host, chain, paratopes) {
         ui.onSizeChanged(host).subscribe(async (_) => {
             await this.loadSequence(host, chain, paratopes.value)

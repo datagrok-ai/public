@@ -2,16 +2,15 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from "datagrok-api/dg";
 import json from "./TPP000153303.json";
-import MiscMethods from "./misc.js"
+import {MiscMethods} from "./misc.js"
 import {_package} from "./package";
 
 // export let _package = new DG.Package();
 
-export default class NglMethods {
+export class NglMethods {
 
     async init(view, inputs) {
 
-        // inputs.ngl_host = ui.div([],'d4-ngl-viewer');
         inputs.ngl_host.style.backgroundColor ='black';
         view.box = true;
         this.stage = new NGL.Stage(inputs.ngl_host);
@@ -19,6 +18,8 @@ export default class NglMethods {
         this.schemeObj = this.CDR3(inputs.cdr_scheme, inputs.paratopes);
 
         await this.loadPdb(this.path, inputs.repChoice, this.schemeObj);
+        this.nglResize(inputs.ngl_host);
+
     }
 
     // ---- NGL ----
@@ -82,17 +83,17 @@ export default class NglMethods {
         });
     }
 
-    nglResize(host, stage) {
+    // viewer resize
+    _resize(host) {
         let canvas = host.querySelector('canvas');
+        canvas.width = Math.floor(host.clientWidth * window.devicePixelRatio);
+        canvas.height = Math.floor(host.clientHeight * window.devicePixelRatio);
+        this.stage.handleResize();
+    }
 
-        function resize() {
-            canvas.width = Math.floor(host.clientWidth * window.devicePixelRatio);
-            canvas.height = Math.floor(host.clientHeight * window.devicePixelRatio);
-            stage.handleResize();
-        }
-
-        ui.onSizeChanged(host).subscribe((_) => resize());
-        resize();
+    nglResize(host) {
+        ui.onSizeChanged(host).subscribe((_) => this._resize(host));
+        this._resize(host);
     }
 
 }

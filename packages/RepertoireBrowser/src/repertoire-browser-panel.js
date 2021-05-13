@@ -1,15 +1,15 @@
 import * as ui from "datagrok-api/ui";
 import * as grok from "datagrok-api/grok";
 import * as DG from "datagrok-api/dg";
-import MiscMethods from "./misc";
+import {MiscMethods} from "./misc";
 import json from "./TPP000153303.json";
 
 
-export default class RepertoireBrowserPanel {
+export class RepertoireBrowserPanel {
 
     async init(view) {
 
-        // ---- sidepanels removal ----
+        // ---- SIDEPANEL REMOVAL ----
         this.view = view
         this.table = this.view.table;
         let windows = grok.shell.windows;
@@ -18,7 +18,7 @@ export default class RepertoireBrowserPanel {
         windows.showConsole = false;
 
 
-        // ---- inputs ----
+        // ---- INPUTS ----
         this.reps = ['cartoon', 'backbone', 'ball+stick', 'licorice', 'hyperball', 'surface'];
         this.repChoice = ui.choiceInput('Representation', 'cartoon', this.reps);
 
@@ -32,9 +32,10 @@ export default class RepertoireBrowserPanel {
 
         this.paratopes = ui.boolInput('Paratopes', false);
 
-        this.msaContentChoice = ui.choiceInput('Content', 'AA MSA', ['AA MSA', 'DNA MSA', 'Hybrid']);
+        this.msaContentChoice = ui.choiceInput('Content', 'AA MSA', ['AA MSA', 'DNA MSA']);
 
-        // ---- inputs panel ----
+
+        // ---- INPUTS PANEL ----
         this.root = ui.div();
         let acc_options = ui.accordion();
         acc_options.addPane('3D model', () => ui.inputs([this.repChoice, this.cdr_scheme]));
@@ -45,7 +46,7 @@ export default class RepertoireBrowserPanel {
         this.root.append(acc_options.root);
 
 
-        // ---- viewer containers ----
+        // ---- VIEWER CONTAINERS ----
         // ngl
         this.ngl_host = ui.div([],'d4-ngl-viewer');
 
@@ -61,13 +62,11 @@ export default class RepertoireBrowserPanel {
             'MSA LIGHT': this.msa_host_L,
         }).root;
 
-        // ---- docking ----
+
+        // ---- DOCKING ----
         this.panel_node = view.dockManager.dock(this.root, 'right', null, 'NGL');
         this.ngl_node = view.dockManager.dock(this.ngl_host, 'left', this.panel_node, 'NGL');
         this.sequence_node = view.dockManager.dock(this.sequence_tabs, 'down', this.ngl_node, 'Sequence', 0.225);
-
-
-
 
     }
 
