@@ -18,7 +18,6 @@
 import numpy as np
 from rdkit import Chem
 from rdkit.Chem.MolStandardize import rdMolStandardize
-from rdkit.Chem import rdmolops
 
 smiles = data[smiles]
 length = len(smiles)
@@ -50,7 +49,7 @@ for n in range(0, length):
     if kekulization:
         Chem.Kekulize(mol)
     if chemotypization:
-        Chem.cleanUp(mol)
+        Chem.SanitizeMol(mol)
     if normalization:
         mol = rdMolStandardize.Normalize(mol)
     if reionization:
@@ -65,5 +64,3 @@ for n in range(0, length):
     standardized[n] = Chem.MolToSmiles(mol, kekuleSmiles = kekulization)
 
 curated = pd.DataFrame(standardized, columns = ['curated_structures'])
-
-
