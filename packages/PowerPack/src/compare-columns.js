@@ -2,26 +2,21 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-function compare(c1, c2) {
-  if (c1.name === c2.name) {c2.name = c1.stringValue + ' (1)'};
-  let df = DG.DataFrame.fromColumns([c1, c2]);
-  df.columns.addNewCalculated(
-    c1.name + '==' + c2.name,
-    '${' + c1.name + '}==${' + c2.name + '}'
-  ).then((_) => {
-    grok.shell.addTableView(df);
-  });
+function compare(t1, c1, c2) {
+  t1.rows.select((row) => row[c1.name] === row[c2.name]);
+  grok.shell.add(t1);
 }
 
-function addCols(t1, t2, container) {
+function addCols(t1, t2) {
 
   let firstColumnAdded = false,
     secondColumnAdded = false;
 
-  let c1 = ui.choiceInput('', '', grok.shell.tables.find(({name}) => name === t1.value).columns.names(), (chosenColumnName) => {
+  let c1 = ui.choiceInput('Columns', '', grok.shell.tables.find(({name}) => name === t1.value).columns.names(), (chosenColumnName) => {
     firstColumnAdded = true;
     if (secondColumnAdded)
       compare(
+        grok.shell.tables.find(({name}) => name === t1.value),
         grok.shell.tables.find(({name}) => name === t1.value).columns.byName(chosenColumnName),
         grok.shell.tables.find(({name}) => name === t2.value).columns.byName(c2.value)
       );
@@ -31,15 +26,13 @@ function addCols(t1, t2, container) {
     secondColumnAdded = true;
     if (firstColumnAdded)
       compare(
+        grok.shell.tables.find(({name}) => name === t1.value),
         grok.shell.tables.find(({name}) => name === t1.value).columns.byName(c1.value),
         grok.shell.tables.find(({name}) => name === t2.value).columns.byName(chosenColumnName)
       );
   });
 
-  c1.input.style.width = '150px';
-  c2.input.style.width = '150px';
-
-  return ui.div([ui.label('Columns'), ui.divH([c1, c2])]);
+  return ui.divH([c1, c2]);
 }
 
 //name: Compare Columns
@@ -52,11 +45,11 @@ export function compareColumns() {
   let firstTableAdded = false,
     secondTableAdded = false;
 
-  let t1 = ui.choiceInput('', '', tablesNames, () => {
+  let t1 = ui.choiceInput('Tables', '', tablesNames, () => {
     firstTableAdded = true;
     if (secondTableAdded) {
       container.innerHTML = '';
-      container.append(addCols(t1, t2, container));
+      container.append(addCols(t1, t2));
     }
   });
 
@@ -64,21 +57,19 @@ export function compareColumns() {
     secondTableAdded = true;
     if (firstTableAdded) {
       container.innerHTML = '';
-      container.append(addCols(t1, t2, container));
+      container.append(addCols(t1, t2));
     }
   });
 
-  t1.input.style.width = '150px';
-  t2.input.style.width = '150px';
-
   let container = ui.div();
+  let inputSection = ui.form([
+    ui.divH([t1, t2], {style: {marginBottom: '10px'}}),
+    container
+  ], 'ui-form-aligned');
+
+  $(inputSection).css('ui-form-aligned');
+
   ui.dialog('Compare Columns')
-    .add(
-      ui.divV([
-        ui.label('Tables'),
-        ui.divH([t1, t2], {style: {marginBottom: '10px'}}),
-        container
-      ])
-    )
+    .add(inputSection)
     .show();
 }
