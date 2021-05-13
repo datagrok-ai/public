@@ -1,3 +1,5 @@
+//tags: FileInfo
+//help-url: https://datagrok.ai/help/develop/how-to/access-data
 // JS API methods for working with files
 
 (async () => {

@@ -1,3 +1,5 @@
+//tags: Project
+//help-url: https://datagrok.ai/help/overview/project
 // gets #demo project list and shows them in the view
 
 let view = grok.shell.newView('projects');

@@ -1,3 +1,5 @@
+//tags: User
+//help-url: https://datagrok.ai/help/govern/user
 let view = grok.shell.newView('Usage');
 
 grok.data.query('UsageAnalysis:UniqueUsersByDate', {'date': 'today'})

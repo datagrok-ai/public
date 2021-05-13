@@ -1,3 +1,5 @@
+//tags: DataQuery
+//help-url: https://datagrok.ai/help/access/parameterized-queries
 // Manual master-details linking of tables that are dynamically retrieved from the database
 grok.data.query('Demo:Northwind:Countries', {}).then((countries) => {
   let customersView = null;
