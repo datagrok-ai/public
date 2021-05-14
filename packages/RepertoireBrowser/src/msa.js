@@ -66,12 +66,13 @@ export class MsaMethods {
 
     msaRender(m, msaFasta, gffAnnotations = {}) {
         const seqs = msa.io.fasta.parse(msaFasta);
+        m.seqs.features = {};
         m.seqs.reset(seqs);
-        // m.seqs.removeAllFeatures();
-        // for (let annotation of Object.values(gffAnnotations)) {
-        //     const features = this.gffParser.parseSeqs(annotation);
-        //     m.seqs.addFeatures(features);
-        // }
+        m.seqs.removeAllFeatures();
+        for (let annotation of Object.values(gffAnnotations)) {
+            const features = this.gffParser.parseSeqs(annotation);
+            m.seqs.addFeatures(features);
+        }
         m.render();
     }
 
