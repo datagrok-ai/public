@@ -67,12 +67,6 @@ Options:
 --ts        Create a TypeScript package
 `;
 
-const HELP_DELETE = `
-Usage: grok delete <name>
-
-Delete a package
-`;
-
 const HELP_PUBLISH = `
 Usage: grok publish [host]
 
@@ -95,7 +89,6 @@ module.exports = {
   add: HELP_ADD,
   config: HELP_CONFIG,
   create: HELP_CREATE,
-  delete: HELP_DELETE,
   publish: HELP_PUBLISH,
   migrate: HELP_MIGRATE,
   help: HELP
