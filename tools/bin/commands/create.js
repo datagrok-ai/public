@@ -107,6 +107,8 @@ function create(args) {
     }
     createDirectoryContents(name, config, templateDir, packageDir, args.ide, args.ts);
     console.log('Successfully created package', name);
+    console.log('Run `npm install` in your package directory to get the required dependencies\n' +
+    'Likely next steps: `grok add` to add functionality, `grok publish` to upload the package');
   } else {
     console.log('Package name may only include letters, numbers, underscores, or hyphens');
   }
