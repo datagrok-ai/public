@@ -64,30 +64,29 @@ export class MsaMethods {
         this.drawAlignments();
     }
 
-    msaRender(m, msa_fasta, {
-        gff_annots = null,
-        gff_aa_annots1 = null,
-        gff_aa_annots2 = null } = {}) {
-        const seqs = msa.io.fasta.parse(msa_fasta);
+    msaRender(m, msaFasta, gffAnnotations = {}) {
+        const seqs = msa.io.fasta.parse(msaFasta);
+        m.seqs.features = {};
         m.seqs.reset(seqs);
-        // m.seqs.removeAllFeatures();
-        // if (gff_aa_annots1) {
-        //     const features = gffParser.parseSeqs(gff_aa_annots1);
-        //     m.seqs.addFeatures(features);
-        // }
-        // if (gff_aa_annots2) {
-        //     const features = gffParser.parseSeqs(gff_aa_annots2);
-        //     m.seqs.addFeatures(features);
-        // }
-        // if (gff_annots) {
-        //     const features = gffParser.parseSeqs(gff_annots);
-        //     m.seqs.addFeatures(features);
-        // }
+        m.seqs.removeAllFeatures();
+        for (let annotation of Object.values(gffAnnotations)) {
+            const features = this.gffParser.parseSeqs(annotation);
+            m.seqs.addFeatures(features);
+        }
         m.render();
     }
 
     gffAnnotator(seqid, source, type, start, end, score, strand, phase, attributes) {
         return `${seqid}\t${source}\t${type}\t${start}\t${end}\t${score}\t${strand}\t${phase}\t${attributes}\n`;
+    }
+
+    annotateRegions(startCol, endCol, i, chain, name, color) {
+        let an = '';
+        if (startCol && endCol) {
+            an += this.gffAnnotator(`germline_align_${chain}`, '.', 'gene',
+            startCol.get(i), endCol.get(i), '.', '+', '.', `Name=${name};Color=${color}`);
+        }
+        return an;
     }
 
     /** Translates an AA sequence into GFF formatted annotations. */
@@ -134,46 +133,35 @@ export class MsaMethods {
             this.msaOnCols(['seq_align_heavy', 'germline_align_heavy'], [this.seqHeavyCol, this.germHeavyCol], idx, this.msaH);
             this.msaOnCols(['seq_align_light', 'germline_align_light'], [this.seqLightCol, this.germLightCol], idx, this.msaL);
         } else if (mode === 'Hybrid') {
-            if (this.seqHeavyCol && this.germHeavyCol) {
-                const seqsH = `>seq_align_heavy\n${this.seqHeavyCol.get(idx)}\n>germline_align_heavy\n${this.germHeavyCol.get(idx)}\n`;
-    
-                const gffAnnotsH = '##gff-version 3\n' + (
-                    (this.vStartHeavy && this.vEndHeavy) ? this.gffAnnotator('germline_align_heavy', '.', 'gene',
-                    this.vStartHeavy.get(idx), this.vEndHeavy.get(idx), '.', '+', '.', 'Name=V region;Color=violet') : '') + (
-                    (this.dStartHeavy && this.dEndHeavy) ? this.gffAnnotator('germline_align_heavy', '.', 'gene',
-                    this.dStartHeavy.get(idx), this.dEndHeavy.get(idx), '.', '+', '.', 'Name=D region;Color=green') : '') + (
-                    (this.jStartHeavy && this.jEndHeavy) ? this.gffAnnotator('germline_align_heavy', '.', 'gene',
-                    this.jStartHeavy.get(idx), this.jEndHeavy.get(idx), '.', '+', '.', 'Name=J region;Color=blue') : '');
-    
-                let gffAASeq = this.makeColGFF(this.seqAlignHeavyAACol, idx, "seq_align_heavy");
-                let gffAAGerm = this.makeColGFF(this.germAlignHeavyAACol, idx, "germline_align_heavy");
-    
-                this.msaRender(this.msaH, seqsH, {
-                    gffAnnotsH: gffAnnotsH.length > 16 ? gffAnnotsH : null,
-                    gffAASeq: gffAASeq.length > 16   ? gffAASeq : null,
-                    gffAAGerm: gffAAGerm.length > 16  ? gffAAGerm : null
-                });
-            }
-            if (this.seqLightCol && this.germLightCol) {
-                const seqsL = `>seq_align_light\n${this.seqLightCol.get(idx)}\n>germline_align_light\n${this.germLightCol.get(idx)}\n`;
-    
-                const gffAnnotsL = '##gff-version 3\n' + (
-                    (this.vStartLight && this.vEndLight) ? this.gffAnnotator('germline_align_light', '.', 'gene',
-                    this.vStartLight.get(idx), this.vEndLight.get(idx), '.', '+', '.', 'Name=V region;Color=violet') : '') + (
-                    (this.dStartLight && this.dEndLight) ? this.gffAnnotator('germline_align_light', '.', 'gene',
-                    this.dStartLight.get(idx), this.dEndLight.get(idx), '.', '+', '.', 'Name=D region;Color=green') : '') + (
-                    (this.jStartLight && this.jEndLight) ? this.gffAnnotator('germline_align_light', '.', 'gene',
-                    this.jStartLight.get(idx), this.jEndLight.get(idx), '.', '+', '.', 'Name=J region;Color=blue') : '');
-    
-                let gffAASeq = this.makeColGFF(this.seqAlignLightAACol, idx, "seq_align_light");
-                let gffAAGerm = this.makeColGFF(this.germAlignLightAACol, idx, "germline_align_light");
-    
-                this.msaRender(this.msaL, seqsL, {
-                    gffAnnotsL: gffAnnotsL.length > 16 ? gffAnnotsL : null,
-                    gffAASeq: gffAASeq.length > 16   ? gffAASeq : null,
-                    gffAAGerm: gffAAGerm.length > 16  ? gffAAGerm : null
-                });
-            }
+            let annotsH = {};
+            let headerLen = 16;
+
+            let gffGermH = '##gff-version 3\n';
+            gffGermH += this.annotateRegions(this.vStartHeavy, this.vEndHeavy, idx, 'heavy', 'V region', 'violet');
+            gffGermH += this.annotateRegions(this.dStartHeavy, this.dEndHeavy, idx, 'heavy', 'D region', 'green');
+            gffGermH += this.annotateRegions(this.jStartHeavy, this.jEndHeavy, idx, 'heavy', 'J region', 'blue');
+            if (gffGermH.length > headerLen) annotsH['gffGerm'] = gffGermH;
+
+            let gffAASeqH = this.makeColGFF(this.seqAlignHeavyAACol, idx, "seq_align_heavy");
+            let gffAAGermH = this.makeColGFF(this.germAlignHeavyAACol, idx, "germline_align_heavy");
+            if (gffAASeqH.length > headerLen) annotsH['gffAASeq'] = gffAASeqH;
+            if (gffAAGermH.length > headerLen) annotsH['gffAAGerm'] = gffAAGermH;
+
+            this.msaOnCols(['seq_align_heavy', 'germline_align_heavy'], [this.seqHeavyCol, this.germHeavyCol], idx, this.msaH, annotsH);
+
+            let annotsL = {};
+            let gffGermL = '##gff-version 3\n';
+            gffGermL += this.annotateRegions(this.vStartLight, this.vEndLight, idx, 'light', 'V region', 'violet');
+            gffGermL += this.annotateRegions(this.dStartLight, this.dEndLight, idx, 'light', 'D region', 'green');
+            gffGermL += this.annotateRegions(this.jStartLight, this.jEndLight, idx, 'light', 'J region', 'blue');
+            if (gffGermL.length > headerLen) annotsL['gffGerm'] = gffGermL;
+
+            let gffAASeqL = this.makeColGFF(this.seqAlignLightAACol, idx, "seq_align_light");
+            let gffAAGermL = this.makeColGFF(this.germAlignLightAACol, idx, "germline_align_light");
+            if (gffAASeqL.length > headerLen) annotsL['gffAASeq'] = gffAASeqL;
+            if (gffAAGermL.length > headerLen) annotsL['gffAAGerm'] = gffAAGermL;
+
+            this.msaOnCols(['seq_align_light', 'germline_align_light'], [this.seqLightCol, this.germLightCol], idx, this.msaL, annotsL);
         }
     }
 
