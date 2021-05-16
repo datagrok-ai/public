@@ -2,34 +2,35 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-function compare(t1, c1, c2) {
-  t1.rows.select((row) => row[c1.name] === row[c2.name]);
-  grok.shell.add(t1);
+function showOutputs(t1, t2, c1, c2, outputs) {
+
+  let selection = grok.shell.tables.find(({name}) => name === t1.value).selection;
+  let col1 = grok.shell.tables.find(({name}) => name === t1.value).columns.byName(c1.value);
+  let col2 = grok.shell.tables.find(({name}) => name === t2.value).columns.byName(c2.value);
+
+  outputs.innerHTML = '';
+  outputs.append(
+    ui.buttonsInput([
+      ui.divText('Matched: ' + selection.trueCount),
+      ui.divText('Mismatched: ' + (selection.length - selection.trueCount)),
+      ui.button('Show mismatches', () => {selection.init((i) => col1.get(i) != col2.get(i));})
+    ])
+  );
 }
 
-function addCols(t1, t2) {
+function addCols(t1, t2, outputs) {
 
   let firstColumnAdded = false,
     secondColumnAdded = false;
 
-  let c1 = ui.choiceInput('Columns', '', grok.shell.tables.find(({name}) => name === t1.value).columns.names(), (chosenColumnName) => {
+  let c1 = ui.choiceInput('Columns', '', grok.shell.tables.find(({name}) => name === t1.value).columns.names(), () => {
     firstColumnAdded = true;
-    if (secondColumnAdded)
-      compare(
-        grok.shell.tables.find(({name}) => name === t1.value),
-        grok.shell.tables.find(({name}) => name === t1.value).columns.byName(chosenColumnName),
-        grok.shell.tables.find(({name}) => name === t2.value).columns.byName(c2.value)
-      );
+    if (secondColumnAdded) showOutputs(t1, t2, c1, c2, outputs);
   });
 
-  let c2 = ui.choiceInput('', '', grok.shell.tables.find(({name}) => name === t2.value).columns.names(), (chosenColumnName) => {
+  let c2 = ui.choiceInput('', '', grok.shell.tables.find(({name}) => name === t2.value).columns.names(), () => {
     secondColumnAdded = true;
-    if (firstColumnAdded)
-      compare(
-        grok.shell.tables.find(({name}) => name === t1.value),
-        grok.shell.tables.find(({name}) => name === t1.value).columns.byName(c1.value),
-        grok.shell.tables.find(({name}) => name === t2.value).columns.byName(chosenColumnName)
-      );
+    if (firstColumnAdded) showOutputs(t1, t2, c1, c2, outputs);
   });
 
   return ui.divH([c1, c2]);
@@ -39,8 +40,7 @@ function addCols(t1, t2) {
 //tags: autostart
 export function compareColumns() {
 
-  let tables = grok.shell.tables;
-  let tablesNames = tables.map((t) => t.name);
+  let tablesNames = grok.shell.tables.map((t) => t.name);
 
   let firstTableAdded = false,
     secondTableAdded = false;
@@ -48,23 +48,26 @@ export function compareColumns() {
   let t1 = ui.choiceInput('Tables', '', tablesNames, () => {
     firstTableAdded = true;
     if (secondTableAdded) {
-      container.innerHTML = '';
-      container.append(addCols(t1, t2));
+      columnsInputs.innerHTML = '';
+      columnsInputs.append(addCols(t1, t2, outputs));
     }
   });
 
   let t2 = ui.choiceInput('', '', tablesNames, () => {
     secondTableAdded = true;
     if (firstTableAdded) {
-      container.innerHTML = '';
-      container.append(addCols(t1, t2));
+      columnsInputs.innerHTML = '';
+      columnsInputs.append(addCols(t1, t2, outputs));
     }
   });
 
-  let container = ui.div();
+  let columnsInputs = ui.div();
+  let outputs = ui.div();
+
   let inputSection = ui.form([
-    ui.divH([t1, t2], {style: {marginBottom: '10px'}}),
-    container
+    ui.divH([t1, t2]),
+    columnsInputs,
+    outputs
   ], 'ui-form-aligned');
 
   $(inputSection).css('ui-form-aligned');

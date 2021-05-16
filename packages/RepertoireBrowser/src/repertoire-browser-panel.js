@@ -32,7 +32,7 @@ export class RepertoireBrowserPanel {
 
         this.paratopes = ui.boolInput('Paratopes', false);
 
-        this.msaContentChoice = ui.choiceInput('Content', 'AA MSA', ['AA MSA', 'DNA MSA']);
+        this.msaContentChoice = ui.choiceInput('Content', 'AA MSA', ['AA MSA', 'DNA MSA', 'Hybrid']);
 
 
         // ---- INPUTS PANEL ----
