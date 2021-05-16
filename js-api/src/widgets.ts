@@ -54,15 +54,6 @@ export class ObjectPropertyBag {
     return new Proxy(this, handler);
   }
 
-  // /**
-  //  * @param {Object} properties  */
-  // apply(properties) {
-  //   for (let name of Object.keys(properties)) {
-  //     if (this.hasProperty(name))
-  //       this.set(name, properties.name);
-  //   }
-  // }
-
   /**
    * Gets the value of the specified property
    * @param {string} propertyName
@@ -90,7 +81,6 @@ export class ObjectPropertyBag {
    * @param {string} name
    * @returns {Property} */
   getProperty(name: string): Property {
-    console.log(`get ${name}`);
     let property = this.getProperties().find((p) => p.name === name);
     if (typeof property == 'undefined')
       throw `Property not found: ${name}`;
