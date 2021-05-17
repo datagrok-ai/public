@@ -1,6 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import './styles.css';
 
 export const _package = new DG.Package();
 const dfExts = ['csv', 'xlsx'];
@@ -48,14 +49,28 @@ export function describeCurrentObj() {
       snippetNames.forEach((el, idx) => el.addEventListener('click', () => {
         editor.value = snippets[idx].script;
         // editor.root.style.display = 'block';
-        // ditor.input.style = 'width: 200; height: 300; visibility: visible;';
+        // editor.input.style = 'width: 200; height: 300; visibility: visible;';
       }));
+
+      const clipboardBtn = ui.button(ui.iconFA('copy'), () => {
+        editor.input.select();
+        const copied = document.execCommand('copy');
+        if (copied) {
+          const copyIcon = clipboardBtn.removeChild(clipboardBtn.firstChild);
+          clipboardBtn.appendChild(ui.iconFA('clipboard-check'));
+          setTimeout(() => {
+            clipboardBtn.removeChild(clipboardBtn.firstChild);
+            clipboardBtn.appendChild(copyIcon);
+          }, 1000);
+        }
+      }, 'Copy');
+      $(clipboardBtn).addClass('clipboard-icon');
 
       let snippetsPane = acc.getPane('Snippets');      
       if (!snippetsPane) snippetsPane = acc.addPane('Snippets', () => {
         return ui.divV([
           ...snippetNames,
-          editor.root
+          ui.divV([clipboardBtn, editor.root], 'textarea-box')
         ]);
       });
     }

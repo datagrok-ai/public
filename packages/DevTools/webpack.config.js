@@ -5,6 +5,14 @@ module.exports = {
   entry: {
     package: './src/package.js'
   },
+  module: {
+    rules: [
+      {
+        test: /\.css$/i,
+        use: ['style-loader', 'css-loader'],
+      },
+    ]
+  },
   devtool: 'inline-source-map',
   externals: {
     'datagrok-api/dg': 'DG',
