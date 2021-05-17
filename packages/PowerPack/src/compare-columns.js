@@ -9,13 +9,32 @@ function showOutputs(t1, t2, c1, c2, outputs) {
   let col2 = grok.shell.tables.find(({name}) => name === t2.value).columns.byName(c2.value);
 
   outputs.innerHTML = '';
-  outputs.append(
-    ui.buttonsInput([
-      ui.divText('Matched: ' + selection.trueCount),
-      ui.divText('Mismatched: ' + (selection.length - selection.trueCount)),
-      ui.button('Show mismatches', () => {selection.init((i) => col1.get(i) != col2.get(i));})
-    ])
-  );
+
+  if (col1.length === col2.length) {
+
+    for (let i = 0; i < col1.length; i++) if (col1.get(i) != col2.get(i)) selection.set(i, true, false);
+
+    let link = ui.element('a');
+    link.text = ' Select';
+    link.onclick = (e) => {selection.fireChanged();};
+
+    outputs.append(
+      ui.buttonsInput([
+        ui.divText('Matched: ' + selection.trueCount),
+        ui.span(['Mismatched: ' + (selection.length - selection.trueCount), link])
+      ])
+    );
+
+  } else {
+
+    outputs.append(
+      ui.buttonsInput([
+        ui.divText('Length mismatch: '),
+        ui.divText(col1.name + ': ' + col1.length + ' rows, '),
+        ui.divText(col2.name + ': ' + col2.length + ' rows')
+      ])
+    );
+  }
 }
 
 function addCols(t1, t2, outputs) {
