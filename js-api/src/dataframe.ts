@@ -129,6 +129,54 @@ const MapProxy = new Proxy(class {
   }
 );
 
+// Proxy wrapper for ColumnList
+const ColumnListProxy = new Proxy(class {
+      columnList: ColumnList;
+      constructor(columnList: any) {
+        this.columnList = columnList;
+      }
+
+    }, {
+      construct(target, args) {
+        // @ts-ignore
+        return new Proxy(new target(...args), {
+          get: function (target: any, prop) {
+            const val = target.columnList[prop];
+            const propNumber = Number(prop);
+
+            if (typeof val === 'function') {
+              return function (...args :string[]) {
+                return val.apply(target.columnList, args);
+              };
+            }
+            else if (val)
+              return val;
+            else if (!isNaN(propNumber))
+              return target.columnList.byIndex(propNumber);
+            else
+              return target.columnList.byName(prop);
+          },
+          set: function (target, prop, value) {
+            const val = target.columnList[prop];
+            const propNumber = Number(prop);
+
+            if (typeof val === 'function')
+              throw new Error(`Can't set on function`);
+
+            let oldColumn;
+            if (!isNaN(propNumber))
+              oldColumn = target.columnList.byIndex(propNumber);
+            else
+              oldColumn = target.columnList.byName(prop);
+            target.o.replace(oldColumn, value)
+            return true;
+          }
+        });
+      }
+    }
+);
+
+
 /**
  * DataFrame is a high-performance, easy to use tabular structure with
  * strongly-typed columns of different types.
@@ -138,7 +186,7 @@ const MapProxy = new Proxy(class {
  */
 export class DataFrame {
   public readonly d: any;
-  public columns: ColumnList;
+  public columns: any;
   public rows: RowList;
   public filter: BitSet;
   public temp: any;
@@ -146,7 +194,7 @@ export class DataFrame {
 
   constructor(d: any) {
     this.d = d;
-    this.columns = toJs(api.grok_DataFrame_Columns(this.d));
+    this.columns = new ColumnListProxy(toJs(api.grok_DataFrame_Columns(this.d)));
     this.rows = new RowList(this, api.grok_DataFrame_Rows(this.d));
     this.filter = new BitSet(api.grok_DataFrame_Get_Filter(this.d));
 
