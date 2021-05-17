@@ -148,25 +148,30 @@ Many viewers support the following:
 
 |                 |                 |
 |-----------------|-----------------|
-| Double-click    | Reset View |
-| Alt+drag        | Zoom   |
-| Mouse drag      | Pan   |
+| Double-click    | Reset View      |
+| Alt+drag        | Zoom            |
+| Mouse drag      | Pan             |
 
 All of the common actions are available from the context menu. To bring it up, either
 right-click, or click on the "hamburger" menu in the top left corner. The icons in the
 viewer header are only visible when the mouse is hovering over the viewer.
 
-The following ones are available under the **Viewer** submenu:
+The following commands are the most common:
 
 |                 |                 |
 |-----------------|-----------------|
 | Properties      | Show viewer properties in the [property panel](../overview/navigation.md#properties) |
+| Reset View      | Reset zoom level. Applies for: [Scatter plot](viewers/scatter-plot.md), [Line chart](viewers/line-chart.md), [Bar chart](viewers/bar-chart.md), [3D scatter plot](viewers/3d-scatter-plot.md), and [Box plot](viewers/box-plot.md) |
+
+General commands are available under the **General** submenu:
+
+|                 |                 |
+|-----------------|-----------------|
 | Clone           | Create a copy of the viewer |
 | Full Screen     | Show in full screen. **Alt+F** |
 | Close           | Close the viewer |
-| Use in Trellis  | Add a [trellis plot](viewers/trellis-plot.md), using this viewer as a renderer |
+| Use in Trellis  | Add a [Trellis plot](viewers/trellis-plot.md), using this viewer as a renderer |
 | Save to Gallery | Saves this viewer to a [gallery](view-layout.md#layout-suggestions) |
-| Copy Markup     | Copy viewer settings to the clipboard. It can be pasted as a [Markup](../overview/markup.md) |
 | Embed           | Create HTML code that can be embedded in an external website |
 
 Style-related commands reside under the **Style** submenu:
@@ -174,18 +179,29 @@ Style-related commands reside under the **Style** submenu:
 |                      |                 |
 |----------------------|-----------------|
 | Pick up              | Remember the style of the current viewer |
-| Apply                | Applies previously remembered style. This option, as well as the "Apply data settings" and "apply style settings", is only enabled when the settings of the corresponding viewer type were picked up previously. |
-| Apply Data Settings  | Apply only "Data" section of the settings |
-| Apply Style Settings | Apply only "Appearance" section of the settings |
-| Set as Default       | Use these settings for new viewers of that type |
+| Apply                | Apply previously remembered style. This option, as well as the "Apply data settings" and "Apply Style Settings", is only enabled when the settings of the corresponding viewer type were picked up previously. |
+| Apply Data Settings  | Apply only "Data" section of the settings. Can be used for viewers belonging to different views as long as the data source remains the same |
+| Apply Style Settings | Apply all settings, except for the "Data" section. You can use this option for viewers that have different data source |
+| Set as Default       | Use style settings for new viewers of that type. The viewer's properties will be changed automatically to match the ones from the remembered style |
 | Reset Default        | Clear default settings |
+
+![Pick up](../uploads/gifs/pickupstyle.gif "Pick up") 
 
 Tooltip-related settings reside under the **Tooltip** submenu:
 
+|                      |                  |
+|----------------------|------------------|
+| Hide                 | Hide the tooltip |
+| Use as Group Tooltip | Use this viewer in [tooltips that correspond to groups of rows](#group-tooltips) |
+| Remove Group Tooltip | Stop using this viewer as a group tooltip |
+| Set Default Tooltip  | Set up tooltip settings common to most viewers |
+
+The commands from the **To Script** submenu produce code that can be used to build a similar visualization using R or Python:
+
 |                      |                 |
 |----------------------|-----------------|
-| Use as Group Tooltip | Use this viewer in for [tooltips that correspond to groups of rows](#group-tooltips) |
-| Reset                | Stop using this viewer as a group tooltip |
+| to R                 | Open the visualization preview and get the code snippet in R      |
+| to Python            | Open the visualization preview and get the code snippet in Python |
 
 
 ## Group Tooltips
