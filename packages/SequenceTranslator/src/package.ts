@@ -256,7 +256,7 @@ function convertSequence(seq: string) {
   if (isGcrsCode(seq))
     return {
       type: "GCRS Code",
-      Nucleotides: noTranslationTableAvailable,
+      Nucleotides: gcrsToNucleotides(seq),
       GCRS: seq,
       MM12: gcrsToMM12(seq),
       OP100: gcrsToOP100(seq)
@@ -470,6 +470,17 @@ export function siRnaNucleotidesToGcrs(nucleotides: string) {
   });
 }
 
+//name: gcrsToNucleotides
+//input: string nucleotides {semType: GCRS}
+//output: string result {semType: RNA nucleotides}
+export function gcrsToNucleotides(nucleotides: string) {
+  const obj: {[index: string]: string} = {
+    "mAps": "A", "mUps": "U", "mGps": "G", "mCps": "C", "fAps": "A", "fUps": "U", "fGps": "G", "fCps": "C",
+    "fU": "U", "fA": "A", "fC": "C", "fG": "G", "mU": "U", "mA": "A", "mC": "C", "mG": "G"
+  };
+  return nucleotides.replace(/(mAps|mUps|mGps|mCps|fAps|fUps|fGps|fCps|fU|fA|fC|fG|mU|mA|mC|mG)/g, function (x: string) {return obj[x];});
+}
+
 //name: gcrsToOP100
 //input: string nucleotides {semType: GCRS}
 //output: string result {semType: OP100}
@@ -495,9 +506,8 @@ export function gcrsToOP100(nucleotides: string) {
   };
   return nucleotides.replace(/(mAps|mUps|mGps|mCps|fAps|fUps|fGps|fCps|fU|fA|fC|fG|mU|mA|mC|mG)/g, function (x: string) {
     count++;
-    if (count < 2) return (count % 2 == 0) ? objForEvenIndicesAtLeftEdge[x] : objForOddIndicesAtLeftEdge[x];
-    if (count == 16) return objForOddIndicesAtLeftEdge[x];
-    if (count == 17) return objForOddIndicesAtRightEdge[x];
+    if (count < 3) return (count % 2 == 0) ? objForEvenIndicesAtLeftEdge[x] : objForOddIndicesAtLeftEdge[x];
+    if (count == 19) return objForOddIndicesAtRightEdge[x];
     return (count % 2 == 1) ? objForEvenIndicesAtCenter[x] : objForOddIndicesAtCenter[x];
   });
 }
