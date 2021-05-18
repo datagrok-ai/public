@@ -138,7 +138,10 @@ export async function clinicalCaseInit(): Promise<void> {
     }
 
     if (Object.keys(links).every(key => grok.shell.tableByName(key))) {
-      grok.shell.topMenu.group('Clin').item('Timelines', () => clinicalCaseTimelines());
+      let clinMenu = grok.shell.topMenu.group('Clin');
+      if (!clinMenu.find('Timelines')) clinMenu.item('Timelines', () => clinicalCaseTimelines());
+      if (!clinMenu.find('Study Summary')) clinMenu.item('Study Summary', () => showStudySummary());
+      if (!clinMenu.find('Patient Profile')) clinMenu.item('Patient Profile', () => showPatientProfile());
     }
   });
 }
@@ -169,4 +172,30 @@ export function clinicalCaseTimelines(): void {
 
   let v = grok.shell.addTableView(result);
   v.addViewer('TimelinesViewer');
+}
+
+//name: showStudySummary
+export function showStudySummary(): void {
+  let dm = grok.shell.tableByName('dm');
+  let bc = DG.Viewer.barChart(dm, { split: 'SEX', stack: 'ARM' });
+  let v = grok.shell.newView('Study Summary', [
+    ui.h1('Study Summary Page'),
+    ui.h2('Sex Distribution'),
+    bc.root,
+  ]);
+}
+
+//name: showPatientProfile
+export function showPatientProfile(): void {
+  let dm = grok.shell.tableByName('dm');
+  let idx = dm.currentRow.idx;
+  let summaryCols = dm.columns.byNames(['AGE', 'SEX']);
+  let summaryMap = Object.fromEntries(summaryCols.map(col => {
+    return [col.name, col.get(idx)];
+  }));
+
+  let v = grok.shell.newView('Patient Profile', [
+    ui.h1('Patient Profile Page'),
+    ui.card(ui.tableFromMap(summaryMap)),
+  ]);
 }
