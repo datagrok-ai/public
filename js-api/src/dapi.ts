@@ -683,7 +683,8 @@ export class FileSource {
   constructor() {
   };
 
-  /** Check if file exists
+  /** Checks if a file exists.
+   * Sample: {@link https://public.datagrok.ai/js/samples/dapi/files}
    * @param {FileInfo | string} file
    * @returns {Promise<Boolean>} */
   exists(file: FileInfo | string): Promise<boolean> {
@@ -691,14 +692,16 @@ export class FileSource {
         api.grok_Dapi_UserFiles_Exists(file, (data: boolean | PromiseLike<boolean>) => resolve(data), (e: any) => reject(e)));
   }
 
-  /** Delete file
+  /** Deletes a file.
+   * Sample: {@link https://public.datagrok.ai/js/samples/dapi/files}
    * @param {FileInfo | string} file
    * @returns {Promise} */
   delete(file: FileInfo | string): Promise<void> {
     return new Promise((resolve, reject) => api.grok_Dapi_UserFiles_Delete(file, () => resolve(), (e: any) => reject(e)));
   }
 
-  /** Move file
+  /** Moves a file.
+   * Sample: {@link https://public.datagrok.ai/js/samples/dapi/files}
    * @param {List<FileInfo | string>} files
    * @param {string} newPath
    * @returns {Promise} */
@@ -706,7 +709,8 @@ export class FileSource {
     return new Promise((resolve, reject) => api.grok_Dapi_UserFiles_Move(files, newPath, () => resolve(), (e: any) => reject(e)));
   }
 
-  /** Rename file
+  /** Renames a file.
+   * Sample: {@link https://public.datagrok.ai/js/samples/dapi/files}
    * @param { FileInfo | string} file
    * @param {string} newName
    * @returns {Promise} */
@@ -714,7 +718,8 @@ export class FileSource {
     return new Promise((resolve, reject) => api.grok_Dapi_UserFiles_Rename(file, newName, () => resolve(), (e: any) => reject(e)));
   }
 
-  /** List file
+  /** Lists files according to a search pattern.
+   * Sample: {@link https://public.datagrok.ai/js/samples/dapi/files}
    * @param {FileInfo | string} file
    * @param {boolean} recursive
    * @param {string} searchPattern
@@ -724,7 +729,8 @@ export class FileSource {
         api.grok_Dapi_UserFiles_List(file, recursive, searchPattern, (data: any) => resolve(toJs(data)), (e: any) => reject(e)));
   }
 
-  /** Read file as string
+  /** Reads a file as string.
+   * Sample: {@link https://public.datagrok.ai/js/samples/dapi/files}
    * @param {FileInfo | string} file
    * @returns {Promise<String>} */
   readAsText(file: FileInfo | string): Promise<string> {
@@ -732,7 +738,8 @@ export class FileSource {
         api.grok_Dapi_UserFiles_ReadAsText(file, (data: string | PromiseLike<string>) => resolve(data), (e: any) => reject(e)));
   }
 
-  /** Read file as bytes
+  /** Reads a file as bytes.
+   * Sample: {@link https://public.datagrok.ai/js/samples/dapi/files}
    * @param {FileInfo | string} file
    * @returns {Promise<Uint8Array>} */
   readAsBytes(file: FileInfo | string): Promise<Uint8Array> {
@@ -740,7 +747,8 @@ export class FileSource {
         api.grok_Dapi_UserFiles_ReadAsBytes(file, (data: any) => resolve(toJs(data)), (e: any) => reject(e)));
   }
 
-  /** Write file
+  /** Writes a file.
+   * Sample: {@link https://public.datagrok.ai/js/samples/dapi/files}
    * @param {FileInfo | string} file
    * @param {Array<number>} blob
    * @returns {Promise} */
@@ -748,7 +756,8 @@ export class FileSource {
     return new Promise((resolve, reject) => api.grok_Dapi_UserFiles_Write(file, blob, () => resolve(), (e: any) => reject(e)));
   }
 
-  /** Write file
+  /** Writes a text file.
+   * Sample: {@link https://public.datagrok.ai/js/samples/dapi/files}
    * @param {FileInfo | string} file
    * @param {string} data
    * @returns {Promise} */
