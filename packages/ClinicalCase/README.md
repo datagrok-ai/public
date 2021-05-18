@@ -7,7 +7,7 @@ support for dealing with clinical data, which is often represented in the
 The project objectives include:
 
 * Working with either databases or file folders 
-* Automatic study summary
+    * Automatic recognition of SDTM data
 * Explaining attribute names
     * Domains: `CV` -> `Cardiovascular System Findings`
     * Attributes: `AEMODIFY` -> `Modified Reported Term`
@@ -16,8 +16,16 @@ The project objectives include:
     * Data types match
     * Values comply with controlled terminology
     * Out-of-range values
+* Patient selection criteria
+    * Global filter with conditions based on the values in any table 
+* Clinical data-specific visualizations
+    * Timelines
+    * Hy's Law
 * Pre-defined views
-* Lab Results View
+    * Study Summary
+      * Dates, cohorts
+    * Patient Profile
+  * Lab Results View
     * Pre-defined, configurable normal ranges
 * Defining groups (treatment / control)
     * Automatic discovery of statistically significant changes between groups   
