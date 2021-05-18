@@ -13,7 +13,9 @@ function showOutputs(t1, t2, c1, c2, outputs) {
   if (col1.length === col2.length) {
 
     let counter = 0;
-    for (let i = 0; i < col1.length; i++) if (col1.get(i) == col2.get(i)) counter++;
+    for (let i = 0; i < col1.length; i++)
+      if (col1.get(i) == col2.get(i))
+        counter++;
 
     let link = ui.element('a');
     link.text = ' Select';
