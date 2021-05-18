@@ -1,2 +1,3 @@
-Sequence is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.
-It showcases various bioinformatics functionality related to sequences with using 3-rd party libraries.
+Support for the biological sequences (DNA, RNA, proteins), 
+including FASTA readers, 3D visualization of molecules, MSA viewer, 
+nd functions for working with sequences.
