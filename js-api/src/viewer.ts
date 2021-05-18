@@ -154,7 +154,7 @@ export class Viewer extends Widget {
   }
 
   static scatterPlot(t: DataFrame, options: object | null = null): Viewer {
-    return new Viewer(api.grok_Viewer_ScatterPlot(t.d, _toJson(options)));
+    return new ScatterPlotViewer(api.grok_Viewer_ScatterPlot(t.d, _toJson(options)));
   }
 
   static lineChart(t: DataFrame, options: object | null = null): Viewer {
@@ -312,5 +312,20 @@ export class JsViewer extends Widget {
    * @returns {DateTime} */
   dateTime(propertyName: ViewerPropertyType, defaultValue: DateTime | null = null, options: {} | null = null): DateTime {
     return this.addProperty(propertyName, TYPE.DATE_TIME, defaultValue, options);
+  }
+}
+
+export class ScatterPlotViewer extends Viewer {
+  constructor(d: any) {
+    super(d);
+  }
+
+  /** Row hit test */
+  hitTest(x: number, y: number): number {
+    return api.grok_ScatterPlotViewer_HitTest(this.d, x, y);
+  }
+
+  zoom(x1: number, y1: number, x2: number, y2: number) {
+    api.grok_ScatterPlotViewer_Zoom(this.d, x1, y1, x2, y2);
   }
 }
