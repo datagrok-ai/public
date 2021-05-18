@@ -12,16 +12,17 @@ function showOutputs(t1, t2, c1, c2, outputs) {
 
   if (col1.length === col2.length) {
 
-    for (let i = 0; i < col1.length; i++) if (col1.get(i) != col2.get(i)) selection.set(i, true, false);
+    let counter = 0;
+    for (let i = 0; i < col1.length; i++) if (col1.get(i) == col2.get(i)) counter++;
 
     let link = ui.element('a');
     link.text = ' Select';
-    link.onclick = (e) => {selection.fireChanged();};
+    link.onclick = (ev) => {selection.init((i) => col1.get(i) != col2.get(i));};
 
     outputs.append(
       ui.buttonsInput([
-        ui.divText('Matched: ' + selection.trueCount),
-        ui.span(['Mismatched: ' + (selection.length - selection.trueCount), link])
+        ui.divText('Matched: ' + counter),
+        ui.span(['Mismatched: ' + (selection.length - counter), link])
       ])
     );
 
@@ -30,8 +31,8 @@ function showOutputs(t1, t2, c1, c2, outputs) {
     outputs.append(
       ui.buttonsInput([
         ui.divText('Length mismatch: '),
-        ui.divText(col1.name + ': ' + col1.length + ' rows, '),
-        ui.divText(col2.name + ': ' + col2.length + ' rows')
+        ui.divText(t1.value + ': ' + col1.length + ' rows, '),
+        ui.divText(t2.value + ': ' + col2.length + ' rows')
       ])
     );
   }
@@ -69,6 +70,8 @@ export function compareColumns() {
     if (secondTableAdded) {
       columnsInputs.innerHTML = '';
       columnsInputs.append(addCols(t1, t2, outputs));
+    } else if (tablesNames.length === 1) {
+      t2.value = t1.value;
     }
   });
 
@@ -77,6 +80,8 @@ export function compareColumns() {
     if (firstTableAdded) {
       columnsInputs.innerHTML = '';
       columnsInputs.append(addCols(t1, t2, outputs));
+    } else if (tablesNames.length === 1) {
+      t1.value = t2.value;
     }
   });
 
