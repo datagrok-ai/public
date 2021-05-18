@@ -8,7 +8,7 @@ export function test() {
     welcomeView();
 }
 //name: compareColumns
-//top-menu: Data | Compare Columns
+//top-menu: Data | Compare Columns...
 export function _compareColumns() {
     compareColumns();
 }

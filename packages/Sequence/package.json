@@ -2,7 +2,7 @@
   "name": "Sequence",
   "version": "0.1",
   "fullName": "Sequence",
-  "description": "Support for DNA sequences",
+  "description": "Support for the biological sequences (DNA, RNA, proteins), including FASTA readers, 3D visualization of molecules, MSA viewer, and functions for working with sequences",
   "sources": [
     "ntseq/ntseq.js",
     "readFasta/fasta_utils.js",
