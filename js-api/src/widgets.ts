@@ -283,6 +283,10 @@ export class Accordion extends DartWidget {
   addPane(name: string, getContent: Function, expanded: boolean = false, before: AccordionPane | null = null): AccordionPane {
     return toJs(api.grok_Accordion_AddPane(this.d, name, getContent, expanded, before !== null ? before.d : null));
   }
+
+  removePane(pane: AccordionPane) {
+    api.grok_Accordion_RemovePane(this.d, pane.d);
+  }
 }
 
 
