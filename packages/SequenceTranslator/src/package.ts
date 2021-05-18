@@ -171,6 +171,8 @@ export function isDnaNucleotidesCode(sequence: string): boolean {return /^[ATGC]
 
 export function isRnaNucleotidesCode(sequence: string): boolean {return /^[AUGC]{10,}$/.test(sequence);}
 
+export function isAbiCode(sequence: string): boolean {return /^[5678ATGC]{10,}$/.test(sequence);}
+
 export function isAsoGapmerBioSpringCode(sequence: string): boolean {return /^[*56789ATGC]{30,}$/.test(sequence);}
 
 export function isAsoGapmerGcrsCode(sequence: string): boolean {return /^(?=.*moe)(?=.*5mC)(?=.*ps){30,}/.test(sequence);}
@@ -204,6 +206,15 @@ function convertSequence(seq: string) {
       BioSpring: asoGapmersNucleotidesToBioSpring(seq),
       Axolabs: noTranslationTableAvailable,
       GCRS: asoGapmersNucleotidesToGcrs(seq)
+    };
+  if (isAbiCode(seq))
+    return {
+      type: "ABI Code",
+      Nucleotides: noTranslationTableAvailable,
+      GCRS: noTranslationTableAvailable,
+      MM12: noTranslationTableAvailable,
+      OP100: noTranslationTableAvailable,
+      ABI: seq
     };
   if (isAsoGapmerBioSpringCode(seq))
     return {
@@ -259,7 +270,8 @@ function convertSequence(seq: string) {
       Nucleotides: gcrsToNucleotides(seq),
       GCRS: seq,
       MM12: gcrsToMM12(seq),
-      OP100: gcrsToOP100(seq)
+      OP100: gcrsToOP100(seq),
+      ABI: gcrsToABI(seq)
     }
   if (isMM12Code(seq))
     return {
@@ -267,7 +279,8 @@ function convertSequence(seq: string) {
       Nucleotides: noTranslationTableAvailable,
       GCRS: noTranslationTableAvailable,
       MM12: seq,
-      OP100: noTranslationTableAvailable
+      OP100: noTranslationTableAvailable,
+      ABI: noTranslationTableAvailable
     };
   if (isOP100Code(seq))
     return {
@@ -275,7 +288,8 @@ function convertSequence(seq: string) {
       Nucleotides: noTranslationTableAvailable,
       GCRS: noTranslationTableAvailable,
       MM12: noTranslationTableAvailable,
-      OP100: seq
+      OP100: seq,
+      ABI: noTranslationTableAvailable
     };
   return {
     type: undefinedInputSequence,
@@ -521,4 +535,17 @@ export function gcrsToMM12(nucleotides: string) {
     "fA": "I", "fC": "J", "fG": "K", "mU": "H", "mA": "E", "mC": "F", "mG": "G"
   };
   return nucleotides.replace(/(mAps|mUps|mGps|mCps|fAps|fUps|fGps|fCps|fU|fA|fC|fG|mU|mA|mC|mG)/g, function (x: string) {return obj[x]});
+}
+
+//name: gcrsToABI
+//input: string nucleotides {semType: GCRS}
+//output: string result {semType: ABI}
+export function gcrsToABI(nucleotides: string) {
+  let count: number = -1;
+  const objForEdges: {[index: string]: string} = {"moeA": "5", "(5m)moeC": "6", "moeG": "7", "moeT": "8"};
+  const objForCenter: {[index: string]: string} = {"A": "A", "T": "T", "(5m)C": "C", "G": "G"};
+  return nucleotides.replace(/(moeA|\(5m\)moeC|moeG|moeT|A|T|\(5m\)C|G)/g, function (x: string) {
+    count++;
+    return (5 < count || count < 15) ? objForCenter[x] : objForEdges[x];
+  });
 }

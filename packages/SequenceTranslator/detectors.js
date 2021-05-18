@@ -8,6 +8,8 @@ class SequencetranslatorPackageDetectors extends DG.Package {
         return 'DNA nucleotides';
       if (DG.Detector.sampleCategories(col, (s) => /^[AUGC]{10,}$/.test(s)))
         return 'RNA nucleotides';
+      if (DG.Detector.sampleCategories(col, (s) => /^[5678ATGC]{10,}$/.test(s)))
+        return 'ABI';
       if (DG.Detector.sampleCategories(col, (s) => /^[*56789ATGC]{30,}$/.test(s)))
         return 'BioSpring / Gapmers';
       if (DG.Detector.sampleCategories(col, (s) => /^(?=.*moe)(?=.*5mC)(?=.*ps){30,}/.test(s)))
