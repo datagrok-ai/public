@@ -246,24 +246,31 @@ export function div(children: HTMLElement[] | HTMLElement = [], options: string 
 
 export function info(children: HTMLElement[] | HTMLElement | string, header: string | null = null): HTMLDivElement {
   let root: HTMLDivElement | null = null;
-  let content: HTMLElement[] = [];
-  let closeElement: HTMLElement = iconFA('times', () => {
-    if (root != null)
-      root.style.display = 'none';
+  let divContent: HTMLElement[] = [];
+  let divActual: HTMLDivElement | null = null;
+  let show = iconFA('lightbulb-exclamation', () => {
+    if (divActual) divActual.style.display = 'block';
+    close.style.display = 'block';
+    show.style.display = 'none';
+  });
+  let close = iconFA('times', () => {
+    if (divActual) divActual.style.display = 'none';
+    close.style.display = 'none';
+    show.style.display = 'block';
   });
   if (header !== null && header !== undefined) {
-    content.push(h1(header));
+    divContent.push(h1(header));
   }
   if (!Array.isArray(children)) {
-    if (typeof children === 'string') {
+    if (children === null || typeof children === 'string') {
       children = [divText(children)];
     } else {
       children = [children];
     }
   }
-  content = content.concat(children);
-  content.push(closeElement);
-  root = div(content, 'grok-info-bar');
+  divContent = divContent.concat(children);
+  divActual = div(divContent, 'grok-info-bar');
+  root = div([show, close, divActual], 'grok-info-bar-container');
   return root;
 }
 
