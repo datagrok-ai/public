@@ -147,12 +147,13 @@ export function divText(text: string, options: string | ElementOptions | null = 
  * @param {Function} handler
  * @param {String} tooltipMsg
  * @returns {HTMLElement} */
-export function iconFA(name: string, handler: (this: HTMLElement, ev: MouseEvent) => any, tooltipMsg: string | null = null): HTMLElement {
+export function iconFA(name: string, handler: ((this: HTMLElement, ev: MouseEvent) => any) | null = null, tooltipMsg: string | null = null): HTMLElement {
   let i = element('i');
   i.classList.add('grok-icon');
   i.classList.add('fal');
   i.classList.add(`fa-${name}`);
-  i.addEventListener('click', handler);
+  if (handler !== null)
+    i.addEventListener('click', handler);
   if (tooltipMsg !== null)
     tooltip.bind(i, tooltipMsg);
   return i;
