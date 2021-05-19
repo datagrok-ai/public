@@ -14,7 +14,7 @@ function showOutputs(t1, t2, c1, c2, outputs) {
 
     let counter = 0;
     for (let i = 0; i < col1.length; i++)
-      if (col1.get(i) == col2.get(i))
+      if (col1.getString(i) == col2.getString(i))
         counter++;
 
     let link = ui.element('a');
@@ -47,12 +47,24 @@ function addCols(t1, t2, outputs) {
 
   let c1 = ui.choiceInput('Columns', '', grok.shell.tables.find(({name}) => name === t1.value).columns.names(), () => {
     firstColumnAdded = true;
-    if (secondColumnAdded) showOutputs(t1, t2, c1, c2, outputs);
+    let df = grok.shell.tables.find(({name}) => name === t1.value);
+    if (secondColumnAdded) {
+      showOutputs(t1, t2, c1, c2, outputs);
+    } else if (t1.value === t2.value && df.columns.length === 2) {
+      let columnsNames = df.columns.names();
+      c2.value = (columnsNames.indexOf(c1.value) === 0) ? columnsNames[1] : columnsNames[0];
+    }
   });
 
   let c2 = ui.choiceInput('', '', grok.shell.tables.find(({name}) => name === t2.value).columns.names(), () => {
     secondColumnAdded = true;
-    if (firstColumnAdded) showOutputs(t1, t2, c1, c2, outputs);
+    let df = grok.shell.tables.find(({name}) => name === t2.value);
+    if (firstColumnAdded) {
+      showOutputs(t1, t2, c1, c2, outputs);
+    } else if (t1.value === t2.value && df.columns.length === 2) {
+      let columnsNames = df.columns.names();
+      c1.value = (columnsNames.indexOf(c2.value) === 0) ? columnsNames[1] : columnsNames[0];
+    }
   });
 
   return ui.divH([c1, c2]);
