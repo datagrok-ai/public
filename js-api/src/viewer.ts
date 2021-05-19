@@ -5,7 +5,7 @@ import {DateTime, Property} from "./entities";
 import {ObjectPropertyBag, Widget} from "./widgets";
 import {_toJson} from "./utils";
 import {toJs} from "./wrappers";
-import {StreamSubscription, __obs} from "./events";
+import {StreamSubscription, __obs, EventData} from "./events";
 import * as rxjs from "rxjs";
 import { Grid } from "./grid";
 
@@ -328,4 +328,6 @@ export class ScatterPlotViewer extends Viewer {
   zoom(x1: number, y1: number, x2: number, y2: number) {
     api.grok_ScatterPlotViewer_Zoom(this.d, x1, y1, x2, y2);
   }
+
+  get onScatterPlotZoomed(): rxjs.Observable<EventData> { return this.onEvent('d4-scatterplot-zoomed'); }
 }
