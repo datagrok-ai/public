@@ -9,13 +9,52 @@ const dfExts = ['csv', 'xlsx'];
 const templates = {
   FileInfo: (ent) =>
 `(async () => {
-// Read as text
-const str = await grok.dapi.files.readAsText("${ent.fullPath}");
+  // Read as text
+  const str = await grok.dapi.files.readAsText("${ent.fullPath}");
 
-// Read as dataframe
-const df = await grok.data.files.openTable("${ent.fullPath}");
+  // Read as dataframe
+  const df = await grok.data.files.openTable("${ent.fullPath}");
+
+  // Delete
+  await grok.dapi.files.delete("${ent.fullPath}");
+  grok.shell.info("${ent.fileName} exists: " + (await grok.dapi.files.exists("${ent.fullPath}")));
 })();`,
-};
+  DataQuery: (ent) =>
+`grok.data.query("${ent.nqName}", {}).then(t => grok.shell.info(t.rowCount));`,
+  Package: (ent) =>
+`(async () => {
+  // Call a function
+  const res = await grok.functions.call("${ent.name}:test", {});
+
+  // Read credentials
+  const package = await grok.dapi.packages.find("${ent.id}");
+  const credentialsResponse = await package.getCredentials();
+  if (credentialsResponse == null) {
+    grok.shell.info('Credentials are not set.');
+  } else {
+    console.log(credentialsResponse.parameters);
+  }
+})();`,
+  Script: (ent) =>
+`grok.functions.call("${ent.nqName}", {}).then(res => grok.shell.info(res));`,
+  ViewLayout: (ent) =>
+`(async () => {
+  // Apply to the original table
+  const layout = await grok.dapi.layouts.find("${ent.id}");
+  const tableId = JSON.parse(layout.viewState).tableId;
+  const df = await grok.data.openTable(tableId);
+  const view = grok.shell.addTableView(df);
+  view.loadLayout(layout);
+
+  // Get layouts applicable to the dataframe 
+  const layouts = await grok.dapi.layouts.getApplicable(df);
+  console.log('Layouts found:', layouts.length);
+
+  // Save and serialize
+  const savedLayout = view.saveLayout();
+  console.log(savedLayout.toJson());
+})();
+`};
 
 function format(s) {
   s = s.replaceAll('-', ' ');
