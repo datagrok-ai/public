@@ -189,13 +189,45 @@ export function showStudySummary(): void {
 export function showPatientProfile(): void {
   let dm = grok.shell.tableByName('dm');
   let idx = dm.currentRow.idx;
+  let subjIdCol = dm.col('USUBJID');
   let summaryCols = dm.columns.byNames(['AGE', 'SEX']);
   let summaryMap = Object.fromEntries(summaryCols.map(col => {
     return [col.name, col.get(idx)];
   }));
 
+  let onValueChanged = (id: string) => {
+    if (!subjIdCol) return;
+
+    for (let i = 0, len = subjIdCol.length; i < len; i++) {
+      if (subjIdCol.get(i) === id) {
+        summaryMap = Object.fromEntries(summaryCols.map(col => {
+          return [col.name, col.get(i)];
+        }));
+        break;
+      }
+      if (i === (len - 1)) {
+        Object.keys(summaryMap).forEach(k => {
+          summaryMap[k] = '';
+        });
+      }
+    }
+
+    card.removeChild($(card).find('table')[0]);
+    card.appendChild(ui.tableFromMap(summaryMap));
+  };
+
+  let userInput = ui.stringInput('', subjIdCol.get(idx), onValueChanged);
+  let searchBox = ui.divH([ui.iconFA('users', null), userInput.root], {
+    style: { 'align-items': 'center', 'margin-left': '8px' },
+  });
+  let card = ui.card(ui.tableFromMap(summaryMap));
+  let mainDiv = ui.divV([
+    searchBox,
+    card,
+  ]);
+
   let v = grok.shell.newView('Patient Profile', [
     ui.h1('Patient Profile Page'),
-    ui.card(ui.tableFromMap(summaryMap)),
+    mainDiv,
   ]);
 }
