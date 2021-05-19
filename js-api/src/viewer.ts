@@ -64,7 +64,7 @@ export class Viewer extends Widget {
    * @param options
    * @returns {Viewer} */
   static fromType(viewerType: ViewerType, table: DataFrame, options: object | null = null): Viewer {
-    return new Viewer(api.grok_Viewer_FromType(viewerType, table.d, _toJson(options)));
+    return toJs(api.grok_Viewer_FromType(viewerType, table.d, _toJson(options)));
   }
 
   static getViewerTypes(): ViewerType[] {
