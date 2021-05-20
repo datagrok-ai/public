@@ -430,7 +430,7 @@ export function popupMenu(items: any): void {
   menu.show();
 }
 
-export function inputs(inputs: InputBase[], options: {}) {
+export function inputs(inputs: InputBase[], options: any = null) {
   return form(inputs, options);
 }
 
