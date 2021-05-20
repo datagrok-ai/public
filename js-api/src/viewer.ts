@@ -329,6 +329,10 @@ export class ScatterPlotViewer extends Viewer {
     api.grok_ScatterPlotViewer_Zoom(this.d, x1, y1, x2, y2);
   }
 
+  get viewBox(): Rect { return toJs(api.grok_ScatterPlotViewer_Get_ViewBox(this.d)); }
+  get xAxisBox(): Rect { return toJs(api.grok_ScatterPlotViewer_Get_XAxisBox(this.d)); }
+  get yAxisBox(): Rect { return toJs(api.grok_ScatterPlotViewer_Get_YAxisBox(this.d)); }
+
   get onZoomed(): rxjs.Observable<Rect> { return this.onEvent('d4-scatterplot-zoomed'); }
   get onViewportChanged(): rxjs.Observable<Rect> { return this.onEvent('d4-viewport-changed'); }
 }
