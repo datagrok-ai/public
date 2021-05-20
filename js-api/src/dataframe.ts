@@ -142,6 +142,8 @@ const ColumnListProxy = new Proxy(class {
         return new Proxy(new target(...args), {
           get: function (target: any, prop) {
             const val = target.columnList[prop];
+            if (typeof prop === 'symbol')
+              return val;
             const propNumber = Number(prop);
 
             if (typeof val === 'function') {
