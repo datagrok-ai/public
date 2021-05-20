@@ -1,4 +1,4 @@
-// Creating a DataFrame from a CSV string and using the numeric format from it in the grid
+// Creating a DataFrame from a CSV string and checking the formats identified for the columns
 
 let table = DG.DataFrame.fromCsv(
 `country, continent, year,  lifeExp,  pop,       gdpPercap
@@ -12,8 +12,5 @@ Zambia,   Africa,    1992,  46.1,     8381163,   1210.8846436
 `);
 
 let view = grok.shell.addTableView(table);
-
-// By default, the `gdpPercap` column format will be set in the grid to 2 significant digits.
-// It's possible to override the grid's column formatting to the one coming from the CSV data:
-
-table.col('gdpPercap').tags[DG.TAGS.FORMAT] = table.col('gdpPercap').tags[DG.TAGS.SOURCE_FORMAT];
+grok.shell.info(table.columns["gdpPercap"].tags[DG.TAGS.FORMAT]);
+grok.shell.info(table.columns["lifeExp"].tags[DG.TAGS.FORMAT]);

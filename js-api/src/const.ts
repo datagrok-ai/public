@@ -191,12 +191,10 @@ export const TAGS = {
   ID: '.id',
   COLOR_CODING_CONDITIONAL: '.color-coding-conditional',
   MULTI_VALUE_SEPARATOR: 'multi-value-separator',
-  /** When set to a string value for a float-typed column, it is used as a number formatter
-   when saving this column, as part of the dataframe, in a CSV format. Determined when parsing
-   a CSV file into a dataframe as the number of maximum needed significant digits for this column
-   detected in the original CSV file. */
-  SOURCE_FORMAT: 'source-format',
-  /** If set, used in both grid display and CSV export to format the numeric column */
+  /** When a dataframe is loaded from a CSV, the maximum number of significant digits
+   in the fractional part for each numeric column is determined  */
+  SOURCE_PRECISION: '.source-precision',
+  /** Set on a dataframe column; used to format column contents in grids, CSV export, passing to scripts */
   FORMAT: 'format'
 }
 
