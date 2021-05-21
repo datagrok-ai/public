@@ -185,7 +185,7 @@ function clearStdView(): void {
 //name: showStudySummary
 export function showStudySummary(): void {
   let dm = grok.shell.tableByName('dm');
-  let bc = DG.Viewer.barChart(dm, { split: 'SEX', stack: 'ARM' });
+  let bc = DG.Viewer.barChart(dm, { split: 'SEX', stack: 'ARMCD' });
   let bp = DG.Viewer.boxPlot(dm, {
     labelOrientation: 'Horz',
     showStatistics: true,
