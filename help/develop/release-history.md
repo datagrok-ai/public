@@ -1,6 +1,89 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-05-21 Dev build 0.92.1
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.1`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* fixes regression in 2D layout alignment of unknown origin 
+* Chem package version 0.9.8, bump. 
+* BioSignals: make initial chart look similar to content of accordion panes 
+* DINQ: Support JSON in WhereSmart method 
+* DevTools: add the `Snippets` pane (WIP)
+* JS API: context is sometimes missing in onAccordionConstructed() 
+* JS API: add Grid.getVisibleCells 
+* Datagrok API and system samples, add cross linking to improve connectivity (WIP)
+* BioSignals: Add url routing for Physionet records 
+* (Bug) JS Samples: to-hierarchy.js example does not work (WIP)
+* NGL viewer (WIP)
+* Scripting: Ability to set custom name for parameter 
+* Scripting: Ability to set postfix for parameter 
+* Scripting: Ability to set postfix for parameter 
+* UI: Ability to set dialog background (WIP)
+* Fixed TS warning 
+* JS: Ability to hide table params from FuncCall editor 
+* Updated public token 
+* (Bug) Core: deepEquals method on Prop class always returns false 
+* Running an ulmo sample in PythonScripts via pip+conda env. 
+* Function editors: open editor with DataFrame parameters even when no tables are open (WIP)
+* Function editors: allow to load input data frames after the dialog is open (WIP)
+* BioSignals: publish connection to Physionet demo files 
+* Fixed warnings 
+* SequenceTranslator: MM12 Sequence Conversion 
+* JS API: add grok.shell.views and grok.shell.tableViews 
+* SequenceTranslator: OP100 Sequence Conversion 
+* Function View (WIP)
+* Power Pack: Compare Columns 
+* Fixed logins in some connections 
+* RepertoireBrowser: MSA tabs (WIP)
+* Add files via upload 
+* Update chem_curator.py 
+* Ability to drop DataConnectionCache (WIP)
+* UsageAnalysis: Added 'users by date' query 
+* (Bug) Molecules not rendered for columns returned by scripts 
+* datagrok-tools: code clean-up 
+* (Bug) DINQ: Permission check on every object type 
+* Fixed analyzer warning 
+* Context commands: "Add derived column..." for multiple columns 
+* Viewer.serialize(includeDefaults): an option to include default values 
+* update "Common Actions" section 
+* (Bug) Events: onViewerAdded and onViewerClosed are sent twice 
+* JS API: add square brackets for columns 
+* Prevent DG disk space usage inside docker container 
+* (Bug) Invalid session message when running second node of DG 
+* (Bug) Exceptions are not handled during DG start 
+* Increase Func socket timeout 
+* Handle AWS "SlowDown" exception 
+* JS API:  add a possibility to use custom ScatterPlot renderer (WIP)
+* ClinicalCase: harmonize menu items 
+* PackageView: added a margin 
+* ClinicalCase: updated description 
+* JS API: add Accordion.removePane() 
+* (Bug) Filters: if multi-value filters are present in the panel, the reset button doesn't work 
+* Updated package description. 
+* SequenceTranslator: ABI Sequence Conversion 
+* JS API: ui.info for a yellow info bar (WIP)
+* ClinicalCase \- a plugin for analyzing SDTM-based clinical studies data (WIP)
+* Update ui.ts 
+* UI: Copyright 2019 -> 2021. 
+* (Bug) Chem: Tile Viewer issue (WIP)
+* GrokML: integrate WASM calls with Dart (pearsonsR for the correlation plot) (WIP)
+* (Bug) JS API: ColumnListProxy:  Cannot convert a Symbol value to a number 
+* Dialog should have ui-panel class 
+* Dataframe: Detect column max significant digits in CSV loading (WIP)
+* Core: Add GrokJsObjectConst 
+* (Bug) Miniconda hangs CVM builds (WIP)
+* JS API: ScatterPlot: add viewport 
+
+
 # 2021-05-10 Stable version 0.92.0
 
 ## Latest Docker Images
