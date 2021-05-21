@@ -12,5 +12,6 @@ Zambia,   Africa,    1992,  46.1,     8381163,   1210.8846436
 `);
 
 let view = grok.shell.addTableView(table);
-grok.shell.info(table.columns["gdpPercap"].tags[DG.TAGS.FORMAT]);
-grok.shell.info(table.columns["lifeExp"].tags[DG.TAGS.FORMAT]);
+grok.shell.info(table.columns['gdpPercap'].tags[DG.TAGS.FORMAT]);
+grok.shell.info(table.columns['lifeExp'].tags[DG.TAGS.FORMAT]);
+grok.shell.info(table.columns['lifeExp'].tags[DG.TAGS.SOURCE_PRECISION]);
