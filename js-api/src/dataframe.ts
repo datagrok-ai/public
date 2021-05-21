@@ -1721,6 +1721,11 @@ export class Stats {
    * @returns {number} */
   spearmanCorr(otherColumn: Column): number { return api.grok_Stats_SpearmanCorr(this.d, otherColumn.d); }
 
+  /** Returns distributions of [valueColumn] for each category in [catColumn]. */
+  static histogramsByCategories(valueColumn: Column, catColumn: Column): Int32Array[] {
+    return api.grok_Stats_HistogramsByCategories(valueColumn.d, catColumn.d);
+  }
+
   /** @returns {string} */
   toString(): string {
     return api.grok_Object_ToString(this.d);
