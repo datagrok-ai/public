@@ -98,13 +98,13 @@ export class ObjectPropertyBag {
 
 /** Base class for controls that have a visual root and a set of properties. */
 export class Widget {
-  private _root: HTMLElement | null;
+  private _root: HTMLElement;
   protected _properties: Property[];
   props: ObjectPropertyBag;
   subs: StreamSubscription[];
 
   /** @constructs Widget and initializes its root. */
-  constructor(widgetRoot: HTMLElement | null = null) {
+  constructor(widgetRoot: HTMLElement) {
 
     /** @member {HTMLElement} */
     this._root = widgetRoot;
@@ -157,8 +157,8 @@ export class Widget {
 
   /** Widget's visual root.
    * @type {HTMLElement} */
-  get root(): HTMLElement | null { return this._root; }
-  set root(r: HTMLElement | null) { this._root = r; }
+  get root(): HTMLElement { return this._root; }
+  set root(r: HTMLElement) { this._root = r; }
 
   /** Gets called when a widget is detached and will no longer be used. Typically used for unsubscribing from events.
    * Be sure to call super.detach() if this method is overridden.  */
@@ -197,10 +197,8 @@ export class Widget {
   }
 
   /** @returns {Widget} */
-  static fromRoot(root: HTMLElement | null): Widget {
-    let w = new Widget();
-    w.root = root;
-    return w;
+  static fromRoot(root: HTMLElement): Widget {
+    return new Widget(root);
   }
 
   /** Creates a {@see Widget} from the specified React component. */
@@ -237,7 +235,7 @@ export class DartWidget extends Widget {
   d: any;
 
   constructor(d: any) {
-    super();
+    super(api.grok_Widget_Get_Root(d));
     this.d = d;
   }
 
