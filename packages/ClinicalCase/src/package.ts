@@ -174,14 +174,33 @@ export function clinicalCaseTimelines(): void {
   v.addViewer('TimelinesViewer');
 }
 
+function clearStdView(): void {
+  const windows = grok.shell.windows;
+  windows.showToolbox = false;
+  windows.showProperties = false;
+  windows.showConsole = false;
+  windows.showHelp = false;
+}
+
 //name: showStudySummary
 export function showStudySummary(): void {
   let dm = grok.shell.tableByName('dm');
-  let bc = DG.Viewer.barChart(dm, { split: 'SEX', stack: 'ARM' });
+  let bc = DG.Viewer.barChart(dm, { split: 'SEX', stack: 'ARMCD' });
+  let bp = DG.Viewer.boxPlot(dm, {
+    labelOrientation: 'Horz',
+    showStatistics: true,
+    value: 'AGE',
+    category: 'ARM'
+  });
+
+  clearStdView();
+
   let v = grok.shell.newView('Study Summary', [
     ui.h1('Study Summary Page'),
-    ui.h2('Sex Distribution'),
-    bc.root,
+    ui.divH([
+      ui.block25([ui.h2('Sex Distribution'), bc.root]),
+      ui.block75([ui.h2('Age Statistics'), bp.root]),
+    ], { style: { width: '100%' } }),
   ]);
 }
 
@@ -225,6 +244,8 @@ export function showPatientProfile(): void {
     searchBox,
     card,
   ]);
+
+  clearStdView();
 
   let v = grok.shell.newView('Patient Profile', [
     ui.h1('Patient Profile Page'),
