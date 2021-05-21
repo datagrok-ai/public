@@ -1,6 +1,26 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-05-21 Dev build 0.92.2
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.2`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* PowerPack: rewrite Compare Columns to TypeScript 
+* (Bug) Log export hands 
+* Help: Ordering in chapters (WIP)
+* Grid: default column width doesn't respect format 
+* (Bug) Grok connect: java.lang.NullPointerException with pattern parameter 
+* Dataframe: Detect column max significant digits in CSV loading (WIP)
+
+
 # 2021-05-21 Dev build 0.92.1
 
 ## Latest Docker Images
