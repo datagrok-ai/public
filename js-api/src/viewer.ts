@@ -51,7 +51,7 @@ export class Viewer extends Widget {
 
   /** @constructs Viewer */
   constructor(d: any) {
-    super();
+    super(api.grok_Viewer_Root(d));
     this.d = d;
 
     /** @member {ObjectPropertyBag} */
@@ -194,12 +194,8 @@ export class JsViewer extends Widget {
 
   /** @constructs JsViewer */
   constructor() {
-    super();
+    super(ui.box());
 
-    /** @type {HTMLElement} */
-    this.root = ui.box();
-
-    /** @type {DataFrame} */
     this.dataFrame = null;
 
     /** @type {StreamSubscription[]} */

@@ -473,8 +473,8 @@ export function moleculeInput(name: string, value: string, onValueChanged: Funct
   return new InputBase(api.grok_MoleculeInput(name, value), onValueChanged);
 }
 
-export function columnInput(name: string, table: DataFrame, value: Column, onValueChanged: Function | null = null): InputBase {
-  return new InputBase(api.grok_ColumnInput(name, table.d, value.d), onValueChanged);
+export function columnInput(name: string, table: DataFrame, value: Column | null, onValueChanged: Function | null = null): InputBase {
+  return new InputBase(api.grok_ColumnInput(name, table.d, value?.d), onValueChanged);
 }
 
 export function columnsInput(name: string, table: DataFrame, onValueChanged: Function | null = null): InputBase {
