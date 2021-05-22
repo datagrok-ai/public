@@ -280,7 +280,7 @@ export function info(children: HTMLElement[] | HTMLElement | string, header: str
  * @param {string | ElementOptions} options
  * @returns {HTMLDivElement} */
 export function divV(items: HTMLElement[], options: string | ElementOptions | null = null): HTMLDivElement {
-  return <HTMLDivElement>_options(api.grok_UI_DivV(items == null ? null : items.map(render), null), options);
+  return <HTMLDivElement>_options(api.grok_UI_DivV(items == null ? null : items.map(render), 'ui-div'), options);
 }
 
 /** Div flex-box container that positions child elements horizontally.
@@ -288,7 +288,7 @@ export function divV(items: HTMLElement[], options: string | ElementOptions | nu
  * @param {string | ElementOptions} options
  * @returns {HTMLDivElement} */
 export function divH(items: HTMLElement[], options: string | ElementOptions | null = null): HTMLDivElement {
-  return <HTMLDivElement>_options(api.grok_UI_DivH(items == null ? null : items.map(render), null), options);
+  return <HTMLDivElement>_options(api.grok_UI_DivH(items == null ? null : items.map(render), 'ui-div'), options);
 }
 
 /** Renders content as a card. */
