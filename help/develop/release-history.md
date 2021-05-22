@@ -1,6 +1,31 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-05-22 Dev build 0.92.3
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.3`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* (Bug) Miniconda hangs CVM builds (WIP)
+* Dataframe: Detect column max significant digits in CSV loading (WIP)
+* PowerPack: rewrite Compare Columns to TypeScript 
+* Grid: automatically pick up cell type from data frame 
+* JS API: Stats.histogramsByCategories 
+* Statistics: Multi-histograms (WIP)
+* Made Widget.root non-nullable. WIP. 
+* ColumnsCorrelationMeta 
+* Correlation plot: on cell click, show the corresponding scatter plot in the property panel 
+* Histogram: multiple histograms mode (WIP)
+* Dialog should have ui-panel class 
+
+
 # 2021-05-21 Dev build 0.92.2
 
 ## Latest Docker Images
