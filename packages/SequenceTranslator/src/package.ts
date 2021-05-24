@@ -237,7 +237,7 @@ function convertSequence(seq: string) {
       type: "RNA Nucleotides Code",
       Nucleotides: seq,
       BioSpring: siRnaNucleotideToBioSpringSenseStrand(seq),
-      Axolabs: noTranslationTableAvailable,
+      Axolabs: siRnaNucleotideToAxolabsSenseStrand(seq),
       GCRS: siRnaNucleotidesToGcrs(seq)
     };
   if (isSiRnaBioSpringCode(seq))
@@ -481,6 +481,40 @@ export function siRnaNucleotidesToGcrs(nucleotides: string) {
     if (count < 2) return objForLeftEdge[x];
     if (count > nucleotides.length - 3) return objForRightEdge[x];
     return (count % 2 == 0) ? objForEvenIndices[x] : objForOddIndices[x];
+  });
+}
+
+//name: siRnaNucleotideToAxolabsSenseStrand
+//input: string nucleotides {semType: RNA nucleotides}
+//output: string result {semType: Axolabs}
+export function siRnaNucleotideToAxolabsSenseStrand(nucleotides: string) {
+  let count: number = -1;
+  const objForLeftEdge: {[index: string]: string} = {"A": "as", "U": "us", "G": "gs", "C": "cs"};
+  const objForSomeIndices: {[index: string]: string} = {"A": "Af", "U": "Uf", "G": "Gf", "C": "Cf"};
+  const obj: {[index: string]: string} = {"A": "a", "U": "u", "G": "g", "C": "c"};
+  return nucleotides.replace(/[AUGC]/g, function (x: string) {
+    count++;
+    if (count < 2) return objForLeftEdge[x];
+    if (count == 6 || (count > 7 && count < 11)) return objForSomeIndices[x]
+    if (count == x.length - 1) return x[x.length - 1];
+    return obj[x];
+  });
+}
+
+//name: siRnaNucleotideToAxolabsAntisenseStrand
+//input: string nucleotides {semType: RNA nucleotides}
+//output: string result {semType: Axolabs}
+export function siRnaNucleotideToAxolabsAntisenseStrand(nucleotides: string) {
+  let count: number = -1;
+  const objForSmallLinkages: {[index: string]: string} = {"A": "as", "U": "us", "G": "gs", "C": "cs"};
+  const objForBigLinkages: {[index: string]: string} = {"A": "Afs", "U": "Ufs", "G": "Gfs", "C": "Cfs"};
+  const objForSomeIndices: {[index: string]: string} = {"A": "Af", "U": "Uf", "G": "Gf", "C": "Cf"};
+  const obj: {[index: string]: string} = {"A": "a", "U": "u", "G": "g", "C": "c"};
+  return nucleotides.replace(/[AUGC]/g, function (x: string) {
+    count++;
+    if (count < 1 || (count > 20 && count < 22)) return objForSmallLinkages[x];
+    if (count == 1) return objForBigLinkages[x];
+    return (count == 5 || count == 7 || count == 8 || count == 13 || count == 15) ? objForSomeIndices[x] : obj[x];
   });
 }
 
