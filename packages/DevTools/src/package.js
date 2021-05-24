@@ -19,8 +19,7 @@ const templates = {
   await grok.dapi.files.delete("${ent.fullPath}");
   grok.shell.info("${ent.fileName} exists: " + (await grok.dapi.files.exists("${ent.fullPath}")));
 })();`,
-  DataQuery: (ent) =>
-`grok.data.query("${ent.nqName}", {}).then(t => grok.shell.info(t.rowCount));`,
+  DataQuery: (ent) => `grok.data.query("${ent.nqName}", {}).then(t => grok.shell.info(t.rowCount));`,
   Package: (ent) =>
 `(async () => {
   // Call a function
@@ -30,13 +29,12 @@ const templates = {
   const package = await grok.dapi.packages.find("${ent.id}");
   const credentialsResponse = await package.getCredentials();
   if (credentialsResponse == null) {
-    grok.shell.info('Credentials are not set.');
+    grok.shell.info("Credentials are not set.");
   } else {
-    console.log(credentialsResponse.parameters);
+    grok.shell.info(credentialsResponse.parameters);
   }
 })();`,
-  Script: (ent) =>
-`grok.functions.call("${ent.nqName}", {}).then(res => grok.shell.info(res));`,
+  Script: (ent) => `grok.functions.call("${ent.nqName}", {}).then(res => grok.shell.info(res));`,
   ViewLayout: (ent) =>
 `(async () => {
   // Apply to the original table
@@ -48,13 +46,21 @@ const templates = {
 
   // Get layouts applicable to the dataframe 
   const layouts = await grok.dapi.layouts.getApplicable(df);
-  console.log('Layouts found:', layouts.length);
+  grok.shell.info("Layouts found: " + layouts.length);
 
   // Save and serialize
   const savedLayout = view.saveLayout();
   console.log(savedLayout.toJson());
 })();
 `};
+
+const helpUrls = {
+  DataConnection: ['https://datagrok.ai/help/develop/how-to/access-data', 'https://datagrok.ai/js-api/DataConnection'],
+  DataQuery: ['https://datagrok.ai/help/develop/how-to/access-data', 'https://datagrok.ai/js-api/DataQuery'],
+  FileInfo: ['https://datagrok.ai/help/develop/how-to/access-data', 'https://datagrok.ai/js-api/FileInfo'],
+  Script: ['https://datagrok.ai/help/develop/scripting', 'https://datagrok.ai/js-api/Script'],
+  ViewLayout: ['https://datagrok.ai/help/develop/how-to/layouts', 'https://datagrok.ai/js-api/ViewLayout'],
+};
 
 function format(s) {
   s = s.replaceAll('-', ' ');
@@ -79,8 +85,20 @@ export function describeCurrentObj() {
 
     if (ent) {
       const snippets = await loadSnippets(ent);
+      const template = (type in templates) ? templates[type](ent) : '';
+      if (snippets.length === 0 && !template) return;
+
+      let links = helpUrls[type] || [];
+      links = links.map(link => {
+        let anc = document.createElement('a');
+        anc.innerHTML = link;
+        anc.setAttribute('href', link);
+        anc.setAttribute('target', '_blank');
+        return anc;
+      });
+
       const snippetNames = snippets.map(s => ui.divText(format(s.friendlyName), { classes: 'd4-link-action' }));
-      let editor = ui.textInput('', (type in templates) ? templates[type](ent) : '');
+      let editor = ui.textInput('', template);
       editor.input.style.height = '200px';
       // editor.input.style = 'width: 0; height: 0; visibility: hidden;';
       // editor.root.style.display = 'none';
@@ -108,6 +126,7 @@ export function describeCurrentObj() {
       let snippetsPane = acc.getPane('Snippets');      
       if (!snippetsPane) snippetsPane = acc.addPane('Snippets', () => {
         return ui.divV([
+          ...links,
           ...snippetNames,
           ui.divV([clipboardBtn, editor.root], 'textarea-box')
         ]);
