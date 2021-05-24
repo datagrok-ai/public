@@ -20,6 +20,23 @@ const templates = {
   grok.shell.info("${ent.fileName} exists: " + (await grok.dapi.files.exists("${ent.fullPath}")));
 })();`,
   DataQuery: (ent) => `grok.data.query("${ent.nqName}", {}).then(t => grok.shell.info(t.rowCount));`,
+  User: (ent) =>
+`(async () => {
+const user = await grok.dapi.users.find("${ent.id}");
+const userGroup = user.group;
+
+// Find the groups the user belongs to
+grok.shell.info(\`Memberships of \${user.friendlyName}: [\${userGroup.memberships}]\`);
+grok.shell.info(\`Admin memberships of \${user.friendlyName}: [\${userGroup.adminMemberships}]\`);
+
+// Manage permissions
+const entity = await grok.dapi.layouts.first();
+let canEdit = false;
+
+await grok.dapi.permissions.grant(entity, userGroup, canEdit);
+console.log(await grok.dapi.permissions.get(entity));
+await grok.dapi.permissions.revoke(userGroup, entity);
+})();`,
   Package: (ent) =>
 `(async () => {
   // Call a function
