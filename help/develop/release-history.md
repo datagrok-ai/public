@@ -1,6 +1,24 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-05-24 Dev build 0.92.4
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.4`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* PivotViewer 
+* (Bug) Miniconda hangs CVM builds (WIP)
+* DevTools: add the `Snippets` pane (WIP)
+* PowerPack: Compare Columns fixes 
+
+
 # 2021-05-22 Dev build 0.92.3
 
 ## Latest Docker Images
