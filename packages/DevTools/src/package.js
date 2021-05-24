@@ -116,7 +116,7 @@ export function describeCurrentObj() {
 
       const snippetNames = snippets.map(s => ui.divText(format(s.friendlyName), { classes: 'd4-link-action' }));
       let editor = ui.textInput('', template);
-      editor.input.style.height = '200px';
+      editor.input.style = 'height: 200px; overflow: hidden;';
       // editor.input.style = 'width: 0; height: 0; visibility: hidden;';
       // editor.root.style.display = 'none';
 
