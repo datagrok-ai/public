@@ -19,18 +19,22 @@ function showOutputs(t1: { value: string; }, t2: { value: string; }, c1: DG.Inpu
         counter++;
 
     let link = ui.element('a');
-    link.textContent = 'Select mismatched rows';
-    link.onclick = (ev) => {
-      selection.init((i) => col1.getString(i) != col2.getString(i));
-    };
+    link.textContent = 'Select';
+    link.onclick = (ev) => {selection.init((i) => col1.getString(i) != col2.getString(i))};
 
-    let d = ui.divV([
-      ui.divText('Matched: ' + counter.toString(), {}),
-      ui.divText('Mismatched: ' + (selection.length - counter).toString()),
-      ui.span([link])
-    ]);
-    d.style.textAlign = 'center';
-    outputs.append(d);
+    let matched = ui.divText('Matched: ' + counter.toString(), {});
+    let mismatched = ui.divH([ui.divText('Mismatched: ' + (selection.length - counter).toString()), link]);
+
+    mismatched.style.marginLeft = '152px';
+    matched.style.marginTop = '10px';
+    matched.style.marginLeft = '152px';
+    link.style.marginLeft = '4px';
+    outputs.append(
+      ui.divV([
+        matched,
+        mismatched
+      ])
+    );
 
   } else {
 
@@ -39,7 +43,9 @@ function showOutputs(t1: { value: string; }, t2: { value: string; }, c1: DG.Inpu
       ui.divText(t1.value + ': ' + col1.length + ' rows, '),
       ui.divText(t2.value + ': ' + col2.length + ' rows')
     ]);
-    d.style.textAlign = 'center';
+    d.style.marginTop = '10px';
+    d.style.marginLeft = '152px';
+    d.style.color = 'var(--red-3)';
     outputs.append(d);
   }
 }
