@@ -577,7 +577,7 @@
       "id": "3dd2c076-4782-4729-a21a-bb30f10da855",
       "comment": "",
       "command": "pause",
-      "target": "50",
+      "target": "500",
       "targets": [],
       "value": ""
     }]

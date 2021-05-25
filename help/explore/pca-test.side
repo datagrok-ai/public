@@ -266,6 +266,13 @@
       ],
       "value": ""
     }, {
+      "id": "2adda290-9d27-4b23-bf86-9843d4702677",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "5571126a-ac84-4d38-ac2b-3d66d07fc5fa",
       "comment": "",
       "command": "verifyElementPresent",
@@ -278,6 +285,13 @@
         ["xpath=//h1", "xpath:position"],
         ["xpath=//h1[contains(.,'Principal Component-Analysis')]", "xpath:innerText"]
       ],
+      "value": ""
+    }, {
+      "id": "6a007633-53ce-482d-b850-953657cee213",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "e93c6e50-0d9b-4eec-ab66-1a461ec97d72",
@@ -293,6 +307,13 @@
       ],
       "value": ""
     }, {
+      "id": "fb9cdca4-2273-4223-be0d-8103af1fa9b6",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "63c50a7d-e9d7-496d-82bb-9a35f855ebeb",
       "comment": "",
       "command": "click",
@@ -303,6 +324,13 @@
         ["xpath=//label[@name='label-All']", "xpath:attributes"],
         ["xpath=//div[2]/div/div/label", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "f8a90b96-3485-42d0-9781-a0e8a5fe52a1",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "5ba37872-dc06-4fde-ae06-8d8d7ab59460",

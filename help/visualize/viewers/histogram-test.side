@@ -305,11 +305,11 @@
       "id": "b9f00615-d211-4190-a305-8d3b0b95fc8f",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Style---Style---Pick-up']",
+      "target": "xpath=//div[@name='div-Style---Pick-Up']",
       "targets": [
-        ["css=.d4-menu-item-container:nth-child(18) > .d4-menu-item:nth-child(3) .d4-menu-item:nth-child(1)", "css:finder"],
-        ["xpath=//div[@name='div-Style---Style---Pick-up']", "xpath:attributes"],
-        ["xpath=//div[15]/div[3]/div/div", "xpath:position"]
+        ["css=.d4-menu-item-container:nth-child(8) > .d4-menu-item:nth-child(4) .d4-menu-item:nth-child(2)", "css:finder"],
+        ["xpath=//div[@name='div-Style---Pick-Up']", "xpath:attributes"],
+        ["xpath=//div[6]/div[4]/div/div/div[2]", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -372,12 +372,12 @@
       "id": "36798c52-be75-45f2-99e5-21ccdae69aad",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@class='panel-titlebar disable-selection']/i[@name='icon-font-icon-menu']",
+      "target": "css=.panel-titlebar-tabhost  > i[name=\"icon-font-icon-menu\"]",
       "targets": [
-        ["css=.splitter-container-horizontal > .panel-titlebar > .grok-font-icon-menu", "css:finder"],
-        ["xpath=//div[@class='panel-titlebar disable-selection']/i[@name='icon-font-icon-menu']", "xpath:attributes"],
+        ["css=.panel-titlebar-tabhost > .grok-font-icon-menu", "css:finder"],
+        ["xpath=(//i[@name='icon-font-icon-menu'])[3]", "xpath:attributes"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div/i", "xpath:idRelative"],
-        ["xpath=//div[3]/div/div/div/div/div[3]/div/i", "xpath:position"]
+        ["xpath=//div[4]/div/div/div/div/div[3]/div/i", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -395,11 +395,11 @@
       "id": "7b3a604b-31b9-4ebd-9e75-5d35f2e61787",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Style---Style---Apply']",
+      "target": "xpath=//div[@name='div-Style---Apply']",
       "targets": [
-        ["css=.d4-menu-item-container:nth-child(20) > .d4-menu-item:nth-child(3) .d4-menu-item:nth-child(4)", "css:finder"],
-        ["xpath=//div[@name='div-Style---Style---Apply']", "xpath:attributes"],
-        ["xpath=//div[17]/div[3]/div/div[4]", "xpath:position"]
+        ["css=.d4-menu-item-container:nth-child(13) > .d4-menu-item:nth-child(4) .d4-menu-item:nth-child(5)", "css:finder"],
+        ["xpath=//div[@name='div-Style---Apply']", "xpath:attributes"],
+        ["xpath=//div[11]/div[4]/div/div/div[5]", "xpath:position"]
       ],
       "value": ""
     }, {

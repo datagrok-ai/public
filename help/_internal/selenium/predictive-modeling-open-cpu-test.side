@@ -636,8 +636,15 @@
       "id": "036fc1fa-7e19-4d59-a698-993764b6a6a6",
       "comment": "",
       "command": "select",
-      "target": "id=editor",
-      "targets": [],
+      "target": "name=input-Model-Engine",
+      "targets": [
+        ["id=181", "id"],
+        ["name=input-Model-Engine", "name"],
+        ["css=#\\31 81", "css:finder"],
+        ["xpath=//select[@id='181']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div/div/select", "xpath:idRelative"],
+        ["xpath=//select", "xpath:position"]
+      ],
       "value": "Caret"
     }, {
       "id": "5ab734eb-17af-49e1-9286-c91c7cb7946d",
@@ -650,7 +657,7 @@
       "id": "e7a9d7e3-b619-4a95-b5fb-5786cd227a37",
       "comment": "",
       "command": "executeScript",
-      "target": "document.querySelector('#editor').dispatchEvent(new Event('input'))",
+      "target": "document.querySelector('[name=input-Model-Engine]').dispatchEvent(new Event('input'))",
       "targets": [],
       "value": ""
     }, {
@@ -737,14 +744,13 @@
       "id": "fa71dcf0-4e84-4f92-99d5-0f101d8008e5",
       "comment": "",
       "command": "click",
-      "target": "name=button-Features",
+      "target": "name=div-Features",
       "targets": [
-        ["name=button-Features", "name"],
-        ["css=button[name=\"button-Features\"]", "css"],
-        ["css=.d4-input-columns > button", "css:finder"],
-        ["xpath=//button[@name='button-Features']", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div/div[2]/div/div[6]/div/button", "xpath:idRelative"],
-        ["xpath=//div[6]/div/button", "xpath:position"]
+        ["id=194", "id"],
+        ["css=#\\31 94", "css:finder"],
+        ["xpath=//div[@id='194']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div[2]/div/div[6]/div", "xpath:idRelative"],
+        ["xpath=//div[4]/div/div/div/div[2]/div/div[6]/div", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -875,12 +881,12 @@
       "id": "114bb9b3-372b-4166-8b40-388057add01f",
       "comment": "",
       "command": "click",
-      "target": "xpath=//span[contains(.,'Demog')]",
+      "target": "xpath=//div[@name='div-demog-(2549-rows,-9-columns)']",
       "targets": [
-        ["css=.d4-toggle-button:nth-child(1) > span", "css:finder"],
-        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div/span", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/span", "xpath:position"],
-        ["xpath=//span[contains(.,'Demog')]", "xpath:innerText"]
+        ["css=.d4-toggle-button", "css:finder"],
+        ["xpath=//div[@name='div-demog-(2549-rows,-9-columns)']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/div", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -1029,12 +1035,11 @@
       "id": "b31f12df-f003-4b5e-a751-9db75cb0b975",
       "comment": "",
       "command": "type",
-      "target": "css=input.type-ahead-input",
+      "target": "css=.ui-input-editor:nth-child(1)",
       "targets": [
-        ["css=input.type-ahead-input", "css"],
-        ["css=.type-ahead-input", "css:finder"],
+        ["css=.ui-input-editor:nth-child(1)", "css:finder"],
         ["xpath=(//input[@type='text'])[2]", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div/div[2]/div/input", "xpath:idRelative"],
+        ["xpath=//div[@id='elementContent']/div/div[2]/div/input", "xpath:idRelative"],
         ["xpath=//div[2]/div/input", "xpath:position"]
       ],
       "value": "Selenium"
