@@ -496,7 +496,7 @@ export function siRnaNucleotideToAxolabsSenseStrand(nucleotides: string) {
     count++;
     if (count < 2) return objForLeftEdge[x];
     if (count == 6 || (count > 7 && count < 11)) return objForSomeIndices[x]
-    if (count == x.length - 1) return x[x.length - 1];
+    if (count == nucleotides.length - 1) return 'a';
     return obj[x];
   });
 }
@@ -512,7 +512,8 @@ export function siRnaNucleotideToAxolabsAntisenseStrand(nucleotides: string) {
   const obj: {[index: string]: string} = {"A": "a", "U": "u", "G": "g", "C": "c"};
   return nucleotides.replace(/[AUGC]/g, function (x: string) {
     count++;
-    if (count < 1 || (count > 20 && count < 22)) return objForSmallLinkages[x];
+    if (count > 19 && count < 22) return objForSmallLinkages[x];
+    if (count == 0) return 'us';
     if (count == 1) return objForBigLinkages[x];
     return (count == 5 || count == 7 || count == 8 || count == 13 || count == 15) ? objForSomeIndices[x] : obj[x];
   });
