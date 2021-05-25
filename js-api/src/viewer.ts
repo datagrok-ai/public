@@ -7,7 +7,7 @@ import {_toJson} from "./utils";
 import {toJs} from "./wrappers";
 import {StreamSubscription, __obs, EventData} from "./events";
 import * as rxjs from "rxjs";
-import {Grid, Rect} from "./grid";
+import {Grid, Point, Rect} from "./grid";
 
 declare let DG: any;
 declare let ui: any;
@@ -331,6 +331,9 @@ export class ScatterPlotViewer extends Viewer {
 
   get viewport(): Rect { return toJs(api.grok_ScatterPlotViewer_Get_Viewport(this.d)); }
   set viewport(viewport: Rect) { api.grok_ScatterPlotViewer_Set_Viewport(this.d, viewport.x, viewport.y, viewport.width, viewport.height); }
+
+  /** Converts world coords to screen coords */
+  coordsToScreen(x: number, y: number): Point { return toJs(api.grok_ScatterPlotViewer_CoordsToScreen(this.d, x, y)); }
 
   get onZoomed(): rxjs.Observable<Rect> { return this.onEvent('d4-scatterplot-zoomed'); }
   get onViewportChanged(): rxjs.Observable<Rect> { return this.onEvent('d4-viewport-changed'); }
