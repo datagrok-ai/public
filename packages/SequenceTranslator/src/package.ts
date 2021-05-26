@@ -3,6 +3,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import {defineAxolabsPattern} from "./defineAxolabsPattern";
+
 export let _package = new DG.Package();
 
 const undefinedInputSequence: string = "Type of input sequence is undefined";
@@ -585,55 +587,9 @@ export function gcrsToABI(nucleotides: string) {
   });
 }
 
-//name: flexibleNucleotidesToAxolabs
+//name: defineAxolabsPattern
 //input: string nucleotides {semType: RNA nucleotides}
 //output: string result {semType: Axolabs}
-export function flexibleNucleotidesToAxolabs(nucleotides: string) {
-  const choices = ["2'OMe RNA", "2'Fluoro RNA", "UNA"];
-
-  const ss5 = ui.divText("SS-5'");
-  const as3 =  ui.divText("AS-3'");
-  const three = ui.divText("3'");
-  const five = ui.divText("5'");
-  ss5.style.marginTop = '26px';
-  as3.style.marginTop = '20px';
-  three.style.marginTop = '26px';
-  five.style.marginTop = '20px';
-
-  let senseStrand = ui.div(),
-    antiSenseStrand = ui.div(),
-    initial = ui.divH([]);
-
-  for (let i = 1; i < 24; i++) { // @ts-ignore
-    senseStrand.append(ui.divH([ui.choiceInput(i.toString(), "2'OMe RNA", choices), ui.boolInput('', true)]));
-    // @ts-ignore
-    antiSenseStrand.append(ui.divH([ui.choiceInput(i.toString(), "2'OMe RNA", choices), ui.boolInput('', true)]));
-    // @ts-ignore
-    initial.append(ui.divV([ui.divText(i.toString()), ui.boolInput('', true), ui.boolInput('', true), ui.divText((24 - i).toString())]));
-  }
-
-  let inp = ui.divH([
-    ui.divV([
-      ui.h1('Define individual design'),
-      ui.divH([
-        ui.divV([ss5, as3]),
-        initial,
-        ui.divV([three, five])
-      ])
-    ]),
-    ui.divV([
-      ui.h1('Sense Strand'),
-      ui.divH([ui.divText('#'), ui.divText('Modification'), ui.divText('PTO')]),
-      senseStrand
-    ]),
-    ui.divV([
-      ui.h1('Antisense Strand'),
-      ui.divH([ui.divText('#'), ui.divText('Modification'), ui.divText('PTO')]),
-      antiSenseStrand
-    ])
-  ]);
-
-  ui.dialog('Axolabs')
-    .add(inp)
-    .showModal(true);
+export function _defineAxolabsPattern(nucleotides: string): void {
+  return defineAxolabsPattern(nucleotides);
 }
