@@ -333,7 +333,7 @@ export class ScatterPlotViewer extends Viewer {
   set viewport(viewport: Rect) { api.grok_ScatterPlotViewer_Set_Viewport(this.d, viewport.x, viewport.y, viewport.width, viewport.height); }
 
   /** Converts world coords to screen coords */
-  coordsToScreen(x: number, y: number): Point { return toJs(api.grok_ScatterPlotViewer_CoordsToScreen(this.d, x, y)); }
+  worldToScreen(x: number, y: number): Point { return toJs(api.grok_ScatterPlotViewer_WorldToScreen(this.d, x, y)); }
 
   get onZoomed(): rxjs.Observable<Rect> { return this.onEvent('d4-scatterplot-zoomed'); }
   get onViewportChanged(): rxjs.Observable<Rect> { return this.onEvent('d4-viewport-changed'); }
