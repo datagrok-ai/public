@@ -5,6 +5,8 @@ import {Property} from "./entities";
 import {DataFrame} from "./dataframe";
 import {ColorType, Type} from "./const";
 import * as React from "react";
+import * as rxjs from "rxjs";
+import {Rect} from "./grid";
 
 declare let grok: any;
 declare let DG: any;
@@ -1219,4 +1221,9 @@ export class ColumnComboBox extends DartWidget {
   get property(): Property {
     return toJs(api.grok_ColumnComboBox_Get_Property(this.d));
   }
+
+  onEvent(eventId: string): rxjs.Observable<any> {
+    return __obs(eventId, this.d);
+  }
+  get onChanged(): rxjs.Observable<String> { return this.onEvent('d4-column-box-column-changed'); }
 }
