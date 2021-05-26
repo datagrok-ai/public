@@ -11,31 +11,42 @@ export function defineAxolabsPattern(nucleotides: string) {
 
   function updateUiForNewSequenceLength(sequenceLength: number) {
 
-    senseStrand.innerHTML = '';
-    antiSenseStrand.innerHTML = '';
-    defineIndividualDesign.innerHTML = '';
+    senseStrandModification.innerHTML = '';
+    antiSenseStrandModification.innerHTML = '';
+    senseStrandPattern.innerHTML = '';
+    antiSenseStrandPattern.innerHTML = '';
 
+    senseStrandPattern.append(ss5);
+    antiSenseStrandPattern.append(as3);
     for (let i = 0; i < sequenceLength; i++) {
-      senseStrand.append(
+      senseStrandModification.append(
         ui.divH([
-          ui.choiceInput((i + 1).toString(), sequenceBasis.value, choices).root,
-          ui.boolInput('', true).root
-        ])
+          ui.block25([ui.label((i + 1).toString())])!,
+          ui.block50([ui.choiceInput('', sequenceBasis.value, choices).root])!,
+          ui.block25([ui.boolInput('', false).root])!
+        ], {style:{alignItems:"center"}})
       );
-      antiSenseStrand.append(
+      antiSenseStrandModification.append(
         ui.divH([
-          ui.choiceInput((i + 1).toString(), sequenceBasis.value, choices).root,
-          ui.boolInput('', true).root
-        ])
+          ui.block25([ui.label((i + 1).toString())])!,
+          ui.block50([ui.choiceInput('', sequenceBasis.value, choices).root])!,
+          ui.block25([ui.boolInput('', false).root])!
+        ], {style:{alignItems:"center"}})
       );
-      defineIndividualDesign.append(
+      senseStrandPattern.append(
         ui.divV([
-          ui.divText(i.toString()),
-          ui.boolInput('', true).root,
+          ui.divText((i + 1).toString()),
+          ui.boolInput('', true).root
+        ])
+      );
+      senseStrandPattern.append(three);
+      antiSenseStrandPattern.append(
+        ui.divV([
           ui.boolInput('', true).root,
           ui.divText((sequenceLength - i).toString())
         ])
       );
+      antiSenseStrandPattern.append(five);
     }
   }
 
@@ -54,56 +65,71 @@ export function defineAxolabsPattern(nucleotides: string) {
   const three = ui.divText("3'");
   const five = ui.divText("5'");
   ss5.style.marginTop = '26px';
-  as3.style.marginTop = '20px';
+  as3.style.marginTop = '10px';
   three.style.marginTop = '26px';
-  five.style.marginTop = '20px';
+  five.style.marginTop = '10px';
 
-  let senseStrand = ui.div(),
-    antiSenseStrand = ui.div(),
-    defineIndividualDesign = ui.divH([]);
+  let senseStrandModification = ui.div(),
+    antiSenseStrandModification = ui.div(),
+    senseStrandPattern = ui.divH([]),
+    antiSenseStrandPattern = ui.divH([]);
 
   let sequenceLength = ui.intInput('Enter sequence length', defaultSequenceLength, (v: number) => updateUiForNewSequenceLength(v));
   let sequenceBasis = ui.choiceInput('Sequence basis', defaultSequenceBasis, choices, (v: string) => updateSequenceBasis(v));
   let fullyPto = ui.boolInput('Fully PTO', false);
-  let createAsStrand = ui.boolInput('Create AS strand', true);
+  let createAsStrand = ui.boolInput('Create AS strand', true, (v: boolean) => {
+    antiSenseStrandSection.hidden = (!v);
+    antiSenseStrandPattern.hidden = (!v);
+  });
   let threeModification = ui.stringInput("Addidional 3' modification", "", () => grok.shell.info('Coming soon'));
-  let fiveModification = ui.stringInput("Addidional 3' modification", "", () => grok.shell.info('Coming soon'));
+  let fiveModification = ui.stringInput("Addidional 5' modification", "", () => grok.shell.info('Coming soon'));
 
   updateUiForNewSequenceLength(defaultSequenceLength);
 
-  let inp = ui.divH([
-    ui.divV([
-      ui.h1('Define individual design'),
-      ui.divH([
-        sequenceLength.root,
-        ui.button('Specify duplex', () => grok.shell.info('Coming soon'))
-      ]),
-      sequenceBasis.root,
-      fullyPto.root,
-      createAsStrand.root,
-      ui.divH([
-        ui.divV([ss5, as3]),
-        defineIndividualDesign,
-        ui.divV([three, five])
-      ]),
-      ui.divH([
-        ui.button('Define pattern', () => grok.shell.info('Coming soon')),
-        ui.button('Convert sequences', () => grok.shell.info('Coming soon')),
-        ui.button('Save pattern', () => grok.shell.info('Coming soon'))
-      ])
+  let defineIndividualDesign = ui.divV([
+    ui.h1('Define individual design'),
+    ui.divH([
+      sequenceLength.root,
+      ui.button('Specify duplex', () => grok.shell.info('Coming soon'))
     ]),
-    ui.divV([
-      ui.h1('Sense Strand'),
-      ui.divH([ui.divText('#'), ui.divText('Modification'), ui.divText('PTO')]),
-      senseStrand,
-      threeModification.root,
-      fiveModification.root
-    ]),
-    ui.divV([
-      ui.h1('Antisense Strand'),
-      ui.divH([ui.divText('#'), ui.divText('Modification'), ui.divText('PTO')]),
-      antiSenseStrand
+    sequenceBasis.root,
+    fullyPto.root,
+    createAsStrand.root,
+    senseStrandPattern,
+    antiSenseStrandPattern,
+    ui.divH([
+      ui.button('Define pattern', () => grok.shell.info('Coming soon')),
+      ui.button('Convert sequences', () => grok.shell.info('Coming soon')),
+      ui.button('Save pattern', () => grok.shell.info('Coming soon'))
     ])
+  ]);
+
+  let senseStrandSection = ui.divV([
+    ui.h1('Sense Strand'),
+    ui.divH([
+      ui.block25([ui.divText('#')])!,
+      ui.block50([ui.divText('Modification')])!,
+      ui.block25([ui.divText('PTO')])!
+    ]),
+    senseStrandModification,
+    threeModification.root,
+    fiveModification.root
+  ], {style:{marginLeft: "30px", width: "250px"}});
+
+  let antiSenseStrandSection = ui.divV([
+    ui.h1('Antisense Strand'),
+    ui.divH([
+      ui.block25([ui.divText('#')])!,
+      ui.block50([ui.divText('Modification')])!,
+      ui.block25([ui.divText('PTO')])!
+    ]),
+    antiSenseStrandModification
+  ], {style:{marginLeft: "30px", width: "250px"}});
+
+  let inp = ui.divH([
+    defineIndividualDesign,
+    senseStrandSection,
+    antiSenseStrandSection
   ]);
 
   ui.dialog('Axolabs')
