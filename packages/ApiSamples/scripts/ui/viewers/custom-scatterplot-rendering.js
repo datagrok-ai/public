@@ -6,7 +6,7 @@ function renderLines (sp) {
     ctx.strokeStyle = 'black';
 
     for (let i = 0; i < sp.dataFrame.rowCount; i++) {
-        let point = sp.coordsToScreen(sp.dataFrame.get('#0', i), sp.dataFrame.get('#1', i));
+        let point = sp.worldToScreen(sp.dataFrame.get('#0', i), sp.dataFrame.get('#1', i));
         ctx.lineTo(point.x, point.y);
     }
 
@@ -19,4 +19,4 @@ let sp = DG.Viewer.scatterPlot(grok.data.demo.randomWalk(20, 2), {
 });
 grok.shell.newView('View', [sp]);
 
-sp.onEvent('d4-after-draw-scene').subscribe(_ => renderLines(sp));
+sp.onAfterDrawScene.subscribe(_ => renderLines(sp));
