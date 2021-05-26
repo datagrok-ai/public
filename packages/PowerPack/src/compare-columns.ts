@@ -18,21 +18,31 @@ function showOutputs(t1: { value: string; }, t2: { value: string; }, c1: DG.Inpu
       if (col1.getString(i) == col2.getString(i))
         counter++;
 
-    let link = ui.element('a');
-    link.textContent = 'Select';
-    link.onclick = (ev) => {selection.init((i) => col1.getString(i) != col2.getString(i))};
+    let selectButton = ui.element('a');
+    selectButton.textContent = 'Select';
+    selectButton.onclick = (ev) => {selection.init((i) => col1.getString(i) != col2.getString(i))};
+
+    let addColumnButton = ui.button('Add Column', () => {
+      grok.shell.table(t1.value).columns.addNewCalculated(
+        c1.value + ' == ' + c2.value,
+        '${' + col1.name + '} == ${' + col2.name + '}',
+        DG.TYPE.BOOL,
+        false
+      ).then((_) => {if (t1.value != t2.value) grok.shell.info('Column was added to ' + t1.value)});
+    });
 
     let matched = ui.divText('Matched: ' + counter.toString(), {});
-    let mismatched = ui.divH([ui.divText('Mismatched: ' + (selection.length - counter).toString()), link]);
+    let mismatched = ui.divH([ui.divText('Mismatched: ' + (selection.length - counter).toString()), selectButton]);
 
     mismatched.style.marginLeft = '152px';
     matched.style.marginTop = '10px';
     matched.style.marginLeft = '152px';
-    link.style.marginLeft = '4px';
+    selectButton.style.marginLeft = '4px';
     outputs.append(
       ui.divV([
         matched,
-        mismatched
+        mismatched,
+        addColumnButton
       ])
     );
 
