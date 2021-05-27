@@ -25,11 +25,16 @@ export function defineAxolabsPattern(nucleotides: string) {
 
   function updateSsPattern() {
     ssPattern.innerHTML = '';
+    ssAvailabilityStatuses = (sequenceLength.value > ssAvailabilityStatuses.length) ?
+      ssAvailabilityStatuses.concat(Array(sequenceLength.value - ssAvailabilityStatuses.length).fill(ui.boolInput('', true))) :
+      ssAvailabilityStatuses.slice(0, sequenceLength.value);
     const ss5 = ui.divText("SS-5'");
     ss5.style.marginTop = '26px';
     ssPattern.append(ss5);
     for (let i = 0; i < sequenceLength.value; i++) {
-      ssAvailabilityStatuses[i] = ui.boolInput('', ssAvailabilityStatuses[i].value, (v: boolean) => grok.shell.info(v));
+      ssAvailabilityStatuses[i] = ui.boolInput('', ssAvailabilityStatuses[i].value, (v: boolean) => {
+        alert(ssModificationItems.children)
+      });
       ssPattern.append(
         ui.divV([
           ui.divText((i + 1).toString()),
@@ -44,6 +49,9 @@ export function defineAxolabsPattern(nucleotides: string) {
 
   function updateAsPattern() {
     asPattern.innerHTML = '';
+    asAvailabilityStatuses = (sequenceLength.value > asAvailabilityStatuses.length) ?
+      asAvailabilityStatuses.concat(Array(sequenceLength.value - asAvailabilityStatuses.length).fill(ui.boolInput('', true))) :
+      asAvailabilityStatuses.slice(0, sequenceLength.value);
     const as3 = ui.divText("AS-3'");
     as3.style.marginTop = '10px';
     asPattern.append(as3);
@@ -52,7 +60,7 @@ export function defineAxolabsPattern(nucleotides: string) {
       asPattern.append(
         ui.divV([
           asAvailabilityStatuses[i],
-          ui.divText((i + 1).toString())
+          ui.divText((sequenceLength.value - i).toString())
         ])
       );
     }
@@ -63,6 +71,12 @@ export function defineAxolabsPattern(nucleotides: string) {
 
   function updateAsModification() {
     asModificationItems.innerHTML = '';
+    asPtoStatuses = (sequenceLength.value > asPtoStatuses.length) ?
+      asPtoStatuses.concat(Array(sequenceLength.value - asPtoStatuses.length).fill(fullyPto)) :
+      asPtoStatuses.slice(0, sequenceLength.value);
+    asBaseStatuses = (sequenceLength.value > asBaseStatuses.length) ?
+      asBaseStatuses.concat(Array(sequenceLength.value - asBaseStatuses.length).fill(sequenceBase)) :
+      asBaseStatuses.slice(0, sequenceLength.value);
     for (let i = 0; i < sequenceLength.value; i++) {
       asPtoStatuses[i] = ui.boolInput('', asPtoStatuses[i].value);
       asBaseStatuses[i] = ui.choiceInput('', asBaseStatuses[i].value, baseChoices);
@@ -78,6 +92,12 @@ export function defineAxolabsPattern(nucleotides: string) {
 
   function updateSsModification() {
     ssModificationItems.innerHTML = '';
+    ssPtoStatuses = (sequenceLength.value > ssPtoStatuses.length) ?
+      ssPtoStatuses.concat(Array(sequenceLength.value - ssPtoStatuses.length).fill(fullyPto)) :
+      ssPtoStatuses.slice(0, sequenceLength.value);
+    ssBaseStatuses = (sequenceLength.value > ssBaseStatuses.length) ?
+      ssBaseStatuses.concat(Array(sequenceLength.value - ssBaseStatuses.length).fill(sequenceBase)) :
+      ssBaseStatuses.slice(0, sequenceLength.value);
     for (let i = 0; i < sequenceLength.value; i++) {
       ssPtoStatuses[i] = ui.boolInput('', ssPtoStatuses[i].value);
       ssBaseStatuses[i] = ui.choiceInput('', ssBaseStatuses[i].value, baseChoices);
