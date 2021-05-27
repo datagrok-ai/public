@@ -137,6 +137,14 @@ export class Func extends Entity {
   prepare(parameters: object = {}): FuncCall {
     return toJs(api.grok_Func_Prepare(this.d, parameters));
   };
+
+  async apply(parameters: object = {}): Promise<any> {
+    return (await this.prepare(parameters).call()).getOutputParamValue();
+  }
+
+  static find(params: { package: string, name: string, tags: string[], returnType: string}): Func[] {
+    return api.Func_Find( params.package, params.name, params.tags, params.returnType);
+  }
 }
 
 /** Represents a project */
