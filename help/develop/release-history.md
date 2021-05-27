@@ -1,6 +1,37 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-05-27 Dev build 0.92.5
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.5`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Help: Ordering in chapters 
+* DevTools: add the `Snippets` pane (WIP)
+* Dialog should have ui-panel class 
+* Javascript vectorization 
+* SequenceTranslator: Conversion to Axolabs sense/antisense strands 
+* (Bug) Radiobutton throws exception when created 
+* DeleteConnectionCache harmonization 
+* Code cleanup 
+* Function View (WIP)
+* PowerPack: Compare Columns CSS fixes 
+* Fix UI tests (WIP)
+* Selenium: Add ui-test for Chord viewer 
+* SequenceTranslator: flexible Axolabs sequence conversion (WIP)
+* JS API: add scatterPlot.worldToScreen() method 
+* PowerPack: Compare Columns: Add Column button 
+* JS API: add events to the ColumnComboBox 
+* Fixed analyzer warning 
+
+
 # 2021-05-24 Dev build 0.92.4
 
 ## Latest Docker Images
