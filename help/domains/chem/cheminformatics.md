@@ -129,16 +129,21 @@ References:
 
 ## Chemical dataset structural curation
 
-To assure the quality of subsequent analysis and predictive models development the Datagrok provides convenient tools for chemical dataset curation. This curation assumes that one might modify the dataset for specific purposes and process the situations when equal chemical entities have different representations. The latter interfere with the representation of the molecule in descriptor space and may lead to inconsistent analysis results and non-robust models.
+To assure the quality of subsequent analysis and predictive models development,
+Datagrok provides convenient tools for chemical dataset curation. This curation 
+assumes that one might modify the dataset for specific purposes and process the
+situations when equal chemical entities have different representations. The latter
+interferes with the representation of the molecule in descriptor space and may lead
+to inconsistent analysis results and non-robust models.
 
-Curation tools include but are not limited to:
+Curation tools include, but are not limited to:
 * kekulization
 * normalization
 * neutralization
 * tautomerization
 * selection of the main component
 
-See [Chemical dataset curation](chem-curate.md) for more details and a demo with curation examples.
+See [Chemical dataset curation](chem-curate.md) for more details, and a demo with curation examples.
 
 References:
 * [Chemical structures curation in cheminformatics](https://pubs.acs.org/doi/10.1021/ci100176x)
