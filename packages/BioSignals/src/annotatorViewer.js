@@ -26,7 +26,11 @@ export class AnnotatorViewer extends DG.JsViewer {
 
   onTableAttached() {
     let signalValues = this.dataFrame.columns.byIndex(0);
-    const samplingPeriodInMilliseconds = 1000 / signalValues.getTag('samplingFrequency');
+
+    const samplingFrequency = parseFloat(signalValues.getTag('samplingFrequency'));
+    const samplingPeriodInMilliseconds = 1000 / samplingFrequency;
+    const secondsToDisplay = 10;
+    const defaultZoomWindowLength = Math.min(secondsToDisplay * samplingFrequency * 100 / signalValues.length, signalValues.length);
     this.timeOfFirstSample = new Date('Jan 01 1970 00:00:00 GMT+0000');
 
     let data = new Array(signalValues.length);
@@ -35,7 +39,7 @@ export class AnnotatorViewer extends DG.JsViewer {
       let now = new Date(base1 += samplingPeriodInMilliseconds);
       data[i] = [
         getTime(now),
-        signalValues.get(i)
+        parseFloat(signalValues.get(i).toFixed(5))
       ];
     }
     if (this.dataFrame.columns.byName('indicesOfRPeak')) {
@@ -50,7 +54,7 @@ export class AnnotatorViewer extends DG.JsViewer {
         now = new Date(base += (indicesOfRPeak[i] - indicesOfRPeak[i - 1]) * samplingPeriodInMilliseconds);
         this.markedPoints[i] = [
           getTime(now),
-          signalValues.get(indicesOfRPeak[i])
+          parseFloat(signalValues.get(indicesOfRPeak[i]).toFixed(5))
         ];
       }
     } else {
@@ -64,11 +68,17 @@ export class AnnotatorViewer extends DG.JsViewer {
         trigger: 'axis',
         position: function (pt) {
           return [pt[0], '10%'];
+        },
+        formatter: function(params) {
+          params = params[0];
+          let chartdate = 'time: ' + params.value[0].toString().substring(11, 19);
+          let val = '<li style="list-style:none">' + params.marker + 'value: ' + '&nbsp;&nbsp;' + params.value[1] + '</li>';
+          return chartdate + val;
         }
       },
       title: {
         left: 'center',
-        text: 'Input (' + signalValues.getTag('samplingFrequency') + ' Hz)',
+        text: signalValues.getTag('displayTitle') ? 'Input (' + signalValues.getTag('samplingFrequency') + ' Hz)' : '',
       },
       toolbox: {
         feature: {
@@ -85,7 +95,7 @@ export class AnnotatorViewer extends DG.JsViewer {
         axisLabel: {
           formatter: (function(value) {
             value = new Date(value);
-            return (value.getSeconds() < 10) ? value.getMinutes() + ":0" + value.getSeconds() : value.getMinutes() + ":" + value.getSeconds();
+            return (value.getUTCSeconds() < 10) ? value.getUTCMinutes() + ":0" + value.getUTCSeconds() : value.getUTCMinutes() + ":" + value.getUTCSeconds();
           })
         }
       },
@@ -97,11 +107,11 @@ export class AnnotatorViewer extends DG.JsViewer {
         {
           type: 'inside',
           start: 0,
-          end: 10
+          end: defaultZoomWindowLength
         },
         {
           start: 0,
-          end: 10
+          end: defaultZoomWindowLength
         }
       ],
       series: [
@@ -110,17 +120,18 @@ export class AnnotatorViewer extends DG.JsViewer {
           symbol: 'none',
           data: data
         },
-        {
-          type: 'scatter',
-          symbolSize: 10,
-          symbol: 'circle',
-          data: this.markedPoints
-        }
-      ]
+        // {
+        //   type: 'scatter',
+        //   symbolSize: 10,
+        //   symbol: 'circle',
+        //   data: this.markedPoints
+        // }
+      ],
+      animation: false
     };
 
     this.chart.setOption(this.option);
-    this.render(samplingPeriodInMilliseconds);
+    //this.render(samplingPeriodInMilliseconds);
   }
 
   render(samplingPeriodInMilliseconds) {
@@ -178,7 +189,8 @@ export class AnnotatorViewer extends DG.JsViewer {
               symbol: 'circle',
               data: this.markedPoints
             }
-          ]
+          ],
+          animation: false
         })
       }
     })

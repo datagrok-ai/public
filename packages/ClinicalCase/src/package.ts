@@ -39,7 +39,7 @@ let submissionValues = [];
 //tags: panel, widgets
 //input: dataframe df
 //output: widget result
-//condition: df.tags.get("sdtm")
+//condition: df.tags.get("sdtm") == "true"
 export function sdtmSummaryPanel(df: DG.DataFrame): DG.Widget {
   let domain = df.getTag('sdtm-domain');
   let domainUpper = domain.toUpperCase();
@@ -61,7 +61,7 @@ export function sdtmSummaryPanel(df: DG.DataFrame): DG.Widget {
 //tags: panel, widgets
 //input: column varCol
 //output: widget result
-//condition: t.tags.get("sdtm")
+//condition: t.tags.get("sdtm") == "true"
 export function sdtmVariablePanel(varCol: DG.Column): DG.Widget {
   let domain = meta.domains[varCol.dataFrame.getTag('sdtm-domain')];
   let variable = domain[varCol.name];
@@ -128,7 +128,7 @@ export async function clinicalCaseInit(): Promise<void> {
     let t = args.args.dataFrame;
     let domain = meta.domains[t.name.toLowerCase()];
     if (domain) {
-      t.setTag('sdtm', true);
+      t.setTag('sdtm', 'true');
       t.setTag('sdtm-domain', t.name.toLowerCase());
       for (let variableName in domain)
         if (t.columns.contains(variableName)) {
@@ -138,7 +138,10 @@ export async function clinicalCaseInit(): Promise<void> {
     }
 
     if (Object.keys(links).every(key => grok.shell.tableByName(key))) {
-      grok.shell.topMenu.group('Clin').item('Timelines', () => clinicalCaseTimelines());
+      let clinMenu = grok.shell.topMenu.group('Clin');
+      if (!clinMenu.find('Timelines')) clinMenu.item('Timelines', () => clinicalCaseTimelines());
+      if (!clinMenu.find('Study Summary')) clinMenu.item('Study Summary', () => showStudySummary());
+      if (!clinMenu.find('Patient Profile')) clinMenu.item('Patient Profile', () => showPatientProfile());
     }
   });
 }
@@ -169,4 +172,83 @@ export function clinicalCaseTimelines(): void {
 
   let v = grok.shell.addTableView(result);
   v.addViewer('TimelinesViewer');
+}
+
+function clearStdView(): void {
+  const windows = grok.shell.windows;
+  windows.showToolbox = false;
+  windows.showProperties = false;
+  windows.showConsole = false;
+  windows.showHelp = false;
+}
+
+//name: showStudySummary
+export function showStudySummary(): void {
+  let dm = grok.shell.tableByName('dm');
+  let bc = DG.Viewer.barChart(dm, { split: 'SEX', stack: 'ARMCD' });
+  let bp = DG.Viewer.boxPlot(dm, {
+    labelOrientation: 'Horz',
+    showStatistics: true,
+    value: 'AGE',
+    category: 'ARM'
+  });
+
+  clearStdView();
+
+  let v = grok.shell.newView('Study Summary', [
+    ui.h1('Study Summary Page'),
+    ui.divH([
+      ui.block25([ui.h2('Sex Distribution'), bc.root]),
+      ui.block75([ui.h2('Age Statistics'), bp.root]),
+    ], { style: { width: '100%' } }),
+  ]);
+}
+
+//name: showPatientProfile
+export function showPatientProfile(): void {
+  let dm = grok.shell.tableByName('dm');
+  let idx = dm.currentRow.idx;
+  let subjIdCol = dm.col('USUBJID');
+  let summaryCols = dm.columns.byNames(['AGE', 'SEX']);
+  let summaryMap = Object.fromEntries(summaryCols.map(col => {
+    return [col.name, col.get(idx)];
+  }));
+
+  let onValueChanged = (id: string) => {
+    if (!subjIdCol) return;
+
+    for (let i = 0, len = subjIdCol.length; i < len; i++) {
+      if (subjIdCol.get(i) === id) {
+        summaryMap = Object.fromEntries(summaryCols.map(col => {
+          return [col.name, col.get(i)];
+        }));
+        break;
+      }
+      if (i === (len - 1)) {
+        Object.keys(summaryMap).forEach(k => {
+          summaryMap[k] = '';
+        });
+      }
+    }
+
+    card.removeChild($(card).find('table')[0]);
+    card.appendChild(ui.tableFromMap(summaryMap));
+  };
+
+  let userInput = ui.stringInput('', subjIdCol.get(idx), onValueChanged);
+  let searchBox = ui.divH([ui.iconFA('users', null), userInput.root], {
+    style: { 'align-items': 'center', 'margin-left': '8px' },
+  });
+  let card = ui.card(ui.tableFromMap(summaryMap));
+  let mainDiv = ui.divV([
+    searchBox,
+    card,
+  ]);
+
+  clearStdView();
+
+  let v = grok.shell.newView('Patient Profile', [
+    ui.h1('Patient Profile Page'),
+    mainDiv,
+  ]);
 }

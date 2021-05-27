@@ -1,6 +1,418 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-05-27 Dev build 0.92.5
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.5`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Help: Ordering in chapters 
+* DevTools: add the `Snippets` pane (WIP)
+* Dialog should have ui-panel class 
+* Javascript vectorization 
+* SequenceTranslator: Conversion to Axolabs sense/antisense strands 
+* (Bug) Radiobutton throws exception when created 
+* DeleteConnectionCache harmonization 
+* Code cleanup 
+* Function View (WIP)
+* PowerPack: Compare Columns CSS fixes 
+* Fix UI tests (WIP)
+* Selenium: Add ui-test for Chord viewer 
+* SequenceTranslator: flexible Axolabs sequence conversion (WIP)
+* JS API: add scatterPlot.worldToScreen() method 
+* PowerPack: Compare Columns: Add Column button 
+* JS API: add events to the ColumnComboBox 
+* Fixed analyzer warning 
+
+
+# 2021-05-24 Dev build 0.92.4
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.4`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* PivotViewer 
+* (Bug) Miniconda hangs CVM builds (WIP)
+* DevTools: add the `Snippets` pane (WIP)
+* PowerPack: Compare Columns fixes 
+
+
+# 2021-05-22 Dev build 0.92.3
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.3`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* (Bug) Miniconda hangs CVM builds (WIP)
+* Dataframe: Detect column max significant digits in CSV loading (WIP)
+* PowerPack: rewrite Compare Columns to TypeScript 
+* Grid: automatically pick up cell type from data frame 
+* JS API: Stats.histogramsByCategories 
+* Statistics: Multi-histograms (WIP)
+* Made Widget.root non-nullable. WIP. 
+* ColumnsCorrelationMeta 
+* Correlation plot: on cell click, show the corresponding scatter plot in the property panel 
+* Histogram: multiple histograms mode (WIP)
+* Dialog should have ui-panel class 
+
+
+# 2021-05-21 Dev build 0.92.2
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.2`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* PowerPack: rewrite Compare Columns to TypeScript 
+* (Bug) Log export hands 
+* Help: Ordering in chapters (WIP)
+* Grid: default column width doesn't respect format 
+* (Bug) Grok connect: java.lang.NullPointerException with pattern parameter 
+* Dataframe: Detect column max significant digits in CSV loading (WIP)
+
+
+# 2021-05-21 Dev build 0.92.1
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.1`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* fixes regression in 2D layout alignment of unknown origin 
+* Chem package version 0.9.8, bump. 
+* BioSignals: make initial chart look similar to content of accordion panes 
+* DINQ: Support JSON in WhereSmart method 
+* DevTools: add the `Snippets` pane (WIP)
+* JS API: context is sometimes missing in onAccordionConstructed() 
+* JS API: add Grid.getVisibleCells 
+* Datagrok API and system samples, add cross linking to improve connectivity (WIP)
+* BioSignals: Add url routing for Physionet records 
+* (Bug) JS Samples: to-hierarchy.js example does not work (WIP)
+* NGL viewer (WIP)
+* Scripting: Ability to set custom name for parameter 
+* Scripting: Ability to set postfix for parameter 
+* Scripting: Ability to set postfix for parameter 
+* UI: Ability to set dialog background (WIP)
+* Fixed TS warning 
+* JS: Ability to hide table params from FuncCall editor 
+* Updated public token 
+* (Bug) Core: deepEquals method on Prop class always returns false 
+* Running an ulmo sample in PythonScripts via pip+conda env. 
+* Function editors: open editor with DataFrame parameters even when no tables are open (WIP)
+* Function editors: allow to load input data frames after the dialog is open (WIP)
+* BioSignals: publish connection to Physionet demo files 
+* Fixed warnings 
+* SequenceTranslator: MM12 Sequence Conversion 
+* JS API: add grok.shell.views and grok.shell.tableViews 
+* SequenceTranslator: OP100 Sequence Conversion 
+* Function View (WIP)
+* Power Pack: Compare Columns 
+* Fixed logins in some connections 
+* RepertoireBrowser: MSA tabs (WIP)
+* Add files via upload 
+* Update chem_curator.py 
+* Ability to drop DataConnectionCache (WIP)
+* UsageAnalysis: Added 'users by date' query 
+* (Bug) Molecules not rendered for columns returned by scripts 
+* datagrok-tools: code clean-up 
+* (Bug) DINQ: Permission check on every object type 
+* Fixed analyzer warning 
+* Context commands: "Add derived column..." for multiple columns 
+* Viewer.serialize(includeDefaults): an option to include default values 
+* update "Common Actions" section 
+* (Bug) Events: onViewerAdded and onViewerClosed are sent twice 
+* JS API: add square brackets for columns 
+* Prevent DG disk space usage inside docker container 
+* (Bug) Invalid session message when running second node of DG 
+* (Bug) Exceptions are not handled during DG start 
+* Increase Func socket timeout 
+* Handle AWS "SlowDown" exception 
+* JS API:  add a possibility to use custom ScatterPlot renderer (WIP)
+* ClinicalCase: harmonize menu items 
+* PackageView: added a margin 
+* ClinicalCase: updated description 
+* JS API: add Accordion.removePane() 
+* (Bug) Filters: if multi-value filters are present in the panel, the reset button doesn't work 
+* Updated package description. 
+* SequenceTranslator: ABI Sequence Conversion 
+* JS API: ui.info for a yellow info bar (WIP)
+* ClinicalCase \- a plugin for analyzing SDTM-based clinical studies data (WIP)
+* Update ui.ts 
+* UI: Copyright 2019 -> 2021. 
+* (Bug) Chem: Tile Viewer issue (WIP)
+* GrokML: integrate WASM calls with Dart (pearsonsR for the correlation plot) (WIP)
+* (Bug) JS API: ColumnListProxy:  Cannot convert a Symbol value to a number 
+* Dialog should have ui-panel class 
+* Dataframe: Detect column max significant digits in CSV loading (WIP)
+* Core: Add GrokJsObjectConst 
+* (Bug) Miniconda hangs CVM builds (WIP)
+* JS API: ScatterPlot: add viewport 
+
+
+# 2021-05-10 Stable version 0.92.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.0`
+  *  `docker pull datagrok/datagrok:stable`
+* CVM: 
+  *  `docker pull datagrok/cvm:0.92.0`
+  *  `docker pull datagrok/cvm:stable`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* (Bug) Chem: R-Groups Analysis with client RDKit 
+* Ability to share files 
+* StringColumn: batch editing: copying existing values 
+* Chem: renderer selection checks. 
+* BioSignals: add possibility to change previously chosen filter script 
+* sequenceTranslator: use Ternary Operator when it brings clarity 
+* BioSignals: choose input signal from context(WIP) 
+* BioSignals: choose input signal from context 
+* Proper dependencies 
+* (Bug) Incorrect QNum parsing 
+* do not crash on an empty substructure library 
+* Chem: Robust invalid molecules handling in parallel Substructure Search 
+* PhyloTreeViewer: JS-based phylogenetic tree visualisation (WIP)
+* Bump commons-io from 2.6 to 2.7 in /connectors/grok_connect 
+* Biosignals: add opened tables to App context 
+* Connectors: Redshift: Schema browsing (WIP)
+* Datagrok API and system samples, add cross linking to improve connectivity (WIP)
+* Trellis Plot: ability to enlarge individual in-trellis viewers 
+* NGL viewer (WIP)
+* (Bug) JS API: Columns.byTags does not work 
+* Widgets: MultiValueFilter 
+* removed to LABS 
+* removed src 
+* files moved to LAB 
+* Join tables: Don't include key fields by default 
+* Icon Tooll 
+* BioSignals: added app description, and ui.buttonsInput 
+* BioSignals: rename folders with scripts to 'filters', 'extractors', 'indicators' 
+* (Bug) Queries: "Converting object to an encodable object failed" with dataframe as parameter 
+* Multi-value filters 
+* (Bug) Excel import: an empty column is created as part of the dataframe 
+* BarChart categories error 
+* (Bug) Layouts: Undocked viewer remained after "Close All" 
+* update package icons 
+* update icon 
+* JS API: BitSet: getBuffer() 
+* MSA tabs added 
+* BioSignals | AnnotatorViewer: generate timestamps from sampling frequency 
+* Fixed grok_connect imports 
+* update icons for script packages 
+* change package name 
+* RepertoireBrowser: msa rendering changed 
+* RepertoireBrowser: added debouncing 
+* Updated public toke 
+* BioSignals: add possibility to enter sampling frequency for local files 
+* Update package.png 
+* (Bug) Grid: html cells are not re-rendered after sorting a column 
+* Connectors: add default schema to providers and use as condition for schema browsing  
+* Prevent socket memory consuming 
+* RepertoireBrowser: gff annotations 
+* (Bug) BioSignals: rename input variables of scripts to camelCase to show them properly in the UI (split into words) 
+* Adjusted a unit test to reflect recent changes in the 'join' implementation 
+* Added demo files 
+* RepertoireBrowser: gff annotations (slight changes) 
+* BioSignals: option to delete accordion pane 
+* (Bug) Grok connect: can't connect to MsSQL using TLS10 
+* JBio;Repertoir: Added GFF annotations for protein translation, tuned debounce timeout for better perf 
+* Repertoir: code cleanup 
+* Table View: Columns pane: add search 
+* BioSignals: Preserve "Filtering, Extraction and Indicator" parameters while selecting "Physionet record" or "Column" 
+* BioSignals: fixes and optimizations 
+* BioSignals: AnnotatorViewer: round values and change tooltip formatter 
+* JS API: ui.info for a yellow info bar (WIP)
+* Docs: how to run Chrome with CORS disabled. 
+* Docs: info about Labs repo and importDemoPackages setting for dev.datagrok.ai. 
+* (Bug) Chem: several molecule filters won't work together (WIP)
+* (Bug) Core: default tooltip config is no longer saved with layout 
+* (Bug) JS Viewer: Incorrect height calculation 
+* (Bug) Bar Chart: coloring cannot be disabled 
+* BioSignals: fixes and minor changes 
+* sequenceTranslator: fix of line feed bug; notify if sequence length is too short 
+* (Bug) Filters: adding returns a filter for the column added previously instead of the currently selected one 
+* (Bug) Bar Chart: coloring gets only applied when editing colors in a grid column 
+* Packages: beta flag 
+* Updated public token 
+* Removed debug line 
+* Chord Diagram (WIP)
+* (Bug) Chem: Tile Viewer issue (WIP)
+* sequenceTranslator: use functions to display default translations 
+* datagrok-tools version 4.1.2, bump 
+* (Bug) sequenceTranslator: molecule SVGs append after adding/removing characters to input sequence 
+* (Bug) UI: new view appears below the current 
+* Fixed TS warnings 
+* ClinicalCase: minor adjustments 
+* SequenceTranslator: OP100 Sequence Conversion (WIP)
+* SequenceTranslator: MM12 Sequence Conversion (WIP)
+* RepertoireBrowser: MSA tabs (WIP)
+* Wiki: Harmonization (WIP)
+* Dataframe: Detect column max significant digits in CSV loading (WIP)
+* (Bug) Api Samples: "db-master-details-manual" example does not work 
+* RepertoireBrowser: code formatting 
+* Data: fixed demog redundant precision 
+* JS API: add Column.isVirtual 
+* (Bug) Chord Viewer: the diagram gets rendered twice when the same column is used for source and target 
+* PhyloTreeViewer: node/branch tooltips based on dataframe rows (WIP)
+* JS API: DG.TAGS.FORMAT tag as a preferred way to set the column format 
+* JS API: add event onAccordionConstructed and Accordion.context getter  
+* Minor cleanup 
+* (Bug) BioSignals: error after calling Python filter first 
+* Menu.fromCommand: show command description in the tooltip 
+* (Bug) Viewers: the menu item `Viewer` is not visible in uploaded projects 
+* Menu capitalization harmonization 
+* Crash when adding columns to an existing DF/Grid 
+* Grid: ShowVisibleColumnsInTooltip property 
+* (Bug) Grid: drag-and-drop column reordering: provide drop zones 
+* JS API: tags must only be strings 
+* BioSignals: SequenceTranslator: use ui.info() for yellow information bars in views 
+* Biosignals: parallel zoom for lineCharts (WIP)
+
+
+# 2021-05-05 Dev build 0.91.10
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.91.10`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Chord Diagram (WIP)
+* datagrok-tools version 4.1.2, bump 
+* (Bug) sequenceTranslator: molecule SVGs append after adding/removing characters to input sequence 
+* (Bug) UI: new view appears below the current 
+* Fixed TS warnings 
+* ClinicalCase: minor adjustments 
+* sequenceTranslator: OP100 Sequence Conversion (WIP)
+* Updated public token 
+* sequenceTranslator: MM12 Sequence Conversion (WIP)
+
+
+# 2021-05-04 Dev build 0.91.9
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.91.9`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* BarChart categories error 
+
+
+# 2021-05-04 Dev build 0.91.8
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.91.8`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* PhyloTreeViewer: JS-based phylogenetic tree visualisation (WIP)
+* Packages: beta flag (WIP)
+* Updated public token 
+* Removed debug line 
+* Chord Diagram (WIP)
+* (Bug) Chem: Tile Viewer issue (WIP)
+* sequenceTranslator: use functions to display default translations 
+
+
+# 2021-05-04 Dev build 0.91.7
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.91.7`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* (Bug) Core: default tooltip config is no longer saved with layout (WIP)
+* (Bug) JS Viewer: Incorrect height calculation 
+* (Bug) Bar Chart: coloring cannot be disabled 
+* BioSignals: fixes and minor changes 
+* PhyloTreeViewer: JS-based phylogenetic tree visualisation (WIP)
+* Datagrok API and system samples, add cross linking to improve connectivity (WIP)
+* sequenceTranslator: fix of line feed bug; notify if sequence length is too short 
+* (Bug) Filters: adding returns a filter for the column added previously instead of the currently selected one 
+* (Bug) Bar Chart: coloring gets only applied when editing colors in a grid column 
+
+
+# 2021-05-03 Dev build 0.91.6
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.91.6`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* BioSignals: option to delete accordion pane 
+* (Bug) Grok connect: can't connect to MsSQL using TLS10 (WIP)
+* JBio;Repertoir: Added GFF annotations for protein translation, tuned debounce timeout for better perf 
+* Repertoir: code cleanup 
+* Table View: Columns pane: add search 
+* BioSignals: Preserve "Filtering, Extraction and Indicator" parameters while selecting "Physionet record" or "Column" 
+* PhyloTreeViewer: JS-based phylogenetic tree visualisation (WIP)
+* BioSignals: fixes and optimizations 
+* DataGrok API and system samples, add cross linking to improve connectivity (WIP)
+* BioSignals: AnnotatorViewer: round values and change tooltip formatter 
+* JS API: ui.info for a yellow info bar 
+* Docs: how to run Chrome with CORS disabled. 
+* Docs: info about Labs repo and importDemoPackages setting for dev.datagrok.ai. 
+* (Bug) Chem: several molecule filters won't work together (WIP)
+
+
 # 2021-04-30 Dev build 0.91.5
 
 ## Latest Docker Images

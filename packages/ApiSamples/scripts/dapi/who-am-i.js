@@ -1,4 +1,6 @@
-// prints current user name and picture
+//tags: User
+//help-url: https://datagrok.ai/help/govern/user
+// Prints the current user name and picture
 
 let view = grok.shell.newView('User', []);
 grok.dapi.users.current().then((user) => {

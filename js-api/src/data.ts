@@ -144,6 +144,7 @@ export class Data {
 
   /**
    * Opens the visual table comparison tool.
+   * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/compare-tables}
    * @param {DataFrame} t1
    * @param {DataFrame} t2
    * @param {string[]} keyColumns1

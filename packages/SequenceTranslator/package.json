@@ -4,10 +4,11 @@
   "version": "0.0.1",
   "description": "",
   "dependencies": {
+    "@types/react": "latest",
     "datagrok-api": "latest",
+    "npm": "^7.11.2",
     "ts-loader": "latest",
-    "typescript": "latest",
-    "@types/react": "latest"
+    "typescript": "latest"
   },
   "scripts": {
     "debug-sequencetranslator": "grok publish --rebuild",

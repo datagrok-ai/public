@@ -1,3 +1,5 @@
+//tags: FileInfo
+//help-url: https://datagrok.ai/help/develop/how-to/access-data
 // JS API methods for working with files
 
 (async () => {
@@ -26,11 +28,12 @@
   res = await grok.dapi.files.list('Demo:TestJobs:Files:DemoFiles/geo', recursive, searchPattern);
   console.log(`list: ${res}`);
 
+  // Move files
   await grok.dapi.files.move(['Demo:TestJobs:Files:DemoFiles/testFile.txt'], 'geo');
   res = await grok.dapi.files.exists('Demo:TestJobs:Files:DemoFiles/geo/testFile.txt');
   console.log(`testFile.txt was moved to geo: ${res}`);
 
-
+  // Delete files
   await grok.dapi.files.delete('Demo:TestJobs:Files:DemoFiles/geo/testFile.txt');
   await grok.dapi.files.delete('Demo:TestJobs:Files:DemoFiles/testFile.dat');
 })();

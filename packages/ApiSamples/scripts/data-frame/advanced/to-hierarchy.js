@@ -9,11 +9,11 @@ function toHierarchy(dataFrame, splitByColumnNames) {
   let parentNodes = columns.map(c => null);
 
   for (let i = 0; i < aggregated.rowCount; i++) {
-    let idx = i === 0 ? 0 : columns.findIndex((col) => col.get(i) !== col.get(j));
+    let idx = i === 0 ? 0 : columns.findIndex((col) => col.get(i) !== col.get(i - 1));
 
     for (let colIdx = idx; colIdx < columns.length; colIdx++) {
       let parentNode = colIdx === 0 ? data : parentNodes[colIdx - 1];
-      let node = { name: columns[colIdx].toStr(i) };
+      let node = { name: columns[colIdx].getString(i) };
       parentNodes[colIdx] = node;
       if (!parentNode.children)
         parentNode.children = [];

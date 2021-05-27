@@ -1,10 +1,15 @@
 {
   "name": "#{PACKAGE_NAME_LOWERCASE}",
+  "beta": true,
   "friendlyName": "#{PACKAGE_NAME}",
   "version": "0.0.1",
   "description": "",
   "dependencies": {
     "datagrok-api": "latest"
+  },
+  "devDependencies": {
+    "webpack": "latest",
+    "webpack-cli": "latest"
   },
   "scripts": {
     "debug-#{PACKAGE_NAME_LOWERCASE}": "grok publish --rebuild",

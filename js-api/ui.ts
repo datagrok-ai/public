@@ -147,12 +147,13 @@ export function divText(text: string, options: string | ElementOptions | null = 
  * @param {Function} handler
  * @param {String} tooltipMsg
  * @returns {HTMLElement} */
-export function iconFA(name: string, handler: (this: HTMLElement, ev: MouseEvent) => any, tooltipMsg: string | null = null): HTMLElement {
+export function iconFA(name: string, handler: ((this: HTMLElement, ev: MouseEvent) => any) | null = null, tooltipMsg: string | null = null): HTMLElement {
   let i = element('i');
   i.classList.add('grok-icon');
   i.classList.add('fal');
   i.classList.add(`fa-${name}`);
-  i.addEventListener('click', handler);
+  if (handler !== null)
+    i.addEventListener('click', handler);
   if (tooltipMsg !== null)
     tooltip.bind(i, tooltipMsg);
   return i;
@@ -244,12 +245,42 @@ export function div(children: HTMLElement[] | HTMLElement = [], options: string 
   return d;
 }
 
+export function info(children: HTMLElement[] | HTMLElement | string, header: string | null = null): HTMLDivElement {
+  let root: HTMLDivElement | null = null;
+  let divContent: HTMLElement[] = [];
+  let divActual: HTMLDivElement | null = null;
+  let show = iconFA('lightbulb-exclamation', () => {
+    if (divActual) divActual.style.display = 'block';
+    close.style.display = 'block';
+    show.style.display = 'none';
+  });
+  let close = iconFA('times', () => {
+    if (divActual) divActual.style.display = 'none';
+    close.style.display = 'none';
+    show.style.display = 'block';
+  });
+  if (header !== null && header !== undefined) {
+    divContent.push(h1(header));
+  }
+  if (!Array.isArray(children)) {
+    if (children === null || typeof children === 'string') {
+      children = [divText(children)];
+    } else {
+      children = [children];
+    }
+  }
+  divContent = divContent.concat(children);
+  divActual = div(divContent, 'grok-info-bar');
+  root = div([show, close, divActual], 'grok-info-bar-container');
+  return root;
+}
+
 /** Div flex-box container that positions child elements vertically.
  * @param {object[]} items
  * @param {string | ElementOptions} options
  * @returns {HTMLDivElement} */
 export function divV(items: HTMLElement[], options: string | ElementOptions | null = null): HTMLDivElement {
-  return <HTMLDivElement>_options(api.grok_UI_DivV(items == null ? null : items.map(render), null), options);
+  return <HTMLDivElement>_options(api.grok_UI_DivV(items == null ? null : items.map(render), 'ui-div'), options);
 }
 
 /** Div flex-box container that positions child elements horizontally.
@@ -257,7 +288,7 @@ export function divV(items: HTMLElement[], options: string | ElementOptions | nu
  * @param {string | ElementOptions} options
  * @returns {HTMLDivElement} */
 export function divH(items: HTMLElement[], options: string | ElementOptions | null = null): HTMLDivElement {
-  return <HTMLDivElement>_options(api.grok_UI_DivH(items == null ? null : items.map(render), null), options);
+  return <HTMLDivElement>_options(api.grok_UI_DivH(items == null ? null : items.map(render), 'ui-div'), options);
 }
 
 /** Renders content as a card. */
@@ -399,7 +430,7 @@ export function popupMenu(items: any): void {
   menu.show();
 }
 
-export function inputs(inputs: InputBase[], options: {}) {
+export function inputs(inputs: InputBase[], options: any = null) {
   return form(inputs, options);
 }
 
@@ -442,8 +473,8 @@ export function moleculeInput(name: string, value: string, onValueChanged: Funct
   return new InputBase(api.grok_MoleculeInput(name, value), onValueChanged);
 }
 
-export function columnInput(name: string, table: DataFrame, value: Column, onValueChanged: Function | null = null): InputBase {
-  return new InputBase(api.grok_ColumnInput(name, table.d, value.d), onValueChanged);
+export function columnInput(name: string, table: DataFrame, value: Column | null, onValueChanged: Function | null = null): InputBase {
+  return new InputBase(api.grok_ColumnInput(name, table.d, value?.d), onValueChanged);
 }
 
 export function columnsInput(name: string, table: DataFrame, onValueChanged: Function | null = null): InputBase {

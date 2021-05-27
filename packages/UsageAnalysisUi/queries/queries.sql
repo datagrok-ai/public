@@ -209,3 +209,16 @@ join test_scenario ts on ts.id = ta.scenario_id
 where @date(ta.date) and ts.type = 'manual'
 order by ta.date desc
 --end
+
+
+--name: users by date
+--input: string date { pattern: datetime }
+--connection: TestTrack
+select u.first_name, u.last_name, date(e.event_time)
+from events e
+join users_sessions us on us.id = e.session_id
+join users u on u.id = us.user_id
+where u.first_name != 'System' and e.event_time is not null
+group by u.first_name, u.last_name, date(e.event_time)
+order by date(event_time) desc
+--end

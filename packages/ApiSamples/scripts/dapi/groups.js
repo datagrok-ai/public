@@ -1,3 +1,5 @@
+//tags: Group
+//help-url: https://datagrok.ai/help/govern/group
 async function groupsTest() {
 
   // Get list of groups named "demo"

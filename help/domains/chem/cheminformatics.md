@@ -127,6 +127,27 @@ more details and a demo of building and applying a model.
 References:
 * [Machine learning in chemoinformatics and drug discovery](https://www.sciencedirect.com/science/article/pii/S1359644617304695)
 
+## Chemical dataset structural curation
+
+To assure the quality of subsequent analysis and predictive models development,
+Datagrok provides convenient tools for chemical dataset curation. This curation 
+assumes that one might modify the dataset for specific purposes and process the
+situations when equal chemical entities have different representations. The latter
+interferes with the representation of the molecule in descriptor space and may lead
+to inconsistent analysis results and non-robust models.
+
+Curation tools include, but are not limited to:
+* kekulization
+* normalization
+* neutralization
+* tautomerization
+* selection of the main component
+
+See [Chemical dataset curation](chem-curate.md) for more details, and a demo with curation examples.
+
+References:
+* [Chemical structures curation in cheminformatics](https://pubs.acs.org/doi/10.1021/ci100176x)
+
 ## Molecule identifier conversions
 
 Grok lets users easily and efficiently convert molecule identifiers between different 

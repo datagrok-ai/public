@@ -5,9 +5,9 @@ import {DateTime, Property} from "./entities";
 import {ObjectPropertyBag, Widget} from "./widgets";
 import {_toJson} from "./utils";
 import {toJs} from "./wrappers";
-import {StreamSubscription, __obs} from "./events";
+import {StreamSubscription, __obs, EventData} from "./events";
 import * as rxjs from "rxjs";
-import { Grid } from "./grid";
+import {Grid, Point, Rect} from "./grid";
 
 declare let DG: any;
 declare let ui: any;
@@ -51,7 +51,7 @@ export class Viewer extends Widget {
 
   /** @constructs Viewer */
   constructor(d: any) {
-    super();
+    super(api.grok_Viewer_Root(d));
     this.d = d;
 
     /** @member {ObjectPropertyBag} */
@@ -64,7 +64,7 @@ export class Viewer extends Widget {
    * @param options
    * @returns {Viewer} */
   static fromType(viewerType: ViewerType, table: DataFrame, options: object | null = null): Viewer {
-    return new Viewer(api.grok_Viewer_FromType(viewerType, table.d, _toJson(options)));
+    return toJs(api.grok_Viewer_FromType(viewerType, table.d, _toJson(options)));
   }
 
   static getViewerTypes(): ViewerType[] {
@@ -80,11 +80,15 @@ export class Viewer extends Widget {
   }
 
   /** 
-   * Gets viewer options. See also {@link getOptions}
+   * Gets the serialized viewer options. [includeDefaults] flag specifies whether the
+   * properties with the defaults values should be returned. Not including default
+   * properties makes it more clean and efficient for serialization purposes.
+   *
+   * See also {@link setOptions}
    *  Sample: https://public.datagrok.ai/js/samples/ui/viewers/types/scatter-plot
    *  @returns {object} */
-  getOptions(): {type: ViewerType} {
-    return JSON.parse(api.grok_Viewer_Serialize(this.d));
+  getOptions(includeDefaults: boolean = false): {type: ViewerType} {
+    return JSON.parse(api.grok_Viewer_Serialize(this.d, includeDefaults));
   }
 
   getInfo(): object {
@@ -150,7 +154,7 @@ export class Viewer extends Widget {
   }
 
   static scatterPlot(t: DataFrame, options: object | null = null): Viewer {
-    return new Viewer(api.grok_Viewer_ScatterPlot(t.d, _toJson(options)));
+    return new ScatterPlotViewer(api.grok_Viewer_ScatterPlot(t.d, _toJson(options)));
   }
 
   static lineChart(t: DataFrame, options: object | null = null): Viewer {
@@ -190,12 +194,8 @@ export class JsViewer extends Widget {
 
   /** @constructs JsViewer */
   constructor() {
-    super();
+    super(ui.box());
 
-    /** @type {HTMLElement} */
-    this.root = ui.box();
-
-    /** @type {DataFrame} */
     this.dataFrame = null;
 
     /** @type {StreamSubscription[]} */
@@ -309,4 +309,33 @@ export class JsViewer extends Widget {
   dateTime(propertyName: ViewerPropertyType, defaultValue: DateTime | null = null, options: {} | null = null): DateTime {
     return this.addProperty(propertyName, TYPE.DATE_TIME, defaultValue, options);
   }
+}
+
+export class ScatterPlotViewer extends Viewer {
+  constructor(d: any) {
+    super(d);
+  }
+
+  /** Row hit test */
+  hitTest(x: number, y: number): number {
+    return api.grok_ScatterPlotViewer_HitTest(this.d, x, y);
+  }
+
+  zoom(x1: number, y1: number, x2: number, y2: number) {
+    api.grok_ScatterPlotViewer_Zoom(this.d, x1, y1, x2, y2);
+  }
+
+  get viewBox(): Rect { return toJs(api.grok_ScatterPlotViewer_Get_ViewBox(this.d)); }
+  get xAxisBox(): Rect { return toJs(api.grok_ScatterPlotViewer_Get_XAxisBox(this.d)); }
+  get yAxisBox(): Rect { return toJs(api.grok_ScatterPlotViewer_Get_YAxisBox(this.d)); }
+
+  get viewport(): Rect { return toJs(api.grok_ScatterPlotViewer_Get_Viewport(this.d)); }
+  set viewport(viewport: Rect) { api.grok_ScatterPlotViewer_Set_Viewport(this.d, viewport.x, viewport.y, viewport.width, viewport.height); }
+
+  /** Converts world coords to screen coords */
+  worldToScreen(x: number, y: number): Point { return toJs(api.grok_ScatterPlotViewer_WorldToScreen(this.d, x, y)); }
+
+  get onZoomed(): rxjs.Observable<Rect> { return this.onEvent('d4-scatterplot-zoomed'); }
+  get onViewportChanged(): rxjs.Observable<Rect> { return this.onEvent('d4-viewport-changed'); }
+  get onAfterDrawScene(): rxjs.Observable<Rect> { return this.onEvent('d4-after-draw-scene'); }
 }
