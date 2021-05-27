@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import { welcomeView } from "./welcome-view";
 import { compareColumns } from './compare-columns';
 import { DistributionProfilerViewer } from './distribution-profiler';
+import {SystemStatusWidget} from "./widgets";
 
 export let _package = new DG.Package();
 
@@ -25,4 +26,16 @@ export function _compareColumns(): void {
 //output: viewer result
 export function _distributionProfiler(): DistributionProfilerViewer {
   return new DistributionProfilerViewer();
+}
+
+//name: welcomeView
+//tags: autostart
+export function _welcomeView(): void {
+  welcomeView();
+}
+
+//description: Shows current time
+//output: widget result
+export function systemStatusWidget(): DG.Widget {
+  return new SystemStatusWidget();
 }
