@@ -143,7 +143,7 @@ export class Func extends Entity {
   }
 
   static find(params: { package: string, name: string, tags: string[], returnType: string}): Func[] {
-    return api.Func_Find( params.package, params.name, params.tags, params.returnType);
+    return api.grok_Func_Find( params.package, params.name, params.tags, params.returnType);
   }
 }
 
