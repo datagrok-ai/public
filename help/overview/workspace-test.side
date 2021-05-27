@@ -124,7 +124,7 @@
       "id": "8cd66b30-33c4-47ea-a5bf-8447bb0cc9f8",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span-Demog",
+      "target": "name=span-demog",
       "targets": [
         ["css=.d4-workspace-item:nth-child(3)", "css:finder"],
         ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[2]/div", "xpath:idRelative"],

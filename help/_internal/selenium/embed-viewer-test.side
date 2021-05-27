@@ -126,18 +126,22 @@
       "id": "d8739f97-6ad7-4b04-8894-ae689244969b",
       "comment": "",
       "command": "mouseMoveAt",
-      "target": "xpath=//div[@name='div-Viewer']",
-      "targets": [],
+      "target": "xpath=//div[@name='div-General']",
+      "targets": [
+        ["css=.d4-menu-item-hover", "css:finder"],
+        ["xpath=//div[@name='div-General']", "xpath:attributes"],
+        ["xpath=//body/div[7]/div[4]", "xpath:position"]
+      ],
       "value": ""
     }, {
       "id": "fc858cc0-860c-4a82-ba79-f283e83dd6bc",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Viewer---Embed...']",
+      "target": "xpath=//div[@name='div-General---Embed...']",
       "targets": [
-        ["css=.d4-menu-item-container:nth-child(10) .d4-menu-item:nth-child(9)", "css:finder"],
-        ["xpath=//div[@name='div-Viewer---Embed...']", "xpath:attributes"],
-        ["xpath=//div[8]/div[4]/div/div/div[9]", "xpath:position"]
+        ["css=.d4-menu-item-container:nth-child(10) > .d4-menu-item .d4-menu-item:nth-child(7)", "css:finder"],
+        ["xpath=//div[@name='div-General---Embed...']", "xpath:attributes"],
+        ["xpath=//div[8]/div[4]/div/div/div[7]", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -158,6 +162,30 @@
         ["xpath=//div[@id='rootDiv']/div/div[2]/i", "xpath:idRelative"],
         ["xpath=//div[2]/i", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "e969ae01-ec39-47a8-b2eb-d824a210d32c",
+      "comment": "",
+      "command": "verifyElementPresent",
+      "target": "css=.d4-dialog-header",
+      "targets": [
+        ["css=.d4-dialog-header", "css:finder"],
+        ["xpath=//body/div[9]/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "330dfd0e-ef2b-4a4b-b25c-8fa9a836f820",
+      "comment": "",
+      "command": "verifyText",
+      "target": "css=.d4-dialog-header",
+      "targets": [],
+      "value": "Embed viewer"
+    }, {
+      "id": "599b1999-5657-4a95-9a47-d2aa929bb6ee",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }]
   }],

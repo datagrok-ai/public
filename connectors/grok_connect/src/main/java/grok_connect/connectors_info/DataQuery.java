@@ -65,6 +65,10 @@ public class DataQuery
         params.remove(param);
     }
 
+    public void removeParams(List<FuncParam> params) {
+        this.params.removeAll(params);
+    }
+
     public void addParams(List<FuncParam> params) {
         this.params.addAll(params);
     }

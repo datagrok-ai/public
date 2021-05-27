@@ -27,11 +27,13 @@ export class ChordViewer extends DG.JsViewer {
   }
 
   init() {
-    this.minLengthThreshold = 0.002;
+    this.maxAvgNameLen = 15;
+    this.maxLinkNumber = 1500;
+    this.minLengthThreshold = 0.005;
     this.innerRadiusMargin = 80;
     this.outerRadiusMargin = 60;
 
-    this.gapScale = scaleLinear([1, 100], [0.04, 0]).clamp(true);
+    this.gapScale = scaleLinear([1, 100], [0.04, this.minLengthThreshold / 2]).clamp(true);
     this.reservedColor = 'rgb(127,127,127)';
     let colors = DG.Color.categoricalPalette.slice();
     colors.splice(colors.indexOf(4286545791), 1); // represents the reserved color
@@ -84,6 +86,7 @@ export class ChordViewer extends DG.JsViewer {
   onPropertyChanged(property) {
     if (this.initialized && this._testColumns()) {
       if (property.name === 'colorBy' && this.chords.length) this.render(false);
+      else if (property.name === 'sortBy' && this.sortBy === 'alphabet' && !this.distinctCols) return;
       else this.render();
     }
   }
@@ -147,8 +150,6 @@ export class ChordViewer extends DG.JsViewer {
 
   _generateData() {
     this.data.length = 0;
-    this.fromColumn = this.dataFrame.getCol(this.fromColumnName);
-    this.toColumn = this.dataFrame.getCol(this.toColumnName);
     this.distinctCols = this.fromColumnName !== this.toColumnName;
 
     this.indexes = this.dataFrame.filter.getSelectedIndexes();
@@ -158,17 +159,17 @@ export class ChordViewer extends DG.JsViewer {
       mouseover: (datum, index, nodes, event) => {
         select(nodes[index]).select(`#${datum.id}`).attr('stroke', color(this.color(datum.label)).darker());
         ui.tooltip.showRowGroup(this.dataFrame, i => {
-          return this.indexes.includes(i) && (this.fromColumn.get(i) === datum.label ||
+          return this.dataFrame.filter.get(i) && (this.fromColumn.get(i) === datum.label ||
             this.toColumn.get(i) === datum.label);
         }, event.x, event.y);
       },
       mouseout: (datum, index, nodes, event) => {
         select(nodes[index]).select(`#${datum.id}`).attr('stroke', 'none');
-        ui.tooltip.hide()
+        ui.tooltip.hide();
       },
       mousedown: (datum, index, nodes, event) => {
         this.dataFrame.selection.handleClick(i => {
-          return this.indexes.includes(i) && (this.fromColumn.get(i) === datum.label ||
+          return this.dataFrame.filter.get(i) && (this.fromColumn.get(i) === datum.label ||
             this.toColumn.get(i) === datum.label);
         }, event);
       }
@@ -198,6 +199,7 @@ export class ChordViewer extends DG.JsViewer {
 
     if (this.sortBy === 'topology') {
       if (!this.distinctCols) {
+        grok.shell.warning('Identical columns cannot be sorted topologically.');
         this.props.sortBy = 'alphabet';
       } else {
         this.data = topSort(this.segments);
@@ -246,18 +248,18 @@ export class ChordViewer extends DG.JsViewer {
       mouseover: (datum, index, nodes, event) => {
         select(nodes[index]).attr('opacity', this.highlightedChordOpacity);
         ui.tooltip.showRowGroup(this.dataFrame, i => {
-          return this.indexes.includes(i) &&
+          return this.dataFrame.filter.get(i) &&
             this.fromColumn.get(i) === datum.source.label &&
             this.toColumn.get(i) === datum.target.label;
         }, event.x, event.y);
       },
       mouseout: (datum, index, nodes, event) => {
         select(nodes[index]).attr('opacity', this.chordOpacity);
-        ui.tooltip.hide()
+        ui.tooltip.hide();
       },
       mousedown: (datum, index, nodes, event) => {
         this.dataFrame.selection.handleClick(i => {
-          return this.indexes.includes(i) &&
+          return this.dataFrame.filter.get(i) &&
             this.fromColumn.get(i) === datum.source.label &&
             this.toColumn.get(i) === datum.target.label;
         }, event);
@@ -287,10 +289,28 @@ export class ChordViewer extends DG.JsViewer {
     });
   }
 
+  _showErrorMessage(msg) { this.root.appendChild(ui.divText(msg, 'd4-viewer-error')); }
+
   render(computeData = true) {
+    $(this.root).empty();
 
     if (!this._testColumns()) {
-      this.root.appendChild(ui.divText('Not enough data to produce the result.', 'd4-viewer-error'));
+      this._showErrorMessage('Not enough data to produce the result.');
+      return;
+    }
+
+    if (computeData) {
+      // TODO: change when columnFilter setter is available
+      this.fromColumn = this.dataFrame.getCol(this.fromColumnName);
+      this.toColumn = this.dataFrame.getCol(this.toColumnName);
+    }
+
+    if (this.fromColumn.type !== 'string' || this.toColumn.type !== 'string') {
+      this._showErrorMessage('Data of a non-string type cannot be plotted.');
+      return;
+    }
+    if (this.fromColumn.categories.length * this.toColumn.categories.length > this.maxLinkNumber) {
+      this._showErrorMessage('Too many categories to render.');
       return;
     }
 
@@ -299,7 +319,6 @@ export class ChordViewer extends DG.JsViewer {
       if (this.distinctCols) this._computeChords();
     }
 
-    $(this.root).empty();
     let width = this.root.parentElement.clientWidth;
     let height = this.root.parentElement.clientHeight;
     let size = Math.min(width, height);
@@ -316,26 +335,34 @@ export class ChordViewer extends DG.JsViewer {
 
     circos.layout(this.data, this.conf);
 
-    let smallBlocks = this.data.some(d => d.end - d.start < this.minLengthThreshold); 
-    if (smallBlocks) {
-      this.root.appendChild(ui.divText('Too many categories to render.', 'd4-viewer-error'));
-      return;
-    }
+    // let smallBlocks = this.data.some(d => d.end - d.start < this.minLengthThreshold); 
+    // if (smallBlocks) {
+    //   this.root.appendChild(ui.divText('Too many categories to render.', 'd4-viewer-error'));
+    //   return;
+    // }
 
     if (this.distinctCols) {
       circos.chords('chords-track', this.chords, this.chordConf);
     }
 
-    circos.text('labels', this.data.map(d => ({
-      block_id: d.id,
-      position: this.freqMap[d.label] / 2,
-      value: d.label
-    })), this.labelConf);
+    let avgNameLen = this.categories.reduce((a, b) => a + b.length, 0) / this.categories.length;
+    let showLabels = avgNameLen < this.maxAvgNameLen;
+
+    if (showLabels) {
+      circos.text('labels', this.data.map(d => ({
+        block_id: d.id,
+        position: this.freqMap[d.label] / 2,
+        value: d.label
+      })), this.labelConf);
+    }
+
     circos.render();
 
-    let labels = select(this.root).selectAll('.block');
-    this._rotateLabels(labels); // fix label rotation past 180
-    this._cropLabels(labels);
+    if (showLabels) {
+      let labels = select(this.root).selectAll('.block');
+      this._rotateLabels(labels); // fix label rotation past 180
+      this._cropLabels(labels);
+    }
 
     this.root.firstChild.style = 'position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);';
   }

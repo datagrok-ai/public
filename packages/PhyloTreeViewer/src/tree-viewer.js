@@ -1,10 +1,13 @@
+import { waitForElm } from './utils.js';
+
 export class PhyloTreeViewer extends DG.JsViewer {
   constructor() {
     super();
     this.radialLayout = this.bool('radialLayout', false);
     this.fontSize = this.string('fontSize', '9px');
     this.selection = this.string('selection', 'path to root & descendants', { choices: [
-      'none', 'path to root', 'descendants', 'path to root & descendants'
+      'none', 'path to root', 'descendants', 'path to root & descendants',
+      'incident branch', 'internal branches', 'terminal branches',
     ]});
     this.tooltipOffset = 10;
     this.defaultSize = 400;
@@ -20,27 +23,9 @@ export class PhyloTreeViewer extends DG.JsViewer {
     this.nodeNameColumn = this.dataFrame.col('node');
     this.parentNameColumn = this.dataFrame.col('parent');
 
-    this.subs.push(this.dataFrame.onCurrentRowChanged.subscribe(() => this.render(false)));
+    this.subs.push(DG.debounce(this.dataFrame.onCurrentRowChanged, 50).subscribe(() => this.render(false)));
     this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => this.render(false)));
     this.render();
-
-    d3.select(this.root).selectAll('.node > text')
-      .on('mouseover', d => {
-        ui.tooltip.show(
-          ui.span([`${d.name}, parent: ${d.parent.name}`]),
-          d3.event.x + this.tooltipOffset,
-          d3.event.y + this.tooltipOffset);
-      })
-      .on('mouseout', () => ui.tooltip.hide());
-
-    d3.select(this.root).selectAll('.internal-node')
-      .on('mouseover', d => {
-        ui.tooltip.show(
-          ui.span([d.name + (d.name ? `, ` : '') + `children: ${d.children.length}`]),
-          d3.event.x + this.tooltipOffset,
-          d3.event.y + this.tooltipOffset);
-      })
-      .on('mouseout', () => ui.tooltip.hide());
   }
 
   onPropertyChanged() { this.render(false); }
@@ -87,9 +72,26 @@ export class PhyloTreeViewer extends DG.JsViewer {
     const selection = (this.selection === 'path to root') ?
     this.tree.path_to_root(node) : (this.selection === 'descendants') ?
     this.tree.select_all_descendants(node, true, true) : (this.selection === 'path to root & descendants') ?
-    this.tree.path_to_root(node).concat(this.tree.select_all_descendants(node, true, true)) : [];
+    this.tree.path_to_root(node).concat(this.tree.select_all_descendants(node, true, true)) :
+    (this.selection === 'incident branch') ? [node] : (this.selection === 'internal branches') ?
+    this.tree.select_all_descendants(node, false, true) : (this.selection === 'terminal branches') ?
+    this.tree.select_all_descendants(node, true, false) : [];
 
     this.tree.modify_selection(selection);
+  }
+
+  _centerLayout(width, height) {
+    const container = d3.select('g.phylotree-container');
+    const g = container.append('g').attr('class', 'phylotree-layout');
+    const selection = container.selectAll('path.branch, g.internal-node, g.node');
+    const data = selection.data();
+    selection.each(function() { g.append(() => this); });
+    g.selectAll('path.branch, g.internal-node, g.node').data(data);
+
+    const bbox = document.querySelector('.phylotree-layout').getBBox();
+    const x = (width - bbox.width) / 2 - Math.abs(bbox.x);
+    const y = (height - bbox.height) / 2 - Math.abs(bbox.y);
+    g.attr('transform', `translate(${x}, ${y})`);
   }
 
   render(computeData = true) {
@@ -108,6 +110,7 @@ export class PhyloTreeViewer extends DG.JsViewer {
     this.tree
       .svg(svg)
       .options({
+        'label-nodes-with-name': true,
         'left-right-spacing': this.radialLayout ? 'fixed-step' : 'fit-to-size',
         'top-bottom-spacing': this.radialLayout ? 'fixed-step' : 'fit-to-size',
         'is-radial': this.radialLayout,
@@ -124,5 +127,42 @@ export class PhyloTreeViewer extends DG.JsViewer {
     
     if (computeData) this._createNodeMap(this.tree.get_nodes());
     if (this.nodeIdColumn) this._updateSelection();
+
+    waitForElm(`node-${this.nodeNameColumn.get(this.dataFrame.rowCount - 1)}`)
+    .then(() => {
+      d3.select(this.root).selectAll('g.internal-node')
+        .on('mouseover', d => {
+          ui.tooltip.show(
+            ui.span([d.name + (d.name ? `, ` : '') + `children: ${d.children.length}`]),
+            d3.event.x + this.tooltipOffset,
+            d3.event.y + this.tooltipOffset);
+        })
+        .on('mouseout', () => ui.tooltip.hide());
+
+      d3.select(this.root).selectAll('g.node > text')
+        .on('mouseover', d => {
+          ui.tooltip.show(
+            ui.span([`${d.name}, parent: ${d.parent.name}`]),
+            d3.event.x + this.tooltipOffset,
+            d3.event.y + this.tooltipOffset);
+        })
+        .on('mouseout', () => ui.tooltip.hide());
+
+      d3.select(this.root).selectAll('path.branch')
+      .on('click', d => {
+        if (!d.selected) {
+          for (let i = 0; i < this.dataFrame.rowCount; i++) {
+            if (this.nodeIdColumn.get(i) === d.target.id) {
+              this.dataFrame.currentRow = i;
+              return;
+            }
+          }
+        }
+      });
+
+      // Layout fix
+      if (this.radialLayout) this._centerLayout(width, height);
+    })
+    .catch(e => console.log(e));
   }
 }

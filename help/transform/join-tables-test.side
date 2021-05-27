@@ -227,7 +227,7 @@
         ["xpath=//div[@id='elementContent']/div/div/div/div[2]/div[2]/table/tbody/tr[2]/td[2]/span", "xpath:idRelative"],
         ["xpath=//tr[2]/td[2]/span", "xpath:position"]
       ],
-      "value": "4"
+      "value": "5"
     }, {
       "id": "ed59db49-25e0-4d20-8269-2feaf2a6d924",
       "comment": "",
@@ -439,7 +439,7 @@
         ["xpath=//div[@id='elementContent']/div/div/div/div[2]/div[2]/table/tbody/tr[2]/td[2]/span", "xpath:idRelative"],
         ["xpath=//tr[2]/td[2]/span", "xpath:position"]
       ],
-      "value": "4"
+      "value": "5"
     }, {
       "id": "38ff1bf1-0270-4c68-af96-b0ba5bf1257c",
       "comment": "",
@@ -639,7 +639,7 @@
         ["xpath=//div[@id='elementContent']/div/div/div/div[2]/div[2]/table/tbody/tr[2]/td[2]/span", "xpath:idRelative"],
         ["xpath=//tr[2]/td[2]/span", "xpath:position"]
       ],
-      "value": "4"
+      "value": "5"
     }, {
       "id": "37946efa-2ea6-4130-b940-bd431a00a64c",
       "comment": "",
@@ -898,7 +898,7 @@
         ["xpath=//div[@id='elementContent']/div/div/div/div[2]/div[2]/table/tbody/tr[2]/td[2]/span", "xpath:idRelative"],
         ["xpath=//tr[2]/td[2]/span", "xpath:position"]
       ],
-      "value": "4"
+      "value": "5"
     }, {
       "id": "da0dd96b-dc62-47f8-a5ea-a33ac794fcf7",
       "comment": "",

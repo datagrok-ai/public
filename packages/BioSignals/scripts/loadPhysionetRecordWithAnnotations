@@ -9,7 +9,6 @@
 #output: double sampling_frequency
 
 import wfdb
-import numpy as np
 
 # 'ECG-ID Database'
 if chosenDatabase == 'ecgiddb':
@@ -35,5 +34,5 @@ annotations_df = pd.DataFrame({
 })
 
 signals_df = pd.DataFrame({
-    record.sig_name[0]: np.around(record.p_signal[:, 0], decimals=4)
+    record.sig_name[0]: record.p_signal[:, 0]
 })

@@ -6,6 +6,7 @@ import { Menu, TabControl } from "./widgets";
 import { DockManager } from "./docking";
 import { DockType, DOCK_TYPE } from "./const";
 import { JsViewer } from "./viewer";
+import {_toIterable} from "./utils";
 
 declare let ui: any;
 let api = <any>window;
@@ -202,7 +203,7 @@ export class Shell {
    * @param {DockType} dockType
    * @param {number} width
    * @returns {TableView} */
-  addTableView(table: DataFrame, dockType: DockType = DOCK_TYPE.FILL, width: number | null = null): TableView {
+  addTableView(table: DataFrame, dockType: DockType | null = DOCK_TYPE.FILL, width: number | null = null): TableView {
     return toJs(api.grok_AddTableView(table.d, dockType, width));
   }
 
@@ -247,6 +248,16 @@ export class Shell {
 
   tableView(tableName: string): TableView {
     return this.getTableView(tableName);
+  }
+
+  /** Returns currently open views*/
+  get views(): Iterable<View> {
+    return _toIterable(api.grok_GetViews());
+  }
+
+  /** Returns currently open table views*/
+  get tableViews(): Iterable<TableView> {
+    return _toIterable(api.grok_GetTableViews());
   }
 
   /** Returns a table by its name. Search is case-insensitive.

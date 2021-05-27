@@ -222,7 +222,7 @@
       "id": "fdc35666-95aa-4ad3-9fcc-9bbce720f1fa",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@class='panel-titlebar disable-selection']/i[@name='icon-font-icon-menu']",
+      "target": "css=.panel-titlebar-tabhost  > i[name=\"icon-font-icon-menu\"]",
       "targets": [
         ["css=.splitter-container-horizontal > .panel-titlebar > .grok-font-icon-menu", "css:finder"],
         ["xpath=//div[@class='panel-titlebar disable-selection']/i[@name='icon-font-icon-menu']", "xpath:attributes"],

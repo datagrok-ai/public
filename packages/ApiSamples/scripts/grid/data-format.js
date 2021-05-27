@@ -2,12 +2,13 @@
 // Similar effect can be achieved by editing 'format' column tag via UI (Column | Properties or press F2).
 // See available format strings below
 
-let view = grok.shell.addTableView(grok.data.demo.demog());
+let df = grok.data.demo.demog();
+let view = grok.shell.addTableView(df);
 
-view.grid.col('age').format = 'compact simple currency';
-view.grid.col('height').format = 'scientific';
-view.grid.col('weight').format = '#.0000';
-view.grid.col('started').format = 'dd.MM.yyyy';
+df.col('age').tags[DG.TAGS.FORMAT] = 'compact simple currency';
+df.col('height').tags[DG.TAGS.FORMAT] = 'scientific';
+df.col('weight').tags[DG.TAGS.FORMAT] = '#.0000';
+df.col('started').tags[DG.TAGS.FORMAT] = 'dd.MM.yyyy';
 
 // NUMBER FORMATS (https://datagrok.ai/help/discover/tags#numbers)
 // The usual formats, such as "0.000" or "#.0000", are supported.

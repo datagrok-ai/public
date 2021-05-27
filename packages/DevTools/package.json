@@ -1,0 +1,26 @@
+{
+	"name": "dev-tools",
+	"beta": true,
+	"friendlyName": "DevTools",
+	"version": "0.0.1",
+	"description": "",
+	"dependencies": {
+		"datagrok-api": "latest"
+	},
+	"devDependencies": {
+		"webpack": "latest",
+		"webpack-cli": "latest",
+		"css-loader": "^5.2.4",
+		"style-loader": "^2.0.0"
+	},
+	"scripts": {
+		"debug-dev-tools": "grok publish --rebuild",
+		"release-dev-tools": "grok publish --rebuild --release",
+		"build-dev-tools": "webpack",
+		"build": "webpack",
+		"debug-dev-tools-public": "grok publish public --rebuild",
+		"release-dev-tools-public": "grok publish public --rebuild --release",
+		"debug-dev-tools-local": "grok publish local --rebuild",
+		"release-dev-tools-local": "grok publish local --rebuild --release"
+	}
+}

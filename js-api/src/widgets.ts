@@ -4,7 +4,9 @@ import {Observable} from "rxjs";
 import {Property} from "./entities";
 import {DataFrame} from "./dataframe";
 import {ColorType, Type} from "./const";
-import React from "react";
+import * as React from "react";
+import * as rxjs from "rxjs";
+import {Rect} from "./grid";
 
 declare let grok: any;
 declare let DG: any;
@@ -54,15 +56,6 @@ export class ObjectPropertyBag {
     return new Proxy(this, handler);
   }
 
-  // /**
-  //  * @param {Object} properties  */
-  // apply(properties) {
-  //   for (let name of Object.keys(properties)) {
-  //     if (this.hasProperty(name))
-  //       this.set(name, properties.name);
-  //   }
-  // }
-
   /**
    * Gets the value of the specified property
    * @param {string} propertyName
@@ -90,7 +83,6 @@ export class ObjectPropertyBag {
    * @param {string} name
    * @returns {Property} */
   getProperty(name: string): Property {
-    console.log(`get ${name}`);
     let property = this.getProperties().find((p) => p.name === name);
     if (typeof property == 'undefined')
       throw `Property not found: ${name}`;
@@ -108,13 +100,13 @@ export class ObjectPropertyBag {
 
 /** Base class for controls that have a visual root and a set of properties. */
 export class Widget {
-  private _root: HTMLElement | null;
+  private _root: HTMLElement;
   protected _properties: Property[];
   props: ObjectPropertyBag;
   subs: StreamSubscription[];
 
   /** @constructs Widget and initializes its root. */
-  constructor(widgetRoot: HTMLElement | null = null) {
+  constructor(widgetRoot: HTMLElement) {
 
     /** @member {HTMLElement} */
     this._root = widgetRoot;
@@ -167,8 +159,8 @@ export class Widget {
 
   /** Widget's visual root.
    * @type {HTMLElement} */
-  get root(): HTMLElement | null { return this._root; }
-  set root(r: HTMLElement | null) { this._root = r; }
+  get root(): HTMLElement { return this._root; }
+  set root(r: HTMLElement) { this._root = r; }
 
   /** Gets called when a widget is detached and will no longer be used. Typically used for unsubscribing from events.
    * Be sure to call super.detach() if this method is overridden.  */
@@ -207,10 +199,8 @@ export class Widget {
   }
 
   /** @returns {Widget} */
-  static fromRoot(root: HTMLElement | null): Widget {
-    let w = new Widget();
-    w.root = root;
-    return w;
+  static fromRoot(root: HTMLElement): Widget {
+    return new Widget(root);
   }
 
   /** Creates a {@see Widget} from the specified React component. */
@@ -247,7 +237,7 @@ export class DartWidget extends Widget {
   d: any;
 
   constructor(d: any) {
-    super();
+    super(api.grok_Widget_Get_Root(d));
     this.d = d;
   }
 
@@ -266,6 +256,11 @@ export class Accordion extends DartWidget {
   /** @constructs Accordion */
   constructor(d: any) {
     super(d);
+  }
+
+  /** An object this accordion is associated with */
+  get context(): any {
+    return toJs(api.grok_Accordion_Get_Context(this.d));
   }
 
   /** Creates a new instance of Accordion */
@@ -287,6 +282,10 @@ export class Accordion extends DartWidget {
 
   addPane(name: string, getContent: Function, expanded: boolean = false, before: AccordionPane | null = null): AccordionPane {
     return toJs(api.grok_Accordion_AddPane(this.d, name, getContent, expanded, before !== null ? before.d : null));
+  }
+
+  removePane(pane: AccordionPane) {
+    api.grok_Accordion_RemovePane(this.d, pane.d);
   }
 }
 
@@ -452,16 +451,15 @@ export class Dialog {
   /** @returns {Dialog}
    * @param {{modal: boolean, fullScreen: boolean, center: boolean, centerAt: Element, x: number, y: number, width: number, height: number}|{}} options
    * */
-  show(options?: { modal?: any; fullScreen?: any; center?: any; centerAt?: any; x?: any; y?: any; width?: any; height?: any; }): Dialog {
-    options = options || {};
-    api.grok_Dialog_Show(this.d, options.modal, options.fullScreen, options.center, options.centerAt, options.x, options.y, options.width, options.height);
+  show(options?: { modal?: boolean; fullScreen?: boolean; center?: boolean; centerAt?: Element; x?: number; y?: number; width?: number; height?: number; backgroundColor: string;}): Dialog {
+    api.grok_Dialog_Show(this.d, options?.modal, options?.fullScreen, options?.center, options?.centerAt, options?.x, options?.y, options?.width, options?.height, options?.backgroundColor);
     return this;
   }
 
   /** @returns {Dialog}
    * @param {boolean} fullScreen  */
   showModal(fullScreen: boolean): Dialog {
-    api.grok_Dialog_Show(this.d, true, fullScreen, false, null, null, null, null, null);
+    api.grok_Dialog_Show(this.d, true, fullScreen, false, null, null, null, null, null, null);
     return this;
   }
 
@@ -1223,4 +1221,9 @@ export class ColumnComboBox extends DartWidget {
   get property(): Property {
     return toJs(api.grok_ColumnComboBox_Get_Property(this.d));
   }
+
+  onEvent(eventId: string): rxjs.Observable<any> {
+    return __obs(eventId, this.d);
+  }
+  get onChanged(): rxjs.Observable<String> { return this.onEvent('d4-column-box-column-changed'); }
 }

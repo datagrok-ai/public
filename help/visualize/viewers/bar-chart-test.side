@@ -130,9 +130,9 @@
       "id": "860fb496-8436-468a-a29f-4db3164ed66e",
       "comment": "",
       "command": "click",
-      "target": "name=div-column-combobox-",
+      "target": "css=.d4-vertical > .d4-column-selector-triangle",
       "targets": [
-        ["css=.d4-column-selector-triangle:nth-child(3)", "css:finder"],
+        ["css=.d4-vertical > .d4-column-selector-triangle", "css:finder"],
         ["xpath=//div[@id='center']/div/div[3]", "xpath:idRelative"],
         ["xpath=//div[2]/div[2]/div/div[3]", "xpath:position"]
       ],
@@ -174,11 +174,11 @@
       "id": "e20faf06-ce6d-4f56-8a4e-124222db4521",
       "comment": "",
       "command": "click",
-      "target": "css=.d4-column-selector-aggregation",
+      "target": "css=.d4-bottom-center > .d4-column-selector-aggregation",
       "targets": [
-        ["css=.d4-column-selector-aggregation", "css:finder"],
+        ["css=.d4-bottom-center > .d4-column-selector-aggregation", "css:finder"],
         ["xpath=//div[@id='center']/div[2]/select", "xpath:idRelative"],
-        ["xpath=//select", "xpath:position"]
+        ["xpath=//div[2]/select", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -192,7 +192,7 @@
       "id": "530cc05b-4ae2-4ee8-bca2-173c66e99cf2",
       "comment": "",
       "command": "select",
-      "target": "css=.d4-column-selector-aggregation",
+      "target": "css=.d4-bottom-center > .d4-column-selector-aggregation",
       "targets": [],
       "value": "label=min"
     }, {
@@ -276,7 +276,7 @@
       "id": "c1adcb4e-85e2-4cb7-81af-e7af5b9c03c8",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@class='panel-titlebar disable-selection']/i[@name='icon-font-icon-menu']",
+      "target": "css=.panel-titlebar-tabhost  > i[name=\"icon-font-icon-menu\"]",
       "targets": [
         ["css=.splitter-container-horizontal > .panel-titlebar > .grok-font-icon-menu", "css:finder"],
         ["xpath=//div[@class='panel-titlebar disable-selection']/i[@name='icon-font-icon-menu']", "xpath:attributes"],
@@ -299,11 +299,11 @@
       "id": "952e8af6-7f63-4a00-bcf1-769612834c10",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Style---Style---Pick-up']",
+      "target": "xpath=//div[@name='div-Style---Pick-Up']",
       "targets": [
-        ["css=.d4-menu-item-container:nth-child(16) > .d4-menu-item:nth-child(2) .d4-menu-item:nth-child(1)", "css:finder"],
-        ["xpath=//div[@name='div-Style---Style---Pick-up']", "xpath:attributes"],
-        ["xpath=//div[13]/div[2]/div/div", "xpath:position"]
+        ["css=.d4-menu-item-container:nth-child(11) > .d4-menu-item:nth-child(5) .d4-menu-item:nth-child(2)", "css:finder"],
+        ["xpath=//div[@name='div-Style---Pick-Up']", "xpath:attributes"],
+        ["xpath=//div[9]/div[5]/div/div/div[2]", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -373,10 +373,10 @@
       "id": "56a258e1-aaf9-44b4-9855-b95648bca6bf",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@class='panel-titlebar disable-selection']/i[@name='icon-font-icon-settings']",
+      "target": "css=.panel-titlebar-tabhost > .grok-font-icon-settings",
       "targets": [
-        ["css=.splitter-container-horizontal > .panel-titlebar > .grok-font-icon-settings", "css:finder"],
-        ["xpath=//div[@class='panel-titlebar disable-selection']/i[@name='icon-font-icon-settings']", "xpath:attributes"],
+        ["css=.panel-titlebar-tabhost > .grok-font-icon-settings", "css:finder"],
+        ["xpath=(//i[@name='icon-font-icon-settings'])[3]", "xpath:attributes"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div/i[3]", "xpath:idRelative"],
         ["xpath=//div[3]/div/i[3]", "xpath:position"]
       ],
@@ -416,17 +416,6 @@
         ["xpath=//tr[3]/td[2]/div", "xpath:position"]
       ],
       "value": "min"
-    }, {
-      "id": "a5fb302c-a565-499d-a874-5e6e4bcacb14",
-      "comment": "",
-      "command": "verifyText",
-      "target": "css=.property-grid-item:nth-child(3) .d4-column-selector-column",
-      "targets": [
-        ["css=.property-grid-item:nth-child(3) .d4-column-selector-column", "css:finder"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div/div/div/table/tbody[2]/tr[3]/td[2]/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//tr[3]/td[2]/div/div/div[2]", "xpath:position"]
-      ],
-      "value": "WEIGHT"
     }, {
       "id": "c1e619e4-f77d-4a31-aff5-9bafaf037424",
       "comment": "",
@@ -494,7 +483,7 @@
       "id": "fecda970-d124-434e-bd30-af40fd4a5924",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@class='panel-titlebar disable-selection']/i[@name='icon-font-icon-menu']",
+      "target": "css=.panel-titlebar-tabhost  > i[name=\"icon-font-icon-menu\"]",
       "targets": [
         ["css=.splitter-container-horizontal > .panel-titlebar > .grok-font-icon-menu", "css:finder"],
         ["xpath=//div[@class='panel-titlebar disable-selection']/i[@name='icon-font-icon-menu']", "xpath:attributes"],
@@ -517,11 +506,11 @@
       "id": "79e8f217-c512-4bb7-a2f4-db3a807a845f",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Style---Style---Apply']",
+      "target": "xpath=//div[@name='div-Style---Apply']",
       "targets": [
-        ["css=.d4-menu-item-container:nth-child(20) > .d4-menu-item:nth-child(2) .d4-menu-item:nth-child(4)", "css:finder"],
-        ["xpath=//div[@name='div-Style---Style---Apply']", "xpath:attributes"],
-        ["xpath=//div[17]/div[2]/div/div[4]", "xpath:position"]
+        ["css=.d4-menu-item-container:nth-child(13) > .d4-menu-item:nth-child(5) .d4-menu-item:nth-child(5)", "css:finder"],
+        ["xpath=//div[@name='div-Style---Apply']", "xpath:attributes"],
+        ["xpath=//div[11]/div[5]/div/div/div[5]", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -547,10 +536,10 @@
       "id": "79b60f50-7fce-49d8-a2e4-20865497d407",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@class='panel-titlebar disable-selection']/i[@name='icon-font-icon-settings']",
+      "target": "css=.panel-titlebar-tabhost > .grok-font-icon-settings",
       "targets": [
-        ["css=.splitter-container-horizontal > .panel-titlebar > .grok-font-icon-settings", "css:finder"],
-        ["xpath=//div[@class='panel-titlebar disable-selection']/i[@name='icon-font-icon-settings']", "xpath:attributes"],
+        ["css=.panel-titlebar-tabhost > .grok-font-icon-settings", "css:finder"],
+        ["xpath=(//i[@name='icon-font-icon-settings'])[3]", "xpath:attributes"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div/i[3]", "xpath:idRelative"],
         ["xpath=//div[3]/div/i[3]", "xpath:position"]
       ],
@@ -577,17 +566,6 @@
         ["xpath=//tr[3]/td[2]/div", "xpath:position"]
       ],
       "value": "min"
-    }, {
-      "id": "3a6fecea-c6ad-494d-bd14-e7fb87bd8504",
-      "comment": "",
-      "command": "verifyText",
-      "target": "css=.property-grid-item:nth-child(3) .d4-column-selector-column",
-      "targets": [
-        ["css=.property-grid-item:nth-child(3) .d4-column-selector-column", "css:finder"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div/div/div/table/tbody[2]/tr[3]/td[2]/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//tr[3]/td[2]/div/div/div[2]", "xpath:position"]
-      ],
-      "value": "WEIGHT"
     }, {
       "id": "beb91f89-a27a-414a-be86-937aef9fcf1b",
       "comment": "",
