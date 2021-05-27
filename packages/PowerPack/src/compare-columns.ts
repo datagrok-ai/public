@@ -28,7 +28,7 @@ function showOutputs(t1: { value: string; }, t2: { value: string; }, c1: DG.Inpu
         '${' + col1.name + '} == ${' + col2.name + '}',
         DG.TYPE.BOOL,
         false
-      ).then((_) => {if (t1.value != t2.value) grok.shell.info('Column was added to ' + t1.value)});
+      ).then((_: any) => {if (t1.value != t2.value) grok.shell.info('Column was added to ' + t1.value)});
     });
 
     let matched = ui.divText('Matched: ' + counter.toString(), {});
