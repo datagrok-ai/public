@@ -126,7 +126,10 @@ class SequencePackage extends DG.Package {
     let t = DG.DataFrame.create(fr.molCnt);
     t.columns.add(DG.Column.fromStrings('accession', fr.acc_));
     t.columns.add(DG.Column.fromStrings('description', fr.descr_));
-    t.columns.add(DG.Column.fromStrings('sequence', fr.seq_));
+
+    let seqCol = DG.Column.fromStrings('sequence', fr.seq_);
+    seqCol.setTag(".mono", "1"); // add tags to mark-up sequence to display monospace
+    t.columns.add(seqCol);
 
     let frc = fr.free_columns_;
     for (let [key, value] of frc) {
