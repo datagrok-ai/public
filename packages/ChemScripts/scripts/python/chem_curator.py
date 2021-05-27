@@ -7,13 +7,12 @@
 #input: dataframe data [Input data table]
 #input: column smiles  {type:categorical; semType: Molecule} [Molecules, in SMILES format]
 #input: bool kekulization = false
-#input: bool chemotypization = false
-#input: bool largestFragment = false
 #input: bool normalization = false
 #input: bool reionization = false
 #input: bool neutralization = false
 #input: bool tautomerization = false
-#output: dataframe curated {action:join(data); semType: Molecule; renderer: rdkitCellRenderer} [Molecules, in SMILES format]
+#input: bool mainFragment = false
+#output: dataframe curated {action:join(data); semType: Molecule} [Molecules, in SMILES format]
 
 import numpy as np
 from rdkit import Chem
@@ -54,7 +53,7 @@ for n in range(0, length):
         mol = rdMolStandardize.Reionize(mol)
     if neutralization:
         neutralize_atoms(mol)
-    if largestFragment:
+    if mainFragment:
         mol = rdMolStandardize.FragmentParent(mol)
     if kekulization:
         Chem.Kekulize(mol)
@@ -62,3 +61,5 @@ for n in range(0, length):
     standardized[n] = Chem.MolToSmiles(mol, kekuleSmiles = kekulization)
 
 curated = pd.DataFrame(standardized, columns = ['curated_structures'])
+
+
