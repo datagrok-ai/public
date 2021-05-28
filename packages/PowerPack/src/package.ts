@@ -8,6 +8,7 @@ import { DistributionProfilerViewer } from './distribution-profiler';
 import {SystemStatusWidget} from "./widgets/system-status-widget";
 import {RecentProjectsWidget} from "./widgets/recent-projects-widget";
 import { CommunityWidget } from './widgets/community-widget';
+import { WebWidget } from './widgets/web-widget';
 
 export let _package = new DG.Package();
 
@@ -43,4 +44,9 @@ export function recentProjectsWidget(): DG.Widget {
 //output: widget result
 export function communityWidget(): DG.Widget {
   return new CommunityWidget();
+}
+
+//output: widget result
+export function webWidget(): DG.Widget {
+  return new WebWidget();
 }
