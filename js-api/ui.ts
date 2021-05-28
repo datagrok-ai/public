@@ -368,6 +368,13 @@ export function list(items: any[]): HTMLElement {
   return api.grok_UI_List(Array.from(items).map(toDart));
 }
 
+export function iframe(src?: string) {
+  let frame = element('iframe') as HTMLIFrameElement;
+  if (src != null)
+    frame.src = src;
+  return frame;
+}
+
 /** Creates an <a> element. */
 export function link(text: string, target: string | Function, tooltipMsg?: string) {
   let link = element('a') as HTMLAnchorElement;
