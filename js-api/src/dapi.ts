@@ -174,7 +174,7 @@ export class Dapi {
    * @param {String} url
    * @param {Object} params
    * @returns {Promise<Object>} */
-  async fetchProxy(url: string, params: RequestInit): Promise<object> {
+  async fetchProxy(url: string, params?: RequestInit): Promise<Response> {
     if (params == null)
       params = {};
     if (params.headers == null)
