@@ -17,6 +17,7 @@ const defaultBase: string = "2'OMe RNA (mX)";
 const defaultPto: boolean = false;
 const defaultAvailability: boolean = true;
 const defaultSequenceLength: number = 23;
+const maximalValidSequenceLength: number = 30;
 
 //name: defineAxolabsPattern
 //input: string nucleotides {semType: RNA nucleotides}
@@ -32,9 +33,7 @@ export function defineAxolabsPattern(nucleotides: string) {
     ss5.style.marginTop = '26px';
     ssPattern.append(ss5);
     for (let i = 0; i < sequenceLength.value; i++) {
-      ssAvailabilityStatuses[i] = ui.boolInput('', ssAvailabilityStatuses[i].value, (v: boolean) => {
-        alert(ssModificationItems.children)
-      });
+      ssAvailabilityStatuses[i] = ui.boolInput('', ssAvailabilityStatuses[i].value, (v: boolean) => updateSsAvailability(i, v));
       ssPattern.append(
         ui.divV([
           ui.divText((i + 1).toString()),
@@ -56,7 +55,7 @@ export function defineAxolabsPattern(nucleotides: string) {
     as3.style.marginTop = '10px';
     asPattern.append(as3);
     for (let i = 0; i < sequenceLength.value; i++) {
-      asAvailabilityStatuses[i] = ui.boolInput('', asAvailabilityStatuses[i].value, (v: boolean) => grok.shell.info(v));
+      asAvailabilityStatuses[i] = ui.boolInput('', asAvailabilityStatuses[i].value, (v: boolean) => updateAsAvailability(i, v));
       asPattern.append(
         ui.divV([
           asAvailabilityStatuses[i],
@@ -112,10 +111,16 @@ export function defineAxolabsPattern(nucleotides: string) {
   }
 
   function updateUiForNewSequenceLength() {
-    updateSsModification();
-    updateAsModification();
-    updateSsPattern();
-    updateAsPattern();
+    if (sequenceLength.value < maximalValidSequenceLength) {
+      updateSsModification();
+      updateAsModification();
+      updateSsPattern();
+      updateAsPattern();
+    } else {
+      ui.dialog('Sequence length should be less than ' + maximalValidSequenceLength.toString() + ' due to UI constrains')
+        .add(ui.divText('Please change sequence length in order to define new pattern'))
+        .show()
+    }
   }
 
   function updatePtoAllAtOnce(newPtoValue: boolean) {
@@ -130,6 +135,32 @@ export function defineAxolabsPattern(nucleotides: string) {
       ssBaseStatuses[i].value = newBasisValue;
       asBaseStatuses[i].value = newBasisValue;
     }
+  }
+
+  function updateSsAvailability(indexOfClickedCheckbox: number, isCheckboxChecked: boolean) {
+    if (isCheckboxChecked) {
+      for (let i = indexOfClickedCheckbox; i < sequenceLength.value; i++) {
+        ssAvailabilityStatuses[i] = ui.boolInput('', true);
+      }
+    } else {
+      for (let i = 0; i < indexOfClickedCheckbox; i++) {
+        ssAvailabilityStatuses[i] = ui.boolInput('', false);
+      }
+    }
+    updateSsPattern();
+  }
+
+  function updateAsAvailability(indexOfClickedCheckbox: number, isCheckboxChecked: boolean) {
+    if (isCheckboxChecked) {
+      for (let i = indexOfClickedCheckbox; i < sequenceLength.value; i++) {
+        asAvailabilityStatuses[i] = ui.boolInput('', true);
+      }
+    } else {
+      for (let i = 0; i < indexOfClickedCheckbox; i++) {
+        asAvailabilityStatuses[i] = ui.boolInput('', false);
+      }
+    }
+    updateAsPattern();
   }
 
   let ssModificationItems = ui.div([]),
