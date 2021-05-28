@@ -364,8 +364,24 @@ export function waitBox(getElement: () => HTMLElement): any {
 }
 
 /** Creates a visual element representing list of [items]. */
-export function list(items: any[]): HTMLElement[] {
+export function list(items: any[]): HTMLElement {
   return api.grok_UI_List(Array.from(items).map(toDart));
+}
+
+/** Creates an <a> element. */
+export function link(text: string, target: string | Function, tooltipMsg?: string) {
+  let link = element('a') as HTMLAnchorElement;
+  link.innerText = text;
+  if (target instanceof Function) {
+    link.addEventListener('click', (_) => target());
+    link.style.cursor = 'pointer';
+  }
+  else if (typeof target === 'string') {
+    link.href = target;
+    link.target = '_blank';
+  }
+  tooltip.bind(link, tooltipMsg);
+  return link;
 }
 
 /** Creates a [Dialog].
@@ -554,8 +570,9 @@ export class Tooltip {
   }
 
   /** Associated the specified visual element with the corresponding item. */
-  bind(element: HTMLElement, tooltip: string): HTMLElement {
-    api.grok_Tooltip_SetOn(element, tooltip);
+  bind(element: HTMLElement, tooltip?: string): HTMLElement {
+    if (tooltip != null)
+      api.grok_Tooltip_SetOn(element, tooltip);
     return element;
   }
 

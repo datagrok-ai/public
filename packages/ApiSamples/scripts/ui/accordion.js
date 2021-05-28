@@ -7,6 +7,10 @@ v.root.appendChild(ui.h1('UI Toolkit'));
 // accordion
 let acc = ui.accordion();
 
+acc.addPane('links', () => ui.divV([
+  ui.link('action', () => grok.shell.info('clicked')),
+  ui.link('google.com', 'https://google.com')]));
+
 acc.addPane('buttons', () => ui.div([
   ui.button('REGULAR'),
   ui.bigButton('BIG')]));
