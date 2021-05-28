@@ -45,32 +45,165 @@ view.addViewer(viewer);
 Notice that the first parameter to `addViewer` may be either a string with the corresponding name or an instance of the `Viewer` class.
 
 Examples:
-  * [Bar Chart](https://public.datagrok.ai/js/samples/ui/viewers/types/bar-chart)
-  * [Box Plot](https://public.datagrok.ai/js/samples/ui/viewers/types/box-plot)
-  * [Calendar](https://public.datagrok.ai/js/samples/ui/viewers/types/calendar)
-  * [Correlation Plot](https://public.datagrok.ai/js/samples/ui/viewers/types/corr-plot)
-  * [Density Plot](https://public.datagrok.ai/js/samples/ui/viewers/types/density-plot)
-  * [Filters](https://public.datagrok.ai/js/samples/ui/viewers/types/filters)
-  * [Form Viewer](https://public.datagrok.ai/js/samples/ui/viewers/types/form)
-  * [Globe Viewer](https://public.datagrok.ai/js/samples/ui/viewers/types/globe)
-  * [Google Map](https://public.datagrok.ai/js/samples/ui/viewers/types/google-map)
-  * [Grid](https://public.datagrok.ai/js/samples/ui/viewers/types/grid)
-  * [Heat Map](https://public.datagrok.ai/js/samples/ui/viewers/types/heat-map)
-  * [Histogram](https://public.datagrok.ai/js/samples/ui/viewers/types/histogram)
-  * [Line Chart](https://public.datagrok.ai/js/samples/ui/viewers/types/line-chart)
-  * [Markup](https://public.datagrok.ai/js/samples/ui/viewers/types/markup)
-  * [Matrix Plot](https://public.datagrok.ai/js/samples/ui/viewers/types/matrix-plot)
-  * [Network Diagram](https://public.datagrok.ai/js/samples/ui/viewers/types/network-diagram)
-  * [PC Plot](https://public.datagrok.ai/js/samples/ui/viewers/types/pc-plot)
-  * [Pie Chart](https://public.datagrok.ai/js/samples/ui/viewers/types/pie-chart)
-  * [Scatter Plot](https://public.datagrok.ai/js/samples/ui/viewers/types/scatter-plot)
-  * [3D Scatter Plot](https://public.datagrok.ai/js/samples/ui/viewers/types/scatter-plot-3d)
-  * [Shape Map](https://public.datagrok.ai/js/samples/ui/viewers/types/shape-map)
-  * [Statistics](https://public.datagrok.ai/js/samples/ui/viewers/types/statistics)
-  * [Tile Viewer](https://public.datagrok.ai/js/samples/ui/viewers/types/tile-viewer)
-  * [Tree Map](https://public.datagrok.ai/js/samples/ui/viewers/types/tree-map)
-  * [Trellis Plot](https://public.datagrok.ai/js/samples/ui/viewers/types/trellis-plot)
-  * [Word Cloud](https://public.datagrok.ai/js/samples/ui/viewers/types/word-cloud)
+
+<table style="width:100%">
+  <tr>
+    <td>
+      <li>
+        <a href="https://public.datagrok.ai/js/samples/ui/viewers/types/bar-chart" target="_blank">Bar Chart</a>
+      </li>
+    </td>
+    <td>
+      <li>
+        <a href="https://public.datagrok.ai/js/samples/ui/viewers/types/markup" target="_blank">Markup</a>
+      </li>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <li>
+        <a href="https://public.datagrok.ai/js/samples/ui/viewers/types/box-plot" target="_blank">Box Plot</a>
+      </li>
+    </td>
+    <td>
+      <li>
+        <a href="https://public.datagrok.ai/js/samples/ui/viewers/types/matrix-plot" target="_blank">Matrix Plot</a>
+      </li>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <li>
+        <a href="https://public.datagrok.ai/js/samples/ui/viewers/types/calendar" target="_blank">Calendar</a>
+      </li>
+    </td>
+    <td>
+      <li>
+        <a href="https://public.datagrok.ai/js/samples/ui/viewers/types/network-diagram" target="_blank">Network Diagram</a>
+      </li>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <li>
+        <a href="https://public.datagrok.ai/js/samples/ui/viewers/types/corr-plot" target="_blank">Correlation Plot</a>
+      </li>
+    </td>
+    <td>
+      <li>
+        <a href="https://public.datagrok.ai/js/samples/ui/viewers/types/pc-plot" target="_blank">PC Plot</a>
+      </li>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <li>
+        <a href="https://public.datagrok.ai/js/samples/ui/viewers/types/density-plot" target="_blank">Density Plot</a>
+      </li>
+    </td>
+    <td>
+      <li>
+        <a href="https://public.datagrok.ai/js/samples/ui/viewers/types/pie-chart" target="_blank">Pie Chart</a>
+      </li>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <li>
+        <a href="https://public.datagrok.ai/js/samples/ui/viewers/types/filters" target="_blank">Filters</a>
+      </li>
+    </td>
+    <td>
+      <li>
+        <a href="https://public.datagrok.ai/js/samples/ui/viewers/types/scatter-plot" target="_blank">Scatter Plot</a>
+      </li>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <li>
+        <a href="https://public.datagrok.ai/js/samples/ui/viewers/types/form" target="_blank">Form Viewer</a>
+      </li>
+    </td>
+    <td>
+      <li>
+        <a href="https://public.datagrok.ai/js/samples/ui/viewers/types/scatter-plot-3d" target="_blank">3D Scatter Plot</a>
+      </li>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <li>
+        <a href="https://public.datagrok.ai/js/samples/ui/viewers/types/globe" target="_blank">Globe Viewer</a>
+      </li>
+    </td>
+    <td>
+      <li>
+        <a href="https://public.datagrok.ai/js/samples/ui/viewers/types/shape-map" target="_blank">Shape Map</a>
+      </li>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <li>
+        <a href="https://public.datagrok.ai/js/samples/ui/viewers/types/google-map" target="_blank">Google Map</a>
+      </li>
+    </td>
+    <td>
+      <li>
+        <a href="https://public.datagrok.ai/js/samples/ui/viewers/types/statistics" target="_blank">Statistics</a>
+      </li>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <li>
+        <a href="https://public.datagrok.ai/js/samples/ui/viewers/types/grid" target="_blank">Grid</a>
+      </li>
+    </td>
+    <td>
+      <li>
+        <a href="https://public.datagrok.ai/js/samples/ui/viewers/types/tile-viewer" target="_blank">Tile Viewer</a>
+      </li>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <li>
+        <a href="https://public.datagrok.ai/js/samples/ui/viewers/types/heat-map" target="_blank">Heat Map</a>
+      </li>
+    </td>
+    <td>
+      <li>
+        <a href="https://public.datagrok.ai/js/samples/ui/viewers/types/tree-map" target="_blank">Tree Map</a>
+      </li>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <li>
+        <a href="https://public.datagrok.ai/js/samples/ui/viewers/types/histogram" target="_blank">Histogram</a>
+      </li>
+    </td>
+    <td>
+      <li>
+        <a href="https://public.datagrok.ai/js/samples/ui/viewers/types/trellis-plot" target="_blank">Trellis Plot</a>
+      </li>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <li>
+        <a href="https://public.datagrok.ai/js/samples/ui/viewers/types/line-chart" target="_blank">Line Chart</a>
+      </li>
+    </td>
+    <td>
+      <li>
+        <a href="https://public.datagrok.ai/js/samples/ui/viewers/types/word-cloud" target="_blank">Word Cloud</a>
+      </li>
+    </td>
+  </tr>
+</table>
 
 ## Adding Viewers to Views
 
