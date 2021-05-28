@@ -46,7 +46,6 @@ export class TypedEventArgs {
    });
  **/
 export class Viewer extends Widget {
-  d: any;
   props: ObjectPropertyBag;
 
   /** @constructs Viewer */

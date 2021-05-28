@@ -102,8 +102,9 @@ export class ObjectPropertyBag {
 export class Widget {
   private _root: HTMLElement;
   protected _properties: Property[];
-  props: ObjectPropertyBag;
+  props: any; //ObjectPropertyBag;
   subs: StreamSubscription[];
+  d: any;
 
   /** @constructs Widget and initializes its root. */
   constructor(widgetRoot: HTMLElement) {
@@ -121,6 +122,12 @@ export class Widget {
     this.subs = [];
 
     this.getProperties = this.getProperties.bind(this);
+  }
+
+  toDart() {
+    if (this.d == null)
+      this.d = api.grok_Widget_Wrap(this);
+    return this.d;
   }
 
   /** Registers a subscription to an external event.
@@ -234,8 +241,6 @@ export class Filter extends Widget {
 
 
 export class DartWidget extends Widget {
-  d: any;
-
   constructor(d: any) {
     super(api.grok_Widget_Get_Root(d));
     this.d = d;
