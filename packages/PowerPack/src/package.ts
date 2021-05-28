@@ -5,7 +5,8 @@ import * as DG from 'datagrok-api/dg';
 import { welcomeView } from "./welcome-view";
 import { compareColumns } from './compare-columns';
 import { DistributionProfilerViewer } from './distribution-profiler';
-import {SystemStatusWidget} from "./widgets";
+import {SystemStatusWidget} from "./widgets/system-status-widget";
+import {RecentProjectsWidget} from "./widgets/recent-projects-widget";
 
 export let _package = new DG.Package();
 
@@ -34,8 +35,12 @@ export function _welcomeView(): void {
   welcomeView();
 }
 
-//description: Shows current time
 //output: widget result
 export function systemStatusWidget(): DG.Widget {
   return new SystemStatusWidget();
+}
+
+//output: widget result
+export function recentProjectsWidget(): DG.Widget {
+  return new RecentProjectsWidget();
 }
