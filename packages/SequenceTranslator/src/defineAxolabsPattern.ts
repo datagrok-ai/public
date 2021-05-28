@@ -12,8 +12,18 @@ Pattern design - section of dialog for changing length of AS and SS by editing c
 SS/AS Modification - sections of dialog for changing base and PTO statuses of one nucleotide at once: for SS or for AS;
 */
 
-const baseChoices: string[] = ["2'OMe RNA (mX)", "2'Fluoro RNA (fX)", "2'OMe U (mU)", "UNA", "GNA", "InvAb", "dX"];
-const defaultBase: string = "2'OMe RNA (mX)";
+const axolabsMap = {
+  "RNA nucleotides": ["A", "C", "G", "U"],
+  "DNA nucleotides": ["dA", "dC", "dG", "dT"],
+  "2'-Fluoro nucleotides": ["Af", "Cf", "Gf", "Uf"],
+  "2'-O-Methyl nucleotides": ["a", "f", "g", "u"],
+  "2'-O-MOE nucleotides (including 5-Methyl C)": ["Am", "Cm", "Gm", "Tm"],
+  "Glycol nucleic acid": ["(GNA-A)", "(GNA-C)", "(GNA-G)", "(GNA-T)"],
+  "LNA nucleotides (including 5-Methyl C)": ["Ab", "Cb", "Gb", "Tb"],
+  "Unlocked nucleotides (UNA)": ["Ao", "Co", "Go", "Uo"]
+}
+const baseChoices: string[] = Object.keys(axolabsMap);
+const defaultBase: string = baseChoices[0];
 const defaultPto: boolean = false;
 const defaultAvailability: boolean = true;
 const defaultSequenceLength: number = 23;
@@ -202,6 +212,8 @@ export function defineAxolabsPattern(nucleotides: string) {
     asPattern.hidden = (!v);
   });
 
+  let applyExistingDesign = ui.choiceInput('Apply Existing Design', '', ['Var-3A97'], () => grok.shell.info('Coming soon'));
+
   let threeModification = ui.stringInput("Addidional 3' modification", "", (v: string) => grok.shell.info('Coming soon'));
   let fiveModification = ui.stringInput("Addidional 5' modification", "", (v: string) => grok.shell.info('Coming soon'));
 
@@ -209,6 +221,7 @@ export function defineAxolabsPattern(nucleotides: string) {
 
   let patternDesignSection = ui.divV([
     ui.h1('Pattern Design'),
+    applyExistingDesign.root,
     ui.divH([
       sequenceLength.root,
       ui.button('Specify Duplex', () => grok.shell.info('Coming soon'))
