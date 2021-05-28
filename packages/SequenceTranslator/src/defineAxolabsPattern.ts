@@ -12,8 +12,18 @@ Pattern design - section of dialog for changing length of AS and SS by editing c
 SS/AS Modification - sections of dialog for changing base and PTO statuses of one nucleotide at once: for SS or for AS;
 */
 
-const baseChoices: string[] = ["2'OMe RNA (mX)", "2'Fluoro RNA (fX)", "2'OMe U (mU)", "UNA", "GNA", "InvAb", "dX"];
-const defaultBase: string = "2'OMe RNA (mX)";
+const axolabsMap = {
+  "RNA nucleotides": ["A", "C", "G", "U"],
+  "DNA nucleotides": ["dA", "dC", "dG", "dT"],
+  "2'-Fluoro nucleotides": ["Af", "Cf", "Gf", "Uf"],
+  "2'-O-Methyl nucleotides": ["a", "f", "g", "u"],
+  "2'-O-MOE nucleotides (including 5-Methyl C)": ["Am", "Cm", "Gm", "Tm"],
+  "Glycol nucleic acid": ["(GNA-A)", "(GNA-C)", "(GNA-G)", "(GNA-T)"],
+  "LNA nucleotides (including 5-Methyl C)": ["Ab", "Cb", "Gb", "Tb"],
+  "Unlocked nucleotides (UNA)": ["Ao", "Co", "Go", "Uo"]
+}
+const baseChoices: string[] = Object.keys(axolabsMap);
+const defaultBase: string = baseChoices[0];
 const defaultPto: boolean = false;
 const defaultAvailability: boolean = true;
 const defaultSequenceLength: number = 23;
@@ -28,11 +38,11 @@ export function defineAxolabsPattern(nucleotides: string) {
     ssPattern.innerHTML = '';
     ssAvailabilityStatuses = (sequenceLength.value > ssAvailabilityStatuses.length) ?
       ssAvailabilityStatuses.concat(Array(sequenceLength.value - ssAvailabilityStatuses.length).fill(ui.boolInput('', true))) :
-      ssAvailabilityStatuses.slice(0, sequenceLength.value);
+      ssAvailabilityStatuses.slice(ssAvailabilityStatuses.length - sequenceLength.value);
     const ss5 = ui.divText("SS-5'");
     ss5.style.marginTop = '26px';
     ssPattern.append(ss5);
-    for (let i = 0; i < sequenceLength.value; i++) {
+    for (let i = 0; i < ssAvailabilityStatuses.length; i++) {
       ssAvailabilityStatuses[i] = ui.boolInput('', ssAvailabilityStatuses[i].value, (v: boolean) => updateSsAvailability(i, v));
       ssPattern.append(
         ui.divV([
@@ -50,16 +60,16 @@ export function defineAxolabsPattern(nucleotides: string) {
     asPattern.innerHTML = '';
     asAvailabilityStatuses = (sequenceLength.value > asAvailabilityStatuses.length) ?
       asAvailabilityStatuses.concat(Array(sequenceLength.value - asAvailabilityStatuses.length).fill(ui.boolInput('', true))) :
-      asAvailabilityStatuses.slice(0, sequenceLength.value);
+      asAvailabilityStatuses.slice(asAvailabilityStatuses.length - sequenceLength.value);
     const as3 = ui.divText("AS-3'");
     as3.style.marginTop = '10px';
     asPattern.append(as3);
-    for (let i = 0; i < sequenceLength.value; i++) {
+    for (let i = 0; i < asAvailabilityStatuses.length; i++) {
       asAvailabilityStatuses[i] = ui.boolInput('', asAvailabilityStatuses[i].value, (v: boolean) => updateAsAvailability(i, v));
       asPattern.append(
         ui.divV([
           asAvailabilityStatuses[i],
-          ui.divText((sequenceLength.value - i).toString())
+          ui.divText((asAvailabilityStatuses.length - i).toString())
         ])
       );
     }
@@ -72,11 +82,11 @@ export function defineAxolabsPattern(nucleotides: string) {
     asModificationItems.innerHTML = '';
     asPtoStatuses = (sequenceLength.value > asPtoStatuses.length) ?
       asPtoStatuses.concat(Array(sequenceLength.value - asPtoStatuses.length).fill(fullyPto)) :
-      asPtoStatuses.slice(0, sequenceLength.value);
+      asPtoStatuses.slice(asPtoStatuses.length - sequenceLength.value);
     asBaseStatuses = (sequenceLength.value > asBaseStatuses.length) ?
       asBaseStatuses.concat(Array(sequenceLength.value - asBaseStatuses.length).fill(sequenceBase)) :
-      asBaseStatuses.slice(0, sequenceLength.value);
-    for (let i = 0; i < sequenceLength.value; i++) {
+      asBaseStatuses.slice(asBaseStatuses.length - sequenceLength.value);
+    for (let i = 0; i < asLength; i++) {
       asPtoStatuses[i] = ui.boolInput('', asPtoStatuses[i].value);
       asBaseStatuses[i] = ui.choiceInput('', asBaseStatuses[i].value, baseChoices);
       asModificationItems.append(
@@ -93,11 +103,11 @@ export function defineAxolabsPattern(nucleotides: string) {
     ssModificationItems.innerHTML = '';
     ssPtoStatuses = (sequenceLength.value > ssPtoStatuses.length) ?
       ssPtoStatuses.concat(Array(sequenceLength.value - ssPtoStatuses.length).fill(fullyPto)) :
-      ssPtoStatuses.slice(0, sequenceLength.value);
+      ssPtoStatuses.slice(ssPtoStatuses.length - sequenceLength.value);
     ssBaseStatuses = (sequenceLength.value > ssBaseStatuses.length) ?
       ssBaseStatuses.concat(Array(sequenceLength.value - ssBaseStatuses.length).fill(sequenceBase)) :
-      ssBaseStatuses.slice(0, sequenceLength.value);
-    for (let i = 0; i < sequenceLength.value; i++) {
+      ssBaseStatuses.slice(ssBaseStatuses.length - sequenceLength.value);
+    for (let i = 0; i < ssLength; i++) {
       ssPtoStatuses[i] = ui.boolInput('', ssPtoStatuses[i].value);
       ssBaseStatuses[i] = ui.choiceInput('', ssBaseStatuses[i].value, baseChoices);
       ssModificationItems.append(
@@ -119,48 +129,58 @@ export function defineAxolabsPattern(nucleotides: string) {
     } else {
       ui.dialog('Sequence length should be less than ' + maximalValidSequenceLength.toString() + ' due to UI constrains')
         .add(ui.divText('Please change sequence length in order to define new pattern'))
-        .show()
+        .show();
     }
   }
 
   function updatePtoAllAtOnce(newPtoValue: boolean) {
-    for (let i = 0; i < sequenceLength.value; i++) {
+    for (let i = 0; i < ssPtoStatuses.length; i++) {
       ssPtoStatuses[i].value = newPtoValue;
+    }
+    for (let i = 0; i < asPtoStatuses.length; i++) {
       asPtoStatuses[i].value = newPtoValue;
     }
   }
 
   function updateBasisAllAtOnce(newBasisValue: string) {
-    for (let i = 0; i < sequenceLength.value; i++) {
+    for (let i = 0; i < ssBaseStatuses.length; i++) {
       ssBaseStatuses[i].value = newBasisValue;
+    }
+    for (let i = 0; i < asBaseStatuses.length; i++) {
       asBaseStatuses[i].value = newBasisValue;
     }
   }
 
-  function updateSsAvailability(indexOfClickedCheckbox: number, isCheckboxChecked: boolean) {
-    if (isCheckboxChecked) {
+  function updateSsAvailability(indexOfClickedCheckbox: number, isClickedCheckboxChecked: boolean) {
+    if (isClickedCheckboxChecked) {
+      ssLength = sequenceLength.value - indexOfClickedCheckbox;
       for (let i = indexOfClickedCheckbox; i < sequenceLength.value; i++) {
         ssAvailabilityStatuses[i] = ui.boolInput('', true);
       }
     } else {
+      ssLength = sequenceLength.value - indexOfClickedCheckbox - 1;
       for (let i = 0; i < indexOfClickedCheckbox; i++) {
         ssAvailabilityStatuses[i] = ui.boolInput('', false);
       }
     }
     updateSsPattern();
+    updateSsModification();
   }
 
-  function updateAsAvailability(indexOfClickedCheckbox: number, isCheckboxChecked: boolean) {
-    if (isCheckboxChecked) {
+  function updateAsAvailability(indexOfClickedCheckbox: number, isClickedCheckboxChecked: boolean) {
+    if (isClickedCheckboxChecked) {
+      asLength = sequenceLength.value - indexOfClickedCheckbox;
       for (let i = indexOfClickedCheckbox; i < sequenceLength.value; i++) {
         asAvailabilityStatuses[i] = ui.boolInput('', true);
       }
     } else {
+      asLength = sequenceLength.value - indexOfClickedCheckbox - 1;
       for (let i = 0; i < indexOfClickedCheckbox; i++) {
         asAvailabilityStatuses[i] = ui.boolInput('', false);
       }
     }
     updateAsPattern();
+    updateAsModification();
   }
 
   let ssModificationItems = ui.div([]),
@@ -175,9 +195,15 @@ export function defineAxolabsPattern(nucleotides: string) {
     ssPtoStatuses = Array(defaultSequenceLength).fill(ui.boolInput('', defaultPto)),
     asPtoStatuses = Array(defaultSequenceLength).fill(ui.boolInput('', defaultPto));
 
-  let sequenceLength = ui.intInput('Enter sequence length', defaultSequenceLength, () => updateUiForNewSequenceLength());
+  let sequenceLength = ui.intInput('Enter sequence length', defaultSequenceLength, () => {
+    asLength = (asLength > sequenceLength.value) ? sequenceLength.value : asLength;
+    ssLength = (ssLength > sequenceLength.value) ? sequenceLength.value : ssLength;
+    updateUiForNewSequenceLength();
+  });
+  let ssLength: number = defaultSequenceLength,
+    asLength: number = defaultSequenceLength;
 
-  let sequenceBase = ui.choiceInput('Sequence basis', defaultBase, baseChoices, (v: string) => {updateBasisAllAtOnce(v)});
+  let sequenceBase = ui.choiceInput('Sequence basis', defaultBase, baseChoices, (v: string) => updateBasisAllAtOnce(v));
 
   let fullyPto = ui.boolInput('Fully PTO', defaultPto, (v: boolean) => updatePtoAllAtOnce(v));
 
@@ -186,6 +212,8 @@ export function defineAxolabsPattern(nucleotides: string) {
     asPattern.hidden = (!v);
   });
 
+  let applyExistingDesign = ui.choiceInput('Apply Existing Design', '', ['Var-3A97'], () => grok.shell.info('Coming soon'));
+
   let threeModification = ui.stringInput("Addidional 3' modification", "", (v: string) => grok.shell.info('Coming soon'));
   let fiveModification = ui.stringInput("Addidional 5' modification", "", (v: string) => grok.shell.info('Coming soon'));
 
@@ -193,6 +221,7 @@ export function defineAxolabsPattern(nucleotides: string) {
 
   let patternDesignSection = ui.divV([
     ui.h1('Pattern Design'),
+    applyExistingDesign.root,
     ui.divH([
       sequenceLength.root,
       ui.button('Specify Duplex', () => grok.shell.info('Coming soon'))
@@ -202,6 +231,8 @@ export function defineAxolabsPattern(nucleotides: string) {
     createAsStrand.root,
     ssPattern,
     asPattern,
+    threeModification.root,
+    fiveModification.root,
     ui.divH([
       ui.button('Define Pattern', () => grok.shell.info('Coming soon')),
       ui.button('Convert Sequences', () => grok.shell.info('Coming soon')),
@@ -216,9 +247,7 @@ export function defineAxolabsPattern(nucleotides: string) {
       ui.block50([ui.divText('Modification')])!,
       ui.block25([ui.divText('PTO')])!
     ]),
-    ssModificationItems,
-    threeModification.root,
-    fiveModification.root
+    ssModificationItems
   ], {style: {marginLeft: "30px", width: "250px"}});
 
   let asModificationSection = ui.divV([
