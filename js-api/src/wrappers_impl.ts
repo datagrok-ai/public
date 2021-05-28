@@ -58,7 +58,11 @@ export function toJs(d: any, check: boolean = false): any {
 export function toDart(x: any): any {
   if (x === undefined || x === null)
     return x;
-  return (typeof x.d !== 'undefined') ? x.d : x;
+  if (typeof x.d !== 'undefined')
+    return x.d;
+  if (typeof x.toDart === 'function')
+    return x.toDart();
+  return x;
 }
 
 
