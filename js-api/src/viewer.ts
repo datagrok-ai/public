@@ -316,11 +316,12 @@ export class ScatterPlotViewer extends Viewer {
     super(d);
   }
 
-  /** Row hit test */
+  /** Row hit test using canvas coords */
   hitTest(x: number, y: number): number {
     return api.grok_ScatterPlotViewer_HitTest(this.d, x, y);
   }
 
+  /** Zoom using world coords */
   zoom(x1: number, y1: number, x2: number, y2: number) {
     api.grok_ScatterPlotViewer_Zoom(this.d, x1, y1, x2, y2);
   }
