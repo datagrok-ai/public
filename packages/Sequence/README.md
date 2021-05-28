@@ -1,7 +1,7 @@
 Support for the biological sequences (DNA, RNA, proteins), including FASTA readers, 
 3D visualization of molecules, MSA viewer, and functions for working with sequences.
 
-##FASTA Format support
+## FASTA Format support
 
 Sequence Package supports import of FASTA files. The file is loaded into a dataframe (table) where all sequence lines belonging to one molecule are concatenated into a text field.
 
