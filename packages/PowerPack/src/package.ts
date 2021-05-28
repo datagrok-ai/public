@@ -7,14 +7,9 @@ import { compareColumns } from './compare-columns';
 import { DistributionProfilerViewer } from './distribution-profiler';
 import {SystemStatusWidget} from "./widgets/system-status-widget";
 import {RecentProjectsWidget} from "./widgets/recent-projects-widget";
+import { CommunityWidget } from './widgets/community-widget';
 
 export let _package = new DG.Package();
-
-//name: test
-//tags: autostart
-export function test(): void {
-  welcomeView();
-}
 
 //name: compareColumns
 //top-menu: Data | Compare Columns...
@@ -43,4 +38,9 @@ export function systemStatusWidget(): DG.Widget {
 //output: widget result
 export function recentProjectsWidget(): DG.Widget {
   return new RecentProjectsWidget();
+}
+
+//output: widget result
+export function communityWidget(): DG.Widget {
+  return new CommunityWidget();
 }
