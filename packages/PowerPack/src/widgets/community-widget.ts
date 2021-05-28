@@ -14,7 +14,9 @@ export class CommunityWidget extends DG.Widget {
     grok.dapi.fetchProxy('https://community.datagrok.ai/latest.json')
       .then((r) => r.json())
       .then((json) => {
-        this.root.appendChild(ui.list(json.topic_list.topics.map((t: any) => t.title)));
+        let links = json.topic_list.topics
+          .map((t: any) => ui.link(t.title, `https://community.datagrok.ai/t/${t.slug}`));
+        this.root.appendChild(ui.list(links));
       });
   }
 }
