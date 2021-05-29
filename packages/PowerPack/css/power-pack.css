@@ -1,5 +1,7 @@
+.power-pack-welcome-view {
+}
+
 .power-pack-widget-host {
-    width: 300px;
 }
 
 .power-pack-widget-header {
@@ -11,5 +13,16 @@
 .power-pack-widget-content {
     margin: 10px;
     height: 200px;
+    width: 300px;
     overflow: auto;
+}
+
+.power-pack-search-host {
+
+}
+
+.power-pack-widgets-host {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
 }
