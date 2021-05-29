@@ -1,0 +1,14 @@
+{
+  "name": "scatter-fast-3d",
+  "version": "0.0.1",
+  "fullName": "ScatterFast3d",
+  "description": "3d scatterplot",
+  "sources333": [
+    "src/viewer3d.js"
+  ],
+  "dependencies": {},
+  "devDependencies": {
+    "webpack": "^5.38.1",
+    "webpack-cli": "^4.7.0"
+  }
+}
