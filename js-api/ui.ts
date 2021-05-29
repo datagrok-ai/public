@@ -390,10 +390,14 @@ function _link(element: HTMLElement, target: string | Function, tooltipMsg?: str
   tooltip.bind(element, tooltipMsg);
 }
 
-export function image(src: string, target: string | Function, tooltipMsg?: string) {
-  let image = element('image') as HTMLImageElement;
-  image.src = src;
-  _link(image, target, tooltipMsg);
+export function image(src: string, width: number, height: number, options: {target: string | Function, tooltipMsg?: string}) {
+  let image = element('div') as HTMLDivElement;
+
+  image.style.backgroundImage = `url(${src})`;
+  image.style.width = `${width}px`;
+  image.style.height = `${height}px`;
+
+  _link(image, options?.target, options?.tooltipMsg);
   return image;
 }
 
