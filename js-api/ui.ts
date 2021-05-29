@@ -566,6 +566,10 @@ export class tools {
     }, 100);
     return () => clearInterval(interval);
   }
+
+  static setHoverVisibility(host: HTMLElement, items: HTMLElement[]) {
+    api.grok_Tools_SetHoverVisibility(host, items);
+  }
 }
 
 /** Represents a tooltip. */
@@ -902,6 +906,7 @@ function _icon(type: string, handler: Function, tooltipMsg?: string): HTMLElemen
   tooltip.bind(e, tooltipMsg);
   return e;
 }
+
 
 export let icons = {
   close: (handler: Function, tooltipMsg: string) => _icon('close', handler, tooltipMsg),
