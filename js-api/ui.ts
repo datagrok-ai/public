@@ -233,7 +233,7 @@ export function inlineText(objects: any[]): HTMLElement {
  * @param {string | ElementOptions} options
  * @returns {HTMLDivElement}
  * */
-export function div(children: HTMLElement[] | HTMLElement = [], options: string | ElementOptions | null = null): HTMLDivElement {
+export function div(children: any[] | HTMLElement = [], options: string | ElementOptions | null = null): HTMLDivElement {
   if (!Array.isArray(children))
     children = [children];
   let d = document.createElement('div');
@@ -894,4 +894,17 @@ export function buttonsInput(children: HTMLButtonElement[] = []): HTMLDivElement
   $(l).addClass('ui-label ui-input-label');
   $(d).addClass('ui-input-root ui-input-buttons').append(l).append(e);
   return d;
+}
+
+function _icon(type: string, handler: Function, tooltipMsg?: string): HTMLElement {
+  let e = $(`<i class="grok-icon grok-font-icon-${type}"></i>`)[0] as HTMLElement;
+  e?.addEventListener('click', () => handler());
+  tooltip.bind(e, tooltipMsg);
+  return e;
+}
+
+export let icons = {
+  close: (handler: Function, tooltipMsg: string) => _icon('close', handler, tooltipMsg),
+  help: (handler: Function, tooltipMsg: string) => _icon('help', handler, tooltipMsg),
+  settings: (handler: Function, tooltipMsg: string) => _icon('settings', handler, tooltipMsg),
 }
