@@ -246,7 +246,7 @@ export function div(children: any[] | HTMLElement = [], options: string | Elemen
 }
 
 export function info(children: HTMLElement[] | HTMLElement | string, header: string | null = null): HTMLDivElement {
-  let root: HTMLDivElement | null = null;
+  let root: HTMLDivElement | null;
   let divContent: HTMLElement[] = [];
   let divActual: HTMLDivElement | null = null;
   let show = iconFA('lightbulb-exclamation', () => {
@@ -373,6 +373,28 @@ export function iframe(src?: string) {
   if (src != null)
     frame.src = src;
   return frame;
+}
+
+function _link(element: HTMLElement, target: string | Function, tooltipMsg?: string): void {
+  if (!tooltipMsg && typeof target === 'string')
+    tooltipMsg = 'Open in new tab';
+
+  element.style.cursor = 'pointer';
+  element.addEventListener('click', (_) => {
+    if (target instanceof Function)
+      target();
+    else
+      window.open(target, '_blank');
+  });
+
+  tooltip.bind(element, tooltipMsg);
+}
+
+export function image(src: string, target: string | Function, tooltipMsg?: string) {
+  let image = element('image') as HTMLImageElement;
+  image.src = src;
+  _link(image, target, tooltipMsg);
+  return image;
 }
 
 /** Creates an <a> element. */
@@ -816,16 +838,14 @@ export function boxFixed(item: Widget | InputBase | HTMLElement | null, options:
   return c;
 }
 
-/** Div flex-box container that positions child elements vertically.
- *  @param {object[]} items */
+/** Div flex-box container that positions child elements vertically. */
 export function splitV(items: HTMLElement[], options: ElementOptions | null = null): HTMLDivElement {
   let b = box(null, options);
   $(b).addClass('ui-split-v').append(items.map(item => box(item)));
   return b;
 }
 
-/** Div flex-box container that positions child elements horizontally.
- *  @param {object[]} items */
+/** Div flex-box container that positions child elements horizontally. */
 export function splitH(items: HTMLElement[], options: ElementOptions | null = null): HTMLDivElement {
   let b = box(null, options);
   $(b).addClass('ui-split-h').append(items.map(item => box(item)));
