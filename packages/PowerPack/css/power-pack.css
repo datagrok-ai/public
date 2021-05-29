@@ -1,6 +1,5 @@
 .power-pack-widget-host {
     width: 300px;
-    height: 200px;
 }
 
 .power-pack-widget-header {
@@ -11,4 +10,6 @@
 
 .power-pack-widget-content {
     margin: 10px;
+    height: 200px;
+    overflow: auto;
 }

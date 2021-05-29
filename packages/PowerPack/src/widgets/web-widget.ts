@@ -22,7 +22,7 @@ export class WebWidget extends DG.Widget {
 
     // properties
     this.caption = super.addProperty('caption', DG.TYPE.STRING, 'Web');
-    this.urlTemplate = super.addProperty('caption', DG.TYPE.STRING, 'https://wikipedia.com');
+    this.urlTemplate = super.addProperty('urlTemplate', DG.TYPE.STRING, 'https://en.m.wikipedia.org/wiki/${p1}');
     this.p1 = super.addProperty('p1', DG.TYPE.STRING, '');
     this.p2 = super.addProperty('p2', DG.TYPE.STRING, '');
     this.p3 = super.addProperty('p3', DG.TYPE.STRING, '');
@@ -35,10 +35,10 @@ export class WebWidget extends DG.Widget {
   }
 
   refresh(): void {
-    let s = this.frame.src;
-    s = replaceAll(this.urlTemplate, '${1}', this.p1);
-    s = replaceAll(this.urlTemplate, '${2}', this.p2);
-    s = replaceAll(this.urlTemplate, '${3}', this.p3);
+    let s = this.urlTemplate;
+    s = replaceAll(s, '${p1}', this.p1);
+    s = replaceAll(s, '${p2}', this.p2);
+    s = replaceAll(s, '${p3}', this.p3);
     this.frame.src = s;
   }
 }

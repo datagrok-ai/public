@@ -5,10 +5,11 @@ import * as DG from 'datagrok-api/dg';
 import { welcomeView } from "./welcome-view";
 import { compareColumns } from './compare-columns';
 import { DistributionProfilerViewer } from './distribution-profiler';
-import {SystemStatusWidget} from "./widgets/system-status-widget";
-import {RecentProjectsWidget} from "./widgets/recent-projects-widget";
+import { SystemStatusWidget } from "./widgets/system-status-widget";
+import { RecentProjectsWidget } from "./widgets/recent-projects-widget";
 import { CommunityWidget } from './widgets/community-widget';
 import { WebWidget } from './widgets/web-widget';
+import { LearningWidget } from "./widgets/learning-widget";
 
 export let _package = new DG.Package();
 
@@ -49,4 +50,9 @@ export function communityWidget(): DG.Widget {
 //output: widget result
 export function webWidget(): DG.Widget {
   return new WebWidget();
+}
+
+//output: widget result
+export function learnWidget(): DG.Widget {
+  return new LearningWidget();
 }
