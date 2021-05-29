@@ -1,6 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as rxjs from 'rxjs';
+import {debounceTime} from 'rxjs/operators';
 
 function card(w: DG.Widget): HTMLElement {
   let host = ui.divV([], 'power-pack-widget-host');
@@ -19,10 +21,39 @@ function card(w: DG.Widget): HTMLElement {
 }
 
 export function welcomeView() {
-  let view = grok.shell.newView('Welcome');
+  let input = ui.element('input', 'ui-input-editor') as HTMLInputElement;
+  input.placeholder = 'Search everywhere';
+  let inputHost = ui.div([
+    ui.iconFA('search'),
+    ui.div([
+      input
+    ], 'ui-input-root,ui-input-type-ahead')
+  ], 'd4-search-bar');
+
+  let searchHost = ui.divV([], 'power-pack-search-host');
+  let widgetsHost = ui.div([], 'power-pack-widgets-host');
+  let viewHost = ui.div([widgetsHost, searchHost]);
+  grok.shell.newView('Welcome', [inputHost, viewHost], 'power-pack-welcome-view');
 
   let widgetFunctions = DG.Func.find({returnType: 'widget'});
+  let searchFunctions = DG.Func.find({tags: ['search']});
 
   for (let f of widgetFunctions)
-    f.apply().then((w: DG.Widget) => view.root.appendChild(card(w)));
+    f.apply().then((w: DG.Widget) => widgetsHost.appendChild(card(w)));
+
+  function doSearch(s: string) {
+    ui.empty(searchHost);
+    for (let sf of searchFunctions)
+      sf.apply({s: input.value}).then((results: any[]) => {
+      for (let r of results)
+        searchHost.appendChild(ui.render(r));
+    });
+  }
+
+  rxjs.fromEvent(input, 'input').pipe(debounceTime(300)).subscribe(_ => {
+    let search = input.value !== '';
+    widgetsHost.style.display = (search ? 'none' : '');
+    searchHost.style.display = (search ? '' : 'none');
+    doSearch(input.value);
+  });
 }
