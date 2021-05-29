@@ -11,10 +11,10 @@ function card(w: DG.Widget): HTMLElement {
     ui.icons.close(() => host.remove(), 'Remove'),
   ], 'd4-dialog-header');
 
-  ui.tools.setHoverVisibility(host, Array.from(host.querySelectorAll('i')));
-
   host.appendChild(header);
   host.appendChild(ui.div([w.root], 'power-pack-widget-content'));
+  ui.tools.setHoverVisibility(host, Array.from(host.querySelectorAll('i')));
+
   return host;
 }
 
