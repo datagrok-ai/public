@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 export class CommunityWidget extends DG.Widget {
-  caption: string = 'Community';
+  caption: string;
 
   constructor() {
     super(ui.div());
@@ -18,6 +18,9 @@ export class CommunityWidget extends DG.Widget {
           .map((t: any) => ui.link(t.title, `https://community.datagrok.ai/t/${t.slug}`));
         this.root.appendChild(ui.list(links));
       });
+
+    // properties
+    this.caption = super.addProperty('caption', DG.TYPE.STRING, 'Community');
   }
 }
 

@@ -11,7 +11,7 @@ export class SystemStatusWidget extends DG.Widget {
     this.root.appendChild(ui.divText('Houston, we have a problem!'));
 
     // properties
-    this.caption = super.addProperty('caption', DG.TYPE.STRING, 'current time: ');
+    this.caption = super.addProperty('caption', DG.TYPE.STRING, 'System');
   }
 }
 

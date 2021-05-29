@@ -1,6 +1,9 @@
 {
 	"name": "powerpack",
 	"friendlyName": "PowerPack",
+	"sources": [
+		"css/power-pack.css"
+	],
 	"version": "0.0.1",
 	"description": "",
 	"dependencies": {
