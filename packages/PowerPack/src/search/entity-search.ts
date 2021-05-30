@@ -16,7 +16,12 @@ export async function functionSearch(s: string): Promise<any[]> {
   return DG.Func.find()
     .filter(value =>
       value.name.toLowerCase().includes(s) ||
-      value.description.toLowerCase().includes(s))
+      value.description?.toLowerCase()?.includes(s))
     .map((f) => f.name);
+}
+
+export async function usersSearch(s: string): Promise<any[]> {
+  s = s.toLowerCase();
+  return (await grok.dapi.users.filter(s).list()).map((u) => u.name);
 }
 
