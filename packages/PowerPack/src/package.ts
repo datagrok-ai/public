@@ -10,7 +10,7 @@ import { RecentProjectsWidget } from "./widgets/recent-projects-widget";
 import { CommunityWidget } from './widgets/community-widget';
 import { WebWidget } from './widgets/web-widget';
 import { LearningWidget } from "./widgets/learning-widget";
-import { entitySearch, functionSearch, googleSearch } from './search/entity-search';
+import { entitySearch, functionSearch, googleSearch, usersSearch } from './search/entity-search';
 
 export let _package = new DG.Package();
 
@@ -72,9 +72,18 @@ export function _googleSearch(s: string): Promise<any[]> {
   return googleSearch(s);
 }
 
+//description: Functions
 //tags: search
 //input: string s
 //output: list result
-export function _functinoSearch(s: string): Promise<any[]> {
+export function _functionSearch(s: string): Promise<any[]> {
   return functionSearch(s);
+}
+
+//description: Users
+//tags: search
+//input: string s
+//output: list result
+export function _usersSearch(s: string): Promise<any[]> {
+  return usersSearch(s);
 }

@@ -45,8 +45,15 @@ export function welcomeView() {
     ui.empty(searchHost);
     for (let sf of searchFunctions)
       sf.apply({s: input.value}).then((results: any[]) => {
-      for (let r of results)
-        searchHost.appendChild(ui.render(r));
+        if (results.length > 0) {
+          let resultBlock = ui.divV([
+            ui.h3(sf.description ?? sf.name)
+          ]);
+          searchHost.appendChild(resultBlock);
+
+          for (let r of results)
+            resultBlock.appendChild(ui.render(r));
+        }
     });
   }
 
