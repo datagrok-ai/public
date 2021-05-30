@@ -10,3 +10,13 @@ export async function entitySearch(s: string): Promise<any[]> {
 export async function googleSearch(s: string): Promise<any[]> {
   return [`google results for  ${s}`];
 }
+
+export async function functionSearch(s: string): Promise<any[]> {
+  s = s.toLowerCase();
+  return DG.Func.find()
+    .filter(value =>
+      value.name.toLowerCase().includes(s) ||
+      value.description.toLowerCase().includes(s))
+    .map((f) => f.name);
+}
+

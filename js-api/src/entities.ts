@@ -126,10 +126,12 @@ export class UserSession extends Entity {
  * {@link https://datagrok.ai/help/overview/functions/function}
  * */
 export class Func extends Entity {
-  /** @constructs Func*/
+
   constructor(d: any) {
     super(d);
   }
+
+  get description(): string { return api.grok_Func_Get_Description(this.d); }
 
   /** Returns {@link FuncCall} object in a stand-by state
    * @param {object} parameters
@@ -138,12 +140,17 @@ export class Func extends Entity {
     return toJs(api.grok_Func_Prepare(this.d, parameters));
   };
 
+  /**
+   *  Executes the function with the specified {link parameters}, and returns result.
+   *  If necessary, the corresponding package will be loaded as part of the call.
+   * */
   async apply(parameters: object = {}): Promise<any> {
     return (await this.prepare(parameters).call()).getOutputParamValue();
   }
 
-  static find(params: { package?: string, name?: string, tags?: string[], returnType?: string}): Func[] {
-    return api.grok_Func_Find( params.package, params.name, params.tags, params.returnType);
+  /** Returns functions with the specified attributes. */
+  static find(params?: { package?: string, name?: string, tags?: string[], returnType?: string}): Func[] {
+    return api.grok_Func_Find(params?.package, params?.name, params?.tags, params?.returnType);
   }
 }
 
