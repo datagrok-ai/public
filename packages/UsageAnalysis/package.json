@@ -1,5 +1,6 @@
 {
   "name": "UsageAnalysis",
+  "beta": true,
   "version": "0.1",
   "fullName": "Usage Analysis",
   "description": "Usage Analysis System",
