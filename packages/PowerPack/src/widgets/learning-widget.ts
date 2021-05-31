@@ -18,12 +18,11 @@ export class LearningWidget extends DG.Widget {
 
 function renderPlaylist(p: any) {
   let url = `https://www.youtube.com/playlist?list=${p.id}`;
-  return ui.divH([
+  return ui.cards.summary(
     ui.image(p.url, 120, 80, { target: url }),
-    ui.divV([
+    [
       ui.link(p.title, url),
       ui.divText(p.description)
-    ])
   ]);
 }
 

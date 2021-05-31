@@ -160,6 +160,11 @@ export class Project extends Entity {
     super(d);
   }
 
+  get pictureUrl(): string { return api.grok_PictureMixin_Get_PictureUrl(this.d); }
+  get path(): string { return api.grok_Project_Get_Path(this.d); }
+  get isOnServer(): string { return api.grok_Project_Get_IsOnServer(this.d); }
+  get isLocal(): string { return api.grok_Project_Get_IsLocal(this.d); }
+
   /** Project description */
   get description(): string { return api.grok_Project_Description(this.d); }
 
