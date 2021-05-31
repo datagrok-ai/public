@@ -310,6 +310,17 @@ export class JsViewer extends Widget {
   }
 }
 
+export class JsViewerLoader extends JsViewer {
+  constructor(d: any) {
+    super();
+    this.d = d;
+  }
+
+  get instance(): Promise<JsViewer> {
+    return new Promise((resolve, reject) => api.grok_JsViewerHostCore_Get_Instance(this.d, (t: any) => resolve(toJs(t))));
+  }
+}
+
 export class ScatterPlotViewer extends Viewer {
   constructor(d: any) {
     super(d);
