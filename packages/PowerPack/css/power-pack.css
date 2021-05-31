@@ -21,6 +21,15 @@
 
 }
 
+.power-pack-search-host .power-pack-widget-content {
+    width: initial;
+    height: initial;
+}
+
+.power-pack-search-host iframe {
+    border: none;
+}
+
 .power-pack-widgets-host {
     display: flex;
     flex-direction: row;

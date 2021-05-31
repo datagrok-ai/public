@@ -368,10 +368,19 @@ export function list(items: any[]): HTMLElement {
   return api.grok_UI_List(Array.from(items).map(toDart));
 }
 
-export function iframe(src?: string) {
+export function iframe(options?: {src?: string, width?: string, height?: string}) {
   let frame = element('iframe') as HTMLIFrameElement;
-  if (src != null)
-    frame.src = src;
+  if (options?.src != null)
+    frame.src = options?.src;
+  if (options?.width != null) {
+    frame.width = options.width;
+    frame.style.width = options.width;
+  }
+  if (options?.height != null) {
+    frame.height = options.height;
+    frame.style.height = options.height;
+  }
+
   return frame;
 }
 

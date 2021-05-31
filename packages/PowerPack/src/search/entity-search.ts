@@ -17,20 +17,26 @@ export async function usersSearch(s: string): Promise<any[]> {
   return (await grok.dapi.users.filter(s).list());
 }
 
+function iframe(src: string): DG.Widget {
+  return new WebWidget({
+    src: src,
+    width: '100%',
+    height: '500px'
+  });
+}
+
 export async function pubChemSearch(s: string): Promise<DG.Widget | null> {
   return s !== 'aspirin'
     ? null
-    : new WebWidget('https://pubchem.ncbi.nlm.nih.gov/compound/aspirin#section=3D-Conformer&embed=true');
+    : iframe( 'https://pubchem.ncbi.nlm.nih.gov/compound/aspirin#section=3D-Conformer&embed=true');
 }
 
 export async function pdbSearch(s: string): Promise<DG.Widget | null> {
-  return (s.length == 4)
-    ? new WebWidget(`https://www.rcsb.org/3d-view/${s}`)
-    : null;
+  return (s.length == 4) ? iframe(`https://www.rcsb.org/3d-view/${s}`) : null;
 }
 
 export async function wikiSearch(s: string): Promise<DG.Widget | null> {
   return (s.toLowerCase().startsWith('wiki:'))
-    ? new WebWidget(`https://en.m.wikipedia.org/wiki/${s.substring(5).trim()}`)
+    ? iframe(`https://en.m.wikipedia.org/wiki/${s.substring(5).trim()}`)
     : null;
 }

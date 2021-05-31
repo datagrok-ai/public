@@ -13,16 +13,17 @@ export class WebWidget extends DG.Widget {
   p1: string;
   p2: string;
   p3: string;
-  frame: HTMLIFrameElement = ui.iframe();
+  frame: HTMLIFrameElement;
 
-  constructor(url?: string) {
+  constructor(options?: {src?: string, width?: string, height?: string}) {
     super(ui.div());
 
+    this.frame = ui.iframe(options);
     this.root.appendChild(this.frame);
 
     // properties
     this.caption = super.addProperty('caption', DG.TYPE.STRING, 'Web');
-    this.urlTemplate = super.addProperty('urlTemplate', DG.TYPE.STRING, url ?? 'https://en.m.wikipedia.org/wiki/${p1}');
+    this.urlTemplate = super.addProperty('urlTemplate', DG.TYPE.STRING, options?.src ?? 'https://en.m.wikipedia.org/wiki/${p1}');
     this.p1 = super.addProperty('p1', DG.TYPE.STRING, '');
     this.p2 = super.addProperty('p2', DG.TYPE.STRING, '');
     this.p3 = super.addProperty('p3', DG.TYPE.STRING, '');
