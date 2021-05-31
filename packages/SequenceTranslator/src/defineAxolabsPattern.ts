@@ -13,14 +13,14 @@ SS/AS Modification - sections of dialog for changing base and PTO statuses of on
 */
 
 const axolabsMap: {[index: string]: [string, string, string, string]} = {
-  "RNA nucleotides": ["A", "C", "G", "U"],
-  "DNA nucleotides": ["dA", "dC", "dG", "dT"],
-  "2'-Fluoro nucleotides": ["Af", "Cf", "Gf", "Uf"],
-  "2'-O-Methyl nucleotides": ["a", "f", "g", "u"],
-  "2'-O-MOE nucleotides (including 5-Methyl C)": ["Am", "Cm", "Gm", "Tm"],
+  "RNA": ["A", "C", "G", "U"],
+  "DNA": ["dA", "dC", "dG", "dT"],
+  "2'-Fluoro": ["Af", "Cf", "Gf", "Uf"],
+  "2'-O-Methyl": ["a", "f", "g", "u"],
+  "2'-O-MOE": ["Am", "Cm", "Gm", "Tm"],
   "Glycol nucleic acid": ["(GNA-A)", "(GNA-C)", "(GNA-G)", "(GNA-T)"],
-  "LNA nucleotides (including 5-Methyl C)": ["Ab", "Cb", "Gb", "Tb"],
-  "Unlocked nucleotides (UNA)": ["Ao", "Co", "Go", "Uo"]
+  "LNA": ["Ab", "Cb", "Gb", "Tb"],
+  "Unlocked (UNA)": ["Ao", "Co", "Go", "Uo"]
 }
 const baseChoices: string[] = Object.keys(axolabsMap);
 const defaultBase: string = baseChoices[0];
@@ -29,7 +29,7 @@ const defaultAvailability: boolean = true;
 const defaultSequenceLength: number = 23;
 const maximalValidSequenceLength: number = 30;
 
-//name: defineAxolabsPattern
+
 export function defineAxolabsPattern() {
 
   function updateSsPattern() {
@@ -42,9 +42,11 @@ export function defineAxolabsPattern() {
     ssPattern.append(ss5);
     for (let i = 0; i < ssAvailabilityStatuses.length; i++) {
       ssAvailabilityStatuses[i] = ui.boolInput('', ssAvailabilityStatuses[i].value, (v: boolean) => updateSsAvailability(i, v));
+      let index = ui.divText((i + 1).toString());
+      index.style.marginLeft = '7px';
       ssPattern.append(
         ui.divV([
-          ui.divText((i + 1).toString()),
+          index,
           ssAvailabilityStatuses[i]
         ])
       );
@@ -64,10 +66,12 @@ export function defineAxolabsPattern() {
     asPattern.append(as3);
     for (let i = 0; i < asAvailabilityStatuses.length; i++) {
       asAvailabilityStatuses[i] = ui.boolInput('', asAvailabilityStatuses[i].value, (v: boolean) => updateAsAvailability(i, v));
+      let index = ui.divText((asAvailabilityStatuses.length - i).toString());
+      index.style.marginLeft = '7px';
       asPattern.append(
         ui.divV([
           asAvailabilityStatuses[i],
-          ui.divText((asAvailabilityStatuses.length - i).toString())
+          index
         ])
       );
     }
@@ -181,20 +185,46 @@ export function defineAxolabsPattern() {
     updateAsModification();
   }
 
-  function convertSequence(nucleotides: string) {
+  function addColumnsFields() {
+    chooseSsColumnDiv.innerHTML = '';
+    chooseAsColumnDiv.innerHTML = '';
+    let chosenInputSsColumn = ui.choiceInput('SS column', '', grok.shell.table(tables.value).columns.names());
+    let chosenInputAsColumn = ui.choiceInput('AS column', '', grok.shell.table(tables.value).columns.names());
+    chooseSsColumnDiv.append(chosenInputSsColumn.root);
+    if (createAsStrand.value) chooseAsColumnDiv.append(chosenInputAsColumn.root);
+    patternDesignSection.append(
+      ui.button('Convert Sequences', () => convertSequence(chosenInputSsColumn.value, chosenInputAsColumn.value))
+    );
+  }
+
+  function convertSequence(chosenInputSsColumn: string, chosenInputAsColumn: string) {
     let count: number = -1;
-    return nucleotides.replace(/[AUGC]/g, function (x: string) {
-      count++;
-      let ind = axolabsMap["RNA nucleotides"].indexOf(x);
-      let v = axolabsMap[ssBaseStatuses[count].value][ind];
-      return (ssPtoStatuses[count].value) ? v + 'ps' : v;
+    grok.shell.table(tables.value).columns.addNewString('Axolabs ' + chosenInputSsColumn).init((i: number) => {
+      count = -1;
+      return grok.shell.table(tables.value).columns.byName(chosenInputSsColumn).get(i).replace(/[AUGC]/g, function (x: string) {
+        count++;
+        let ind = axolabsMap["RNA"].indexOf(x);
+        let v = axolabsMap[ssBaseStatuses[count].value][ind];
+        return (ssPtoStatuses[count].value) ? v + 'ps' : v;
+      })
+    });
+    grok.shell.table(tables.value).columns.addNewString('Axolabs ' + chosenInputAsColumn).init((i: number) => {
+      count = -1;
+      return grok.shell.table(tables.value).columns.byName(chosenInputAsColumn).get(i).replace(/[AUGC]/g, function (x: string) {
+        count++;
+        let ind = axolabsMap["RNA"].indexOf(x);
+        let v = axolabsMap[asBaseStatuses[count].value][ind];
+        return (asPtoStatuses[count].value) ? v + 'ps' : v;
+      });
     });
   }
 
   let ssModificationItems = ui.div([]),
     asModificationItems = ui.div([]),
     ssPattern = ui.divH([]),
-    asPattern = ui.divH([]);
+    asPattern = ui.divH([]),
+    chooseAsColumnDiv = ui.div([]),
+    chooseSsColumnDiv = ui.div([]);
 
   let ssAvailabilityStatuses = Array(defaultSequenceLength).fill(ui.boolInput('', defaultAvailability)),
     asAvailabilityStatuses = Array(defaultSequenceLength).fill(ui.boolInput('', defaultAvailability)),
@@ -203,7 +233,7 @@ export function defineAxolabsPattern() {
     ssPtoStatuses = Array(defaultSequenceLength).fill(ui.boolInput('', defaultPto)),
     asPtoStatuses = Array(defaultSequenceLength).fill(ui.boolInput('', defaultPto));
 
-  let sequenceLength = ui.intInput('Enter sequence length', defaultSequenceLength, () => {
+  let sequenceLength = ui.intInput('Sequence length', defaultSequenceLength, () => {
     asLength = (asLength > sequenceLength.value) ? sequenceLength.value : asLength;
     ssLength = (ssLength > sequenceLength.value) ? sequenceLength.value : ssLength;
     updateUiForNewSequenceLength();
@@ -211,7 +241,7 @@ export function defineAxolabsPattern() {
   let ssLength: number = defaultSequenceLength,
     asLength: number = defaultSequenceLength;
 
-  let tables = ui.choiceInput('Tables', '', grok.shell.tables.map((t) => t.name));
+  let tables = ui.choiceInput('Tables', '', grok.shell.tableNames, (name: string) => addColumnsFields());
 
   let sequenceBase = ui.choiceInput('Sequence basis', defaultBase, baseChoices, (v: string) => updateBasisAllAtOnce(v));
 
@@ -220,6 +250,7 @@ export function defineAxolabsPattern() {
   let createAsStrand = ui.boolInput('Create AS strand', true, (v: boolean) => {
     asModificationSection.hidden = (!v);
     asPattern.hidden = (!v);
+    chooseAsColumnDiv.hidden = (!v);
   });
 
   let applyExistingDesign = ui.choiceInput('Apply Existing Design', '', ['Var-3A97'], () => grok.shell.info('Coming soon'));
@@ -227,26 +258,27 @@ export function defineAxolabsPattern() {
   let threeModification = ui.stringInput("Addidional 3' modification", "", (v: string) => grok.shell.info('Coming soon'));
   let fiveModification = ui.stringInput("Addidional 5' modification", "", (v: string) => grok.shell.info('Coming soon'));
 
+  sequenceLength.root.append(ui.button('Specify Duplex', () => grok.shell.info('Coming soon')));
   updateUiForNewSequenceLength();
 
   let patternDesignSection = ui.divV([
     ui.h1('Pattern Design'),
-    tables.root,
-    applyExistingDesign.root,
-    ui.divH([
+    ui.div([
+      tables.root,
+      chooseSsColumnDiv,
+      chooseAsColumnDiv,
+      applyExistingDesign.root,
       sequenceLength.root,
-      ui.button('Specify Duplex', () => grok.shell.info('Coming soon'))
-    ]),
-    sequenceBase.root,
-    fullyPto.root,
-    createAsStrand.root,
+      sequenceBase.root,
+      fullyPto.root,
+      createAsStrand.root
+    ], 'ui-form'),
     ssPattern,
     asPattern,
     threeModification.root,
     fiveModification.root,
     ui.divH([
       ui.button('Define Pattern', () => grok.shell.info('Coming soon')),
-      ui.button('Convert Sequences', () => grok.shell.info('Coming soon')),
       ui.button('Save Pattern', () => grok.shell.info('Coming soon'))
     ])
   ]);
@@ -271,11 +303,24 @@ export function defineAxolabsPattern() {
     asModificationItems
   ], {style: {marginLeft: "30px", width: "250px"}});
 
+  let appAxolabsDescription = ui.info(
+    [
+      ui.divText("\n How to define new pattern:",{style:{'font-weight':'bolder'}}),
+      ui.divText("1. Choose table and columns with sense and antisense strands"),
+      ui.divText("2. Choose lengths of both strands by editing checkboxes below"),
+      ui.divText("3. Choose basis and PTO status for each nucleotide"),
+      ui.divText("4. Set additional modifications for sequence edges"),
+      ui.divText("5. Press 'Convert Sequences' button"),
+      ui.divText("This will add the result column(s) to the right of the table"),
+    ], 'Create and apply Axolabs translation patterns.'
+  );
+
   return ui.block([
+    appAxolabsDescription,
     ui.divH([
       patternDesignSection,
       ssModificationSection,
       asModificationSection
     ])
-  ]);
+  ], {style:{padding: "20px 0"}});
 }
