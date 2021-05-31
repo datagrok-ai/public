@@ -231,7 +231,7 @@ export function inlineText(objects: any[]): HTMLElement {
  * @param {string | ElementOptions} options
  * @returns {HTMLDivElement}
  * */
-export function div(children: any[] | HTMLElement = [], options: string | ElementOptions | null = null): HTMLDivElement {
+export function div(children: any[] | string | HTMLElement = [], options: string | ElementOptions | null = null): HTMLDivElement {
   if (!Array.isArray(children))
     children = [children];
   let d = document.createElement('div');
@@ -399,6 +399,7 @@ function _link(element: HTMLElement, target: string | Function, tooltipMsg?: str
 
 export function image(src: string, width: number, height: number, options: {target: string | Function, tooltipMsg?: string}) {
   let image = element('div') as HTMLDivElement;
+  image.classList.add('ui-image');
 
   image.style.backgroundImage = `url(${src})`;
   image.style.width = `${width}px`;
@@ -409,16 +410,19 @@ export function image(src: string, width: number, height: number, options: {targ
 }
 
 /** Creates an <a> element. */
-export function link(text: string, target: string | Function, tooltipMsg?: string) {
+export function link(text: string, target: string | Function | object, tooltipMsg?: string) {
   let link = element('a') as HTMLAnchorElement;
+  link.classList.add('ui-link');
   link.innerText = text;
   if (target instanceof Function) {
     link.addEventListener('click', (_) => target());
-    link.style.cursor = 'pointer';
   }
   else if (typeof target === 'string') {
     link.href = target;
     link.target = '_blank';
+  }
+  else {
+    bind(target, link);
   }
   tooltip.bind(link, tooltipMsg);
   return link;
@@ -436,7 +440,7 @@ export function dialog(title: string = ''): Dialog {
  * @param {Element} element
  * @returns {Element}. */
 export function bind(item: any, element: Element): Element {
-  return api.grok_UI_Bind(item, element);
+  return api.grok_UI_Bind(toDart(item), element);
 }
 
 /** Shows popup with the [element] near the [anchor].
@@ -944,3 +948,27 @@ export let icons = {
   help: (handler: Function, tooltipMsg: string) => _icon('help', handler, tooltipMsg),
   settings: (handler: Function, tooltipMsg: string) => _icon('settings', handler, tooltipMsg),
 }
+
+export namespace cards {
+
+  /** Two columns, with picture on the left and details on the right */
+  export function summary(picture: HTMLElement, details: any[]): HTMLElement {
+    return divH([
+      $(picture).addClass('ui-card-picture').get()[0],
+      divV(details.map((d) => render(d)), 'ui-card-details')
+    ], 'ui-card')
+  }
+}
+
+export namespace labels {
+  export function details(s: string): HTMLDivElement {
+    return divText(s, 'ui-label-details');
+  }
+
+}
+
+// export let cards = {
+//   summary: (options{picture: string}): HTMLElement => {
+//     return null;
+//   }
+// }
