@@ -1,5 +1,6 @@
 {
 	"name": "chemblbrowser",
+  "beta": true,
 	"fullName": "ChemblBrowser",
 	"version": "0.0.1",
 	"description": "",
