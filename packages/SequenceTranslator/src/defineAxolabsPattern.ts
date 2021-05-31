@@ -12,7 +12,7 @@ Pattern design - section of dialog for changing length of AS and SS by editing c
 SS/AS Modification - sections of dialog for changing base and PTO statuses of one nucleotide at once: for SS or for AS;
 */
 
-const axolabsMap = {
+const axolabsMap: {[index: string]: [string, string, string, string]} = {
   "RNA nucleotides": ["A", "C", "G", "U"],
   "DNA nucleotides": ["dA", "dC", "dG", "dT"],
   "2'-Fluoro nucleotides": ["Af", "Cf", "Gf", "Uf"],
@@ -30,9 +30,7 @@ const defaultSequenceLength: number = 23;
 const maximalValidSequenceLength: number = 30;
 
 //name: defineAxolabsPattern
-//input: string nucleotides {semType: RNA nucleotides}
-//output: string result {semType: Axolabs}
-export function defineAxolabsPattern(nucleotides: string) {
+export function defineAxolabsPattern() {
 
   function updateSsPattern() {
     ssPattern.innerHTML = '';
@@ -183,6 +181,16 @@ export function defineAxolabsPattern(nucleotides: string) {
     updateAsModification();
   }
 
+  function convertSequence(nucleotides: string) {
+    let count: number = -1;
+    return nucleotides.replace(/[AUGC]/g, function (x: string) {
+      count++;
+      let ind = axolabsMap["RNA nucleotides"].indexOf(x);
+      let v = axolabsMap[ssBaseStatuses[count].value][ind];
+      return (ssPtoStatuses[count].value) ? v + 'ps' : v;
+    });
+  }
+
   let ssModificationItems = ui.div([]),
     asModificationItems = ui.div([]),
     ssPattern = ui.divH([]),
@@ -203,6 +211,8 @@ export function defineAxolabsPattern(nucleotides: string) {
   let ssLength: number = defaultSequenceLength,
     asLength: number = defaultSequenceLength;
 
+  let tables = ui.choiceInput('Tables', '', grok.shell.tables.map((t) => t.name));
+
   let sequenceBase = ui.choiceInput('Sequence basis', defaultBase, baseChoices, (v: string) => updateBasisAllAtOnce(v));
 
   let fullyPto = ui.boolInput('Fully PTO', defaultPto, (v: boolean) => updatePtoAllAtOnce(v));
@@ -221,6 +231,7 @@ export function defineAxolabsPattern(nucleotides: string) {
 
   let patternDesignSection = ui.divV([
     ui.h1('Pattern Design'),
+    tables.root,
     applyExistingDesign.root,
     ui.divH([
       sequenceLength.root,
@@ -260,13 +271,11 @@ export function defineAxolabsPattern(nucleotides: string) {
     asModificationItems
   ], {style: {marginLeft: "30px", width: "250px"}});
 
-  ui.dialog('Axolabs')
-    .add(
-      ui.divH([
-        patternDesignSection,
-        ssModificationSection,
-        asModificationSection
-      ])
-    )
-    .showModal(true);
+  return ui.block([
+    ui.divH([
+      patternDesignSection,
+      ssModificationSection,
+      asModificationSection
+    ])
+  ]);
 }
