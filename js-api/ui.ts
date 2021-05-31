@@ -961,14 +961,9 @@ export namespace cards {
 }
 
 export namespace labels {
+
+  /** Minor details to show using the smaller font */
   export function details(s: string): HTMLDivElement {
     return divText(s, 'ui-label-details');
   }
-
 }
-
-// export let cards = {
-//   summary: (options{picture: string}): HTMLElement => {
-//     return null;
-//   }
-// }
