@@ -11,7 +11,6 @@ import { CommunityWidget } from './widgets/community-widget';
 import { WebWidget } from './widgets/web-widget';
 import { LearningWidget } from "./widgets/learning-widget";
 import { functionSearch, pdbSearch, pubChemSearch, usersSearch, wikiSearch } from './search/entity-search';
-import { ServicesWidget } from './widgets/services-widget';
 
 export let _package = new DG.Package();
 
@@ -35,16 +34,19 @@ export function _welcomeView(): void {
 }
 
 //output: widget result
+//tags: homepage
 export function systemStatusWidget(): DG.Widget {
   return new SystemStatusWidget();
 }
 
 //output: widget result
+//tags: homepage
 export function recentProjectsWidget(): DG.Widget {
   return new RecentProjectsWidget();
 }
 
 //output: widget result
+//tags: homepage
 export function communityWidget(): DG.Widget {
   return new CommunityWidget();
 }
@@ -57,11 +59,6 @@ export function webWidget(): DG.Widget {
 //output: widget result
 export function learnWidget(): DG.Widget {
   return new LearningWidget();
-}
-
-//output: widget result
-export function servicesWidget(): DG.Widget {
-  return new ServicesWidget();
 }
 
 //description: Functions
