@@ -14,29 +14,34 @@ Chemical structure graphs with aromatic systems have different representations. 
 # Normalization
 Normalization is used mostly for handling the zwitterions - ions with both positive and negative charges that could be neutralized by each other at certain pH values. Such molecules are electrically neutral and in physiological conditions, such atom charges are indeed neutralized. 
  
+
 ![Normalization](chem_curate_norm.jpg "Normalization")
  
 # Reionization
  
 In some other cases structures are not electrically neutral but atom charges do not satisfy the lowest energy condition so reionization procedure is advisable. 
  
+
 ![Reionization](chem_curate_reion.jpg "Reionization")
  
 # Neutralization
  
 In cases when biological properties of the compound are prior to all other properties, it is commonly practiced to proceed with neutralized structures so even charged molecules are transformed to their electrically neutral form. This procedure should be used with the assumption that base and salt forms have the same activities. It should be noted though that there are structures that could not be neutralized, such as structures with quaternary nitrogen with no hydrogen neighbors, they basically do not have base form and exist only as salts. 
  
+
 ![Neutralization](chem_curate_charge.jpg "Neutralization")
  
 # Tautomerization
  
 One of the most surprising phenomenon are tautomers - compounds that exist in two or more structural forms at the same time in everyconverting state. To simplify the analysis of such structures tautomerization procedure has to be done. As a result, there will be only one most common form of the tautomer in the dataset. 
  
+
 ![Tautomerization](chem_curate_tau.jpg "Tautomerization")
  
 # Main fragment
  
 Analysis of mixtures or salts is rarely used so one may prefer to proceed only with the main fragment. This procedure is widely used in combination with neutralization. 
  
+
 ![Main fragment](chem_curate_main.jpg "Main fragment")
  
