@@ -2,26 +2,35 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-
-export async function entitySearch(s: string): Promise<any[]> {
-  return [`entity results for ${s}`];
-}
-
-export async function googleSearch(s: string): Promise<any[]> {
-  return [`google results for  ${s}`];
-}
+import {WebWidget} from "../widgets/web-widget";
 
 export async function functionSearch(s: string): Promise<any[]> {
   s = s.toLowerCase();
   return DG.Func.find()
     .filter(value =>
       value.name.toLowerCase().includes(s) ||
-      value.description?.toLowerCase()?.includes(s))
-    .map((f) => f.name);
+      value.description?.toLowerCase()?.includes(s));
 }
 
 export async function usersSearch(s: string): Promise<any[]> {
   s = s.toLowerCase();
-  return (await grok.dapi.users.filter(s).list()).map((u) => u.name);
+  return (await grok.dapi.users.filter(s).list());
 }
 
+export async function pubChemSearch(s: string): Promise<DG.Widget | null> {
+  return s !== 'aspirin'
+    ? null
+    : new WebWidget('https://pubchem.ncbi.nlm.nih.gov/compound/aspirin#section=3D-Conformer&embed=true');
+}
+
+export async function pdbSearch(s: string): Promise<DG.Widget | null> {
+  return (s.length == 4)
+    ? new WebWidget(`https://www.rcsb.org/3d-view/${s}`)
+    : null;
+}
+
+export async function wikiSearch(s: string): Promise<DG.Widget | null> {
+  return (s.toLowerCase().startsWith('wiki:'))
+    ? new WebWidget(`https://en.m.wikipedia.org/wiki/${s.substring(5).trim()}`)
+    : null;
+}

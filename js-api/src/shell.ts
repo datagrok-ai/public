@@ -429,3 +429,8 @@ export class Settings {
     api.grok_Set_PresentationMode(x);
   }
 }
+
+export class SearchResult {
+  caption?: string;
+  imageUrl?: string;
+}
