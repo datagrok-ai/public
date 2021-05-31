@@ -15,14 +15,14 @@ export class WebWidget extends DG.Widget {
   p3: string;
   frame: HTMLIFrameElement = ui.iframe();
 
-  constructor() {
+  constructor(url?: string) {
     super(ui.div());
 
     this.root.appendChild(this.frame);
 
     // properties
     this.caption = super.addProperty('caption', DG.TYPE.STRING, 'Web');
-    this.urlTemplate = super.addProperty('urlTemplate', DG.TYPE.STRING, 'https://en.m.wikipedia.org/wiki/${p1}');
+    this.urlTemplate = super.addProperty('urlTemplate', DG.TYPE.STRING, url ?? 'https://en.m.wikipedia.org/wiki/${p1}');
     this.p1 = super.addProperty('p1', DG.TYPE.STRING, '');
     this.p2 = super.addProperty('p2', DG.TYPE.STRING, '');
     this.p3 = super.addProperty('p3', DG.TYPE.STRING, '');

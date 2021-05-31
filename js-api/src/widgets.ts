@@ -49,7 +49,7 @@ export class ObjectPropertyBag {
           // @ts-ignore
           return props[name];
 
-        return target.getProperty(name).get(x);
+        return target.getProperty(name)?.get(x);
       }
     }
 

@@ -22,7 +22,7 @@ function card(w: DG.Widget): HTMLElement {
 
 export function welcomeView() {
   let input = ui.element('input', 'ui-input-editor') as HTMLInputElement;
-  input.placeholder = 'Search everywhere';
+  input.placeholder = 'Search everywhere. Try "aspirin" or "7JZK"';
   let inputHost = ui.div([
     ui.iconFA('search'),
     ui.div([
@@ -36,25 +36,31 @@ export function welcomeView() {
   grok.shell.newView('Welcome', [inputHost, viewHost], 'power-pack-welcome-view');
 
   let widgetFunctions = DG.Func.find({returnType: 'widget'});
-  let searchFunctions = DG.Func.find({tags: ['search']});
+  let searchFunctions = DG.Func.find({tags: ['search'], returnType: 'list'});
+  let searchWidgetFunctions = DG.Func.find({tags: ['search'], returnType: 'widget'});
 
   for (let f of widgetFunctions)
     f.apply().then((w: DG.Widget) => widgetsHost.appendChild(card(w)));
 
   function doSearch(s: string) {
     ui.empty(searchHost);
+
     for (let sf of searchFunctions)
       sf.apply({s: input.value}).then((results: any[]) => {
         if (results.length > 0) {
-          let resultBlock = ui.divV([
-            ui.h3(sf.description ?? sf.name)
-          ]);
-          searchHost.appendChild(resultBlock);
-
-          for (let r of results)
-            resultBlock.appendChild(ui.render(r));
+          searchHost.appendChild(ui.divV([
+            ui.h3(sf.description ?? sf.name),
+            ui.list(results)
+          ]));
         }
     });
+
+    for (let sf of searchWidgetFunctions)
+      sf.apply({s: input.value})
+        .then((result: DG.Widget) => {
+          if (result)
+            searchHost.appendChild(card(result));
+        });
   }
 
   rxjs.fromEvent(input, 'input').pipe(debounceTime(300)).subscribe(_ => {
