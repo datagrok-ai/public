@@ -208,11 +208,9 @@ export function renderCard(x: object): HTMLElement {
   return api.grok_UI_RenderCard(x);
 }
 
-/** Renders span
- * @param {object[]} x
- * @returns {HTMLElement}. */
-export function span(x: object[]): HTMLElement {
-  return api.grok_UI_Span(x);
+/** Renders multiple objects as a span */
+export function span(x: object[], options: string | ElementOptions | null = null): HTMLElement {
+  return _options(api.grok_UI_Span(x), options);
 }
 
 export function renderInline(x: HTMLElement): HTMLElement {
@@ -347,7 +345,7 @@ export function tableFromMap(map: { [key: string]: any }): HTMLTableElement {
 }
 
 /** Creates a visual table based on [items] and [renderer]. */
-export function table(items: [], renderer: ((item: any, ind: number) => any) | null, columnNames: string[] | null = null): HTMLTableElement {
+export function table(items: any[], renderer: ((item: any, ind: number) => any) | null, columnNames: string[] | null = null): HTMLTableElement {
   return api.grok_HtmlTable(items, renderer !== null ? (object: any, ind: number) => renderer(toJs(object), ind) : null, columnNames).root;
 }
 

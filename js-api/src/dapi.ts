@@ -363,7 +363,7 @@ export class AdminDataSource {
   /** Returns information about the services.
    * Sample: {@link https://public.datagrok.ai/js/samples/dapi/admin}
    *  @returns {Promise<Map>} */
-  getServiceInfos(): Promise<object> {
+  getServiceInfos(): Promise<object[]> {
     return new Promise((resolve, reject) => api.grok_Dapi_Admin_GetServiceInfos(this.s, (q: any) => resolve(toJs(q)), (e: any) => reject(e)));
   }
 }
