@@ -129,9 +129,9 @@ export function sequenceTranslator(): void {
     )
   ]);
 
-  grok.shell.newView('Sequence Translator', [
-    appDescription,
-    ui.divV([
+  let tab = ui.tabControl({
+    'MAIN': ui.divV([
+      appDescription,
       ui.div([
         ui.h1('Input sequence'),
         ui.div([
@@ -143,9 +143,16 @@ export function sequenceTranslator(): void {
         ui.h1('Output'),
         outputTableDiv
       ]),
-      accordionWithCmoCodes.root
+      accordionWithCmoCodes.root,
+      moleculeSvg
     ], 'sequence'),
-    moleculeSvg
+    'AXOLABS': _defineAxolabsPattern()
+  }).root;
+  tab.style.height = '100%';
+  tab.style.width = '100%';
+
+  grok.shell.newView('Sequence Translator', [
+     tab
   ]);
 
   $('.sequence')
@@ -588,8 +595,6 @@ export function gcrsToABI(nucleotides: string) {
 }
 
 //name: defineAxolabsPattern
-//input: string nucleotides {semType: RNA nucleotides}
-//output: string result {semType: Axolabs}
-export function _defineAxolabsPattern(nucleotides: string): void {
-  return defineAxolabsPattern(nucleotides);
+export function _defineAxolabsPattern() {
+  return defineAxolabsPattern();
 }
