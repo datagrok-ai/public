@@ -21,7 +21,7 @@ export function sequenceTranslator(): void {
   windows.showToolbox = false;
   windows.showHelp = false;
 
-  let appDescription = ui.info(
+  let appMainDescription = ui.info(
     [
       ui.divText('\n How to convert one sequence:',{style:{'font-weight':'bolder'}}),
       ui.divText("Paste sequence into the text field below"),
@@ -63,7 +63,7 @@ export function sequenceTranslator(): void {
         moleculeSvg.append(mol);
     } catch(e) {
       moleculeSvg.innerHTML = "";
-      // grok.shell.error(e);
+      grok.shell.error(e);
     } finally {
       pi.close();
     }
@@ -131,7 +131,7 @@ export function sequenceTranslator(): void {
 
   let tab = ui.tabControl({
     'MAIN': ui.divV([
-      appDescription,
+      appMainDescription,
       ui.div([
         ui.h1('Input sequence'),
         ui.div([
