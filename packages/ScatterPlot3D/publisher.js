@@ -12,7 +12,7 @@ ws.on('open', () => {
 
 ws.onmessage = function (event) {
     console.log('event.data: ',event.data);
-    exec('webpack-cli'
+    exec('ls' 
     , (err, stdout, stderr) => {
         if (err) {
           // node couldn't execute the command
@@ -22,8 +22,8 @@ ws.onmessage = function (event) {
       
         // the *entire* stdout and stderr (buffered)
         console.log(Date.now())
-        console.log(`stdout: ${stdout}`);
-        console.log(`stderr: ${stderr}`);
+        console.log(`stdout1: ${stdout}`);
+        console.log(`stderr1: ${stderr}`);
         ws.send('webpacked1')
         exec('grok publish https://dev.datagrok.ai/api --key 952e8090-7663-53c0-a49a-81ade66950be --rebuild'
           , (err2, stdout2, stderr2) => {
@@ -33,14 +33,14 @@ ws.onmessage = function (event) {
             }
                     // the *entire* stdout and stderr (buffered)
           console.log(Date.now())
-          console.log(`stdout: ${stdout}`);
-          console.log(`stderr: ${stderr}`);
+          console.log(`stdout2: ${stdout2}`);
+          console.log(`stderr2: ${stderr2}`);
         ws.send('compiled1')
 
           } // (err2, stdout2, strerr2)
-        )
+        ) // 2nd exec
 
-      })
+      }) // 1st exec 
     
     
 
