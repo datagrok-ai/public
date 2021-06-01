@@ -188,8 +188,8 @@ export function defineAxolabsPattern() {
   function addColumnsFields() {
     chooseSsColumnDiv.innerHTML = '';
     chooseAsColumnDiv.innerHTML = '';
-    let chosenInputSsColumn = ui.choiceInput('SS column', '', grok.shell.table(tables.value).columns.names());
-    let chosenInputAsColumn = ui.choiceInput('AS column', '', grok.shell.table(tables.value).columns.names());
+    let chosenInputSsColumn = ui.choiceInput('SS Column', '', grok.shell.table(tables.value).columns.names());
+    let chosenInputAsColumn = ui.choiceInput('AS Column', '', grok.shell.table(tables.value).columns.names());
     chooseSsColumnDiv.append(chosenInputSsColumn.root);
     if (createAsStrand.value) chooseAsColumnDiv.append(chosenInputAsColumn.root);
     patternDesignSection.append(
@@ -208,15 +208,16 @@ export function defineAxolabsPattern() {
         return (ssPtoStatuses[count].value) ? v + 'ps' : v;
       })
     });
-    grok.shell.table(tables.value).columns.addNewString('Axolabs ' + chosenInputAsColumn).init((i: number) => {
-      count = -1;
-      return grok.shell.table(tables.value).columns.byName(chosenInputAsColumn).get(i).replace(/[AUGC]/g, function (x: string) {
-        count++;
-        let ind = axolabsMap["RNA"].indexOf(x);
-        let v = axolabsMap[asBaseStatuses[count].value][ind];
-        return (asPtoStatuses[count].value) ? v + 'ps' : v;
+    if (createAsStrand.value)
+      grok.shell.table(tables.value).columns.addNewString('Axolabs ' + chosenInputAsColumn).init((i: number) => {
+        count = -1;
+        return grok.shell.table(tables.value).columns.byName(chosenInputAsColumn).get(i).replace(/[AUGC]/g, function (x: string) {
+          count++;
+          let ind = axolabsMap["RNA"].indexOf(x);
+          let v = axolabsMap[asBaseStatuses[count].value][ind];
+          return (asPtoStatuses[count].value) ? v + 'ps' : v;
+        });
       });
-    });
   }
 
   let ssModificationItems = ui.div([]),
@@ -233,30 +234,36 @@ export function defineAxolabsPattern() {
     ssPtoStatuses = Array(defaultSequenceLength).fill(ui.boolInput('', defaultPto)),
     asPtoStatuses = Array(defaultSequenceLength).fill(ui.boolInput('', defaultPto));
 
-  let sequenceLength = ui.intInput('Sequence length', defaultSequenceLength, () => {
-    asLength = (asLength > sequenceLength.value) ? sequenceLength.value : asLength;
-    ssLength = (ssLength > sequenceLength.value) ? sequenceLength.value : ssLength;
+  let sequenceLength = ui.intInput('Sequence Length', defaultSequenceLength, () => {
+    if (sequenceLength.value > oldSequenceLength) {
+      ssLength += sequenceLength.value - oldSequenceLength;
+      asLength += sequenceLength.value - oldSequenceLength;
+    }
+    if (asLength > sequenceLength.value) asLength = sequenceLength.value;
+    if (ssLength > sequenceLength.value) ssLength = sequenceLength.value;
     updateUiForNewSequenceLength();
+    oldSequenceLength = sequenceLength.value;
   });
-  let ssLength: number = defaultSequenceLength,
+  let oldSequenceLength: number = sequenceLength.value,
+    ssLength: number = defaultSequenceLength,
     asLength: number = defaultSequenceLength;
 
   let tables = ui.choiceInput('Tables', '', grok.shell.tableNames, (name: string) => addColumnsFields());
 
-  let sequenceBase = ui.choiceInput('Sequence basis', defaultBase, baseChoices, (v: string) => updateBasisAllAtOnce(v));
+  let sequenceBase = ui.choiceInput('Sequence Basis', defaultBase, baseChoices, (v: string) => updateBasisAllAtOnce(v));
 
   let fullyPto = ui.boolInput('Fully PTO', defaultPto, (v: boolean) => updatePtoAllAtOnce(v));
 
-  let createAsStrand = ui.boolInput('Create AS strand', true, (v: boolean) => {
+  let createAsStrand = ui.boolInput('Create AS Strand', true, (v: boolean) => {
     asModificationSection.hidden = (!v);
     asPattern.hidden = (!v);
     chooseAsColumnDiv.hidden = (!v);
   });
 
-  let applyExistingDesign = ui.choiceInput('Apply Existing Design', '', ['Var-3A97'], () => grok.shell.info('Coming soon'));
+  let applyExistingDesign = ui.choiceInput('Apply Existing Pattern', '', ['Var-3A97'], () => grok.shell.info('Coming soon'));
 
-  let threeModification = ui.stringInput("Addidional 3' modification", "", (v: string) => grok.shell.info('Coming soon'));
-  let fiveModification = ui.stringInput("Addidional 5' modification", "", (v: string) => grok.shell.info('Coming soon'));
+  let threeModification = ui.stringInput("Addidional 3' Modification", "", (v: string) => grok.shell.info('Coming soon'));
+  let fiveModification = ui.stringInput("Addidional 5' Modification", "", (v: string) => grok.shell.info('Coming soon'));
 
   sequenceLength.root.append(ui.button('Specify Duplex', () => grok.shell.info('Coming soon')));
   updateUiForNewSequenceLength();
