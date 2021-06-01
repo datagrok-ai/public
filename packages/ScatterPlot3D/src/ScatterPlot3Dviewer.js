@@ -1,26 +1,106 @@
 import * as THREE from 'three'
 //import { OrbitControls } from "https://threejs.org/examples/jsm/controls/OrbitControls.js";
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls.js';
+
 export class ScatterPlot3Dviewer extends DG.JsViewer {
 	constructor() {
 		super();
-		console.log("HREEE ", THREE)
-
-		
-
-
+		console.log("TTHREEE ", THREE.REVISION);
+		window.onHitHandlerName = () => { console.log('hit !!!') }
+		this.onHitHandlerName = () => { console.log('hit !!!') }
 
 
+		//this.onHitHandlerName = onHitHandlerName;
 
+		this.currentRow = -1;
+		this.mouseOverRow = -1;
+		this.showTooltip = true;
 
-
+		this.getMyLook();
 
 		this.initLayout();
+		this.init3D();
 
 		//this.onTableAttached();
+	} // ctor
+
+	initLayout() {
+		this.container = ui.div([], 'd4-viewer-host');
+		console.log('cont ', this.container)
 	}
+ 
+	init3D() {
+		const width = this.container.clientWidth;
+		const height = this.container.clientHeight;
+
+		this.materialList = [];
+		this.geometryList = [];
+		this.geometrySize = new THREE.Vector3();
+		this.mouse = new THREE.Vector2();
+		this.highlightBoxScale = 1.5;
+		// camera
+		this.camera = new THREE.PerspectiveCamera();
+		this.resetCamera();
+
+		// hitting render target
+		this.hittingRenderTarget = new THREE.WebGLRenderTarget(width, height);
+		this.hittingRenderTarget.texture.generateMipmaps = false;
+		this.hittingRenderTarget.texture.minFilter = THREE.NearestFilter;
+
+		var highlightBox = function (color, transparent, opacity) {
+			return new THREE.Mesh(
+				new THREE.BoxGeometry(1, 1, 1),
+				new THREE.MeshLambertMaterial({
+					emissive: color,
+					transparent: transparent,
+					opacity: opacity,
+					side: THREE.FrontSide
+				})
+			);
+		};
+
+		// highlight boxes
+		this.mouseOverBox = highlightBox(0xFFFF00, true, 0.5);
+		this.currentRowBox = highlightBox(0x000000, true, 0.75);
+
+		// renderer
+		this.renderer = new THREE.WebGLRenderer({
+			antialias: true,
+			alpha: true
+		});
+
+//		if (this.renderer.extensions.get('ANGLE_instanced_arrays') === null) {
+//			document.getElementById("notSupported").style.display = "";
+//			return;
+//		}
+
+		this.renderer.setPixelRatio(window.devicePixelRatio);
+		this.renderer.setSize(width, height);
+		this.renderer.domElement.style.width = '100%';
+		this.renderer.domElement.style.heigth = '100%';
+		this.container.appendChild(this.renderer.domElement);
+
+//		if (this.renderer.extensions.get('ANGLE_instanced_arrays') === null) {
+//			throw 'ANGLE_instanced_arrays not supported';
+//		}
+
+		// controls
+		this.controls = new TrackballControls(
+			this.camera, this.renderer.domElement
+		);
+		this.controls.dynamicDampingFactor = 0.00001;
+		this.timerAutoRotation = null;
+
+		// shaders
+		this.initShaders();
+
+		this.isEventsLinked = false;
+	} // init3d
+
 
 	getMyLook() {
+		this.look = {}
 		this.look.TETRAHEDRON = 'tetrahedron';
 		this.look.OCTAHEDRON = 'octahedron';
 		this.look.CYLINDER = 'cylinder';
@@ -28,7 +108,7 @@ export class ScatterPlot3Dviewer extends DG.JsViewer {
 		this.look.BOX = 'box';
 		this.look.SPHERE = 'sphere';
 		this.look.MarkerTypes = [
-			this.look.TETRAHEDRON, this.look.OCTAHEDRON, this.look.CYLINDER, 
+			this.look.TETRAHEDRON, this.look.OCTAHEDRON, this.look.CYLINDER,
 			this.look.DODECAHEDRON, this.look.BOX, this.look.SPHERE
 		];
 		this.look.backColor = 'red';
@@ -53,18 +133,22 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 		this.look.showFilteredOutPoints = false;
 
 		/// Highlight 'mouse-over' rows (such as the ones that fall into a histogram bin that
-  		/// the mouse is currently hovering over).
-  		this.look.showMouseOverRowGroup = true;
-		this.look.markerType = ScatterPlot3dMarkers.OCTAHEDRON;
+		/// the mouse is currently hovering over).
+		this.look.showMouseOverRowGroup = true;
+		//this.look.markerType = ScatterPlot3dMarkers.OCTAHEDRON;
+		this.look.markerType = this.look.OCTAHEDRON;
 		this.look.markerTypeChoices = this.look.markersTypes;
 		this.look.markerRandomRotation = false;
-	}
+
+
+		this.look.markerMinSize = 0.001;
+	} // look
 
 	rendererResize(size) {
-		this.renderer.setSize(size.width, size.height);
+		//	this.renderer.setSize(size.width, size.height);
 	}
 
-	initLayout() {
+	initLayout2() {
 		this.camera = new THREE.PerspectiveCamera(45, 1, 2, 100000);
 		this.scene = new THREE.Scene();
 		this.camera.position.z = -100;
@@ -128,7 +212,7 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 	}
 
 	createMarker(type, coords) {
-		var m = new THREE.MeshPhongMaterial({ color: 0xff0000 })
+		var m = new THREE.MeshPhongMaterial({ color: 0xff00ff })
 		var g = new THREE.SphereGeometry(2, 6, 6);
 		var mesh = new THREE.Mesh(g, m);
 		mesh.position.x = coords[0];
@@ -138,6 +222,7 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 	}
 
 	onTableAttached() {
+		if (!this.scene) return 0;
 		var df = this.dataFrame;
 		// debugger 
 
@@ -172,11 +257,502 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 		}
 	}
 
-	render() {
+	renderttt() {
 		if (this.controls) this.controls.update();
 		this.renderer.render(this.scene, this.camera);
 		requestAnimationFrame(this.render.bind(this))
 	}
+
+
+
+
+
+
+
+	updateAllScene(look, x, y, z, filter, colors, sizes) {
+		this.look = look;
+		this.initMesh(x, y, z, filter, colors, sizes);
+
+		if (this.look.dynamicCameraMovement)
+			this.enableAutoRotation();
+		else
+			this.disableAutoRotation();
+
+		if (!this.isEventsLinked) {
+			this.renderer.domElement.addEventListener('mousemove', this.onMouseMove.bind(this));
+			this.renderer.domElement.addEventListener('mousedown', this.onMouseDown.bind(this));
+			this.renderer.domElement.addEventListener('wheel', this.onMouseMove.bind(this));
+			this.renderer.domElement.addEventListener('dblclick', this.onDoubleClick.bind(this));
+			onResize(this.container, this.onWindowResize.bind(this));
+			requestAnimationFrame(this.render.bind(this));
+			this.enableAutoRotation();
+			this.isEventsLinked = true;
+		}
+	}
+
+
+	update(colors, filter) {
+		let markerColor = new THREE.Color();
+		for (let n = 0; n < colors.length; n++) {
+			markerColor.setHex(colors[n]);
+			this.markerColors.setXYZ(n, markerColor.r, markerColor.g, markerColor.b);
+			this.markerAlphas.setX(n, ((colors[n] >> 24) & 255) / 255.0);
+			this.filter.setX(n, filter[n]);
+		}
+
+		this.igeo.attributes.color.needsUpdate = true;
+		this.igeo.attributes.alpha.needsUpdate = true;
+		this.igeo.attributes.filter.needsUpdate = true;
+		this.hit();
+		this.render();
+	}
+
+
+
+	hitRows(currentRow, mouseOverRow) {
+		this.currentRow = currentRow;
+		this.mouseOverRow = mouseOverRow;
+		this.hit();
+		this.render();
+	}
+
+
+
+	resetView() {
+		this.resetCamera();
+		this.controls.reset();
+		this.hit();
+		this.render();
+	}
+
+
+	enableAutoRotation() {
+		this.controls.staticMoving = false;
+
+		// Simulate touch
+		this.controls.handleEvent(new MouseEvent('mousedown', { clientX: 0 }));
+		this.controls.handleEvent(new MouseEvent('mousemove', { clientX: 1 }));
+		this.controls.handleEvent(new MouseEvent('mouseup', { clientX: 2 }));
+
+		if (this.timerAutoRotation === null)
+			this.timerAutoRotation = setInterval(this.render.bind(this), 10);
+	}
+
+
+	disableAutoRotation() {
+		this.controls.staticMoving = true;
+		clearInterval(this.timerAutoRotation);
+		this.timerAutoRotation = null;
+	}
+
+
+	resetCamera() {
+		this.camera.fov = 20;
+		this.camera.aspect = this.container.clientWidth / this.container.clientHeight;
+		this.camera.near = 1;
+		this.camera.far = 100;
+		this.camera.position.z = 4.0;
+		this.camera.updateProjectionMatrix();
+	}
+
+
+	initMesh(x, y, z, filter, color, size) {
+		this.clean();
+
+		let geo;
+		if (this.look.markerType === 'tetrahedron')
+			geo = new THREE.TetrahedronGeometry(1.0);
+		else if (this.look.markerType === 'octahedron')
+			geo = new THREE.OctahedronGeometry(1.0);
+		else if (this.look.markerType === 'cylinder')
+			geo = new THREE.CylinderGeometry(1.0, 1.0, 1.0, 5, 1);
+		else if (this.look.markerType === 'dodecahedron')
+			geo = new THREE.DodecahedronGeometry(1.0);
+		else if (this.look.markerType === 'box')
+			geo = new THREE.BoxGeometry(1.0, 1.0, 1.0);
+		else if (this.look.markerType === 'sphere')
+			geo = new THREE.SphereGeometry(1.0, 8, 8);
+		else
+			geo = new THREE.TetrahedronGeometry(1.0);
+		geo.computeBoundingBox();
+		geo.boundingBox.getSize(this.geometrySize);
+		this.geometryList.push(geo);
+
+		this.makeInstanced(geo, x, y, z, filter, color, size);
+		this.hit();
+		this.render();
+	}
+
+
+	saveMousePosition(e) {
+		this.mouse.x = e.clientX;
+		this.mouse.y = e.clientY;
+	}
+
+
+	onMouseMove(e) {
+		if (this.showTooltip === false)
+			window[this.onHitHandlerName].apply(window, [-1, this.currentRow, 0, 0, new Object()]);
+		this.saveMousePosition(e);
+		const element = this.hitTest(e.layerX, e.layerY);
+		this.mouseOverRow = element.id;
+		this.hit();
+		if (!this.look.dynamicCameraMovement)
+			this.render();
+	}
+
+
+
+	onMouseDown(e) {
+		if (!this.look.dynamicCameraMovement)
+			this.disableAutoRotation();
+		handleMouseMove(this.onMouseMove.bind(this), this.onMouseUp.bind(this));
+		this.showTooltip = false;
+		this.saveMousePosition(e);
+		const element = this.hitTest(e.layerX, e.layerY);
+		if (element.object && !(e.ctrlKey || e.metaKey || e.shiftKey))
+			this.currentRow = element.id;
+
+		let options = {
+			'ctrlKey': e.ctrlKey,
+			'metaKey': e.metaKey,
+			'shiftKey': e.shiftKey
+		};
+
+		this.hit(options);
+		this.render();
+	}
+
+
+	onMouseUp(e) {
+		this.showTooltip = true;
+	}
+
+
+	onDoubleClick(e) {
+		const element = this.hitTest(e.layerX, e.layerY);
+		if (element.object)
+			this.onMouseDown(e);
+		else
+			this.resetView();
+	}
+
+
+
+
+	onWindowResize(e) {
+		const width = this.container.clientWidth;
+		const height = this.container.clientHeight;
+		this.camera.aspect = width / height;
+		this.camera.updateProjectionMatrix();
+
+		this.renderer.setSize(width, height);
+		this.hittingRenderTarget.setSize(width, height);
+		this.renderer.render(this.scene, this.camera);
+	}
+
+
+
+
+	clean() {
+		THREE.Cache.clear();
+
+		this.materialList.forEach(function (m) {
+			m.dispose();
+		});
+
+		this.geometryList.forEach(function (g) {
+			g.dispose();
+		});
+
+		this.scene = new THREE.Scene();
+		this.scene.background = new THREE.Color(this.look.backColor);
+
+		this.scene.add(this.camera);
+		this.scene.add(this.mouseOverBox);
+		this.scene.add(this.currentRowBox);
+
+		this.hittingScene = new THREE.Scene();
+		this.hittingData = {};
+		this.materialList = [];
+		this.geometryList = [];
+	}
+
+
+
+
+
+	makeInstanced(geo, x, y, z, filter, colors, sizes) {
+		// material
+		const vert = document.getElementById('vertInstanced').textContent;
+		const frag = document.getElementById('fragInstanced').textContent;
+
+		const material = new THREE.RawShaderMaterial({
+			vertexShader: vert,
+			fragmentShader: frag,
+			transparent: true
+		});
+
+		this.materialList.push(material);
+
+		const hittingMaterial = new THREE.RawShaderMaterial({
+			vertexShader: "#define HITTING\n" + vert,
+			fragmentShader: "#define HITTING\n" + frag
+		});
+
+		this.materialList.push(hittingMaterial);
+
+		// geometry
+		let bgeo = new THREE.BufferGeometry().fromGeometry(geo);
+		this.geometryList.push(bgeo);
+
+		this.igeo = new THREE.InstancedBufferGeometry();
+		this.geometryList.push(this.igeo);
+
+		const vertices = bgeo.attributes.position.clone();
+		this.igeo.addAttribute('position', vertices);
+
+		const numObjects = x.length;
+
+		let mcol0 = new THREE.InstancedBufferAttribute(new Float32Array(numObjects * 3), 3, 1);
+		let mcol1 = new THREE.InstancedBufferAttribute(new Float32Array(numObjects * 3), 3, 1);
+		let mcol2 = new THREE.InstancedBufferAttribute(new Float32Array(numObjects * 3), 3, 1);
+		let mcol3 = new THREE.InstancedBufferAttribute(new Float32Array(numObjects * 3), 3, 1);
+
+		const scaleFactor = 1.0 / (10.0 * Math.log(numObjects));
+
+		let position = new THREE.Vector3();
+		let rotation = new THREE.Euler();
+		let quaternion = new THREE.Quaternion();
+		let scale = new THREE.Vector3();
+
+		let matrix = new THREE.Matrix4();
+		let me = matrix.elements;
+
+		for (let n = 0; n < numObjects; n++) {
+			let size = (sizes === null) ? scaleFactor : sizes[n] * scaleFactor;
+			size = (size < this.markerMinSize) ? this.markerMinSize : size;
+			scale.setScalar(size);
+
+			position.x = x[n] - 0.5;
+			position.y = y[n] - 0.5;
+			position.z = z[n] - 0.5;
+
+			if (this.look.markerRandomRotation) {
+				rotation.x = Math.random() * 2 * Math.PI;
+				rotation.y = Math.random() * 2 * Math.PI;
+				rotation.z = Math.random() * 2 * Math.PI;
+				quaternion.setFromEuler(rotation, false);
+			}
+
+			matrix.compose(position, quaternion, scale);
+
+			let object = new THREE.Object3D();
+			object.applyMatrix(matrix);
+			this.hittingData[n + 1] = object;
+
+			mcol0.setXYZ(n, me[0], me[1], me[2]);
+			mcol1.setXYZ(n, me[4], me[5], me[6]);
+			mcol2.setXYZ(n, me[8], me[9], me[10]);
+			mcol3.setXYZ(n, me[12], me[13], me[14]);
+		}
+
+		this.igeo.addAttribute('mcol0', mcol0);
+		this.igeo.addAttribute('mcol1', mcol1);
+		this.igeo.addAttribute('mcol2', mcol2);
+		this.igeo.addAttribute('mcol3', mcol3);
+
+		this.markerColors = new THREE.InstancedBufferAttribute(new Float32Array(numObjects * 3), 3, 1);
+		this.markerAlphas = new THREE.InstancedBufferAttribute(new Float32Array(numObjects), 1, 1);
+		let markerColor = new THREE.Color();
+
+		for (let n = 0; n < numObjects; n++) {
+			markerColor.setHex(colors[n]);
+			this.markerAlphas.setX(n, ((colors[n] >> 24) & 255) / 255.0);
+			this.markerColors.setXYZ(n, markerColor.r, markerColor.g, markerColor.b);
+		}
+
+		this.igeo.addAttribute('color', this.markerColors);
+		this.igeo.addAttribute('alpha', this.markerAlphas);
+
+		let col = new THREE.Color();
+		let hittingColors = new THREE.InstancedBufferAttribute(new Float32Array(numObjects * 3), 3, 1);
+
+		for (let n = 0; n < numObjects; n++) {
+			col.setHex(n + 1);
+			hittingColors.setXYZ(n, col.r, col.g, col.b);
+		}
+
+		this.igeo.addAttribute('hittingColor', hittingColors);
+
+		// filter
+		this.filter = new THREE.InstancedBufferAttribute(filter, 1, 1);
+		this.igeo.addAttribute('filter', this.filter);
+
+		// mesh
+		this.mesh = new THREE.Mesh(this.igeo, material);
+		this.scene.add(this.mesh);
+
+		this.hittingMesh = new THREE.Mesh(this.igeo, hittingMaterial);
+		this.hittingScene.add(this.hittingMesh);
+	} // makeInstanced
+
+
+
+	hitTest(x, y) {
+		// create buffer for reading a single pixel
+		let pixelBuffer = new Uint8Array(4);
+
+		// read the pixel under the mouse from the texture
+		this.renderer.readRenderTargetPixels(this.hittingRenderTarget,
+			x, this.hittingRenderTarget.height - y, 1, 1, pixelBuffer);
+
+		// interpret the pixel as an ID
+		let id = (pixelBuffer[0] << 16) | (pixelBuffer[1] << 8) | (pixelBuffer[2]);
+
+		return {
+			id: id - 1,
+			object: this.hittingData[id]
+		};
+	} // hitTest
+
+
+	getElement(id) {
+		return {
+			id: id,
+			object: this.hittingData[id + 1]
+		};
+	}
+
+
+	hit(options) {
+		options = ((options === undefined) || (options === null)) ? new Object() : options;
+
+		options.showTooltip = this.showTooltip;
+
+		// render the hitting scene off-screen
+		this.mouseOverBox.visible = false;
+		this.currentRowBox.visible = false;
+		this.renderer.render(this.hittingScene, this.camera, this.hittingRenderTarget);
+		this.moveHighlightBox(this.mouseOverBox, this.getElement(this.mouseOverRow), true, options);
+		this.moveHighlightBox(this.currentRowBox, this.getElement(this.currentRow), false, options);
+	}
+
+
+	moveHighlightBox(highlightBox, element, notify, options) {
+		if (element.object) {
+			const object = element.object;
+
+			// move the highlightBox, so that it surrounds the hit object
+			if (object.position && object.rotation && object.scale) {
+				highlightBox.position.copy(object.position);
+				highlightBox.rotation.copy(object.rotation);
+				highlightBox.scale.copy(object.scale).multiply(this.geometrySize).multiplyScalar(this.highlightBoxScale);
+				highlightBox.visible = true;
+			}
+
+			if (notify)
+				window[this.onHitHandlerName].apply(window, [this.mouseOverRow, this.currentRow, this.mouse.x, this.mouse.y, options]);
+		}
+		else {
+			if (notify)
+				window[this.onHitHandlerName].apply(window, [this.mouseOverRow, this.currentRow, 0, 0, options]);
+		}
+	}
+
+
+	render() {
+		this.controls.update();
+		this.renderer.render(this.scene, this.camera);
+	}
+
+
+	initShaders() {
+		const vertInstanced = `
+		#define SHADER_NAME vertInstanced
+  
+		precision highp float;
+	  
+		uniform mat4 modelViewMatrix;
+		uniform mat4 projectionMatrix;
+	  
+		attribute vec3 position;
+		attribute vec3 mcol0;
+		attribute vec3 mcol1;
+		attribute vec3 mcol2;
+		attribute vec3 mcol3;
+		attribute float filter;
+		attribute float alpha;
+	  
+		#ifdef HITTING
+		attribute vec3 hittingColor;
+		#else
+		attribute vec3 color;
+		varying vec3 vPosition;
+		varying float vAlpha;
+		#endif
+	  
+		varying vec3 vColor;
+	  
+		void main()	{
+		  mat4 matrix = mat4(
+			vec4(mcol0, 0),
+			vec4(mcol1, 0),
+			vec4(mcol2, 0),
+			vec4(mcol3, 1)
+		  );
+	  
+		  vec3 positionEye = (modelViewMatrix * matrix * vec4(position, 1.0)).xyz;
+	  
+		#ifdef HITTING
+		  vColor = hittingColor;
+		#else
+		  vColor = color;
+		  vPosition = positionEye;
+		  vAlpha = alpha;
+		#endif
+		  gl_Position = projectionMatrix * vec4(positionEye, filter);
+		}`;
+
+		const fragInstanced = `
+		#define SHADER_NAME fragInstanced
+  
+		#extension GL_OES_standard_derivatives : enable
+  
+		precision highp float;
+	  
+		varying vec3 vColor;
+	  
+		#ifndef HITTING
+		varying vec3 vPosition;
+		varying float vAlpha;
+		#endif
+	  
+		void main()	{
+		#ifdef HITTING
+		  gl_FragColor = vec4(vColor, 1.0);
+		#else
+				  vec3 fdx = dFdx(vPosition);
+				  vec3 fdy = dFdy(vPosition);
+				  vec3 normal = normalize(cross(fdx, fdy));
+				  float diffuse = dot(normal, vec3(0.0, 0.0, 1.0));
+				  gl_FragColor = vec4(diffuse * vColor, vAlpha);
+		#endif
+		}`;
+
+		const addScript = function (type, id, code) {
+			let s = document.createElement("script");
+			s.id = id;
+			s.type = type;
+			s.innerHTML = code;
+			document.head.appendChild(s);
+		};
+
+		if (!document.getElementById("vertMerged")) {
+			addScript("x-shader/x-vertex", "vertInstanced", vertInstanced);
+			addScript("x-shader/x-fragment", "fragInstanced", fragInstanced);
+		}
+	} // initShaders
 
 
 }

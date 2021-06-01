@@ -11,13 +11,12 @@ export function test() {
   grok.shell.info(_package.webRoot);
 }
 
-
+console.error('bbbb11') 
  
 //name: ScatterPlot3D
 //description: Creates an awesome viewer
 //tags: viewer
 //output: viewer result
 export function scatterPlot3Dviewer() {
-  
   return new ScatterPlot3Dviewer();
 }
