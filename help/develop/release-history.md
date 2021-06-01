@@ -1,6 +1,74 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-06-01 Dev build 0.92.6
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.6`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* chem curation description added 
+* SequenceTranslator: flexible Axolabs sequence conversion (WIP)
+* (Bug) JS API: Viewer.props does not work 
+* ScatterPlot custom renderer: disable overlay dot rendering on categories hover  
+* (Bug) Pie Chart: unnecessary datetime aggregation 
+* (Bug) WebViewer won't load as part of the project (WIP)
+* Demo of structural curation added 
+* (Bug) JS API: toJs won't work on GrokPackage 
+* Minor style improvements 
+* Fixed paths to images 
+* JS API: Func.find(package, name, tags, returnType) 
+* JS API: Func.appy(params): Promise<TResult> 
+* Widget-based Welcome page (WIP)
+* Added documentation for FASTA reader 
+* Added tag for sequence field 
+* Update README.md 
+* Wiki: How to manipulate viewers (WIP)
+* JsWidgetBase: getJsObject now returns jsWidget 
+* JS API:  add a possibility to use custom ScatterPlot renderer (WIP)
+* fetchProxy: better typing. 
+* JS API: ui.link(text, url | action, tooltip?) 
+* Power Pack: Community Widget 
+* JS API: ui.iframe(src) 
+* Power Pack: WebWidget 
+* PLOT3D init 
+* JS API: toDart(): ability for JS classes to define custom conversion 
+* JS API: ui.icons for commonly used icons 
+* JS API: ui.tools.setHoverVisibility(host, elements) 
+* JS API: ui.image 
+* Power Pack: Learn Widget (WIP)
+* Scripting: interactivity: show execution results in the property panel 
+* Run script: added F5 shortcut to the tooltip 
+* Global Search (WIP)
+* Power Pack: Search: FunctionSearchProvider 
+* Power Pack: Search: WikiSearch 
+* Charts: Tree Viewer (WIP)
+* info page polishing 
+* chem Cureate: info page polishing 
+* chem Curate: jpg files changed to png 
+* Help: Ordering in chapters 
+* PLOT3D: import three.js and show scene 
+* Added beta flag to the old Usage analysis 
+* Function View (WIP)
+* (Bug) JS API: JsViewerHostCore is returned instead of Viewer instance 
+* Data: activity_cliffs, chem_standards 
+* (Bug) Miniconda hangs CVM builds (WIP)
+* Packages: Curation, Beta (WIP)
+* Property Panel expanding indicator 
+* UI: Application pictures and Views grouping 
+* Use current datagrok-api version for remote package build 
+* Power Pack: ServicesWidget 
+* JS API: ui.cards: an easy way to build cards (WIP)
+* PLOT3D: add look() function 
+* CVM: Octave to Matlab compliance (WIP)
+
+
 # 2021-05-27 Dev build 0.92.5
 
 ## Latest Docker Images
