@@ -9,27 +9,35 @@ export class ScatterPlot3Dviewer extends DG.JsViewer {
 		console.log("TTHREEE ", THREE.REVISION);
 		window.onHitHandlerName = () => { console.log('hit !!!') }
 		this.onHitHandlerName = () => { console.log('hit !!!') }
-
-
+ 
+  
 		//this.onHitHandlerName = onHitHandlerName;
 
 		this.currentRow = -1;
 		this.mouseOverRow = -1;
 		this.showTooltip = true;
-
+     
 		this.getMyLook();
-
+         
 		this.initLayout();
 		this.init3D();
-
+		console.log(this.renderer)
+		if (this.isTableAttached) {
+			console.error(this.dataFrame)
+			this.onTableAttached()
+		this.updateAllScene(this.look, this.rawX, this.rawY, this.rawZ, this.dataFrame.filter,
+			this.rawZ, this.rawZ)
+		}
 		//this.onTableAttached();
-	} // ctor
+	} // ctor 
 
 	initLayout() {
 		this.container = ui.div([], 'd4-viewer-host');
-		console.log('cont ', this.container)
+		this.container.style.width = '100%';
+		this.container.style.height = '100%';
+		console.log('cont ', this.container);
 	}
- 
+            
 	init3D() {
 		const width = this.container.clientWidth;
 		const height = this.container.clientHeight;
@@ -42,6 +50,7 @@ export class ScatterPlot3Dviewer extends DG.JsViewer {
 		// camera
 		this.camera = new THREE.PerspectiveCamera();
 		this.resetCamera();
+		this.clean();
 
 		// hitting render target
 		this.hittingRenderTarget = new THREE.WebGLRenderTarget(width, height);
@@ -65,7 +74,7 @@ export class ScatterPlot3Dviewer extends DG.JsViewer {
 		this.currentRowBox = highlightBox(0x000000, true, 0.75);
 
 		// renderer
-		this.renderer = new THREE.WebGLRenderer({
+		this.renderer = new THREE.WebGL1Renderer({
 			antialias: true,
 			alpha: true
 		});
@@ -78,12 +87,23 @@ export class ScatterPlot3Dviewer extends DG.JsViewer {
 		this.renderer.setPixelRatio(window.devicePixelRatio);
 		this.renderer.setSize(width, height);
 		this.renderer.domElement.style.width = '100%';
-		this.renderer.domElement.style.heigth = '100%';
+		this.renderer.domElement.style.height = '100%';
+		this.renderer.domElement.width = '222';
+		this.renderer.domElement.height = '222';
+
 		this.container.appendChild(this.renderer.domElement);
 
-//		if (this.renderer.extensions.get('ANGLE_instanced_arrays') === null) {
-//			throw 'ANGLE_instanced_arrays not supported';
-//		}
+/*
+		let mapDiv = ui.div([], 'd4-viewer-host');
+		this.mapDiv = mapDiv;
+		mapDiv.add(ui.h1('Hello World'))
+		mapDiv.appendChild(this.renderer.domElement);
+*/
+
+		this.root.appendChild(this.container)
+	//	if (this.renderer.extensions.get('instanced_arrays') === null) {
+	//		throw 'ANGLE_instanced_arrays not supported';
+	//	}
 
 		// controls
 		this.controls = new TrackballControls(
@@ -111,7 +131,7 @@ export class ScatterPlot3Dviewer extends DG.JsViewer {
 			this.look.TETRAHEDRON, this.look.OCTAHEDRON, this.look.CYLINDER,
 			this.look.DODECAHEDRON, this.look.BOX, this.look.SPHERE
 		];
-		this.look.backColor = 'red';
+		this.look.backColor = 'blue';
 		this.look.filteredRowsColor = 'green';
 		this.look.filteredOutRowsColor = 'red';
 		this.look.selectedRowsColor = 'green';
@@ -136,7 +156,7 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 		/// the mouse is currently hovering over).
 		this.look.showMouseOverRowGroup = true;
 		//this.look.markerType = ScatterPlot3dMarkers.OCTAHEDRON;
-		this.look.markerType = this.look.OCTAHEDRON;
+		this.look.markerType = this.look.BOX;
 		this.look.markerTypeChoices = this.look.markersTypes;
 		this.look.markerRandomRotation = false;
 
@@ -172,17 +192,19 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 		this.renderer.setSize(400, 400);
 		let mapDiv = ui.div([], 'd4-viewer-host');
 		this.mapDiv = mapDiv;
+		mapDiv.add(ui.h1('Hello World'))
 		mapDiv.appendChild(this.renderer.domElement);
 		this.controls = new OrbitControls(this.camera, this.renderer.domElement);
 		this.controls.enabled = true
 
 		console.error(this.renderer);
 		this.root.appendChild(mapDiv);
+		
 		// mapDiv.appendChild(ms);
 		//mapDiv.appendChild(this.canvas);
 		this.render();
-	}
-
+	} // initLayout2
+       
 	// normalization of array, result: 
 	// 1. array with values from 0 to 1
 	// 2. scale factor (how much original array bigger than nomalized)
@@ -192,7 +214,7 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 		var rez = ar.map(e => (e - min) / scale)
 		return rez;
 	}
-
+               
 	// get info about array:
 	// center, scale, min, max
 	getNormalizeInfo(ar) {
@@ -220,32 +242,39 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 		mesh.position.z = coords[2];
 		return mesh
 	}
-
+ 
 	onTableAttached() {
-		if (!this.scene) return 0;
+		if (!this.scene) {
+			this.isTableAttached = true;
+			return 0;
+		}
 		var df = this.dataFrame;
-		// debugger 
-
-
+   
+//return 0            
+       
 		let numericalColumns = Array.from(this.dataFrame.columns.numerical);
 		this.xColumnName = numericalColumns[0].name;
 		this.yColumnName = numericalColumns[1].name;
 		this.zColumnName = numericalColumns[2].name;
-		this.zColumnName = 'AGE'
-		this.xColumnName = 'WEIGHT';
-		this.yColumnName = 'HEIGHT';
+	//	this.zColumnName = 'AGE'
+	//	this.xColumnName = 'WEIGHT';
+	//	this.yColumnName = 'HEIGHT';
 		this.rawX = this.dataFrame.getCol(this.xColumnName).getRawData();
 		this.rawY = this.dataFrame.getCol(this.yColumnName).getRawData();
 		this.rawZ = this.dataFrame.getCol(this.zColumnName).getRawData();
-		//	console.error('raw X ', this.rawX)
-		//	console.error('raw Y ', this.rawY)
-		//	console.error('raw Z ', this.rawZ)
-		this.placeMarkers();
+//			console.error('raw X ', this.rawX)
+	//		console.error('raw Y ', this.rawY)
+	//		console.error('raw Z ', this.rawZ)
+//		this.placeMarkers();
 		var { centerX } = this.getNormalizeInfo(this.rawX)
 		var { centerY } = this.getNormalizeInfo(this.rawY)
 		var { centerZ } = this.getNormalizeInfo(this.rawZ)
 		this.camera.lookAt(new THREE.Vector3(centerX, centerY, centerZ))
 
+		this.clean()
+
+		this.updateAllScene(this.look, this.rawX, this.rawY, this.rawZ, this.dataFrame.filter,
+			this.rawZ, this.rawZ)
 		this.render()
 	}
 
@@ -358,7 +387,7 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 
 	initMesh(x, y, z, filter, color, size) {
 		this.clean();
-
+		console.log('init mesh')
 		let geo;
 		if (this.look.markerType === 'tetrahedron')
 			geo = new THREE.TetrahedronGeometry(1.0);
@@ -469,8 +498,8 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 		this.scene.background = new THREE.Color(this.look.backColor);
 
 		this.scene.add(this.camera);
-		this.scene.add(this.mouseOverBox);
-		this.scene.add(this.currentRowBox);
+	//	this.scene.add(this.mouseOverBox);
+	//	this.scene.add(this.currentRowBox);
 
 		this.hittingScene = new THREE.Scene();
 		this.hittingData = {};
@@ -483,6 +512,7 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 
 
 	makeInstanced(geo, x, y, z, filter, colors, sizes) {
+		console.log('make instanced ', geo)
 		// material
 		const vert = document.getElementById('vertInstanced').textContent;
 		const frag = document.getElementById('fragInstanced').textContent;
@@ -503,7 +533,12 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 		this.materialList.push(hittingMaterial);
 
 		// geometry
-		let bgeo = new THREE.BufferGeometry().fromGeometry(geo);
+
+		let bg2 =  new THREE.BufferGeometry(geo)
+		console.log('bg2 ', bg2)
+		//let bgeo =bg2.fromGeometry(geo);
+		let bgeo =bg2.fromGeometry(geo);
+		//let bgeo =bg2
 		this.geometryList.push(bgeo);
 
 		this.igeo = new THREE.InstancedBufferGeometry();
@@ -591,10 +626,13 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 
 		// mesh
 		this.mesh = new THREE.Mesh(this.igeo, material);
+		console.log('make instanced ', geo)
+
+		console.log('mesh ', mesh)
 		this.scene.add(this.mesh);
 
 		this.hittingMesh = new THREE.Mesh(this.igeo, hittingMaterial);
-		this.hittingScene.add(this.hittingMesh);
+	//	this.hittingScene.add(this.hittingMesh);
 	} // makeInstanced
 
 
