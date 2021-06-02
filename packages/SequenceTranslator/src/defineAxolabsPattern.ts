@@ -3,6 +3,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import {drawAxolabsPattern} from "./drawAxolabsPattern";
+import {axolabsMap} from "./axolabsMap";
 /*
 SS - sense strand of DNA;
 AS - antisense strand of DNA;
@@ -12,16 +14,6 @@ Pattern design - section of dialog for changing length of AS and SS by editing c
 SS/AS Modification - sections of dialog for changing base and PTO statuses of one nucleotide at once: for SS or for AS;
 */
 
-const axolabsMap: {[index: string]: [string, string, string, string]} = {
-  "RNA": ["A", "C", "G", "U"],
-  "DNA": ["dA", "dC", "dG", "dT"],
-  "2'-Fluoro": ["Af", "Cf", "Gf", "Uf"],
-  "2'-O-Methyl": ["a", "f", "g", "u"],
-  "2'-O-MOE": ["Am", "Cm", "Gm", "Tm"],
-  "Glycol nucleic acid": ["(GNA-A)", "(GNA-C)", "(GNA-G)", "(GNA-T)"],
-  "LNA": ["Ab", "Cb", "Gb", "Tb"],
-  "Unlocked (UNA)": ["Ao", "Co", "Go", "Uo"]
-}
 const baseChoices: string[] = Object.keys(axolabsMap);
 const defaultBase: string = baseChoices[0];
 const defaultPto: boolean = false;
@@ -203,8 +195,8 @@ export function defineAxolabsPattern() {
       count = -1;
       return grok.shell.table(tables.value).columns.byName(chosenInputSsColumn).get(i).replace(/[AUGC]/g, function (x: string) {
         count++;
-        let ind = axolabsMap["RNA"].indexOf(x);
-        let v = axolabsMap[ssBaseStatuses[count].value][ind];
+        let ind = axolabsMap["RNA"]["symbols"].indexOf(x);
+        let v = axolabsMap[ssBaseStatuses[count].value]["symbols"][ind];
         return (ssPtoStatuses[count].value) ? v + 'ps' : v;
       })
     });
@@ -213,8 +205,8 @@ export function defineAxolabsPattern() {
         count = -1;
         return grok.shell.table(tables.value).columns.byName(chosenInputAsColumn).get(i).replace(/[AUGC]/g, function (x: string) {
           count++;
-          let ind = axolabsMap["RNA"].indexOf(x);
-          let v = axolabsMap[asBaseStatuses[count].value][ind];
+          let ind = axolabsMap["RNA"]["symbols"].indexOf(x);
+          let v = axolabsMap[asBaseStatuses[count].value]["symbols"][ind];
           return (asPtoStatuses[count].value) ? v + 'ps' : v;
         });
       });
@@ -265,7 +257,21 @@ export function defineAxolabsPattern() {
   let threeModification = ui.stringInput("Addidional 3' Modification", "", (v: string) => grok.shell.info('Coming soon'));
   let fiveModification = ui.stringInput("Addidional 5' Modification", "", (v: string) => grok.shell.info('Coming soon'));
 
-  sequenceLength.root.append(ui.button('Specify Duplex', () => grok.shell.info('Coming soon')));
+  sequenceLength.root.append(ui.button('Specify Duplex', () => {
+    ui.dialog('Axolabs Pattern')
+      .add(
+        ui.span([
+          drawAxolabsPattern(
+            applyExistingDesign.value,
+            ssBaseStatuses.map((e) => e.value),
+            asBaseStatuses.map((e) => e.value),
+            ssPtoStatuses.map((e) => e.value),
+            asPtoStatuses.map((e) => e.value)
+          )
+        ])
+      )
+      .show();
+  }));
   updateUiForNewSequenceLength();
 
   let patternDesignSection = ui.divV([
