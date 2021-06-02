@@ -55,6 +55,11 @@ export function welcomeView() {
         }
     });
 
+    grok.functions
+      .eval(s)
+      .then((result) => searchHost.appendChild(ui.span([s + ' = ', result], {style: {'font-size' : '20px'}})))
+      .catch(() => {})
+
     for (let sf of searchWidgetFunctions)
       sf.apply({s: input.value})
         .then((result: DG.Widget) => {
