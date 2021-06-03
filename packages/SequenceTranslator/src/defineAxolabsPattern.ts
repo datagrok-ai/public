@@ -3,6 +3,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import {drawAxolabsPattern} from "./drawAxolabsPattern";
+import {axolabsMap} from "./axolabsMap";
 /*
 SS - sense strand of DNA;
 AS - antisense strand of DNA;
@@ -12,22 +14,12 @@ Pattern design - section of dialog for changing length of AS and SS by editing c
 SS/AS Modification - sections of dialog for changing base and PTO statuses of one nucleotide at once: for SS or for AS;
 */
 
-const axolabsMap: {[index: string]: [string, string, string, string]} = {
-  "RNA": ["A", "C", "G", "U"],
-  "DNA": ["dA", "dC", "dG", "dT"],
-  "2'-Fluoro": ["Af", "Cf", "Gf", "Uf"],
-  "2'-O-Methyl": ["a", "f", "g", "u"],
-  "2'-O-MOE": ["Am", "Cm", "Gm", "Tm"],
-  "Glycol nucleic acid": ["(GNA-A)", "(GNA-C)", "(GNA-G)", "(GNA-T)"],
-  "LNA": ["Ab", "Cb", "Gb", "Tb"],
-  "Unlocked (UNA)": ["Ao", "Co", "Go", "Uo"]
-}
 const baseChoices: string[] = Object.keys(axolabsMap);
 const defaultBase: string = baseChoices[0];
 const defaultPto: boolean = false;
 const defaultAvailability: boolean = true;
 const defaultSequenceLength: number = 23;
-const maximalValidSequenceLength: number = 30;
+const maximalValidSequenceLength: number = 35;
 
 
 export function defineAxolabsPattern() {
@@ -203,8 +195,8 @@ export function defineAxolabsPattern() {
       count = -1;
       return grok.shell.table(tables.value).columns.byName(chosenInputSsColumn).get(i).replace(/[AUGC]/g, function (x: string) {
         count++;
-        let ind = axolabsMap["RNA"].indexOf(x);
-        let v = axolabsMap[ssBaseStatuses[count].value][ind];
+        let ind = axolabsMap["RNA"]["symbols"].indexOf(x);
+        let v = axolabsMap[ssBaseStatuses[count].value]["symbols"][ind];
         return (ssPtoStatuses[count].value) ? v + 'ps' : v;
       })
     });
@@ -213,8 +205,8 @@ export function defineAxolabsPattern() {
         count = -1;
         return grok.shell.table(tables.value).columns.byName(chosenInputAsColumn).get(i).replace(/[AUGC]/g, function (x: string) {
           count++;
-          let ind = axolabsMap["RNA"].indexOf(x);
-          let v = axolabsMap[asBaseStatuses[count].value][ind];
+          let ind = axolabsMap["RNA"]["symbols"].indexOf(x);
+          let v = axolabsMap[asBaseStatuses[count].value]["symbols"][ind];
           return (asPtoStatuses[count].value) ? v + 'ps' : v;
         });
       });
@@ -265,25 +257,45 @@ export function defineAxolabsPattern() {
   let threeModification = ui.stringInput("Addidional 3' Modification", "", (v: string) => grok.shell.info('Coming soon'));
   let fiveModification = ui.stringInput("Addidional 5' Modification", "", (v: string) => grok.shell.info('Coming soon'));
 
-  sequenceLength.root.append(ui.button('Specify Duplex', () => grok.shell.info('Coming soon')));
+  sequenceLength.root.append(ui.button('Specify Duplex', () => {
+    ui.dialog('Axolabs Pattern')
+      .add(
+        ui.span([
+          drawAxolabsPattern(
+            applyExistingDesign.value,
+            ssBaseStatuses.slice(0, ssLength).map((e) => e.value),
+            asBaseStatuses.slice(0, asLength).map((e) => e.value),
+            ssPtoStatuses.slice(0, ssLength).map((e) => e.value),
+            asPtoStatuses.slice(0, asLength).map((e) => e.value)
+          )
+        ])
+      )
+      .show();
+  }));
   updateUiForNewSequenceLength();
 
   let patternDesignSection = ui.divV([
     ui.h1('Pattern Design'),
-    ui.div([
-      tables.root,
-      chooseSsColumnDiv,
-      chooseAsColumnDiv,
-      applyExistingDesign.root,
-      sequenceLength.root,
-      sequenceBase.root,
-      fullyPto.root,
-      createAsStrand.root
-    ], 'ui-form'),
-    ssPattern,
-    asPattern,
-    threeModification.root,
-    fiveModification.root,
+    ui.divH([
+      ui.div([
+        tables.root,
+        chooseSsColumnDiv,
+        chooseAsColumnDiv,
+        applyExistingDesign.root,
+        sequenceLength.root,
+        sequenceBase.root,
+        fullyPto.root,
+        createAsStrand.root
+      ], 'ui-form'),
+      ui.inputs([
+        threeModification,
+        fiveModification
+      ], {})
+    ], {style: {flexWrap: 'wrap'}}),
+    ui.block([
+      ssPattern,
+      asPattern
+    ], {style: {overflowX: 'scroll'}}),
     ui.divH([
       ui.button('Define Pattern', () => grok.shell.info('Coming soon')),
       ui.button('Save Pattern', () => grok.shell.info('Coming soon'))
@@ -322,12 +334,21 @@ export function defineAxolabsPattern() {
     ], 'Create and apply Axolabs translation patterns.'
   );
 
-  return ui.block([
-    appAxolabsDescription,
+  let splitter = ui.splitH([
+    patternDesignSection,
     ui.divH([
-      patternDesignSection,
       ssModificationSection,
       asModificationSection
     ])
-  ], {style:{padding: "20px 0"}});
+  ], {style: {height: 'inherit'}});
+
+  $(splitter).children('.ui-box').removeClass('ui-box').addClass('ui-div');
+  $(splitter).children('.ui-div:nth-child(2)').css('flex-shrink','0');
+
+  return ui.block([
+    appAxolabsDescription,
+    ui.block([
+      splitter
+    ], {style: {height: '100%'}})
+  ], {style: {padding: "20px 0", overflowY: "hidden!important"}}); // will not allow to scroll over page
 }
