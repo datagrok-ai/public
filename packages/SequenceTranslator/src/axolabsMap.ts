@@ -1,7 +1,7 @@
 export const axolabsMap: {[index: string]: {symbols: [string, string, string, string], color: string}} = {
   "RNA": {
     symbols: ["A", "C", "G", "U"],
-    color: "black"
+    color: "purple"
   },
   "DNA": {
     symbols: ["dA", "dC", "dG", "dT"],
@@ -19,7 +19,7 @@ export const axolabsMap: {[index: string]: {symbols: [string, string, string, st
     symbols: ["Am", "Cm", "Gm", "Tm"],
     color: "cyan"
   },
-  "Glycol nucleic acid": {
+  "GNA": { // Glycol nucleic acid
     symbols: ["(GNA-A)", "(GNA-C)", "(GNA-G)", "(GNA-T)"],
     color: "yellow"
   },
@@ -27,7 +27,7 @@ export const axolabsMap: {[index: string]: {symbols: [string, string, string, st
     symbols: ["Ab", "Cb", "Gb", "Tb"],
     color: "aquamarine"
   },
-  "Unlocked (UNA)": {
+  "UNA": { // Unlocked nucleotides
     symbols: ["Ao", "Co", "Go", "Uo"],
     color: "green"
   }

@@ -263,10 +263,10 @@ export function defineAxolabsPattern() {
         ui.span([
           drawAxolabsPattern(
             applyExistingDesign.value,
-            ssBaseStatuses.map((e) => e.value),
-            asBaseStatuses.map((e) => e.value),
-            ssPtoStatuses.map((e) => e.value),
-            asPtoStatuses.map((e) => e.value)
+            ssBaseStatuses.slice(0, ssLength).map((e) => e.value),
+            asBaseStatuses.slice(0, asLength).map((e) => e.value),
+            ssPtoStatuses.slice(0, ssLength).map((e) => e.value),
+            asPtoStatuses.slice(0, asLength).map((e) => e.value)
           )
         ])
       )
