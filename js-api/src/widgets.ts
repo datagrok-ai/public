@@ -510,6 +510,11 @@ export class Dialog {
     api.grok_Dialog_AddContextAction(this.d, text, action);
     return this;
   }
+
+  /** Clears the content. */
+  clear() {
+    api.grok_Dialog_Clear(this.d);
+  }
 }
 
 /**
