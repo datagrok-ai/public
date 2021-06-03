@@ -19,7 +19,7 @@ const defaultBase: string = baseChoices[0];
 const defaultPto: boolean = false;
 const defaultAvailability: boolean = true;
 const defaultSequenceLength: number = 23;
-const maximalValidSequenceLength: number = 30;
+const maximalValidSequenceLength: number = 35;
 
 
 export function defineAxolabsPattern() {
@@ -276,20 +276,26 @@ export function defineAxolabsPattern() {
 
   let patternDesignSection = ui.divV([
     ui.h1('Pattern Design'),
-    ui.div([
-      tables.root,
-      chooseSsColumnDiv,
-      chooseAsColumnDiv,
-      applyExistingDesign.root,
-      sequenceLength.root,
-      sequenceBase.root,
-      fullyPto.root,
-      createAsStrand.root
-    ], 'ui-form'),
-    ssPattern,
-    asPattern,
-    threeModification.root,
-    fiveModification.root,
+    ui.divH([
+      ui.div([
+        tables.root,
+        chooseSsColumnDiv,
+        chooseAsColumnDiv,
+        applyExistingDesign.root,
+        sequenceLength.root,
+        sequenceBase.root,
+        fullyPto.root,
+        createAsStrand.root
+      ], 'ui-form'),
+      ui.inputs([
+        threeModification,
+        fiveModification
+      ], {})
+    ], {style: {flexWrap: 'wrap'}}),
+    ui.block([
+      ssPattern,
+      asPattern
+    ], {style: {overflowX: 'scroll'}}),
     ui.divH([
       ui.button('Define Pattern', () => grok.shell.info('Coming soon')),
       ui.button('Save Pattern', () => grok.shell.info('Coming soon'))
@@ -328,12 +334,21 @@ export function defineAxolabsPattern() {
     ], 'Create and apply Axolabs translation patterns.'
   );
 
-  return ui.block([
-    appAxolabsDescription,
+  let splitter = ui.splitH([
+    patternDesignSection,
     ui.divH([
-      patternDesignSection,
       ssModificationSection,
       asModificationSection
     ])
-  ], {style:{padding: "20px 0"}});
+  ], {style: {height: 'inherit'}});
+
+  $(splitter).children('.ui-box').removeClass('ui-box').addClass('ui-div');
+  $(splitter).children('.ui-div:nth-child(2)').css('flex-shrink','0');
+
+  return ui.block([
+    appAxolabsDescription,
+    ui.block([
+      splitter
+    ], {style: {height: '100%'}})
+  ], {style: {padding: "20px 0", overflowY: "hidden!important"}}); // will not allow to scroll over page
 }
