@@ -7,9 +7,16 @@ export class ScatterPlot3Dviewer extends DG.JsViewer {
 	constructor() {
 		super();
 		console.log("TTHREEE ", THREE.REVISION);
-		window.onHitHandlerName = () => { console.log('hit !!!') }
-		this.onHitHandlerName = () => { console.log('hit !!!') }
+		function hName() {
+			console.log('hName hit!')
+		}
+
+
+		window.onHitHandlerName = 'hName';
+		this.onHitHandlerName = 'hName'
  
+		window.hName = hName;
+		this.hName = hName
   
 		//this.onHitHandlerName = onHitHandlerName;
 
@@ -421,6 +428,7 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 
 	onMouseMove(e) {
 		if (this.showTooltip === false)
+		debugger
 			window[this.onHitHandlerName].apply(window, [-1, this.currentRow, 0, 0, new Object()]);
 		this.saveMousePosition(e);
 		const element = this.hitTest(e.layerX, e.layerY);
@@ -532,13 +540,14 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 
 		this.materialList.push(hittingMaterial);
 
-		// geometry
-
-		let bg2 =  new THREE.BufferGeometry(geo)
-		console.log('bg2 ', bg2)
+		// geometry 
+		console.log('geo ', geo);   
+		//let bg2 =  new THREE.BufferGeometry(geo)
+		//console.log('bg2 ', bg2)
 		//let bgeo =bg2.fromGeometry(geo);
-		let bgeo =bg2.fromGeometry(geo);
+		//let bgeo =bg2.fromGeometry(geo);
 		//let bgeo =bg2
+		var bgeo = geo.clone();
 		this.geometryList.push(bgeo);
 
 		this.igeo = new THREE.InstancedBufferGeometry();
@@ -549,10 +558,10 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 
 		const numObjects = x.length;
 
-		let mcol0 = new THREE.InstancedBufferAttribute(new Float32Array(numObjects * 3), 3, 1);
-		let mcol1 = new THREE.InstancedBufferAttribute(new Float32Array(numObjects * 3), 3, 1);
-		let mcol2 = new THREE.InstancedBufferAttribute(new Float32Array(numObjects * 3), 3, 1);
-		let mcol3 = new THREE.InstancedBufferAttribute(new Float32Array(numObjects * 3), 3, 1);
+		let mcol0 = new THREE.InstancedBufferAttribute(new Float32Array(numObjects * 3), 3, false);
+		let mcol1 = new THREE.InstancedBufferAttribute(new Float32Array(numObjects * 3), 3, false);
+		let mcol2 = new THREE.InstancedBufferAttribute(new Float32Array(numObjects * 3), 3, false);
+		let mcol3 = new THREE.InstancedBufferAttribute(new Float32Array(numObjects * 3), 3, false);
 
 		const scaleFactor = 1.0 / (10.0 * Math.log(numObjects));
 
@@ -579,11 +588,11 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 				rotation.z = Math.random() * 2 * Math.PI;
 				quaternion.setFromEuler(rotation, false);
 			}
-
+   
 			matrix.compose(position, quaternion, scale);
 
 			let object = new THREE.Object3D();
-			object.applyMatrix(matrix);
+			object.applyMatrix4(matrix); 
 			this.hittingData[n + 1] = object;
 
 			mcol0.setXYZ(n, me[0], me[1], me[2]);
@@ -591,14 +600,18 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 			mcol2.setXYZ(n, me[8], me[9], me[10]);
 			mcol3.setXYZ(n, me[12], me[13], me[14]);
 		}
-
+/*
 		this.igeo.addAttribute('mcol0', mcol0);
 		this.igeo.addAttribute('mcol1', mcol1);
 		this.igeo.addAttribute('mcol2', mcol2);
 		this.igeo.addAttribute('mcol3', mcol3);
-
-		this.markerColors = new THREE.InstancedBufferAttribute(new Float32Array(numObjects * 3), 3, 1);
-		this.markerAlphas = new THREE.InstancedBufferAttribute(new Float32Array(numObjects), 1, 1);
+*/
+this.igeo.setAttribute('mcol0', mcol0);
+this.igeo.setAttribute('mcol1', mcol1);
+this.igeo.setAttribute('mcol2', mcol2);
+this.igeo.setAttribute('mcol3', mcol3);
+		this.markerColors = new THREE.InstancedBufferAttribute(new Float32Array(numObjects * 3), 3, false);
+		this.markerAlphas = new THREE.InstancedBufferAttribute(new Float32Array(numObjects), 1, false);
 		let markerColor = new THREE.Color();
 
 		for (let n = 0; n < numObjects; n++) {
@@ -607,28 +620,28 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 			this.markerColors.setXYZ(n, markerColor.r, markerColor.g, markerColor.b);
 		}
 
-		this.igeo.addAttribute('color', this.markerColors);
-		this.igeo.addAttribute('alpha', this.markerAlphas);
+		this.igeo.setAttribute('color', this.markerColors);
+		this.igeo.setAttribute('alpha', this.markerAlphas);
 
 		let col = new THREE.Color();
-		let hittingColors = new THREE.InstancedBufferAttribute(new Float32Array(numObjects * 3), 3, 1);
+		let hittingColors = new THREE.InstancedBufferAttribute(new Float32Array(numObjects * 3), 3, false);
 
 		for (let n = 0; n < numObjects; n++) {
 			col.setHex(n + 1);
 			hittingColors.setXYZ(n, col.r, col.g, col.b);
 		}
 
-		this.igeo.addAttribute('hittingColor', hittingColors);
+		this.igeo.setAttribute('hittingColor', hittingColors);
 
 		// filter
-		this.filter = new THREE.InstancedBufferAttribute(filter, 1, 1);
-		this.igeo.addAttribute('filter', this.filter);
+		this.filter = new THREE.InstancedBufferAttribute(filter, 1, false);
+		this.igeo.setAttribute('filter', this.filter);
 
 		// mesh
 		this.mesh = new THREE.Mesh(this.igeo, material);
 		console.log('make instanced ', geo)
 
-		console.log('mesh ', mesh)
+		console.log('mesh ', this.mesh);
 		this.scene.add(this.mesh);
 
 		this.hittingMesh = new THREE.Mesh(this.igeo, hittingMaterial);
