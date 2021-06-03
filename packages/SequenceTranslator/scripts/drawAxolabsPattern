@@ -5,6 +5,8 @@
 #input: string patternName
 #output: graphics pattern
 
+import matplotlib.pyplot as plt
+
 basis_color_dict = {
     "RNA": 'k',  # black
     "DNA": 'm',  # magenta
