@@ -35,26 +35,60 @@ export function drawAxolabsPattern(patternName: string, ssBaseStatuses: string[]
   };
 
   const maxNumberInStrands = Math.max(ssBaseStatuses.length, asBaseStatuses.length),
-    radius = 20,
-    width = (2 * radius + 1) * maxNumberInStrands,
-    height = 200,
+    baseRadius = 20,
+    psLinkageRadius = 5,
+    psLinkageColor = 'red',
+    width = (2 * baseRadius + 1) * maxNumberInStrands + 5 * baseRadius,
+    height = 11 * baseRadius,
     title = patternName + ' for ' + String(ssBaseStatuses.length) + '/' + String(asBaseStatuses.length) + 'mer',
     fontSize = '30',
+    textShift = 3,
     fontWeight = 'normal',
     fontColor = 'black';
 
   let image = svg.render(String(width), String(height));
-  image.append(svg.text(title, String(Math.round(width / 2)), String(2 * radius), fontSize, fontWeight, fontColor));
-  image.append(svg.text('SS:', '0', String(4 * radius), fontSize, fontWeight, fontColor));
-  image.append(svg.text('AS:', '0', String(7 * radius), fontSize, fontWeight, fontColor));
-  for (let i = 0; i < ssBaseStatuses.length; i++) {
+  image.append(svg.text(title, String(Math.round(width / 2)), String(2 * baseRadius), fontSize, fontWeight, fontColor));
+  image.append(svg.text('SS:', '0', String(4 * baseRadius), fontSize, fontWeight, fontColor));
+  image.append(svg.text('AS:', '0', String(7 * baseRadius), fontSize, fontWeight, fontColor));
+
+  image.append(svg.text("3'", String(2.5 * baseRadius), String(4 * baseRadius), fontSize, fontWeight, fontColor));
+  image.append(svg.text("5'", String(width - baseRadius), String(4 * baseRadius), fontSize, fontWeight, fontColor));
+  image.append(svg.text("3'", String(width - baseRadius), String(7 * baseRadius), fontSize, fontWeight, fontColor));
+  image.append(svg.text("5'", String(2.5 * baseRadius), String(7 * baseRadius), fontSize, fontWeight, fontColor));
+
+  for (let i = ssBaseStatuses.length - 1; i > -1; i--) {
     image.append(
-      svg.circle(String((i + 2) * 2 * radius), String(4 * radius), String(radius), axolabsMap[ssBaseStatuses[i]]["color"])
+      svg.circle(String((maxNumberInStrands - i + 2) * 2 * baseRadius), String(3.5 * baseRadius), String(baseRadius), axolabsMap[ssBaseStatuses[i]]["color"])
     );
-  }
-  for (let i = 0; i < asBaseStatuses.length; i++) {
     image.append(
-      svg.circle(String((i + 2) * 2 * radius), String(7 * radius), String(radius), axolabsMap[asBaseStatuses[i]]["color"])
+      svg.text(String(ssBaseStatuses.length - i), String((maxNumberInStrands - i + 2) * 2 * baseRadius - baseRadius + textShift), String(4 * baseRadius), fontSize, fontWeight, fontColor)
+    );
+    if (ssPtoStatuses[i]) {
+      image.append(
+        svg.circle(String((maxNumberInStrands - i + 2) * 2 * baseRadius + baseRadius), String(4 * baseRadius + psLinkageRadius), String(psLinkageRadius), psLinkageColor)
+      );
+    }
+  }
+  for (let i = asBaseStatuses.length - 1; i > -1; i--) {
+    image.append(
+      svg.circle(String((maxNumberInStrands - i + 2) * 2 * baseRadius), String(6.5 * baseRadius), String(baseRadius), axolabsMap[asBaseStatuses[i]]["color"])
+    );
+    image.append(
+      svg.text(String(i + 1), String((maxNumberInStrands - i + 2) * 2 * baseRadius - baseRadius + textShift), String(7 * baseRadius), fontSize, fontWeight, fontColor)
+    )
+    if (asPtoStatuses[i]) {
+      image.append(
+        svg.circle(String((maxNumberInStrands - i + 2) * 2 * baseRadius + baseRadius), String(7 * baseRadius + psLinkageRadius), String(psLinkageRadius), psLinkageColor)
+      );
+    }
+  }
+  const uniqueBases = [...new Set(ssBaseStatuses.concat(asBaseStatuses))];
+  for (let i = 0; i < uniqueBases.length; i++) {
+    image.append(
+      svg.circle(String(Math.round(i * width / uniqueBases.length + baseRadius)), String(9.5 * baseRadius), String(baseRadius), axolabsMap[uniqueBases[i]]["color"])
+    );
+    image.append(
+      svg.text(Object.keys(axolabsMap)[i], String(Math.round(i * width / uniqueBases.length) + 2 * baseRadius), String(10 * baseRadius), fontSize, fontWeight, fontColor)
     );
   }
   return image;
