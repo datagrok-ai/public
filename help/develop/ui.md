@@ -6,91 +6,121 @@ Routines for building an interface in Datagrok. [See API Examples in action](htt
 
 # Table of contents
 <details>
-<summary>[Layouts ](#layouts)</summary>
+<summary>Layouts</summary>
+
 * [Containers](#containers)
 * [Boxes](#boxes)
 * [Panels](#panels)
 * [Blocks](#blocks)
 * [Flexbox Gird](#flexbox-grid)
 * [Splitters](#splitters)
+
 </details>
+
 <details>
-<summary>[Views](#views)</summary>
-[Table View](#table-view)
-[Simple View](#simple-view)
+<summary>Views</summary>
+
+* [Table View](#table-view)
+* [Simple View](#simple-view)
+
 <details>
-	<summary>[Viewers](#viewers)</summary>
-	[Bar Chart](#bar-chart)
-	[Box Plot](#box-plot)
-	[Calendar](#calendar)
-	[Correlation Plot](#correlation-plot)
-	[Density Plot](#density-plot)
-	[Filters](#filters)
-	[Form](#form)
-	[Globe](#globe)
-	[Google Map Viewer](#google-map-viewer)
-	[Grid](#grid)
-	[Heat Map](#heat-map)
-	[Histogram](#histogram)
-	[Line Chart](#line-chart)
-	[Markup Viewer](#markup-viewer)
-	[Matrix Plot](#matrix-plot)
-	[Network Diagram](#network-diagram)
-	[Parallel Coordinates Plot](#parallel-coordinates-plot)
-	[Scatter Plot 3D](#scatter-plot-3d)
-	[Scatter Plot](#scatter-plot)
-	[Shape Map](#shape-map)
-	[Statistics](#statistics)
-	[Tile Viewer](#tile-viewer)
-	[Tree map](#tree-map)
-	[Word Cloud](#word-cloud)
-	</details>
-[Ribbon](#ribbon)
-[Toolbox](#toolbox)
+	<summary>
+  
+  * [Viewers](#viewers)
+  
+  </summary>
+	
+  * [Bar Chart](#bar-chart)
+	* [Box Plot](#box-plot)
+	* [Calendar](#calendar)
+	* [Correlation Plot](#correlation-plot)
+	* [Density Plot](#density-plot)
+	* [Filters](#filters)
+	* [Form](#form)
+	* [Globe](#globe)
+	* [Google Map Viewer](#google-map-viewer)
+	* [Grid](#grid)
+	* [Heat Map](#heat-map)
+	* [Histogram](#histogram)
+	* [Line Chart](#line-chart)
+	* [Markup Viewer](#markup-viewer)
+	* [Matrix Plot](#matrix-plot)
+	* [Network Diagram](#network-diagram)
+	* [Parallel Coordinates Plot](#parallel-coordinates-plot)
+	* [Scatter Plot 3D](#scatter-plot-3d)
+	* [Scatter Plot](#scatter-plot)
+	* [Shape Map](#shape-map)
+	* [Statistics](#statistics)
+	* [Tile Viewer](#tile-viewer)
+	* [Tree map](#tree-map)
+	* [Word Cloud](#word-cloud)
+	
+  </details>
+
+* [Ribbon](#ribbon)
+* [Toolbox](#toolbox)
+
 </details>
-[Dialogs](#dialogs)
+
+* [Dialogs](#dialogs)
+
 <details>
-<summary>[Elements](#elements)</summary>
-[Colors](#colors)
+<summary>
+
+* [Elements](#elements)
+
+</summary>
+
+* [Colors](#colors)
 	<details>
-	<summary>[Typography](#typography)</summary>
-	[Headers](#headers)
-	[Paragraphs](#paragraphs)
-	[Spans](#spans)
-	[Label](#label)
-	[Link](#link)
-	[Text Blocks](#text-blocks)
+	<summary>Typography</summary>
+
+	* [Headers](#headers)
+	* [Paragraphs](#paragraphs)
+	* [Spans](#spans)
+	* [Label](#label)
+	* [Link](#link)
+	* [Text Blocks](#text-blocks)
+
 	</details>
- [Tables](#tables)
-[Lists](#lists)
-[Buttons](#buttons)
+
+* [Tables](#tables)
+* [Lists](#lists)
+* [Buttons](#buttons)
+
 	<details>
-	<summary>[Forms](#forms)</summary>
-	[Inputs](#inputs)
-	[Text Area](#text-area)
-	[Dropdown Selection](#dropdown-selection)
-	[Selection](#selection)
-	[Group Selection](#group-selection)
-	[Range Slider](#range-slider)
+	<summary>Forms</summary>
+
+	* [Inputs](#inputs)
+	* [Text Area](#text-area)
+	* [Dropdown Selection](#dropdown-selection)
+	* [Selection](#selection)
+	* [Group Selection](#group-selection)
+	* [Range Slider](#range-slider)
+
 	</details>
-[Icons](#icons)
-[Image](#image)
+
+* [Icons](#icons)
+* [Image](#image)
+
 </details> 
 <details>
-<summary>[Components](#components)</summary>
-[Accordions](#accordions)
-[Await (Loading Indicator)](#await-loading-indicator)
-[Cards](#cards)
-[Combo Popup](#combo-popup)
-[Property Panel](#property-panel)
-[Sidebar](#sidebar)
-[Tabs](#tabs)
-[Tag Editor](#tag-editor)
-[Taskbar progress](#taskbar-progress)
-[Toasts](#toasts)
-[Tooltips](#tooltips)
-[Tree View](#tree-view)
-[Info Bars](#info-bars)
+<summary>Components</summary>
+
+* [Accordions](#accordions)
+* [Await (Loading Indicator)](#await-loading-indicator)
+* [Cards](#cards)
+* [Combo Popup](#combo-popup)
+* [Property Panel](#property-panel)
+* [Sidebar](#sidebar)
+* [Tabs](#tabs)
+* [Tag Editor](#tag-editor)
+* [Taskbar progress](#taskbar-progress)
+* [Toasts](#toasts)
+* [Tooltips](#tooltips)
+* [Tree View](#tree-view)
+* [Info Bars](#info-bars)
+
 </details>
 
 # Layouts
@@ -773,7 +803,7 @@ ui.dialog('Modal dialog')
       ui.info('Info text', 'Optional header')
     ]);
     ```
-    
+
   ## Iframe
     Iframe.
     ```javascript
