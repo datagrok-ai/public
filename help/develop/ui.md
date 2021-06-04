@@ -52,7 +52,15 @@ Routines for building an interface in Datagrok. [See API Examples in action](htt
 
 </details>
 
-[Dialogs](#dialogs)
+<details>
+<summary>Elements</summary>
+
+* [Dialogs](#dialogs)
+  * [Standard Dialog](#modal-dialog)
+  * [Modal Dialog](#modal-dialog)
+  * [Fullscreen Modal Dialog](#fullscreen-modal-dialog)
+
+</details>
 
 <details>
 <summary>Elements</summary>
@@ -451,27 +459,34 @@ There are three types of dialogs:
 - fullscreen modal dialog
 
 For each dialog, you can set the position by viewport by x and y-asix.
-```javascript
-//standart dialog
-ui.dialog('Standart dialog')
-  .add(ui.span(['Some content...']))
-  .onOK(() => {})
-  .addContextAction('My Action', () => {}))
-  .addButton('Optional button')
-  .show({x: 300, y: 300});
+  ## Standard Dialog
+  ```javascript
+  //standart dialog
+  ui.dialog('Standart dialog')
+    .add(ui.span(['Some content...']))
+    .onOK(() => {})
+    .addContextAction('My Action', () => {}))
+    .addButton('Optional button')
+    .show({x: 300, y: 300});
+  ```
 
-//Fullscreen modal dialog
-ui.dialog('Modal dialog')
-  .add(ui.span(['Some content...']))
-  .onOK(() => {})
-  .showModal(true);
+  ## Modal Dialog
+  ```
+  //modal dialog
+  ui.dialog('Modal dialog')
+    .add(ui.span(['Some content...']))
+    .onOK(() => {})
+    .showModal();
+  ```
 
-//modal dialog
-ui.dialog('Modal dialog')
-  .add(ui.span(['Some content...']))
-  .onOK(() => {})
-  .showModal();
-```
+  ## Fullscreen Modal Dialog
+  ```
+  //Fullscreen modal dialog
+  ui.dialog('Modal dialog')
+    .add(ui.span(['Some content...']))
+    .onOK(() => {})
+    .showModal(true);
+  ```
 
 # Elements
 
