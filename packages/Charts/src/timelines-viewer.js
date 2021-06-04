@@ -10,7 +10,7 @@ export class TimelinesViewer extends EChartViewer {
     this.endColumnName = this.string('endColumnName');
     this.colorByColumnName = this.string('colorByColumnName');
 
-    this.marker = this.string('marker', 'circle', { choices: ['circle', 'rect', 'ring', 'diamond'] });
+    this.marker = this.string('marker', 'circle', { choices: ['circle', 'square', 'ring', 'diamond'] });
     this.markerSize = this.int('markerSize', 6);
     this.markerPosition = this.string('markerPosition', 'main line',
       { choices: ['main line', 'above main line', 'scatter'] });
@@ -28,7 +28,7 @@ export class TimelinesViewer extends EChartViewer {
 
     this.data = [];
     this.count = 0;
-    this.selectionColor = '#FB8C28';
+    this.selectionColor = DG.Color.toRgb(DG.Color.selectedRows);
     this.zoomState = [[0, 100], [0, 100], [0, 100], [0, 100]];
     this.tooltipOffset = 10;
     this.initialized = false;
@@ -66,6 +66,8 @@ export class TimelinesViewer extends EChartViewer {
         filterMode: 'weakFilter',
       },
       {
+        type: 'slider',
+        xAxisIndex: [1, 2],
         start: this.zoomState[1][0],
         end: this.zoomState[1][1],
         height: 10,
@@ -267,7 +269,7 @@ export class TimelinesViewer extends EChartViewer {
           marker.shape.y = -this.markerSize / 2;
           marker.shape.r = this.markerSize / 4;
           marker.rotation = 0.785398;
-        } else if (this.marker === 'rect') {
+        } else if (this.marker === 'square') {
           marker.x = 0;
           marker.y = 0;
           marker.shape.x = xPos(this.markerSize / 2);
