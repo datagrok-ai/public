@@ -53,7 +53,7 @@ Routines for building an interface in Datagrok. [See API Examples in action](htt
 </details>
 
 <details>
-<summary>Elements</summary>
+<summary>Dialogs</summary>
 
 * [Dialogs](#dialogs)
   * [Standard Dialog](#modal-dialog)
