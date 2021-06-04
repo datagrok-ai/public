@@ -2,6 +2,13 @@
 }
 
 .power-pack-widget-host {
+    flex-grow: 1;
+    flex-shrink: 1;
+    max-width: 400px;
+    width: 300px!important;
+    margin: 6px;
+    flex-direction: column;
+   /* box-shadow: #E2E2E2 0 0 7px;*/
 }
 
 .power-pack-widget-header {
@@ -11,7 +18,6 @@
 }
 
 .power-pack-widget-content {
-    margin: 10px;
     height: 200px;
     width: 300px;
     overflow: auto;

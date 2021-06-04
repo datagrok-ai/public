@@ -5,7 +5,7 @@ import * as rxjs from 'rxjs';
 import {debounceTime} from 'rxjs/operators';
 
 function card(w: DG.Widget): HTMLElement {
-  let host = ui.divV([], 'power-pack-widget-host');
+  let host = ui.box(null, 'power-pack-widget-host');
 
   let header = ui.div([
     ui.divText(w.props.caption ?? '', 'd4-dialog-title'),
@@ -14,7 +14,7 @@ function card(w: DG.Widget): HTMLElement {
   ], 'd4-dialog-header');
 
   host.appendChild(header);
-  host.appendChild(ui.div([w.root], 'power-pack-widget-content'));
+  host.appendChild(ui.box(w.root, 'power-pack-widget-content'));
   ui.tools.setHoverVisibility(host, Array.from(host.querySelectorAll('i')));
 
   return host;

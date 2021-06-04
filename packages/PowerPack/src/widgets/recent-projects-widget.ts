@@ -6,7 +6,7 @@ export class RecentProjectsWidget extends DG.Widget {
   caption: string;
 
   constructor() {
-    super(ui.div());
+    super(ui.panel());
 
     // properties
     this.caption = super.addProperty('caption', DG.TYPE.STRING, 'Recent projects');
@@ -22,6 +22,14 @@ export class RecentProjectsWidget extends DG.Widget {
 }
 
 function projectData(p: DG.Project){
+  let card = ui.cards.summary(
+    ui.image(p.pictureUrl, 120, 80, { target: '#' }),
+    [
+      ui.h2(ui.link(p.friendlyName, '#')),
+      ui.div(p.createdOn, {style:{color:'var(--grey-4)'}})
+    ]);
+  ui.bind(p, card);
+  return card;
   let root = ui.divV([]);
   let ppath = p.path;
   //let pictureUrl = 'https://dev.datagrok.ai/api/entities/picture/'+p.d.PictureMixin_pictureId+'?w=200';
