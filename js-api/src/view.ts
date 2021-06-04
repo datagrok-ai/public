@@ -220,6 +220,11 @@ export class View extends ViewBase {
     return v;
   }
 
+  /** Creates one of the standard views based on the view type (such as 'functions') */
+  static createByType(viewType: string, options?: any): View {
+    return new View(api.grok_View_CreateByType(viewType, options));
+  }
+
   get box(): boolean {
     return $(this.root).hasClass('ui-box');
   }
@@ -283,6 +288,40 @@ export class View extends ViewBase {
     return new ViewLayout(api.grok_View_Save_Layout(this.d));
   }
 
+  // to be used in [createByType].
+  static readonly APPS = 'apps';
+  static readonly SETTINGS = 'settings';
+  static readonly WELCOME = 'welcome';
+  static readonly SCRIPT = 'script';
+  static readonly SKETCH = 'sketch';
+  static readonly FORUM = 'forum';
+  static readonly PROJECTS = 'projects';
+  static readonly NOTEBOOKS = 'notebooks';
+  static readonly HELP = 'help';
+  static readonly OPEN_TEXT = 'text';
+  static readonly DATABASES = 'databases';
+  static readonly WEB_SERVICES = 'webservices';
+  static readonly VIEW_LAYOUTS = 'layouts';
+  static readonly FUNCTIONS = 'functions';
+  static readonly DATA_CONNECTIONS = 'connections';
+  static readonly DATA_JOB_RUNS = 'jobs';
+  static readonly FILES = 'files';
+  static readonly DATA_QUERY_RUNS = 'queryruns';
+  static readonly EMAILS = 'emails';
+  static readonly GROUPS = 'groups';
+  static readonly MODELS = 'models';
+  static readonly QUERIES = 'queries';
+  static readonly SCRIPTS = 'scripts';
+  static readonly USERS = 'users';
+  static readonly PACKAGES = 'packages';
+  static readonly PACKAGE_REPOSITORIES = 'repositories';
+  static readonly JS_EDITOR = 'js';
+
+  static readonly ALL = [View.APPS, View.SETTINGS, View.WELCOME, View.SCRIPT, View.SKETCH,
+    View.FORUM, View.PROJECTS, View.NOTEBOOKS, View.HELP, View.OPEN_TEXT, View.DATABASES,
+    View.WEB_SERVICES, View.VIEW_LAYOUTS, View.FUNCTIONS, View.DATA_CONNECTIONS, View.DATA_JOB_RUNS,
+    View.FILES, View.DATA_QUERY_RUNS, View.EMAILS, View.GROUPS, View.MODELS, View.QUERIES,
+    View.SCRIPTS, View.USERS, View.PACKAGES, View.PACKAGE_REPOSITORIES, View.JS_EDITOR];
 }
 
 
