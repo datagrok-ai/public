@@ -57,3 +57,12 @@
 .power-pack-widget-host .d4-dialog-header {
     font-size: 16px;
 }
+
+.welcome-system-widget {
+    font-size: 18px;
+    line-height: 180%;
+}
+
+.welcome-community-widget {
+    line-height: 160%;
+}
