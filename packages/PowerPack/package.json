@@ -7,6 +7,7 @@
 	"version": "0.0.1",
 	"description": "",
 	"dependencies": {
+		"cash-dom": "latest",
 		"datagrok-api": "../../js-api",
 		"datagrok-tools": "^4.1.2",
 		"ts-loader": "latest",
