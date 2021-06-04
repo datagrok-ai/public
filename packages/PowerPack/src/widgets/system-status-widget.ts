@@ -8,14 +8,14 @@ export class SystemStatusWidget extends DG.Widget {
   caption: string;
 
   constructor() {
-    super(ui.panel());
+    super(ui.panel([], 'welcome-system-widget'));
 
     grok.dapi.admin.getServiceInfos().then((services: any[]) => {
       // let table = ui.table(services, (item, idx) =>
       //   [`${item.key}:`, ui.span([item.status], `grok-plugin-status-${item.status.toLowerCase()}`)])
       // this.root.appendChild(table);
 
-      this.root.appendChild(ui.list(services.map(
+      this.root.appendChild(ui.divV(services.map(
         (s) => divText(s.key, `grok-plugin-status-${s.status.toLowerCase()}`))));
     });
 

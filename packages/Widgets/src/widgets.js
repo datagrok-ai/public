@@ -4,10 +4,10 @@
 class TimeWidget extends DG.Widget {
 
   constructor() {
-    super(ui.div());
+    super(ui.panel([], 'welcome-time-widget'));
 
     // properties
-    this.caption = this.addProperty('caption', DG.TYPE.STRING, 'current time: ');
+    this.caption = this.addProperty('caption', DG.TYPE.STRING, 'Current time');
 
     // external subscriptions that will be unsubscribed from in the detach() method
     this.sub(rxjs.interval(1000).subscribe((_) => this.render()));
@@ -19,7 +19,7 @@ class TimeWidget extends DG.Widget {
 
   render() {
     $(this.root).empty();
-    this.root.appendChild(ui.render([this.caption, new Date().toTimeString()]));
+    this.root.appendChild(ui.render([new Date().toTimeString()]));
   }
 }
 
