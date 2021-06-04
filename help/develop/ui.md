@@ -8,102 +8,78 @@ Routines for building an interface in Datagrok. [See API Examples in action](htt
 <details>
 <summary>Layouts</summary>
 
-* [Containers](#containers)
-* [Boxes](#boxes)
-* [Panels](#panels)
-* [Blocks](#blocks)
-* [Flexbox Gird](#flexbox-grid)
-* [Splitters](#splitters)
+[Containers](#containers)
+[Boxes](#boxes)
+[Panels](#panels)
+[Blocks](#blocks)
+[Flexbox Gird](#flexbox-grid)
+[Splitters](#splitters)
 
 </details>
 
 <details>
 <summary>Views</summary>
 
-* [Table View](#table-view)
-* [Simple View](#simple-view)
-
-<details>
-	<summary>
-  
-  * [Viewers](#viewers)
-  
-  </summary>
-	
+[Table View](#table-view)
+[Simple View](#simple-view)
+[Viewers](#viewers)
   * [Bar Chart](#bar-chart)
-	* [Box Plot](#box-plot)
-	* [Calendar](#calendar)
-	* [Correlation Plot](#correlation-plot)
-	* [Density Plot](#density-plot)
-	* [Filters](#filters)
-	* [Form](#form)
-	* [Globe](#globe)
-	* [Google Map Viewer](#google-map-viewer)
-	* [Grid](#grid)
-	* [Heat Map](#heat-map)
-	* [Histogram](#histogram)
-	* [Line Chart](#line-chart)
-	* [Markup Viewer](#markup-viewer)
-	* [Matrix Plot](#matrix-plot)
-	* [Network Diagram](#network-diagram)
-	* [Parallel Coordinates Plot](#parallel-coordinates-plot)
-	* [Scatter Plot 3D](#scatter-plot-3d)
-	* [Scatter Plot](#scatter-plot)
-	* [Shape Map](#shape-map)
-	* [Statistics](#statistics)
-	* [Tile Viewer](#tile-viewer)
-	* [Tree map](#tree-map)
-	* [Word Cloud](#word-cloud)
-	
-  </details>
-
-* [Ribbon](#ribbon)
-* [Toolbox](#toolbox)
+  * [Box Plot](#box-plot)
+  * [Calendar](#calendar)
+  * [Correlation Plot](#correlation-plot)
+  * [Density Plot](#density-plot)
+  * [Filters](#filters)
+  * [Form](#form)
+  * [Globe](#globe)
+  * [Google Map Viewer](#google-map-viewer)
+  * [Grid](#grid)
+  * [Heat Map](#heat-map)
+  * [Histogram](#histogram)
+  * [Line Chart](#line-chart)
+  * [Markup Viewer](#markup-viewer)
+  * [Matrix Plot](#matrix-plot)
+  * [Network Diagram](#network-diagram)
+  * [Parallel Coordinates Plot](#parallel-coordinates-plot)
+  * [Scatter Plot 3D](#scatter-plot-3d)
+  * [Scatter Plot](#scatter-plot)
+  * [Shape Map](#shape-map)
+  * [Statistics](#statistics)
+  * [Tile Viewer](#tile-viewer)
+  * [Tree map](#tree-map)
+  * [Word Cloud](#word-cloud)
+[Ribbon](#ribbon)
+[Toolbox](#toolbox)
 
 </details>
 
-* [Dialogs](#dialogs)
+[Dialogs](#dialogs)
 
 <details>
-<summary>
+<summary> [Elements](#elements) </summary>
 
-* [Elements](#elements)
-
-</summary>
-
-* [Colors](#colors)
-	<details>
-	<summary>Typography</summary>
-
-	* [Headers](#headers)
-	* [Paragraphs](#paragraphs)
-	* [Spans](#spans)
-	* [Label](#label)
-	* [Link](#link)
-	* [Text Blocks](#text-blocks)
-
-	</details>
-
-* [Tables](#tables)
-* [Lists](#lists)
-* [Buttons](#buttons)
-
-	<details>
-	<summary>Forms</summary>
-
-	* [Inputs](#inputs)
-	* [Text Area](#text-area)
-	* [Dropdown Selection](#dropdown-selection)
-	* [Selection](#selection)
-	* [Group Selection](#group-selection)
-	* [Range Slider](#range-slider)
-
-	</details>
-
-* [Icons](#icons)
-* [Image](#image)
+  * [Colors](#colors)
+  * [Typography](#typography)
+    * [Headers](#headers)
+    * [Paragraphs](#paragraphs)
+    * [Spans](#spans)
+    * [Label](#label)
+    * [Link](#link)
+    * [Text Blocks](#text-blocks)
+  * [Tables](#tables)
+  * [Lists](#lists)
+  * [Buttons](#buttons)
+  * [Forms](#forms)
+    * [Inputs](#inputs)
+    * [Text Area](#text-area)
+    * [Dropdown Selection](#dropdown-selection)
+    * [Selection](#selection)
+    * [Group Selection](#group-selection)
+    * [Range Slider](#range-slider)
+  * [Icons](#icons)
+  * [Image](#image)
 
 </details> 
+
 <details>
 <summary>Components</summary>
 
