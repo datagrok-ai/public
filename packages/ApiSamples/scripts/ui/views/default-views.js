@@ -1,7 +1,8 @@
-let host = ui.divV([]);
+let host = ui.divV(null, {style: { width: '500px', height: '500px'}});
 
-let selector = ui.choiceInput('Type', DG.View.APPS,  DG.View.ALL, (x) => {
-  host.appendChild(DG.View.createByType(x, {}));
+let selector = ui.choiceInput('View', DG.View.APPS,  DG.View.ALL, (x) => {
+  $(host).empty();
+  host.appendChild(DG.View.createByType(x).root);
 });
 
-ui.divV([selector, host])
+ui.dialog().add(ui.divV([selector, host])).show();
