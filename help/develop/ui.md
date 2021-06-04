@@ -45,7 +45,7 @@ Routines for building an interface in Datagrok. [See API Examples in action](htt
   * [Shape Map](#shape-map)
   * [Statistics](#statistics)
   * [Tile Viewer](#tile-viewer)
-  * [Tree map](#tree-map)
+  * [Tree Map](#tree-map)
   * [Word Cloud](#word-cloud)
 * [Ribbon](#ribbon)
 * [Toolbox](#toolbox)
@@ -215,204 +215,228 @@ ui.div([ui.h1('Header'), box])
  ```
 
 # Views
- ## Table View
- Table view - a view container with a grid table that contains a set of data that is structured in rows and columns. It allows the user to scroll in both directions and can contain large numbers of items and columns.
- ```javascript
- let table = grok.data.demo.demog();
- let view = grok.shell.addTableView(table);
- ```
- ## Simple View
- Simple view is an empty view container that can contain any kind of elements.
- ```javascript
- let view = grok.shell.newView('Simple View');
- ```
- ## Viewers
- A viewer is a visual component associated with a table.Viewers belonging to the same view all share the same row selection and filter. Viewers are saved as part of the project. Also, it is possible to save viewers and views individually, and reuse them.
+  ## Table View
+  Table view - a view container with a grid table that contains a set of data that is structured in rows and columns. It allows the user to scroll in both directions and can contain large numbers of items and columns.
+  ```javascript
+  let table = grok.data.demo.demog();
+  let view = grok.shell.addTableView(table);
+  ```
+  ## Simple View
+  Simple view is an empty view container that can contain any kind of elements.
+  ```javascript
+  let view = grok.shell.newView('Simple View');
+  ```
 
-    ### Bar Chart
-    A bar chart presents grouped data as rectangular bars with lengths proportional to the values that they represent. Unlike histograms which you can apply to display the distribution of numerical data, bar charts are primarily designed for categorical values.
-    ```javascript
-    let view = grok.shell.addTableView(grok.data.demo.demog());
-    view.barChart({
-      split: 'race',
-      value: 'age',
-      valueAggrType: 'avg'
-    });
-    ```
-    ### Box Plot
-    The box plot (a.k.a. box and whisker diagram) is a standardized way of displaying the distribution of data based on the five number summary: minimum, first quartile, median, third quartile, and maximum.
-    ```javascript
-    let view = grok.shell.addTableView(grok.data.demo.demog());
-    view.boxPlot();
-    ```
-    ### Calendar
-    Calendar lets you analyze longitudinal data. It needs at least one column of type DateTime.
-    ```javascript
-    let view = grok.shell.addTableView(grok.data.demo.demog());
-    view.calendar();
-    ```
-    ### Correlation Plot
-    A quick way to assess correlations between all columns at once. Cells are color-coded by the Pearson correlation coefficient. Histograms along the diagonal show the corresponding distribution. Hover over the cell to see the corresponding scatter plot. The grid is sortable. Select columns in the view by selecting corresponding rows.
-    ```javascript
-    let view = grok.shell.addTableView(grok.data.demo.demog());
-    view.corrPlot({
-      xs: ['age', 'weight', 'height'],
-      ys: ['age', 'weight', 'height'],
-    });
-    ```
-    ### Density Plot
-    Unlike [Scatter plot](#scatter-plot) that visualizes each individual data point, density plot splits 2D area by bins, and color-codes it depending on the number of points that fall within this bin. The darker the color, the more points it contains.
-    ```javascript
-    let view = grok.shell.addTableView(grok.data.demo.demog());
-    view.densityPlot();
-    ```
-    ### Filters
-    A set of controls for quick filtering, selection, and visual assessment of column values.
-    ```javascript
-    let view = grok.shell.addTableView(grok.data.demo.demog());
-    view.filters();
-    ```
-    ### Form
-    Form allows you to customize the appearance of the row by manually positioning the fields, and adding other visual elements, such as pictures or panels. A form can be used either as a stand-alone viewer, or as a row template of the [Tile viewer](#tile-viewer).
-    ```javascript
-    let view = grok.shell.addTableView(grok.data.demo.demog());
-    view.form();
-    ```
-    ### Globe
-    Visualizes magnitude and color for data on a 3D globe using latitude and longitude.
-    ```javascript
-    grok.data.getDemoTable('geo/world_pop_1990.csv').then((t) => {
-      grok.shell.addTableView(t).addViewer('Globe');
-    });
-    ```
-    ### Google Map Viewer
-    Google Map Viewer overlays latitude/longitude data from the corresponding table on top of the Google Map.
-    ```javascript
-    let view = grok.shell.addTableView(grok.data.demo.geo());
-    view.googleMap();
-    ```
-    ### Grid
-    A grid table contains a set of data that is structured in rows and columns. It allows the user to scroll in both directions and can handle large numbers of items and columns.
-    ```javascript
-    let view = grok.shell.addTableView(grok.data.demo.demog());
-    view.grid.setOptions({
-        colHeaderHeight: 80,
-    });
-    ```
-    ### Heat Map
-    A Heat Map is a graphical representation of table where each cell value is represented as color. It is based on grid, so all of the grid's features are applicable to the heat map as well.
-    ```javascript
-    let view = grok.shell.addTableView(grok.data.demo.demog());
-    view.heatMap();
-    });
-    ```
-    ### Histogram
-    A histogram is a graphical representation of the distribution of numerical data.
-    ```javascript
-    let view = grok.shell.addTableView(grok.data.demo.demog());
-    view.histogram({
-        value: 'age'
-    });
-    ```
-    ### Line Chart
-    Line chart displays information as a series of data points connected by a line.
-    ```javascript
-    let view = grok.shell.addTableView(grok.data.demo.demog());
-    view.lineChart();
-    ```
-    ### Markup Viewer
-    Use this viewer to host any text, arbitrary HTML content, or markdown-formatted text. In most casees, the viewer will auto-detect content type. Use the "mode" property to explicitly specify it.
-    ```javascript
-    let table = grok.data.testData('demog', 10000);
-    let view = grok.shell.addTableView(table);
+  ## Viewers
+  A viewer is a visual component associated with a table.Viewers belonging to the same view all share the same row selection and filter. Viewers are saved as part of the project. Also, it is possible to save viewers and views individually, and reuse them.
 
-    let markup = `<div style="padding:0px 20px">
-    <h2>HTML Markup</h2>
-    Markup Viewer lets you combine HTML markup with the properties that are dynamically evaluated against
-    the current dataset. This is useful for creating custom dashboards, or telling stories with data. Here are some
-    examples that illustrate most important concepts:
-    `;
+  ### Bar Chart
+  A bar chart presents grouped data as rectangular bars with lengths proportional to the values that they represent. Unlike histograms which you can apply to display the distribution of numerical data, bar charts are primarily designed for categorical values.
+  ```javascript
+  let view = grok.shell.addTableView(grok.data.demo.demog());
+  view.barChart({
+    split: 'race',
+    value: 'age',
+    valueAggrType: 'avg'
+  });
+  ```
 
-    view.markup({content: markup});
-    ```
-    ### Matrix Plot
-    Use Matrix Plot to assess the relationship among many pairs of columns at the same time.
-    ```javascript
-    let view = grok.shell.addTableView(grok.data.demo.demog());
-    view.matrixPlot();
-    ```
-    ### Network Diagram
-    Network diagram is used to visualize graphs, where values of the specified two columns become nodes, and rows become edges. It is possible to color-code and size-code nodes and columns by choosing the aggregate function that would apply to the values that represent an edge or a node.
-    ```javascript
-    let view = grok.shell.addTableView(grok.data.demo.demog());
-    view.networkDiagram();
-    ```
-    ### Parallel Coordinates Plot
-    Parallel coordinates is a common way of visualizing high-dimensional geometry and analyzing multivariate data.
+  ### Box Plot
+  The box plot (a.k.a. box and whisker diagram) is a standardized way of displaying the distribution of data based on the five number summary: minimum, first quartile, median, third quartile, and maximum.
+  ```javascript
+  let view = grok.shell.addTableView(grok.data.demo.demog());
+  view.boxPlot();
+  ```
 
-    To show a set of points in an n-dimensional space, a backdrop is drawn consisting of n parallel lines, typically vertical and equally spaced. A point in n-dimensional space is represented as a polyline with vertices on the parallel axes; the position of the vertex on the i-th axis corresponds to the i-th coordinate of the point.
+  ### Calendar
+  Calendar lets you analyze longitudinal data. It needs at least one column of type DateTime.
+  ```javascript
+  let view = grok.shell.addTableView(grok.data.demo.demog());
+  view.calendar();
+  ```
 
-    This visualization is closely related to time series visualization, except that it is applied to data where the axes do not correspond to points in time, and therefore do not have a natural order. Therefore, different axis arrangements may be of interest.
-    ```javascript
-    let view = grok.shell.addTableView(grok.data.demo.demog());
-    view.pcPlot();
-    ```
-    ### Scatter Plot 3D
-    Use 3D scatter plot to plot data points on three axes to show the relationship between three variables. Each row in the data table is represented by a marker whose position depends on its values in the columns set on the X, Y, and Z axes. Additionally, you can color-code and size-code points, as well as display labels next to markers.
-    ```javascript
-    let view = grok.shell.addTableView(grok.data.demo.demog());
-    view.scatterPlot3d();
-    ```
-    ### Scatter Plot
-    A scatter plot (also called a scatter graph, scatter chart, scattergram, or scatter diagram) is a type of plot or mathematical diagram using Cartesian coordinates to display values for typically two variables for a set of data. If the points are color-coded you can increase the number of displayed variables to three. The data is displayed as a collection of points, each having the value of one variable determining the position on the horizontal axis and the value of the other variable determining the position on the vertical axis.
-    ```javascript
-    let view = grok.shell.addTableView(grok.data.demo.demog());
-    let plot = view.scatterPlot({
-        x: 'height',
-        y: 'weight',
-        size: 'age',
-        color: 'race',
-    });
+  ### Correlation Plot
+  A quick way to assess correlations between all columns at once. Cells are color-coded by the Pearson correlation coefficient. Histograms along the diagonal show the corresponding distribution. Hover over the cell to see the corresponding scatter plot. The grid is sortable. Select columns in the view by selecting corresponding rows.
+  ```javascript
+  let view = grok.shell.addTableView(grok.data.demo.demog());
+  view.corrPlot({
+    xs: ['age', 'weight', 'height'],
+    ys: ['age', 'weight', 'height'],
+  });
+  ```
 
-    plot.setOptions({
-        showRegressionLine: true,
-        markerType: 'square'
-    });
-    ```
-    ### Shape Map
-    Shows a map that is applicable for the specified dataset. Typically, it would represent a geographical area (countries, states, counties, etc), but it also supports arbitrary shapes (such as a store floor plan, brain regions, or EEG electrodes).
+  ### Density Plot
+  Unlike [Scatter plot](#scatter-plot) that visualizes each individual data point, density plot splits 2D area by bins, and color-codes it depending on the number of points that fall within this bin. The darker the color, the more points it contains.
+  ```javascript
+  let view = grok.shell.addTableView(grok.data.demo.demog());
+  view.densityPlot();
+  ```
 
-    When opened, a viewer automatically determines the best map that is applicable to the current dataset.
-    ```javascript
-    grok.data.loadTable('https://public.datagrok.ai/demo//earnings-by-state.csv').then((t) => {
-      let view = grok.shell.addTableView(t);
-      view.shapeMap();
-    });
-    ```
-    ### Statistics
-    Provides specified descriptive statistics for the chosen columns.
-    ```javascript
-    let view = grok.shell.addTableView(grok.data.demo.demog());
-    view.statistics();
-    ```
-    ### Tile Viewer
-    Visualizes rows as a collection of forms that are positioned as tiles.
-    ```javascript
-    let view = grok.shell.addTableView(grok.data.demo.demog());
-    view.tileViewer();
-    ```
-    ### Tree Map
-    Tree maps display hierarchical (tree-structured) data as a set of nested rectangles. Each branch of the tree is given a rectangle, which is then tiled with smaller rectangles representing sub- branches. A leaf node's rectangle has an area proportional to a specified dimension of the data.
-    ```javascript
-    let view = grok.shell.addTableView(grok.data.demo.demog());
-    view.treeMap();
-    ```
-    ### Word Cloud
-    A word cloud is a graphical representation of word frequency. Any other aggregation function can be used as well for representing size or color of the particular word. On the example of the demographics dataset, to visualize races by indicating size as number of subjects, and color as average age.
-    ```javascript
-    let view = grok.shell.addTableView(grok.data.demo.demog());
-    view.wordCloud();
-    ```
+  ### Filters
+  A set of controls for quick filtering, selection, and visual assessment of column values.
+  ```javascript
+  let view = grok.shell.addTableView(grok.data.demo.demog());
+  view.filters();
+  ```
+
+  ### Form
+  Form allows you to customize the appearance of the row by manually positioning the fields, and adding other visual elements, such as pictures or panels. A form can be used either as a stand-alone viewer, or as a row template of the [Tile viewer](#tile-viewer).
+  ```javascript
+  let view = grok.shell.addTableView(grok.data.demo.demog());
+  view.form();
+  ```
+
+  ### Globe
+  Visualizes magnitude and color for data on a 3D globe using latitude and longitude.
+  ```javascript
+  grok.data.getDemoTable('geo/world_pop_1990.csv').then((t) => {
+    grok.shell.addTableView(t).addViewer('Globe');
+  });
+  ```
+
+  ### Google Map Viewer
+  Google Map Viewer overlays latitude/longitude data from the corresponding table on top of the Google Map.
+  ```javascript
+  let view = grok.shell.addTableView(grok.data.demo.geo());
+  view.googleMap();
+  ```
+
+  ### Grid
+  A grid table contains a set of data that is structured in rows and columns. It allows the user to scroll in both directions and can handle large numbers of items and columns.
+  ```javascript
+  let view = grok.shell.addTableView(grok.data.demo.demog());
+  view.grid.setOptions({
+      colHeaderHeight: 80,
+  });
+  ```
+
+  ### Heat Map
+  A Heat Map is a graphical representation of table where each cell value is represented as color. It is based on grid, so all of the grid's features are applicable to the heat map as well.
+  ```javascript
+  let view = grok.shell.addTableView(grok.data.demo.demog());
+  view.heatMap();
+  });
+  ```
+
+  ### Histogram
+  A histogram is a graphical representation of the distribution of numerical data.
+  ```javascript
+  let view = grok.shell.addTableView(grok.data.demo.demog());
+  view.histogram({
+      value: 'age'
+  });
+  ```
+
+  ### Line Chart
+  Line chart displays information as a series of data points connected by a line.
+  ```javascript
+  let view = grok.shell.addTableView(grok.data.demo.demog());
+  view.lineChart();
+  ```
+
+  ### Markup Viewer
+  Use this viewer to host any text, arbitrary HTML content, or markdown-formatted text. In most casees, the viewer will auto-detect content type. Use the "mode" property to explicitly specify it.
+  ```javascript
+  let table = grok.data.testData('demog', 10000);
+  let view = grok.shell.addTableView(table);
+
+  let markup = `<div style="padding:0px 20px">
+  <h2>HTML Markup</h2>
+  Markup Viewer lets you combine HTML markup with the properties that are dynamically evaluated against
+  the current dataset. This is useful for creating custom dashboards, or telling stories with data. Here are some
+  examples that illustrate most important concepts:
+  `;
+
+  view.markup({content: markup});
+  ```
+
+  ### Matrix Plot
+  Use Matrix Plot to assess the relationship among many pairs of columns at the same time.
+  ```javascript
+  let view = grok.shell.addTableView(grok.data.demo.demog());
+  view.matrixPlot();
+  ```
+
+  ### Network Diagram
+  Network diagram is used to visualize graphs, where values of the specified two columns become nodes, and rows become edges. It is possible to color-code and size-code nodes and columns by choosing the aggregate function that would apply to the values that represent an edge or a node.
+  ```javascript
+  let view = grok.shell.addTableView(grok.data.demo.demog());
+  view.networkDiagram();
+  ```
+
+  ### Parallel Coordinates Plot
+  Parallel coordinates is a common way of visualizing high-dimensional geometry and analyzing multivariate data.
+
+  To show a set of points in an n-dimensional space, a backdrop is drawn consisting of n parallel lines, typically vertical and equally spaced. A point in n-dimensional space is represented as a polyline with vertices on the parallel axes; the position of the vertex on the i-th axis corresponds to the i-th coordinate of the point.
+
+  This visualization is closely related to time series visualization, except that it is applied to data where the axes do not correspond to points in time, and therefore do not have a natural order. Therefore, different axis arrangements may be of interest.
+  ```javascript
+  let view = grok.shell.addTableView(grok.data.demo.demog());
+  view.pcPlot();
+  ```
+
+  ### Scatter Plot 3D
+  Use 3D scatter plot to plot data points on three axes to show the relationship between three variables. Each row in the data table is represented by a marker whose position depends on its values in the columns set on the X, Y, and Z axes. Additionally, you can color-code and size-code points, as well as display labels next to markers.
+  ```javascript
+  let view = grok.shell.addTableView(grok.data.demo.demog());
+  view.scatterPlot3d();
+  ```
+
+  ### Scatter Plot
+  A scatter plot (also called a scatter graph, scatter chart, scattergram, or scatter diagram) is a type of plot or mathematical diagram using Cartesian coordinates to display values for typically two variables for a set of data. If the points are color-coded you can increase the number of displayed variables to three. The data is displayed as a collection of points, each having the value of one variable determining the position on the horizontal axis and the value of the other variable determining the position on the vertical axis.
+  ```javascript
+  let view = grok.shell.addTableView(grok.data.demo.demog());
+  let plot = view.scatterPlot({
+      x: 'height',
+      y: 'weight',
+      size: 'age',
+      color: 'race',
+  });
+
+  plot.setOptions({
+      showRegressionLine: true,
+      markerType: 'square'
+  });
+  ```
+
+  ### Shape Map
+  Shows a map that is applicable for the specified dataset. Typically, it would represent a geographical area (countries, states, counties, etc), but it also supports arbitrary shapes (such as a store floor plan, brain regions, or EEG electrodes).
+
+  When opened, a viewer automatically determines the best map that is applicable to the current dataset.
+  ```javascript
+  grok.data.loadTable('https://public.datagrok.ai/demo//earnings-by-state.csv').then((t) => {
+    let view = grok.shell.addTableView(t);
+    view.shapeMap();
+  });
+  ```
+
+  ### Statistics
+  Provides specified descriptive statistics for the chosen columns.
+  ```javascript
+  let view = grok.shell.addTableView(grok.data.demo.demog());
+  view.statistics();
+  ```
+
+  ### Tile Viewer
+  Visualizes rows as a collection of forms that are positioned as tiles.
+  ```javascript
+  let view = grok.shell.addTableView(grok.data.demo.demog());
+  view.tileViewer();
+  ```
+
+  ### Tree Map
+  Tree maps display hierarchical (tree-structured) data as a set of nested rectangles. Each branch of the tree is given a rectangle, which is then tiled with smaller rectangles representing sub- branches. A leaf node's rectangle has an area proportional to a specified dimension of the data.
+  ```javascript
+  let view = grok.shell.addTableView(grok.data.demo.demog());
+  view.treeMap();
+  ```
+
+  ### Word Cloud
+  A word cloud is a graphical representation of word frequency. Any other aggregation function can be used as well for representing size or color of the particular word. On the example of the demographics dataset, to visualize races by indicating size as number of subjects, and color as average age.
+  ```javascript
+  let view = grok.shell.addTableView(grok.data.demo.demog());
+  view.wordCloud();
+  ```
 
  ## Ribbon
  Ribbon is a layout container that appears in the header of the view.
@@ -512,34 +536,34 @@ For each dialog, you can set the position by viewport by x and y-asix.
   ## Typography
   Typography sets default styles for headings, paragraphs, spans, and divs elements.
   
-    ### Headers
-    ```javascript
-    ui.h1('Header 1');
-    ui.h2('Header 2');
-    ui.h3('Header 3');
-    ```
-    ### Paragraphs
-    ```javascript
-    ui.p('Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industrys standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book.');
-    ```
-    ### Spans
-    ```javascript
-    ui.span(['span element']);
-    ```
-    ### Label
-    A label is the name or title of a control or group of related controls.
-    ```javascript
-    ui.label('label text');
-    ```
-    ### Link
-    Link.
-    ```javascript
-    
-    ```
-    ### Text Blocks
-    ```javascript
-    ui.divText('Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industrys standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book.');
-    ```
+  ### Headers
+  ```javascript
+  ui.h1('Header 1');
+  ui.h2('Header 2');
+  ui.h3('Header 3');
+  ```
+  ### Paragraphs
+  ```javascript
+  ui.p('Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industrys standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book.');
+  ```
+  ### Spans
+  ```javascript
+  ui.span(['span element']);
+  ```
+  ### Label
+  A label is the name or title of a control or group of related controls.
+  ```javascript
+  ui.label('label text');
+  ```
+  ### Link
+  Link.
+  ```javascript
+  
+  ```
+  ### Text Blocks
+  ```javascript
+  ui.divText('Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industrys standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book.');
+  ```
 
   ## Tables
   Table - display information in a grid-like format of rows and columns. Table can contain interactive components such as buttons.
