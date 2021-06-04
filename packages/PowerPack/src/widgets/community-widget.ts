@@ -7,7 +7,7 @@ export class CommunityWidget extends DG.Widget {
   caption: string;
 
   constructor() {
-    super(ui.div());
+    super(ui.panel());
 
     grok.dapi.fetchProxy('https://community.datagrok.ai/latest.json')
       .then((r) => r.json())

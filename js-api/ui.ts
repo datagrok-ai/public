@@ -90,21 +90,32 @@ export function canvas(width: number | null = null, height: number | null = null
 }
 
 /** @returns {HTMLHeadingElement} */
-export function h1(s: string): HTMLHeadingElement {
-  return _innerText(element('h1'), s) as HTMLHeadingElement;
-}
-
-/** @returns {HTMLHeadingElement} */
-export function h2(s: string): HTMLHeadingElement {
-  let x = element('h2');
-  x.innerText = s;
+export function h1(s: string | Element): HTMLHeadingElement {
+  let x = element('h1');
+  if (typeof s === 'string')
+    x.innerText = s;
+  else
+    $(x).append(s);
   return x as HTMLHeadingElement;
 }
 
 /** @returns {HTMLHeadingElement} */
-export function h3(s: string): HTMLHeadingElement {
+export function h2(s: string | Element): HTMLHeadingElement {
+  let x = element('h2');
+  if (typeof s === 'string')
+    x.innerText = s;
+  else
+    $(x).append(s);
+  return x as HTMLHeadingElement;
+}
+
+/** @returns {HTMLHeadingElement} */
+export function h3(s: string | Element): HTMLHeadingElement {
   let x = element('h3');
-  x.innerText = s;
+  if (typeof s === 'string')
+    x.innerText = s;
+  else
+    $(x).append(s);
   return x as HTMLHeadingElement;
 }
 
@@ -830,7 +841,7 @@ export class EntityMetaDartProxy extends ObjectHandler {
   renderView(x: any, context = null): HTMLDivElement { return api.grok_Meta_RenderProperties(x); }
 }
 
-export function box(item: Widget | InputBase | HTMLElement | null, options: ElementOptions | null = null): HTMLDivElement {
+export function box(item: Widget | InputBase | HTMLElement | null = null, options: string | ElementOptions | null = null): HTMLDivElement {
   if (item instanceof Widget) {
     item = item.root;
   }
@@ -891,8 +902,10 @@ export function p(text: string, options = null): HTMLParagraphElement {
   return c;
 }
 
-export function panel(items: HTMLElement[], options?: string | ElementOptions) {
-  return $(div(items, options)).addClass('ui-panel')[0];
+export function panel(items: HTMLElement[] = [], options?: string | ElementOptions): HTMLDivElement {
+  let e = div(items, options);
+  $(e).addClass('ui-panel');
+  return e;
 }
 
 export function label(text: string | null, options: {} | null = null): HTMLLabelElement {
@@ -955,7 +968,7 @@ export namespace cards {
   export function summary(picture: HTMLElement, details: any[]): HTMLElement {
     return divH([
       $(picture).addClass('ui-card-picture').get()[0],
-      divV(details.map((d) => render(d)), 'ui-card-details')
+      div(details.map((d) => render(d)), 'ui-card-details')
     ], 'ui-card')
   }
 }

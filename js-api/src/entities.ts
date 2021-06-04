@@ -41,6 +41,12 @@ export class Entity {
   /** Entity path */
   get path(): string { return api.grok_Entity_Path(this.d); }
 
+  /** Time when entity was created **/
+  get createdOn(): string { return api.grok_Entity_Get_CreatedOn(this.d); }
+
+  /** Time when entity was updated **/
+  get updatedOn(): string { return api.grok_Entity_Get_UpdatedOn(this.d); }
+
   /** Entity properties */
   getProperties(): Promise<Map<string, any>> {
     return new Promise((resolve, reject) => api.grok_EntitiesDataSource_GetProperties(grok.dapi.entities.s, this.d, (p: any) => resolve(p), (e: any) => reject(e)));

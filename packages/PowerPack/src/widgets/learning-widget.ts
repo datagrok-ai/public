@@ -7,7 +7,7 @@ export class LearningWidget extends DG.Widget {
   caption: string;
 
   constructor() {
-    super(ui.div());
+    super(ui.panel());
 
     this.root.appendChild(ui.divV(playlists.map(renderPlaylist)));
 
@@ -21,7 +21,7 @@ function renderPlaylist(p: any) {
   return ui.cards.summary(
     ui.image(p.url, 120, 80, { target: url }),
     [
-      ui.link(p.title, url),
+      ui.h2(ui.link(p.title, url)),
       ui.divText(p.description)
   ]);
 }

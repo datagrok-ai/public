@@ -2,6 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import $ from "cash-dom";
 
 function replaceAll(string: string, search: string, replace: string) {
   return string.split(search).join(replace);
@@ -16,10 +17,15 @@ export class WebWidget extends DG.Widget {
   frame: HTMLIFrameElement;
 
   constructor(options?: {src?: string, width?: string, height?: string}) {
-    super(ui.div());
+    super(ui.box());
 
     this.frame = ui.iframe(options);
     this.root.appendChild(this.frame);
+
+    $(this.root).removeClass('ui-panel');
+    this.frame.style.border = 'none';
+    this.frame.style.width = '100%';
+    this.frame.style.height = '100vh';
 
     // properties
     this.caption = super.addProperty('caption', DG.TYPE.STRING, 'Web');
