@@ -317,7 +317,7 @@ export class View extends ViewBase {
   static readonly PACKAGE_REPOSITORIES = 'repositories';
   static readonly JS_EDITOR = 'js';
 
-  static readonly ALL = [View.APPS, View.SETTINGS, View.WELCOME, View.SCRIPT, View.SKETCH,
+  static readonly ALL_VIEW_TYPES = [View.APPS, View.SETTINGS, View.WELCOME, View.SCRIPT, View.SKETCH,
     View.FORUM, View.PROJECTS, View.NOTEBOOKS, View.HELP, View.OPEN_TEXT, View.DATABASES,
     View.WEB_SERVICES, View.VIEW_LAYOUTS, View.FUNCTIONS, View.DATA_CONNECTIONS, View.DATA_JOB_RUNS,
     View.FILES, View.DATA_QUERY_RUNS, View.EMAILS, View.GROUPS, View.MODELS, View.QUERIES,
