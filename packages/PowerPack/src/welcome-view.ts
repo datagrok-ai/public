@@ -45,6 +45,11 @@ export function welcomeView() {
   function doSearch(s: string) {
     ui.empty(searchHost);
 
+    if (DG.View.ALL_VIEW_TYPES.includes(s)) {
+      searchHost.appendChild(DG.View.createByType(s).root);
+      return;
+    }
+
     for (let sf of searchFunctions)
       sf.apply({s: input.value}).then((results: any[]) => {
         if (results.length > 0) {

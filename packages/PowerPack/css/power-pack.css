@@ -36,10 +36,18 @@
     flex-wrap: wrap;
 }
 
+.power-pack-welcome-view .d4-search-bar {
+    margin-bottom: 10px;
+}
+
 .power-pack-welcome-view .d4-search-bar .ui-input-root {
     width: 100%;
 }
 
 .power-pack-welcome-view .d4-search-bar .ui-input-editor {
+    font-size: 16px;
+}
+
+.power-pack-widget-host .d4-dialog-header {
     font-size: 16px;
 }
