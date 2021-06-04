@@ -471,7 +471,7 @@ For each dialog, you can set the position by viewport by x and y-asix.
   ```
 
   ## Modal Dialog
-  ```
+  ```javascript
   //modal dialog
   ui.dialog('Modal dialog')
     .add(ui.span(['Some content...']))
@@ -480,7 +480,7 @@ For each dialog, you can set the position by viewport by x and y-asix.
   ```
 
   ## Fullscreen Modal Dialog
-  ```
+  ```javascript
   //Fullscreen modal dialog
   ui.dialog('Modal dialog')
     .add(ui.span(['Some content...']))
