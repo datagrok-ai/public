@@ -8,21 +8,21 @@ Routines for building an interface in Datagrok. [See API Examples in action](htt
 <details>
 <summary>Layouts</summary>
 
-[Containers](#containers)
-[Boxes](#boxes)
-[Panels](#panels)
-[Blocks](#blocks)
-[Flexbox Gird](#flexbox-grid)
-[Splitters](#splitters)
+* [Containers](#containers)
+* [Boxes](#boxes)
+* [Panels](#panels)
+* [Blocks](#blocks)
+* [Flexbox Gird](#flexbox-grid)
+* [Splitters](#splitters)
 
 </details>
 
 <details>
 <summary>Views</summary>
 
-[Table View](#table-view)
-[Simple View](#simple-view)
-[Viewers](#viewers)
+* [Table View](#table-view)
+* [Simple View](#simple-view)
+* [Viewers](#viewers)
   * [Bar Chart](#bar-chart)
   * [Box Plot](#box-plot)
   * [Calendar](#calendar)
@@ -47,36 +47,36 @@ Routines for building an interface in Datagrok. [See API Examples in action](htt
   * [Tile Viewer](#tile-viewer)
   * [Tree map](#tree-map)
   * [Word Cloud](#word-cloud)
-[Ribbon](#ribbon)
-[Toolbox](#toolbox)
+* [Ribbon](#ribbon)
+* [Toolbox](#toolbox)
 
 </details>
 
 [Dialogs](#dialogs)
 
 <details>
-<summary> [Elements](#elements) </summary>
+<summary>Elements</summary>
 
-  * [Colors](#colors)
-  * [Typography](#typography)
-    * [Headers](#headers)
-    * [Paragraphs](#paragraphs)
-    * [Spans](#spans)
-    * [Label](#label)
-    * [Link](#link)
-    * [Text Blocks](#text-blocks)
-  * [Tables](#tables)
-  * [Lists](#lists)
-  * [Buttons](#buttons)
-  * [Forms](#forms)
-    * [Inputs](#inputs)
-    * [Text Area](#text-area)
-    * [Dropdown Selection](#dropdown-selection)
-    * [Selection](#selection)
-    * [Group Selection](#group-selection)
-    * [Range Slider](#range-slider)
-  * [Icons](#icons)
-  * [Image](#image)
+* [Colors](#colors)
+* [Typography](#typography)
+  * [Headers](#headers)
+  * [Paragraphs](#paragraphs)
+  * [Spans](#spans)
+  * [Label](#label)
+  * [Link](#link)
+  * [Text Blocks](#text-blocks)
+* [Tables](#tables)
+* [Lists](#lists)
+* [Buttons](#buttons)
+* [Forms](#forms)
+  * [Inputs](#inputs)
+  * [Text Area](#text-area)
+  * [Dropdown Selection](#dropdown-selection)
+  * [Selection](#selection)
+  * [Group Selection](#group-selection)
+  * [Range Slider](#range-slider)
+* [Icons](#icons)
+* [Image](#image)
 
 </details> 
 
