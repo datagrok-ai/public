@@ -1,17 +1,19 @@
 import * as THREE from 'three'
+import { Vector3 } from 'three';
 //import { OrbitControls } from "https://threejs.org/examples/jsm/controls/OrbitControls.js";
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls.js';
 
 export class ScatterPlot3Dviewer extends DG.JsViewer {
 	constructor() {
+
 		super();
 		console.log("TTHREEE ", THREE.REVISION);
 		function hName() {
-			console.log('hName hit!')
+	//		console.log('hName hit!')
 		}
-
-
+		this.new = true;
+ 
 		window.onHitHandlerName = 'hName';
 		this.onHitHandlerName = 'hName'
  
@@ -19,30 +21,220 @@ export class ScatterPlot3Dviewer extends DG.JsViewer {
 		this.hName = hName
   
 		//this.onHitHandlerName = onHitHandlerName;
-
+ 
 		this.currentRow = -1;
 		this.mouseOverRow = -1;
 		this.showTooltip = true;
      
-		this.getMyLook();
-         
-		this.initLayout();
-		this.init3D();
-		console.log(this.renderer)
-		if (this.isTableAttached) {
-			console.error(this.dataFrame)
-			this.onTableAttached()
-		this.updateAllScene(this.look, this.rawX, this.rawY, this.rawZ, this.dataFrame.filter,
-			this.rawZ, this.rawZ)
+		if (this.new) {
+			this.getMyLook();         
+			this.initLayout();
+ 
+			this.init3D();
+//return
+			console.log(this.renderer)
+			if (this.isTableAttached) {
+				console.error(this.dataFrame)
+				this.onTableAttached()
+			this.updateAllScene(this.look, this.rawX, this.rawY, this.rawZ, this.dataFrame.filter,
+				this.rawZ, this.rawZ)
+			}	
+		} else {
+			this.initLayout2()
+
+
 		}
-		//this.onTableAttached();
+
+		//this.onTableAttached(); 
 	} // ctor 
 
-	initLayout() {
+	rendererResize(size) {
+		//	this.renderer.setSize(size.width, size.height);
+	}
+ 
+	initLayout21() {
+		this.camera = new THREE.PerspectiveCamera(45, 1, .3, 100000);
+		this.scene = new THREE.Scene();
+		this.camera.position.z = -100;
+		this.camera.position.x = 0;
+		this.cameraTarget = new THREE.Vector3(0, 0, 0);
+		this.camera.lookAt(this.cameraTarget);
+
+		const ambientLight = new THREE.AmbientLight(0xffffff, 2.485434543257532104);
+		this.scene.add(ambientLight);
+		this.renderer = new THREE.WebGLRenderer({ antialias: true });
+		this.renderer.setClearColor(0x1e3278, 1);
+
+ 
+		var m = new THREE.MeshPhongMaterial({ color: 0xff0000 })
+		var g = new THREE.SphereGeometry(2, 6, 6);
+		var mesh = new THREE.Mesh(g, m);
+		mesh.position.x = 0
+		mesh.position.y = 0
+		mesh.position.z = 0 
+		this.scene.add(mesh);
+		this.renderer.setSize(400, 400);
+		let mapDiv = ui.div([], 'd4-viewer-host');
+		this.mapDiv = mapDiv;
+		//mapDiv.add(ui.h1('Hello World'))
+		mapDiv.appendChild(this.renderer.domElement);
+		
+		//this.controls.enabled = true
+
+
+ 
+		console.error(this.renderer);
+		this.root.appendChild(mapDiv);
+		//this.controls = new TrackballControls(this.camera, this.renderer.domElement		);
+		this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+		this.controls.enabled = true
+		
+		// mapDiv.appendChild(ms);
+		//mapDiv.appendChild(this.canvas);
+		this.render();
+	} // initLayout2
+       
+	// normalization of array, result: 
+	// 1. array with values from 0 to 1
+	// 2. scale factor (how much original array bigger than nomalized)
+	// 3. center of original array
+	normalize(ar) {
+		var { center, scale, min, max } = this.getNormalizeInfo(ar);
+		var rez = ar.map(e => (e - min) / scale)
+		return rez;
+	}
+               
+	// get info about array:
+	// center, scale, min, max
+	getNormalizeInfo(ar) {
+		var min = 1000 * 1000 * 1000;
+		var max = -1000 * 1000 * 1000;
+		for (var i = 0; i < ar.length; i++) {
+			if (ar[i] > max) max = ar[i];
+			if (ar[i] < min) min = ar[i];
+		};
+		var dx = max - min;
+		return {
+			center: (max - min) / 2,
+			scale: dx,
+			min: min,
+			max: max
+		}
+	}
+
+	createMarker(type, coords) {
+		var m = new THREE.MeshPhongMaterial({ color: 0xff00ff })
+		var g = new THREE.SphereGeometry(2, 6, 6);
+		var mesh = new THREE.Mesh(g, m);
+		mesh.position.x = coords[0];
+		mesh.position.y = coords[1];
+		mesh.position.z = coords[2];
+		return mesh
+	}
+
+ 
+	// -------------------------------------------------------------------------------
+	onTableAttached() {
+		if (!this.scene) {
+			this.isTableAttached = true;
+			return 0;
+		}
+		var df = this.dataFrame;
+   
+//return 0            
+       
+		let numericalColumns = Array.from(this.dataFrame.columns.numerical);
+		this.xColumnName = numericalColumns[0].name;
+		this.yColumnName = numericalColumns[1].name;
+		this.zColumnName = numericalColumns[2].name;
+	//	this.zColumnName = 'AGE'
+	//	this.xColumnName = 'WEIGHT';
+	//	this.yColumnName = 'HEIGHT';
+		this.rawX = this.dataFrame.getCol(this.xColumnName).getRawData();
+		this.rawY = this.dataFrame.getCol(this.yColumnName).getRawData();
+		this.rawZ = this.dataFrame.getCol(this.zColumnName).getRawData();
+//			console.error('raw X ', this.rawX)
+	//		console.error('raw Y ', this.rawY)
+	//		console.error('raw Z ', this.rawZ)
+//		this.placeMarkers();
+		var { centerX } = this.getNormalizeInfo(this.rawX)
+		var { centerY } = this.getNormalizeInfo(this.rawY)
+		var { centerZ } = this.getNormalizeInfo(this.rawZ)
+		this.camera.lookAt(new THREE.Vector3(centerX, centerY, centerZ))
+
+		if (this.new) {
+	//		this.placeMarkers()
+	//		console.log(this.scene)
+	//		this.scene.background = new THREE.Color(.2,0,0)
+	//		this.render()
+//return 0
+			console.log('table attach if this new')
+			this.clean()
+		//	this.render()
+	//		return 0
+
+			this.updateAllScene(this.look, this.rawX, this.rawY, this.rawZ, this.dataFrame.filter,
+				this.rawZ, this.rawZ)
+
+	
+		} else {
+			this.placeMarkers()
+		}
+		this.render()
+	} // table attached
+
+	placeMarkers() {
+		for (var i = 0; i < this.rawX.length; i++) {
+			var marker = this.createMarker('circle',
+				[this.rawX[i], this.rawY[i], this.rawZ[i]]);
+			this.scene.add(marker);
+		}
+	}
+
+	renderttt() {
+		if (this.controls) this.controls.update();
+		this.renderer.render(this.scene, this.camera);
+		requestAnimationFrame(this.render.bind(this))
+	}
+
+
+
+
+
+
+
+
+	
+	initLayout() {		
 		this.container = ui.div([], 'd4-viewer-host');
 		this.container.style.width = '100%';
 		this.container.style.height = '100%';
 		console.log('cont ', this.container);
+	}
+	
+	initTHREE() {
+		this.camera = new THREE.PerspectiveCamera(45, 1, .3, 100000);
+		this.scene = new THREE.Scene();
+		this.camera.position.z = -10;
+		this.camera.position.x = 0;
+		this.cameraTarget = new THREE.Vector3(0, 0, 0);
+		this.camera.lookAt(this.cameraTarget);
+
+		const ambientLight = new THREE.AmbientLight(0xffffff, 2.485434543257532104);
+		this.scene.add(ambientLight);
+		this.renderer = new THREE.WebGLRenderer({ antialias: true });
+		this.container.appendChild(this.renderer.domElement);
+		this.root.appendChild(this.container)
+		this.renderer.setClearColor(0x1e3278, 1);
+	}
+
+	resetCamera2() {
+		this.camera = new THREE.PerspectiveCamera(45, 1, .3, 100000);
+
+		this.camera.position.z = -100;
+		this.camera.position.x = 0;
+		this.cameraTarget = new THREE.Vector3(0, 0, 0);
+		this.camera.lookAt(this.cameraTarget);
 	}
             
 	init3D() {
@@ -54,10 +246,16 @@ export class ScatterPlot3Dviewer extends DG.JsViewer {
 		this.geometrySize = new THREE.Vector3();
 		this.mouse = new THREE.Vector2();
 		this.highlightBoxScale = 1.5;
+
+		//this.initTHREE();		return 
 		// camera
 		this.camera = new THREE.PerspectiveCamera();
 		this.resetCamera();
 		this.clean();
+ 
+		
+		const ambientLight = new THREE.AmbientLight(0xffffff, 2.485434543257532104);
+		this.scene.add(ambientLight);
 
 		// hitting render target
 		this.hittingRenderTarget = new THREE.WebGLRenderTarget(width, height);
@@ -75,15 +273,15 @@ export class ScatterPlot3Dviewer extends DG.JsViewer {
 				})
 			);
 		};
-
+ 
 		// highlight boxes
 		this.mouseOverBox = highlightBox(0xFFFF00, true, 0.5);
 		this.currentRowBox = highlightBox(0x000000, true, 0.75);
 
 		// renderer
-		this.renderer = new THREE.WebGL1Renderer({
-			antialias: true,
-			alpha: true
+		this.renderer = new THREE.WebGLRenderer({
+	//		antialias: true,
+		//	alpha: true
 		});
 
 //		if (this.renderer.extensions.get('ANGLE_instanced_arrays') === null) {
@@ -91,23 +289,25 @@ export class ScatterPlot3Dviewer extends DG.JsViewer {
 //			return;
 //		}
 
-		this.renderer.setPixelRatio(window.devicePixelRatio);
-		this.renderer.setSize(width, height);
+
+//		this.renderer.setPixelRatio(window.devicePixelRatio);
+//		this.renderer.setSize(width, height);
 		this.renderer.domElement.style.width = '100%';
 		this.renderer.domElement.style.height = '100%';
-		this.renderer.domElement.width = '222';
-		this.renderer.domElement.height = '222';
+	//	this.renderer.domElement.width = '22';
+	//	this.renderer.domElement.height = '22';
 
 		this.container.appendChild(this.renderer.domElement);
+ 
 
-/*
-		let mapDiv = ui.div([], 'd4-viewer-host');
-		this.mapDiv = mapDiv;
-		mapDiv.add(ui.h1('Hello World'))
-		mapDiv.appendChild(this.renderer.domElement);
-*/
+//		let mapDiv = ui.div([], 'd4-viewer-host');
+//		this.mapDiv = mapDiv;
+	//	mapDiv.add(ui.h1('Hello World'))
+//		mapDiv.appendChild(this.renderer.domElement);
+
 
 		this.root.appendChild(this.container)
+	//	return
 	//	if (this.renderer.extensions.get('instanced_arrays') === null) {
 	//		throw 'ANGLE_instanced_arrays not supported';
 	//	}
@@ -171,139 +371,6 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 		this.look.markerMinSize = 0.001;
 	} // look
 
-	rendererResize(size) {
-		//	this.renderer.setSize(size.width, size.height);
-	}
-
-	initLayout2() {
-		this.camera = new THREE.PerspectiveCamera(45, 1, 2, 100000);
-		this.scene = new THREE.Scene();
-		this.camera.position.z = -100;
-		this.camera.position.x = 0;
-		this.cameraTarget = new THREE.Vector3(0, 0, 0);
-		this.camera.lookAt(this.cameraTarget);
-
-		const ambientLight = new THREE.AmbientLight(0xffffff, 2.485434543257532104);
-		this.scene.add(ambientLight);
-		this.renderer = new THREE.WebGLRenderer({ antialias: true });
-		this.renderer.setClearColor(0x1e3278, 1);
-
-
-		var m = new THREE.MeshPhongMaterial({ color: 0xff0000 })
-		var g = new THREE.SphereGeometry(2, 6, 6);
-		var mesh = new THREE.Mesh(g, m);
-		mesh.position.x = 0
-		mesh.position.y = 0
-		mesh.position.z = 0
-		this.scene.add(mesh);
-		this.renderer.setSize(400, 400);
-		let mapDiv = ui.div([], 'd4-viewer-host');
-		this.mapDiv = mapDiv;
-		mapDiv.add(ui.h1('Hello World'))
-		mapDiv.appendChild(this.renderer.domElement);
-		this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-		this.controls.enabled = true
-
-		console.error(this.renderer);
-		this.root.appendChild(mapDiv);
-		
-		// mapDiv.appendChild(ms);
-		//mapDiv.appendChild(this.canvas);
-		this.render();
-	} // initLayout2
-       
-	// normalization of array, result: 
-	// 1. array with values from 0 to 1
-	// 2. scale factor (how much original array bigger than nomalized)
-	// 3. center of original array
-	normalize(ar) {
-		var { center, scale, min, max } = this.getNormalizeInfo(ar);
-		var rez = ar.map(e => (e - min) / scale)
-		return rez;
-	}
-               
-	// get info about array:
-	// center, scale, min, max
-	getNormalizeInfo(ar) {
-		var min = 1000 * 1000 * 1000;
-		var max = -1000 * 1000 * 1000;
-		for (var i = 0; i < ar.length; i++) {
-			if (ar[i] > max) max = ar[i];
-			if (ar[i] < min) min = ar[i];
-		};
-		var dx = max - min;
-		return {
-			center: (max - min) / 2,
-			scale: dx,
-			min: min,
-			max: max
-		}
-	}
-
-	createMarker(type, coords) {
-		var m = new THREE.MeshPhongMaterial({ color: 0xff00ff })
-		var g = new THREE.SphereGeometry(2, 6, 6);
-		var mesh = new THREE.Mesh(g, m);
-		mesh.position.x = coords[0];
-		mesh.position.y = coords[1];
-		mesh.position.z = coords[2];
-		return mesh
-	}
- 
-	onTableAttached() {
-		if (!this.scene) {
-			this.isTableAttached = true;
-			return 0;
-		}
-		var df = this.dataFrame;
-   
-//return 0            
-       
-		let numericalColumns = Array.from(this.dataFrame.columns.numerical);
-		this.xColumnName = numericalColumns[0].name;
-		this.yColumnName = numericalColumns[1].name;
-		this.zColumnName = numericalColumns[2].name;
-	//	this.zColumnName = 'AGE'
-	//	this.xColumnName = 'WEIGHT';
-	//	this.yColumnName = 'HEIGHT';
-		this.rawX = this.dataFrame.getCol(this.xColumnName).getRawData();
-		this.rawY = this.dataFrame.getCol(this.yColumnName).getRawData();
-		this.rawZ = this.dataFrame.getCol(this.zColumnName).getRawData();
-//			console.error('raw X ', this.rawX)
-	//		console.error('raw Y ', this.rawY)
-	//		console.error('raw Z ', this.rawZ)
-//		this.placeMarkers();
-		var { centerX } = this.getNormalizeInfo(this.rawX)
-		var { centerY } = this.getNormalizeInfo(this.rawY)
-		var { centerZ } = this.getNormalizeInfo(this.rawZ)
-		this.camera.lookAt(new THREE.Vector3(centerX, centerY, centerZ))
-
-		this.clean()
-
-		this.updateAllScene(this.look, this.rawX, this.rawY, this.rawZ, this.dataFrame.filter,
-			this.rawZ, this.rawZ)
-		this.render()
-	}
-
-	placeMarkers() {
-		for (var i = 0; i < this.rawX.length; i++) {
-			var marker = this.createMarker('circle',
-				[this.rawX[i], this.rawY[i], this.rawZ[i]]);
-			this.scene.add(marker);
-		}
-	}
-
-	renderttt() {
-		if (this.controls) this.controls.update();
-		this.renderer.render(this.scene, this.camera);
-		requestAnimationFrame(this.render.bind(this))
-	}
-
-
-
-
-
-
 
 	updateAllScene(look, x, y, z, filter, colors, sizes) {
 		this.look = look;
@@ -319,14 +386,14 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 			this.renderer.domElement.addEventListener('mousedown', this.onMouseDown.bind(this));
 			this.renderer.domElement.addEventListener('wheel', this.onMouseMove.bind(this));
 			this.renderer.domElement.addEventListener('dblclick', this.onDoubleClick.bind(this));
-			onResize(this.container, this.onWindowResize.bind(this));
+			//onResize(this.container, this.onWindowResize.bind(this)); 
 			requestAnimationFrame(this.render.bind(this));
 			this.enableAutoRotation();
 			this.isEventsLinked = true;
 		}
-	}
+	} 
 
-
+ 
 	update(colors, filter) {
 		let markerColor = new THREE.Color();
 		for (let n = 0; n < colors.length; n++) {
@@ -363,6 +430,7 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 
 
 	enableAutoRotation() {
+		return 0;
 		this.controls.staticMoving = false;
 
 		// Simulate touch
@@ -383,18 +451,18 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 
 
 	resetCamera() {
-		this.camera.fov = 20;
-		this.camera.aspect = this.container.clientWidth / this.container.clientHeight;
+		this.camera.fov = 45;
+		this.camera.aspect =1// this.container.clientWidth / this.container.clientHeight;
 		this.camera.near = 1;
 		this.camera.far = 100;
 		this.camera.position.z = 4.0;
-		this.camera.updateProjectionMatrix();
+	//	this.camera.updateProjectionMatrix();
 	}
 
 
 	initMesh(x, y, z, filter, color, size) {
 		this.clean();
-		console.log('init mesh')
+		console.log('init mesh', this.look.markerType)
 		let geo;
 		if (this.look.markerType === 'tetrahedron')
 			geo = new THREE.TetrahedronGeometry(1.0);
@@ -417,6 +485,10 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 		this.makeInstanced(geo, x, y, z, filter, color, size);
 		this.hit();
 		this.render();
+	}
+
+	initMesh2() {
+
 	}
 
 
@@ -492,6 +564,12 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 
 
 	clean() {
+	/*	
+		this.scene = new THREE.Scene();
+		this.scene.background = new THREE.Color(this.look.backColor);
+		this.scene.background = new THREE.Color(0,0,1);
+		return 0;
+*/
 		THREE.Cache.clear();
 
 		this.materialList.forEach(function (m) {
@@ -504,6 +582,7 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 
 		this.scene = new THREE.Scene();
 		this.scene.background = new THREE.Color(this.look.backColor);
+		this.scene.background = new THREE.Color(0, 1, 0);
 
 		this.scene.add(this.camera);
 	//	this.scene.add(this.mouseOverBox);
@@ -520,6 +599,7 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 
 
 	makeInstanced(geo, x, y, z, filter, colors, sizes) {
+	//	return 0;
 		console.log('make instanced ', geo)
 		// material
 		const vert = document.getElementById('vertInstanced').textContent;
@@ -556,7 +636,8 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 		const vertices = bgeo.attributes.position.clone();
 		this.igeo.addAttribute('position', vertices);
 
-		const numObjects = x.length;
+		var numObjects = x.length;
+		numObjects = 100
 
 		let mcol0 = new THREE.InstancedBufferAttribute(new Float32Array(numObjects * 3), 3, false);
 		let mcol1 = new THREE.InstancedBufferAttribute(new Float32Array(numObjects * 3), 3, false);
@@ -573,6 +654,7 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 		let matrix = new THREE.Matrix4();
 		let me = matrix.elements;
 
+		//for (let n = 0; n < numObjects; n++) {
 		for (let n = 0; n < numObjects; n++) {
 			let size = (sizes === null) ? scaleFactor : sizes[n] * scaleFactor;
 			size = (size < this.markerMinSize) ? this.markerMinSize : size;
@@ -638,16 +720,35 @@ this.igeo.setAttribute('mcol3', mcol3);
 		this.igeo.setAttribute('filter', this.filter);
 
 		// mesh
-		this.mesh = new THREE.Mesh(this.igeo, material);
+		var m = new THREE.MeshPhongMaterial({ color: 0x0000ff })
+
+		this.mesh = new THREE.Mesh(this.igeo, m);
+		this.mesh.name = 'name'
+		this.mesh.scale.x =100
+		this.mesh.scale.y =100
 		console.log('make instanced ', geo)
 
 		console.log('mesh ', this.mesh);
 		this.scene.add(this.mesh);
 
-		this.hittingMesh = new THREE.Mesh(this.igeo, hittingMaterial);
-	//	this.hittingScene.add(this.hittingMesh);
-	} // makeInstanced
 
+
+
+		this.hittingMesh = new THREE.Mesh(this.igeo, hittingMaterial);
+		this.hittingScene.add(this.hittingMesh);
+
+
+
+
+
+	var m = new THREE.MeshPhongMaterial({ color: 0xff0000 })
+	var g = new THREE.SphereGeometry(1, 6, 6);
+	var mesh2 = new THREE.Mesh(g, m);
+	mesh2.position.x = 0
+	mesh2.position.y = 0
+	mesh2.position.z = 0
+	this.scene.add(mesh2);
+	} // makeInstanced
 
 
 	hitTest(x, y) {
@@ -684,12 +785,12 @@ this.igeo.setAttribute('mcol3', mcol3);
 		// render the hitting scene off-screen
 		this.mouseOverBox.visible = false;
 		this.currentRowBox.visible = false;
-		this.renderer.render(this.hittingScene, this.camera, this.hittingRenderTarget);
+	//	this.renderer.render(this.hittingScene, this.camera, this.hittingRenderTarget);
 		this.moveHighlightBox(this.mouseOverBox, this.getElement(this.mouseOverRow), true, options);
 		this.moveHighlightBox(this.currentRowBox, this.getElement(this.currentRow), false, options);
 	}
 
-
+ 
 	moveHighlightBox(highlightBox, element, notify, options) {
 		if (element.object) {
 			const object = element.object;
@@ -710,12 +811,41 @@ this.igeo.setAttribute('mcol3', mcol3);
 				window[this.onHitHandlerName].apply(window, [this.mouseOverRow, this.currentRow, 0, 0, options]);
 		}
 	}
-
-
+  
+      
 	render() {
-		this.controls.update();
+		if (this.controls) this.controls.update();
+	//	console.log(this.controls)
+		//this.camera.rotation.x = Math.PI
+		if (false) {
+			this.camera.position.x = 10;
+			this.camera.position.y = 10; 
+			this.camera.position.z = 10;
+			this.camera.lookAt(new Vector3(0,0,0))
+		}
+
+		
+	//	const ambientLight = new THREE.AmbientLight(0xffffff, 222.485434543257532104);
+	//	this.scene.add(ambientLight); 
+
+		  
+	var m = new THREE.MeshPhongMaterial({ color: 0xff0000 })  
+	var g = new THREE.SphereGeometry(1.1, 6, 6);
+	var mesh2 = new THREE.Mesh(g, m);
+	mesh2.position.x = 5
+	mesh2.position.y = 5
+	mesh2.position.z = 0
+//	this.scene.add(mesh2);
+
+	//	console.log('camera ', this.camera.position, this.camera.rotation)
+	//	console.log('scene ', this.scene)
 		this.renderer.render(this.scene, this.camera);
+//return 0 
+		requestAnimationFrame(this.render.bind(this))
+
 	}
+
+
 
 
 	initShaders() {
@@ -763,6 +893,7 @@ this.igeo.setAttribute('mcol3', mcol3);
 		  vAlpha = alpha;
 		#endif
 		  gl_Position = projectionMatrix * vec4(positionEye, filter);
+		  gl_Position = projectionMatrix * vec4(positionEye, 1.);
 		}`;
 
 		const fragInstanced = `
@@ -789,6 +920,7 @@ this.igeo.setAttribute('mcol3', mcol3);
 				  float diffuse = dot(normal, vec3(0.0, 0.0, 1.0));
 				  gl_FragColor = vec4(diffuse * vColor, vAlpha);
 		#endif
+		gl_FragColor = vec4(1., 0.,0.,1.);
 		}`;
 
 		const addScript = function (type, id, code) {
@@ -803,6 +935,9 @@ this.igeo.setAttribute('mcol3', mcol3);
 			addScript("x-shader/x-vertex", "vertInstanced", vertInstanced);
 			addScript("x-shader/x-fragment", "fragInstanced", fragInstanced);
 		}
+
+		this.vertexShader = vertInstanced;
+		this.fragmentShader = fragInstanced;
 	} // initShaders
 
 
