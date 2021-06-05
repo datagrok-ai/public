@@ -604,7 +604,7 @@ export class UserDataStorage {
    * @param {Map} data
    * @param {boolean} currentUser Value should be available only for current user
    * @returns {Promise}*/
-  post(name: string, data: Map<string, string>, currentUser: boolean = true): Promise<void> {
+  post(name: string, data: any, currentUser: boolean = true): Promise<void> {
     return new Promise((resolve, reject) =>
       api.grok_Dapi_UserDataStorage_Post(name, data, currentUser, () => resolve(), (e: any) => reject(e)));
   }
@@ -614,16 +614,16 @@ export class UserDataStorage {
    * @param {Map} data
    * @param {boolean} currentUser Value should be available only for current user
    * @returns {Promise}*/
-  put(name: string, data: Map<string, string>, currentUser: boolean = true): Promise<void> {
+  put(name: string, data: any, currentUser: boolean = true): Promise<void> {
     return new Promise((resolve, reject) =>
       api.grok_Dapi_UserDataStorage_Put(name, data, currentUser, () => resolve(), (e: any) => reject(e)));
   }
 
   /** Retrieves a map from Users Data Storage
-   * @param {string} name Storage name
-   * @param {boolean} currentUser get a value from a current user storage
+   * @param {string} name - Storage name
+   * @param {boolean} currentUser - get a value from a current user storage
    * @returns {Promise<Map>} */
-  get(name: string, currentUser: boolean = true): Promise<Map<string, string>> {
+  get(name: string, currentUser: boolean = true): Promise<any> {
     return new Promise((resolve, reject) =>
       api.grok_Dapi_UserDataStorage_Get(name, currentUser, (data: any) => resolve(data), (e: any) => reject(e)));
   }

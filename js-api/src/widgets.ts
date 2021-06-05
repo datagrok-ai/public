@@ -1,7 +1,7 @@
 import {toDart, toJs} from "./wrappers";
 import {__obs, _sub, observeStream, StreamSubscription} from "./events";
 import {Observable} from "rxjs";
-import {Property} from "./entities";
+import {Func, Property} from "./entities";
 import {DataFrame} from "./dataframe";
 import {ColorType, Type} from "./const";
 import * as React from "react";
@@ -100,6 +100,10 @@ export class ObjectPropertyBag {
 
 /** Base class for controls that have a visual root and a set of properties. */
 export class Widget {
+
+  /** Constructor function. No parameters, returns [Widget]. */
+  factory: Func | null = null;
+
   private _root: HTMLElement;
   protected _properties: Property[];
   props: any; //ObjectPropertyBag;

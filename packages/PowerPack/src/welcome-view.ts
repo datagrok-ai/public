@@ -4,13 +4,36 @@ import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 import {debounceTime} from 'rxjs/operators';
 
+interface UserWidgetSettings {
+  factoryName?: string;
+  caption?: string;
+  ignored?: boolean;
+}
+
+interface UserWidgetsSettings {
+  [index: string]: UserWidgetSettings;
+}
+
+const WIDGETS_STORAGE = 'widgets';
+let settings: UserWidgetsSettings;
+
 function card(w: DG.Widget): HTMLElement {
   let host = ui.box(null, 'power-pack-widget-host');
+
+  function remove(): void {
+    host.remove();
+    if (w.factory?.name) {
+      let settings = { ignored: true };
+      grok.dapi.userDataStorage
+        .postValue(WIDGETS_STORAGE, w.factory.name, JSON.stringify(settings))
+        .then((_) => grok.shell.info('To control widget visibility, go to Tools | Widgets'));
+    }
+  }
 
   let header = ui.div([
     ui.divText(w.props.caption ?? '', 'd4-dialog-title'),
     ui.icons.settings(() => { grok.shell.o = w}, 'Edit settings'),
-    ui.icons.close(() => host.remove(), 'Remove'),
+    ui.icons.close(remove, 'Remove'),
   ], 'd4-dialog-header');
 
   host.appendChild(header);
@@ -39,8 +62,15 @@ export function welcomeView() {
   let searchFunctions = DG.Func.find({tags: ['search'], returnType: 'list'});
   let searchWidgetFunctions = DG.Func.find({tags: ['search'], returnType: 'widget'});
 
-  for (let f of widgetFunctions)
-    f.apply().then((w: DG.Widget) => widgetsHost.appendChild(card(w)));
+  grok.dapi.userDataStorage.get(WIDGETS_STORAGE).then((settings) => {
+    for (let f of widgetFunctions) {
+      if (!settings[f.name] || settings[f.name].ignored)
+        f.apply().then(function (w: DG.Widget) {
+          w.factory = f;
+          widgetsHost.appendChild(card(w));
+        });
+    }
+  });
 
   function doSearch(s: string) {
     ui.empty(searchHost);
