@@ -12,6 +12,11 @@ export async function functionSearch(s: string): Promise<any[]> {
       value.description?.toLowerCase()?.includes(s));
 }
 
+export async function scriptsSearch(s: string): Promise<any[]> {
+  s = s.toLowerCase();
+  return (await grok.dapi.scripts.filter(s).list());
+}
+
 export async function usersSearch(s: string): Promise<any[]> {
   s = s.toLowerCase();
   return (await grok.dapi.users.filter(s).list());
