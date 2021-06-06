@@ -16,6 +16,7 @@ export class ScatterPlot3Dviewer extends DG.JsViewer {
 		this.time0 = Date.now()
 		this.time1 = this.time0 + 1;
 		this.time00 = Date.now()
+		this.localSubs = []
  
 		window.onHitHandlerName = 'hName';
 		this.onHitHandlerName = 'hName'
@@ -39,8 +40,10 @@ export class ScatterPlot3Dviewer extends DG.JsViewer {
 			if (this.isTableAttached) {
 				console.error(this.dataFrame)
 				this.onTableAttached()
-			this.updateAllScene(this.look, this.rawX, this.rawY, this.rawZ, this.dataFrame.filter,
-				this.rawZ, this.rawZ)
+			this.updateAllScene(this.look, this.rawX, this.rawY, this.rawZ,
+				 this.dataFrame.filter,
+				0xff00ff, 
+				this.rawZ)
 			}	
 		} else {
 			this.initLayout2()
@@ -50,6 +53,23 @@ export class ScatterPlot3Dviewer extends DG.JsViewer {
 
 		//this.onTableAttached(); 
 	} // ctor 
+ 
+	getFloat32Filter() {
+		var getBitByIndex32 = (b, index) => {
+			let i = Math.floor(index / 32);
+			let j = index % 32;
+			let rez = !!(b[~~ (i / 32)] & (1 << (i & 31)));
+			//let rez = a[i] & (Math.pow(2, j));
+			return rez;
+		}
+		var b = this.dataFrame.filter.d.b;
+		var n = this.rawY.length;
+		//var rez = new Float32Array(n);
+		for (var i=0; i<n; i++) {
+			this.filter32[i] = getBitByIndex32(b, i)
+		}
+		//return rez;
+	}
 
 	rendererResize(size) {
 		//	this.renderer.setSize(size.width, size.height);
@@ -164,6 +184,9 @@ export class ScatterPlot3Dviewer extends DG.JsViewer {
 		var { centerY } = this.getNormalizeInfo(this.rawY)
 		var { centerZ } = this.getNormalizeInfo(this.rawZ)
 		this.camera.lookAt(new THREE.Vector3(centerX, centerY, centerZ))
+
+		this.addDataFrameCallbacks();
+
 
 		if (this.new) {
 	//		this.placeMarkers()
@@ -398,6 +421,10 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 		this.look.markerMinSize = 0.001;
 	} // look
 
+	addDataFrameCallbacks() {
+		this.localSubs.push(this.dataFrame.filter.onChanged.subscribe(() => this.update()))
+	}
+
 
 	updateAllScene(look, x, y, z, filter, colors, sizes) {
 		this.look = look;
@@ -422,6 +449,8 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 
  
 	update(colors, filter) {
+		console.log('this update !!!!!!!!!!!!!!!!!!!!!!')
+		
 		let markerColor = new THREE.Color();
 		for (let n = 0; n < colors.length; n++) {
 			markerColor.setHex(colors[n]);
@@ -432,8 +461,14 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 
 		this.igeo.attributes.color.needsUpdate = true;
 		this.igeo.attributes.alpha.needsUpdate = true;
-		this.igeo.attributes.filter.needsUpdate = true;
-		this.hit();
+		
+		//console.log('fffff ', this.igeo.attributes)
+		this.getFloat32Filter();
+		if( this.igeo.attributes.filter2) {
+			console.log('fffff ', this.igeo.attributes.filter2)
+			this.igeo.attributes.filter2.needsUpdate = true;
+		}
+		//this.hit();
 		this.render();
 	}
 
@@ -528,7 +563,7 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 
 
 	onMouseMove(e) {
-		return
+	//	return
 		if (this.showTooltip === false)
 		debugger
 			window[this.onHitHandlerName].apply(window, [-1, this.currentRow, 0, 0, new Object()]);
@@ -543,7 +578,7 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 
 
 	onMouseDown(e) {
-		return
+	//	return
 		if (!this.look.dynamicCameraMovement)
 			this.disableAutoRotation();
 		handleMouseMove(this.onMouseMove.bind(this), this.onMouseUp.bind(this));
@@ -630,6 +665,21 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	makeInstanced(geo, x, y, z, filter, colors, sizes) {
 	//	return 0;
 		console.log('make instanced ', geo)
@@ -643,12 +693,18 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 			fragmentShader: frag,
 			transparent: false
 		});
+		material.side = THREE.BackSide
 
 		this.materialList.push(material);
-
+/*
 		const hittingMaterial = new THREE.RawShaderMaterial({
 			vertexShader: "#define HITTING\n" + vert,
 			fragmentShader: "#define HITTING\n" + frag
+		});
+		*/
+		const hittingMaterial = new THREE.RawShaderMaterial({
+			vertexShader: this.webgl2prefix  + "#define HITTING\n" + this.vertInstancedBody,
+			fragmentShader: this.webgl2prefix + "#define HITTING\n" + this.fragInstancedBody
 		});
 
 		this.materialList.push(hittingMaterial);
@@ -660,7 +716,10 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 		//let bgeo =bg2.fromGeometry(geo);
 		//let bgeo =bg2.fromGeometry(geo);
 		//let bgeo =bg2
-		var bgeo = geo.clone();
+		var bgeoi = geo.clone();
+		//bgeoi = geo.toBufferGeometry();
+		var bgeo = geo.toNonIndexed()
+		console.log('bgeo ', bgeo)
 		this.geometryList.push(bgeo);
 
 		this.igeo = new THREE.InstancedBufferGeometry();
@@ -732,11 +791,13 @@ this.igeo.setAttribute('mcol3', mcol3);
 		for (let n = 0; n < numObjects; n++) {
 			markerColor.setHex(colors[n]);
 			this.markerAlphas.setX(n, ((colors[n] >> 24) & 255) / 255.0);
-			this.markerColors.setXYZ(n, markerColor.r, markerColor.g, markerColor.b);
+			//this.markerColors.setXYZ(n, markerColor.r, markerColor.g, markerColor.b);
+			this.markerColors.setXYZ(n,1,0,0);
 		}
 
 		this.igeo.setAttribute('color', this.markerColors);
 		this.igeo.setAttribute('alpha', this.markerAlphas);
+
 
 		let col = new THREE.Color();
 		let hittingColors = new THREE.InstancedBufferAttribute(new Float32Array(numObjects * 3), 3, false);
@@ -745,24 +806,28 @@ this.igeo.setAttribute('mcol3', mcol3);
 			col.setHex(n + 1);
 			hittingColors.setXYZ(n, col.r, col.g, col.b);
 		}
- 
+    
 		this.igeo.setAttribute('hittingColor', hittingColors);
 
-		// filter
-		this.filter = new THREE.InstancedBufferAttribute(filter, 1, false);
+		// filter 
+		this.filter32 = new Float32Array(this.rawX.length)
+		this.getFloat32Filter()
+		this.filter = new THREE.InstancedBufferAttribute(this.filter32, 1, false);
+		console.log('this filter ' , this.filter)
 		this.igeo.setAttribute('filter2', this.filter);
 
+		console.log('this igeo ', this.igeo)
 		// mesh
 		var m = new THREE.MeshPhongMaterial({ color: 0x0000ff })
 
 		this.mesh = new THREE.Mesh(this.igeo, material);
-		this.mesh.name = 'name'
+		this.mesh.name = 'main'
 		this.mesh.scale.x =1
 		this.mesh.scale.y =1
 		this.mesh.scale.z =1
 		console.log('make instanced ', geo)
 
-		console.log('mesh main', this.mesh);
+		console.log('mesh main', this.mesh.geometry);
 		this.scene.add(this.mesh);
 
 
@@ -777,7 +842,8 @@ this.igeo.setAttribute('mcol3', mcol3);
 
 	var m = new THREE.MeshLambertMaterial({ color: 0xff00ff })
 	var g = new THREE.SphereGeometry(1, 6, 6);
-	var mesh2 = new THREE.Mesh(g, m);
+	var mesh2 = new THREE.Mesh(geo, m);
+	mesh2.name = 'mesh2'
 	mesh2.scale.x = 10
 	mesh2.scale.y = 10
 	mesh2.scale.z = 10
@@ -785,6 +851,7 @@ this.igeo.setAttribute('mcol3', mcol3);
 	mesh2.position.y = 20
 	mesh2.position.z = 0
 	this.scene.add(mesh2);
+	console.log('mesh2 ', mesh2.geometry)
 	} // makeInstanced
 
 	getFilter() {
@@ -826,7 +893,7 @@ this.igeo.setAttribute('mcol3', mcol3);
 		// render the hitting scene off-screen
 		this.mouseOverBox.visible = false;
 		this.currentRowBox.visible = false;
-	//	this.renderer.render(this.hittingScene, this.camera, this.hittingRenderTarget);
+		this.renderer.render(this.hittingScene, this.camera, this.hittingRenderTarget);
 		this.moveHighlightBox(this.mouseOverBox, this.getElement(this.mouseOverRow), true, options);
 		this.moveHighlightBox(this.currentRowBox, this.getElement(this.currentRow), false, options);
 	}
@@ -1016,9 +1083,10 @@ this.igeo.setAttribute('mcol3', mcol3);
 
 
 
+		const webgl2prefix = '#version 300 es\n';
+		this.webgl2prefix = webgl2prefix;
 
-
-		const vertInstanced = `#version 300 es
+		const vertInstancedBody = `
 		#define SHADER_NAME vertInstanced
   
 		precision highp float;
@@ -1069,11 +1137,13 @@ this.igeo.setAttribute('mcol3', mcol3);
 		  vAlpha = alpha;
 		#endif
 		  gl_Position = projectionMatrix * vec4(positionEye, filter2);
-		  gl_Position = projectionMatrix * vec4(positionEye, 1.);
+		 // gl_Position = projectionMatrix * vec4(positionEye, 1.);
 		//  gl_Position = vec4(position[0], position[1], 0., .5);
 		}`;
 
-		const fragInstanced = `#version 300 es
+		var vertInstanced = webgl2prefix + vertInstancedBody
+
+		const fragInstancedBody = `
 		#define SHADER_NAME fragInstanced
   
 		#extension GL_OES_standard_derivatives : enable
@@ -1081,7 +1151,7 @@ this.igeo.setAttribute('mcol3', mcol3);
 		precision highp float;
 	  
 		in vec3 vColor;
-
+ 
 	  
 		#ifndef HITTING
 		in vec3 vPosition;
@@ -1103,7 +1173,13 @@ this.igeo.setAttribute('mcol3', mcol3);
 	
 		//outColor = vec4(1., 0.,0.,1.);
 		}`;
+		var fragInstanced = webgl2prefix + fragInstancedBody;
 		// WebGL2
+		this.vertInstancedBody = vertInstancedBody;
+		this.fragInstancedBody = fragInstancedBody;
+
+
+
 
 
 		const addScript = function (type, id, code) {
@@ -1122,6 +1198,32 @@ this.igeo.setAttribute('mcol3', mcol3);
 		this.vertexShader = vertInstanced;
 		this.fragmentShader = fragInstanced;
 	} // initShaders
+
+
+	dartHitRows() {
+
+	}
+
+	dartUpdateAll() {
+
+	}
+
+	dartUpdate() {
+
+	}
+
+	dartLookTooColumns() {
+
+	}
+
+	dartGetColors() {
+		var colors = Uint32Array(this.dataFrame.rowCount);
+		var isGrouped = this.look.showMouseOverRowGroup && this.dataFrame.rows.mouseOverRowFunc
+		for (var n=0; n<colors.length; n++) {
+			colors[n] = 0x00ffff;
+		}
+	}
+
 
 
 }
