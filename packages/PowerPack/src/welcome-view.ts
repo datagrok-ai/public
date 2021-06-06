@@ -3,6 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 import {debounceTime} from 'rxjs/operators';
+import {powerSearch} from "./search/power-search";
 
 interface UserWidgetSettings {
   factoryName?: string;
@@ -79,6 +80,8 @@ export function welcomeView() {
       searchHost.appendChild(DG.View.createByType(s).root);
       return;
     }
+
+    powerSearch(s, searchHost);
 
     for (let sf of searchFunctions)
       sf.apply({s: input.value}).then((results: any[]) => {
