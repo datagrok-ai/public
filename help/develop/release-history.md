@@ -1,6 +1,64 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-06-07 Dev build 0.92.7
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.7`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* SequenceTranslator: flexible Axolabs sequence conversion (WIP)
+* Function View (WIP)
+* PLOT3D: add functions and some refactor 
+* Power Pack: Power Search: integrate with functions (WIP)
+* UTC support in the datetime parser (WIP)
+* Package content validation: up-to-date bundle check 
+* Grok connect: tests (WIP)
+* PLOT3D: before refactor 
+* PLOT3D: fix problem with getGeometry() and other 
+* PLOT3D: delete unused files 
+* Fixed exception on deploy 
+* (Bug) Current user is system while deploying 
+* (Bug) UsageAnalysis hangs backend (WIP)
+* JS API: dialog.clear() 
+* Add string name indexing for columns 
+* GrokML: integrate WASM calls with Dart (pearsonsR for the correlation plot) (WIP)
+* WIP 
+* PLOT3D: refactor 
+* JS API: View.createByName('functions', {search: '#math'}): a way to create standard Dart views 
+* Power Search: integrate with default views ("functions", "databases", "files", etc) 
+* Fixed a typo 
+* (Bug) Can't close QueryView 
+* Charts: Timelines (WIP)
+* Update icons.js 
+* Package content validation: ensure referenced files are in place (WIP)
+* Widget-based Welcome page (WIP)
+* Use current datagrok-api version for remote package build 
+* Updated public token 
+* Code cleanup 
+* Fixed type casting 
+* Update ui.md 
+* Connections: add system connections  (WIP)
+* DB: improve and fix migration scripts  (WIP)
+* (Bug) Grok Script Tests: show errors and check for errors (WIP)
+* PLOT3D: working original mesh and shaders to WegGL2 
+* Widgets: remember widget state in user settings (WIP)
+* PLOT3D: working filter and fixed inverted normals 
+* Power Search: community-curated, template-based, widget-driven search engine (WIP)
+* PLOT3D: auto rotation 
+* (Bug) Miniconda hangs CVM builds (WIP)
+* Calculation of actvity cliffs 
+* Update ui.md and add new ui samples 
+* Wiki: Onboarding Content (WIP)
+* Fixed indentation 
+
+
 # 2021-06-01 Dev build 0.92.6
 
 ## Latest Docker Images
