@@ -55,6 +55,18 @@ export class ScatterPlot3Dviewer extends DG.JsViewer {
 	} // ctor 
  
 	getFloat32Filter() {
+		this.getFloat32BitSet(this.filterFloat, this.dataFrame.filter)
+	}
+
+	getFloat32Selection() {
+		this.getFloat32BitSet(this.selectionFloat, this.dataFrame.selection)
+	//	console.log('sel float: ', this.selectionFloat);
+
+
+	}
+
+	getFloat32BitSet(filter1, bitset) {
+
 		var getBitByIndex32 = (b, index) => {
 			let i = Math.floor(index / 32);
 			let j = index % 32;
@@ -62,13 +74,25 @@ export class ScatterPlot3Dviewer extends DG.JsViewer {
 			//let rez = a[i] & (Math.pow(2, j));
 			return rez;
 		}
-		var b = this.dataFrame.filter.d.b;
-		var n = this.rawY.length;
+		var b = bitset.d.b;
+
+		var n = bitset.d.c;
 		//var rez = new Float32Array(n);
 		for (var i=0; i<n; i++) {
-			this.filter32[i] = getBitByIndex32(b, i)
+			filter1[i] = getBitByIndex32(b, i)
 		}
+
+		var bs=0;
+		b.map(e => bs+=e);
+		console.log('bs ', bs)
+		var fs=0;
+		for (var i=0; i<filter1.length; i++) {
+			fs += filter1[i];
+		}
+	//	console.log('fs ', fs)
+	//	console.log('fs ', filter1)
 		//return rez;
+
 	}
 
 	rendererResize(size) {
@@ -401,7 +425,7 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
   List<int> categoricalColorScheme = Color.defaultList;
 
 		*/
-		this.look.dynamicCameraMovement = false;
+		this.look.dynamicCameraMovement = true;
 		this.look.showVerticalGridLines = true;
 		this.look.showHorizontalGridLines = true;
 		this.look.showXAxis = true;
@@ -423,6 +447,19 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 
 	addDataFrameCallbacks() {
 		this.localSubs.push(this.dataFrame.filter.onChanged.subscribe(() => this.update()))
+		this.localSubs.push(this.dataFrame.selection.onChanged.subscribe((e) => {
+			console.error('se  ', e)
+
+			this.update()
+		}))
+		this.localSubs.push(this.dataFrame.onMouseOverRowChanged.subscribe((e) => {
+			console.error('mouse over row ', e)
+			this.update()
+		}))
+		this.localSubs.push(this.dataFrame.onCurrentRowChanged.subscribe((e) => {
+			console.error('current row ', e)
+			this.update()
+		}))
 	}
 
 
@@ -435,7 +472,8 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 		else
 			this.disableAutoRotation();
 
-		if (!this.isEventsLinked) {
+	//	if (!this.isEventsLinked) {
+		if (true) {
 			this.renderer.domElement.addEventListener('mousemove', this.onMouseMove.bind(this));
 			this.renderer.domElement.addEventListener('mousedown', this.onMouseDown.bind(this));
 			this.renderer.domElement.addEventListener('wheel', this.onMouseMove.bind(this));
@@ -447,27 +485,37 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 		}
 	} 
 
+	/*
+	**********************************************************************************************************************
+	**********************************************************************************************************************
+	**********************************************************************************************************************
+	*/
  
-	update(colors, filter) {
+	update(colors2, filter) {
 		console.log('this update !!!!!!!!!!!!!!!!!!!!!!')
+
 		
+		//console.log('fffff ', this.igeo.attributes)
+		this.getFloat32Filter();
+		this.getFloat32Selection();
+		if( this.igeo.attributes.filter2) {
+			console.log('fffff ', this.igeo.attributes.filter2)
+			this.igeo.attributes.filter2.needsUpdate = true;
+		}
+		
+
+		var colors = this.dartGetColors()
 		let markerColor = new THREE.Color();
 		for (let n = 0; n < colors.length; n++) {
 			markerColor.setHex(colors[n]);
 			this.markerColors.setXYZ(n, markerColor.r, markerColor.g, markerColor.b);
 			this.markerAlphas.setX(n, ((colors[n] >> 24) & 255) / 255.0);
-			this.filter.setX(n, filter[n]);
+		//	this.filter.setX(n, filter[n]);
 		}
 
 		this.igeo.attributes.color.needsUpdate = true;
 		this.igeo.attributes.alpha.needsUpdate = true;
-		
-		//console.log('fffff ', this.igeo.attributes)
-		this.getFloat32Filter();
-		if( this.igeo.attributes.filter2) {
-			console.log('fffff ', this.igeo.attributes.filter2)
-			this.igeo.attributes.filter2.needsUpdate = true;
-		}
+
 		//this.hit();
 		this.render();
 	}
@@ -492,19 +540,33 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 
 
 	enableAutoRotation() {
-		return 0;
+	//	return 0;
 		this.controls.staticMoving = false;
+		console.log('controls ', this.controls.domElement)
+		console.log('controls ', this.controls)
+		this.controls.autoRotate = true
 
 		// Simulate touch
-		this.controls.handleEvent(new MouseEvent('mousedown', { clientX: 0 }));
-		this.controls.handleEvent(new MouseEvent('mousemove', { clientX: 1 }));
-		this.controls.handleEvent(new MouseEvent('mouseup', { clientX: 2 }));
+		this.rrr = 0
+		setInterval(() => {
+	//		console.log('inerrrrrrrrrrrr', this.rrr)
+//			this.controls.domElement.dispatchEvent(new MouseEvent('mousedown', { clientX: 0 }));
+//			this.controls.domElement.dispatchEvent(new MouseEvent('mousemove', { clientX: 10 }));
+//			this.controls.domElement.dispatchEvent(new MouseEvent('mouseup', { clientX: 10 }));
 
-		if (this.timerAutoRotation === null)
+			this.controls.dispatchEvent(new MouseEvent('mousedown', { clientX: this.rrr+0 }));
+			this.controls.dispatchEvent(new MouseEvent('mousemove', { clientX: this.rrr+10 }));
+			this.controls.dispatchEvent(new MouseEvent('mouseup', { clientX: this.rrr+11 }));
+	//		this.rrr += 11;
+	//		this.render()
+		}, 100	
+		)
+
+//		if (this.timerAutoRotation === null)
 			this.timerAutoRotation = setInterval(this.render.bind(this), 10);
 	}
 
-
+ 
 	disableAutoRotation() {
 		this.controls.staticMoving = true;
 		clearInterval(this.timerAutoRotation);
@@ -563,7 +625,8 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 
 
 	onMouseMove(e) {
-	//	return
+		
+		//return
 		if (this.showTooltip === false)
 		debugger
 			window[this.onHitHandlerName].apply(window, [-1, this.currentRow, 0, 0, new Object()]);
@@ -578,7 +641,8 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 
 
 	onMouseDown(e) {
-	//	return
+		console.log('m down')
+		return
 		if (!this.look.dynamicCameraMovement)
 			this.disableAutoRotation();
 		handleMouseMove(this.onMouseMove.bind(this), this.onMouseUp.bind(this));
@@ -784,6 +848,8 @@ this.igeo.setAttribute('mcol0', mcol0);
 this.igeo.setAttribute('mcol1', mcol1);
 this.igeo.setAttribute('mcol2', mcol2);
 this.igeo.setAttribute('mcol3', mcol3);
+
+
 		this.markerColors = new THREE.InstancedBufferAttribute(new Float32Array(numObjects * 3), 3, false);
 		this.markerAlphas = new THREE.InstancedBufferAttribute(new Float32Array(numObjects), 1, true);
 		let markerColor = new THREE.Color();
@@ -810,9 +876,12 @@ this.igeo.setAttribute('mcol3', mcol3);
 		this.igeo.setAttribute('hittingColor', hittingColors);
 
 		// filter 
-		this.filter32 = new Float32Array(this.rawX.length)
+		this.filterFloat = new Float32Array(this.rawX.length)
+		this.selectionFloat = new Float32Array(this.rawX.length)
 		this.getFloat32Filter()
-		this.filter = new THREE.InstancedBufferAttribute(this.filter32, 1, false);
+		this.getFloat32Selection()
+		this.filter = new THREE.InstancedBufferAttribute(this.filterFloat, 1, false);
+	
 		console.log('this filter ' , this.filter)
 		this.igeo.setAttribute('filter2', this.filter);
 
@@ -982,7 +1051,7 @@ this.igeo.setAttribute('mcol3', mcol3);
 	//	console.log('scene ', this.scene)
 		this.renderer.render(this.scene, this.camera);
 //return 0 
-		requestAnimationFrame(this.render.bind(this))
+	//	requestAnimationFrame(this.render.bind(this))
 
 	}
 
@@ -1137,7 +1206,7 @@ this.igeo.setAttribute('mcol3', mcol3);
 		  vAlpha = alpha;
 		#endif
 		  gl_Position = projectionMatrix * vec4(positionEye, filter2);
-		 // gl_Position = projectionMatrix * vec4(positionEye, 1.);
+		  gl_Position = projectionMatrix * vec4(positionEye, 1.);
 		//  gl_Position = vec4(position[0], position[1], 0., .5);
 		}`;
 
@@ -1171,7 +1240,7 @@ this.igeo.setAttribute('mcol3', mcol3);
 				  outColor = vec4(diffuse * vColor, vAlpha);
 		#endif
 	
-		//outColor = vec4(1., 0.,0.,1.);
+		//outColor = vec4(1., 0.,0.7,1.);
 		}`;
 		var fragInstanced = webgl2prefix + fragInstancedBody;
 		// WebGL2
@@ -1217,13 +1286,22 @@ this.igeo.setAttribute('mcol3', mcol3);
 	}
 
 	dartGetColors() {
-		var colors = Uint32Array(this.dataFrame.rowCount);
+		var colors = new Uint32Array(this.dataFrame.rowCount);
 		var isGrouped = this.look.showMouseOverRowGroup && this.dataFrame.rows.mouseOverRowFunc
 		for (var n=0; n<colors.length; n++) {
-			colors[n] = 0x00ffff;
+			colors[n] = this.dartGetColor(n);
 		}
+
+	//	console.log('ccccoooo lll ', colors)
+	//	console.log('ccccoooo lll f', this.filterFloat)
+		console.log('f32 ', this.dataFrame)
+		return colors;
 	}
 
+	dartGetColor(i) {
+		return (this.selectionFloat[i] < .5) ? 0xffff0000 : 0xff0022ff
+	}
 
+ 
 
 }
