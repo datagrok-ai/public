@@ -152,7 +152,6 @@ export function divText(text: string, options: string | ElementOptions | null = 
   return e as HTMLDivElement;
 }
 
-// ui.ts
 export function markdown(text: string): HTMLElement {
   return api.grok_UI_Markdown(text);
 }
