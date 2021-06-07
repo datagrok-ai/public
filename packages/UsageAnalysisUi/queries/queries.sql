@@ -1,12 +1,12 @@
 --name: total users count
---connection: datagrok
+--connection: System:Datagrok
 select count(*) from users;
 --end
 
 
 --name: new users
 --input: string interv { pattern: datetime }
---connection: datagrok
+--connection: System:Datagrok
 select count(*) as count from users
 where @interv(joined);
 --end
@@ -14,14 +14,14 @@ where @interv(joined);
 select count(*) from events;
 --name: new users
 --input: string interv { pattern: datetime }
---connection: datagrok
+--connection: System:Datagrok
 select count(*) as count from events
 where @interv(joined);
 --end
 
 
 --name: new users last month week day
---connection: datagrok
+--connection: System:Datagrok
 with
 month_count as (select count(*) as "month" from users where joined > current_timestamp - interval '30 days'),
 week_count as (select count(*) as "week" from users where joined > current_timestamp - interval '7 days'),
@@ -31,7 +31,7 @@ select * from month_count, week_count, day_count;
 
 
 --name: new events last month week day
---connection: datagrok
+--connection: System:Datagrok
 with
 month_events as (select count(*) as "month" from events where event_time > current_timestamp - interval '30 days'),
 week_events as (select count(*) as "week" from events where event_time > current_timestamp - interval '7 days'),
@@ -41,7 +41,7 @@ select * from month_events, week_events, day_events;
 --end
 
 --name: new errors last month week day
---connection: datagrok
+--connection: System:Datagrok
 with
 month_errors as (select count(*) as "month" from events where error_stack_trace is not null and event_time > current_timestamp - interval '30 days'),
 week_errors as (select count(*) as "week" from events where error_stack_trace is not null and event_time > current_timestamp - interval '7 days'),
@@ -56,7 +56,7 @@ select * from month_errors, week_errors, day_errors;
 --input: list users
 --input: list events
 --input: bool isExactly
---connection: datagrok
+--connection: System:Datagrok
 select t.date::date, count(t.id) as user_count from (
 	select distinct on (date(e.event_time), u.id) u.id, e.event_time as date
 	from events e
@@ -76,7 +76,7 @@ group by t.date::date;
 
 --name: unique users by @date
 --input: string date { pattern: datetime }
---connection: datagrok
+--connection: System:Datagrok
 select u.name, u.id from events e
 inner join users_sessions s on e.session_id = s.id
 inner join users u on u.id = s.user_id
@@ -87,7 +87,7 @@ group by u.name, u.id
 
 ----name: events on @date
 ----input: string date { pattern: datetime }
-----connection: datagrok
+----connection: System:Datagrok
 --select u.login as user, u.id as user_id, t.name, t.source, e.id as event_id, e.event_time, e.description from events e
 --inner join event_types t on e.event_type_id = t.id
 --inner join users_sessions s on e.session_id = s.id
@@ -102,7 +102,7 @@ group by u.name, u.id
 --input: list users
 --input: list events
 --input: bool isExactly
---connection: datagrok
+--connection: System:Datagrok
 select u.login as user, u.id as user_id, t.name, t.source, e.id as event_id, e.event_time, e.description from events e
 inner join event_types t on e.event_type_id = t.id
 inner join users_sessions s on e.session_id = s.id
@@ -120,7 +120,7 @@ order by e.event_time desc
 
 ----name: errors on @date
 ----input: string date { pattern: datetime }
-----connection: datagrok
+----connection: System:Datagrok
 --select friendly_name as name, event_time, error_message, error_stack_trace, source, run_number as count, e.id as event_id from events e
 --where @date(e.event_time) and e.error_stack_trace is not null
 ----end
@@ -131,7 +131,7 @@ order by e.event_time desc
 --input: list users
 --input: list events
 --input: bool isExactly
---connection: datagrok
+--connection: System:Datagrok
 select e.friendly_name as name, e.event_time, e.error_message, e.error_stack_trace, e.source, e.run_number as count, e.id as event_id from events e
 inner join users_sessions s on e.session_id = s.id
 inner join users u on u.id = s.user_id
@@ -148,7 +148,7 @@ end
 
 --name: events summary on @date
 --input: string date { pattern: datetime }
---connection: datagrok
+--connection: System:Datagrok
 select et.friendly_name, et.id as event_type_id, count(1) as cnt from events e
 inner join event_types et on e.event_type_id = et.id
 where @date(e.event_time)
@@ -161,7 +161,7 @@ limit 25
 --name: events summary on @date and @users
 --input: string date { pattern: datetime }
 --input: list users
---connection: datagrok
+--connection: System:Datagrok
 select et.friendly_name, et.id as event_type_id, count(1) as cnt from events e
 inner join event_types et on e.event_type_id = et.id
 inner join users_sessions s on e.session_id = s.id
@@ -175,7 +175,7 @@ limit 25
 
 --name: errors summary on @date
 --input: string date { pattern: datetime }
---connection: datagrok
+--connection: System:Datagrok
 select et.friendly_name, et.id as event_type_id, count(1) as cnt from events e
 join event_types et on e.event_type_id = et.id
 where @date(e.event_time) and e.error_stack_trace is not null
@@ -188,7 +188,7 @@ limit 25
 --name: errors summary on @date and @users
 --input: string date { pattern: datetime }
 --input: list users
---connection: datagrok
+--connection: System:Datagrok
 select et.friendly_name, et.id as event_type_id, count(1) as cnt from events e
 join event_types et on e.event_type_id = et.id
 inner join users_sessions s on e.session_id = s.id
