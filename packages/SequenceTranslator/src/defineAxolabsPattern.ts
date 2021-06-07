@@ -33,7 +33,10 @@ export function defineAxolabsPattern() {
     ss5.style.marginTop = '26px';
     ssPattern.append(ss5);
     for (let i = 0; i < ssAvailabilityStatuses.length; i++) {
-      ssAvailabilityStatuses[i] = ui.boolInput('', ssAvailabilityStatuses[i].value, (v: boolean) => updateSsAvailability(i, v));
+      ssAvailabilityStatuses[i] = ui.boolInput('', ssAvailabilityStatuses[i].value, (v: boolean) => {
+        updateSsAvailability(i, v);
+        updateSvgScheme();
+      });
       let index = ui.divText((i + 1).toString());
       index.style.marginLeft = '7px';
       ssPattern.append(
@@ -57,7 +60,10 @@ export function defineAxolabsPattern() {
     as3.style.marginTop = '10px';
     asPattern.append(as3);
     for (let i = 0; i < asAvailabilityStatuses.length; i++) {
-      asAvailabilityStatuses[i] = ui.boolInput('', asAvailabilityStatuses[i].value, (v: boolean) => updateAsAvailability(i, v));
+      asAvailabilityStatuses[i] = ui.boolInput('', asAvailabilityStatuses[i].value, (v: boolean) => {
+        updateAsAvailability(i, v);
+        updateSvgScheme();
+      });
       let index = ui.divText((asAvailabilityStatuses.length - i).toString());
       index.style.marginLeft = '7px';
       asPattern.append(
@@ -74,20 +80,20 @@ export function defineAxolabsPattern() {
 
   function updateAsModification() {
     asModificationItems.innerHTML = '';
-    asPtoStatuses = (sequenceLength.value > asPtoStatuses.length) ?
-      asPtoStatuses.concat(Array(sequenceLength.value - asPtoStatuses.length).fill(fullyPto)) :
-      asPtoStatuses.slice(asPtoStatuses.length - sequenceLength.value);
-    asBaseStatuses = (sequenceLength.value > asBaseStatuses.length) ?
-      asBaseStatuses.concat(Array(sequenceLength.value - asBaseStatuses.length).fill(sequenceBase)) :
-      asBaseStatuses.slice(asBaseStatuses.length - sequenceLength.value);
+    asPtoLinkages = (sequenceLength.value > asPtoLinkages.length) ?
+      asPtoLinkages.concat(Array(sequenceLength.value - asPtoLinkages.length).fill(fullyPto)) :
+      asPtoLinkages.slice(asPtoLinkages.length - sequenceLength.value);
+    asBases = (sequenceLength.value > asBases.length) ?
+      asBases.concat(Array(sequenceLength.value - asBases.length).fill(sequenceBase)) :
+      asBases.slice(asBases.length - sequenceLength.value);
     for (let i = 0; i < asLength; i++) {
-      asPtoStatuses[i] = ui.boolInput('', asPtoStatuses[i].value);
-      asBaseStatuses[i] = ui.choiceInput('', asBaseStatuses[i].value, baseChoices);
+      asPtoLinkages[i] = ui.boolInput('', asPtoLinkages[i].value, () => updateSvgScheme());
+      asBases[i] = ui.choiceInput('', asBases[i].value, baseChoices, () => updateSvgScheme());
       asModificationItems.append(
         ui.divH([
           ui.block25([ui.label((i + 1).toString())])!,
-          ui.block50([asBaseStatuses[i]])!,
-          ui.block25([asPtoStatuses[i]])!
+          ui.block50([asBases[i]])!,
+          ui.block25([asPtoLinkages[i]])!
         ], {style: {alignItems: "center"}})
       );
     }
@@ -95,20 +101,20 @@ export function defineAxolabsPattern() {
 
   function updateSsModification() {
     ssModificationItems.innerHTML = '';
-    ssPtoStatuses = (sequenceLength.value > ssPtoStatuses.length) ?
-      ssPtoStatuses.concat(Array(sequenceLength.value - ssPtoStatuses.length).fill(fullyPto)) :
-      ssPtoStatuses.slice(ssPtoStatuses.length - sequenceLength.value);
-    ssBaseStatuses = (sequenceLength.value > ssBaseStatuses.length) ?
-      ssBaseStatuses.concat(Array(sequenceLength.value - ssBaseStatuses.length).fill(sequenceBase)) :
-      ssBaseStatuses.slice(ssBaseStatuses.length - sequenceLength.value);
+    ssPtoLinkages = (sequenceLength.value > ssPtoLinkages.length) ?
+      ssPtoLinkages.concat(Array(sequenceLength.value - ssPtoLinkages.length).fill(fullyPto)) :
+      ssPtoLinkages.slice(ssPtoLinkages.length - sequenceLength.value);
+    ssBases = (sequenceLength.value > ssBases.length) ?
+      ssBases.concat(Array(sequenceLength.value - ssBases.length).fill(sequenceBase)) :
+      ssBases.slice(ssBases.length - sequenceLength.value);
     for (let i = 0; i < ssLength; i++) {
-      ssPtoStatuses[i] = ui.boolInput('', ssPtoStatuses[i].value);
-      ssBaseStatuses[i] = ui.choiceInput('', ssBaseStatuses[i].value, baseChoices);
+      ssPtoLinkages[i] = ui.boolInput('', ssPtoLinkages[i].value, () => updateSvgScheme());
+      ssBases[i] = ui.choiceInput('', ssBases[i].value, baseChoices, () => updateSvgScheme());
       ssModificationItems.append(
         ui.divH([
           ui.block25([ui.label((i + 1).toString())])!,
-          ui.block50([ssBaseStatuses[i]])!,
-          ui.block25([ssPtoStatuses[i]])!
+          ui.block50([ssBases[i]])!,
+          ui.block25([ssPtoLinkages[i]])!
         ], {style: {alignItems: "center"}})
       );
     }
@@ -120,6 +126,7 @@ export function defineAxolabsPattern() {
       updateAsModification();
       updateSsPattern();
       updateAsPattern();
+      updateSvgScheme();
     } else {
       ui.dialog('Sequence length should be less than ' + maximalValidSequenceLength.toString() + ' due to UI constrains')
         .add(ui.divText('Please change sequence length in order to define new pattern'))
@@ -128,21 +135,23 @@ export function defineAxolabsPattern() {
   }
 
   function updatePtoAllAtOnce(newPtoValue: boolean) {
-    for (let i = 0; i < ssPtoStatuses.length; i++) {
-      ssPtoStatuses[i].value = newPtoValue;
+    for (let i = 0; i < ssPtoLinkages.length; i++) {
+      ssPtoLinkages[i].value = newPtoValue;
     }
-    for (let i = 0; i < asPtoStatuses.length; i++) {
-      asPtoStatuses[i].value = newPtoValue;
+    for (let i = 0; i < asPtoLinkages.length; i++) {
+      asPtoLinkages[i].value = newPtoValue;
     }
+    updateSvgScheme();
   }
 
   function updateBasisAllAtOnce(newBasisValue: string) {
-    for (let i = 0; i < ssBaseStatuses.length; i++) {
-      ssBaseStatuses[i].value = newBasisValue;
+    for (let i = 0; i < ssBases.length; i++) {
+      ssBases[i].value = newBasisValue;
     }
-    for (let i = 0; i < asBaseStatuses.length; i++) {
-      asBaseStatuses[i].value = newBasisValue;
+    for (let i = 0; i < asBases.length; i++) {
+      asBases[i].value = newBasisValue;
     }
+    updateSvgScheme();
   }
 
   function updateSsAvailability(indexOfClickedCheckbox: number, isClickedCheckboxChecked: boolean) {
@@ -159,6 +168,7 @@ export function defineAxolabsPattern() {
     }
     updateSsPattern();
     updateSsModification();
+    updateSvgScheme();
   }
 
   function updateAsAvailability(indexOfClickedCheckbox: number, isClickedCheckboxChecked: boolean) {
@@ -175,6 +185,23 @@ export function defineAxolabsPattern() {
     }
     updateAsPattern();
     updateAsModification();
+    updateSvgScheme();
+  }
+
+  function updateSvgScheme() {
+    svgDiv.innerHTML = '';
+    svgDiv.append(
+      ui.span([
+        drawAxolabsPattern(
+          applyExistingDesign.value,
+          createAsStrand.value,
+          ssBases.slice(0, ssLength).map((e) => e.value),
+          asBases.slice(0, asLength).map((e) => e.value),
+          ssPtoLinkages.slice(0, ssLength).map((e) => e.value),
+          asPtoLinkages.slice(0, asLength).map((e) => e.value)
+        )
+      ])
+    );
   }
 
   function addColumnsFields() {
@@ -196,8 +223,8 @@ export function defineAxolabsPattern() {
       return grok.shell.table(tables.value).columns.byName(chosenInputSsColumn).get(i).replace(/[AUGC]/g, function (x: string) {
         count++;
         let ind = axolabsMap["RNA"]["symbols"].indexOf(x);
-        let v = axolabsMap[ssBaseStatuses[count].value]["symbols"][ind];
-        return (ssPtoStatuses[count].value) ? v + 'ps' : v;
+        let v = axolabsMap[ssBases[count].value]["symbols"][ind];
+        return (ssPtoLinkages[count].value) ? v + 'ps' : v;
       })
     });
     if (createAsStrand.value)
@@ -206,8 +233,8 @@ export function defineAxolabsPattern() {
         return grok.shell.table(tables.value).columns.byName(chosenInputAsColumn).get(i).replace(/[AUGC]/g, function (x: string) {
           count++;
           let ind = axolabsMap["RNA"]["symbols"].indexOf(x);
-          let v = axolabsMap[asBaseStatuses[count].value]["symbols"][ind];
-          return (asPtoStatuses[count].value) ? v + 'ps' : v;
+          let v = axolabsMap[asBases[count].value]["symbols"][ind];
+          return (asPtoLinkages[count].value) ? v + 'ps' : v;
         });
       });
   }
@@ -217,14 +244,15 @@ export function defineAxolabsPattern() {
     ssPattern = ui.divH([]),
     asPattern = ui.divH([]),
     chooseAsColumnDiv = ui.div([]),
-    chooseSsColumnDiv = ui.div([]);
+    chooseSsColumnDiv = ui.div([]),
+    svgDiv = ui.div([]);
 
   let ssAvailabilityStatuses = Array(defaultSequenceLength).fill(ui.boolInput('', defaultAvailability)),
     asAvailabilityStatuses = Array(defaultSequenceLength).fill(ui.boolInput('', defaultAvailability)),
-    ssBaseStatuses = Array(defaultSequenceLength).fill(ui.choiceInput('', defaultBase, baseChoices)),
-    asBaseStatuses = Array(defaultSequenceLength).fill(ui.choiceInput('', defaultBase, baseChoices)),
-    ssPtoStatuses = Array(defaultSequenceLength).fill(ui.boolInput('', defaultPto)),
-    asPtoStatuses = Array(defaultSequenceLength).fill(ui.boolInput('', defaultPto));
+    ssBases = Array(defaultSequenceLength).fill(ui.choiceInput('', defaultBase, baseChoices)),
+    asBases = Array(defaultSequenceLength).fill(ui.choiceInput('', defaultBase, baseChoices)),
+    ssPtoLinkages = Array(defaultSequenceLength).fill(ui.boolInput('', defaultPto)),
+    asPtoLinkages = Array(defaultSequenceLength).fill(ui.boolInput('', defaultPto));
 
   let sequenceLength = ui.intInput('Sequence Length', defaultSequenceLength, () => {
     if (sequenceLength.value > oldSequenceLength) {
@@ -250,6 +278,7 @@ export function defineAxolabsPattern() {
     asModificationSection.hidden = (!v);
     asPattern.hidden = (!v);
     chooseAsColumnDiv.hidden = (!v);
+    updateSvgScheme();
   });
 
   let applyExistingDesign = ui.choiceInput('Apply Existing Pattern', '', ['Var-3A97'], () => grok.shell.info('Coming soon'));
@@ -257,21 +286,7 @@ export function defineAxolabsPattern() {
   let threeModification = ui.stringInput("Addidional 3' Modification", "", (v: string) => grok.shell.info('Coming soon'));
   let fiveModification = ui.stringInput("Addidional 5' Modification", "", (v: string) => grok.shell.info('Coming soon'));
 
-  sequenceLength.root.append(ui.button('Specify Duplex', () => {
-    ui.dialog('Axolabs Pattern')
-      .add(
-        ui.span([
-          drawAxolabsPattern(
-            applyExistingDesign.value,
-            ssBaseStatuses.slice(0, ssLength).map((e) => e.value),
-            asBaseStatuses.slice(0, asLength).map((e) => e.value),
-            ssPtoStatuses.slice(0, ssLength).map((e) => e.value),
-            asPtoStatuses.slice(0, asLength).map((e) => e.value)
-          )
-        ])
-      )
-      .show();
-  }));
+  sequenceLength.root.append(ui.button('Specify Duplex', () => {}));
   updateUiForNewSequenceLength();
 
   let patternDesignSection = ui.divV([
@@ -294,11 +309,25 @@ export function defineAxolabsPattern() {
     ], {style: {flexWrap: 'wrap'}}),
     ui.block([
       ssPattern,
-      asPattern
+      asPattern,
+      svgDiv
     ], {style: {overflowX: 'scroll'}}),
     ui.divH([
       ui.button('Define Pattern', () => grok.shell.info('Coming soon')),
-      ui.button('Save Pattern', () => grok.shell.info('Coming soon'))
+      ui.button('Save Pattern', () => {
+        let inputObj = {
+          "name": 'test',
+          "ssBases": String(ssBases.slice(0, ssLength).map((e) => e.value)),
+          "asBases": String(asBases.slice(0, asLength).map((e) => e.value)),
+          "ssPtoLinkages": String(ssPtoLinkages.slice(0, ssLength).map((e) => e.value)),
+          "asPtoLinkages": String(asPtoLinkages.slice(0, asLength).map((e) => e.value))
+        };
+        async function store(STORAGE_NAME: string, value: Map<string, string>) {
+          await grok.dapi.userDataStorage.post(STORAGE_NAME, value, false);
+        }
+        // @ts-ignore
+        store('coordinate-storage', inputObj);
+      })
     ])
   ]);
 
