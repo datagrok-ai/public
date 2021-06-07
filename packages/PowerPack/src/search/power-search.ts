@@ -90,4 +90,8 @@ const templates: Card[] = [
   },
 ]
 
+const widgetTemplates = [
+
+];
+
 // <object data="https://www.ebi.ac.uk/chembl/embed/#compound_report_card/CHEMBL1193654/name_and_classification" width="100%" height="100%"></object>

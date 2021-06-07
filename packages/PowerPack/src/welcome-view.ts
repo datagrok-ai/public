@@ -4,6 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 import {debounceTime} from 'rxjs/operators';
 import {powerSearch} from "./search/power-search";
+import {card, WIDGETS_STORAGE } from './utils';
 
 interface UserWidgetSettings {
   factoryName?: string;
@@ -15,34 +16,7 @@ interface UserWidgetsSettings {
   [index: string]: UserWidgetSettings;
 }
 
-const WIDGETS_STORAGE = 'widgets';
 let settings: UserWidgetsSettings;
-
-function card(w: DG.Widget): HTMLElement {
-  let host = ui.box(null, 'power-pack-widget-host');
-
-  function remove(): void {
-    host.remove();
-    if (w.factory?.name) {
-      let settings = { ignored: true };
-      grok.dapi.userDataStorage
-        .postValue(WIDGETS_STORAGE, w.factory.name, JSON.stringify(settings))
-        .then((_) => grok.shell.info('To control widget visibility, go to Tools | Widgets'));
-    }
-  }
-
-  let header = ui.div([
-    ui.divText(w.props.caption ?? '', 'd4-dialog-title'),
-    ui.icons.settings(() => { grok.shell.o = w}, 'Edit settings'),
-    ui.icons.close(remove, 'Remove'),
-  ], 'd4-dialog-header');
-
-  host.appendChild(header);
-  host.appendChild(ui.box(w.root, 'power-pack-widget-content'));
-  ui.tools.setHoverVisibility(host, Array.from(host.querySelectorAll('i')));
-
-  return host;
-}
 
 export function welcomeView() {
   let input = ui.element('input', 'ui-input-editor') as HTMLInputElement;
