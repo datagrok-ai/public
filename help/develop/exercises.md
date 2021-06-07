@@ -294,6 +294,30 @@ _You will learn:_ how to invoke arbitrary Datagrok functions in JavaScript and a
 7. Notice that we don't need the entire input dataframe to run the script, just one column.
    Optimize the 2 scripts of this exercise to only take this one column as an input, and thus
    optimizing the data network roundtrip.
+   
+8. In this example, we've manually and programmatically expanded the original dataframe with one
+   new column. As this is a common action in many scenarios, the same result in Datagrok
+   can be achieved with setting `{action:join(inputDf)}` on the output dataframe:  
+   ```
+   #output: dataframe aDfWithANewColumn {action:join(inputDf)}
+   ```  
+   This is useful not only for brevity, but also for saving bandwidth: the resulting dataframe
+   will be joined with the origin dataframe on the client side, only the necessary new data
+   shall be passed over to the client.  
+   For example, this is how to convert an existing column into a new one and add it to the
+   original dataframe:  
+   
+   ```
+    #language: python
+    #input: dataframe inputDf
+    #output: dataframe outputDf {action:join(inputDf)}
+
+    outputDf = inputDf[['someColumn']]
+    outputDf['newColumn'] = 2 * outputDf['someColumn']
+   ```  
+   Note that the `someColumn` column shall pop up as a new column in the resulting dataframe, as well,
+   under a name `someColumn (2)`. If you don't want this, you should drop this column in the
+   `outputDf`.
 
 ### Composing two JavaScript functions
 
