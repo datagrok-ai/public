@@ -20,6 +20,7 @@ const defaultPto: boolean = false;
 const defaultAvailability: boolean = true;
 const defaultSequenceLength: number = 23;
 const maximalValidSequenceLength: number = 35;
+const userStorageKey: string = 'SequenceTranslate:Axolabs';
 
 
 export function defineAxolabsPattern() {
@@ -193,7 +194,7 @@ export function defineAxolabsPattern() {
     svgDiv.append(
       ui.span([
         drawAxolabsPattern(
-          applyExistingDesign.value,
+          (newPatternName.value == '') ? applyExistingDesign.value : newPatternName.value,
           createAsStrand.value,
           ssBases.slice(0, ssLength).map((e) => e.value),
           asBases.slice(0, asLength).map((e) => e.value),
@@ -239,6 +240,57 @@ export function defineAxolabsPattern() {
       });
   }
 
+  function savePattern() {
+    let inputObj = {
+      "name": (newPatternName.value == '') ? applyExistingDesign.value : newPatternName.value,
+      "ssBases": String(ssBases.slice(0, ssLength).map((e) => e.value)),
+      "asBases": String(asBases.slice(0, asLength).map((e) => e.value)),
+      "ssPtoLinkages": String(ssPtoLinkages.slice(0, ssLength).map((e) => e.value)),
+      "asPtoLinkages": String(asPtoLinkages.slice(0, asLength).map((e) => e.value))
+    };
+    async function saveInUserStorage(storageName: string, value: string) {
+      //// @ts-ignore
+      await grok.dapi.userDataStorage.post(storageName, value, false);
+    }
+    saveInUserStorage(userStorageKey, JSON.stringify(inputObj));
+    saveImage();
+  }
+  
+  function saveImage() {
+    let img = new Image(),
+      serializer = new XMLSerializer(),
+      svgStr = serializer.serializeToString(document.getElementById('mySvg')!);
+
+    img.src = "data:image/svg+xml;utf8," + svgStr;
+    let canvas = document.createElement("canvas");
+    let w = document.getElementById('mySvg')!.clientWidth;
+    let h = document.getElementById('mySvg')!.clientHeight;
+    canvas.width = w;
+    canvas.height = h;
+    canvas.getContext("2d")!.drawImage(img,0,0, w, h);
+
+    let dlLink = document.createElement('a');
+    dlLink.download = "image";
+    dlLink.href = canvas.toDataURL("image/png");
+    dlLink.dataset.downloadurl = ["image/png", dlLink.download, dlLink.href].join(':');
+    document.body.appendChild(dlLink);
+    dlLink.click();
+    document.body.removeChild(dlLink);
+  }
+
+  function getPatterns() {
+    grok.dapi.userDataStorage.get(userStorageKey).then((entities) => {
+      if (entities !== null && Object.keys(entities).length === 0)
+        grok.shell.info('No pattern saved');
+      else {
+        // @ts-ignore
+        let values = JSON.parse(entities);
+        return values['name'];
+      }
+      return [];
+    });
+  }
+
   let ssModificationItems = ui.div([]),
     asModificationItems = ui.div([]),
     ssPattern = ui.divH([]),
@@ -281,12 +333,13 @@ export function defineAxolabsPattern() {
     updateSvgScheme();
   });
 
-  let applyExistingDesign = ui.choiceInput('Apply Existing Pattern', '', ['Var-3A97'], () => grok.shell.info('Coming soon'));
+  let newPatternName = ui.stringInput('New pattern name', '');
+  let existingPatterns = getPatterns();
+  let applyExistingDesign = ui.choiceInput('Apply Existing Pattern', '', ['Var-3A97'], () => {});
 
   let threeModification = ui.stringInput("Addidional 3' Modification", "", (v: string) => grok.shell.info('Coming soon'));
   let fiveModification = ui.stringInput("Addidional 5' Modification", "", (v: string) => grok.shell.info('Coming soon'));
 
-  sequenceLength.root.append(ui.button('Specify Duplex', () => {}));
   updateUiForNewSequenceLength();
 
   let patternDesignSection = ui.divV([
@@ -296,6 +349,7 @@ export function defineAxolabsPattern() {
         tables.root,
         chooseSsColumnDiv,
         chooseAsColumnDiv,
+        newPatternName.root,
         applyExistingDesign.root,
         sequenceLength.root,
         sequenceBase.root,
@@ -313,20 +367,20 @@ export function defineAxolabsPattern() {
       svgDiv
     ], {style: {overflowX: 'scroll'}}),
     ui.divH([
-      ui.button('Define Pattern', () => grok.shell.info('Coming soon')),
       ui.button('Save Pattern', () => {
-        let inputObj = {
-          "name": 'test',
-          "ssBases": String(ssBases.slice(0, ssLength).map((e) => e.value)),
-          "asBases": String(asBases.slice(0, asLength).map((e) => e.value)),
-          "ssPtoLinkages": String(ssPtoLinkages.slice(0, ssLength).map((e) => e.value)),
-          "asPtoLinkages": String(asPtoLinkages.slice(0, asLength).map((e) => e.value))
-        };
-        async function store(STORAGE_NAME: string, value: Map<string, string>) {
-          await grok.dapi.userDataStorage.post(STORAGE_NAME, value, false);
+        if (newPatternName.value != '' || applyExistingDesign.value != '') {
+          savePattern();
+        } else {
+          let name = ui.textInput('', '');
+          ui.dialog('Enter name of new pattern')
+            .add(name.root)
+            .onOK(() => {
+              newPatternName.value = name.value;
+              savePattern();
+              saveImage();
+            })
+            .show();
         }
-        // @ts-ignore
-        store('coordinate-storage', inputObj);
       })
     ])
   ]);

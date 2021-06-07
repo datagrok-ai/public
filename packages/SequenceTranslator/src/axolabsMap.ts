@@ -32,11 +32,19 @@ export const axolabsMap: {[index: string]: {symbols: [string, string, string, st
     color: "green"
   },
   "A": {
-    symbols: ["A", "A", "A", "A"],
+    symbols: ["a", "a", "a", "a"],
     color: "darkviolet"
   },
+  "C": {
+    symbols: ["c", "c", "c", "c"],
+    color: "navy"
+  },
+  "G": {
+    symbols: ["g", "g", "g", "g"],
+    color: "darkslateblue"
+  },
   "U": {
-    symbols: ["U", "U", "U", "U"],
+    symbols: ["u", "u", "u", "u"],
     color: "indigo"
   }
 };

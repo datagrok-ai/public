@@ -83,7 +83,7 @@ export function drawAxolabsPattern(patternName: string, createAsStrand: boolean,
       )
       if (asPtoStatuses[i]) {
         image.append(
-          svg.circle(String((maxNumberInStrands - i + 2) * 2 * baseRadius + baseRadius), String(7 * baseRadius + psLinkageRadius), String(psLinkageRadius), psLinkageColor)
+          svg.circle(String((maxNumberInStrands - i + 2) * 2 * baseRadius - baseRadius), String(7 * baseRadius + psLinkageRadius), String(psLinkageRadius), psLinkageColor)
         );
       }
     }
