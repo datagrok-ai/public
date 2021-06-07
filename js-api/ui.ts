@@ -152,6 +152,11 @@ export function divText(text: string, options: string | ElementOptions | null = 
   return e as HTMLDivElement;
 }
 
+// ui.ts
+export function markdown(text: string): HTMLElement {
+  return api.grok_UI_Markdown(text);
+}
+
 /** Returns a font-awesome icon with the specified name, handler, and tooltip.
  * Sample: {@link https://public.datagrok.ai/js/samples/ui/icons}
  * @param {string} name - icon name (omit the "fa-" prefix)
