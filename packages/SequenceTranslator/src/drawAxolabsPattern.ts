@@ -5,11 +5,15 @@ import * as DG from 'datagrok-api/dg';
 
 import {axolabsMap} from "./axolabsMap";
 
-export function drawAxolabsPattern(patternName: string, ssBaseStatuses: string[], asBaseStatuses: string[], ssPtoStatuses: boolean[], asPtoStatuses: boolean[]) {
+export function drawAxolabsPattern(patternName: string, createAsStrand: boolean, ssBaseStatuses: string[], asBaseStatuses: string[], ssPtoStatuses: boolean[], asPtoStatuses: boolean[]) {
+  ssBaseStatuses = ssBaseStatuses.reverse();
+  ssPtoStatuses = ssPtoStatuses.reverse();
+
   const svg = {
     xmlns : "http://www.w3.org/2000/svg",
     render : function(width: string, height: string) {
       const e = document.createElementNS(this.xmlns, 'svg');
+      e.setAttribute('id', 'mySvg');
       e.setAttribute("width", width);
       e.setAttribute("height", height);
       return e;
@@ -69,17 +73,19 @@ export function drawAxolabsPattern(patternName: string, ssBaseStatuses: string[]
       );
     }
   }
-  for (let i = asBaseStatuses.length - 1; i > -1; i--) {
-    image.append(
-      svg.circle(String((maxNumberInStrands - i + 2) * 2 * baseRadius), String(6.5 * baseRadius), String(baseRadius), axolabsMap[asBaseStatuses[i]]["color"])
-    );
-    image.append(
-      svg.text(String(i + 1), String((maxNumberInStrands - i + 2) * 2 * baseRadius - baseRadius + textShift), String(7 * baseRadius), fontSize, fontWeight, fontColor)
-    )
-    if (asPtoStatuses[i]) {
+  if (createAsStrand) {
+    for (let i = asBaseStatuses.length - 1; i > -1; i--) {
       image.append(
-        svg.circle(String((maxNumberInStrands - i + 2) * 2 * baseRadius + baseRadius), String(7 * baseRadius + psLinkageRadius), String(psLinkageRadius), psLinkageColor)
+        svg.circle(String((maxNumberInStrands - i + 2) * 2 * baseRadius), String(6.5 * baseRadius), String(baseRadius), axolabsMap[asBaseStatuses[i]]["color"])
       );
+      image.append(
+        svg.text(String(i + 1), String((maxNumberInStrands - i + 2) * 2 * baseRadius - baseRadius + textShift), String(7 * baseRadius), fontSize, fontWeight, fontColor)
+      )
+      if (asPtoStatuses[i]) {
+        image.append(
+          svg.circle(String((maxNumberInStrands - i + 2) * 2 * baseRadius + baseRadius), String(7 * baseRadius + psLinkageRadius), String(psLinkageRadius), psLinkageColor)
+        );
+      }
     }
   }
   const uniqueBases = [...new Set(ssBaseStatuses.concat(asBaseStatuses))];
@@ -88,7 +94,7 @@ export function drawAxolabsPattern(patternName: string, ssBaseStatuses: string[]
       svg.circle(String(Math.round(i * width / uniqueBases.length + baseRadius)), String(9.5 * baseRadius), String(baseRadius), axolabsMap[uniqueBases[i]]["color"])
     );
     image.append(
-      svg.text(Object.keys(axolabsMap)[i], String(Math.round(i * width / uniqueBases.length) + 2 * baseRadius), String(10 * baseRadius), fontSize, fontWeight, fontColor)
+      svg.text(uniqueBases[i], String(Math.round(i * width / uniqueBases.length) + 2 * baseRadius), String(10 * baseRadius), fontSize, fontWeight, fontColor)
     );
   }
   return image;

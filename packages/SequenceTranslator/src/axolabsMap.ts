@@ -30,5 +30,13 @@ export const axolabsMap: {[index: string]: {symbols: [string, string, string, st
   "UNA": { // Unlocked nucleotides
     symbols: ["Ao", "Co", "Go", "Uo"],
     color: "green"
+  },
+  "A": {
+    symbols: ["A", "A", "A", "A"],
+    color: "darkviolet"
+  },
+  "U": {
+    symbols: ["U", "U", "U", "U"],
+    color: "indigo"
   }
 };
