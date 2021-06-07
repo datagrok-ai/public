@@ -6,7 +6,7 @@
 This article describes the routines for building a user interface in Datagrok.
 
 ### Live examples
-The following code examples are available from the code editor within Datagrok. [See API Examples in action](https://public.datagrok.ai/js/samples/ui)
+The following code examples are available from the code editor within Datagrok. [See API Examples](https://public.datagrok.ai/js/samples/ui)
 
 ### Design toolkit
 Figma Datagrok UIKit avaliable on [Figma Community](https://www.figma.com/@datagrok)
