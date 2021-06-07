@@ -2,9 +2,16 @@
 <!-- SUBTITLE: -->
 
 <!-- This is a user-centric view on the Datagrok applications UI development-->
-Routines for building an interface in Datagrok. [See API Examples in action](https://public.datagrok.ai/js/samples/ui)
+# Datagrok UI
+This article describes the routines for building a user interface in Datagrok.
 
-# Table of contents
+### Live examples
+The following code examples are available from the code editor within Datagrok. [See API Examples in action](https://public.datagrok.ai/js/samples/ui)
+
+### Design toolkit
+Figma Datagrok UIKit avaliable on [Figma Community](https://www.figma.com/@datagrok)
+
+### Table of contents
 <details>
 <summary>Layouts</summary>
 
@@ -56,7 +63,7 @@ Routines for building an interface in Datagrok. [See API Examples in action](htt
 <summary>Dialogs</summary>
 
 * [Dialogs](#dialogs)
-  * [Standard Dialog](#modal-dialog)
+  * [Standard Dialog](#standard-dialog)
   * [Modal Dialog](#modal-dialog)
   * [Fullscreen Modal Dialog](#fullscreen-modal-dialog)
 
@@ -103,6 +110,7 @@ Routines for building an interface in Datagrok. [See API Examples in action](htt
 * [Toasts](#toasts)
 * [Tooltips](#tooltips)
 * [Tree View](#tree-view)
+* [Iframe](#iframe)
 * [Info Bars](#info-bars)
 
 </details>
@@ -556,9 +564,10 @@ For each dialog, you can set the position by viewport by x and y-asix.
   ui.label('label text');
   ```
   ### Link
-  Link.
+  Link is a clickable text element than can be used for navigation or to trigger an event.
   ```javascript
-  
+  ui.link('datagrok','https://datagrok.ai','tooltip message'),
+	ui.link('Hello',()=>{grok.shell.info('hello')},'tooltip message')
   ```
   ### Text Blocks
   ```javascript
@@ -664,7 +673,7 @@ For each dialog, you can set the position by viewport by x and y-asix.
   ## Image
   Image
   ```javascript
-  
+  ui.image('https://datagrok.ai/help/visualize/viewers-interaction-main.gif',400,200,{target:'https://datagrok.ai/help/visualize/viewers'});
   ```
 # Components
 
@@ -810,6 +819,11 @@ For each dialog, you can set the position by viewport by x and y-asix.
     .concat(subGroup1.items)
     .concat(group2.items);
   ```
+  ## Iframe
+    Iframe.
+    ```javascript
+    ui.iframe( { src: 'https://en.m.wikipedia.org/wiki', width: '400', height: '200' });
+    ```  
 
   ## Info bars
     Info bar allows adding assisting information to views, typically at their top area.
@@ -818,10 +832,3 @@ For each dialog, you can set the position by viewport by x and y-asix.
       ui.info('Info text', 'Optional header')
     ]);
     ```
-
-  ## Iframe
-    Iframe.
-    ```javascript
-    
-    ]);
-    ```  
