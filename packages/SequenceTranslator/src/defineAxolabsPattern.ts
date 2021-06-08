@@ -2,6 +2,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+// @ts-ignore
+import * as svg from 'save-svg-as-png';
 
 import {drawAxolabsPattern} from "./drawAxolabsPattern";
 import {axolabsMap} from "./axolabsMap";
@@ -20,7 +22,7 @@ const defaultPto: boolean = false;
 const defaultAvailability: boolean = true;
 const defaultSequenceLength: number = 23;
 const maximalValidSequenceLength: number = 35;
-const userStorageKey: string = 'SequenceTranslate:Axolabs';
+const userStorageKey: string = 'SequenceTranslator';
 
 
 export function defineAxolabsPattern() {
@@ -199,7 +201,9 @@ export function defineAxolabsPattern() {
           ssBases.slice(0, ssLength).map((e) => e.value),
           asBases.slice(0, asLength).map((e) => e.value),
           ssPtoLinkages.slice(0, ssLength).map((e) => e.value),
-          asPtoLinkages.slice(0, asLength).map((e) => e.value)
+          asPtoLinkages.slice(0, asLength).map((e) => e.value),
+          threeModification.value,
+          fiveModification.value
         )
       ])
     );
@@ -212,7 +216,8 @@ export function defineAxolabsPattern() {
     let chosenInputAsColumn = ui.choiceInput('AS Column', '', grok.shell.table(tables.value).columns.names());
     chooseSsColumnDiv.append(chosenInputSsColumn.root);
     if (createAsStrand.value) chooseAsColumnDiv.append(chosenInputAsColumn.root);
-    patternDesignSection.append(
+    convertSequenceDiv.innerHTML = '';
+    convertSequenceDiv.append(
       ui.button('Convert Sequences', () => convertSequence(chosenInputSsColumn.value, chosenInputAsColumn.value))
     );
   }
@@ -225,7 +230,7 @@ export function defineAxolabsPattern() {
         count++;
         let ind = axolabsMap["RNA"]["symbols"].indexOf(x);
         let v = axolabsMap[ssBases[count].value]["symbols"][ind];
-        return (ssPtoLinkages[count].value) ? v + 'ps' : v;
+        return (ssPtoLinkages[count].value) ? v + 's' : v;
       })
     });
     if (createAsStrand.value)
@@ -235,7 +240,7 @@ export function defineAxolabsPattern() {
           count++;
           let ind = axolabsMap["RNA"]["symbols"].indexOf(x);
           let v = axolabsMap[asBases[count].value]["symbols"][ind];
-          return (asPtoLinkages[count].value) ? v + 'ps' : v;
+          return (asPtoLinkages[count].value) ? v + 's' : v;
         });
       });
   }
@@ -257,25 +262,7 @@ export function defineAxolabsPattern() {
   }
   
   function saveImage() {
-    let img = new Image(),
-      serializer = new XMLSerializer(),
-      svgStr = serializer.serializeToString(document.getElementById('mySvg')!);
-
-    img.src = "data:image/svg+xml;utf8," + svgStr;
-    let canvas = document.createElement("canvas");
-    let w = document.getElementById('mySvg')!.clientWidth;
-    let h = document.getElementById('mySvg')!.clientHeight;
-    canvas.width = w;
-    canvas.height = h;
-    canvas.getContext("2d")!.drawImage(img,0,0, w, h);
-
-    let dlLink = document.createElement('a');
-    dlLink.download = "image";
-    dlLink.href = canvas.toDataURL("image/png");
-    dlLink.dataset.downloadurl = ["image/png", dlLink.download, dlLink.href].join(':');
-    document.body.appendChild(dlLink);
-    dlLink.click();
-    document.body.removeChild(dlLink);
+    svg.saveSvgAsPng(document.getElementById('mySvg'), 'diagram.png');
   }
 
   function getPatterns() {
@@ -297,7 +284,8 @@ export function defineAxolabsPattern() {
     asPattern = ui.divH([]),
     chooseAsColumnDiv = ui.div([]),
     chooseSsColumnDiv = ui.div([]),
-    svgDiv = ui.div([]);
+    svgDiv = ui.div([]),
+    convertSequenceDiv = ui.div([]);
 
   let ssAvailabilityStatuses = Array(defaultSequenceLength).fill(ui.boolInput('', defaultAvailability)),
     asAvailabilityStatuses = Array(defaultSequenceLength).fill(ui.boolInput('', defaultAvailability)),
@@ -333,12 +321,12 @@ export function defineAxolabsPattern() {
     updateSvgScheme();
   });
 
-  let newPatternName = ui.stringInput('New pattern name', '');
+  let newPatternName = ui.stringInput('New pattern name', '', () => updateSvgScheme());
   let existingPatterns = getPatterns();
   let applyExistingDesign = ui.choiceInput('Apply Existing Pattern', '', ['Var-3A97'], () => {});
 
-  let threeModification = ui.stringInput("Addidional 3' Modification", "", (v: string) => grok.shell.info('Coming soon'));
-  let fiveModification = ui.stringInput("Addidional 5' Modification", "", (v: string) => grok.shell.info('Coming soon'));
+  let threeModification = ui.stringInput("Addidional 3' Modification", "", () => updateSvgScheme());
+  let fiveModification = ui.stringInput("Addidional 5' Modification", "", () => updateSvgScheme());
 
   updateUiForNewSequenceLength();
 
@@ -381,7 +369,8 @@ export function defineAxolabsPattern() {
             })
             .show();
         }
-      })
+      }),
+      convertSequenceDiv
     ])
   ]);
 
