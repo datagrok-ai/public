@@ -42,11 +42,11 @@ export function drawAxolabsPattern(patternName: string, createAsStrand: boolean,
     baseRadius = 15,
     psLinkageRadius = 5,
     psLinkageColor = 'red',
-    fontSize = '24',
+    fontSize = '17',
     width = (2 * baseRadius + 1) * maxNumberInStrands + 5 * baseRadius + Math.max(ssModif.length, asModif.length) * 4,
     height = 11 * baseRadius,
     title = patternName + ' for ' + String(ssBaseStatuses.length) + '/' + String(asBaseStatuses.length) + 'mer',
-    textShift = 2,
+    textShift = 5,
     fontWeight = 'normal',
     fontColor = 'grey';
 
