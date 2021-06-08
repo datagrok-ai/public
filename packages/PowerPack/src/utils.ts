@@ -24,6 +24,11 @@ export function card(w: DG.Widget): HTMLElement {
     ui.icons.close(remove, 'Remove'),
   ], 'd4-dialog-header');
 
+  if (w.root.classList.contains('widget-narrow'))
+    host.classList.add('widget-narrow');
+  if (w.root.classList.contains('widget-wide'))
+    host.classList.add('widget-wide');
+
   host.appendChild(header);
   host.appendChild(ui.box(w.root, 'power-pack-widget-content'));
   ui.tools.setHoverVisibility(host, Array.from(host.querySelectorAll('i')));

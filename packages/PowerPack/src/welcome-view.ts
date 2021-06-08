@@ -28,7 +28,7 @@ export function welcomeView() {
     ], 'ui-input-root,ui-input-type-ahead')
   ], 'd4-search-bar');
 
-  let searchHost = ui.divV([], 'power-pack-search-host');
+  let searchHost = ui.block([], 'power-pack-search-host');
   let widgetsHost = ui.div([], 'power-pack-widgets-host');
   let viewHost = ui.div([widgetsHost, searchHost]);
   grok.shell.newView('Welcome', [inputHost, viewHost], 'power-pack-welcome-view');

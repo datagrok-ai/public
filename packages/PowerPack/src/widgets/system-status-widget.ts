@@ -8,7 +8,7 @@ export class SystemStatusWidget extends DG.Widget {
   caption: string;
 
   constructor() {
-    super(ui.panel([], 'welcome-system-widget'));
+    super(ui.panel([], 'welcome-system-widget widget-narrow'));
 
     grok.dapi.admin.getServiceInfos().then((services: any[]) => {
       // let table = ui.table(services, (item, idx) =>
