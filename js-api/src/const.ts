@@ -190,7 +190,7 @@ export const TAGS = {
   AUTO_CHOICES: '.auto-choices',
   ID: '.id',
   COLOR_CODING_CONDITIONAL: '.color-coding-conditional',
-  MULTI_VALUE_SEPARATOR: 'multi-value-separator',
+  MULTI_VALUE_SEPARATOR: '.multi-value-separator',
   /** When a dataframe is loaded from a CSV, the maximum number of significant digits
    in the fractional part for each numeric column is determined  */
   SOURCE_PRECISION: '.source-precision',
