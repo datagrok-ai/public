@@ -40,6 +40,8 @@ export class ObjectPropertyBag {
         };
       },
       set(target: any, name: string, value: any) {
+        if (<any>x instanceof DartWidget)
+          x = toDart(x);
         target.getProperty(name).set(x, value);
         return true;
       },
@@ -48,7 +50,8 @@ export class ObjectPropertyBag {
         if (own.includes(name) || props.hasOwnProperty(name))
           // @ts-ignore
           return props[name];
-
+        if (<any>x instanceof DartWidget)
+          x = toDart(x);
         return target.getProperty(name)?.get(x);
       }
     }
@@ -252,6 +255,10 @@ export class DartWidget extends Widget {
 
   get root(): HTMLElement {
     return api.grok_Widget_Get_Root(this.d);
+  }
+
+  getProperties(): Property[] {
+    return toJs(api.grok_PropMixin_GetProperties(this.d));
   }
 }
 

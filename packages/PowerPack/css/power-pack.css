@@ -1,6 +1,14 @@
 .power-pack-welcome-view {
 }
 
+.power-pack-widget-host > .d4-dialog-header > i {
+    visibility: hidden;
+}
+
+.power-pack-widget-host:hover > .d4-dialog-header > i {
+    visibility: visible;
+}
+
 .power-pack-widget-host {
     flex-grow: 1;
     flex-shrink: 1;
@@ -8,7 +16,17 @@
     width: 300px!important;
     margin: 6px;
     flex-direction: column;
-   /* box-shadow: #E2E2E2 0 0 7px;*/
+    /* box-shadow: #E2E2E2 0 0 7px;*/
+}
+
+.power-pack-widget-host.widget-narrow {
+    max-width: 200px;
+    width: 150px!important;
+}
+
+.power-pack-widget-host.widget-wide {
+    max-width: 800px;
+    width: 600px!important;
 }
 
 .power-pack-widget-header {
@@ -25,6 +43,9 @@
 
 .power-pack-search-host {
     margin-bottom: 10px;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
 }
 
 .power-pack-search-host .power-pack-widget-content {
@@ -44,6 +65,7 @@
 
 .power-pack-welcome-view .d4-search-bar {
     margin-bottom: 10px;
+
 }
 
 .power-pack-welcome-view .d4-search-bar .ui-input-root {
@@ -65,4 +87,12 @@
 
 .welcome-community-widget {
     line-height: 160%;
+}
+
+.power-pack-widget-content .grok-user-profile-notifications h1 {
+    visibility: hidden;
+}
+
+.power-pack-widget-content .grok-user-profile-notifications {
+    padding: 12px;
 }

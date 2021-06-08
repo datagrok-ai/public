@@ -23,9 +23,9 @@ export class RecentProjectsWidget extends DG.Widget {
 
 function projectData(p: DG.Project){
   let card = ui.cards.summary(
-    ui.image(p.pictureUrl, 120, 80, { target: '#' }),
+    ui.image(p.pictureUrl, 120, 80, {target: () => {}}),
     [
-      ui.h2(ui.link(p.friendlyName, '#')),
+      ui.h2(ui.link(p.friendlyName, p)),
       ui.div(p.createdOn, {style:{color:'var(--grey-4)'}})
     ]);
   ui.bind(p, card);
