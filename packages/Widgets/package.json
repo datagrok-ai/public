@@ -1,5 +1,6 @@
 {
   "name": "Widgets",
+  "beta": true,
   "version": "0.1",
   "fullName": "MultiForm",
   "description": "A collection of commonly used widgets, viewers, filters, and cell renderers.",

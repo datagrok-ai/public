@@ -1,20 +1,20 @@
 {
-	"name": "chemblbrowser",
+  "name": "chemblbrowser",
   "beta": true,
-	"fullName": "ChemblBrowser",
-	"version": "0.0.1",
-	"description": "",
-	"dependencies": {
-		"datagrok-api": "latest"
-	},
-	"scripts": {
-		"debug-chemblbrowser": "grok publish --rebuild",
-		"release-chemblbrowser": "grok publish --rebuild --release",
-		"build-chemblbrowser": "webpack",
-		"build": "webpack",
-		"debug-chemblbrowser-public": "grok publish public --rebuild",
-		"release-chemblbrowser-public": "grok publish public --rebuild --release",
-		"debug-chemblbrowser-localhost": "grok publish localhost --rebuild",
-		"release-chemblbrowser-localhost": "grok publish localhost --rebuild --release"
-	}
+  "fullName": "ChemblBrowser",
+  "version": "0.0.1",
+  "description": "",
+  "dependencies": {
+    "datagrok-api": "latest"
+  },
+  "scripts": {
+    "debug-chemblbrowser": "grok publish --rebuild",
+    "release-chemblbrowser": "grok publish --rebuild --release",
+    "build-chemblbrowser": "webpack",
+    "build": "webpack",
+    "debug-chemblbrowser-public": "grok publish public --rebuild",
+    "release-chemblbrowser-public": "grok publish public --rebuild --release",
+    "debug-chemblbrowser-localhost": "grok publish localhost --rebuild",
+    "release-chemblbrowser-localhost": "grok publish localhost --rebuild --release"
+  }
 }
