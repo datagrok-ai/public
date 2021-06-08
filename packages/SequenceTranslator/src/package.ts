@@ -33,6 +33,7 @@ export function sequenceTranslator(): void {
   );
 
   let inputSequenceField = ui.textInput("", defaultNucleotidesInput, async (seq: string) => {
+    moleculeSvg.innerHTML = "";
     let outputSequencesObj = convertSequence(seq);
 
     let tableRows = [];
@@ -54,18 +55,15 @@ export function sequenceTranslator(): void {
 
     semTypeOfInputSequence.textContent = 'Detected input type: ' + outputSequencesObj.type;
 
-    let pi = DG.TaskBarProgressIndicator.create('Rendering molecule...');
-    try {
-      let flavor: string = (outputSequencesObj.Nucleotides.includes('U')) ? "RNA_both_caps" : "DNA_both_caps";
-      let mol = grok.chem.svgMol(<string> await nucleotidesToSmiles(outputSequencesObj.Nucleotides, flavor), 900, 300);
-      moleculeSvg.innerHTML = "";
-      if (outputSequencesObj.type != smallNumberOfCharacters && outputSequencesObj.type != undefinedInputSequence)
+    if (!(outputSequencesObj.type == undefinedInputSequence || outputSequencesObj.type == smallNumberOfCharacters)) {
+      let pi = DG.TaskBarProgressIndicator.create('Rendering molecule...');
+      try {
+        let flavor: string = (outputSequencesObj.Nucleotides.includes('U')) ? "RNA_both_caps" : "DNA_both_caps";
+        let mol = grok.chem.svgMol(<string> await nucleotidesToSmiles(outputSequencesObj.Nucleotides, flavor), 900, 300);
         moleculeSvg.append(mol);
-    } catch(e) {
-      moleculeSvg.innerHTML = "";
-      grok.shell.error(e);
-    } finally {
-      pi.close();
+      } finally {
+        pi.close();
+      }
     }
   });
 

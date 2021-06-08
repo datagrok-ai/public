@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {axolabsMap} from "./axolabsMap";
 
-export function drawAxolabsPattern(patternName: string, createAsStrand: boolean, ssBaseStatuses: string[], asBaseStatuses: string[], ssPtoStatuses: boolean[], asPtoStatuses: boolean[]) {
+export function drawAxolabsPattern(patternName: string, createAsStrand: boolean, ssBaseStatuses: string[], asBaseStatuses: string[], ssPtoStatuses: boolean[], asPtoStatuses: boolean[], ssModif: string, asModif:string) {
   ssBaseStatuses = ssBaseStatuses.reverse();
   ssPtoStatuses = ssPtoStatuses.reverse();
 
@@ -39,16 +39,16 @@ export function drawAxolabsPattern(patternName: string, createAsStrand: boolean,
   };
 
   const maxNumberInStrands = Math.max(ssBaseStatuses.length, asBaseStatuses.length),
-    baseRadius = 20,
+    baseRadius = 15,
     psLinkageRadius = 5,
     psLinkageColor = 'red',
-    width = (2 * baseRadius + 1) * maxNumberInStrands + 5 * baseRadius,
+    fontSize = '24',
+    width = (2 * baseRadius + 1) * maxNumberInStrands + 5 * baseRadius + Math.max(ssModif.length, asModif.length) * 4,
     height = 11 * baseRadius,
     title = patternName + ' for ' + String(ssBaseStatuses.length) + '/' + String(asBaseStatuses.length) + 'mer',
-    fontSize = '30',
-    textShift = 3,
+    textShift = 2,
     fontWeight = 'normal',
-    fontColor = 'black';
+    fontColor = 'grey';
 
   let image = svg.render(String(width), String(height));
   image.append(svg.text(title, String(Math.round(width / 2)), String(2 * baseRadius), fontSize, fontWeight, fontColor));
@@ -56,9 +56,12 @@ export function drawAxolabsPattern(patternName: string, createAsStrand: boolean,
   image.append(svg.text('AS:', '0', String(7 * baseRadius), fontSize, fontWeight, fontColor));
 
   image.append(svg.text("3'", String(2.5 * baseRadius), String(4 * baseRadius), fontSize, fontWeight, fontColor));
-  image.append(svg.text("5'", String(width - baseRadius), String(4 * baseRadius), fontSize, fontWeight, fontColor));
-  image.append(svg.text("3'", String(width - baseRadius), String(7 * baseRadius), fontSize, fontWeight, fontColor));
+  image.append(svg.text("5'", String(width - baseRadius + ssModif.length), String(4 * baseRadius), fontSize, fontWeight, fontColor));
+  image.append(svg.text("3'", String(width - baseRadius + asModif.length), String(7 * baseRadius), fontSize, fontWeight, fontColor));
   image.append(svg.text("5'", String(2.5 * baseRadius), String(7 * baseRadius), fontSize, fontWeight, fontColor));
+
+  image.append(svg.text(ssModif, String((maxNumberInStrands - ssBaseStatuses.length + 2) * 2 * baseRadius), String(4 * baseRadius), fontSize, fontWeight, psLinkageColor));
+  image.append(svg.text(asModif, String((maxNumberInStrands - asBaseStatuses.length + 2) * 2 * baseRadius), String(7 * baseRadius), fontSize, fontWeight, psLinkageColor));
 
   for (let i = ssBaseStatuses.length - 1; i > -1; i--) {
     image.append(
