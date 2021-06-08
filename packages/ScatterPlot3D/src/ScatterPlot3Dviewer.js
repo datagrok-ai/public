@@ -9,6 +9,7 @@ export class ScatterPlot3Dviewer extends DG.JsViewer {
 
 		super();
 		console.log("TTHREEE ", THREE.REVISION);
+		this.look = {}
 		function hName() {
 	//		console.log('hName hit!')
 		}
@@ -17,6 +18,14 @@ export class ScatterPlot3Dviewer extends DG.JsViewer {
 		this.time1 = this.time0 + 1;
 		this.time00 = Date.now()
 		this.localSubs = []
+		
+		this.xColumnName = this.string('xColumnName');
+		this.yColumnName = this.string('yColumnName');
+		this.zColumnName = this.string('zColumnName');
+
+		this.filteredRowsColor = this.string('FilteredRowscolor', "0xff00ff", {choices: ['0xff0000', '0x00ff00']});
+
+
  
 		window.onHitHandlerName = 'hName';
 		this.onHitHandlerName = 'hName'
@@ -55,22 +64,37 @@ export class ScatterPlot3Dviewer extends DG.JsViewer {
 	} // ctor 
  
 	getFloat32Filter() {
+	//	console.log('fil float df: ', this.dataFrame.filter.d.b)
 		this.getFloat32BitSet(this.filterFloat, this.dataFrame.filter)
+	//	console.log('fil float: ', this.filterFloat);
+	//	console.log('fil float: ', this.filterFloat.reduce((a, e) => a+=e, 0));
 	}
 
 	getFloat32Selection() {
 		this.getFloat32BitSet(this.selectionFloat, this.dataFrame.selection)
 	//	console.log('sel float: ', this.selectionFloat);
+	//	console.log('sel float: ', this.selectionFloat.reduce((a, e) => a+=e, 0));
 
 
 	}
+
+	getArrayFromBitset(bitset) {
+		debugger
+		var ar = new Float32Array(bitset.d.c)
+		this.getFloat32BitSet(ar,bitset)
+		console.log('ar float: ', ar);
+		console.log('ar float: ', ar.reduce((a, e) => a+=e, 0));
+
+	}
+
+
 
 	getFloat32BitSet(filter1, bitset) {
 
 		var getBitByIndex32 = (b, index) => {
 			let i = Math.floor(index / 32);
 			let j = index % 32;
-			let rez = !!(b[~~ (i / 32)] & (1 << (i & 31)));
+			let rez = !!(b[~~ (index / 32)] & (1 << (index & 31)));
 			//let rez = a[i] & (Math.pow(2, j));
 			return rez;
 		}
@@ -84,7 +108,7 @@ export class ScatterPlot3Dviewer extends DG.JsViewer {
 
 		var bs=0;
 		b.map(e => bs+=e);
-		console.log('bs ', bs)
+	//	console.log('bs ', bs)
 		var fs=0;
 		for (var i=0; i<filter1.length; i++) {
 			fs += filter1[i];
@@ -111,6 +135,7 @@ export class ScatterPlot3Dviewer extends DG.JsViewer {
 		this.scene.add(ambientLight);
 		this.renderer = new THREE.WebGLRenderer({ antialias: true });
 		this.renderer.setClearColor(0x1e3278, 1);
+		this.renderer.setClearColor(0xffffff, 1);
 
  
 		var m = new THREE.MeshPhongMaterial({ color: 0xff0000 })
@@ -179,6 +204,15 @@ export class ScatterPlot3Dviewer extends DG.JsViewer {
 		return mesh
 	}
 
+	updateProps() {
+		console.error('update props ', this.filteredRowsColor, this.zColumnName)
+		this.rawX = this.dataFrame.getCol(this.xColumnName).getRawData();
+		this.rawY = this.dataFrame.getCol(this.yColumnName).getRawData();
+		this.rawZ = this.dataFrame.getCol(this.zColumnName).getRawData();
+	//	this.look.filteredRowsColor = 
+	//	this.updateAllScene()
+	}
+
  
 	// -------------------------------------------------------------------------------
 	onTableAttached() {
@@ -211,6 +245,8 @@ export class ScatterPlot3Dviewer extends DG.JsViewer {
 
 		this.addDataFrameCallbacks();
 
+		this.filterFloat = new Float32Array(this.rawX.length)
+		this.selectionFloat = new Float32Array(this.rawX.length)
 
 		if (this.new) {
 	//		this.placeMarkers()
@@ -340,8 +376,8 @@ const intensity = 1;
 
 		// renderer
 		this.renderer = new THREE.WebGLRenderer({
-	//		antialias: true,
-		//	alpha: true
+			antialias: true,
+			alpha: true
 		});
 
 		this.renderer.context.getExtension('OES_standard_derivatives');
@@ -401,7 +437,13 @@ const intensity = 1;
 
 
 	getMyLook() {
-		this.look = {}
+	//	this.look = {}
+		this.look.getRGBA = (v) => {
+
+			var rez = {
+
+			}
+		}
 		this.look.TETRAHEDRON = 'tetrahedron';
 		this.look.OCTAHEDRON = 'octahedron';
 		this.look.CYLINDER = 'cylinder';
@@ -413,9 +455,11 @@ const intensity = 1;
 			this.look.DODECAHEDRON, this.look.BOX, this.look.SPHERE
 		];
 		this.look.backColor = 'blue';
-		this.look.filteredRowsColor = 'green';
-		this.look.filteredOutRowsColor = 'red';
-		this.look.selectedRowsColor = 'green';
+		this.look.backColor = 0xffffffff;
+	//	this.look.filteredRowsColor = {r: 255, g: 0, b: 0, a: 1};
+	//	this.look.filteredRowsColor = 0x1f77b4;
+		this.look.filteredOutRowsColor = {r: 0, g: 0, b: 255, a: 1};
+		this.look.selectedRowsColor = 0xff8c00 // {r: 0, g: 255, b: 0, a: 1};;
 		this.look.missingValueColor = 'red';
 		this.look.axisLineColor = 'green';
 		this.look.axisTextColor = 'red';
@@ -442,7 +486,7 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 		this.look.markerRandomRotation = false;
 
 
-		this.look.markerMinSize = 0.001;
+		this.look.markerMinSize = 0.1;
 	} // look
 
 	addDataFrameCallbacks() {
@@ -460,13 +504,32 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 			console.error('current row ', e)
 			this.update()
 		}))
+		this.localSubs.push(this.dataFrame.onCurrentRowChanged.subscribe((e) => {
+			console.error('onMetaDataChanged ', e)
+			this.update()
+		}))
+		this.localSubs.push(this.dataFrame.onCurrentRowChanged.subscribe((e) => {
+			console.error('onCurrentRowChanged ', e)
+			this.update()
+		}))
+
+		this.localSubs.push(this.dataFrame.onMouseOverRowGroupChanged.subscribe((e) => {
+			return 0
+			var t = grok.shell.t;
+			var ar = this.getArrayFromBitset(t)
+
+			console.error('onMouseOverRowGroupChanged ', ar)
+			this.update()
+		}))
+
 	}
 
 
 	updateAllScene(look, x, y, z, filter, colors, sizes) {
-		this.look = look;
-		this.initMesh(x, y, z, filter, colors, sizes);
-//return
+	//	this.look = look;
+		//this.initMesh(x, y, z, filter, colors, sizes);
+		this.initMesh(this.rawX, this.rawY, this.rawZ, this.dataFrame.filter) //, colors, sizes);
+return
 		if (this.look.dynamicCameraMovement)
 			this.enableAutoRotation();
 		else
@@ -480,7 +543,7 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 			this.renderer.domElement.addEventListener('dblclick', this.onDoubleClick.bind(this));
 		//	onResize(this.container, this.onWindowResize.bind(this)); 
 			requestAnimationFrame(this.render.bind(this));
-			this.enableAutoRotation();
+	//		this.enableAutoRotation();
 			this.isEventsLinked = true;
 		}
 	} 
@@ -490,6 +553,8 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 	**********************************************************************************************************************
 	**********************************************************************************************************************
 	*/
+
+
  
 	update(colors2, filter) {
 		console.log('this update !!!!!!!!!!!!!!!!!!!!!!')
@@ -505,6 +570,7 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 		
 
 		var colors = this.dartGetColors()
+	//	console.log('colors ', colors)
 		let markerColor = new THREE.Color();
 		for (let n = 0; n < colors.length; n++) {
 			markerColor.setHex(colors[n]);
@@ -566,7 +632,7 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 			this.timerAutoRotation = setInterval(this.render.bind(this), 10);
 	}
 
- 
+  
 	disableAutoRotation() {
 		this.controls.staticMoving = true;
 		clearInterval(this.timerAutoRotation);
@@ -599,7 +665,7 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 		else if (this.look.markerType === 'dodecahedron')
 			geo = new THREE.DodecahedronGeometry(1.0);
 		else if (this.look.markerType === 'box')
-			geo = new THREE.BoxGeometry(1.0, 1.0, 1.0);
+			geo = new THREE.BoxGeometry(2.0, 2.0, 2.0);
 		else if (this.look.markerType === 'sphere')
 			geo = new THREE.SphereGeometry(1.0, 8, 8);
 		else
@@ -713,7 +779,7 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 
 		this.scene = new THREE.Scene();
 		this.scene.background = new THREE.Color(this.look.backColor);
-		this.scene.background = new THREE.Color(0, 1, 0);
+	//	this.scene.background = new THREE.Color(1, 1, 1);
 
 		this.scene.add(this.camera);
 	//	this.scene.add(this.mouseOverBox);
@@ -727,6 +793,18 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 
 
 
+	onPropertyChanged(property) {
+		var name = property.name;
+		var val = property.get();
+		if (name === 'markerSizeProp') {
+		  this.markerSize = parseInt(val);
+		  if (this.dataFrame) this.render();
+		};
+
+		this.updateProps()
+		this.updateAllScene()
+		//super.onPropertyChanged(property);
+	  }
 
 
 
@@ -744,9 +822,15 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 
 
 
-	makeInstanced(geo, x, y, z, filter, colors, sizes) {
+	makeInstanced(geo, x, y, z, filter, colors2, sizes) {
 	//	return 0;
+	this.getFloat32Filter();
+	
+	this.getFloat32Selection();
 		console.log('make instanced ', geo)
+		var colors = this.dartGetColors()
+		
+
 		this.scene.add( new THREE.AxesHelper( 5 * 5 ) );
 		// material
 		const vert = document.getElementById('vertInstanced').textContent;
@@ -755,10 +839,11 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 		const material = new THREE.RawShaderMaterial({
 			vertexShader: vert,
 			fragmentShader: frag,
-			transparent: false
+			opacity: 0.5,
+			transparent: true
 		});
-		material.side = THREE.BackSide
-
+	//	material.side = THREE.BackSide
+ 
 		this.materialList.push(material);
 /*
 		const hittingMaterial = new THREE.RawShaderMaterial({
@@ -793,7 +878,7 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 		this.igeo.addAttribute('position', vertices);
 
 		var numObjects = x.length;
-		//numObjects = 100
+	//	numObjects = 10
 
 		let mcol0 = new THREE.InstancedBufferAttribute(new Float32Array(numObjects * 3), 3, false);
 		let mcol1 = new THREE.InstancedBufferAttribute(new Float32Array(numObjects * 3), 3, false);
@@ -809,12 +894,17 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 
 		let matrix = new THREE.Matrix4();
 		let me = matrix.elements;
-
+ 
 		//for (let n = 0; n < numObjects; n++) {
 		for (let n = 0; n < numObjects; n++) {
-			let size = (sizes === null) ? scaleFactor : sizes[n] * scaleFactor;
+			//let size = (sizes === null) ? scaleFactor : sizes[n] * scaleFactor;
+			let size = .3;
 			size = (size < this.markerMinSize) ? this.markerMinSize : size;
+			if (size < 0) size = -size;
 			scale.setScalar(size);
+			scale[0] = 1
+			scale[1] = 1
+			scale[2] = 1
 
 			position.x = x[n]*1 - 0.5;
 			position.y = y[n]*1 - 0.5;
@@ -853,14 +943,14 @@ this.igeo.setAttribute('mcol3', mcol3);
 		this.markerColors = new THREE.InstancedBufferAttribute(new Float32Array(numObjects * 3), 3, false);
 		this.markerAlphas = new THREE.InstancedBufferAttribute(new Float32Array(numObjects), 1, true);
 		let markerColor = new THREE.Color();
-
+	//	markerColor = DG.Color.filteredOutRows
 		for (let n = 0; n < numObjects; n++) {
 			markerColor.setHex(colors[n]);
 			this.markerAlphas.setX(n, ((colors[n] >> 24) & 255) / 255.0);
-			//this.markerColors.setXYZ(n, markerColor.r, markerColor.g, markerColor.b);
-			this.markerColors.setXYZ(n,1,0,0);
+			this.markerColors.setXYZ(n, markerColor.r, markerColor.g, markerColor.b);
+			//this.markerColors.setXYZ(n,1,0,0);
 		}
-
+		
 		this.igeo.setAttribute('color', this.markerColors);
 		this.igeo.setAttribute('alpha', this.markerAlphas);
 
@@ -876,8 +966,7 @@ this.igeo.setAttribute('mcol3', mcol3);
 		this.igeo.setAttribute('hittingColor', hittingColors);
 
 		// filter 
-		this.filterFloat = new Float32Array(this.rawX.length)
-		this.selectionFloat = new Float32Array(this.rawX.length)
+
 		this.getFloat32Filter()
 		this.getFloat32Selection()
 		this.filter = new THREE.InstancedBufferAttribute(this.filterFloat, 1, false);
@@ -906,16 +995,16 @@ this.igeo.setAttribute('mcol3', mcol3);
 		this.hittingScene.add(this.hittingMesh);
 
 
-
+		
 
 
 	var m = new THREE.MeshLambertMaterial({ color: 0xff00ff })
 	var g = new THREE.SphereGeometry(1, 6, 6);
 	var mesh2 = new THREE.Mesh(geo, m);
 	mesh2.name = 'mesh2'
-	mesh2.scale.x = 10
-	mesh2.scale.y = 10
-	mesh2.scale.z = 10
+	mesh2.scale.x = 1
+	mesh2.scale.y = 1
+	mesh2.scale.z = 1
 	mesh2.position.x = 0
 	mesh2.position.y = 20
 	mesh2.position.z = 0
@@ -1051,7 +1140,7 @@ this.igeo.setAttribute('mcol3', mcol3);
 	//	console.log('scene ', this.scene)
 		this.renderer.render(this.scene, this.camera);
 //return 0 
-	//	requestAnimationFrame(this.render.bind(this))
+		requestAnimationFrame(this.render.bind(this))
 
 	}
 
@@ -1099,7 +1188,7 @@ this.igeo.setAttribute('mcol3', mcol3);
 			  vec4(0., 0., 1., 0.),
 			  vec4(0., 0., 0., 1.)
 		  );
-	  */
+	  */ 
 		  vec3 positionEye = (modelViewMatrix * matrix * vec4(position, 1.0)).xyz;
 	  
 		#ifdef HITTING
@@ -1110,10 +1199,10 @@ this.igeo.setAttribute('mcol3', mcol3);
 		  vAlpha = alpha;
 		#endif
 		  gl_Position = projectionMatrix * vec4(positionEye, filter);
-		  gl_Position = projectionMatrix * vec4(positionEye, 1.);
+		//  gl_Position = projectionMatrix * vec4(positionEye, 1.);
 		//  gl_Position = vec4(position[0], position[1], 0., .5);
 		}`;
-
+  
 		const fragInstanced1 = `#version 300 es
 		#define SHADER_NAME fragInstanced
   
@@ -1206,7 +1295,7 @@ this.igeo.setAttribute('mcol3', mcol3);
 		  vAlpha = alpha;
 		#endif
 		  gl_Position = projectionMatrix * vec4(positionEye, filter2);
-		  gl_Position = projectionMatrix * vec4(positionEye, 1.);
+	//	  gl_Position = projectionMatrix * vec4(positionEye, 1.);
 		//  gl_Position = vec4(position[0], position[1], 0., .5);
 		}`;
 
@@ -1238,9 +1327,11 @@ this.igeo.setAttribute('mcol3', mcol3);
 				  vec3 normal = normalize(cross(fdx, fdy));
 				  float diffuse = dot(normal, vec3(0.0, 0.0, 1.0));
 				  outColor = vec4(diffuse * vColor, vAlpha);
+				  outColor = vec4(diffuse * vColor, .2);
 		#endif
 	
-		//outColor = vec4(1., 0.,0.7,1.);
+		//outColor = vec4(1., 0.,0.7,.5);
+		//outColor = vec4(vColor,1.);
 		}`;
 		var fragInstanced = webgl2prefix + fragInstancedBody;
 		// WebGL2
@@ -1292,14 +1383,15 @@ this.igeo.setAttribute('mcol3', mcol3);
 			colors[n] = this.dartGetColor(n);
 		}
 
-	//	console.log('ccccoooo lll ', colors)
+		console.log('ccccoooo lll this.look.filteredRowsColor ', this.filteredRowsColor)
 	//	console.log('ccccoooo lll f', this.filterFloat)
-		console.log('f32 ', this.dataFrame)
+	//	console.log('f32 ', this.dataFrame)
 		return colors;
 	}
-
+ 
 	dartGetColor(i) {
-		return (this.selectionFloat[i] < .5) ? 0xffff0000 : 0xff0022ff
+	//	return 0x3f3f0000;
+		return (this.selectionFloat[i] < .5) ? this.filteredRowsColor : this.look.selectedRowsColor
 	}
 
  
