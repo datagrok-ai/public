@@ -19,7 +19,6 @@ SS/AS Modification - sections of dialog for changing base and PTO statuses of on
 const baseChoices: string[] = Object.keys(axolabsMap);
 const defaultBase: string = baseChoices[0];
 const defaultPto: boolean = false;
-const defaultAvailability: boolean = true;
 const defaultSequenceLength: number = 23;
 const maximalValidSequenceLength: number = 35;
 const userStorageKey: string = 'SequenceTranslator';
@@ -27,69 +26,15 @@ const userStorageKey: string = 'SequenceTranslator';
 
 export function defineAxolabsPattern() {
 
-  function updateSsPattern() {
-    ssPattern.innerHTML = '';
-    ssAvailabilityStatuses = (sequenceLength.value > ssAvailabilityStatuses.length) ?
-      ssAvailabilityStatuses.concat(Array(sequenceLength.value - ssAvailabilityStatuses.length).fill(ui.boolInput('', true))) :
-      ssAvailabilityStatuses.slice(ssAvailabilityStatuses.length - sequenceLength.value);
-    const ss5 = ui.divText("SS-5'");
-    ss5.style.marginTop = '26px';
-    ssPattern.append(ss5);
-    for (let i = 0; i < ssAvailabilityStatuses.length; i++) {
-      ssAvailabilityStatuses[i] = ui.boolInput('', ssAvailabilityStatuses[i].value, (v: boolean) => {
-        updateSsAvailability(i, v);
-        updateSvgScheme();
-      });
-      let index = ui.divText((i + 1).toString());
-      index.style.marginLeft = '7px';
-      ssPattern.append(
-        ui.divV([
-          index,
-          ssAvailabilityStatuses[i]
-        ])
-      );
-    }
-    const three = ui.divText("3'");
-    three.style.marginTop = '26px';
-    ssPattern.append(three);
-  }
-
-  function updateAsPattern() {
-    asPattern.innerHTML = '';
-    asAvailabilityStatuses = (sequenceLength.value > asAvailabilityStatuses.length) ?
-      asAvailabilityStatuses.concat(Array(sequenceLength.value - asAvailabilityStatuses.length).fill(ui.boolInput('', true))) :
-      asAvailabilityStatuses.slice(asAvailabilityStatuses.length - sequenceLength.value);
-    const as3 = ui.divText("AS-3'");
-    as3.style.marginTop = '10px';
-    asPattern.append(as3);
-    for (let i = 0; i < asAvailabilityStatuses.length; i++) {
-      asAvailabilityStatuses[i] = ui.boolInput('', asAvailabilityStatuses[i].value, (v: boolean) => {
-        updateAsAvailability(i, v);
-        updateSvgScheme();
-      });
-      let index = ui.divText((asAvailabilityStatuses.length - i).toString());
-      index.style.marginLeft = '7px';
-      asPattern.append(
-        ui.divV([
-          asAvailabilityStatuses[i],
-          index
-        ])
-      );
-    }
-    const five = ui.divText("5'");
-    five.style.marginTop = '10px';
-    asPattern.append(five);
-  }
-
   function updateAsModification() {
     asModificationItems.innerHTML = '';
-    asPtoLinkages = (sequenceLength.value > asPtoLinkages.length) ?
-      asPtoLinkages.concat(Array(sequenceLength.value - asPtoLinkages.length).fill(fullyPto)) :
-      asPtoLinkages.slice(asPtoLinkages.length - sequenceLength.value);
-    asBases = (sequenceLength.value > asBases.length) ?
-      asBases.concat(Array(sequenceLength.value - asBases.length).fill(sequenceBase)) :
-      asBases.slice(asBases.length - sequenceLength.value);
-    for (let i = 0; i < asLength; i++) {
+    asPtoLinkages = (asLength.value > asPtoLinkages.length) ?
+      asPtoLinkages.concat(Array(asLength.value - asPtoLinkages.length).fill(fullyPto)) :
+      asPtoLinkages.slice(asPtoLinkages.length - asLength.value);
+    asBases = (asLength.value > asBases.length) ?
+      asBases.concat(Array(asLength.value - asBases.length).fill(sequenceBase)) :
+      asBases.slice(asBases.length - asLength.value);
+    for (let i = 0; i < asLength.value; i++) {
       asPtoLinkages[i] = ui.boolInput('', asPtoLinkages[i].value, () => updateSvgScheme());
       asBases[i] = ui.choiceInput('', asBases[i].value, baseChoices, () => updateSvgScheme());
       asModificationItems.append(
@@ -104,13 +49,13 @@ export function defineAxolabsPattern() {
 
   function updateSsModification() {
     ssModificationItems.innerHTML = '';
-    ssPtoLinkages = (sequenceLength.value > ssPtoLinkages.length) ?
-      ssPtoLinkages.concat(Array(sequenceLength.value - ssPtoLinkages.length).fill(fullyPto)) :
-      ssPtoLinkages.slice(ssPtoLinkages.length - sequenceLength.value);
-    ssBases = (sequenceLength.value > ssBases.length) ?
-      ssBases.concat(Array(sequenceLength.value - ssBases.length).fill(sequenceBase)) :
-      ssBases.slice(ssBases.length - sequenceLength.value);
-    for (let i = 0; i < ssLength; i++) {
+    ssPtoLinkages = (ssLength.value > ssPtoLinkages.length) ?
+      ssPtoLinkages.concat(Array(ssLength.value - ssPtoLinkages.length).fill(fullyPto)) :
+      ssPtoLinkages.slice(ssPtoLinkages.length - ssLength.value);
+    ssBases = (ssLength.value > ssBases.length) ?
+      ssBases.concat(Array(ssLength.value - ssBases.length).fill(sequenceBase)) :
+      ssBases.slice(ssBases.length - ssLength.value);
+    for (let i = 0; i < ssLength.value; i++) {
       ssPtoLinkages[i] = ui.boolInput('', ssPtoLinkages[i].value, () => updateSvgScheme());
       ssBases[i] = ui.choiceInput('', ssBases[i].value, baseChoices, () => updateSvgScheme());
       ssModificationItems.append(
@@ -124,11 +69,9 @@ export function defineAxolabsPattern() {
   }
 
   function updateUiForNewSequenceLength() {
-    if (sequenceLength.value < maximalValidSequenceLength) {
+    if (ssLength.value < maximalValidSequenceLength && asLength.value < maximalValidSequenceLength) {
       updateSsModification();
       updateAsModification();
-      updateSsPattern();
-      updateAsPattern();
       updateSvgScheme();
     } else {
       ui.dialog('Sequence length should be less than ' + maximalValidSequenceLength.toString() + ' due to UI constrains')
@@ -157,40 +100,6 @@ export function defineAxolabsPattern() {
     updateSvgScheme();
   }
 
-  function updateSsAvailability(indexOfClickedCheckbox: number, isClickedCheckboxChecked: boolean) {
-    if (isClickedCheckboxChecked) {
-      ssLength = sequenceLength.value - indexOfClickedCheckbox;
-      for (let i = indexOfClickedCheckbox; i < sequenceLength.value; i++) {
-        ssAvailabilityStatuses[i] = ui.boolInput('', true);
-      }
-    } else {
-      ssLength = sequenceLength.value - indexOfClickedCheckbox - 1;
-      for (let i = 0; i < indexOfClickedCheckbox; i++) {
-        ssAvailabilityStatuses[i] = ui.boolInput('', false);
-      }
-    }
-    updateSsPattern();
-    updateSsModification();
-    updateSvgScheme();
-  }
-
-  function updateAsAvailability(indexOfClickedCheckbox: number, isClickedCheckboxChecked: boolean) {
-    if (isClickedCheckboxChecked) {
-      asLength = sequenceLength.value - indexOfClickedCheckbox;
-      for (let i = indexOfClickedCheckbox; i < sequenceLength.value; i++) {
-        asAvailabilityStatuses[i] = ui.boolInput('', true);
-      }
-    } else {
-      asLength = sequenceLength.value - indexOfClickedCheckbox - 1;
-      for (let i = 0; i < indexOfClickedCheckbox; i++) {
-        asAvailabilityStatuses[i] = ui.boolInput('', false);
-      }
-    }
-    updateAsPattern();
-    updateAsModification();
-    updateSvgScheme();
-  }
-
   function updateSvgScheme() {
     svgDiv.innerHTML = '';
     svgDiv.append(
@@ -198,10 +107,10 @@ export function defineAxolabsPattern() {
         drawAxolabsPattern(
           (newPatternName.value == '') ? applyExistingDesign.value : newPatternName.value,
           createAsStrand.value,
-          ssBases.slice(0, ssLength).map((e) => e.value),
-          asBases.slice(0, asLength).map((e) => e.value),
-          ssPtoLinkages.slice(0, ssLength).map((e) => e.value),
-          asPtoLinkages.slice(0, asLength).map((e) => e.value),
+          ssBases.slice(0, ssLength.value).map((e) => e.value),
+          asBases.slice(0, asLength.value).map((e) => e.value),
+          ssPtoLinkages.slice(0, ssLength.value).map((e) => e.value),
+          asPtoLinkages.slice(0, asLength.value).map((e) => e.value),
           threeModification.value,
           fiveModification.value
         )
@@ -248,10 +157,10 @@ export function defineAxolabsPattern() {
   function savePattern() {
     let inputObj = {
       "name": (newPatternName.value == '') ? applyExistingDesign.value : newPatternName.value,
-      "ssBases": String(ssBases.slice(0, ssLength).map((e) => e.value)),
-      "asBases": String(asBases.slice(0, asLength).map((e) => e.value)),
-      "ssPtoLinkages": String(ssPtoLinkages.slice(0, ssLength).map((e) => e.value)),
-      "asPtoLinkages": String(asPtoLinkages.slice(0, asLength).map((e) => e.value))
+      "ssBases": String(ssBases.slice(0, ssLength.value).map((e) => e.value)),
+      "asBases": String(asBases.slice(0, asLength.value).map((e) => e.value)),
+      "ssPtoLinkages": String(ssPtoLinkages.slice(0, ssLength.value).map((e) => e.value)),
+      "asPtoLinkages": String(asPtoLinkages.slice(0, asLength.value).map((e) => e.value))
     };
     async function saveInUserStorage(storageName: string, value: string) {
       //// @ts-ignore
@@ -260,7 +169,7 @@ export function defineAxolabsPattern() {
     saveInUserStorage(userStorageKey, JSON.stringify(inputObj));
     saveImage();
   }
-  
+
   function saveImage() {
     svg.saveSvgAsPng(document.getElementById('mySvg'), 'diagram.png');
   }
@@ -280,33 +189,18 @@ export function defineAxolabsPattern() {
 
   let ssModificationItems = ui.div([]),
     asModificationItems = ui.div([]),
-    ssPattern = ui.divH([]),
-    asPattern = ui.divH([]),
     chooseAsColumnDiv = ui.div([]),
     chooseSsColumnDiv = ui.div([]),
     svgDiv = ui.div([]),
     convertSequenceDiv = ui.div([]);
 
-  let ssAvailabilityStatuses = Array(defaultSequenceLength).fill(ui.boolInput('', defaultAvailability)),
-    asAvailabilityStatuses = Array(defaultSequenceLength).fill(ui.boolInput('', defaultAvailability)),
-    ssBases = Array(defaultSequenceLength).fill(ui.choiceInput('', defaultBase, baseChoices)),
+  let ssBases = Array(defaultSequenceLength).fill(ui.choiceInput('', defaultBase, baseChoices)),
     asBases = Array(defaultSequenceLength).fill(ui.choiceInput('', defaultBase, baseChoices)),
     ssPtoLinkages = Array(defaultSequenceLength).fill(ui.boolInput('', defaultPto)),
     asPtoLinkages = Array(defaultSequenceLength).fill(ui.boolInput('', defaultPto));
 
-  let sequenceLength = ui.intInput('Sequence Length', defaultSequenceLength, () => {
-    if (sequenceLength.value > oldSequenceLength) {
-      ssLength += sequenceLength.value - oldSequenceLength;
-      asLength += sequenceLength.value - oldSequenceLength;
-    }
-    if (asLength > sequenceLength.value) asLength = sequenceLength.value;
-    if (ssLength > sequenceLength.value) ssLength = sequenceLength.value;
-    updateUiForNewSequenceLength();
-    oldSequenceLength = sequenceLength.value;
-  });
-  let oldSequenceLength: number = sequenceLength.value,
-    ssLength: number = defaultSequenceLength,
-    asLength: number = defaultSequenceLength;
+  let ssLength = ui.intInput('SS Length', defaultSequenceLength, () => updateUiForNewSequenceLength());
+  let asLength = ui.intInput('AS Length', defaultSequenceLength, () => updateUiForNewSequenceLength());
 
   let tables = ui.choiceInput('Tables', '', grok.shell.tableNames, (name: string) => addColumnsFields());
 
@@ -316,14 +210,13 @@ export function defineAxolabsPattern() {
 
   let createAsStrand = ui.boolInput('Create AS Strand', true, (v: boolean) => {
     asModificationSection.hidden = (!v);
-    asPattern.hidden = (!v);
     chooseAsColumnDiv.hidden = (!v);
     updateSvgScheme();
   });
 
   let newPatternName = ui.stringInput('New pattern name', '', () => updateSvgScheme());
   let existingPatterns = getPatterns();
-  let applyExistingDesign = ui.choiceInput('Apply Existing Pattern', '', ['Var-3A97'], () => {});
+  let applyExistingDesign = ui.choiceInput('Apply Existing Pattern', '', ['Var-3A97'], () => updateSvgScheme());
 
   let threeModification = ui.stringInput("Addidional 3' Modification", "", () => updateSvgScheme());
   let fiveModification = ui.stringInput("Addidional 5' Modification", "", () => updateSvgScheme());
@@ -339,7 +232,8 @@ export function defineAxolabsPattern() {
         chooseAsColumnDiv,
         newPatternName.root,
         applyExistingDesign.root,
-        sequenceLength.root,
+        ssLength.root,
+        asLength.root,
         sequenceBase.root,
         fullyPto.root,
         createAsStrand.root
@@ -350,8 +244,6 @@ export function defineAxolabsPattern() {
       ], {})
     ], {style: {flexWrap: 'wrap'}}),
     ui.block([
-      ssPattern,
-      asPattern,
       svgDiv
     ], {style: {overflowX: 'scroll'}}),
     ui.divH([
