@@ -128,43 +128,43 @@ export function sequenceTranslator(): void {
   ]);
 
   let tab = ui.tabControl({
-    'MAIN': ui.divV([
+    'MAIN': ui.div([
       appMainDescription,
-      ui.div([
-        ui.h1('Input sequence'),
+      ui.panel([
         ui.div([
-          inputSequenceField.root
-        ],'input-base')
-      ], 'sequenceInput'),
-      semTypeOfInputSequence,
-      ui.block([
-        ui.h1('Output'),
-        outputTableDiv
-      ]),
-      accordionWithCmoCodes.root,
-      moleculeSvg
-    ], 'sequence'),
+          ui.h1('Input sequence'),
+          ui.div([
+            inputSequenceField.root
+          ],'input-base')
+        ], 'sequenceInput'),
+        semTypeOfInputSequence,
+        ui.block([
+          ui.h1('Output'),
+          outputTableDiv
+        ]),
+        accordionWithCmoCodes.root,
+        moleculeSvg
+      ], 'sequence')!
+    ]),
     'AXOLABS': _defineAxolabsPattern()
   }).root;
   tab.style.height = '100%';
   tab.style.width = '100%';
 
-  grok.shell.newView('Sequence Translator', [
+  let v = grok.shell.newView('Sequence Translator', [
      tab
   ]);
+  v.box = true;
 
   $('.sequence')
-    .css('padding','20px 0')
     .children().css('padding','5px 0');
   $('.sequenceInput .input-base').css('margin','0');
   $('.sequenceInput textarea')
-    .attr('placeholder','Paste here')
     .css('resize','none')
     .css('min-height','50px')
     .css('width','100%');
   $('.sequenceInput select')
-    .css('width','100%')
-    .attr('placeholder','');
+    .css('width','100%');
 }
 
 export async function nucleotidesToSmiles(nucleotides: string, flavor: string) {

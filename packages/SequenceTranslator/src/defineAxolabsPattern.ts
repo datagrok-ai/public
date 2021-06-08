@@ -214,16 +214,20 @@ export function defineAxolabsPattern() {
     updateSvgScheme();
   });
 
-  let newPatternName = ui.stringInput('New pattern name', '', () => updateSvgScheme());
+  let newPatternName = ui.stringInput('New Pattern Name', '', () => updateSvgScheme());
+  newPatternName.setTooltip('New Pattern Name');
   let existingPatterns = getPatterns();
   let applyExistingDesign = ui.choiceInput('Apply Existing Pattern', '', ['Var-3A97'], () => updateSvgScheme());
+  applyExistingDesign.setTooltip('Apply Existing Pattern');
 
   let threeModification = ui.stringInput("Addidional 3' Modification", "", () => updateSvgScheme());
+  threeModification.setTooltip("Addidional 3' Modification");
   let fiveModification = ui.stringInput("Addidional 5' Modification", "", () => updateSvgScheme());
+  fiveModification.setTooltip("Addidional 5' Modification");
 
   updateUiForNewSequenceLength();
 
-  let patternDesignSection = ui.divV([
+  let patternDesignSection = ui.panel([
     ui.h1('Pattern Design'),
     ui.divH([
       ui.div([
@@ -266,7 +270,8 @@ export function defineAxolabsPattern() {
     ])
   ]);
 
-  let ssModificationSection = ui.divV([
+  let ssModificationSection = ui.box(
+    ui.panel([
     ui.h1('Sense Strand'),
     ui.divH([
       ui.block25([ui.divText('#')])!,
@@ -274,17 +279,18 @@ export function defineAxolabsPattern() {
       ui.block25([ui.divText('PTO')])!
     ]),
     ssModificationItems
-  ], {style: {marginLeft: "30px", width: "250px"}});
+  ])!, {style: {maxWidth: '250px'}});
 
-  let asModificationSection = ui.divV([
-    ui.h1('Antisense Strand'),
-    ui.divH([
-      ui.block25([ui.divText('#')])!,
-      ui.block50([ui.divText('Modification')])!,
-      ui.block25([ui.divText('PTO')])!
-    ]),
-    asModificationItems
-  ], {style: {marginLeft: "30px", width: "250px"}});
+  let asModificationSection = ui.box(
+    ui.panel([
+      ui.h1('Antisense Strand'),
+      ui.divH([
+        ui.block25([ui.divText('#')])!,
+        ui.block50([ui.divText('Modification')])!,
+        ui.block25([ui.divText('PTO')])!
+      ]),
+      asModificationItems
+  ])!, {style: {maxWidth: '250px'}});
 
   let appAxolabsDescription = ui.info(
     [
@@ -298,21 +304,12 @@ export function defineAxolabsPattern() {
     ], 'Create and apply Axolabs translation patterns.'
   );
 
-  let splitter = ui.splitH([
-    patternDesignSection,
-    ui.divH([
-      ssModificationSection,
-      asModificationSection
-    ])
-  ], {style: {height: 'inherit'}});
-
-  $(splitter).children('.ui-box').removeClass('ui-box').addClass('ui-div');
-  $(splitter).children('.ui-div:nth-child(2)').css('flex-shrink','0');
-
-  return ui.block([
-    appAxolabsDescription,
-    ui.block([
-      splitter
-    ], {style: {height: '100%'}})
-  ], {style: {padding: "20px 0", overflowY: "hidden!important"}}); // will not allow to scroll over page
+  return ui.splitH([
+    ui.div([
+      appAxolabsDescription,
+      patternDesignSection!,
+    ])!,
+    ssModificationSection,
+    asModificationSection
+  ]);
 }
