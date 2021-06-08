@@ -43,6 +43,8 @@ export function welcomeView() {
         f.apply().then(function (w: DG.Widget) {
           w.factory = f;
           widgetsHost.appendChild(card(w));
+        }).catch((_) => {
+          console.log(`Unable to execute function ${f.name}`);
         });
     }
   });
