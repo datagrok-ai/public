@@ -1,5 +1,6 @@
 {
 	"name": "charpy",
+  "beta": true,
 	"fullName": "ChaRPy",
 	"version": "1.0.0",
 	"description": "",

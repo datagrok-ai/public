@@ -1,5 +1,6 @@
 {
 	"name": "IconTool",
+  "beta": true,
 	"fullName": "Icon Tool",
 	"version": "0.0.1",
 	"description": "Icon generation tool for Datagrok packages",

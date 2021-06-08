@@ -1,5 +1,6 @@
 {
 	"name": "clinicalcase",
+  "beta": true,
 	"fullName": "ClinicalCase",
 	"version": "0.0.1",
 	"description": "",

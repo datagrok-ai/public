@@ -1,5 +1,6 @@
 {
   "name": "FileEditors",
+  "beta": true,
   "version": "0.1",
   "fullName": "File Editors",
   "description": "Support for editing end previewing multiple file formats (PDF, SVG)",

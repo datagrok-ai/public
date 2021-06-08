@@ -1,5 +1,6 @@
 {
   "name": "discovery",
+  "beta": true,
   "fullName": "Discovery",
   "version": "0.0.1",
   "description": "",
