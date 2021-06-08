@@ -12,8 +12,7 @@ export class RecentProjectsWidget extends DG.Widget {
     this.caption = super.addProperty('caption', DG.TYPE.STRING, 'Recent projects');
 
     let projectList = ui.divV([]);
-    grok.dapi.projects
-      .filter('#demo')
+    grok.dapi.projects.recent
       .list({pageSize: 5})
       .then((projects) => projectList.appendChild(ui.divV(projects.map((p) => projectData(p) ), {style:{overflowX:'scroll'}})));
 
@@ -21,12 +20,13 @@ export class RecentProjectsWidget extends DG.Widget {
   }
 }
 
-function projectData(p: DG.Project){
+function projectData(h: DG.HistoryEntry){
+  let p = <DG.Project>h.object;
   let card = ui.cards.summary(
     ui.image(p.pictureUrl, 120, 80, {target: () => {}}),
     [
       ui.h2(ui.link(p.friendlyName, p)),
-      ui.div(p.createdOn, {style:{color:'var(--grey-4)'}})
+      ui.div(h.time, {style:{color:'var(--grey-4)'}})
     ]);
   ui.bind(p, card);
   return card;

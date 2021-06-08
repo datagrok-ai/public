@@ -680,3 +680,14 @@ export class DateTime {
     return new DateTime(api.grok_DateTime_FromMillisecondsSinceEpoch(millisecondsSinceEpoch));
   }
 }
+
+export class HistoryEntry {
+  public d: any;
+
+  constructor(d: any) {
+    this.d = d;
+  };
+
+  get object(): object { return toJs(api.grok_HistoryEntry_Get_Object(this.d)); }
+  get time(): object { return toJs(api.grok_HistoryEntry_Get_Time(this.d)); }
+}

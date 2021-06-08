@@ -18,7 +18,7 @@ import {
   Package,
   UserSession,
   Property,
-  FileInfo
+  FileInfo, HistoryEntry
 } from "./entities";
 import {ViewLayout} from "./view";
 import {toDart, toJs} from "./wrappers";
@@ -35,7 +35,7 @@ export class Dapi {
   }
 
   /** Retrieves entities from server by list of IDs
-   *  @returns {Promise<List<Entity>>} */
+   *  @returns {Promise<Entity[]>} */
   getEntities(ids: string[]): Promise<Entity[]> {
     return new Promise((resolve, reject) => api.grok_Dapi_Entities_GetEntities(ids, (q: any) => {
       return resolve(q.map(toJs));
@@ -128,8 +128,8 @@ export class Dapi {
 
   /** Projects API endpoint
    *  @type {HttpDataSource<Project>} */
-  get projects(): HttpDataSource<Project> {
-    return new HttpDataSource(api.grok_Dapi_Projects(), (a: any) => new Project(a));
+  get projects(): ProjectsDataSource {
+    return new ProjectsDataSource(api.grok_Dapi_Projects(), (a: any) => new Project(a));
   }
 
   /** Environments API endpoint
@@ -478,7 +478,7 @@ export class EntitiesDataSource extends HttpDataSource<Entity> {
   }
 
   /** Allows to set properties for entities
-   * @param {List<Map>} props
+   * @param {Map[]} props
    * @returns {Promise} */
   saveProperties(props: Map<Property, any>): Promise<void> {
     return new Promise((resolve, reject) => api.grok_EntitiesDataSource_SaveProperties(this.s, props, (_: any) => resolve(), (e: any) => reject(e)));
@@ -492,7 +492,7 @@ export class EntitiesDataSource extends HttpDataSource<Entity> {
   }
 
   /** Deletes entity properties
-   * @param {List<Map>} props
+   * @param {Map[]} props
    * @returns {Promise} */
   deleteProperties(props: Map<Property, any>): Promise<void> {
     return new Promise((resolve, reject) => api.grok_EntitiesDataSource_DeleteProperties(this.s, props, (_: any) => resolve(), (e: any) => reject(e)));
@@ -533,7 +533,7 @@ export class LayoutsDataSource extends HttpDataSource<ViewLayout> {
 
   /** Returns layouts that applicable to the table
    * @param {DataFrame} t
-   * @returns {Promise<List<ViewLayout>>} */
+   * @returns {Promise<ViewLayout[]>} */
   getApplicable(t: DataFrame): Promise<ViewLayout[]> {
     let s = this.entityToJs;
     return new Promise((resolve, reject) => api.grok_LayoutsDataSource_Applicable(this.s, t.d, (q: any[]) => resolve(q.map(s)), (e: any) => reject(e)));
@@ -649,6 +649,24 @@ export class UserDataStorage {
   }
 }
 
+
+/**
+ * Functionality for working with remote projects
+ * @extends HttpDataSource
+ * */
+export class ProjectsDataSource extends HttpDataSource<Project> {
+  /** @constructs TablesDataSource*/
+  constructor(s: any, instance: any) {
+    super(s, instance);
+  }
+
+  /** Gets recent projects datasource
+   * @returns {HttpDataSource<HistoryEntry>} */
+  get recent(): HttpDataSource<HistoryEntry> {
+     return new HttpDataSource<HistoryEntry>(api.grok_Dapi_RecentProjects(), (d: any) => new HistoryEntry(d));
+  }
+}
+
 /**
  * Functionality for working with remote tables
  * @extends HttpDataSource
@@ -702,7 +720,7 @@ export class FileSource {
 
   /** Moves a file.
    * Sample: {@link https://public.datagrok.ai/js/samples/dapi/files}
-   * @param {List<FileInfo | string>} files
+   * @param {FileInfo[] | string[]} files
    * @param {string} newPath
    * @returns {Promise} */
   move(files: FileInfo[] | string[], newPath: string): Promise<void> {
@@ -723,7 +741,7 @@ export class FileSource {
    * @param {FileInfo | string} file
    * @param {boolean} recursive
    * @param {string} searchPattern
-   * @returns {Promise<List<FileInfo>>} */
+   * @returns {Promise<FileInfo[]>} */
   list(file: FileInfo | string, recursive: boolean, searchPattern: string): Promise<FileInfo[]> {
     return new Promise((resolve, reject) =>
         api.grok_Dapi_UserFiles_List(file, recursive, searchPattern, (data: any) => resolve(toJs(data)), (e: any) => reject(e)));
