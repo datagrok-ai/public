@@ -8,30 +8,42 @@ export class ScatterPlot3Dviewer extends DG.JsViewer {
 	constructor() {
 
 		super();
-		console.log("TTHREEE ", THREE.REVISION);
-		this.look = {}
+		console.log("THREE REVISION ", THREE.REVISION);
+		this.look = {};
 		function hName() {
 	//		console.log('hName hit!')
 		}
 		this.new = true;
-		this.time0 = Date.now()
+		this.time0 = Date.now();
 		this.time1 = this.time0 + 1;
-		this.time00 = Date.now()
-		this.localSubs = []
+		this.time00 = Date.now();
+		this.localSubs = [];
+ 
+		this.sizeMin = .1;
+		this.sizeMax = 2;
 		
 		this.xColumnName = this.string('xColumnName');
 		this.yColumnName = this.string('yColumnName');
 		this.zColumnName = this.string('zColumnName');
 
-		this.filteredRowsColor = this.string('FilteredRowscolor', "0xff00ff", {choices: ['0xff0000', '0x00ff00']});
+		this.sizeColumnName = this.string('sizeColumnName');
+		this.colorColumnName = this.string('colorColumnName');
 
-
+		//this.filteredRowsColor = this.string('filteredRowsColor', "0x1f77b4", {choices: ["0xff00ff", '0xff0000', '0x00ff00']});
+		this.filteredRowsColor = this.string('filteredRowsColor', "0x1f77b4");
+		this.backColor = this.string('backColor', "0xffffff");
+		this.filteredOutRowsColor = this.string('filteredOutRowsColor', '0xf0f0f0');
+		this.selectedRowsColor = this.string('selectedRowsColor', '0xff8c00');
+		this.missingValueColor = this.string('missingValueColor', '0xf0f0f0');
+		this.axisLineColor = this.string('axisLineColor', '0x808080');
+		this.axisTextColor = this.string('axisTextColor', '0x808080');
+		this.gridLineColor = this.string('gridLineColor', '0xf0f0f0');
  
 		window.onHitHandlerName = 'hName';
-		this.onHitHandlerName = 'hName'
+		this.onHitHandlerName = 'hName';
  
 		window.hName = hName;
-		this.hName = hName
+		this.hName = hName;
   
 		//this.onHitHandlerName = onHitHandlerName;
  
@@ -47,17 +59,13 @@ export class ScatterPlot3Dviewer extends DG.JsViewer {
 //return
 			console.log(this.renderer)
 			if (this.isTableAttached) {
-				console.error(this.dataFrame)
-				this.onTableAttached()
-			this.updateAllScene(this.look, this.rawX, this.rawY, this.rawZ,
-				 this.dataFrame.filter,
-				0xff00ff, 
-				this.rawZ)
+				console.error(this.dataFrame);
+				this.onTableAttached();
+				this.updateAllScene(this.look, this.rawX, this.rawY, this.rawZ,
+					this.dataFrame.filter, 0xff00ff, this.rawZ);
 			}	
 		} else {
-			this.initLayout2()
-
-
+			this.initLayout2();
 		}
 
 		//this.onTableAttached(); 
@@ -65,13 +73,13 @@ export class ScatterPlot3Dviewer extends DG.JsViewer {
  
 	getFloat32Filter() {
 	//	console.log('fil float df: ', this.dataFrame.filter.d.b)
-		this.getFloat32BitSet(this.filterFloat, this.dataFrame.filter)
+		this.getFloat32BitSet(this.filterFloat, this.dataFrame.filter);
 	//	console.log('fil float: ', this.filterFloat);
 	//	console.log('fil float: ', this.filterFloat.reduce((a, e) => a+=e, 0));
 	}
 
 	getFloat32Selection() {
-		this.getFloat32BitSet(this.selectionFloat, this.dataFrame.selection)
+		this.getFloat32BitSet(this.selectionFloat, this.dataFrame.selection);
 	//	console.log('sel float: ', this.selectionFloat);
 	//	console.log('sel float: ', this.selectionFloat.reduce((a, e) => a+=e, 0));
 
@@ -80,11 +88,10 @@ export class ScatterPlot3Dviewer extends DG.JsViewer {
 
 	getArrayFromBitset(bitset) {
 		debugger
-		var ar = new Float32Array(bitset.d.c)
-		this.getFloat32BitSet(ar,bitset)
+		var ar = new Float32Array(bitset.d.c);
+		this.getFloat32BitSet(ar,bitset);
 		console.log('ar float: ', ar);
 		console.log('ar float: ', ar.reduce((a, e) => a+=e, 0));
-
 	}
 
 
@@ -103,7 +110,7 @@ export class ScatterPlot3Dviewer extends DG.JsViewer {
 		var n = bitset.d.c;
 		//var rez = new Float32Array(n);
 		for (var i=0; i<n; i++) {
-			filter1[i] = getBitByIndex32(b, i)
+			filter1[i] = getBitByIndex32(b, i);
 		}
 
 		var bs=0;
@@ -141,9 +148,9 @@ export class ScatterPlot3Dviewer extends DG.JsViewer {
 		var m = new THREE.MeshPhongMaterial({ color: 0xff0000 })
 		var g = new THREE.SphereGeometry(2, 6, 6);
 		var mesh = new THREE.Mesh(g, m);
-		mesh.position.x = 0
-		mesh.position.y = 0
-		mesh.position.z = 0 
+		mesh.position.x = 0;
+		mesh.position.y = 0;
+		mesh.position.z = 0;
 		this.scene.add(mesh);
 		this.renderer.setSize(400, 400);
 		let mapDiv = ui.div([], 'd4-viewer-host');
@@ -151,7 +158,7 @@ export class ScatterPlot3Dviewer extends DG.JsViewer {
 		//mapDiv.add(ui.h1('Hello World'))
 		mapDiv.appendChild(this.renderer.domElement);
 		
-		//this.controls.enabled = true
+		//this.controls.enabled = true;
 
 
  
@@ -159,7 +166,7 @@ export class ScatterPlot3Dviewer extends DG.JsViewer {
 		this.root.appendChild(mapDiv);
 		this.controls = new TrackballControls(this.camera, this.renderer.domElement		);
 		//this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-		this.controls.enabled = true
+		this.controls.enabled = true;
 		
 		// mapDiv.appendChild(ms);
 		//mapDiv.appendChild(this.canvas);
@@ -172,7 +179,7 @@ export class ScatterPlot3Dviewer extends DG.JsViewer {
 	// 3. center of original array
 	normalize(ar) {
 		var { center, scale, min, max } = this.getNormalizeInfo(ar);
-		var rez = ar.map(e => (e - min) / scale)
+		var rez = ar.map(e => (e - min) / scale);
 		return rez;
 	}
                
@@ -195,22 +202,13 @@ export class ScatterPlot3Dviewer extends DG.JsViewer {
 	}
 
 	createMarker(type, coords) {
-		var m = new THREE.MeshPhongMaterial({ color: 0xff00ff })
+		var m = new THREE.MeshPhongMaterial({ color: 0xff00ff });
 		var g = new THREE.SphereGeometry(2, 6, 6);
 		var mesh = new THREE.Mesh(g, m);
 		mesh.position.x = coords[0];
 		mesh.position.y = coords[1];
 		mesh.position.z = coords[2];
-		return mesh
-	}
-
-	updateProps() {
-		console.error('update props ', this.filteredRowsColor, this.zColumnName)
-		this.rawX = this.dataFrame.getCol(this.xColumnName).getRawData();
-		this.rawY = this.dataFrame.getCol(this.yColumnName).getRawData();
-		this.rawZ = this.dataFrame.getCol(this.zColumnName).getRawData();
-	//	this.look.filteredRowsColor = 
-	//	this.updateAllScene()
+		return mesh;
 	}
 
  
@@ -221,26 +219,20 @@ export class ScatterPlot3Dviewer extends DG.JsViewer {
 			return 0;
 		}
 		var df = this.dataFrame;
-   
-//return 0            
-       
+    
 		let numericalColumns = Array.from(this.dataFrame.columns.numerical);
 		this.xColumnName = numericalColumns[0].name;
 		this.yColumnName = numericalColumns[1].name;
 		this.zColumnName = numericalColumns[2].name;
-	//	this.zColumnName = 'AGE'
-	//	this.xColumnName = 'WEIGHT';
-	//	this.yColumnName = 'HEIGHT';
 		this.rawX = this.dataFrame.getCol(this.xColumnName).getRawData();
 		this.rawY = this.dataFrame.getCol(this.yColumnName).getRawData();
 		this.rawZ = this.dataFrame.getCol(this.zColumnName).getRawData();
-//			console.error('raw X ', this.rawX)
-	//		console.error('raw Y ', this.rawY)
-	//		console.error('raw Z ', this.rawZ)
-//		this.placeMarkers();
-		var { centerX } = this.getNormalizeInfo(this.rawX)
-		var { centerY } = this.getNormalizeInfo(this.rawY)
-		var { centerZ } = this.getNormalizeInfo(this.rawZ)
+		this.sizeX = new Float32Array(this.rawX.length)
+		this.colorX = new Float32Array(this.rawX.length)
+
+		var { centerX } = this.getNormalizeInfo(this.rawX);
+		var { centerY } = this.getNormalizeInfo(this.rawY);
+		var { centerZ } = this.getNormalizeInfo(this.rawZ);
 		this.camera.lookAt(new THREE.Vector3(centerX, centerY, centerZ))
 
 		this.addDataFrameCallbacks();
@@ -264,9 +256,9 @@ export class ScatterPlot3Dviewer extends DG.JsViewer {
 
 	
 		} else {
-			this.placeMarkers()
+			this.placeMarkers();
 		}
-		this.render()
+		this.render();
 	} // table attached
 
 	placeMarkers() {
@@ -276,18 +268,6 @@ export class ScatterPlot3Dviewer extends DG.JsViewer {
 			this.scene.add(marker);
 		}
 	}
-
-	renderttt() {
-		if (this.controls) this.controls.update();
-		this.renderer.render(this.scene, this.camera);
-		requestAnimationFrame(this.render.bind(this))
-	}
-
-
-
-
-
-
 
 
 	
@@ -340,7 +320,7 @@ export class ScatterPlot3Dviewer extends DG.JsViewer {
 		this.clean();
  
 		const color = 0xFFFFFF;
-const intensity = 1;
+		const intensity = 1;
 		const light = new THREE.AmbientLight(color, intensity);
 	//	this.scene.add(light);
 
@@ -569,13 +549,13 @@ return
 		}
 		
 
-		var colors = this.dartGetColors()
+		this.dartGetColors()
 	//	console.log('colors ', colors)
 		let markerColor = new THREE.Color();
-		for (let n = 0; n < colors.length; n++) {
-			markerColor.setHex(colors[n]);
+		for (let n = 0; n < this.colorX.length; n++) {
+			markerColor.setHex(this.colorX[n]);
 			this.markerColors.setXYZ(n, markerColor.r, markerColor.g, markerColor.b);
-			this.markerAlphas.setX(n, ((colors[n] >> 24) & 255) / 255.0);
+			this.markerAlphas.setX(n, ((this.colorX[n] >> 24) & 255) / 255.0);
 		//	this.filter.setX(n, filter[n]);
 		}
 
@@ -608,14 +588,14 @@ return
 	enableAutoRotation() {
 	//	return 0;
 		this.controls.staticMoving = false;
-		console.log('controls ', this.controls.domElement)
-		console.log('controls ', this.controls)
+		console.log('controls ', this.controls.domElement);
+		console.log('controls ', this.controls);
 		this.controls.autoRotate = true
 
 		// Simulate touch
 		this.rrr = 0
 		setInterval(() => {
-	//		console.log('inerrrrrrrrrrrr', this.rrr)
+	//		console.log('inerrrrrrrrrrrr', this.rrr);
 //			this.controls.domElement.dispatchEvent(new MouseEvent('mousedown', { clientX: 0 }));
 //			this.controls.domElement.dispatchEvent(new MouseEvent('mousemove', { clientX: 10 }));
 //			this.controls.domElement.dispatchEvent(new MouseEvent('mouseup', { clientX: 10 }));
@@ -654,7 +634,7 @@ return
 
 	initMesh(x, y, z, filter, color, size) {
 		this.clean();
-		console.log('init mesh', this.look.markerType)
+		console.log('init mesh', this.look.markerType);
 		let geo;
 		if (this.look.markerType === 'tetrahedron')
 			geo = new THREE.TetrahedronGeometry(1.0);
@@ -796,19 +776,55 @@ return
 	onPropertyChanged(property) {
 		var name = property.name;
 		var val = property.get();
+		var v2 = this.filteredRowsColor;
 		if (name === 'markerSizeProp') {
 		  this.markerSize = parseInt(val);
 		  if (this.dataFrame) this.render();
 		};
 
-		this.updateProps()
-		this.updateAllScene()
+		this.updateProps();
+		this.updateAllScene();
 		//super.onPropertyChanged(property);
 	  }
 
+	  normalize2(ar1, ar2, min1, max1, min2, max2) {
+		  var d1 = max1 - min1;
+		  var d2 = max2 - min2;
+		  return ar1.map((e, i) => ar2[i] = min2 + (e - min1) * d2 / d1);
+	  }
+
+	  updateProps() {
+		if (!this.dataFrame) return;
+		console.error('update props ', this.filteredRowsColor, this.zColumnName);
+		this.rawX = this.dataFrame.getCol(this.xColumnName).getRawData();
+		this.rawY = this.dataFrame.getCol(this.yColumnName).getRawData();
+		this.rawZ = this.dataFrame.getCol(this.zColumnName).getRawData();
+
+		if (this.sizeColumnName) {
+			this.isSizeExists = true;
+			var tSize = this.dataFrame.getCol(this.sizeColumnName);
+			this.normalize2(tSize.getRawData(), this.sizeX, tSize.min, tSize.max, this.sizeMin, this.sizeMax);
+	
+		}
+
+		if (this.colorColumnName) {
+			this.isColorExists = true;
+		} else {
+			this.isColorExists = false;
+		}
+			var tColor = this.dataFrame.getCol(this.colorColumnName);
+			this.colorMax = tColor?.max;
+			this.colorMin = tColor?.min;
+			//this.normalize2(tSize.getRawData(), this.colorX, tSize.min, tSize.max, this.sizeMin, this.sizeMax);
+			this.dartGetColors(this.colorX, tColor?.getRawData());
+	
+	
+
+	}
 
 
 
+ 
 
 
 
@@ -823,12 +839,13 @@ return
 
 
 	makeInstanced(geo, x, y, z, filter, colors2, sizes) {
+		this.updateProps()
 	//	return 0;
-	this.getFloat32Filter();
+		this.getFloat32Filter();
 	
-	this.getFloat32Selection();
-		console.log('make instanced ', geo)
-		var colors = this.dartGetColors()
+		this.getFloat32Selection();
+		console.log('make instanced ', geo);
+		//var colors = this.dartGetColors();
 		
 
 		this.scene.add( new THREE.AxesHelper( 5 * 5 ) );
@@ -885,7 +902,8 @@ return
 		let mcol2 = new THREE.InstancedBufferAttribute(new Float32Array(numObjects * 3), 3, false);
 		let mcol3 = new THREE.InstancedBufferAttribute(new Float32Array(numObjects * 3), 3, false);
 
-		const scaleFactor = 1.0 / (10.0 * Math.log(numObjects));
+		this.scaleFactor = 1.0 / (10.0 * Math.log(numObjects));
+		this.scaleFactor = .14
 
 		let position = new THREE.Vector3();
 		let rotation = new THREE.Euler();
@@ -894,17 +912,12 @@ return
 
 		let matrix = new THREE.Matrix4();
 		let me = matrix.elements;
+		
  
 		//for (let n = 0; n < numObjects; n++) {
 		for (let n = 0; n < numObjects; n++) {
-			//let size = (sizes === null) ? scaleFactor : sizes[n] * scaleFactor;
-			let size = .3;
-			size = (size < this.markerMinSize) ? this.markerMinSize : size;
-			if (size < 0) size = -size;
+			let size = (!this.isSizeExists) ? this.scaleFactor : this.sizeX[n] * this.scaleFactor;
 			scale.setScalar(size);
-			scale[0] = 1
-			scale[1] = 1
-			scale[2] = 1
 
 			position.x = x[n]*1 - 0.5;
 			position.y = y[n]*1 - 0.5;
@@ -934,10 +947,10 @@ return
 		this.igeo.addAttribute('mcol2', mcol2);
 		this.igeo.addAttribute('mcol3', mcol3);
 */
-this.igeo.setAttribute('mcol0', mcol0);
-this.igeo.setAttribute('mcol1', mcol1);
-this.igeo.setAttribute('mcol2', mcol2);
-this.igeo.setAttribute('mcol3', mcol3);
+		this.igeo.setAttribute('mcol0', mcol0);
+		this.igeo.setAttribute('mcol1', mcol1);
+		this.igeo.setAttribute('mcol2', mcol2);
+		this.igeo.setAttribute('mcol3', mcol3);
 
 
 		this.markerColors = new THREE.InstancedBufferAttribute(new Float32Array(numObjects * 3), 3, false);
@@ -945,8 +958,8 @@ this.igeo.setAttribute('mcol3', mcol3);
 		let markerColor = new THREE.Color();
 	//	markerColor = DG.Color.filteredOutRows
 		for (let n = 0; n < numObjects; n++) {
-			markerColor.setHex(colors[n]);
-			this.markerAlphas.setX(n, ((colors[n] >> 24) & 255) / 255.0);
+			markerColor.setHex(this.colorX[n]);
+			this.markerAlphas.setX(n, ((this.colorX[n] >> 24) & 255) / 255.0);
 			this.markerColors.setXYZ(n, markerColor.r, markerColor.g, markerColor.b);
 			//this.markerColors.setXYZ(n,1,0,0);
 		}
@@ -967,37 +980,33 @@ this.igeo.setAttribute('mcol3', mcol3);
 
 		// filter 
 
-		this.getFloat32Filter()
-		this.getFloat32Selection()
+		this.getFloat32Filter();
+		this.getFloat32Selection();
 		this.filter = new THREE.InstancedBufferAttribute(this.filterFloat, 1, false);
 	
-		console.log('this filter ' , this.filter)
+		console.log('this filter ' , this.filter);
 		this.igeo.setAttribute('filter2', this.filter);
 
-		console.log('this igeo ', this.igeo)
+		console.log('this igeo ', this.igeo);
 		// mesh
-		var m = new THREE.MeshPhongMaterial({ color: 0x0000ff })
+		var m = new THREE.MeshPhongMaterial({ color: 0x0000ff });
 
 		this.mesh = new THREE.Mesh(this.igeo, material);
-		this.mesh.name = 'main'
-		this.mesh.scale.x =1
-		this.mesh.scale.y =1
-		this.mesh.scale.z =1
-		console.log('make instanced ', geo)
+		this.mesh.name = 'main';
+		this.mesh.scale.x =1;
+		this.mesh.scale.y =1;
+		this.mesh.scale.z =1;
+		console.log('make instanced ', geo);
 
 		console.log('mesh main', this.mesh.geometry);
 		this.scene.add(this.mesh);
 
-
-
-
 		this.hittingMesh = new THREE.Mesh(this.igeo, hittingMaterial);
 		this.hittingScene.add(this.hittingMesh);
 
-
 		
 
-
+/*
 	var m = new THREE.MeshLambertMaterial({ color: 0xff00ff })
 	var g = new THREE.SphereGeometry(1, 6, 6);
 	var mesh2 = new THREE.Mesh(geo, m);
@@ -1010,11 +1019,8 @@ this.igeo.setAttribute('mcol3', mcol3);
 	mesh2.position.z = 0
 	this.scene.add(mesh2);
 	console.log('mesh2 ', mesh2.geometry)
+	*/
 	} // makeInstanced
-
-	getFilter() {
-		var rez = new Float32Array(this.dataFrame.rowCount)
-	}
 
 
 	hitTest(x, y) {
@@ -1080,39 +1086,26 @@ this.igeo.setAttribute('mcol3', mcol3);
  
 	  
 	updateStats() {
-		// update fps meter
-	 //   this.time0 = this.time1 // save old timestamps
-	 //   this.time1 = Date.now()
-		var dtime = this.time1 - this.time0
+		var dtime = this.time1 - this.time0;
 		if (this.time1 - this.time0 == 0) dtime = 1;
-		let fps2 = 1000 / dtime
-		//console.log('00' ,this.time00)
-		this.root.style.overflow='visible'
-		this.fpsMeter.style.overflow='visible'
-		this.fpsMeter.style.color = 'red'
+		let fps2 = 1000 / dtime;
+		this.root.style.overflow='visible';
+		this.fpsMeter.style.overflow='visible';
+		this.fpsMeter.style.color = 'red';
 		this.fpsMeter.innerHTML =
 		  fps2.toFixed(1) + ' fps; t: ' + (this.time1-this.time0) + 
 		  "<br>" + this.camera.position.x.toFixed(1) + ' ' +this.camera.position.y.toFixed(1)
 		   + 'z' + 
 		  this.camera.position.z.toFixed(1)
-		  +		  "<br>" + (this.time1 - this.time00) + ' contr ' + !!this.controls 
-		  /*
-		  var bb = 
-		  'ms; size: ' + (this.rowCount / 1000).toFixed(0) + 'k ' +
-		  '<br>Scale: ' + [this.scale[0].toFixed(2), this.scale[1].toFixed(2)] +
-		  'pan: ' + [this.pan[0].toFixed(2), this.pan[1].toFixed(2)] + '  ' +
-		  '<br>size: ' + this.canvasSize + ' texHeight: ' + this.dataTextureHeight +
-		  '<br>Marker: ' + this.markerSize 
-		  */
-		  //+      '<br>screenPoint: ' + this.screenPoint;
+		  +		  "<br>" + (this.time1 - this.time00) + ' contr ' + !!this.controls;
 	  }
       
         
 	render() {
 		this.time0 = this.time1;
 		this.time1 = Date.now();
-		this.controls.enabled = true
-		this.updateStats()
+		this.controls.enabled = true;
+		this.updateStats();
 		if (this.controls) this.controls.update();
 	//	console.log(this.scene)
 		//this.camera.rotation.x = Math.PI
@@ -1123,24 +1116,8 @@ this.igeo.setAttribute('mcol3', mcol3);
 			this.camera.lookAt(new Vector3(0,0,0))
 		}
 
-		
-	//	const ambientLight = new THREE.AmbientLight(0xffffff, 222.485434543257532104);
-	//	this.scene.add(ambientLight); 
-
-		  
-	var m = new THREE.MeshPhongMaterial({ color: 0xff0000 })  
-	var g = new THREE.SphereGeometry(1.1, 6, 6); 
-	var mesh2 = new THREE.Mesh(g, m);
-	mesh2.position.x = 5
-	mesh2.position.y = 5
-	mesh2.position.z = 0
-//	this.scene.add(mesh2);
-
-	//	console.log('camera ', this.camera.position, this.camera.rotation)
-	//	console.log('scene ', this.scene)
 		this.renderer.render(this.scene, this.camera);
-//return 0 
-		requestAnimationFrame(this.render.bind(this))
+		requestAnimationFrame(this.render.bind(this));
 
 	}
 
@@ -1376,24 +1353,70 @@ this.igeo.setAttribute('mcol3', mcol3);
 
 	}
 
+	//dartGetColors(target, ar) {
 	dartGetColors() {
-		var colors = new Uint32Array(this.dataFrame.rowCount);
+		var target = this.colorX;
+		var ar
+		if (this.isColorExists) {
+			ar = this.dataFrame.getCol(this.colorColumnName).getRawData();
+		}
+		//var colors = new Uint32Array(this.dataFrame.rowCount);
+	//	var colors = this.colorX;
 		var isGrouped = this.look.showMouseOverRowGroup && this.dataFrame.rows.mouseOverRowFunc
-		for (var n=0; n<colors.length; n++) {
-			colors[n] = this.dartGetColor(n);
+		if (!target) {
+			debugger
+		}
+		for (var n=0; n<target.length; n++) {
+			target[n] = this.dartGetColor(ar, n);
+
 		}
 
-		console.log('ccccoooo lll this.look.filteredRowsColor ', this.filteredRowsColor)
-	//	console.log('ccccoooo lll f', this.filterFloat)
-	//	console.log('f32 ', this.dataFrame)
-		return colors;
-	}
- 
-	dartGetColor(i) {
-	//	return 0x3f3f0000;
-		return (this.selectionFloat[i] < .5) ? this.filteredRowsColor : this.look.selectedRowsColor
-	}
+		console.log('this.look.filteredRowsColor ', this.filteredRowsColor);
+		//	console.log('f32 ', this.dataFrame);
+		//if (this.isColorExists) {
+		if (false) {
+			debugger
+			//let target = this.dataFrame.getCol(this.colorColumnName).getRawData();
+			this.dartGetRowColor(target, ar);
+		} 
+	//	return colors;
 
- 
+	} 
+  
+	dartGetColor(ar, i) {
+	//	return 0x3f3f0000;
+		var r = (this.selectionFloat[i] < .5) ? this.filteredRowsColor : this.selectedRowsColor;
+
+		function vNormal(v) {
+			return (v - min) / d;
+		}
+		if (this.isColorExists) {
+			var min = this.colorMin;
+			var max = this.colorMax;
+			var d = max - min;
+	
+
+				var blue = (1 - vNormal(ar[i])) * 256;
+				var red = vNormal(ar[i]);
+				r = 256*256*256*red + blue;
+	
+		}
+
+		return r;
+	} 
+
+	dartGetRowColor(target, ar, i) {
+		function vNormal(v) {
+			return (v - min) / d;
+		}
+		var min = ar.min;
+		var max = ar.max;
+		var d = max - min;
+		for (var i=0; i<ar.length; i++) {
+			let blue = (1 - vNormal(ar[i]));
+			let red = vNormal(ar[i]);
+			target[i] = 256*256*red + blue;
+		}
+	}
 
 }
