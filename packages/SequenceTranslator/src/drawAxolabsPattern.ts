@@ -56,8 +56,8 @@ export function drawAxolabsPattern(patternName: string, createAsStrand: boolean,
       e.innerHTML = text;
       return e;
     },
-    polygon : function (x: number, y: number, fill: string) {
-      const e = document.createElementNS(this.xmlns,"polygon");
+    polygon : function(x: number, y: number, fill: string) {
+      const e = document.createElementNS(this.xmlns, "polygon");
       e.setAttribute("points", getStarPoints(x, y));
       e.setAttribute('fill', fill);
       return e;
@@ -81,10 +81,10 @@ export function drawAxolabsPattern(patternName: string, createAsStrand: boolean,
   image.append(svg.text('SS:', '0', String(4 * baseRadius), fontSize, fontWeight, fontColor));
   image.append(svg.text('AS:', '0', String(7 * baseRadius), fontSize, fontWeight, fontColor));
 
-  image.append(svg.text("3'", String(2.5 * baseRadius), String(4 * baseRadius), fontSize, fontWeight, fontColor));
-  image.append(svg.text("5'", String(width - baseRadius), String(4 * baseRadius), fontSize, fontWeight, fontColor));
-  image.append(svg.text("3'", String(width - baseRadius), String(7 * baseRadius), fontSize, fontWeight, fontColor));
-  image.append(svg.text("5'", String(2.5 * baseRadius), String(7 * baseRadius), fontSize, fontWeight, fontColor));
+  image.append(svg.text("5'", String(2.5 * baseRadius), String(4 * baseRadius), fontSize, fontWeight, fontColor));
+  image.append(svg.text("3'", String(width - baseRadius), String(4 * baseRadius), fontSize, fontWeight, fontColor));
+  image.append(svg.text("5'", String(width - baseRadius), String(7 * baseRadius), fontSize, fontWeight, fontColor));
+  image.append(svg.text("3'", String(2.5 * baseRadius), String(7 * baseRadius), fontSize, fontWeight, fontColor));
 
   image.append(svg.text(ssModif, String((maxNumberInStrands + 2) * 2 * baseRadius + baseRadius), String(4 * baseRadius), fontSize, fontWeight, psLinkageColor));
   image.append(svg.text(asModif, String((maxNumberInStrands + 2) * 2 * baseRadius + baseRadius), String(7 * baseRadius), fontSize, fontWeight, psLinkageColor));
