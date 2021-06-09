@@ -79,7 +79,7 @@ export function defineAxolabsPattern() {
     }
   }
 
-  function updatePtoAllAtOnce(newPtoValue: boolean) {
+  function updatePto(newPtoValue: boolean) {
     for (let i = 0; i < ssPtoLinkages.length; i++) {
       ssPtoLinkages[i].value = newPtoValue;
     }
@@ -89,7 +89,7 @@ export function defineAxolabsPattern() {
     updateSvgScheme();
   }
 
-  function updateBasisAllAtOnce(newBasisValue: string) {
+  function updateBases(newBasisValue: string) {
     for (let i = 0; i < ssBases.length; i++) {
       ssBases[i].value = newBasisValue;
     }
@@ -158,7 +158,6 @@ export function defineAxolabsPattern() {
         fiveModification.value = obj['fiveModification'];
 
         updateSvgScheme();
-        updateSvgScheme();
         updateAsModification();
         updateSsModification();
       });
@@ -192,26 +191,40 @@ export function defineAxolabsPattern() {
       });
   }
 
+  function postPatternToUserStorage() {
+    grok.dapi.userDataStorage.postValue(
+      userStorageKey,
+      newPatternName.value,
+      JSON.stringify({
+        "ssBases": ssBases.slice(0, ssLength.value).map((e) => e.value),
+        "asBases": asBases.slice(0, asLength.value).map((e) => e.value),
+        "ssPtoLinkages": ssPtoLinkages.slice(0, ssLength.value).map((e) => e.value),
+        "asPtoLinkages": asPtoLinkages.slice(0, asLength.value).map((e) => e.value),
+        "threeModification": threeModification.value,
+        "fiveModification": fiveModification.value
+      }),
+      false
+    ).then(() => grok.shell.info('Pattern ' + newPatternName.value + ' was successfully uploaded!'));
+  }
+
   function savePattern() {
-    async function saveInUserStorage() {
-      let keyName: string = newPatternName.value;
-      await grok.dapi.userDataStorage.postValue(
-        userStorageKey,
-        keyName,
-        JSON.stringify({
-          "name": keyName,
-          "ssBases": ssBases.slice(0, ssLength.value).map((e) => e.value),
-          "asBases": asBases.slice(0, asLength.value).map((e) => e.value),
-          "ssPtoLinkages": ssPtoLinkages.slice(0, ssLength.value).map((e) => e.value),
-          "asPtoLinkages": asPtoLinkages.slice(0, asLength.value).map((e) => e.value),
-          "threeModification": threeModification.value,
-          "fiveModification": fiveModification.value
-        }),
-        false
-      );
-    }
-    saveInUserStorage().then(r => grok.shell.info(r));
-    saveImage();
+    grok.dapi.userDataStorage.get(userStorageKey, false).then((entities) => {
+      if (Object.keys(entities).includes(newPatternName.value)) {
+        let dialog = ui.dialog('Pattern with name ' + newPatternName.value + ' already exist');
+        $(dialog.getButton('OK')).hide();
+        dialog
+          .add(ui.divText('Replace existing pattern?'))
+          .addButton('YES', () => {
+            grok.dapi.userDataStorage.remove(userStorageKey, newPatternName.value, false)
+              .then(() => postPatternToUserStorage())
+              .then(() => saveImage());
+          })
+          .show();
+      } else {
+        postPatternToUserStorage();
+        saveImage();
+      }
+    });
   }
 
   function saveImage() {
@@ -236,9 +249,9 @@ export function defineAxolabsPattern() {
 
   let tables = ui.choiceInput('Tables', '', grok.shell.tableNames, () => addColumnsFields());
 
-  let sequenceBase = ui.choiceInput('Sequence Basis', defaultBase, baseChoices, (v: string) => updateBasisAllAtOnce(v));
+  let sequenceBase = ui.choiceInput('Sequence Basis', defaultBase, baseChoices, (v: string) => updateBases(v));
 
-  let fullyPto = ui.boolInput('Fully PTO', defaultPto, (v: boolean) => updatePtoAllAtOnce(v));
+  let fullyPto = ui.boolInput('Fully PTO', defaultPto, (v: boolean) => updatePto(v));
 
   let createAsStrand = ui.boolInput('Create AS Strand', true, (v: boolean) => {
     asModificationSection.hidden = (!v);
