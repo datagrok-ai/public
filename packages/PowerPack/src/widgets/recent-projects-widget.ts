@@ -26,7 +26,7 @@ function projectData(h: DG.HistoryEntry){
     ui.image(p.pictureUrl, 120, 80, {target: () => {}}),
     [
       ui.h2(ui.link(p.friendlyName, p)),
-      ui.div(h.time, {style:{color:'var(--grey-4)'}})
+      ui.div([h.time], {style:{color:'var(--grey-4)'}})
     ]);
   ui.bind(p, card);
   return card;
