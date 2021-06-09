@@ -5,6 +5,26 @@ import * as DG from 'datagrok-api/dg';
 
 import {axolabsMap} from "./axolabsMap";
 
+function getStarPoints(centerX: number, centerY: number) {
+  const innerCirclePoints = 5;  // a 5 point star
+  const innerRadius = 15 / innerCirclePoints;
+  const innerOuterRadiusRatio = 2; // outter circle is x2 the inner
+  const outerRadius = innerRadius * innerOuterRadiusRatio;
+  const angle = (Math.PI / innerCirclePoints);
+  const angleOffsetToCenterStar = 60;
+  const totalPoints = innerCirclePoints * 2; // 10 in a 5-points star
+
+  let points = '';
+  for (let i = 0; i < totalPoints; i++) {
+    let isEvenIndex = i % 2 == 0;
+    let r = isEvenIndex ? outerRadius : innerRadius;
+    let currX = centerX + Math.cos(i * angle + angleOffsetToCenterStar ) * r;
+    let currY = centerY + Math.sin(i * angle + angleOffsetToCenterStar) * r;
+    points += currX + ',' + currY + ' ';
+  }
+  return points;
+}
+
 export function drawAxolabsPattern(patternName: string, createAsStrand: boolean, ssBaseStatuses: string[], asBaseStatuses: string[], ssPtoStatuses: boolean[], asPtoStatuses: boolean[], ssModif: string, asModif:string) {
   ssBaseStatuses = ssBaseStatuses.reverse();
   ssPtoStatuses = ssPtoStatuses.reverse();
@@ -35,6 +55,12 @@ export function drawAxolabsPattern(patternName: string, createAsStrand: boolean,
       e.setAttribute("fill", fill);
       e.innerHTML = text;
       return e;
+    },
+    polygon : function (x: number, y: number, fill: string) {
+      const e = document.createElementNS(this.xmlns,"polygon");
+      e.setAttribute("points", getStarPoints(x, y));
+      e.setAttribute('fill', fill);
+      return e;
     }
   };
 
@@ -43,7 +69,7 @@ export function drawAxolabsPattern(patternName: string, createAsStrand: boolean,
     psLinkageRadius = 5,
     psLinkageColor = 'red',
     fontSize = '17',
-    width = (2 * baseRadius + 1) * maxNumberInStrands + 5 * baseRadius + Math.max(ssModif.length, asModif.length) * 4,
+    width = (2 * baseRadius + 1) * maxNumberInStrands + 5 * baseRadius + Math.max(ssModif.length, asModif.length) * 9,
     height = 11 * baseRadius,
     title = patternName + ' for ' + String(ssBaseStatuses.length) + '/' + String(asBaseStatuses.length) + 'mer',
     textShift = 5,
@@ -56,12 +82,12 @@ export function drawAxolabsPattern(patternName: string, createAsStrand: boolean,
   image.append(svg.text('AS:', '0', String(7 * baseRadius), fontSize, fontWeight, fontColor));
 
   image.append(svg.text("3'", String(2.5 * baseRadius), String(4 * baseRadius), fontSize, fontWeight, fontColor));
-  image.append(svg.text("5'", String(width - baseRadius + ssModif.length), String(4 * baseRadius), fontSize, fontWeight, fontColor));
-  image.append(svg.text("3'", String(width - baseRadius + asModif.length), String(7 * baseRadius), fontSize, fontWeight, fontColor));
+  image.append(svg.text("5'", String(width - baseRadius), String(4 * baseRadius), fontSize, fontWeight, fontColor));
+  image.append(svg.text("3'", String(width - baseRadius), String(7 * baseRadius), fontSize, fontWeight, fontColor));
   image.append(svg.text("5'", String(2.5 * baseRadius), String(7 * baseRadius), fontSize, fontWeight, fontColor));
 
-  image.append(svg.text(ssModif, String((maxNumberInStrands + 2) * 2 * baseRadius), String(4 * baseRadius), fontSize, fontWeight, psLinkageColor));
-  image.append(svg.text(asModif, String((maxNumberInStrands + 2) * 2 * baseRadius), String(7 * baseRadius), fontSize, fontWeight, psLinkageColor));
+  image.append(svg.text(ssModif, String((maxNumberInStrands + 2) * 2 * baseRadius + baseRadius), String(4 * baseRadius), fontSize, fontWeight, psLinkageColor));
+  image.append(svg.text(asModif, String((maxNumberInStrands + 2) * 2 * baseRadius + baseRadius), String(7 * baseRadius), fontSize, fontWeight, psLinkageColor));
 
   for (let i = ssBaseStatuses.length - 1; i > -1; i--) {
     image.append(
@@ -72,7 +98,7 @@ export function drawAxolabsPattern(patternName: string, createAsStrand: boolean,
     );
     if (ssPtoStatuses[i]) {
       image.append(
-        svg.circle(String((maxNumberInStrands - i + 2) * 2 * baseRadius + baseRadius), String(4 * baseRadius + psLinkageRadius), String(psLinkageRadius), psLinkageColor)
+        svg.polygon((maxNumberInStrands - i + 2) * 2 * baseRadius + baseRadius, 4 * baseRadius + psLinkageRadius, psLinkageColor)
       );
     }
   }
@@ -86,7 +112,7 @@ export function drawAxolabsPattern(patternName: string, createAsStrand: boolean,
       )
       if (asPtoStatuses[i]) {
         image.append(
-          svg.circle(String((maxNumberInStrands - i + 2) * 2 * baseRadius - baseRadius), String(7 * baseRadius + psLinkageRadius), String(psLinkageRadius), psLinkageColor)
+          svg.polygon((maxNumberInStrands - i + 2) * 2 * baseRadius - baseRadius, 7 * baseRadius + psLinkageRadius, psLinkageColor)
         );
       }
     }
