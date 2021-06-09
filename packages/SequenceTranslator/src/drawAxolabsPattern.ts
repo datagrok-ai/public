@@ -60,8 +60,8 @@ export function drawAxolabsPattern(patternName: string, createAsStrand: boolean,
   image.append(svg.text("3'", String(width - baseRadius + asModif.length), String(7 * baseRadius), fontSize, fontWeight, fontColor));
   image.append(svg.text("5'", String(2.5 * baseRadius), String(7 * baseRadius), fontSize, fontWeight, fontColor));
 
-  image.append(svg.text(ssModif, String((maxNumberInStrands - ssBaseStatuses.length + 2) * 2 * baseRadius), String(4 * baseRadius), fontSize, fontWeight, psLinkageColor));
-  image.append(svg.text(asModif, String((maxNumberInStrands - asBaseStatuses.length + 2) * 2 * baseRadius), String(7 * baseRadius), fontSize, fontWeight, psLinkageColor));
+  image.append(svg.text(ssModif, String((maxNumberInStrands + 2) * 2 * baseRadius), String(4 * baseRadius), fontSize, fontWeight, psLinkageColor));
+  image.append(svg.text(asModif, String((maxNumberInStrands + 2) * 2 * baseRadius), String(7 * baseRadius), fontSize, fontWeight, psLinkageColor));
 
   for (let i = ssBaseStatuses.length - 1; i > -1; i--) {
     image.append(

@@ -12,7 +12,6 @@ SS - sense strand of DNA;
 AS - antisense strand of DNA;
 base - indicates how to translate input nucleotide;
 PTO - indicates whether oligonucleotide is phosphorothioated (ps linkage);
-Pattern design - section of dialog for changing length of AS and SS by editing corresponding checkboxes;
 SS/AS Modification - sections of dialog for changing base and PTO statuses of one nucleotide at once: for SS or for AS;
 */
 
@@ -105,7 +104,7 @@ export function defineAxolabsPattern() {
     svgDiv.append(
       ui.span([
         drawAxolabsPattern(
-          (newPatternName.value == '') ? applyExistingDesign.value : newPatternName.value,
+          newPatternName.value,
           createAsStrand.value,
           ssBases.slice(0, ssLength.value).map((e) => e.value),
           asBases.slice(0, asLength.value).map((e) => e.value),
@@ -129,6 +128,45 @@ export function defineAxolabsPattern() {
     convertSequenceDiv.append(
       ui.button('Convert Sequences', () => convertSequence(chosenInputSsColumn.value, chosenInputAsColumn.value))
     );
+    applyExistingPatternDiv.innerHTML = '';
+    grok.dapi.userDataStorage.get(userStorageKey, false).then((entities) => {
+      let applyExistingPattern = ui.choiceInput('Apply Existing Pattern', '', Object.keys(entities), (v: string) => {
+        // @ts-ignore
+        let obj = JSON.parse(entities[v]);
+        ssLength.value = obj['ssBases'].length;
+        asLength.value = obj['asBases'].length;
+        createAsStrand.value = (asLength.value > 0);
+        newPatternName.value = v;
+
+        ssBases = [];
+        for (let i = 0; i < obj['ssBases'].length; i++)
+          ssBases.push(ui.choiceInput('', obj['ssBases'][i], baseChoices));
+
+        asBases = [];
+        for (let i = 0; i < obj['asBases'].length; i++)
+          asBases.push(ui.choiceInput('', obj['asBases'][i], baseChoices));
+
+        ssPtoLinkages = [];
+        for (let i = 0; i < obj['ssPtoLinkages'].length; i++)
+          ssPtoLinkages.push(ui.boolInput('', obj['ssPtoLinkages'][i]));
+
+        asPtoLinkages = [];
+        for (let i = 0; i < obj['asPtoLinkages'].length; i++)
+          asPtoLinkages.push(ui.boolInput('', obj['asPtoLinkages'][i]));
+
+        threeModification.value = obj['threeModification'];
+        fiveModification.value = obj['fiveModification'];
+
+        updateSvgScheme();
+        updateSvgScheme();
+        updateAsModification();
+        updateSsModification();
+      });
+      applyExistingPattern.setTooltip('Apply Existing Pattern');
+      applyExistingPatternDiv.append(
+        applyExistingPattern.root
+      );
+    });
   }
 
   function convertSequence(chosenInputSsColumn: string, chosenInputAsColumn: string) {
@@ -155,36 +193,29 @@ export function defineAxolabsPattern() {
   }
 
   function savePattern() {
-    let inputObj = {
-      "name": (newPatternName.value == '') ? applyExistingDesign.value : newPatternName.value,
-      "ssBases": String(ssBases.slice(0, ssLength.value).map((e) => e.value)),
-      "asBases": String(asBases.slice(0, asLength.value).map((e) => e.value)),
-      "ssPtoLinkages": String(ssPtoLinkages.slice(0, ssLength.value).map((e) => e.value)),
-      "asPtoLinkages": String(asPtoLinkages.slice(0, asLength.value).map((e) => e.value))
-    };
-    async function saveInUserStorage(storageName: string, value: string) {
-      //// @ts-ignore
-      await grok.dapi.userDataStorage.post(storageName, value, false);
+    async function saveInUserStorage() {
+      let keyName: string = newPatternName.value;
+      await grok.dapi.userDataStorage.postValue(
+        userStorageKey,
+        keyName,
+        JSON.stringify({
+          "name": keyName,
+          "ssBases": ssBases.slice(0, ssLength.value).map((e) => e.value),
+          "asBases": asBases.slice(0, asLength.value).map((e) => e.value),
+          "ssPtoLinkages": ssPtoLinkages.slice(0, ssLength.value).map((e) => e.value),
+          "asPtoLinkages": asPtoLinkages.slice(0, asLength.value).map((e) => e.value),
+          "threeModification": threeModification.value,
+          "fiveModification": fiveModification.value
+        }),
+        false
+      );
     }
-    saveInUserStorage(userStorageKey, JSON.stringify(inputObj));
+    saveInUserStorage().then(r => grok.shell.info(r));
     saveImage();
   }
 
   function saveImage() {
-    svg.saveSvgAsPng(document.getElementById('mySvg'), 'diagram.png');
-  }
-
-  function getPatterns() {
-    grok.dapi.userDataStorage.get(userStorageKey).then((entities) => {
-      if (entities !== null && Object.keys(entities).length === 0)
-        grok.shell.info('No pattern saved');
-      else {
-        // @ts-ignore
-        let values = JSON.parse(entities);
-        return values['name'];
-      }
-      return [];
-    });
+    svg.saveSvgAsPng(document.getElementById('mySvg'), newPatternName.value);
   }
 
   let ssModificationItems = ui.div([]),
@@ -192,7 +223,8 @@ export function defineAxolabsPattern() {
     chooseAsColumnDiv = ui.div([]),
     chooseSsColumnDiv = ui.div([]),
     svgDiv = ui.div([]),
-    convertSequenceDiv = ui.div([]);
+    convertSequenceDiv = ui.div([]),
+    applyExistingPatternDiv = ui.div([]);
 
   let ssBases = Array(defaultSequenceLength).fill(ui.choiceInput('', defaultBase, baseChoices)),
     asBases = Array(defaultSequenceLength).fill(ui.choiceInput('', defaultBase, baseChoices)),
@@ -202,7 +234,7 @@ export function defineAxolabsPattern() {
   let ssLength = ui.intInput('SS Length', defaultSequenceLength, () => updateUiForNewSequenceLength());
   let asLength = ui.intInput('AS Length', defaultSequenceLength, () => updateUiForNewSequenceLength());
 
-  let tables = ui.choiceInput('Tables', '', grok.shell.tableNames, (name: string) => addColumnsFields());
+  let tables = ui.choiceInput('Tables', '', grok.shell.tableNames, () => addColumnsFields());
 
   let sequenceBase = ui.choiceInput('Sequence Basis', defaultBase, baseChoices, (v: string) => updateBasisAllAtOnce(v));
 
@@ -216,9 +248,6 @@ export function defineAxolabsPattern() {
 
   let newPatternName = ui.stringInput('New Pattern Name', '', () => updateSvgScheme());
   newPatternName.setTooltip('New Pattern Name');
-  let existingPatterns = getPatterns();
-  let applyExistingDesign = ui.choiceInput('Apply Existing Pattern', '', ['Var-3A97'], () => updateSvgScheme());
-  applyExistingDesign.setTooltip('Apply Existing Pattern');
 
   let threeModification = ui.stringInput("Addidional 3' Modification", "", () => updateSvgScheme());
   threeModification.setTooltip("Addidional 3' Modification");
@@ -235,7 +264,7 @@ export function defineAxolabsPattern() {
         chooseSsColumnDiv,
         chooseAsColumnDiv,
         newPatternName.root,
-        applyExistingDesign.root,
+        applyExistingPatternDiv,
         ssLength.root,
         asLength.root,
         sequenceBase.root,
@@ -252,7 +281,7 @@ export function defineAxolabsPattern() {
     ], {style: {overflowX: 'scroll'}}),
     ui.divH([
       ui.button('Save Pattern', () => {
-        if (newPatternName.value != '' || applyExistingDesign.value != '') {
+        if (newPatternName.value != '') {
           savePattern();
         } else {
           let name = ui.textInput('', '');
@@ -272,14 +301,14 @@ export function defineAxolabsPattern() {
 
   let ssModificationSection = ui.box(
     ui.panel([
-    ui.h1('Sense Strand'),
-    ui.divH([
-      ui.block25([ui.divText('#')])!,
-      ui.block50([ui.divText('Modification')])!,
-      ui.block25([ui.divText('PTO')])!
-    ]),
-    ssModificationItems
-  ])!, {style: {maxWidth: '250px'}});
+      ui.h1('Sense Strand'),
+      ui.divH([
+        ui.block25([ui.divText('#')])!,
+        ui.block50([ui.divText('Modification')])!,
+        ui.block25([ui.divText('PTO')])!
+      ]),
+      ssModificationItems
+    ])!, {style: {maxWidth: '250px'}});
 
   let asModificationSection = ui.box(
     ui.panel([
@@ -290,11 +319,11 @@ export function defineAxolabsPattern() {
         ui.block25([ui.divText('PTO')])!
       ]),
       asModificationItems
-  ])!, {style: {maxWidth: '250px'}});
+    ])!, {style: {maxWidth: '250px'}});
 
   let appAxolabsDescription = ui.info(
     [
-      ui.divText("\n How to define new pattern:",{style:{'font-weight':'bolder'}}),
+      ui.divText("\n How to define new pattern:",{style: {'font-weight': 'bolder'}}),
       ui.divText("1. Choose table and columns with sense and antisense strands"),
       ui.divText("2. Choose lengths of both strands by editing checkboxes below"),
       ui.divText("3. Choose basis and PTO status for each nucleotide"),
