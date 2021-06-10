@@ -124,10 +124,16 @@ export function defineAxolabsPattern() {
     let chosenInputAsColumn = ui.choiceInput('AS Column', '', grok.shell.table(tables.value).columns.names());
     chooseSsColumnDiv.append(chosenInputSsColumn.root);
     if (createAsStrand.value) chooseAsColumnDiv.append(chosenInputAsColumn.root);
-    convertSequenceDiv.innerHTML = '';
-    convertSequenceDiv.append(
-      ui.button('Convert Sequences', () => convertSequence(chosenInputSsColumn.value, chosenInputAsColumn.value))
-    );
+
+    convertSequenceButton.style.visibility = 'visible';
+    convertSequenceButton.onclick = () => {
+      if (!(chosenInputSsColumn.value == null || chosenInputAsColumn.value == null)) {
+        convertSequence(chosenInputSsColumn.value, chosenInputAsColumn.value);
+      } else {
+        grok.shell.info('Please select columns on which to apply pattern');
+      }
+    }
+
     applyExistingPatternDiv.innerHTML = '';
     grok.dapi.userDataStorage.get(userStorageKey, false).then((entities) => {
       let applyExistingPattern = ui.choiceInput('Apply Existing Pattern', '', Object.keys(entities), (v: string) => {
@@ -189,6 +195,7 @@ export function defineAxolabsPattern() {
           return (asPtoLinkages[count].value) ? v + 's' : v;
         });
       });
+    grok.shell.info('Columns was added to table ' + tables.value);
   }
 
   function postPatternToUserStorage() {
@@ -218,6 +225,7 @@ export function defineAxolabsPattern() {
             grok.dapi.userDataStorage.remove(userStorageKey, newPatternName.value, false)
               .then(() => postPatternToUserStorage())
               .then(() => saveImage());
+            dialog.close();
           })
           .show();
       } else {
@@ -236,9 +244,10 @@ export function defineAxolabsPattern() {
     chooseAsColumnDiv = ui.div([]),
     chooseSsColumnDiv = ui.div([]),
     svgDiv = ui.div([]),
-    convertSequenceDiv = ui.div([]),
+    convertSequenceButton = ui.button('Convert Sequences', () => {}),
     applyExistingPatternDiv = ui.div([]);
 
+  convertSequenceButton.style.visibility = 'hidden';
   let ssBases = Array(defaultSequenceLength).fill(ui.choiceInput('', defaultBase, baseChoices)),
     asBases = Array(defaultSequenceLength).fill(ui.choiceInput('', defaultBase, baseChoices)),
     ssPtoLinkages = Array(defaultSequenceLength).fill(ui.boolInput('', defaultPto)),
@@ -262,54 +271,57 @@ export function defineAxolabsPattern() {
   let newPatternName = ui.stringInput('New Pattern Name', '', () => updateSvgScheme());
   newPatternName.setTooltip('New Pattern Name');
 
-  let threeModification = ui.stringInput("Addidional 3' Modification", "", () => updateSvgScheme());
-  threeModification.setTooltip("Addidional 3' Modification");
-  let fiveModification = ui.stringInput("Addidional 5' Modification", "", () => updateSvgScheme());
-  fiveModification.setTooltip("Addidional 5' Modification");
+  let threeModification = ui.stringInput("Additional 3' Modification", "", () => updateSvgScheme());
+  threeModification.setTooltip("Additional 3' Modification");
+  let fiveModification = ui.stringInput("Additional 5' Modification", "", () => updateSvgScheme());
+  fiveModification.setTooltip("Additional 5' Modification");
 
   updateUiForNewSequenceLength();
 
+  let savePatternButton = ui.button('Save Pattern', () => {
+    if (newPatternName.value != '') {
+      savePattern();
+    } else {
+      let name = ui.textInput('', '');
+      ui.dialog('Enter name of new pattern')
+        .add(name.root)
+        .onOK(() => {
+          newPatternName.value = name.value;
+          savePattern();
+        })
+        .show();
+    }
+  });
   let patternDesignSection = ui.panel([
-    ui.h1('Pattern Design'),
     ui.divH([
       ui.div([
+        ui.h1('Inputs'),
         tables.root,
         chooseSsColumnDiv,
         chooseAsColumnDiv,
         newPatternName.root,
         applyExistingPatternDiv,
+        ui.buttonsInput([
+          convertSequenceButton
+        ])
+      ], 'ui-form'),
+      ui.div([
+        ui.h1('Pattern Design'),
         ssLength.root,
         asLength.root,
         sequenceBase.root,
         fullyPto.root,
-        createAsStrand.root
-      ], 'ui-form'),
-      ui.inputs([
-        threeModification,
-        fiveModification
-      ], {})
+        createAsStrand.root,
+        threeModification.root,
+        fiveModification.root,
+        ui.buttonsInput([
+          savePatternButton
+        ])
+      ], 'ui-form')
     ], {style: {flexWrap: 'wrap'}}),
     ui.block([
       svgDiv
-    ], {style: {overflowX: 'scroll'}}),
-    ui.divH([
-      ui.button('Save Pattern', () => {
-        if (newPatternName.value != '') {
-          savePattern();
-        } else {
-          let name = ui.textInput('', '');
-          ui.dialog('Enter name of new pattern')
-            .add(name.root)
-            .onOK(() => {
-              newPatternName.value = name.value;
-              savePattern();
-              saveImage();
-            })
-            .show();
-        }
-      }),
-      convertSequenceDiv
-    ])
+    ], {style: {overflowX: 'scroll'}})
   ]);
 
   let ssModificationSection = ui.box(
