@@ -1,6 +1,56 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-06-10 Dev build 0.92.8
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.8`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* (Bug) Func: not handled exception 
+* Grok connect: tests (WIP)
+* UsageAnalysis harmonization (WIP)
+* Reordering ui samples files 
+* JS wrap for activity cliffs script 
+* JS API: add ui.markdown 
+* Deploy: test connections migration (WIP)
+* SequenceTranslator: flexible Axolabs sequence conversion (WIP)
+* Power Search: community-curated, template-based, widget-driven search engine (WIP)
+* (Bug) Current user is system while deploying 
+* (Bug) Scatter Plot: axes should not pick up automatically assigned precision-related column format (WIP)
+* (Bug) Miniconda hangs CVM builds (WIP)
+* Conditional color-coding: bring options from the property panel to column context menu 
+* (Bug) Hide function deselects the selected columns from the tooltip  
+* (Bug) Bar Chart: Viewer coloring settings should take precedence over the grid coloring settings (WIP)
+* PLOT3D: transparecy, some props, fixed filter 
+* (Bug) Sequence Translator | Main: If you enter the wrong input value, then many balloons with stacktraces will appear (WIP)
+* (Bug) Sequence Translator | AXOLABS: Name of an existing pattern is not displayed (WIP)
+* Packages: Curation, Beta (WIP)
+* Ability to drop DataQueryCache (WIP)
+* (Bug) Data | Unpivot does not work 
+* (Bug) Column format changes are not persisted in layouts 
+* Sequence Translator | AXOLABS: Add tooltips for field headers which do not fit completely (WIP)
+* BoxPlot: removed "Reset View" menu option 
+* .multi-value-separated: added dot in front 
+* (Bug) Deploy: deploy will fail if a project doesn't contain "tags"  
+* NotificationsWidget 
+* Widget-based Welcome page (WIP)
+* Power Pack: Recent Projects Widget 
+* FileSystemWidget 
+* (Bug) Applications: Table views open both in the "Tables" section on side bar and in the open application section 
+* PLOT3D: added columns size and column color props and some clean code 
+* PLOT3D: fix animation 
+* IntRle encoder: refusing to encode when max-min > 2^32 
+* DataQuery View: a way to easily share this query 
+* Timelines: toggle zoom sliders 
+
+
 # 2021-06-07 Dev build 0.92.7
 
 ## Latest Docker Images
