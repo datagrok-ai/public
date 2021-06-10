@@ -2,6 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+//import {test222} from "./test.js"
 import {ScatterPlot3Dviewer} from './ScatterPlot3Dviewer.js';
  
 export let _package = new DG.Package();

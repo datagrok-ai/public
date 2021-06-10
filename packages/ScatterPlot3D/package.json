@@ -8,6 +8,7 @@
 		"datagrok-api": "latest",
 		"ws": "^7.4.6"
 	},
+	
 	"scripts": {
 		"debug-scatterplot3d": "grok publish --rebuild",
 		"release-scatterplot3d": "grok publish --rebuild --release",

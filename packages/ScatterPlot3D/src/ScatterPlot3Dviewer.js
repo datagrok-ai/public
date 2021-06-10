@@ -3,12 +3,14 @@ import { Vector3 } from 'three';
 //import { OrbitControls } from "https://threejs.org/examples/jsm/controls/OrbitControls.js";
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls.js';
+import { test222 } from './test';
 
 export class ScatterPlot3Dviewer extends DG.JsViewer {
 	constructor() {
 
 		super();
 		console.log("THREE REVISION ", THREE.REVISION);
+		test222();
 		this.look = {};
 		function hName() {
 	//		console.log('hName hit!')
@@ -227,6 +229,14 @@ export class ScatterPlot3Dviewer extends DG.JsViewer {
 		this.rawX = this.dataFrame.getCol(this.xColumnName).getRawData();
 		this.rawY = this.dataFrame.getCol(this.yColumnName).getRawData();
 		this.rawZ = this.dataFrame.getCol(this.zColumnName).getRawData();
+		this.centerX = 0;
+		this.centerY = 0;
+		this.centerZ = 0;
+		for (var i=0; i<this.rawX.length; i++) {
+			this.centerX += this.rawX[i] / this.rawX.length;
+			this.centerY += this.rawY[i] / this.rawX.length;
+			this.centerZ += this.rawZ[i] / this.rawX.length;
+		}
 		this.sizeX = new Float32Array(this.rawX.length)
 		this.colorX = new Float32Array(this.rawX.length)
 
@@ -449,7 +459,7 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
   List<int> categoricalColorScheme = Color.defaultList;
 
 		*/
-		this.look.dynamicCameraMovement = true;
+		this.look.dynamicCameraMovement = false;
 		this.look.showVerticalGridLines = true;
 		this.look.showHorizontalGridLines = true;
 		this.look.showXAxis = true;
@@ -509,21 +519,21 @@ List<int> linearColorScheme = Color.schemeBlueWhiteRed;
 	//	this.look = look;
 		//this.initMesh(x, y, z, filter, colors, sizes);
 		this.initMesh(this.rawX, this.rawY, this.rawZ, this.dataFrame.filter) //, colors, sizes);
-return
+//return
 		if (this.look.dynamicCameraMovement)
 			this.enableAutoRotation();
 		else
 			this.disableAutoRotation();
 
-	//	if (!this.isEventsLinked) {
-		if (true) {
+		if (!this.isEventsLinked) {
+	//	if (true) {
 			this.renderer.domElement.addEventListener('mousemove', this.onMouseMove.bind(this));
 			this.renderer.domElement.addEventListener('mousedown', this.onMouseDown.bind(this));
 			this.renderer.domElement.addEventListener('wheel', this.onMouseMove.bind(this));
 			this.renderer.domElement.addEventListener('dblclick', this.onDoubleClick.bind(this));
 		//	onResize(this.container, this.onWindowResize.bind(this)); 
 			requestAnimationFrame(this.render.bind(this));
-	//		this.enableAutoRotation();
+			this.enableAutoRotation();
 			this.isEventsLinked = true;
 		}
 	} 
@@ -584,38 +594,63 @@ return
 		this.render();
 	}
 
+	rotateStep() {
+ 
+		//this.camera.rotation.z += .01;
+		this.cameraAngle += .01;
+		this.camera.lookAt(new Vector3(
+			this.centerX,
+			this.centerY,
+			this.centerZ
+		))
+		this.camera.position.y = this.centerY * 1.2;
+		this.camera.position.x = Math.sin(this.cameraAngle)*this.cameraRadius;
+		this.camera.position.z = Math.cos(this.cameraAngle)*this.cameraRadius;
+
+	//	this.camera.lookAt(new Vector3(100,0,0))
+
+		console.log(this.camera.position, this.cameraAngle)
+
+	//	this.camera.lookAt(new Vector3(this.centerX+100, this.centerY, this.centerZ))
+	}
 
 	enableAutoRotation() {
 	//	return 0;
 		this.controls.staticMoving = false;
+		this.cameraRadius = 30;
+		this.cameraAngle = 0
 		console.log('controls ', this.controls.domElement);
-		console.log('controls ', this.controls);
-		this.controls.autoRotate = true
+		console.log('controls e', this.controls.enabled);
+		//this.controls.autoRotate = true
+		this.controls.enabled = false
 
 		// Simulate touch
 		this.rrr = 0
-		setInterval(() => {
+		this.timerAutoRotation = setInterval(() => {
+			this.rotateStep()
 	//		console.log('inerrrrrrrrrrrr', this.rrr);
 //			this.controls.domElement.dispatchEvent(new MouseEvent('mousedown', { clientX: 0 }));
 //			this.controls.domElement.dispatchEvent(new MouseEvent('mousemove', { clientX: 10 }));
 //			this.controls.domElement.dispatchEvent(new MouseEvent('mouseup', { clientX: 10 }));
 
-			this.controls.dispatchEvent(new MouseEvent('mousedown', { clientX: this.rrr+0 }));
-			this.controls.dispatchEvent(new MouseEvent('mousemove', { clientX: this.rrr+10 }));
-			this.controls.dispatchEvent(new MouseEvent('mouseup', { clientX: this.rrr+11 }));
+	//		this.controls.dispatchEvent(new MouseEvent('mousedown', { clientX: this.rrr+0 }));
+	//		this.controls.dispatchEvent(new MouseEvent('mousemove', { clientX: this.rrr+10 }));
+	//		this.controls.dispatchEvent(new MouseEvent('mouseup', { clientX: this.rrr+11 }));
 	//		this.rrr += 11;
 	//		this.render()
 		}, 100	
 		)
 
 //		if (this.timerAutoRotation === null)
-			this.timerAutoRotation = setInterval(this.render.bind(this), 10);
+	//		this.timerAutoRotation = setInterval(this.render.bind(this), 10);
 	}
 
   
 	disableAutoRotation() {
-		this.controls.staticMoving = true;
-		clearInterval(this.timerAutoRotation);
+		this.controls.enabled = true;
+
+	//	this.controls.staticMoving = true;
+		if (this.timerAutoRotation) clearInterval(this.timerAutoRotation);
 		this.timerAutoRotation = null;
 	}
  
@@ -625,9 +660,9 @@ return
 		this.camera.aspect =1// this.container.clientWidth / this.container.clientHeight;
 		this.camera.near = 1;
 		this.camera.far = 10000;
-		this.camera.position.z = 54.0;
-		this.camera.position.x = 24.0;
-		this.camera.position.y = 34.0;
+	//	this.camera.position.z = 54.0;
+	//	this.camera.position.x = 24.0;
+	//	this.camera.position.y = 34.0;
 	//	this.camera.updateProjectionMatrix();
 	}
 
@@ -688,9 +723,9 @@ return
 
 	onMouseDown(e) {
 		console.log('m down')
+	//	return
+		if (!this.look.dynamicCameraMovement) this.disableAutoRotation();
 		return
-		if (!this.look.dynamicCameraMovement)
-			this.disableAutoRotation();
 		handleMouseMove(this.onMouseMove.bind(this), this.onMouseUp.bind(this));
 		this.showTooltip = false;
 		this.saveMousePosition(e);
@@ -1086,6 +1121,21 @@ return
  
 	  
 	updateStats() {
+
+		THREE.Utils = {
+			cameraLookDir: function(camera) {
+				var vector = new THREE.Vector3(0, 0, -1);
+				vector.applyEuler(camera.rotation, camera.eulerOrder);
+				return vector;
+			}
+		};
+
+		var v = new THREE.Vector3(0,0, -1);
+v.applyQuaternion(this.camera.quaternion);
+ //v = THREE.Utils.cameraLookDir(this.camera)
+//console.log(v)
+//if (!v) v = {position: {x: 0, y: 0, z:0}}
+
 		var dtime = this.time1 - this.time0;
 		if (this.time1 - this.time0 == 0) dtime = 1;
 		let fps2 = 1000 / dtime;
@@ -1095,18 +1145,24 @@ return
 		this.fpsMeter.innerHTML =
 		  fps2.toFixed(1) + ' fps; t: ' + (this.time1-this.time0) + 
 		  "<br>" + this.camera.position.x.toFixed(1) + ' ' +this.camera.position.y.toFixed(1)
-		   + 'z' + 
-		  this.camera.position.z.toFixed(1)
-		  +		  "<br>" + (this.time1 - this.time00) + ' contr ' + !!this.controls;
+		   + 'z' + 		  this.camera.position.z.toFixed(1) +
+		   '<br>v ' + v.x.toFixed(1) + ' ' + v.y.toFixed(1) + ' ' +
+		   	 v.z.toFixed(), 
+		  +		  "<br>" + (this.time1 - this.time00) +  
+		  
+		  
+		 
+		  ' contr ' + !!this.controls;
 	  }
       
-        
+         
 	render() {
+		this.camera.lookAt(this.centerX, this.centerY, this.centerZ)
 		this.time0 = this.time1;
 		this.time1 = Date.now();
-		this.controls.enabled = true;
+	//	this.controls.enabled = true;
 		this.updateStats();
-		if (this.controls) this.controls.update();
+		if (this.controls && this.controls.enabled) this.controls.update();
 	//	console.log(this.scene)
 		//this.camera.rotation.x = Math.PI
 		if (false) {
@@ -1115,6 +1171,7 @@ return
 			this.camera.position.z = 10;
 			this.camera.lookAt(new Vector3(0,0,0))
 		}
+
 
 		this.renderer.render(this.scene, this.camera);
 		requestAnimationFrame(this.render.bind(this));
@@ -1352,7 +1409,7 @@ return
 	dartLookTooColumns() {
 
 	}
-
+ 
 	//dartGetColors(target, ar) {
 	dartGetColors() {
 		var target = this.colorX;
@@ -1387,25 +1444,29 @@ return
 	//	return 0x3f3f0000;
 		var r = (this.selectionFloat[i] < .5) ? this.filteredRowsColor : this.selectedRowsColor;
 
-		function vNormal(v) {
-			return (v - min) / d;
+		function vNormal235(v) {
+			var d = this.colorMax - this.colorMin;
+			if (d === 0) d = 1;
+			return Math.floor(256* (v - this.colorMin) / d);
 		}
 		if (this.isColorExists) {
 			var min = this.colorMin;
 			var max = this.colorMax;
 			var d = max - min;
-	
+			if (d === 0) d = 1;
+			var v = ar[i]
+			var norm = Math.floor(256 * (ar[i] - min) / d)
 
-				var blue = (1 - vNormal(ar[i])) * 256;
-				var red = vNormal(ar[i]);
-				r = 256*256*256*red + blue;
+				var blue = (255 - norm);
+				var red = norm;
+				r = 256*256*red + blue;
 	
-		}
+		} 
 
 		return r;
 	} 
 
-	dartGetRowColor(target, ar, i) {
+	dartGetRowColor2(target, ar, i) {
 		function vNormal(v) {
 			return (v - min) / d;
 		}
@@ -1417,6 +1478,12 @@ return
 			let red = vNormal(ar[i]);
 			target[i] = 256*256*red + blue;
 		}
+	}
+
+	dartOnHit() {
+		var currentRow = this.dataFrame.currentRow;
+		console.error('hit ')
+
 	}
 
 }
