@@ -46,5 +46,17 @@ export const axolabsMap: {[index: string]: {symbols: [string, string, string, st
   "U": {
     symbols: ["u", "u", "u", "u"],
     color: "indigo"
+  },
+  "X-New": {
+    symbols: ["X", "X", "X", "X"],
+    color: "aliceblue"
+  },
+  "Y-New": {
+    symbols: ["Y", "Y", "Y", "Y"],
+    color: "beige"
+  },
+  "Z-New": {
+    symbols: ["Z", "Z", "Z", "Z"],
+    color: "aqua"
   }
 };
