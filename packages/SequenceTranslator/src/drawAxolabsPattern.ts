@@ -66,6 +66,8 @@ export function drawAxolabsPattern(patternName: string, createAsStrand: boolean,
 
   const maxNumberInStrands = Math.max(ssBaseStatuses.length, asBaseStatuses.length),
     baseRadius = 15,
+    legendRadius = 6,
+    legendFontSize = '14',
     psLinkageRadius = 5,
     psLinkageColor = 'red',
     fontSize = '17',
@@ -94,7 +96,7 @@ export function drawAxolabsPattern(patternName: string, createAsStrand: boolean,
       svg.circle(String((maxNumberInStrands - i + 2) * 2 * baseRadius), String(3.5 * baseRadius), String(baseRadius), axolabsMap[ssBaseStatuses[i]]["color"])
     );
     image.append(
-      svg.text(String(ssBaseStatuses.length - i), String((maxNumberInStrands - i + 2) * 2 * baseRadius - baseRadius + textShift), String(4 * baseRadius), fontSize, fontWeight, fontColor)
+      svg.text(String(ssBaseStatuses.length - i), String((maxNumberInStrands - i + 2) * 2 * baseRadius - baseRadius + ((ssBaseStatuses.length - i < 10) ? textShift + 5 : textShift)), String(4 * baseRadius), fontSize, fontWeight, fontColor)
     );
     if (ssPtoStatuses[i]) {
       image.append(
@@ -108,7 +110,7 @@ export function drawAxolabsPattern(patternName: string, createAsStrand: boolean,
         svg.circle(String((maxNumberInStrands - i + 2) * 2 * baseRadius), String(6.5 * baseRadius), String(baseRadius), axolabsMap[asBaseStatuses[i]]["color"])
       );
       image.append(
-        svg.text(String(i + 1), String((maxNumberInStrands - i + 2) * 2 * baseRadius - baseRadius + textShift), String(7 * baseRadius), fontSize, fontWeight, fontColor)
+        svg.text(String(i + 1), String((maxNumberInStrands - i + 2) * 2 * baseRadius - baseRadius + ((i < 9) ? textShift + 5 : textShift)), String(7 * baseRadius), fontSize, fontWeight, fontColor)
       )
       if (asPtoStatuses[i]) {
         image.append(
@@ -120,10 +122,10 @@ export function drawAxolabsPattern(patternName: string, createAsStrand: boolean,
   const uniqueBases = [...new Set(ssBaseStatuses.concat(asBaseStatuses))];
   for (let i = 0; i < uniqueBases.length; i++) {
     image.append(
-      svg.circle(String(Math.round(i * width / uniqueBases.length + baseRadius)), String(9.5 * baseRadius), String(baseRadius), axolabsMap[uniqueBases[i]]["color"])
+      svg.circle(String(Math.round(i * width / uniqueBases.length + baseRadius)), String(9.5 * baseRadius), String(legendRadius), axolabsMap[uniqueBases[i]]["color"])
     );
     image.append(
-      svg.text(uniqueBases[i], String(Math.round(i * width / uniqueBases.length) + 2 * baseRadius), String(10 * baseRadius), fontSize, fontWeight, fontColor)
+      svg.text(uniqueBases[i], String(Math.round(i * width / uniqueBases.length) + 2 * baseRadius - 8), String(10 * baseRadius - 3), legendFontSize, fontWeight, fontColor)
     );
   }
   return image;
