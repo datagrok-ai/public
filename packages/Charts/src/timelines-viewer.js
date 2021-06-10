@@ -20,6 +20,7 @@ export class TimelinesViewer extends EChartViewer {
     ]});
     this.axisPointer = this.string('axisPointer', 'shadow',
       { choices: ['cross', 'line', 'shadow', 'none'] });
+    this.showZoomSliders = this.bool('showZoomSliders', true);
 
     this.subjectRegex = /^USUBJID$/;
     this.eventRegex = /^([A-Z]{2}(TERM|TEST|TRT|VAL)|(ACT)?ARM|MIDS(TYPE)?|VISIT)$/;
@@ -67,7 +68,7 @@ export class TimelinesViewer extends EChartViewer {
       },
       {
         type: 'slider',
-        xAxisIndex: [1, 2],
+        // xAxisIndex: [1, 2],
         start: this.zoomState[1][0],
         end: this.zoomState[1][1],
         height: 10,
@@ -146,6 +147,10 @@ export class TimelinesViewer extends EChartViewer {
     if (!this.initialized) return;
     if (property.name === 'axisPointer') {
       this.option.tooltip.axisPointer.type = property.get();
+    } else if (property.name === 'showZoomSliders') {
+      this.option.dataZoom.forEach(z => {
+        if (z.type === 'slider') z.show = this.showZoomSliders;
+      });
     } else if (property.name === 'subjectColumnName') {
       this.subjectCol = this.dataFrame.getCol(property.get());
       this.subjects = this.subjectCol.categories;
