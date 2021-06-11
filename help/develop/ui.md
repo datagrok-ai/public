@@ -102,6 +102,7 @@ Figma Datagrok UIKit avaliable on [Figma Community](https://www.figma.com/@datag
 * [Await (Loading Indicator)](#await-loading-indicator)
 * [Cards](#cards)
 * [Combo Popup](#combo-popup)
+* [Markdown](#markdown)
 * [Property Panel](#property-panel)
 * [Sidebar](#sidebar)
 * [Tabs](#tabs)
@@ -671,7 +672,7 @@ For each dialog, you can set the position by viewport by x and y-asix.
   ```
 
   ## Image
-  Image
+  Image control is a visual component that integrates images into your app. It could have an external link and a specific size.  
   ```javascript
   ui.image('https://datagrok.ai/help/visualize/viewers-interaction-main.gif',400,200,{target:'https://datagrok.ai/help/visualize/viewers'});
   ```
@@ -716,6 +717,24 @@ For each dialog, you can set the position by viewport by x and y-asix.
         'Item 2': () => {},
     })]);
   ```
+
+  ## Markdown
+  Markdown is a control that renders markdown documents into your app.
+  ```javascript
+  let document = `# Intro
+  Datagrok unlocks the value of the complex data by empowering non-technical users to: \n 
+    * [Discover](/help/discover/fair). 
+    * [Cleanse](/help/transform/data-wrangling). 
+    * [Visualize](/help/visualize/viewers).
+    * [Explore data](/help/#explore).
+    * [Build and deploy predictive models](/help/learn/predictive-modeling).
+    *	[Collaborate with others](/help/collaborate/sharing).
+  `;
+
+  grok.shell.newView('Markdown example',[
+    ui.markdown(document)
+  ]);
+  ``` 
 
   ## Popup Menu (context menu)
   Menus appear upon interaction with a button, action, or other control. They display a list of choices, with one choice per lin. Menu can also have a multilevel list of choices.
@@ -819,8 +838,9 @@ For each dialog, you can set the position by viewport by x and y-asix.
     .concat(subGroup1.items)
     .concat(group2.items);
   ```
+  
   ## Iframe
-    Iframe.
+    Iframe a nested browsing context embedding another HTML page into the current one.
     ```javascript
     ui.iframe( { src: 'https://en.m.wikipedia.org/wiki', width: '400', height: '200' });
     ```  
