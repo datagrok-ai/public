@@ -10,7 +10,7 @@ export class TimelinesViewer extends EChartViewer {
     this.endColumnName = this.string('endColumnName');
     this.colorByColumnName = this.string('colorByColumnName');
 
-    this.marker = this.string('marker', 'circle', { choices: ['circle', 'square', 'ring', 'diamond'] });
+    this.marker = this.string('marker', 'circle', { choices: ['circle', 'rect', 'ring', 'diamond'] });
     this.markerSize = this.int('markerSize', 6);
     this.markerPosition = this.string('markerPosition', 'main line',
       { choices: ['main line', 'above main line', 'scatter'] });
@@ -47,6 +47,7 @@ export class TimelinesViewer extends EChartViewer {
         bottom: '3%',
         containLabel: true
       },
+      animation: false,
       xAxis: {
         type: 'value',
         min: value => value.min - 1,
@@ -93,14 +94,9 @@ export class TimelinesViewer extends EChartViewer {
         {
           type: 'custom',
           progressive: 0,   // Disable progressive rendering
-          animation: false,
-          encode: {
-            x: [1, 2],
-            y: 0,
-            tooltip: 3
-          }
-        }
-      ]
+          encode: { x: [1, 2], y: 0 },
+        },
+      ],
     };
   }
 
@@ -209,6 +205,47 @@ export class TimelinesViewer extends EChartViewer {
     this.colorBuf = this.colorByCol.getRawData();
     this.colorMap = this.getColorMap();
 
+    /* Lab Chemistry Header */
+    this.lbCatCol = this.dataFrame.col('LBCAT');
+    this.lbTstCol = this.dataFrame.col('LBTEST');
+    this.lbDayCol = this.dataFrame.col('LBDY');
+    this.lbIndCol = this.dataFrame.col('LBNRIND');
+    this.showLabChem = Boolean(this.lbCatCol && this.lbTstCol && this.lbDayCol && this.lbIndCol);
+
+    if (this.showLabChem) {
+      this.option.series[1] = {
+        type: 'scatter',
+        encode: { x: 6, y: 5 },
+      };
+
+      this.option['visualMap'] = {
+        type: 'piecewise',
+        categories: ['high', 'normal', 'low'],
+        inRange: {
+          symbol: {
+            'high': 'triangle',
+            'normal': 'roundRect',
+            'low': 'triangle',
+          },
+          color: {
+            'high': '#ce5c5c',
+            'normal': '#fbc357',
+            'low': '#51689b',
+          },
+        },
+        dimension: 7,
+        top: 20,
+        right: 20,
+        orient: 'vertical',
+        seriesIndex: [1],
+        itemWidth: 14,
+        itemHeight: 14,
+        textGap: 7,
+        align: 'left',
+      };
+    }
+    /* Lab Chemistry Header */
+
     let prevSubj = null;
 
     this.option.series[0].renderItem = (params, api) => {
@@ -274,7 +311,7 @@ export class TimelinesViewer extends EChartViewer {
           marker.shape.y = -this.markerSize / 2;
           marker.shape.r = this.markerSize / 4;
           marker.rotation = 0.785398;
-        } else if (this.marker === 'square') {
+        } else if (this.marker === 'rect') {
           marker.x = 0;
           marker.y = 0;
           marker.shape.x = xPos(this.markerSize / 2);
@@ -339,8 +376,6 @@ export class TimelinesViewer extends EChartViewer {
       return col.type === 'datetime' ? new Date(`${col.get(i)}`) : col.isNone(i) ? null : buf[i];
     };
 
-    const selectedIndexes = this.dataFrame.selection.getSelectedIndexes();
-
     for (const i of this.dataFrame.filter.getSelectedIndexes()) {
       const id = this.subjects[this.subjBuf[i]];
       const start = getTime(i, this.startCol, this.startBuf);
@@ -351,7 +386,11 @@ export class TimelinesViewer extends EChartViewer {
       if (tempObj.hasOwnProperty(key)) {
         tempObj[key][3].push(event);
       } else {
-        tempObj[key] = [id, start, end, [event,], selectedIndexes.includes(i)];
+        let value = [id, start, end, [event], this.dataFrame.selection.get(i)];
+        if (this.showLabChem && this.lbCatCol.get(i) === 'CHEMISTRY') {
+          value.push(this.lbTstCol.get(i), this.lbDayCol.get(i), this.lbIndCol.get(i).toLowerCase());
+        }
+        tempObj[key] = value;
       }
     }
 
@@ -369,7 +408,9 @@ export class TimelinesViewer extends EChartViewer {
   }
 
   render() {
-    this.option.series[0].data = this.getSeriesData();
+    const data = this.getSeriesData();
+    this.option.series[0].data = data;
+    if (this.showLabChem) this.option.series[1].data = data;
     this.option.dataZoom.forEach((z, i) => {
       z.start = this.zoomState[i][0];
       z.end = this.zoomState[i][1];
