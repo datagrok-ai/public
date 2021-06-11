@@ -840,15 +840,15 @@ For each dialog, you can set the position by viewport by x and y-asix.
   ```
 
   ## Iframe
-    Iframe a nested browsing context embedding another HTML page into the current one.
-    ```javascript
-    ui.iframe( { src: 'https://en.m.wikipedia.org/wiki', width: '400', height: '200' });
-    ```  
+  Iframe a nested browsing context embedding another HTML page into the current one.
+  ```javascript
+  ui.iframe( { src: 'https://en.m.wikipedia.org/wiki', width: '400', height: '200' });
+  ```  
 
   ## Info bars
-    Info bar allows adding assisting information to views, typically at their top area.
-    ```javascript
-    grok.shell.newView('View', [
-      ui.info('Info text', 'Optional header')
-    ]);
-    ```
+  Info bar allows adding assisting information to views, typically at their top area.
+  ```javascript
+  grok.shell.newView('View', [
+    ui.info('Info text', 'Optional header')
+  ]);
+  ```
