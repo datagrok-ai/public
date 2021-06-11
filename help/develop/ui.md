@@ -625,45 +625,45 @@ For each dialog, you can set the position by viewport by x and y-asix.
   ]);
   ```
 
-    ### Inputs
-    Input field allows users to enter and edit text or numeric values in one line.
-    There are two types of input fields:
-    - **String input** allows to enter or edit text value
-    - **Int input** allows to enter or edit numeric value
-    ```javascript
-    ui.stringInput('Name', 'Arthur Dent');
-    ui.intInput('Age', 30);
-    ```
+  ### Inputs
+  Input field allows users to enter and edit text or numeric values in one line.
+  There are two types of input fields:
+  - **String input** allows to enter or edit text value
+  - **Int input** allows to enter or edit numeric value
+  ```javascript
+  ui.stringInput('Name', 'Arthur Dent');
+  ui.intInput('Age', 30);
+  ```
 
-    ### Text Area
-    The text area is an input control that allows the user to enter several lines of text.
-    ```javascript
-    ui.textArea('Text area text data');
-    ```
+  ### Text Area
+  The text area is an input control that allows the user to enter several lines of text.
+  ```javascript
+  ui.textArea('Text area text data');
+  ```
 
-    ### Dropdown Selection
-    The select control is used to select an item from a predefined list.
-    ```javascript
-    ui.choiceInput('Label', 'Value 1', ['Value 1', 'Value 2']);
-    ```
+  ### Dropdown Selection
+  The select control is used to select an item from a predefined list.
+  ```javascript
+  ui.choiceInput('Label', 'Value 1', ['Value 1', 'Value 2']);
+  ```
 
-    ### Selection
-    The select control let's option to set a binary value (true/false). When the user clicks the selection control, it toggles between checked and unchecked.
-    ```javascript
-    ui.boolInput('Name', false);
-    ```
+  ### Selection
+  The select control let's option to set a binary value (true/false). When the user clicks the selection control, it toggles between checked and unchecked.
+  ```javascript
+  ui.boolInput('Name', false);
+  ```
 
-    ### Group Selection
-    Group selection is commonly used to select one or more option from the predefined list.
-    ```javascript
-    ui.multiChoiceInput('Group label', ['Value 1', 'Value 2'], ['Value 3', 'Value 4']);
-    ```
-    
-    ### Range Slider
-    Range slider is a UI control that enables to select a value range within a predefined interval.
-    ```javascript
-    ui.rangeSlider(0, 10, 2, 5);
-    ```
+  ### Group Selection
+  Group selection is commonly used to select one or more option from the predefined list.
+  ```javascript
+  ui.multiChoiceInput('Group label', ['Value 1', 'Value 2'], ['Value 3', 'Value 4']);
+  ```
+  
+  ### Range Slider
+  Range slider is a UI control that enables to select a value range within a predefined interval.
+  ```javascript
+  ui.rangeSlider(0, 10, 2, 5);
+  ```
 
   ## Icons
   The icon control displays the icon from the FontAwesome library. Icon can used as a button control. Use FontAwesome without 'fa' prefix.
