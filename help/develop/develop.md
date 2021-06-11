@@ -50,17 +50,20 @@ Here are the first steps to get you started:
    ```
    npm install datagrok-tools -g
    ```
-   To avoid permission issues when installing packages globally (`-g`), use a version manager to install both `Node.js` and `npm` (here are the [instructions](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)).
+   To avoid permission issues when installing packages globally (`-g`), use a version manager to install both `Node.js` and `npm` (here are the [instructions](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)).  On macOS and Unix systems, you may also need to use `sudo` at the beginning of the installation command and enter the root password if prompted.
+   
 2. Configure your environment with the following command:
    ```
    grok config
    ```
    Enter developer keys and set the default server. Your credentials will be stored locally in `config.yaml`. Once created, this file will be used for publishing all your packages. The developer key can be retrieved by opening your user profile (see it on public: [https://public.datagrok.ai/u](https://public.datagrok.ai/u)) and clicking on `Developer key`. Administrators can manage existing keys and grant or revoke privileges.
+
 3. Create a new package by running this command:
    ```
    grok create <packageName>
    ```
    A new folder `MyPackage` will be created automatically as well as its contents.
+
 4. Once you've completed the work on your package, upload it by running:
    ```
    grok publish

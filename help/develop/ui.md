@@ -102,6 +102,7 @@ Figma Datagrok UIKit avaliable on [Figma Community](https://www.figma.com/@datag
 * [Await (Loading Indicator)](#await-loading-indicator)
 * [Cards](#cards)
 * [Combo Popup](#combo-popup)
+* [Markdown](#markdown)
 * [Property Panel](#property-panel)
 * [Sidebar](#sidebar)
 * [Tabs](#tabs)
@@ -624,45 +625,45 @@ For each dialog, you can set the position by viewport by x and y-asix.
   ]);
   ```
 
-    ### Inputs
-    Input field allows users to enter and edit text or numeric values in one line.
-    There are two types of input fields:
-    - **String input** allows to enter or edit text value
-    - **Int input** allows to enter or edit numeric value
-    ```javascript
-    ui.stringInput('Name', 'Arthur Dent');
-    ui.intInput('Age', 30);
-    ```
+  ### Inputs
+  Input field allows users to enter and edit text or numeric values in one line.
+  There are two types of input fields:
+  - **String input** allows to enter or edit text value
+  - **Int input** allows to enter or edit numeric value
+  ```javascript
+  ui.stringInput('Name', 'Arthur Dent');
+  ui.intInput('Age', 30);
+  ```
 
-    ### Text Area
-    The text area is an input control that allows the user to enter several lines of text.
-    ```javascript
-    ui.textArea('Text area text data');
-    ```
+  ### Text Area
+  The text area is an input control that allows the user to enter several lines of text.
+  ```javascript
+  ui.textArea('Text area text data');
+  ```
 
-    ### Dropdown Selection
-    The select control is used to select an item from a predefined list.
-    ```javascript
-    ui.choiceInput('Label', 'Value 1', ['Value 1', 'Value 2']);
-    ```
+  ### Dropdown Selection
+  The select control is used to select an item from a predefined list.
+  ```javascript
+  ui.choiceInput('Label', 'Value 1', ['Value 1', 'Value 2']);
+  ```
 
-    ### Selection
-    The select control let's option to set a binary value (true/false). When the user clicks the selection control, it toggles between checked and unchecked.
-    ```javascript
-    ui.boolInput('Name', false);
-    ```
+  ### Selection
+  The select control let's option to set a binary value (true/false). When the user clicks the selection control, it toggles between checked and unchecked.
+  ```javascript
+  ui.boolInput('Name', false);
+  ```
 
-    ### Group Selection
-    Group selection is commonly used to select one or more option from the predefined list.
-    ```javascript
-    ui.multiChoiceInput('Group label', ['Value 1', 'Value 2'], ['Value 3', 'Value 4']);
-    ```
-    
-    ### Range Slider
-    Range slider is a UI control that enables to select a value range within a predefined interval.
-    ```javascript
-    ui.rangeSlider(0, 10, 2, 5);
-    ```
+  ### Group Selection
+  Group selection is commonly used to select one or more option from the predefined list.
+  ```javascript
+  ui.multiChoiceInput('Group label', ['Value 1', 'Value 2'], ['Value 3', 'Value 4']);
+  ```
+  
+  ### Range Slider
+  Range slider is a UI control that enables to select a value range within a predefined interval.
+  ```javascript
+  ui.rangeSlider(0, 10, 2, 5);
+  ```
 
   ## Icons
   The icon control displays the icon from the FontAwesome library. Icon can used as a button control. Use FontAwesome without 'fa' prefix.
@@ -671,7 +672,7 @@ For each dialog, you can set the position by viewport by x and y-asix.
   ```
 
   ## Image
-  Image
+  Image control is a visual component that integrates images into your app. It could have an external link and a specific size.  
   ```javascript
   ui.image('https://datagrok.ai/help/visualize/viewers-interaction-main.gif',400,200,{target:'https://datagrok.ai/help/visualize/viewers'});
   ```
@@ -716,6 +717,24 @@ For each dialog, you can set the position by viewport by x and y-asix.
         'Item 2': () => {},
     })]);
   ```
+
+  ## Markdown
+  Markdown is a control that renders markdown documents into your app.
+  ```javascript
+  let document = `# Intro
+  Datagrok unlocks the value of the complex data by empowering non-technical users to: \n 
+    * [Discover](/help/discover/fair). 
+    * [Cleanse](/help/transform/data-wrangling). 
+    * [Visualize](/help/visualize/viewers).
+    * [Explore data](/help/#explore).
+    * [Build and deploy predictive models](/help/learn/predictive-modeling).
+    *	[Collaborate with others](/help/collaborate/sharing).
+  `;
+
+  grok.shell.newView('Markdown example',[
+    ui.markdown(document)
+  ]);
+  ``` 
 
   ## Popup Menu (context menu)
   Menus appear upon interaction with a button, action, or other control. They display a list of choices, with one choice per lin. Menu can also have a multilevel list of choices.
@@ -819,16 +838,17 @@ For each dialog, you can set the position by viewport by x and y-asix.
     .concat(subGroup1.items)
     .concat(group2.items);
   ```
+
   ## Iframe
-    Iframe.
-    ```javascript
-    ui.iframe( { src: 'https://en.m.wikipedia.org/wiki', width: '400', height: '200' });
-    ```  
+  Iframe a nested browsing context embedding another HTML page into the current one.
+  ```javascript
+  ui.iframe( { src: 'https://en.m.wikipedia.org/wiki', width: '400', height: '200' });
+  ```  
 
   ## Info bars
-    Info bar allows adding assisting information to views, typically at their top area.
-    ```javascript
-    grok.shell.newView('View', [
-      ui.info('Info text', 'Optional header')
-    ]);
-    ```
+  Info bar allows adding assisting information to views, typically at their top area.
+  ```javascript
+  grok.shell.newView('View', [
+    ui.info('Info text', 'Optional header')
+  ]);
+  ```
