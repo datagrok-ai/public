@@ -1,0 +1,5 @@
+{
+  "name": "CHEMBL_ID",
+  "description": "ChEMBL compound identifier",
+  "template": "(CHEMBL[0-9]+)"
+}
