@@ -352,7 +352,7 @@ Use an `--ide=vscode` key of [grok tools](#Getting-Started) to set up a `.vscode
 
 This parameter coupled with `grok create` adds an additional `.vscode` folder with two files to your package folder.
 These files bring you development experience close to building native apps, where you modify the code, hit the "Run",
-wait for application to "compile" (in our case — go through webpack, and potentiallythrough linters), start it and
+wait for application to "compile" (in our case — go through webpack, and potentially through linters), start it and
 then explore your runtime state through breakpoints, variable watches, call stacks etc.
 
 With this setting, you would be able to "compile" and "run" the package in one click from the left sidebar of
