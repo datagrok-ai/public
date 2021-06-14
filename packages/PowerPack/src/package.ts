@@ -10,6 +10,7 @@ import { RecentProjectsWidget } from "./widgets/recent-projects-widget";
 import { CommunityWidget } from './widgets/community-widget';
 import { WebWidget } from './widgets/web-widget';
 import { LearningWidget } from "./widgets/learning-widget";
+import { AboutWidget } from "./widgets/about-widget";
 import { functionSearch, pdbSearch, pubChemSearch, scriptsSearch, usersSearch, wikiSearch } from './search/entity-search';
 
 export let _package = new DG.Package();
@@ -59,6 +60,11 @@ export function webWidget(): DG.Widget {
 //output: widget result
 export function learnWidget(): DG.Widget {
   return new LearningWidget();
+}
+
+//output: widget about
+export function aboutWidget(): DG.Widget {
+  return new AboutWidget();
 }
 
 //description: Functions
