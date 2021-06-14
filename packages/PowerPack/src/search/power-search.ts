@@ -3,6 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {WebWidget} from "../widgets/web-widget";
+import {DataQuery} from "datagrok-api/dg";
 
 // Power Search: community-curated, template-based, widget-driven search engine
 
@@ -16,6 +17,12 @@ interface Card {
   id: string;
   name: string;
   templates: Template[];
+}
+
+let queries: DG.DataQuery[] = [];
+
+export function initSearch() {
+  grok.dapi.queries.list().then((qs) => queries = qs);
 }
 
 export function powerSearch(s: string, host: HTMLDivElement): void {
@@ -39,6 +46,50 @@ export function powerSearch(s: string, host: HTMLDivElement): void {
       }
     }
 }
+
+
+
+export function queriesSearch(s: string, host: HTMLDivElement): void {
+  const dateRegExp = new RegExp('\\btoday\\b|\\bthis week\\b');
+  const varRegExpStr = '@[a-zA-Z0-9_]+';
+  const varRegExp = new RegExp(varRegExpStr);
+  let searchDateMatches = dateRegExp.exec(s);
+  if (searchDateMatches == null)
+    return;
+
+  function hasDateInput(q: DG.DataQuery): boolean {
+    let matches = varRegExp.exec(q.friendlyName);
+    if (matches == null)
+      return false;
+    return matches.length == 2 && matches[1] == '@date';
+  }
+
+  // special case for date templates - do we even need it?
+  for (let q of queries.filter(hasDateInput)) {
+    q.apply({date: searchDateMatches[1]}).then((df: DG.DataFrame) => {
+      let grid = DG.Viewer.grid(df);
+      host.appendChild(grid.root);
+    });
+  }
+
+  for (let q of queries.filter((q) => varRegExp.exec(q.friendlyName) !== null)) {
+    let varMatches = varRegExp.exec(q.friendlyName);
+    if (varMatches == null || varMatches.length != 2)
+      continue;
+
+    let qPattern = new RegExp(q.friendlyName.replace(varRegExp, '(' + varRegExpStr + ')'));
+    let matches = qPattern.exec(s);
+    if (matches != null && matches.length == 2) {
+      let varName = varMatches[1];
+      let varValue = matches[1];
+      q.apply({ [varName] : varValue }).then((df: DG.DataFrame) => {
+        let grid = DG.Viewer.grid(df);
+        host.appendChild(grid.root);
+      });
+    }
+  }
+}
+
 
 const semTypes = [
   {

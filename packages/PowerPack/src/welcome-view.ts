@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 import {debounceTime} from 'rxjs/operators';
-import {powerSearch} from "./search/power-search";
+import {initSearch, powerSearch, queriesSearch} from "./search/power-search";
 import {card, WIDGETS_STORAGE } from './utils';
 
 interface UserWidgetSettings {
@@ -49,6 +49,8 @@ export function welcomeView() {
     }
   });
 
+  initSearch();
+
   function doSearch(s: string) {
     ui.empty(searchHost);
 
@@ -58,6 +60,7 @@ export function welcomeView() {
     }
 
     powerSearch(s, searchHost);
+    queriesSearch(s, searchHost);
 
     for (let sf of searchFunctions)
       sf.apply({s: input.value}).then((results: any[]) => {
