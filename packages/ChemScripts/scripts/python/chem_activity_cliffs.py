@@ -3,6 +3,7 @@
 #input: dataframe data [Input data table]
 #input: column smiles {type:categorical; semType: Molecule} [Molecules, in SMILES format]
 #input: column activities
+#input: double similarityValue
 #output: dataframe output_coords
 #output: dataframe output_pairs
 
@@ -12,7 +13,6 @@ from rdkit import Chem
 import random
 from rdkit import DataStructs
 
-similarityValue = 80
 automaticSimilarityLimit = False
 components = 3
 
@@ -77,8 +77,10 @@ for i in range(0, len(output_pairs.index)):
     similarityCount[output_pairs.loc[i, "n1"].astype(int)] += output_pairs.loc[i, "sim"]
     similarityCount[output_pairs.loc[i, "n2"].astype(int)] += output_pairs.loc[i, "sim"]
     if output_pairs.loc[i, "sali"] != math.inf:
-        saliCount[output_pairs.loc[i, "n1"].astype(int)] += output_pairs.loc[i, "sali"]
-        saliCount[output_pairs.loc[i, "n2"].astype(int)] += output_pairs.loc[i, "sali"]
+        if activities[output_pairs.loc[i, "n1"]] > activities[output_pairs.loc[i, "n2"]]:
+            saliCount[output_pairs.loc[i, "n1"].astype(int)] += output_pairs.loc[i, "sali"]
+        else:
+            saliCount[output_pairs.loc[i, "n2"].astype(int)] += output_pairs.loc[i, "sali"]
 
 mx = []
 my = []
