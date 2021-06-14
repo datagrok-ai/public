@@ -115,7 +115,9 @@ export function sdtmVariablePanel(varCol: DG.Column): DG.Widget {
 //name: Clinical Case
 //tags: app
 export function clinicalCaseApp(): void {
-  grok.shell.info('This is clinical.');
+  showStudySummary();
+  showPatientProfile();
+  showLabs();
 }
 
 //tags: autostart
@@ -185,6 +187,15 @@ function clearStdView(): void {
 //name: showStudySummary
 export function showStudySummary(): void {
   let dm = grok.shell.tableByName('dm');
+  if (dm == null) return;
+
+  let subjsPerDay = dm.groupBy(['RFSTDTC']).uniqueCount('USUBJID').aggregate();
+  let refStartCol = subjsPerDay.col('RFSTDTC');
+  for (let i = 0, rowCount = subjsPerDay.rowCount; i < rowCount; i++) {
+    if (refStartCol.isNone(i)) subjsPerDay.rows.removeAt(i);
+  }
+
+  let lc = DG.Viewer.lineChart(subjsPerDay);
   let bc = DG.Viewer.barChart(dm, { split: 'SEX', stack: 'ARMCD' });
   let bp = DG.Viewer.boxPlot(dm, {
     labelOrientation: 'Horz',
@@ -195,8 +206,9 @@ export function showStudySummary(): void {
 
   clearStdView();
 
-  let v = grok.shell.newView('Study Summary', [
-    ui.h1('Study Summary Page'),
+  let v = grok.shell.newView('Summary', [
+    ui.h1('Study Summary'),
+    ui.block([ui.divText('Patient Enrollment'), lc.root]),
     ui.divH([
       ui.block25([ui.h2('Sex Distribution'), bc.root]),
       ui.block75([ui.h2('Age Statistics'), bp.root]),
@@ -250,5 +262,15 @@ export function showPatientProfile(): void {
   let v = grok.shell.newView('Patient Profile', [
     ui.h1('Patient Profile Page'),
     mainDiv,
+  ]);
+}
+
+//name: showLabs
+export function showLabs(): void {
+  let lb = grok.shell.tableByName('lb');
+  if (lb == null) return;
+
+  grok.shell.newView('Labs', [
+    ui.divText('Labs view content'),
   ]);
 }
