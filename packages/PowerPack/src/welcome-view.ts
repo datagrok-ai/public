@@ -34,8 +34,6 @@ export function welcomeView() {
   grok.shell.newView('Welcome', [inputHost, viewHost], 'power-pack-welcome-view');
 
   let widgetFunctions = DG.Func.find({returnType: 'widget'});
-  let searchFunctions = DG.Func.find({tags: ['search'], returnType: 'list'});
-  let searchWidgetFunctions = DG.Func.find({tags: ['search'], returnType: 'widget'});
 
   grok.dapi.userDataStorage.get(WIDGETS_STORAGE).then((settings) => {
     for (let f of widgetFunctions) {
@@ -53,36 +51,7 @@ export function welcomeView() {
 
   function doSearch(s: string) {
     ui.empty(searchHost);
-
-    if (DG.View.ALL_VIEW_TYPES.includes(s)) {
-      searchHost.appendChild(DG.View.createByType(s).root);
-      return;
-    }
-
     powerSearch(s, searchHost);
-    queriesSearch(s, searchHost);
-
-    for (let sf of searchFunctions)
-      sf.apply({s: input.value}).then((results: any[]) => {
-        if (results.length > 0) {
-          searchHost.appendChild(ui.divV([
-            ui.h3(sf.description ?? sf.name),
-            ui.list(results)
-          ]));
-        }
-    });
-
-    grok.functions
-      .eval(s)
-      .then((result) => searchHost.appendChild(ui.span([s + ' = ', result], {style: {'font-size' : '20px'}})))
-      .catch(() => {})
-
-    for (let sf of searchWidgetFunctions)
-      sf.apply({s: input.value})
-        .then((result: DG.Widget) => {
-          if (result)
-            searchHost.appendChild(card(result));
-        });
   }
 
   rxjs.fromEvent(input, 'input').pipe(debounceTime(300)).subscribe(_ => {
