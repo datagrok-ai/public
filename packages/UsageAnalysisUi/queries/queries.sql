@@ -202,7 +202,7 @@ limit 25
 
 --name: manual activity by @date
 --input: string date { pattern: datetime }
---connection: TestTrack
+--connection: System:TestTrack
 select ta.date, ts.file_name, ta.result, ta.error_desc as error
 from test_activity ta
 join test_scenario ts on ts.id = ta.scenario_id
@@ -213,7 +213,7 @@ order by ta.date desc
 
 --name: users by date
 --input: string date { pattern: datetime }
---connection: TestTrack
+--connection: System:TestTrack
 select u.first_name, u.last_name, date(e.event_time)
 from events e
 join users_sessions us on us.id = e.session_id
