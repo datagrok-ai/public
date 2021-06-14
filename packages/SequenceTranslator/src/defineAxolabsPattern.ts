@@ -24,6 +24,26 @@ const userStorageKey: string = 'SequenceTranslator';
 const exampleMinWidth: string = '400px';
 const modificationSectionMaxWidth = '220px';
 
+function translateSequence(sequence: string, bases: any, ptoLinkages: any, modification: any) {
+  let counter: number = -1;
+  return sequence.replace(/[AUGC]/g, function (x: string) {
+    counter++;
+    let indexOfSymbol = axolabsMap["RNA"]["symbols"].indexOf(x);
+    let symbol = axolabsMap[bases[counter].value]["symbols"][indexOfSymbol];
+    return (ptoLinkages[counter].value) ? symbol + 's' : symbol;
+  }) + modification.value;
+}
+
+function addColumnWithTranslatedSequences(tableName: string, columnName: string, bases: any, ptoLinkages: any, modification: any) {
+  const nameOfNewColumn = 'Axolabs ' + columnName;
+  let columns = grok.shell.table(tableName).columns;
+  if (columns.contains(nameOfNewColumn))
+    columns.remove(nameOfNewColumn);
+  const columnWithInputSequences = columns.byName(columnName);
+  return columns.addNewString(nameOfNewColumn).init((i: number) => {
+    return translateSequence(columnWithInputSequences.getString(i), bases, ptoLinkages, modification);
+  });
+}
 
 export function defineAxolabsPattern() {
 
@@ -36,8 +56,14 @@ export function defineAxolabsPattern() {
       asBases.concat(Array(asLength.value - asBases.length).fill(sequenceBase)) :
       asBases.slice(asBases.length - asLength.value);
     for (let i = 0; i < asLength.value; i++) {
-      asPtoLinkages[i] = ui.boolInput('', asPtoLinkages[i].value, () => updateSvgScheme());
-      asBases[i] = ui.choiceInput('', asBases[i].value, baseChoices, () => updateSvgScheme());
+      asPtoLinkages[i] = ui.boolInput('', asPtoLinkages[i].value, () => {
+        updateSvgScheme();
+        updateExamples();
+      });
+      asBases[i] = ui.choiceInput('', asBases[i].value, baseChoices, () => {
+        updateSvgScheme();
+        updateExamples();
+      });
       asModificationItems.append(
         ui.divH([
           ui.block25([ui.label((i + 1).toString())])!,
@@ -57,8 +83,14 @@ export function defineAxolabsPattern() {
       ssBases.concat(Array(ssLength.value - ssBases.length).fill(sequenceBase)) :
       ssBases.slice(ssBases.length - ssLength.value);
     for (let i = 0; i < ssLength.value; i++) {
-      ssPtoLinkages[i] = ui.boolInput('', ssPtoLinkages[i].value, () => updateSvgScheme());
-      ssBases[i] = ui.choiceInput('', ssBases[i].value, baseChoices, () => updateSvgScheme());
+      ssPtoLinkages[i] = ui.boolInput('', ssPtoLinkages[i].value, () => {
+        updateSvgScheme();
+        updateExamples();
+      });
+      ssBases[i] = ui.choiceInput('', ssBases[i].value, baseChoices, () => {
+        updateSvgScheme();
+        updateExamples();
+      });
       ssModificationItems.append(
         ui.divH([
           ui.block25([ui.label((i + 1).toString())])!,
@@ -102,12 +134,18 @@ export function defineAxolabsPattern() {
     updateSvgScheme();
   }
 
+  function updateExamples() {
+    ssResult.value = translateSequence(ssInput.value, ssBases, ssPtoLinkages, threeModification);
+    if (createAsStrand.value)
+      asResult.value = translateSequence(asInput.value, asBases, asPtoLinkages, fiveModification);
+  }
+
   function updateSvgScheme() {
     svgDiv.innerHTML = '';
     svgDiv.append(
       ui.span([
         drawAxolabsPattern(
-          newPatternName.value,
+          saveAs.value,
           createAsStrand.value,
           ssBases.slice(0, ssLength.value).map((e) => e.value),
           asBases.slice(0, asLength.value).map((e) => e.value),
@@ -120,133 +158,14 @@ export function defineAxolabsPattern() {
     );
   }
 
-  function checkWhetherAllValuesInColumnHaveTheSameLength(colName: string): boolean {
-    let col = grok.shell.table(tables.value).columns.byName(colName);
-    let allLengthsAreTheSame = true;
-    for (let i = 1; i < col.length; i++) {
-      if (col.get(i - 1).length != col.get(i).length) {
-        allLengthsAreTheSame = false;
-        break;
-      }
-    }
-    if (!allLengthsAreTheSame) {
-      let dialog = ui.dialog('Sequences lengths mismatch');
-      $(dialog.getButton('OK')).hide();
-      dialog
-        .add(ui.divText('The sequence length should match the number of Raw sequences in the input file'))
-        .add(ui.divText("'ADD COLUMN' to see sequences lengths"))
-        .addButton('ADD COLUMN', () => {
-          grok.shell.table(tables.value).columns.addNewInt('Sequences lengths in ' + colName).init((j) => col.get(j).length);
-          grok.shell.info('Column with lengths added to ' + tables.value);
-          dialog.close();
-        })
-        .show();
-    }
-    return allLengthsAreTheSame;
-  }
-
-  function convertSequence(inputSsColumn: string, inputAsColumn: string) {
-    let count: number = -1;
-    grok.shell.table(tables.value).columns.addNewString('Axolabs ' + inputSsColumn).init((i: number) => {
-      count = -1;
-      return grok.shell.table(tables.value).columns.byName(inputSsColumn).get(i).replace(/[AUGC]/g, function (x: string) {
-        count++;
-        let ind = axolabsMap["RNA"]["symbols"].indexOf(x);
-        let v = axolabsMap[ssBases[count].value]["symbols"][ind];
-        return (ssPtoLinkages[count].value) ? v + 's' : v;
-      })
-    });
-    if (createAsStrand.value)
-      grok.shell.table(tables.value).columns.addNewString('Axolabs ' + inputAsColumn).init((i: number) => {
-        count = -1;
-        return grok.shell.table(tables.value).columns.byName(inputAsColumn).get(i).replace(/[AUGC]/g, function (x: string) {
-          count++;
-          let ind = axolabsMap["RNA"]["symbols"].indexOf(x);
-          let v = axolabsMap[asBases[count].value]["symbols"][ind];
-          return (asPtoLinkages[count].value) ? v + 's' : v;
-        });
-      });
-    grok.shell.info('Columns was added to table ' + tables.value);
-  }
-
-  function postPatternToUserStorage() {
-    grok.dapi.userDataStorage.postValue(
-      userStorageKey,
-      newPatternName.value,
-      JSON.stringify({
-        "ssBases": ssBases.slice(0, ssLength.value).map((e) => e.value),
-        "asBases": asBases.slice(0, asLength.value).map((e) => e.value),
-        "ssPtoLinkages": ssPtoLinkages.slice(0, ssLength.value).map((e) => e.value),
-        "asPtoLinkages": asPtoLinkages.slice(0, asLength.value).map((e) => e.value),
-        "threeModification": threeModification.value,
-        "fiveModification": fiveModification.value
-      }),
-      false
-    ).then(() => grok.shell.info('Pattern ' + newPatternName.value + ' was successfully uploaded!'));
-  }
-
-  function savePattern() {
+  function parsePatternAndUpdateUi(newName: string) {
     grok.dapi.userDataStorage.get(userStorageKey, false).then((entities) => {
-      if (Object.keys(entities).includes(newPatternName.value)) {
-        let dialog = ui.dialog('Pattern already exists');
-        $(dialog.getButton('OK')).hide();
-        dialog
-          .add(ui.divText("Pattern name '" + newPatternName.value + "' already exists."))
-          .add(ui.divText('Replace pattern?'))
-          .addButton('YES', () => {
-            grok.dapi.userDataStorage.remove(userStorageKey, newPatternName.value, false)
-              .then(() => postPatternToUserStorage())
-              .then(() => saveImage());
-            dialog.close();
-          })
-          .show();
-      } else {
-        postPatternToUserStorage();
-        saveImage();
-      }
-    });
-  }
-
-  function saveImage() {
-    svg.saveSvgAsPng(document.getElementById('mySvg'), newPatternName.value);
-  }
-
-  let ssModificationItems = ui.div([]),
-    asModificationItems = ui.div([]),
-    chooseAsColumnDiv = ui.div([]),
-    svgDiv = ui.div([]),
-    appAxolabsDescription = ui.div([]),
-    applyExistingPatternDiv = ui.div([]);
-
-  let ssBases = Array(defaultSequenceLength).fill(ui.choiceInput('', defaultBase, baseChoices)),
-    asBases = Array(defaultSequenceLength).fill(ui.choiceInput('', defaultBase, baseChoices)),
-    ssPtoLinkages = Array(defaultSequenceLength).fill(ui.boolInput('', defaultPto)),
-    asPtoLinkages = Array(defaultSequenceLength).fill(ui.boolInput('', defaultPto));
-
-  let ssLength = ui.intInput('SS Length', defaultSequenceLength, () => updateUiForNewSequenceLength());
-  let asLength = ui.intInput('AS Length', defaultSequenceLength, () => updateUiForNewSequenceLength());
-
-  let tables = ui.choiceInput('Tables', '', grok.shell.tableNames, () => {});
-
-  let inputSsColumn = ui.choiceInput('SS Column', '', [], (n: string) => {
-    let allLengthsAreTheSame: boolean = checkWhetherAllValuesInColumnHaveTheSameLength(n);
-    if (allLengthsAreTheSame && grok.shell.table(tables.value).columns.byName(n).get(0).length != ssLength.value)
-      ssLength.value = grok.shell.table(tables.value).columns.byName(n).get(0).length;
-  });
-  let inputAsColumn = ui.choiceInput('AS Column', '', [], (n: string) => {
-    let allLengthsAreTheSame: boolean = checkWhetherAllValuesInColumnHaveTheSameLength(n);
-    if (allLengthsAreTheSame && grok.shell.table(tables.value).columns.byName(n).get(0).length != asLength.value)
-      asLength.value = grok.shell.table(tables.value).columns.byName(n).get(0).length;
-  });
-
-  grok.dapi.userDataStorage.get(userStorageKey, false).then((entities) => {
-    let applyExistingPattern = ui.choiceInput('Load Pattern', '', Object.keys(entities), (v: string) => {
       // @ts-ignore
-      let obj = JSON.parse(entities[v]);
+      let obj = JSON.parse(entities[newName]);
       ssLength.value = obj['ssBases'].length;
       asLength.value = obj['asBases'].length;
       createAsStrand.value = (asLength.value > 0);
-      newPatternName.value = v;
+      saveAs.value = newName;
 
       ssBases = [];
       for (let i = 0; i < obj['ssBases'].length; i++)
@@ -271,44 +190,186 @@ export function defineAxolabsPattern() {
       updateAsModification();
       updateSsModification();
     });
-    applyExistingPattern.setTooltip('Apply Existing Pattern');
-    applyExistingPatternDiv.append(
-      applyExistingPattern.root
-    );
-    applyExistingPattern.root.append(
-      ui.button(ui.iconFA('trash-alt', () => {}), () => grok.shell.info('deleted'))
-    );
+  }
+
+  function checkWhetherAllValuesInColumnHaveTheSameLength(colName: string): boolean {
+    let col = grok.shell.table(tables.value).columns.byName(colName);
+    let allLengthsAreTheSame = true;
+    for (let i = 1; i < col.length; i++) {
+      if (col.get(i - 1).length != col.get(i).length) {
+        allLengthsAreTheSame = false;
+        break;
+      }
+    }
+    if (!allLengthsAreTheSame) {
+      let dialog = ui.dialog('Sequences lengths mismatch');
+      $(dialog.getButton('OK')).hide();
+      dialog
+        .add(ui.divText('The sequence length should match the number of Raw sequences in the input file'))
+        .add(ui.divText("'ADD COLUMN' to see sequences lengths"))
+        .addButton('ADD COLUMN', () => {
+          grok.shell.table(tables.value).columns.addNewInt('Sequences lengths in ' + colName).init((j) => col.get(j).length);
+          grok.shell.info("Column with lengths added to '" + tables.value + "'");
+          dialog.close();
+        })
+        .show();
+    }
+    return allLengthsAreTheSame;
+  }
+
+  function postPatternToUserStorage() {
+    grok.dapi.userDataStorage.postValue(
+      userStorageKey,
+      saveAs.value,
+      JSON.stringify({
+        "ssBases": ssBases.slice(0, ssLength.value).map((e) => e.value),
+        "asBases": asBases.slice(0, asLength.value).map((e) => e.value),
+        "ssPtoLinkages": ssPtoLinkages.slice(0, ssLength.value).map((e) => e.value),
+        "asPtoLinkages": asPtoLinkages.slice(0, asLength.value).map((e) => e.value),
+        "threeModification": threeModification.value,
+        "fiveModification": fiveModification.value
+      }),
+      false
+    ).then(() => grok.shell.info('Pattern ' + saveAs.value + ' was successfully uploaded!'));
+  }
+
+  function updatePatternsList() {
+    grok.dapi.userDataStorage.get(userStorageKey, false).then((entities) => {
+      let loadPattern = ui.choiceInput('Load Pattern', '', Object.keys(entities), (v: string) => {
+        parsePatternAndUpdateUi(v)
+      });
+      loadPattern.setTooltip('Apply Existing Pattern');
+      loadPatternDiv.innerHTML = '';
+      loadPatternDiv.append(
+        loadPattern.root
+      );
+      loadPattern.root.append(
+        ui.button(ui.iconFA('trash-alt', () => {
+        }), () => {
+          grok.dapi.userDataStorage.remove(userStorageKey, loadPattern.value, false)
+            .then(() => grok.shell.info("Pattern '" + loadPattern.value + "' deleted"));
+          updatePatternsList();
+        })
+      );
+    });
+  }
+
+  function savePattern() {
+    grok.dapi.userDataStorage.get(userStorageKey, false).then((entities) => {
+      if (Object.keys(entities).includes(saveAs.value)) {
+        let dialog = ui.dialog('Pattern already exists');
+        $(dialog.getButton('OK')).hide();
+        dialog
+          .add(ui.divText("Pattern name '" + saveAs.value + "' already exists."))
+          .add(ui.divText('Replace pattern?'))
+          .addButton('YES', () => {
+            grok.dapi.userDataStorage.remove(userStorageKey, saveAs.value, false)
+              .then(() => postPatternToUserStorage());
+            dialog.close();
+          })
+          .show();
+      } else {
+        postPatternToUserStorage();
+      }
+    });
+    updatePatternsList();
+  }
+
+  let inputSsColumnDiv = ui.div([]),
+    inputAsColumnDiv = ui.div([]),
+    ssModificationItems = ui.div([]),
+    asModificationItems = ui.div([]),
+    svgDiv = ui.div([]),
+    asExampleDiv = ui.div([]),
+    appAxolabsDescription = ui.div([]),
+    loadPatternDiv = ui.div([]);
+
+  let ssBases = Array(defaultSequenceLength).fill(ui.choiceInput('', defaultBase, baseChoices)),
+    asBases = Array(defaultSequenceLength).fill(ui.choiceInput('', defaultBase, baseChoices)),
+    ssPtoLinkages = Array(defaultSequenceLength).fill(ui.boolInput('', defaultPto)),
+    asPtoLinkages = Array(defaultSequenceLength).fill(ui.boolInput('', defaultPto));
+
+  let ssLength = ui.intInput('SS Length', defaultSequenceLength, () => updateUiForNewSequenceLength());
+  let asLength = ui.intInput('AS Length', defaultSequenceLength, () => updateUiForNewSequenceLength());
+  let asLengthDiv = ui.div([asLength.root]);
+
+  function f1(n: string) {
+    let allLengthsAreTheSame: boolean = checkWhetherAllValuesInColumnHaveTheSameLength(n);
+    const firstSequence = grok.shell.table(tables.value).columns.byName(n).get(0);
+    if (allLengthsAreTheSame && firstSequence.length != ssLength.value)
+      ssLength.value = grok.shell.table(tables.value).columns.byName(n).get(0).length;
+      ssInput.value = firstSequence;
+  }
+
+  function f2(n: string) {
+    let allLengthsAreTheSame: boolean = checkWhetherAllValuesInColumnHaveTheSameLength(n);
+    const firstSequence = grok.shell.table(tables.value).columns.byName(n).get(0);
+    if (allLengthsAreTheSame && firstSequence.length != asLength.value)
+      asLength.value = grok.shell.table(tables.value).columns.byName(n).get(0).length;
+      asLengthDiv.innerHTML = '';
+      asLengthDiv.append(asLength.root);
+      asInput.value = firstSequence;
+  }
+
+  let tables = ui.choiceInput('Tables', '', grok.shell.tableNames, () => {
+    inputSsColumn = ui.choiceInput('SS Column', '', grok.shell.table(tables.value).columns.names(), (n: string) => f1(n));
+    inputSsColumnDiv.innerHTML = '';
+    inputSsColumnDiv.append(inputSsColumn.root);
+    inputAsColumn = ui.choiceInput('AS Column', '', grok.shell.table(tables.value).columns.names(), (n: string) => f2(n));
+    inputAsColumnDiv.innerHTML = '';
+    inputAsColumnDiv.append(inputAsColumn.root);
   });
 
-  let sequenceBase = ui.choiceInput('Sequence Basis', defaultBase, baseChoices, (v: string) => updateBases(v));
+  let inputSsColumn = ui.choiceInput('SS Column', '', []);
+  inputSsColumnDiv.append(inputSsColumn.root);
+  let inputAsColumn = ui.choiceInput('AS Column', '', []);
+  inputAsColumnDiv.append(inputAsColumn.root);
 
-  let fullyPto = ui.boolInput('Fully PTO', defaultPto, (v: boolean) => updatePto(v));
+  updatePatternsList();
+
+  let sequenceBase = ui.choiceInput('Sequence Basis', defaultBase, baseChoices, (v: string) => {
+    updateBases(v);
+    updateExamples();
+  });
+
+  let fullyPto = ui.boolInput('Fully PTO', defaultPto, (v: boolean) => {
+    updatePto(v);
+    updateExamples();
+  });
 
   let createAsStrand = ui.boolInput('Create AS Strand', true, (v: boolean) => {
     asModificationSection.hidden = (!v);
-    chooseAsColumnDiv.hidden = (!v);
+    inputAsColumnDiv.hidden = (!v);
+    asLengthDiv.hidden = (!v);
+    asExampleDiv.hidden = (!v);
     updateSvgScheme();
   });
 
-  let newPatternName = ui.stringInput('Save As', '', () => updateSvgScheme());
-  newPatternName.setTooltip('Pattern Name');
+  let saveAs = ui.stringInput('Save As', '', () => updateSvgScheme());
+  saveAs.setTooltip('Name Of New Pattern');
 
-  let threeModification = ui.stringInput("Additional 3' Modification", "", () => updateSvgScheme());
+  let threeModification = ui.stringInput("Additional 3' Modification", "", () => {
+    updateSvgScheme();
+    updateExamples();
+  });
   threeModification.setTooltip("Additional 3' Modification");
-  let fiveModification = ui.stringInput("Additional 5' Modification", "", () => updateSvgScheme());
+  let fiveModification = ui.stringInput("Additional 5' Modification", "", () => {
+    updateSvgScheme();
+    updateExamples();
+  });
   fiveModification.setTooltip("Additional 5' Modification");
 
   updateUiForNewSequenceLength();
 
   let savePatternButton = ui.button('Save', () => {
-    if (newPatternName.value != '') {
+    if (saveAs.value != '') {
       savePattern();
     } else {
       let name = ui.stringInput('Enter name', '');
       ui.dialog('Pattern name')
         .add(name.root)
         .onOK(() => {
-          newPatternName.value = name.value;
+          saveAs.value = name.value;
           savePattern();
         })
         .show();
@@ -316,14 +377,17 @@ export function defineAxolabsPattern() {
   });
 
   let convertSequenceButton = ui.button('Convert Sequences', () => {
-    if (!(inputSsColumn.value == null || inputAsColumn.value == null)) {
-      convertSequence(inputSsColumn.value, inputAsColumn.value);
-    } else {
-      grok.shell.info('Please select columns on which to apply pattern');
+    if (inputSsColumn.value == null || (createAsStrand.value && inputAsColumn.value == null))
+      grok.shell.info("Please select table and columns on which to apply pattern");
+    else {
+      addColumnWithTranslatedSequences(tables.value, inputSsColumn.value, ssBases, ssPtoLinkages, threeModification);
+      if (createAsStrand.value)
+        addColumnWithTranslatedSequences(tables.value, inputAsColumn.value, asBases, asPtoLinkages, fiveModification);
+      grok.shell.info(((createAsStrand.value) ? "Columns were" : "Column was") + " added to table '" + tables.value + "'");
     }
-  })
+  });
 
-  let ssInput = ui.stringInput('SS', '',() => ssResult.value = ssInput.value);
+  let ssInput = ui.stringInput('SS', '',() => ssResult.value = translateSequence(ssInput.value, ssBases, ssPtoLinkages, threeModification));
   let ssResult = ui.stringInput(' ', '');
   // @ts-ignore
   ssInput.input.style.resize = 'none';
@@ -336,10 +400,12 @@ export function defineAxolabsPattern() {
   // @ts-ignore
   ssResult.input.disabled = 'true';
   ssResult.root.append(
-    ui.button(ui.iconFA('copy', () => {}), () => grok.shell.info('copied'))
+    ui.button(ui.iconFA('copy', () => {}), () => {
+      navigator.clipboard.writeText(ssResult.value).then(() => grok.shell.info('Sequence was copied to clipboard'));
+    })
   );
 
-  let asInput = ui.stringInput('AS','',() => asResult.value = asInput.value);
+  let asInput = ui.stringInput('AS','',() => asResult.value = translateSequence(asInput.value, asBases, asPtoLinkages, fiveModification));
   let asResult = ui.stringInput(' ','');
   // @ts-ignore
   asInput.input.style.resize = 'none';
@@ -352,8 +418,12 @@ export function defineAxolabsPattern() {
   // @ts-ignore
   asResult.input.disabled = 'true';
   asResult.root.append(
-    ui.button(ui.iconFA('copy', () => {}), () => grok.shell.info('copied'))
+    ui.button(ui.iconFA('copy', () => {}), () => {
+      navigator.clipboard.writeText(asResult.value).then(() => grok.shell.info('Sequence was copied to clipboard'));
+    })
   );
+  asExampleDiv.append(asInput.root);
+  asExampleDiv.append(asResult.root);
 
   let patternDesignSection = ui.panel([
     ui.divH([
@@ -366,14 +436,14 @@ export function defineAxolabsPattern() {
           })
         ]),
         ssLength.root,
-        asLength.root,
+        asLengthDiv,
         sequenceBase.root,
         fullyPto.root,
         createAsStrand.root,
         threeModification.root,
         fiveModification.root,
-        applyExistingPatternDiv,
-        newPatternName.root,
+        loadPatternDiv,
+        saveAs.root,
         ui.buttonsInput([
           savePatternButton
         ])
@@ -382,8 +452,8 @@ export function defineAxolabsPattern() {
         ui.div([
           ui.h1('Inputs'),
           tables.root,
-          inputSsColumn.root,
-          inputAsColumn.root,
+          inputSsColumnDiv,
+          inputAsColumnDiv,
           ui.buttonsInput([
             convertSequenceButton
           ])
@@ -392,15 +462,14 @@ export function defineAxolabsPattern() {
           ui.h1('Example'),
           ssInput.root,
           ssResult.root,
-          asInput.root,
-          asResult.root
+          asExampleDiv
         ], 'ui-form')
       ])
     ], {style: {flexWrap: 'wrap'}}),
     ui.block([
       svgDiv
     ], {style: {overflowX: 'scroll'}}),
-    ui.button('Download', () => saveImage())
+    ui.button('Download', () => svg.saveSvgAsPng(document.getElementById('mySvg'), saveAs.value))
   ]);
 
   let ssModificationSection = ui.box(
