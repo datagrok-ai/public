@@ -29,7 +29,9 @@ export function initSearch() {
 }
 
 export function powerSearch(s: string, host: HTMLDivElement): void {
+  jsEvalSearch(s, host) ||
   viewsSearch(s, host);
+
   functionEvaluationsSearch(s, host);
   searchFunctionsSearch(s, host);
   queriesEntitiesSearch(s, host);
@@ -50,7 +52,22 @@ function viewsSearch(s: string, host: HTMLDivElement): boolean {
 }
 
 function queriesEntitiesSearch(s: string, host: HTMLDivElement): void {
-  host.appendChild(ui.list(queries.filter((q) => q.name.includes(s))));
+  s = s.toLowerCase();
+  host.appendChild(ui.list(queries.filter((q) => q.name.toLowerCase().includes(s))));
+}
+
+/// Evaluates some of the JavaScript code
+/// Example: ui.label('produced by JavaScript')
+function jsEvalSearch(s: string, host: HTMLDivElement): boolean {
+  if (s.startsWith('grok.') || s.startsWith('DG.') || s.startsWith('ui.')) {
+    try {
+      let x = eval(s);
+      host.appendChild(ui.render(x));
+      return true;
+    }
+    catch (_) {}
+  }
+  return false;
 }
 
 /// Evaluates custom search functions
