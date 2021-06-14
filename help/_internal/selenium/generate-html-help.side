@@ -10,7 +10,7 @@
       "id": "8ff604b9-81db-4083-8663-4b119b7492f9",
       "comment": "",
       "command": "open",
-      "target": "/datasets?selenium=true&q=",
+      "target": "/datasets?selenium=true",
       "targets": [],
       "value": ""
     }, {
@@ -59,7 +59,7 @@
       "id": "ab8f2726-12a0-40e3-ac90-4730f3344006",
       "comment": "",
       "command": "pause",
-      "target": "2000",
+      "target": "5000",
       "targets": [],
       "value": ""
     }, {
@@ -78,7 +78,7 @@
       "id": "fa9926ab-3131-4bf0-9d26-80d702a0bb1f",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "5000",
       "targets": [],
       "value": ""
     }, {
@@ -96,7 +96,7 @@
       "id": "6f88b3fb-e83b-4c29-a77f-c3326b7e9eb2",
       "comment": "",
       "command": "pause",
-      "target": "2000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {
@@ -115,7 +115,7 @@
       "id": "feb72353-5fc5-4b99-9436-676e7f239816",
       "comment": "",
       "command": "pause",
-      "target": "2000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {
@@ -129,6 +129,13 @@
         ["xpath=//div[@id='rootDiv']/div/div/div/div[7]/div/div[3]", "xpath:idRelative"],
         ["xpath=//div[7]/div/div[3]", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "4f92c55f-9464-4ce2-bf36-6e5da37f9fde",
+      "comment": "",
+      "command": "pause",
+      "target": "2000",
+      "targets": [],
       "value": ""
     }, {
       "id": "d2251269-71b7-4ba4-a064-c0127b54d9c0",
