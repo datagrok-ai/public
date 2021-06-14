@@ -1,6 +1,43 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-06-14 Dev build 0.92.9
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.9`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Sequence Translator | AXOLABS: Add tooltips for field headers which do not fit completely (WIP)
+* Fixed int to double type mismatch 
+* Timelines: add a heading visualizing data from LB domain (WIP)
+* Added sudo prompt in datagrok-tools installation 
+* Update help index 
+* (Bug) Miniconda hangs CVM builds (WIP)
+* Update ui.md 
+* Create markdown.js 
+* (Bug) Connectors: Oracle: NullPointerException in DB table content  
+* Packages: Curation, Beta (WIP)
+* Meta for ServerSettings 
+* Deploy: test connections migration (WIP)
+* (Bug) IntColumn.fromList(values) does not work with values outside of the int32 range 
+* (Bug) Query runs forever 
+* (Bug) JS API: Viewer.close() sometimes fails (WIP)
+* Updated unit tests for integers 
+* Extended meta package: an example 
+* Wiki: link & typos correction 
+* Typo correction 
+* Code cleanup 
+* Power Search: deep integration with functions (WIP)
+* Fixed a test 
+* Updated public token 
+
+
 # 2021-06-10 Dev build 0.92.8
 
 ## Latest Docker Images
