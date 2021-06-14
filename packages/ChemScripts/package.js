@@ -8,7 +8,8 @@ class ChemScriptsPackage extends DG.Package {
   //input: dataframe df [Input data table]
   //input: column smiles {type:categorical; semType: Molecule} [Molecules, in SMILES format]
   //input: column activities
-  async activityCliffs(df, smiles, activities) {
+  //input: double similarity = 80 [Similarity cutoff]
+  async activityCliffs(df, smiles, activities, similarity) {
     
     function renderLines (sp, pairs) {
 
@@ -36,7 +37,8 @@ class ChemScriptsPackage extends DG.Package {
     let call = f.prepare({
       'data': df,
       'smiles': smiles,
-      'activities': activities
+      'activities': activities,
+      'similarityValue': similarity
     });
     await call.call();
 
@@ -61,6 +63,4 @@ class ChemScriptsPackage extends DG.Package {
 
     sp.onEvent('d4-before-draw-scene').subscribe(_ => renderLines(sp, pairs));
   }  
-
-    
 }
