@@ -16,7 +16,6 @@ import {toDart, toJs} from "./wrappers";
 import {SIMILARITY_METRIC} from "./const";
 import {_getIterator, _toIterable} from "./utils";
 import {Observable}  from "rxjs";
-import Table = WebAssembly.Table;
 
 declare let grok: any;
 declare let DG: any;
