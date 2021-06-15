@@ -236,7 +236,7 @@ export function defineAxolabsPattern() {
   function updatePatternsList() {
     grok.dapi.userDataStorage.get(userStorageKey, false).then((entities) => {
       let loadPattern = ui.choiceInput('Load Pattern', '', Object.keys(entities), (v: string) => {
-        parsePatternAndUpdateUi(v)
+        parsePatternAndUpdateUi(v);
       });
       loadPattern.setTooltip('Apply Existing Pattern');
       loadPatternDiv.innerHTML = '';
@@ -379,7 +379,18 @@ export function defineAxolabsPattern() {
   let convertSequenceButton = ui.button('Convert Sequences', () => {
     if (inputSsColumn.value == null || (createAsStrand.value && inputAsColumn.value == null))
       grok.shell.info("Please select table and columns on which to apply pattern");
-    else {
+    else if (ssLength.value != ssInput.value.length || asLength.value != asInput.value.length) {
+      let dialog = ui.dialog("Length mismatch")
+      $(dialog.getButton('OK')).hide();
+      dialog
+        .add(ui.divText("Length of sequences in columns doesn't match entered length. Update length value?"))
+        .addButton('YES', () => {
+          ssLength.value = grok.shell.table(tables.value).columns.byName(inputSsColumn.value).getString(0).length;
+          asLength.value = grok.shell.table(tables.value).columns.byName(inputAsColumn.value).getString(0).length;
+          dialog.close();
+        })
+        .show();
+    } else {
       addColumnWithTranslatedSequences(tables.value, inputSsColumn.value, ssBases, ssPtoLinkages, threeModification);
       if (createAsStrand.value)
         addColumnWithTranslatedSequences(tables.value, inputAsColumn.value, asBases, asPtoLinkages, fiveModification);
