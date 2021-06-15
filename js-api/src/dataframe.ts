@@ -16,6 +16,7 @@ import {toDart, toJs} from "./wrappers";
 import {SIMILARITY_METRIC} from "./const";
 import {_getIterator, _toIterable} from "./utils";
 import {Observable}  from "rxjs";
+import Table = WebAssembly.Table;
 
 declare let grok: any;
 declare let DG: any;
@@ -588,6 +589,11 @@ export class DataFrame {
   getDensity(xBins: number, yBins: number, xColName: string, yColName: string): Int32Array {
     return api.grok_MathActions_GetDensity(this.d, xBins, yBins, xColName, yColName);
   }
+
+  //TODO: figure out (and document!) the best way to deal with circular references
+  // get plot(): TablePlotter {
+  //   return new TablePlotter(this);
+  // }
 }
 
 /** Represents a row. Allows for quick property access like "row.height". */
