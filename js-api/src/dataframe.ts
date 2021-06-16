@@ -588,6 +588,11 @@ export class DataFrame {
   getDensity(xBins: number, yBins: number, xColName: string, yColName: string): Int32Array {
     return api.grok_MathActions_GetDensity(this.d, xBins, yBins, xColName, yColName);
   }
+
+  //TODO: figure out (and document!) the best way to deal with circular references
+  // get plot(): TablePlotter {
+  //   return new TablePlotter(this);
+  // }
 }
 
 /** Represents a row. Allows for quick property access like "row.height". */

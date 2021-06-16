@@ -1,70 +1,70 @@
 export const axolabsMap: {[index: string]: {symbols: [string, string, string, string], color: string}} = {
   "RNA": {
     symbols: ["A", "C", "G", "U"],
-    color: "purple"
+    color: "rgb(128,0,128)"
   },
   "DNA": {
     symbols: ["dA", "dC", "dG", "dT"],
-    color: "magenta"
+    color: "rgb(255,0,255)"
   },
   "2'-Fluoro": {
     symbols: ["Af", "Cf", "Gf", "Uf"],
-    color: "blue"
+    color: "rgb(0,0,255)"
   },
   "2'-O-Methyl": {
     symbols: ["a", "c", "g", "u"],
-    color: "silver"
+    color: "rgb(192,192,192)"
   },
   "2'-O-MOE": {
     symbols: ["Am", "Cm", "Gm", "Tm"],
-    color: "cyan"
+    color: "rgb(0,255,255)"
   },
   "GNA": { // Glycol nucleic acid
     symbols: ["(GNA-A)", "(GNA-C)", "(GNA-G)", "(GNA-T)"],
-    color: "yellow"
+    color: "rgb(255,255,0)"
   },
   "LNA": {
     symbols: ["Ab", "Cb", "Gb", "Tb"],
-    color: "aquamarine"
+    color: "rgb(50,100,83)"
   },
   "UNA": { // Unlocked nucleotides
     symbols: ["Ao", "Co", "Go", "Uo"],
-    color: "green"
+    color: "rgb(0,128,0)"
   },
   "A": {
     symbols: ["a", "a", "a", "a"],
-    color: "darkviolet"
+    color: "rgb(148,0,211)"
   },
   "C": {
     symbols: ["c", "c", "c", "c"],
-    color: "navy"
+    color: "rgb(0,0,128)"
   },
   "G": {
     symbols: ["g", "g", "g", "g"],
-    color: "darkslateblue"
+    color: "rgb(72,61,139)"
   },
   "U": {
     symbols: ["u", "u", "u", "u"],
-    color: "indigo"
+    color: "rgb(75,0,130)"
   },
   "X-New": {
     symbols: ["X", "X", "X", "X"],
-    color: "aliceblue"
+    color: "rgb(240,248,255)"
   },
   "Y-New": {
     symbols: ["Y", "Y", "Y", "Y"],
-    color: "beige"
+    color: "rgb(245,245,220)"
   },
   "Z-New": {
     symbols: ["Z", "Z", "Z", "Z"],
-    color: "aqua"
+    color: "rgb(0,255,255)"
   },
   "Invabasic": {
     symbols: ["(invabasic)", "(invabasic)", "(invabasic)", "(invabasic)"],
-    color: "lightblue"
+    color: "rgb(173,216,230)"
   },
   "5'-vinylps": {
     symbols: ["(vinu)", "(vinu)", "(vinu)", "(vinu)"],
-    color: "darkblue"
+    color: "rgb(0,0,139)"
   }
 };
