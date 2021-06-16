@@ -209,7 +209,7 @@ export function defineAxolabsPattern() {
         .add(ui.divText("'ADD COLUMN' to see sequences lengths"))
         .addButton('ADD COLUMN', () => {
           grok.shell.table(tables.value).columns.addNewInt('Sequences lengths in ' + colName).init((j) => col.get(j).length);
-          grok.shell.info("Column with lengths added to '" + tables.value + "'");
+          grok.shell.info("Column with lengths was added to '" + tables.value + "'");
           dialog.close();
         })
         .show();
@@ -247,7 +247,7 @@ export function defineAxolabsPattern() {
         ui.div([
           ui.button(ui.iconFA('trash-alt', () => {}), () => {
             if (loadPattern.value == null)
-              grok.shell.info('Choose pattern to delete')
+              grok.shell.warning('Choose pattern to delete');
             else
               grok.dapi.userDataStorage.remove(userStorageKey, loadPattern.value, false)
                 .then(() => grok.shell.info("Pattern '" + loadPattern.value + "' deleted"));
@@ -372,8 +372,8 @@ export function defineAxolabsPattern() {
     if (saveAs.value != '') {
       savePattern();
     } else {
-      let name = ui.stringInput('Enter name', '');
-      ui.dialog('Pattern name')
+      let name = ui.stringInput('Pattern name', '');
+      ui.dialog('Save pattern')
         .add(name.root)
         .onOK(() => {
           saveAs.value = name.value;
@@ -385,7 +385,7 @@ export function defineAxolabsPattern() {
 
   let convertSequenceButton = ui.button('Convert Sequences', () => {
     if (inputSsColumn.value == null || (createAsStrand.value && inputAsColumn.value == null))
-      grok.shell.info("Please select table and columns on which to apply pattern");
+      grok.shell.warning("Please select table and columns on which to apply pattern");
     else if (ssLength.value != ssInput.value.length || asLength.value != asInput.value.length) {
       let dialog = ui.dialog("Length mismatch")
       $(dialog.getButton('OK')).hide();
