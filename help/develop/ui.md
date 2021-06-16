@@ -796,7 +796,8 @@ For each dialog, you can set the position by viewport by x and y-asix.
   - Success message
   - Error message
   ```javascript
-  grok.shell.info('Success message')
+  grok.shell.info('Success message');
+  grok.shell.warning('Warning message');
   grok.shell.error('Error message');
   ```
 
