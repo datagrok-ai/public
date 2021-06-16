@@ -1,0 +1,27 @@
+{
+	"name": "oligobatchcalculator",
+	"beta": true,
+	"friendlyName": "OligoBatchCalculator",
+	"version": "0.0.1",
+	"description": "",
+	"dependencies": {
+		"datagrok-api": "latest",
+		"ts-loader": "latest",
+		"typescript": "latest"
+	},
+	"devDependencies": {
+		"@types/jquery": "^3.5.5",
+		"webpack": "latest",
+		"webpack-cli": "latest"
+	},
+	"scripts": {
+		"debug-oligobatchcalculator": "grok publish --rebuild",
+		"release-oligobatchcalculator": "grok publish --rebuild --release",
+		"build-oligobatchcalculator": "webpack",
+		"build": "webpack",
+		"debug-oligobatchcalculator-public": "grok publish public --rebuild",
+		"release-oligobatchcalculator-public": "grok publish public --rebuild --release",
+		"debug-oligobatchcalculator-local": "grok publish local --rebuild",
+		"release-oligobatchcalculator-local": "grok publish local --rebuild --release"
+	}
+}
