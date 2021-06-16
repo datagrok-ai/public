@@ -27,6 +27,14 @@ public class GrokConnectShell {
         output.setRequired(false);
         options.addOption(output);
 
+        Option binaryOutput = new Option("bo", "binary_output", true, "Output binary file path");
+        binaryOutput.setRequired(false);
+        options.addOption(binaryOutput);
+
+        Option originalCsv = new Option("oc", "original_csv", true, "Output original CSV file path");
+        originalCsv.setRequired(false);
+        options.addOption(originalCsv);
+
         Option help = new Option("h", "help", false, "Help");
         help.setRequired(false);
         options.addOption(output);
@@ -48,6 +56,7 @@ public class GrokConnectShell {
         call.setParamValues();
         DateTime startTime = DateTime.now();
         DataProvider provider = DataProvider.getByName(call.func.connection.dataSource);
+        provider.originalCsvPath = cmd.getOptionValue("original_csv");
         DataFrame table = provider.execute(call);
         double execTime = (DateTime.now().getMillis() - startTime.getMillis()) / 1000.0;
 
@@ -64,5 +73,14 @@ public class GrokConnectShell {
             Files.write(Paths.get(csvPath), csv.getBytes(StandardCharsets.UTF_8));
         else
             System.out.println(csv);
+
+        String binaryPath = cmd.getOptionValue("binary_output");
+
+        if (binaryPath != null) {
+            try (FileOutputStream outputStream = new FileOutputStream(new File(binaryPath))) {
+                outputStream.write(table.toByteArray());
+            }
+        }
+
     }
 }
