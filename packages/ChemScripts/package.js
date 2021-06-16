@@ -59,7 +59,6 @@ class ChemScriptsPackage extends DG.Package {
 
     sp.props.markerDefaultSize = 5
     sp.props.colorColumnName = 'activity';
-    grok.shell.newView('View', [sp]);
 
     sp.onEvent('d4-before-draw-scene').subscribe(_ => renderLines(sp, pairs));
   }  
