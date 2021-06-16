@@ -222,10 +222,7 @@ public abstract class JdbcDataProvider extends DataProvider {
 
             for (int c = 1; c < columnCount + 1; c++) {
                 csvWriter.append(resultSetMetaData.getColumnLabel(c));
-                if (c == columnCount)
-                    csvWriter.append('\n');
-                else
-                    csvWriter.append(',');
+                csvWriter.append(c == columnCount ? '\n' : ',');
             }
         }
 
@@ -244,11 +241,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                         csvWriter.append(valueString);
                     }
                     csvWriter.append(value != null ? value.toString() : "");
-
-                    if (c == columnCount)
-                        csvWriter.append('\n');
-                    else
-                        csvWriter.append(',');
+                    csvWriter.append(c == columnCount ? '\n' : ',');
                 }
 
                 int type = resultSetMetaData.getColumnType(c);
