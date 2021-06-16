@@ -236,7 +236,7 @@ export function defineAxolabsPattern() {
   function updatePatternsList() {
     grok.dapi.userDataStorage.get(userStorageKey, false).then((entities) => {
       let loadPattern = ui.choiceInput('Load Pattern', '', Object.keys(entities), (v: string) => {
-        parsePatternAndUpdateUi(v)
+        parsePatternAndUpdateUi(v);
       });
       loadPattern.setTooltip('Apply Existing Pattern');
       loadPatternDiv.innerHTML = '';
@@ -244,35 +244,39 @@ export function defineAxolabsPattern() {
         loadPattern.root
       );
       loadPattern.root.append(
-        ui.button(ui.iconFA('trash-alt', () => {
-        }), () => {
-          grok.dapi.userDataStorage.remove(userStorageKey, loadPattern.value, false)
-            .then(() => grok.shell.info("Pattern '" + loadPattern.value + "' deleted"));
-          updatePatternsList();
-        })
+        ui.div([
+          ui.button(ui.iconFA('trash-alt', () => {}), () => {
+            if (loadPattern.value == null)
+              grok.shell.info('Choose pattern to delete')
+            else
+              grok.dapi.userDataStorage.remove(userStorageKey, loadPattern.value, false)
+                .then(() => grok.shell.info("Pattern '" + loadPattern.value + "' deleted"));
+              updatePatternsList();
+          })
+        ], 'ui-input-options')
       );
     });
   }
 
   function savePattern() {
-    grok.dapi.userDataStorage.get(userStorageKey, false).then((entities) => {
-      if (Object.keys(entities).includes(saveAs.value)) {
-        let dialog = ui.dialog('Pattern already exists');
-        $(dialog.getButton('OK')).hide();
-        dialog
-          .add(ui.divText("Pattern name '" + saveAs.value + "' already exists."))
-          .add(ui.divText('Replace pattern?'))
-          .addButton('YES', () => {
-            grok.dapi.userDataStorage.remove(userStorageKey, saveAs.value, false)
-              .then(() => postPatternToUserStorage());
-            dialog.close();
-          })
-          .show();
-      } else {
-        postPatternToUserStorage();
-      }
-    });
-    updatePatternsList();
+    grok.dapi.userDataStorage.get(userStorageKey, false)
+      .then((entities) => {
+        if (Object.keys(entities).includes(saveAs.value)) {
+          let dialog = ui.dialog('Pattern already exists');
+          $(dialog.getButton('OK')).hide();
+          dialog
+            .add(ui.divText("Pattern name '" + saveAs.value + "' already exists."))
+            .add(ui.divText('Replace pattern?'))
+            .addButton('YES', () => {
+              grok.dapi.userDataStorage.remove(userStorageKey, saveAs.value, false)
+                .then(() => postPatternToUserStorage());
+              dialog.close();
+            })
+            .show();
+        } else {
+          postPatternToUserStorage();
+        }
+      }).then(() => updatePatternsList()).then(() => grok.shell.info("Pattern '" + saveAs.value + "' is accessible"));
   }
 
   let inputSsColumnDiv = ui.div([]),
@@ -282,7 +286,8 @@ export function defineAxolabsPattern() {
     svgDiv = ui.div([]),
     asExampleDiv = ui.div([]),
     appAxolabsDescription = ui.div([]),
-    loadPatternDiv = ui.div([]);
+    loadPatternDiv = ui.div([]),
+    fiveModificationDiv = ui.div([]);
 
   let ssBases = Array(defaultSequenceLength).fill(ui.choiceInput('', defaultBase, baseChoices)),
     asBases = Array(defaultSequenceLength).fill(ui.choiceInput('', defaultBase, baseChoices)),
@@ -341,6 +346,7 @@ export function defineAxolabsPattern() {
     asModificationSection.hidden = (!v);
     inputAsColumnDiv.hidden = (!v);
     asLengthDiv.hidden = (!v);
+    fiveModificationDiv.hidden = (!v);
     asExampleDiv.hidden = (!v);
     updateSvgScheme();
   });
@@ -358,6 +364,7 @@ export function defineAxolabsPattern() {
     updateExamples();
   });
   fiveModification.setTooltip("Additional 5' Modification");
+  fiveModificationDiv.append(fiveModification.root);
 
   updateUiForNewSequenceLength();
 
@@ -379,7 +386,18 @@ export function defineAxolabsPattern() {
   let convertSequenceButton = ui.button('Convert Sequences', () => {
     if (inputSsColumn.value == null || (createAsStrand.value && inputAsColumn.value == null))
       grok.shell.info("Please select table and columns on which to apply pattern");
-    else {
+    else if (ssLength.value != ssInput.value.length || asLength.value != asInput.value.length) {
+      let dialog = ui.dialog("Length mismatch")
+      $(dialog.getButton('OK')).hide();
+      dialog
+        .add(ui.divText("Length of sequences in columns doesn't match entered length. Update length value?"))
+        .addButton('YES', () => {
+          ssLength.value = grok.shell.table(tables.value).columns.byName(inputSsColumn.value).getString(0).length;
+          asLength.value = grok.shell.table(tables.value).columns.byName(inputAsColumn.value).getString(0).length;
+          dialog.close();
+        })
+        .show();
+    } else {
       addColumnWithTranslatedSequences(tables.value, inputSsColumn.value, ssBases, ssPtoLinkages, threeModification);
       if (createAsStrand.value)
         addColumnWithTranslatedSequences(tables.value, inputAsColumn.value, asBases, asPtoLinkages, fiveModification);
@@ -400,9 +418,11 @@ export function defineAxolabsPattern() {
   // @ts-ignore
   ssResult.input.disabled = 'true';
   ssResult.root.append(
-    ui.button(ui.iconFA('copy', () => {}), () => {
-      navigator.clipboard.writeText(ssResult.value).then(() => grok.shell.info('Sequence was copied to clipboard'));
-    })
+    ui.div([
+      ui.button(ui.iconFA('copy', () => {}), () => {
+        navigator.clipboard.writeText(ssResult.value).then(() => grok.shell.info('Sequence was copied to clipboard'));
+      })
+    ], 'ui-input-options')
   );
 
   let asInput = ui.stringInput('AS','',() => asResult.value = translateSequence(asInput.value, asBases, asPtoLinkages, fiveModification));
@@ -418,9 +438,11 @@ export function defineAxolabsPattern() {
   // @ts-ignore
   asResult.input.disabled = 'true';
   asResult.root.append(
-    ui.button(ui.iconFA('copy', () => {}), () => {
-      navigator.clipboard.writeText(asResult.value).then(() => grok.shell.info('Sequence was copied to clipboard'));
-    })
+    ui.div([
+      ui.button(ui.iconFA('copy', () => {}), () => {
+        navigator.clipboard.writeText(asResult.value).then(() => grok.shell.info('Sequence was copied to clipboard'));
+      })
+    ], 'ui-input-options')
   );
   asExampleDiv.append(asInput.root);
   asExampleDiv.append(asResult.root);
@@ -441,7 +463,7 @@ export function defineAxolabsPattern() {
         fullyPto.root,
         createAsStrand.root,
         threeModification.root,
-        fiveModification.root,
+        fiveModificationDiv,
         loadPatternDiv,
         saveAs.root,
         ui.buttonsInput([

@@ -152,7 +152,7 @@ export class Viewer extends Widget {
     return new Viewer(api.grok_Viewer_Filters(t.d, _toJson(options)));
   }
 
-  static scatterPlot(t: DataFrame, options: object | null = null): Viewer {
+  static scatterPlot(t: DataFrame, options: object | null = null): ScatterPlotViewer {
     return new ScatterPlotViewer(api.grok_Viewer_ScatterPlot(t.d, _toJson(options)));
   }
 
@@ -178,6 +178,19 @@ export class Viewer extends Widget {
         new StreamSubscription(d).cancel();
       }
     );
+  }
+}
+
+
+export class TablePlotter {
+  dataFrame: DataFrame;
+
+  constructor(dataFrame: DataFrame) {
+    this.dataFrame = dataFrame;
+  }
+
+  scatter(x: string, y: string, color?: string, size?: string): ScatterPlotViewer {
+    return Viewer.scatterPlot(this.dataFrame, {x: x, y: y, color: color, size: size});
   }
 }
 

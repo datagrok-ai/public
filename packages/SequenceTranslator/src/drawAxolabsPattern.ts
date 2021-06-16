@@ -25,6 +25,11 @@ function getStarPoints(centerX: number, centerY: number) {
   return points;
 }
 
+function getFontColor(rgbString: string) {
+  let rgbIntList = rgbString.match(/\d+/g)!.map(e => Number(e));
+  return ((rgbIntList[0] * 0.299 + rgbIntList[1] * 0.587 + rgbIntList[2] * 0.114) > 186) ? '#333333' : '#ffffff';
+}
+
 export function drawAxolabsPattern(patternName: string, createAsStrand: boolean, ssBaseStatuses: string[], asBaseStatuses: string[], ssPtoStatuses: boolean[], asPtoStatuses: boolean[], ssModif: string, asModif:string) {
   ssBaseStatuses = ssBaseStatuses.reverse();
   ssPtoStatuses = ssPtoStatuses.reverse();
@@ -95,8 +100,9 @@ export function drawAxolabsPattern(patternName: string, createAsStrand: boolean,
     image.append(
       svg.circle(String((maxNumberInStrands - i + 2) * 2 * baseRadius), String(3.5 * baseRadius), String(baseRadius), axolabsMap[ssBaseStatuses[i]]["color"])
     );
+    let c = axolabsMap[ssBaseStatuses[i]]["color"].match(/\d+/g)!.map(e => Number(e));
     image.append(
-      svg.text(String(ssBaseStatuses.length - i), String((maxNumberInStrands - i + 2) * 2 * baseRadius - baseRadius + ((ssBaseStatuses.length - i < 10) ? textShift + 5 : textShift)), String(4 * baseRadius), fontSize, fontWeight, fontColor)
+      svg.text(String(ssBaseStatuses.length - i), String((maxNumberInStrands - i + 2) * 2 * baseRadius - baseRadius + ((ssBaseStatuses.length - i < 10) ? textShift + 5 : textShift)), String(4 * baseRadius), fontSize, fontWeight, getFontColor(axolabsMap[ssBaseStatuses[i]]["color"]))
     );
     if (ssPtoStatuses[i]) {
       image.append(
@@ -110,7 +116,7 @@ export function drawAxolabsPattern(patternName: string, createAsStrand: boolean,
         svg.circle(String((maxNumberInStrands - i + 2) * 2 * baseRadius), String(6.5 * baseRadius), String(baseRadius), axolabsMap[asBaseStatuses[i]]["color"])
       );
       image.append(
-        svg.text(String(i + 1), String((maxNumberInStrands - i + 2) * 2 * baseRadius - baseRadius + ((i < 9) ? textShift + 5 : textShift)), String(7 * baseRadius), fontSize, fontWeight, fontColor)
+        svg.text(String(i + 1), String((maxNumberInStrands - i + 2) * 2 * baseRadius - baseRadius + ((i < 9) ? textShift + 5 : textShift)), String(7 * baseRadius), fontSize, fontWeight, getFontColor(axolabsMap[asBaseStatuses[i]]["color"]))
       )
       if (asPtoStatuses[i]) {
         image.append(

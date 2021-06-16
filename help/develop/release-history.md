@@ -1,6 +1,44 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-06-15 Dev build 0.92.10
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.10`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Update generate-html-help.side 
+* Handling the case when an existing column is being replaced 
+* Deploy: test connections migration (WIP)
+* ClinicalCase \- a plugin for analyzing SDTM-based clinical studies data (WIP)
+* Activity cliffs visual modification 
+* Update beta users table 
+* Sequence Translator | AXOLABS: Add tooltips for field headers which do not fit completely 
+* Moved to table view 
+* Updated public token 
+* Reduce DataQueryCall tag payload (WIP)
+* user friendly options added 
+* (Bug) Miniconda hangs CVM builds (WIP)
+* About-widget 
+* Power Search: deep integration with functions (WIP)
+* Add .vscode to gitignore 
+* Power Search: JS integration 
+* JS API: fluent API for plotting (WIP)
+* (Bug) Deploy: projects migration bugs (WIP)
+* Connections: add system connections  
+* SequenceTranslator: flexible Axolabs sequence conversion 
+* (Bug) Impossible to add a tile viewer to the table  
+* Sequence Translator: detect font color suitable for background color 
+* (Bug) Bar Chart: stacked mode: labels are rendered behind the bars 
+* (Bug) Log export hangs 
+
+
 # 2021-06-14 Dev build 0.92.9
 
 ## Latest Docker Images
