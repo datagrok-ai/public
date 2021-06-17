@@ -146,6 +146,12 @@ export class Func extends Entity {
     return toJs(api.grok_Func_Prepare(this.d, parameters));
   };
 
+  get inputs(): Property[] {
+    return toJs(api.grok_Func_Get_InputParams(this.d));
+  }
+  get outputs(): Property[] {
+    return toJs(api.grok_Func_Get_OutputParams(this.d));
+  }
   /**
    *  Executes the function with the specified {link parameters}, and returns result.
    *  If necessary, the corresponding package will be loaded as part of the call.
