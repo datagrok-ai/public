@@ -240,7 +240,9 @@ public abstract class JdbcDataProvider extends DataProvider {
                             valueString = "\"" + valueString + "\"";
                         csvWriter.append(valueString);
                     }
-                    csvWriter.append(value != null ? value.toString() : "");
+                    else
+                        csvWriter.append("");
+
                     csvWriter.append(c == columnCount ? '\n' : ',');
                 }
 
