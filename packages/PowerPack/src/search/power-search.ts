@@ -29,9 +29,12 @@ export function initSearch() {
 }
 
 export function powerSearch(s: string, host: HTMLDivElement): void {
+  ui.empty(host);
+
   jsEvalSearch(s, host) ||
   viewsSearch(s, host);
 
+  projectsSearch(s, host);
   functionEvaluationsSearch(s, host);
   searchFunctionsSearch(s, host);
   queriesEntitiesSearch(s, host);
@@ -54,6 +57,20 @@ function viewsSearch(s: string, host: HTMLDivElement): boolean {
 function queriesEntitiesSearch(s: string, host: HTMLDivElement): void {
   s = s.toLowerCase();
   host.appendChild(ui.list(queries.filter((q) => q.name.toLowerCase().includes(s))));
+}
+
+function projectsSearch(s: string, host: HTMLDivElement): void {
+  if (s.length < 3)
+    return;
+  grok.dapi.projects.filter(s).list({pageSize: 5}).then((projects) => {
+    if (projects.length > 0)
+      host.appendChild(
+        ui.divV([
+          ui.h3('Projects'),
+          ui.divH(projects.map((p) => ui.renderCard(p)))
+        ])
+      );
+  });
 }
 
 /// Evaluates some of the JavaScript code
