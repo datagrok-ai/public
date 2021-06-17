@@ -56,7 +56,7 @@ public class GrokConnectShell {
         call.setParamValues();
         DateTime startTime = DateTime.now();
         DataProvider provider = DataProvider.getByName(call.func.connection.dataSource);
-        provider.originalCsvPath = cmd.getOptionValue("original_csv");
+        provider.outputCsv = cmd.getOptionValue("original_csv");
         DataFrame table = provider.execute(call);
         double execTime = (DateTime.now().getMillis() - startTime.getMillis()) / 1000.0;
 

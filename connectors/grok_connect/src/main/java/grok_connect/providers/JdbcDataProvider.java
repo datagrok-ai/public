@@ -217,8 +217,8 @@ public abstract class JdbcDataProvider extends DataProvider {
         }
 
         BufferedWriter csvWriter = null;
-        if (originalCsvPath != null) {
-            csvWriter = new BufferedWriter(new FileWriter(originalCsvPath));
+        if (outputCsv != null) {
+            csvWriter = new BufferedWriter(new FileWriter(outputCsv));
 
             for (int c = 1; c < columnCount + 1; c++) {
                 csvWriter.append(resultSetMetaData.getColumnLabel(c));
@@ -233,15 +233,13 @@ public abstract class JdbcDataProvider extends DataProvider {
             for (int c = 1; c < columnCount + 1; c++) {
                 Object value = resultSet.getObject(c);
 
-                if (originalCsvPath != null) {
+                if (outputCsv != null) {
                     if (value != null) {
                         String valueString = value.toString();
                         if (valueString.contains(","))
                             valueString = "\"" + valueString + "\"";
                         csvWriter.append(valueString);
                     }
-                    else
-                        csvWriter.append("");
 
                     csvWriter.append(c == columnCount ? '\n' : ',');
                 }
@@ -332,7 +330,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                             String.valueOf(size) + " > " + String.valueOf(memoryLimit) + " MB");
             }
         }
-        if (originalCsvPath != null)
+        if (outputCsv != null)
             csvWriter.close();
 
         connection.close();
