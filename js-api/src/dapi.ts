@@ -87,7 +87,7 @@ export class Dapi {
   /** Packages API endpoint
    *  @type {HttpDataSource<Package>} */
   get packages(): HttpDataSource<Package> {
-    return new HttpDataSource(api.grok_Dapi_Packages(), (a: any) => new Package(a));
+    return new HttpDataSource(api.grok_Dapi_Packages(), (a: any) => toJs(a));
   }
 
   /** View Layouts API endpoint

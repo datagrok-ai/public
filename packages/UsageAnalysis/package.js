@@ -1,4 +1,4 @@
-class UsageAnalysisUiPackage extends DG.Package {
+class UsageAnalysisPackage extends DG.Package {
 
   //name: Usage Analysis
   //tags: app
@@ -71,7 +71,7 @@ class UsageAnalysisUiPackage extends DG.Package {
           params['users'] = (supportUsers && selectedUsers.length !== 0) ? selectedUsers : ['all'];
           params['events'] = (events.value.length !== 0) ? [isExactly.value ? events.value : events.value + '%'] : ['all'];
 
-          grok.data.query('UsageAnalysisUi:' + queryName, params).then((t) => {
+          grok.data.query('UsageAnalysis:' + queryName, params).then((t) => {
             if (cardName === 'Errors')
               grok.data.detectSemanticTypes(t);
             host.appendChild(f(t));
@@ -90,7 +90,7 @@ class UsageAnalysisUiPackage extends DG.Package {
             queryName += 'AndUsers';
             params['users'] = selectedUsers;
           }
-          grok.data.query('UsageAnalysisUi:' + queryName, params).then((t) => {
+          grok.data.query('UsageAnalysis:' + queryName, params).then((t) => {
             if (cardName === 'Errors')
               grok.data.detectSemanticTypes(t);
             host.appendChild(f(t));
@@ -130,7 +130,7 @@ class UsageAnalysisUiPackage extends DG.Package {
         host.appendChild(ui.loader());
         host.appendChild(ui.wait(async () => {
           let root = ui.div();
-          let lastUsers = await grok.data.query('UsageAnalysisUi:NewUsersLastMonthWeekDay');
+          let lastUsers = await grok.data.query('UsageAnalysis:NewUsersLastMonthWeekDay');
           let list = [
             ['Day', lastUsers.get('day', 0)],
             ['Week', lastUsers.get('week', 0)],
@@ -152,7 +152,7 @@ class UsageAnalysisUiPackage extends DG.Package {
         host.appendChild(ui.loader());
         host.appendChild(ui.wait(async () => {
           let root = ui.div();
-          let lastEvents = await grok.data.query('UsageAnalysisUi:NewEventsLastMonthWeekDay');
+          let lastEvents = await grok.data.query('UsageAnalysis:NewEventsLastMonthWeekDay');
           let list = [
             ['Day', lastEvents.get('day', 0)],
             ['Week', lastEvents.get('week', 0)],
@@ -174,7 +174,7 @@ class UsageAnalysisUiPackage extends DG.Package {
         host.appendChild(ui.loader());
         host.appendChild(ui.wait(async () => {
             let root = ui.div();
-            let lastErrors = await grok.data.query('UsageAnalysisUi:NewErrorsLastMonthWeekDay');
+            let lastErrors = await grok.data.query('UsageAnalysis:NewErrorsLastMonthWeekDay');
             let list = [
               ['Day', lastErrors.get('day', 0)],
               ['Week', lastErrors.get('week', 0)],

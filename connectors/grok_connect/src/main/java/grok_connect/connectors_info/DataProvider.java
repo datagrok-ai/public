@@ -20,6 +20,8 @@ public abstract class DataProvider
 
     public DataSource descriptor;
 
+    public String originalCsvPath;
+
     public abstract boolean isParametrized();
 
     public abstract DataFrame execute(FuncCall queryRun)

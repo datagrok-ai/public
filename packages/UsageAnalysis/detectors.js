@@ -1,4 +1,4 @@
-class UsageAnalysisUiPackageDetectors extends DG.Package {
+class UsageAnalysisPackageDetectors extends DG.Package {
 
   //tags: semTypeDetector
   //input: column col
