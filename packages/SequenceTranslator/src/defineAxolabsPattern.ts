@@ -154,7 +154,8 @@ export function defineAxolabsPattern() {
           sSthreeModification.value,
           sSfiveModification.value,
           aSthreeModification.value,
-          aSfiveModification.value
+          aSfiveModification.value,
+          comment.value
         )
       ])
     );
@@ -189,6 +190,7 @@ export function defineAxolabsPattern() {
       sSfiveModification.value = obj['sSfiveModification'];
       aSthreeModification.value = obj['aSthreeModification'];
       aSfiveModification.value = obj['aSfiveModification'];
+      comment.value = obj['comment'];
 
       updateSvgScheme();
       updateAsModification();
@@ -233,7 +235,8 @@ export function defineAxolabsPattern() {
         "sSthreeModification": sSthreeModification.value,
         "sSfiveModification": sSfiveModification.value,
         "aSthreeModification": aSthreeModification.value,
-        "aSfiveModification": aSfiveModification.value
+        "aSfiveModification": aSfiveModification.value,
+        "comment": comment.value
       }),
       false
     ).then(() => grok.shell.info('Pattern ' + saveAs.value + ' was successfully uploaded!'));
@@ -387,6 +390,8 @@ export function defineAxolabsPattern() {
   asModificationDiv.append(aSthreeModification.root);
   asModificationDiv.append(aSfiveModification.root);
 
+  let comment = ui.stringInput('Comment', '', () => updateSvgScheme());
+
   updateUiForNewSequenceLength();
 
   let savePatternButton = ui.button('Save', () => {
@@ -486,6 +491,7 @@ export function defineAxolabsPattern() {
         sSfiveModification.root,
         sSthreeModification.root,
         asModificationDiv,
+        comment.root,
         loadPatternDiv,
         saveAs.root,
         ui.buttonsInput([

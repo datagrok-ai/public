@@ -31,7 +31,7 @@ function getFontColor(rgbString: string) {
 }
 
 export function drawAxolabsPattern(patternName: string, createAsStrand: boolean, ssBaseStatuses: string[], asBaseStatuses: string[], ssPtoStatuses: boolean[], asPtoStatuses: boolean[],
-                                   sSthreeModification: string, sSfiveModification: string, aSthreeModification: string, aSfiveModification: string) {
+                                   sSthreeModification: string, sSfiveModification: string, aSthreeModification: string, aSfiveModification: string, comment: string) {
   ssBaseStatuses = ssBaseStatuses.reverse();
   ssPtoStatuses = ssPtoStatuses.reverse();
 
@@ -77,12 +77,13 @@ export function drawAxolabsPattern(patternName: string, createAsStrand: boolean,
     psLinkageRadius = 5,
     psLinkageColor = 'red',
     fontSize = '17',
-    width = (2 * baseRadius + 1) * maxNumberInStrands + 5 * baseRadius + (Math.max(sSthreeModification.length, aSfiveModification.length) + Math.max(sSfiveModification.length, aSthreeModification.length)) * 9,
-    height = 10 * baseRadius,
+    width = (2 * baseRadius + 1) * maxNumberInStrands + 5 * baseRadius + (Math.max(sSthreeModification.length, aSfiveModification.length) + Math.max(sSfiveModification.length, aSthreeModification.length)) * 10,
+    height = 11 * baseRadius,
     title = patternName + ' for ' + String(ssBaseStatuses.length) + ((createAsStrand) ? '/' + String(asBaseStatuses.length) : '') + 'mer',
     textShift = 5,
     fontWeight = 'normal',
-    fontColor = 'grey';
+    fontColor = 'var(--grey-6)',
+    shift = Math.max(sSfiveModification.length, aSthreeModification.length) * 10;
 
   let image = svg.render(String(width), String(height));
   image.append(svg.text(title, String(Math.round(width / 2)), String(2 * baseRadius), fontSize, fontWeight, fontColor));
@@ -97,10 +98,9 @@ export function drawAxolabsPattern(patternName: string, createAsStrand: boolean,
   image.append(svg.text(sSfiveModification, String(Math.round(3.5 * baseRadius)), String(4 * baseRadius), fontSize, fontWeight, psLinkageColor));
   image.append(svg.text(aSthreeModification, String(Math.round(3.5 * baseRadius)), String(7 * baseRadius), fontSize, fontWeight, psLinkageColor));
 
-  image.append(svg.text(sSthreeModification, String((maxNumberInStrands + 2) * 2 * baseRadius + Math.round(3.5 * baseRadius)), String(4 * baseRadius), fontSize, fontWeight, psLinkageColor));
-  image.append(svg.text(aSfiveModification, String((maxNumberInStrands + 2) * 2 * baseRadius + Math.round(3.5 * baseRadius)), String(7 * baseRadius), fontSize, fontWeight, psLinkageColor));
+  image.append(svg.text(sSthreeModification, String(shift + (maxNumberInStrands + 2.5) * 2 * baseRadius), String(4 * baseRadius), fontSize, fontWeight, psLinkageColor));
+  image.append(svg.text(aSfiveModification, String(shift + (maxNumberInStrands + 2.5) * 2 * baseRadius), String(7 * baseRadius), fontSize, fontWeight, psLinkageColor));
 
-  const shift = Math.max(sSfiveModification.length, aSthreeModification.length) * 9;
   for (let i = ssBaseStatuses.length - 1; i > -1; i--) {
     image.append(
       svg.circle(String(shift + (maxNumberInStrands - i + 2) * 2 * baseRadius), String(3.5 * baseRadius), String(baseRadius), axolabsMap[ssBaseStatuses[i]]["color"])
@@ -130,23 +130,24 @@ export function drawAxolabsPattern(patternName: string, createAsStrand: boolean,
     }
   }
   const uniqueBases = [...new Set(ssBaseStatuses.concat(asBaseStatuses))];
-  const isPtoExist = ([...new Set(ssPtoStatuses.concat(asPtoStatuses))].includes(true)) ? true : false;
+  const isPtoExist = [...new Set(ssPtoStatuses.concat(asPtoStatuses))].includes(true);
   const startFrom = isPtoExist ? 1 : 0;
   if (isPtoExist) {
     image.append(
-      svg.polygon(baseRadius, 9.5 * baseRadius, psLinkageColor)
+      svg.polygon(baseRadius, 9 * baseRadius, psLinkageColor)
     );
     image.append(
-      svg.text('ps linkage', String(2 * baseRadius - 8), String(10 * baseRadius - 3), legendFontSize, fontWeight, fontColor)
+      svg.text('ps linkage', String(2 * baseRadius - 8), String(9.5 * baseRadius - 3), legendFontSize, fontWeight, fontColor)
     );
   }
   for (let i = 0; i < uniqueBases.length; i++) {
     image.append(
-      svg.circle(String(Math.round((i + startFrom) * width / (uniqueBases.length + startFrom) + baseRadius)), String(9.5 * baseRadius), String(legendRadius), axolabsMap[uniqueBases[i]]["color"])
+      svg.circle(String(Math.round((i + startFrom) * width / (uniqueBases.length + startFrom) + baseRadius)), String(9 * baseRadius), String(legendRadius), axolabsMap[uniqueBases[i]]["color"])
     );
     image.append(
-      svg.text(uniqueBases[i], String(Math.round((i + startFrom) * width / (uniqueBases.length + startFrom)) + 2 * baseRadius - 8), String(10 * baseRadius - 3), legendFontSize, fontWeight, fontColor)
+      svg.text(uniqueBases[i], String(Math.round((i + startFrom) * width / (uniqueBases.length + startFrom)) + 2 * baseRadius - 8), String(9.5 * baseRadius - 3), legendFontSize, fontWeight, fontColor)
     );
   }
+  image.append(svg.text(comment, String(2 * baseRadius), String(10.5 * baseRadius), fontSize, fontWeight, fontColor));
   return image;
 }
