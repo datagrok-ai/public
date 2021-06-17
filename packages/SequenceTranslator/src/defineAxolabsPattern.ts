@@ -24,24 +24,24 @@ const userStorageKey: string = 'SequenceTranslator';
 const exampleMinWidth: string = '400px';
 const modificationSectionMaxWidth = '220px';
 
-function translateSequence(sequence: string, bases: any, ptoLinkages: any, modification: any) {
+function translateSequence(sequence: string, bases: any, ptoLinkages: any, startModification: any, endModification: any) {
   let counter: number = -1;
-  return sequence.replace(/[AUGC]/g, function (x: string) {
+  return startModification.value + sequence.replace(/[AUGC]/g, function (x: string) {
     counter++;
     let indexOfSymbol = axolabsMap["RNA"]["symbols"].indexOf(x);
     let symbol = axolabsMap[bases[counter].value]["symbols"][indexOfSymbol];
     return (ptoLinkages[counter].value) ? symbol + 's' : symbol;
-  }) + modification.value;
+  }) + endModification.value;
 }
 
-function addColumnWithTranslatedSequences(tableName: string, columnName: string, bases: any, ptoLinkages: any, modification: any) {
+function addColumnWithTranslatedSequences(tableName: string, columnName: string, bases: any, ptoLinkages: any, startModification: any, endModification: any) {
   const nameOfNewColumn = 'Axolabs ' + columnName;
   let columns = grok.shell.table(tableName).columns;
   if (columns.contains(nameOfNewColumn))
     columns.remove(nameOfNewColumn);
   const columnWithInputSequences = columns.byName(columnName);
   return columns.addNewString(nameOfNewColumn).init((i: number) => {
-    return translateSequence(columnWithInputSequences.getString(i), bases, ptoLinkages, modification);
+    return translateSequence(columnWithInputSequences.getString(i), bases, ptoLinkages, startModification, endModification);
   });
 }
 
@@ -135,9 +135,9 @@ export function defineAxolabsPattern() {
   }
 
   function updateExamples() {
-    ssResult.value = translateSequence(ssInput.value, ssBases, ssPtoLinkages, threeModification);
+    ssResult.value = translateSequence(ssInput.value, ssBases, ssPtoLinkages, sSthreeModification, sSfiveModification);
     if (createAsStrand.value)
-      asResult.value = translateSequence(asInput.value, asBases, asPtoLinkages, fiveModification);
+      asResult.value = translateSequence(asInput.value, asBases, asPtoLinkages, aSthreeModification, aSfiveModification);
   }
 
   function updateSvgScheme() {
@@ -151,8 +151,10 @@ export function defineAxolabsPattern() {
           asBases.slice(0, asLength.value).map((e) => e.value),
           ssPtoLinkages.slice(0, ssLength.value).map((e) => e.value),
           asPtoLinkages.slice(0, asLength.value).map((e) => e.value),
-          threeModification.value,
-          fiveModification.value
+          sSthreeModification.value,
+          sSfiveModification.value,
+          aSthreeModification.value,
+          aSfiveModification.value
         )
       ])
     );
@@ -183,8 +185,10 @@ export function defineAxolabsPattern() {
       for (let i = 0; i < obj['asPtoLinkages'].length; i++)
         asPtoLinkages.push(ui.boolInput('', obj['asPtoLinkages'][i]));
 
-      threeModification.value = obj['threeModification'];
-      fiveModification.value = obj['fiveModification'];
+      sSthreeModification.value = obj['sSthreeModification'];
+      sSfiveModification.value = obj['sSfiveModification'];
+      aSthreeModification.value = obj['aSthreeModification'];
+      aSfiveModification.value = obj['aSfiveModification'];
 
       updateSvgScheme();
       updateAsModification();
@@ -209,7 +213,7 @@ export function defineAxolabsPattern() {
         .add(ui.divText("'ADD COLUMN' to see sequences lengths"))
         .addButton('ADD COLUMN', () => {
           grok.shell.table(tables.value).columns.addNewInt('Sequences lengths in ' + colName).init((j) => col.get(j).length);
-          grok.shell.info("Column with lengths was added to '" + tables.value + "'");
+          grok.shell.info("Column with lengths added to '" + tables.value + "'");
           dialog.close();
         })
         .show();
@@ -226,8 +230,10 @@ export function defineAxolabsPattern() {
         "asBases": asBases.slice(0, asLength.value).map((e) => e.value),
         "ssPtoLinkages": ssPtoLinkages.slice(0, ssLength.value).map((e) => e.value),
         "asPtoLinkages": asPtoLinkages.slice(0, asLength.value).map((e) => e.value),
-        "threeModification": threeModification.value,
-        "fiveModification": fiveModification.value
+        "sSthreeModification": sSthreeModification.value,
+        "sSfiveModification": sSfiveModification.value,
+        "aSthreeModification": aSthreeModification.value,
+        "aSfiveModification": aSfiveModification.value
       }),
       false
     ).then(() => grok.shell.info('Pattern ' + saveAs.value + ' was successfully uploaded!'));
@@ -247,11 +253,11 @@ export function defineAxolabsPattern() {
         ui.div([
           ui.button(ui.iconFA('trash-alt', () => {}), () => {
             if (loadPattern.value == null)
-              grok.shell.warning('Choose pattern to delete');
+              grok.shell.info('Choose pattern to delete')
             else
               grok.dapi.userDataStorage.remove(userStorageKey, loadPattern.value, false)
                 .then(() => grok.shell.info("Pattern '" + loadPattern.value + "' deleted"));
-              updatePatternsList();
+            updatePatternsList();
           })
         ], 'ui-input-options')
       );
@@ -287,7 +293,7 @@ export function defineAxolabsPattern() {
     asExampleDiv = ui.div([]),
     appAxolabsDescription = ui.div([]),
     loadPatternDiv = ui.div([]),
-    fiveModificationDiv = ui.div([]);
+    asModificationDiv = ui.div([]);
 
   let ssBases = Array(defaultSequenceLength).fill(ui.choiceInput('', defaultBase, baseChoices)),
     asBases = Array(defaultSequenceLength).fill(ui.choiceInput('', defaultBase, baseChoices)),
@@ -303,7 +309,7 @@ export function defineAxolabsPattern() {
     const firstSequence = grok.shell.table(tables.value).columns.byName(n).get(0);
     if (allLengthsAreTheSame && firstSequence.length != ssLength.value)
       ssLength.value = grok.shell.table(tables.value).columns.byName(n).get(0).length;
-      ssInput.value = firstSequence;
+    ssInput.value = firstSequence;
   }
 
   function f2(n: string) {
@@ -311,9 +317,9 @@ export function defineAxolabsPattern() {
     const firstSequence = grok.shell.table(tables.value).columns.byName(n).get(0);
     if (allLengthsAreTheSame && firstSequence.length != asLength.value)
       asLength.value = grok.shell.table(tables.value).columns.byName(n).get(0).length;
-      asLengthDiv.innerHTML = '';
-      asLengthDiv.append(asLength.root);
-      asInput.value = firstSequence;
+    asLengthDiv.innerHTML = '';
+    asLengthDiv.append(asLength.root);
+    asInput.value = firstSequence;
   }
 
   let tables = ui.choiceInput('Tables', '', grok.shell.tableNames, () => {
@@ -346,7 +352,7 @@ export function defineAxolabsPattern() {
     asModificationSection.hidden = (!v);
     inputAsColumnDiv.hidden = (!v);
     asLengthDiv.hidden = (!v);
-    fiveModificationDiv.hidden = (!v);
+    asModificationDiv.hidden = (!v);
     asExampleDiv.hidden = (!v);
     updateSvgScheme();
   });
@@ -354,17 +360,32 @@ export function defineAxolabsPattern() {
   let saveAs = ui.stringInput('Save As', '', () => updateSvgScheme());
   saveAs.setTooltip('Name Of New Pattern');
 
-  let threeModification = ui.stringInput("Additional 3' Modification", "", () => {
+  let sSthreeModification = ui.stringInput("Additional SS 3' Modification", "", () => {
     updateSvgScheme();
     updateExamples();
   });
-  threeModification.setTooltip("Additional 3' Modification");
-  let fiveModification = ui.stringInput("Additional 5' Modification", "", () => {
+  sSthreeModification.setTooltip("Additional SS 3' Modification");
+
+  let sSfiveModification = ui.stringInput("Additional SS 5' Modification", "", () => {
     updateSvgScheme();
     updateExamples();
   });
-  fiveModification.setTooltip("Additional 5' Modification");
-  fiveModificationDiv.append(fiveModification.root);
+  sSfiveModification.setTooltip("Additional SS 5' Modification");
+
+  let aSthreeModification = ui.stringInput("Additional AS 3' Modification", "", () => {
+    updateSvgScheme();
+    updateExamples();
+  });
+  aSthreeModification.setTooltip("Additional AS 3' Modification");
+
+  let aSfiveModification = ui.stringInput("Additional AS 5' Modification", "", () => {
+    updateSvgScheme();
+    updateExamples();
+  });
+  aSfiveModification.setTooltip("Additional AS 5' Modification");
+
+  asModificationDiv.append(aSthreeModification.root);
+  asModificationDiv.append(aSfiveModification.root);
 
   updateUiForNewSequenceLength();
 
@@ -372,8 +393,8 @@ export function defineAxolabsPattern() {
     if (saveAs.value != '') {
       savePattern();
     } else {
-      let name = ui.stringInput('Pattern name', '');
-      ui.dialog('Save pattern')
+      let name = ui.stringInput('Enter name', '');
+      ui.dialog('Pattern name')
         .add(name.root)
         .onOK(() => {
           saveAs.value = name.value;
@@ -385,7 +406,7 @@ export function defineAxolabsPattern() {
 
   let convertSequenceButton = ui.button('Convert Sequences', () => {
     if (inputSsColumn.value == null || (createAsStrand.value && inputAsColumn.value == null))
-      grok.shell.warning("Please select table and columns on which to apply pattern");
+      grok.shell.info("Please select table and columns on which to apply pattern");
     else if (ssLength.value != ssInput.value.length || asLength.value != asInput.value.length) {
       let dialog = ui.dialog("Length mismatch")
       $(dialog.getButton('OK')).hide();
@@ -398,14 +419,14 @@ export function defineAxolabsPattern() {
         })
         .show();
     } else {
-      addColumnWithTranslatedSequences(tables.value, inputSsColumn.value, ssBases, ssPtoLinkages, threeModification);
+      addColumnWithTranslatedSequences(tables.value, inputSsColumn.value, ssBases, ssPtoLinkages, sSfiveModification, sSthreeModification);
       if (createAsStrand.value)
-        addColumnWithTranslatedSequences(tables.value, inputAsColumn.value, asBases, asPtoLinkages, fiveModification);
+        addColumnWithTranslatedSequences(tables.value, inputAsColumn.value, asBases, asPtoLinkages, aSthreeModification, aSfiveModification);
       grok.shell.info(((createAsStrand.value) ? "Columns were" : "Column was") + " added to table '" + tables.value + "'");
     }
   });
 
-  let ssInput = ui.stringInput('SS', '',() => ssResult.value = translateSequence(ssInput.value, ssBases, ssPtoLinkages, threeModification));
+  let ssInput = ui.stringInput('SS', '',() => ssResult.value = translateSequence(ssInput.value, ssBases, ssPtoLinkages, sSfiveModification, sSthreeModification));
   let ssResult = ui.stringInput(' ', '');
   // @ts-ignore
   ssInput.input.style.resize = 'none';
@@ -425,7 +446,7 @@ export function defineAxolabsPattern() {
     ], 'ui-input-options')
   );
 
-  let asInput = ui.stringInput('AS','',() => asResult.value = translateSequence(asInput.value, asBases, asPtoLinkages, fiveModification));
+  let asInput = ui.stringInput('AS','',() => asResult.value = translateSequence(asInput.value, asBases, asPtoLinkages, aSthreeModification, aSfiveModification));
   let asResult = ui.stringInput(' ','');
   // @ts-ignore
   asInput.input.style.resize = 'none';
@@ -462,8 +483,9 @@ export function defineAxolabsPattern() {
         sequenceBase.root,
         fullyPto.root,
         createAsStrand.root,
-        threeModification.root,
-        fiveModificationDiv,
+        sSfiveModification.root,
+        sSthreeModification.root,
+        asModificationDiv,
         loadPatternDiv,
         saveAs.root,
         ui.buttonsInput([

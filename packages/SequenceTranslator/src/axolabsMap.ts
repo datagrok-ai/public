@@ -1,11 +1,12 @@
+const rnaColor = "rgb(255,230,153)";
 export const axolabsMap: {[index: string]: {symbols: [string, string, string, string], color: string}} = {
   "RNA": {
     symbols: ["A", "C", "G", "U"],
-    color: "rgb(197,224,180)"
+    color: rnaColor
   },
   "DNA": {
     symbols: ["dA", "dC", "dG", "dT"],
-    color: "rgb(255,230,153)"
+    color: "rgb(197,224,180)"
   },
   "2'-Fluoro": {
     symbols: ["Af", "Cf", "Gf", "Uf"],
@@ -33,19 +34,19 @@ export const axolabsMap: {[index: string]: {symbols: [string, string, string, st
   },
   "A": {
     symbols: ["a", "a", "a", "a"],
-    color: "rgb(197,224,180)"
+    color: rnaColor
   },
   "C": {
     symbols: ["c", "c", "c", "c"],
-    color: "rgb(197,224,180)"
+    color: rnaColor
   },
   "G": {
     symbols: ["g", "g", "g", "g"],
-    color: "rgb(197,224,180)"
+    color: rnaColor
   },
   "U": {
     symbols: ["u", "u", "u", "u"],
-    color: "rgb(197,224,180)"
+    color: rnaColor
   },
   "X-New": {
     symbols: ["X", "X", "X", "X"],
