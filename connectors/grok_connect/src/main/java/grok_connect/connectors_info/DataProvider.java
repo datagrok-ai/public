@@ -20,7 +20,7 @@ public abstract class DataProvider
 
     public DataSource descriptor;
 
-    public String originalCsvPath;
+    public String outputCsv;
 
     public abstract boolean isParametrized();
 
