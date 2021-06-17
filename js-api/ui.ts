@@ -47,10 +47,21 @@ export function appendAll(root: HTMLElement, elements: (HTMLElement | Viewer)[])
   return root;
 }
 
+/** Removes all child nodes, and disposes widgets that these nodes
+ *  might contain. See also [remove]. */
 export function empty(e: HTMLElement): HTMLElement {
-  while (e.firstChild)
+  while (e.firstChild) {
+    api.grok_Widget_Kill(e.firstChild);
     e.removeChild(e.firstChild);
+  }
   return e;
+}
+
+/** Removes the [element] from the DOM, and disposes any widgets that
+ *  the [element] might contain. See also [empty]. */
+export function remove(element: HTMLElement): void {
+  api.grok_Widget_Kill(element);
+  element.remove();
 }
 
 export function _innerText(x: HTMLElement, s: string): HTMLElement {
