@@ -49,15 +49,10 @@ export function welcomeView() {
 
   initSearch();
 
-  function doSearch(s: string) {
-    ui.empty(searchHost);
-    powerSearch(s, searchHost);
-  }
-
   rxjs.fromEvent(input, 'input').pipe(debounceTime(300)).subscribe(_ => {
     let search = input.value !== '';
     widgetsHost.style.display = (search ? 'none' : '');
     searchHost.style.display = (search ? '' : 'none');
-    doSearch(input.value);
+    powerSearch(input.value, searchHost);
   });
 }
