@@ -216,12 +216,35 @@ public abstract class JdbcDataProvider extends DataProvider {
             columns.add(c - 1, column);
         }
 
+        BufferedWriter csvWriter = null;
+        if (originalCsvPath != null) {
+            csvWriter = new BufferedWriter(new FileWriter(originalCsvPath));
+
+            for (int c = 1; c < columnCount + 1; c++) {
+                csvWriter.append(resultSetMetaData.getColumnLabel(c));
+                csvWriter.append(c == columnCount ? '\n' : ',');
+            }
+        }
+
         int rowCount = 0;
         while (resultSet.next()) {
             rowCount++;
 
             for (int c = 1; c < columnCount + 1; c++) {
                 Object value = resultSet.getObject(c);
+
+                if (originalCsvPath != null) {
+                    if (value != null) {
+                        String valueString = value.toString();
+                        if (valueString.contains(","))
+                            valueString = "\"" + valueString + "\"";
+                        csvWriter.append(valueString);
+                    }
+                    else
+                        csvWriter.append("");
+
+                    csvWriter.append(c == columnCount ? '\n' : ',');
+                }
 
                 int type = resultSetMetaData.getColumnType(c);
                 String typeName = resultSetMetaData.getColumnTypeName(c);
@@ -309,6 +332,8 @@ public abstract class JdbcDataProvider extends DataProvider {
                             String.valueOf(size) + " > " + String.valueOf(memoryLimit) + " MB");
             }
         }
+        if (originalCsvPath != null)
+            csvWriter.close();
 
         connection.close();
 
@@ -474,7 +499,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                 typeName.equalsIgnoreCase("int") ||
                 typeName.equalsIgnoreCase("serial2") ||
                 typeName.equalsIgnoreCase("serial4") ||
-                ((precision < 33) && (scale == 0) && (isFloat(type, typeName, precision, scale) || isDecimal(type, typeName)));
+                ((precision < 8) && (scale == 0) && (isFloat(type, typeName, precision, scale) || isDecimal(type, typeName)));
         // TODO Investigate precision value for current case
     }
 
