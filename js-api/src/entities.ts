@@ -548,6 +548,8 @@ export class Package extends Entity {
       this._name = x;
   }
 
+  get meta() { return (this.d == null) ? null : toJs(api.grok_Package_Get_Meta(this.d)); }
+
   /** Loads package
    * @returns {Promise<Package>} */
   async load(): Promise<Package> {
