@@ -342,3 +342,7 @@ export function _propsToDart(s: string): string {
   }
   return res;
 }
+
+export function format(x: number, format?: string): string {
+  return api.grok_Utils_FormatNumber(x, format);
+}
