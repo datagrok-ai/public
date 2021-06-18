@@ -96,3 +96,16 @@
 .power-pack-widget-content .grok-user-profile-notifications {
     padding: 12px!important;
 }
+
+.pp-kpi-host {}
+
+.pp-kpi-value {
+    font-size: 40px;
+    font-weight: bold;
+    color: var(--grey-6);
+}
+
+.pp-kpi-caption {
+    font-size: 16px;
+    color: var(--grey-5);
+}
