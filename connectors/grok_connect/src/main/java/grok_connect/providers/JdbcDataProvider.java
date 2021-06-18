@@ -7,6 +7,7 @@ import java.math.*;
 import java.text.*;
 import java.util.regex.*;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.text.StringEscapeUtils;
 import serialization.*;
 import grok_connect.utils.*;
 import grok_connect.table_query.*;
@@ -234,12 +235,8 @@ public abstract class JdbcDataProvider extends DataProvider {
                 Object value = resultSet.getObject(c);
 
                 if (outputCsv != null) {
-                    if (value != null) {
-                        String valueString = value.toString();
-                        if (valueString.contains(","))
-                            valueString = "\"" + valueString + "\"";
-                        csvWriter.append(valueString);
-                    }
+                    if (value != null)
+                        csvWriter.append(StringEscapeUtils.escapeCsv(value.toString()));
 
                     csvWriter.append(c == columnCount ? '\n' : ',');
                 }
