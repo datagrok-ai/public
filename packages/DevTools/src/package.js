@@ -22,7 +22,7 @@ const templates = {
   DataQuery: (ent) => `grok.data.query("${ent.nqName}", {}).then(t => grok.shell.info(t.rowCount));`,
   User: (ent) =>
 `(async () => {
-const user = await grok.dapi.users.find("${ent.id}");
+const user = await grok.dapi.users.include("group.memberships, group.adminMemberships").find("${ent.id}");
 const userGroup = user.group;
 
 // Find the groups the user belongs to
