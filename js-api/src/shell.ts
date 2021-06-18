@@ -377,6 +377,33 @@ export class Windows {
   set showColumns(x: boolean) {
     api.grok_Windows_Set_ShowColumns(x);
   }
+
+  /** Hide dock tabs in presentation mode **/
+  get hideTabsInPresentationMode(): boolean {
+    return api.grok_Get_HideTabsInPresentationMode();
+  }
+
+  set hideTabsInPresentationMode(x: boolean) {
+    api.grok_Set_HideTabsInPresentationMode(x);
+  }
+
+  /** Presentation mode **/
+  get presentationMode(): boolean {
+    return api.grok_Get_PresentationMode();
+  }
+
+  set presentationMode(x: boolean) {
+    api.grok_Set_PresentationMode(x);
+  }
+
+  /** New menu style**/
+  get simpleMode(): boolean {
+    return api.grok_Get_SimpleMode();
+  }
+
+  set simpleMode(x: boolean) {
+    api.grok_Set_SimpleMode(x);
+  }
 }
 
 
@@ -409,24 +436,6 @@ export class Settings {
   /** Jupyter Notebook Token */
   get jupyterNotebookToken(): string {
     return api.grok_Settings_Get_JupyterNotebookToken();
-  }
-
-  /** Hide dock tabs in presentation mode **/
-  get hideTabsInPresentationMode(): boolean {
-    return api.grok_Get_HideTabsInPresentationMode();
-  }
-
-  set hideTabsInPresentationMode(x: boolean) {
-    api.grok_Set_HideTabsInPresentationMode(x);
-  }
-
-  /** Presentation mode **/
-  get presentationMode(): boolean {
-    return api.grok_Get_PresentationMode();
-  }
-
-  set presentationMode(x: boolean) {
-    api.grok_Set_PresentationMode(x);
   }
 }
 
