@@ -64,7 +64,8 @@ class UsageAnalysisPackage extends DG.Package {
 
           let host = ui.block([],'d4-item-card card');
           host.appendChild(ui.h1(cardName));
-          host.appendChild(ui.loader());
+          let loader = ui.loader();
+          host.appendChild(loader);
           let params = {'date': date.value, 'isExactly': isExactly.value};
           let selectedUsers = users.tags;
 
@@ -75,6 +76,7 @@ class UsageAnalysisPackage extends DG.Package {
             if (cardName === 'Errors')
               grok.data.detectSemanticTypes(t);
             host.appendChild(f(t));
+            host.removeChild(loader);
           });
           return host;
       }
@@ -82,7 +84,8 @@ class UsageAnalysisPackage extends DG.Package {
       function addCard(cardName, queryName, f, supportUsers = false) {
           let host = ui.block([],'d4-item-card card');
           host.appendChild(ui.h1(cardName));
-          host.appendChild(ui.loader());
+          let loader = ui.loader();
+          host.appendChild(loader);
           let params = {'date': date.value};
           let selectedUsers = users.tags;
 
@@ -94,6 +97,7 @@ class UsageAnalysisPackage extends DG.Package {
             if (cardName === 'Errors')
               grok.data.detectSemanticTypes(t);
             host.appendChild(f(t));
+            host.removeChild(loader);
           });
           return host;
       }
@@ -107,12 +111,13 @@ class UsageAnalysisPackage extends DG.Package {
         });
       }
 
-      function getUniqerUser(cardName){
+      function getUniqueUsers(cardName){
         let host = ui.block([],'d4-item-card card');
         host.style.overflow="auto";
         host.style.height="94.5%";
         host.appendChild(ui.h1(cardName));
-        host.appendChild(ui.loader());
+        let loader = ui.loader();
+        host.appendChild(loader);
         grok.data.query('UsageAnalysis:UniqueUsersByDate', {'date': date.value})
           .then(t => {
             let ids = Array.from(t.getCol('id').values());
@@ -120,14 +125,15 @@ class UsageAnalysisPackage extends DG.Package {
               host.appendChild(ui.list(users));
             });
           });
-        host.removeChild(host.childNodes[1]);
+        host.removeChild(loader);
         return host;
       }
 
       function getUsersSummary(cardName){
         let host = ui.block([],'d4-item-card card');
         host.appendChild(ui.h1(cardName));
-        host.appendChild(ui.loader());
+        let loader = ui.loader();
+        host.appendChild(loader);
         host.appendChild(ui.wait(async () => {
           let root = ui.div();
           let lastUsers = await grok.data.query('UsageAnalysis:NewUsersLastMonthWeekDay');
@@ -142,7 +148,7 @@ class UsageAnalysisPackage extends DG.Package {
           ));
           return root;
           }))
-        host.removeChild(host.childNodes[1]);
+        host.removeChild(loader);
         return host;
       }
 
@@ -193,7 +199,7 @@ class UsageAnalysisPackage extends DG.Package {
       usersSummary.appendChild(getUsersSummary('New Users'));
       eventsSummary.appendChild(getEventsSummary('New Events'));
       errorsSummary.appendChild(getErrorsSummary('New Errors'));
-      uniqueUsers.appendChild(getUniqerUser('Unique Users'));
+      uniqueUsers.appendChild(getUniqueUsers('Unique Users'));
       uniqueUsersperDay.appendChild(addCardWithFilters('Unique Users Per Day', 'UniqueUsersPerDay', (t) => DG.Viewer.lineChart(t).root));
       usage.appendChild(
             addCardWithFilters('Usage', 'Events', (t) => {
