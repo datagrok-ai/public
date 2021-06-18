@@ -12,6 +12,7 @@ import { WebWidget } from './widgets/web-widget';
 import { LearningWidget } from "./widgets/learning-widget";
 import { AboutWidget } from "./widgets/about-widget";
 import { functionSearch, pdbSearch, pubChemSearch, scriptsSearch, usersSearch, wikiSearch } from './search/entity-search';
+import {KpiWidget} from "./widgets/kpi-widget";
 
 export let _package = new DG.Package();
 
@@ -65,6 +66,11 @@ export function learnWidget(): DG.Widget {
 //output: widget about
 export function aboutWidget(): DG.Widget {
   return new AboutWidget();
+}
+
+//output: widget about
+export function kpiWidget(): DG.Widget {
+  return new KpiWidget();
 }
 
 //description: Functions

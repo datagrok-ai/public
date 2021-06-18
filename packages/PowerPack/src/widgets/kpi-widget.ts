@@ -1,0 +1,42 @@
+/* Do not change these import lines. Datagrok will import API library in exactly the same manner */
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
+import {Property} from "datagrok-api/dg";
+
+export class KpiWidget extends DG.Widget {
+
+  caption: string;
+  format: string;
+  value: any;
+
+  valueLabel: HTMLDivElement;
+  captionLabel: HTMLDivElement;
+
+  constructor() {
+    super(ui.divV([], 'pp-kpi-host'));
+
+    this.caption = super.addProperty('caption', DG.TYPE.STRING, 'Indicator');
+    this.value = super.addProperty('value', DG.TYPE.DYNAMIC, 9999);
+    this.format = super.addProperty('format', DG.TYPE.STRING, '###,###,###');
+
+    this.captionLabel = ui.divText(this.caption, 'pp-kpi-caption');
+    this.valueLabel = ui.divText(this.value, 'pp-kpi-value');
+
+    this.root.appendChild(this.captionLabel);
+    this.root.appendChild(this.valueLabel);
+  }
+
+  refresh(): void {
+    let s = (typeof(this.value) == 'number')
+      ? DG.utils.format(this.value, this.format)
+      : this.value?.toString() ?? '';
+
+    this.captionLabel.innerText = this.caption ?? '';
+    this.valueLabel.innerText = s;
+  }
+
+  onPropertyChanged(property: Property | null): void {
+    this.refresh();
+  }
+}
