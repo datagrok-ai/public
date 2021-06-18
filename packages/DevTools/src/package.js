@@ -19,10 +19,16 @@ const templates = {
   await grok.dapi.files.delete("${ent.fullPath}");
   grok.shell.info("${ent.fileName} exists: " + (await grok.dapi.files.exists("${ent.fullPath}")));
 })();`,
-  DataQuery: (ent) => `grok.data.query("${ent.nqName}", {}).then(t => grok.shell.info(t.rowCount));`,
+  DataQuery: (ent) =>
+`(async () => {
+  const q = await grok.dapi.queries.find("${ent.id}");
+
+  // Run a query
+  const res = await grok.data.query("${ent.nqName}", {});
+})();`,
   User: (ent) =>
 `(async () => {
-const user = await grok.dapi.users.find("${ent.id}");
+const user = await grok.dapi.users.include("group.memberships, group.adminMemberships").find("${ent.id}");
 const userGroup = user.group;
 
 // Find the groups the user belongs to
@@ -37,10 +43,26 @@ await grok.dapi.permissions.grant(entity, userGroup, canEdit);
 console.log(await grok.dapi.permissions.get(entity));
 await grok.dapi.permissions.revoke(userGroup, entity);
 })();`,
+  Group: (ent) =>
+`(async () => {
+  const group = await grok.dapi.groups.find("${ent.id}");
+
+  // Manage permissions
+  const entity = await grok.dapi.layouts.first();
+  let canEdit = false;
+
+  await grok.dapi.permissions.grant(entity, group, canEdit);
+  console.log(await grok.dapi.permissions.get(entity));
+  await grok.dapi.permissions.revoke(group, entity);
+})();`,
   Package: (ent) =>
 `(async () => {
+  // Find package functions
+  const funcs = DG.Func.find({ package: "${ent.name}" });
+
   // Call a function
-  const res = await grok.functions.call("${ent.name}:test", {});
+  const res1 = await grok.functions.call("${ent.name}:test", {});
+  const res2 = await funcs[0].apply({});
 
   // Read credentials
   const package = await grok.dapi.packages.find("${ent.id}");
@@ -51,7 +73,21 @@ await grok.dapi.permissions.revoke(userGroup, entity);
     grok.shell.info(credentialsResponse.parameters);
   }
 })();`,
-  Script: (ent) => `grok.functions.call("${ent.nqName}", {}).then(res => grok.shell.info(res));`,
+  Project: (ent) =>
+`(async () => {
+  const project = await grok.dapi.projects.find("${ent.id}");
+  console.log(await grok.dapi.permissions.get(project));
+})();`,
+  Script: (ent) =>
+`(async () => {
+  const script = await grok.dapi.scripts.find("${ent.id}");
+
+  // Call a script
+  const res = await grok.functions.call("${ent.nqName}", {});
+
+  // Read a script
+  grok.shell.info(script.script);
+})();`,
   ViewLayout: (ent) =>
 `(async () => {
   // Apply to the original table

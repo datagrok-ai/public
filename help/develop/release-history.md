@@ -1,6 +1,63 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-06-18 Dev build 0.92.11
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.11`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* (Bug) Grid: empty space on the right 
+* (Bug) Filters: filter component state is different across pages 
+* Update ui.md 
+* SequenceTranslator: svg color adjustments 
+* Oligo Batch Calculator: create initial version and test on files 
+* Create datagrok installation instructions (v.2) 
+* Correct Markdown view of instructions 
+* Deploy: test connections migration (WIP)
+* Connections: add system connections  
+* Correct instruction points 
+* Binning Functions: BinBySpecificLimits 
+* DateTime extractor functions (year, month, day, etc) 
+* (Bug) Connectors: Impala: int32max instead of real values 
+* bug with table view fixed 
+* JS API: ability to read metadata for a package or a group of packages 
+* Renamed "UsageAnalysisUI" to "UsageAnalysis" 
+* AutoGen code rebuild (pub get and build execution) 
+* Renamed PowerPack to meet both npm and DG conventions 
+* Simplified datagrok installation instructions 
+* [(Bug) JS API: df.replace won't work on a column with the same name](https://community.datagrok.ai/t/annot-replace-a-column-with-a-column-with-the-same-name/528) 
+* (Bug) Connectors: output table files for debug 
+* JS API: Advanced Func API (WIP)
+* Sequence Translator: add modifications to beginning of both strands 
+* Cast exception to string 
+* (Bug) Filters: range slider filters out nulls 
+* (Bug) OnDialogClosed event fires twice 
+* (Bug) File Sharing doesn't work 
+* Created index 
+* *BREAKING\* Log function renamed to Ln 
+* (Bug) JS Editor: exception when ApiSamples package is not there 
+* Adjusted demo query name to 'System:CoffeeCompany:StoresInState' 
+* Math Functions: Log(arg1, arg2) 
+* Math Functions: Log10() 
+* Math Functions: Round10() 
+* Correct mistake in dart installation instructions 
+* JS API: add simpleMode and move presentationMode, hideTabsInPresentationMode to windows 
+* SequenceTranslator: refactoring of svg creation 
+* Grok connect: add CSV chars escaping  
+* JS API: improve the HttpDataSource.include method to accept entity properties 
+* DevTools: add the `Snippets` pane (WIP)
+* Math Functions: RandBetween() 
+* (Bug) Functions: function search won't work on packages (WIP)
+* Updated public token 
+
+
 # 2021-06-15 Dev build 0.92.10
 
 ## Latest Docker Images

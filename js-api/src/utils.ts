@@ -296,3 +296,49 @@ export function _options(element: HTMLElement, options: any) {
     Object.assign(element.style, options.style);
   return element;
 }
+
+/**
+ * Converts entity properties between JavaScript and Dart.
+ * See also: {@link include}
+ * @param {string} s
+ */
+export function _propsToDart(s: string): string {
+  const jsToDart: { [index: string]: string } = {
+    'adminMemberships': 'parents.parent',
+    'memberships': 'parents.parent',
+  };
+
+  let res = '';
+  if (s === res) return res;
+  let ents = s.split(',');
+  for (let ent of ents) {
+    ent = ent.trim();
+    let idx = ent.lastIndexOf('.');
+    if (idx === -1) {
+      res += ent + ',';
+      continue;
+    }
+
+    let entEndPos = ent.indexOf('.') + 1;
+    res += ent.slice(0, entEndPos);
+    let props = ent.slice(entEndPos, ent.length);
+
+    while (props) {
+      idx = props.indexOf('.');
+      let match = jsToDart[props];
+      if (match) res += match;
+      else {
+        let p = (idx === -1) ? props : props.slice(0, idx);
+        res += jsToDart[p] || p;
+      }
+      if (idx === -1) props = '';
+      else {
+        props = props.slice(idx + 1);
+        res += '.';
+      }
+    }
+
+    res += ',';
+  }
+  return res;
+}

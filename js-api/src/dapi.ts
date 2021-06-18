@@ -22,6 +22,7 @@ import {
 } from "./entities";
 import {ViewLayout} from "./view";
 import {toDart, toJs} from "./wrappers";
+import {_propsToDart} from "./utils";
 
 let api = <any>window;
 
@@ -321,7 +322,7 @@ export class HttpDataSource<T> {
    * @param {string} include
    * @returns {HttpDataSource} */
   include(include: string): HttpDataSource<T> {
-    this.s = api.grok_DataSource_Include(this.s, include);
+    this.s = api.grok_DataSource_Include(this.s, _propsToDart(include));
     return this;
   }
 }

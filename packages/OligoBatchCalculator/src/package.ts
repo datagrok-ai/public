@@ -5,67 +5,30 @@ import * as DG from 'datagrok-api/dg';
 
 export let _package = new DG.Package();
 
-function normalizeSeque
-
-function calculateExtinctionCoefficientUsingNearestNeighborMethod(sequence: string) {
-  let extinctionCoefficient = -1;
-  const searchValue = '/(' + Object.keys(weights) + ')/g';
-  // @ts-ignore
-  sequence.replace(searchValue, function (x: string) {
-
-  });
-}
-
 function calculateMolecularWeight(sequence: string): number {
   let molecularWeight = 0;
-  const searchValue = '/(' + Object.keys(weights).join('|') + ')/g';
-  // @ts-ignore
-  sequence.replace("/(1|2|3|4|5|6|7|8|9|moeT|moeA|moe5mC|moeG|5mC|A|C|G|T|Uf|fU|Af|fA|Cf|fC|Gf|fG|u|mU|a|mA|c|mC|g|mG|*|s|ps)/g",  (nucleotideSymbol: string) => molecularWeight += weights[nucleotideSymbol]);
-  return molecularWeight;
+  for (let i = 0; i < sequence.length; i += 2)
+    molecularWeight += weights[sequence.slice(i, i + 2)];
+  return molecularWeight - 61.97;
+}
+
+function normalizeSequence(sequence: string): string {
+  const obj: {[index: string]: string} = {
+    "fU": "rU", "fA": "rA", "fC": "rC", "fG": "rG", "mU": "rU", "mA": "rA", "mC": "rC", "mG": "rG", "ps": ""
+  };
+  return sequence.replace(/(fU|fA|fC|fG|mU|mA|mC|mG|ps)/g, function (x: string) {return obj[x];});
 }
 
 const weights: {[index: string]: number} = {
-  "5": 378.27,
-  "moeT": 378.27,
-  "6": 387.29,
-  "moeA": 387.29,
-  "7": 377.29,
-  "moe5mC": 377.29,
-  "8": 403.28,
-  "moeG": 403.28,
-  "9": 303.21,
-  "5mC": 303.21,
-  "A": 313.21,
-  "C": 289.18,
-  "G": 329.21,
-  "T": 304.20,
-  "1": 308.16,
-  "Uf": 308.16,
-  "fU": 308.16,
-  "2": 331.20,
-  "Af": 331.20,
-  "fA": 331.20,
-  "3": 307.18,
-  "Cf": 307.18,
-  "fC": 307.18,
-  "4": 347.19,
-  "Gf": 347.19,
-  "fG": 347.19,
-  // "5": 320.20,
-  "u": 320.20,
-  "mU": 320.20,
-  // "6": 343.24,
-  "a": 343.24,
-  "mA": 343.24,
-  // "7": 319.21,
-  "c": 319.21,
-  "mC": 319.21,
-  // "8": 359.24,
-  "g": 359.24,
-  "mG": 359.24,
-  "*": 16.07,
-  "s": 16.07,
-  "ps": 16.07
+  "fU":	308.16,
+  "fA":	331.2,
+  "fC":	307.18,
+  "fG":	347.19,
+  "mU":	320.2,
+  "mA":	343.24,
+  "mC":	319.21,
+  "mG":	359.24,
+  "ps":	16.07
 };
 
 //name: OligoBatchCalculator
@@ -78,24 +41,34 @@ export function OligoBatchCalculator() {
     'dG': 11500,
     'dT': 8700
   },
-  individualRnaBases = {
+  individualRnaBases: any = {
     'rA': 15400,
     'rC': 7200,
     'rG': 11500,
     'rU': 9900
   },
-  nearestNeighbourRna = {
+  nearestNeighbourDna = {
     'dA': {'dA': 27400, 'dC': 21200, 'dG': 25000, 'dT': 22800},
     'dC': {'dA': 21200, 'dC': 14600, 'dG': 18000, 'dT': 15200},
     'dG': {'dA': 25200, 'dC': 17600, 'dG': 21600, 'dT': 20000},
     'dT': {'dA': 23400, 'dC': 16200, 'dG': 19000, 'dT': 16800}
   },
-  nearestNeighbourDna = {
+  nearestNeighbourRna: any = {
     'rA': {'rA': 27400, 'rC': 21000, 'rG': 25000, 'rU': 24000},
     'rC': {'rA': 21000, 'rC': 14200, 'rG': 17800, 'rU': 16200},
     'rG': {'rA': 25200, 'rC': 17400, 'rG': 21600, 'rU': 21200},
     'rU': {'rA': 24600, 'rC': 17200, 'rG': 20000, 'rU': 19600}
   };
+
+  function getExtinctionCoefficientUsingNearestNeighborMethod(sequence: string) {
+    sequence = normalizeSequence(sequence);
+    let ec1 = 0, ec2 = 0;
+    for (let i = 0; i < sequence.length - 2; i += 2)
+      ec1 += nearestNeighbourRna[sequence.slice(i, i + 2)][sequence.slice(i + 2, i + 4)];
+    for (let i = 2; i < sequence.length - 4; i += 2)
+      ec2 += individualRnaBases[sequence.slice(i, i + 2)];
+    return ec1 - ec2;
+  }
 
   let windows = grok.shell.windows;
   windows.showProperties = false;
@@ -115,40 +88,29 @@ export function OligoBatchCalculator() {
   let threeMod = ui.boolInput("3' MOD", false);
   let internal = ui.boolInput('INTERNAL', false);
   let fiveMod = ui.boolInput("5' MOD", false);
+  let table = DG.DataFrame.create();
   let inputSequenceField = ui.textInput("", "", async (seq: string) => {
     let sequences = seq.split('\n');
-    let tableRows = [];
-    for (let i = 0; i < sequences.length; i++) {
-      // @ts-ignore
-      tableRows.push({
-        'n': i + 1,
-        'seq': sequences[i],
-        'len': sequences[i].length,
-        'od': '1.00 OD',
-        'nmole': 'ex',
-        'mass': calculateMolecularWeight(sequences[i]),
-        'nmoleOD': 'nm',
-        'mgod': 'k',
-        'mw': 'mw',
-        'g': 'g',
-        'gc': 'gc',
-        'ec': 'ec'
-      });
-    }
     tableDiv.innerHTML = '';
-    tableDiv.append(
-      DG.HtmlTable.create(
-        tableRows,
-        (item: {
-          n: string; seq: string; len: string; od: string; nmole: string; mass: string, nmoleOD: string; mgod: string; mw: string; g: string; gc: string; ec: string;
-        }) => [item.n, item.seq, item.len, item.od, item.nmole, item.mass, item.nmoleOD, item.mgod, item.mw, item.g, item.gc, item.ec],
-        ['Item#', 'Sequence', 'Length', 'OD-260', 'nmole', 'Mass', 'nmole/OD', 'μg/OD', 'MW', 'G%', 'GC%', 'Ext. Coefficient']
-      ).root
-    );
+    let od260 = Array(sequences.length).fill(1);
+    let nMole = Array(sequences.length).fill(19);
+    let mass = Array(sequences.length).fill(30);
+    table = DG.DataFrame.fromColumns([
+      DG.Column.fromList('int', 'Item#', [...Array(sequences.length + 1).keys()].slice(1)),
+      DG.Column.fromList('string', 'Sequence', sequences),
+      DG.Column.fromList('int', 'Length', sequences.map((s) => s.length)),
+      DG.Column.fromList('int', 'OD-260', od260),
+      DG.Column.fromList('double', 'nmole', nMole),
+      DG.Column.fromList('double', 'Mass', mass),
+      DG.Column.fromList('double', 'nmole/OD', nMole.map(function(n, i) {return n / od260[i];})),
+      DG.Column.fromList('double', 'μg/OD', mass.map(function(n, i) {return n / od260[i];})),
+      DG.Column.fromList('double', 'MW', sequences.map((s) => calculateMolecularWeight(s))),
+      DG.Column.fromList('int', 'Ext. Coefficient', sequences.map((s) => getExtinctionCoefficientUsingNearestNeighborMethod(s))),
+    ]);
+    tableDiv.append(DG.Viewer.grid(table).root);
   });
 
-  let tableRows: never[] = [];
-  let tableDiv = ui.div([]);
+  let tableDiv = ui.block([]);
 
   grok.shell.newView('Sequence Translator', [
     ui.divH([
@@ -173,7 +135,7 @@ export function OligoBatchCalculator() {
     ]),
     ui.block([
       ui.div([
-        ui.h1('Input sequence'),
+        ui.h1('Input sequences'),
         ui.div([
           inputSequenceField.root
         ],'input-base')
