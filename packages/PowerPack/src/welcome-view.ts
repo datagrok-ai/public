@@ -67,7 +67,7 @@ export function welcomeView() {
 
   rxjs.fromEvent(input, 'input').pipe(debounceTime(500)).subscribe(_ => doSearch(input.value));
 
-  if (window.location.search.startsWith('search')) {
+  if (window.location.search.startsWith('/search')) {
     const params = new URLSearchParams(window.location.search);
     input.value = params.get('q') ?? '';
   }
