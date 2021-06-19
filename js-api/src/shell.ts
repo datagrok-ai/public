@@ -292,6 +292,7 @@ export class Shell {
     api.grok_ClearDirtyFlag();
   }
 
+  get startUri(): string { return api.Get_StartUri(); }
 }
 
 
