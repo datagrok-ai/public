@@ -386,6 +386,18 @@ export class TabPane {
     this.d = d;
   }
 
+  get parent(): TabControl {
+    return toJs(api.grok_TabPane_Get_Parent(this.d));
+  }
+
+  get root(): HTMLDivElement {
+    return api.grok_TabPane_Get_Root(this.d);
+  }
+
+  get content(): HTMLDivElement {
+    return api.grok_TabPane_Get_Content(this.d);
+  }
+
   get expanded(): boolean {
     return api.grok_AccordionPane_Get_Expanded(this.d);
   }
