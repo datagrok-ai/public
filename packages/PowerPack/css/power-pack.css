@@ -80,11 +80,6 @@
     font-size: 16px;
 }
 
-.welcome-system-widget {
-    font-size: 18px;
-    line-height: 180%;
-}
-
 .welcome-community-widget {
     line-height: 160%;
 }
@@ -97,7 +92,15 @@
     padding: 12px!important;
 }
 
+.power-pack-widget-content .grok-user-profile-notifications h1 {
+    display: none;
+}
+
 .pp-kpi-host {}
+
+.pp-kpi-host * {
+    padding: 8px;
+}
 
 .pp-kpi-value {
     font-size: 40px;

@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 export const WIDGETS_STORAGE = 'widgets';
 
-export function card(w: DG.Widget): HTMLElement {
+export function widgetHost(w: DG.Widget): HTMLElement {
   let host = ui.box(null, 'power-pack-widget-host');
 
   function remove(): void {

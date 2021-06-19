@@ -14,14 +14,15 @@ export class KpiWidget extends DG.Widget {
   captionLabel: HTMLDivElement;
 
   constructor() {
-    super(ui.divV([], 'pp-kpi-host'));
+    super(ui.div([], 'pp-kpi-host'));
 
     this.caption = super.addProperty('caption', DG.TYPE.STRING, 'Indicator');
     this.value = super.addProperty('value', DG.TYPE.DYNAMIC, 9999);
     this.format = super.addProperty('format', DG.TYPE.STRING, '###,###,###');
 
-    this.captionLabel = ui.divText(this.caption, 'pp-kpi-caption');
-    this.valueLabel = ui.divText(this.value, 'pp-kpi-value');
+    this.captionLabel = ui.divText('', 'pp-kpi-caption');
+    this.valueLabel = ui.divText('', 'pp-kpi-value');
+    this.refresh();
 
     this.root.appendChild(this.captionLabel);
     this.root.appendChild(this.valueLabel);

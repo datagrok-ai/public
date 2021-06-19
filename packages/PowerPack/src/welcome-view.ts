@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 import {debounceTime} from 'rxjs/operators';
 import {initSearch, powerSearch, queriesSearch} from "./search/power-search";
-import {card, WIDGETS_STORAGE } from './utils';
+import {widgetHost, WIDGETS_STORAGE } from './utils';
 
 interface UserWidgetSettings {
   factoryName?: string;
@@ -40,7 +40,7 @@ export function welcomeView() {
       if (!settings[f.name] || settings[f.name].ignored)
         f.apply().then(function (w: DG.Widget) {
           w.factory = f;
-          widgetsHost.appendChild(card(w));
+          widgetsHost.appendChild(widgetHost(w));
         }).catch((e) => {
           console.error(`Unable to execute function ${f.name}`, e);
         });
