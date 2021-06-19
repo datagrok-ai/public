@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {WebWidget} from "../widgets/web-widget";
 import {DataQuery} from "datagrok-api/dg";
-import {card} from "../utils";
+import {widgetHost} from "../utils";
 
 // Power Search: community-curated, template-based, widget-driven search engine
 
@@ -21,6 +21,7 @@ interface Card {
 }
 
 let queries: DG.DataQuery[] = [];
+let widgetFunctions = DG.Func.find({returnType: 'widget'});
 let searchFunctions = DG.Func.find({tags: ['search'], returnType: 'list'});
 let searchWidgetFunctions = DG.Func.find({tags: ['search'], returnType: 'widget'});
 
@@ -41,6 +42,7 @@ export function powerSearch(s: string, host: HTMLDivElement): void {
   queriesSearch(s, host);
   templatesSearch(s, host);
   widgetsSearch(s, host);
+  specificWidgetsSearch(s, host);
 }
 
 
@@ -106,8 +108,17 @@ function widgetsSearch(s: string, host: HTMLDivElement): void {
     sf.apply({s: s})
       .then((result: DG.Widget) => {
         if (result)
-          host.appendChild(card(result));
+          host.appendChild(widgetHost(result));
       });
+}
+
+/// Explicitly spelled widgets
+/// Example: "kpiWidget"
+function specificWidgetsSearch(s: string, host: HTMLDivElement): void {
+  s = s.toLowerCase();
+  for (let wf of widgetFunctions)
+    if (wf.name.toLowerCase() == s)
+      wf.apply().then((w: DG.Widget) => host.appendChild(ui.div([widgetHost(w)])));
 }
 
 /// Community-curated template collection
