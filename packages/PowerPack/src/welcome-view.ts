@@ -62,7 +62,7 @@ export function welcomeView() {
     widgetsHost.style.display = (search ? 'none' : '');
     searchHost.style.display = (search ? '' : 'none');
     powerSearch(s, searchHost);
-    view.path = search ? 'search' : `search?q=$s}`;
+    view.path = search ? `search?q=${s}` : 'search';
   }
 
   rxjs.fromEvent(input, 'input').pipe(debounceTime(500)).subscribe(_ => doSearch(input.value));
