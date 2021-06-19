@@ -19,6 +19,11 @@ interface UserWidgetsSettings {
 let settings: UserWidgetsSettings;
 
 export function welcomeView() {
+  // let's not add this view if the platform was opened via a specific link
+  if ((!window.location.search.startsWith('search') && window.location.search != '') ||
+    (window.location.pathname != '/' && window.location.pathname != '/login.html'))
+    return;
+
   let input = ui.element('input', 'ui-input-editor') as HTMLInputElement;
   input.placeholder = 'Search everywhere. Try "aspirin" or "7JZK"';
   let inputHost = ui.div([
@@ -31,7 +36,10 @@ export function welcomeView() {
   let searchHost = ui.block([], 'power-pack-search-host');
   let widgetsHost = ui.div([], 'power-pack-widgets-host');
   let viewHost = ui.div([widgetsHost, searchHost]);
-  grok.shell.newView('Welcome', [inputHost, viewHost], 'power-pack-welcome-view');
+  let view = grok.shell.newView(
+    'Welcome',
+    [inputHost, viewHost],
+    'power-pack-welcome-view');
 
   let widgetFunctions = DG.Func.find({returnType: 'widget'});
 
@@ -49,10 +57,18 @@ export function welcomeView() {
 
   initSearch();
 
-  rxjs.fromEvent(input, 'input').pipe(debounceTime(300)).subscribe(_ => {
-    let search = input.value !== '';
+  function doSearch(s: string) {
+    let search = s !== '';
     widgetsHost.style.display = (search ? 'none' : '');
     searchHost.style.display = (search ? '' : 'none');
-    powerSearch(input.value, searchHost);
-  });
+    powerSearch(s, searchHost);
+    view.path = search ? 'search' : `search?q=$s}`;
+  }
+
+  rxjs.fromEvent(input, 'input').pipe(debounceTime(500)).subscribe(_ => doSearch(input.value));
+
+  if (window.location.search.startsWith('search')) {
+    const params = new URLSearchParams(window.location.search);
+    input.value = params.get('q') ?? '';
+  }
 }
