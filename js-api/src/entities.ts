@@ -164,6 +164,11 @@ export class Func extends Entity {
   static find(params?: { package?: string, name?: string, tags?: string[], returnType?: string}): Func[] {
     return api.grok_Func_Find(params?.package, params?.name, params?.tags, params?.returnType);
   }
+
+  /** Returns a function with the specified name. */
+  static byName(name: string): Func {
+    return Func.find({ name: name})[0];
+  }
 }
 
 /** Represents a project */

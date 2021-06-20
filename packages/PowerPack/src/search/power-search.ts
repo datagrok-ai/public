@@ -17,6 +17,7 @@ interface Template {
 interface Card {
   id: string;
   name: string;
+  widget: string;
   templates: Template[];
 }
 
@@ -125,23 +126,43 @@ function specificWidgetsSearch(s: string, host: HTMLDivElement): void {
 function templatesSearch(s: string, host: HTMLDivElement): void {
   for (let p of templates)
     for (let t of p.templates) {
-      if (t.regexp == null)
-        t.regexp = new RegExp(t.template);
-      let matches = t.regexp.exec(s);
-      let url = t.url;
+      let x = <any>t;
+      if (x.regexp == null)
+        x.regexp = new RegExp(t.template);
+      let matches = x.regexp.exec(s);
+      let url = x.url;
 
-      if (matches !== null) {
-        for (let i = 1; i < matches.length; i++)
-          url = url.replace('${' + i + '}', matches[i]);
+      // if (p.widget == 'webWidget') {
+      //   if (matches !== null) {
+      //     for (let i = 1; i < matches.length; i++)
+      //       url = url.replace('${' + i + '}', matches[i]);
+      //
+      //     let widget = new WebWidget({
+      //       src: url,
+      //       width: '100%',
+      //       height: '500px'
+      //     });
+      //
+      //     host.appendChild(widget.root);
+      //   }
+      // }
+      // else
+      //   {
+        if (matches !== null) {
+          let widgetProperties: any = {};
+          for (let [k, v] of Object.entries(t))
+            if (k != 'template' && k != 'regexp') {
+              for (let i = 1; i < matches.length; i++)
+                v = v.replace('${' + i + '}', matches[i]);
 
-        let widget = new WebWidget({
-          src: url,
-          width: '100%',
-          height: '500px'
-        });
+              widgetProperties[k] = v;
+            }
 
-        host.appendChild(widget.root);
-      }
+          DG.Func.byName(p.widget).apply().then((w: DG.Widget) => {
+            w.props.setAll(widgetProperties);
+            host.appendChild(w.root);
+          });
+        }
     }
 }
 
@@ -222,10 +243,33 @@ const semTypes = [
   }
 ];
 
-const templates: Card[] = [
+const templates = [
+  {
+    id: 'kpi-test',
+    name: 'KPI Test',
+    widget: 'kpiWidget',
+    templates: [
+      {
+        template: 'kpi ([0-9]+)',
+        caption: '${1}'
+      }
+    ]
+  },
+  {
+    id: 'ticket-stock-price',
+    name: 'Stock Price',
+    widget: 'webWidget',
+    templates: [
+      {
+        template: 'kpi ([0-9]+)',
+        caption: '${1}'
+      }
+    ]
+  },
   {
     id: 'chembl-id-report-card',
     name: 'Report card',
+    widget: 'webWidget',
     templates: [{
       template: '(CHEMBL[0-9]+)',
       url: 'https://www.ebi.ac.uk/chembl/embed/#compound_report_card/${1}/name_and_classification'
@@ -234,6 +278,7 @@ const templates: Card[] = [
   {
     id: 'chembl-id-representations',
     name: 'Representations',
+    widget: 'webWidget',
     templates: [{
       template: '(CHEMBL[0-9]+)',
       url: 'https://www.ebi.ac.uk/chembl/embed/#compound_report_card/${1}/representations'
@@ -242,6 +287,7 @@ const templates: Card[] = [
   {
     id: 'chembl-id-alternative-forms',
     name: 'Alternative forms',
+    widget: 'webWidget',
     templates: [{
       template: '(CHEMBL[0-9]+)',
       url: 'https://www.ebi.ac.uk/chembl/embed/#compound_report_card/${1}/alternate_forms'
@@ -250,13 +296,16 @@ const templates: Card[] = [
   {
     id: 'chembl-id-calculated-properties',
     name: 'Calculated properties',
+    widget: 'webWidget',
     templates: [{
       template: '(CHEMBL[0-9]+)',
       url: 'https://www.ebi.ac.uk/chembl/embed/#compound_report_card/${1}/calculated_properties'
     }]
-  },  {
+  },
+  {
     id: 'chembl-id-cross-refs',
     name: 'Cross references',
+    widget: 'webWidget',
     templates: [{
       template: '(CHEMBL[0-9]+)',
       url: 'https://www.ebi.ac.uk/chembl/embed/#compound_report_card/${1}/cross_refs'
