@@ -64,12 +64,12 @@ export function welcomeView() {
   initSearch();
 
   function doSearch(s: string) {
-    console.log('search:' + s);
     input.value = s;
     let search = s !== '';
     widgetsHost.style.display = (search ? 'none' : '');
     searchHost.style.display = (search ? '' : 'none');
-    powerSearch(s, searchHost);
+    if (search != null)
+      powerSearch(s, searchHost);
     view.path = search ? `search?q=${s}` : 'search';
   }
 

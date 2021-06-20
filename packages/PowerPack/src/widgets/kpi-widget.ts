@@ -8,7 +8,7 @@ export class KpiWidget extends DG.Widget {
 
   caption: string;
   format: string;
-  value: any;
+  value: number;
 
   valueLabel: HTMLDivElement;
   captionLabel: HTMLDivElement;
@@ -17,7 +17,7 @@ export class KpiWidget extends DG.Widget {
     super(ui.div([], 'pp-kpi-host'));
 
     this.caption = super.addProperty('caption', DG.TYPE.STRING, 'Indicator');
-    this.value = super.addProperty('value', DG.TYPE.DYNAMIC, 9999);
+    this.value = super.addProperty('value', DG.TYPE.INT, 9999);
     this.format = super.addProperty('format', DG.TYPE.STRING, '###,###,###');
 
     this.captionLabel = ui.divText('', 'pp-kpi-caption');
@@ -29,10 +29,7 @@ export class KpiWidget extends DG.Widget {
   }
 
   refresh(): void {
-    let s = (typeof(this.value) == 'number')
-      ? DG.utils.format(this.value, this.format)
-      : this.value?.toString() ?? '';
-
+    let s = DG.utils.format(this.value, this.format);
     this.captionLabel.innerText = this.caption ?? '';
     this.valueLabel.innerText = s;
   }
