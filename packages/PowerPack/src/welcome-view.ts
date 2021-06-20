@@ -19,9 +19,15 @@ interface UserWidgetsSettings {
 let settings: UserWidgetsSettings;
 
 export function welcomeView() {
+
+  let searchStr = null;
+  if (window.location.pathname == '/search' && window.location.search.startsWith('?')) {
+    const params = new URLSearchParams(window.location.search.slice(1));
+    searchStr = params.get('q') ?? '';
+  }
+
   // let's not add this view if the platform was opened via a specific link
-  if ((!window.location.search.startsWith('search') && window.location.search != '') ||
-    (window.location.pathname != '/' && window.location.pathname != '/login.html'))
+  if (searchStr == null && window.location.pathname != '/' && window.location.pathname != '/login.html')
     return;
 
   let input = ui.element('input', 'ui-input-editor') as HTMLInputElement;
@@ -41,11 +47,11 @@ export function welcomeView() {
     [inputHost, viewHost],
     'power-pack-welcome-view');
 
-  let widgetFunctions = DG.Func.find({tags: [DG.FUNC_TAGS.DASHBOARD], returnType: 'widget'});
+  let widgetFunctions = DG.Func.find({tags: ['dashboard'], returnType: 'widget'});
 
   grok.dapi.userDataStorage.get(WIDGETS_STORAGE).then((settings) => {
     for (let f of widgetFunctions) {
-      if (!settings[f.name] || settings[f.name].ignored)
+      //if (!settings[f.name] || settings[f.name].ignored)
         f.apply().then(function (w: DG.Widget) {
           w.factory = f;
           widgetsHost.appendChild(widgetHost(w));
@@ -58,6 +64,8 @@ export function welcomeView() {
   initSearch();
 
   function doSearch(s: string) {
+    console.log('search:' + s);
+    input.value = s;
     let search = s !== '';
     widgetsHost.style.display = (search ? 'none' : '');
     searchHost.style.display = (search ? '' : 'none');
@@ -67,11 +75,6 @@ export function welcomeView() {
 
   rxjs.fromEvent(input, 'input').pipe(debounceTime(500)).subscribe(_ => doSearch(input.value));
 
-  if (window.location.search.startsWith('/search')) {
-    const params = new URLSearchParams(window.location.search);
-    let s = params.get('q') ?? '';
-    console.log('search:' + s);
-    input.value = s;
-    doSearch(s);
-  }
+  if (searchStr != null)
+    doSearch(searchStr);
 }
