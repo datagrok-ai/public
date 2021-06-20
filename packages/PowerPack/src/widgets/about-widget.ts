@@ -45,7 +45,7 @@ non-technical users to
 build and deploy [predictive models](/help/learn/predictive-modeling), and collaborate with others.
 Datagrok's [performance](/help/develop/performance) is unmatched 
 due to our technology that allows to work with tens of millions of data points interactively
-right in the web browser. The platform is flexible and extensible, and integrates easitly with existing systems. If anything
+right in the web browser. The platform is flexible and extensible, and integrates easily with existing systems. If anything
 is missing, extend the platform with  [plugins and applications](/help/develop/develop).
 The platform is a lot more than a tool for data analysis - it is an ecosystem designed
 for users, IT, data scientists, chemists, and developers not only to collaborate, but to 
