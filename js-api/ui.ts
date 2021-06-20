@@ -633,6 +633,12 @@ export class tools {
   static setHoverVisibility(host: HTMLElement, items: HTMLElement[]) {
     api.grok_Tools_SetHoverVisibility(host, items);
   }
+
+  static createElementFromHtml(htmlString: string): HTMLDivElement {
+    let host = div([]);
+    host.innerHTML = htmlString.trim();
+    return host;
+  }
 }
 
 /** Represents a tooltip. */
