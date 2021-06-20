@@ -4,13 +4,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from "cash-dom";
 
-function replaceAll(string: string, search: string, replace: string) {
-  return string.split(search).join(replace);
-}
-
 export class WebWidget extends DG.Widget {
   caption: string;
-  urlTemplate: string;
+  url: string;
   p1: string;
   p2: string;
   p3: string;
@@ -29,7 +25,7 @@ export class WebWidget extends DG.Widget {
 
     // properties
     this.caption = super.addProperty('caption', DG.TYPE.STRING, 'Web');
-    this.urlTemplate = super.addProperty('urlTemplate', DG.TYPE.STRING, options?.src ?? 'https://en.m.wikipedia.org/wiki/${p1}');
+    this.url = super.addProperty('url', DG.TYPE.STRING, options?.src ?? 'https://en.m.wikipedia.org/wiki/${p1}');
     this.p1 = super.addProperty('p1', DG.TYPE.STRING, '');
     this.p2 = super.addProperty('p2', DG.TYPE.STRING, '');
     this.p3 = super.addProperty('p3', DG.TYPE.STRING, '');
@@ -42,10 +38,10 @@ export class WebWidget extends DG.Widget {
   }
 
   refresh(): void {
-    let s = this.urlTemplate;
-    s = replaceAll(s, '${p1}', this.p1);
-    s = replaceAll(s, '${p2}', this.p2);
-    s = replaceAll(s, '${p3}', this.p3);
+    let s = this.url;
+    s = DG.Utils.replaceAll(s, '${p1}', this.p1);
+    s = DG.Utils.replaceAll(s, '${p2}', this.p2);
+    s = DG.Utils.replaceAll(s, '${p3}', this.p3);
     this.frame.src = s;
   }
 }

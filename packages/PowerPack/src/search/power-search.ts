@@ -130,39 +130,22 @@ function templatesSearch(s: string, host: HTMLDivElement): void {
       if (x.regexp == null)
         x.regexp = new RegExp(t.template);
       let matches = x.regexp.exec(s);
-      let url = x.url;
 
-      // if (p.widget == 'webWidget') {
-      //   if (matches !== null) {
-      //     for (let i = 1; i < matches.length; i++)
-      //       url = url.replace('${' + i + '}', matches[i]);
-      //
-      //     let widget = new WebWidget({
-      //       src: url,
-      //       width: '100%',
-      //       height: '500px'
-      //     });
-      //
-      //     host.appendChild(widget.root);
-      //   }
-      // }
-      // else
-      //   {
-        if (matches !== null) {
-          let widgetProperties: any = {};
-          for (let [k, v] of Object.entries(t))
-            if (k != 'template' && k != 'regexp') {
-              for (let i = 1; i < matches.length; i++)
-                v = v.replace('${' + i + '}', matches[i]);
+      if (matches !== null) {
+        let widgetProperties: any = {};
+        for (let [k, v] of Object.entries(t))
+          if (k != 'template' && k != 'regexp') {
+            for (let i = 1; i < matches.length; i++)
+              v = v.replace('${' + i + '}', matches[i]);
 
-              widgetProperties[k] = v;
-            }
+            widgetProperties[k] = v;
+          }
 
-          DG.Func.byName(p.widget).apply().then((w: DG.Widget) => {
-            w.props.setAll(widgetProperties);
-            host.appendChild(w.root);
-          });
-        }
+        DG.Func.byName(p.widget).apply().then((w: DG.Widget) => {
+          w.props.setAll(widgetProperties);
+          host.appendChild(w.root);
+        });
+      }
     }
 }
 
@@ -173,25 +156,6 @@ export function queriesSearch(s: string, host: HTMLDivElement): void {
   const varRegExp = new RegExp(varRegExpStr);
   const idRegExp = new RegExp('([a-zA-Z0-9_]+)');
   const byRegExp = new RegExp('by ([a-zA-Z0-9_]+)$');
-
-  // let searchDateMatches = dateRegExp.exec(s);
-  // if (searchDateMatches == null)
-  //   return;
-  //
-  // function hasDateInput(q: DG.DataQuery): boolean {
-  //   let matches = varRegExp.exec(q.friendlyName);
-  //   if (matches == null)
-  //     return false;
-  //   return matches.length == 2 && matches[1] == '@date';
-  // }
-  //
-  // // special case for date templates - do we even need it?
-  // for (let q of queries.filter(hasDateInput)) {
-  //   q.apply({date: searchDateMatches[1]}).then((df: DG.DataFrame) => {
-  //     let grid = DG.Viewer.grid(df);
-  //     host.appendChild(grid.root);
-  //   });
-  // }
 
   let byColumn: string | null = null;
   if (byRegExp.test(s)) {
