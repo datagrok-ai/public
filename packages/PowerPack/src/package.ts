@@ -12,7 +12,8 @@ import { WebWidget } from './widgets/web-widget';
 import { LearningWidget } from "./widgets/learning-widget";
 import { AboutWidget } from "./widgets/about-widget";
 import { functionSearch, pdbSearch, pubChemSearch, scriptsSearch, usersSearch, wikiSearch } from './search/entity-search';
-import {KpiWidget} from "./widgets/kpi-widget";
+import { KpiWidget } from "./widgets/kpi-widget";
+import { HtmlWidget } from "./widgets/html-widget";
 
 export let _package = new DG.Package();
 
@@ -56,6 +57,11 @@ export function communityWidget(): DG.Widget {
 //output: widget result
 export function webWidget(): DG.Widget {
   return new WebWidget();
+}
+
+//output: widget result
+export function htmlWidget(): DG.Widget {
+  return new HtmlWidget();
 }
 
 //output: widget result

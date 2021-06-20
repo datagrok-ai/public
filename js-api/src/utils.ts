@@ -18,6 +18,10 @@ export class Utils {
       res[i] = i;
     return res;
   }
+
+  static replaceAll(string: string, search: string, replace: string) {
+    return string.split(search).join(replace);
+  }
 }
 
 // export class PropProxy {

@@ -19,7 +19,7 @@ export function widgetHost(w: DG.Widget): HTMLElement {
   }
 
   let header = ui.div([
-    ui.divText(w.props.caption ?? '', 'd4-dialog-title'),
+    ui.divText(w.props.hasProperty('caption') ? w.props.caption : '', 'd4-dialog-title'),
     ui.icons.settings(() => { grok.shell.o = w}, 'Edit settings'),
     ui.icons.close(remove, 'Remove'),
   ], 'd4-dialog-header');
