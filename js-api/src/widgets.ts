@@ -46,7 +46,7 @@ export class ObjectPropertyBag {
         return true;
       },
       get(target: any, name: any) {
-        const own = ['__proto__', 'hasProperty', 'getProperty', 'getProperties', 'get', 'set', 'apply'];
+        const own = ['__proto__', 'hasProperty', 'getProperty', 'getProperties', 'get', 'set', 'setAll', 'apply'];
         if (own.includes(name) || props.hasOwnProperty(name))
           // @ts-ignore
           return props[name];
@@ -75,6 +75,12 @@ export class ObjectPropertyBag {
    * */
   set(propertyName: string, propertyValue: object) {
     this.getProperty(propertyName).set(this.source, propertyValue);
+  }
+
+  /** Sets all properties according to the passed object containing key-value pairs */
+  setAll(params: object) {
+    for (const [k, v] of Object.entries(params))
+      this.set(k, v);
   }
 
   /** @returns {Property[]} */
