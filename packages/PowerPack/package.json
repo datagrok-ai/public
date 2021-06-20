@@ -16,7 +16,7 @@
 		"webpack-cli": "^4.6.0"
 	},
 	"scripts": {
-		"debug-powerpack": "npm install && webpack && grok publish",
+		"debug-powerpack": "webpack && grok publish",
 		"release-powerpack": "grok publish --rebuild --release",
 		"build-powerpack": "webpack && grok publish",
 		"build": "webpack",

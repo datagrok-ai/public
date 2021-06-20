@@ -10,7 +10,7 @@ export class AboutWidget extends DG.Widget {
     super(ui.div());
 
     // properties
-    this.caption = super.addProperty('caption', DG.TYPE.STRING, 'Who is for?');
+    this.caption = super.addProperty('caption', DG.TYPE.STRING, 'Why Datagrok?');
     let tabControl = ui.tabControl({
     'Overview' : () => ui.panel([ui.markdown(intro)]),
     'Users' : () => ui.panel([ui.markdown(introUsers)]),
