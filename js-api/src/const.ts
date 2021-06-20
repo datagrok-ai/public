@@ -198,6 +198,11 @@ export const TAGS = {
   FORMAT: 'format'
 }
 
+export const FUNC_TAGS = {
+  // when applied to a widget function, makes it appear on the welcome screen
+  DASHBOARD: 'dashboard'
+}
+
 ////// Viewers
 /** @enum {VIEWER} */
 export enum VIEWER {

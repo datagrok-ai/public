@@ -36,19 +36,19 @@ export function _welcomeView(): void {
 }
 
 //output: widget result
-//tags: homepage
+//tags: dashboard
 export function systemStatusWidget(): DG.Widget {
   return new SystemStatusWidget();
 }
 
 //output: widget result
-//tags: homepage
+//tags: dashboard
 export function recentProjectsWidget(): DG.Widget {
   return new RecentProjectsWidget();
 }
 
 //output: widget result
-//tags: homepage
+//tags: dashboard
 export function communityWidget(): DG.Widget {
   return new CommunityWidget();
 }
@@ -59,16 +59,18 @@ export function webWidget(): DG.Widget {
 }
 
 //output: widget result
+//tags: dashboard
 export function learnWidget(): DG.Widget {
   return new LearningWidget();
 }
 
 //output: widget about
+//tags: dashboard
 export function aboutWidget(): DG.Widget {
   return new AboutWidget();
 }
 
-//output: widget about
+//output: widget kpi
 export function kpiWidget(): DG.Widget {
   return new KpiWidget();
 }

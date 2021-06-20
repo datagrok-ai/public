@@ -41,7 +41,7 @@ export function welcomeView() {
     [inputHost, viewHost],
     'power-pack-welcome-view');
 
-  let widgetFunctions = DG.Func.find({returnType: 'widget'});
+  let widgetFunctions = DG.Func.find({tags: [DG.FUNC_TAGS.DASHBOARD], returnType: 'widget'});
 
   grok.dapi.userDataStorage.get(WIDGETS_STORAGE).then((settings) => {
     for (let f of widgetFunctions) {
@@ -69,6 +69,9 @@ export function welcomeView() {
 
   if (window.location.search.startsWith('/search')) {
     const params = new URLSearchParams(window.location.search);
-    input.value = params.get('q') ?? '';
+    let s = params.get('q') ?? '';
+    console.log('search:' + s);
+    input.value = s;
+    doSearch(s);
   }
 }
