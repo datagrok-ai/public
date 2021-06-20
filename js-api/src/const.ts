@@ -198,9 +198,50 @@ export const TAGS = {
   FORMAT: 'format'
 }
 
-export const FUNC_TAGS = {
-  // when applied to a widget function, makes it appear on the welcome screen
-  DASHBOARD: 'dashboard'
+export const FUNC_TYPES = {
+  /** An application that gets shown in the app store.
+    * Signature: app() */
+  APP: 'app',
+
+  /** Context-specific widget that appears on the property panel
+    * Signature: panel(x: any): Widget */
+  PANEL: 'panel',
+
+  /** Gets invoked when the containing package is initialized
+    * Signature: init() */
+  INIT: 'init',
+
+  /** Gets invoked at platform startup. Use it wisely as the whole package will get initialized.
+    * Signature: autostart() */
+  AUTOSTART: 'autostart',
+
+  /** Semantic type detector for a column. Gets invoked when a new dataframe is imported into the platform.
+   *  Implementation should either set column.semType directly, or return the semantic type that will get assigned.
+   *  Signature: semTypeDetector(Column): string */
+  SEM_TYPE_DETECTOR: 'semTypeDetector',
+
+  /** Creates a viewer (or editor) for a file with the specified extension.
+   *  The extension is derived from the `fileViewer-<extension>` tag.
+   *  Used in the file system browser.
+   *  Signature: fileViewer(FileInfo): View */
+  FILE_VIEWER: 'fileViewer',
+
+  /** Exports a file. Gets added to the "export" menu at startup.
+   *  Signature: fileExporter() */
+  FILE_EXPORTER: 'fileExporter',
+
+  /** Creates a cell renderer that is used for rendering cells for specific semantic types.
+   *  Semantic type is derived from the `cellRenderer-<semType>` tag.
+   *  Signature: cellRenderer(): GridCellRenderer */
+  CELL_RENDERER: 'cellRenderer',
+
+  /** Edits package settings.
+   *  Signature: packageSettingsEditor(): Widget */
+  PACKAGE_SETTINGS_EDITOR: 'packageSettingsEditor',
+
+  /** Makes a widget appear on the welcome screen
+   *  Signature: dashboard(): DG.Widget */
+  DASHBOARD: 'dashboard',
 }
 
 ////// Viewers
