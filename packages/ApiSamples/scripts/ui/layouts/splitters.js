@@ -1,14 +1,21 @@
-// Creating custom dialogs
+// Splitters
 
 let t = grok.data.demo.demog();
-let block =
-  $(ui.splitV([
-    ui.textInput('', 'this \n is a \n multi-line \n script').root,
+let block = ui.splitV([
     ui.splitH([
-      DG.Viewer.scatterPlot(t),
-      DG.Viewer.histogram(t)])
-  ])).css('flex-grow', '1');
+      ui.inputs([
+        ui.stringInput('Input',''),
+        ui.choiceInput('Select', 'item 1', ['item 1', 'item 2']),
+        ui.textInput('text',' multi line /n text input'),
+      ]),
+      DG.Viewer.grid(t).root
+    ]),
+    ui.splitH([
+      DG.Viewer.scatterPlot(t).root,
+      DG.Viewer.histogram(t).root
+    ])
+  ]);
 
-ui.dialog('Windows')
-  .add(block)
-  .showModal(true);
+let view = grok.shell.newView('Splitters');
+view.box = true;
+view.append(block);
