@@ -1,4 +1,4 @@
-// Creating box
+// Panel
 
 let panel = ui.panel([
     ui.h1('Header'), 
