@@ -63,7 +63,42 @@ The `sortIndexes` method sorts in ascending order, run this [code snippet](https
 view.grid.sort(['age']);
 ```
 
-The default sort order is ascending. Provide the second argument to specify the direction: `true` stands for ascending and `false` for descending order.
+The default sort order is ascending. Provide the second argument to specify
+the direction: `true` stands for ascending and `false` for descending order:
+
+```javascript
+view.grid.sort(['disease', 'weight'], [true, false]);
+```
+
+A column may also have a custom value comparer associated with it. If you
+provide this function, it will be used for sorting the column. For example,
+let's say we have a string column where values have some logical order.
+We can define a comparison function that is used for its sorting later:
+
+```javascript
+let column = DG.Column.fromList(DG.TYPE.STRING, 'months', ['Feb', 'Jan', 'May', 'Mar']);
+
+let months = { Jan: 1, Feb: 2, Mar: 3, Apr: 4, May: 5 };
+column.valueComparer = (s1, s2) => months[s1] - months[s2];
+```
+
+It is possible to get the sorted order if needed:
+
+```javascript
+let order = column.getSortedOrder();
+grok.shell.info(Array.from(order).map((i) => column.get(i)).join(', '));
+let view = grok.shell.addTableView(DG.DataFrame.fromColumns([column]));
+view.grid.setRowOrder(order);
+```
+
+Once a value comparer is defined for a column, it gets used by all
+visualizations, and for other purposes, such as aggregation. Run the following
+[script](https://public.datagrok.ai/js/samples/data-frame/sorting/custom-comparer)
+and try attaching charts to the output table view paying attention to the
+properly sorted categories:
+
+![Custom sorting](custom-column-sorting.png "Custom sorting")
+
 
 ## Column Visibility
 
