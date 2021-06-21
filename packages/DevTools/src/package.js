@@ -55,6 +55,14 @@ await grok.dapi.permissions.revoke(userGroup, entity);
   console.log(await grok.dapi.permissions.get(entity));
   await grok.dapi.permissions.revoke(group, entity);
 })();`,
+  DataFrame: (ent) =>
+`
+DataFrame snippet
+`,
+  Column: (ent) =>
+`
+Column snippet
+`,
   Package: (ent) =>
 `(async () => {
   // Find package functions
@@ -108,12 +116,27 @@ await grok.dapi.permissions.revoke(userGroup, entity);
 `};
 
 const helpUrls = {
-  DataConnection: ['https://datagrok.ai/help/develop/how-to/access-data', 'https://datagrok.ai/js-api/DataConnection'],
-  DataQuery: ['https://datagrok.ai/help/develop/how-to/access-data', 'https://datagrok.ai/js-api/DataQuery'],
-  FileInfo: ['https://datagrok.ai/help/develop/how-to/access-data', 'https://datagrok.ai/js-api/FileInfo'],
-  Script: ['https://datagrok.ai/help/develop/scripting', 'https://datagrok.ai/js-api/Script'],
-  ViewLayout: ['https://datagrok.ai/help/develop/how-to/layouts', 'https://datagrok.ai/js-api/ViewLayout'],
+  Column: { wiki: 'https://datagrok.ai/help/overview/table', class: 'https://datagrok.ai/js-api/Column' },
+  DataConnection: { wiki: 'https://datagrok.ai/help/develop/how-to/access-data', class: 'https://datagrok.ai/js-api/DataConnection' },
+  DataFrame: { wiki: 'https://datagrok.ai/help/overview/table', class: 'https://datagrok.ai/js-api/DataFrame' },
+  DataQuery: { wiki: 'https://datagrok.ai/help/develop/how-to/access-data', class: 'https://datagrok.ai/js-api/DataQuery' },
+  FileInfo: { wiki: 'https://datagrok.ai/help/develop/how-to/access-data', class: 'https://datagrok.ai/js-api/FileInfo' },
+  Script: { wiki: 'https://datagrok.ai/help/develop/scripting', class: 'https://datagrok.ai/js-api/Script' },
+  ViewLayout: { wiki: 'https://datagrok.ai/help/develop/how-to/layouts', class: 'https://datagrok.ai/js-api/ViewLayout' },
 };
+
+const tags = {
+  DataFrame: ['construction', 'modification', 'events'],
+  Column: ['creation'],
+};
+
+function getTagEditor(type) {
+  let t = DG.TagEditor.create();
+  for (let tag of tags[type]) {
+    t.addTag(tag);
+  }
+  return t.root;
+}
 
 function format(s) {
   s = s.replaceAll('-', ' ');
@@ -142,13 +165,7 @@ export function describeCurrentObj() {
       if (snippets.length === 0 && !template) return;
 
       let links = helpUrls[type] || [];
-      links = links.map(link => {
-        let anc = document.createElement('a');
-        anc.innerHTML = link;
-        anc.setAttribute('href', link);
-        anc.setAttribute('target', '_blank');
-        return anc;
-      });
+      links = Object.keys(links).map(key => ui.link(`${type} ${key}`, links[key]));
 
       const snippetNames = snippets.map(s => ui.divText(format(s.friendlyName), { classes: 'd4-link-action' }));
       let editor = ui.textInput('', template);
@@ -179,9 +196,16 @@ export function describeCurrentObj() {
       let snippetsPane = acc.getPane('Snippets');      
       if (!snippetsPane) snippetsPane = acc.addPane('Snippets', () => {
         return ui.divV([
+          ...((type in tags) ? [getTagEditor(type)] : []),
           ...links,
           ...snippetNames,
-          ui.divV([clipboardBtn, editor.root], 'textarea-box')
+          ui.divV([clipboardBtn, editor.root], 'textarea-box'),
+          ui.divH([
+            ui.button(ui.iconFA('redo'), () => editor.value = template, 'Reset'),
+            ui.button(ui.iconFA('external-link'), () => {
+              grok.shell.newView('Editor', [DG.View.createByType(DG.View.JS_EDITOR, { script: editor.value }).root]);
+            }, 'Open in editor'),
+          ]),
         ]);
       });
     }
