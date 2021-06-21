@@ -1,4 +1,4 @@
-<!-- TITLE: Building an application -->
+<!-- TITLE: Build an Application -->
 <!-- SUBTITLE: -->
 
 <!-- This is a developer's view on the Datagrok applications -->
