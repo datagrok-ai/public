@@ -9,7 +9,15 @@ function calculateMolecularWeight(sequence: string): number {
   let molecularWeight = 0;
   for (let i = 0; i < sequence.length; i += 2)
     molecularWeight += weights[sequence.slice(i, i + 2)];
-  return molecularWeight - 61.97;
+  return (sequence.length > 0) ? molecularWeight - 61.97 : 0;
+}
+
+function calculateNMole(molecularWeights: number[], extinctionCoefficients: number[], amount: number, units: string) {
+  let nmoles = Array(molecularWeights.length);
+  const coefficient = (units == 'mg') ? 1 : 1000;
+  for (let i = 0; i < molecularWeights.length; i++)
+    nmoles[i] = coefficient / molecularWeights[i];
+  return (molecularWeights[0] > 0) ? nmoles : Array(molecularWeights.length).fill(0);
 }
 
 function normalizeSequence(sequence: string): string {
@@ -17,6 +25,10 @@ function normalizeSequence(sequence: string): string {
     "fU": "rU", "fA": "rA", "fC": "rC", "fG": "rG", "mU": "rU", "mA": "rA", "mC": "rC", "mG": "rG", "ps": ""
   };
   return sequence.replace(/(fU|fA|fC|fG|mU|mA|mC|mG|ps)/g, function (x: string) {return obj[x];});
+}
+
+function prepareInputTextField(text: string) {
+  return text.replace(/\s/g, '').split('\n');
 }
 
 const weights: {[index: string]: number} = {
@@ -58,7 +70,8 @@ export function OligoBatchCalculator() {
     'rC': {'rA': 21000, 'rC': 14200, 'rG': 17800, 'rU': 16200},
     'rG': {'rA': 25200, 'rC': 17400, 'rG': 21600, 'rU': 21200},
     'rU': {'rA': 24600, 'rC': 17200, 'rG': 20000, 'rU': 19600}
-  };
+  },
+  defaultInputSequence = 'fAmCmGmAmCpsmU';
 
   function getExtinctionCoefficientUsingNearestNeighborMethod(sequence: string) {
     sequence = normalizeSequence(sequence);
@@ -70,6 +83,28 @@ export function OligoBatchCalculator() {
     return ec1 - ec2;
   }
 
+  function updateTable(sequences: string[]) {
+    tableDiv.innerHTML = '';
+    let od260 = Array(sequences.length).fill(yieldAmount.value);
+    let mass = Array(sequences.length).fill(30);
+    let molecularWeights = sequences.map((s) => calculateMolecularWeight(s));
+    let extinctionCoefficients = sequences.map((s) => getExtinctionCoefficientUsingNearestNeighborMethod(s));
+    let nMole = calculateNMole(molecularWeights, extinctionCoefficients, yieldAmount.value, units.value);
+    table = DG.DataFrame.fromColumns([
+      DG.Column.fromList('int', 'Item#', [...new Int16Array(sequences.length + 1).keys()].slice(1)),
+      DG.Column.fromList('string', 'Sequence', sequences),
+      DG.Column.fromList('int', 'Length', sequences.map((s) => s.length)),
+      DG.Column.fromList('int', 'OD-260', od260),
+      DG.Column.fromList('double', 'nmole', nMole),
+      DG.Column.fromList('double', 'Mass', mass),
+      DG.Column.fromList('double', 'nmole/OD', nMole.map(function(n, i) {return n / od260[i];})),
+      DG.Column.fromList('double', 'μg/OD', mass.map(function(n, i) {return n / od260[i];})),
+      DG.Column.fromList('double', 'MW', molecularWeights),
+      DG.Column.fromList('int', 'Ext. Coefficient', extinctionCoefficients),
+    ]);
+    tableDiv.append(DG.Viewer.grid(table).root);
+  }
+
   let windows = grok.shell.windows;
   windows.showProperties = false;
   windows.showToolbox = false;
@@ -78,60 +113,46 @@ export function OligoBatchCalculator() {
   let text1 = ui.divText('Enter Yield Amount & Units');
   let text2 = ui.divText('Search Modifications');
 
-  let enter1 = ui.stringInput('', '');
+  let yieldAmount = ui.floatInput('', 1, () => updateTable(inputSequenceField.value));
   let enter2 = ui.stringInput('', '');
-  let choose = ui.choiceInput('', 'Select', []);
+  let units = ui.choiceInput('', 'OD', ['OD', 'µg', 'mg', 'µmole', 'nmole'], () => {
+    updateTable(inputSequenceField.value);
+  });
   let analyzeAsSingleStrand = ui.button('Analyze As Single Strand', () => grok.shell.info('Coming soon'));
   let analyzeAsDuplexStrand = ui.button('Analyze As Duplex Strand', () => grok.shell.info('Coming soon'));
-  let clearSequences = ui.button('Clear Sequences', () => grok.shell.info('Coming soon'));
+  let clearSequences = ui.button('Clear Sequences', () => inputSequenceField.value = '');
   let addModifications = ui.button('Add Modifications', () => grok.shell.info('Coming soon'));
   let threeMod = ui.boolInput("3' MOD", false);
   let internal = ui.boolInput('INTERNAL', false);
   let fiveMod = ui.boolInput("5' MOD", false);
   let table = DG.DataFrame.create();
-  let inputSequenceField = ui.textInput("", "", async (seq: string) => {
-    let sequences = seq.split('\n');
-    tableDiv.innerHTML = '';
-    let od260 = Array(sequences.length).fill(1);
-    let nMole = Array(sequences.length).fill(19);
-    let mass = Array(sequences.length).fill(30);
-    table = DG.DataFrame.fromColumns([
-      DG.Column.fromList('int', 'Item#', [...Array(sequences.length + 1).keys()].slice(1)),
-      DG.Column.fromList('string', 'Sequence', sequences),
-      DG.Column.fromList('int', 'Length', sequences.map((s) => s.length)),
-      DG.Column.fromList('int', 'OD-260', od260),
-      DG.Column.fromList('double', 'nmole', nMole),
-      DG.Column.fromList('double', 'Mass', mass),
-      DG.Column.fromList('double', 'nmole/OD', nMole.map(function(n, i) {return n / od260[i];})),
-      DG.Column.fromList('double', 'μg/OD', mass.map(function(n, i) {return n / od260[i];})),
-      DG.Column.fromList('double', 'MW', sequences.map((s) => calculateMolecularWeight(s))),
-      DG.Column.fromList('int', 'Ext. Coefficient', sequences.map((s) => getExtinctionCoefficientUsingNearestNeighborMethod(s))),
-    ]);
-    tableDiv.append(DG.Viewer.grid(table).root);
+  let inputSequenceField = ui.textInput("", defaultInputSequence, async (txt: string) => {
+    updateTable(prepareInputTextField(txt));
   });
 
   let tableDiv = ui.block([]);
+  updateTable([defaultInputSequence]);
 
   grok.shell.newView('Sequence Translator', [
     ui.divH([
       ui.divV([
         text1,
         ui.divH([
-          enter1.root,
-          choose.root
+          yieldAmount.root,
+          units.root,
+          clearSequences
         ])
       ]),
-      analyzeAsSingleStrand,
-      analyzeAsDuplexStrand,
-      clearSequences,
-      addModifications,
-      ui.divV([
-        text2,
-        enter2.root
-      ]),
-      threeMod.root,
-      internal.root,
-      fiveMod.root
+      // analyzeAsSingleStrand,
+      // analyzeAsDuplexStrand,
+      // addModifications,
+      // ui.divV([
+      //   text2,
+      //   enter2.root
+      // ]),
+      // threeMod.root,
+      // internal.root,
+      // fiveMod.root
     ]),
     ui.block([
       ui.div([
