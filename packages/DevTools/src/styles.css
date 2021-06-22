@@ -1,12 +1,12 @@
-.textarea-box {
+.dt-textarea-box {
   position: relative;
 }
 
-.textarea-box:hover .snippet-editor-icon {
+.dt-textarea-box:hover .dt-snippet-editor-icon {
   visibility: visible;
 }
 
-.snippet-editor-icon {
+.dt-snippet-editor-icon {
   position: absolute;
   right: 10px;
   visibility: hidden;
@@ -14,28 +14,28 @@
   z-index: 1;
 }
 
-.clipboard-icon {
+.dt-clipboard-icon {
   top: 10px;
   margin-right: 2px !important;
 }
 
-.editor-icon {
+.dt-editor-icon {
   top: 30px;
 }
 
-.reset-icon {
+.dt-reset-icon {
   top: 50px;
 }
 
-.snippet-editor-icon i {
+.dt-snippet-editor-icon i {
   font-size: 17px;
 }
 
-.snippet-editor-icon:hover {
+.dt-snippet-editor-icon:hover {
   background-color: var(--steel-1);
   border-radius: 2px;
 }
 
-.snippet-inline-icon i {
+.dt-snippet-inline-icon i {
   font-size: 13px;
 }

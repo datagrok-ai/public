@@ -205,23 +205,23 @@ export function describeCurrentObj() {
           }, 1000);
         }
       }, 'Copy');
-      $(clipboardBtn).addClass('snippet-editor-icon clipboard-icon');
+      $(clipboardBtn).addClass('dt-snippet-editor-icon dt-clipboard-icon');
 
       const editorBtn = ui.button(ui.iconFA('code'), () => {
         grok.shell.addView(DG.View.createByType(DG.View.JS_EDITOR, { script: editor.value }));
       }, 'Open in editor');
-      $(editorBtn).addClass('snippet-editor-icon editor-icon');
+      $(editorBtn).addClass('dt-snippet-editor-icon dt-editor-icon');
 
       const resetBtn = ui.button(ui.iconFA('redo'), () => editor.value = template, 'Reset');
-      $(resetBtn).addClass('snippet-editor-icon reset-icon');
+      $(resetBtn).addClass('dt-snippet-editor-icon dt-reset-icon');
 
       const topEditorBtn = ui.button(ui.iconFA('code'), () => {
         grok.shell.addView(DG.View.createByType(DG.View.JS_EDITOR, { script: entExtract[type](ent) }));
       }, 'Open in editor');
-      $(topEditorBtn).addClass('snippet-inline-icon');
+      $(topEditorBtn).addClass('dt-snippet-inline-icon');
 
       const browserLogBtn = ui.button(ui.iconFA('bug'), () => (console.clear(), console.log(grok.shell.o)), 'Log to console');
-      $(browserLogBtn).addClass('snippet-inline-icon');
+      $(browserLogBtn).addClass('dt-snippet-inline-icon');
 
       let snippetsPane = acc.getPane('Snippets');      
       if (!snippetsPane) snippetsPane = acc.addPane('Snippets', () => {
@@ -230,7 +230,7 @@ export function describeCurrentObj() {
           ...((type in tags) ? [getTagEditor(type)] : []),
           ...links,
           ...snippetNames,
-          ui.divV([clipboardBtn, editorBtn, resetBtn, editor.root], 'textarea-box'),
+          ui.divV([clipboardBtn, editorBtn, resetBtn, editor.root], 'dt-textarea-box'),
         ]);
       });
     }
