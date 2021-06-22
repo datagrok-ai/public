@@ -2,11 +2,12 @@
 import {TYPE, VIEWER, ViewerPropertyType, ViewerType} from "./const";
 import {Column, DataFrame} from "./dataframe.js";
 import {DateTime, Property} from "./entities";
-import {ObjectPropertyBag, Widget} from "./widgets";
+import {ObjectPropertyBag, Widget, Menu} from "./widgets";
 import {_toJson} from "./utils";
 import {toJs} from "./wrappers";
 import {StreamSubscription, __obs, EventData} from "./events";
 import * as rxjs from "rxjs";
+import { map, filter, scan } from 'rxjs/operators';
 import {Grid, Point, Rect} from "./grid";
 
 declare let DG: any;
@@ -158,6 +159,10 @@ export class Viewer extends Widget {
 
   static lineChart(t: DataFrame, options: object | null = null): Viewer {
     return new Viewer(api.grok_Viewer_LineChart(t.d, _toJson(options)));
+  }
+
+  get onContextMenu(): rxjs.Observable<Menu> {
+    return this.onEvent('d4-context-menu').pipe(map(x => x.args.menu));
   }
 
   /** Observes platform events with the specified eventId.
