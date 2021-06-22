@@ -208,7 +208,7 @@ export function describeCurrentObj() {
       $(clipboardBtn).addClass('snippet-editor-icon clipboard-icon');
 
       const editorBtn = ui.button(ui.iconFA('code'), () => {
-        grok.shell.newView('Editor', [DG.View.createByType(DG.View.JS_EDITOR, { script: editor.value }).root]);
+        grok.shell.addView(DG.View.createByType(DG.View.JS_EDITOR, { script: editor.value }));
       }, 'Open in editor');
       $(editorBtn).addClass('snippet-editor-icon editor-icon');
 
@@ -216,7 +216,7 @@ export function describeCurrentObj() {
       $(resetBtn).addClass('snippet-editor-icon reset-icon');
 
       const topEditorBtn = ui.button(ui.iconFA('code'), () => {
-        grok.shell.newView('Editor', [DG.View.createByType(DG.View.JS_EDITOR, { script: entExtract[type](ent) }).root]);
+        grok.shell.addView(DG.View.createByType(DG.View.JS_EDITOR, { script: entExtract[type](ent) }));
       }, 'Open in editor');
       $(topEditorBtn).addClass('snippet-inline-icon');
 
