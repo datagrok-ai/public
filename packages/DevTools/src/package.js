@@ -115,6 +115,20 @@ Column snippet
 })();
 `};
 
+const entExtract = {
+  FileInfo: (ent) => dfExts.includes(ent.extension) ? `let df = await grok.data.files.openTable("${ent.fullPath}");` : ``,
+  DataQuery: (ent) => `let query = await grok.dapi.queries.find("${ent.id}");`,
+  User: (ent) => `let user = await grok.dapi.users.find("${ent.id}");`,
+  Group: (ent) => `let group = await grok.dapi.groups.find("${ent.id}");`,
+  DataFrame: (ent) => `let df = await grok.data.openTable("${ent.id}");`,
+  Column: (ent) => `let df = await grok.data.openTable("${ent.dataFrame.id}");\nlet col = df.col("${ent.name}");`,
+  Package: (ent) => `let package = await grok.dapi.packages.find("${ent.id}");`,
+  Project: (ent) => `let project = await grok.dapi.projects.find("${ent.id}");`,
+  Script: (ent) => `let script = await grok.dapi.scripts.find("${ent.id}");`,
+  Func: (ent) => `let func = DG.Func.find({ name: "${ent.name}" })[0];`,
+  ViewLayout: (ent) => `let layout = await grok.dapi.layouts.find("${ent.id}");`,
+};
+
 const helpUrls = {
   Column: { wiki: 'https://datagrok.ai/help/overview/table', class: 'https://datagrok.ai/js-api/Column' },
   DataConnection: { wiki: 'https://datagrok.ai/help/develop/how-to/access-data', class: 'https://datagrok.ai/js-api/DataConnection' },
@@ -191,21 +205,32 @@ export function describeCurrentObj() {
           }, 1000);
         }
       }, 'Copy');
-      $(clipboardBtn).addClass('clipboard-icon');
+      $(clipboardBtn).addClass('snippet-editor-icon clipboard-icon');
+
+      const editorBtn = ui.button(ui.iconFA('code'), () => {
+        grok.shell.newView('Editor', [DG.View.createByType(DG.View.JS_EDITOR, { script: editor.value }).root]);
+      }, 'Open in editor');
+      $(editorBtn).addClass('snippet-editor-icon editor-icon');
+
+      const resetBtn = ui.button(ui.iconFA('redo'), () => editor.value = template, 'Reset');
+      $(resetBtn).addClass('snippet-editor-icon reset-icon');
+
+      const topEditorBtn = ui.button(ui.iconFA('code'), () => {
+        grok.shell.newView('Editor', [DG.View.createByType(DG.View.JS_EDITOR, { script: entExtract[type](ent) }).root]);
+      }, 'Open in editor');
+      $(topEditorBtn).addClass('snippet-inline-icon');
+
+      const browserLogBtn = ui.button(ui.iconFA('bug'), () => (console.clear(), console.log(grok.shell.o)), 'Log to console');
+      $(browserLogBtn).addClass('snippet-inline-icon');
 
       let snippetsPane = acc.getPane('Snippets');      
       if (!snippetsPane) snippetsPane = acc.addPane('Snippets', () => {
         return ui.divV([
+          ui.divH([ui.divText(`${type} ${ent.name}:`), topEditorBtn, browserLogBtn], { style: { 'align-items': 'baseline' } }),
           ...((type in tags) ? [getTagEditor(type)] : []),
           ...links,
           ...snippetNames,
-          ui.divV([clipboardBtn, editor.root], 'textarea-box'),
-          ui.divH([
-            ui.button(ui.iconFA('redo'), () => editor.value = template, 'Reset'),
-            ui.button(ui.iconFA('external-link'), () => {
-              grok.shell.newView('Editor', [DG.View.createByType(DG.View.JS_EDITOR, { script: editor.value }).root]);
-            }, 'Open in editor'),
-          ]),
+          ui.divV([clipboardBtn, editorBtn, resetBtn, editor.root], 'textarea-box'),
         ]);
       });
     }
