@@ -1,3 +1,4 @@
+//tags: DataFrame, construction
 // Creating a DataFrame from a CSV string and checking the formats identified for the columns
 
 let table = DG.DataFrame.fromCsv(

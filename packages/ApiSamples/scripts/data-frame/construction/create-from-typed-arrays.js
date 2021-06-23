@@ -1,3 +1,4 @@
+//tags: DataFrame, construction
 // This is the fastest way of creating numerical columns
 // The following example creates a table with 100 million rows and two columns
 // See also: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Typed_arrays
