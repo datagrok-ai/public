@@ -1,3 +1,4 @@
+//tags: DataFrame, construction
 // Creating a DataFrame from a JSON string
 
 let table = DG.DataFrame.fromJson(`[
