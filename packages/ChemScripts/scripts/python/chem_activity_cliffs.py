@@ -19,7 +19,7 @@ components = 3
 AVERAGE_NEIGHBOR_COUNT = 6
 MIN_SIMILARITY = 80
 DEFAULT_SIMILARITY = 95
-VIEW_CYCLE_COUNT = 5000
+VIEW_CYCLE_COUNT = 250
 
 if automaticSimilarityLimit:
     initialSimilarityLimit = MIN_SIMILARITY
@@ -190,4 +190,13 @@ for i in range(0, rowCount):
     mx[n] = mx[n]*2 - 1
     my[n] = my[n]*2 - 1
 
-output_coords = pd.DataFrame({"n": range(1, rowCount + 1), "x_coord": mx, "y_coord": my, "sali": saliCount})
+
+size = [0] * length
+m = max(saliCount)/4
+for i in range(0, len(saliCount)):
+    if saliCount[i] < m:
+        size[i] = m
+    else:
+        size[i] = saliCount[i] 
+
+output_coords = pd.DataFrame({"n": range(1, rowCount + 1), "x_coord": mx, "y_coord": my, "size": size})
