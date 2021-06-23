@@ -151,6 +151,31 @@ view.grid.col('sex').categoryColors = {
 
 This [example](https://public.datagrok.ai/js/samples/grid/category-colors) is also available on the platform. If the object contains less categories than given in the corresponding column, the cells belonging to the unmentioned categories will be filled with default colors. This might help in cases when you want to enable color-coding with default colors, to do that, simply leave the object empty.
 
+Colors can also be derived from column tags. Numerical columns have the options
+`Off`, `Linear`, and `Conditional`, while categorical columns are limited to
+`Off` and `Categorical`. Datetime columns support `Linear` encoding. Here is an
+[example](https://public.datagrok.ai/js/samples/grid/color-coding-conditional)
+of constructing a grid for a dataframe with these tags:
+
+```javascript
+let t = grok.data.demo.demog();
+t.col('height').tags['.color-coding-type'] = 'Conditional';
+t.col('height').tags['.color-coding-conditional'] = `{"20-170":"#00FF00","170-190":"#220505"}`;
+grok.shell.addTableView(t);
+```
+
+You should specify the `.color-coding-type` tag in all cases, the
+`.color-coding-conditional` tag, as the name suggests, works only with
+conditional coloring. Its value contains the rules for determining which color
+matches a number in the column. The slight difference from the first example is
+that values that do not fall within the range, or otherwise are beyond the scope
+of the given rules, are not colored at all. Note that the
+`.color-coding-conditional` tag is optional, when it is not given and the type
+is set to conditional, the default coloring scheme will be applied to the
+column. The binning rules in this case rely on the column's statistics, and are
+generated automatically. See the [patterns](../../access/parameterized-queries.md#patterns)
+section to learn the syntax for rules.
+
 See also:
   * [Grid](../../visualize/viewers/grid.md)
   * [Table View](../../overview/table-view.md)

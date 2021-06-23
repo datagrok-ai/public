@@ -1,3 +1,4 @@
+//tags: ViewLayout
 // open a table, then do View | Layout | Clone
 
 function info(action, layout) {

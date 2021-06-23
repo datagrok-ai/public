@@ -94,7 +94,7 @@ In case you need to define a different date format, proceed to column properties
 ## .color-coding-type
 
 Indicates on what basis the columns are colored. Numerical columns have the options `Off`,
-`Linear`, and `Conditional`, while categorical columns are limited to `Off` and `Conditional`.
+`Linear`, and `Conditional`, while categorical columns are limited to `Off` and `Categorical`.
 
 ## .color-coding-conditional
 
