@@ -18,13 +18,16 @@ export class PhyloTreeViewer extends DG.JsViewer {
 
   onTableAttached() {
     this.newick = this.dataFrame.getTag('.newick');
-    this.parsedNewick = JSON.parse(this.dataFrame.getTag('.newickJson'));
-    this.nodeIdColumn = this.dataFrame.col('id');
-    this.nodeNameColumn = this.dataFrame.col('node');
-    this.parentNameColumn = this.dataFrame.col('parent');
-
-    this.subs.push(DG.debounce(this.dataFrame.onCurrentRowChanged, 50).subscribe(() => this.render(false)));
-    this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => this.render(false)));
+    if (this.newick) {
+      this.parsedNewick = JSON.parse(this.dataFrame.getTag('.newickJson'));
+      this.nodeIdColumn = this.dataFrame.col('id');
+      this.nodeNameColumn = this.dataFrame.col('node');
+      this.parentNameColumn = this.dataFrame.col('parent');
+      this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => this.render(false)));
+    } else {
+      this.newickCol = this.dataFrame.columns.bySemType('newick');
+    }
+    this.subs.push(DG.debounce(this.dataFrame.onCurrentRowChanged, 50).subscribe((_) => this.render(false)));
     this.render();
   }
 
@@ -97,8 +100,8 @@ export class PhyloTreeViewer extends DG.JsViewer {
   render(computeData = true) {
     $(this.root).empty();
 
-    if (this.newick == null) {
-      this.root.appendChild(ui.divText('Newick tag not found.', 'd4-viewer-error'));
+    if (this.newick == null && this.newickCol == null) {
+      this.root.appendChild(ui.divText('Newick not found.', 'd4-viewer-error'));
       return;
     }
 
@@ -121,10 +124,12 @@ export class PhyloTreeViewer extends DG.JsViewer {
       .font_size(parseInt(this.fontSize));
 
     this.tree.modify_selection(() => false);
-    this.tree(this.parsedNewick).layout();
+    this.tree(this.newick ? this.parsedNewick : d3.layout.newick_parser(
+      this.newickCol.get(this.dataFrame.currentRow.idx)
+    )).layout();
     // if (computeData) this.tree(this.parsedNewick);
     // this.tree.layout();
-    
+    if (!this.newick) return;
     if (computeData) this._createNodeMap(this.tree.get_nodes());
     if (this.nodeIdColumn) this._updateSelection();
 
