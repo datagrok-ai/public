@@ -207,7 +207,7 @@ export function describeCurrentObj() {
       }, 'Copy');
       $(clipboardBtn).addClass('dt-snippet-editor-icon dt-clipboard-icon');
 
-      const editorBtn = ui.button(ui.iconFA('code'), () => {
+      const editorBtn = ui.button(ui.iconFA('external-link'), () => {
         grok.shell.addView(DG.View.createByType(DG.View.JS_EDITOR, { script: editor.value }));
       }, 'Open in editor');
       $(editorBtn).addClass('dt-snippet-editor-icon dt-editor-icon');
@@ -215,12 +215,12 @@ export function describeCurrentObj() {
       const resetBtn = ui.button(ui.iconFA('redo'), () => editor.value = template, 'Reset');
       $(resetBtn).addClass('dt-snippet-editor-icon dt-reset-icon');
 
-      const topEditorBtn = ui.button(ui.iconFA('code'), () => {
+      const topEditorBtn = ui.button(ui.iconFA('edit'), () => {
         grok.shell.addView(DG.View.createByType(DG.View.JS_EDITOR, { script: entExtract[type](ent) }));
       }, 'Open in editor');
       $(topEditorBtn).addClass('dt-snippet-inline-icon');
 
-      const browserLogBtn = ui.button(ui.iconFA('bug'), () => (console.clear(), console.log(grok.shell.o)), 'Log to console');
+      const browserLogBtn = ui.button(ui.iconFA('terminal'), () => (console.clear(), console.log(grok.shell.o)), 'Log to console');
       $(browserLogBtn).addClass('dt-snippet-inline-icon');
 
       let snippetsPane = acc.getPane('Snippets');      
