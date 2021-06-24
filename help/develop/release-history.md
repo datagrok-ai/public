@@ -1,6 +1,79 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-06-24 Dev build 0.92.12
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.12`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Fixed project deploy 
+* Connections: add system connections  
+* (Bug) Functions: function search won't work on packages 
+* (Bug) Usage analysis: persistent loader 
+* DevTools: add the `Snippets` pane (WIP)
+* JS API: format(x, fmt) 
+* Power Pack: Widgets: Kpi 
+* Math Functions: Round10() 
+* Math Functions: RandBetween() 
+* Power Search: integrate with widgets 
+* Power Search (WIP)
+* JS API: Added grok.shell.startUri 
+* JS API: TabPane: new properties: root, content, parent 
+* Power Pack: Search: routing 
+* (Bug) An exception when closing the last view 
+* Not opening a default view at startup in debug mode (in favor of PowerPack's home view) 
+* Not opening a default view at startup when the URL starts with '/search' (in favor of PowerPack's search) 
+* Math Functions: Avg() 
+* JS API: PropertyBag.setAll(object) 
+* Power Search: community-curated, template-based, widget-driven search engine (WIP)
+* DG.tools.createElementFromHtml 
+* Power Pack: HtmlWidget 
+* Introduced Property.editor (used to be Property.info.editor) 
+* Fixed a typo. 
+* JS API: Document function roles 
+* Wiki: additional sorting examples 
+* Wiki: how-to pages title consistency 
+* Math Functions: Median() 
+* Update ui examples 
+* Oligo Batch Calculator: calculate optical density(OD), nmole and mass from Yield Amount & Units 
+* Add color blindess-friendly color palettes  (WIP)
+* Text Functions: StrFind() 
+* Text Functions: StrLeft() 
+* (Bug) JS API: code editor view differs from the original one (WIP)
+* Text Functions: StrRight() 
+* Text Functions: StrRepeat() 
+* Text Functions: RegExpReplace() 
+* Text Functions: RegExpExtract() 
+* Create color-checker.js 
+* Layout templates for JS API Examples 
+* SequenceTranslator: adjustments to svg creation 
+* Updated help, section transform \- text functions 
+* (Bug) Project | Links: Project link is generated incorrectly 
+* JS API: Viewer.onContextMenu event 
+* Added reuseList function 
+* Chem Activity cliffs \- visulisation polishing 
+* Added solution for git push to public repo issue 
+* Removed an annotation comment from samples opened in JS editor 
+* (Bug) Grok Script: Syntax error: "abc".trim().toUpperCase()  
+* Wiki: details on color-coding 
+* (Bug) Deploy ignores friendlyName in queries 
+* Deploy: test connections migration (WIP)
+* Fixed typo 
+* Core: Add key missing calculation functions (WIP)
+* Wiki: expand an article on adding new columns (WIP)
+* JS API: ability to read metadata for a package or a group of packages 
+* PhyloTreeViewer: JS-based phylogenetic tree visualisation (WIP)
+* (Bug) Share button doesn't work for projects 
+* Line-height fix 
+
+
 # 2021-06-18 Dev build 0.92.11
 
 ## Latest Docker Images
