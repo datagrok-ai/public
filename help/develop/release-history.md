@@ -1,6 +1,22 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-06-24 Dev build 0.92.13
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.13`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* (Bug) JS API: JsViewerLoader.instance sometimes returns null instead of jsViewer  
+* (Bug) Notebook sharing doesn't work 
+
+
 # 2021-06-24 Dev build 0.92.12
 
 ## Latest Docker Images
