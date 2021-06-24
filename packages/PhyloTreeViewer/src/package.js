@@ -8,6 +8,14 @@ import { PhyloTreeViewer } from './tree-viewer.js';
 
 export const _package = new DG.Package();
 
+//name: newickToDf
+//input: string newick
+//input: string filename
+//output: dataframe df
+export function _newickToDf(newick, filename) {
+  return newickToDf(newick, filename);
+};
+
 //name: PhyloTree
 //description: Phylogenetic tree visualization
 //tags: viewer
