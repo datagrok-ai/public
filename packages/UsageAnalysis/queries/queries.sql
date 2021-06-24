@@ -20,34 +20,21 @@ where @interv(joined);
 --end
 
 
---name: new users last month week day
+--name: NewUsersEventsErrors
 --connection: System:Datagrok
 with
 month_count as (select count(*) as "month" from users where joined > current_timestamp - interval '30 days'),
 week_count as (select count(*) as "week" from users where joined > current_timestamp - interval '7 days'),
-day_count as (select count(*) as "day" from users where joined > current_timestamp - interval '1 day')
-select * from month_count, week_count, day_count;
---end
-
-
---name: new events last month week day
---connection: System:Datagrok
-with
+day_count as (select count(*) as "day" from users where joined > current_timestamp - interval '1 day'),
 month_events as (select count(*) as "month" from events where event_time > current_timestamp - interval '30 days'),
 week_events as (select count(*) as "week" from events where event_time > current_timestamp - interval '7 days'),
-day_events as (select count(*) as "day" from events where event_time > current_timestamp - interval '1 day')
-
-select * from month_events, week_events, day_events;
---end
-
---name: new errors last month week day
---connection: System:Datagrok
-with
+day_events as (select count(*) as "day" from events where event_time > current_timestamp - interval '1 day'),
 month_errors as (select count(*) as "month" from events where error_stack_trace is not null and event_time > current_timestamp - interval '30 days'),
 week_errors as (select count(*) as "week" from events where error_stack_trace is not null and event_time > current_timestamp - interval '7 days'),
 day_errors as (select count(*) as "day" from events where error_stack_trace is not null and event_time > current_timestamp - interval '1 day')
-
-select * from month_errors, week_errors, day_errors;
+select 'users_count' as counter_type, * from month_count, week_count, day_count union
+select 'events_count' as counter_type, * from month_events, week_events, day_events union
+select 'errors_count' as counter_type, * from month_errors, week_errors, day_errors
 --end
 
 

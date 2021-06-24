@@ -1,21 +1,41 @@
 class UsageAnalysisPackage extends DG.Package {
 
+  getSummary(summaryDf, counterType, title) {
+    summaryDf.rows.match({counter_type: counterType}).select();
+    let host = ui.block([],'d4-item-card card');
+    host.appendChild(ui.h1(title));
+    let list = [
+      ['Day', summaryDf.get('day', summaryDf.selection.findNext(-1, 1))],
+      ['Week', summaryDf.get('week', summaryDf.selection.findNext(-1, 1))],
+      ['Month', summaryDf.get('month', summaryDf.selection.findNext(-1, 1))]
+    ];
+    console.log(list);
+    summaryDf.selection.setAll(false);
+    host.appendChild(ui.div([ui.table(list, (item, idx) =>
+            [`${item[0]}:`, item[1]]
+        )]
+    ));
+    return host;
+  }
+
   //name: Usage Analysis
   //tags: app
-  startApp() {
+  async startApp() {
     let view = grok.shell.newView('Usage Analysis');
     view.root.style.overflow = 'auto';
     let results = ui.div(this.users.root);
     //container for users tag editor
     let filters = ui.divH([],'filters');
 
+    let summaryDf = await grok.data.query('UsageAnalysis:NewUsersEventsErrors');
+
     // containers for widgets
-    let usersSummary = null;
-    let eventsSummary = null;
-    let errorsSummary = null;
+    let usersSummary = this.getSummary(summaryDf, 'users_count', 'New users');
+    let eventsSummary = this.getSummary(summaryDf, 'events_count', 'New events');
+    let errorsSummary = this.getSummary(summaryDf, 'errors_count', 'New errors');
     let usage = null;
     let uniqueUsers = null;
-    let uniqueUsersperDay = null;
+    let uniqueUsersPerDay = null;
     let eventType = null;
     let errorType = null;
     let testTracking = null;
@@ -49,11 +69,8 @@ class UsageAnalysisPackage extends DG.Package {
 
     function showUsage() {
 
-      usersSummary = ui.block([],'cardbox');
-      eventsSummary = ui.block([],'cardbox');
-      errorsSummary = ui.block([],'cardbox');
       uniqueUsers = ui.block([],'cardbox');
-      uniqueUsersperDay = ui.block([],'cardbox');
+      uniqueUsersPerDay = ui.block([],'cardbox');
       usage = ui.block([],'cardbox');
       eventType = ui.block([],'cardbox');
       errorType = ui.block([],'cardbox');
@@ -129,78 +146,8 @@ class UsageAnalysisPackage extends DG.Package {
         return host;
       }
 
-      function getUsersSummary(cardName){
-        let host = ui.block([],'d4-item-card card');
-        host.appendChild(ui.h1(cardName));
-        let loader = ui.loader();
-        host.appendChild(loader);
-        host.appendChild(ui.wait(async () => {
-          let root = ui.div();
-          let lastUsers = await grok.data.query('UsageAnalysis:NewUsersLastMonthWeekDay');
-          let list = [
-            ['Day', lastUsers.get('day', 0)],
-            ['Week', lastUsers.get('week', 0)],
-            ['Month', lastUsers.get('month', 0)]
-          ];
-          root.appendChild(ui.div([ui.table(list, (item, idx) =>
-              [`${item[0]}:`, item[1]]
-            )]
-          ));
-          return root;
-          }))
-        host.removeChild(loader);
-        return host;
-      }
-
-      function getEventsSummary(cardName){
-        let host = ui.block([],'d4-item-card card');
-        host.appendChild(ui.h1(cardName));
-        host.appendChild(ui.loader());
-        host.appendChild(ui.wait(async () => {
-          let root = ui.div();
-          let lastEvents = await grok.data.query('UsageAnalysis:NewEventsLastMonthWeekDay');
-          let list = [
-            ['Day', lastEvents.get('day', 0)],
-            ['Week', lastEvents.get('week', 0)],
-            ['Month', lastEvents.get('month', 0)]
-          ];
-          root.appendChild(ui.div([ui.table(list, (item, idx) =>
-              [`${item[0]}:`, item[1]]
-            )]
-          ));
-          return root;
-          }))
-        host.removeChild(host.childNodes[1]);
-        return host;
-      }
-
-      function getErrorsSummary(cardName){
-        let host = ui.block([],'d4-item-card card');
-        host.appendChild(ui.h1(cardName));
-        host.appendChild(ui.loader());
-        host.appendChild(ui.wait(async () => {
-            let root = ui.div();
-            let lastErrors = await grok.data.query('UsageAnalysis:NewErrorsLastMonthWeekDay');
-            let list = [
-              ['Day', lastErrors.get('day', 0)],
-              ['Week', lastErrors.get('week', 0)],
-              ['Month', lastErrors.get('month', 0)]
-            ];
-            root.appendChild(ui.div([ui.table(list, (item, idx) =>
-                [`${item[0]}:`, item[1]]
-              )]
-            ));
-            return root;
-        }))
-        host.removeChild(host.childNodes[1]);
-        return host;
-      }
-
-      usersSummary.appendChild(getUsersSummary('New Users'));
-      eventsSummary.appendChild(getEventsSummary('New Events'));
-      errorsSummary.appendChild(getErrorsSummary('New Errors'));
       uniqueUsers.appendChild(getUniqueUsers('Unique Users'));
-      uniqueUsersperDay.appendChild(addCardWithFilters('Unique Users Per Day', 'UniqueUsersPerDay', (t) => DG.Viewer.lineChart(t).root));
+      uniqueUsersPerDay.appendChild(addCardWithFilters('Unique Users Per Day', 'UniqueUsersPerDay', (t) => DG.Viewer.lineChart(t).root));
       usage.appendChild(
             addCardWithFilters('Usage', 'Events', (t) => {
               subscribeOnTableWithEvents(t);
@@ -210,7 +157,7 @@ class UsageAnalysisPackage extends DG.Package {
       eventType.appendChild(addCard('Event Types', 'EventsSummaryOnDate', (t) => DG.Viewer.barChart(t, {valueAggrType: 'avg'}).root));
       errorType.appendChild(addCard('Error Types', 'ErrorsSummaryOnDate', (t) => DG.Viewer.barChart(t, {valueAggrType: 'avg'}).root));
       testTracking.appendChild(addCard('Test Tracking', 'ManualActivityByDate', (t) => DG.Viewer.grid(t).root, false));
-      results.append(ui.divH([usersSummary,eventsSummary,errorsSummary]),ui.divH([uniqueUsers,uniqueUsersperDay]),ui.divH([usage]),ui.divH([eventType,errorType]),ui.divH([testTracking]));
+      results.append(ui.divH([usersSummary,eventsSummary,errorsSummary]),ui.divH([uniqueUsers,uniqueUsersPerDay]),ui.divH([usage]),ui.divH([eventType,errorType]),ui.divH([testTracking]));
 
       updateUsersList();
       updateLayout();
@@ -256,7 +203,7 @@ class UsageAnalysisPackage extends DG.Package {
       (!newEventsToolbox.value ? $(eventsSummary).hide() : $(eventsSummary).show());
       (!newErrorsToolbox.value ? $(errorsSummary).hide() : $(errorsSummary).show());
       (!uniqueUsersToolbox.value ? $(uniqueUsers).hide() : $(uniqueUsers).show());
-      (!uniqueUsersperDayToolbox.value ? $(uniqueUsersperDay).hide() : $(uniqueUsersperDay).show());
+      (!uniqueUsersperDayToolbox.value ? $(uniqueUsersPerDay).hide() : $(uniqueUsersPerDay).show());
       (!usageToolbox.value ? $(usage).hide() : $(usage).show());
       (!eventTypeToolbox.value ? $(eventType).hide() : $(eventType).show());
       (!errorTypeToolbox.value ? $(errorType).hide() : $(errorType).show());
