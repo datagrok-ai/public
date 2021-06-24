@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 export let _package = new DG.Package();
 
 function calculateMolecularWeight(sequence: string): number {
-  const step = (/^[AUGC]/g.test(sequence)) ? 1 : 2;
+  const step = /^[AUGC]/g.test(sequence) ? 1 : 2;
   let molecularWeight = 0;
   for (let i = 0; i < sequence.length; i += step)
     molecularWeight += weights[sequence.slice(i, i + step)];
@@ -32,7 +32,7 @@ function calculateMass(extinctionCoefficients: number[], molecularWeights: numbe
   if (units == 'mg' || units == 'µg') return mass.fill(amount);
   if (units == 'OD') {
     for (let i = 0; i < molecularWeights.length; i++)
-      mass[i] = amount / extinctionCoefficients[i] * molecularWeights[i];
+      mass[i] = 1000 * amount / extinctionCoefficients[i] * molecularWeights[i];
     return (molecularWeights[0] > 0) ? mass : Array(molecularWeights.length).fill(0);
   }
   const coefficient = units == 'mg' ? 1 : 1000;
@@ -55,13 +55,18 @@ function calculateOd(extinctionCoefficients: number[], molecularWeights: number[
   return od;
 }
 
-function normalizeSequence(sequence: string): string {
-  const isRna = (/^[AUGC]/g.test(sequence));
-  const obj: {[index: string]: string} = isRna ?
-    {"A": "rA", "U": "rU", "G": "rG", "C": "rC"} :
-    {"fU": "rU", "fA": "rA", "fC": "rC", "fG": "rG", "mU": "rU", "mA": "rA", "mC": "rC", "mG": "rG", "ps": ""};
-  if (isRna) return sequence.replace(/[AUGC]/g, function (x) {return obj[x]});
-  return sequence.replace(/(fU|fA|fC|fG|mU|mA|mC|mG|ps)/g, function (x) {return obj[x]});
+function normalizeSequences(sequences: string[]): string[] {
+  let normalizedSequences = Array(sequences.length);
+  for (let i = 0; i < sequences.length; i++) {
+    const isRna = (/^[AUGC]/g.test(sequences[i]));
+    const obj: {[index: string]: string} = isRna ?
+      {"A": "rA", "U": "rU", "G": "rG", "C": "rC"} :
+      {"fU": "rU", "fA": "rA", "fC": "rC", "fG": "rG", "mU": "rU", "mA": "rA", "mC": "rC", "mG": "rG", "ps": ""};
+    normalizedSequences[i] = (isRna) ?
+      sequences[i].replace(/[AUGC]/g, function (x) {return obj[x]}) :
+      sequences[i].replace(/(fU|fA|fC|fG|mU|mA|mC|mG|ps)/g, function (x) {return obj[x]});
+  }
+  return normalizedSequences;
 }
 
 function prepareInputTextField(text: string) {
@@ -115,7 +120,6 @@ export function OligoBatchCalculator() {
   defaultInput = 'fAmCmGmAmCpsmU\nmApsmApsfGmAmUmCfGfAfC\nmAmUfGmGmUmCmAfAmGmA';
 
   function getExtinctionCoefficientUsingNearestNeighborMethod(sequence: string) {
-    sequence = normalizeSequence(sequence);
     let ec1 = 0, ec2 = 0;
     for (let i = 0; i < sequence.length - 2; i += 2)
       ec1 += nearestNeighbourRna[sequence.slice(i, i + 2)][sequence.slice(i + 2, i + 4)];
@@ -126,20 +130,20 @@ export function OligoBatchCalculator() {
 
   function updateTable(text: string) {
     let sequences = prepareInputTextField(text);
+    let normalizedSequences = normalizeSequences(sequences);
     tableDiv.innerHTML = '';
     let molecularWeights = sequences.map((s) => calculateMolecularWeight(s));
-    let extinctionCoefficients = sequences.map((s) => getExtinctionCoefficientUsingNearestNeighborMethod(s));
+    let extinctionCoefficients = normalizedSequences.map((s) => getExtinctionCoefficientUsingNearestNeighborMethod(s));
     let nMole = calculateNMole(molecularWeights, extinctionCoefficients, yieldAmount.value, units.value);
     let mass = calculateMass(extinctionCoefficients, molecularWeights, nMole, yieldAmount.value, units.value);
     let od260 = calculateOd(extinctionCoefficients, molecularWeights, nMole, yieldAmount.value, units.value);
 
     let moleName = (units.value == 'µmole') ? 'µmole' : 'nmole';
-    let massName = (units.value == 'µg') ? units.value : 'mg';
+    let massName = (units.value == 'mg') ? units.value : 'µg';
 
     table = DG.DataFrame.fromColumns([
-      DG.Column.fromList('int', 'Item#', [...new Int16Array(sequences.length + 1).keys()].slice(1)),
       DG.Column.fromList('string', 'Sequence', sequences),
-      DG.Column.fromList('int', 'Length', sequences.map((s) => s.length)),
+      DG.Column.fromList('int', 'Length', normalizedSequences.map((s) => s.length / 2)),
       DG.Column.fromList('int', 'OD-260', od260),
       DG.Column.fromList('double', moleName, nMole),
       DG.Column.fromList('double', 'Mass (' + massName + ')', mass),
@@ -156,7 +160,6 @@ export function OligoBatchCalculator() {
   windows.showToolbox = false;
   windows.showHelp = false;
 
-  let text1 = ui.h1('Yield Amount & Units');
   let text2 = ui.divText('Search Modifications');
 
   let yieldAmount = ui.floatInput('', 1, () => updateTable(inputSequenceField.value));
@@ -174,51 +177,36 @@ export function OligoBatchCalculator() {
   let table = DG.DataFrame.create();
   let inputSequenceField = ui.textInput("", defaultInput, async (txt: string) => updateTable(txt));
 
-  let tableDiv = ui.block([]);
+  let tableDiv = ui.box();
   updateTable(defaultInput);
 
-  let loadFileButton = ui.button('LOAD AS CSV', () => {grok.shell.info('Coming soon')});
+  let saveAsButton = ui.bigButton('SAVE AS CSV', () => {grok.shell.info('Coming soon')});
 
-  grok.shell.newView('Oligo Batch Calculator', [
-    ui.divH([
-      ui.divV([
-        text1,
-        ui.divH([
-          yieldAmount.root,
-          units.root,
-          clearSequences
-        ])
-      ]),
-      // analyzeAsSingleStrand,
-      // analyzeAsDuplexStrand,
-      // addModifications,
-      // ui.divV([
-      //   text2,
-      //   enter2.root
-      // ]),
-      // threeMod.root,
-      // internal.root,
-      // fiveMod.root
-    ]),
-    ui.block([
-      ui.div([
-        ui.h1('Input sequences'),
-        ui.div([
-          inputSequenceField.root
-        ],'input-base')
-      ], 'sequenceInput'),
-    ]),
-    loadFileButton,
-    tableDiv
+  let view = grok.shell.newView('Oligo Batch Calculator', [
+    ui.splitV([
+      ui.box(
+        ui.panel([
+          ui.h1('Yield Amount & Units'),
+          ui.divH([
+            yieldAmount.root,
+            units.root
+          ]),
+          ui.h1('Input Sequences'),
+          ui.div([
+            inputSequenceField.root
+          ],'inputSequence'),
+          clearSequences,
+          ui.h1('Oligo Properties')
+        ]), {style:{maxHeight:'300px'}}),
+      tableDiv,
+      ui.box(ui.panel([saveAsButton]), {style:{maxHeight:'60px'}}),
+    ])
   ]);
+  view.box = true;
 
-  $('.sequence')
-    .children().css('padding','5px 0');
-  $('.sequenceInput .input-base').css('margin','0');
-  $('.sequenceInput textarea')
+  $('.inputSequence textarea')
     .css('resize','none')
     .css('min-height','50px')
-    .css('width','100%');
-  $('.sequenceInput select')
-    .css('width','100%');
+    .css('width','100%')
+    .css('font-family','monospace');
 }
