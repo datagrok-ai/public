@@ -24,6 +24,10 @@ const userStorageKey: string = 'SequenceTranslator';
 const exampleMinWidth: string = '400px';
 const modificationSectionMaxWidth = '220px';
 
+function generateExample(sequenceLength: number) {
+  return 'AUGC'.repeat(Math.floor(sequenceLength / 4)) + 'AUGC'.slice(0, sequenceLength % 4);
+}
+
 function translateSequence(sequence: string, bases: any, ptoLinkages: any, startModification: any, endModification: any) {
   let counter: number = -1;
   return startModification.value + sequence.replace(/[AUGC]/g, function (x: string) {
@@ -106,6 +110,9 @@ export function defineAxolabsPattern() {
       updateSsModification();
       updateAsModification();
       updateSvgScheme();
+      updateExamples();
+      // ssInput.value = generateExample(ssLength.value);
+      // asInput.value = generateExample(asLength.value);
     } else {
       ui.dialog('Sequence length is out of range')
         .add(ui.divText('Sequence length should be less than ' + maximalValidSequenceLength.toString() + ' due to UI constrains.'))
@@ -392,8 +399,6 @@ export function defineAxolabsPattern() {
 
   let comment = ui.stringInput('Comment', '', () => updateSvgScheme());
 
-  updateUiForNewSequenceLength();
-
   let savePatternButton = ui.button('Save', () => {
     if (saveAs.value != '') {
       savePattern();
@@ -431,8 +436,8 @@ export function defineAxolabsPattern() {
     }
   });
 
-  let ssInput = ui.stringInput('SS', '',() => ssResult.value = translateSequence(ssInput.value, ssBases, ssPtoLinkages, sSfiveModification, sSthreeModification));
-  let ssResult = ui.stringInput(' ', '');
+  let ssInput = ui.stringInput('SS', generateExample(maximalValidSequenceLength),() => ssResult.value = translateSequence(ssInput.value, ssBases, ssPtoLinkages, sSfiveModification, sSthreeModification));
+  let ssResult = ui.stringInput(' ', translateSequence(ssInput.value, ssBases, ssPtoLinkages, sSthreeModification, sSfiveModification));
   // @ts-ignore
   ssInput.input.style.resize = 'none';
   // @ts-ignore
@@ -451,8 +456,8 @@ export function defineAxolabsPattern() {
     ], 'ui-input-options')
   );
 
-  let asInput = ui.stringInput('AS','',() => asResult.value = translateSequence(asInput.value, asBases, asPtoLinkages, aSthreeModification, aSfiveModification));
-  let asResult = ui.stringInput(' ','');
+  let asInput = ui.stringInput('AS', generateExample(maximalValidSequenceLength),() => asResult.value = translateSequence(asInput.value, asBases, asPtoLinkages, aSthreeModification, aSfiveModification));
+  let asResult = ui.stringInput(' ', translateSequence(asInput.value, asBases, asPtoLinkages, aSthreeModification, aSfiveModification));
   // @ts-ignore
   asInput.input.style.resize = 'none';
   // @ts-ignore
@@ -472,6 +477,8 @@ export function defineAxolabsPattern() {
   );
   asExampleDiv.append(asInput.root);
   asExampleDiv.append(asResult.root);
+
+  updateUiForNewSequenceLength();
 
   let patternDesignSection = ui.panel([
     ui.divH([
