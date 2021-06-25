@@ -19,7 +19,7 @@ export class LearningWidget extends DG.Widget {
 function renderPlaylist(p: any) {
   let url = `https://www.youtube.com/playlist?list=${p.id}`;
   return ui.cards.summary(
-    ui.image(p.url, 120, 80, { target: url }),
+    ui.image(p.url, 120, 90, { target: url }),
     [
       ui.h2(ui.link(p.title, url)),
       ui.divText(p.description)
@@ -34,31 +34,31 @@ let playlists = [
     "id": "PLIRnAn2pMh3kvsE5apYXqX0I9bk257_eY",
     "title": "Meetings",
     "description": "Join us for the regular community meetings",
-    "url": "https://i.ytimg.com/vi/JaJgxtHAb98/default.jpg"
+    "url": "https://raw.githubusercontent.com/datagrok-ai/public/master/help/uploads/pictures/Meetings.png"
   },
   {
     "id": "PLIRnAn2pMh3ncmRaE4fjmPbDaDvKklh7j",
     "title": "Develop",
     "description": "Extend the platform by developing scripts, functions, and packages",
-    "url": "https://i.ytimg.com/vi/dKrCk38A1m8/default.jpg"
+    "url": "https://raw.githubusercontent.com/datagrok-ai/public/master/help/uploads/pictures/Develop.png"
   },
   {
     "id": "PLIRnAn2pMh3nHUxed6p-uw7If24nGENDa",
     "title": "Cheminformatics",
     "description": "Work with chemical structures using the first-class cheminformatics support provided by the platform",
-    "url": "https://i.ytimg.com/vi/wCdzD64plEo/default.jpg"
+    "url": "https://raw.githubusercontent.com/datagrok-ai/public/master/help/uploads/pictures/Cheminformatics.png"
   },
   {
     "id": "PLIRnAn2pMh3nLvDs3NLXkLtsyJeX912GG",
     "title": "Visualize",
     "description": "Understand your data by using powerful interactive visualizations",
-    "url": "https://i.ytimg.com/vi/jHRpOnhBAz4/default.jpg"
+    "url": "https://raw.githubusercontent.com/datagrok-ai/public/master/help/uploads/pictures/Visualize.png"
   },
   {
     "id": "PLIRnAn2pMh3nToHhFs3eXpf9xXa195lrN",
     "title": "Explore",
     "description": "Discover, transform, and explore your data, no matter where it comes from",
-    "url": "https://i.ytimg.com/vi/67LzPsdNrEc/default.jpg"
+    "url": "https://raw.githubusercontent.com/datagrok-ai/public/master/help/uploads/pictures/Explore.png"
   }
 ];
 
