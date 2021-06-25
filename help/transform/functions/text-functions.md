@@ -9,6 +9,7 @@ As parameters of the function, you can pass a regular string or a column name. T
 
 *Function List:*
 
+- [Add](#add)
 - [Contains](#contains)
 - [EndsWith](#endswith)
 - [Length](#length)
@@ -28,121 +29,118 @@ As parameters of the function, you can pass a regular string or a column name. T
 - [ToUpperCase](#touppercase)
 - [Trim](#trim)
 
-## Contains(`s`, `sub`)
+## <a name="add"></a>Add(`s1`, `s2`)
+
+Append the string `s2` at the end of the string `s1` and returns the result obtained.
+
+```javascript
+Add("Police", "man")    // "Policeman"
+```
+
+## <a name="contains"></a>Contains(`s`, `sub`)
 
 Checks if the string `s` contains a match of `sub`.
 
 ```javascript
-/* Example of using the Contains */
-Contains("Stormy Weather", "Sunny")      // Returns boolean false
-Contains("Stormy Weather", "Weather")    // Returns boolean true
+Contains("Stormy Weather", "Sunny")      // false
+Contains("Stormy Weather", "Weather")    // true
 ```
 
-## EndsWith(`s`, `postfix`)
+## <a name="endswith"></a>EndsWith(`s`, `postfix`)
 
 Checks if the string `s` ends with a match of `postfix`.
 
 ```javascript
-/* Example of using the EndsWith */
-EndsWith("White Christmas", "White")        // Returns boolean false
-EndsWith("White Christmas", "Christmas")    // Returns boolean true
+EndsWith("White Christmas", "White")        // false
+EndsWith("White Christmas", "Christmas")    // true
 ```
 
-## Length(`s`)
+## <a name="length"></a>Length(`s`)
 
 Returns the length of the string `s`.
 
 ```javascript
-/* Example of using the Length */
-Length("Text")    // Returns integer 4
+Length("Text")    // 4
 ```
 
-## ParseFloat(`s`)
+## <a name="parsefloat"></a>ParseFloat(`s`)
 
 Parse `s` as a, possibly signed, real literal and return its value.
 
 ```javascript
-/* Example of using the ParseFloat */
-ParseFloat("2025")      // Returns real -2025
-ParseFloat("-012.78")   // Returns real -12.78
+ParseFloat("2025")      // -2025
+ParseFloat("-012.78")   // -12.78
 ```
 
-## ParseInt(`s`)
+## <a name="parseint"></a>ParseInt(`s`)
 
 Parse `s` as a, possibly signed, integer literal and return its value.
 
 ```javascript
-/* Example of using the ParseInt */
-ParseInt("2025")    // Returns integer 2025
-ParseInt("-012")     // Returns integer -12
+ParseInt("2025")    // 2025
+ParseInt("-012")    // -12
 ```
 
-## RegExpExtract(`s`, `pattern`, `n`)
+## <a name="regexpextract"></a>RegExpExtract(`s`, `pattern`, `n`)
 
 Returns the `n`-th part of a string `s` that matches a regular expression `pattern`.
 
 ```javascript
-/* Example of using the RegExpExtract */
-RegExpExtract("Hello World!", "l+", 0)    // Returns string "ll"
-RegExpExtract("Hello World!", "l+", 1)    // Returns string "l"
+RegExpExtract("Hello World!", "l+", 0)    // "ll"
+RegExpExtract("Hello World!", "l+", 1)    // "l"
 ```
 
-## RegExpReplace(`s`, `pattern`, `sub`)
+## <a name="rexpreplace"></a>RegExpReplace(`s`, `pattern`, `sub`)
 
 Returns the string after replacing a substring `sub` in string `s` according to a regular expression `pattern`.
 
 ```javascript
-/* Example of using the RegExpReplace */
-RegExpReplace("Hello World!", "l+", "LL")    // Returns string "HeLLo WorLLd!"
+RegExpReplace("Hello World!", "l+", "LL")    // "HeLLo WorLLd!"
 ```
 
-## ReplaceAll(`s`, `from`, `replace`)
+## <a name="replaceall"></a>ReplaceAll(`s`, `from`, `replace`)
 
 Replaces all substrings in string `s` that match `from` with `replace` and returns the result obtained.
 
 ```javascript
-/* Example of using the ReplaceAll */
-ReplaceAll("New York, New York", "York", "Orleans")    // Returns string "New Orleans, New Orleans"
-ReplaceAll("Every", "", ".")                           // Returns string ".E.v.e.r.y."
-ReplaceAll("moto", "o", "")                            // Returns string "mt"
+ReplaceAll("New York", "York", "Orleans")    // "New Orleans"
+ReplaceAll("Every", "", ".")                 // ".E.v.e.r.y."
+ReplaceAll("moto", "o", "")                  // "mt"
 ```
 
-## SplitString(`s`, `separator`, `i`)
+## <a name="splitstring"></a>SplitString(`s`, `separator`, `i`)
 
 Splits the string `s` at matches of `separator` and returns the `i`-th of the substring between the matches.
 
 ```javascript
-/* Example of using the SplitString */
-SplitString("Born to Be Wild", " ", 2)     // Returns string "Be"
-SplitString("Born to Be Wild", "to", 1)    // Returns string " Be Wild"
-SplitString("a,b,c,d", ",", 0)             // Returns string "a"
+SplitString("Born to Be Wild", " ", 2)     // "Be"
+SplitString("Born to Be Wild", "to", 1)    // " Be Wild"
+SplitString("a,b,c,d", ",", 0)             // "a"
 ```
 
-## StartsWith(`s`, `prefix`)
+## <a name="startswith"></a>StartsWith(`s`, `prefix`)
 
 Checks if the string `s` starts with a match of `prefix`.
 
 ```javascript
-/* Example of using the StartsWith */
-StartsWith("White Christmas", "White")        // Returns boolean true
-StartsWith("White Christmas", "Christmas")    // Returns boolean false
+StartsWith("White Christmas", "White")        // true
+StartsWith("White Christmas", "Christmas")    // false
 ```
 
-## StrFind(`s`, `sub`)
+## <a name="strfind"></a>StrFind(`s`, `sub`)
 
 Returns the index of the first occurrence of the string `sub` in the string `s`.
 
 If `sub` or `s` are empty then the function returns -1.
 
 ```javascript
-/* Example of using the StrFind */
-StrFind("Hello world!", "Hello")  // Returns integer 0
-StrFind("Hello world!", "world")  // Returns integer 6
-StrFind("Hello world!", "Car")    // Returns integer -1
-StrFind("", "Moon")               // Returns integer -1
+StrFind("Hello world!", "Hello")  // 0
+StrFind("Hello world!", "world")  // 6
+StrFind("Hello world!", "Car")    // -1
+StrFind("", "Moon")               // -1
 ```
 
-## StrLeft(`s`, `count`)
+## <a name="strleft"></a>StrLeft(`s`, `count`)
 
 Returns the first `count` characters of the string `s`.
 
@@ -151,15 +149,14 @@ If `s` is empty then the function returns empty string.
 `count` is of type integer. If `count` is negative, then the `count` number of characters will be removed from the right-hand side of the `s` string.
 
 ```javascript
-/* Example of using the StrLeft */
-StrLeft("Daddy", 1)      // Returns string "D"
-StrLeft("Daddy", 10))    // Returns string "Daddy"
-StrLeft("", 3)           // Returns empty string
-StrLeft("Daddy", -3)     // Returns string "Da"
-StrLeft("Daddy", -8))    // Returns empty string
+StrLeft("Daddy", 1)      // "D"
+StrLeft("Daddy", 10))    // "Daddy"
+StrLeft("", 3)           // ""
+StrLeft("Daddy", -3)     // "Da"
+StrLeft("Daddy", -8))    // ""
 ```
 
-## StrRight(`s`, `count`)
+## <a name="strright"></a>StrRight(`s`, `count`)
 
 Returns the last `count` characters of the string `s`.
 
@@ -168,55 +165,49 @@ If `s` is empty then the function returns empty string.
 `count` is of type integer. If `count` is negative, then the `count` number of characters will be removed from the left-hand side of the `s` string.
 
 ```javascript
-/* Example of using the StrRight */
-StrRight("Daddy", 1)      // Returns string "y"
-StrRight("Daddy", 10))    // Returns string "Daddy"
-StrRight("", 3)           // Returns empty string
-StrRight("Daddy", -3)     // Returns string "dy"
-StrRight("Daddy", -8))    // Returns empty string
+StrRight("Daddy", 1)      // "y"
+StrRight("Daddy", 10))    // "Daddy"
+StrRight("", 3)           // ""
+StrRight("Daddy", -3)     // "dy"
+StrRight("Daddy", -8))    // ""
 ```
 
-## StrRepeat(`s`, `num`)
+## <a name="strrepeat"></a>StrRepeat(`s`, `n`)
 
-Returns a string consisting of `num` repetitions of string `s`.
+Returns a string consisting of `n` repetitions of string `s`.
 
 ```javascript
-/* Example of using the StrRepeat */
-StrRepeat("Chain", 2)    // Returns string "ChainChain"
+StrRepeat("Chain", 2)    // "ChainChain"
 ```
 
-## Substring(`s`, `start`, `end`)
+## <a name="substring"></a>Substring(`s`, `start`, `end`)
 
 Returns the substring of the string `s` from `start` index, inclusive, to `end`, exclusive.
 
 ```javascript
-/* Example of using the Substring */
-Substring("Alfa Romeo", 5, 10)    // Returns string "Romeo"
+Substring("Alfa Romeo", 5, 10)    // "Romeo"
 ```
 
-## ToLowerCase(`s`)
+## <a name="tolowercase"></a>ToLowerCase(`s`)
 
 Converts all characters in this string `s` to lower case and returns the result obtained.
 
 ```javascript
-/* Example of using the ToLowerCase */
-ToLowerCase("ALPHABET")    // Returns string "alphabet"
+ToLowerCase("ALPHABET")    // "alphabet"
 ```
 
-## ToUpperCase(`s`)
+## <a name="touppercase"></a>ToUpperCase(`s`)
 
 Converts all characters in this string `s` to upper case and returns the result obtained.
 
 ```javascript
-/* Example of using the ToUpperCase */
-ToUpperCase("alphabet")    // Returns string "ALPHABET"
+ToUpperCase("alphabet")    // "ALPHABET"
 ```
 
-## Trim(`s`)
+## <a name="trim"></a>Trim(`s`)
 
 Returns the string without any leading and trailing whitespace of the string `s`.
 
 ```javascript
-/* Example of using the Trim */
-Trim("  My home.   ")    // Returns string "My home."
+Trim("  My home.   ")    // "My home."
 ```
