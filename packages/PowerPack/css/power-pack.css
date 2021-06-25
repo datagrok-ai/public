@@ -112,3 +112,11 @@
     font-size: 16px;
     color: var(--grey-5);
 }
+
+.grok-view:hover .power-pack-widget-host .ui-div::-webkit-scrollbar-thumb {
+    background-color: transparent;
+}
+
+.grok-view:hover .power-pack-widget-host:hover .ui-div::-webkit-scrollbar-thumb {
+    background-color: #dbdcdf;
+}

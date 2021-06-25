@@ -124,8 +124,9 @@ export class PhyloTreeViewer extends DG.JsViewer {
       .font_size(parseInt(this.fontSize));
 
     this.tree.modify_selection(() => false);
+    const idx = this.dataFrame.currentRow.idx;
     this.tree(this.newick ? this.parsedNewick : d3.layout.newick_parser(
-      this.newickCol.get(this.dataFrame.currentRow.idx)
+      this.newickCol.get((idx == -1) ? 1 : idx)
     )).layout();
     // if (computeData) this.tree(this.parsedNewick);
     // this.tree.layout();
