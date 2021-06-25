@@ -9,7 +9,6 @@ class UsageAnalysisPackage extends DG.Package {
       ['Week', summaryDf.get('week', summaryDf.selection.findNext(-1, 1))],
       ['Month', summaryDf.get('month', summaryDf.selection.findNext(-1, 1))]
     ];
-    console.log(list);
     summaryDf.selection.setAll(false);
     host.appendChild(ui.div([ui.table(list, (item, idx) =>
             [`${item[0]}:`, item[1]]
@@ -34,6 +33,7 @@ class UsageAnalysisPackage extends DG.Package {
     let eventsSummary = this.getSummary(summaryDf, 'events_count', 'New events');
     let errorsSummary = this.getSummary(summaryDf, 'errors_count', 'New errors');
     let usage = null;
+    let errorList = null;
     let uniqueUsers = null;
     let uniqueUsersPerDay = null;
     let eventType = null;
@@ -72,6 +72,7 @@ class UsageAnalysisPackage extends DG.Package {
       uniqueUsers = ui.block([],'cardbox');
       uniqueUsersPerDay = ui.block([],'cardbox');
       usage = ui.block([],'cardbox');
+      errorList = ui.block([],'cardbox');
       eventType = ui.block([],'cardbox');
       errorType = ui.block([],'cardbox');
       testTracking = ui.block([],'cardbox');
@@ -148,6 +149,7 @@ class UsageAnalysisPackage extends DG.Package {
 
       uniqueUsers.appendChild(getUniqueUsers('Unique Users'));
       uniqueUsersPerDay.appendChild(addCardWithFilters('Unique Users Per Day', 'UniqueUsersPerDay', (t) => DG.Viewer.lineChart(t).root));
+      errorList.appendChild(addCardWithFilters('Error list', 'Errors', (t) => DG.Viewer.grid(t).root));
       usage.appendChild(
             addCardWithFilters('Usage', 'Events', (t) => {
               subscribeOnTableWithEvents(t);
@@ -157,7 +159,14 @@ class UsageAnalysisPackage extends DG.Package {
       eventType.appendChild(addCard('Event Types', 'EventsSummaryOnDate', (t) => DG.Viewer.barChart(t, {valueAggrType: 'avg'}).root));
       errorType.appendChild(addCard('Error Types', 'ErrorsSummaryOnDate', (t) => DG.Viewer.barChart(t, {valueAggrType: 'avg'}).root));
       testTracking.appendChild(addCard('Test Tracking', 'ManualActivityByDate', (t) => DG.Viewer.grid(t).root, false));
-      results.append(ui.divH([usersSummary,eventsSummary,errorsSummary]),ui.divH([uniqueUsers,uniqueUsersPerDay]),ui.divH([usage]),ui.divH([eventType,errorType]),ui.divH([testTracking]));
+      results.append(
+          ui.divH([usersSummary,eventsSummary,errorsSummary]),
+          ui.divH([uniqueUsers,uniqueUsersPerDay]),
+          ui.divH([usage]),
+          ui.divH([errorList]),
+          ui.divH([eventType,errorType]),
+          ui.divH([testTracking])
+      );
 
       updateUsersList();
       updateLayout();

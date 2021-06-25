@@ -1,25 +1,3 @@
---name: total users count
---connection: System:Datagrok
-select count(*) from users;
---end
-
-
---name: new users
---input: string interv { pattern: datetime }
---connection: System:Datagrok
-select count(*) as count from users
-where @interv(joined);
---end
-
-select count(*) from events;
---name: new users
---input: string interv { pattern: datetime }
---connection: System:Datagrok
-select count(*) as count from events
-where @interv(joined);
---end
-
-
 --name: NewUsersEventsErrors
 --connection: System:Datagrok
 with
@@ -38,7 +16,7 @@ select 'errors_count' as counter_type, * from month_errors, week_errors, day_err
 --end
 
 
---name: unique users per day on @date and @users and @events
+--name: UniqueUsersPerDayOnDateAndUsersAndEvents
 --input: string date { pattern: datetime }
 --input: list users
 --input: list events
@@ -61,7 +39,7 @@ group by t.date::date;
 --end
 
 
---name: unique users by @date
+--name: UniqueUsersByDate
 --input: string date { pattern: datetime }
 --connection: System:Datagrok
 select u.name, u.id from events e
@@ -71,20 +49,7 @@ where @date(e.event_time)
 group by u.name, u.id
 --end
 
-
-----name: events on @date
-----input: string date { pattern: datetime }
-----connection: System:Datagrok
---select u.login as user, u.id as user_id, t.name, t.source, e.id as event_id, e.event_time, e.description from events e
---inner join event_types t on e.event_type_id = t.id
---inner join users_sessions s on e.session_id = s.id
---inner join users u on u.id = s.user_id
---where @date(e.event_time)
---order by e.event_time desc
-----end
-
-
---name: events on @date and @users and @events
+--name: EventsOnDateAndUsersAndEvents
 --input: string date { pattern: datetime }
 --input: list users
 --input: list events
@@ -105,21 +70,13 @@ order by e.event_time desc
 --end
 
 
-----name: errors on @date
-----input: string date { pattern: datetime }
-----connection: System:Datagrok
---select friendly_name as name, event_time, error_message, error_stack_trace, source, run_number as count, e.id as event_id from events e
---where @date(e.event_time) and e.error_stack_trace is not null
-----end
-
-
---name: errors on @date and @users and @events
+--name: ErrorsOnDateAndUsersAndEvents
 --input: string date { pattern: datetime }
 --input: list users
 --input: list events
 --input: bool isExactly
 --connection: System:Datagrok
-select e.friendly_name as name, e.event_time, e.error_message, e.error_stack_trace, e.source, e.run_number as count, e.id as event_id from events e
+select e.friendly_name, e.event_time, e.error_message, e.error_stack_trace, e.source, e.run_number as count, e.id as event_id from events e
 inner join users_sessions s on e.session_id = s.id
 inner join users u on u.id = s.user_id
 where e.error_stack_trace is not null
@@ -133,7 +90,7 @@ end
 --end
 
 
---name: events summary on @date
+--name: EventsSummaryOnDate
 --input: string date { pattern: datetime }
 --connection: System:Datagrok
 select et.friendly_name, et.id as event_type_id, count(1) as cnt from events e
@@ -145,7 +102,7 @@ limit 25
 --end
 
 
---name: events summary on @date and @users
+--name: EventsSummaryOnDateAndUsers
 --input: string date { pattern: datetime }
 --input: list users
 --connection: System:Datagrok
@@ -160,7 +117,7 @@ limit 25
 --end
 
 
---name: errors summary on @date
+--name: ErrorsSummaryOnDate
 --input: string date { pattern: datetime }
 --connection: System:Datagrok
 select et.friendly_name, et.id as event_type_id, count(1) as cnt from events e
@@ -172,7 +129,7 @@ limit 25
 --end
 
 
---name: errors summary on @date and @users
+--name: ErrorsSummaryOnDateAndUsers
 --input: string date { pattern: datetime }
 --input: list users
 --connection: System:Datagrok
@@ -187,7 +144,7 @@ limit 25
 --end
 
 
---name: manual activity by @date
+--name: ManualActivityByDate
 --input: string date { pattern: datetime }
 --connection: System:TestTrack
 select ta.date, ts.file_name, ta.result, ta.error_desc as error
@@ -195,17 +152,4 @@ from test_activity ta
 join test_scenario ts on ts.id = ta.scenario_id
 where @date(ta.date) and ts.type = 'manual'
 order by ta.date desc
---end
-
-
---name: users by date
---input: string date { pattern: datetime }
---connection: System:TestTrack
-select u.first_name, u.last_name, date(e.event_time)
-from events e
-join users_sessions us on us.id = e.session_id
-join users u on u.id = us.user_id
-where u.first_name != 'System' and e.event_time is not null
-group by u.first_name, u.last_name, date(e.event_time)
-order by date(event_time) desc
 --end
