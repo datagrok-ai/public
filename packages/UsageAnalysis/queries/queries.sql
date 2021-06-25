@@ -76,10 +76,11 @@ order by e.event_time desc
 --input: list events
 --input: bool isExactly
 --connection: System:Datagrok
-select e.friendly_name, e.event_time, e.error_message, e.error_stack_trace, e.source, e.run_number as count, e.id as event_id from events e
-inner join users_sessions s on e.session_id = s.id
-inner join users u on u.id = s.user_id
-where e.error_stack_trace is not null
+select et.friendly_name, count(e.id) as count, et.error_source, et.error_stack_trace, et.id from event_types et
+join events e on e.event_type_id = et.id
+join users_sessions s on e.session_id = s.id
+join users u on u.id = s.user_id
+where et.source = 'error'
 and @date(e.event_time)
 and (u.login = any(@users) or @users = ARRAY['all'])
 and
@@ -87,6 +88,8 @@ case @isExactly
 when true then (e.friendly_name = any(@events) or @events = ARRAY['all'])
 else (e.friendly_name like any (@events) or @events = ARRAY['all'])
 end
+group by et.id, et.friendly_name, et.error_stack_trace, et.error_source
+order by count desc
 --end
 
 

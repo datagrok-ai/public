@@ -29,16 +29,16 @@ class UsageAnalysisPackage extends DG.Package {
     let summaryDf = await grok.data.query('UsageAnalysis:NewUsersEventsErrors');
 
     // containers for widgets
-    let usersSummary = this.getSummary(summaryDf, 'users_count', 'New users');
-    let eventsSummary = this.getSummary(summaryDf, 'events_count', 'New events');
-    let errorsSummary = this.getSummary(summaryDf, 'errors_count', 'New errors');
-    let usage = null;
-    let errorList = null;
-    let uniqueUsers = null;
-    let uniqueUsersPerDay = null;
-    let eventType = null;
-    let errorType = null;
-    let testTracking = null;
+    let usersSummaryCard = this.getSummary(summaryDf, 'users_count', 'New users');
+    let eventsSummaryCard = this.getSummary(summaryDf, 'events_count', 'New events');
+    let errorsSummaryCard = this.getSummary(summaryDf, 'errors_count', 'New errors');
+    let usageCard = null;
+    let errorListCard = null;
+    let uniqueUsersCard = null;
+    let uniqueUsersPerDayCard = null;
+    let eventTypeCard = null;
+    let errorTypeCard = null;
+    let testTrackingCard = null;
 
     let accToolbox = ui.accordion();
     let newUsersToolbox = ui.boolInput('New users', true, ()=>updateLayout());
@@ -69,13 +69,13 @@ class UsageAnalysisPackage extends DG.Package {
 
     function showUsage() {
 
-      uniqueUsers = ui.block([],'cardbox');
-      uniqueUsersPerDay = ui.block([],'cardbox');
-      usage = ui.block([],'cardbox');
-      errorList = ui.block([],'cardbox');
-      eventType = ui.block([],'cardbox');
-      errorType = ui.block([],'cardbox');
-      testTracking = ui.block([],'cardbox');
+      uniqueUsersCard = ui.block([],'cardbox');
+      uniqueUsersPerDayCard = ui.block([],'cardbox');
+      usageCard = ui.block([],'cardbox');
+      errorListCard = ui.block([],'cardbox');
+      eventTypeCard = ui.block([],'cardbox');
+      errorTypeCard = ui.block([],'cardbox');
+      testTrackingCard = ui.block([],'cardbox');
 
       function addCardWithFilters(cardName, queryName, f, supportUsers = true) {
         queryName += 'OnDateAndUsersAndEvents';
@@ -99,7 +99,7 @@ class UsageAnalysisPackage extends DG.Package {
           return host;
       }
 
-      function addCard(cardName, queryName, f, supportUsers = false) {
+      function addCard(cardName, query, f, supportUsers = false) {
           let host = ui.block([],'d4-item-card card');
           host.appendChild(ui.h1(cardName));
           let loader = ui.loader();
@@ -108,10 +108,10 @@ class UsageAnalysisPackage extends DG.Package {
           let selectedUsers = users.tags;
 
           if (supportUsers && selectedUsers.length !== 0) {
-            queryName += 'AndUsers';
+            query += 'AndUsers';
             params['users'] = selectedUsers;
           }
-          grok.data.query('UsageAnalysis:' + queryName, params).then((t) => {
+          grok.data.query('UsageAnalysis:' + query, params).then((t) => {
             if (cardName === 'Errors')
               grok.data.detectSemanticTypes(t);
             host.appendChild(f(t));
@@ -147,25 +147,25 @@ class UsageAnalysisPackage extends DG.Package {
         return host;
       }
 
-      uniqueUsers.appendChild(getUniqueUsers('Unique Users'));
-      uniqueUsersPerDay.appendChild(addCardWithFilters('Unique Users Per Day', 'UniqueUsersPerDay', (t) => DG.Viewer.lineChart(t).root));
-      errorList.appendChild(addCardWithFilters('Error list', 'Errors', (t) => DG.Viewer.grid(t).root));
-      usage.appendChild(
+      uniqueUsersCard.appendChild(getUniqueUsers('Unique Users'));
+      uniqueUsersPerDayCard.appendChild(addCardWithFilters('Unique Users Per Day', 'UniqueUsersPerDay', (t) => DG.Viewer.lineChart(t).root));
+      errorListCard.appendChild(addCardWithFilters('Error Types List', 'Errors', (t) => DG.Viewer.grid(t).root));
+      usageCard.appendChild(
             addCardWithFilters('Usage', 'Events', (t) => {
               subscribeOnTableWithEvents(t);
               return DG.Viewer.scatterPlot(t, {'color': 'user'}).root;
             })
       );
-      eventType.appendChild(addCard('Event Types', 'EventsSummaryOnDate', (t) => DG.Viewer.barChart(t, {valueAggrType: 'avg'}).root));
-      errorType.appendChild(addCard('Error Types', 'ErrorsSummaryOnDate', (t) => DG.Viewer.barChart(t, {valueAggrType: 'avg'}).root));
-      testTracking.appendChild(addCard('Test Tracking', 'ManualActivityByDate', (t) => DG.Viewer.grid(t).root, false));
+      eventTypeCard.appendChild(addCard('Event Types', 'EventsSummaryOnDate', (t) => DG.Viewer.barChart(t, {valueAggrType: 'avg'}).root));
+      errorTypeCard.appendChild(addCardWithFilters('Error Types', 'Errors', (t) => DG.Viewer.barChart(t, {valueAggrType: 'avg'}).root));
+      testTrackingCard.appendChild(addCard('Test Tracking', 'ManualActivityByDate', (t) => DG.Viewer.grid(t).root, false));
       results.append(
-          ui.divH([usersSummary,eventsSummary,errorsSummary]),
-          ui.divH([uniqueUsers,uniqueUsersPerDay]),
-          ui.divH([usage]),
-          ui.divH([errorList]),
-          ui.divH([eventType,errorType]),
-          ui.divH([testTracking])
+          ui.divH([usersSummaryCard,eventsSummaryCard,errorsSummaryCard]),
+          ui.divH([uniqueUsersCard,uniqueUsersPerDayCard]),
+          ui.divH([usageCard]),
+          ui.divH([eventTypeCard,errorTypeCard]),
+          ui.divH([errorListCard]),
+          ui.divH([testTrackingCard])
       );
 
       updateUsersList();
@@ -208,15 +208,15 @@ class UsageAnalysisPackage extends DG.Package {
 
     // Checking if the layout widget was hide or show
     function updateLayout(){
-      (!newUsersToolbox.value ? $(usersSummary).hide() : $(usersSummary).show());
-      (!newEventsToolbox.value ? $(eventsSummary).hide() : $(eventsSummary).show());
-      (!newErrorsToolbox.value ? $(errorsSummary).hide() : $(errorsSummary).show());
-      (!uniqueUsersToolbox.value ? $(uniqueUsers).hide() : $(uniqueUsers).show());
-      (!uniqueUsersperDayToolbox.value ? $(uniqueUsersPerDay).hide() : $(uniqueUsersPerDay).show());
-      (!usageToolbox.value ? $(usage).hide() : $(usage).show());
-      (!eventTypeToolbox.value ? $(eventType).hide() : $(eventType).show());
-      (!errorTypeToolbox.value ? $(errorType).hide() : $(errorType).show());
-      (!testTrackingToolbox.value ? $(testTracking).hide() : $(testTracking).show());
+      (!newUsersToolbox.value ? $(usersSummaryCard).hide() : $(usersSummaryCard).show());
+      (!newEventsToolbox.value ? $(eventsSummaryCard).hide() : $(eventsSummaryCard).show());
+      (!newErrorsToolbox.value ? $(errorsSummaryCard).hide() : $(errorsSummaryCard).show());
+      (!uniqueUsersToolbox.value ? $(uniqueUsersCard).hide() : $(uniqueUsersCard).show());
+      (!uniqueUsersperDayToolbox.value ? $(uniqueUsersPerDayCard).hide() : $(uniqueUsersPerDayCard).show());
+      (!usageToolbox.value ? $(usageCard).hide() : $(usageCard).show());
+      (!eventTypeToolbox.value ? $(eventTypeCard).hide() : $(eventTypeCard).show());
+      (!errorTypeToolbox.value ? $(errorTypeCard).hide() : $(errorTypeCard).show());
+      (!testTrackingToolbox.value ? $(testTrackingCard).hide() : $(testTrackingCard).show());
     }
 
     // Add users to dock manager
