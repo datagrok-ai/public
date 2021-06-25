@@ -181,6 +181,9 @@ export function OligoBatchCalculator() {
   updateTable(defaultInput);
 
   let saveAsButton = ui.bigButton('SAVE AS CSV', () => {grok.shell.info('Coming soon')});
+  let title = ui.panel([ui.h1('Oligo Properties')], 'ui-panel ui-box');
+  title.style.maxHeight = '45px';
+  $(title).children('h1').css('margin', '0px');
 
   let view = grok.shell.newView('Oligo Batch Calculator', [
     ui.splitV([
@@ -196,10 +199,15 @@ export function OligoBatchCalculator() {
             inputSequenceField.root
           ],'inputSequence'),
           clearSequences,
-          ui.h1('Oligo Properties')
-        ]), {style:{maxHeight:'300px'}}),
-      tableDiv,
-      ui.box(ui.panel([saveAsButton]), {style:{maxHeight:'60px'}}),
+        ]), {style:{maxHeight:'245px'}}
+      ),
+      ui.splitV([
+        title,
+        ui.panel([tableDiv], 'ui-box')
+      ]),
+      ui.box(
+        ui.panel([saveAsButton]), {style:{maxHeight:'60px'}}
+      ),
     ])
   ]);
   view.box = true;
