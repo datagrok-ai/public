@@ -24,8 +24,9 @@ const userStorageKey: string = 'SequenceTranslator';
 const exampleMinWidth: string = '400px';
 const modificationSectionMaxWidth = '220px';
 
-function generateExample(sequenceLength: number) {
-  return 'AUGC'.repeat(Math.floor(sequenceLength / 4)) + 'AUGC'.slice(0, sequenceLength % 4);
+function generateExample(sequenceLength: number): string {
+  const uniqueSymbols = axolabsMap[defaultBase].symbols.join('');
+  return uniqueSymbols.repeat(Math.floor(sequenceLength / 4)) + uniqueSymbols.slice(0, sequenceLength % 4);
 }
 
 function translateSequence(sequence: string, bases: any, ptoLinkages: any, startModification: any, endModification: any) {
@@ -62,11 +63,11 @@ export function defineAxolabsPattern() {
     for (let i = 0; i < asLength.value; i++) {
       asPtoLinkages[i] = ui.boolInput('', asPtoLinkages[i].value, () => {
         updateSvgScheme();
-        updateExamples();
+        updateOutputExamples();
       });
       asBases[i] = ui.choiceInput('', asBases[i].value, baseChoices, () => {
         updateSvgScheme();
-        updateExamples();
+        updateOutputExamples();
       });
       asModificationItems.append(
         ui.divH([
@@ -89,11 +90,11 @@ export function defineAxolabsPattern() {
     for (let i = 0; i < ssLength.value; i++) {
       ssPtoLinkages[i] = ui.boolInput('', ssPtoLinkages[i].value, () => {
         updateSvgScheme();
-        updateExamples();
+        updateOutputExamples();
       });
       ssBases[i] = ui.choiceInput('', ssBases[i].value, baseChoices, () => {
         updateSvgScheme();
-        updateExamples();
+        updateOutputExamples();
       });
       ssModificationItems.append(
         ui.divH([
@@ -110,9 +111,8 @@ export function defineAxolabsPattern() {
       updateSsModification();
       updateAsModification();
       updateSvgScheme();
-      updateExamples();
-      // ssInput.value = generateExample(ssLength.value);
-      // asInput.value = generateExample(asLength.value);
+      updateInputExamples();
+      updateOutputExamples();
     } else {
       ui.dialog('Sequence length is out of range')
         .add(ui.divText('Sequence length should be less than ' + maximalValidSequenceLength.toString() + ' due to UI constrains.'))
@@ -141,10 +141,16 @@ export function defineAxolabsPattern() {
     updateSvgScheme();
   }
 
-  function updateExamples() {
-    ssResult.value = translateSequence(ssInput.value, ssBases, ssPtoLinkages, sSthreeModification, sSfiveModification);
+  function updateInputExamples() {
+    ssInputExample.value = generateExample(ssLength.value);
     if (createAsStrand.value)
-      asResult.value = translateSequence(asInput.value, asBases, asPtoLinkages, aSthreeModification, aSfiveModification);
+      asInputExample.value = generateExample(asLength.value);
+  }
+
+  function updateOutputExamples() {
+    ssOutputExample.value = translateSequence(ssInputExample.value, ssBases, ssPtoLinkages, sSthreeModification, sSfiveModification);
+    if (createAsStrand.value)
+      asOutputExample.value = translateSequence(asInputExample.value, asBases, asPtoLinkages, aSthreeModification, aSfiveModification);
   }
 
   function updateSvgScheme() {
@@ -319,7 +325,7 @@ export function defineAxolabsPattern() {
     const firstSequence = grok.shell.table(tables.value).columns.byName(n).get(0);
     if (allLengthsAreTheSame && firstSequence.length != ssLength.value)
       ssLength.value = grok.shell.table(tables.value).columns.byName(n).get(0).length;
-    ssInput.value = firstSequence;
+    ssInputExample.value = firstSequence;
   }
 
   function f2(n: string) {
@@ -329,7 +335,7 @@ export function defineAxolabsPattern() {
       asLength.value = grok.shell.table(tables.value).columns.byName(n).get(0).length;
     asLengthDiv.innerHTML = '';
     asLengthDiv.append(asLength.root);
-    asInput.value = firstSequence;
+    asInputExample.value = firstSequence;
   }
 
   let tables = ui.choiceInput('Tables', '', grok.shell.tableNames, () => {
@@ -350,12 +356,12 @@ export function defineAxolabsPattern() {
 
   let sequenceBase = ui.choiceInput('Sequence Basis', defaultBase, baseChoices, (v: string) => {
     updateBases(v);
-    updateExamples();
+    updateOutputExamples();
   });
 
   let fullyPto = ui.boolInput('Fully PTO', defaultPto, (v: boolean) => {
     updatePto(v);
-    updateExamples();
+    updateOutputExamples();
   });
 
   let createAsStrand = ui.boolInput('Create AS Strand', true, (v: boolean) => {
@@ -372,25 +378,25 @@ export function defineAxolabsPattern() {
 
   let sSthreeModification = ui.stringInput("Additional SS 3' Modification", "", () => {
     updateSvgScheme();
-    updateExamples();
+    updateOutputExamples();
   });
   sSthreeModification.setTooltip("Additional SS 3' Modification");
 
   let sSfiveModification = ui.stringInput("Additional SS 5' Modification", "", () => {
     updateSvgScheme();
-    updateExamples();
+    updateOutputExamples();
   });
   sSfiveModification.setTooltip("Additional SS 5' Modification");
 
   let aSthreeModification = ui.stringInput("Additional AS 3' Modification", "", () => {
     updateSvgScheme();
-    updateExamples();
+    updateOutputExamples();
   });
   aSthreeModification.setTooltip("Additional AS 3' Modification");
 
   let aSfiveModification = ui.stringInput("Additional AS 5' Modification", "", () => {
     updateSvgScheme();
-    updateExamples();
+    updateOutputExamples();
   });
   aSfiveModification.setTooltip("Additional AS 5' Modification");
 
@@ -417,7 +423,7 @@ export function defineAxolabsPattern() {
   let convertSequenceButton = ui.button('Convert Sequences', () => {
     if (inputSsColumn.value == null || (createAsStrand.value && inputAsColumn.value == null))
       grok.shell.info("Please select table and columns on which to apply pattern");
-    else if (ssLength.value != ssInput.value.length || asLength.value != asInput.value.length) {
+    else if (ssLength.value != ssInputExample.value.length || asLength.value != asInputExample.value.length) {
       let dialog = ui.dialog("Length mismatch")
       $(dialog.getButton('OK')).hide();
       dialog
@@ -436,47 +442,51 @@ export function defineAxolabsPattern() {
     }
   });
 
-  let ssInput = ui.stringInput('SS', generateExample(maximalValidSequenceLength),() => ssResult.value = translateSequence(ssInput.value, ssBases, ssPtoLinkages, sSfiveModification, sSthreeModification));
-  let ssResult = ui.stringInput(' ', translateSequence(ssInput.value, ssBases, ssPtoLinkages, sSthreeModification, sSfiveModification));
+  let ssInputExample = ui.stringInput('SS', generateExample(ssLength.value),() => {
+    ssOutputExample.value = translateSequence(ssInputExample.value, ssBases, ssPtoLinkages, sSfiveModification, sSthreeModification)
+  });
+  let ssOutputExample = ui.stringInput(' ', translateSequence(ssInputExample.value, ssBases, ssPtoLinkages, sSthreeModification, sSfiveModification));
   // @ts-ignore
-  ssInput.input.style.resize = 'none';
+  ssInputExample.input.style.resize = 'none';
   // @ts-ignore
-  ssInput.input.style.minWidth = exampleMinWidth;
+  ssInputExample.input.style.minWidth = exampleMinWidth;
   // @ts-ignore
-  ssResult.input.style.resize = 'none';
+  ssOutputExample.input.style.resize = 'none';
   // @ts-ignore
-  ssResult.input.style.minWidth = exampleMinWidth;
+  ssOutputExample.input.style.minWidth = exampleMinWidth;
   // @ts-ignore
-  ssResult.input.disabled = 'true';
-  ssResult.root.append(
+  ssOutputExample.input.disabled = 'true';
+  ssOutputExample.root.append(
     ui.div([
       ui.button(ui.iconFA('copy', () => {}), () => {
-        navigator.clipboard.writeText(ssResult.value).then(() => grok.shell.info('Sequence was copied to clipboard'));
+        navigator.clipboard.writeText(ssOutputExample.value).then(() => grok.shell.info('Sequence was copied to clipboard'));
       })
     ], 'ui-input-options')
   );
 
-  let asInput = ui.stringInput('AS', generateExample(maximalValidSequenceLength),() => asResult.value = translateSequence(asInput.value, asBases, asPtoLinkages, aSthreeModification, aSfiveModification));
-  let asResult = ui.stringInput(' ', translateSequence(asInput.value, asBases, asPtoLinkages, aSthreeModification, aSfiveModification));
+  let asInputExample = ui.stringInput('AS', generateExample(asLength.value),() => {
+    asOutputExample.value = translateSequence(asInputExample.value, asBases, asPtoLinkages, aSthreeModification, aSfiveModification);
+  });
+  let asOutputExample = ui.stringInput(' ', translateSequence(asInputExample.value, asBases, asPtoLinkages, aSthreeModification, aSfiveModification));
   // @ts-ignore
-  asInput.input.style.resize = 'none';
+  asInputExample.input.style.resize = 'none';
   // @ts-ignore
-  asInput.input.style.minWidth = exampleMinWidth;
+  asInputExample.input.style.minWidth = exampleMinWidth;
   // @ts-ignore
-  asResult.input.style.resize = 'none';
+  asOutputExample.input.style.resize = 'none';
   // @ts-ignore
-  asResult.input.style.minWidth = exampleMinWidth;
+  asOutputExample.input.style.minWidth = exampleMinWidth;
   // @ts-ignore
-  asResult.input.disabled = 'true';
-  asResult.root.append(
+  asOutputExample.input.disabled = 'true';
+  asOutputExample.root.append(
     ui.div([
       ui.button(ui.iconFA('copy', () => {}), () => {
-        navigator.clipboard.writeText(asResult.value).then(() => grok.shell.info('Sequence was copied to clipboard'));
+        navigator.clipboard.writeText(asOutputExample.value).then(() => grok.shell.info('Sequence was copied to clipboard'));
       })
     ], 'ui-input-options')
   );
-  asExampleDiv.append(asInput.root);
-  asExampleDiv.append(asResult.root);
+  asExampleDiv.append(asInputExample.root);
+  asExampleDiv.append(asOutputExample.root);
 
   updateUiForNewSequenceLength();
 
@@ -517,8 +527,8 @@ export function defineAxolabsPattern() {
         ], 'ui-form'),
         ui.div([
           ui.h1('Example'),
-          ssInput.root,
-          ssResult.root,
+          ssInputExample.root,
+          ssOutputExample.root,
           asExampleDiv
         ], 'ui-form')
       ])
