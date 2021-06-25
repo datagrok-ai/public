@@ -5,7 +5,7 @@
 
 This type of function includes math, trigonometric, and logic functions.
 
-As parameters of the function, you can pass numeric scalars, numeric functions, math constants, boolean scalars, boolean functions, or a column name. To pass a column cell, you can use the syntax `${columnName}`. Other ways to use parameters: `true`, `false`, `PI`, `E` etc.
+As parameters of the function, you can pass numeric scalars, numeric functions, [math constants](constants.md), boolean scalars, boolean functions, or a column name. To pass a column cell, you can use the syntax `${columnName}`. Other ways to use parameters: `true`, `false`, `PI`, `E` etc.
 
 >By default, real numbers in a column show only 2 digits after the integer part. You can change this behavior by setting the appropriate format for displaying the data in the column. To do this, click on the column heading and in the opened context menu select "Format" option.
 
@@ -22,6 +22,7 @@ As parameters of the function, you can pass numeric scalars, numeric functions, 
 - [Ceil](#ceil)
 - [Cos](#cos)
 - [Div](#div)
+- [Eq](#eq)
 - [Exp](#exp)
 - [Floor](#floor)
 - [Greater](#greater)
@@ -35,6 +36,7 @@ As parameters of the function, you can pass numeric scalars, numeric functions, 
 - [Mul](#mul)
 - [Neg](#neg)
 - [Not](#not)
+- [NotEq](#noteq)
 - [NotGreater](#notgreater)
 - [NotSmaller](#notsmaller)
 - [Or](#or)
@@ -141,6 +143,15 @@ Returns the result of dividing `x` by `y`.
 
 ```javascript
 Div(7.5, 2)    // 3.75
+```
+
+## <a name="eq"></a>Eq(`x`, `y`)
+
+Returns true if `x` equal to `y` and false otherwise.
+
+```javascript
+Eq(5, 5)           // true
+Eq(true, false)    // false
 ```
 
 ## <a name="exp"></a>Exp(`x`)
@@ -251,6 +262,15 @@ Returns logical negation of the `a`.
 ```javascript
 Not(true)     // false
 Not(5 < 1)    // true
+```
+
+## <a name="noteq"></a>NotEq(`x`, `y`)
+
+Returns false if `x` equal to `y` and true otherwise.
+
+```javascript
+NotEq(5, 5)           // false
+NotEq(true, false)    // true
 ```
 
 ## <a name="notgreater"></a>NotGreater(`x`, `y`)
