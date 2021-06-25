@@ -12,7 +12,9 @@ As parameters of the function, you can pass a regular string or a column name. T
 - [Add](#add)
 - [Contains](#contains)
 - [EndsWith](#endswith)
+- [Eq](#eq)
 - [Length](#length)
+- [NotEq](#noteq)
 - [ParseFloat](#parsefloat)
 - [ParseInt](#parseint)
 - [RegExpExtract](#regexpextract)
@@ -55,12 +57,28 @@ EndsWith("White Christmas", "White")        // false
 EndsWith("White Christmas", "Christmas")    // true
 ```
 
+## <a name="eq"></a>Eq(`s1`, `s2`)
+
+Returns true if the string `s1` equal to `s2` and false otherwise.
+
+```javascript
+Eq("Sky", "Sky")    // true
+```
+
 ## <a name="length"></a>Length(`s`)
 
 Returns the length of the string `s`.
 
 ```javascript
 Length("Text")    // 4
+```
+
+## <a name="noteq"></a>NotEq(`x`, `y`)
+
+Returns false if the string `s1` equal to `s2` and true otherwise.
+
+```javascript
+Eq("Sky", "Sky")    // false
 ```
 
 ## <a name="parsefloat"></a>ParseFloat(`s`)
