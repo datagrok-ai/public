@@ -161,6 +161,10 @@ export class Viewer extends Widget {
     return new Viewer(api.grok_Viewer_LineChart(t.d, _toJson(options)));
   }
 
+  static network(t: DataFrame, options: object | null = null): Viewer {
+    return Viewer.fromType(VIEWER.NETWORK_DIAGRAM, t, options);
+  }
+
   get onContextMenu(): rxjs.Observable<Menu> {
     return this.onEvent('d4-context-menu').pipe(map(x => x.args.menu));
   }
