@@ -156,3 +156,29 @@ join test_scenario ts on ts.id = ta.scenario_id
 where @date(ta.date) and ts.type = 'manual'
 order by ta.date desc
 --end
+
+
+--name: users by date
+--input: string date { pattern: datetime }
+--connection: System:TestTrack
+select u.first_name, u.last_name, date(e.event_time)
+from events e
+join users_sessions us on us.id = e.session_id
+join users u on u.id = us.user_id
+where u.first_name != 'System' and e.event_time is not null
+group by u.first_name, u.last_name, date(e.event_time)
+order by date(event_time) desc
+--end
+
+
+--name: errors for @user
+--input: string date { pattern: datetime }
+--input: string user
+--connection: System:Datagrok
+select e.friendly_name as name, e.event_time, e.error_message, e.error_stack_trace, e.source, e.run_number as count, e.id as event_id from events e
+inner join users_sessions s on e.session_id = s.id
+inner join users u on u.id = s.user_id
+where e.error_stack_trace is not null
+and @date(e.event_time)
+and (u.login = @user)
+--end

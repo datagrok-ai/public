@@ -14,6 +14,7 @@ import { AboutWidget } from "./widgets/about-widget";
 import { functionSearch, pdbSearch, pubChemSearch, scriptsSearch, usersSearch, wikiSearch } from './search/entity-search';
 import { KpiWidget } from "./widgets/kpi-widget";
 import { HtmlWidget } from "./widgets/html-widget";
+import {PowerPackSettingsEditor} from "./settings-editor";
 
 export let _package = new DG.Package();
 
@@ -79,6 +80,12 @@ export function aboutWidget(): DG.Widget {
 //output: widget kpi
 export function kpiWidget(): DG.Widget {
   return new KpiWidget();
+}
+
+//output: widget kpi
+//tags: packageSettingsEditor
+export function powerPackSettingsEditor(): DG.Widget {
+  return new PowerPackSettingsEditor();
 }
 
 //description: Functions
