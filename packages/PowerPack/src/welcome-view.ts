@@ -4,17 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 import {debounceTime} from 'rxjs/operators';
 import {initSearch, powerSearch, queriesSearch} from "./search/power-search";
-import {widgetHost, WIDGETS_STORAGE } from './utils';
-
-interface UserWidgetSettings {
-  factoryName?: string;
-  caption?: string;
-  ignored?: boolean;
-}
-
-interface UserWidgetsSettings {
-  [index: string]: UserWidgetSettings;
-}
+import {widgetHost, getSettings, UserWidgetsSettings } from './utils';
 
 let settings: UserWidgetsSettings;
 
@@ -49,9 +39,9 @@ export function welcomeView() {
 
   let widgetFunctions = DG.Func.find({tags: ['dashboard'], returnType: 'widget'});
 
-  grok.dapi.userDataStorage.get(WIDGETS_STORAGE).then((settings) => {
+  getSettings().then((settings: UserWidgetsSettings) => {
     for (let f of widgetFunctions) {
-      //if (!settings[f.name] || settings[f.name].ignored)
+      if (!settings[f.name] || settings[f.name].ignored)
         f.apply().then(function (w: DG.Widget) {
           w.factory = f;
           widgetsHost.appendChild(widgetHost(w));

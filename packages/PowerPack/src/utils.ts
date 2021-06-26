@@ -5,15 +5,36 @@ import * as DG from 'datagrok-api/dg';
 
 export const WIDGETS_STORAGE = 'widgets';
 
+export interface UserWidgetSettings {
+  factoryName?: string;
+  caption?: string;
+  ignored?: boolean;
+}
+
+export interface UserWidgetsSettings {
+  [index: string]: UserWidgetSettings;
+}
+
+export let settings: UserWidgetsSettings;
+
+export async function getSettings(): Promise<UserWidgetsSettings> {
+  return settings ?? (settings = (await grok.dapi.userDataStorage.get(WIDGETS_STORAGE)));
+}
+
+export function saveSettings(): Promise<void> {
+  console.log(settings);
+  return grok.dapi.userDataStorage.post(WIDGETS_STORAGE, settings);
+}
+
 export function widgetHost(w: DG.Widget): HTMLElement {
   let host = ui.box(null, 'power-pack-widget-host');
 
   function remove(): void {
     host.remove();
     if (w.factory?.name) {
-      let settings = { ignored: true };
-      grok.dapi.userDataStorage
-        .postValue(WIDGETS_STORAGE, w.factory.name, JSON.stringify(settings))
+      let widgetSettings = settings[w.factory.name] ?? (settings[w.factory.name] = { });
+      widgetSettings.ignored = true;
+      saveSettings()
         .then((_) => grok.shell.info('To control widget visibility, go to Tools | Widgets'));
     }
   }

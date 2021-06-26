@@ -235,7 +235,7 @@ export function renderCard(x: object): HTMLElement {
 }
 
 /** Renders multiple objects as a span */
-export function span(x: object[], options: string | ElementOptions | null = null): HTMLElement {
+export function span(x: any[], options: string | ElementOptions | null = null): HTMLElement {
   return _options(api.grok_UI_Span(x), options);
 }
 
@@ -376,12 +376,12 @@ export function table(items: any[], renderer: ((item: any, ind: number) => any) 
 }
 
 /** Waits for Future<Element> function to complete and collect its result.*/
-export function wait(getElement: () => HTMLElement): any {
+export function wait(getElement: () => Promise<HTMLElement>): any {
   return toJs(api.grok_UI_Wait(getElement));
 }
 
 /** Waits for Future<Element> function to complete and collect its result as a ui.box.*/
-export function waitBox(getElement: () => HTMLElement): any {
+export function waitBox(getElement: () => Promise<HTMLElement>): any {
   let d = toJs(api.grok_UI_Wait(getElement));
   $(d).css('ui-box');
   return d;
@@ -650,7 +650,7 @@ export class Tooltip {
   }
 
   /** Associated the specified visual element with the corresponding item. */
-  bind(element: HTMLElement, tooltip?: string): HTMLElement {
+  bind(element: HTMLElement, tooltip?: string | null): HTMLElement {
     if (tooltip != null)
       api.grok_Tooltip_SetOn(element, tooltip);
     return element;
@@ -969,7 +969,7 @@ export function buttonsInput(children: HTMLButtonElement[] = []): HTMLDivElement
   return d;
 }
 
-function _icon(type: string, handler: Function, tooltipMsg?: string): HTMLElement {
+function _icon(type: string, handler: Function, tooltipMsg: string | null = null): HTMLElement {
   let e = $(`<i class="grok-icon grok-font-icon-${type}"></i>`)[0] as HTMLElement;
   e?.addEventListener('click', () => handler());
   tooltip.bind(e, tooltipMsg);
@@ -978,9 +978,9 @@ function _icon(type: string, handler: Function, tooltipMsg?: string): HTMLElemen
 
 
 export let icons = {
-  close: (handler: Function, tooltipMsg: string) => _icon('close', handler, tooltipMsg),
-  help: (handler: Function, tooltipMsg: string) => _icon('help', handler, tooltipMsg),
-  settings: (handler: Function, tooltipMsg: string) => _icon('settings', handler, tooltipMsg),
+  close: (handler: Function, tooltipMsg: string | null = null) => _icon('close', handler, tooltipMsg),
+  help: (handler: Function, tooltipMsg: string | null = null) => _icon('help', handler, tooltipMsg),
+  settings: (handler: Function, tooltipMsg: string | null = null) => _icon('settings', handler, tooltipMsg),
 }
 
 export namespace cards {
