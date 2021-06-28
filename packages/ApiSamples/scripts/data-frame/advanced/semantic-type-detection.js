@@ -1,3 +1,4 @@
+//tags: DataFrame, events
 // Custom handling of the semantic type detection
 // See https://datagrok.ai/help/discover/semantic-types
 
