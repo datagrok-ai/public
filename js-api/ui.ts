@@ -436,7 +436,11 @@ export function image(src: string, width: number, height: number, options: {targ
 }
 
 /** Creates an <a> element. */
-export function link(text: string, target: string | Function | object, tooltipMsg?: string) {
+export function link(
+    text: string,
+    target: string | Function | object,
+    tooltipMsg?: string,
+    options: string | ElementOptions | null = { classes: 'link-external' }): HTMLAnchorElement {
   let link = element('a') as HTMLAnchorElement;
   link.classList.add('ui-link');
   link.innerText = text;
@@ -451,6 +455,7 @@ export function link(text: string, target: string | Function | object, tooltipMs
     bind(target, link);
   }
   tooltip.bind(link, tooltipMsg);
+  _options(link, options);
   return link;
 }
 
