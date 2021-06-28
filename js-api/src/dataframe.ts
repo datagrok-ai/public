@@ -1157,7 +1157,7 @@ export class ColumnList {
   /** Adds a new integer column
    * @param {string} name
    * @returns {Column}
-   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/construction/add-columns}
+   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/modification/add-columns}
    * */
   addNewInt(name: string): Column { return this.addNew(name, TYPE.INT); }
 
@@ -1170,21 +1170,21 @@ export class ColumnList {
   /** Adds a new qualified number column
    * @param {string} name
    * @returns {Column}
-   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/construction/add-columns}
+   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/modification/add-columns}
    * */
   addNewQnum(name: string): Column { return this.addNew(name, TYPE.QNUM); }
 
   /** Adds a new datetime column
    * @param {string} name
    * @returns {Column}
-   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/construction/add-columns}
+   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/modification/add-columns}
    * */
   addNewDateTime(name: string): Column { return this.addNew(name, TYPE.DATE_TIME); }
 
   /** Adds a new boolean column
    * @param {string} name
    * @returns {Column}
-   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/construction/add-columns}
+   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/modification/add-columns}
    * */
   addNewBool(name: string): Column { return this.addNew(name, TYPE.BOOL); }
 
