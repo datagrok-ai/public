@@ -28,7 +28,7 @@ export class AboutWidget extends DG.Widget {
       )], {style:{marginTop:'10px'}})
     ]),
     'Developers' : () => ui.panel([ui.markdown(introDev)]),
-    'Leaders' : () => ui.panel([ui.markdown(introDev)]),
+    'Leaders' : () => ui.panel([ui.markdown(introLeaders)]),
     //
     }, true)
     tabControl.root.className = 'd4-tab-host d4-tab-vertical';
