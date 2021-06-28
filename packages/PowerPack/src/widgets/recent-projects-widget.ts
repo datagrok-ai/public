@@ -7,20 +7,20 @@ export class RecentProjectsWidget extends DG.Widget {
 
   constructor() {
     super(ui.panel());
-
-    // properties
     this.caption = super.addProperty('caption', DG.TYPE.STRING, 'Recent projects');
+    this.getProjects();
+  }
 
+  async getProjects(){
+    let count = (await grok.dapi.projects.recent.list()).length;
     let projectList = ui.divV([]); 
 
-    let projectsCount = grok.dapi.projects.recent.include.length;
-
-    if (projectsCount != 0){
+    if (count != 0){
       grok.dapi.projects.recent
       .list({pageSize: 5})
       .then((projects) => projectList.appendChild(ui.divV(projects.map((p) => projectData(p) ), {style:{overflowX:'scroll'}})));
     } else {
-      this.caption = super.addProperty('caption', DG.TYPE.STRING, 'Demo projects');
+      this.caption = 'Demo projects';
       grok.dapi.projects
       .filter('#demo')
       .list({pageSize: 5})
