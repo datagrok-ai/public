@@ -1,4 +1,5 @@
-// Demonstrates handling of Grok-originated events
+//tags: DataFrame, events
+// Demonstrates handling of Datagrok-originated events
 
 demog = grok.data.demo.demog();
 view = grok.shell.addTableView(demog);
@@ -21,6 +22,7 @@ demog.onColumnSelectionChanged.subscribe((_) => info('ddt-column-selection-chang
 demog.onColumnsChanged.subscribe((_) => info('ddt-columns-changed'));
 demog.onColumnsAdded.subscribe((_) => info('ddt-columns-added'));
 demog.onColumnsRemoved.subscribe((_) => info('ddt-columns-removed'));
+demog.onRowsAdded.subscribe((_) => info('ddt-rows-added'));
 demog.onRowsRemoved.subscribe((_) => info('ddt-rows-removed'));
 demog.onDataChanged.subscribe((_) => info('ddt-data-changed'));
 demog.onFilterChanged.subscribe((_) => info('ddt-filter-changed'));
