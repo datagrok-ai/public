@@ -371,4 +371,5 @@ export class ScatterPlotViewer extends Viewer {
   get onZoomed(): rxjs.Observable<Rect> { return this.onEvent('d4-scatterplot-zoomed'); }
   get onViewportChanged(): rxjs.Observable<Rect> { return this.onEvent('d4-viewport-changed'); }
   get onAfterDrawScene(): rxjs.Observable<Rect> { return this.onEvent('d4-after-draw-scene'); }
+  get onBeforeDrawScene(): rxjs.Observable<Rect> { return this.onEvent('d4-before-draw-scene'); }
 }
