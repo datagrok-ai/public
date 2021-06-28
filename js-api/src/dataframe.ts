@@ -346,33 +346,38 @@ export class DataFrame {
     return new DataFrame(api.grok_DataFrame_Clone(this.d, toDart(rowMask), columnIds, saveSelection));
   }
 
-  /** Current row
-   * @type {Row} */
+  /** Current row.
+   * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/current-elements} */
   get currentRow(): Row {
     return new Row(this, api.grok_DataFrame_Get_CurrentRowIdx(this.d));
   }
 
+  /** Current row.
+   * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/current-elements} */
   set currentRow(idx) {
     api.grok_DataFrame_Set_CurrentRowIdx(this.d, idx);
   }
 
-  /** Get Current column
-   * @type {Column} */
+  /** Current column.
+   * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/current-elements} */
   get currentCol(): Column {
     return toJs(api.grok_DataFrame_Get_CurrentCol(this.d));
   }
 
+  /** Current column.
+   * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/current-elements} */
   set currentCol(col: Column) {
     api.grok_DataFrame_Set_CurrentCol(this.d, col.d);
   }
 
-  /** Get current cell
-   * @type {Cell}
-   * */
+  /** Current cell.
+   * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/current-elements} */
   get currentCell(): Cell {
     return new Cell(api.grok_DataFrame_Get_CurrentCell(this.d));
   }
 
+  /** Current cell.
+   * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/current-elements} */
   set currentCell(cell: Cell) {
     api.grok_DataFrame_Set_CurrentCell(this.d, cell.d);
   }
@@ -474,97 +479,75 @@ export class DataFrame {
     return __obs(event, this.d);
   }
 
-  /** @returns {Observable} */ get onValuesChanged(): Observable<any> {
-    return this._event('ddt-values-changed');
-  }
+  /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/events} */
+   get onValuesChanged(): Observable<any> { return this._event('ddt-values-changed'); }
 
-  /** @returns {Observable} */ get onCurrentRowChanged(): Observable<any> {
-    return this._event('ddt-current-row-changed');
-  }
+  /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/current-elements} */
+  get onCurrentRowChanged(): Observable<any> { return this._event('ddt-current-row-changed'); }
 
-  /** @returns {Observable} */ get onMouseOverRowChanged(): Observable<any> {
-    return this._event('ddt-mouse-over-row-changed');
-  }
+  /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/events} */
+  get onMouseOverRowChanged(): Observable<any> { return this._event('ddt-mouse-over-row-changed'); }
 
-  /** @returns {Observable} */ get onCurrentColChanged(): Observable<any> {
-    return this._event('ddt-current-col-changed');
-  }
+  /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/current-elements} */
+  get onCurrentColChanged(): Observable<any> { return this._event('ddt-current-col-changed'); }
 
-  /** @returns {Observable} */ get onMouseOverColChanged(): Observable<any> {
-    return this._event('ddt-mouse-over-col-changed');
-  }
+  /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/events} */
+  get onMouseOverColChanged(): Observable<any> { return this._event('ddt-mouse-over-col-changed'); }
 
-  /** @returns {Observable} */ get onCurrentCellChanged(): Observable<any> {
-    return this._event('ddt-current-cell-changed');
-  }
+  /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/current-elements} */
+  get onCurrentCellChanged(): Observable<any> { return this._event('ddt-current-cell-changed'); }
 
-  /** @returns {Observable} */ get onMouseOverRowGroupChanged(): Observable<any> {
-    return this._event('ddt-mouse-over-row-group-changed');
-  }
+  /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/events} */
+  get onMouseOverRowGroupChanged(): Observable<any> { return this._event('ddt-mouse-over-row-group-changed'); }
 
-  /** @returns {Observable} */ get onNameChanged(): Observable<any> {
-    return this._event('ddt-table-name-changed');
-  }
+  /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/events} */
+  get onNameChanged(): Observable<any> { return this._event('ddt-table-name-changed'); }
 
-  /** @returns {Observable} */ get onMetadataChanged(): Observable<any> {
-    return this._event('ddt-table-metadata-changed');
-  }
+  /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/events} */
+  get onMetadataChanged(): Observable<any> { return this._event('ddt-table-metadata-changed'); }
 
-  /** @returns {Observable} */ get onColumnNameChanged(): Observable<any> {
-    return this._event('ddt-table-column-name-changed');
-  }
+  /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/events} */
+  get onColumnNameChanged(): Observable<any> { return this._event('ddt-table-column-name-changed'); }
 
-  /** @returns {Observable} */ get onColumnSelectionChanged(): Observable<any> {
-    return this._event('ddt-column-selection-changed');
-  }
+  /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/events} */
+  get onColumnSelectionChanged(): Observable<any> { return this._event('ddt-column-selection-changed'); }
 
-  /** @returns {Observable} */ get onColumnsChanged(): Observable<any> {
-    return this._event('ddt-columns-changed');
-  }
+  /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/events} */
+  get onColumnsChanged(): Observable<any> { return this._event('ddt-columns-changed'); }
 
-  /** @returns {Observable} */ get onColumnsAdded(): Observable<any> {
-    return this._event('ddt-columns-added');
-  }
+  /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/events} */
+  get onColumnsAdded(): Observable<any> { return this._event('ddt-columns-added'); }
 
-  /** @returns {Observable} */ get onColumnsRemoved(): Observable<any> {
-    return this._event('ddt-columns-removed');
-  }
+  /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/events} */
+  get onColumnsRemoved(): Observable<any> { return this._event('ddt-columns-removed'); }
 
-  /** @returns {Observable} */ get onRowsAdded(): Observable<any> {
-    return this._event('ddt-rows-added');
-  }
+  /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/events} */
+  get onRowsAdded(): Observable<any> { return this._event('ddt-rows-added'); }
 
-  /** @returns {Observable} */ get onRowsRemoved(): Observable<any> {
-    return this._event('ddt-rows-removed');
-  }
+  /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/events} */
+  get onRowsRemoved(): Observable<any> { return this._event('ddt-rows-removed'); }
 
   /** @returns {Observable} */ get onRowsFiltering(): Observable<any> {
     return this._event('ddt-rows-filtering');
   }
 
-  /** @returns {Observable}
-   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/advanced/semantic-type-detection}
-   * */
-  get onSemanticTypeDetecting(): Observable<any> {
-    return this._event('ddt-semantic-type-detecting');
-  }
+  /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/advanced/semantic-type-detection} */
+  get onSemanticTypeDetecting(): Observable<any> { return this._event('ddt-semantic-type-detecting'); }
 
-  /** @returns {Observable} */ get onSemanticTypeDetected(): Observable<any> {
-    return this._event('ddt-semantic-type-detected');
-  }
+  /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/advanced/semantic-type-detection} */
+  get onSemanticTypeDetected(): Observable<any> { return this._event('ddt-semantic-type-detected'); }
 
-  /** @returns {Observable} */ get onDataChanged(): Observable<any> {
+  /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/events} */
+  get onDataChanged(): Observable<any> {
     return rxjs.concat(this.onValuesChanged, this.onColumnsAdded,
       this.onColumnsRemoved, this.onRowsAdded, this.onRowsRemoved);
   }
 
-  /** @returns {Observable} */ get onSelectionChanged(): Observable<any> {
-    return this.selection.onChanged;
-  }
+  /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/events} */
+  get onSelectionChanged(): Observable<any> { return this.selection.onChanged; }
 
-  /** @returns {Observable} */ get onFilterChanged(): Observable<any> {
-    return this.filter.onChanged;
-  }
+  /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/events} */
+  get onFilterChanged(): Observable<any> { return this.filter.onChanged; }
 
   fireValuesChanged(): void {
     api.grok_DataFrame_FireValuesChanged(this.d);
