@@ -223,8 +223,8 @@ export function describeCurrentObj() {
       const browserLogBtn = ui.button(ui.iconFA('terminal'), () => (console.clear(), console.log(grok.shell.o)), 'Log to console');
       $(browserLogBtn).addClass('dt-snippet-inline-icon');
 
-      let snippetsPane = acc.getPane('Snippets');      
-      if (!snippetsPane) snippetsPane = acc.addPane('Snippets', () => {
+      let devPane = acc.getPane('Dev');      
+      if (!devPane) devPane = acc.addPane('Dev', () => {
         return ui.divV([
           ui.divH([ui.divText(`${type} ${ent.name}:`), topEditorBtn, browserLogBtn], { style: { 'align-items': 'baseline' } }),
           ...((type in tags) ? [getTagEditor(type)] : []),
