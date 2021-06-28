@@ -25,7 +25,7 @@ Table of contents
   * [Development](#development)
   * [Publishing](#publishing)
   * [Debugging](#debugging)
-  * [Applications](#applications)
+  * [Function Types](#function-types)
   * [Documentation](#documentation)
 
 ## Packages
@@ -514,7 +514,29 @@ Deploying such package locates it to the Datagrok host URI (such as `https://dev
 
 2. Make sure the required plugins / debuggers for Chrome debugging are installed in your IDE.
 
-## Applications
+## Function Types
+
+A package can contain a variety of functions, so it will be appropriate to give
+an overview of the most common ones. Typically, each function type has a special
+tag denoting what the function does, for example:
+
+  * `#app` for [applications](#applications)
+  * `#dashboard` for [dashboards](#dashboards)
+  * `#panel` for [info panels](#info-panels)
+  * `#init` and `#autostart` for [pre-run functions](#pre-run-functions)
+  * `#semTypeDetector` for [semantic types detectors](#semantic-types-detectors)
+  * `#cellRenderer` for custom [cell renderers](#cell-renderers)
+  * `#fileViewer` and `#fileExporter` for [file viewers](#file-viewers) and [exporters](#file-exporters)
+  * `#packageSettingsEditor` for [settings editors](#package-settings-editors)
+
+You can use these tags to search for certain functions either from the platform's interface
+([https://public.datagrok.ai/functions?q](https://public.datagrok.ai/functions?q)) or from within your code:
+
+```js
+const applications = DG.Func.find({ tags: [DG.FUNC_TYPES.APP] });
+```
+
+### Applications
 
 Applications are [functions](../overview/functions/function.md) tagged with the `#app` tag. A package might contain zero, one, or more apps. See our [GitHub repository](https://github.com/datagrok-ai/public/tree/master/packages) for application examples, such as [Enamine Store application](https://github.com/datagrok-ai/public/tree/master/packages/EnamineStore).
 
