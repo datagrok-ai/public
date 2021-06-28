@@ -8,27 +8,26 @@
 
 .dt-snippet-editor-icon {
   position: absolute;
-  right: 10px;
+  top: 5px;
   visibility: hidden;
   margin: 5px;
   z-index: 1;
 }
 
 .dt-clipboard-icon {
-  top: 10px;
-  margin-right: 2px !important;
+  right: 50px;
 }
 
 .dt-editor-icon {
-  top: 30px;
+  right: 30px;
 }
 
 .dt-reset-icon {
-  top: 50px;
+  right: 10px;
 }
 
 .dt-snippet-editor-icon i {
-  font-size: 17px;
+  font-size: 13px;
 }
 
 .dt-snippet-editor-icon:hover {
