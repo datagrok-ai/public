@@ -372,7 +372,7 @@ export function tableFromMap(map: { [key: string]: any }): HTMLTableElement {
 
 /** Creates a visual table based on [items] and [renderer]. */
 export function table(items: any[], renderer: ((item: any, ind: number) => any) | null, columnNames: string[] | null = null): HTMLTableElement {
-  return api.grok_HtmlTable(items, renderer !== null ? (object: any, ind: number) => renderer(toJs(object), ind) : null, columnNames).root;
+  return toJs(api.grok_HtmlTable(items, renderer !== null ? (object: any, ind: number) => renderer(toJs(object), ind) : null, columnNames)).root;
 }
 
 /** Waits for Future<Element> function to complete and collect its result.*/
