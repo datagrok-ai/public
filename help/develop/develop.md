@@ -543,6 +543,33 @@ Applications are [functions](../overview/functions/function.md) tagged with the 
 To open the application launcher, click on `Functions | Apps`, or follow [this link](https://public.datagrok.ai/apps)
 from outside the platform. To launch a particular app automatically, open the following URL: `https://public.datagrok.ai/apps/<APP_NAME>`.
 
+### Pre-run Functions
+
+The purpose of pre-run functions is to prepare the main package code for
+execution. This includes fetching specific pieces of data, subscribing to global
+events, changing the user interface right after the platform starts, connecting
+to external services with refined configuration parameters, and so on.
+
+There are two types of functions serving this purpose: `init` and `autostart`.
+The function tagged with `init` gets invoked when the containing package is
+initialized. This typically happens the first time any of the functions in the
+package is called. It is guaranteed that this function gets invoked _once_ before
+the execution of the rest of the code and will not be re-executed on subsequent
+calls. The `autostart` functions are similar to the first type, but differ from
+it in a few aspects. Firstly, these functions are called at the platform startup,
+not necessarily when some package function is invoked. Moreover, if you decide to
+call a regular function from your package, there is no guarantee that its code will
+wait until the `autostart` completes. Another caveat is that the whole package will
+get initialized along with `autostart`, so use this type of functions wisely.
+If possible, stick to the `init` tag while developing your programs.
+
+To get the template for an `init` function, use the following `datagrok-tools`
+command from your package directory:
+
+```
+grok add function init packageNameInit
+```
+
 ## Documentation
 
 According to [this study](http://sigdoc.acm.org/wp-content/uploads/2019/01/CDQ18002_Meng_Steinhardt_Schubert.pdf),
