@@ -67,7 +67,7 @@ class UsageAnalysisPackage extends DG.Package {
     let events = this.events;
     let isExactly = this.isExactly;
 
-    function showUsage() {
+    async function showUsage() {
 
       uniqueUsersCard = ui.block([],'cardbox');
       uniqueUsersPerDayCard = ui.block([],'cardbox');
@@ -77,47 +77,41 @@ class UsageAnalysisPackage extends DG.Package {
       errorTypeCard = ui.block([],'cardbox');
       testTrackingCard = ui.block([],'cardbox');
 
-      function addCardWithFilters(cardName, queryName, f, supportUsers = true) {
-        queryName += 'OnDateAndUsersAndEvents';
+      function addCardUsingDataframe(cardName, dataframe, f, supportUsers = true) {
+        let host = ui.block([],'d4-item-card card');
+        host.appendChild(ui.h1(cardName));
 
-          let host = ui.block([],'d4-item-card card');
-          host.appendChild(ui.h1(cardName));
-          let loader = ui.loader();
-          host.appendChild(loader);
-          let params = {'date': date.value, 'isExactly': isExactly.value};
-          let selectedUsers = users.tags;
-
-          params['users'] = (supportUsers && selectedUsers.length !== 0) ? selectedUsers : ['all'];
-          params['events'] = (events.value.length !== 0) ? [isExactly.value ? events.value : events.value + '%'] : ['all'];
-
-          grok.data.query('UsageAnalysis:' + queryName, params).then((t) => {
-            if (cardName === 'Errors')
-              grok.data.detectSemanticTypes(t);
-            host.appendChild(f(t));
-            host.removeChild(loader);
-          });
-          return host;
+        if (cardName === 'Errors')
+          grok.data.detectSemanticTypes(dataframe);
+        host.appendChild(f(dataframe));
+        return host;
       }
 
-      function addCard(cardName, query, f, supportUsers = false) {
-          let host = ui.block([],'d4-item-card card');
-          host.appendChild(ui.h1(cardName));
-          let loader = ui.loader();
-          host.appendChild(loader);
-          let params = {'date': date.value};
-          let selectedUsers = users.tags;
+      function getCurrentFilter() {
+        let filter = {'date': date.value, 'isExactly': isExactly.value};
+        let selectedUsers = users.tags;
 
-          if (supportUsers && selectedUsers.length !== 0) {
-            query += 'AndUsers';
-            params['users'] = selectedUsers;
-          }
-          grok.data.query('UsageAnalysis:' + query, params).then((t) => {
-            if (cardName === 'Errors')
-              grok.data.detectSemanticTypes(t);
-            host.appendChild(f(t));
-            host.removeChild(loader);
-          });
-          return host;
+        filter['users'] = (selectedUsers.length !== 0) ? selectedUsers : ['all'];
+        filter['events'] = (events.value.length !== 0) ? [isExactly.value ? events.value : events.value + '%'] : ['all'];
+
+        return filter;
+      }
+
+      function addCardWithFilters(cardName, queryName, f) {
+        let host = ui.block([],'d4-item-card card');
+        host.appendChild(ui.h1(cardName));
+        let loader = ui.loader();
+        host.appendChild(loader);
+
+        let filter = getCurrentFilter();
+
+        grok.data.query('UsageAnalysis:' + queryName, filter).then((t) => {
+          if (cardName === 'Errors')
+            grok.data.detectSemanticTypes(t);
+          host.appendChild(f(t));
+          host.removeChild(loader);
+        });
+        return host;
       }
 
       while (results.firstChild)
@@ -147,18 +141,21 @@ class UsageAnalysisPackage extends DG.Package {
         return host;
       }
 
+      let filter = getCurrentFilter();
+      let errors = await grok.data.query('UsageAnalysis:ErrorsOnDateAndUsersAndEvents', filter);
+
       uniqueUsersCard.appendChild(getUniqueUsers('Unique Users'));
-      uniqueUsersPerDayCard.appendChild(addCardWithFilters('Unique Users Per Day', 'UniqueUsersPerDay', (t) => DG.Viewer.lineChart(t).root));
-      errorListCard.appendChild(addCardWithFilters('Error Types List', 'Errors', (t) => DG.Viewer.grid(t).root));
+      uniqueUsersPerDayCard.appendChild(addCardWithFilters('Unique Users Per Day', 'UniqueUsersPerDayOnDateAndUsersAndEvents', (t) => DG.Viewer.lineChart(t).root));
+      errorListCard.appendChild(addCardUsingDataframe('Error Types List', errors, (t) => DG.Viewer.grid(t).root));
       usageCard.appendChild(
-            addCardWithFilters('Usage', 'Events', (t) => {
+            addCardWithFilters('Usage', 'EventsOnDateAndUsersAndEvents', (t) => {
               subscribeOnTableWithEvents(t);
               return DG.Viewer.scatterPlot(t, {'color': 'user'}).root;
             })
       );
-      eventTypeCard.appendChild(addCard('Event Types', 'EventsSummaryOnDate', (t) => DG.Viewer.barChart(t, {valueAggrType: 'avg'}).root));
-      errorTypeCard.appendChild(addCardWithFilters('Error Types', 'Errors', (t) => DG.Viewer.barChart(t, {valueAggrType: 'avg'}).root));
-      testTrackingCard.appendChild(addCard('Test Tracking', 'ManualActivityByDate', (t) => DG.Viewer.grid(t).root, false));
+      eventTypeCard.appendChild(addCardWithFilters('Event Types', 'EventsSummaryOnDate', (t) => DG.Viewer.barChart(t, {valueAggrType: 'avg'}).root));
+      errorTypeCard.appendChild(addCardUsingDataframe('Error Types', errors, (t) => DG.Viewer.barChart(t, {valueAggrType: 'avg'}).root));
+      testTrackingCard.appendChild(addCardWithFilters('Test Tracking', 'ManualActivityByDate', (t) => DG.Viewer.grid(t).root, false));
       results.append(
           ui.divH([usersSummaryCard,eventsSummaryCard,errorsSummaryCard]),
           ui.divH([uniqueUsersCard,uniqueUsersPerDayCard]),
@@ -177,7 +174,7 @@ class UsageAnalysisPackage extends DG.Package {
     this.events.onChanged(this.debounce(showUsage, 750));
     this.isExactly.onChanged(showUsage);
 
-    showUsage();
+    await showUsage();
 
     accToolbox.addPane('Services', () => ui.wait(async () => {
       let root = ui.div();
