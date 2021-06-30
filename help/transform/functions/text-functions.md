@@ -17,6 +17,7 @@ As parameters of the function, you can pass a regular string or a column name. T
 - [NotEq](#noteq)
 - [ParseFloat](#parsefloat)
 - [ParseInt](#parseint)
+- [RegExpContains](#regexpcontains)
 - [RegExpExtract](#regexpextract)
 - [RegExpReplace](#rexpreplace)
 - [ReplaceAll](#replaceall)
@@ -97,6 +98,15 @@ Parse `s` as a, possibly signed, integer literal and return its value.
 ```javascript
 ParseInt("2025")    // 2025
 ParseInt("-012")    // -12
+```
+
+## <a name="regexpcontains"></a>RegExpContains(`s`, `pattern`)
+
+Checks if the string `s` contains a string matches a regular expression `pattern`.
+
+```javascript
+RegExpContains("Stormy Weather", "Sunny")      // false
+RegExpContains("name@gmail.com", "(\W|^)[\w.\-]{0,25}@(hotmail|gmail)\.com(\W|$)")    // true
 ```
 
 ## <a name="regexpextract"></a>RegExpExtract(`s`, `pattern`, `n`)

@@ -50,6 +50,7 @@ As parameters of the function, you can pass numeric scalars, numeric functions, 
 - [Sqrt](#sqrt)
 - [Sub](#sub)
 - [Tan](#tan)
+- [Xor](#xor)
 
 ## <a name="abs"></a>Abs(`x`)
 
@@ -387,4 +388,13 @@ Returns the tangent of the `x`.
 ```javascript
 Tan(0)         // 0
 Tan(PI / 6)    // 0.5
+```
+
+## <a name="xor"></a>Xor(`a`, `b`)
+
+Returns logical exclusive disjunction of boolean `a` and `b`.
+
+```javascript
+Xor(true, false)        // true
+Xor(5 == 5, 10 < 20)    // false
 ```
