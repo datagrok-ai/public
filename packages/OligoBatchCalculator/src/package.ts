@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 export let _package = new DG.Package();
 
 function calculateMolecularWeight(sequence: string): number {
-  const step = /^[AUGC]/g.test(sequence) ? 1 : 2;
+  const step = /^[AUGCT]/g.test(sequence) ? 1 : 2;
   let molecularWeight = 0;
   for (let i = 0; i < sequence.length; i += step)
     molecularWeight += weights[sequence.slice(i, i + step)];
@@ -59,12 +59,17 @@ function calculateOd(extinctionCoefficients: number[], molecularWeights: number[
 function normalizeSequences(sequences: string[]): string[] {
   let normalizedSequences = Array(sequences.length);
   for (let i = 0; i < sequences.length; i++) {
-    const isRna = (/^[AUGC]/g.test(sequences[i]));
+    const isRna = (/^[AUGC]+$/.test(sequences[i]));
+    const isDna = (/^[ATGC]+$/.test(sequences[i]));
     const obj: {[index: string]: string} = isRna ?
       {"A": "rA", "U": "rU", "G": "rG", "C": "rC"} :
+      isDna ?
+      {"A": "dA", "T": "dT", "G": "dG", "C": "dC"} :
       {"fU": "rU", "fA": "rA", "fC": "rC", "fG": "rG", "mU": "rU", "mA": "rA", "mC": "rC", "mG": "rG", "ps": ""};
-    normalizedSequences[i] = (isRna) ?
+    normalizedSequences[i] = isRna ?
       sequences[i].replace(/[AUGC]/g, function (x) {return obj[x]}) :
+      isDna ?
+      sequences[i].replace(/[ATGC]/g, function (x) {return obj[x]}) :
       sequences[i].replace(/(fU|fA|fC|fG|mU|mA|mC|mG|ps)/g, function (x) {return obj[x]});
   }
   return normalizedSequences;
@@ -87,32 +92,34 @@ const weights: {[index: string]: number} = {
   "A": 313.21,
   "U": 306.17,
   "G": 329.21,
-  "C": 289.18
+  "C": 289.18,
+  "T": 304.195,
+  "dA": 313.21,
+  "dU": 306.17,
+  "dG": 329.21,
+  "dC": 289.18,
+  "dT": 304.195
 };
 
 //name: OligoBatchCalculator
 //tags: app
 export function OligoBatchCalculator() {
 
-  const individualDnaBases = {
+  const individualBases: any = {
     'dA': 15400,
     'dC': 7400,
     'dG': 11500,
-    'dT': 8700
-  },
-  individualRnaBases: any = {
+    'dT': 8700,
     'rA': 15400,
     'rC': 7200,
     'rG': 11500,
     'rU': 9900
   },
-  nearestNeighbourDna = {
+  nearestNeighbour: any = {
     'dA': {'dA': 27400, 'dC': 21200, 'dG': 25000, 'dT': 22800},
     'dC': {'dA': 21200, 'dC': 14600, 'dG': 18000, 'dT': 15200},
     'dG': {'dA': 25200, 'dC': 17600, 'dG': 21600, 'dT': 20000},
-    'dT': {'dA': 23400, 'dC': 16200, 'dG': 19000, 'dT': 16800}
-  },
-  nearestNeighbourRna: any = {
+    'dT': {'dA': 23400, 'dC': 16200, 'dG': 19000, 'dT': 16800},
     'rA': {'rA': 27400, 'rC': 21000, 'rG': 25000, 'rU': 24000},
     'rC': {'rA': 21000, 'rC': 14200, 'rG': 17800, 'rU': 16200},
     'rG': {'rA': 25200, 'rC': 17400, 'rG': 21600, 'rU': 21200},
@@ -123,9 +130,16 @@ export function OligoBatchCalculator() {
   function getExtinctionCoefficientUsingNearestNeighborMethod(sequence: string) {
     let ec1 = 0, ec2 = 0;
     for (let i = 0; i < sequence.length - 2; i += 2)
-      ec1 += nearestNeighbourRna[sequence.slice(i, i + 2)][sequence.slice(i + 2, i + 4)];
+      if (sequence[i] == sequence[i + 2])
+        ec1 += nearestNeighbour[sequence.slice(i, i + 2)][sequence.slice(i + 2, i + 4)];
+      else
+        ec1 += (
+          nearestNeighbour['r' + ((sequence[i + 1] == 'T') ? 'U' : sequence[i + 1])]['r' + ((sequence[i + 3] == 'T') ? 'U' : sequence[i + 3])]
+          +
+          nearestNeighbour['d' + ((sequence[i + 1] == 'U') ? 'T' : sequence[i + 1])]['d' + ((sequence[i + 3] == 'U') ? 'T' : sequence[i + 3])]
+        ) / 2;
     for (let i = 2; i < sequence.length - 2; i += 2)
-      ec2 += individualRnaBases[sequence.slice(i, i + 2)];
+      ec2 += individualBases[sequence.slice(i, i + 2)];
     return ec1 - ec2;
   }
 
