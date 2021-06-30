@@ -288,7 +288,7 @@ export function info(children: HTMLElement[] | HTMLElement | string, header: str
   }
   if (!Array.isArray(children)) {
     if (children === null || typeof children === 'string') {
-      children = [divText(children)];
+      children = [divText(<string>children)];
     } else {
       children = [children];
     }
