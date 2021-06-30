@@ -191,7 +191,7 @@ export function describeCurrentObj() {
       }, 'Copy');
       $(clipboardBtn).addClass('dt-snippet-editor-icon dt-clipboard-icon');
 
-      const editorBtn = ui.button(ui.iconFA('external-link-square-alt'), () => {
+      const editorBtn = ui.button(ui.iconFA('external-link-square'), () => {
         grok.shell.addView(DG.View.createByType(DG.View.JS_EDITOR, { script: editor.value }));
       }, 'Open in editor');
       $(editorBtn).addClass('dt-snippet-editor-icon dt-editor-icon');
