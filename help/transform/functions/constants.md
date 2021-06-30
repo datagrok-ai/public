@@ -18,7 +18,7 @@ The use of constants optimizes the readability, speed, and accuracy of calculati
 | `LN10`    | [Natural logarithm of 10](https://en.wikipedia.org/wiki/Natural_logarithm#Natural_logarithm_of_10) | 2.302585092994046  |
 | `LOG2E`   | Base-2 logarithm of E                                                                              | 1.4426950408889634 |
 | `LOG10E`  | Base-10 logarithm of E                                                                             | 0.4342944819032518 |
-| `PI`      | [Pi](https://en.wikipedia.org/wiki/Pi))                                                           | 3.1415926535897932 |
+| `PI`      | [Pi](https://en.wikipedia.org/wiki/Pi)                                                           | 3.1415926535897932 |
 | `SQRT1_2` | Square root of 1/2                                                                                 | 0.7071067811865476 |
 | `SQRT2`   | [Square root of 2](https://en.wikipedia.org/wiki/Square_root_of_2)                                 | 1.4142135623730951 |
 

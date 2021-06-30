@@ -19,12 +19,14 @@ Sin(PI / 6) * (17 - ${LENGTH}) < 9    // The result is a boolean value
 
 *Operator List:*
 
-| Operator | Description                                                              | Similar Function                                 |
-| -------- | ------------------------------------------------------------------------ | ------------------------------------------------ |
+> Here `A` is the left operand of the operator and the `B` is the right operand.
+
+| Operator | Description                                                      | Similar Function                                 |
+| -------- | ---------------------------------------------------------------- | ------------------------------------------------ |
 | `/`      | The result of dividing `A` by `B`                                | [Div(A, B)](math-functions.md#div)               |
 | `*`      | The product of `A` and `B`                                       | [Mul(A, B)](math-functions.md#mul)               |
 | `'%'`    | The remainder of dividing `A` by `B`                             | [Mod(A, B)](math-functions.md#mod)               |
-| `^`      | Returns `A` to the power of `B`                                          | [Pow(A, B)](math-functions.md#pow)               |
+| `^`      | Returns `A` to the power of `B`                                  | [Pow(A, B)](math-functions.md#pow)               |
 | `+`      | The sum of two numbers `A` and `B`                               | [Add(A, B)](math-functions.md#add)               |
 | `-`      | The difference between `A` and `B`                               | [Sub(A, B)](math-functions.md#sub)               |
 | `==`     | True if `A` equal to `B` and false otherwise                     | [Eq(A, B)](math-functions.md#eq)                 |
@@ -37,5 +39,6 @@ Sin(PI / 6) * (17 - ${LENGTH}) < 9    // The result is a boolean value
 | `&&`     | Logical conjunction of boolean `A` and `B`                       | [And(A, B)](math-functions.md#and)               |
 | `or`     | Logical disjunction of boolean `A` and `B`                       | [Or(A, B)](math-functions.md#or)                 |
 | `\|\|`   | Logical disjunction of boolean `A` and `B`                       | [Or(A, B)](math-functions.md#or)                 |
+| `xor`    | Logical exclusive disjunction of boolean `A` and `B`             | [Xor(A, B)](math-functions.md#xor)               |
 | `not`    | Logical negation of the `B`                                      | [Not(B)](math-functions.md#not)                  |
 | `!`      | Logical negation of the `B`                                      | [Not(B)](math-functions.md#not)                  |
