@@ -16,7 +16,7 @@ let api = <any>window;
 export class ObjectPropertyBag {
   source: any;
 
-  constructor(source: any, x = null) {
+  constructor(source: any, x: any = null) {
 
     /** @member {Object} */
     this.source = source;

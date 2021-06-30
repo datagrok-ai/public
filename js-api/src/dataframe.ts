@@ -1057,7 +1057,7 @@ export class ColumnList {
   /** Finds columns by the corresponding semTypes, or null, if any of the sem types could not be found.
    * @returns {Column[]} */
   bySemTypesExact(semTypes: SemType[]): Column[] | null {
-    let columns = [];
+    let columns = <any>[];
     for (let semType of semTypes) {
       let col = this.bySemType(semType);
       if (col == null)
