@@ -859,12 +859,12 @@ export class EntityMetaDartProxy extends ObjectHandler {
   isApplicable(x: any): boolean { return api.grok_Meta_IsApplicable(this.d, toDart(x)); }
   getCaption(x: any): string { return api.grok_Meta_Get_Name(this.d, x); }
 
-  renderIcon(x: any, context = null): HTMLDivElement { return api.grok_Meta_RenderIcon(x); }
-  renderMarkup(x: any, context = null): HTMLDivElement { return api.grok_Meta_RenderMarkup(x); }
-  renderTooltip(x: any, context = null): HTMLDivElement { return api.grok_Meta_RenderTooltip(x); }
-  renderCard(x: any, context = null): HTMLDivElement { return api.grok_Meta_RenderCard(x); }
-  renderProperties(x: any, context = null): HTMLDivElement { return api.grok_Meta_RenderProperties(x); }
-  renderView(x: any, context = null): HTMLDivElement { return api.grok_Meta_RenderProperties(x); }
+  renderIcon(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderIcon(x); }
+  renderMarkup(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderMarkup(x); }
+  renderTooltip(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderTooltip(x); }
+  renderCard(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderCard(x); }
+  renderProperties(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderProperties(x); }
+  renderView(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderProperties(x); }
 }
 
 export function box(item: Widget | InputBase | HTMLElement | null = null, options: string | ElementOptions | null = null): HTMLDivElement {
@@ -920,7 +920,7 @@ export function block50(items: HTMLElement[], options: ElementOptions | null = n
   return $(block(items, options)).addClass('ui-block-50')[0];
 }
 
-export function p(text: string, options = null): HTMLParagraphElement {
+export function p(text: string, options: any = null): HTMLParagraphElement {
   let c = document.createElement('p');
   c.textContent = text;
   $(c).addClass('ui-p');
