@@ -17,21 +17,21 @@ SS/AS Modification - sections of dialog for changing base and PTO statuses of on
 
 const baseChoices: string[] = Object.keys(axolabsMap);
 const defaultBase: string = baseChoices[0];
-const defaultPto: boolean = false;
+const defaultPto: boolean = true;
 const defaultSequenceLength: number = 23;
 const maximalValidSequenceLength: number = 35;
 const userStorageKey: string = 'SequenceTranslator';
 const exampleMinWidth: string = '400px';
-const modificationSectionMaxWidth = '220px';
+const modificationSectionMaxWidth = '210px';
 
-function generateExample(sequenceLength: number): string {
-  const uniqueSymbols = axolabsMap[defaultBase].symbols.join('');
+function generateExample(sequenceLength: number, sequenceBasis: string): string {
+  const uniqueSymbols = axolabsMap[sequenceBasis].symbols.join('');
   return uniqueSymbols.repeat(Math.floor(sequenceLength / 4)) + uniqueSymbols.slice(0, sequenceLength % 4);
 }
 
-function translateSequence(sequence: string, bases: any, ptoLinkages: any, startModification: any, endModification: any) {
+function translateSequence(sequence: string, bases: any, ptoLinkages: any, startModification: any, endModification: any, firstPtoExist: boolean) {
   let counter: number = -1;
-  return startModification.value + sequence.replace(/[AUGC]/g, function (x: string) {
+  return startModification.value + (firstPtoExist ? 's' : '') + sequence.replace(/[AUGC]/g, function (x: string) {
     counter++;
     let indexOfSymbol = axolabsMap["RNA"]["symbols"].indexOf(x);
     let symbol = axolabsMap[bases[counter].value]["symbols"][indexOfSymbol];
@@ -39,14 +39,14 @@ function translateSequence(sequence: string, bases: any, ptoLinkages: any, start
   }) + endModification.value;
 }
 
-function addColumnWithTranslatedSequences(tableName: string, columnName: string, bases: any, ptoLinkages: any, startModification: any, endModification: any) {
+function addColumnWithTranslatedSequences(tableName: string, columnName: string, bases: any, ptoLinkages: any, startModification: any, endModification: any, firstPtoExist: boolean) {
   const nameOfNewColumn = 'Axolabs ' + columnName;
   let columns = grok.shell.table(tableName).columns;
   if (columns.contains(nameOfNewColumn))
     columns.remove(nameOfNewColumn);
   const columnWithInputSequences = columns.byName(columnName);
   return columns.addNewString(nameOfNewColumn).init((i: number) => {
-    return translateSequence(columnWithInputSequences.getString(i), bases, ptoLinkages, startModification, endModification);
+    return translateSequence(columnWithInputSequences.getString(i), bases, ptoLinkages, startModification, endModification, firstPtoExist);
   });
 }
 
@@ -54,9 +54,9 @@ export function defineAxolabsPattern() {
 
   function updateAsModification() {
     asModificationItems.innerHTML = '';
-    asPtoLinkages = (asLength.value > asPtoLinkages.length) ?
-      asPtoLinkages.concat(Array(asLength.value - asPtoLinkages.length).fill(fullyPto)) :
-      asPtoLinkages.slice(asPtoLinkages.length - asLength.value);
+    asPtoLinkages = (asLength.value > asBases.length) ?
+      asPtoLinkages.concat(Array(asLength.value - asBases.length).fill(fullyPto)) :
+      asPtoLinkages.slice(asBases.length - asLength.value);
     asBases = (asLength.value > asBases.length) ?
       asBases.concat(Array(asLength.value - asBases.length).fill(sequenceBase)) :
       asBases.slice(asBases.length - asLength.value);
@@ -81,9 +81,9 @@ export function defineAxolabsPattern() {
 
   function updateSsModification() {
     ssModificationItems.innerHTML = '';
-    ssPtoLinkages = (ssLength.value > ssPtoLinkages.length) ?
-      ssPtoLinkages.concat(Array(ssLength.value - ssPtoLinkages.length).fill(fullyPto)) :
-      ssPtoLinkages.slice(ssPtoLinkages.length - ssLength.value);
+    ssPtoLinkages = (ssLength.value > ssBases.length) ?
+      ssPtoLinkages.concat(Array(ssLength.value - ssBases.length).fill(fullyPto)) :
+      ssPtoLinkages.slice(ssBases.length - ssLength.value);
     ssBases = (ssLength.value > ssBases.length) ?
       ssBases.concat(Array(ssLength.value - ssBases.length).fill(sequenceBase)) :
       ssBases.slice(ssBases.length - ssLength.value);
@@ -142,15 +142,15 @@ export function defineAxolabsPattern() {
   }
 
   function updateInputExamples() {
-    ssInputExample.value = generateExample(ssLength.value);
+    ssInputExample.value = generateExample(ssLength.value, sequenceBase.value);
     if (createAsStrand.value)
-      asInputExample.value = generateExample(asLength.value);
+      asInputExample.value = generateExample(asLength.value, sequenceBase.value);
   }
 
   function updateOutputExamples() {
-    ssOutputExample.value = translateSequence(ssInputExample.value, ssBases, ssPtoLinkages, sSthreeModification, sSfiveModification);
+    ssOutputExample.value = translateSequence(ssInputExample.value, ssBases, ssPtoLinkages, ssThreeModification, ssFiveModification, firstSsPto.value);
     if (createAsStrand.value)
-      asOutputExample.value = translateSequence(asInputExample.value, asBases, asPtoLinkages, aSthreeModification, aSfiveModification);
+      asOutputExample.value = translateSequence(asInputExample.value, asBases, asPtoLinkages, asThreeModification, asFiveModification, firstAsPto.value);
   }
 
   function updateSvgScheme() {
@@ -162,12 +162,12 @@ export function defineAxolabsPattern() {
           createAsStrand.value,
           ssBases.slice(0, ssLength.value).map((e) => e.value),
           asBases.slice(0, asLength.value).map((e) => e.value),
-          ssPtoLinkages.slice(0, ssLength.value).map((e) => e.value),
-          asPtoLinkages.slice(0, asLength.value).map((e) => e.value),
-          sSthreeModification.value,
-          sSfiveModification.value,
-          aSthreeModification.value,
-          aSfiveModification.value,
+          [firstSsPto.value].concat(ssPtoLinkages.slice(0, ssLength.value).map((e) => e.value)),
+          [firstAsPto.value].concat(asPtoLinkages.slice(0, asLength.value).map((e) => e.value)),
+          ssThreeModification.value,
+          ssFiveModification.value,
+          asThreeModification.value,
+          asFiveModification.value,
           comment.value
         )
       ])
@@ -191,18 +191,20 @@ export function defineAxolabsPattern() {
       for (let i = 0; i < obj['asBases'].length; i++)
         asBases.push(ui.choiceInput('', obj['asBases'][i], baseChoices));
 
+      firstSsPto.value = obj['ssPtoLinkages'][0];
       ssPtoLinkages = [];
-      for (let i = 0; i < obj['ssPtoLinkages'].length; i++)
+      for (let i = 1; i < obj['ssPtoLinkages'].length; i++)
         ssPtoLinkages.push(ui.boolInput('', obj['ssPtoLinkages'][i]));
 
+      firstAsPto.value = obj['asPtoLinkages'][0];
       asPtoLinkages = [];
-      for (let i = 0; i < obj['asPtoLinkages'].length; i++)
+      for (let i = 1; i < obj['asPtoLinkages'].length; i++)
         asPtoLinkages.push(ui.boolInput('', obj['asPtoLinkages'][i]));
 
-      sSthreeModification.value = obj['sSthreeModification'];
-      sSfiveModification.value = obj['sSfiveModification'];
-      aSthreeModification.value = obj['aSthreeModification'];
-      aSfiveModification.value = obj['aSfiveModification'];
+      ssThreeModification.value = obj['ssThreeModification'];
+      ssFiveModification.value = obj['ssFiveModification'];
+      asThreeModification.value = obj['asThreeModification'];
+      asFiveModification.value = obj['asFiveModification'];
       comment.value = obj['comment'];
 
       updateSvgScheme();
@@ -243,16 +245,16 @@ export function defineAxolabsPattern() {
       JSON.stringify({
         "ssBases": ssBases.slice(0, ssLength.value).map((e) => e.value),
         "asBases": asBases.slice(0, asLength.value).map((e) => e.value),
-        "ssPtoLinkages": ssPtoLinkages.slice(0, ssLength.value).map((e) => e.value),
-        "asPtoLinkages": asPtoLinkages.slice(0, asLength.value).map((e) => e.value),
-        "sSthreeModification": sSthreeModification.value,
-        "sSfiveModification": sSfiveModification.value,
-        "aSthreeModification": aSthreeModification.value,
-        "aSfiveModification": aSfiveModification.value,
+        "ssPtoLinkages": [firstSsPto.value].concat(ssPtoLinkages.slice(0, ssLength.value).map((e) => e.value)),
+        "asPtoLinkages": [firstAsPto.value].concat(asPtoLinkages.slice(0, asLength.value).map((e) => e.value)),
+        "ssThreeModification": ssThreeModification.value,
+        "ssFiveModification": ssFiveModification.value,
+        "asThreeModification": asThreeModification.value,
+        "asFiveModification": asFiveModification.value,
         "comment": comment.value
       }),
       false
-    ).then(() => grok.shell.info('Pattern ' + saveAs.value + ' was successfully uploaded!'));
+    ).then(() => grok.shell.info("Pattern '" + saveAs.value + "' was successfully uploaded!"));
   }
 
   function updatePatternsList() {
@@ -269,7 +271,7 @@ export function defineAxolabsPattern() {
         ui.div([
           ui.button(ui.iconFA('trash-alt', () => {}), () => {
             if (loadPattern.value == null)
-              grok.shell.info('Choose pattern to delete')
+              grok.shell.info('Choose pattern to delete');
             else
               grok.dapi.userDataStorage.remove(userStorageKey, loadPattern.value, false)
                 .then(() => grok.shell.info("Pattern '" + loadPattern.value + "' deleted"));
@@ -309,7 +311,8 @@ export function defineAxolabsPattern() {
     asExampleDiv = ui.div([]),
     appAxolabsDescription = ui.div([]),
     loadPatternDiv = ui.div([]),
-    asModificationDiv = ui.div([]);
+    asModificationDiv = ui.div([]),
+    firstAsPtoDiv = ui.div([]);
 
   let ssBases = Array(defaultSequenceLength).fill(ui.choiceInput('', defaultBase, baseChoices)),
     asBases = Array(defaultSequenceLength).fill(ui.choiceInput('', defaultBase, baseChoices)),
@@ -360,9 +363,15 @@ export function defineAxolabsPattern() {
   });
 
   let fullyPto = ui.boolInput('Fully PTO', defaultPto, (v: boolean) => {
+    firstSsPto.value = v;
+    firstAsPto.value = v;
     updatePto(v);
     updateOutputExamples();
   });
+
+  let firstSsPto = ui.boolInput('First SS PTO', fullyPto.value, () => updateSvgScheme());
+  let firstAsPto = ui.boolInput('First AS PTO', fullyPto.value, () => updateSvgScheme());
+  firstAsPtoDiv.append(firstAsPto.root);
 
   let createAsStrand = ui.boolInput('Create AS Strand', true, (v: boolean) => {
     asModificationSection.hidden = (!v);
@@ -370,47 +379,48 @@ export function defineAxolabsPattern() {
     asLengthDiv.hidden = (!v);
     asModificationDiv.hidden = (!v);
     asExampleDiv.hidden = (!v);
+    firstAsPtoDiv.hidden = (!v);
     updateSvgScheme();
   });
 
-  let saveAs = ui.stringInput('Save As', '', () => updateSvgScheme());
+  let saveAs = ui.stringInput('Save As', 'Pattern Name Example', () => updateSvgScheme());
   saveAs.setTooltip('Name Of New Pattern');
 
-  let sSthreeModification = ui.stringInput("Additional SS 3' Modification", "", () => {
+  let ssThreeModification = ui.stringInput("Additional SS 3' Modification", "(Modification 2)", () => {
     updateSvgScheme();
     updateOutputExamples();
   });
-  sSthreeModification.setTooltip("Additional SS 3' Modification");
+  ssThreeModification.setTooltip("Additional SS 3' Modification");
 
-  let sSfiveModification = ui.stringInput("Additional SS 5' Modification", "", () => {
+  let ssFiveModification = ui.stringInput("Additional SS 5' Modification", "(Modification 1)", () => {
     updateSvgScheme();
     updateOutputExamples();
   });
-  sSfiveModification.setTooltip("Additional SS 5' Modification");
+  ssFiveModification.setTooltip("Additional SS 5' Modification");
 
-  let aSthreeModification = ui.stringInput("Additional AS 3' Modification", "", () => {
+  let asThreeModification = ui.stringInput("Additional AS 3' Modification", "(Modification 3)", () => {
     updateSvgScheme();
     updateOutputExamples();
   });
-  aSthreeModification.setTooltip("Additional AS 3' Modification");
+  asThreeModification.setTooltip("Additional AS 3' Modification");
 
-  let aSfiveModification = ui.stringInput("Additional AS 5' Modification", "", () => {
+  let asFiveModification = ui.stringInput("Additional AS 5' Modification", "(Modification 4)", () => {
     updateSvgScheme();
     updateOutputExamples();
   });
-  aSfiveModification.setTooltip("Additional AS 5' Modification");
+  asFiveModification.setTooltip("Additional AS 5' Modification");
 
-  asModificationDiv.append(aSthreeModification.root);
-  asModificationDiv.append(aSfiveModification.root);
+  asModificationDiv.append(asThreeModification.root);
+  asModificationDiv.append(asFiveModification.root);
 
-  let comment = ui.stringInput('Comment', '', () => updateSvgScheme());
+  let comment = ui.stringInput('Comment', 'Place For Your Comment', () => updateSvgScheme());
 
   let savePatternButton = ui.button('Save', () => {
     if (saveAs.value != '') {
       savePattern();
     } else {
-      let name = ui.stringInput('Enter name', '');
-      ui.dialog('Pattern name')
+      let name = ui.stringInput('Enter Name', '');
+      ui.dialog('Pattern Name')
         .add(name.root)
         .onOK(() => {
           saveAs.value = name.value;
@@ -424,7 +434,7 @@ export function defineAxolabsPattern() {
     if (inputSsColumn.value == null || (createAsStrand.value && inputAsColumn.value == null))
       grok.shell.info("Please select table and columns on which to apply pattern");
     else if (ssLength.value != ssInputExample.value.length || asLength.value != asInputExample.value.length) {
-      let dialog = ui.dialog("Length mismatch")
+      let dialog = ui.dialog("Length Mismatch")
       $(dialog.getButton('OK')).hide();
       dialog
         .add(ui.divText("Length of sequences in columns doesn't match entered length. Update length value?"))
@@ -435,25 +445,21 @@ export function defineAxolabsPattern() {
         })
         .show();
     } else {
-      addColumnWithTranslatedSequences(tables.value, inputSsColumn.value, ssBases, ssPtoLinkages, sSfiveModification, sSthreeModification);
+      addColumnWithTranslatedSequences(tables.value, inputSsColumn.value, ssBases, ssPtoLinkages, ssFiveModification, ssThreeModification, firstSsPto.value);
       if (createAsStrand.value)
-        addColumnWithTranslatedSequences(tables.value, inputAsColumn.value, asBases, asPtoLinkages, aSthreeModification, aSfiveModification);
+        addColumnWithTranslatedSequences(tables.value, inputAsColumn.value, asBases, asPtoLinkages, asThreeModification, asFiveModification, firstAsPto.value);
       grok.shell.info(((createAsStrand.value) ? "Columns were" : "Column was") + " added to table '" + tables.value + "'");
     }
   });
 
-  let ssInputExample = ui.stringInput('SS', generateExample(ssLength.value),() => {
-    ssOutputExample.value = translateSequence(ssInputExample.value, ssBases, ssPtoLinkages, sSfiveModification, sSthreeModification)
+  let ssInputExample = ui.stringInput('SS', generateExample(ssLength.value, sequenceBase.value),() => {
+    ssOutputExample.value = translateSequence(ssInputExample.value, ssBases, ssPtoLinkages, ssFiveModification, ssThreeModification, firstSsPto.value)
   });
-  let ssOutputExample = ui.stringInput(' ', translateSequence(ssInputExample.value, ssBases, ssPtoLinkages, sSthreeModification, sSfiveModification));
-  // @ts-ignore
-  ssInputExample.input.style.resize = 'none';
-  // @ts-ignore
-  ssInputExample.input.style.minWidth = exampleMinWidth;
-  // @ts-ignore
-  ssOutputExample.input.style.resize = 'none';
-  // @ts-ignore
-  ssOutputExample.input.style.minWidth = exampleMinWidth;
+  let ssOutputExample = ui.stringInput(' ', translateSequence(ssInputExample.value, ssBases, ssPtoLinkages, ssThreeModification, ssFiveModification, firstSsPto.value));
+  (ssInputExample.input as HTMLElement).style.resize = 'none';
+  (ssInputExample.input as HTMLElement).style.minWidth = exampleMinWidth;
+  (ssOutputExample.input as HTMLElement).style.resize = 'none';
+  (ssOutputExample.input as HTMLElement).style.minWidth = exampleMinWidth;
   // @ts-ignore
   ssOutputExample.input.disabled = 'true';
   ssOutputExample.root.append(
@@ -464,18 +470,14 @@ export function defineAxolabsPattern() {
     ], 'ui-input-options')
   );
 
-  let asInputExample = ui.stringInput('AS', generateExample(asLength.value),() => {
-    asOutputExample.value = translateSequence(asInputExample.value, asBases, asPtoLinkages, aSthreeModification, aSfiveModification);
+  let asInputExample = ui.stringInput('AS', generateExample(asLength.value, sequenceBase.value),() => {
+    asOutputExample.value = translateSequence(asInputExample.value, asBases, asPtoLinkages, asThreeModification, asFiveModification, firstSsPto.value);
   });
-  let asOutputExample = ui.stringInput(' ', translateSequence(asInputExample.value, asBases, asPtoLinkages, aSthreeModification, aSfiveModification));
-  // @ts-ignore
-  asInputExample.input.style.resize = 'none';
-  // @ts-ignore
-  asInputExample.input.style.minWidth = exampleMinWidth;
-  // @ts-ignore
-  asOutputExample.input.style.resize = 'none';
-  // @ts-ignore
-  asOutputExample.input.style.minWidth = exampleMinWidth;
+  let asOutputExample = ui.stringInput(' ', translateSequence(asInputExample.value, asBases, asPtoLinkages, asThreeModification, asFiveModification, firstSsPto.value));
+  (asInputExample.input as HTMLElement).style.resize = 'none';
+  (asInputExample.input as HTMLElement).style.minWidth = exampleMinWidth;
+  (asOutputExample.input as HTMLElement).style.resize = 'none';
+  (asOutputExample.input as HTMLElement).style.minWidth = exampleMinWidth;
   // @ts-ignore
   asOutputExample.input.disabled = 'true';
   asOutputExample.root.append(
@@ -491,6 +493,10 @@ export function defineAxolabsPattern() {
   updateUiForNewSequenceLength();
 
   let patternDesignSection = ui.panel([
+    ui.block([
+      svgDiv
+    ], {style: {overflowX: 'scroll'}}),
+    ui.button('Download', () => svg.saveSvgAsPng(document.getElementById('mySvg'), saveAs.value)),
     ui.divH([
       ui.div([
         ui.divH([
@@ -504,9 +510,11 @@ export function defineAxolabsPattern() {
         asLengthDiv,
         sequenceBase.root,
         fullyPto.root,
+        firstSsPto.root,
+        firstAsPtoDiv,
         createAsStrand.root,
-        sSfiveModification.root,
-        sSthreeModification.root,
+        ssFiveModification.root,
+        ssThreeModification.root,
         asModificationDiv,
         comment.root,
         loadPatternDiv,
@@ -532,11 +540,7 @@ export function defineAxolabsPattern() {
           asExampleDiv
         ], 'ui-form')
       ])
-    ], {style: {flexWrap: 'wrap'}}),
-    ui.block([
-      svgDiv
-    ], {style: {overflowX: 'scroll'}}),
-    ui.button('Download', () => svg.saveSvgAsPng(document.getElementById('mySvg'), saveAs.value))
+    ], {style: {flexWrap: 'wrap'}})
   ]);
 
   let ssModificationSection = ui.box(
