@@ -25,7 +25,7 @@ Sin(PI / 6) * (17 - ${LENGTH}) < 9    // The result is a boolean value
 | -------- | ---------------------------------------------------------------- | ------------------------------------------------ |
 | `/`      | The result of dividing `A` by `B`                                | [Div(A, B)](math-functions.md#div)               |
 | `*`      | The product of `A` and `B`                                       | [Mul(A, B)](math-functions.md#mul)               |
-| `'%'`    | The remainder of dividing `A` by `B`                             | [Mod(A, B)](math-functions.md#mod)               |
+| `%`      | The remainder of dividing `A` by `B`                             | [Mod(A, B)](math-functions.md#mod)               |
 | `^`      | Returns `A` to the power of `B`                                  | [Pow(A, B)](math-functions.md#pow)               |
 | `+`      | The sum of two numbers `A` and `B`                               | [Add(A, B)](math-functions.md#add)               |
 | `-`      | The difference between `A` and `B`                               | [Sub(A, B)](math-functions.md#sub)               |
