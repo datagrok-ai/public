@@ -120,6 +120,11 @@ export class Viewer extends Widget {
     return toJs(api.grok_Viewer_Get_DataFrame(this.d));
   }
 
+  /** Returns a view this viewer is associated with, or null */
+  get view(): any | null {
+    return toJs(api.grok_Viewer_Get_View(this.d));
+  }
+
   /** @type {DataFrame} */
   get dataFrame(): DataFrame {
     return toJs(api.grok_Viewer_Get_DataFrame(this.d));
