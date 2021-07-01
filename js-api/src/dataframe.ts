@@ -931,6 +931,16 @@ export class Column {
     return this;
   }
 
+  /** Opens an editor dialog with preview for a calculated column. */
+  editFormula(): void {
+    let formula = this.getTag('formula');
+    if (formula == null || !(this.name && this.dataFrame?.columns.contains(this.name)))
+      return;
+    let params = { table: this.dataFrame, expression: formula, name: this.name, type: this.type };
+    let call = DG.Func.byName('AddNewColumn').prepare(params);
+    grok.functions.call('CmdAddNewColumn', { call });
+  }
+
   /** Compacts the internal column representation.
    *  Currently, it only affects string columns where values were modified. */
   compact() {
@@ -1057,7 +1067,7 @@ export class ColumnList {
   /** Finds columns by the corresponding semTypes, or null, if any of the sem types could not be found.
    * @returns {Column[]} */
   bySemTypesExact(semTypes: SemType[]): Column[] | null {
-    let columns = [];
+    let columns = <any>[];
     for (let semType of semTypes) {
       let col = this.bySemType(semType);
       if (col == null)

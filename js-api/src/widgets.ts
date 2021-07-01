@@ -1,6 +1,6 @@
 import {toDart, toJs} from "./wrappers";
 import {__obs, _sub, observeStream, StreamSubscription} from "./events";
-import {Observable} from "rxjs";
+import {Observable, Subscription} from "rxjs";
 import {Func, Property} from "./entities";
 import {DataFrame} from "./dataframe";
 import {ColorType, Type} from "./const";
@@ -16,7 +16,7 @@ let api = <any>window;
 export class ObjectPropertyBag {
   source: any;
 
-  constructor(source: any, x = null) {
+  constructor(source: any, x: any = null) {
 
     /** @member {Object} */
     this.source = source;
@@ -116,7 +116,7 @@ export class Widget {
   private _root: HTMLElement;
   protected _properties: Property[];
   props: any; //ObjectPropertyBag;
-  subs: StreamSubscription[];
+  subs: Subscription[];
   d: any;
 
   /** @constructs Widget and initializes its root. */
@@ -144,8 +144,8 @@ export class Widget {
   }
 
   /** Registers a subscription to an external event.
-   * @param {StreamSubscription} subscription */
-  sub(subscription: StreamSubscription): void {
+   * @param {Subscription} subscription */
+  sub(subscription: Subscription): void {
     this.subs.push(subscription);
   }
 

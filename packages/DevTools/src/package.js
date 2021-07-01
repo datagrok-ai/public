@@ -8,27 +8,22 @@ const dfExts = ['csv', 'xlsx'];
 
 const templates = {
   FileInfo: (ent) =>
-`(async () => {
-  // Read as text
-  const str = await grok.dapi.files.readAsText("${ent.fullPath}");
+`// Read as text
+const str = await grok.dapi.files.readAsText("${ent.fullPath}");
 
-  // Read as dataframe
-  const df = await grok.data.files.openTable("${ent.fullPath}");
+// Read as dataframe
+const df = await grok.data.files.openTable("${ent.fullPath}");
 
-  // Delete
-  await grok.dapi.files.delete("${ent.fullPath}");
-  grok.shell.info("${ent.fileName} exists: " + (await grok.dapi.files.exists("${ent.fullPath}")));
-})();`,
+// Delete
+await grok.dapi.files.delete("${ent.fullPath}");
+grok.shell.info("${ent.fileName} exists: " + (await grok.dapi.files.exists("${ent.fullPath}")));`,
   DataQuery: (ent) =>
-`(async () => {
-  const q = await grok.dapi.queries.find("${ent.id}");
+`const q = await grok.dapi.queries.find("${ent.id}");
 
-  // Run a query
-  const res = await grok.data.query("${ent.nqName}", {});
-})();`,
+// Run a query
+const res = await grok.data.query("${ent.nqName}", {});`,
   User: (ent) =>
-`(async () => {
-const user = await grok.dapi.users.include("group.memberships, group.adminMemberships").find("${ent.id}");
+`const user = await grok.dapi.users.include("group.memberships, group.adminMemberships").find("${ent.id}");
 const userGroup = user.group;
 
 // Find the groups the user belongs to
@@ -41,20 +36,17 @@ let canEdit = false;
 
 await grok.dapi.permissions.grant(entity, userGroup, canEdit);
 console.log(await grok.dapi.permissions.get(entity));
-await grok.dapi.permissions.revoke(userGroup, entity);
-})();`,
+await grok.dapi.permissions.revoke(userGroup, entity);`,
   Group: (ent) =>
-`(async () => {
-  const group = await grok.dapi.groups.find("${ent.id}");
+`const group = await grok.dapi.groups.find("${ent.id}");
 
-  // Manage permissions
-  const entity = await grok.dapi.layouts.first();
-  let canEdit = false;
+// Manage permissions
+const entity = await grok.dapi.layouts.first();
+let canEdit = false;
 
-  await grok.dapi.permissions.grant(entity, group, canEdit);
-  console.log(await grok.dapi.permissions.get(entity));
-  await grok.dapi.permissions.revoke(group, entity);
-})();`,
+await grok.dapi.permissions.grant(entity, group, canEdit);
+console.log(await grok.dapi.permissions.get(entity));
+await grok.dapi.permissions.revoke(group, entity);`,
   DataFrame: (ent) =>
 `
 DataFrame snippet
@@ -64,56 +56,48 @@ DataFrame snippet
 Column snippet
 `,
   Package: (ent) =>
-`(async () => {
-  // Find package functions
-  const funcs = DG.Func.find({ package: "${ent.name}" });
+`// Find package functions
+const funcs = DG.Func.find({ package: "${ent.name}" });
 
-  // Call a function
-  const res1 = await grok.functions.call("${ent.name}:test", {});
-  const res2 = await funcs[0].apply({});
+// Call a function
+const res1 = await grok.functions.call("${ent.name}:test", {});
+const res2 = await funcs[0].apply({});
 
-  // Read credentials
-  const package = await grok.dapi.packages.find("${ent.id}");
-  const credentialsResponse = await package.getCredentials();
-  if (credentialsResponse == null) {
-    grok.shell.info("Credentials are not set.");
-  } else {
-    grok.shell.info(credentialsResponse.parameters);
-  }
-})();`,
+// Read credentials
+const package = await grok.dapi.packages.find("${ent.id}");
+const credentialsResponse = await package.getCredentials();
+if (credentialsResponse == null) {
+  grok.shell.info("Credentials are not set.");
+} else {
+  grok.shell.info(credentialsResponse.parameters);
+}`,
   Project: (ent) =>
-`(async () => {
-  const project = await grok.dapi.projects.find("${ent.id}");
-  console.log(await grok.dapi.permissions.get(project));
-})();`,
+`const project = await grok.dapi.projects.find("${ent.id}");
+console.log(await grok.dapi.permissions.get(project));`,
   Script: (ent) =>
-`(async () => {
-  const script = await grok.dapi.scripts.find("${ent.id}");
+`const script = await grok.dapi.scripts.find("${ent.id}");
 
-  // Call a script
-  const res = await grok.functions.call("${ent.nqName}", {});
+// Call a script
+const res = await grok.functions.call("${ent.nqName}", {});
 
-  // Read a script
-  grok.shell.info(script.script);
-})();`,
+// Read a script
+grok.shell.info(script.script);`,
   ViewLayout: (ent) =>
-`(async () => {
-  // Apply to the original table
-  const layout = await grok.dapi.layouts.find("${ent.id}");
-  const tableId = JSON.parse(layout.viewState).tableId;
-  const df = await grok.data.openTable(tableId);
-  const view = grok.shell.addTableView(df);
-  view.loadLayout(layout);
+`// Apply to the original table
+const layout = await grok.dapi.layouts.find("${ent.id}");
+const tableId = JSON.parse(layout.viewState).tableId;
+const df = await grok.data.openTable(tableId);
+const view = grok.shell.addTableView(df);
+view.loadLayout(layout);
 
-  // Get layouts applicable to the dataframe 
-  const layouts = await grok.dapi.layouts.getApplicable(df);
-  grok.shell.info("Layouts found: " + layouts.length);
+// Get layouts applicable to the dataframe 
+const layouts = await grok.dapi.layouts.getApplicable(df);
+grok.shell.info("Layouts found: " + layouts.length);
 
-  // Save and serialize
-  const savedLayout = view.saveLayout();
-  console.log(savedLayout.toJson());
-})();
-`};
+// Save and serialize
+const savedLayout = view.saveLayout();
+console.log(savedLayout.toJson());`
+};
 
 const entExtract = {
   FileInfo: (ent) => dfExts.includes(ent.extension) ? `let df = await grok.data.files.openTable("${ent.fullPath}");` : ``,
@@ -207,7 +191,7 @@ export function describeCurrentObj() {
       }, 'Copy');
       $(clipboardBtn).addClass('dt-snippet-editor-icon dt-clipboard-icon');
 
-      const editorBtn = ui.button(ui.iconFA('external-link-square-alt'), () => {
+      const editorBtn = ui.button(ui.iconFA('external-link-square'), () => {
         grok.shell.addView(DG.View.createByType(DG.View.JS_EDITOR, { script: editor.value }));
       }, 'Open in editor');
       $(editorBtn).addClass('dt-snippet-editor-icon dt-editor-icon');

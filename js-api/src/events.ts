@@ -12,7 +12,7 @@ export function debounce<T>(observable: rxjs.Observable<T>, milliseconds: number
   return observable.pipe(rxjsOperators.debounceTime(milliseconds));
 }
 
-export function __obs(eventId: string, object = null): Observable<any> {
+export function __obs(eventId: string, object: any = null): Observable<any> {
   console.log(`${eventId} initialized.`);
 
   if (object == null) {

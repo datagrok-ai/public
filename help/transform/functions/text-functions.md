@@ -3,7 +3,7 @@
 
 # Text functions
 
-As parameters of the function, you can pass a regular string or a column name. To pass a regular string, it must be enclosed in double quotes, like `"my string"`. To pass a column cell, you can use the syntax `${columnName}`.
+As parameters of the function, you can pass a regular string or a column name. To pass a regular string, it must be enclosed in double quotes, like `"my string"` or in apostrophes, like  `'my string'`. To pass a column cell, you can use the syntax `${columnName}`.
 
 >Note that character and substring indexing in strings and lists starts at 0.
 
@@ -13,10 +13,13 @@ As parameters of the function, you can pass a regular string or a column name. T
 - [Contains](#contains)
 - [EndsWith](#endswith)
 - [Eq](#eq)
+- [IsEmpty](#isempty)
+- [IsNotEmpty](#isnotempty)
 - [Length](#length)
 - [NotEq](#noteq)
 - [ParseFloat](#parsefloat)
 - [ParseInt](#parseint)
+- [RegExpContains](#regexpcontains)
 - [RegExpExtract](#regexpextract)
 - [RegExpReplace](#rexpreplace)
 - [ReplaceAll](#replaceall)
@@ -65,6 +68,26 @@ Returns true if the string `s1` equal to `s2` and false otherwise.
 Eq("Sky", "Sky")    // true
 ```
 
+## <a name="isempty"></a>IsEmpty(`s`)
+
+Returns true if the string `s` is empty or null, and false otherwise.
+
+```javascript
+IsEmpty("")         // true
+IsEmpty(null)       // true
+IsEmpty("Green")    // false
+```
+
+## <a name="isnotempty"></a>IsNotEmpty(`s`)
+
+Returns true if the string `s` is not empty and not null, and false otherwise.
+
+```javascript
+IsNotEmpty("")         // false
+IsNotEmpty(null)       // false
+IsNotEmpty("Green")    // true
+```
+
 ## <a name="length"></a>Length(`s`)
 
 Returns the length of the string `s`.
@@ -97,6 +120,15 @@ Parse `s` as a, possibly signed, integer literal and return its value.
 ```javascript
 ParseInt("2025")    // 2025
 ParseInt("-012")    // -12
+```
+
+## <a name="regexpcontains"></a>RegExpContains(`s`, `pattern`)
+
+Checks if the string `s` contains a string matches a regular expression `pattern`.
+
+```javascript
+RegExpContains("Stormy Weather", "Sunny")      // false
+RegExpContains("name@gmail.com", "(\W|^)[\w.\-]{0,25}@(hotmail|gmail)\.com(\W|$)")    // true
 ```
 
 ## <a name="regexpextract"></a>RegExpExtract(`s`, `pattern`, `n`)

@@ -10,6 +10,7 @@ import {toJs} from './wrappers';
 import {_options, _toIterable} from './utils';
 import { StreamSubscription } from './events';
 import $ from "cash-dom";
+import {Subscription} from "rxjs";
 
 
 let api = <any>window;
@@ -19,7 +20,7 @@ let api = <any>window;
  * */
 export class ViewBase {
   d: any;
-  subs: StreamSubscription[];
+  subs: Subscription[];
   protected _root: HTMLDivElement;
   private _closing: boolean;
 
