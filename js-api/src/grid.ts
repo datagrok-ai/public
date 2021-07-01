@@ -285,8 +285,12 @@ export class GridColumn {
   get right(): number {
     return api.grok_GridColumn_Get_Right(this.d);
   }
-}
 
+  /** Returns all visible cells */
+  getVisibleCells(): Iterable<GridCell> {
+    return this.grid.getVisibleCells(this);
+  }
+}
 
 /** Represents grid columns. */
 export class GridColumnList {
@@ -487,7 +491,7 @@ export class Grid extends Viewer {
   /**
    * Currently visible cells
    */
-  getVisibleCells(column: GridColumn): Iterable<Cell> {
+  getVisibleCells(column: GridColumn | null = null): Iterable<GridCell> {
     return _toIterable(api.grok_Grid_GetVisibleCells(this.d, column?.d))
   }
 }
