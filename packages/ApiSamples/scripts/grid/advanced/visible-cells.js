@@ -10,7 +10,7 @@ setInterval(() => {
     g.strokeRect(cell.bounds.x, cell.bounds.y, cell.bounds.width, cell.bounds.height);
 
   g.strokeStyle = 'blue';
-  for (let cell of grid.getVisibleCells(grid.columns.byName('age')))
+  for (let cell of grid.columns.byName('age').getVisibleCells())
     g.strokeRect(cell.bounds.x, cell.bounds.y, cell.bounds.width, cell.bounds.height);
 
 }, 1000);
