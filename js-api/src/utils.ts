@@ -310,25 +310,18 @@ export function _propsToDart(s: string): string {
   const jsToDart: { [index: string]: string } = {
     'adminMemberships': 'parents.parent',
     'memberships': 'parents.parent',
+    'inputs': 'params',
+    'outputs': 'params',
   };
 
   let res = '';
   if (s === res) return res;
   let ents = s.split(',');
   for (let ent of ents) {
-    ent = ent.trim();
-    let idx = ent.lastIndexOf('.');
-    if (idx === -1) {
-      res += ent + ',';
-      continue;
-    }
-
-    let entEndPos = ent.indexOf('.') + 1;
-    res += ent.slice(0, entEndPos);
-    let props = ent.slice(entEndPos, ent.length);
+    let props = ent.trim();
 
     while (props) {
-      idx = props.indexOf('.');
+      let idx = props.indexOf('.');
       let match = jsToDart[props];
       if (match) res += match;
       else {

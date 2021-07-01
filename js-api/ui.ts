@@ -288,7 +288,7 @@ export function info(children: HTMLElement[] | HTMLElement | string, header: str
   }
   if (!Array.isArray(children)) {
     if (children === null || typeof children === 'string') {
-      children = [divText(children)];
+      children = [divText(<string>children)];
     } else {
       children = [children];
     }
@@ -372,7 +372,7 @@ export function tableFromMap(map: { [key: string]: any }): HTMLTableElement {
 
 /** Creates a visual table based on [items] and [renderer]. */
 export function table(items: any[], renderer: ((item: any, ind: number) => any) | null, columnNames: string[] | null = null): HTMLTableElement {
-  return api.grok_HtmlTable(items, renderer !== null ? (object: any, ind: number) => renderer(toJs(object), ind) : null, columnNames).root;
+  return toJs(api.grok_HtmlTable(items, renderer !== null ? (object: any, ind: number) => renderer(toJs(object), ind) : null, columnNames)).root;
 }
 
 /** Waits for Future<Element> function to complete and collect its result.*/
@@ -440,7 +440,7 @@ export function link(
     text: string,
     target: string | Function | object,
     tooltipMsg?: string,
-    options: string | ElementOptions | null = { classes: 'link-external' }): HTMLAnchorElement {
+    options: string | ElementOptions | null = { classes: 'd4-link-external' }): HTMLAnchorElement {
   let link = element('a') as HTMLAnchorElement;
   link.classList.add('ui-link');
   link.innerText = text;
@@ -859,12 +859,12 @@ export class EntityMetaDartProxy extends ObjectHandler {
   isApplicable(x: any): boolean { return api.grok_Meta_IsApplicable(this.d, toDart(x)); }
   getCaption(x: any): string { return api.grok_Meta_Get_Name(this.d, x); }
 
-  renderIcon(x: any, context = null): HTMLDivElement { return api.grok_Meta_RenderIcon(x); }
-  renderMarkup(x: any, context = null): HTMLDivElement { return api.grok_Meta_RenderMarkup(x); }
-  renderTooltip(x: any, context = null): HTMLDivElement { return api.grok_Meta_RenderTooltip(x); }
-  renderCard(x: any, context = null): HTMLDivElement { return api.grok_Meta_RenderCard(x); }
-  renderProperties(x: any, context = null): HTMLDivElement { return api.grok_Meta_RenderProperties(x); }
-  renderView(x: any, context = null): HTMLDivElement { return api.grok_Meta_RenderProperties(x); }
+  renderIcon(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderIcon(x); }
+  renderMarkup(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderMarkup(x); }
+  renderTooltip(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderTooltip(x); }
+  renderCard(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderCard(x); }
+  renderProperties(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderProperties(x); }
+  renderView(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderProperties(x); }
 }
 
 export function box(item: Widget | InputBase | HTMLElement | null = null, options: string | ElementOptions | null = null): HTMLDivElement {
@@ -920,7 +920,7 @@ export function block50(items: HTMLElement[], options: ElementOptions | null = n
   return $(block(items, options)).addClass('ui-block-50')[0];
 }
 
-export function p(text: string, options = null): HTMLParagraphElement {
+export function p(text: string, options: any = null): HTMLParagraphElement {
   let c = document.createElement('p');
   c.textContent = text;
   $(c).addClass('ui-p');

@@ -9,6 +9,7 @@ import {StreamSubscription, __obs, EventData} from "./events";
 import * as rxjs from "rxjs";
 import { map, filter, scan } from 'rxjs/operators';
 import {Grid, Point, Rect} from "./grid";
+import {Subscription} from "rxjs";
 
 declare let DG: any;
 declare let ui: any;
@@ -214,7 +215,7 @@ export class TablePlotter {
  *  */
 export class JsViewer extends Widget {
   dataFrame: DataFrame | null;
-  subs: StreamSubscription[];
+  subs: Subscription[];
   obs: rxjs.Observable<any>[];
   props: ObjectPropertyBag;
 

@@ -3,14 +3,14 @@
 
 # Exercises
 
-This is a set of programming exercises designed to make developers proficient with the
+This is a set of programming exercises designed to help developers get proficient with the
 Datagrok platform. The exercises are organized as progressive steps, with tasks
 of increasing complexity built on top of the previously completed steps.
 
 During this course, we will be building support for
 handling DNA nucleotide sequences. Let that not scare you, think of them as regular
 strings that can only contain characters G, A, C, and T (and now you know the origins
-of the "Gattaca" movie name). We will start with writing stand-alone functions, then 
+of the "Gattaca" movie name). We will start with writing standalone functions, then 
 automatically recognizing nucleotide sequences in the imported data, and then 
 going all the way to custom visualizations, querying relational databases, 
 predictive models, integration with the external utilities, data augmentation, and 
@@ -60,7 +60,7 @@ Prerequisites: basic JavaScript knowledge
 5. Launch the platform and run the package's `test` function using different methods: 
     * via the [Functions](https://dev.datagrok.ai/functions?q=test) view
     * via the [Packages](https://dev.datagrok.ai/packages?) menu (find your package and run `test` from the 'Content' pane in the property panel)
-    * via the [console](): press `~` key anywhere inside Datagrok, the Console will appear to the right; execute `<yourFirstName>Sequence:test()` there
+    * via the [console](overview/navigation.md#console): press `~` key anywhere inside Datagrok, the Console will appear to the right; execute `<yourFirstName>Sequence:test()` there
 
 ## Semantic types
 
@@ -329,7 +329,7 @@ _You will learn:_ how to invoke arbitrary Datagrok functions in JavaScript and a
     //name: CountSubsequenceTableJS
     //language: javascript
     //input: dataframe inputDf
-    //input: column inputColName
+    //input: string inputColName
     //input: string outputColName
     //input: string subseq
     //output: dataframe outputDf
@@ -587,40 +587,47 @@ _Prerequisites:_ exercises ["Setting up the environment"](#setting-up-the-enviro
    
 ## Accessing web services with OpenAPI
 
-_Details:_ [OpenAPI access](access/open-api.md)
+_Details:_ [OpenAPI access](../access/open-api.md)
 
-Web services often provide their API specs in an [OpenAPI (Swagger)]() format in a JSON or a yaml file.
+Web services often provide their API specs in an [OpenAPI (Swagger)](access/open-api.md) format
+in a JSON or a yaml file.
 Because OpenAPI spec file is standardized, the API may now be directly loaded and later queried.
 Datagrok provides for connecting to API data sources and fetching API querying results as dataframes.
 In this lesson we will connect to the [European Nucleotide Archive (ENA)](https://www.ebi.ac.uk/ena/) and
 fetch some nucleotide data regarding coronavirus.
 
-1. Obtain a ENA's Swagger file for the [ENA Browser](https://www.ebi.ac.uk/ena/browser),
-   following [this link](https://www.ebi.ac.uk/ena/browser/api/).
-   It would take you some effort to reach the JSON Swagger at the link.
-   It's also possible to understand the API through its [Swagger API tester](https://www.ebi.ac.uk/ena/browser/api/).
+1. Obtain a ENA's Swagger JSON file for the [ENA Browser](https://www.ebi.ac.uk/ena/browser),
+   following [this link](https://www.ebi.ac.uk/ena/browser/api/v2/api-docs).  
+   It usually takes you some effort to reach the JSON Swagger at the API Browser link.
+   The rule of thumb there is to use the browser's "Network" tab in the Developers Console
+   (available by F12), and identify there a resource called "api-docs". Usually, when there's
+   an [API Navigator](https://www.ebi.ac.uk/ena/browser/api), there's also a JSON Swagger.
+   It's also possible to understand the API through its
+   [Swagger API tester](https://www.ebi.ac.uk/ena/browser/api/).
    Follow recommendations [here](access/open-api.md#Troubleshooting). In particular,
    modify the connection's `Name` to `ENA`, `Url` to `https://www.ebi.ac.uk/ena/browser/api/`.
    Save this file to a desktop with a name, say, `ENA.json`.
-3. Load the Swagger into Datarok by drag and drop into the platform window.
+3. Load the Swagger into Datarok by drag-and-dropping it into the platform window.
 5. Check the connection is valid with the `Test` button, and hit `Ok` to save the edit.
-6. In the expanded view of the `ENA` connection, locate `Perform a text search and download data in XML format` and hit `Run`
-   or double-click it.
+6. In the expanded view of the `ENA` connection, locate `Perform a text search and download data in XML format`
+   and hit `Run` or double-click it.
 7. Enter the parameter values: set `Query` to `coronavirus`, `Result` to `assembly`. Hit `Ok`.
    As a result, you'd find a table, which was prepared from the received XML file by Datagrok.
 8. Close the table, locate the saved query in the list and run it.
 9. Bring the connection to the package:
-   * Put the Swagger file in a `swaggers` folder of the package. Make sure it ships the `basePath` and `host`
+   * Put the Swagger file in a `swaggers` folder of the package.  
+     Make sure the swagger contains the correct `basePath` and `host`, in some Swaggers it isn't
+     always the case.
    * Add the following function to `package.js`:
-   ```
-   //name: testENASwagger
-   export async function testENASwagger() {
-     let data = await grok.data.query('<yourFirstName>sequence:PerformATextSearchAndDownloadDataInXMLFormat',
-       {'query': 'coronavirus', 'result': 'assembly'});
-     grok.shell.addTableView(data);
-   }
-   ```
-   * Note how the Swagger's query name translates into a package query name
+     ```
+     //name: testENASwagger
+     export async function testENASwagger() {
+       let data = await grok.data.query('<yourFirstName>sequence:PerformATextSearchAndDownloadDataInXMLFormat',
+         {'query': 'coronavirus', 'result': 'assembly'});
+       grok.shell.addTableView(data);
+     }
+     ```
+   * Note how the Swagger's query name translates into a package query name.
    * You can obtain this query name with the Datagrok UI. Click on the query
      of interest, `"Perform a text search and download data in XML format"` in our
      case, and find a `Links...` section. Click it and copy a function's name from the URI.
@@ -628,7 +635,8 @@ fetch some nucleotide data regarding coronavirus.
 
 We provide a handful of demo Swaggers, check their source JSON files
 [here](https://github.com/datagrok-ai/public/tree/master/packages/Swaggers/swaggers)
-and see in action in Datagrok at [`Web Services`](https://public.datagrok.ai/webservices).
+and see in action in Datagrok at the [`Web Services`](https://public.datagrok.ai/webservices) section
+of the Datagrok UI.
 
 ## Creating an info panel with a REST web service
 
@@ -637,7 +645,7 @@ based on the ENA sequence ID contained in a currently selected grid cell.
 
 1. Searching through [the ENA archive](https://www.ebi.ac.uk/ena/browser/text-search?query=coronavirus),
    you may notice the sequences' IDs have a format of `[A-Z]{2}[0-9]{6}` (two capital letters + six digits).
-   Go to the [detectors file](#detectors) of your package and add a detector which recognizes a string
+   Go to the [detectors file](#semantic-types) of your package and add a detector which recognizes a string
    of this form:
    
    ```javascript

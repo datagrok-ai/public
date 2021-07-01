@@ -37,5 +37,7 @@ specified extension. Here's how it looks:
 ![](../../access/file-shares-file-viewers.gif)
 
 See also:
-* [File shares](../../access/file-shares.md)
-* [JavaScript development](../develop.md)
+
+  * [File Shares](../../access/file-shares.md)
+  * [JavaScript Development](../develop.md)
+  * [How to Create File Exporters](file-exporters.md)

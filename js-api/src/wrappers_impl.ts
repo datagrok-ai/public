@@ -6,7 +6,7 @@ import {TypedEventArgs} from "./viewer";
  * @param {object[]} params
  * @returns {object[]} - list of JavaScript objects */
 export function paramsToJs(params: any): any {
-  let result = [];
+  let result = <any>[];
   for (let i = 0; i < params.length; i++) {
     let type = (<any>window).grok_GetType(params[i]);
     if (type !== null && (!TYPES_SCALAR.has(type) || type === TYPE.LIST || type === TYPE.MAP))
