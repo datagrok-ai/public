@@ -76,7 +76,7 @@ function normalizeSequences(sequences: string[]): string[] {
 }
 
 function prepareInputTextField(text: string) {
-  return text.split('\n');
+  return text.split('\n').map((s) => s.replace(/\s/g, '')).filter(item => item);
 }
 
 const weights: {[index: string]: number} = {
@@ -105,7 +105,7 @@ const weights: {[index: string]: number} = {
 //tags: app
 export function OligoBatchCalculator() {
 
-  const individualBases: any = {
+  const individualBases: {[index: string]: number} = {
     'dA': 15400,
     'dC': 7400,
     'dG': 11500,
