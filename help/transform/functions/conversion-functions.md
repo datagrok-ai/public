@@ -5,24 +5,28 @@
 
 *Function List:*
 
-- [Conversion functions](#conversion-functions)
-  - [<a name="boolean"></a>Boolean(`x`)](#booleanx)
-  - [<a name="dateparse"></a>DateParse(`s`)](#dateparses)
-  - [<a name="timespanparse"></a>TimeSpanParse(`s`)](#timespanparses)
-
+- [Boolean](#booleanx)
+- [DateParse](#dateparses)
+- [TimeSpanParse](#timespanparses)
 
 ## <a name="boolean"></a>Boolean(`x`)
 
 Represents `x` as a boolean value.
 
 ```javascript
-Boolean(10)       // true
-Boolean("abc")    // true
-Boolean(true)     // true
-Boolean(0)        // false
-Boolean(null)     // false
-Boolean("")       // false
-Boolean(false)    // false
+Boolean(10)         // true
+Boolean(true)       // true
+Boolean("true")     // true
+Boolean("y")        // true
+
+Boolean(0)          // false
+Boolean(false)      // false
+Boolean("false")    // false
+Boolean("n")        // false
+
+Boolean(null)       // null
+Boolean("")         // null
+Boolean("abc")      // null
 ```
 
 ## <a name="dateparse"></a>DateParse(`s`)

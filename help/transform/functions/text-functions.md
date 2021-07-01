@@ -13,6 +13,8 @@ As parameters of the function, you can pass a regular string or a column name. T
 - [Contains](#contains)
 - [EndsWith](#endswith)
 - [Eq](#eq)
+- [IsEmpty](#isempty)
+- [IsNotEmpty](#isnotempty)
 - [Length](#length)
 - [NotEq](#noteq)
 - [ParseFloat](#parsefloat)
@@ -64,6 +66,26 @@ Returns true if the string `s1` equal to `s2` and false otherwise.
 
 ```javascript
 Eq("Sky", "Sky")    // true
+```
+
+## <a name="isempty"></a>IsEmpty(`s`)
+
+Returns true if the string `s` is empty or null, and false otherwise.
+
+```javascript
+IsEmpty("")         // true
+IsEmpty(null)       // true
+IsEmpty("Green")    // false
+```
+
+## <a name="isnotempty"></a>IsNotEmpty(`s`)
+
+Returns true if the string `s` is not empty and not null, and false otherwise.
+
+```javascript
+IsNotEmpty("")         // false
+IsNotEmpty(null)       // false
+IsNotEmpty("Green")    // true
 ```
 
 ## <a name="length"></a>Length(`s`)
