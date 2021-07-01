@@ -22,11 +22,10 @@ Boolean("y")        // true
 Boolean(0)          // false
 Boolean(false)      // false
 Boolean("false")    // false
+Boolean("abc")      // false
 Boolean("n")        // false
-
-Boolean(null)       // null
-Boolean("")         // null
-Boolean("abc")      // null
+Boolean(null)       // false
+Boolean("")         // false
 ```
 
 ## <a name="dateparse"></a>DateParse(`s`)
