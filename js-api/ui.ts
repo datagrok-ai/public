@@ -440,7 +440,7 @@ export function link(
     text: string,
     target: string | Function | object,
     tooltipMsg?: string,
-    options: string | ElementOptions | null = { classes: 'link-external' }): HTMLAnchorElement {
+    options: string | ElementOptions | null = { classes: 'd4-link-external' }): HTMLAnchorElement {
   let link = element('a') as HTMLAnchorElement;
   link.classList.add('ui-link');
   link.innerText = text;
