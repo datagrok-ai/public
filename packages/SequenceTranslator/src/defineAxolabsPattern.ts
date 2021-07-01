@@ -29,6 +29,10 @@ function generateExample(sequenceLength: number, sequenceBasis: string): string 
   return uniqueSymbols.repeat(Math.floor(sequenceLength / 4)) + uniqueSymbols.slice(0, sequenceLength % 4);
 }
 
+function findDuplicates(data: Int32Array | Float32Array | Float64Array | Uint32Array): number[] {
+  return Array.from(new Set(data)).filter((value) => data.indexOf(value) !== data.lastIndexOf(value));
+}
+
 function translateSequence(sequence: string, bases: any, ptoLinkages: any, startModification: any, endModification: any, firstPtoExist: boolean) {
   let counter: number = -1;
   return startModification.value + (firstPtoExist ? 's' : '') + sequence.replace(/[AUGC]/g, function (x: string) {
@@ -37,6 +41,15 @@ function translateSequence(sequence: string, bases: any, ptoLinkages: any, start
     let symbol = axolabsMap[bases[counter].value]["symbols"][indexOfSymbol];
     return (ptoLinkages[counter].value) ? symbol + 's' : symbol;
   }) + endModification.value;
+}
+
+function addColumnWithIds(tableName: string, columnName: string, patternName: string) {
+  const nameOfNewColumn = 'ID ' + patternName;
+  let columns = grok.shell.table(tableName).columns;
+  if (columns.contains(nameOfNewColumn))
+    columns.remove(nameOfNewColumn);
+  const columnWithIds = columns.byName(columnName);
+  return columns.addNewString(nameOfNewColumn).init((i: number) => columnWithIds.get(i) + '_' + patternName);
 }
 
 function addColumnWithTranslatedSequences(tableName: string, columnName: string, bases: any, ptoLinkages: any, startModification: any, endModification: any, firstPtoExist: boolean) {
@@ -305,6 +318,7 @@ export function defineAxolabsPattern() {
 
   let inputSsColumnDiv = ui.div([]),
     inputAsColumnDiv = ui.div([]),
+    inputIdColumnDiv = ui.div([]),
     ssModificationItems = ui.div([]),
     asModificationItems = ui.div([]),
     svgDiv = ui.div([]),
@@ -323,37 +337,58 @@ export function defineAxolabsPattern() {
   let asLength = ui.intInput('AS Length', defaultSequenceLength, () => updateUiForNewSequenceLength());
   let asLengthDiv = ui.div([asLength.root]);
 
-  function f1(n: string) {
-    let allLengthsAreTheSame: boolean = checkWhetherAllValuesInColumnHaveTheSameLength(n);
-    const firstSequence = grok.shell.table(tables.value).columns.byName(n).get(0);
+  function validateSsColumn(colName: string) {
+    let allLengthsAreTheSame: boolean = checkWhetherAllValuesInColumnHaveTheSameLength(colName);
+    const firstSequence = grok.shell.table(tables.value).columns.byName(colName).get(0);
     if (allLengthsAreTheSame && firstSequence.length != ssLength.value)
-      ssLength.value = grok.shell.table(tables.value).columns.byName(n).get(0).length;
+      ssLength.value = grok.shell.table(tables.value).columns.byName(colName).get(0).length;
     ssInputExample.value = firstSequence;
   }
 
-  function f2(n: string) {
-    let allLengthsAreTheSame: boolean = checkWhetherAllValuesInColumnHaveTheSameLength(n);
-    const firstSequence = grok.shell.table(tables.value).columns.byName(n).get(0);
+  function validateAsColumn(colName: string) {
+    let allLengthsAreTheSame: boolean = checkWhetherAllValuesInColumnHaveTheSameLength(colName);
+    const firstSequence = grok.shell.table(tables.value).columns.byName(colName).get(0);
     if (allLengthsAreTheSame && firstSequence.length != asLength.value)
-      asLength.value = grok.shell.table(tables.value).columns.byName(n).get(0).length;
+      asLength.value = grok.shell.table(tables.value).columns.byName(colName).get(0).length;
     asLengthDiv.innerHTML = '';
     asLengthDiv.append(asLength.root);
     asInputExample.value = firstSequence;
   }
 
+  function validateIdsColumn(colName: string) {
+    const col = grok.shell.table(tables.value).columns.byName(colName);
+    if (col.type != DG.TYPE.INT)
+      grok.shell.error('Column should contain integers only');
+    else if (col.categories.length < col.length) {
+      const duplicates = findDuplicates(col.getRawData());
+      ui.dialog('Repetitions in column with IDs')
+        .add(ui.button('Select rows with non-unique values', () => {
+          let selection = grok.shell.table(tables.value).selection
+          selection.init((i) => duplicates.indexOf(col.get(i)) > -1);
+          grok.shell.info("Rows with duplicated values are selected in table '" + tables.value + "'");
+        }))
+        .show();
+    }
+  }
+
   let tables = ui.choiceInput('Tables', '', grok.shell.tableNames, () => {
-    inputSsColumn = ui.choiceInput('SS Column', '', grok.shell.table(tables.value).columns.names(), (n: string) => f1(n));
+    inputSsColumn = ui.choiceInput('SS Column', '', grok.shell.table(tables.value).columns.names(), (colName: string) => validateSsColumn(colName));
     inputSsColumnDiv.innerHTML = '';
     inputSsColumnDiv.append(inputSsColumn.root);
-    inputAsColumn = ui.choiceInput('AS Column', '', grok.shell.table(tables.value).columns.names(), (n: string) => f2(n));
+    inputAsColumn = ui.choiceInput('AS Column', '', grok.shell.table(tables.value).columns.names(), (colName: string) => validateAsColumn(colName));
     inputAsColumnDiv.innerHTML = '';
     inputAsColumnDiv.append(inputAsColumn.root);
+    inputIdColumn = ui.choiceInput('ID Column', '', grok.shell.table(tables.value).columns.names(), (colName: string) => validateIdsColumn(colName));
+    inputIdColumnDiv.innerHTML = '';
+    inputIdColumnDiv.append(inputIdColumn.root);
   });
 
   let inputSsColumn = ui.choiceInput('SS Column', '', []);
   inputSsColumnDiv.append(inputSsColumn.root);
   let inputAsColumn = ui.choiceInput('AS Column', '', []);
   inputAsColumnDiv.append(inputAsColumn.root);
+  let inputIdColumn = ui.choiceInput('ID Column', '', []);
+  inputIdColumnDiv.append(inputIdColumn.root);
 
   updatePatternsList();
 
@@ -431,8 +466,9 @@ export function defineAxolabsPattern() {
   });
 
   let convertSequenceButton = ui.button('Convert Sequences', () => {
-    if (inputSsColumn.value == null || (createAsStrand.value && inputAsColumn.value == null))
+    if (inputSsColumn.value == null || (createAsStrand.value && inputAsColumn.value == null)) {
       grok.shell.info("Please select table and columns on which to apply pattern");
+    }
     else if (ssLength.value != ssInputExample.value.length || asLength.value != asInputExample.value.length) {
       let dialog = ui.dialog("Length Mismatch")
       $(dialog.getButton('OK')).hide();
@@ -445,6 +481,8 @@ export function defineAxolabsPattern() {
         })
         .show();
     } else {
+      if (inputIdColumn.value != null)
+        addColumnWithIds(tables.value, inputIdColumn.value, saveAs.value);
       addColumnWithTranslatedSequences(tables.value, inputSsColumn.value, ssBases, ssPtoLinkages, ssFiveModification, ssThreeModification, firstSsPto.value);
       if (createAsStrand.value)
         addColumnWithTranslatedSequences(tables.value, inputAsColumn.value, asBases, asPtoLinkages, asThreeModification, asFiveModification, firstAsPto.value);
@@ -529,6 +567,7 @@ export function defineAxolabsPattern() {
           tables.root,
           inputSsColumnDiv,
           inputAsColumnDiv,
+          inputIdColumnDiv,
           ui.buttonsInput([
             convertSequenceButton
           ])
