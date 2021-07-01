@@ -329,7 +329,7 @@ _You will learn:_ how to invoke arbitrary Datagrok functions in JavaScript and a
     //name: CountSubsequenceTableJS
     //language: javascript
     //input: dataframe inputDf
-    //input: column inputColName
+    //input: string inputColName
     //input: string outputColName
     //input: string subseq
     //output: dataframe outputDf
