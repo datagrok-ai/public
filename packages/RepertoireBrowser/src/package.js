@@ -17,7 +17,7 @@ export async function RepertoireBrowserApp() {
       let df = (await grok.functions.eval('OpenServerFile("Dskatov:RepertoireBrowser/RepertoireBrowserSample.csv")'))[0];
       view = grok.shell.addTableView(df);
     } catch (e) {
-      grok.shell.warning('Data not found.');
+      grok.shell.warning('File "Dskatov:RepertoireBrowser/RepertoireBrowserSample.csv" not found.');
       console.log(e);
       return;
     }
