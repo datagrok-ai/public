@@ -58,7 +58,7 @@ export const axolabsMap: {[index: string]: {symbols: [string, string, string, st
   },
   "Z-New": {
     symbols: ["Z", "Z", "Z", "Z"],
-    color: "rgb(84,130,53)"
+    color: "rgb(155,108,132)"
   },
   "InvAbasic": {
     symbols: ["(invabasic)", "(invabasic)", "(invabasic)", "(invabasic)"],
