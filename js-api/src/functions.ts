@@ -4,6 +4,8 @@ import {Entity, Func} from "./entities";
 import {DartWidget, ProgressIndicator, Widget} from "./widgets";
 import {Column} from "./dataframe";
 import {_toIterable} from "./utils";
+import {Observable} from "rxjs";
+import {__obs} from "./events";
 declare let grok: any;
 declare let DG: any;
 let api = <any>window;
@@ -118,6 +120,9 @@ export class Functions {
   scriptSync(s: string): any {
     return toJs(api.grok_ScriptSync(s));
   }
+
+  get onBeforeRunAction(): Observable<any> { return __obs('d4-before-run-action'); }
+  get onAfterRunAction(): Observable<any> { return __obs('d4-after-run-action'); }
 }
 
 export class Context {
