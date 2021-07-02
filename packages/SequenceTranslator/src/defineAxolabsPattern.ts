@@ -251,10 +251,11 @@ export function defineAxolabsPattern() {
     return allLengthsAreTheSame;
   }
 
-  function postPatternToUserStorage() {
+  async function postPatternToUserStorage() {
+    const author = await grok.dapi.users.current().then((user) => {return ' (Author: ' + user.firstName + ' ' + user.lastName + ')'});
     grok.dapi.userDataStorage.postValue(
       userStorageKey,
-      saveAs.value,
+      saveAs.value + author,
       JSON.stringify({
         "ssBases": ssBases.slice(0, ssLength.value).map((e) => e.value),
         "asBases": asBases.slice(0, asLength.value).map((e) => e.value),
@@ -284,7 +285,8 @@ export function defineAxolabsPattern() {
         ui.div([
           ui.button(ui.iconFA('trash-alt', () => {}), () => {
             if (loadPattern.value == null)
-              grok.shell.info('Choose pattern to delete');
+              grok.shell.warning('Choose pattern to delete');
+            // else if (grok.dapi.users.current().then((user) => {return user.})
             else
               grok.dapi.userDataStorage.remove(userStorageKey, loadPattern.value, false)
                 .then(() => grok.shell.info("Pattern '" + loadPattern.value + "' deleted"));
@@ -296,6 +298,8 @@ export function defineAxolabsPattern() {
   }
 
   function savePattern() {
+    // let author = await grok.dapi.users.current().then((user) => {return ' (Author: ' + user.firstName + ' ' + user.lastName + ')'});
+    // saveAs.value = saveAs.value + author;
     grok.dapi.userDataStorage.get(userStorageKey, false)
       .then((entities) => {
         if (Object.keys(entities).includes(saveAs.value)) {
@@ -306,14 +310,16 @@ export function defineAxolabsPattern() {
             .add(ui.divText('Replace pattern?'))
             .addButton('YES', () => {
               grok.dapi.userDataStorage.remove(userStorageKey, saveAs.value, false)
-                .then(() => postPatternToUserStorage());
+                .then(() => postPatternToUserStorage())
+                .then(() => updatePatternsList());
               dialog.close();
             })
             .show();
         } else {
           postPatternToUserStorage();
+          updatePatternsList();
         }
-      }).then(() => updatePatternsList()).then(() => grok.shell.info("Pattern '" + saveAs.value + "' is accessible"));
+      });
   }
 
   let inputSsColumnDiv = ui.div([]),
