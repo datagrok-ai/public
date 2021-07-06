@@ -5,12 +5,27 @@
 
 Welcome to [Datagrok](https://www.datagrok.ai), the next generation data platform!
 
-This is a guide to help you jump-start extending Datagrok via plugins and building applications on top of it.
+This is a guide to help you jump-start using Datagrok as an engineer, extending Datagrok
+with plugins and building applications on top of it. During this Getting Started,
+post your questions and suggestions at our [Community Forum](https://community.datagrok.ai/).
+We usually respond within less than a day.
 
-During this Getting Started, don't hesitate to post questions and suggestions at our
-[Community Forum](https://community.datagrok.ai/). We usually respond within less than a day.
+## Let's start
 
-*Table of Contents:*
+*Take it fast.* If you are already somewhat knowledgeable with the platform, maybe due to
+previous demos we had for you or having watched some of our
+[youtube](https://www.youtube.com/channel/UCXPHEjOd4gyZ6m6Ji-iOBYg) videos,
+you can take a fast track:   
+> Watch the [20 minutes to an app](https://www.youtube.com/watch?v=tVwpRB8fikQ) video refresher,
+> and proceed directly to the programming [Exercises](exercises.md).  
+>  
+When you have time, check
+[Daily Source of Information](#daily-sources-of-information) to know where to post questions
+and get info on the platform updates. Return to this document time to time to study
+platform _in depth_.
+
+*Take it step by step.* In case you prefer a clear start and dive into the platform
+stepwise, we recommend you to follow the below *Table of Contents*:
 
 1. [Daily Sources of Information](#daily-sources-of-information)
 2. [Datagrok Video Walkthrough](#datagrok-video-walkthrough)
