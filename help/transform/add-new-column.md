@@ -3,67 +3,41 @@
 
 # Adding New Columns
 
-Adds a column of the specified type to the current table, and initializes it using the specified
-expression (mathematical function, constants, platform objects properties and functions).
+Adds a column of the specified type to the current table, and initializes it using the specified expression (mathematical function, constants, platform objects properties and functions).
 
-To reference a column, specify its name in the curly brackets, preceded by the dollar sign, like
-that: ${WIDTH}. While editing the formula, press '$' to opens up a column list popup; use arrows and
-Enter to select it.
+To add new columns, you can use data from existing columns as follows:
 
-For formulas where row index is required, 'row' variable is available.
+- To reference each row of a column, specify its name in the curly brackets, preceded by the dollar sign: `${Width}`. For example you can use this expression in function like that: `Round(${Width})`.
 
-Examples:
+- To reference a whole column, specify its name in the square brackets, preceded by the dollar sign: `$[Width]`. For example you can use this expression in function like that: `Avg($[Width])`.
+
+While editing the formula, press '$' to opens up a column list popup; use arrows and Enter to select it. You can also use the Drag-n-Drop mechanism to drag and drop the desired column directly into the text of the formula. To do this, grab the column heading and drag it to the formula window.
+
+For formulas where row index is required, `row` variable is available.
+
+Example:
+
+```javascript
+1.57 * Round10(${Weight}, 2) / Avg($[Weight]) - log(${IC50} * PI)
 ```
-1.57 * ${WEIGHT} / ${HEIGHT}
--log(${IC50} * LN10)
+
+To treat data as strings use quotes, for example:
+
+```javascript
+"Police" + "man"    // "Policeman"
 ```
 
-| Constants | Description                             |
-|-----------|-----------------------------------------|
-| E         | Euler's number (approx. 2.718)          |
-| LN2       | Natural logarithm of 2 (approx. 0.693)  |
-| LN10      | Natural logarithm of 10 (approx. 2.302) |
-| LOG2E     | Base-2 logarithm of E (approx. 1.442)   |
-| LOG10E    | Base-10 logarithm of E (approx. 0.434)  |
-| PI        | PI (approx. 3.14)                       |
-| SQRT1_2   | Square root of 1/2 (approx. 0.707)      |
-| SQRT2     | Square root of 2 (approx. 1.414)        |
+The platform supports a large number of functions, constants and operators. You can find out about them in the corresponding sections of the help system:
 
-
-| Functions   | Description                                                       |
-|-------------|-------------------------------------------------------------------|
-| Abs(x)      | Absolute value of x                                               |
-| Acos(x)     | Arccosine of x, in radians                                        |
-| Asin(x)     | Arcsine of x, in radians                                          |
-| Atan(x)     | Arctangent of x as a numeric value between -PI/2 and PI/2 radians |
-| Atan2(y, x) | Arctangent of the quotient of its arguments                       |
-| Ceil(x)     | x, rounded upwards to the nearest integer                         |
-| Cos(x)      | Cosine of x (x is in radians)                                     |
-| Exp(x)      | E^x                                                               |
-| Floor(x)    | x, rounded downwards to the nearest integer                       |
-| Log(x)      | Natural logarithm (base E) of x                                   |
-| Max(x, y)   | Number with the highest value                                     |
-| Min(x, y)   | Number with the lowest value                                      |
-| Pow(x, y)   | Value of x to the power of y                                      |
-| Random()    | A floating-point, pseudo-random number 0..1                       |
-| Round(x)    | Rounds x to the nearest integer                                   |
-| Sin(x)      | Returns the sine of x (x is in radians)                           |
-| Sqrt(x)     | Square root of x                                                  |
-| Tan(x)      | Tangent of an angle                                               |
-
-
-To treat data as strings use quotes, for example: 
-```
-"a" + "b"
-```
-results in "ab".
-
-Detection of datetime for most datetime formats works automatically. 
-But in some cases it is hard to recognize is it formula or datetime.
-For example to get "1/1/2019" date, to solve this set datetime type and use quotes:
-```
-"1/1/2019"
-```
+- [Binning functions](../functions/binning-functions.md)
+- [Constants](../functions/constants.md)
+- [Conversion functions](../functions/conversion-functions.md)
+- [DateTime functions](../functions/datetime-functions.md)
+- [Math functions](../functions/math-functions.md)
+- [Operators](../functions/operators.md)
+- [Stats functions](../functions/stats-functions.md)
+- [Text functions](../functions/text-functions.md)
+- [TimeSpan functions](../functions/timespan-functions.md)
 
 ### Videos
 
@@ -71,6 +45,6 @@ For example to get "1/1/2019" date, to solve this set datetime type and use quot
 
 See also:
 
-  * [Grok Scripting](../overview/grok-script.md)
-  * [Function](../overview/functions/function.md)
-  * [Column selectors](../visualize/viewers/column-selectors.md)
+- [Grok Scripting](../overview/grok-script.md)
+- [Function](../overview/functions/function.md)
+- [Column selectors](../visualize/viewers/column-selectors.md)
