@@ -78,26 +78,11 @@ public abstract class JdbcDataProvider extends DataProvider {
         throw new UnsupportedOperationException();
     }
 
-    @SuppressWarnings("unchecked")
-    public DataFrame execute(FuncCall queryRun)
-            throws ClassNotFoundException, SQLException, ParseException, IOException {
-
-        ResultSet resultSet;
-        Pattern pattern = Pattern.compile("(?m)@(\\w+)");
-        int count = (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_COUNT))
-                ? ((Double)queryRun.options.get(DataProvider.QUERY_COUNT)).intValue() : 0;
-        int memoryLimit = (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_MEMORY_LIMIT_MB))
-                ? ((Double)queryRun.options.get(DataProvider.QUERY_MEMORY_LIMIT_MB)).intValue() : 0;
-        int timeout = (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_TIMEOUT_SEC))
-                ? ((Double)queryRun.options.get(DataProvider.QUERY_TIMEOUT_SEC)).intValue() : 300;
-
-        // Remove header lines
+    public ResultSet executeQuery(String query, FuncCall queryRun, Connection connection, int timeout)  throws ClassNotFoundException, SQLException {
         DataQuery dataQuery = queryRun.func;
-        String query = dataQuery.query;
-        String commentStart = DataProvider.getByName(dataQuery.connection.dataSource).descriptor.commentStart;
-        query = query.replaceAll("(?m)^" + commentStart + ".*\\n", "");
 
-        Connection connection = getConnection(dataQuery.connection);
+        ResultSet resultSet = null;
+        Pattern pattern = Pattern.compile("(?m)@(\\w+)");
         if (dataQuery.inputParamsCount() > 0) {
             query = convertPatternParamsToQueryParams(queryRun, query);
 
@@ -129,7 +114,8 @@ public abstract class JdbcDataProvider extends DataProvider {
                 }
                 statement.setQueryTimeout(timeout);
                 System.out.println(query);
-                resultSet = statement.executeQuery();
+                if(statement.execute(query))
+                    resultSet = statement.getResultSet();
             } else {
                 // Put parameters into func
                 Matcher matcher = pattern.matcher(query);
@@ -166,15 +152,52 @@ public abstract class JdbcDataProvider extends DataProvider {
                 Statement statement = connection.createStatement();
                 statement.setQueryTimeout(timeout);
                 System.out.println(query);
-                resultSet = statement.executeQuery(query);
+                if(statement.execute(query))
+                    resultSet = statement.getResultSet();
             }
         } else {
             // Query without parameters
             Statement statement = connection.createStatement();
             statement.setQueryTimeout(timeout);
             System.out.println(query);
-            resultSet = statement.executeQuery(query);
+            if(statement.execute(query))
+                resultSet = statement.getResultSet();
         }
+        return resultSet;
+    }
+
+    @SuppressWarnings("unchecked")
+    public DataFrame execute(FuncCall queryRun)
+            throws ClassNotFoundException, SQLException, ParseException, IOException {
+
+        int count = (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_COUNT))
+                ? ((Double)queryRun.options.get(DataProvider.QUERY_COUNT)).intValue() : 0;
+        int memoryLimit = (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_MEMORY_LIMIT_MB))
+                ? ((Double)queryRun.options.get(DataProvider.QUERY_MEMORY_LIMIT_MB)).intValue() : 0;
+        int timeout = (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_TIMEOUT_SEC))
+                ? ((Double)queryRun.options.get(DataProvider.QUERY_TIMEOUT_SEC)).intValue() : 300;
+
+        // Remove header lines
+        DataQuery dataQuery = queryRun.func;
+        String query = dataQuery.query;
+        Connection connection = getConnection(dataQuery.connection);
+        String commentStart = DataProvider.getByName(dataQuery.connection.dataSource).descriptor.commentStart;
+
+        ResultSet resultSet = null;
+
+        if (queryRun.func.options == null || !queryRun.func.options.get("batchMode").equals("true")){
+            query = query.replaceAll("(?m)^" + commentStart + ".*\\n", "");
+            resultSet = executeQuery(query, queryRun, connection, timeout);
+        }
+        else {
+            String[] queries = query.split("\\\n--batch\n");
+
+            for (String currentQuery : queries)
+                resultSet = executeQuery(currentQuery, queryRun, connection, timeout);
+        }
+
+        if (resultSet == null)
+            return new DataFrame();
 
         ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
 
