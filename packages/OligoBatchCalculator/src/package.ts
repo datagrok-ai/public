@@ -197,7 +197,14 @@ export function OligoBatchCalculator() {
   let tableDiv = ui.box();
   updateTable(defaultInput);
 
-  let saveAsButton = ui.bigButton('SAVE AS CSV', () => {grok.shell.info('Coming soon')});
+  let saveAsButton = ui.bigButton('SAVE AS CSV', () => {
+    let csvContent = table.toCsv();
+    let encodedUri = encodeURI(csvContent);
+    let link = document.createElement("a");
+    link.setAttribute("href", "data:text/csv;charset=utf-8,\uFEFF" + encodedUri);
+    link.setAttribute("download", "Oligo Properties.csv");
+    link.click();
+  });
   let title = ui.panel([ui.h1('Oligo Properties')], 'ui-panel ui-box');
   title.style.maxHeight = '45px';
   $(title).children('h1').css('margin', '0px');
