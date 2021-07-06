@@ -41,7 +41,7 @@ export class TreeBrowser {
     let trees = DG.Viewer.fromType(DG.VIEWER.NETWORK_DIAGRAM, processed, {
       node1: 'node',
       node2: 'parent',
-      edgeColor: 'edgeColor'
+      edgeColorColumnName: 'edgeColor'
     });  
 
     view.addViewer(tree);

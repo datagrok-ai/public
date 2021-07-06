@@ -22,13 +22,14 @@ custom applications.
   * [Semantic types](#semantic-types)
   * [Scripting and functions](#scripting-and-functions)
       * [Scripting with server functions](#scripting-with-server-functions)
+      * [Modifying dataframes with scripts](#modifying-dataframes-with-scripts)
       * [Scripting with client functions](#scripting-with-client-functions)
+  <!---
   * [Composing functions](#composing-functions)
       * [Composing a JavaScript and a Python function](#composing-a-javascript-and-a-python-function)
       * [Composing two JavaScript functions](#composing-two-javascript-functions)
-      <!---
       * Composing functions in the package
-      --->
+  --->
   * [Querying databases](#querying-databases)
   * [Creating a scripting viewer](#creating-a-scripting-viewer)
   * [Transforming dataframes](#transforming-dataframes)
@@ -51,7 +52,7 @@ custom applications.
 
 ## Setting up the environment
 
-Prerequisites: basic JavaScript knowledge
+Prerequisites: basic JavaScript knowledge.
 
 1. Install the necessary tools (Node.js, npm, webpack, datagrok-tools) following [these instructions](develop.md#getting-started)
 2. Get a dev key for https://dev.datagrok.ai (you will work with this server) and add it by running `grok config`
@@ -64,10 +65,10 @@ Prerequisites: basic JavaScript knowledge
 
 ## Semantic types
 
-Prerequisites: basic JavaScript knowledge
+Prerequisites: basic JavaScript knowledge.
 
 Details: [How to Create a Semantic Type Detector](how-to/semantic-type-detector.md),
-[How to Add an Info Panel](how-to/add-info-panel.md)
+[How to Add an Info Panel](how-to/add-info-panel.md).
 
 You will learn: how to write semantic type detectors, how to develop context-specific data augmentation.  
 
@@ -122,7 +123,8 @@ You will learn: how to write semantic type detectors, how to develop context-spe
    you will see `quality: dna_nucleotide` in the bottom of the tooltip. Alternatively, you can 
    find this information if you click on the column and expand the 'Details' pane in the property panel on the right.
    
-5. Now transform the previously created `complement` function into an [info panel](): tag it with `panel` and `widgets` tags
+5. Now transform the previously created `complement` function into an [info panel]():
+   tag it with `panel` and `widgets` tags
    and change the output type to `widget` (see an example [here](how-to/add-info-panel.md#functions)).
    This will instruct the platform to use the `complement` function for providing additional information for string values
    of the `dna_nucleotide` semantic type. To test it, simply open our test file, click on any cell
@@ -170,6 +172,94 @@ In this exercise, we will count occurrences of a given subsequence in a nucleoti
    ```<yourLogin>:CountSubsequencePython('ATGATC', 'A')```.
    You can find your login inside the profile page between name and email (under avatar), or in the profile URL: 
    `https://dev.datagrok.ai/u/<yourLogin>/summary`.
+7. Let's apply `CountSubsequencePython` to the input dataframe using Datagrok UI.
+   Open a table — say, let's go for `sequences.csv`. Navigate to `Data | Files` and open
+   `Demo Files / bio / sequences.csv`. Navigate to a menu item `Edit | Add New Column...`
+   and click it. Type in your expression using the function you've just previously created:  
+   ![](exercises-add-new-column.png)  
+   Observe how the `Preview Result Columns` change while you are modifying the expression. 
+   There, notice a namespace `<yourLogin>` as part of a qualified function name `<yourLogin>:<functionName>`,
+   `JDoe:CountSubseqnecePython` in this case. Namepaces are used through Datagrok very commonly.
+   In general, there shall be no case where you would call a function without specifying a namespace.
+   Datagrok namespaces originate from the names of packages, projects, and users, and always
+   qualify a resource name, be it a package, a function, a connection or a query.  
+   Now hit "Ok" and have the new column inserted to the dataframe.
+   
+### Modifying dataframes with scripts
+
+_Prerequisites:_ basic Python knowledge.
+
+_You will learn:_ how to manipulate tables, which we usually call dataframes, using a server
+scripting language, expand dataframes with newly computed values, and modify the dataframes.
+
+In the previous exercise we learnt a fast method to apply a function to a table and produce
+a new column in it. Another means to introduce new columns to the dataframes is to
+programmatically manipulate dataframes right in scripts. Let's repeat what we've
+achieved in the last point of the previous exercise, now with more scripting.
+
+1. Let's create a different kind of our `CountSubsequencePython` function, now called
+   `CountSubsequencePythonDataframe`. While the original function could only operate on a
+   single row, the new function shall operate on the entire dataframe.  
+   To start with, the function's Datagrok signature should look as follows:  
+   ```python
+   #name: CountSubsequencePythonDataframe
+   #language: python
+   #input: dataframe sequences
+   #input: column columnName
+   #input: string subsequence = "ACC"
+   #output: dataframe result {action:join(sequences)}
+   ```  
+   This function takes as an input a dataframe with a column containing nucleotide sequences,
+   named as a value of `columnName`, a nucleotide subsequence `subsequence` being sought,
+   and outputs an input dataframe with a new column _appended_ to it, containing numbers of
+   subsequence occurrences in the nucleotide sequences. Say, for a table on the left the following
+   table on the right should be produced for a subsequence `ACC` being sought:  
+    <table>
+    <tr><td>
+    
+    | Sequence     | ID     |
+    |--------------|--------|
+    | AACCTCACCCAT | 123AB  |
+    | CCTTCTCCTCCT | 198CD  |
+    | CTGGAAGACCTA | 637EF  |
+    
+    </td><td>
+    
+    | Sequence     | ID     | N(ACC) |  
+    |--------------|--------|--------|
+    | AACCTCACCCAT | 123AB  | 2      |
+    | CCTTCTCCTCCT | 198CD  | 1      |
+    | CTGGAAGACCTA | 637EF  | 0      |
+    
+    </td></tr>
+    </table>  
+   
+2. Implement a function `CountSubsequencePythonDataframe`. Assume the `result` is a Python dataframe
+   with just this one column `columnName`. After the `result` column is computed and returned from the server
+   to the client, based on the `join` instruction, `result` will be  _appended_ to the existing input
+   dataframe `sequences`. As this is performed purely on the client, we save the bandwidth without needing
+   to return a copy of a dataframe which we already passed to the server.  
+   * Use Pandas dataframes to access the input dataframe and create an output dataframe     
+   * You don't need to import `pandas`, Datagrok does this automatically
+   * Note that the `column inputColName` is just a string with a column name, passed to a script    
+      
+3. Run the function with a "Play" button on top of the function window. THe dialog will prompt you
+   to select a dataframe. Navigate to a "Data" view (first button on the left sidebar) and open
+   a file with nucleotide sequences (say, `Demo Files / bio / sequences.csv`). Go back to the
+   `Run Function` dialog to select the opened dataframe.
+   
+4. Now choose a column with nucleotide sequences from the dropdown. Notice how the list of columns
+   is automatically formed for the selected dataframe. Finally, run the function to get the
+   resulting dataframe.
+   
+5. As for modifying the dataframes in general, just consider removing the `{action:join}` option
+   and do whatever is needed to the output dataframe `result` before the end line of the script.
+   This will return exactly the `result` dataframe after all modifications.
+   
+6. Consider that the function may have several outputs. In case you return two dataframes,
+   both will appear in the Datagrok interface. There's also a special syntax in Datagrok JS API
+   to call functions which return several parameters, we'll review this in one of the following
+   exercises. 
 
 ### Scripting with client functions
 
@@ -177,82 +267,32 @@ _Prerequisites:_ basic JavaScript knowledge.
 
 _You will learn:_ how to create and invoke Datagrok JavaScript scripts.
 
-7. Go to `Functions | Scripts` and hit `New JavaScript Script`.
-8. Implement the function `CountSubsequenceJS` in JavaScript, which does the same as
+1. Go to `Functions | Scripts` and hit `New JavaScript Script`.
+2. Implement the function `CountSubsequenceJS` in JavaScript, which does the same as
    [`CountSubsequencePython`](#scripting-with-server-functions). Follow the same conventions on
    the parameters in the comments block and returning a result via a variable.
-9. Run `CountSubsequenceJS` using the `Play` button; using the console. From same console,
+3. Run `CountSubsequenceJS` using the `Play` button; using the console. From same console,
    run `CountSubsequencePython` yet again.  You can notice that both Python and JS versions of
    our function, implemented as scripts, are homogeneous functions in Datagrok.
    It's also possible to call them in a uniform fashion
    [using our JavaScript API](scripting.md#running-a-script). This is also shown
    in the ["Composing functions and dataframes"](#composing-functions-and-dataframes) exercise.
-10. Don't forget to save these two scripts. We would re-use parts of them in the following exercises.
+4. Don't forget to save these two scripts. We would re-use parts of them in the following exercises.
 
 The difference between the two scripts is that the first, `CountSubsequencePython`, runs on
 our server by a [compute virtual machine](develop/admin/architecture.md#compute-virtual-machine),
 whereas the second, `CountSubsequenceJS`, runs directly in the browser. To run `CountSubsequencePython`,
 Datagrok passes the script arguments over the network and fetches back the result to the browser.
 
+<!-- Redo with a simpler stance
+
 ## Composing functions
 
 ### Composing a JavaScript and a Python function
 
-_Prerequisites:_ basic Python knowledge, basic JavaScript knowledge.
-
 _You will learn:_ how to invoke arbitrary Datagrok functions in JavaScript and augment tables.
 
 1. Open Datagrok and navigate to `Functions | Scripts | New Python Script`.
-2. Implement a script `CountSubsequencePython` that takes as an input:
-
-   * a dataframe with a column containing nucleotide sequences,
-   * a name of that nucleotide sequences column,
-   * a nucleotide subsequence being sought,
-   
-   and outputs a dataframe containing a column with numbers of subsequence occurrences
-   in the sequences from the nucleotide column. Say, for a table, where we are only interested
-   in the column `Sequence` (on the left), the following table (on the right) should be produced
-   for a subsequence `ACC` being sought:  
-   <table>
-   <tr><td>
-   
-   | Sequence     | A's |
-   |--------------|-----|
-   | AACCTCACCCAT | 4   |
-   | CCTTCTCCTCCT | 0   |
-   | CTGGAAGACCTA | 3   |
-   
-   </td><td>
-   
-   | N(ACC) |
-   |--------|
-   | 2      |
-   | 0      |
-   | 1      |
-   
-   </td></tr>
-   </table>  
-   Equip your Python script with the following header:
-   
-   ```python
-   #name: CountSubsequenceTablePython
-   #language: python
-   #input: dataframe inputDf
-   #input: column inputColName
-   #input: string outputColName
-   #input: string subseq
-   #output: dataframe outputDf
-   ```
-   
-   In contrast to a simple script from the exercise ["Scripting and functions"](#scripting-and-functions),
-   we will now operate with dataframes:
-   * Use Pandas dataframes to access the input dataframe and create an output dataframe
-   * Use `outputDf = pd.DataFrame()` to initialize the output Pandas dataframe which you would
-     fill in with the occurrence counts
-   * You don't need to import `pandas`, Datagrok does this automatically
-   * Note that the `column inputColName` is just a column name, but not a data in some column
-   
-   You may want to borrow some code from the ["Scripting and functions"](#scripting-and-functions) exercise.
    
 3. Let's create a wrapping function `CountSubsequenceTableAugment` in JavaScript which would do all the technical
    job. We would use it to give the new column with counts a proper name, and to _augment_ the input dataframe
@@ -373,6 +413,8 @@ For a table of 10 rows we'd have to call the server scripting 10 times with a ne
 to deliver parameters to [compute virtual machine](). This will be less overhead for a JavaScript version,
 as all will happen in the browser, but still not as optimal as the case where we do just one call to a
 nested script.
+
+-->
 
 ## Querying databases
 

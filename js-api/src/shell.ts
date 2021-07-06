@@ -52,18 +52,6 @@ export class Shell {
     return new Project(api.grok_Project());
   }
 
-  /** Names of the currently open tables
-   *  @type {string[]} */
-  get tableNames(): string[] {
-    return api.grok_TableNames();
-  }
-
-  /** List of currently open tables
-   *  @type {DataFrame[]}*/
-  get tables(): DataFrame[] {
-    return this.tableNames.map(this.tableByName);
-  }
-
   /** Adds a table to the workspace.
    * @param {DataFrame} table*/
   addTable(table: DataFrame): void {
@@ -212,6 +200,7 @@ export class Shell {
    * Search is case-insensitive.
    * @param {string} tableName
    * @returns {TableView} */
+  //Obsolete
   getTableView(tableName: string): TableView {
     return new TableView(api.grok_GetTableView(tableName));
   }
@@ -238,16 +227,33 @@ export class Shell {
     api.grok_RegisterViewer(viewerTypeName, description, createViewer);
   }
 
+  /** Returns a {@link DataFrame} with the specified [tableName]. */
   table(tableName: string): DataFrame {
     return this.tableByName(tableName);
   }
 
+  /** Returns a first TableView for the specified [tableName], or null if there
+   *  are no such views. */
   view(tableName: string): View {
     return this.getTableView(tableName);
   }
 
+  /** Returns a first TableView for the specified [tableName], or null if there
+   *  are no such views. */
   tableView(tableName: string): TableView {
     return this.getTableView(tableName);
+  }
+
+  /** Names of the currently open tables
+   *  @type {string[]} */
+  get tableNames(): string[] {
+    return api.grok_TableNames();
+  }
+
+  /** List of currently open tables
+   *  @type {DataFrame[]}*/
+  get tables(): DataFrame[] {
+    return this.tableNames.map(this.tableByName);
   }
 
   /** Returns currently open views*/
@@ -263,6 +269,7 @@ export class Shell {
   /** Returns a table by its name. Search is case-insensitive.
    * @param {string} tableName
    * @returns {DataFrame} */
+  //Obsolete
   tableByName(tableName: string): DataFrame {
     return toJs(api.grok_TableByName(tableName));
   }
