@@ -3,7 +3,7 @@
 
 # Exercises
 
-This is a set of programming exercises designed to help developers get proficient with the
+These programming exercises designed to help developers get proficient with the
 Datagrok platform. The exercises are organized as progressive steps, with tasks
 of increasing complexity built on top of the previously completed steps.
 
