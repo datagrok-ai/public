@@ -13,13 +13,13 @@ During this Getting Started, don't hesitate to post questions and suggestions at
 *Table of Contents:*
 
 1. [Daily Sources of Information](#daily-sources-of-information)
-2. [Datagrok Video Walkthrough](#datarok-video-walkthrough)
-3. [Quick F.A.Q., before you start developing](#faq-frequently-asked-questions)
-4. Datagrok Tutorials ([read here first](#datagrok-tutorials-and-exercises), [start directly](https://public.datagrok.ai/))
-5. Datagrok Exercises ([read here first](#datagrok-tutorials-and-exercises), [start directly](exercises.md))
-6. Datagrok Architecture ([read here first](#datagrok-architecture), [start directly](admin/architecture.md))
-7. Extending and customizing Datagrok ([read here first](#extending-and-customizing-datagrok), [start directly](https://datagrok.ai/help/develop/extending-and-customizing))
-8. Building Datagrok Applications ([read here first](#datagrok-application-development), [start directly](how-to/build-an-app.md))
+2. [Datagrok Video Walkthrough](#datagrok-video-walkthrough)
+3. [Before you start: a Quick F.A.Q.](#faq-frequently-asked-questions)
+4. Datagrok Tutorials: [read here first](#datagrok-tutorials-and-exercises), [start directly](https://public.datagrok.ai/)
+5. Datagrok Exercises [read here first](#datagrok-tutorials-and-exercises), [start directly](exercises.md)
+6. Datagrok Architecture: [read here first](#datagrok-architecture), [start directly](admin/architecture.md)
+7. Extending and customizing Datagrok: [read here first](#extending-and-customizing-datagrok), [start directly](https://datagrok.ai/help/develop/extending-and-customizing)
+8. Building Datagrok Applications: [read here first](#datagrok-application-development), [start directly](how-to/build-an-app.md)
 
 ## Daily Sources of Information
 
@@ -36,9 +36,11 @@ Recall the following locations during your daily work with Datagrok:
    We recommend you to subscribe to at least these three topics.
    
 2. We aggregate Datagrok Release Notes [here](https://datagrok.ai/help/develop/release-history).
-   For every build, the notes are auto-generated. However, for the major releases we [curate and shape them up](https://github.com/datagrok-ai/public/blob/master/help/develop/release-history.md#2021-04-14-dev-build-08936)
-   by hand with the lists of highlights, major items, improvements, bug fixes and cross-linking to relevant Community Forum posts,
-   examples and sources. Therefore, Notes become a powerful source of full knowledge about what's coming in the recent Datagrok update.
+   For every build, the notes are auto-generated. However, for the major releases we
+   [curate and shape them up](https://github.com/datagrok-ai/public/blob/master/help/develop/release-history.md#dev-build-08936)
+   by hand with the lists of highlights, major items, improvements, bug fixes and cross-linking to relevant
+   Community Forum posts, examples and sources. Therefore, Notes become a powerful source of full knowledge
+   about what's coming in the recent Datagrok update.
 
 3. Highly diversed set of [JS API Samples](https://public.datagrok.ai/js) right at hand. Use the built-in
    [JS Fiddler](https://public.datagrok.ai/js) inside Datagrok to fast-prototype interfaces and functions

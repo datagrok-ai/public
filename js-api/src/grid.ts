@@ -166,6 +166,11 @@ export class GridColumn {
     return d == null ? null : new GridColumn(d);
   }
 
+  /** A {@link Grid} this column is associated with */
+  get grid(): Grid {
+    return toJs(api.grok_GridColumn_Get_Grid(this.d));
+  }
+
   /** @returns {Column} Corresponding table column, or null. */
   get column(): Column | null {
     let col = api.grok_GridColumn_Get_Column(this.d);
@@ -280,8 +285,12 @@ export class GridColumn {
   get right(): number {
     return api.grok_GridColumn_Get_Right(this.d);
   }
-}
 
+  /** Returns all visible cells */
+  getVisibleCells(): Iterable<GridCell> {
+    return this.grid.getVisibleCells(this);
+  }
+}
 
 /** Represents grid columns. */
 export class GridColumnList {
@@ -392,18 +401,17 @@ export class Grid extends Viewer {
     }));
   }
 
-  /** Returns a grid cell at the specified position.
-   * Sample: {@link https://public.datagrok.ai/js/samples/grid/hit-test}
-   */
-  hitTest(x: number, y: number): GridCell {
-    return new GridCell(api.grok_Grid_HitTest(this.d, x, y));
+  /** Returns a grid cell at the specified position, or null if there is none.
+   * Sample: {@link https://public.datagrok.ai/js/samples/grid/hit-test} */
+  hitTest(x: number, y: number): GridCell | null {
+    return toJs(api.grok_Grid_HitTest(this.d, x, y));
   }
 
   /** Sorts rows by the specified [columnIds].
    *  Specify sort directions via [asc] array (true = ascending, false = descending)
    *  If [asc] is not specified, sorts in ascending order. */
   sort(columns: string[] | Column[], orders: boolean[] | null = null): Grid {
-    api.grok_Grid_Sort(this.d, columns.map((c: string | Column) => c instanceof Column ? c.d : c), orders);
+    api.grok_Grid_Sort(this.d, (columns as any[]).map((c: string | Column) => c instanceof Column ? c.d : c), orders);
     return this;
   }
 
@@ -483,8 +491,8 @@ export class Grid extends Viewer {
   /**
    * Currently visible cells
    */
-  getVisibleCells(): Iterable<Cell> {
-    return _toIterable(api.grok_Grid_GetVisibleCells(this.d))
+  getVisibleCells(column: GridColumn | null = null): Iterable<GridCell> {
+    return _toIterable(api.grok_Grid_GetVisibleCells(this.d, column?.d))
   }
 }
 

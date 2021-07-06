@@ -58,7 +58,7 @@ export const axolabsMap: {[index: string]: {symbols: [string, string, string, st
   },
   "Z-New": {
     symbols: ["Z", "Z", "Z", "Z"],
-    color: "rgb(84,130,53)"
+    color: "rgb(155,108,132)"
   },
   "InvAbasic": {
     symbols: ["(invabasic)", "(invabasic)", "(invabasic)", "(invabasic)"],
@@ -67,5 +67,13 @@ export const axolabsMap: {[index: string]: {symbols: [string, string, string, st
   "5'-vinylps": {
     symbols: ["(vinu)", "(vinu)", "(vinu)", "(vinu)"],
     color: "rgb(0,0,139)"
+  },
+  "InvAbasic(overhang)": {
+    symbols: ["(invabasic)", "(invabasic)", "(invabasic)", "(invabasic)"],
+    color: "rgb(240,62,202)"
+  },
+  "2'-OMe-U(overhang)": {
+    symbols: ["mU", "mU", "mU", "mU"],
+    color: "rgb(65,233,80)"
   }
 };

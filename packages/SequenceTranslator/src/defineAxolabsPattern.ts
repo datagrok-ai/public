@@ -33,6 +33,23 @@ function findDuplicates(data: Int32Array | Float32Array | Float64Array | Uint32A
   return Array.from(new Set(data)).filter((value) => data.indexOf(value) !== data.lastIndexOf(value));
 }
 
+async function isCurrentUserCreatedThisPattern(patternName: string): Promise<boolean> {
+  return await grok.dapi.users.current().then((user) => {
+    let [firstName, lastName] = getName(patternName);
+    return (user.firstName == firstName && user.lastName == lastName);
+  });
+}
+
+function getName(patternName: string): string[] {
+  let first = -1;
+  for (let i = 0; i < patternName.length; i++)
+    if (patternName[i] == ':') {
+      first = i;
+      break;
+    }
+  return (first == -1) ? ['', ''] : patternName.slice(first + 2, patternName.length - 1).split(' ');
+}
+
 function translateSequence(sequence: string, bases: any, ptoLinkages: any, startModification: any, endModification: any, firstPtoExist: boolean) {
   let counter: number = -1;
   return startModification.value + (firstPtoExist ? 's' : '') + sequence.replace(/[AUGC]/g, function (x: string) {
@@ -187,8 +204,8 @@ export function defineAxolabsPattern() {
     );
   }
 
-  function parsePatternAndUpdateUi(newName: string) {
-    grok.dapi.userDataStorage.get(userStorageKey, false).then((entities) => {
+  async function parsePatternAndUpdateUi(newName: string) {
+    await grok.dapi.userDataStorage.get(userStorageKey, false).then((entities) => {
       // @ts-ignore
       let obj = JSON.parse(entities[newName]);
       ssLength.value = obj['ssBases'].length;
@@ -251,10 +268,16 @@ export function defineAxolabsPattern() {
     return allLengthsAreTheSame;
   }
 
-  function postPatternToUserStorage() {
-    grok.dapi.userDataStorage.postValue(
+  async function getName(): Promise<string> {
+    return await grok.dapi.users.current().then((user) => {return ' (Author: ' + user.firstName + ' ' + user.lastName + ')'});
+  }
+
+  async function postPatternToUserStorage() {
+    let author = await getName();
+    saveAs.value = saveAs.stringValue + author;
+    return grok.dapi.userDataStorage.postValue(
       userStorageKey,
-      saveAs.value,
+      saveAs.stringValue,
       JSON.stringify({
         "ssBases": ssBases.slice(0, ssLength.value).map((e) => e.value),
         "asBases": asBases.slice(0, asLength.value).map((e) => e.value),
@@ -270,7 +293,7 @@ export function defineAxolabsPattern() {
     ).then(() => grok.shell.info("Pattern '" + saveAs.value + "' was successfully uploaded!"));
   }
 
-  function updatePatternsList() {
+  async function updatePatternsList() {
     grok.dapi.userDataStorage.get(userStorageKey, false).then((entities) => {
       let loadPattern = ui.choiceInput('Load Pattern', '', Object.keys(entities), (v: string) => {
         parsePatternAndUpdateUi(v);
@@ -282,21 +305,24 @@ export function defineAxolabsPattern() {
       );
       loadPattern.root.append(
         ui.div([
-          ui.button(ui.iconFA('trash-alt', () => {}), () => {
-            if (loadPattern.value == null)
-              grok.shell.info('Choose pattern to delete');
-            else
-              grok.dapi.userDataStorage.remove(userStorageKey, loadPattern.value, false)
+          ui.button(ui.iconFA('trash-alt', () => {}), async () => {
+            if (loadPattern.value == null) {
+              grok.shell.warning('Choose pattern to delete');
+            } else if (await isCurrentUserCreatedThisPattern(saveAs.value)) {
+                grok.shell.warning('Cannot delete pattern, created by another user');
+            } else {
+              await grok.dapi.userDataStorage.remove(userStorageKey, loadPattern.value, false)
                 .then(() => grok.shell.info("Pattern '" + loadPattern.value + "' deleted"));
-            updatePatternsList();
+            }
+            await updatePatternsList();
           })
         ], 'ui-input-options')
       );
     });
   }
 
-  function savePattern() {
-    grok.dapi.userDataStorage.get(userStorageKey, false)
+  async function savePattern() {
+    await grok.dapi.userDataStorage.get(userStorageKey, false)
       .then((entities) => {
         if (Object.keys(entities).includes(saveAs.value)) {
           let dialog = ui.dialog('Pattern already exists');
@@ -304,8 +330,8 @@ export function defineAxolabsPattern() {
           dialog
             .add(ui.divText("Pattern name '" + saveAs.value + "' already exists."))
             .add(ui.divText('Replace pattern?'))
-            .addButton('YES', () => {
-              grok.dapi.userDataStorage.remove(userStorageKey, saveAs.value, false)
+            .addButton('YES', async () => {
+              await grok.dapi.userDataStorage.remove(userStorageKey, saveAs.value, false)
                 .then(() => postPatternToUserStorage());
               dialog.close();
             })
@@ -313,7 +339,8 @@ export function defineAxolabsPattern() {
         } else {
           postPatternToUserStorage();
         }
-      }).then(() => updatePatternsList()).then(() => grok.shell.info("Pattern '" + saveAs.value + "' is accessible"));
+      });
+    await updatePatternsList();
   }
 
   let inputSsColumnDiv = ui.div([]),
@@ -390,7 +417,7 @@ export function defineAxolabsPattern() {
   let inputIdColumn = ui.choiceInput('ID Column', '', []);
   inputIdColumnDiv.append(inputIdColumn.root);
 
-  updatePatternsList();
+  updatePatternsList().then(() => grok.shell.info(''));
 
   let sequenceBase = ui.choiceInput('Sequence Basis', defaultBase, baseChoices, (v: string) => {
     updateBases(v);
@@ -452,14 +479,14 @@ export function defineAxolabsPattern() {
 
   let savePatternButton = ui.button('Save', () => {
     if (saveAs.value != '') {
-      savePattern();
+      savePattern().then(r => grok.shell.info('Pattern saved'));
     } else {
       let name = ui.stringInput('Enter Name', '');
       ui.dialog('Pattern Name')
         .add(name.root)
         .onOK(() => {
           saveAs.value = name.value;
-          savePattern();
+          savePattern().then(r => grok.shell.info('Pattern saved'));
         })
         .show();
     }

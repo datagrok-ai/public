@@ -116,7 +116,6 @@ export function sdtmVariablePanel(varCol: DG.Column): DG.Widget {
 //tags: app
 export function clinicalCaseApp(): void {
   showStudySummary();
-  showPatientProfile();
   showLabs();
 }
 
@@ -143,7 +142,6 @@ export async function clinicalCaseInit(): Promise<void> {
       let clinMenu = grok.shell.topMenu.group('Clin');
       if (!clinMenu.find('Timelines')) clinMenu.item('Timelines', () => clinicalCaseTimelines());
       if (!clinMenu.find('Study Summary')) clinMenu.item('Study Summary', () => showStudySummary());
-      if (!clinMenu.find('Patient Profile')) clinMenu.item('Patient Profile', () => showPatientProfile());
     }
   });
 }
@@ -187,7 +185,7 @@ function clearStdView(): void {
 //name: showStudySummary
 export function showStudySummary(): void {
   let dm = grok.shell.tableByName('dm');
-  if (dm == null) return;
+  if (dm == null) return grok.shell.warning('Demographic data not found.');
 
   let subjsPerDay = dm.groupBy(['RFSTDTC']).uniqueCount('USUBJID').aggregate();
   let refStartCol = subjsPerDay.col('RFSTDTC');
@@ -216,59 +214,10 @@ export function showStudySummary(): void {
   ]);
 }
 
-//name: showPatientProfile
-export function showPatientProfile(): void {
-  let dm = grok.shell.tableByName('dm');
-  let idx = dm.currentRow.idx;
-  let subjIdCol = dm.col('USUBJID');
-  let summaryCols = dm.columns.byNames(['AGE', 'SEX']);
-  let summaryMap = Object.fromEntries(summaryCols.map(col => {
-    return [col.name, col.get(idx)];
-  }));
-
-  let onValueChanged = (id: string) => {
-    if (!subjIdCol) return;
-
-    for (let i = 0, len = subjIdCol.length; i < len; i++) {
-      if (subjIdCol.get(i) === id) {
-        summaryMap = Object.fromEntries(summaryCols.map(col => {
-          return [col.name, col.get(i)];
-        }));
-        break;
-      }
-      if (i === (len - 1)) {
-        Object.keys(summaryMap).forEach(k => {
-          summaryMap[k] = '';
-        });
-      }
-    }
-
-    card.removeChild($(card).find('table')[0]);
-    card.appendChild(ui.tableFromMap(summaryMap));
-  };
-
-  let userInput = ui.stringInput('', subjIdCol.get(idx), onValueChanged);
-  let searchBox = ui.divH([ui.iconFA('users', null), userInput.root], {
-    style: { 'align-items': 'center', 'margin-left': '8px' },
-  });
-  let card = ui.card(ui.tableFromMap(summaryMap));
-  let mainDiv = ui.divV([
-    searchBox,
-    card,
-  ]);
-
-  clearStdView();
-
-  let v = grok.shell.newView('Patient Profile', [
-    ui.h1('Patient Profile Page'),
-    mainDiv,
-  ]);
-}
-
 //name: showLabs
 export function showLabs(): void {
   let lb = grok.shell.tableByName('lb');
-  if (lb == null) return;
+  if (lb == null) return grok.shell.warning('Laboratory test results not found.');
 
   grok.shell.newView('Labs', [
     ui.divText('Labs view content'),

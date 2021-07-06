@@ -133,6 +133,15 @@ During the [publishing step](#publishing), the contents of `package.js` get pars
 [headers](scripting.md#header) are registered as Grok [functions](../overview/functions/function.md). By annotating
 functions in a specific way, it is possible to register custom viewers, widgets, renderers, 
 converters, validators, suggestions, info panels, and semantic type detectors. 
+If function has more than one output, it must return JS object `{param1: value, param2: value}`:
+```js
+//name: test
+//output: string s1
+//output: string s1
+export function test() {
+  return {s1: 'a', s2: 'b'};
+}
+```
 
 ### <a href="#" id="detectors.js"></a>detectors.js
 

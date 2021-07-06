@@ -28,6 +28,11 @@ function getTextWidth(text: string, font: number): number {
   return 2 * context.measureText(text).width;
 }
 
+function getTextInsideCircle(bases: string[], index: number): string {
+  return (bases[index].slice(-10) == "(overhang)") ? "" :
+    ['A', 'G', 'C', 'U', 'T'].includes(bases[index]) ? bases[index] : String(bases.length - index);
+}
+
 function getFontColorVisibleOnBackground(rgbString: string) {
   const rgbIntList = rgbString.match(/\d+/g)!.map(e => Number(e));
   return (rgbIntList[0] * 0.299 + rgbIntList[1] * 0.587 + rgbIntList[2] * 0.114) > 186 ? '#333333' : '#ffffff';
@@ -48,8 +53,8 @@ export function drawAxolabsPattern(patternName: string, asExists: boolean, ssBas
     return widthOfRightModification + (maxNumberOfNucleotidesInStrands - index + 1) * baseDiameter;
   }
 
-  function getShiftToAlignNumberInsideCircle(index: number): number {
-    return index < 10 ? shiftToAlignOneDigitNumberInsideCircle : shiftToAlignTwoDigitNumberInsideCircle;
+  function getShiftToAlignNumberInsideCircle(bases: string[], index: number): number {
+    return (index < 10 || ['A', 'G', 'C', 'U', 'T'].includes(bases[index])) ? shiftToAlignOneDigitNumberInsideCircle : shiftToAlignTwoDigitNumberInsideCircle;
   }
 
   const svg = {
@@ -126,8 +131,7 @@ export function drawAxolabsPattern(patternName: string, asExists: boolean, ssBas
     yOfTitle = 2 * baseRadius,
     yOfSsTexts = 4 * baseRadius,
     yOfAsTexts = 7 * baseRadius,
-    xOfComment = 2 * baseRadius,
-    yOfComment = asExists ? 10.5 * baseRadius : 8 * baseRadius,
+    yOfComment = asExists ? 11 * baseRadius : 8.5 * baseRadius,
     yOfSsCircles = 3.5 * baseRadius,
     yOfAsCircles = 6.5 * baseRadius,
     yOfCirclesInLegends = asExists ? 9 * baseRadius : 6 * baseRadius,
@@ -145,7 +149,7 @@ export function drawAxolabsPattern(patternName: string, asExists: boolean, ssBas
     asExists ? svg.text(asThreeModification, xOfLeftModifications, yOfAsTexts, baseFontSize, modificationsColor) : '',
     svg.text(ssThreeModification, xOfRightModifications, yOfSsTexts, baseFontSize, modificationsColor),
     asExists ? svg.text(asFiveModification, xOfRightModifications, yOfAsTexts, baseFontSize, modificationsColor) : '',
-    svg.text(comment, xOfComment, yOfComment, baseFontSize, fontColor),
+    svg.text(comment, xOfLeftTexts, yOfComment, legendFontSize, fontColor),
     isPtoExist ? svg.star(baseRadius, yOfCirclesInLegends, psLinkageColor) : '',
     isPtoExist ? svg.text('ps linkage', 2 * baseRadius - 8, yOfTextLegend, legendFontSize, fontColor) : ''
   );
@@ -153,7 +157,7 @@ export function drawAxolabsPattern(patternName: string, asExists: boolean, ssBas
   for (let i = ssBases.length - 1; i > -1; i--)
     image.append(
       svg.circle(getXOfBaseCircles(i), yOfSsCircles, baseRadius, getBaseColor(ssBases[i])),
-      svg.text(String(ssBases.length - i), getXOfBaseCircles(i) + getShiftToAlignNumberInsideCircle(ssBases.length - i), yOfSsTexts, baseFontSize, getFontColorVisibleOnBackground(axolabsMap[ssBases[i]]["color"])),
+      svg.text(getTextInsideCircle(ssBases, i), getXOfBaseCircles(i) + getShiftToAlignNumberInsideCircle(ssBases, ssBases.length - i), yOfSsTexts, baseFontSize, getFontColorVisibleOnBackground(axolabsMap[ssBases[i]]["color"])),
       ssPtoStatuses[i] ? svg.star(getXOfBaseCircles(i) + baseRadius, yOfSsTexts + psLinkageRadius, psLinkageColor) : ''
     );
   image.append(
@@ -164,7 +168,7 @@ export function drawAxolabsPattern(patternName: string, asExists: boolean, ssBas
     for (let i = asBases.length - 1; i > -1; i--)
       image.append(
         svg.circle(getXOfBaseCircles(i), yOfAsCircles, baseRadius, getBaseColor(asBases[i])),
-        svg.text(String(i + 1), getXOfBaseCircles(i) + getShiftToAlignNumberInsideCircle(i + 1), yOfAsTexts, baseFontSize, getFontColorVisibleOnBackground(axolabsMap[asBases[i]]["color"])),
+        svg.text(getTextInsideCircle(asBases, asBases.length - i - 1), getXOfBaseCircles(i) + getShiftToAlignNumberInsideCircle(asBases, i), yOfAsTexts, baseFontSize, getFontColorVisibleOnBackground(axolabsMap[asBases[i]]["color"])),
         asPtoStatuses[i] ? svg.star(getXOfBaseCircles(i) + baseRadius, yOfAsTexts + psLinkageRadius, psLinkageColor) : ''
       );
     image.append(
