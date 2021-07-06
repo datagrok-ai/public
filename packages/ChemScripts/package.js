@@ -174,7 +174,7 @@ class ChemScriptsPackage extends DG.Package {
             if(distance < cycleMinDistance){
             
               if(distance == 0){
-                let angle = 2 * Math.PI * random.random();
+                let angle = 2 * Math.PI * Math.random();
                 dx = Math.sin(angle) * cycleMinDistance;
                 dy = Math.cos(angle) * cycleMinDistance;
               } else {
@@ -257,6 +257,8 @@ class ChemScriptsPackage extends DG.Package {
 
     sp.props.showXSelector = false;
     sp.props.showYSelector = false;
+    sp.props.showSizeSelector = false;
+    sp.props.showColorSelector = false;
     sp.props.markerMinSize = 5;
     sp.props.markerMaxSize = 25;
     sp.props.colorColumnName = 'activity';
