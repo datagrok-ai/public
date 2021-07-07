@@ -90,18 +90,26 @@ export function defineAxolabsPattern() {
     asBases = (asLength.value > asBases.length) ?
       asBases.concat(Array(asLength.value - asBases.length).fill(sequenceBase)) :
       asBases.slice(asBases.length - asLength.value);
+    let nucleotideCounter = 0;
     for (let i = 0; i < asLength.value; i++) {
       asPtoLinkages[i] = ui.boolInput('', asPtoLinkages[i].value, () => {
         updateSvgScheme();
         updateOutputExamples();
       });
       asBases[i] = ui.choiceInput('', asBases[i].value, baseChoices, () => {
+        updateAsModification();
         updateSvgScheme();
         updateOutputExamples();
       });
+      let isOverhang = false;
+      if (asBases[i].value.slice(-10) == '(overhang)') {
+        isOverhang = true;
+      } else {
+        nucleotideCounter++;
+      }
       asModificationItems.append(
         ui.divH([
-          ui.block25([ui.label((i + 1).toString())])!,
+          ui.block25([ui.label(asBases[i].value.slice(-10) == '(overhang)' ? '' : String(i + 1))])!,
           ui.block50([asBases[i]])!,
           ui.block25([asPtoLinkages[i]])!
         ], {style: {alignItems: "center"}})
@@ -117,18 +125,26 @@ export function defineAxolabsPattern() {
     ssBases = (ssLength.value > ssBases.length) ?
       ssBases.concat(Array(ssLength.value - ssBases.length).fill(sequenceBase)) :
       ssBases.slice(ssBases.length - ssLength.value);
+    let nucleotideCounter = 0;
     for (let i = 0; i < ssLength.value; i++) {
       ssPtoLinkages[i] = ui.boolInput('', ssPtoLinkages[i].value, () => {
         updateSvgScheme();
         updateOutputExamples();
       });
       ssBases[i] = ui.choiceInput('', ssBases[i].value, baseChoices, () => {
+        updateSsModification();
         updateSvgScheme();
         updateOutputExamples();
       });
+      let isOverhang = false;
+      if (ssBases[i].value.slice(-10) == '(overhang)') {
+        isOverhang = true;
+      } else {
+        nucleotideCounter++;
+      }
       ssModificationItems.append(
         ui.divH([
-          ui.block25([ui.label((i + 1).toString())])!,
+          ui.block25([ui.label(isOverhang ? '' : String(nucleotideCounter))])!,
           ui.block50([ssBases[i]])!,
           ui.block25([ssPtoLinkages[i]])!
         ], {style: {alignItems: "center"}})
