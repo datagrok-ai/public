@@ -41,7 +41,7 @@ If you want to jump-start with Datagrok on your local machine, we recommend this
       datagrok:
         image: datagrok/datagrok:latest
         environment:
-          GROK_PARAMETERS: "{\"deployDemo\": false, \"dbServer\": \"database\", \"db\": \"datagrok\", \"dbAdminLogin\": \"postgres\", \"dbAdminPassword\": \"postgres\", \"dbLogin\": \"dg\", \"dbPassword\": \"dg\"}"
+          GROK_PARAMETERS: "{\"deployDemo\": false, \"dbServer\": \"database\", \"db\": \"datagrok\", \"dbAdminLogin\": \"postgres\", \"dbAdminPassword\": \"postgres\", \"dbLogin\": \"dg\", \"dbPassword\": \"dg\", \"adminPassword\": \"admin\", \"adminDevKey\": \"admin\"}"
         ports:
           - "8080:8080"
         networks:
