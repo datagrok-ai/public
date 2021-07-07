@@ -3,6 +3,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as meta from './sdtm-meta';
+import { study } from "./clinical-study";
+import {StudySummaryView} from "./views/study-summary-view";
 
 export let _package = new DG.Package();
 
@@ -115,8 +117,12 @@ export function sdtmVariablePanel(varCol: DG.Column): DG.Widget {
 //name: Clinical Case
 //tags: app
 export function clinicalCaseApp(): void {
-  showStudySummary();
-  showLabs();
+
+  study.initFromWorkspace();
+  grok.shell.newView('foo', [new StudySummaryView().root]);
+
+  // showStudySummary();
+  // showLabs();
 }
 
 //tags: autostart
