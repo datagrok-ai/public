@@ -12,9 +12,8 @@ This document contains instructions to deploy Datagrok on AWS EC2 instance.
 
 ## Setup Datagrok Virtual Machine
 
-1. Copy latest Datagrok Virtual Machine docker image URL from [dev.datagrok.ai/docker_images](https://dev.datagrok.ai/docker_images)
-2. Download Datagrok image `wget IMAGE_URL`, load image to docker `docker load < <IMAGE_NAME>`
-3. Prepare string GROK_START_PARAMETERS:
+1. Pull Datagrok image to docker `docker pull datagrok/datagrok:latest`
+2. Prepare string `GROK_START_PARAMETERS`:
  ```
 {
 "amazonStorageRegion": "us-east-2",                             # S3 region
@@ -29,15 +28,14 @@ This document contains instructions to deploy Datagrok on AWS EC2 instance.
 "dbAdminPassword": "postgres"                                   # RDS admin password
 }
 ```
-4. Run Datagrok image
-`docker run -it -e GROK_PARAMETERS="<GROK_START_PARAMETERS>" -p 8080:8080 <IMAGE_NAME>`
-5. Check if Datagrok started successfully: http://HOST_NAME, login to Datagrok using username "admin" and password "SM9ekKEkZuBDp5eD"
+3. Run Datagrok image
+`docker run -it -e GROK_PARAMETERS="<GROK_START_PARAMETERS>" -p 8080:8080 datagrok/datagrok:latest`
+4. Check if Datagrok started successfully: http://HOST_NAME, login to Datagrok using username "admin" and password "SM9ekKEkZuBDp5eD"
 
 ## Setup Compute Virtual Machine
 
-1. Copy latest Compute Virtual Machine docker image URL from [dev.datagrok.ai/docker_images](https://dev.datagrok.ai/docker_images)
-2. Download Datagrok image `wget IMAGE_URL`, load image to docker `docker load < <IMAGE_NAME>`
-3. Run CVM image `docker run -it -e GROK_COMPUTE_NUM_CORES=4 -p 8080:8080 -p 54321:54321 <IMAGE_NAME>`
+1. Pull CVM image `docker pull datagrok/cvm:latest`
+2. Run CVM image `docker run -it -e GROK_COMPUTE_NUM_CORES=4 -p 8080:8080 -p 54321:54321 datagrok/cvm:latest`
 
 Edit settings in the Datagrok (Tools | Settings...):
 * Scripting:
