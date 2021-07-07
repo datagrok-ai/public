@@ -258,7 +258,7 @@ export class DataFrame {
   }
 
   /** Name of the dataframe.
-   * @returns {string}*/
+   * @returns {string} */
   get name(): string {
     return api.grok_DataFrame_Get_Name(this.d);
   }
@@ -629,15 +629,6 @@ export class Column {
     this.d = d;
     this.temp = new MapProxy(api.grok_Column_Get_Temp(this.d));
     this.tags = new MapProxy(api.grok_Column_Get_Tags(this.d));
-    //
-    // return new Proxy(this, {
-    //     get(target, x) {
-    //         if (typeof x === 'number')
-    //             return target.get(x);
-    //         if (target.hasOwnProperty(x))
-    //             return target[x];
-    //     }
-    // });
   }
 
   /** Creates a {@link Column} from the list of string values
@@ -817,6 +808,12 @@ export class Column {
 
   set name(s: string) {
     api.grok_Column_Set_Name(this.d, s);
+  }
+  
+  /** Version of the column. Increases each time the column was changed
+   * @returns {number} */
+  get version(): number {
+    return api.grok_Column_Get_Version(this.d);
   }
 
   /**
