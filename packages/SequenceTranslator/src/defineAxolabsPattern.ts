@@ -206,7 +206,6 @@ export function defineAxolabsPattern() {
 
   async function parsePatternAndUpdateUi(newName: string) {
     await grok.dapi.userDataStorage.get(userStorageKey, false).then((entities) => {
-      // @ts-ignore
       let obj = JSON.parse(entities[newName]);
       ssLength.value = obj['ssBases'].length;
       asLength.value = obj['asBases'].length;
@@ -259,7 +258,7 @@ export function defineAxolabsPattern() {
         .add(ui.divText('The sequence length should match the number of Raw sequences in the input file'))
         .add(ui.divText("'ADD COLUMN' to see sequences lengths"))
         .addButton('ADD COLUMN', () => {
-          grok.shell.table(tables.value).columns.addNewInt('Sequences lengths in ' + colName).init((j) => col.get(j).length);
+          grok.shell.table(tables.value).columns.addNewInt('Sequences lengths in ' + colName).init((j: number) => col.get(j).length);
           grok.shell.info("Column with lengths added to '" + tables.value + "'");
           dialog.close();
         })

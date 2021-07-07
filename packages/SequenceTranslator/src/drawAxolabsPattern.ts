@@ -53,8 +53,8 @@ export function drawAxolabsPattern(patternName: string, asExists: boolean, ssBas
     return widthOfRightModification + (maxNumberOfNucleotidesInStrands - index + 1) * baseDiameter;
   }
 
-  function getShiftToAlignNumberInsideCircle(bases: string[], index: number): number {
-    return (index < 10 || ['A', 'G', 'C', 'U', 'T'].includes(bases[index])) ? shiftToAlignOneDigitNumberInsideCircle : shiftToAlignTwoDigitNumberInsideCircle;
+  function getShiftToAlignNumberInsideCircle(bases: string[], generalIndex: number, nucleotideIndex: number): number {
+    return (nucleotideIndex < 10 || ['A', 'G', 'C', 'U', 'T'].includes(bases[generalIndex])) ? shiftToAlignOneDigitNumberInsideCircle : shiftToAlignTwoDigitNumberInsideCircle;
   }
 
   const svg = {
@@ -162,7 +162,7 @@ export function drawAxolabsPattern(patternName: string, asExists: boolean, ssBas
       nucleotideCounter--;
     image.append(
       svg.circle(getXOfBaseCircles(i), yOfSsCircles, baseRadius, getBaseColor(ssBases[i])),
-      svg.text(getTextInsideCircle(ssBases, i, nucleotideCounter, numberOfSsNucleotides), getXOfBaseCircles(i) + getShiftToAlignNumberInsideCircle(ssBases, ssBases.length - i), yOfSsTexts, baseFontSize, getFontColorVisibleOnBackground(axolabsMap[ssBases[i]]["color"])),
+      svg.text(getTextInsideCircle(ssBases, i, nucleotideCounter, numberOfSsNucleotides), getXOfBaseCircles(i) + getShiftToAlignNumberInsideCircle(ssBases, ssBases.length - i, numberOfSsNucleotides - nucleotideCounter), yOfSsTexts, baseFontSize, getFontColorVisibleOnBackground(axolabsMap[ssBases[i]]["color"])),
       ssPtoStatuses[i] ? svg.star(getXOfBaseCircles(i) + baseRadius, yOfSsTexts + psLinkageRadius, psLinkageColor) : ''
     );
   }
@@ -181,7 +181,7 @@ export function drawAxolabsPattern(patternName: string, asExists: boolean, ssBas
         nucleotideCounter--;
       image.append(
         svg.circle(getXOfBaseCircles(i), yOfAsCircles, baseRadius, getBaseColor(asBases[i])),
-        svg.text(getTextInsideCircle(asBases, i, numberOfAsNucleotides - nucleotideCounter - 1, numberOfAsNucleotides), getXOfBaseCircles(i) + getShiftToAlignNumberInsideCircle(asBases, i), yOfAsTexts, baseFontSize, getFontColorVisibleOnBackground(axolabsMap[asBases[i]]["color"])),
+        svg.text(getTextInsideCircle(asBases, i, numberOfAsNucleotides - nucleotideCounter - 1, numberOfAsNucleotides), getXOfBaseCircles(i) + getShiftToAlignNumberInsideCircle(asBases, i, nucleotideCounter + 1), yOfAsTexts, baseFontSize, getFontColorVisibleOnBackground(axolabsMap[asBases[i]]["color"])),
         asPtoStatuses[i] ? svg.star(getXOfBaseCircles(i) + baseRadius, yOfAsTexts + psLinkageRadius, psLinkageColor) : ''
       );
     }
