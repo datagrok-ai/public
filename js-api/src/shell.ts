@@ -128,22 +128,18 @@ export class Shell {
   }
 
   /** Opens the view that handles the specified url.
-   * Sample: {@link https://public.datagrok.ai/js/samples/ui/docking/docking}
-   * @param {string} url
-   * @returns {View} */
+   * Sample: {@link https://public.datagrok.ai/js/samples/ui/docking/docking} */
   route(url: string): View {
     return View.fromDart(api.grok_Route(url));
   }
 
   /** Adds an item to the workspace.
    * It could be a DataFrame, a View, or an HtmlElement.
-   * Throws an error, if the item has a different type.
-   * @param {DataFrame | View | HTMLElement} item
-   * @returns {Shell} */
-  add(item: DataFrame | View | HTMLElement): Shell {
+   * Throws an error, if the item has a different type. */
+  add(item: DataFrame | ViewBase | HTMLElement): Shell {
     if (item instanceof DataFrame)
       this.addTableView(item);
-    else if (item instanceof View)
+    else if (item instanceof ViewBase)
       this.addView(item);
     else if (item instanceof HTMLElement)
       this.dockElement(item);
@@ -152,14 +148,8 @@ export class Shell {
     return this;
   }
 
-  /**
-   * Adds a view.
-   * @param {View} v
-   * @param {DockType} dockType
-   * @param {number} width
-   * @returns {View}
-   */
-  addView(v: View, dockType: DockType = DOCK_TYPE.FILL, width: number | null = null): View {
+  /** Adds a view. */
+  addView(v: ViewBase, dockType: DockType = DOCK_TYPE.FILL, width: number | null = null): ViewBase {
     if (api.grok_AddView == null) {
       document.body.append(v.root);
       v.root.style.width = '100vw';
