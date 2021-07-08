@@ -68,11 +68,11 @@ export const axolabsMap: {[index: string]: {symbols: [string, string, string, st
     symbols: ["(vinu)", "(vinu)", "(vinu)", "(vinu)"],
     color: "rgb(0,0,139)"
   },
-  "InvAbasic(overhang)": {
+  "InvAbasic(o)": {
     symbols: ["(invabasic)", "(invabasic)", "(invabasic)", "(invabasic)"],
     color: "rgb(240,62,202)"
   },
-  "2'-OMe-U(overhang)": {
+  "2'-OMe-U(o)": {
     symbols: ["mU", "mU", "mU", "mU"],
     color: "rgb(65,233,80)"
   }
