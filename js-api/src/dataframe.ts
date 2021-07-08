@@ -193,6 +193,7 @@ export class DataFrame {
   public filter: BitSet;
   public temp: any;
   public tags: any;
+  private _plot: DataFramePlotHelper;
 
   constructor(d: any) {
     this.d = d;
@@ -243,6 +244,12 @@ export class DataFrame {
    * */
   static fromJson(json: string): DataFrame {
     return new DataFrame(api.grok_DataFrame_FromJson(json));
+  }
+
+  get plot(): DataFramePlotHelper {
+    if (this._plot == undefined)
+    this._plot = new DataFramePlotHelper(this);
+    return this._plot;
   }
 
   /** Returns number of rows in the table.
@@ -2043,6 +2050,23 @@ export class Qnum {
   static toString(x: number): string {
     return api.grok_Qnum_ToString(x);
   }
+}
+
+class DataFramePlotHelper {
+  private readonly df: DataFrame;
+  constructor(df: DataFrame) {
+    this.df = df;
+  }
+
+  scatter(options: object | null = null) { return DG.Viewer.scatterPlot(this.df, options); }
+  grid(options: object | null = null) { return DG.Viewer.grid(this.df, options); }
+  histogram(options: object | null = null) { return DG.Viewer.histogram(this.df, options); }
+  bar(options: object | null = null) { return DG.Viewer.barChart(this.df, options); }
+  heatMap(options: object | null = null) { return DG.Viewer.heatMap(this.df, options); }
+  box(options: object | null = null) { return DG.Viewer.boxPlot(this.df, options); }
+  line(options: object | null = null) { return DG.Viewer.lineChart(this.df, options); }
+  network(options: object | null = null) { return DG.Viewer.network(this.df, options); }
+  
 }
 
 
