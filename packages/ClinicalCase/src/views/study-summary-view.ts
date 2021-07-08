@@ -29,9 +29,9 @@ export class StudySummaryView extends DG.ViewBase {
         lc.root]),
       ui.divH([
         ui.block25([ui.h2('Summary'), summary]),
-        ui.block25([ui.h2('Sex'), DG.Viewer.barChart(study.domains.dm, { split: 'sex' }).root]),
-        ui.block25([ui.h2('Race'), DG.Viewer.barChart(study.domains.dm, { split: 'race' }).root]),
-        ui.block25([ui.h2('Age'), DG.Viewer.histogram(study.domains.dm, { value: 'age' }).root]),
+        ui.block25([ui.h2('Sex'), DG.Viewer.barChart(study.domains.dm, { split: 'sex', style: 'dashboard' }).root]),
+        ui.block25([ui.h2('Race'), DG.Viewer.barChart(study.domains.dm, { split: 'race', style: 'dashboard' }).root]),
+        ui.block25([ui.h2('Age'), DG.Viewer.histogram(study.domains.dm, { value: 'age', style: 'dashboard' }).root]),
       ], { style: { width: '100%' } }),
     ]));
   }
