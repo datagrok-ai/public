@@ -1641,6 +1641,11 @@ export class Stats {
     return api.grok_Stats_Get_MissingValueCount(this.d);
   }
 
+  /** Number of unique values. */
+  get uniqueValueCount(): number {
+    return api.grok_Stats_Get_UniqueCount(this.d);
+  }
+
   /** Number of non-empty values. */
   get valueCount(): number {
     return api.grok_Stats_Get_ValueCount(this.d);
