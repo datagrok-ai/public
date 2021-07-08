@@ -12,7 +12,7 @@
 		"webpack": "^5.33.2"
 	},
 	"scripts": {
-		"debug-clinicalcase": "grok publish --rebuild",
+		"debug-clinicalcase": "webpack && grok publish",
 		"release-clinicalcase": "grok publish --rebuild --release",
 		"build-clinicalcase": "webpack",
 		"build": "webpack",
