@@ -20,6 +20,13 @@ function getPointsToDrawStar(centerX: number, centerY: number) {
   return points;
 }
 
+function countOverhangsOnTheRightEdge(modifications: string[]): number {
+  let i = 0;
+  while (i < modifications.length && modifications[i].slice(-3) == '(o)')
+    i++;
+  return (i == modifications.length - 1) ? 0 : i;
+}
+
 function getTextWidth(text: string, font: number): number {
   const context = document.createElement('canvas').getContext('2d');
   // @ts-ignore
@@ -29,7 +36,7 @@ function getTextWidth(text: string, font: number): number {
 }
 
 function getTextInsideCircle(bases: string[], index: number, nucleotideCounter: number, numberOfNucleotides: number): string {
-  return (bases[index].slice(-10) == "(overhang)") ? "" :
+  return (bases[index].slice(-3) == "(o)") ? "" :
     ['A', 'G', 'C', 'U', 'T'].includes(bases[index]) ? bases[index] : String(numberOfNucleotides - nucleotideCounter);
 }
 
@@ -49,8 +56,8 @@ export function drawAxolabsPattern(patternName: string, asExists: boolean, ssBas
     return Math.round((index + startFrom) * width / (uniqueBases.length + startFrom) + legendRadius);
   }
 
-  function getXOfBaseCircles(index: number): number {
-    return widthOfRightModification + (maxNumberOfNucleotidesInStrands - index + 1) * baseDiameter;
+  function getXOfBaseCircles(index: number, rightOverhangs: number): number {
+    return widthOfRightModification + (resultingNumberOfNucleotidesInStrands - index + rightOverhangs + 1) * baseDiameter;
   }
 
   function getShiftToAlignNumberInsideCircle(bases: string[], generalIndex: number, nucleotideIndex: number): number {
@@ -110,23 +117,25 @@ export function drawAxolabsPattern(patternName: string, asExists: boolean, ssBas
     ssRightText = "3'",
     asRightText = "5'";
 
-  const maxNumberOfNucleotidesInStrands = Math.max(ssBases.length, asBases.length),
+  const ssRightOverhangs = countOverhangsOnTheRightEdge(ssBases);
+  const asRightOverhangs = countOverhangsOnTheRightEdge(asBases);
+  const resultingNumberOfNucleotidesInStrands = Math.max(ssBases.length - ssRightOverhangs, asBases.length - asRightOverhangs),
     baseDiameter = 2 * baseRadius,
-    widthOfBases = baseDiameter * maxNumberOfNucleotidesInStrands,
+    widthOfBases = baseDiameter * (resultingNumberOfNucleotidesInStrands + Math.max(ssRightOverhangs, asRightOverhangs)),
     widthOfLeftModification = Math.max(getTextWidth(ssThreeModification, baseFontSize), getTextWidth(asFiveModification, baseFontSize)),
     widthOfRightModification = Math.max(getTextWidth(ssFiveModification, baseFontSize), getTextWidth(asThreeModification, baseFontSize)),
     widthOfLeftText = Math.max(getTextWidth(ssLeftText, baseFontSize), getTextWidth(asLeftText, baseFontSize)),
     widthOfRightText = Math.max(getTextWidth(ssRightText, baseFontSize), getTextWidth(asRightText, baseFontSize)),
     width = widthOfLeftText + widthOfLeftModification + widthOfBases + widthOfRightModification + widthOfRightText + baseDiameter,
     height = asExists ? 11 * baseRadius : 9 * baseRadius,
-    xOfTitle = Math.round(width / 2),
+    xOfTitle = Math.round(width / 4),
     uniqueBases = asExists ? [...new Set(ssBases.concat(asBases))] : [...new Set(ssBases)],
     isPtoExist = asExists ? [...new Set(ssPtoStatuses.concat(asPtoStatuses))].includes(true) : [...new Set(ssPtoStatuses)].includes(true),
     startFrom = isPtoExist ? 1 : 0,
     xOfLeftTexts = 0,
     xOfLeftModifications = xOfLeftTexts + widthOfLeftText - 5,
-    xOfRightModifications = getXOfBaseCircles(-0.5),
-    xOfRightTexts = xOfRightModifications + widthOfLeftModification,
+    xOfRightModifications = getXOfBaseCircles(-0.5, 0),
+    xOfRightTexts = xOfRightModifications + widthOfLeftModification + baseDiameter * (Math.max(ssRightOverhangs, asRightOverhangs)),
     yOfTitle = 2 * baseRadius,
     yOfSsTexts = 4 * baseRadius,
     yOfAsTexts = 7 * baseRadius,
@@ -154,39 +163,39 @@ export function drawAxolabsPattern(patternName: string, asExists: boolean, ssBas
 
   let numberOfSsNucleotides = 0;
   for (let i = 0; i < ssBases.length; i++)
-    if (ssBases[i].slice(-10) != '(overhang)')
+    if (ssBases[i].slice(-3) != '(o)')
       numberOfSsNucleotides++;
   let nucleotideCounter = numberOfSsNucleotides;
   for (let i = ssBases.length - 1; i > -1; i--) {
-    if (ssBases[i].slice(-10) != '(overhang)')
+    if (ssBases[i].slice(-3) != '(o)')
       nucleotideCounter--;
     image.append(
-      svg.circle(getXOfBaseCircles(i), yOfSsCircles, baseRadius, getBaseColor(ssBases[i])),
-      svg.text(getTextInsideCircle(ssBases, i, nucleotideCounter, numberOfSsNucleotides), getXOfBaseCircles(i) + getShiftToAlignNumberInsideCircle(ssBases, ssBases.length - i, numberOfSsNucleotides - nucleotideCounter), yOfSsTexts, baseFontSize, getFontColorVisibleOnBackground(axolabsMap[ssBases[i]]["color"])),
-      ssPtoStatuses[i] ? svg.star(getXOfBaseCircles(i) + baseRadius, yOfSsTexts + psLinkageRadius, psLinkageColor) : ''
+      svg.circle(getXOfBaseCircles(i, ssRightOverhangs), yOfSsCircles, baseRadius, getBaseColor(ssBases[i])),
+      svg.text(getTextInsideCircle(ssBases, i, nucleotideCounter, numberOfSsNucleotides), getXOfBaseCircles(i, ssRightOverhangs) + getShiftToAlignNumberInsideCircle(ssBases, ssBases.length - i, numberOfSsNucleotides - nucleotideCounter), yOfSsTexts, baseFontSize, getFontColorVisibleOnBackground(axolabsMap[ssBases[i]]["color"])),
+      ssPtoStatuses[i] ? svg.star(getXOfBaseCircles(i, ssRightOverhangs) + baseRadius, yOfSsTexts + psLinkageRadius, psLinkageColor) : ''
     );
   }
   image.append(
-    ssPtoStatuses[ssBases.length] ? svg.star(getXOfBaseCircles(ssBases.length) + baseRadius, yOfSsTexts + psLinkageRadius, psLinkageColor) : ''
+    ssPtoStatuses[ssBases.length] ? svg.star(getXOfBaseCircles(ssBases.length, ssRightOverhangs) + baseRadius, yOfSsTexts + psLinkageRadius, psLinkageColor) : ''
   );
 
   let numberOfAsNucleotides = 0;
   for (let i = 0; i < asBases.length; i++)
-    if (asBases[i].slice(-10) != '(overhang)')
+    if (asBases[i].slice(-3) != '(o)')
       numberOfAsNucleotides++;
   if (asExists) {
     let nucleotideCounter = numberOfAsNucleotides;
     for (let i = asBases.length - 1; i > -1; i--) {
-      if (asBases[i].slice(-10) != '(overhang)')
+      if (asBases[i].slice(-3) != '(o)')
         nucleotideCounter--;
       image.append(
-        svg.circle(getXOfBaseCircles(i), yOfAsCircles, baseRadius, getBaseColor(asBases[i])),
-        svg.text(getTextInsideCircle(asBases, i, numberOfAsNucleotides - nucleotideCounter - 1, numberOfAsNucleotides), getXOfBaseCircles(i) + getShiftToAlignNumberInsideCircle(asBases, i, nucleotideCounter + 1), yOfAsTexts, baseFontSize, getFontColorVisibleOnBackground(axolabsMap[asBases[i]]["color"])),
-        asPtoStatuses[i] ? svg.star(getXOfBaseCircles(i) + baseRadius, yOfAsTexts + psLinkageRadius, psLinkageColor) : ''
+        svg.circle(getXOfBaseCircles(i, asRightOverhangs), yOfAsCircles, baseRadius, getBaseColor(asBases[i])),
+        svg.text(getTextInsideCircle(asBases, i, numberOfAsNucleotides - nucleotideCounter - 1, numberOfAsNucleotides), getXOfBaseCircles(i, asRightOverhangs) + getShiftToAlignNumberInsideCircle(asBases, i, nucleotideCounter + 1), yOfAsTexts, baseFontSize, getFontColorVisibleOnBackground(axolabsMap[asBases[i]]["color"])),
+        asPtoStatuses[i] ? svg.star(getXOfBaseCircles(i, asRightOverhangs) + baseRadius, yOfAsTexts + psLinkageRadius, psLinkageColor) : ''
       );
     }
     image.append(
-      asPtoStatuses[asBases.length] ? svg.star(getXOfBaseCircles(asBases.length) + baseRadius, yOfAsTexts + psLinkageRadius, psLinkageColor) : ''
+      asPtoStatuses[asBases.length] ? svg.star(getXOfBaseCircles(asBases.length, asRightOverhangs) + baseRadius, yOfAsTexts + psLinkageRadius, psLinkageColor) : ''
     );
   }
 
