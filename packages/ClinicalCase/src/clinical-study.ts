@@ -67,6 +67,7 @@ export class ClinicalStudy {
   description: string;
   domains: ClinicalDomains = new ClinicalDomains();
   subjectsCount: number;
+  sitesCount: number;
 
   initFromWorkspace(): void {
     for (let t of grok.shell.tables) {
@@ -75,6 +76,8 @@ export class ClinicalStudy {
     }
 
     this.subjectsCount = this.domains.dm.rowCount;
+    this.sitesCount = this.domains.dm.col('siteid').stats.uniqueCount;
+    this.name = this.domains.dm.col('studyid').get(0);
   }
 }
 

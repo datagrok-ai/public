@@ -1642,7 +1642,7 @@ export class Stats {
   }
 
   /** Number of unique values. */
-  get uniqueValueCount(): number {
+  get uniqueCount(): number {
     return api.grok_Stats_Get_UniqueCount(this.d);
   }
 
