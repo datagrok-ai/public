@@ -12,24 +12,26 @@ export class StudySummaryView extends DG.ViewBase {
     let subjsPerDay = study.domains.dm.groupBy(['RFSTDTC']).uniqueCount('USUBJID').aggregate();
     let refStartCol = subjsPerDay.col('RFSTDTC');
     for (let i = 0, rowCount = subjsPerDay.rowCount; i < rowCount; i++) {
-      if (refStartCol.isNone(i)) subjsPerDay.rows.removeAt(i);
+      if (refStartCol.isNone(i))
+        subjsPerDay.rows.removeAt(i);
     }
-
     let lc = DG.Viewer.lineChart(subjsPerDay);
-    let bc = DG.Viewer.barChart(study.domains.dm, { split: 'SEX', stack: 'ARMCD' });
-    let bp = DG.Viewer.boxPlot(study.domains.dm, {
-      labelOrientation: 'Horz',
-      showStatistics: true,
-      value: 'AGE',
-      category: 'ARM'
+
+    let summary = ui.tableFromMap({
+      'subjects': study.subjectsCount,
+      'sites': study.sitesCount
     });
 
     this.root.appendChild(ui.div([
-      ui.h1('Study Summary'),
-      ui.block([ui.divText('Patient Enrollment'), lc.root]),
+      ui.h1(study.name),
+      ui.block([
+        ui.h2('Enrollment'),
+        lc.root]),
       ui.divH([
-        ui.block25([ui.h2('Sex Distribution'), bc.root]),
-        ui.block75([ui.h2('Age Statistics'), bp.root]),
+        ui.block25([ui.h2('Summary'), summary]),
+        ui.block25([ui.h2('Sex'), DG.Viewer.barChart(study.domains.dm, { split: 'sex' }).root]),
+        ui.block25([ui.h2('Race'), DG.Viewer.barChart(study.domains.dm, { split: 'race' }).root]),
+        ui.block25([ui.h2('Age'), DG.Viewer.histogram(study.domains.dm, { value: 'age' }).root]),
       ], { style: { width: '100%' } }),
     ]));
   }
