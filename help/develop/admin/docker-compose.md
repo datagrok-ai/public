@@ -77,7 +77,7 @@ If you want to jump-start with Datagrok on your local machine, we recommend this
    ```  
    Datagrok will deploy a new database automatically.
 
-4. Once the server is up and running, the Login page should be available at [`http://localhost:8080`](http://localhost:8080). For a quick setup, login to Datagrok using a username `admin` and a password `SM9ekKEkZuBDp5eD`. To change your password, pass a key-value pair `"adminPassword": "yourPassword"` to the JSON string `GROK_PARAMETERS`.
+4. Once the server is up and running, the Login page should be available at [`http://localhost:8080`](http://localhost:8080). For a quick setup, login to Datagrok using a username `admin` and a password `admin`. To change your password, pass a key-value pair `"adminPassword": "yourPassword"` to the JSON string `GROK_PARAMETERS`.
 
 5. After Datagrok is deployed for the first time, you can shut it down using `Ctrl+C`. Alternatively, run the command:
    ```  
