@@ -40,6 +40,16 @@ async function isCurrentUserCreatedThisPattern(patternName: string): Promise<boo
   });
 }
 
+function getShortName(patternName: string): string {
+  let first = patternName.length + 1;
+  for (let i = 0; i < patternName.length; i++)
+    if (patternName[i] == '(') {
+      first = i;
+      break;
+    }
+  return patternName.slice(0, first - 1);
+}
+
 function getName(patternName: string): string[] {
   let first = -1;
   for (let i = 0; i < patternName.length; i++)
@@ -102,14 +112,14 @@ export function defineAxolabsPattern() {
         updateOutputExamples();
       });
       let isOverhang = false;
-      if (asBases[i].value.slice(-10) == '(overhang)') {
+      if (asBases[i].value.slice(-3) == '(o)') {
         isOverhang = true;
       } else {
         nucleotideCounter++;
       }
       asModificationItems.append(
         ui.divH([
-          ui.block25([ui.label(asBases[i].value.slice(-10) == '(overhang)' ? '' : String(i + 1))])!,
+          ui.block25([ui.label(asBases[i].value.slice(-3) == '(o)' ? '' : String(i + 1))])!,
           ui.block50([asBases[i]])!,
           ui.block25([asPtoLinkages[i]])!
         ], {style: {alignItems: "center"}})
@@ -137,7 +147,7 @@ export function defineAxolabsPattern() {
         updateOutputExamples();
       });
       let isOverhang = false;
-      if (ssBases[i].value.slice(-10) == '(overhang)') {
+      if (ssBases[i].value.slice(-3) == '(o)') {
         isOverhang = true;
       } else {
         nucleotideCounter++;
@@ -204,7 +214,7 @@ export function defineAxolabsPattern() {
     svgDiv.append(
       ui.span([
         drawAxolabsPattern(
-          saveAs.value,
+          getShortName(saveAs.value),
           createAsStrand.value,
           ssBases.slice(0, ssLength.value).map((e) => e.value),
           asBases.slice(0, asLength.value).map((e) => e.value),
@@ -464,25 +474,25 @@ export function defineAxolabsPattern() {
   let saveAs = ui.stringInput('Save As', 'Pattern Name Example', () => updateSvgScheme());
   saveAs.setTooltip('Name Of New Pattern');
 
-  let ssThreeModification = ui.stringInput("Additional SS 3' Modification", "(Modification 2)", () => {
+  let ssThreeModification = ui.stringInput("Additional SS 3' Modification", "", () => {
     updateSvgScheme();
     updateOutputExamples();
   });
   ssThreeModification.setTooltip("Additional SS 3' Modification");
 
-  let ssFiveModification = ui.stringInput("Additional SS 5' Modification", "(Modification 1)", () => {
+  let ssFiveModification = ui.stringInput("Additional SS 5' Modification", "", () => {
     updateSvgScheme();
     updateOutputExamples();
   });
   ssFiveModification.setTooltip("Additional SS 5' Modification");
 
-  let asThreeModification = ui.stringInput("Additional AS 3' Modification", "(Modification 3)", () => {
+  let asThreeModification = ui.stringInput("Additional AS 3' Modification", "", () => {
     updateSvgScheme();
     updateOutputExamples();
   });
   asThreeModification.setTooltip("Additional AS 3' Modification");
 
-  let asFiveModification = ui.stringInput("Additional AS 5' Modification", "(Modification 4)", () => {
+  let asFiveModification = ui.stringInput("Additional AS 5' Modification", "", () => {
     updateSvgScheme();
     updateOutputExamples();
   });
@@ -491,7 +501,7 @@ export function defineAxolabsPattern() {
   asModificationDiv.append(asThreeModification.root);
   asModificationDiv.append(asFiveModification.root);
 
-  let comment = ui.stringInput('Comment', 'Place For Your Comment', () => updateSvgScheme());
+  let comment = ui.stringInput('Comment', '', () => updateSvgScheme());
 
   let savePatternButton = ui.button('Save', () => {
     if (saveAs.value != '') {
@@ -525,7 +535,7 @@ export function defineAxolabsPattern() {
         .show();
     } else {
       if (inputIdColumn.value != null)
-        addColumnWithIds(tables.value, inputIdColumn.value, saveAs.value);
+        addColumnWithIds(tables.value, inputIdColumn.value, getShortName(saveAs.value));
       addColumnWithTranslatedSequences(tables.value, inputSsColumn.value, ssBases, ssPtoLinkages, ssFiveModification, ssThreeModification, firstSsPto.value);
       if (createAsStrand.value)
         addColumnWithTranslatedSequences(tables.value, inputAsColumn.value, asBases, asPtoLinkages, asThreeModification, asFiveModification, firstAsPto.value);

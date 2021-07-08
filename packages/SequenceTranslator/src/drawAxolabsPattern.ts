@@ -29,7 +29,7 @@ function getTextWidth(text: string, font: number): number {
 }
 
 function getTextInsideCircle(bases: string[], index: number, nucleotideCounter: number, numberOfNucleotides: number): string {
-  return (bases[index].slice(-10) == "(overhang)") ? "" :
+  return (bases[index].slice(-3) == "(o)") ? "" :
     ['A', 'G', 'C', 'U', 'T'].includes(bases[index]) ? bases[index] : String(numberOfNucleotides - nucleotideCounter);
 }
 
@@ -119,7 +119,7 @@ export function drawAxolabsPattern(patternName: string, asExists: boolean, ssBas
     widthOfRightText = Math.max(getTextWidth(ssRightText, baseFontSize), getTextWidth(asRightText, baseFontSize)),
     width = widthOfLeftText + widthOfLeftModification + widthOfBases + widthOfRightModification + widthOfRightText + baseDiameter,
     height = asExists ? 11 * baseRadius : 9 * baseRadius,
-    xOfTitle = Math.round(width / 2),
+    xOfTitle = Math.round(width / 4),
     uniqueBases = asExists ? [...new Set(ssBases.concat(asBases))] : [...new Set(ssBases)],
     isPtoExist = asExists ? [...new Set(ssPtoStatuses.concat(asPtoStatuses))].includes(true) : [...new Set(ssPtoStatuses)].includes(true),
     startFrom = isPtoExist ? 1 : 0,
@@ -154,11 +154,11 @@ export function drawAxolabsPattern(patternName: string, asExists: boolean, ssBas
 
   let numberOfSsNucleotides = 0;
   for (let i = 0; i < ssBases.length; i++)
-    if (ssBases[i].slice(-10) != '(overhang)')
+    if (ssBases[i].slice(-3) != '(o)')
       numberOfSsNucleotides++;
   let nucleotideCounter = numberOfSsNucleotides;
   for (let i = ssBases.length - 1; i > -1; i--) {
-    if (ssBases[i].slice(-10) != '(overhang)')
+    if (ssBases[i].slice(-3) != '(o)')
       nucleotideCounter--;
     image.append(
       svg.circle(getXOfBaseCircles(i), yOfSsCircles, baseRadius, getBaseColor(ssBases[i])),
@@ -172,12 +172,12 @@ export function drawAxolabsPattern(patternName: string, asExists: boolean, ssBas
 
   let numberOfAsNucleotides = 0;
   for (let i = 0; i < asBases.length; i++)
-    if (asBases[i].slice(-10) != '(overhang)')
+    if (asBases[i].slice(-3) != '(o)')
       numberOfAsNucleotides++;
   if (asExists) {
     let nucleotideCounter = numberOfAsNucleotides;
     for (let i = asBases.length - 1; i > -1; i--) {
-      if (asBases[i].slice(-10) != '(overhang)')
+      if (asBases[i].slice(-3) != '(o)')
         nucleotideCounter--;
       image.append(
         svg.circle(getXOfBaseCircles(i), yOfAsCircles, baseRadius, getBaseColor(asBases[i])),
