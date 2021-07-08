@@ -17,6 +17,7 @@ export class MultiPlotViewer extends DG.JsViewer {
   private defaultTitleHeight: any = this.string('defaultTitleHeight', '25px');
   private typeComboElements = [];
   private showHideElements = [];
+  private closeElements = [];
   private plots = [];
   private box: any;
   private echart: any;
@@ -38,15 +39,16 @@ export class MultiPlotViewer extends DG.JsViewer {
   constructor() {
     super();
     console.log('------------------------------------- MULTIPLOT ------------------------------');
+    console.log('this.root: ', this.root);
     this.categoryColors = DG.Color.categoricalPalette.map(DG.Color.toRgb);
 
     this.plots = [
-      { height: '1flex', title: 'Events', show: 1 },
-      { height: '2flex', title: 'Cars length(wheel.base)', show: 1 },
-      { height: '80px', title: 'Lab Chemistry', show: 1 }
+      { height: '1flex', title: 'Events', show: 1, MPtype: 'scatter' },
+      { height: '2flex', title: 'Cars length(wheel.base)', show: 1, MPtype: 'timeLine' },
+      { height: '80px', title: 'Lab Chemistry', show: 1, MPtype: 'scatter' }
     ];
 
-    var allTypes = ['scatter', 'line', 'bar'];
+    var allTypes = ['scatter', 'line', 'bar', 'timeLine'];
     // init plots with some data y=x^2, later can be replaced
     this.plots.map((e, ip) => {
       var r = [];
@@ -191,6 +193,10 @@ export class MultiPlotViewer extends DG.JsViewer {
         this.showHideElements[i].style.top = heightData[i].titleTop + 'px';
       }
 
+      if (this.closeElements[i]) {
+        this.closeElements[i].style.top = heightData[i].titleTop + 7 + 'px';
+      }
+
       if (!this.plots[i].show) continue;
 
       // only for visible plots
@@ -239,7 +245,7 @@ export class MultiPlotViewer extends DG.JsViewer {
         symbol: this.plots[i].series.symbol || (() => { }),
         itemStyle: this.plots[i].series.itemStyle ?
           { color: this.plots[i].series.itemStyle } : {},
-        yAxis: { type: this.plots[1].yType || 'value' },
+        yAxis: { type: this.plots[i].yType || 'value' },
         xAxisIndex: visibleIndex,
         yAxisIndex: visibleIndex,
         data: this.plots[i].series.data,
@@ -247,8 +253,8 @@ export class MultiPlotViewer extends DG.JsViewer {
         encode: { x: 0, y: 1 }
       }
 
-      if (i == this.timeLineIndex) {
-        currentSeries = this.timeLineSeries;
+      if (this.plots[i].MPtype === 'timeLine') {
+        currentSeries = this.plots[i].series;
         currentSeries.xAxisIndex = visibleIndex;
         currentSeries.yAxisIndex = visibleIndex;
         currentSeries.gridIndex = visibleIndex;
@@ -332,18 +338,17 @@ export class MultiPlotViewer extends DG.JsViewer {
         tabs[names[i]] = grok.shell.tables[i];
       }
 
-
       var callback = (item) => {
         console.log('item ', item);
-        var t = tabs[item];
-        var nCols = Array.from(t.columns.numerical);
+        var table = tabs[item];
+        var nCols = Array.from(table.columns.numerical);
         var colNames = nCols.map((e: { name: string }) => e.name);
-        var r0raw = t.getCol(colNames[0]).getRawData();
-        var r0 = this.normalize100(t.getCol(colNames[0]));
-        var r1 = t.getCol(colNames[1]).getRawData();
+        var r0raw = table.getCol(colNames[0]).getRawData();
+        var column0 = this.normalize100(table.getCol(colNames[0]));
+        var column1 = table.getCol(colNames[1]).getRawData();
         var data = [];
-        for (var i = 0; i < r0.length; i++) {
-          data.push([r0[i], r1[i]]);
+        for (var i = 0; i < column0.length; i++) {
+          data.push([column0[i], column1[i]]);
         };
         this.plots.push({
           height: '1flex', title: item + ' ' + colNames[1] + '( ' + colNames[0] + ' )',
@@ -433,7 +438,7 @@ export class MultiPlotViewer extends DG.JsViewer {
           return (e[0] > 22) ? "square" : "triangle";
         }
         this.plots[this.statusChartIndex].yType = 'category';
-        console.log('update Filter')
+        console.log('update Filter');
         this.updateFilter(tab);
       }
     } // for tables
@@ -443,7 +448,6 @@ export class MultiPlotViewer extends DG.JsViewer {
 
     // @ts-ignore
     this.subs.push(this.dataFrame.selection.onChanged.subscribe((_) => {
-      console.log('selllll: ', this.dataFrame);
       this.selection = this.dataFrame.selection.getSelectedIndexes();
       this.updatePlots();
       this.setEchartOptions();
@@ -559,22 +563,43 @@ export class MultiPlotViewer extends DG.JsViewer {
       inputShowHide.root.style.right = "23px";
       inputShowHide.root.style.top = (40 * i) + 'px';
       inputShowHide.root.style.flexDirection = 'row';
+      inputShowHide.root.style.topMargin = '5px';
+
       this.showHideElements.push(inputShowHide.root);
       let inp = inputShowHide.root.querySelector('input');
-      inp.style.width = '18px';
-      inp.style.minWidth = '18px';
-      inp.style.height = '28px';
+      inp.style.width = '12px';
+      inp.style.minWidth = '12px';
       inp.style.opacity = '1';
 
-      this.root.appendChild(inputShowHide.root);
+      //     this.root.appendChild(inputShowHide.root);
     }
+
+    // create close 'X' icons
+    this.closeElements = [];
+    for (var i = 0; i < this.plots.length; i++) {
+      var inputClose: any = ui.icons.close(((i) => () => {
+        grok.shell.info('click' + i);
+        this.plots.splice(i, 1);
+        this.updatePlots();
+        this.setEchartOptions();
+      })(i), 'Close');
+      inputClose.style.position = 'absolute';
+      inputClose.style.right = "6px";
+      inputClose.style.top = (40 * i) + 'px';
+      inputClose.style.flexDirection = 'row';
+      this.closeElements.push(inputClose);
+
+      this.root.appendChild(inputClose);
+    } // close X
+
   } // createElements
 
   render() {
 
   }
+
   initTimeLine() {
-    console.error('init time line :', this.timeLinesData)
+    console.error('init time line :', this.timeLinesData);
     let thisData = this.plots[this.timeLineIndex].series.data;
     let data = this.timeLinesData;
     var t = this;
