@@ -195,7 +195,8 @@ export const TAGS = {
    in the fractional part for each numeric column is determined  */
   SOURCE_PRECISION: '.source-precision',
   /** Set on a dataframe column; used to format column contents in grids, CSV export, passing to scripts */
-  FORMAT: 'format'
+  FORMAT: 'format',
+  FORMULA: 'formula',
 }
 
 export const FUNC_TYPES = {
