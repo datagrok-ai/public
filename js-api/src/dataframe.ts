@@ -16,6 +16,7 @@ import {toDart, toJs} from "./wrappers";
 import {SIMILARITY_METRIC} from "./const";
 import {_getIterator, _toIterable} from "./utils";
 import {Observable}  from "rxjs";
+import {filter} from "rxjs/operators";
 
 declare let grok: any;
 declare let DG: any;
@@ -820,7 +821,7 @@ export class Column {
   set name(s: string) {
     api.grok_Column_Set_Name(this.d, s);
   }
-  
+
   /** Version of the column. Increases each time the column was changed
    * @returns {number} */
   get version(): number {
@@ -947,6 +948,14 @@ export class Column {
     let params = { table: this.dataFrame, expression: formula, name: this.name, type: this.type };
     let call = DG.Func.byName('AddNewColumn').prepare(params);
     grok.functions.call('CmdAddNewColumn', { call });
+    let sub = grok.functions.onAfterRunAction.pipe(filter(c => c == call)).subscribe(() => {
+      let newCol = call.getOutputParamValue();
+      for (let [key, value] of this.tags) if (key !== DG.TAGS.FORMULA) newCol.setTag(key, value);
+      this.dataFrame.columns.remove(newCol.name);
+      this.dataFrame.columns.replace(this, newCol);
+      newCol.name = this.name;
+      sub.unsubscribe();
+    });
   }
 
   /** Compacts the internal column representation.
