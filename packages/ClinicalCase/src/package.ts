@@ -6,6 +6,7 @@ import * as meta from './sdtm-meta';
 import { study } from "./clinical-study";
 import {StudySummaryView} from "./views/study-summary-view";
 import {TimelinesView} from "./views/timelines-view";
+import {PatientProfileView} from "./views/patient-profile-view";
 
 export let _package = new DG.Package();
 
@@ -122,6 +123,7 @@ export function clinicalCaseApp(): void {
   study.initFromWorkspace();
   grok.shell.newView(`${study.name} / Summary`, [new StudySummaryView().root]);
   grok.shell.newView(`${study.name} / Timelines`, [new TimelinesView().root]);
+  grok.shell.newView(`${study.name} / Patient Profile`, [new PatientProfileView().root]);
 
   // showStudySummary();
   // showLabs();
