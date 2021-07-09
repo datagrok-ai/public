@@ -194,7 +194,18 @@ export function OligoBatchCalculator() {
       DG.Column.fromList('double', 'MW', molecularWeights),
       DG.Column.fromList('int', 'Ext. Coefficient', extinctionCoefficients)
     ]);
-    tableDiv.append(DG.Viewer.grid(table).root);
+    let view = grok.shell.addTableView(table);
+    let col = view.grid.columns.byName('Sequence');
+    col!.cellType = 'html';
+    view.grid.onCellPrepare(function (gc) {
+      if (gc.isTableCell && gc.gridColumn.name == 'Sequence') {
+        gc.style.element = ui.divH([
+          ui.divText(gc.cell.value[0], {style: {color: "red"}}),
+          ui.divText(gc.cell.value[1], {style: {color: "black"}})
+        ])
+      }
+    });
+    tableDiv.append(view.root);
   }
 
   let windows = grok.shell.windows;
