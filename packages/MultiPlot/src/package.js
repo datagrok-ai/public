@@ -6,15 +6,15 @@ import {MultiPlotViewer} from './multiplot.ts';
 
 export const _package = new DG.Package();
 
-// name: test
+//name: test
 export function test() {
   // grok.shell.info(_package.webRoot);
 }
 
-// name: MultiPlot
-// description: Creates MultiPlot viewer
-// tags: viewer
-// output: viewer result
+//name: MultiPlot
+//description: Creates MultiPlot viewer
+//tags: viewer
+//output: viewer result
 export function _MultiPlot() {
   return new MultiPlotViewer();
 }
