@@ -365,6 +365,10 @@ export class DataFrame {
     api.grok_DataFrame_Set_CurrentRowIdx(this.d, idx);
   }
 
+  /** Index of the current row. */
+  get currentRowIdx(): number { return api.grok_DataFrame_Get_CurrentRowIdx(this.d); }
+  set currentRowIdx(idx) { api.grok_DataFrame_Set_CurrentRowIdx(this.d, idx); }
+
   /** Current column.
    * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/current-elements} */
   get currentCol(): Column {
