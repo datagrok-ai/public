@@ -38,7 +38,6 @@ export class MultiPlotViewer extends DG.JsViewer {
   private plotTitleLowMargin: number = 5;
   private controlsTopShift: number = -4;
 
- 
   constructor() {
     super();
     console.log('------------------------------------- MULTIPLOT ------------------------------');
@@ -146,7 +145,7 @@ export class MultiPlotViewer extends DG.JsViewer {
         titleHeight: titleHeight,
         titleText: this.plots[i].title
       });
-      floatHeight -= plotHeight + titleHeight + 
+      floatHeight -= plotHeight + titleHeight +
         1 * (this.plotTitleHighMargin + this.plotTitleLowMargin);
     } // first cycle
 
@@ -192,7 +191,7 @@ export class MultiPlotViewer extends DG.JsViewer {
         'fontSize': (this.defaultTitleHeight * .6)
       };
       if (this.typeComboElements[i]) {
-        this.typeComboElements[i].style.top = heightData[i].titleTop + this.controlsTopShift +'px';
+        this.typeComboElements[i].style.top = heightData[i].titleTop + this.controlsTopShift + 'px';
       }
 
       if (this.showHideElements[i]) {
@@ -507,7 +506,6 @@ export class MultiPlotViewer extends DG.JsViewer {
 
   applyFilter(filter) {
     this.clearPlots();
-
   }
 
   detach(): void {
@@ -525,12 +523,9 @@ export class MultiPlotViewer extends DG.JsViewer {
   }
 
   deleteElements() {
-    this.typeComboElements.map(e => {
-      e.remove();
-    });
-    this.showHideElements.map(e => {
-      e.remove();
-    });
+    this.typeComboElements.map(e => e.remove());
+    this.showHideElements.map(e => e.remove());
+    this.closeElements.map(e => e.remove());
   }
 
   createElements() {
@@ -538,7 +533,7 @@ export class MultiPlotViewer extends DG.JsViewer {
 
     // create comboboxed to choose plot types
     this.typeComboElements = [];
-    for (var i = 0; i < this.plots.length-22; i++) {
+    for (var i = 0; i < this.plots.length; i++) {
       var inputPlotType: any = ui.choiceInput('', 'scatter', ['scatter', 'line', 'bar'], ((i) => (event) => {
         console.log('changed ', event, i);
         this.plots[i].series.type = event;
@@ -546,40 +541,36 @@ export class MultiPlotViewer extends DG.JsViewer {
         this.setEchartOptions();
       })(i));
 
- 
-
       this.typeComboElements.push(inputPlotType.root);
       this.root.appendChild(inputPlotType.root);
       inputPlotType.root.style.position = 'absolute';
-      inputPlotType.root.style.right = "38px";
+      inputPlotType.root.style.right = "28px";
       inputPlotType.root.style['flex-direction'] = 'row';
       inputPlotType.root.style.top = (40 * i) + 'px';
     }
 
-
     // create checkboxes for show/hide plots
     this.showHideElements = [];
     for (var i = 0; i < this.plots.length; i++) {
-        var inputPlotType: any = ui.div([ui.iconFA('angle-right'), ui.iconFA('angle-down')])
-        var showHideIcons = inputPlotType.querySelectorAll('i');
+      var inputPlotType: any = ui.div([ui.iconFA('angle-right'), ui.iconFA('angle-down')]);
+      var showHideIcons = inputPlotType.querySelectorAll('i');
       //  debugger
       showHideIcons[0].style.display = 'none';
-        inputPlotType.DGswitch = 1;
+      inputPlotType.DGswitch = 1;
       inputPlotType.addEventListener('click', ((i) => (e) => {
         var div = e.target.parentNode;
-        console.log('click ', i, e.target.parentNode.DGswitch);
-        e.target.parentNode.DGswitch = 1 - e.target.parentNode.DGswitch;
+        //     console.log('click ', i, div.DGswitch);
+        div.DGswitch = 1 - div.DGswitch;
         var displays = ['', 'none'];
         var els = div.querySelectorAll('i');
-        var sw = e.target.parentNode.DGswitch;
-        els[0].style.display = displays[sw];
-        els[1].style.display = displays[1 - sw];
-
-        this.plots[i].show = sw;
+        var isShown = div.DGswitch;
+        els[0].style.display = displays[isShown];
+        els[1].style.display = displays[1 - isShown];
+        this.plots[i].show = isShown;
         this.updatePlots();
         this.setEchartOptions();
-      })(i))
-        
+      })(i));
+
       this.typeComboElements.push(inputPlotType);
       this.root.appendChild(inputPlotType);
       inputPlotType.style.position = 'absolute';
@@ -589,49 +580,20 @@ export class MultiPlotViewer extends DG.JsViewer {
       this.showHideElements.push(inputPlotType);
     }
 
-
-
-
- /*
-    // create checkboxes for show/hide plots
-    this.showHideElements = [];
-
-    for (var i = 0; i < this.plots.length; i++) {
-      let inputShowHide: any = ui.boolInput('', true, ((i) => (event) => {
-        console.log('checked: ', event, i);
-        this.plots[i].show = event;
-        this.updatePlots();
-        this.setEchartOptions();
-      })(i));
-
-      this.root.appendChild(inputShowHide.root);
-      inputShowHide.root.style.position = 'absolute';
-      inputShowHide.root.style.right = "26px";
-      inputShowHide.root.style.top = (40 * i) + 'px';
-      inputShowHide.root.style.flexDirection = 'row';
-      inputShowHide.root.style.topMargin = '5px';
-
-      this.showHideElements.push(inputShowHide.root);
-      let inp = inputShowHide.root.querySelector('input');
-      inp.style.width = '12px';
-      inp.style.minWidth = '12px';
-      inp.style.opacity = '1';
-
-      //     this.root.appendChild(inputShowHide.root);
-    }
-*/
-
     // create close 'X' icons
     this.closeElements = [];
     for (var i = 0; i < this.plots.length; i++) {
       var inputClose: any = ui.icons.close(((i) => () => {
-        grok.shell.info('click' + i);
+        //    grok.shell.info('click' + i);
         this.plots.splice(i, 1);
+        this.createElements();
+
+        this.updateHeight();
         this.updatePlots();
         this.setEchartOptions();
       })(i), 'Close');
       inputClose.style.position = 'absolute';
-      inputClose.style.right = "12px";
+      inputClose.style.right = "15px";
       inputClose.style.top = (40 * i) + 'px';
       inputClose.style.flexDirection = 'row';
       this.closeElements.push(inputClose);
