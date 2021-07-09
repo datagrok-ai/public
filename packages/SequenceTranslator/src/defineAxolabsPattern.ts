@@ -204,7 +204,7 @@ export function defineAxolabsPattern() {
   }
 
   function updateOutputExamples() {
-    ssOutputExample.value = translateSequence(ssInputExample.value, ssBases, ssPtoLinkages, ssThreeModification, ssFiveModification, firstSsPto.value);
+    ssOutputExample.value = translateSequence(ssInputExample.value, ssBases, ssPtoLinkages, ssFiveModification, ssThreeModification, firstSsPto.value);
     if (createAsStrand.value)
       asOutputExample.value = translateSequence(asInputExample.value, asBases, asPtoLinkages, asThreeModification, asFiveModification, firstAsPto.value);
   }

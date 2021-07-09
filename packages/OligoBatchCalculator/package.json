@@ -1,6 +1,6 @@
 {
 	"name": "oligobatchcalculator",
-	"beta": true,
+	"beta": false,
 	"friendlyName": "OligoBatchCalculator",
 	"version": "0.0.1",
 	"description": "",
