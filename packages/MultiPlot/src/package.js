@@ -4,18 +4,18 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {MultiPlotViewer} from './multiplot.ts';
 
-export let _package = new DG.Package();
+export const _package = new DG.Package();
 
-//name: test
+// name: test
 export function test() {
- // grok.shell.info(_package.webRoot);
+  // grok.shell.info(_package.webRoot);
 }
 
-//name: MultiPlot
-//description: Creates MultiPlot viewer
-//tags: viewer
-//output: viewer result
+// name: MultiPlot
+// description: Creates MultiPlot viewer
+// tags: viewer
+// output: viewer result
 export function _MultiPlot() {
   return new MultiPlotViewer();
 }
- 
+

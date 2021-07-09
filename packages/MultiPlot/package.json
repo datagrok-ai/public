@@ -20,7 +20,11 @@
 		"release-multiplot-public": "grok publish public --rebuild --release"
 	},
 	"devDependencies": {
+		"@typescript-eslint/eslint-plugin": "^4.28.2",
+		"@typescript-eslint/parser": "^4.28.2",
 		"echarts": "^5.1.2",
+		"eslint": "^7.30.0",
+		"eslint-config-google": "^0.14.0",
 		"ts-loader": "^9.2.3",
 		"webpack": "^5.41.1",
 		"webpack-cli": "^4.7.2"
