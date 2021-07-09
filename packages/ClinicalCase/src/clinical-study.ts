@@ -60,6 +60,10 @@ export class ClinicalDomains {
   tm: DG.DataFrame = null;
   ts: DG.DataFrame = null;
   tv: DG.DataFrame = null;
+
+  all(): DG.DataFrame[] {
+    return Object.keys(this).map((k) => this[k]).filter((v) => v != null)
+  }
 }
 
 export class ClinicalStudy {

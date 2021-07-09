@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import * as meta from './sdtm-meta';
 import { study } from "./clinical-study";
 import {StudySummaryView} from "./views/study-summary-view";
+import {TimelinesView} from "./views/timelines-view";
 
 export let _package = new DG.Package();
 
@@ -119,7 +120,8 @@ export function sdtmVariablePanel(varCol: DG.Column): DG.Widget {
 export function clinicalCaseApp(): void {
 
   study.initFromWorkspace();
-  grok.shell.newView('foo', [new StudySummaryView().root]);
+  grok.shell.newView(`${study.name} / Summary`, [new StudySummaryView().root]);
+  grok.shell.newView(`${study.name} / Timelines`, [new TimelinesView().root]);
 
   // showStudySummary();
   // showLabs();
@@ -146,8 +148,10 @@ export async function clinicalCaseInit(): Promise<void> {
 
     if (Object.keys(links).every(key => grok.shell.tableByName(key))) {
       let clinMenu = grok.shell.topMenu.group('Clin');
-      if (!clinMenu.find('Timelines')) clinMenu.item('Timelines', () => clinicalCaseTimelines());
-      if (!clinMenu.find('Study Summary')) clinMenu.item('Study Summary', () => showStudySummary());
+      if (!clinMenu.find('Timelines'))
+        clinMenu.item('Timelines', () => clinicalCaseTimelines());
+      if (!clinMenu.find('Study Summary'))
+        clinMenu.item('Study Summary', () => grok.shell.newView('foo', [new StudySummaryView().root]));
     }
   });
 }
@@ -186,38 +190,6 @@ function clearStdView(): void {
   windows.showProperties = false;
   windows.showConsole = false;
   windows.showHelp = false;
-}
-
-//name: showStudySummary
-export function showStudySummary(): void {
-  let dm = grok.shell.tableByName('dm');
-  if (dm == null) return grok.shell.warning('Demographic data not found.');
-
-  let subjsPerDay = dm.groupBy(['RFSTDTC']).uniqueCount('USUBJID').aggregate();
-  let refStartCol = subjsPerDay.col('RFSTDTC');
-  for (let i = 0, rowCount = subjsPerDay.rowCount; i < rowCount; i++) {
-    if (refStartCol.isNone(i)) subjsPerDay.rows.removeAt(i);
-  }
-
-  let lc = DG.Viewer.lineChart(subjsPerDay);
-  let bc = DG.Viewer.barChart(dm, { split: 'SEX', stack: 'ARMCD' });
-  let bp = DG.Viewer.boxPlot(dm, {
-    labelOrientation: 'Horz',
-    showStatistics: true,
-    value: 'AGE',
-    category: 'ARM'
-  });
-
-  clearStdView();
-
-  let v = grok.shell.newView('Summary', [
-    ui.h1('Study Summary'),
-    ui.block([ui.divText('Patient Enrollment'), lc.root]),
-    ui.divH([
-      ui.block25([ui.h2('Sex Distribution'), bc.root]),
-      ui.block75([ui.h2('Age Statistics'), bp.root]),
-    ], { style: { width: '100%' } }),
-  ]);
 }
 
 //name: showLabs
