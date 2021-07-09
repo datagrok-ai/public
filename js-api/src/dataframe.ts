@@ -635,7 +635,8 @@ export class Row {
 export class Column {
   public d: any;
   private temp: any;
-  private tags: any;
+  public tags: any;
+  private _dialogs: ColumnDialogHelper;
 
   constructor(d: any) {
     this.d = d;
@@ -828,6 +829,12 @@ export class Column {
     return api.grok_Column_Get_Version(this.d);
   }
 
+  get dialogs(): ColumnDialogHelper {
+    if (this._dialogs == undefined)
+      this._dialogs = new ColumnDialogHelper(this);
+    return this._dialogs;
+  }
+
   /**
    * Initializes all values in the column to [columnInitializer].
    * @param {string | number | Function} valueInitializer
@@ -938,24 +945,6 @@ export class Column {
   setTag(tag: string, value: string): Column {
     api.grok_Column_Set_Tag(this.d, tag, value);
     return this;
-  }
-
-  /** Opens an editor dialog with preview for a calculated column. */
-  editFormula(): void {
-    let formula = this.getTag('formula');
-    if (formula == null || !(this.name && this.dataFrame?.columns.contains(this.name)))
-      return;
-    let params = { table: this.dataFrame, expression: formula, name: this.name, type: this.type };
-    let call = DG.Func.byName('AddNewColumn').prepare(params);
-    grok.functions.call('CmdAddNewColumn', { call });
-    let sub = grok.functions.onAfterRunAction.pipe(filter(c => c == call)).subscribe(() => {
-      let newCol = call.getOutputParamValue();
-      for (let [key, value] of this.tags) if (key !== DG.TAGS.FORMULA) newCol.setTag(key, value);
-      this.dataFrame.columns.remove(newCol.name);
-      this.dataFrame.columns.replace(this, newCol);
-      newCol.name = this.name;
-      sub.unsubscribe();
-    });
   }
 
   /** Compacts the internal column representation.
@@ -2087,6 +2076,30 @@ class DataFramePlotHelper {
   
 }
 
+class ColumnDialogHelper {
+  private readonly column: Column;
+  constructor(column: Column) {
+    this.column = column;
+  }
+
+  /** Opens an editor dialog with preview for a calculated column. */
+  editFormula(): void {
+    let formula = this.column.getTag('formula');
+    if (formula == null || !(this.column.name && this.column.dataFrame?.columns.contains(this.column.name)))
+      return;
+    let params = { table: this.column.dataFrame, expression: formula, name: this.column.name, type: this.column.type };
+    let call = DG.Func.byName('AddNewColumn').prepare(params);
+    grok.functions.call('CmdAddNewColumn', { call });
+    let sub = grok.functions.onAfterRunAction.pipe(filter(c => c == call)).subscribe(() => {
+      let newCol = call.getOutputParamValue();
+      for (let [key, value] of this.column.tags) if (key !== DG.TAGS.FORMULA) newCol.setTag(key, value);
+      this.column.dataFrame.columns.remove(newCol.name);
+      this.column.dataFrame.columns.replace(this.column, newCol);
+      newCol.name = this.column.name;
+      sub.unsubscribe();
+    });
+  }
+}
 
 //static const int None = -2147483648;
 //static const double None = 2.6789344063684636e-34;
