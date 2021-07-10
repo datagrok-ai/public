@@ -217,23 +217,17 @@ export class Dapi {
  */
 export class HttpDataSource<T> {
   s: any;
-  entityToJs: any;
+  entityToJs: (d: any) => T | null;
 
   /** @constructs HttpDataSource */
-  constructor(s: any, instance: any) {
+  constructor(s: any, instance: (d: any) => T) {
     this.s = s;
-    this.entityToJs = instance;
+    this.entityToJs = (d: any) => d == null ? null : instance(d);
   }
 
   /** Returns all entities that satisfy the filtering criteria (see {@link filter}).
    *  See examples: {@link https://public.datagrok.ai/js/samples/dapi/projects-list}
-   *  Smart filter: {@link https://datagrok.ai/help/overview/smart-search}
-   *  @param {Object} options
-   *  @param {int} options.pageSize
-   *  @param {int} options.pageNumber
-   *  @param {string} options.order
-   *  @param {string} options.filter
-   *  @returns {Promise<object[]>}  */
+   *  Smart filter: {@link https://datagrok.ai/help/overview/smart-search} */
   list(options: {pageSize?: number, pageNumber?: number, filter?: string, order?: string} = {}): Promise<T[]> {
     if (options.pageSize !== undefined)
       this.by(options.pageSize);
@@ -247,7 +241,7 @@ export class HttpDataSource<T> {
     return new Promise((resolve, reject) => api.grok_DataSource_List(this.s, (q: any) => resolve(q.map(s)), (e: any) => reject(e)));
   }
 
-  /** Returns fist entity that satisfy the filtering criteria (see {@link filter}).
+  /** Returns fist entity that satisfies the filtering criteria (see {@link filter}).
    *  @returns Promise<object>  */
   first(): Promise<T> {
     let s = this.entityToJs;
@@ -264,17 +258,13 @@ export class HttpDataSource<T> {
     return new Promise((resolve, reject) => api.grok_DataSource_Find(this.s, id, (q: any) => resolve(s(q)), (e: any) => reject(e)));
   }
 
-  /** Saves an entity
-   *  @param {Entity} e
-   *  @returns {Promise} - entity. */
+  /** Saves an entity. */
   save(e: Entity): Promise<T> {
     let s = this.entityToJs;
     return new Promise((resolve, reject) => api.grok_DataSource_Save(this.s, e.d, (q: any) => resolve(s(q)), (e: any) => reject(e)));
   }
 
-  /** Deletes an entity
-   *  @param {Entity} e
-   *  @returns {Promise} */
+  /** Deletes an entity. */
   delete(e: Entity): Promise<void> {
     return new Promise((resolve, reject) => api.grok_DataSource_Delete(this.s, e.d, () => resolve(), (e: any) => reject(e)));
   }
@@ -284,6 +274,7 @@ export class HttpDataSource<T> {
     return this;
   }
 
+  /** Restricts results to the specified page number. See also {@link nextPage}. */
   page(i: number): HttpDataSource<T> {
     this.s = api.grok_DataSource_Page(this.s, i);
     return this;
