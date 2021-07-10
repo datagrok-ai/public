@@ -49,7 +49,7 @@ export class Shell {
   /** Current project
    *  @type {Project} */
   get project(): Project {
-    return new Project(api.grok_Project());
+    return toJs(api.grok_Project());
   }
 
   /** Adds a table to the workspace.

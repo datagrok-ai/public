@@ -1,6 +1,7 @@
 import {ColumnType, SemType, Type, TYPE} from "./const";
 import { FuncCall } from "./functions";
 import {toJs} from "./wrappers";
+import {DataFrame} from "./dataframe";
 
 declare var grok: any;
 let api = <any>window;
@@ -146,12 +147,16 @@ export class Func extends Entity {
     return toJs(api.grok_Func_Prepare(this.d, parameters));
   };
 
+  /** Input parameters */
   get inputs(): Property[] {
     return toJs(api.grok_Func_Get_InputParams(this.d));
   }
+
+  /** Output parameters */
   get outputs(): Property[] {
     return toJs(api.grok_Func_Get_OutputParams(this.d));
   }
+
   /**
    *  Executes the function with the specified {link parameters}, and returns result.
    *  If necessary, the corresponding package will be loaded as part of the call.
@@ -192,6 +197,11 @@ export class Project extends Entity {
   get isEmpty(): boolean { return api.grok_Project_IsEmpty(this.d); }
 
   toMarkup(): string { return api.grok_Project_ToMarkup(this.d); }
+
+  /** Opens the project in workspace */
+  open(options?: {closeAll: boolean}): Promise<Project> {
+    return new Promise((resolve, reject) => api.grok_Project_Open(this.d, options?.closeAll ?? false, (d: any) => resolve(toJs(d)), (e: any) => reject(e)));
+  }
 }
 
 /** Represents a data query
