@@ -7,6 +7,7 @@ import { study } from "./clinical-study";
 import {StudySummaryView} from "./views/study-summary-view";
 import {TimelinesView} from "./views/timelines-view";
 import {PatientProfileView} from "./views/patient-profile-view";
+import {AdverseEventsView} from "./views/adverse-events-view";
 
 export let _package = new DG.Package();
 
@@ -118,12 +119,17 @@ export function sdtmVariablePanel(varCol: DG.Column): DG.Widget {
 
 //name: Clinical Case
 //tags: app
-export function clinicalCaseApp(): void {
+export async function clinicalCaseApp(): Promise<any> {
+
+  if (Object.keys(meta.domains).every((name) => grok.shell.table(name) == null))
+    await grok.dapi.projects.open('clin-demo-files');
 
   study.initFromWorkspace();
-  grok.shell.newView(`${study.name} / Summary`, [new StudySummaryView().root]);
-  grok.shell.newView(`${study.name} / Timelines`, [new TimelinesView().root]);
-  grok.shell.newView(`${study.name} / Patient Profile`, [new PatientProfileView().root]);
+
+  grok.shell.newView(`Summary`, [new StudySummaryView().root]);
+  //grok.shell.newView(`Timelines`, [new TimelinesView().root]);
+  grok.shell.newView(`Patient Profile`, [new PatientProfileView().root]);
+  grok.shell.newView(`Adverse Events`, [new AdverseEventsView().root]);
 
   // showStudySummary();
   // showLabs();

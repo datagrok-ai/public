@@ -1142,9 +1142,8 @@ export class ColumnList {
    * @param {string} expression
    * @param {ColumnType} type
    * @param {bool} treatAsString
-   *
    * @returns {Column} */
-  addNewCalculated(name: string, expression: string, type: ColumnType | null, treatAsString: boolean | null): Promise<Column> {
+  addNewCalculated(name: string, expression: string, type?: ColumnType | null, treatAsString?: boolean | null): Promise<Column> {
     return new Promise((resolve, reject) => toJs(api.grok_ColumnList_AddNewCalculated(this.d, name, expression, type, treatAsString, (c: any) => resolve(c), (e: any) => reject(e))));
   }
 
