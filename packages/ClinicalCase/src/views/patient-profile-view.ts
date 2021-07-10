@@ -36,7 +36,5 @@ export class PatientProfileView extends DG.ViewBase {
     this.race.value = row['race'];
     this.age.value = row['age'].toString();
     this.arm.value = row['arm'];
-    // this.height.value = row['height'].toString();
-    // this.weight.value = row['weight'].toString();
   }
 }

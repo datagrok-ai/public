@@ -132,11 +132,7 @@ export class Data {
   }
 
   /**
-   * @param {DataFrame} t1
-   * @param {DataFrame} t2
-   * @param {string[]} keyColumns1
-   * @param {string[]} keyColumns2
-   * @param {SyncType[]} linkTypes
+   * Links tables by the specified key columns using the specified link types (such as "current row to filter").
    * */
   linkTables(t1: DataFrame, t2: DataFrame, keyColumns1: string[], keyColumns2: string[], linkTypes: SyncType[]): void {
     api.grok_LinkTables(t1.d, t2.d, keyColumns1, keyColumns2, linkTypes);
@@ -145,12 +141,6 @@ export class Data {
   /**
    * Opens the visual table comparison tool.
    * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/compare-tables}
-   * @param {DataFrame} t1
-   * @param {DataFrame} t2
-   * @param {string[]} keyColumns1
-   * @param {string[]} keyColumns2
-   * @param {string[]} valueColumns1
-   * @param {string[]} valueColumns2
    * */
   compareTables(t1: DataFrame, t2: DataFrame, keyColumns1: string[], keyColumns2: string[], valueColumns1: string[], valueColumns2: string[]): void {
     api.grok_CompareTables(t1.d, t2.d, keyColumns1, keyColumns2, valueColumns1, valueColumns2);

@@ -37,7 +37,6 @@ export class TimelinesView extends DG.ViewBase {
         result.append(t, true);
     }
 
-    let v = grok.shell.addTableView(result);
-    v.addViewer('TimelinesViewer');
+    this.root.appendChild(DG.Viewer.fromType(DG.VIEWER.TIMELINES, result).root);
   }
 }

@@ -222,7 +222,7 @@ export class HttpDataSource<T> {
   /** @constructs HttpDataSource */
   constructor(s: any, instance: (d: any) => T) {
     this.s = s;
-    this.entityToJs = (d: any) => d == null ? null : instance(d);
+    this.entityToJs = (d: any) => (d == null ? null : instance(d));
   }
 
   /** Returns all entities that satisfy the filtering criteria (see {@link filter}).
@@ -656,6 +656,14 @@ export class ProjectsDataSource extends HttpDataSource<Project> {
    * @returns {HttpDataSource<HistoryEntry>} */
   get recent(): HttpDataSource<HistoryEntry> {
      return new HttpDataSource<HistoryEntry>(api.grok_Dapi_RecentProjects(), (d: any) => new HistoryEntry(d));
+  }
+
+  /** Opens the specified project. */
+  open(name: string, options?: {closeAll: boolean}): Promise<Project> {
+    return this
+      .filter('demog')
+      .first()
+      .then(p => p.open(options));
   }
 }
 
