@@ -273,7 +273,8 @@ export enum VIEWER {
   TILE_VIEWER = 'Tile viewer',
   TREE_MAP = 'Tree map',
   TRELLIS_PLOT = 'Trellis plot',
-  WORD_CLOUD = 'Word cloud'
+  WORD_CLOUD = 'Word cloud',
+  TIMELINES = 'TimelinesViewer'
 }
 
 /** @enum {SIMILARITY_METRIC} */
