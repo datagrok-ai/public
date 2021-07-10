@@ -82,6 +82,14 @@ export class ClinicalStudy {
     this.subjectsCount = this.domains.dm.rowCount;
     this.sitesCount = this.domains.dm.col('siteid').stats.uniqueCount;
     this.name = this.domains.dm.col('studyid').get(0);
+
+    this.process();
+  }
+
+  private process(): void {
+    if (this.domains.ae != null) {
+      this.domains.ae.columns.addNewCalculated('week', 'floor(${AESTDY} / 7)');
+    }
   }
 }
 
