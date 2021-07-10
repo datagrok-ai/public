@@ -200,7 +200,7 @@ export class Project extends Entity {
 
   /** Opens the project in workspace */
   open(options?: {closeAll: boolean}): Promise<Project> {
-    return new Promise((resolve, reject) => api.grok_Project_Open(this.d, options?.closeAll ?? false, (d: any) => resolve(toJs(d)), (e: any) => reject(e)));
+    return api.grok_Project_Open(this.d, options?.closeAll ?? false);
   }
 }
 
@@ -321,8 +321,12 @@ export class FileInfo extends Entity {
   get url(): string { return api.grok_FileInfo_Get_Url(this.d); }
 
   /** @returns {Promise<string>} */
+  // readAsString(): Promise<string> {
+  //   return new Promise((resolve, reject) => api.grok_FileInfo_ReadAsString(this.d, (x: any) => resolve(x), (x: any) => reject(x)));
+  // }
+
   readAsString(): Promise<string> {
-    return new Promise((resolve, reject) => api.grok_FileInfo_ReadAsString(this.d, (x: any) => resolve(x), (x: any) => reject(x)));
+    return api.grok_FileInfo_ReadAsString(this.d);
   }
 
   /** @returns {Promise<Uint8Array>} */
