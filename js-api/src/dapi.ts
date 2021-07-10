@@ -335,7 +335,8 @@ export class UsersDataSource extends HttpDataSource<User> {
    * @returns {Promise<User>} */
   current(): Promise<User> {
     let s = this.entityToJs;
-    return new Promise((resolve, reject) => api.grok_UsersDataSource_Current(this.s, (q: any) => resolve(s(q)), (e: any) => reject(e)));
+    return api.grok_UsersDataSource_Current(this.s);
+    //return new Promise((resolve, reject) => api.grok_UsersDataSource_Current(this.s, (q: any) => resolve(s(q)), (e: any) => reject(e)));
   }
 
   /** Returns current session
