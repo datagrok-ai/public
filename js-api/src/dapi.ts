@@ -661,7 +661,7 @@ export class ProjectsDataSource extends HttpDataSource<Project> {
   /** Opens the specified project. */
   open(name: string, options?: {closeAll: boolean}): Promise<Project> {
     return this
-      .filter('demog')
+      .filter(name)
       .first()
       .then(p => p.open(options));
   }
