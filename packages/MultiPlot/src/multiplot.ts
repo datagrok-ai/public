@@ -8,6 +8,7 @@ import {DataFrame, Property, Viewer} from 'datagrok-api/dg';
 
 export class MultiPlotViewer extends DG.JsViewer {
   private defaultTitleHeight: any = this.string('defaultTitleHeight', '25px');
+  private paramA = this.string('paramA', 'string inside');
   private typeComboElements = [];
   private showHideElements = [];
   private closeElements = [];
@@ -17,8 +18,8 @@ export class MultiPlotViewer extends DG.JsViewer {
   private echartOptions: any;
   private visiblePlotsCount: number;
   private timeLineSeries: any;
-  private timeLineIndex: number = 1;
-  private statusChartIndex: number = 0;
+  private timeLineIndex: number = 11;
+  private statusChartIndex: number = 10;
   private timeLineOverlapShift = 4;
   private circleRange: number = 3;
   private timeLineWidth: number = 1;
@@ -30,34 +31,66 @@ export class MultiPlotViewer extends DG.JsViewer {
   private plotTitleHighMargin: number = 10;
   private plotTitleLowMargin: number = 5;
   private controlsTopShift: number = -4;
+  private tables = {}
+  private isTablesLoaded: number = 0;
+  private options = {
+    series: [
+      {
+        table: 'ae__2__lb__2_',
+        title: 'title1',
+        type: 'scatter',
+        x: 'AESTDY',
+        y: 'LBTEST',
+        yType: 'category',
+        color: 'red',
+        markerShape: 'square',
+        height: '1flex',
+        show: 1,
+      },
+      {
+        table: 'ae__2__lb__2_',
+        title: 'title1',
+        type: 'timeLine',
+        x: 'LBTEST',
+        y: ['AESTDY', 'LBDY'],
+        yType: 'category',
+        color: 'red',
+        markerShape: 'square',
+        height: '1flex',
+        show: 1,
+      },
+      {
+        table: 'ae__2__lb__2_',
+        title: 'title2',
+        type: 'scatter',
+        x: 'AESTDY',
+        y: 'LBSTRESN',
+        yType: 'value',
+        color: 'red',
+        markerShape: 'square',
+        height: '20%',
+        show: 1,
+      },
+    ],
+  }
 
   constructor() {
     super();
     console.log('------------------------------------- MULTIPLOT ------------------------------');
     console.log('this.root: ', this.root);
+    console.log('this a ', this.paramA);
+
     this.categoryColors = DG.Color.categoricalPalette.map(DG.Color.toRgb);
-
-    this.plots = [
-      {height: '1flex', title: 'Events', show: 1, MPtype: 'scatter'},
-      {height: '2flex', title: '1Cars length(wheel.base)', show: 1, MPtype: 'timeLine'},
-      {height: '80px', title: 'Lab Chemistry', show: 1, MPtype: 'scatter'},
-    ];
-
+    this.plots = this.options.series;
     const allTypes = ['scatter', 'line', 'bar', 'timeLine'];
     // init plots with some data y=x^2, later can be replaced
-    this.plots.map((e, ip) => {
-      const r = [];
-      for (let i = 0; i < (ip / 1000 + 5) * 2; i++) {
-        r.push([i * 20, i * i * 1]);
-      }
+    this.plots.map((e) => {
       e.series = {
         type: 'scatter',
-        data: r,
+        data: [],
       };
     });
 
-    this.initTimeLine();
-    this.plots[this.timeLineIndex].series = this.timeLineSeries;
     this.init();
 
     this.box = this.root.getBoundingClientRect();
@@ -69,9 +102,10 @@ export class MultiPlotViewer extends DG.JsViewer {
         this.updatePlots();
         this.setEchartOptions();
         this.echart.resize();
+        console.log('this a -------------------------', this.paramA);
       }
     });
-  } // ctor
+  }
 
   setEchartOptions(): void {
     console.log('set echart options: ', this.echartOptions);
@@ -92,8 +126,6 @@ export class MultiPlotViewer extends DG.JsViewer {
     // super.onPropertyChanged(property);
   }
 
-  // input: dataFrame.column
-  // output: array of normalized numbers from 0 to 100
   normalize100(column: DG.Column): DG.Row[] {
     const r = [];
     const delta = column.max - column.min;
@@ -249,8 +281,9 @@ export class MultiPlotViewer extends DG.JsViewer {
         encode: {x: 0, y: 1},
       };
 
-      if (this.plots[i].MPtype === 'timeLine') {
-        currentSeries = this.plots[i].series;
+      // if (this.plots[i].MPtype === 'timeLine') {
+      if (this.plots[i].type === 'timeLine') {
+        currentSeries = this.plots[i].timeLinesSeries;
         currentSeries.xAxisIndex = visibleIndex;
         currentSeries.yAxisIndex = visibleIndex;
         currentSeries.gridIndex = visibleIndex;
@@ -285,12 +318,14 @@ export class MultiPlotViewer extends DG.JsViewer {
   clearPlots(): void {
     this.visiblePlotsCount = 0; // number of visible charts
     for (let i = 0; i < this.plots.length; i++) {
-      if (this.plots[i].show) this.visiblePlotsCount++;
+      if (this.plots[i].show) {
+        this.visiblePlotsCount++;
+      }
     }
     function createEmptyObjects(n) {
-      const r = [];
-      for (let i = 0; i < n; i++) r.push({});
-      return r;
+      return new Array(n).fill(null).map(() => {
+        return {};
+      });
     }
 
     this.echartOptions = {
@@ -410,28 +445,22 @@ export class MultiPlotViewer extends DG.JsViewer {
   }
 
   onTableAttached(): void {
-    if (this.dataFrame.name != 'ae__2__lb__2_') return;
-    this.addMenu();
     console.log('table attached');
     console.log('this ', this);
     console.log('THIS:PLOTS: ', this.plots);
+    console.log('tables: ', grok.shell.tables);
+    this.addMenu();
+    const tableArray = grok.shell.tables;
+    this.tables = {};
+    for (let i=0; i<tableArray.length; i++) {
+      this.tables[tableArray[i].name] = tableArray[i];
+    }
 
-    // load timelines
-    for (const tab of grok.shell.tables) {
-      if (tab.name === 'ae__2__lb__2_') {
-        this.plots[this.statusChartIndex].series.itemStyle = (e, i) => {
-          let color = this.categoryColors[0];
-          if (this.selection.includes(e.dataIndex)) color = this.categoryColors[1];
-          return color;
-        };
-        this.plots[this.statusChartIndex].series.symbol = (e) => {
-          return (e[0] > 22) ? 'square' : 'triangle';
-        };
-        this.plots[this.statusChartIndex].yType = 'category';
-        console.log('update Filter');
-        this.updateFilter(tab);
-      }
-    } // for tables
+    if (this.isTablesLoaded) {
+      return;
+    }
+    this.isTablesLoaded = 1;
+    this.updateFilter();
 
     // this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
     // this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()));
@@ -448,34 +477,35 @@ export class MultiPlotViewer extends DG.JsViewer {
     // @ts-ignore
     this.subs.push(this.dataFrame.filter.onChanged.subscribe((_) => {
       console.log('filter change');
-      this.updateFilter(this.dataFrame);
+      //    this.updateFilter(this.dataFrame);
       this.setEchartOptions();
 
       this.render();
     }));
   } // table attached
 
-  updateFilter(tab: DG.DataFrame): void {
-    if (this.dataFrame.name != 'ae__2__lb__2_') {
-      console.error('wrong table');
-      return;
+  updateFilter(): void {
+    for (let i=0; i< this.plots.length; i++) {
+      const tableName = this.plots[i].table;
+      const table = this.tables[tableName];
+      const indexes = table.filter.getSelectedIndexes();
+      const x = this.plots[i].x;
+      const y = this.plots[i].y;
+      const xArray = Array.isArray(x) ? x : [x];
+      const yArray = Array.isArray(y) ? y : [y];
+
+      const data = this.getUniversalData(
+          table,
+          // [this.plots[i].x, this.plots[i].y],
+          xArray.concat(yArray),
+          indexes,
+      );
+      this.plots[i].series.data = data;
+      if (this.plots[i].type != 'timeLine') continue;
+      this.timeLinesData = data;
+      this.timeLineIndex = i;
+      this.plots[i].timeLinesSeries = this.initTimeLine();
     }
-    const table = tab || this.dataFrame;
-    const testNameFieldName = 'LBTEST';
-    const startTimeFieldName = 'AESTDY';
-    const endTimeFieldName = 'LBDY';
-    const testValueFieldName = 'LBSTRESN';
-    const testLoFieldName = 'LBSTNRLO';
-    const testHiFieldName = 'LBSTNRHI';
-    const indexes = table.filter.getSelectedIndexes();
-    this.statusChartData = this.getUniversalData(
-        table, [startTimeFieldName, endTimeFieldName], indexes,
-    );
-    this.plots[this.statusChartIndex].series.data = this.statusChartData;
-    this.timeLinesData = this.getUniversalData(
-        table, [testNameFieldName, startTimeFieldName, endTimeFieldName], indexes,
-    );
-    this.plots[this.timeLineIndex].series.data = this.timeLinesData;
     this.updatePlots();
   }
 
@@ -492,7 +522,7 @@ export class MultiPlotViewer extends DG.JsViewer {
     this.clearPlots();
     this.createElements();
     this.updateOptionsPositions();
-    this.updatePlots();
+    //   this.updatePlots();
     //  this.setEchartOptions();
     this.render();
   }
@@ -528,16 +558,15 @@ export class MultiPlotViewer extends DG.JsViewer {
     for (let i = 0; i < this.plots.length; i++) {
       const inputPlotType: any = ui.div([ui.iconFA('angle-right'), ui.iconFA('angle-down')]);
       const showHideIcons = inputPlotType.querySelectorAll('i');
-      //  debugger
       showHideIcons[0].style.display = 'none';
-      inputPlotType.DGswitch = 1;
+      inputPlotType.showSwitch = 1;
       inputPlotType.addEventListener('click', ((i) => (e) => {
         const div = e.target.parentNode;
-        //     console.log('click ', i, div.DGswitch);
-        div.DGswitch = 1 - div.DGswitch;
+        //     console.log('click ', i, div.showSwitch);
+        div.showSwitch = 1 - div.showSwitch;
         const displays = ['', 'none'];
         const els = div.querySelectorAll('i');
-        const isShown = div.DGswitch;
+        const isShown = div.showSwitch;
         els[0].style.display = displays[isShown];
         els[1].style.display = displays[1 - isShown];
         this.plots[i].show = isShown;
@@ -577,40 +606,39 @@ export class MultiPlotViewer extends DG.JsViewer {
 
   }
 
-  initTimeLine(): void {
-    console.error('init time line :', this.timeLinesData);
-    const thisData = this.plots[this.timeLineIndex].series.data;
-    const data = this.timeLinesData;
-    const t = this;
+  initTimeLine(): any {
+    console.log('init time line :', this.timeLinesData);
     let count = 0;
-    this.timeLineSeries = {
+    const renderFailed = 1234;
+    // this.timeLineSeries = {
+    const timeLinesSeries = {
       type: 'custom',
       progressive: 0,
       animation: false,
-      renderItem: ((t: any, echarts: any) => (params, api) => {
+      renderItem: ((t: any, echarts: any) => (params, echartAPI) => {
         const data = this.timeLinesData;
-        if (!data || data.length == 0) return 1234;
+        if (!data || data.length == 0) return renderFailed;
         const customDebug = false;
         if (customDebug) console.log('renderItem data: ', data);
-        if (customDebug) console.log('custom render ', params, api);
-        const av0 = api.value(0);
-        const av1 = api.value(1);
-        const av2 = api.value(2);
+        if (customDebug) console.log('custom render ', params, echartAPI);
+        const av0 = echartAPI.value(0);
+        const av1 = echartAPI.value(1);
+        const av2 = echartAPI.value(2);
         if (customDebug) console.log('values: ', av0, av1, av2);
         const gridTopRaw = this.echartOptions.grid[this.timeLineIndex].top;
         const gridTop = parseFloat(gridTopRaw);
         if (customDebug) console.log('gridtop ', gridTop);
         let overlap = false;
         if (params.dataIndex > 0 && data[params.dataIndex - 1][0] === data[params.dataIndex][0] &&
-          api.value(1) <= data[params.dataIndex - 1][2]) {
-          if (customDebug) console.log('Overlap:', api.value(1), data[params.dataIndex - 1][2]);
+          echartAPI.value(1) <= data[params.dataIndex - 1][2]) {
+          if (customDebug) console.log('Overlap:', echartAPI.value(1), data[params.dataIndex - 1][2]);
           overlap = true;
         }
-        const categoryIndex = api.value(0);
-        const start = api.coord([api.value(1), categoryIndex + 0]);
-        const end = api.coord([api.value(2), categoryIndex]);
+        const categoryIndex = echartAPI.value(0);
+        const start = echartAPI.coord([echartAPI.value(1), categoryIndex + 0]);
+        const end = echartAPI.coord([echartAPI.value(2), categoryIndex]);
         if (customDebug) console.log('index start end ', categoryIndex, start, end);
-        const height = api.size([0, 1])[1];
+        const height = echartAPI.size([0, 1])[1];
         if (customDebug) console.log('height: ', height);
         const rect0 = {
           x: start[0],
@@ -639,7 +667,7 @@ export class MultiPlotViewer extends DG.JsViewer {
             transition: ['shape'],
             // shape: rectShape,
             shape: rectShape,
-            style: {fill: api.value(3)},
+            style: {fill: echartAPI.value(3)},
           },
           {
             type: 'circle',
@@ -670,7 +698,7 @@ export class MultiPlotViewer extends DG.JsViewer {
               type: 'rect',
               transition: ['shape'],
               shape: rectShape,
-              style: {fill: api.value(3)},
+              style: {fill: echartAPI.value(3)},
             },
             {
               type: 'circle',
@@ -699,5 +727,6 @@ export class MultiPlotViewer extends DG.JsViewer {
       },
       data: this.timeLinesData,
     }; // this.timeLineSeries
+    return timeLinesSeries;
   } // initTimeLine
 }

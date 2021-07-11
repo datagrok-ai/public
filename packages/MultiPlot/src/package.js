@@ -15,7 +15,8 @@ export function test() {
 //description: Creates MultiPlot viewer
 //tags: viewer
 //output: viewer result
-export function _MultiPlot() {
+export function MultiPlot() {
+  console.log('package.js     export function MultiPlot()');
   return new MultiPlotViewer();
 }
 
