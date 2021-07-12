@@ -195,6 +195,7 @@ export class DataFrame {
   public temp: any;
   public tags: any;
   private _plot: DataFramePlotHelper;
+  private _dialogs: DataFrameDialogHelper;
 
   constructor(d: any) {
     this.d = d;
@@ -249,8 +250,14 @@ export class DataFrame {
 
   get plot(): DataFramePlotHelper {
     if (this._plot == undefined)
-    this._plot = new DataFramePlotHelper(this);
+      this._plot = new DataFramePlotHelper(this);
     return this._plot;
+  }
+
+  get dialogs(): DataFrameDialogHelper {
+    if (this._dialogs == undefined)
+      this._dialogs = new DataFrameDialogHelper(this);
+    return this._dialogs;
   }
 
   /** Returns number of rows in the table.
@@ -2088,6 +2095,15 @@ class DataFramePlotHelper {
   line(options: object | null = null) { return DG.Viewer.lineChart(this.df, options); }
   network(options: object | null = null) { return DG.Viewer.network(this.df, options); }
   
+}
+
+class DataFrameDialogHelper {
+  private readonly df: DataFrame;
+  constructor(df: DataFrame) {
+    this.df = df;
+  }
+
+  addNewColumn(): void { grok.functions.call('CmdAddNewColumn'); }
 }
 
 class ColumnDialogHelper {
