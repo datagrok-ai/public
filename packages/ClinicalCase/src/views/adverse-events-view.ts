@@ -10,13 +10,16 @@ export class AdverseEventsView extends DG.ViewBase {
   constructor() {
     super();
 
-    let typesPlot = study.domains.ae.plot.bar( {
-      split: 'AEDECOD',
-      style: 'dashboard' }).root;
+    function bar(categoryColumn: string) {
+      return study.domains.ae.plot.bar( {
+        split: categoryColumn,
+        style: 'dashboard' }).root
+    }
 
-    let bodySystemsPlot = study.domains.ae.plot.bar( {
-      split: 'AEBODSYS',
-      style: 'dashboard' }).root;
+    let typesPlot = bar('AEDECOD');
+    let bodySystemsPlot = bar('AEBODSYS');
+    let causalityPlot = bar('AEREL');
+    let outcomePlot = bar('AEOUT');
 
     let timelinesPlot = study.domains.ae.plot.line({
       x: 'week',
@@ -26,6 +29,15 @@ export class AdverseEventsView extends DG.ViewBase {
       split: 'AESEV',
       style: 'dashboard' }).root;
 
+    let scatterPlot = study.domains.ae.plot.scatter({
+      x: 'AESTDY',
+      y: 'USUBJID',
+      color: 'AESEV',
+      markerDefaultSize: 5,
+      legendVisibility: 'Never',
+      style: 'dashboard'
+    }).root;
+
     let grid = study.domains.ae.plot.grid();
 
     this.root.appendChild(ui.div([
@@ -33,6 +45,11 @@ export class AdverseEventsView extends DG.ViewBase {
         ui.block25([ui.h2('Types'), typesPlot]),
         ui.block25([ui.h2('Body System'), bodySystemsPlot]),
         ui.block50([ui.h2('Events per Week'), timelinesPlot]),
+      ], { style: { width: '100%' } }),
+      ui.divH([
+        ui.block25([ui.h2('Causality'), causalityPlot]),
+        ui.block25([ui.h2('Outcome'), outcomePlot]),
+        ui.block50([ui.h2('All Events'), scatterPlot]),
       ], { style: { width: '100%' } }),
       ui.divH([ grid ], { style: { width: '100%' } })
     ]));
