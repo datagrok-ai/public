@@ -277,6 +277,15 @@ export enum VIEWER {
   TIMELINES = 'TimelinesViewer'
 }
 
+/** @enum {LINE_CHART_SERIES_TYPE} */
+export enum LINE_CHART_SERIES_TYPE {
+  LINE = 'Line Chart',
+  AREA = 'Area Chart',
+  BAR = 'Bar Chart',
+  STACKED_BAR = 'Stacked Bar Chart',
+  STACKED_AREA = 'Stacked Area Chart'
+}
+
 /** @enum {SIMILARITY_METRIC} */
 export enum SIMILARITY_METRIC {
   TANIMOTO = 'tanimoto',

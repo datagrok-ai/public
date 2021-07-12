@@ -21,6 +21,7 @@ export class AdverseEventsView extends DG.ViewBase {
     let timelinesPlot = study.domains.ae.plot.line({
       x: 'week',
       yColumnNames: ['week'],
+      chartTypes: ['Stacked Bar Chart'],
       yAggrTypes: [DG.STATS.TOTAL_COUNT],
       split: 'AESEV',
       style: 'dashboard' }).root;
