@@ -1014,6 +1014,21 @@ export class Column {
     }
   }
 
+  /** Applies the specified formula to a calculated column.
+   * Returns a new column object, if applied successfully, and null otherwise.
+   * @param {string} formula
+   * @returns {Column} */
+  async applyFormula(formula: string): Promise<Column | null> {
+    if (this.getTag('formula') == null || !(this.name && this.dataFrame?.columns.contains(this.name)))
+      return null;
+    let newCol = await this.dataFrame.columns.addNewCalculated(this.name, formula);
+    for (let [key, value] of this.tags) if (key !== DG.TAGS.FORMULA) newCol.setTag(key, value);
+    this.dataFrame.columns.remove(newCol.name);
+    this.dataFrame.columns.replace(this, newCol);
+    newCol.name = this.name;
+    return newCol;
+  }
+
   /** Creates and returns a new column by converting [column] to the specified [newType].
    *  @param {string} newType
    *  @param {string} format
@@ -1144,7 +1159,7 @@ export class ColumnList {
    * @param {bool} treatAsString
    * @returns {Column} */
   addNewCalculated(name: string, expression: string, type?: ColumnType | null, treatAsString?: boolean | null): Promise<Column> {
-    return new Promise((resolve, reject) => toJs(api.grok_ColumnList_AddNewCalculated(this.d, name, expression, type, treatAsString, (c: any) => resolve(c), (e: any) => reject(e))));
+    return new Promise((resolve, reject) => api.grok_ColumnList_AddNewCalculated(this.d, name, expression, type, treatAsString, (c: any) => resolve(toJs(c)), (e: any) => reject(e)));
   }
 
   /** Adds a string column
