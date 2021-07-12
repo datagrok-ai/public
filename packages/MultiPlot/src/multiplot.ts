@@ -9,8 +9,8 @@ import {DataFrame, Property, Viewer} from 'datagrok-api/dg';
 export class MultiPlotViewer extends DG.JsViewer {
   // properties
   private defaultTitleHeight: string = this.string('defaultTitleHeight', '25px');
-  private colorBackColor: string = this.string('colorBackColor', 'white');
-  private verticalLinescolor: string = this.string('verticalLinescolor', '#cccccc');
+  private BackColor: string = this.string('BackColor', 'white');
+  private verticalLinesColor: string = this.string('verticalLinesColor', '#cccccc');
   private verticalLines: boolean = this.bool('verticalLines', true);
   private showControls: boolean = this.bool('showControls', true);
   private timeLineWidth: number = this.int('timeLineWidth', 1);
@@ -39,6 +39,7 @@ export class MultiPlotViewer extends DG.JsViewer {
   private plotTitleHighMargin: number = 10;
   private plotTitleLowMargin: number = 5;
   private controlsTopShift: number = -4;
+  private headerHiddenShift: number = -10;
   private tables = {}
   private isTablesLoaded: number = 0;
   private options = {
@@ -129,20 +130,20 @@ export class MultiPlotViewer extends DG.JsViewer {
   onPropertyChanged(property: DG.Property): void {
     const name = property.name;
     const val = property.get(this);
-    console.log('property changed: ', name, val, this.verticalLinescolor);
+    console.log('property changed: ', name, val, this.verticalLinesColor);
     if (name === 'defaultTitleHeight') {
       this.defaultTitleHeight = val;
       this.updateHeight();
       this.setEchartOptions();
     }
-    if (name === 'colorBackColor') {
-      console.log('colorBackColor', this.colorBackColor);
+    if (name === 'BackColor') {
+      console.log('BackColor', this.BackColor);
     }
     if (name === 'verticalLines') {
       console.log(this.verticalLines);
     }
     if (name === 'showControls') {
-      this.setContorlsVisibility();
+      this.setControlsVisibility();
     }
 
     this.updatePlots();
@@ -203,6 +204,7 @@ export class MultiPlotViewer extends DG.JsViewer {
 
     let currentTop = 0;
     let echartIndex = 0; // index in echarts library
+    // second cycle (set positions and height)
     for (let j = 0; j < r.length; j++) {
       currentTop += this.plotTitleHighMargin;
       r[j].titleTop = currentTop;
@@ -218,6 +220,16 @@ export class MultiPlotViewer extends DG.JsViewer {
         echartIndex++;
       };
     }
+
+    // correct height of the last visible plot to avoid overlap of controls
+    let j = this.plots.length - 1;
+    while (j > -1 && !this.plots[j].show) {
+      j--;
+    }
+    if (j < this.plots.length - 1 && j >= 0) {
+      r[j].height += this.headerHiddenShift;
+    }
+
     console.log('currentTop  :', currentTop, r);
     return r;
   } // parseHeight
@@ -265,7 +277,7 @@ export class MultiPlotViewer extends DG.JsViewer {
   updatePlots(): void {
     this.clearPlots();
 
-    this.echartOptions.backgroundColor = this.colorBackColor;
+    this.echartOptions.backgroundColor = this.BackColor;
 
     // update positions
     console.log('update plots positions', this.plots);
@@ -322,7 +334,7 @@ export class MultiPlotViewer extends DG.JsViewer {
     this.echartOptions.xAxis[visibleIndex - 1].axisTick = {
       inside: true,
       length: this.verticalLines ? 2000 : 5,
-      lineStyle: {color: this.verticalLinescolor},
+      lineStyle: {color: this.verticalLinesColor},
     };
     this.echartOptions.xAxis[visibleIndex - 1].show = true;
     this.echartOptions.xAxis[visibleIndex - 1].type = 'value';
@@ -579,7 +591,7 @@ export class MultiPlotViewer extends DG.JsViewer {
     this.closeElements.map((e) => e.remove());
   }
 
-  setContorlsVisibility() : void {
+  setControlsVisibility() : void {
     this.typeComboElements.map((e) => {
       e.style.visibility = this.showControls ? 'visible' : 'hidden';
     });
