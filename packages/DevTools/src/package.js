@@ -72,7 +72,10 @@ if (credentialsResponse == null) {
   grok.shell.info(credentialsResponse.parameters);
 }`,
   Project: (ent) =>
-`const project = await grok.dapi.projects.find("${ent.id}");
+`// Find a project by its name and open it in the workspace
+const project = await grok.dapi.projects.open("${ent.friendlyName}");
+
+// Read permissions
 console.log(await grok.dapi.permissions.get(project));`,
   Script: (ent) =>
 `const script = await grok.dapi.scripts.find("${ent.id}");
