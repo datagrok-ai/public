@@ -7,7 +7,15 @@ import {DataFrame, Property, Viewer} from 'datagrok-api/dg';
 // import * as deb from "./../debug.js";
 
 export class MultiPlotViewer extends DG.JsViewer {
-  private defaultTitleHeight: any = this.string('defaultTitleHeight', '25px');
+  // properties
+  private defaultTitleHeight: string = this.string('defaultTitleHeight', '25px');
+  private colorBackColor: string = this.string('colorBackColor', 'white');
+  private verticalLinescolor: string = this.string('verticalLinescolor', '#cccccc');
+  private verticalLines: boolean = this.bool('verticalLines', true);
+  private showControls: boolean = this.bool('showControls', true);
+  private timeLineWidth: number = this.int('timeLineWidth', 1);
+  private timeLineRadius: number = this.int('timeLineRadius', 3);
+
   private paramA = this.string('paramA', 'string inside');
   private typeComboElements = [];
   private showHideElements = [];
@@ -21,8 +29,8 @@ export class MultiPlotViewer extends DG.JsViewer {
   private timeLineIndex: number = 11;
   private statusChartIndex: number = 10;
   private timeLineOverlapShift = 4;
-  private circleRange: number = 3;
-  private timeLineWidth: number = 1;
+  // private circleRange: number = 3;
+  // private timeLineWidth: number = 1;
   private timeLinesData: any = [];
   private statusChartData: any = [];
   private categoryColors: any = [];
@@ -40,8 +48,10 @@ export class MultiPlotViewer extends DG.JsViewer {
         title: 'title1',
         type: 'scatter',
         x: 'AESTDY',
-        y: 'LBTEST',
-        yType: 'category',
+        //    y: 'LBTEST',
+        y: 'LBSTRESN',
+
+        yType: 'value',
         color: 'red',
         markerShape: 'square',
         height: '1flex',
@@ -102,7 +112,7 @@ export class MultiPlotViewer extends DG.JsViewer {
         this.updatePlots();
         this.setEchartOptions();
         this.echart.resize();
-        console.log('this a -------------------------', this.paramA);
+        console.log('this this.paramA -------------------------', this.paramA);
       }
     });
   }
@@ -119,10 +129,24 @@ export class MultiPlotViewer extends DG.JsViewer {
   onPropertyChanged(property: DG.Property): void {
     const name = property.name;
     const val = property.get(this);
+    console.log('property changed: ', name, val, this.verticalLinescolor);
     if (name === 'defaultTitleHeight') {
       this.defaultTitleHeight = val;
       this.updateHeight();
+      this.setEchartOptions();
     }
+    if (name === 'colorBackColor') {
+      console.log('colorBackColor', this.colorBackColor);
+    }
+    if (name === 'verticalLines') {
+      console.log(this.verticalLines);
+    }
+    if (name === 'showControls') {
+      this.setContorlsVisibility();
+    }
+
+    this.updatePlots();
+    this.setEchartOptions();
     // super.onPropertyChanged(property);
   }
 
@@ -211,7 +235,7 @@ export class MultiPlotViewer extends DG.JsViewer {
       this.echartOptions.title[i].text = heightData[i].titleText;
       this.echartOptions.title[i].textStyle = {
         'height': heightData[i].titleHeight,
-        'fontSize': (this.defaultTitleHeight * .6),
+        'fontSize': (parseFloat(this.defaultTitleHeight) * .6),
       };
       if (this.typeComboElements[i]) {
         this.typeComboElements[i].style.top = heightData[i].titleTop + this.controlsTopShift + 'px';
@@ -237,10 +261,11 @@ export class MultiPlotViewer extends DG.JsViewer {
     } // for i
   } // updateOptionsPositions
 
-
   // takes data from this.plots and fills options for echart library
   updatePlots(): void {
     this.clearPlots();
+
+    this.echartOptions.backgroundColor = this.colorBackColor;
 
     // update positions
     console.log('update plots positions', this.plots);
@@ -277,18 +302,16 @@ export class MultiPlotViewer extends DG.JsViewer {
         xAxisIndex: visibleIndex,
         yAxisIndex: visibleIndex,
         data: this.plots[i].series.data,
-        coordinateSystem: 'cartesian2d',
+        //   coordinateSystem: 'cartesian2d',
         encode: {x: 0, y: 1},
       };
 
-      // if (this.plots[i].MPtype === 'timeLine') {
       if (this.plots[i].type === 'timeLine') {
         currentSeries = this.plots[i].timeLinesSeries;
         currentSeries.xAxisIndex = visibleIndex;
         currentSeries.yAxisIndex = visibleIndex;
         currentSeries.gridIndex = visibleIndex;
         this.echartOptions.xAxis[visibleIndex].type = 'value';
-        // this.echartOptions.xAxis[visibleIndex].type = 'value';
         this.echartOptions.yAxis[visibleIndex].type = 'category';
       }
 
@@ -298,8 +321,8 @@ export class MultiPlotViewer extends DG.JsViewer {
 
     this.echartOptions.xAxis[visibleIndex - 1].axisTick = {
       inside: true,
-      length: 1000,
-      lineStyle: {color: '#cccccc'},
+      length: this.verticalLines ? 2000 : 5,
+      lineStyle: {color: this.verticalLinescolor},
     };
     this.echartOptions.xAxis[visibleIndex - 1].show = true;
     this.echartOptions.xAxis[visibleIndex - 1].type = 'value';
@@ -309,20 +332,20 @@ export class MultiPlotViewer extends DG.JsViewer {
   } // updatePlots
 
   // only updates heights
-  updateHeight() {
+  updateHeight() : void {
     this.updateOptionsPositions();
     this.setEchartOptions();
   }
 
   // fill echart options with arrays of empty objects
-  clearPlots(): void {
+  clearPlots() : void {
     this.visiblePlotsCount = 0; // number of visible charts
     for (let i = 0; i < this.plots.length; i++) {
       if (this.plots[i].show) {
         this.visiblePlotsCount++;
       }
     }
-    function createEmptyObjects(n) {
+    function createEmptyObjects(n: number) : any {
       return new Array(n).fill(null).map(() => {
         return {};
       });
@@ -468,6 +491,17 @@ export class MultiPlotViewer extends DG.JsViewer {
     // @ts-ignore
     this.subs.push(this.dataFrame.selection.onChanged.subscribe((_) => {
       this.selection = this.dataFrame.selection.getSelectedIndexes();
+      this.plots.map((plot) => {
+        const defaultColor = this.categoryColors[0];
+        const selectionColor = this.categoryColors[1];
+        plot.series.itemStyle = (e, i) => {
+          let color = defaultColor;
+          if (this.selection.includes(e.dataIndex)) {
+            color = selectionColor;
+          }
+          return color;
+        };
+      });
       this.updatePlots();
       this.setEchartOptions();
       console.log(this.selection);
@@ -477,7 +511,7 @@ export class MultiPlotViewer extends DG.JsViewer {
     // @ts-ignore
     this.subs.push(this.dataFrame.filter.onChanged.subscribe((_) => {
       console.log('filter change');
-      //    this.updateFilter(this.dataFrame);
+      this.updateFilter();
       this.setEchartOptions();
 
       this.render();
@@ -489,6 +523,7 @@ export class MultiPlotViewer extends DG.JsViewer {
       const tableName = this.plots[i].table;
       const table = this.tables[tableName];
       const indexes = table.filter.getSelectedIndexes();
+      console.log(indexes);
       const x = this.plots[i].x;
       const y = this.plots[i].y;
       const xArray = Array.isArray(x) ? x : [x];
@@ -518,6 +553,17 @@ export class MultiPlotViewer extends DG.JsViewer {
   }
 
   init(): void {
+    this.plots.map((plot) => {
+      const defaultColor = this.categoryColors[0];
+      const selectionColor = this.categoryColors[1];
+      plot.series.itemStyle = (e, i) => {
+        let color = defaultColor;
+        if (this.selection.includes(e.dataIndex)) {
+          color = selectionColor;
+        }
+        return color;
+      };
+    });
     if (!this.echart) this.echart = echarts.init(this.root, null, {renderer: 'canvas'});
     this.clearPlots();
     this.createElements();
@@ -531,6 +577,18 @@ export class MultiPlotViewer extends DG.JsViewer {
     this.typeComboElements.map((e) => e.remove());
     this.showHideElements.map((e) => e.remove());
     this.closeElements.map((e) => e.remove());
+  }
+
+  setContorlsVisibility() : void {
+    this.typeComboElements.map((e) => {
+      e.style.visibility = this.showControls ? 'visible' : 'hidden';
+    });
+    this.showHideElements.map((e) => {
+      e.style.visibility = this.showControls ? 'visible' : 'hidden';
+    });
+    this.closeElements.map((e) => {
+      e.style.visibility = this.showControls ? 'visible' : 'hidden';
+    });
   }
 
   createElements(): void {
@@ -672,14 +730,14 @@ export class MultiPlotViewer extends DG.JsViewer {
           {
             type: 'circle',
             shape: {
-              cx: start[0], cy: end[1] + 0, r: this.circleRange,
+              cx: start[0], cy: end[1] + 0, r: this.timeLineRadius,
             },
             style: {fill: this.categoryColors[categoryIndex % this.categoryColors.length]},
           },
           {
             type: 'circle',
             shape: {
-              cx: end[0], cy: end[1] + 0, r: this.circleRange,
+              cx: end[0], cy: end[1] + 0, r: this.timeLineRadius,
             },
             style: {fill: endColor},
           },
@@ -703,14 +761,14 @@ export class MultiPlotViewer extends DG.JsViewer {
             {
               type: 'circle',
               shape: {
-                cx: start[0], cy: end[1] + shift, r: this.circleRange,
+                cx: start[0], cy: end[1] + shift, r: this.timeLineRadius,
               },
               style: {fill: 'darkgreen'},
             },
             {
               type: 'circle',
               shape: {
-                cx: end[0], cy: end[1] + shift, r: this.circleRange,
+                cx: end[0], cy: end[1] + shift, r: this.timeLineRadius,
               },
               style: {fill: 'red'},
             },
