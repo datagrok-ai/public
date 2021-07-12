@@ -22,7 +22,6 @@ const defaultSequenceLength: number = 23;
 const maximalValidSequenceLength: number = 35;
 const userStorageKey: string = 'SequenceTranslator';
 const exampleMinWidth: string = '400px';
-const modificationSectionMaxWidth = '210px';
 
 function generateExample(sequenceLength: number, sequenceBasis: string): string {
   const uniqueSymbols = axolabsMap[sequenceBasis].symbols.join('');
@@ -119,8 +118,7 @@ export function defineAxolabsPattern() {
       }
       asModificationItems.append(
         ui.divH([
-          ui.block25([ui.label(asBases[i].value.slice(-3) == '(o)' ? '' : String(i + 1))])!,
-          ui.block50([asBases[i]])!,
+          ui.block75([asBases[i]])!,
           ui.block25([asPtoLinkages[i]])!
         ], {style: {alignItems: "center"}})
       );
@@ -414,12 +412,16 @@ export function defineAxolabsPattern() {
       grok.shell.error('Column should contain integers only');
     else if (col.categories.length < col.length) {
       const duplicates = findDuplicates(col.getRawData());
-      ui.dialog('Repetitions in column with IDs')
-        .add(ui.button('Select rows with non-unique values', () => {
-          let selection = grok.shell.table(tables.value).selection
+      ui.dialog('Non-unique IDs')
+        .add(ui.divText("Press 'OK' to select rows with non-unique values"))
+        .onOK(() => {
+          let selection = grok.shell.table(tables.value).selection;
           selection.init((i) => duplicates.indexOf(col.get(i)) > -1);
-          grok.shell.info("Rows with duplicated values are selected in table '" + tables.value + "'");
-        }))
+          for (let tv of grok.shell.tableViews)
+            if (tv.name == tables.value)
+              grok.shell.v = tv;
+          grok.shell.info("Rows are selected in table '" + tables.value + "'");
+        })
         .show();
     }
   }
@@ -471,7 +473,7 @@ export function defineAxolabsPattern() {
     updateSvgScheme();
   });
 
-  let saveAs = ui.stringInput('Save As', 'Pattern Name Example', () => updateSvgScheme());
+  let saveAs = ui.textInput('Save As', 'Pattern Name Example', () => updateSvgScheme());
   saveAs.setTooltip('Name Of New Pattern');
 
   let ssThreeModification = ui.stringInput("Additional SS 3' Modification", "", () => {
@@ -501,7 +503,7 @@ export function defineAxolabsPattern() {
   asModificationDiv.append(asThreeModification.root);
   asModificationDiv.append(asFiveModification.root);
 
-  let comment = ui.stringInput('Comment', '', () => updateSvgScheme());
+  let comment = ui.textInput('Comment', '', () => updateSvgScheme());
 
   let savePatternButton = ui.button('Save', () => {
     if (saveAs.value != '') {
@@ -543,10 +545,10 @@ export function defineAxolabsPattern() {
     }
   });
 
-  let ssInputExample = ui.stringInput('SS', generateExample(ssLength.value, sequenceBase.value),() => {
+  let ssInputExample = ui.textInput('SS', generateExample(ssLength.value, sequenceBase.value),() => {
     ssOutputExample.value = translateSequence(ssInputExample.value, ssBases, ssPtoLinkages, ssFiveModification, ssThreeModification, firstSsPto.value)
   });
-  let ssOutputExample = ui.stringInput(' ', translateSequence(ssInputExample.value, ssBases, ssPtoLinkages, ssThreeModification, ssFiveModification, firstSsPto.value));
+  let ssOutputExample = ui.textInput(' ', translateSequence(ssInputExample.value, ssBases, ssPtoLinkages, ssThreeModification, ssFiveModification, firstSsPto.value));
   (ssInputExample.input as HTMLElement).style.resize = 'none';
   (ssInputExample.input as HTMLElement).style.minWidth = exampleMinWidth;
   (ssOutputExample.input as HTMLElement).style.resize = 'none';
@@ -561,10 +563,10 @@ export function defineAxolabsPattern() {
     ], 'ui-input-options')
   );
 
-  let asInputExample = ui.stringInput('AS', generateExample(asLength.value, sequenceBase.value),() => {
+  let asInputExample = ui.textInput('AS', generateExample(asLength.value, sequenceBase.value),() => {
     asOutputExample.value = translateSequence(asInputExample.value, asBases, asPtoLinkages, asThreeModification, asFiveModification, firstSsPto.value);
   });
-  let asOutputExample = ui.stringInput(' ', translateSequence(asInputExample.value, asBases, asPtoLinkages, asThreeModification, asFiveModification, firstSsPto.value));
+  let asOutputExample = ui.textInput(' ', translateSequence(asInputExample.value, asBases, asPtoLinkages, asThreeModification, asFiveModification, firstSsPto.value));
   (asInputExample.input as HTMLElement).style.resize = 'none';
   (asInputExample.input as HTMLElement).style.minWidth = exampleMinWidth;
   (asOutputExample.input as HTMLElement).style.resize = 'none';
@@ -592,10 +594,12 @@ export function defineAxolabsPattern() {
       ui.div([
         ui.divH([
           ui.h1('Pattern'),
-          ui.iconFA('question-circle',() => {
-            appAxolabsDescription.innerHTML = '';
-            appAxolabsDescription.append(info);
-          })
+          ui.div([
+            ui.iconFA('question-circle',() => {
+              appAxolabsDescription.innerHTML = '';
+              appAxolabsDescription.append(info);
+            })
+          ], {style: {padding: '2px'}})
         ]),
         ssLength.root,
         asLengthDiv,
@@ -635,8 +639,7 @@ export function defineAxolabsPattern() {
     ], {style: {flexWrap: 'wrap'}})
   ]);
 
-  let ssModificationSection = ui.box(
-    ui.panel([
+  let ssModificationSection = ui.panel([
       ui.h1('Sense Strand'),
       ui.divH([
         ui.block25([ui.divText('#')])!,
@@ -644,18 +647,16 @@ export function defineAxolabsPattern() {
         ui.block25([ui.divText('PTO')])!
       ]),
       ssModificationItems
-    ])!, {style: {maxWidth: modificationSectionMaxWidth}});
+    ])!;
 
-  let asModificationSection = ui.box(
-    ui.panel([
+  let asModificationSection = ui.panel([
       ui.h1('Antisense Strand'),
       ui.divH([
-        ui.block25([ui.divText('#')])!,
-        ui.block50([ui.divText('Modification')])!,
+        ui.block75([ui.divText('Modification')])!,
         ui.block25([ui.divText('PTO')])!
       ]),
       asModificationItems
-    ])!, {style: {maxWidth: modificationSectionMaxWidth}});
+    ])!;
 
   let info = ui.info(
     [
@@ -674,7 +675,12 @@ export function defineAxolabsPattern() {
       appAxolabsDescription,
       patternDesignSection!
     ])!,
-    ssModificationSection,
-    asModificationSection
+    ui.box(
+      ui.divH([
+        ssModificationSection,
+        asModificationSection
+        ]
+      ), {style: {maxWidth: '400px'}}
+    )
   ]);
 }
