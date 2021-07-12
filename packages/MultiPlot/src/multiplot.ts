@@ -319,6 +319,7 @@ export class MultiPlotViewer extends DG.JsViewer {
       };
 
       if (this.plots[i].type === 'timeLine') {
+        this.plots[i].timeLinesSeries = this.initTimeLine(visibleIndex);
         currentSeries = this.plots[i].timeLinesSeries;
         currentSeries.xAxisIndex = visibleIndex;
         currentSeries.yAxisIndex = visibleIndex;
@@ -331,6 +332,11 @@ export class MultiPlotViewer extends DG.JsViewer {
       visibleIndex++;
     } // for i<this.plots.length
 
+    this.echartOptions.responsive = false;
+    console.log('echart options: ', this.echartOptions);
+    if (visibleIndex === 0)
+      return; 
+
     this.echartOptions.xAxis[visibleIndex - 1].axisTick = {
       inside: true,
       length: this.verticalLines ? 2000 : 5,
@@ -338,9 +344,7 @@ export class MultiPlotViewer extends DG.JsViewer {
     };
     this.echartOptions.xAxis[visibleIndex - 1].show = true;
     this.echartOptions.xAxis[visibleIndex - 1].type = 'value';
-    this.echartOptions.responsive = false;
 
-    console.log('echart options: ', this.echartOptions);
   } // updatePlots
 
   // only updates heights
@@ -551,7 +555,6 @@ export class MultiPlotViewer extends DG.JsViewer {
       if (this.plots[i].type != 'timeLine') continue;
       this.timeLinesData = data;
       this.timeLineIndex = i;
-      this.plots[i].timeLinesSeries = this.initTimeLine();
     }
     this.updatePlots();
   }
@@ -640,6 +643,7 @@ export class MultiPlotViewer extends DG.JsViewer {
         els[0].style.display = displays[isShown];
         els[1].style.display = displays[1 - isShown];
         this.plots[i].show = isShown;
+        this.updateFilter();
         this.updatePlots();
         this.setEchartOptions();
       })(i));
@@ -676,7 +680,7 @@ export class MultiPlotViewer extends DG.JsViewer {
 
   }
 
-  initTimeLine(): any {
+  initTimeLine(visibleIndex: number): any {
     console.log('init time line :', this.timeLinesData);
     let count = 0;
     const renderFailed = 1234;
@@ -695,7 +699,7 @@ export class MultiPlotViewer extends DG.JsViewer {
         const av1 = echartAPI.value(1);
         const av2 = echartAPI.value(2);
         if (customDebug) console.log('values: ', av0, av1, av2);
-        const gridTopRaw = this.echartOptions.grid[this.timeLineIndex].top;
+        const gridTopRaw = this.echartOptions.grid[visibleIndex].top;
         const gridTop = parseFloat(gridTopRaw);
         if (customDebug) console.log('gridtop ', gridTop);
         let overlap = false;
