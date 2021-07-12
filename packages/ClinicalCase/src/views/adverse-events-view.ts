@@ -26,12 +26,15 @@ export class AdverseEventsView extends DG.ViewBase {
       split: 'AESEV',
       style: 'dashboard' }).root;
 
+    let grid = study.domains.ae.plot.grid();
+
     this.root.appendChild(ui.div([
       ui.divH([
         ui.block25([ui.h2('Types'), typesPlot]),
         ui.block25([ui.h2('Body System'), bodySystemsPlot]),
         ui.block50([ui.h2('Events per Week'), timelinesPlot]),
       ], { style: { width: '100%' } }),
+      ui.divH([ grid ], { style: { width: '100%' } })
     ]));
   }
 }
