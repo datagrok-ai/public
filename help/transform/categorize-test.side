@@ -165,6 +165,13 @@
       ],
       "value": ""
     }, {
+      "id": "902b7699-915d-481c-badc-767c521653d9",
+      "comment": "",
+      "command": "pause",
+      "target": "2000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "f6280e9c-a249-4ee9-b5a4-e08d94d4d705",
       "comment": "",
       "command": "click",
@@ -178,21 +185,21 @@
       "id": "dccf0bd8-e321-4f5b-97dd-a5140dda7926",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "4000",
       "targets": [],
       "value": ""
     }, {
       "id": "2ffb098e-d53a-4615-a975-3bae538ff011",
       "comment": "",
       "command": "executeScript",
-      "target": "let element = document.querySelector(\".grok-data-categorizer .d4-root div[name=viewer-Grid] canvas:nth-child(4)\"); let event = new MouseEvent(\"click\", {     bubbles: true,     cancelable: false,     view: window,     button: 2,     buttons: 0,     clientX: element.getBoundingClientRect().x+20,     clientY: element.getBoundingClientRect().y+40}); element.dispatchEvent(event);",
+      "target": "let element = document.querySelector(\".grok-data-categorizer .d4-root div[name=viewer-Grid] canvas:nth-child(4)\"); let event = new MouseEvent(\"click\", {     bubbles: true,     cancelable: false,     view: window,     button: 2,     buttons: 0,     clientX: element.getBoundingClientRect().x+25,     clientY: element.getBoundingClientRect().y+40}); element.dispatchEvent(event);",
       "targets": [],
       "value": ""
     }, {
       "id": "604ef791-0ead-4046-a242-99abf5818ce5",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "2000",
       "targets": [],
       "value": ""
     }, {
@@ -221,7 +228,7 @@
       "id": "16a00fc3-0e6b-4764-9d1c-413fae4ca2eb",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "2000",
       "targets": [],
       "value": ""
     }, {
@@ -411,7 +418,7 @@
       "id": "6a63ab35-2d10-48d5-9dc1-8ec61ba597ba",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "2000",
       "targets": [],
       "value": ""
     }, {
@@ -428,7 +435,7 @@
       "id": "6643dae2-d7ed-4f15-bfcf-f5c17a238e8b",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "2000",
       "targets": [],
       "value": ""
     }, {
@@ -529,6 +536,13 @@
       "comment": "",
       "command": "verifyElementPresent",
       "target": "name=span-category-(2)-(2-categories)",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "c367ca87-4f5c-4fdc-bde4-f23fbc8a13e5",
+      "comment": "",
+      "command": "pause",
+      "target": "2000",
       "targets": [],
       "value": ""
     }, {

@@ -125,7 +125,7 @@
       "id": "b6e44068-ce53-4ac8-9ae2-815127a68770",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"tree-expander-MySQL---northwind\"]",
+      "target": "css=div[name=\"tree-expander-MySQL---Northwind\"]",
       "targets": [
         ["css=div[name=\"tree-expander-MySQL---northwind\"]", "css"],
         ["css=.d4-tree-view-group:nth-child(19) > .d4-tree-view-group-host > .d4-tree-view-group:nth-child(3) > .d4-tree-view-node > .d4-tree-view-tri", "css:finder"],
@@ -138,7 +138,7 @@
       "id": "c18f1a9c-7f26-46a4-967f-bdda74168bd2",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"tree-MySQL---northwind\"] > div.d4-tree-view-group-label",
+      "target": "css=div[name=\"tree-MySQL---Northwind\"] > div.d4-tree-view-group-label",
       "targets": [
         ["css=div[name=\"tree-MySQL---northwind\"] > div.d4-tree-view-group-label", "css"],
         ["css=.d4-tree-view-node-selected > .d4-tree-view-group-label", "css:finder"],
@@ -298,7 +298,7 @@
       "id": "6caebaa1-63cc-451f-a187-54034057a4e0",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"tree-MySQL---northwind---Test-Query-By-Selenium-MySql\"] > div.d4-tree-view-group-label",
+      "target": "css=div[name=\"tree-MySQL---Northwind---Test-Query-By-Selenium-MySql\"] > div.d4-tree-view-group-label",
       "targets": [
         ["css=div[name=\"tree-MySQL---northwind---Test-Query-By-Selenium-MySql\"] > div.d4-tree-view-group-label", "css"],
         ["css=.d4-tree-view-group:nth-child(3) .d4-tree-view-group:nth-child(8) .d4-tree-view-group-label", "css:finder"],
@@ -592,7 +592,7 @@
         ["xpath=//div[@id='elementContent']/div/div[2]/div/input", "xpath:idRelative"],
         ["xpath=//div[2]/div/input", "xpath:position"]
       ],
-      "value": "name =\"Test_Query_By_Selenium_MySql\" and connection.name = \"northwind\""
+      "value": "name =\"Test_Query_By_Selenium_MySql\""
     }, {
       "id": "e5bd01a1-d3e4-4faf-8da9-fc2ccbcda086",
       "comment": "",
@@ -624,7 +624,7 @@
       "id": "828026c3-18be-447f-b5a3-82d7179aaadc",
       "comment": "",
       "command": "click",
-      "target": "xpath=//span[@name='span-Northwind']",
+      "target": "name=span-MySQLNorthwind",
       "targets": [
         ["css=tr:nth-child(1) .d4-link-label", "css:finder"],
         ["xpath=//span[@name='span-Northwind']", "xpath:attributes"],
@@ -793,7 +793,7 @@
       "id": "21f52a40-f170-420d-b156-c4cbafec69e8",
       "comment": "",
       "command": "pause",
-      "target": "2000",
+      "target": "4000",
       "targets": [],
       "value": ""
     }, {
@@ -898,7 +898,7 @@
       "id": "fa66613c-040e-4ef0-8e3c-4d4eead0478b",
       "comment": "",
       "command": "click",
-      "target": "xpath=//span[@name='span-Northwind']",
+      "target": "name=span-MySQLNorthwind",
       "targets": [
         ["css=.d4-current-object", "css:finder"],
         ["xpath=//span[@name='span-Northwind']", "xpath:attributes"],
@@ -1025,7 +1025,7 @@
         ["xpath=//div[@id='elementContent']/div/div[2]/div/input", "xpath:idRelative"],
         ["xpath=//div[2]/div/input", "xpath:position"]
       ],
-      "value": "name =\"Test_Query_By_Selenium_MySql\" and connection.name = \"northwind\""
+      "value": "name =\"Test_Query_By_Selenium_MySql\""
     }, {
       "id": "2497a9ab-b43a-469e-babc-2ed1e5fcc688",
       "comment": "",

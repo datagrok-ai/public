@@ -17,7 +17,7 @@
       "id": "9fcf7373-c913-45ab-bec9-269d52152909",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "2000",
       "targets": [],
       "value": ""
     }, {
@@ -67,7 +67,7 @@
       "id": "cfe50028-b347-4562-a692-fe86c4d23fbc",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {
@@ -219,6 +219,13 @@
       ],
       "value": ""
     }, {
+      "id": "fc6745c7-91f5-4ba1-9fa9-2ad45ed05c17",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "fdc35666-95aa-4ad3-9fcc-9bbce720f1fa",
       "comment": "",
       "command": "click",
@@ -234,7 +241,7 @@
       "id": "633c36bd-6e91-4ad0-bf69-d78bfb0aa2d2",
       "comment": "",
       "command": "pause",
-      "target": "500",
+      "target": "1000",
       "targets": [],
       "value": ""
     }, {
