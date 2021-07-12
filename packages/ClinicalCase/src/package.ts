@@ -127,7 +127,7 @@ export async function clinicalCaseApp(): Promise<any> {
   study.initFromWorkspace();
 
   grok.shell.newView(`Summary`, [new StudySummaryView().root]);
-  //grok.shell.newView(`Timelines`, [new TimelinesView().root]);
+  grok.shell.newView(`Timelines`, [new TimelinesView().root]);
   grok.shell.newView(`Patient Profile`, [new PatientProfileView().root]);
   grok.shell.newView(`Adverse Events`, [new AdverseEventsView().root]);
 
