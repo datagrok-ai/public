@@ -4,9 +4,9 @@ grok.functions.onAfterRunAction.subscribe((_) => grok.shell.info('Runs after a c
 
 // Filtering events to specific function calls
 grok.functions
-    .onAfterRunAction
-    .pipe(rxjs.operators.filter(call => call.func.name == 'Max'))
-    .subscribe((call) => grok.shell.info(`Max of ${Array.from(call.inputs.values())}: ${call.getOutputParamValue()}`));
+  .onAfterRunAction
+  .pipe(rxjs.operators.filter((call) => call.func.name == 'Max'))
+  .subscribe((call) => grok.shell.info(`Max of ${Array.from(call.inputs.values())}: ${call.getOutputParamValue()}`));
 
 let x = await DG.Func.byName('Abs').apply({ x: -5 });
 let y = await DG.Func.byName('Max').apply({ nums : [-4, 9, 7] });
