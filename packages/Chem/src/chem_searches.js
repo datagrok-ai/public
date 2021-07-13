@@ -212,6 +212,10 @@ async function chemSubstructureSearchLibrary(molStringsColumn, molString) {
         const molStr = hashToMolblock[item] || item;
         molStringsColumn.setString(i++, molStr, notify);
       }
+      // This seems to be the only way to trigger re-calculation of categories
+      // without the following two lines, categories are not updated
+      molStringsColumn.setCategoryOrder(molStringsColumn.categories);
+      molStringsColumn.setCategoryOrder(null);
       // TODO: avoid creating an additional array here
     }
   );
