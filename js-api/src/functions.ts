@@ -22,7 +22,7 @@ const FuncCallParamMapProxy = new Proxy(class {
       return _toIterable(this.input ? api.grok_Func_InputParamMap_Keys(this.d) : api.grok_Func_OutputParamMap_Keys(this.d));
     }
     values() {
-      return _toIterable(api.grok_Func_ParamMap_Values(this.d));
+      return _toIterable(this.input ? api.grok_Func_InputParamMap_Values(this.d) : api.grok_Func_OutputParamMap_Values(this.d));
     }
     * [Symbol.iterator] () {
       for (let key of this.keys()) {
@@ -39,13 +39,13 @@ const FuncCallParamMapProxy = new Proxy(class {
       }
     }
     delete(key: string) {
-      return DG.toJs(this.input ? api.grok_Func_InputParamMap_Delete(this.d, DG.toDart(key)) : api.grok_Func_OutputParamMap_Delete(this.d, DG.toDart(key)));
+      return DG.toJs(this.input ? api.grok_Func_InputParamMap_Delete(this.d, key) : api.grok_Func_OutputParamMap_Delete(this.d, key));
     }
     get(key: any) {
       return DG.toJs(this.input ? api.grok_Func_InputParamMap_Get(this.d, key) : api.grok_Func_OutputParamMap_Get(this.d, key));
     }
     has(key: string) {
-      return this.input ? api.grok_Func_InputParamMap_Has(this.d, DG.toDart(key)) : api.grok_Func_OutputParamMap_Has(this.d, DG.toDart(key));
+      return this.input ? api.grok_Func_InputParamMap_Has(this.d, key) : api.grok_Func_OutputParamMap_Has(this.d, key);
     }
     set(key: string, value: any) {
       this.input ? api.grok_Func_InputParamMap_Set(this.d, key, DG.toDart(value)) : api.grok_Func_OutputParamMap_Set(this.d, key, DG.toDart(value));

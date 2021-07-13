@@ -60,7 +60,7 @@
       "id": "5dc82201-963e-4426-b05c-8dddb86d92b3",
       "comment": "",
       "command": "pause",
-      "target": "2000",
+      "target": "5000",
       "targets": [],
       "value": ""
     }, {
@@ -91,7 +91,7 @@
       "id": "68fdf78e-4866-4f4e-8457-4e4c5e248fd3",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "2000",
       "targets": [],
       "value": ""
     }, {
@@ -117,25 +117,30 @@
       "id": "b6e44068-ce53-4ac8-9ae2-815127a68770",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"tree-expander-Oracle---northwind\"]",
+      "target": "xpath=//div[@name='tree-expander-Oracle---Northwind']",
       "targets": [
-        ["css=div[name=\"tree-expander-Oracle---northwind\"]", "css"],
-        ["css=.d4-tree-view-group:nth-child(19) > .d4-tree-view-group-host > .d4-tree-view-group:nth-child(3) > .d4-tree-view-node > .d4-tree-view-tri", "css:finder"],
-        ["xpath=//div[@name='tree-expander-Oracle---northwind']", "xpath:attributes"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div[19]/div[2]/div[3]/div/div", "xpath:idRelative"],
-        ["xpath=//div[19]/div[2]/div[3]/div/div", "xpath:position"]
+        ["css=.d4-tree-view-group:nth-child(23) > .d4-tree-view-group-host .d4-tree-view-tri", "css:finder"],
+        ["xpath=//div[@name='tree-expander-Oracle---Northwind']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div[2]/div[23]/div[2]/div/div/div", "xpath:idRelative"],
+        ["xpath=//div[23]/div[2]/div/div/div", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "5efcd7ff-5819-4ee2-b6a2-0da8014f8249",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "c18f1a9c-7f26-46a4-967f-bdda74168bd2",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"tree-Oracle---northwind\"] > div.d4-tree-view-group-label",
+      "target": "name=tree-Oracle---Northwind",
       "targets": [
-        ["css=div[name=\"tree-Oracle---northwind\"] > div.d4-tree-view-group-label", "css"],
-        ["css=.d4-tree-view-node-selected > .d4-tree-view-group-label", "css:finder"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div[19]/div[2]/div[3]/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[19]/div[2]/div[3]/div/div[2]", "xpath:position"]
+        ["css=.d4-tree-view-group:nth-child(23) > .d4-tree-view-group-host .d4-tree-view-group-label", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div/div/div[2]/div[23]/div[2]/div/div/div[2]", "xpath:idRelative"],
+        ["xpath=//div[23]/div[2]/div/div/div[2]", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -299,15 +304,30 @@
       ],
       "value": ""
     }, {
+      "id": "d67a8eb7-412d-4c4c-b544-5b399c2956ff",
+      "comment": "",
+      "command": "pause",
+      "target": "2000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "9b3d00f5-2cd2-4d61-b240-34d11a2694c4",
       "comment": "",
       "command": "click",
-      "target": "name=tree-Oracle---northwind---Test-Query-By-Selenium-Oracle",
+      "target": "xpath=//div[@name='tree-Oracle---Northwind---Test-Query-By-Selenium-Oracle']",
       "targets": [
-        ["css=.d4-tree-view-group-host > .d4-tree-view-group:nth-child(1) .d4-tree-view-group:nth-child(4) .d4-tree-view-group-label", "css:finder"],
-        ["xpath=//div[@id='elementContent']/div/div/div[2]/div[23]/div[2]/div/div[2]/div[4]/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div[2]/div[4]/div/div[2]", "xpath:position"]
+        ["css=.d4-tree-view-group-host > .d4-tree-view-group .d4-tree-view-group:nth-child(2) > .d4-tree-view-node", "css:finder"],
+        ["xpath=//div[@name='tree-Oracle---Northwind---Test-Query-By-Selenium-Oracle']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div[2]/div[23]/div[2]/div/div[2]/div[2]/div", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div[2]/div[2]/div", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "4c96bce2-da7d-48f6-b164-62edbf9b3c30",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "c3cd57ce-4a69-45ac-b12d-af6b40d56c8c",
@@ -583,7 +603,7 @@
         ["xpath=//div[@id='elementContent']/div/div[2]/div/input", "xpath:idRelative"],
         ["xpath=//div[2]/div/input", "xpath:position"]
       ],
-      "value": "name =\"Test_Query_By_Selenium_Oracle\" and connection.name = \"northwind\""
+      "value": "name =\"Test_Query_By_Selenium_Oracle\""
     }, {
       "id": "e5bd01a1-d3e4-4faf-8da9-fc2ccbcda086",
       "comment": "",
@@ -608,7 +628,7 @@
       "id": "51a36960-e0de-4cde-8eb0-4d8d6f123b82",
       "comment": "",
       "command": "click",
-      "target": "name=span-Northwind",
+      "target": "name=span-OracleNorthwind",
       "targets": [
         ["css=.d4-flex-col tr:nth-child(1) > td:nth-child(2)", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div[4]/div/div/div/table/tbody/tr/td[2]", "xpath:idRelative"],
@@ -777,7 +797,7 @@
       "id": "21f52a40-f170-420d-b156-c4cbafec69e8",
       "comment": "",
       "command": "pause",
-      "target": "2000",
+      "target": "4000",
       "targets": [],
       "value": ""
     }, {
@@ -894,7 +914,7 @@
       "id": "2d061f40-9747-47e2-a105-5cd40e7ccdf8",
       "comment": "",
       "command": "click",
-      "target": "name=span-Northwind",
+      "target": "name=span-OracleNorthwind",
       "targets": [
         ["css=.d4-flex-col tr:nth-child(1) > td:nth-child(2)", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div[4]/div/div/div/table/tbody/tr/td[2]", "xpath:idRelative"],
@@ -1020,7 +1040,7 @@
         ["xpath=//div[@id='elementContent']/div/div[2]/div/input", "xpath:idRelative"],
         ["xpath=//div[2]/div/input", "xpath:position"]
       ],
-      "value": "name =\"Test_Query_By_Selenium_Oracle\" and connection.name = \"northwind\""
+      "value": "name =\"Test_Query_By_Selenium_Oracle\""
     }, {
       "id": "2497a9ab-b43a-469e-babc-2ed1e5fcc688",
       "comment": "",

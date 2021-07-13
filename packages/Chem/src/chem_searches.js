@@ -18,16 +18,18 @@ async function _cacheByAction(params, invalidator) {
     typeof foo.cachedStructure == 'undefined') {
     foo.cachedForCol = null;
     foo.cachedStructure = null;
+    foo.cachedForColVersion = null;
     invalidateCache = true;
   }
 
-  if (column !== foo.cachedForCol || query == null) {
+  if (column !== foo.cachedForCol || (column.version !== foo.cachedForColVersion) || query == null) {
     invalidateCache = true;
   }
 
   if (invalidateCache) {
     await invalidator(params);
     foo.cachedForCol = column;
+    foo.cachedForColVersion = column.version;
   }
 }
 

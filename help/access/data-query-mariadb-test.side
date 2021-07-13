@@ -117,7 +117,7 @@
       "id": "b6e44068-ce53-4ac8-9ae2-815127a68770",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"tree-expander-MariaDB---northwind\"]",
+      "target": "css=div[name=\"tree-expander-MariaDB---Northwind\"]",
       "targets": [
         ["css=div[name=\"tree-expander-MariaDB---northwind\"]", "css"],
         ["css=.d4-tree-view-group:nth-child(19) > .d4-tree-view-group-host > .d4-tree-view-group:nth-child(3) > .d4-tree-view-node > .d4-tree-view-tri", "css:finder"],
@@ -127,10 +127,17 @@
       ],
       "value": ""
     }, {
+      "id": "13fd19ef-4e63-47a8-b345-70200fe9ca3b",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "c18f1a9c-7f26-46a4-967f-bdda74168bd2",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"tree-MariaDB---northwind\"] > div.d4-tree-view-group-label",
+      "target": "css=div[name=\"tree-MariaDB---Northwind\"] > div.d4-tree-view-group-label",
       "targets": [
         ["css=div[name=\"tree-MariaDB---northwind\"] > div.d4-tree-view-group-label", "css"],
         ["css=.d4-tree-view-node-selected > .d4-tree-view-group-label", "css:finder"],
@@ -289,13 +296,20 @@
       "id": "6caebaa1-63cc-451f-a187-54034057a4e0",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"tree-MariaDB---northwind---Test-Query-By-Selenium-MariaDB\"] > div.d4-tree-view-group-label",
+      "target": "css=div[name=\"tree-MariaDB---Northwind---Test-Query-By-Selenium-MariaDB\"] > div.d4-tree-view-group-label",
       "targets": [
         ["css=div[name=\"tree-MariaDB---northwind---Test-Query-By-Selenium-MariaDB\"] > div.d4-tree-view-group-label", "css"],
         ["css=.d4-tree-view-group:nth-child(3) .d4-tree-view-group:nth-child(8) .d4-tree-view-group-label", "css:finder"],
         ["xpath=//div[@id='data-sources']/div/div[2]/div[19]/div[2]/div[3]/div[2]/div[8]/div/div[2]", "xpath:idRelative"],
         ["xpath=//div[3]/div[2]/div[8]/div/div[2]", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "67fe6b7f-97e2-49af-bf6f-b9c25f1bae1a",
+      "comment": "",
+      "command": "pause",
+      "target": "2000",
+      "targets": [],
       "value": ""
     }, {
       "id": "c3cd57ce-4a69-45ac-b12d-af6b40d56c8c",
@@ -308,6 +322,13 @@
         ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div", "xpath:idRelative"],
         ["xpath=//div[3]/div/div[2]/div/div/div/div/div[4]/div", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "a4582143-36dc-4676-8736-3ca4002d3219",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "761f77c2-1296-484a-b6c7-713fb8279685",
@@ -564,7 +585,7 @@
         ["xpath=//div[@id='elementContent']/div/div[2]/div/input", "xpath:idRelative"],
         ["xpath=//div[2]/div/input", "xpath:position"]
       ],
-      "value": "name =\"Test_Query_By_Selenium_MariaDB\" and connection.name = \"northwind\""
+      "value": "name =\"Test_Query_By_Selenium_MariaDB\" "
     }, {
       "id": "e5bd01a1-d3e4-4faf-8da9-fc2ccbcda086",
       "comment": "",
@@ -589,7 +610,7 @@
       "id": "51a36960-e0de-4cde-8eb0-4d8d6f123b82",
       "comment": "",
       "command": "click",
-      "target": "name=span-Northwind",
+      "target": "name=span-MariaDBNorthwind",
       "targets": [
         ["css=.d4-flex-col tr:nth-child(1) > td:nth-child(2)", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div[4]/div/div/div/table/tbody/tr/td[2]", "xpath:idRelative"],
@@ -758,7 +779,7 @@
       "id": "21f52a40-f170-420d-b156-c4cbafec69e8",
       "comment": "",
       "command": "pause",
-      "target": "2000",
+      "target": "4000",
       "targets": [],
       "value": ""
     }, {
@@ -875,7 +896,7 @@
       "id": "2d061f40-9747-47e2-a105-5cd40e7ccdf8",
       "comment": "",
       "command": "click",
-      "target": "name=span-Northwind",
+      "target": "name=span-MariaDBNorthwind",
       "targets": [
         ["css=.d4-flex-col tr:nth-child(1) > td:nth-child(2)", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div[4]/div/div/div/table/tbody/tr/td[2]", "xpath:idRelative"],
@@ -1001,7 +1022,7 @@
         ["xpath=//div[@id='elementContent']/div/div[2]/div/input", "xpath:idRelative"],
         ["xpath=//div[2]/div/input", "xpath:position"]
       ],
-      "value": "name =\"Test_Query_By_Selenium_MariaDB\" and connection.name = \"northwind\""
+      "value": "name =\"Test_Query_By_Selenium_MariaDB\" "
     }, {
       "id": "2497a9ab-b43a-469e-babc-2ed1e5fcc688",
       "comment": "",
