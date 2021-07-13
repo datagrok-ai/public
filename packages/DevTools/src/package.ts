@@ -7,7 +7,7 @@ export const _package = new DG.Package();
 const dfExts = ['csv', 'xlsx'];
 
 const templates = {
-  FileInfo: (ent) =>
+  FileInfo: (ent: DG.FileInfo) =>
 `// Read as text
 const str = await grok.dapi.files.readAsText("${ent.fullPath}");
 
@@ -17,12 +17,12 @@ const df = await grok.data.files.openTable("${ent.fullPath}");
 // Delete
 await grok.dapi.files.delete("${ent.fullPath}");
 grok.shell.info("${ent.fileName} exists: " + (await grok.dapi.files.exists("${ent.fullPath}")));`,
-  DataQuery: (ent) =>
+  DataQuery: (ent: DG.DataQuery) =>
 `const q = await grok.dapi.queries.find("${ent.id}");
 
 // Run a query
 const res = await grok.data.query("${ent.nqName}", {});`,
-  User: (ent) =>
+  User: (ent: DG.User) =>
 `const user = await grok.dapi.users.include("group.memberships, group.adminMemberships").find("${ent.id}");
 const userGroup = user.group;
 
@@ -37,7 +37,7 @@ let canEdit = false;
 await grok.dapi.permissions.grant(entity, userGroup, canEdit);
 console.log(await grok.dapi.permissions.get(entity));
 await grok.dapi.permissions.revoke(userGroup, entity);`,
-  Group: (ent) =>
+  Group: (ent: DG.Group) =>
 `const group = await grok.dapi.groups.find("${ent.id}");
 
 // Manage permissions
@@ -47,15 +47,15 @@ let canEdit = false;
 await grok.dapi.permissions.grant(entity, group, canEdit);
 console.log(await grok.dapi.permissions.get(entity));
 await grok.dapi.permissions.revoke(group, entity);`,
-  DataFrame: (ent) =>
+  DataFrame: (ent: DG.DataFrame) =>
 `
 DataFrame snippet
 `,
-  Column: (ent) =>
+  Column: (ent: DG.Column) =>
 `
 Column snippet
 `,
-  Package: (ent) =>
+  Package: (ent: DG.Package) =>
 `// Find package functions
 const funcs = DG.Func.find({ package: "${ent.name}" });
 
@@ -71,13 +71,13 @@ if (credentialsResponse == null) {
 } else {
   grok.shell.info(credentialsResponse.parameters);
 }`,
-  Project: (ent) =>
+  Project: (ent: DG.Project) =>
 `// Find a project by its name and open it in the workspace
 const project = await grok.dapi.projects.open("${ent.friendlyName}");
 
 // Read permissions
 console.log(await grok.dapi.permissions.get(project));`,
-  Script: (ent) =>
+  Script: (ent: DG.Script) =>
 `const script = await grok.dapi.scripts.find("${ent.id}");
 
 // Call a script
@@ -85,7 +85,7 @@ const res = await grok.functions.call("${ent.nqName}", {});
 
 // Read a script
 grok.shell.info(script.script);`,
-  ViewLayout: (ent) =>
+  ViewLayout: (ent: DG.ViewLayout) =>
 `// Apply to the original table
 const layout = await grok.dapi.layouts.find("${ent.id}");
 const tableId = JSON.parse(layout.viewState).tableId;
@@ -103,17 +103,17 @@ console.log(savedLayout.toJson());`
 };
 
 const entExtract = {
-  FileInfo: (ent) => dfExts.includes(ent.extension) ? `let df = await grok.data.files.openTable("${ent.fullPath}");` : ``,
-  DataQuery: (ent) => `let query = await grok.dapi.queries.find("${ent.id}");`,
-  User: (ent) => `let user = await grok.dapi.users.find("${ent.id}");`,
-  Group: (ent) => `let group = await grok.dapi.groups.find("${ent.id}");`,
-  DataFrame: (ent) => `let df = await grok.data.openTable("${ent.id}");`,
-  Column: (ent) => `let df = await grok.data.openTable("${ent.dataFrame.id}");\nlet col = df.col("${ent.name}");`,
-  Package: (ent) => `let package = await grok.dapi.packages.find("${ent.id}");`,
-  Project: (ent) => `let project = await grok.dapi.projects.find("${ent.id}");`,
-  Script: (ent) => `let script = await grok.dapi.scripts.find("${ent.id}");`,
-  Func: (ent) => `let func = DG.Func.find({ name: "${ent.name}" })[0];`,
-  ViewLayout: (ent) => `let layout = await grok.dapi.layouts.find("${ent.id}");`,
+  FileInfo: (ent: DG.FileInfo) => dfExts.includes(ent.extension) ? `let df = await grok.data.files.openTable("${ent.fullPath}");` : ``,
+  DataQuery: (ent: DG.DataQuery) => `let query = await grok.dapi.queries.find("${ent.id}");`,
+  User: (ent: DG.User) => `let user = await grok.dapi.users.find("${ent.id}");`,
+  Group: (ent: DG.Group) => `let group = await grok.dapi.groups.find("${ent.id}");`,
+  DataFrame: (ent: DG.DataFrame) => `let df = await grok.data.openTable("${ent.id}");`,
+  Column: (ent: DG.Column) => `let df = await grok.data.openTable("${ent.dataFrame.id}");\nlet col = df.col("${ent.name}");`,
+  Package: (ent: DG.Package) => `let package = await grok.dapi.packages.find("${ent.id}");`,
+  Project: (ent: DG.Project) => `let project = await grok.dapi.projects.find("${ent.id}");`,
+  Script: (ent: DG.Script) => `let script = await grok.dapi.scripts.find("${ent.id}");`,
+  Func: (ent: DG.Func) => `let func = DG.Func.find({ name: "${ent.name}" })[0];`,
+  ViewLayout: (ent: DG.ViewLayout) => `let layout = await grok.dapi.layouts.find("${ent.id}");`,
 };
 
 const helpUrls = {
@@ -131,7 +131,7 @@ const tags = {
   Column: ['creation'],
 };
 
-function getTagEditor(type) {
+function getTagEditor(type: string): HTMLElement {
   let t = DG.TagEditor.create();
   for (let tag of tags[type]) {
     t.addTag(tag);
@@ -139,12 +139,12 @@ function getTagEditor(type) {
   return t.root;
 }
 
-function format(s) {
+function format(s): string {
   s = s.replaceAll('-', ' ');
   return s[0].toUpperCase() + s.slice(1);
 }
 
-async function loadSnippets(ent) {
+async function loadSnippets(ent: any): Promise<DG.Script[]> {
   const type = ent.constructor.name;
   let tags = `#demo and #${type}`;
   if (type === 'FileInfo' && dfExts.includes(ent.extension)) {
@@ -155,7 +155,7 @@ async function loadSnippets(ent) {
 }
 
 //tags: autostart
-export function describeCurrentObj() {
+export function describeCurrentObj(): void {
   grok.events.onAccordionConstructed.subscribe(async (acc) => {
     const ent = acc.context;
     const type = ent.constructor.name;
@@ -170,18 +170,15 @@ export function describeCurrentObj() {
 
       const snippetNames = snippets.map(s => ui.divText(format(s.friendlyName), { classes: 'd4-link-action' }));
       let editor = ui.textInput('', template);
-      editor.input.style = 'height: 200px; overflow: hidden;';
-      // editor.input.style = 'width: 0; height: 0; visibility: hidden;';
-      // editor.root.style.display = 'none';
+      (editor.input as HTMLInputElement).style.height = '200px';
+      (editor.input as HTMLInputElement).style.overflow = 'hidden';
 
       snippetNames.forEach((el, idx) => el.addEventListener('click', () => {
         editor.value = snippets[idx].script;
-        // editor.root.style.display = 'block';
-        // editor.input.style = 'width: 200; height: 300; visibility: visible;';
       }));
 
       const clipboardBtn = ui.button(ui.iconFA('copy'), () => {
-        editor.input.select();
+        (editor.input as HTMLInputElement).select();
         const copied = document.execCommand('copy');
         if (copied) {
           const copyIcon = clipboardBtn.removeChild(clipboardBtn.firstChild);
