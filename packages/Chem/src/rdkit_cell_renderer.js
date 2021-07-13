@@ -47,7 +47,7 @@ M  END
       mol = rdKitModule.get_mol(molString);
     } catch (e) {
       try {
-        mol = rdKitModule.get_mol(molString, false);
+        mol = rdKitModule.get_mol(molString, "{\"kekulize\":false}");
       } catch (e2) {
         console.error(
           "In _fetchMolGetOrCreate: RDKit .get_mol crashes on a molString: `" + molString + "`");
@@ -57,15 +57,19 @@ M  END
     try {
       if (mol.is_valid()) {
         if (this._isMolBlock(scaffoldMolString)) {
-          let rdkitScaffoldMol = this._fetchMol(scaffoldMolString, "", molRegenerateCoords, false).mol;
+          const rdkitScaffoldMol = this._fetchMol(scaffoldMolString, "", molRegenerateCoords, false).mol;
           substructJson = mol.generate_aligned_coords(rdkitScaffoldMol, true, true, false);
           if (substructJson === "") {
             substructJson = "{}";
           }
         } else if (molRegenerateCoords) {
-          let molBlock = mol.get_new_coords(true);
+          const molBlock = mol.get_new_coords(true);
           mol.delete();
           mol = rdKitModule.get_mol(molBlock);
+        }
+        if (!this._isMolBlock(molString) || molRegenerateCoords) {
+          mol.normalize_2d_molblock();
+          mol.straighten_2d_layout();
         }
       }
       if (!mol.is_valid()) {
@@ -133,9 +137,15 @@ M  END
       "width": Math.floor(w),
       "height": Math.floor(h),
       "bondLineWidth": 1,
-      "minFontSize": 11,
+      "fixedScale": 0.07,
+      "minFontSize": 9,
       "highlightBondWidthMultiplier": 12,
-      "dummyIsotopeLabels": false
+      "dummyIsotopeLabels": false,
+      "atomColourPalette": {
+        16: [0.498, 0.247, 0.0],
+        9: [0.0, 0.498, 0.0],
+        17: [0.0, 0.498, 0.0],
+      },
     };
     if (highlightScaffold) {
       Object.assign(opts, substruct);

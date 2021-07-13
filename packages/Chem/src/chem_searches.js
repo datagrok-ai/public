@@ -29,7 +29,7 @@ async function _cacheByAction(params, invalidator) {
   if (invalidateCache) {
     await invalidator(params);
     foo.cachedForCol = column;
-    fool.cachedForColVersion = column.version;
+    foo.cachedForColVersion = column.version;
   }
 }
 
@@ -204,9 +204,16 @@ async function chemSubstructureSearchLibrary(molStringsColumn, molString) {
       column: molStringsColumn,
       query: molString
     },
-    async (params) =>
-      await rdKitParallel.substructInit(molStringsColumn.toList())
-    // TODO: avoid creating an additional array here
+    async (params) => {
+      const { molIdxToHash, hashToMolblock } = await rdKitParallel.substructInit(molStringsColumn.toList());
+      let i = 0;
+      for (const item of molIdxToHash) {
+        const notify = (i === molIdxToHash.length - 1);
+        const molStr = hashToMolblock[item] || item;
+        molStringsColumn.setString(i++, molStr, notify);
+      }
+      // TODO: avoid creating an additional array here
+    }
   );
 
   let result = DG.BitSet.create(molStringsColumn.length);
