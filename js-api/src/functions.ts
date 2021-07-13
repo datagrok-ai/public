@@ -22,7 +22,7 @@ const FuncCallParamMapProxy = new Proxy(class {
       return _toIterable(this.input ? api.grok_Func_InputParamMap_Keys(this.d) : api.grok_Func_OutputParamMap_Keys(this.d));
     }
     values() {
-      return _toIterable(api.grok_Func_ParamMap_Values(this.d));
+      return _toIterable(this.input ? api.grok_Func_InputParamMap_Values(this.d) : api.grok_Func_OutputParamMap_Values(this.d));
     }
     * [Symbol.iterator] () {
       for (let key of this.keys()) {
