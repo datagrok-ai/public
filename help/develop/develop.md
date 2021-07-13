@@ -533,7 +533,7 @@ tag denoting what the function does, for example:
   * `#dashboard` for [dashboards](#dashboards)
   * `#panel` for [info panels](#info-panels)
   * `#init` and `#autostart` for [pre-run functions](#pre-run-functions)
-  * `#semTypeDetector` for [semantic types detectors](#semantic-types-detectors)
+  * `#semTypeDetector` for [semantic types detectors](#semantic-type-detectors)
   * `#cellRenderer` for custom [cell renderers](#cell-renderers)
   * `#fileViewer` and `#fileExporter` for [file viewers](#file-viewers) and [exporters](#file-exporters)
   * `#packageSettingsEditor` for [settings editors](#package-settings-editors)
@@ -551,6 +551,14 @@ Applications are [functions](../overview/functions/function.md) tagged with the 
 
 To open the application launcher, click on `Functions | Apps`, or follow [this link](https://public.datagrok.ai/apps)
 from outside the platform. To launch a particular app automatically, open the following URL: `https://public.datagrok.ai/apps/<APP_NAME>`.
+
+To get the template for an `app` function, use the following `datagrok-tools` command from your package directory:
+
+```
+grok add app <name>
+```
+
+*Details:* [How to Build an Application](how-to/build-an-app.md)
 
 ### Pre-run Functions
 
@@ -576,8 +584,23 @@ To get the template for an `init` function, use the following `datagrok-tools`
 command from your package directory:
 
 ```
-grok add function init packageNameInit
+grok add function init <packageName>Init
 ```
+
+### File Viewers
+
+File viewers are used in Datagrok's [file share browser](../access/file-shares.md).
+The platform provides a way to define custom viewers (or editors) in addition to the native ones.
+These functions work on files with a specific extension, which is derived from the `fileViewer-<extension>` tag.
+
+*Details:* [How to Develop Custom File Viewers](how-to/custom-file-viewers.md)
+
+### File Exporters
+
+A file exporter is a function used for loading data from the platform. It is annotated
+with the `#fileExporter` tag. Exporters reside in the platform's top menu "export" section.
+
+*Details:* [How to Create File Exporters](how-to/file-exporters.md)
 
 ## Documentation
 

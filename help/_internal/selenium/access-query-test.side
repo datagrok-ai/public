@@ -60,7 +60,7 @@
       "id": "5dc82201-963e-4426-b05c-8dddb86d92b3",
       "comment": "",
       "command": "pause",
-      "target": "3000",
+      "target": "4000",
       "targets": [],
       "value": ""
     }, {
@@ -124,11 +124,11 @@
       "id": "b6e44068-ce53-4ac8-9ae2-815127a68770",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='tree-expander-Access---northwind.mdb']",
+      "target": "xpath=//div[@name='tree-expander-Access---Northwind']",
       "targets": [
-        ["css=.d4-tree-view-group:nth-child(1) > .d4-tree-view-group-host .d4-tree-view-tri-expanded", "css:finder"],
-        ["xpath=//div[@name='tree-expander-Access---northwind.mdb']", "xpath:attributes"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div/div[2]/div/div/div", "xpath:idRelative"],
+        ["css=.d4-tree-view-node-selected > .d4-tree-view-tri", "css:finder"],
+        ["xpath=//div[@name='tree-expander-Access---Northwind']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div[2]/div/div[2]/div/div/div", "xpath:idRelative"],
         ["xpath=//div[2]/div/div[2]/div/div/div", "xpath:position"]
       ],
       "value": ""

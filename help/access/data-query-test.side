@@ -125,7 +125,7 @@
       "id": "b6e44068-ce53-4ac8-9ae2-815127a68770",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"tree-expander-PostgreSQL---northwind\"]",
+      "target": "css=div[name=\"tree-expander-PostgreSQL---Northwind\"]",
       "targets": [
         ["css=div[name=\"tree-expander-PostgreSQL---northwind\"]", "css"],
         ["css=.d4-tree-view-group:nth-child(19) > .d4-tree-view-group-host > .d4-tree-view-group:nth-child(3) > .d4-tree-view-node > .d4-tree-view-tri", "css:finder"],
@@ -135,10 +135,17 @@
       ],
       "value": ""
     }, {
+      "id": "aff40a29-08c5-4fc5-967d-bd06fc67b5fe",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "c18f1a9c-7f26-46a4-967f-bdda74168bd2",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"tree-PostgreSQL---northwind\"] > div.d4-tree-view-group-label",
+      "target": "css=div[name=\"tree-PostgreSQL---Northwind\"] > div.d4-tree-view-group-label",
       "targets": [
         ["css=div[name=\"tree-PostgreSQL---northwind\"] > div.d4-tree-view-group-label", "css"],
         ["css=.d4-tree-view-node-selected > .d4-tree-view-group-label", "css:finder"],
@@ -213,6 +220,13 @@
         ["xpath=//div[2]/div/div/div/div/input", "xpath:position"]
       ],
       "value": "Test_Query_By_Selenium"
+    }, {
+      "id": "d3323705-b3b7-4ee3-810a-27bd1f0df1f6",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
     }, {
       "id": "92f46e2f-18f0-4233-9f58-b18719aeecaf",
       "comment": "",
@@ -312,7 +326,7 @@
       "id": "6caebaa1-63cc-451f-a187-54034057a4e0",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"tree-PostgreSQL---northwind---Test-Query-By-Selenium\"] > div.d4-tree-view-group-label",
+      "target": "css=div[name=\"tree-PostgreSQL---Northwind---Test-Query-By-Selenium\"] > div.d4-tree-view-group-label",
       "targets": [
         ["css=div[name=\"tree-PostgreSQL---northwind---Test-Query-By-Selenium\"] > div.d4-tree-view-group-label", "css"],
         ["css=.d4-tree-view-group:nth-child(3) .d4-tree-view-group:nth-child(8) .d4-tree-view-group-label", "css:finder"],
@@ -615,7 +629,7 @@
         ["xpath=//div[@id='elementContent']/div/div[2]/div/input", "xpath:idRelative"],
         ["xpath=//div[2]/div/input", "xpath:position"]
       ],
-      "value": "name =\"Test_Query_By_Selenium\" and connection.name = \"northwind\""
+      "value": "name =\"Test_Query_By_Selenium\""
     }, {
       "id": "e5bd01a1-d3e4-4faf-8da9-fc2ccbcda086",
       "comment": "",
@@ -640,7 +654,7 @@
       "id": "51a36960-e0de-4cde-8eb0-4d8d6f123b82",
       "comment": "",
       "command": "click",
-      "target": "name=span-Northwind",
+      "target": "name=span-PostgreSQLNorthwind",
       "targets": [],
       "value": ""
     }, {
@@ -814,7 +828,7 @@
       "id": "21f52a40-f170-420d-b156-c4cbafec69e8",
       "comment": "",
       "command": "pause",
-      "target": "2000",
+      "target": "4000",
       "targets": [],
       "value": ""
     }, {
@@ -919,7 +933,7 @@
       "id": "bb80478a-7a91-4fa6-b651-d0892e6bf037",
       "comment": "",
       "command": "click",
-      "target": "name=span-Northwind",
+      "target": "name=span-PostgreSQLNorthwind",
       "targets": [
         ["css=.d4-link-label > span:nth-child(1)", "css:finder"],
         ["xpath=//div[@id='elementContent']/div[4]/div/div/div/table/tbody/tr/td[2]/span/span", "xpath:idRelative"],
@@ -1068,7 +1082,7 @@
         ["xpath=//div[@id='elementContent']/div/div[2]/div/input", "xpath:idRelative"],
         ["xpath=//div[2]/div/input", "xpath:position"]
       ],
-      "value": "name =\"Test_Query_By_Selenium\" and connection.name = \"northwind\""
+      "value": "name =\"Test_Query_By_Selenium\" "
     }, {
       "id": "2497a9ab-b43a-469e-babc-2ed1e5fcc688",
       "comment": "",

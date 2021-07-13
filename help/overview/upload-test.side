@@ -60,7 +60,7 @@
       "id": "d513f1e9-2b80-4021-b243-19d0b560184a",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "4000",
       "targets": [],
       "value": ""
     }, {
@@ -143,7 +143,7 @@
       "id": "2099ad28-2eea-442a-b17b-353edd0845fe",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"tree-expander-PostgreSQL---northwind\"]",
+      "target": "css=div[name=\"tree-expander-PostgreSQL---Northwind\"]",
       "targets": [
         ["css=div[name=\"tree-expander-PostgreSQL---northwind\"]", "css"],
         ["css=.d4-tree-view-group:nth-child(19) > .d4-tree-view-group-host > .d4-tree-view-group:nth-child(3) > .d4-tree-view-node > .d4-tree-view-tri", "css:finder"],
@@ -163,7 +163,7 @@
       "id": "a60b542a-1342-4990-8e61-10eac96acb6c",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"tree-PostgreSQL---northwind---Products\"] > div.d4-tree-view-group-label",
+      "target": "css=div[name=\"tree-PostgreSQL---Northwind---Products\"] > div.d4-tree-view-group-label",
       "targets": [
         ["css=div[name=\"tree-PostgreSQL---northwind---products\"] > div.d4-tree-view-group-label", "css"],
         ["css=.d4-tree-view-group:nth-child(3) .d4-tree-view-group:nth-child(7) .d4-tree-view-group-label", "css:finder"],
@@ -262,7 +262,7 @@
       "id": "791f7624-26ce-43fc-a23e-ae461653f350",
       "comment": "",
       "command": "pause",
-      "target": "2000",
+      "target": "4000",
       "targets": [],
       "value": ""
     }, {
@@ -281,7 +281,7 @@
       "id": "b8b8bed7-5d0d-4788-95b2-3cf2126b44e5",
       "comment": "",
       "command": "pause",
-      "target": "2000",
+      "target": "1000",
       "targets": [],
       "value": ""
     }, {
@@ -480,6 +480,13 @@
         ["xpath=//select", "xpath:position"]
       ],
       "value": "label=Can edit"
+    }, {
+      "id": "b1c4462f-c86b-4f95-ae7c-53ece2f6f409",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
     }, {
       "id": "cfeb2499-1002-416d-8953-b4f7ba6e8b08",
       "comment": "",

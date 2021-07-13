@@ -156,7 +156,7 @@
     }, {
       "id": "0788596d-fe4e-4010-95d7-3afd27ff6190",
       "comment": "",
-      "command": "click",
+      "command": "pause",
       "target": "2000",
       "targets": [],
       "value": ""

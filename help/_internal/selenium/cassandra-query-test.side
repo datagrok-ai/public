@@ -499,6 +499,13 @@
       ],
       "value": ""
     }, {
+      "id": "76eb4f5e-187d-4547-be37-2c68406afbcd",
+      "comment": "",
+      "command": "pause",
+      "target": "2000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "a558b1f3-f487-4e5f-a5bc-f1bfafec98f9",
       "comment": "",
       "command": "click",
@@ -509,6 +516,13 @@
         ["xpath=//div[@id='elementContent']/div/div/div/div[5]/div", "xpath:idRelative"],
         ["xpath=//div[3]/div/div[2]/div/div/div/div/div[5]/div", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "0b4d6262-0797-4ea1-a3c1-83b92852752c",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "2073b211-1bbb-4209-84cf-91d6641cfb96",

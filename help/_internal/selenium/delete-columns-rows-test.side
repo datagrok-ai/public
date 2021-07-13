@@ -331,11 +331,11 @@
       "id": "12a2b325-62bc-4f95-86cb-82b4fcb426e9",
       "comment": "",
       "command": "click",
-      "target": "xpath=//span[@name='span-Demog']",
+      "target": "name=div-view-name",
       "targets": [
         ["css=.d4-ribbon-name > span:nth-child(1)", "css:finder"],
-        ["xpath=//span[@name='span-Demog']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[3]/div[3]/div/div/div/div/div/div/div[2]/span", "xpath:idRelative"],
+        ["xpath=//span[@name='span-demog']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[3]/div/div/div/div/div[2]/div/div[2]/span", "xpath:idRelative"],
         ["xpath=//div[2]/span", "xpath:position"]
       ],
       "value": ""
@@ -441,14 +441,14 @@
       "targets": [],
       "value": ""
     }, {
-      "id": "458220ae-09d3-4a8d-af50-1d1d6793150c",
+      "id": "dc586f42-00db-4814-86ec-95494dce5826",
       "comment": "",
       "command": "click",
-      "target": "xpath=//span[@name='span-Demog']",
+      "target": "name=div-view-name",
       "targets": [
         ["css=.d4-ribbon-name > span:nth-child(1)", "css:finder"],
-        ["xpath=//span[@name='span-Demog']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[3]/div[3]/div/div/div/div/div/div/div[2]/span", "xpath:idRelative"],
+        ["xpath=//span[@name='span-demog']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[3]/div/div/div/div/div[2]/div/div[2]/span", "xpath:idRelative"],
         ["xpath=//div[2]/span", "xpath:position"]
       ],
       "value": ""
@@ -522,14 +522,14 @@
       ],
       "value": ""
     }, {
-      "id": "cc0f9d06-aff6-4e70-9a3d-e60026f8b412",
+      "id": "27a356cf-36c3-4509-b6bd-b145b0968a95",
       "comment": "",
       "command": "click",
-      "target": "xpath=//span[@name='span-Demog']",
+      "target": "name=div-view-name",
       "targets": [
         ["css=.d4-ribbon-name > span:nth-child(1)", "css:finder"],
-        ["xpath=//span[@name='span-Demog']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[3]/div[3]/div/div/div/div/div/div/div[2]/span", "xpath:idRelative"],
+        ["xpath=//span[@name='span-demog']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div/div[3]/div[3]/div/div/div/div/div[2]/div/div[2]/span", "xpath:idRelative"],
         ["xpath=//div[2]/span", "xpath:position"]
       ],
       "value": ""

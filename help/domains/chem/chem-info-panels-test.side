@@ -3409,7 +3409,7 @@
       "id": "6b313721-9f70-4a99-ad0e-69452c03c178",
       "comment": "",
       "command": "open",
-      "target": "/datasets?selenium=true&q=smiles",
+      "target": "/projects?selenium=true&q=smiles",
       "targets": [],
       "value": ""
     }, {
@@ -3542,6 +3542,38 @@
         ["xpath=//div[2]/i", "xpath:position"]
       ],
       "value": ""
+    }, {
+      "id": "25fff262-14f9-44a7-a665-f70aa8e2d1fc",
+      "comment": "",
+      "command": "click",
+      "target": "name=button-SELECT",
+      "targets": [
+        ["name=button-SELECT", "name"],
+        ["css=.btn", "css:finder"],
+        ["xpath=//button[@name='button-SELECT']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[20]/div[2]/div/button", "xpath:idRelative"],
+        ["xpath=//button", "xpath:position"],
+        ["xpath=//button[contains(.,'SELECT')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "80d1e6c0-3d6c-4c64-b176-210efd9be00e",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "e00873a5-ae6f-4cfd-9f29-29ad6800ae49",
+      "comment": "",
+      "command": "click",
+      "target": "css=div[name=\"tree-EState.EState\"] > input[type=checkbox]",
+      "targets": [
+        ["css=.d4-tree-view-group:nth-child(2) > .d4-tree-view-node > input", "css:finder"],
+        ["xpath=(//input[@type='checkbox'])[6]", "xpath:attributes"],
+        ["xpath=//div[2]/div[2]/div/input", "xpath:position"]
+      ],
+      "value": "div[name=\"tree-EState.EState\"] > input[type=\"checkbox\"]"
     }, {
       "id": "b769d923-b230-49b9-85f8-cb7ac646067e",
       "comment": "",
