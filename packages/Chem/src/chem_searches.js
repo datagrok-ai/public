@@ -29,7 +29,7 @@ async function _cacheByAction(params, invalidator) {
   if (invalidateCache) {
     await invalidator(params);
     foo.cachedForCol = column;
-    fool.cachedForColVersion = column.version;
+    foo.cachedForColVersion = column.version;
   }
 }
 
