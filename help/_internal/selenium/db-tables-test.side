@@ -60,7 +60,7 @@
       "id": "25336f09-39ed-4b86-b7d1-7b3e07cfb014",
       "comment": "",
       "command": "pause",
-      "target": "3000",
+      "target": "4000",
       "targets": [],
       "value": ""
     }, {
@@ -117,7 +117,7 @@
       "id": "df328e6c-240f-4ab2-8c2c-a00284a4adde",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"tree-expander-MS-SQL---northwind\"]",
+      "target": "css=div[name=\"tree-expander-MS-SQL---Northwind\"]",
       "targets": [
         ["css=div[name=\"tree-expander-MS-SQL---northwind\"]", "css"],
         ["css=.d4-tree-view-group:nth-child(13) > .d4-tree-view-group-host > .d4-tree-view-group > .d4-tree-view-node > .d4-tree-view-tri", "css:finder"],
