@@ -129,8 +129,8 @@
       "target": "css=.d4-star",
       "targets": [
         ["css=.d4-star", "css:finder"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div/span/i", "xpath:idRelative"],
-        ["xpath=//span/i", "xpath:position"]
+        ["xpath=//div[@id='elementContent']/div/div/div/div/span/i[2]", "xpath:idRelative"],
+        ["xpath=//span/i[2]", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -175,7 +175,7 @@
       "id": "2077fdcf-bcbf-4b99-bd11-e722af67dfcb",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='tree-PostgreSQL---northwind']",
+      "target": "xpath=//div[@name='tree-PostgreSQL---Northwind']",
       "targets": [
         ["css=.d4-tree-view-node-selected", "css:finder"],
         ["xpath=//div[@name='tree-PostgreSQL---northwind']", "xpath:attributes"],
@@ -212,7 +212,7 @@
       "id": "ccadaefb-f995-483d-84ed-02d939c4e217",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='tree-expander-PostgreSQL---northwind']",
+      "target": "xpath=//div[@name='tree-expander-PostgreSQL---Northwind']",
       "targets": [
         ["css=.d4-tree-view-node-selected > .d4-tree-view-tri", "css:finder"],
         ["xpath=//div[@name='tree-expander-PostgreSQL---northwind']", "xpath:attributes"],
@@ -221,10 +221,17 @@
       ],
       "value": ""
     }, {
+      "id": "551d4167-13ff-45b9-84d8-01c45c334e40",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "4908aac0-eff6-4fed-b4db-42e23afc4cbd",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='tree-PostgreSQL---northwind---Products']",
+      "target": "xpath=//div[@name='tree-PostgreSQL---Northwind---Products']",
       "targets": [
         ["css=.d4-tree-view-group:nth-child(4) .d4-tree-view-group:nth-child(8) > .d4-tree-view-node", "css:finder"],
         ["xpath=//div[@name='tree-PostgreSQL---northwind---Products']", "xpath:attributes"],

@@ -60,7 +60,7 @@
       "id": "515e0fa2-c976-4ee5-9c74-97972bc13941",
       "comment": "",
       "command": "pause",
-      "target": "2000",
+      "target": "5000",
       "targets": [],
       "value": ""
     }, {
@@ -134,6 +134,13 @@
       ],
       "value": ""
     }, {
+      "id": "86f6bc34-e5e6-4642-9e4a-84e12effb3c9",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "dc62be45-eead-407d-a50e-c5fdb8b23895",
       "comment": "",
       "command": "click",
@@ -143,6 +150,13 @@
         ["css=.d4-menu-item-container:nth-child(5) > .d4-menu-item:nth-child(3) > .d4-menu-item-label", "css:finder"],
         ["xpath=//body/div[3]/div[3]/div[2]", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "7b981d04-5c51-40c0-a563-594ae630a6ee",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "fd05093d-6590-4732-9f2a-0c5cbac84062",
@@ -157,6 +171,13 @@
       ],
       "value": "northwind_by_Selenium"
     }, {
+      "id": "3e2bae07-fd91-40c5-9bc9-5a2ffbd50db9",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "51e0dccb-eea7-4c29-bc48-9025f3b7d500",
       "comment": "",
       "command": "type",
@@ -168,6 +189,13 @@
         ["xpath=//div[3]/input", "xpath:position"]
       ],
       "value": "localhost"
+    }, {
+      "id": "e2954589-b423-4067-a460-890c731a8b2a",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
     }, {
       "id": "4f388eee-99d3-414e-8aca-3a73dc7e8dd6",
       "comment": "",
@@ -181,6 +209,13 @@
       ],
       "value": "northwind"
     }, {
+      "id": "aa40a1e4-3966-4e35-93f0-3a20e6004953",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "225c6ad5-14c7-4016-9230-ceb8cd17362a",
       "comment": "",
       "command": "type",
@@ -192,6 +227,13 @@
         ["xpath=//div[5]/input", "xpath:position"]
       ],
       "value": "postgres"
+    }, {
+      "id": "d06e6c3a-3fa1-4cc2-acce-642a6adedd0a",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
     }, {
       "id": "06d6d358-10d0-4129-a8b0-edc3eebee88f",
       "comment": "",
@@ -335,6 +377,13 @@
       ],
       "value": ""
     }, {
+      "id": "ebbad743-c6c0-4209-9e28-22431ba7ae10",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "8571f16f-8072-4291-a54b-02a414aeb501",
       "comment": "",
       "command": "click",
@@ -344,6 +393,13 @@
         ["css=.d4-menu-item-container:nth-child(6) > .d4-menu-item:nth-child(3) > .d4-menu-item-label", "css:finder"],
         ["xpath=//div[4]/div[3]/div[2]", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "099e480b-7357-43fa-ba15-a4b3b2ed99a8",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "e554a412-8250-4572-97c2-2cd5fea13fc5",
@@ -358,6 +414,13 @@
       ],
       "value": ""
     }, {
+      "id": "10d61bd9-5e81-49cd-bd34-252db1d90b01",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "7b0a4046-bb8e-4bd3-ba87-17c4d818193b",
       "comment": "",
       "command": "type",
@@ -369,6 +432,13 @@
         ["xpath=//div[2]/input", "xpath:position"]
       ],
       "value": "rhea_by_selenium"
+    }, {
+      "id": "d2d3674a-47aa-492d-b93c-8b9980ad6494",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
     }, {
       "id": "2f4059a5-d870-4555-bdcb-fef23aacbf0b",
       "comment": "",
@@ -382,6 +452,13 @@
       ],
       "value": "https://sparql.rhea-db.org/sparql"
     }, {
+      "id": "6cd78b34-70f2-4b76-afb0-4fa1de0b503d",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "b138a003-2da4-42f2-8e6f-a3bb7b968bd4",
       "comment": "",
       "command": "click",
@@ -392,6 +469,13 @@
         ["xpath=(//input[@id='editor'])[3]", "xpath:attributes"],
         ["xpath=//label/input", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "36b26507-b892-45d8-8631-73bfb271775e",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "6b0a9221-9213-4035-afac-0c1e00864784",
@@ -551,6 +635,13 @@
       ],
       "value": ""
     }, {
+      "id": "8252fee6-9435-48bc-b17a-039440a7c18e",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "8c080951-08fa-43ea-8a46-cb3ca570b0da",
       "comment": "",
       "command": "click",
@@ -560,6 +651,13 @@
         ["css=.d4-menu-item-container:nth-child(6) > .d4-menu-item:nth-child(3) > .d4-menu-item-label", "css:finder"],
         ["xpath=//div[4]/div[3]/div[2]", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "6aad7b87-e3c9-4e8e-b5d4-baf7b83933be",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "aa1ca327-da54-4ab5-a1f8-ca453d4d3fc2",
@@ -574,6 +672,13 @@
       ],
       "value": ""
     }, {
+      "id": "23daf6e7-8440-4dcb-8051-e89b7704492b",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "cc830fb9-795a-4370-8b50-c9da86cc11b5",
       "comment": "",
       "command": "type",
@@ -585,6 +690,13 @@
         ["xpath=//div[2]/input", "xpath:position"]
       ],
       "value": "posgres_net_by_selenium"
+    }, {
+      "id": "42cf3984-79af-45e5-817d-faef12fec3b1",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
     }, {
       "id": "00760968-6ff7-4261-ad09-765ea6347a3c",
       "comment": "",
@@ -598,6 +710,13 @@
       ],
       "value": "localhost"
     }, {
+      "id": "3b2301c9-a51c-4ce4-ab7c-39c1228c948a",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "c0cad05d-62b7-4ce7-948d-c14fb475b21e",
       "comment": "",
       "command": "type",
@@ -609,6 +728,13 @@
         ["xpath=//div[5]/input", "xpath:position"]
       ],
       "value": "northwind"
+    }, {
+      "id": "ced995e5-d05b-4988-9ac8-4680fb7ff385",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
     }, {
       "id": "3692abde-7056-4e56-a5d1-19b20b7362ea",
       "comment": "",
@@ -622,6 +748,13 @@
       ],
       "value": "5432"
     }, {
+      "id": "f3a4b85d-1fff-4262-a86f-5cb1a836eeb3",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "fc6f0878-6d0b-4418-8100-c5a5a8a2a17d",
       "comment": "",
       "command": "type",
@@ -633,6 +766,13 @@
         ["xpath=//div[6]/input", "xpath:position"]
       ],
       "value": "postgres"
+    }, {
+      "id": "4e608330-8b1b-4126-ab8b-b85fae20f74d",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
     }, {
       "id": "6ea547a7-1322-4de5-b4db-0457c240c333",
       "comment": "",
@@ -753,6 +893,13 @@
         ["xpath=//div[@id='rootDiv']/div/div/div[4]/i", "xpath:idRelative"],
         ["xpath=//div[4]/i", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "5ed90e97-6a54-4a74-b09e-bc13aa170b66",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "7a9e0431-f519-40c9-84cf-96982e1e3ce2",
