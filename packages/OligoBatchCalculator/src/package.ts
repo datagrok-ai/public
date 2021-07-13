@@ -5,6 +5,25 @@ import * as DG from 'datagrok-api/dg';
 
 export let _package = new DG.Package();
 
+//name: Oligo Batch Calculator
+//input: string sequence
+//input: double amount
+//input: string outputUnits {choices: ['NMole', 'Milligrams', 'Micrograms', 'Optical Density']}
+//output: double opticalDensity
+//output: double nMole
+//output: double molecularMass
+//output: double molecularWeight
+//output: double extinctionCoefficient
+export function OligoBatchCalculator(sequence: string, amount: number, outputUnits: string) {
+  return {
+    opticalDensity: od(sequence, amount, outputUnits),
+    nMole: nMole(sequence, amount, outputUnits),
+    molecularMass: molecularWeight(sequence),
+    molecularWeight: molecularWeight(sequence),
+    extinctionCoefficient: extinctionCoefficient(sequence)
+  }
+}
+
 //name: opticalDensity
 //input: string sequence
 //input: double amount
@@ -33,7 +52,7 @@ export function nMole(sequence: string, amount: number, outputUnits: string): nu
 //input: string sequence
 //input: double amount
 //input: string outputUnits {choices: ['Optical Density', 'Milligrams', 'Micromoles', 'Millimoles']}
-//output: double nMole
+//output: double molecularMass
 export function molecularMass(sequence: string, amount: number, outputUnits: string): number {
   if (outputUnits == 'Optical Density')
     return 1000 * amount / extinctionCoefficient(sequence) * molecularWeight(sequence);
@@ -161,9 +180,9 @@ function prepareInputTextField(text: string) {
   return text.split('\n').map((s) => s.replace(/\s/g, '')).filter(item => item);
 }
 
-//name: Oligo Batch Calculator
+//name: Oligo Batch Calculator App
 //tags: app
-export function OligoBatchCalculator() {
+export function OligoBatchCalculatorApp() {
 
   const defaultInput = 'fAmCmGmAmCpsmU\nmApsmApsfGmAmUmCfGfAfC\nmAmUfGmGmUmCmAfAmGmA';
 
