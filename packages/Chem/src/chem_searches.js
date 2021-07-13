@@ -1,7 +1,7 @@
 var rdKitParallel = null;
 async function _initRdKitWorkers() {
-  let foo = _initRdKitWorkers;
-  if (typeof foo.initialized == 'undefined' || !foo.initialized) {
+  let initFunc = _initRdKitWorkers;
+  if (typeof initFunc.initialized == 'undefined' || !initFunc.initialized) {
     rdKitParallel = new RdKitParallel();
     await rdKitParallel.init(rdKitWorkerWebRoot);
     _initRdKitWorkers.initialized = true;
@@ -11,25 +11,25 @@ async function _initRdKitWorkers() {
 async function _cacheByAction(params, invalidator) {
 
   let invalidateCache = false;
-  let {foo, column, query} = params;
+  let {funcObj, column, query} = params;
 
   if (
-    typeof foo.cachedForCol == 'undefined' &&
-    typeof foo.cachedStructure == 'undefined') {
-    foo.cachedForCol = null;
-    foo.cachedStructure = null;
-    foo.cachedForColVersion = null;
+    typeof funcObj.cachedForCol == 'undefined' &&
+    typeof funcObj.cachedStructure == 'undefined') {
+    funcObj.cachedForCol = null;
+    funcObj.cachedStructure = null;
+    funcObj.cachedForColVersion = null;
     invalidateCache = true;
   }
 
-  if (column !== foo.cachedForCol || (column.version !== foo.cachedForColVersion) || query == null) {
+  if (column !== funcObj.cachedForCol || (column.version !== funcObj.cachedForColVersion) || query == null) {
     invalidateCache = true;
   }
 
   if (invalidateCache) {
     await invalidator(params);
-    foo.cachedForCol = column;
-    foo.cachedForColVersion = column.version;
+    funcObj.cachedForCol = column;
+    funcObj.cachedForColVersion = column.version;
   }
 }
 
@@ -142,10 +142,10 @@ async function _chemSimilarityScoring(molStringsColumn, molString, settings) {
   // await _initRdKitWorkers();
 
   _cacheByAction(
-    {foo: _chemSimilarityScoring, column: molStringsColumn, query: molString},
+    {funcObj: _chemSimilarityScoring, column: molStringsColumn, query: molString},
     (params) => {
-      let {foo, column, query} = params;
-      foo.cachedStructure = _moleculesToFingerprints(molStringsColumn, settings);
+      let {funcObj, column, query} = params;
+      funcObj.cachedStructure = _moleculesToFingerprints(molStringsColumn, settings);
     });
 
   if (molString.length != 0) {
@@ -200,7 +200,7 @@ async function chemSubstructureSearchLibrary(molStringsColumn, molString) {
   await _initRdKitWorkers();
 
   await _cacheByAction({
-      foo: chemSubstructureSearchLibrary,
+      funcObj: chemSubstructureSearchLibrary,
       column: molStringsColumn,
       query: molString
     },
