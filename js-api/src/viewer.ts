@@ -47,7 +47,7 @@ export class TypedEventArgs {
    });
  **/
 export class Viewer extends Widget {
-  props: ObjectPropertyBag;
+  props: ObjectPropertyBag | undefined;
 
   /** @constructs Viewer */
   constructor(d: any, root?: HTMLElement) {
@@ -127,11 +127,11 @@ export class Viewer extends Widget {
   }
 
   /** @type {DataFrame} */
-  get dataFrame(): DataFrame {
+  get dataFrame(): DataFrame | undefined {
     return toJs(api.grok_Viewer_Get_DataFrame(this.d));
   }
 
-  set dataFrame(t: DataFrame) {
+  set dataFrame(t: DataFrame | undefined) {
     api.grok_Viewer_Set_DataFrame(this.d, t == null ? null : t.d);
   }
 
@@ -212,13 +212,14 @@ export class TablePlotter {
  *  See an example on github: {@link https://github.com/datagrok-ai/public/tree/master/packages/Leaflet}
  *  */
 export class JsViewer extends Viewer {
-  private _dataFrame: DataFrame | null;
+  private _dataFrame: DataFrame | undefined;
   public d: any;
-  public get dataFrame(): DataFrame | null {
+  public get dataFrame(): DataFrame | undefined {
         return this._dataFrame;
     }
-    public set dataFrame(value: DataFrame | null) {
-      this.onFrameAttached(value);
+    public set dataFrame(value: DataFrame | undefined) {
+      if (value != undefined)
+        this.onFrameAttached(value);
     }
   subs: Subscription[];
   obs: rxjs.Observable<any>[];
@@ -230,7 +231,6 @@ export class JsViewer extends Viewer {
     super(null, _root);
 
     this._root = _root;
-    this._dataFrame = null;
 
     /** @type {StreamSubscription[]} */
     this.subs = [];  // stream subscriptions - will be canceled when the viewer is detached
