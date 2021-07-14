@@ -74,3 +74,12 @@ export function vaidateAEDomain(df: DG.DataFrame, validationResults: DG.DataFram
     validateDomainName(df, 'ae', 'SD0004', validationResults);
 }
 
+export function vaidateDMDomain(df: DG.DataFrame, validationResults: DG.DataFrame){
+    validateRequiredVariables(df, 'dm', 'SD0002', validationResults);
+    validateStartEndVariables(df, ['STDY', 'ENDY'], 'dm','SD0012', validationResults);
+    validateNonNegativeVariables(df, ['DUR'], 'dm','SD0015', validationResults);
+    validateISO8601Variables(df, ['DTC'], 'dm', 'SD0003', validationResults);
+    validateISO8601Variables(df, ['DUR', 'ELTM', 'EVLINT', 'STINT', 'ENINT', 'TDSTOFF', 'TDTGTPAI', 'TDMINPAI', 'TDMAXPAI'], 'dm', 'SD1011', validationResults);
+    validateDomainName(df, 'ae', 'SD0004', validationResults);
+}
+
