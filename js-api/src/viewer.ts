@@ -2,14 +2,14 @@
 import {TYPE, VIEWER, ViewerPropertyType, ViewerType} from "./const";
 import {Column, DataFrame} from "./dataframe.js";
 import {DateTime, Property} from "./entities";
-import {ObjectPropertyBag, Widget, Menu} from "./widgets";
+import {Menu, ObjectPropertyBag, Widget} from "./widgets";
 import {_toJson} from "./utils";
 import {toJs} from "./wrappers";
-import {StreamSubscription, __obs, EventData} from "./events";
+import {__obs, StreamSubscription} from "./events";
 import * as rxjs from "rxjs";
-import { map, filter, scan } from 'rxjs/operators';
-import {Grid, Point, Rect} from "./grid";
 import {Subscription} from "rxjs";
+import {map} from 'rxjs/operators';
+import {Grid, Point, Rect} from "./grid";
 
 declare let DG: any;
 declare let ui: any;
@@ -27,8 +27,7 @@ export class TypedEventArgs {
 
   get data(): any {
     let data = api.grok_TypedEventArgs_Get_Data(this.d);
-    let jsData = toJs(data);
-    return jsData;
+    return toJs(data);
   }
 }
 
@@ -51,12 +50,13 @@ export class Viewer extends Widget {
   props: ObjectPropertyBag;
 
   /** @constructs Viewer */
-  constructor(d: any) {
-    super(api.grok_Viewer_Root(d));
+  constructor(d: any, root?: HTMLElement) {
+    super(root ?? api.grok_Viewer_Root(d));
     this.d = d;
 
+    if (d != null)
     /** @member {ObjectPropertyBag} */
-    this.props = new ObjectPropertyBag(this, api.grok_Viewer_Get_Look(this.d));
+      this.props = new ObjectPropertyBag(this, api.grok_Viewer_Get_Look(this.d));
   }
 
   /** Creates a new viewer of the specified type.
@@ -144,11 +144,11 @@ export class Viewer extends Widget {
   }
 
   static barChart(t: DataFrame, options: object | null = null): Viewer {
-    return Viewer.fromType(VIEWER.BAR_CHART, t, options);
+    return <Viewer>Viewer.fromType(VIEWER.BAR_CHART, t, options);
   }
 
   static heatMap(t: DataFrame, options: object | null = null): Viewer {
-    return Viewer.fromType(VIEWER.HEAT_MAP, t, options);
+    return <Viewer>Viewer.fromType(VIEWER.HEAT_MAP, t, options);
   }
 
   static boxPlot(t: DataFrame, options: object | null = null): Viewer {
@@ -168,16 +168,14 @@ export class Viewer extends Widget {
   }
 
   static network(t: DataFrame, options: object | null = null): Viewer {
-    return Viewer.fromType(VIEWER.NETWORK_DIAGRAM, t, options);
+    return <Viewer>Viewer.fromType(VIEWER.NETWORK_DIAGRAM, t, options);
   }
 
   get onContextMenu(): rxjs.Observable<Menu> {
     return this.onEvent('d4-context-menu').pipe(map(x => x.args.menu));
   }
 
-  /** Observes platform events with the specified eventId.
-   * @param {string} eventId
-   * @returns {Observable} */
+  /** Observes platform events with the specified eventId. */
   onEvent(eventId: string | null = null): rxjs.Observable<any> {
     if (eventId !== null)
       return __obs(eventId, this.d);
@@ -213,22 +211,30 @@ export class TablePlotter {
 /** Subclass JsViewer to implement a DataFrame-bound Datagrok viewer in JavaScript.
  *  See an example on github: {@link https://github.com/datagrok-ai/public/tree/master/packages/Leaflet}
  *  */
-export class JsViewer extends Widget {
-  dataFrame: DataFrame | null;
+export class JsViewer extends Viewer {
+  private _dataFrame: DataFrame | null;
+  public d: any;
+  public get dataFrame(): DataFrame | null {
+        return this._dataFrame;
+    }
+    public set dataFrame(value: DataFrame | null) {
+      this.onFrameAttached(value);
+    }
   subs: Subscription[];
   obs: rxjs.Observable<any>[];
   props: ObjectPropertyBag;
 
   /** @constructs JsViewer */
   constructor() {
-    super(ui.box());
+    let _root = ui.box();
+    super(null, _root);
 
-    this.dataFrame = null;
+    this._root = _root;
+    this._dataFrame = null;
 
     /** @type {StreamSubscription[]} */
     this.subs = [];  // stream subscriptions - will be canceled when the viewer is detached
 
-    /** @member {Observable[]} */
     this.obs = [];
 
     /** @member {ObjectPropertyBag} */
@@ -236,9 +242,12 @@ export class JsViewer extends Widget {
   }
 
   onFrameAttached(dataFrame: DataFrame): void {
-    this.dataFrame = dataFrame;
+    this._dataFrame = dataFrame;
     this.onTableAttached();
   }
+
+  get root(): HTMLElement { return this._root; }
+  set root(r: HTMLElement) { this._root = r; }
 
   /** Gets called when a table is attached to the viewer. */
   onTableAttached(): void {
@@ -262,14 +271,11 @@ export class JsViewer extends Widget {
 
   /** cleanup() will get called when the viewer is disposed
    * @param {Function} cleanup */
-  registerCleanup(cleanup: Function): void {
+  protected registerCleanup(cleanup: Function): void {
     api.grok_Widget_RegisterCleanup(this.root, cleanup);
   }
 
-  /**
-   * @param {Observable} observable
-   * @returns {Observable} */
-  _obs(observable: rxjs.Observable<any>): rxjs.Observable<any> {
+  protected _obs(observable: rxjs.Observable<any>): rxjs.Observable<any> {
     this.obs.push(observable);
     return observable;
   }
@@ -279,7 +285,7 @@ export class JsViewer extends Widget {
    * @param {string} dataPropertyName
    * @param {object} options
    * @returns {Column} */
-  column(dataPropertyName: string, options: {} | null = null): Column {
+  protected column(dataPropertyName: string, options: {} | null = null): Column {
     return this.addProperty(`${dataPropertyName}ColumnName`, TYPE.STRING, null, options);
   }
 
@@ -288,7 +294,7 @@ export class JsViewer extends Widget {
    * @param {number} defaultValue
    * @param {object} options
    * @returns {number} */
-  int(propertyName: ViewerPropertyType, defaultValue: number | null = null, options: {} | null = null): number {
+  protected int(propertyName: ViewerPropertyType, defaultValue: number | null = null, options: {} | null = null): number {
     return this.addProperty(propertyName, TYPE.INT, defaultValue, options);
   }
 
@@ -297,7 +303,7 @@ export class JsViewer extends Widget {
    * @param {number} defaultValue
    * @param {object} options
    * @returns {number} */
-  float(propertyName: ViewerPropertyType, defaultValue: number | null = null, options: {} | null = null): number {
+  protected float(propertyName: ViewerPropertyType, defaultValue: number | null = null, options: {} | null = null): number {
     return this.addProperty(propertyName, TYPE.FLOAT, defaultValue, options);
   }
 
@@ -306,7 +312,7 @@ export class JsViewer extends Widget {
    * @param {string} defaultValue
    * @param {object} options
    * @returns {string} */
-  string(propertyName: ViewerPropertyType, defaultValue: string | null = null, options: {} | null = null): string {
+  protected string(propertyName: ViewerPropertyType, defaultValue: string | null = null, options: {} | null = null): string {
     return this.addProperty(propertyName, TYPE.STRING, defaultValue, options);
   }
 
@@ -315,7 +321,7 @@ export class JsViewer extends Widget {
    * @param {string[]} defaultValue
    * @param {object} options
    * @returns {string[]} */
-  stringList(propertyName: ViewerPropertyType, defaultValue: string[] | null = null, options: {} | null = null): string[] {
+  protected stringList(propertyName: ViewerPropertyType, defaultValue: string[] | null = null, options: {} | null = null): string[] {
     return this.addProperty(propertyName, TYPE.STRING_LIST, defaultValue, options);
   }
 
@@ -324,7 +330,7 @@ export class JsViewer extends Widget {
    * @param {boolean} defaultValue
    * @param {object} options
    * @returns {boolean} */
-  bool(propertyName: ViewerPropertyType, defaultValue: boolean | null = null, options: {} | null = null): boolean {
+  protected bool(propertyName: ViewerPropertyType, defaultValue: boolean | null = null, options: {} | null = null): boolean {
     return this.addProperty(propertyName, TYPE.BOOL, defaultValue, options);
   }
 
@@ -333,19 +339,8 @@ export class JsViewer extends Widget {
    * @param {DateTime} defaultValue
    * @param {object} options
    * @returns {DateTime} */
-  dateTime(propertyName: ViewerPropertyType, defaultValue: DateTime | null = null, options: {} | null = null): DateTime {
+  protected dateTime(propertyName: ViewerPropertyType, defaultValue: DateTime | null = null, options: {} | null = null): DateTime {
     return this.addProperty(propertyName, TYPE.DATE_TIME, defaultValue, options);
-  }
-}
-
-export class JsViewerLoader extends JsViewer {
-  constructor(d: any) {
-    super();
-    this.d = d;
-  }
-
-  get instance(): Promise<JsViewer> {
-    return new Promise((resolve, reject) => api.grok_JsViewerHostCore_Get_Instance(this.d, (t: any) => resolve(toJs(t))));
   }
 }
 
