@@ -108,14 +108,14 @@
       "id": "ccefa6d6-f9af-4185-9bac-04040bb355a3",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//h2[contains(.,'Applications')]",
+      "target": "xpath=//h3[@id='applications']",
       "targets": [
-        ["id=grok-app", "id"],
-        ["css=#grok-app", "css:finder"],
-        ["xpath=//h1[@id='grok-app']", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/span/h1", "xpath:idRelative"],
-        ["xpath=//span/h1", "xpath:position"],
-        ["xpath=//h1[contains(.,'Grok App')]", "xpath:innerText"]
+        ["id=applications", "id"],
+        ["css=#applications", "css:finder"],
+        ["xpath=//h3[@id='applications']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/span/h3[18]", "xpath:idRelative"],
+        ["xpath=//h3[18]", "xpath:position"],
+        ["xpath=//h3[contains(.,'Applications')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
@@ -136,6 +136,18 @@
       "command": "pause",
       "target": "7000",
       "targets": [],
+      "value": ""
+    }, {
+      "id": "1b29d7f7-89ea-49f4-afbd-93ef32f47fe3",
+      "comment": "",
+      "command": "verifyElementNotPresent",
+      "target": "id=balloon: error",
+      "targets": [
+        ["id=balloon: error", "id"],
+        ["xpath=//div[@id='balloon: error']", "xpath:attributes"],
+        ["xpath=//div[@id='rootDiv']/div[3]/div", "xpath:idRelative"],
+        ["xpath=//body/div[3]/div[3]/div", "xpath:position"]
+      ],
       "value": ""
     }, {
       "id": "03df217b-a673-4ecd-b580-8f380b16cfef",

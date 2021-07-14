@@ -187,10 +187,10 @@
       "id": "f4243c3e-b4f6-4b07-a9b0-7b4485f9b055",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-font-icon-settings'])[2]",
+      "target": "xpath=(//i[@name='icon-font-icon-settings'])[3]",
       "targets": [
-        ["css=.splitter-container-vertical > .panel-titlebar > .grok-font-icon-settings", "css:finder"],
-        ["xpath=(//i[@name='icon-font-icon-settings'])[2]", "xpath:attributes"],
+        ["css=.panel-titlebar-tabhost > .grok-font-icon-settings", "css:finder"],
+        ["xpath=(//i[@name='icon-font-icon-settings'])[3]", "xpath:attributes"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div/i[3]", "xpath:idRelative"],
         ["xpath=//div[3]/div/i[3]", "xpath:position"]
       ],
@@ -393,7 +393,7 @@
       "id": "71a0b72b-583d-4d64-8e01-82a666d46dd9",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//i[@name='icon-font-icon-settings'])[2]",
+      "target": "xpath=(//i[@name='icon-font-icon-settings'])[3]",
       "targets": [
         ["css=.splitter-container-vertical > .panel-titlebar > .grok-font-icon-settings", "css:finder"],
         ["xpath=(//i[@name='icon-font-icon-settings'])[2]", "xpath:attributes"],

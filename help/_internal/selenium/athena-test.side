@@ -60,7 +60,7 @@
       "id": "ece8e486-3665-43bc-b808-cc7e19c704e1",
       "comment": "",
       "command": "pause",
-      "target": "3000",
+      "target": "5000",
       "targets": [],
       "value": ""
     }, {

@@ -52,7 +52,7 @@
       "id": "ab8f2726-12a0-40e3-ac90-4730f3344006",
       "comment": "",
       "command": "pause",
-      "target": "3000",
+      "target": "5000",
       "targets": [],
       "value": ""
     }, {
@@ -137,12 +137,12 @@
       "id": "af54d518-3121-4bf4-89e6-7b959cce529a",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='tree-expander-Web---Covid-19-current-cases']",
+      "target": "xpath=//div[@name='tree-expander-Web---Countries-API']",
       "targets": [
-        ["css=.d4-tree-view-group:nth-child(9) > .d4-tree-view-node > .d4-tree-view-tri-expanded", "css:finder"],
-        ["xpath=//div[@name='tree-expander-Web---Covid-19-current-cases']", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div/div[2]/div[35]/div[2]/div[9]/div/div", "xpath:idRelative"],
-        ["xpath=//div[35]/div[2]/div[9]/div/div", "xpath:position"]
+        ["css=.d4-tree-view-group:nth-child(36) .d4-tree-view-group:nth-child(8) .d4-tree-view-tri", "css:finder"],
+        ["xpath=//div[@name='tree-expander-Web---Countries-API']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div[2]/div[36]/div[2]/div[8]/div/div", "xpath:idRelative"],
+        ["xpath=//div[36]/div[2]/div[8]/div/div", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -156,12 +156,12 @@
       "id": "4f29be4a-9ff4-4eb1-b643-3429db8fff1c",
       "comment": "",
       "command": "doubleClick",
-      "target": "xpath=//div[@name='tree-Web---Covid-19-current-cases---Cases-By-Countries']",
+      "target": "xpath=//div[@name='tree-Web---Countries-API---All-Countries']",
       "targets": [
-        ["css=.d4-tree-view-group:nth-child(9) .d4-tree-view-group:nth-child(2) > .d4-tree-view-node", "css:finder"],
-        ["xpath=//div[@name='tree-Web---Covid-19-current-cases---Cases-By-Countries']", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div/div[2]/div[35]/div[2]/div[9]/div[2]/div[2]/div", "xpath:idRelative"],
-        ["xpath=//div[9]/div[2]/div[2]/div", "xpath:position"]
+        ["css=.d4-tree-view-group:nth-child(8) .d4-tree-view-group:nth-child(1) > .d4-tree-view-node", "css:finder"],
+        ["xpath=//div[@name='tree-Web---Countries-API---All-Countries']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div[2]/div[36]/div[2]/div[8]/div[2]/div/div", "xpath:idRelative"],
+        ["xpath=//div[8]/div[2]/div/div", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -211,7 +211,7 @@
       "id": "f47b7bb7-9f69-4ced-a469-3a63e5ae00f4",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span-Cases-By-Countries",
+      "target": "name=span-All-Countries",
       "targets": [],
       "value": ""
     }, {

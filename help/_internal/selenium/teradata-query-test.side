@@ -124,24 +124,31 @@
       "id": "b6e44068-ce53-4ac8-9ae2-815127a68770",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='tree-expander-Teradata---northwind']",
+      "target": "xpath=//div[@name='tree-expander-Teradata---Northwind']",
       "targets": [
-        ["css=.d4-tree-view-group:nth-child(28) > .d4-tree-view-group-host > .d4-tree-view-group > .d4-tree-view-node > .d4-tree-view-tri", "css:finder"],
-        ["xpath=//div[@name='tree-expander-Teradata---northwind.sl3']", "xpath:attributes"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div[28]/div[2]/div/div/div", "xpath:idRelative"],
-        ["xpath=//div[28]/div[2]/div/div/div", "xpath:position"]
+        ["css=.d4-tree-view-group-host > .d4-tree-view-group:nth-child(1) .d4-tree-view-tri-expanded", "css:finder"],
+        ["xpath=//div[@name='tree-expander-Teradata---Northwind']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div[2]/div[32]/div[2]/div/div/div", "xpath:idRelative"],
+        ["xpath=//div[32]/div[2]/div/div/div", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "3eba9686-c4f9-4b70-8ed3-5b9a1e04e872",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "c18f1a9c-7f26-46a4-967f-bdda74168bd2",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='tree-Teradata---northwind']",
+      "target": "xpath=//div[@name='tree-Teradata---Northwind']",
       "targets": [
-        ["css=.d4-tree-view-group:nth-child(28) > .d4-tree-view-group-host > .d4-tree-view-group > .d4-tree-view-node", "css:finder"],
-        ["xpath=//div[@name='tree-Teradata---northwind.sl3']", "xpath:attributes"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div[28]/div[2]/div/div", "xpath:idRelative"],
-        ["xpath=//div[28]/div[2]/div/div", "xpath:position"]
+        ["css=.d4-tree-view-group:nth-child(32) > .d4-tree-view-group-host > .d4-tree-view-group > .d4-tree-view-node", "css:finder"],
+        ["xpath=//div[@name='tree-Teradata---Northwind']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div[2]/div[32]/div[2]/div/div", "xpath:idRelative"],
+        ["xpath=//div[32]/div[2]/div/div", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -296,13 +303,20 @@
       "id": "6caebaa1-63cc-451f-a187-54034057a4e0",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"tree-Teradata---northwind---Test-Query-By-Selenium-Teradata\"] > div.d4-tree-view-group-label",
+      "target": "css=div[name=\"tree-Teradata---Northwind---Test-Query-By-Selenium-Teradata\"] > div.d4-tree-view-group-label",
       "targets": [
         ["css=div[name=\"tree-Teradata---northwind---Test-Query-By-Selenium-Teradata\"] > div.d4-tree-view-group-label", "css"],
         ["css=.d4-tree-view-group:nth-child(3) .d4-tree-view-group:nth-child(8) .d4-tree-view-group-label", "css:finder"],
         ["xpath=//div[@id='data-sources']/div/div[2]/div[19]/div[2]/div[3]/div[2]/div[8]/div/div[2]", "xpath:idRelative"],
         ["xpath=//div[3]/div[2]/div[8]/div/div[2]", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "49dec0c7-00fa-4432-8c20-c654899bd2a2",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "c3cd57ce-4a69-45ac-b12d-af6b40d56c8c",
@@ -328,6 +342,13 @@
         ["xpath=//textarea", "xpath:position"]
       ],
       "value": "SELECT * FROM northwind.products"
+    }, {
+      "id": "73d6862d-20cc-4cc3-b2c8-c47ecae1e424",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
     }, {
       "id": "a6f36012-b3d2-4d4b-a778-da8063c9804e",
       "comment": "",
@@ -388,6 +409,13 @@
       ],
       "value": ""
     }, {
+      "id": "a246bde8-732d-4520-9366-e561a9123548",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "13dd2d57-3a12-4b06-a3b5-8f6cf1226693",
       "comment": "",
       "command": "click",
@@ -400,6 +428,13 @@
         ["xpath=//div[@id='elementContent']/div/div/div/div[3]/div[2]/div/button", "xpath:idRelative"],
         ["xpath=//button", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "7fa8aca2-8550-48a5-b419-a25170c73b06",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "606dc0ea-cdd1-46f9-852f-ed5aa4670407",
@@ -429,7 +464,7 @@
       "id": "6ed33851-7d59-4296-b4e8-9a5e18ea0de0",
       "comment": "",
       "command": "pause",
-      "target": "3000",
+      "target": "4000",
       "targets": [],
       "value": ""
     }, {
@@ -564,7 +599,7 @@
         ["xpath=//div[@id='elementContent']/div/div[2]/div/input", "xpath:idRelative"],
         ["xpath=//div[2]/div/input", "xpath:position"]
       ],
-      "value": "name =\"Test_Query_By_Selenium_Teradata\" and connection.name = \"northwind\""
+      "value": "name =\"Test_Query_By_Selenium_Teradata\""
     }, {
       "id": "e5bd01a1-d3e4-4faf-8da9-fc2ccbcda086",
       "comment": "",
@@ -760,7 +795,7 @@
       "id": "21f52a40-f170-420d-b156-c4cbafec69e8",
       "comment": "",
       "command": "pause",
-      "target": "2000",
+      "target": "4000",
       "targets": [],
       "value": ""
     }, {
