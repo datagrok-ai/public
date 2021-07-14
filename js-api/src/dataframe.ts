@@ -195,8 +195,8 @@ export class DataFrame {
   public filter: BitSet;
   public temp: any;
   public tags: any;
-  private _plot: DataFramePlotHelper;
-  private _dialogs: DataFrameDialogHelper;
+  private _plot: DataFramePlotHelper | undefined;
+  private _dialogs: DataFrameDialogHelper | undefined;
 
   constructor(d: any) {
     this.d = d;
@@ -644,7 +644,7 @@ export class Column {
   public d: any;
   private temp: any;
   public tags: any;
-  private _dialogs: ColumnDialogHelper;
+  private _dialogs: ColumnDialogHelper | undefined;
 
   constructor(d: any) {
     this.d = d;

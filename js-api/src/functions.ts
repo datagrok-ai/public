@@ -117,6 +117,14 @@ export class Functions {
     }, (err: any) => reject(err)));
   }
 
+  async find(name: string): Promise<any> {
+    let f = await this.eval(name);
+    if (f instanceof Function)
+      return f;
+    else
+      return null;
+  }
+
   scriptSync(s: string): any {
     return toJs(api.grok_ScriptSync(s));
   }
