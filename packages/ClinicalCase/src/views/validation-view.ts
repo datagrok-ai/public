@@ -1,10 +1,8 @@
-import { ClinicalCaseView } from "../clinical-case-view";
-import * as grok from "datagrok-api/grok";
 import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
 import { validationRulesList } from "../package";
-import { pinnacleRuleIdColumnName } from "../validation/constants";
+import { pinnacleRuleIdColumnName, validationResultRuleIdColumn } from "../validation/constants";
 
 export class ValidationView extends DG.ViewBase {
 
@@ -14,17 +12,45 @@ export class ValidationView extends DG.ViewBase {
     let resultsGrid = study.validationResults.plot.grid();
     let rulesGrid = validationRulesList.plot.grid();
 
+    let uniqueViolatedRuleIds = this.getUniqueErrorIds();
+
     validationRulesList.onCurrentRowChanged.subscribe(args => {
       const currentRowIdx = validationRulesList.currentRow.idx;
       const currentRuleId = validationRulesList.get(pinnacleRuleIdColumnName, currentRowIdx);
-     /*  study.validationResults.rows.filter((row) => row.get('Violated rule id') === currentRuleId);
-      resultsGrid.invalidate(); */
+      study.validationResults.rows.match({ 'Violated rule id': `${currentRuleId}`}).filter();
+      resultsGrid.invalidate();
     });
 
-    this.root.appendChild(ui.div([
-      ui.divH([ rulesGrid ], { style: { width: '100%' } }),
-      ui.divH([ resultsGrid ], { style: { width: '100%' } })
-    ]));
-    
+    rulesGrid.onCellPrepare(function (gc) {
+      if (!gc.isTableCell)
+        return;
+      if (gc.gridColumn.idx === 1 && uniqueViolatedRuleIds.has(gc.cell.value))
+        gc.style.backColor = 0xFFFF0000;    
+    });
+
+    this.generateUI(resultsGrid, rulesGrid);
   }
+
+  private generateUI(resultsGrid: any, rulesGrid: any){
+    this.root.appendChild(ui.div([
+      ui.divH(
+        [
+          ui.block([ui.h2('List of rules'), rulesGrid], { style: { width: '100%' } }),
+        ]),
+      ui.divH([
+        ui.block([ui.h2('Detected errors'), resultsGrid]),
+      ])
+    ]));
+  }
+
+  private getUniqueErrorIds(){
+    const uniqueIds = new Set();
+    let column = study.validationResults.columns.byName(validationResultRuleIdColumn);
+    let rowCount = study.validationResults.rowCount;
+    for (let i = 0; i < rowCount; i++)
+      uniqueIds.add(column.get(i));
+    return uniqueIds;
+  }
+
 }
+

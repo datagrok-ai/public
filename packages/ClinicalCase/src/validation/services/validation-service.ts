@@ -24,7 +24,7 @@ export function validateNonIdenticalVariables(df: DG.DataFrame, columnPostfixes:
 }
 
 export function validateNonNegativeVariables(df: DG.DataFrame, columnPostfixes: string[], domain: string, ruleId: string, validationResults: DG.DataFrame){
-    const columnsToValidate = getListOfVariablesToValidate(df, domain, null, getColumnNamesWithDomain(df, columnPostfixes));
+    const columnsToValidate = getListOfVariablesToValidate(df, domain, null, getColumnNamesWithDomain(df, columnPostfixes, domain));
     if (columnsToValidate.length){
         columnsToValidate.forEach(item => validateColumns([df.getCol(item)], df.rowCount, negativeValue, 
         validationResults, ruleId, domain, true))
@@ -71,6 +71,15 @@ export function vaidateAEDomain(df: DG.DataFrame, validationResults: DG.DataFram
     validateISO8601Variables(df, ['DUR', 'ELTM', 'EVLINT', 'STINT', 'ENINT', 'TDSTOFF', 'TDTGTPAI', 'TDMINPAI', 'TDMAXPAI'], 'ae', 'SD1011', validationResults);
     validateSeriousnesCriteriaVariables(df, 'ae', 'SD0009', validationResults);
     validateNonIdenticalVariables(df, ['CAT', 'SCAT'],'ae', 'SD1041', validationResults);
+    validateDomainName(df, 'ae', 'SD0004', validationResults);
+}
+
+export function vaidateDMDomain(df: DG.DataFrame, validationResults: DG.DataFrame){
+    validateRequiredVariables(df, 'dm', 'SD0002', validationResults);
+    validateStartEndVariables(df, ['STDY', 'ENDY'], 'dm','SD0012', validationResults);
+    validateNonNegativeVariables(df, ['DUR'], 'dm','SD0015', validationResults);
+    validateISO8601Variables(df, ['DTC'], 'dm', 'SD0003', validationResults);
+    validateISO8601Variables(df, ['DUR', 'ELTM', 'EVLINT', 'STINT', 'ENINT', 'TDSTOFF', 'TDTGTPAI', 'TDMINPAI', 'TDMAXPAI'], 'dm', 'SD1011', validationResults);
     validateDomainName(df, 'ae', 'SD0004', validationResults);
 }
 

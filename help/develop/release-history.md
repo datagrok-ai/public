@@ -1,6 +1,212 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-07-14 Dev build 0.92.15
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.15`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Sequence Translator: set default translation examples 
+* Oligo Batch Calculator: normalize UI 
+* DevTools: add the `Snippets` pane (WIP)
+* Usage analysis: performance improvements  (WIP)
+* Wiki: expand an article on adding new columns 
+* Update help index 
+* JS API: Viewer.network() 
+* Fixed scrollbars hover 
+* PhyloTreeViewer: JS-based phylogenetic tree visualisation (WIP)
+* Core: Add key missing calculation functions 
+* Usage analysis: lists of errors (WIP)
+* (Bug) Grok connect: can't browse scheme of CompoundLookup  
+* pictures for learn widget 
+* Widgets updates 
+* Package Settings Editors (WIP)
+* Remove 'Dev' info panel in favor of the package-defined one 
+* DevTools package (WIP)
+* JS API: Document function roles (WIP)
+* Added function to test code performance 
+* Update about-widget.ts 
+* ApiSamples: example rearrangement 
+* Operator: Xor() 
+* Datagrok API and system samples, add cross linking to improve connectivity (WIP)
+* DevTools: annotate API examples (WIP)
+* Conversion functions: Boolean() 
+* JS API: add ScatterPlot.onBeforeDrawScene 
+* 'Serialization' info panel for columns 
+* Deploy: test connections migration (WIP)
+* Added class 'link-external' 
+* Projects: merge Log analysis with Usage analysis  
+* JS API: ui.link options 
+* Update recent-projects-widget.ts 
+* Property Panel: add an 'Edit' button for adjusting the formula of a calculated column (WIP)
+* Removed obsolte parameter 
+* Add New Column: minor performance improvements 
+* (Bug) Include method doesn't work from TS 
+* JS API: improve the HttpDataSource.include method to accept entity properties 
+* (Bug) Oligo Batch Calculator: units and ratios don't match with cases of original app 
+* (Bug) JS API: ui.table returns null on JnJ 
+* Fixed "request a demo" button 
+* Update submodule tokens 
+* Fixed typing 
+* Fixed strict checking 
+* Change 'link-external' icon 
+* Change editor icon 
+* Oligo Batch Calculator: nearest neighbor method for extinction coefficient (EC) calculation​ 
+* Ability to declare Script as App 
+* Help indexing 
+* Wiki: file exporter example 
+* Formula engine: propagate semantic type of the top-level function to column 
+* Nucleotide sequences for exercises: a-h1n1, sars-cov-2 (fixing non-GATC symbols) 
+* isEmpty and isNotEmpty \- true if null or empty string 
+* JS API: Column.editFormula() 
+* Oligo Batch Calculator: remove empty rows and spaces 
+* Programming exercises (WIP)
+* Sequence Translator: possibility to add phosphate linkage before first nucleotide 
+* Fix a typo 
+* Prefix a CSS class 
+* Prefix for the link-external class 
+* Package Content Validation: allow refering to the common directory 
+* Sequence Translator: enumerate translated sequences with unique IDs, linked to pattern name 
+* RepertoireBrowser: tree dashboard 
+* (Bug) Add new column: Strings in functions cannot be enclosed in single quotes 
+* Documented a few methods, and marked some as obsolete 
+* JS API: GridColumn.getVisibleCells() 
+* Package property panel: renamed "Content" to "Functions" 
+* Formula engine: Ability to reference columns 
+* JS API: onBeforeRunAction, onAfterRunAction 
+* Ability to return multiple outputs in JS 
+* Sequence Translator: using existing pattern and saving it as own 
+* Add statistical functions 
+* Types.getCommonElementType \- provided a description (still needs a good implementation) 
+* Minor changes to the environment setup instructions. Added a couple of the potentially useful scripts. 
+* Harmonize file names (data_actions -> functions, data_action -> func) 
+* Ddt: harmonize folder structure 
+* (Bug) Functions: Unexpected behavior of some statistical functions 
+* Removed duplicate import 
+* ClinicalCase \- a plugin for analyzing SDTM-based clinical studies data (WIP)
+* Modified default config 
+* Wiki: Onboarding Content (WIP)
+* Grok connect: deserialization fix 
+* PepLens: table with sequences application initiated 
+* Sequence Translator: overhang options 
+* (Bug) Datlas skips row count check for package queries  
+* (Bug) Exception on SetAutoComplete 
+* (Bug) Deploy failed if public is not checked out 
+* (Bug) Query ExtractParameters clears existing params 
+* (Bug) View Layouts: When saving layout in an open project, new layout is not generated, but the project layout is overwritten 
+* Ability to use other parameters from choices and suggestions statements 
+* Better event firing 
+* Removed labs submodule 
+* Fixed analyzer warnings 
+* Fixed submodule host 
+* Oligo Batch Calculator: save as CSV 
+* Ability to switch to advanced mode in Function View 
+* Chem: activity cliffs ported to JS 
+* (Bug) Exception when running script as app 
+* view polishing 
+* Fixed test 
+* Grok connect: add batch mode  
+* (Bug) Functions: Variable "row" don't work 
+* (Bug) "JS functions with multiple output params must return JS object" exception when there are no output parameters 
+* Got rid of DataFrameViewer.view in favor of ViewerBase.view 
+* Dataframe: version getter for columns 
+* Set default admin password for docker-compose  
+* SequenceTranslator: fix of Shifts To Align Numbers Inside Circle 
+* Sequence Translator: in modification sections enumerate nucleotides only 
+* Updated EC2 instructions 
+* Updated help index 
+* MPLOT: init 
+* Minor code harmonization 
+* MultiPlot: add Close button "X" and functionality 
+* SequenceTranslator: minor changes 
+* JS API: Stats.uniqueCount 
+* Sequence Translator: align non-overhang nucleotides on the right edge of both strands 
+* JS: DataFrame.plot. methods 
+* Grok connect: add helpers for dataframe substitution  
+* Functions: Parameter categories 
+* Box Plot: showCategorySelector and showValueSelector properties 
+* (Bug) Box Plot: an exception when stdev(value) = 0 
+* (Bug) Box Plot: improve initial choice of value column (stdev > 0 if possible) 
+* Box Plot: better border color 
+* Viewers: support for styles 
+* Viewers: implement 'dashboard' style for all standard viewers 
+*  MultiPlot: show/hide controls using ">" icon 
+* (Bug) MultiPlot: contorls not removing when plot remove 
+* Clinical Case: Timelines View (WIP)
+* Clinical Case: Patient Profile View (WIP)
+* Removed devops position 
+* Timelines: remove the additional visulization in favor of MultiPlot 
+* (Bug) Functions View: Click on the selected category does not remove the check mark 
+* Updated copyright messages. 
+* JS: grok.functions.call should return JS object for multiple output parameters 
+* Oligo Batch Calculator: create separate functions for every indicator 
+* SequenceTranslator: check for characters/words outside of allowed set, distinguish rows (WIP)
+* MultiPlot: clean code 
+* (Bug) MultiPlot: fix package.js 
+* (Bug) Extra space breaks function annotation 
+* (Bug) grok.dapi.projects.where('bad filter').first() returns a Project instance with d == null 
+* JS API: Project.open()  // in workspace 
+* JS API: Simplify registering functions that return futures/promises 
+* Clinical Case: Adverse Events View (WIP)
+* Histogram and BarChart: washed-out default colors 
+* MultiPlot: remove hardcode and fix some remarks 
+* Line Chart: move hit-testing functionality to series renderers 
+* (Bug) Line Chart: "stacked bars" mode does not work 
+* Introduced Color.textColor 
+* Bar Chart: adaptive font size 
+* MultiPlot: settings to properties 
+* Bar Chart: in case of many categories, automatically zoom in to a reasonable number of categories 
+* Bar Chart: make scrolling smoother 
+* Edit Column Dialog: validators change 
+* JS API: Column.applyFormula() 
+* JS API: DataFrame.dialogs methods (WIP)
+* Sequence Translator: final UI adjustments (WIP)
+* Calculated columns examples 
+* ScatterPlot: changed back marker color 
+* ScatterPlot: set default marker size to 10 
+* (Bug) Layouts: Grid looses event handlers after layout restore 
+* DevTools: project snippets 
+* Fix UI tests (WIP)
+* Updated public token 
+* (Bug) MultiPlot: controls overlap if last plot is hidden 
+* (Bug) MultiPlot:  exception (empty grid) when only timeLine chart is shown 
+* (Bug) Filters: Multi-value filters does not turn off when corresponding checkbox is off 
+* (Bug) Filters: multi-value filters have no square indicator on top to toggle category selection 
+* (Bug) Filters: There are no icons for sorting and searching on hover for Multi-value filters 
+* (Bug) Filters: clicking on "search" should open search field AND focus on it 
+* FuncCall.inputs.values() fix 
+* Examples for onBeforeRunAction, onAfterRunAction 
+* Remove DG.toDart wrapper from string keys 
+* Add missing parameter types 
+* OligoBatchCalculator: calculator function returns multiple values 
+* (Bug) Chem: proper cache invalidation (WIP)
+* Fixed analyzer warning 
+* fixes typo 
+* DevTools: convert to TypeScript 
+* FunctionsWidget 
+* implemented several validation rules, added validation view, added error summary to study summary view 
+* MultiPlot: make tooltips as in DG (WIP)
+* Update public token 
+* (Bug) JsViewer root is not correctly wrapped 
+* (Bug) JS API: properties cannot be changed in JsViewer (JsViewer.props and JsViewer.setOptions result in errors) 
+* (Bug) JS API: JsViewer is no longer in the context of the onContextMenu event 
+* (Bug) JS API: JsViewerHostCore is returned instead of Viewer instance 
+* grok 9125 prepared for biowasm integration 
+* added validatin for DM domain, implemented filtering of validatin result based on selected rule and ighlighting of cell with violated rule 
+* added check of dm dataframe for null 
+* removed extracting domain from sdtm-tag 
+* JS API: correct viewer type names 
+* DevTools: generate code for viewers customization (WIP)
+* Oligo Batch Calculator: check for characters/words outside of allowed set, distinguish rows (WIP)
+
+
 # 2021-06-24 Dev build 0.92.14
 
 ## Latest Docker Images
