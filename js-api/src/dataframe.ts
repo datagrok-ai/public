@@ -2087,7 +2087,7 @@ class DataFramePlotHelper {
     this.df = df;
   }
 
-  fromType(viewerType: ViewerType, options: object | null = null): Widget {
+  fromType(viewerType: ViewerType, options: object | null = null): Promise<Widget> {
     return toJs(api.grok_Viewer_FromType_Async(viewerType, this.df.d, _toJson(options)));
   }
   scatter(options: object | null = null) { return DG.Viewer.scatterPlot(this.df, options); }
