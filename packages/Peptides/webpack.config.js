@@ -16,7 +16,7 @@ module.exports = {
   },
   output: {
     filename: '[name].js',
-    library: 'peplens',
+    library: 'peptides',
     libraryTarget: 'var',
     path: path.resolve(__dirname, 'dist'),
   },

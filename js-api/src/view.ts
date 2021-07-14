@@ -378,7 +378,7 @@ export class TableView extends View {
    * @returns {Viewer} */
   addViewer(v: ViewerType | string | Viewer, options: object | null = null): Viewer {
     if (typeof v === 'string')
-      v = new Viewer(api.grok_View_AddViewerByName(this.d, v));
+      v = toJs(api.grok_View_AddViewerByName(this.d, v)) as Viewer;
     else
       api.grok_View_AddViewer(this.d, v.d);
     if (options !== null)
