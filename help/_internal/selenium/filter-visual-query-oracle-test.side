@@ -52,7 +52,7 @@
       "id": "ab8f2726-12a0-40e3-ac90-4730f3344006",
       "comment": "",
       "command": "pause",
-      "target": "3000",
+      "target": "5000",
       "targets": [],
       "value": ""
     }, {
@@ -109,7 +109,7 @@
       "id": "191404ee-3315-4be2-aa1a-bc918908f364",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='tree-expander-Oracle---northwind']",
+      "target": "xpath=//div[@name='tree-expander-Oracle---Northwind']",
       "targets": [
         ["css=.d4-tree-view-group:nth-child(18) > .d4-tree-view-group-host .d4-tree-view-tri", "css:finder"],
         ["xpath=//div[@name='tree-expander-Oracle---northwind']", "xpath:attributes"],
@@ -128,11 +128,11 @@
       "id": "5bc94d6c-d75a-469b-bf67-a1bb549cb76c",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//div[@name='tree-expander-Oracle---northwind'])[2]",
+      "target": "xpath=(//div[@name='tree-expander-Oracle---Northwind'])[2]",
       "targets": [
-        ["css=.d4-tree-view-group:nth-child(23) .d4-tree-view-group .d4-tree-view-group:nth-child(1) .d4-tree-view-tri", "css:finder"],
-        ["xpath=(//div[@name='tree-expander-Oracle---northwind'])[2]", "xpath:attributes"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div[23]/div[2]/div/div[2]/div/div/div", "xpath:idRelative"],
+        ["css=.d4-tree-view-group-host > .d4-tree-view-group:nth-child(1) > .d4-tree-view-group-host .d4-tree-view-tri", "css:finder"],
+        ["xpath=(//div[@name='tree-expander-Oracle---Northwind'])[2]", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div[2]/div[23]/div[2]/div/div[2]/div/div/div", "xpath:idRelative"],
         ["xpath=//div[23]/div[2]/div/div[2]/div/div/div", "xpath:position"]
       ],
       "value": ""
@@ -147,7 +147,7 @@
       "id": "5f85df82-d5b2-45ae-8eaa-3fe69a8d02c4",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='tree-Oracle---northwind---Tables---PRODUCTS']",
+      "target": "xpath=//div[@name='tree-Oracle---Northwind---Tables---PRODUCTS']",
       "targets": [
         ["css=.d4-tree-view-node-selected", "css:finder"],
         ["xpath=//div[@name='tree-Oracle---northwind---Tables---PRODUCTS']", "xpath:attributes"],
@@ -475,12 +475,12 @@
       "id": "0febabcf-3d39-463f-84dc-bd8067796684",
       "comment": "",
       "command": "type",
-      "target": "id=editor",
+      "target": "name=input-Name",
       "targets": [
-        ["id=editor", "id"],
+        ["id=59", "id"],
         ["name=input-Name", "name"],
-        ["css=#editor", "css:finder"],
-        ["xpath=//input[@id='editor']", "xpath:attributes"],
+        ["css=#\\35 9", "css:finder"],
+        ["xpath=//input[@id='59']", "xpath:attributes"],
         ["xpath=//div[@id='elementContent']/div[2]/div/div/div/div/input", "xpath:idRelative"],
         ["xpath=//div[2]/div/div/div/div/input", "xpath:position"]
       ],
@@ -536,19 +536,19 @@
       "id": "cd0ca9c2-e2a3-4f65-b4d0-912032df6c53",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='tree-Oracle---northwind---visual-query-filters-test']",
+      "target": "xpath=//div[@name='tree-Oracle---Northwind---visual-query-filters-test']",
       "targets": [
-        ["css=.d4-tree-view-group:nth-child(1) .d4-tree-view-group:nth-child(4) > .d4-tree-view-node", "css:finder"],
-        ["xpath=//div[@name='tree-Oracle---northwind---visual-query-filters-test']", "xpath:attributes"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div[23]/div[2]/div/div[2]/div[4]/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div[2]/div[4]/div", "xpath:position"]
+        ["css=.d4-tree-view-group:nth-child(23) > .d4-tree-view-group-host > .d4-tree-view-group > .d4-tree-view-group-host > .d4-tree-view-group:nth-child(2) > .d4-tree-view-node", "css:finder"],
+        ["xpath=//div[@name='tree-Oracle---Northwind---visual-query-filters-test']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div[2]/div[23]/div[2]/div/div[2]/div[2]/div", "xpath:idRelative"],
+        ["xpath=//div[23]/div[2]/div/div[2]/div[2]/div", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "5a716513-bb66-4836-9ec2-781cb20ddfc0",
       "comment": "",
       "command": "doubleClick",
-      "target": "xpath=//div[@name='tree-Oracle---northwind---visual-query-filters-test']",
+      "target": "xpath=//div[@name='tree-Oracle---Northwind---visual-query-filters-test']",
       "targets": [
         ["css=.d4-tree-view-group:nth-child(1) .d4-tree-view-group:nth-child(4) > .d4-tree-view-node", "css:finder"],
         ["xpath=//div[@name='tree-Oracle---northwind---visual-query-filters-test']", "xpath:attributes"],
@@ -579,7 +579,7 @@
       "id": "d8db347a-28ee-49ee-a563-42090da46309",
       "comment": "",
       "command": "pause",
-      "target": "3000",
+      "target": "2000",
       "targets": [],
       "value": ""
     }, {
@@ -662,15 +662,25 @@
       "id": "e184990d-f038-4da2-924b-3fba7a716c7a",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span-CATEGORY-ID-(min-1,-max-4)",
-      "targets": [],
+      "target": "xpath=//i[@name='CATEGORY-ID-(min-1.00,-max-4.00)']",
+      "targets": [
+        ["css=.d4-entity-markup-row:nth-child(1) > .grok-icon", "css:finder"],
+        ["xpath=//i[@name='CATEGORY-ID-(min-1.00,-max-4.00)']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div[2]/div/div/span/i", "xpath:idRelative"],
+        ["xpath=//div[2]/div/div/span/i", "xpath:position"]
+      ],
       "value": ""
     }, {
       "id": "207a9a45-ea39-417d-b167-372c01058e78",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span-sum(UNIT-PRICE)-(min-266,-max-418)",
-      "targets": [],
+      "target": "name=span-sum(UNIT-PRICE)-(min-266.75,-max-418.75)",
+      "targets": [
+        ["css=div:nth-child(1) > .d4-flex-col > .d4-entity-markup-row:nth-child(2)", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div[2]/div/div/span[2]", "xpath:idRelative"],
+        ["xpath=//div[4]/div[2]/div/div/span[2]", "xpath:position"],
+        ["xpath=//span[contains(.,'sum(UNIT_PRICE)')]", "xpath:innerText"]
+      ],
       "value": ""
     }, {
       "id": "cbff4f83-33b4-4627-8627-b12d25a59d69",
@@ -702,12 +712,12 @@
       "id": "c266a396-e10f-4e2b-961f-e86a5e9d396c",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='tree-Oracle---northwind---visual-query-filters-test']",
+      "target": "xpath=//div[@name='tree-Oracle---Northwind---visual-query-filters-test']",
       "targets": [
-        ["css=.d4-tree-view-group:nth-child(1) .d4-tree-view-group:nth-child(4) > .d4-tree-view-node", "css:finder"],
-        ["xpath=//div[@name='tree-Oracle---northwind---visual-query-filters-test']", "xpath:attributes"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div[23]/div[2]/div/div[2]/div[4]/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div[2]/div[4]/div", "xpath:position"]
+        ["css=.d4-tree-view-node-selected", "css:finder"],
+        ["xpath=//div[@name='tree-Oracle---Northwind---visual-query-filters-test']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div[2]/div[23]/div[2]/div/div[2]/div[2]/div", "xpath:idRelative"],
+        ["xpath=//div[23]/div[2]/div/div[2]/div[2]/div", "xpath:position"]
       ],
       "value": ""
     }, {
