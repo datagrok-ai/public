@@ -56,7 +56,8 @@ M  END
     }
     try {
       if (mol.is_valid()) {
-        if (this._isMolBlock(scaffoldMolString)) {
+        const scaffoldIsMolBlock = this._isMolBlock(scaffoldMolString);
+        if (scaffoldIsMolBlock) {
           const rdkitScaffoldMol = this._fetchMol(scaffoldMolString, "", molRegenerateCoords, false).mol;
           substructJson = mol.generate_aligned_coords(rdkitScaffoldMol, true, true, false);
           if (substructJson === "") {
@@ -67,7 +68,7 @@ M  END
           mol.delete();
           mol = rdKitModule.get_mol(molBlock);
         }
-        if (!this._isMolBlock(molString) || molRegenerateCoords) {
+        if (!scaffoldIsMolBlock || molRegenerateCoords) {
           mol.normalize_2d_molblock();
           mol.straighten_2d_layout();
         }
