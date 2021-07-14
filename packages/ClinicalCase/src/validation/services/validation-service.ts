@@ -24,7 +24,7 @@ export function validateNonIdenticalVariables(df: DG.DataFrame, columnPostfixes:
 }
 
 export function validateNonNegativeVariables(df: DG.DataFrame, columnPostfixes: string[], domain: string, ruleId: string, validationResults: DG.DataFrame){
-    const columnsToValidate = getListOfVariablesToValidate(df, domain, null, getColumnNamesWithDomain(df, columnPostfixes));
+    const columnsToValidate = getListOfVariablesToValidate(df, domain, null, getColumnNamesWithDomain(df, columnPostfixes, domain));
     if (columnsToValidate.length){
         columnsToValidate.forEach(item => validateColumns([df.getCol(item)], df.rowCount, negativeValue, 
         validationResults, ruleId, domain, true))
