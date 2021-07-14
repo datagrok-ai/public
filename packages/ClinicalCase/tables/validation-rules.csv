@@ -1,4 +1,4 @@
-Pinnacle 21 ID,Publisher ID,Message,Description,Category,Severity
+Rule ID,Publisher ID,Message,Description,Category,Severity
 CT2001,"FDAB017, CG0020, CG0085, CG0131, CG0232-CG0235, CG0387-CG0396, CG0541",Variable value not found in non-extensible codelist,Variable must be populated with terms from its CDISC controlled terminology codelist. New terms cannot be added into non-extensible codelists.,Terminology,
 CT2002,"FDAB017, CG0021",Variable value not found in extensible codelist,"Variable should be populated with terms from its CDISC controlled terminology codelist. New terms can be added as long as they are not duplicates, synonyms or subsets of existing standard terms.",Terminology,
 CT2003,"FDAB009, CG0021",Coded and Decoded values do not have the same Code in CDISC CT,Paired variables such as TEST/TESTCD must be populated using terms with the same Codelist Code value in CDISC control terminology. There is one-to-one relationship between paired variable values defined in CDISC control terminology by Codelist Code value.,Terminology,

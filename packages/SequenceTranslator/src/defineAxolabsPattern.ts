@@ -118,8 +118,9 @@ export function defineAxolabsPattern() {
       }
       asModificationItems.append(
         ui.divH([
+          ui.div([ui.label(asBases[i].value.slice(-3) == '(o)' ? '' : String(nucleotideCounter))], {style: {width: '20px'}})!,
           ui.block75([asBases[i]])!,
-          ui.block25([asPtoLinkages[i]])!
+          ui.div([asPtoLinkages[i]])!
         ], {style: {alignItems: "center"}})
       );
     }
@@ -152,9 +153,9 @@ export function defineAxolabsPattern() {
       }
       ssModificationItems.append(
         ui.divH([
-          ui.block25([ui.label(isOverhang ? '' : String(nucleotideCounter))])!,
-          ui.block50([ssBases[i]])!,
-          ui.block25([ssPtoLinkages[i]])!
+          ui.div([ui.label(ssBases[i].value.slice(-3) == '(o)' ? '' : String(nucleotideCounter))], {style: {width: '20px'}})!,
+          ui.block75([ssBases[i]])!,
+          ui.div([ssPtoLinkages[i]])!
         ], {style: {alignItems: "center"}})
       );
     }
@@ -473,7 +474,7 @@ export function defineAxolabsPattern() {
     updateSvgScheme();
   });
 
-  let saveAs = ui.textInput('Save As', 'Pattern Name Example', () => updateSvgScheme());
+  let saveAs = ui.textInput('Save As', 'Pattern Name', () => updateSvgScheme());
   saveAs.setTooltip('Name Of New Pattern');
 
   let ssThreeModification = ui.stringInput("Additional SS 3' Modification", "", () => {
@@ -642,9 +643,9 @@ export function defineAxolabsPattern() {
   let ssModificationSection = ui.panel([
       ui.h1('Sense Strand'),
       ui.divH([
-        ui.block25([ui.divText('#')])!,
-        ui.block50([ui.divText('Modification')])!,
-        ui.block25([ui.divText('PTO')])!
+        ui.div([ui.divText('#')], {style: {width: '20px'}})!,
+        ui.block75([ui.divText('Modification')])!,
+        ui.div([ui.divText('PTO')], {style: {paddingRight: '8px'}})!
       ]),
       ssModificationItems
     ])!;
@@ -652,8 +653,9 @@ export function defineAxolabsPattern() {
   let asModificationSection = ui.panel([
       ui.h1('Antisense Strand'),
       ui.divH([
+        ui.div([ui.divText('#')], {style: {width: '20px'}})!,
         ui.block75([ui.divText('Modification')])!,
-        ui.block25([ui.divText('PTO')])!
+        ui.div([ui.divText('PTO')], {style: {paddingRight: '8px'}})!
       ]),
       asModificationItems
     ])!;
@@ -679,8 +681,7 @@ export function defineAxolabsPattern() {
       ui.divH([
         ssModificationSection,
         asModificationSection
-        ]
-      ), {style: {maxWidth: '400px'}}
+      ]), {style: {maxWidth: '400px'}}
     )
   ]);
 }

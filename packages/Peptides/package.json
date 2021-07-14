@@ -1,0 +1,19 @@
+{
+	"name": "peptides",
+	"friendlyName": "Peptides",
+	"version": "0.0.1",
+	"description": "",
+	"dependencies": {
+		"datagrok-api": "latest"
+	},
+	"scripts": {
+		"debug-peptides": "grok publish --rebuild",
+		"release-peptides": "grok publish --rebuild --release",
+		"build-peptides": "webpack",
+		"build": "webpack",
+		"debug-peptides-public": "grok publish public --rebuild",
+		"release-peptides-public": "grok publish public --rebuild --release",
+		"debug-peptides-local": "grok publish local --rebuild",
+		"release-peptides-local": "grok publish local --rebuild --release"
+	}
+}

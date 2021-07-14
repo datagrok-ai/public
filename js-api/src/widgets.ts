@@ -593,7 +593,7 @@ export class Menu {
     api.grok_Menu_Clear(this.d);
   }
 
-  /** Adds a menu group with the specified text.
+  /** Returns an existing menu group or adds a new group with the specified text.
    * @param {string} text
    * @returns {Menu} */
   group(text: string): Menu {

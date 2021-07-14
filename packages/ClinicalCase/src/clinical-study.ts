@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as meta from './sdtm-meta';
-import { vaidateAEDomain } from './validation/services/validation-service';
+import { vaidateAEDomain, vaidateDMDomain } from './validation/services/validation-service';
 import { createValidationDataFrame } from './validation/validation-utils';
 
 export class ClinicalDomains {
@@ -102,6 +102,9 @@ export class ClinicalStudy {
     this.validationResults = createValidationDataFrame();
     if (this.domains.ae != null) {
       vaidateAEDomain(study.domains.ae, this.validationResults);
+    }
+    if (this.domains.dm != null) {
+      vaidateDMDomain(study.domains.dm, this.validationResults);
     }
   }
 

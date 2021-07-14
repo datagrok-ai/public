@@ -18,9 +18,9 @@ function main(tableName, localTables) {
 }
 
 
-//name: PepLens
+//name: Peptides
 //tags: app
-export function PepLensApp() {
+export function Peptides() {
 
   let appDescription = ui.info(
     [
