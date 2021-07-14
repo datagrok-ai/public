@@ -102,6 +102,8 @@ export class ClinicalStudy {
     this.validationResults = createValidationDataFrame();
     if (this.domains.ae != null) {
       vaidateAEDomain(study.domains.ae, this.validationResults);
+    }
+    if (this.domains.dm != null) {
       vaidateDMDomain(study.domains.dm, this.validationResults);
     }
   }
