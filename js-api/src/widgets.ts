@@ -113,7 +113,7 @@ export class Widget {
   /** Constructor function. No parameters, returns [Widget]. */
   factory: Func | null = null;
 
-  private _root: HTMLElement;
+  protected _root: HTMLElement;
   protected _properties: Property[];
   props: any; //ObjectPropertyBag;
   subs: Subscription[];
