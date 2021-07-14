@@ -12,8 +12,7 @@ export function createValidationDataFrame(){
 }
 
 
-export function getColumnNamesWithDomain(df: DG.DataFrame, columns: string[]) {
-    const domain = df.getTag('sdtm-domain').toUpperCase();
+export function getColumnNamesWithDomain(df: DG.DataFrame, columns: string[], domain: string) {
     return columns.map(col => `${domain}${col}`);
 }
 
