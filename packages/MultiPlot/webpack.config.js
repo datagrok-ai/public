@@ -33,5 +33,10 @@ module.exports = {
         ]
       }
     ]
+  },
+  
+  optimization: {
+    moduleIds: 'hashed',
+    chunkIds: 'deterministic'
   }
 };
