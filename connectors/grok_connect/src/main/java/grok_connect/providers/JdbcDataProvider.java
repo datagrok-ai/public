@@ -114,7 +114,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                 }
                 statement.setQueryTimeout(timeout);
                 System.out.println(query);
-                if(statement.execute(query))
+                if(statement.execute())
                     resultSet = statement.getResultSet();
             } else {
                 // Put parameters into func
