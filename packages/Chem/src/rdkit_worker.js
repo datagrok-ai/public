@@ -1,4 +1,4 @@
-importScripts('RDKit_minimal_2021.03_15.js');
+importScripts('RDKit_minimal_2021.03_14.js');
 importScripts('rdkit_substruct_library.js');
 
 let _rdKitModule = null;
@@ -15,8 +15,8 @@ onmessage = async function (e) {
     _substructLibrary = new RdKitSubstructLibrary(_rdKitModule);
     port.postMessage({op: op});
   } else if (op === 'substructLibrary::init') {
-    const result = _substructLibrary.init(args[0]);
-    port.postMessage({op: op, retval: result});
+    _substructLibrary.init(args[0]);
+    port.postMessage({op: op});
   } else if (op === 'substructLibrary::search') {
     const result = _substructLibrary.search(args[0]);
     port.postMessage({op: op, retval: result});
