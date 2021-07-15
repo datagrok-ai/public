@@ -28,7 +28,6 @@ class RdKitSubstructLibrary {
             hashToMolblock[item] = mol.get_molblock();
           }
         }
-        this.library.add_mol(mol);
       } catch (e) {
         console.error(
           "Possibly a malformed molString: `" + item + "`");
