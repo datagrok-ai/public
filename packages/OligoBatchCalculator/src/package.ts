@@ -18,7 +18,7 @@ export function OligoBatchCalculator(sequence: string, amount: number, outputUni
   return {
     opticalDensity: od(sequence, amount, outputUnits),
     nMole: nMole(sequence, amount, outputUnits),
-    molecularMass: molecularWeight(sequence),
+    molecularMass: molecularMass(sequence, amount, outputUnits),
     molecularWeight: molecularWeight(sequence),
     extinctionCoefficient: extinctionCoefficient(sequence)
   }
@@ -177,34 +177,38 @@ function normalizeSequences(sequences: string[]): string[] {
 
 function prepareInputTextField(text: string) {
   const oneDigitSymbols = ["A", "U", "T", "C", "G"],
-    twoDigitSymbols = ["fA", "fU", "fC", "fG", "mA", "mU", "mC", "mG", "dA", "dU", "dC", "dG", "dT", "rA", "rU", "rC", "rG", "ps"];
+    twoDigitSymbols = ["fA", "fU", "fC", "fG", "mA", "mU", "mC", "mG", "dA", "dU", "dC", "dG", "dT", "rA", "rU", "rC", "rG", "ps"],
+    firstLettersInTwoDigitSymbols = ['m', 'f', 'p', 'd', 'r'];
 
-  let wrongSequences = text.split('\n').map((s) => s.replace(/\s/g, '')).filter(item => item);
+  let dirtySequences = text.split('\n').map((s) => s.replace(/\s/g, '')).filter(item => item);
 
-  let changes: number[][] = [];
-  let correctSequences: string[] = [];
-  for (let sequence of wrongSequences) {
+  let indicesOfWrongSymbols: number[][] = [];
+  let cleanSequences: string[] = [];
+  let c = 0;
+  for (let sequence of dirtySequences) {
     let arr: number[] = [];
     let i = 0;
-    let seq = '';
+    cleanSequences[indicesOfWrongSymbols.length] = '';
     while (i < sequence.length) {
       if (twoDigitSymbols.includes(sequence.slice(i, i + 2))) {
-        seq += sequence.slice(i, i + 2);
+        cleanSequences[indicesOfWrongSymbols.length] += sequence.slice(i, i + 2);
         i += 2;
       } else if (oneDigitSymbols.includes(sequence[i])) {
-        seq += sequence[i];
+        cleanSequences[indicesOfWrongSymbols.length] += sequence[i];
         i++;
       } else {
         while (i < sequence.length && !(oneDigitSymbols.includes(sequence[i]) || twoDigitSymbols.includes(sequence.slice(i, i + 2)))) {
           arr.push(i);
           i++;
         }
+        if (arr.length > 0 && firstLettersInTwoDigitSymbols.includes(dirtySequences[c][arr[0]]) && !firstLettersInTwoDigitSymbols.includes(dirtySequences[c][arr[0] + 1]))
+          cleanSequences[indicesOfWrongSymbols.length] += dirtySequences[c][arr[0]];
       }
     }
-    correctSequences[changes.length] = seq;
-    changes[changes.length] = arr;
+    indicesOfWrongSymbols[indicesOfWrongSymbols.length] = (arr.length > 0 && firstLettersInTwoDigitSymbols.includes(dirtySequences[c][arr[0]]) && !firstLettersInTwoDigitSymbols.includes(dirtySequences[c][arr[0] + 1])) ? arr.slice(1) : arr;
+    c++;
   }
-  return {cleanSequences: correctSequences, dirtySequences: wrongSequences, indicesOfWrongSymbols: changes};
+  return {cleanSequences: cleanSequences, dirtySequences: dirtySequences, indicesOfWrongSymbols: indicesOfWrongSymbols};
 }
 
 //name: Oligo Batch Calculator
@@ -217,6 +221,8 @@ export function OligoBatchCalculatorApp() {
     let {cleanSequences, dirtySequences, indicesOfWrongSymbols} = prepareInputTextField(text);
     let normalizedSequences = normalizeSequences(cleanSequences);
     tableDiv.innerHTML = '';
+    removeUnrecognizedSymbolsButtonDiv.innerHTML = '';
+
     let molecularWeights = cleanSequences.map((s) => molecularWeight(s));
     let extinctionCoefficients = normalizedSequences.map((s) => extinctionCoefficient(s));
     let nMole = calculateNMole(molecularWeights, extinctionCoefficients, yieldAmount.value, units.value);
@@ -240,27 +246,32 @@ export function OligoBatchCalculatorApp() {
       DG.Column.fromList('double', 'MW', molecularWeights),
       DG.Column.fromList('int', 'Ext. Coefficient', extinctionCoefficients)
     ]);
-    let view = grok.shell.addTableView(table);
-    let col = view.grid.columns.byName('Sequence');
+
+    let grid = DG.Viewer.grid(table);
+    let col = grid.columns.byName('Sequence');
     col!.cellType = 'html';
-    view.grid.onCellPrepare(function (gc) {
+
+    grid.onCellPrepare(function (gc) {
       if (gc.isTableCell && gc.gridColumn.name == 'Sequence') {
         let arr = ui.divH([]);
         for (let i = 0; i < gc.cell.value.length; i++) {
           if (indicesOfWrongSymbols[gc.gridRow].includes(i)) {
-            arr.append(ui.divText(gc.cell.value[i], {style: {color: "red"}}))
+            arr.append(ui.divText(gc.cell.value[i], {style: {color: "red"}}));
           } else {
-            arr.append(ui.divText(gc.cell.value[i], {style: {color: "black"}}))
+            arr.append(ui.divText(gc.cell.value[i], {style: {color: "grey"}}));
           }
         }
         gc.style.element = arr;
       }
     });
-    tableDiv.append(view.root);
-    removeUnrecognizedSymbolsButtonDiv.innerHTML = '';
-    removeUnrecognizedSymbolsButtonDiv.append(
-      ui.button('REMOVE UNRECOGNIZED SYMBOLS', () => updateTable(cleanSequences.join('\n')))
-    );
+    tableDiv.append(grid.root);
+    if (indicesOfWrongSymbols.some((e) => e.length > 0))
+      removeUnrecognizedSymbolsButtonDiv.append(
+        ui.button('REMOVE UNRECOGNIZED SYMBOLS', () => {
+          inputSequenceField.value = cleanSequences.join('\n');
+          updateTable(cleanSequences.join('\n'));
+        })
+      );
   }
 
   let windows = grok.shell.windows;
@@ -324,8 +335,10 @@ export function OligoBatchCalculatorApp() {
       ]),
       ui.box(
         ui.panel([
-          saveAsButton,
-          removeUnrecognizedSymbolsButtonDiv
+          ui.divH([
+            saveAsButton,
+            removeUnrecognizedSymbolsButtonDiv
+          ])
         ]), {style:{maxHeight:'60px'}}
       ),
     ])
