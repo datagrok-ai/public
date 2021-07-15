@@ -37,6 +37,6 @@ export class TimelinesView extends DG.ViewBase {
         result.append(t, true);
     }
 
-    this.root.appendChild(DG.Viewer.fromType(DG.VIEWER.TIMELINES, result).root);
+    result.plot.fromType(DG.VIEWER.TIMELINES).then((v: DG.Viewer) => this.root.appendChild(v.root));
   }
 }
