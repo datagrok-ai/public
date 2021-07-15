@@ -37,6 +37,14 @@ export class TimelinesView extends DG.ViewBase {
         result.append(t, true);
     }
 
-    result.plot.fromType(DG.VIEWER.TIMELINES).then((v: DG.Viewer) => this.root.appendChild(v.root));
+    result.plot.fromType(DG.VIEWER.TIMELINES).then((v: DG.Viewer) => {
+      v.setOptions({
+        subjectColumnName: 'key',
+        startColumnName: 'start',
+        endColumnName: 'end',
+        colorByColumnName: 'event',
+      });
+      this.root.appendChild(v.root);
+    });
   }
 }
