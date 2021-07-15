@@ -135,7 +135,7 @@
       "id": "28f417ad-4ea6-4e6a-945e-1c43a7b5ac72",
       "comment": "",
       "command": "click",
-      "target": "name=radio52",
+      "target": "name=radio37",
       "targets": [
         ["id=53", "id"],
         ["name=radio52", "name"],

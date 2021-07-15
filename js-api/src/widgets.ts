@@ -113,7 +113,7 @@ export class Widget {
   /** Constructor function. No parameters, returns [Widget]. */
   factory: Func | null = null;
 
-  private _root: HTMLElement;
+  protected _root: HTMLElement;
   protected _properties: Property[];
   props: any; //ObjectPropertyBag;
   subs: Subscription[];
@@ -593,7 +593,7 @@ export class Menu {
     api.grok_Menu_Clear(this.d);
   }
 
-  /** Adds a menu group with the specified text.
+  /** Returns an existing menu group or adds a new group with the specified text.
    * @param {string} text
    * @returns {Menu} */
   group(text: string): Menu {

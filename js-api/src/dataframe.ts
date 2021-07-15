@@ -9,14 +9,15 @@ import {
   SimilarityMetric,
   AggregationType,
   CsvImportOptions,
-  IndexPredicate, FLOAT_NULL
+  IndexPredicate, FLOAT_NULL, ViewerType
 } from "./const";
 import {__obs, observeStream} from "./events";
 import {toDart, toJs} from "./wrappers";
 import {SIMILARITY_METRIC} from "./const";
-import {_getIterator, _toIterable} from "./utils";
+import {_getIterator, _toIterable, _toJson} from "./utils";
 import {Observable}  from "rxjs";
 import {filter} from "rxjs/operators";
+import {Widget} from "./widgets";
 
 declare let grok: any;
 declare let DG: any;
@@ -194,8 +195,8 @@ export class DataFrame {
   public filter: BitSet;
   public temp: any;
   public tags: any;
-  private _plot: DataFramePlotHelper;
-  private _dialogs: DataFrameDialogHelper;
+  private _plot: DataFramePlotHelper | undefined;
+  private _dialogs: DataFrameDialogHelper | undefined;
 
   constructor(d: any) {
     this.d = d;
@@ -643,7 +644,7 @@ export class Column {
   public d: any;
   private temp: any;
   public tags: any;
-  private _dialogs: ColumnDialogHelper;
+  private _dialogs: ColumnDialogHelper | undefined;
 
   constructor(d: any) {
     this.d = d;
@@ -2086,6 +2087,9 @@ class DataFramePlotHelper {
     this.df = df;
   }
 
+  fromType(viewerType: ViewerType, options: object | null = null): Promise<Widget> {
+    return toJs(api.grok_Viewer_FromType_Async(viewerType, this.df.d, _toJson(options)));
+  }
   scatter(options: object | null = null) { return DG.Viewer.scatterPlot(this.df, options); }
   grid(options: object | null = null) { return DG.Viewer.grid(this.df, options); }
   histogram(options: object | null = null) { return DG.Viewer.histogram(this.df, options); }
