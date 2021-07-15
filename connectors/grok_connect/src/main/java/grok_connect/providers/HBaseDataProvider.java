@@ -8,6 +8,8 @@ import grok_connect.connectors_info.*;
 
 public class HBaseDataProvider extends JdbcDataProvider {
     public HBaseDataProvider() {
+        driverClassName = "org.apache.phoenix.queryserver.client.Driver";
+
         descriptor = new DataSource();
         descriptor.type = "HBase";
         descriptor.description = "Query HBase database";
@@ -17,14 +19,14 @@ public class HBaseDataProvider extends JdbcDataProvider {
     }
 
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
-        Class.forName("org.apache.phoenix.queryserver.client.Driver");
+        Class.forName(driverClassName);
         java.util.Properties properties = defaultConnectionProperties(conn);
         if (!conn.hasCustomConnectionString()) {
             properties.setProperty("serialization", "PROTOBUF");
             if (conn.ssl())
                 properties.setProperty("sslConnection", "true");
         }
-        return DriverManager.getConnection(getConnectionString(conn), properties);
+        return CustomDriverManager.getConnection(getConnectionString(conn), properties, driverClassName);
     }
 
     public String getConnectionStringImpl(DataConnection conn) {

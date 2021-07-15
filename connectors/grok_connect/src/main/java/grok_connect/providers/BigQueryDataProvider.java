@@ -8,6 +8,8 @@ import grok_connect.connectors_info.*;
 
 public class BigQueryDataProvider extends JdbcDataProvider {
     public BigQueryDataProvider() {
+        driverClassName = "net.starschema.clouddb.jdbc.BQDriver";
+
         descriptor = new DataSource();
         descriptor.type = "BigQuery";
         descriptor.description = "Query BigQuery database";
@@ -23,9 +25,9 @@ public class BigQueryDataProvider extends JdbcDataProvider {
     }
 
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
-        Class.forName("net.starschema.clouddb.jdbc.BQDriver");
-        return DriverManager.getConnection(getConnectionString(conn), conn.credentials.getLogin(),
-                conn.credentials.getPassword());
+        Class.forName(driverClassName);
+        return CustomDriverManager.getConnection(getConnectionString(conn), conn.credentials.getLogin(),
+                conn.credentials.getPassword(), driverClassName);
     }
 
     public String getConnectionStringImpl(DataConnection conn) {

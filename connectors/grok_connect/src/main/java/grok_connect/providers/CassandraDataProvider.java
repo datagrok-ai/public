@@ -9,6 +9,8 @@ import grok_connect.connectors_info.*;
 
 public class CassandraDataProvider extends JdbcDataProvider {
     public CassandraDataProvider() {
+        driverClassName = "com.github.cassandra.jdbc.CassandraDriver";
+
         descriptor = new DataSource();
         descriptor.type = "Cassandra";
         descriptor.description = "Query Cassandra database";
@@ -19,7 +21,7 @@ public class CassandraDataProvider extends JdbcDataProvider {
     }
 
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
-        Class.forName("com.github.cassandra.jdbc.CassandraDriver");
+        Class.forName(driverClassName);
 
         Logger logger = Logger.getLogger("com.github.cassandra.jdbc");
         logger.setLevel(Level.ERROR);
@@ -29,7 +31,7 @@ public class CassandraDataProvider extends JdbcDataProvider {
             properties.setProperty("SSLMode", "1");
             properties.setProperty("UseSslIdentityCheck", "0");
         }
-        return DriverManager.getConnection(getConnectionString(conn), properties);
+        return CustomDriverManager.getConnection(getConnectionString(conn), properties, driverClassName);
     }
 
     public String getConnectionStringImpl(DataConnection conn) {

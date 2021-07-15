@@ -8,6 +8,8 @@ import grok_connect.connectors_info.*;
 
 public class DenodoDataProvider extends JdbcDataProvider {
     public DenodoDataProvider() {
+        driverClassName = "com.denodo.vdp.jdbc.Driver";
+
         descriptor = new DataSource();
         descriptor.type = "Denodo";
         descriptor.description = "Query Denodo database";
@@ -17,11 +19,11 @@ public class DenodoDataProvider extends JdbcDataProvider {
     }
 
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
-        Class.forName("com.denodo.vdp.jdbc.Driver");
+        Class.forName(driverClassName);
         java.util.Properties properties = defaultConnectionProperties(conn);
         if (!conn.hasCustomConnectionString() && conn.ssl())
             properties.setProperty("ssl", "true");
-        return DriverManager.getConnection(getConnectionString(conn), properties);
+        return CustomDriverManager.getConnection(getConnectionString(conn), properties, driverClassName);
     }
 
     public String getConnectionStringImpl(DataConnection conn) {

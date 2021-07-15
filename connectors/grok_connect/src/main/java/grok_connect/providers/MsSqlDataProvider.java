@@ -13,6 +13,8 @@ import grok_connect.connectors_info.*;
 
 public class MsSqlDataProvider extends JdbcDataProvider {
     public MsSqlDataProvider() {
+        driverClassName = "com.microsoft.sqlserver.jdbc.SQLServerDriver";
+
         descriptor = new DataSource();
         descriptor.type = "MS SQL";
         descriptor.category = "Database";
@@ -49,11 +51,11 @@ public class MsSqlDataProvider extends JdbcDataProvider {
     }
 
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
-        Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+        Class.forName(driverClassName);
         String connString = getConnectionString(conn);
         connString = connString.endsWith(";") ? connString : connString + ";";
         connString += "user=" + conn.credentials.getLogin() + ";password=" + conn.credentials.getPassword();
-        return DriverManager.getConnection(connString);
+        return CustomDriverManager.getConnection(connString, driverClassName);
     }
 
     public String getConnectionStringImpl(DataConnection conn) {

@@ -9,6 +9,8 @@ import serialization.Types;
 
 public class TeradataDataProvider extends JdbcDataProvider {
     public TeradataDataProvider() {
+        driverClassName = "com.teradata.jdbc.TeraDriver";
+
         descriptor = new DataSource();
         descriptor.type = "Teradata";
         descriptor.description = "Query Teradata database";
@@ -24,11 +26,11 @@ public class TeradataDataProvider extends JdbcDataProvider {
     }
 
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
-        Class.forName("com.teradata.jdbc.TeraDriver");
+        Class.forName(driverClassName);
         java.util.Properties properties = defaultConnectionProperties(conn);
         if (!conn.hasCustomConnectionString() && conn.ssl())
             properties.setProperty("ENABLESSL", "true");
-        return DriverManager.getConnection(getConnectionString(conn), properties);
+        return CustomDriverManager.getConnection(getConnectionString(conn), properties, driverClassName);
 
     }
 
