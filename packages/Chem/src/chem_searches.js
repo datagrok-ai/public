@@ -30,6 +30,7 @@ async function _cacheByAction(params, invalidator) {
     await invalidator(params);
     foo.cachedForCol = column;
     foo.cachedForColVersion = column.version;
+    console.log('Molecule cache was invalidated');
   }
 }
 
