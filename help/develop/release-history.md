@@ -1,6 +1,26 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-07-15 Dev build 0.92.17
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.17`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Adde pubspec to speed-up packages resolving 
+* Custom ML functions (WIP)
+* \- do not add molecules twice to substructure library \- no need to overwrite cells if SMILES 
+* Oligo Batch Calculator: check for characters/words outside of allowed set, distinguish rows 
+* ClinicalCase \- a plugin for analyzing SDTM-based clinical studies data (WIP)
+* PowerPack: Removed Function widget from Welcome screen 
+
+
 # 2021-07-15 Dev build 0.92.16
 
 ## Latest Docker Images
