@@ -80,7 +80,7 @@ public class MsSqlDataProvider extends JdbcDataProvider {
     }
 
     public String getSchemasSql(String db) {
-        return "SELECT DISTINCT name FROM sys.databases";
+        return "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA";
     }
 
     public String getSchemaSql(String db, String schema, String table) {
