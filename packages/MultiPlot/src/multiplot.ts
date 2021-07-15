@@ -9,8 +9,8 @@ import {DataFrame, Property, Viewer} from 'datagrok-api/dg';
 export class MultiPlotViewer extends DG.JsViewer {
   // properties
   private defaultTitleHeight: string = this.string('defaultTitleHeight', '25px');
-  private backColor: string = this.string('backColor', '#ffffff');
-  private verticalLinesColor: string = this.string('verticalLinesColor', '#cccccc');
+  private backColor: number = this.int('backColor', 0xffffff);
+  private verticalLinesColor: number = this.int('verticalLinesColor', 0xf0f0f0);
   private verticalLines: boolean = this.bool('verticalLines', true);
   private showControls: boolean = this.bool('showControls', true);
   private timeLineWidth: number = this.int('timeLineWidth', 1);
@@ -270,9 +270,18 @@ export class MultiPlotViewer extends DG.JsViewer {
 
   // takes data from this.plots and fills options for echart library
   updatePlots(): void {
+    function toColor(num) {
+      num >>>= 0;
+      const b = num & 0xFF;
+      const g = (num & 0xFF00) >>> 8;
+      const r = (num & 0xFF0000) >>> 16;
+      // a = ( (num & 0xFF000000) >>> 24 ) / 255 ;
+      const a = 1;
+      return 'rgba(' + [r, g, b, a].join(',') + ')';
+    }
     this.clearPlots();
     if (this.isTablesLoaded === 0) return;
-    this.echartOptions.backgroundColor = this.backColor;
+    this.echartOptions.backgroundColor = toColor(this.backColor);
 
     // update positions
     this.updateOptionsPositions();
@@ -340,7 +349,7 @@ export class MultiPlotViewer extends DG.JsViewer {
     this.echartOptions.xAxis[visibleIndex - 1].axisTick = {
       inside: true,
       length: this.verticalLines ? 2000 : 5,
-      lineStyle: {color: this.verticalLinesColor},
+      lineStyle: {color: toColor(this.verticalLinesColor)},
     };
     this.echartOptions.xAxis[visibleIndex - 1].show = true;
     this.echartOptions.xAxis[visibleIndex - 1].type = 'value';
@@ -497,6 +506,7 @@ export class MultiPlotViewer extends DG.JsViewer {
     }
     this.isTablesLoaded = 1;
     this.updateFilter();
+    this.render();
 
     // this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
     // this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()));
@@ -517,14 +527,11 @@ export class MultiPlotViewer extends DG.JsViewer {
       });
       this.updatePlots();
       this.render();
-      this.render();
     }));
 
     // @ts-ignore
     this.subs.push(this.dataFrame.filter.onChanged.subscribe((_) => {
       this.updateFilter();
-      this.render();
-
       this.render();
     }));
   } // table attached
@@ -553,11 +560,6 @@ export class MultiPlotViewer extends DG.JsViewer {
     this.updatePlots();
   }
 
-  getTooltipByParams(params: any) : any {
-
-  }
-
-
   isGroup(componentIndex: number) : boolean {
     const type = this.plots[this.visibleIndexes[componentIndex]].type;
     if (type === 'scatter' || type === 'line') return false;
@@ -583,7 +585,29 @@ export class MultiPlotViewer extends DG.JsViewer {
     });
 
     this.echart.on('click', (params) => {
-      console.log('params ', params);
+      console.log('click params ', params);
+      const iPlot : number = this.visibleIndexes[params.componentIndex];
+      const table : DG.DataFrame = this.tables[this.plots[iPlot].table];
+      const subjBuf = this.plots[iPlot];
+      const x = params.event.event.x + this.tooltipOffset;
+      const y = params.event.event.y + this.tooltipOffset;
+      const xColName = this.plots[iPlot].x;
+      const yColName = this.plots[iPlot].y;
+      const colNames = [xColName, yColName];
+      table.selection.handleClick( (i) => {
+        console.log('params value');
+        if (params.componentType === 'yAxis') {
+          return this.plots[iPlot].subjects[this.plots[iPlot].subjBuf[i]] === params.value;
+        }
+        if (params.componentType === 'series') {
+          if (this.isGroup(params.componentIndex)) {
+            return params.value[0] ===
+              this.plots[iPlot].subjects[this.plots[iPlot].subjBuf[i]];
+          } else {
+            return params.dataIndex === i;
+          }
+        }
+      }, params.event.event);
     });
 
     this.echart.on('mouseover', (params) => {
