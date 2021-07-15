@@ -1,6 +1,28 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-07-15 Dev build 0.92.16
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.16`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Sequence Translator: final UI adjustments (WIP)
+* Got rid of dapi.entityToJs 
+* Fixed TS warnings 
+* JS API: DataFrame.plot.fromType return type correction 
+* (Bug) Scripts: "suggestions" and "choices" don't work 
+* MultiPlot: make tooltips as in DG 
+* Updated public token 
+* Chem, RDKit-based (WIP)
+
+
 # 2021-07-14 Dev build 0.92.15
 
 ## Latest Docker Images
