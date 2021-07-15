@@ -1,6 +1,24 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-07-15 Dev build 0.92.18
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.18`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* (Bug) Grok connect: "The method execute() cannot take arguments" error with query parameters  (WIP)
+* ClinicalCase \- a plugin for analyzing SDTM-based clinical studies data (WIP)
+* (Bug) Grok connect: DriverManager returns wrong driver 
+* (Bug) MS SQL: Schemas are empty (WIP)
+
+
 # 2021-07-15 Dev build 0.92.17
 
 ## Latest Docker Images
