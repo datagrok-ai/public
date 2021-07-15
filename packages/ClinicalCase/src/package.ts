@@ -8,8 +8,12 @@ import {StudySummaryView} from "./views/study-summary-view";
 import {TimelinesView} from "./views/timelines-view";
 import {PatientProfileView} from "./views/patient-profile-view";
 import {AdverseEventsView} from "./views/adverse-events-view";
+import { ValidationView } from './views/validation-view';
 
 export let _package = new DG.Package();
+
+export let validationRulesList = null;
+
 
 let links = {
   ae: { key: 'USUBJID', start: 'AESTDY', end: 'AEENDY', event: 'AETERM' },
@@ -130,6 +134,7 @@ export async function clinicalCaseApp(): Promise<any> {
   grok.shell.newView(`Timelines`, [new TimelinesView().root]);
   grok.shell.newView(`Patient Profile`, [new PatientProfileView().root]);
   grok.shell.newView(`Adverse Events`, [new AdverseEventsView().root]);
+  grok.shell.newView(`Validation`, [new ValidationView().root]);
 
   // showStudySummary();
   // showLabs();
@@ -138,6 +143,7 @@ export async function clinicalCaseApp(): Promise<any> {
 //tags: autostart
 export async function clinicalCaseInit(): Promise<void> {
   terminology = await grok.data.loadTable(`${_package.webRoot}tables/sdtm-terminology.csv`);
+  validationRulesList = await grok.data.loadTable(`${_package.webRoot}tables/validation-rules.csv`);
   submissionValueCol = terminology.getCol('CDISC Submission Value');
   submissionValues = submissionValueCol.categories;
 

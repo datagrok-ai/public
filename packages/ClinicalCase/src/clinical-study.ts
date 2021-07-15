@@ -3,6 +3,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as meta from './sdtm-meta';
+import { vaidateAEDomain, vaidateDMDomain } from './validation/services/validation-service';
+import { createValidationDataFrame } from './validation/validation-utils';
 
 export class ClinicalDomains {
   ae: DG.DataFrame = null;
@@ -72,6 +74,7 @@ export class ClinicalStudy {
   domains: ClinicalDomains = new ClinicalDomains();
   subjectsCount: number;
   sitesCount: number;
+  validationResults: DG.DataFrame;
 
   initFromWorkspace(): void {
     for (let t of grok.shell.tables) {
@@ -84,6 +87,9 @@ export class ClinicalStudy {
     this.name = this.domains.dm.col('studyid').get(0);
 
     this.process();
+
+    this.validate();
+
   }
 
   private process(): void {
@@ -91,6 +97,17 @@ export class ClinicalStudy {
       this.domains.ae.columns.addNewCalculated('week', 'floor(${AESTDY} / 7)');
     }
   }
+
+  private validate(): void {
+    this.validationResults = createValidationDataFrame();
+    if (this.domains.ae != null) {
+      vaidateAEDomain(study.domains.ae, this.validationResults);
+    }
+    if (this.domains.dm != null) {
+      vaidateDMDomain(study.domains.dm, this.validationResults);
+    }
+  }
+
 }
 
 export let study: ClinicalStudy = new ClinicalStudy();
