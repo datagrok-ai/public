@@ -1,5 +1,6 @@
 package grok_connect.providers;
 
+import grok_connect.utils.CustomDriverManager;
 import serialization.Types;
 import org.bson.*;
 import java.sql.*;
@@ -10,6 +11,8 @@ import grok_connect.connectors_info.*;
 
 public class MongoDbDataProvider extends JdbcDataProvider {
     public MongoDbDataProvider() {
+        driverClassName = "com.dbschema.MongoJdbcDriver";
+
         descriptor = new DataSource();
         descriptor.type = "MongoDB";
         descriptor.description = "Query MongoDB database";
@@ -19,8 +22,8 @@ public class MongoDbDataProvider extends JdbcDataProvider {
     }
 
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
-        Class.forName("com.dbschema.MongoJdbcDriver");
-        return DriverManager.getConnection(getConnectionString(conn), conn.credentials.getLogin(), conn.credentials.getPassword());
+        Class.forName(driverClassName);
+        return CustomDriverManager.getConnection(getConnectionString(conn), conn.credentials.getLogin(), conn.credentials.getPassword(), driverClassName);
     }
 
     public String getConnectionStringImpl(DataConnection conn) {

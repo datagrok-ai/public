@@ -16,6 +16,8 @@ import serialization.Types;
 
 
 public abstract class JdbcDataProvider extends DataProvider {
+    protected String driverClassName;
+
     public abstract Connection getConnection(DataConnection dataConnection)
             throws ClassNotFoundException, SQLException;
 

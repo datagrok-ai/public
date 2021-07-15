@@ -9,6 +9,8 @@ import grok_connect.table_query.*;
 
 public class RedshiftDataProvider extends JdbcDataProvider {
     public RedshiftDataProvider() {
+        driverClassName = "com.amazon.redshift.jdbc42.Driver";
+
         descriptor = new DataSource();
         descriptor.type = "Redshift";
         descriptor.category = "Database";
@@ -35,13 +37,13 @@ public class RedshiftDataProvider extends JdbcDataProvider {
     }
 
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
-        Class.forName("com.amazon.redshift.jdbc42.Driver");
+        Class.forName(driverClassName);
         java.util.Properties properties = defaultConnectionProperties(conn);
         if (!conn.hasCustomConnectionString() && conn.ssl()) {
             properties.setProperty("ssl", "true");
             properties.setProperty("sslfactory", "com.amazon.redshift.ssl.NonValidatingFactory");
         }
-        return DriverManager.getConnection(getConnectionString(conn), properties);
+        return CustomDriverManager.getConnection(getConnectionString(conn), properties, driverClassName);
     }
 
     public String getConnectionStringImpl(DataConnection conn) {

@@ -10,6 +10,8 @@ import grok_connect.connectors_info.*;
 
 public class MySqlDataProvider extends JdbcDataProvider {
     public MySqlDataProvider() {
+        driverClassName = "com.mysql.jdbc.Driver";
+
         descriptor = new DataSource();
         descriptor.type = "MySQL";
         descriptor.description = "Query MySQL database";
@@ -47,7 +49,7 @@ public class MySqlDataProvider extends JdbcDataProvider {
     }
 
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
-        Class.forName("com.mysql.jdbc.Driver");
+        Class.forName(driverClassName);
         java.util.Properties properties = defaultConnectionProperties(conn);
         if (!conn.hasCustomConnectionString()) {
             properties.setProperty("zeroDateTimeBehavior", "convertToNull");
@@ -56,7 +58,7 @@ public class MySqlDataProvider extends JdbcDataProvider {
                 properties.setProperty("verifyServerCertificate", "false");
             }
         }
-        return DriverManager.getConnection(getConnectionString(conn), properties);
+        return CustomDriverManager.getConnection(getConnectionString(conn), properties, driverClassName);
     }
 
     public String getConnectionStringImpl(DataConnection conn) {
