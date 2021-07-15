@@ -1,7 +1,7 @@
 var rdKitParallel = null;
 async function _initRdKitWorkers() {
-  let initFunc = _initRdKitWorkers;
-  if (typeof initFunc.initialized == 'undefined' || !initFunc.initialized) {
+  let foo = _initRdKitWorkers;
+  if (typeof foo.initialized == 'undefined' || !foo.initialized) {
     rdKitParallel = new RdKitParallel();
     await rdKitParallel.init(rdKitWorkerWebRoot);
     _initRdKitWorkers.initialized = true;
@@ -11,25 +11,25 @@ async function _initRdKitWorkers() {
 async function _cacheByAction(params, invalidator) {
 
   let invalidateCache = false;
-  let {funcObj, column, query} = params;
+  let {foo, column, query} = params;
 
   if (
-    typeof funcObj.cachedForCol == 'undefined' &&
-    typeof funcObj.cachedStructure == 'undefined') {
-    funcObj.cachedForCol = null;
-    funcObj.cachedStructure = null;
-    funcObj.cachedForColVersion = null;
+    typeof foo.cachedForCol == 'undefined' &&
+    typeof foo.cachedStructure == 'undefined') {
+    foo.cachedForCol = null;
+    foo.cachedStructure = null;
+    foo.cachedForColVersion = null;
     invalidateCache = true;
   }
 
-  if (column !== funcObj.cachedForCol || (column.version !== funcObj.cachedForColVersion) || query == null) {
+  if (column !== foo.cachedForCol || (column.version !== foo.cachedForColVersion) || query == null) {
     invalidateCache = true;
   }
 
   if (invalidateCache) {
     await invalidator(params);
-    funcObj.cachedForCol = column;
-    funcObj.cachedForColVersion = column.version;
+    foo.cachedForCol = column;
+    foo.cachedForColVersion = column.version;
   }
 }
 
@@ -142,10 +142,10 @@ async function _chemSimilarityScoring(molStringsColumn, molString, settings) {
   // await _initRdKitWorkers();
 
   _cacheByAction(
-    {funcObj: _chemSimilarityScoring, column: molStringsColumn, query: molString},
+    {foo: _chemSimilarityScoring, column: molStringsColumn, query: molString},
     (params) => {
-      let {funcObj, column, query} = params;
-      funcObj.cachedStructure = _moleculesToFingerprints(molStringsColumn, settings);
+      let {foo, column, query} = params;
+      foo.cachedStructure = _moleculesToFingerprints(molStringsColumn, settings);
     });
 
   if (molString.length != 0) {
@@ -200,13 +200,24 @@ async function chemSubstructureSearchLibrary(molStringsColumn, molString) {
   await _initRdKitWorkers();
 
   await _cacheByAction({
-      funcObj: chemSubstructureSearchLibrary,
+      foo: chemSubstructureSearchLibrary,
       column: molStringsColumn,
       query: molString
     },
-    async (params) =>
-      await rdKitParallel.substructInit(molStringsColumn.toList())
-    // TODO: avoid creating an additional array here
+    async (params) => {
+      const { molIdxToHash, hashToMolblock } = await rdKitParallel.substructInit(molStringsColumn.toList());
+      let i = 0;
+      for (const item of molIdxToHash) {
+        const notify = (i === molIdxToHash.length - 1);
+        const molStr = hashToMolblock[item] || item;
+        molStringsColumn.setString(i++, molStr, notify);
+      }
+      // This seems to be the only way to trigger re-calculation of categories
+      // without the following two lines, categories are not updated
+      molStringsColumn.setCategoryOrder(molStringsColumn.categories);
+      molStringsColumn.setCategoryOrder(null);
+      // TODO: avoid creating an additional array here
+    }
   );
 
   let result = DG.BitSet.create(molStringsColumn.length);
