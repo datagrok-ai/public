@@ -43,9 +43,13 @@ class RdKitParallel {
         const segment = i < (nWorkers - 1) ?
           dict.slice(i * segmentLength, (i + 1) * segmentLength) :
           dict.slice(i * segmentLength, length);
-        return t._workers[i].substructInit(segment);        
-      });
-    
+        return t._workers[i].substructInit(segment);
+      },
+      async (resultArray) => resultArray.reduce((acc, item) => ({
+        molIdxToHash: [ ...acc.molIdxToHash, ...item.molIdxToHash ],
+        hashToMolblock: { ...acc.hashToMolblock, ...item.hashToMolblock }
+      }))
+    );
   }
   
   async substructSearch(query) {
