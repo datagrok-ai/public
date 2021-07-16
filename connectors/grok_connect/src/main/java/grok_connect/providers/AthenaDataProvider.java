@@ -9,6 +9,8 @@ import grok_connect.connectors_info.*;
 
 public class AthenaDataProvider extends JdbcDataProvider {
     public AthenaDataProvider() {
+        driverClassName = "com.simba.athena.jdbc.Driver";
+
         Property encode = new Property(Property.STRING_TYPE, "s3OutputEncOption",
                 "The encryption protocol that the driver uses to encrypt your query results before storing them on Amazon S3");
         encode.choices = new ArrayList<String>() {{ add("SSE_S3"); add("SSE_KMS"); add("CSE_KMS"); }};
@@ -37,12 +39,12 @@ public class AthenaDataProvider extends JdbcDataProvider {
     }
 
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
-        Class.forName("com.simba.athena.jdbc.Driver");
+        Class.forName(driverClassName);
         String connString = getConnectionString(conn);
         connString = connString.endsWith(";") ? connString : connString + ";";
         connString += "User=" + conn.credentials.parameters.get("AccessKey") + ";" +
                 "Password=" + conn.credentials.parameters.get("SecretKey");
-        return DriverManager.getConnection(connString);
+        return CustomDriverManager.getConnection(connString, driverClassName);
     }
 
     public String getConnectionStringImpl(DataConnection conn) {

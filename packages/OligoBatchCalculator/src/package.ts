@@ -18,7 +18,7 @@ export function OligoBatchCalculator(sequence: string, amount: number, outputUni
   return {
     opticalDensity: od(sequence, amount, outputUnits),
     nMole: nMole(sequence, amount, outputUnits),
-    molecularMass: molecularWeight(sequence),
+    molecularMass: molecularMass(sequence, amount, outputUnits),
     molecularWeight: molecularWeight(sequence),
     extinctionCoefficient: extinctionCoefficient(sequence)
   }
@@ -83,8 +83,7 @@ export function molecularWeight(sequence: string): number {
 //input: string sequence
 //output: double ec
 export function extinctionCoefficient(sequence: string) {
-  let sequences = normalizeSequences([sequence]);
-  sequence = sequences[0];
+  sequence = !(sequence[0] == 'r' || sequence[0] == 'd') ? normalizeSequences([sequence])[0] : sequence;
   const individualBases: {[index: string]: number} = {
     'dA': 15400, 'dC': 7400, 'dG': 11500, 'dT': 8700,
     'rA': 15400, 'rC': 7200, 'rG': 11500, 'rU': 9900
@@ -166,31 +165,65 @@ function normalizeSequences(sequences: string[]): string[] {
       {"A": "rA", "U": "rU", "G": "rG", "C": "rC"} :
       isDna ?
         {"A": "dA", "T": "dT", "G": "dG", "C": "dC"} :
-        {"fU": "rU", "fA": "rA", "fC": "rC", "fG": "rG", "mU": "rU", "mA": "rA", "mC": "rC", "mG": "rG", "ps": ""};
+        {"U": "rU", "A": "rA", "C": "rC", "G": "rG", "fU": "rU", "fA": "rA", "fC": "rC", "fG": "rG", "mU": "rU", "mA": "rA", "mC": "rC", "mG": "rG", "ps": ""};
     normalizedSequences[i] = isRna ?
       sequences[i].replace(/[AUGC]/g, function (x) {return obj[x]}) :
       isDna ?
         sequences[i].replace(/[ATGC]/g, function (x) {return obj[x]}) :
-        sequences[i].replace(/(fU|fA|fC|fG|mU|mA|mC|mG|ps)/g, function (x) {return obj[x]});
+        sequences[i].replace(/(fU|fA|fC|fG|mU|mA|mC|mG|ps|A|U|G|C)/g, function (x) {return obj[x]});
   }
   return normalizedSequences;
 }
 
 function prepareInputTextField(text: string) {
-  return text.split('\n').map((s) => s.replace(/\s/g, '')).filter(item => item);
+  const oneDigitSymbols = ["A", "U", "T", "C", "G"],
+    twoDigitSymbols = ["fA", "fU", "fC", "fG", "mA", "mU", "mC", "mG", "dA", "dU", "dC", "dG", "dT", "rA", "rU", "rC", "rG", "ps"],
+    firstLettersInTwoDigitSymbols = ['m', 'f', 'p', 'd', 'r'];
+
+  let dirtySequences = text.split('\n').map((s) => s.replace(/\s/g, '')).filter(item => item);
+
+  let indicesOfWrongSymbols: number[][] = [];
+  let cleanSequences: string[] = [];
+  let c = 0;
+  for (let sequence of dirtySequences) {
+    let arr: number[] = [];
+    let i = 0;
+    cleanSequences[indicesOfWrongSymbols.length] = '';
+    while (i < sequence.length) {
+      if (twoDigitSymbols.includes(sequence.slice(i, i + 2))) {
+        cleanSequences[indicesOfWrongSymbols.length] += sequence.slice(i, i + 2);
+        i += 2;
+      } else if (oneDigitSymbols.includes(sequence[i])) {
+        cleanSequences[indicesOfWrongSymbols.length] += sequence[i];
+        i++;
+      } else {
+        while (i < sequence.length && !(oneDigitSymbols.includes(sequence[i]) || twoDigitSymbols.includes(sequence.slice(i, i + 2)))) {
+          arr.push(i);
+          i++;
+        }
+        if (arr.length > 0 && firstLettersInTwoDigitSymbols.includes(dirtySequences[c][arr[0]]) && !firstLettersInTwoDigitSymbols.includes(dirtySequences[c][arr[0] + 1]))
+          cleanSequences[indicesOfWrongSymbols.length] += dirtySequences[c][arr[0]];
+      }
+    }
+    indicesOfWrongSymbols[indicesOfWrongSymbols.length] = (arr.length > 0 && firstLettersInTwoDigitSymbols.includes(dirtySequences[c][arr[0]]) && !firstLettersInTwoDigitSymbols.includes(dirtySequences[c][arr[0] + 1])) ? arr.slice(1) : arr;
+    c++;
+  }
+  return {cleanSequences: cleanSequences, dirtySequences: dirtySequences, indicesOfWrongSymbols: indicesOfWrongSymbols};
 }
 
-//name: Oligo Batch Calculator App
+//name: Oligo Batch Calculator
 //tags: app
 export function OligoBatchCalculatorApp() {
 
   const defaultInput = 'fAmCmGmAmCpsmU\nmApsmApsfGmAmUmCfGfAfC\nmAmUfGmGmUmCmAfAmGmA';
 
   function updateTable(text: string) {
-    let sequences = prepareInputTextField(text);
-    let normalizedSequences = normalizeSequences(sequences);
+    let {cleanSequences, dirtySequences, indicesOfWrongSymbols} = prepareInputTextField(text);
+    let normalizedSequences = normalizeSequences(cleanSequences);
     tableDiv.innerHTML = '';
-    let molecularWeights = sequences.map((s) => molecularWeight(s));
+    removeUnrecognizedSymbolsButtonDiv.innerHTML = '';
+
+    let molecularWeights = cleanSequences.map((s) => molecularWeight(s));
     let extinctionCoefficients = normalizedSequences.map((s) => extinctionCoefficient(s));
     let nMole = calculateNMole(molecularWeights, extinctionCoefficients, yieldAmount.value, units.value);
     let od260 = opticalDensity(extinctionCoefficients, molecularWeights, nMole, yieldAmount.value, units.value);
@@ -202,8 +235,8 @@ export function OligoBatchCalculatorApp() {
     const coefficient = (units.value == 'mg' || units.value == 'µmole') ? 1000 : 1;
 
     table = DG.DataFrame.fromColumns([
-      DG.Column.fromList('int', 'Item #', Array(...Array(sequences.length + 1).keys()).slice(1)),
-      DG.Column.fromList('string', 'Sequence', sequences),
+      DG.Column.fromList('int', 'Item #', Array(...Array(cleanSequences.length + 1).keys()).slice(1)),
+      DG.Column.fromList('string', 'Sequence', dirtySequences),
       DG.Column.fromList('int', 'Length', normalizedSequences.map((s) => s.length / 2)),
       DG.Column.fromList('double', 'OD 260', od260),
       DG.Column.fromList('double', moleName1, nMole),
@@ -213,18 +246,32 @@ export function OligoBatchCalculatorApp() {
       DG.Column.fromList('double', 'MW', molecularWeights),
       DG.Column.fromList('int', 'Ext. Coefficient', extinctionCoefficients)
     ]);
-    let view = grok.shell.addTableView(table);
-    let col = view.grid.columns.byName('Sequence');
+
+    let grid = DG.Viewer.grid(table);
+    let col = grid.columns.byName('Sequence');
     col!.cellType = 'html';
-    view.grid.onCellPrepare(function (gc) {
+
+    grid.onCellPrepare(function (gc) {
       if (gc.isTableCell && gc.gridColumn.name == 'Sequence') {
-        gc.style.element = ui.divH([
-          ui.divText(gc.cell.value[0], {style: {color: "red"}}),
-          ui.divText(gc.cell.value[1], {style: {color: "black"}})
-        ])
+        let arr = ui.divH([]);
+        for (let i = 0; i < gc.cell.value.length; i++) {
+          if (indicesOfWrongSymbols[gc.gridRow].includes(i)) {
+            arr.append(ui.divText(gc.cell.value[i], {style: {color: "red"}}));
+          } else {
+            arr.append(ui.divText(gc.cell.value[i], {style: {color: "grey"}}));
+          }
+        }
+        gc.style.element = arr;
       }
     });
-    tableDiv.append(view.root);
+    tableDiv.append(grid.root);
+    if (indicesOfWrongSymbols.some((e) => e.length > 0))
+      removeUnrecognizedSymbolsButtonDiv.append(
+        ui.button('REMOVE UNRECOGNIZED SYMBOLS', () => {
+          inputSequenceField.value = cleanSequences.join('\n');
+          updateTable(cleanSequences.join('\n'));
+        })
+      );
   }
 
   let windows = grok.shell.windows;
@@ -250,6 +297,7 @@ export function OligoBatchCalculatorApp() {
   let inputSequenceField = ui.textInput("", defaultInput, async (txt: string) => updateTable(txt));
 
   let tableDiv = ui.box();
+  let removeUnrecognizedSymbolsButtonDiv = ui.div();
   updateTable(defaultInput);
 
   let saveAsButton = ui.bigButton('SAVE AS CSV', () => {
@@ -260,6 +308,7 @@ export function OligoBatchCalculatorApp() {
     link.setAttribute("download", "Oligo Properties.csv");
     link.click();
   });
+
   let title = ui.panel([ui.h1('Oligo Properties')], 'ui-panel ui-box');
   title.style.maxHeight = '45px';
   $(title).children('h1').css('margin', '0px');
@@ -285,7 +334,12 @@ export function OligoBatchCalculatorApp() {
         ui.panel([tableDiv], 'ui-box')
       ]),
       ui.box(
-        ui.panel([saveAsButton]), {style:{maxHeight:'60px'}}
+        ui.panel([
+          ui.divH([
+            saveAsButton,
+            removeUnrecognizedSymbolsButtonDiv
+          ])
+        ]), {style:{maxHeight:'60px'}}
       ),
     ])
   ]);

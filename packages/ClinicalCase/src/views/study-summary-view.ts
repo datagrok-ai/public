@@ -14,7 +14,10 @@ export class StudySummaryView extends DG.ViewBase {
     super();
 
     this.name = study.name;
+    this.buildView();
+  }
 
+  async buildView() {
     let subjsPerDay = study.domains.dm.groupBy(['RFSTDTC']).uniqueCount('USUBJID').aggregate();
     let refStartCol = subjsPerDay.col('RFSTDTC');
     for (let i = 0, rowCount = subjsPerDay.rowCount; i < rowCount; i++) {
@@ -22,6 +25,10 @@ export class StudySummaryView extends DG.ViewBase {
         subjsPerDay.rows.removeAt(i);
     }
     let lc = DG.Viewer.lineChart(subjsPerDay);
+    if (refStartCol.type != DG.TYPE.DATE_TIME) {
+      await subjsPerDay.columns.addNewCalculated('~RFSTDTC', 'Date(${RFSTDTC}, 1, 1)');
+      lc.setOptions({ x: '~RFSTDTC', yColumnNames: ['unique(USUBJID)'] });
+    }
 
     let summary = ui.tableFromMap({
       'subjects': study.subjectsCount,

@@ -8,6 +8,8 @@ import grok_connect.connectors_info.*;
 
 public class Db2DataProvider extends JdbcDataProvider {
     public Db2DataProvider() {
+        driverClassName = "com.ibm.db2.jcc.DB2Driver";
+
         descriptor = new DataSource();
         descriptor.type = "DB2";
         descriptor.description = "Query DB2 database";
@@ -17,11 +19,11 @@ public class Db2DataProvider extends JdbcDataProvider {
     }
 
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
-        Class.forName("com.ibm.db2.jcc.DB2Driver");
+        Class.forName(driverClassName);
         java.util.Properties properties = defaultConnectionProperties(conn);
         if (!conn.hasCustomConnectionString() && conn.ssl())
             properties.setProperty("sslConnection", "true");
-        return DriverManager.getConnection(getConnectionString(conn), properties);
+        return CustomDriverManager.getConnection(getConnectionString(conn), properties, driverClassName);
     }
 
     public String getConnectionStringImpl(DataConnection conn) {

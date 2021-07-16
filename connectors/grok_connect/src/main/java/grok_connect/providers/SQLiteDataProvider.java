@@ -12,6 +12,8 @@ public class SQLiteDataProvider extends JdbcDataProvider {
     }
 
     public SQLiteDataProvider() {
+        driverClassName = "org.sqlite.JDBC";
+
         descriptor = new DataSource();
         descriptor.type = "SQLite";
         descriptor.description = "Query SQLite database";
@@ -27,8 +29,8 @@ public class SQLiteDataProvider extends JdbcDataProvider {
     }
 
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
-        Class.forName("org.sqlite.JDBC");
-        return DriverManager.getConnection(getConnectionString(conn), conn.credentials.getLogin(), conn.credentials.getPassword());
+        Class.forName(driverClassName);
+        return CustomDriverManager.getConnection(getConnectionString(conn), conn.credentials.getLogin(), conn.credentials.getPassword(), driverClassName);
     }
 
     public String getConnectionStringImpl(DataConnection conn) {

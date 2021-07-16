@@ -8,6 +8,8 @@ import grok_connect.connectors_info.*;
 
 public class VerticaDataProvider extends JdbcDataProvider {
     public VerticaDataProvider() {
+        driverClassName = "com.vertica.jdbc.Driver";
+
         descriptor = new DataSource();
         descriptor.type = "Vertica";
         descriptor.description = "Query Vertica database";
@@ -17,11 +19,11 @@ public class VerticaDataProvider extends JdbcDataProvider {
     }
 
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
-        Class.forName("com.vertica.jdbc.Driver");
+        Class.forName(driverClassName);
         java.util.Properties properties = defaultConnectionProperties(conn);
         if (!conn.hasCustomConnectionString() && conn.ssl())
             properties.setProperty("SSL", "true");
-        return DriverManager.getConnection(getConnectionString(conn), properties);
+        return CustomDriverManager.getConnection(getConnectionString(conn), properties, driverClassName);
     }
 
     public String getConnectionStringImpl(DataConnection conn) {
