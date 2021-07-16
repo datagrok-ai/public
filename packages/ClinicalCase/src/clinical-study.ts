@@ -78,6 +78,10 @@ export class ClinicalStudy {
 
   initFromWorkspace(): void {
     for (let t of grok.shell.tables) {
+      let view = grok.shell.tableView(t.name);
+      if (view != null)
+        view.syncCurrentObject = false;
+
       if (t.name.toLowerCase() in this.domains)
         this.domains[t.name.toLowerCase()] = t;
     }
@@ -107,7 +111,14 @@ export class ClinicalStudy {
       vaidateDMDomain(study.domains.dm, this.validationResults);
     }
   }
+}
 
+export class ClinRow {
+  row: DG.Row;
+
+  constructor(row: DG.Row) {
+    this.row = row;
+  }
 }
 
 export let study: ClinicalStudy = new ClinicalStudy();

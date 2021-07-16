@@ -9,6 +9,7 @@ import {TimelinesView} from "./views/timelines-view";
 import {PatientProfileView} from "./views/patient-profile-view";
 import {AdverseEventsView} from "./views/adverse-events-view";
 import { ValidationView } from './views/validation-view';
+import { AdverseEventHandler } from './panels/adverse-event-handler';
 
 export let _package = new DG.Package();
 
@@ -135,6 +136,8 @@ export async function clinicalCaseApp(): Promise<any> {
   grok.shell.newView(`Patient Profile`, [new PatientProfileView().root]);
   grok.shell.newView(`Adverse Events`, [new AdverseEventsView().root]);
   grok.shell.newView(`Validation`, [new ValidationView().root]);
+
+  DG.ObjectHandler.register(new AdverseEventHandler());
 
   // showStudySummary();
   // showLabs();
