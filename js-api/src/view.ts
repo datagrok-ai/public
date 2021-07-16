@@ -637,6 +637,9 @@ export class TableView extends View {
   get viewers(): Iterable<Viewer> {
     return _toIterable(api.grok_View_Get_Viewers(this.d));
   }
+
+  get syncCurrentObject(): boolean { return api.grok_TableView_Get_SyncCurrentObject(this.d); }
+  set syncCurrentObject(x: boolean) { api.grok_TableView_Set_SyncCurrentObject(this.d, x); }
 }
 
 
