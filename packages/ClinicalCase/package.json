@@ -13,7 +13,7 @@
 	},
 	"scripts": {
 		"debug-clinicalcase": "webpack && grok publish",
-		"release-clinicalcase": "grok publish --rebuild --release",
+		"release-clinicalcase": "webpack && grok publish --release",
 		"build-clinicalcase": "webpack",
 		"build": "webpack",
 		"debug-clinicalcase-dev": "grok publish dev --rebuild",
