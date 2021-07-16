@@ -7,7 +7,8 @@ export function createValidationDataFrame(){
     validationResults.columns.addNewString('Domain');
     validationResults.columns.addNewString('Column');
     validationResults.columns.addNewInt('Row number');
-    validationResults.columns.addNewString('Violated rule id');
+    validationResults.columns.addNewString('Value');
+    validationResults.columns.addNewString('Violated rule ID');
     return validationResults;
 }
 
@@ -27,16 +28,21 @@ export function validateColumns(columns: DG.Column[],
     externalConditionVariable?: any){
     for (let i = 0; i < rowCount; ++i) {
         const values = getValue? columns.map((item) => item.get(i)): {column: columns[0], index: i};
+        const value = getValue? values[0]: columns[0].get(i);
         const condition = externalConditionVariable? filter(values, externalConditionVariable): filter(values);
         if(condition){
-            updateValidationResult(i, columns[0].name, ruleId, domainId, validationResults);
+            updateValidationResult(i, columns[0].name, ruleId, domainId, getStringValue(value), validationResults);
         }
       }
 }
 
 
-export function updateValidationResult(i, colName, ruleId, domainId, validationResults: DG.DataFrame){
-    validationResults.rows.addNew([domainId, colName, i, ruleId]);
+export function updateValidationResult(i, colName, ruleId, domainId, value, validationResults: DG.DataFrame){
+    validationResults.rows.addNew([domainId, colName, i, value, ruleId]);
+}
+
+export function getStringValue(value: any){
+    return !value || value == DG.INT_NULL || value == DG.FLOAT_NULL ? '' : value.toString();
 }
 
 

@@ -218,8 +218,7 @@ export class JsViewer extends Viewer {
         return this._dataFrame;
     }
     public set dataFrame(value: DataFrame | undefined) {
-      if (value != undefined)
-        this.onFrameAttached(value);
+      this._dataFrame = value;
     }
   subs: Subscription[];
   obs: rxjs.Observable<any>[];
@@ -242,7 +241,6 @@ export class JsViewer extends Viewer {
   }
 
   onFrameAttached(dataFrame: DataFrame): void {
-    this._dataFrame = dataFrame;
     this.onTableAttached();
   }
 

@@ -1,6 +1,35 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-07-16 Dev build 0.92.19
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.19`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Added debug prints to  ExternalDataProvider 
+* MultiPlot: add click support 
+* MultiPlot: move timeLines render to external file (WIP)
+* Added a polyfill for Object.entries (won't work in Dartium without it, and did not find a way to specify the relevant target to TypeScript) 
+* (Bug) JS API: Custom object handlers should get inserted after the generic JsObjectMeta in order to have effect 
+* JS API: TableView.syncCurrentObject to control whether current columns/rows should be shown in the property panel 
+* Removed debug printouts. 
+* (Bug) Matcher: matching on multiple criteria ignores the "and/or" option 
+* Clinical Case: Adverse Events: show events preceding the adverse event 
+* Update ui.md 
+* ClinicalCase \- a plugin for analyzing SDTM-based clinical studies data (WIP)
+* updated rules table, implemented opening validation view for specific domain by link 
+* (Bug) Core: Bitset.falseCount returns the number of set bits 
+* Untied dataFrame setter and onFrameAttached 
+* Updated help index, minor changes 
+
+
 # 2021-07-15 Dev build 0.92.18
 
 ## Latest Docker Images
