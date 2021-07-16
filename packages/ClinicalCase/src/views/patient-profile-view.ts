@@ -12,6 +12,9 @@ export class PatientProfileView extends DG.ViewBase {
   age: InputBase = ui.stringInput('Age', '');
   race: InputBase = ui.stringInput('Race', '');
   arm: InputBase = ui.stringInput('ARM', '');
+  ae: DG.DataFrame = study.domains.ae.clone(null, ['USUBJID', 'AETERM', 'AESTDY', 'AEENDY', 'AESEV']);
+  aeSubjIdCol: DG.Column = this.ae.col('USUBJID');
+  timelines: HTMLDivElement = ui.div();
   // height: InputBase = ui.stringInput('Height', '');
   // weight: InputBase = ui.stringInput('Weight', '');
 
@@ -24,7 +27,11 @@ export class PatientProfileView extends DG.ViewBase {
     ]))
 
     this.root.appendChild(this.id);
-    this.root.appendChild(ui.inputs([this.sex, this.age, this.race, this.arm]));
+    this.root.appendChild(ui.divV([
+      this.id,
+      ui.inputs([this.sex, this.age, this.race, this.arm]),
+      this.timelines,
+    ]));
     this.refresh(0);
   }
 
@@ -36,5 +43,15 @@ export class PatientProfileView extends DG.ViewBase {
     this.race.value = row['race'];
     this.age.value = row['age'].toString();
     this.arm.value = row['arm'];
+    this.ae.filter.init((i: number) => this.aeSubjIdCol.get(i) === row['usubjid']);
+    let v = DG.Viewer.scatterPlot(this.ae, {
+      x: 'AESTDY',
+      y: 'AETERM',
+      color: 'AESEV',
+      legendVisibility: 'Never',
+      style: 'dashboard',
+    });
+    $(this.timelines).empty();
+    this.timelines.appendChild(ui.divH([v.root], { style: { width: '100%' } }));
   }
 }
