@@ -131,11 +131,14 @@ export async function clinicalCaseApp(): Promise<any> {
 
   study.initFromWorkspace();
 
-  grok.shell.newView(`Summary`, [new StudySummaryView().root]);
+  const studySummaryClass = new StudySummaryView();
+  grok.shell.newView(`Summary`, [ studySummaryClass.root ]);
   grok.shell.newView(`Timelines`, [new TimelinesView().root]);
-  grok.shell.newView(`Patient Profile`, [new PatientProfileView().root]);
-  grok.shell.newView(`Adverse Events`, [new AdverseEventsView().root]);
-  grok.shell.newView(`Validation`, [new ValidationView().root]);
+  grok.shell.newView(`Patient Profile`, [ new PatientProfileView().root ]);
+  grok.shell.newView(`Adverse Events`, [ new AdverseEventsView().root ]);
+  const validationView = grok.shell.newView(`Validation`, [ new ValidationView().root ]);
+
+  studySummaryClass.validationView = validationView;
 
   DG.ObjectHandler.register(new AdverseEventHandler());
 

@@ -638,7 +638,7 @@ For each dialog, you can set the position by viewport by x and y-asix.
   ### Text Area
   The text area is an input control that allows the user to enter several lines of text.
   ```javascript
-  ui.textArea('Text area text data');
+  ui.textInput('Lable','Text area text data');
   ```
 
   ### Dropdown Selection

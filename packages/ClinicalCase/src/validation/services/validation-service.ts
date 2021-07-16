@@ -80,6 +80,6 @@ export function vaidateDMDomain(df: DG.DataFrame, validationResults: DG.DataFram
     validateNonNegativeVariables(df, ['DUR'], 'dm','SD0015', validationResults);
     validateISO8601Variables(df, ['DTC'], 'dm', 'SD0003', validationResults);
     validateISO8601Variables(df, ['DUR', 'ELTM', 'EVLINT', 'STINT', 'ENINT', 'TDSTOFF', 'TDTGTPAI', 'TDMINPAI', 'TDMAXPAI'], 'dm', 'SD1011', validationResults);
-    validateDomainName(df, 'ae', 'SD0004', validationResults);
+    validateDomainName(df, 'dm', 'SD0004', validationResults);
 }
 
