@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
 import * as echarts from 'echarts';
-import { initTimeLine } from './timeLinesRender';
+import {initTimeLine} from './timeLinesRender';
 // import * as deb from "./../debug.js";
 
 export class MultiPlotViewer extends DG.JsViewer {
@@ -337,7 +337,7 @@ export class MultiPlotViewer extends DG.JsViewer {
         this.echartOptions.xAxis[visibleIndex].type = 'value';
         this.echartOptions.yAxis[visibleIndex].type = 'category';
       }
- 
+
       this.echartOptions.series.push(currentSeries);
       this.visibleIndexes.push(i);
       visibleIndex++;
@@ -750,5 +750,4 @@ export class MultiPlotViewer extends DG.JsViewer {
       setTimeout(() => this.echart.setOption(this.echartOptions, true), 200);
     }
   }
-
 }
