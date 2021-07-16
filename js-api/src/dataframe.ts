@@ -600,7 +600,7 @@ export class DataFrame {
 
 /** Represents a row. Allows for quick property access like "row.height". */
 export class Row {
-  private table: DataFrame;
+  table: DataFrame;
   readonly idx: number;
 
   /**
@@ -637,6 +637,8 @@ export class Row {
   get(columnName: string): any {
     return this.table.getCol(columnName).get(this.idx);
   }
+
+  toDart(): any { return api.grok_Row(this.table.d, this.idx); }
 }
 
 /** Strongly-typed column. */
