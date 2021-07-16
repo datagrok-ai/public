@@ -8,6 +8,8 @@ import grok_connect.connectors_info.*;
 
 public class ImpalaDataProvider extends JdbcDataProvider {
     public ImpalaDataProvider() {
+        driverClassName = "com.cloudera.impala.jdbc41.Driver";
+
         descriptor = new DataSource();
         descriptor.type = "Impala";
         descriptor.description = "Query Impala database";
@@ -23,8 +25,8 @@ public class ImpalaDataProvider extends JdbcDataProvider {
     }
 
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
-        Class.forName("com.cloudera.impala.jdbc41.Driver");
-        return DriverManager.getConnection(getConnectionString(conn), conn.credentials.getLogin(), conn.credentials.getPassword());
+        Class.forName(driverClassName);
+        return CustomDriverManager.getConnection(getConnectionString(conn), conn.credentials.getLogin(), conn.credentials.getPassword(), driverClassName);
     }
 
     public String getConnectionStringImpl(DataConnection conn) {

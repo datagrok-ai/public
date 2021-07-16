@@ -8,6 +8,8 @@ import grok_connect.connectors_info.*;
 
 public class VirtuosoDataProvider extends JdbcDataProvider {
     public VirtuosoDataProvider() {
+        driverClassName = "virtuoso.jdbc4.Driver";
+
         descriptor = new DataSource();
         descriptor.type = "Virtuoso";
         descriptor.description = "Query Virtuoso database";
@@ -18,11 +20,11 @@ public class VirtuosoDataProvider extends JdbcDataProvider {
     }
 
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
-        Class.forName("virtuoso.jdbc4.Driver");
+        Class.forName(driverClassName);
         String connString = getConnectionString(conn);
         connString = connString.endsWith("/") ? connString : connString + "/";
         connString += "UID=" + conn.credentials.getLogin() + "/PWD=" + conn.credentials.getPassword();
-        return DriverManager.getConnection(connString, conn.credentials.getLogin(), conn.credentials.getPassword());
+        return CustomDriverManager.getConnection(connString, conn.credentials.getLogin(), conn.credentials.getPassword(), driverClassName);
     }
 
     public String getConnectionStringImpl(DataConnection conn) {

@@ -8,6 +8,8 @@ import grok_connect.connectors_info.*;
 
 public class HiveDataProvider extends JdbcDataProvider {
     public HiveDataProvider() {
+        driverClassName = "org.apache.hive.jdbc.HiveDriver";
+
         descriptor = new DataSource();
         descriptor.type = "Hive";
         descriptor.description = "Query Hive database";
@@ -17,11 +19,11 @@ public class HiveDataProvider extends JdbcDataProvider {
     }
 
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
-        Class.forName("org.apache.hive.jdbc.HiveDriver");
+        Class.forName(driverClassName);
         java.util.Properties properties = defaultConnectionProperties(conn);
         if (!conn.hasCustomConnectionString() && conn.ssl())
             properties.setProperty("ssl", "true");
-        return DriverManager.getConnection(getConnectionString(conn), properties);
+        return CustomDriverManager.getConnection(getConnectionString(conn), properties, driverClassName);
     }
 
     public String getConnectionStringImpl(DataConnection conn) {

@@ -11,6 +11,8 @@ import grok_connect.connectors_info.*;
 
 public class AccessDataProvider extends JdbcDataProvider {
     public AccessDataProvider() {
+        driverClassName = "net.ucanaccess.jdbc.UcanaccessDriver";
+
         descriptor = new DataSource();
         descriptor.type = "Access";
         descriptor.description = "Query Access database";
@@ -27,9 +29,9 @@ public class AccessDataProvider extends JdbcDataProvider {
     }
 
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
-        Class.forName("net.ucanaccess.jdbc.UcanaccessDriver");
-        return DriverManager.getConnection(getConnectionString(conn), conn.credentials.getLogin(),
-                conn.credentials.getPassword());
+        Class.forName(driverClassName);
+        return CustomDriverManager.getConnection(getConnectionString(conn), conn.credentials.getLogin(),
+                conn.credentials.getPassword(), driverClassName);
     }
 
     public String getConnectionStringImpl(DataConnection conn) {

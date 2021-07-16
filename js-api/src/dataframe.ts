@@ -195,8 +195,8 @@ export class DataFrame {
   public filter: BitSet;
   public temp: any;
   public tags: any;
-  private _plot: DataFramePlotHelper;
-  private _dialogs: DataFrameDialogHelper;
+  private _plot: DataFramePlotHelper | undefined;
+  private _dialogs: DataFrameDialogHelper | undefined;
 
   constructor(d: any) {
     this.d = d;
@@ -600,7 +600,7 @@ export class DataFrame {
 
 /** Represents a row. Allows for quick property access like "row.height". */
 export class Row {
-  private table: DataFrame;
+  table: DataFrame;
   readonly idx: number;
 
   /**
@@ -637,6 +637,8 @@ export class Row {
   get(columnName: string): any {
     return this.table.getCol(columnName).get(this.idx);
   }
+
+  toDart(): any { return api.grok_Row(this.table.d, this.idx); }
 }
 
 /** Strongly-typed column. */
@@ -644,7 +646,7 @@ export class Column {
   public d: any;
   private temp: any;
   public tags: any;
-  private _dialogs: ColumnDialogHelper;
+  private _dialogs: ColumnDialogHelper | undefined;
 
   constructor(d: any) {
     this.d = d;
@@ -2087,7 +2089,7 @@ class DataFramePlotHelper {
     this.df = df;
   }
 
-  fromType(viewerType: ViewerType, options: object | null = null): Widget {
+  fromType(viewerType: ViewerType, options: object | null = null): Promise<Widget> {
     return toJs(api.grok_Viewer_FromType_Async(viewerType, this.df.d, _toJson(options)));
   }
   scatter(options: object | null = null) { return DG.Viewer.scatterPlot(this.df, options); }

@@ -5,11 +5,11 @@ import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
+import grok_connect.utils.CustomDriverManager;
 import grok_connect.utils.Property;
 import serialization.Types;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -18,6 +18,8 @@ import java.util.List;
 public class SnowflakeDataProvider extends JdbcDataProvider{
 
     public SnowflakeDataProvider() {
+        driverClassName = "com.snowflake.client.jdbc.SnowflakeDriver";
+
         descriptor = new DataSource();
         descriptor.type = "Snowflake";
         descriptor.description = "Query Snowflake database";
@@ -63,14 +65,14 @@ public class SnowflakeDataProvider extends JdbcDataProvider{
     }
 
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
-        Class.forName("com.snowflake.client.jdbc.SnowflakeDriver");
+        Class.forName(driverClassName);
         java.util.Properties properties = defaultConnectionProperties(conn);
 
         if (!conn.hasCustomConnectionString() && conn.ssl())
             properties.setProperty("ssl", "on");
 
         properties.put("db", conn.getDb());
-        return DriverManager.getConnection(getConnectionString(conn), properties);
+        return CustomDriverManager.getConnection(getConnectionString(conn), properties, driverClassName);
     }
 
     public String getConnectionStringImpl(DataConnection conn) {

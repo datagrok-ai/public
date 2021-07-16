@@ -2,11 +2,14 @@ package grok_connect.providers;
 
 import java.sql.*;
 import grok_connect.connectors_info.*;
+import grok_connect.utils.CustomDriverManager;
 
 
 // TODO Note that this is just template. This class can be used as connector layer for other databases.
 public class OdbcDataProvider extends JdbcDataProvider {
     public OdbcDataProvider() {
+        driverClassName = "sun.jdbc.odbc.JdbcOdbcDriver";
+
         descriptor = new DataSource();
         descriptor.type = "ODBC";
         descriptor.description = "Query database via ODBC";
@@ -15,8 +18,8 @@ public class OdbcDataProvider extends JdbcDataProvider {
     }
 
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
-        Class.forName("sun.jdbc.odbc.JdbcOdbcDriver");
-        return DriverManager.getConnection(getConnectionString(conn), conn.credentials.getLogin(), conn.credentials.getPassword());
+        Class.forName(driverClassName);
+        return CustomDriverManager.getConnection(getConnectionString(conn), conn.credentials.getLogin(), conn.credentials.getPassword(), driverClassName);
     }
 
     public String getConnectionStringImpl(DataConnection conn) {

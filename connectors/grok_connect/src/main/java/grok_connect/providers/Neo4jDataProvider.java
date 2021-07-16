@@ -8,6 +8,8 @@ import grok_connect.connectors_info.*;
 
 public class Neo4jDataProvider extends JdbcDataProvider {
     public Neo4jDataProvider() {
+        driverClassName = "org.neo4j.jdbc.Driver";
+
         descriptor = new DataSource();
         descriptor.type = "Neo4j";
         descriptor.description = "Query Neo4j database";
@@ -18,7 +20,7 @@ public class Neo4jDataProvider extends JdbcDataProvider {
     }
 
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
-        Class.forName("org.neo4j.jdbc.Driver");
+        Class.forName(driverClassName);
         Class.forName("org.neo4j.jdbc.bolt.BoltDriver");
         Class.forName("org.neo4j.jdbc.boltrouting.BoltRoutingNeo4jDriver");
         Class.forName("org.neo4j.jdbc.http.HttpDriver");
@@ -26,7 +28,7 @@ public class Neo4jDataProvider extends JdbcDataProvider {
         String connString = getConnectionString(conn);
         if (!conn.hasCustomConnectionString() && !conn.ssl())
             connString += "?nossl";
-        return DriverManager.getConnection(connString, properties);
+        return CustomDriverManager.getConnection(connString, properties, driverClassName);
 
     }
 

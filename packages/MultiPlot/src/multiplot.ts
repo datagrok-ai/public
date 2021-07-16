@@ -3,14 +3,14 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
 import * as echarts from 'echarts';
-import {DataFrame, Property, Viewer} from 'datagrok-api/dg';
+import {initTimeLine} from './timeLinesRender';
 // import * as deb from "./../debug.js";
 
 export class MultiPlotViewer extends DG.JsViewer {
   // properties
   private defaultTitleHeight: string = this.string('defaultTitleHeight', '25px');
-  private backColor: string = this.string('backColor', '#ffffff');
-  private verticalLinesColor: string = this.string('verticalLinesColor', '#cccccc');
+  private backColor: number = this.int('backColor', 0xffffff);
+  private verticalLinesColor: number = this.int('verticalLinesColor', 0xf0f0f0);
   private verticalLines: boolean = this.bool('verticalLines', true);
   private showControls: boolean = this.bool('showControls', true);
   private timeLineWidth: number = this.int('timeLineWidth', 1);
@@ -23,8 +23,10 @@ export class MultiPlotViewer extends DG.JsViewer {
   private plots = [];
   private box: any;
   private echart: any;
+  private echarts: any = echarts;
   private echartOptions: any;
   private visiblePlotsCount: number;
+  private initTimeLine = initTimeLine;
   private timeLineSeries: any;
   private timeLineIndex: number = 11;
   private statusChartIndex: number = 10;
@@ -40,9 +42,10 @@ export class MultiPlotViewer extends DG.JsViewer {
   private plotTitleLowMargin: number = 5;
   private controlsTopShift: number = -4;
   private headerHiddenShift: number = -10;
-  private tables = {}
+  private tables = {};
   private isTablesLoaded: number = 0;
   private tooltipOffset: number = 10;
+  private visibleIndexes: number[];
   private options = {
     series: [
       {
@@ -61,7 +64,7 @@ export class MultiPlotViewer extends DG.JsViewer {
       },
       {
         table: 'ae__2__lb__2_',
-        title: 'title1',
+        title: 'title11',
         type: 'timeLine',
         x: 'LBTEST',
         y: ['AESTDY', 'LBDY'],
@@ -122,19 +125,10 @@ export class MultiPlotViewer extends DG.JsViewer {
       this.updateOptionsPositions();
       if (this.echart) {
         this.updatePlots();
-        this.setEchartOptions();
+        this.render();
         this.echart.resize();
       }
     });
-  }
-
-  setEchartOptions(): void {
-    console.log('set echart options: ', this.echartOptions);
-    if (this.echart) {
-      // this.echart.clear();
-      // this.echart.setOption(this.echartOptions, true);
-      setTimeout(() => this.echart.setOption(this.echartOptions, true), 200);
-    }
   }
 
   onPropertyChanged(property: DG.Property): void {
@@ -143,7 +137,7 @@ export class MultiPlotViewer extends DG.JsViewer {
     if (name === 'defaultTitleHeight') {
       this.defaultTitleHeight = val;
       this.updateHeight();
-      this.setEchartOptions();
+      this.render();
     }
     if (name === 'backColor') {
     }
@@ -154,7 +148,7 @@ export class MultiPlotViewer extends DG.JsViewer {
     }
 
     this.updatePlots();
-    this.setEchartOptions();
+    this.render();
     // super.onPropertyChanged(property);
   }
 
@@ -278,14 +272,24 @@ export class MultiPlotViewer extends DG.JsViewer {
 
   // takes data from this.plots and fills options for echart library
   updatePlots(): void {
+    function toColor(num: number): string {
+      num >>>= 0;
+      const b = num & 0xFF;
+      const g = (num & 0xFF00) >>> 8;
+      const r = (num & 0xFF0000) >>> 16;
+      // a = ( (num & 0xFF000000) >>> 24 ) / 255 ;
+      const a = 1;
+      return 'rgba(' + [r, g, b, a].join(',') + ')';
+    }
     this.clearPlots();
-
-    this.echartOptions.backgroundColor = this.backColor;
+    if (this.isTablesLoaded === 0) return;
+    this.echartOptions.backgroundColor = toColor(this.backColor);
 
     // update positions
     this.updateOptionsPositions();
     this.echartOptions.series = [];
     let visibleIndex = 0;
+    this.visibleIndexes = [];
     for (let i = 0; i < this.plots.length; i++) {
       this.echartOptions.title[i].left = '10px';
       this.echartOptions.title[i].text = this.plots[i].title;
@@ -303,6 +307,7 @@ export class MultiPlotViewer extends DG.JsViewer {
       this.echartOptions.yAxis[visibleIndex].gridIndex = visibleIndex;
       this.echartOptions.yAxis[visibleIndex].type = this.plots[i].yType || 'value';
       this.echartOptions.yAxis[visibleIndex].show = this.plots[i].show;
+      this.echartOptions.yAxis[visibleIndex].triggerEvent = true;
 
       let currentSeries = {
         type: this.plots[i].series.type,
@@ -321,7 +326,7 @@ export class MultiPlotViewer extends DG.JsViewer {
       };
 
       if (this.plots[i].type === 'timeLine') {
-        this.plots[i].timeLinesSeries = this.initTimeLine(visibleIndex);
+        this.plots[i].timeLinesSeries = this.initTimeLine(visibleIndex, this);
         this.plots[i].subjectCol = this.tables[this.plots[i].table].getCol(this.plots[i].x);
         this.plots[i].subjects = this.plots[i].subjectCol.categories;
         this.plots[i].subjBuf = this.plots[i].subjectCol.getRawData();
@@ -334,6 +339,7 @@ export class MultiPlotViewer extends DG.JsViewer {
       }
 
       this.echartOptions.series.push(currentSeries);
+      this.visibleIndexes.push(i);
       visibleIndex++;
     } // for i<this.plots.length
 
@@ -345,7 +351,7 @@ export class MultiPlotViewer extends DG.JsViewer {
     this.echartOptions.xAxis[visibleIndex - 1].axisTick = {
       inside: true,
       length: this.verticalLines ? 2000 : 5,
-      lineStyle: {color: this.verticalLinesColor},
+      lineStyle: {color: toColor(this.verticalLinesColor)},
     };
     this.echartOptions.xAxis[visibleIndex - 1].show = true;
     this.echartOptions.xAxis[visibleIndex - 1].type = 'value';
@@ -354,7 +360,7 @@ export class MultiPlotViewer extends DG.JsViewer {
   // only updates heights
   updateHeight() : void {
     this.updateOptionsPositions();
-    this.setEchartOptions();
+    this.render();
   }
 
   // fill echart options with arrays of empty objects
@@ -438,7 +444,7 @@ export class MultiPlotViewer extends DG.JsViewer {
         });
         this.createElements();
         this.updatePlots();
-        this.setEchartOptions();
+        this.render();
       }; // callback
 
       // add context menu items (right click);
@@ -502,6 +508,7 @@ export class MultiPlotViewer extends DG.JsViewer {
     }
     this.isTablesLoaded = 1;
     this.updateFilter();
+    this.render();
 
     // this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
     // this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()));
@@ -521,15 +528,12 @@ export class MultiPlotViewer extends DG.JsViewer {
         };
       });
       this.updatePlots();
-      this.setEchartOptions();
       this.render();
     }));
 
     // @ts-ignore
     this.subs.push(this.dataFrame.filter.onChanged.subscribe((_) => {
       this.updateFilter();
-      this.setEchartOptions();
-
       this.render();
     }));
   } // table attached
@@ -558,16 +562,10 @@ export class MultiPlotViewer extends DG.JsViewer {
     this.updatePlots();
   }
 
-  applyFilter(filter: DG.BitSet): void {
-    this.clearPlots();
-  }
-
-  detach(): void {
-    this.subs.forEach((sub) => sub.unsubscribe());
-  }
-
-  getTooltipByParams(params: any) : any {
-
+  isGroup(componentIndex: number) : boolean {
+    const type = this.plots[this.visibleIndexes[componentIndex]].type;
+    if (type === 'scatter' || type === 'line') return false;
+    return true;
   }
 
   init(): void {
@@ -584,39 +582,79 @@ export class MultiPlotViewer extends DG.JsViewer {
     });
     if (!this.echart) this.echart = echarts.init(this.root, null, {renderer: 'canvas'});
 
-    this.echart.on('mouseover', (params) => {
-      if (params.componentType === 'series') {
-        const iPlot = params.seriesIndex;
-        const table = this.tables[this.plots[iPlot].table];
-        if (params.componentSubType === 'scatter') {
-          console.log(JSON.stringify(params.data));
-          ui.tooltip.show(ui.divV(
-              params.data.map((e, i) => ui.div([params.dimensionNames[i] + ': ' + e + '']))),
-          params.event.event.x + this.tooltipOffset,
-          params.event.event.y + this.tooltipOffset,
-          );
+    this.echart.on('dataZoom', (e) => {
+      console.log('zoom ', e);
+    });
+
+    this.echart.on('click', (params) => {
+      console.log('click params ', params);
+      const iPlot : number = this.visibleIndexes[params.componentIndex];
+      const table : DG.DataFrame = this.tables[this.plots[iPlot].table];
+      const subjBuf = this.plots[iPlot];
+      const x = params.event.event.x + this.tooltipOffset;
+      const y = params.event.event.y + this.tooltipOffset;
+      const xColName = this.plots[iPlot].x;
+      const yColName = this.plots[iPlot].y;
+      const colNames = [xColName, yColName];
+      table.selection.handleClick( (i) => {
+        console.log('params value');
+        if (params.componentType === 'yAxis') {
+          return this.plots[iPlot].subjects[this.plots[iPlot].subjBuf[i]] === params.value;
         }
-        if (params.componentSubType === 'custom') {
+        if (params.componentType === 'series') {
+          if (this.isGroup(params.componentIndex)) {
+            return params.value[0] ===
+              this.plots[iPlot].subjects[this.plots[iPlot].subjBuf[i]];
+          } else {
+            return params.dataIndex === i;
+          }
+        }
+      }, params.event.event);
+    });
+
+    this.echart.on('mouseover', (params) => {
+      const iPlot : number = this.visibleIndexes[params.componentIndex];
+      const table : DG.DataFrame = this.tables[this.plots[iPlot].table];
+      const subjBuf = this.plots[iPlot];
+      const x = params.event.event.x + this.tooltipOffset;
+      const y = params.event.event.y + this.tooltipOffset;
+      const xColName = this.plots[iPlot].x;
+      const yColName = this.plots[iPlot].y;
+      const colNames = [xColName, yColName];
+      const val = params.value[1];
+
+      if (params.componentType === 'yAxis') {
+        if (this.isGroup(params.componentIndex)) {
+          ui.tooltip.showRowGroup(table, (i) => {
+            return params.value === this.plots[iPlot].subjects[this.plots[iPlot].subjBuf[i]];
+          }, x, y);
+        }
+      }
+
+      if (params.componentType === 'series') {
+        if (!this.isGroup(params.componentIndex)) {
+          ui.tooltip.show(ui.divV(
+              params.data.map((e, i) => ui.div([colNames[i] + ': ' + e + ''])),
+          ), x, y);
+        } else {
           ui.tooltip.showRowGroup(table, (i) => {
             return params.value[0] === this.plots[iPlot].subjects[this.plots[iPlot].subjBuf[i]]; // &&
             //            params.value[1] === (this.startCol.isNone(i) ? null : this.startBuf[i]) &&
             //          params.value[2] === (this.endCol.isNone(i) ? null : this.endBuf[i]);
-          },
-          params.event.event.x + this.tooltipOffset,
-          params.event.event.y + this.tooltipOffset,
-          );
+          }, x, y);
         }
       } // series
-      const val = params.value[1];
-    });
+    }); // mouseover
+
+    this.echart.on('mouseout', () => ui.tooltip.hide());
 
     this.clearPlots();
     this.createElements();
     this.updateOptionsPositions();
     //   this.updatePlots();
-    //  this.setEchartOptions();
+    //  this.render();
     this.render();
-  }
+  } // init
 
   deleteElements(): void {
     this.typeComboElements.map((e) => e.remove());
@@ -645,7 +683,7 @@ export class MultiPlotViewer extends DG.JsViewer {
       const inputPlotType: any = ui.choiceInput('', 'scatter', ['scatter', 'line', 'bar'], ((i) => (event) => {
         this.plots[i].series.type = event;
         this.updatePlots();
-        this.setEchartOptions();
+        this.render();
       })(i));
       this.typeComboElements.push(inputPlotType.root);
       this.root.appendChild(inputPlotType.root);
@@ -673,7 +711,7 @@ export class MultiPlotViewer extends DG.JsViewer {
         this.plots[i].show = isShown;
         this.updateFilter();
         this.updatePlots();
-        this.setEchartOptions();
+        this.render();
       })(i));
       this.typeComboElements.push(inputPlotType);
       this.root.appendChild(inputPlotType);
@@ -693,7 +731,7 @@ export class MultiPlotViewer extends DG.JsViewer {
         this.createElements();
         this.updateHeight();
         this.updatePlots();
-        this.setEchartOptions();
+        this.render();
       })(i), 'Close');
       inputClose.style.position = 'absolute';
       inputClose.style.right = '15px';
@@ -705,119 +743,11 @@ export class MultiPlotViewer extends DG.JsViewer {
   } // createElements
 
   render(): void {
-
+    console.log('set echart options: ', this.echartOptions);
+    if (this.echart) {
+      // this.echart.clear();
+      // this.echart.setOption(this.echartOptions, true);
+      setTimeout(() => this.echart.setOption(this.echartOptions, true), 200);
+    }
   }
-
-  initTimeLine(visibleIndex: number): any {
-    let count = 0;
-    const renderFailed = 1234;
-    // this.timeLineSeries = {
-    const timeLinesSeries = {
-      type: 'custom',
-      progressive: 0,
-      animation: false,
-      renderItem: ((t: any, echarts: any) => (params, echartAPI) => {
-        const data = this.timeLinesData;
-        if (!data || data.length == 0) return renderFailed;
-        const customDebug = false;
-        const av0 = echartAPI.value(0);
-        const av1 = echartAPI.value(1);
-        const av2 = echartAPI.value(2);
-        const gridTopRaw = this.echartOptions.grid[visibleIndex].top;
-        const gridTop = parseFloat(gridTopRaw);
-        let overlap = false;
-        if (params.dataIndex > 0 && data[params.dataIndex - 1][0] === data[params.dataIndex][0] &&
-          echartAPI.value(1) <= data[params.dataIndex - 1][2]) {
-          overlap = true;
-        }
-        const categoryIndex = echartAPI.value(0);
-        const start = echartAPI.coord([echartAPI.value(1), categoryIndex + 0]);
-        const end = echartAPI.coord([echartAPI.value(2), categoryIndex]);
-        const height = echartAPI.size([0, 1])[1];
-        const rect0 = {
-          x: start[0],
-          y: start[1] - this.timeLineWidth / 2,
-          width: end[0] - start[0],
-          height: this.timeLineWidth,
-        };
-        const rect1 = {
-          x: params.coordSys.x,
-          y: params.coordSys.y, // + gridTop,
-          width: params.coordSys.width,
-          height: params.coordSys.height,
-        };
-        let rectShape = echarts.graphic.clipRectByRect(rect0, rect1);
-        if (!rectShape) {
-          rectShape = {x: -220, y: 20, width: 100, height: 10};
-        }
-        let endColor = this.categoryColors[categoryIndex % this.categoryColors.length];
-        if (this.selection.includes(params.dataIndex)) endColor = 'red';
-        let group = {
-          type: 'group',
-          children: [{
-            type: 'rect',
-            transition: ['shape'],
-            // shape: rectShape,
-            shape: rectShape,
-            style: {fill: echartAPI.value(3)},
-          },
-          {
-            type: 'circle',
-            shape: {
-              cx: start[0], cy: end[1] + 0, r: this.timeLineRadius,
-            },
-            style: {fill: this.categoryColors[categoryIndex % this.categoryColors.length]},
-          },
-          {
-            type: 'circle',
-            shape: {
-              cx: end[0], cy: end[1] + 0, r: this.timeLineRadius,
-            },
-            style: {fill: endColor},
-          },
-          ],
-        };
-        if (overlap && (end[0] - start[0] > 20)) {
-          // let shift = count ? 20 : -20;
-          const shift = (count % 3) ? (count % 3 === 2) ?
-            0 : this.timeLineOverlapShift - height / 2 : height / 2 - this.timeLineOverlapShift;
-          //    shift = 0;
-          count += 1;
-          rectShape.y += shift;
-          group = {
-            type: 'group',
-            children: [{
-              type: 'rect',
-              transition: ['shape'],
-              shape: rectShape,
-              style: {fill: echartAPI.value(3)},
-            },
-            {
-              type: 'circle',
-              shape: {
-                cx: start[0], cy: end[1] + shift, r: this.timeLineRadius,
-              },
-              style: {fill: 'darkgreen'},
-            },
-            {
-              type: 'circle',
-              shape: {
-                cx: end[0], cy: end[1] + shift, r: this.timeLineRadius,
-              },
-              style: {fill: 'red'},
-            },
-            ],
-          };
-        } // overlap
-        return group;
-      })(this, echarts), // render item
-      encode: {
-        x: [1, 2],
-        y: 0,
-        tooltip: 3,
-      },
-      data: this.timeLinesData,
-    }; // this.timeLineSeries
-    return timeLinesSeries;
-  } // initTimeLine
 }
