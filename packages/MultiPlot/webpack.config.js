@@ -38,5 +38,8 @@ module.exports = {
   optimization: {
     moduleIds: 'hashed',
     chunkIds: 'deterministic'
+  },
+  resolve: {
+    extensions: ['.ts', '.js', '.json']
   }
 };
