@@ -3,10 +3,14 @@ import * as grok from "datagrok-api/grok";
 import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
+import { ValidationView } from "./validation-view";
+import { event } from "jquery";
 
 export class StudySummaryView extends DG.ViewBase {
 
-  constructor() {
+ validationView: DG.View;
+
+ constructor() {
     super();
 
     this.name = study.name;
@@ -41,11 +45,20 @@ export class StudySummaryView extends DG.ViewBase {
     ]));
   }
 
-  private createErrorsMap(){
+  private createErrorsMap() {
     const errorsMap = {};
-    const validationSummary = study.validationResults.groupBy(['Domain']).count().aggregate();
+    const validationSummary = study.validationResults.groupBy([ 'Domain' ]).count().aggregate();
     for (let i = 0; i < validationSummary.rowCount; ++i) {
-      errorsMap[validationSummary.get('Domain', i)] = validationSummary.get('count', i)
+      const domain = validationSummary.get('Domain', i);
+      const link = ui.link(validationSummary.get('count', i), {}, '', {id: domain});
+      link.addEventListener('click', (event) => {
+        this.validationView.close();
+        const filteredView = new ValidationView($(link).attr('id'));
+        this.validationView = grok.shell.newView(`Validation`, [filteredView.root]);
+        grok.shell.v = this.validationView;
+        event.stopPropagation();
+      });
+      errorsMap[ validationSummary.get('Domain', i) ] = link;
     }
     return errorsMap;
   }

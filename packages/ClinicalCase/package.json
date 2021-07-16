@@ -5,6 +5,7 @@
 	"version": "0.0.1",
 	"description": "",
 	"dependencies": {
+		"@types/jquery": "^3.5.6",
 		"datagrok-api": "../../js-api",
 		"moment": "^2.29.1",
 		"ts-loader": "^8.1.0",
