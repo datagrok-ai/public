@@ -1,6 +1,35 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-07-18 Dev build 0.92.20
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.20`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Line Chart: support for multiple Y axes 
+* Line Chart: MultiAxis: double-click (choosing a primary series) should have no effect 
+* (Bug) Line Chart: point hit-testing doesn't work for points on the right 
+* Scripting: GetFunc: support maps 
+* Removed unnecessary toString() overloads, all column subclasses now simply return column name. 
+* (Bug) Line Chart: NullReferenceError when changing X axis column 
+* UI: Text Input that can be decorated with an icons 
+* CachedComputation: generic way to cache computations on mutable objects (such as columns) 
+* (Bug) DataFrame.onValuesChanged fires twice when user edits a value in the grid 
+* Line Chart: do not show aggregation options if all X points are unique 
+* (Bug) Scatter Plot: "axes follow filter" feature does not work 
+* (Bug) Line Chart: "axes follow filter" feature does not work 
+* (Bug) Filters: clicking on "search" should open search field AND focus on it 
+* Removed custom DataFrame property 
+* Updated public token; Added beta-user 
+
+
 # 2021-07-16 Dev build 0.92.19
 
 ## Latest Docker Images
