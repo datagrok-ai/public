@@ -212,14 +212,8 @@ export class TablePlotter {
  *  See an example on github: {@link https://github.com/datagrok-ai/public/tree/master/packages/Leaflet}
  *  */
 export class JsViewer extends Viewer {
-  private _dataFrame: DataFrame | undefined;
   public d: any;
-  public get dataFrame(): DataFrame | undefined {
-        return this._dataFrame;
-    }
-    public set dataFrame(value: DataFrame | undefined) {
-      this._dataFrame = value;
-    }
+
   subs: Subscription[];
   obs: rxjs.Observable<any>[];
   props: ObjectPropertyBag;
