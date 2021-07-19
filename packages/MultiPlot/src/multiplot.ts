@@ -46,6 +46,12 @@ export class MultiPlotViewer extends DG.JsViewer {
   private isTablesLoaded: number = 0;
   private tooltipOffset: number = 10;
   private visibleIndexes: number[];
+  private marker = this.string('marker', 'ring', {choices: ['circle', 'rect', 'ring', 'diamond']});
+  private markerSize = this.int('markerSize', 6);
+  private lineWidth = this.int('lineWidth', 2);
+  private markerPosition = this.string('markerPosition', 'main line',
+      {choices: ['main line', 'above main line', 'scatter']});
+  private selectionColor = DG.Color.toRgb(DG.Color.selectedRows);
   private options = {
     series: [
       {
@@ -512,7 +518,6 @@ export class MultiPlotViewer extends DG.JsViewer {
 
     // this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
     // this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()));
-
     // @ts-ignore
     this.subs.push(this.dataFrame.selection.onChanged.subscribe((_) => {
       this.selection = this.dataFrame.selection.getSelectedIndexes();
@@ -529,8 +534,7 @@ export class MultiPlotViewer extends DG.JsViewer {
       });
       this.updatePlots();
       this.render();
-    }));
-
+    }));   
     // @ts-ignore
     this.subs.push(this.dataFrame.filter.onChanged.subscribe((_) => {
       this.updateFilter();
@@ -745,7 +749,7 @@ export class MultiPlotViewer extends DG.JsViewer {
   render(): void {
     console.log('set echart options: ', this.echartOptions);
     if (this.echart) {
-      // this.echart.clear();
+      this.echart.clear();
       // this.echart.setOption(this.echartOptions, true);
       setTimeout(() => this.echart.setOption(this.echartOptions, true), 200);
     }
