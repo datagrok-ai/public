@@ -28,7 +28,7 @@ export const helpUrls = {
 
 export const tags = {
   DataFrame: ['construction', 'modification', 'events'],
-  Column: ['creation'],
+  Column: ['creation', 'modification', 'access'],
 };
 
 export const templates = {
