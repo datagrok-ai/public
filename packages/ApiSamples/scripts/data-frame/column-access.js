@@ -1,3 +1,4 @@
+//tags: Column, access
 // Different ways to get a column
 
 let d = grok.data.demo.demog();
