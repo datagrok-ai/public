@@ -91,13 +91,15 @@ function addColumnWithTranslatedSequences(tableName: string, columnName: string,
 
 export function defineAxolabsPattern() {
 
+  let ssMaxBases = [], asMaxBases = [], asPto = [], ssPto = [];
+
   function updateAsModification() {
     asModificationItems.innerHTML = '';
     asPtoLinkages = (asLength.value > asBases.length) ?
       asPtoLinkages.concat(Array(asLength.value - asBases.length).fill(fullyPto)) :
       asPtoLinkages.slice(asBases.length - asLength.value);
     asBases = (asLength.value > asBases.length) ?
-      asBases.concat(Array(asLength.value - asBases.length).fill(sequenceBase)) :
+      asBases.concat(asBases.slice(asLength.value - asBases.length, asLength.value)) :
       asBases.slice(asBases.length - asLength.value);
     let nucleotideCounter = 0;
     for (let i = 0; i < asLength.value; i++) {
@@ -229,7 +231,25 @@ export function defineAxolabsPattern() {
     );
   }
 
+  function detectDefaultBasis(array: string[]) {
+    let modeMap: {[index: string]: number} = {};
+    let maxEl = array[0], maxCount = 1;
+    for(let i = 0; i < array.length; i++) {
+      let el = array[i];
+      if (modeMap[el] == null)
+        modeMap[el] = 1;
+      else
+        modeMap[el]++;
+      if (modeMap[el] > maxCount) {
+        maxEl = el;
+        maxCount = modeMap[el];
+      }
+    }
+    return maxEl;
+  }
+
   async function parsePatternAndUpdateUi(newName: string) {
+    let pi = DG.TaskBarProgressIndicator.create('Loading pattern...');
     await grok.dapi.userDataStorage.get(userStorageKey, false).then((entities) => {
       let obj = JSON.parse(entities[newName]);
       ssLength.value = obj['ssBases'].length;
@@ -261,10 +281,9 @@ export function defineAxolabsPattern() {
       asFiveModification.value = obj['asFiveModification'];
       comment.value = obj['comment'];
 
-      updateSvgScheme();
-      updateAsModification();
-      updateSsModification();
+      sequenceBase.value = detectDefaultBasis(obj['asBases'].concat(obj['ssBases']));
     });
+    pi.close();
   }
 
   function checkWhetherAllValuesInColumnHaveTheSameLength(colName: string): boolean {
@@ -286,6 +305,7 @@ export function defineAxolabsPattern() {
           grok.shell.table(tables.value).columns.addNewInt('Sequences lengths in ' + colName).init((j: number) => col.get(j).length);
           grok.shell.info("Column with lengths added to '" + tables.value + "'");
           dialog.close();
+          grok.shell.v = grok.shell.getTableView(tables.value);
         })
         .show();
     }
@@ -418,9 +438,7 @@ export function defineAxolabsPattern() {
         .onOK(() => {
           let selection = grok.shell.table(tables.value).selection;
           selection.init((i) => duplicates.indexOf(col.get(i)) > -1);
-          for (let tv of grok.shell.tableViews)
-            if (tv.name == tables.value)
-              grok.shell.v = tv;
+          grok.shell.v = grok.shell.getTableView(tables.value);
           grok.shell.info("Rows are selected in table '" + tables.value + "'");
         })
         .show();
@@ -542,6 +560,7 @@ export function defineAxolabsPattern() {
       addColumnWithTranslatedSequences(tables.value, inputSsColumn.value, ssBases, ssPtoLinkages, ssFiveModification, ssThreeModification, firstSsPto.value);
       if (createAsStrand.value)
         addColumnWithTranslatedSequences(tables.value, inputAsColumn.value, asBases, asPtoLinkages, asThreeModification, asFiveModification, firstAsPto.value);
+      grok.shell.v = grok.shell.getTableView(tables.value);
       grok.shell.info(((createAsStrand.value) ? "Columns were" : "Column was") + " added to table '" + tables.value + "'");
     }
   });
