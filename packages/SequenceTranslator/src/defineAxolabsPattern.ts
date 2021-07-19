@@ -91,16 +91,15 @@ function addColumnWithTranslatedSequences(tableName: string, columnName: string,
 
 export function defineAxolabsPattern() {
 
-  let ssMaxBases = [], asMaxBases = [], asPto = [], ssPto = [];
+  let maximalSsLength = defaultSequenceLength;
+  let maximalAsLength = defaultSequenceLength;
 
   function updateAsModification() {
     asModificationItems.innerHTML = '';
-    asPtoLinkages = (asLength.value > asBases.length) ?
-      asPtoLinkages.concat(Array(asLength.value - asBases.length).fill(fullyPto)) :
-      asPtoLinkages.slice(asBases.length - asLength.value);
-    asBases = (asLength.value > asBases.length) ?
-      asBases.concat(asBases.slice(asLength.value - asBases.length, asLength.value)) :
-      asBases.slice(asBases.length - asLength.value);
+    if (asLength.value > maximalAsLength) {
+      asPtoLinkages = asPtoLinkages.concat(Array(maximalAsLength - asLength.value).fill(fullyPto));
+      asBases = asBases.concat(Array(maximalAsLength - asLength.value).fill(sequenceBase));
+    }
     let nucleotideCounter = 0;
     for (let i = 0; i < asLength.value; i++) {
       asPtoLinkages[i] = ui.boolInput('', asPtoLinkages[i].value, () => {
@@ -130,12 +129,10 @@ export function defineAxolabsPattern() {
 
   function updateSsModification() {
     ssModificationItems.innerHTML = '';
-    ssPtoLinkages = (ssLength.value > ssBases.length) ?
-      ssPtoLinkages.concat(Array(ssLength.value - ssBases.length).fill(fullyPto)) :
-      ssPtoLinkages.slice(ssBases.length - ssLength.value);
-    ssBases = (ssLength.value > ssBases.length) ?
-      ssBases.concat(Array(ssLength.value - ssBases.length).fill(sequenceBase)) :
-      ssBases.slice(ssBases.length - ssLength.value);
+    if (ssLength.value > maximalSsLength) {
+      ssPtoLinkages = ssPtoLinkages.concat(Array(maximalSsLength - ssLength.value).fill(fullyPto));
+      ssBases = ssBases.concat(Array(maximalSsLength - ssLength.value).fill(sequenceBase));
+    }
     let nucleotideCounter = 0;
     for (let i = 0; i < ssLength.value; i++) {
       ssPtoLinkages[i] = ui.boolInput('', ssPtoLinkages[i].value, () => {
@@ -165,6 +162,10 @@ export function defineAxolabsPattern() {
 
   function updateUiForNewSequenceLength() {
     if (ssLength.value < maximalValidSequenceLength && asLength.value < maximalValidSequenceLength) {
+      if (ssLength.value > maximalSsLength)
+        maximalSsLength = ssLength.value;
+      if (asLength.value > maximalAsLength)
+        maximalAsLength = asLength.value;
       updateSsModification();
       updateAsModification();
       updateSvgScheme();
@@ -252,9 +253,8 @@ export function defineAxolabsPattern() {
     let pi = DG.TaskBarProgressIndicator.create('Loading pattern...');
     await grok.dapi.userDataStorage.get(userStorageKey, false).then((entities) => {
       let obj = JSON.parse(entities[newName]);
-      ssLength.value = obj['ssBases'].length;
-      asLength.value = obj['asBases'].length;
-      createAsStrand.value = (asLength.value > 0);
+      sequenceBase.value = detectDefaultBasis(obj['asBases'].concat(obj['ssBases']));
+      createAsStrand.value = (obj['asBases'].length > 0);
       saveAs.value = newName;
 
       ssBases = [];
@@ -275,13 +275,14 @@ export function defineAxolabsPattern() {
       for (let i = 1; i < obj['asPtoLinkages'].length; i++)
         asPtoLinkages.push(ui.boolInput('', obj['asPtoLinkages'][i]));
 
+      ssLength.value = obj['ssBases'].length;
+      asLength.value = obj['asBases'].length;
+
       ssThreeModification.value = obj['ssThreeModification'];
       ssFiveModification.value = obj['ssFiveModification'];
       asThreeModification.value = obj['asThreeModification'];
       asFiveModification.value = obj['asFiveModification'];
       comment.value = obj['comment'];
-
-      sequenceBase.value = detectDefaultBasis(obj['asBases'].concat(obj['ssBases']));
     });
     pi.close();
   }
@@ -660,24 +661,24 @@ export function defineAxolabsPattern() {
   ]);
 
   let ssModificationSection = ui.panel([
-      ui.h1('Sense Strand'),
-      ui.divH([
-        ui.div([ui.divText('#')], {style: {width: '20px'}})!,
-        ui.block75([ui.divText('Modification')])!,
-        ui.div([ui.divText('PTO')], {style: {paddingRight: '8px'}})!
-      ]),
-      ssModificationItems
-    ])!;
+    ui.h1('Sense Strand'),
+    ui.divH([
+      ui.div([ui.divText('#')], {style: {width: '20px'}})!,
+      ui.block75([ui.divText('Modification')])!,
+      ui.div([ui.divText('PTO')], {style: {paddingRight: '8px'}})!
+    ]),
+    ssModificationItems
+  ])!;
 
   let asModificationSection = ui.panel([
-      ui.h1('Antisense Strand'),
-      ui.divH([
-        ui.div([ui.divText('#')], {style: {width: '20px'}})!,
-        ui.block75([ui.divText('Modification')])!,
-        ui.div([ui.divText('PTO')], {style: {paddingRight: '8px'}})!
-      ]),
-      asModificationItems
-    ])!;
+    ui.h1('Antisense Strand'),
+    ui.divH([
+      ui.div([ui.divText('#')], {style: {width: '20px'}})!,
+      ui.block75([ui.divText('Modification')])!,
+      ui.div([ui.divText('PTO')], {style: {paddingRight: '8px'}})!
+    ]),
+    asModificationItems
+  ])!;
 
   let info = ui.info(
     [
