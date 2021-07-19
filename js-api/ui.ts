@@ -548,6 +548,10 @@ export function stringInput(name: string, value: string, onValueChanged: Functio
   return new InputBase(api.grok_StringInput(name, value, options), onValueChanged);
 }
 
+export function searchInput(name: string, value: string, onValueChanged: Function | null = null): InputBase {
+  return new InputBase(api.grok_SearchInput(name, value), onValueChanged);
+}
+
 export function floatInput(name: string, value: number, onValueChanged: Function | null = null): InputBase {
   return new InputBase(api.grok_FloatInput(name, value), onValueChanged);
 }
