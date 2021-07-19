@@ -39,7 +39,8 @@ async function loadSnippets(ent: any): Promise<DG.Script[]> {
 function getViewerScript(viewer: DG.Viewer): string {
   let options = viewer.getOptions(false)['look'];
   delete options['#type'];
-  return `grok.shell.v.addViewer(DG.VIEWER.${viewerConst[viewer.type]}, ${JSON.stringify(options, null, 2)});`;
+  let script = `grok.shell.v.addViewer(DG.VIEWER.${viewerConst[viewer.type]}, ${JSON.stringify(options, null, 2)});`;
+  return `<pre><code>${script}</code></pre>`;
 }
 
 //tags: autostart
