@@ -711,17 +711,18 @@ export class MultiPlotViewer extends DG.JsViewer {
     // create comboboxes to choose plot types
     this.typeComboElements = [];
     for (let i = 0; i < this.plots.length; i++) {
-      const inputPlotType: any = ui.choiceInput('', 'scatter', ['scatter', 'line', 'bar'], ((i) => (event) => {
+      const inputPlotType: any = ui.choiceInput('', 'scatter', ['scatter', 'line', 'bar'], (event) => {
         this.plots[i].series.type = event;
         this.updatePlots();
         this.render();
-      })(i));
+      });
       this.typeComboElements.push(inputPlotType.root);
       this.root.appendChild(inputPlotType.root);
       inputPlotType.root.style.position = 'absolute';
       inputPlotType.root.style.right = '28px';
       inputPlotType.root.style['flex-direction'] = 'row';
       inputPlotType.root.style.top = (40 * i) + 'px';
+      inputPlotType.root.querySelector('select').style.borderBottom = '0px';
     }
 
     // create checkboxes for show/hide plots
@@ -731,7 +732,7 @@ export class MultiPlotViewer extends DG.JsViewer {
       const showHideIcons = inputPlotType.querySelectorAll('i');
       showHideIcons[0].style.display = 'none';
       inputPlotType.showSwitch = 1;
-      inputPlotType.addEventListener('click', ((i) => (e) => {
+      inputPlotType.addEventListener('click', (e) => {
         const div = e.target.parentNode;
         div.showSwitch = 1 - div.showSwitch;
         const displays = ['', 'none'];
@@ -743,7 +744,7 @@ export class MultiPlotViewer extends DG.JsViewer {
         this.updateFilter();
         this.updatePlots();
         this.render();
-      })(i));
+      });
       this.typeComboElements.push(inputPlotType);
       this.root.appendChild(inputPlotType);
       inputPlotType.style.position = 'absolute';
@@ -756,14 +757,13 @@ export class MultiPlotViewer extends DG.JsViewer {
     // create close 'X' icons
     this.closeElements = [];
     for (let i = 0; i < this.plots.length; i++) {
-      const inputClose: any = ui.icons.close(((i) => () => {
-        //    grok.shell.info('click' + i);
+      const inputClose: any = ui.icons.close(() => {
         this.plots.splice(i, 1);
         this.createElements();
         this.updateHeight();
         this.updatePlots();
         this.render();
-      })(i), 'Close');
+      }, 'Close');
       inputClose.style.position = 'absolute';
       inputClose.style.right = '15px';
       inputClose.style.top = (40 * i) + 'px';
