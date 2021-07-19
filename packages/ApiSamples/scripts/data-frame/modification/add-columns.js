@@ -1,3 +1,4 @@
+//tags: DataFrame, modification
 // Different ways to add columns
 
 let t = DG.DataFrame.fromCsv(

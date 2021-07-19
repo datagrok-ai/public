@@ -1,3 +1,4 @@
+//tags: Column, modification
 // A new instance of the column is created when column type is changed.
 
 // Metod 1: column.convertTo(newType)

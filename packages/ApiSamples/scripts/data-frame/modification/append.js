@@ -1,3 +1,4 @@
+//tags: DataFrame, modification
 // Appends two tables. Note that the missing columns are created automatically.
 
 let t1 = DG.DataFrame.fromCsv(
