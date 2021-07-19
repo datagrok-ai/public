@@ -378,6 +378,10 @@ export class DataFrame {
   get currentRowIdx(): number { return api.grok_DataFrame_Get_CurrentRowIdx(this.d); }
   set currentRowIdx(idx) { api.grok_DataFrame_Set_CurrentRowIdx(this.d, idx); }
 
+  /** Index of the mouse-over row. */
+  get mouseOverRowIdx(): number { return api.grok_DataFrame_Get_MouseOverRowIdx(this.d); }
+  set mouseOverRowIdx(idx) { api.grok_DataFrame_Set_MouseOverRowIdx(this.d, idx); }
+
   /** Current column.
    * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/current-elements} */
   get currentCol(): Column {
