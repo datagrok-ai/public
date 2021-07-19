@@ -19,13 +19,6 @@ export function test(s) {
   grok.shell.info(_package.webRoot);
 }
 
-//name: TimelinesViewer
-//description: Creates TimelinesViewer viewer
-//tags: viewer
-//output: viewer result
-export function _TimelinesViewer() {
-  return new TimelinesViewer();
-}
 
 //name: timelinesViewerDemo
 export function timelinesViewerDemo() {
@@ -88,8 +81,9 @@ export function _ChordViewer() {
   return new ChordViewer();
 }
 
-//tags: init
+//tags: autostart
 export function init() {
+  grok.shell.registerViewer('TimelinesViewer', 'Creates TimelinesViewer viewer', () => new TimelinesViewer());
   grok.events.onContextMenu.subscribe(args => {
     if (args.args.context instanceof TimelinesViewer) {
       args.args.menu.item('Reset View', () => {
