@@ -13,17 +13,9 @@ import './styles.css';
 
 export const _package = new DG.Package();
 
-function getTagEditor(type: string): HTMLElement {
-  let t = DG.TagEditor.create();
-  for (let tag of tags[type]) {
-    t.addTag(tag);
-  }
-  return t.root;
-}
-
-function getGroupInput(editor: DG.InputBase, type: string): HTMLElement {
+function getGroupInput(type: string): HTMLElement {
   const items = tags[type];
-  const inp = ui.choiceInput('Group', items.length ? items[0] : null, items, async (tag: string) => {
+  const inp = ui.choiceInput('See snippets:', items.length ? items[0] : null, items, async (tag: string) => {
     const snippets = await loadSnippets(type, tag);
     const container = $('.dt-dev-pane-container > .dt-snippet-section')
     container.empty();
@@ -118,7 +110,7 @@ export function describeCurrentObj(): void {
       if (!devPane) devPane = acc.addPane('Dev', () => {
         return ui.divV([
           ui.divH([ui.divText(`${type} ${ent.name}:`), topEditorBtn, browserLogBtn], { style: { 'align-items': 'baseline' } }),
-          ...((type in tags) ? [getTagEditor(type), getGroupInput(editor, type)] : []),
+          ...((type in tags) ? [getGroupInput(type)] : []),
           ...links,
           ui.div([...formSnippetSection(snippets)], 'dt-snippet-section'),
           ui.divV([clipboardBtn, editorBtn, resetBtn, editor.root], 'dt-textarea-box'),
