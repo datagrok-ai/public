@@ -544,8 +544,8 @@ export function multiChoiceInput<T>(name: string, value: T, items: T[], onValueC
   return new InputBase(api.grok_MultiChoiceInput(name, value, items), onValueChanged);
 }
 
-export function stringInput(name: string, value: string, onValueChanged: Function | null = null): InputBase {
-  return new InputBase(api.grok_StringInput(name, value), onValueChanged);
+export function stringInput(name: string, value: string, onValueChanged: Function | null = null, options: { icon?: string | HTMLElement, clearIcon?: boolean, escClears?: boolean, placeHolder?: String } | null = null): InputBase {
+  return new InputBase(api.grok_StringInput(name, value, options), onValueChanged);
 }
 
 export function floatInput(name: string, value: number, onValueChanged: Function | null = null): InputBase {
