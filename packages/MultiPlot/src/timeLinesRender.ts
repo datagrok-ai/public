@@ -127,6 +127,7 @@ function timeLinesD(params, api) {
         }
   }
 */
+
   const categoryIndex = api.value(0);
   const start = api.coord([api.value(1), categoryIndex]);
   const end = api.coord([api.value(2), categoryIndex]);

@@ -52,6 +52,7 @@ export class MultiPlotViewer extends DG.JsViewer {
   private markerPosition = this.string('markerPosition', 'main line',
       {choices: ['main line', 'above main line', 'scatter']});
   private selectionColor = DG.Color.toRgb(DG.Color.selectedRows);
+  private categoryLength : number = 10;
   private options = {
     series: [
       {
@@ -335,6 +336,8 @@ export class MultiPlotViewer extends DG.JsViewer {
         this.plots[i].timeLinesSeries = this.initTimeLine(visibleIndex, this);
         this.plots[i].subjectCol = this.tables[this.plots[i].table].getCol(this.plots[i].x);
         this.plots[i].subjects = this.plots[i].subjectCol.categories;
+        this.plots[i].subjects = this.plots[i].subjects.map(this.trimCategoryString.bind(this));
+        // this.plots[i].subjects = this.plots[i].subjects.map(e => this.trimCategoryWord(e, this.categoryLength, true));
         this.plots[i].subjBuf = this.plots[i].subjectCol.getRawData();
         currentSeries = this.plots[i].timeLinesSeries;
         currentSeries.xAxisIndex = visibleIndex;
@@ -362,6 +365,21 @@ export class MultiPlotViewer extends DG.JsViewer {
     this.echartOptions.xAxis[visibleIndex - 1].show = true;
     this.echartOptions.xAxis[visibleIndex - 1].type = 'value';
   } // updatePlots
+
+  trimCategoryString(s: string) : string {
+    return s.length > this.categoryLength ? s.substring(0, this.categoryLength) + '...' : s;
+  }
+
+  // trim to keep only entire words
+  trimCategoryWord( str: string, n: number, useWordBoundary : boolean) : string {
+    if (str.length <= n) {
+      return str;
+    }
+    const subString = str.substr(0, n-1); // the original check
+    return (useWordBoundary ?
+      subString.substr(0, subString.lastIndexOf(' ')) + '...' :
+      subString) + '...';
+  }
 
   // only updates heights
   updateHeight() : void {
@@ -397,7 +415,8 @@ export class MultiPlotViewer extends DG.JsViewer {
         axisPointer: {type: 'shadow'},
       },
       textStyle: {
-        fontFamily: 'Roboto'
+        fontFamily: 'Roboto',
+        overflow: 'truncate',
       },
       grid: createEmptyObjects(this.visiblePlotsCount),
       xAxis: createEmptyObjects(this.visiblePlotsCount),
@@ -537,13 +556,12 @@ export class MultiPlotViewer extends DG.JsViewer {
       });
       this.updatePlots();
       this.render();
-    }));   
+    }));
     // @ts-ignore
     this.subs.push(this.dataFrame.filter.onChanged.subscribe((_) => {
       this.updateFilter();
       this.render();
     }));
-
   } // table attached
 
   updateFilter(): void {
@@ -564,7 +582,12 @@ export class MultiPlotViewer extends DG.JsViewer {
       );
       this.plots[i].series.data = data;
       if (this.plots[i].type != 'timeLine') continue;
+      for (let i=0; i<data.length; i++) {
+        data[i][0] = this.trimCategoryString(data[i][0]);
+        //     data[i][0] = this.trimCategoryWord(data[i][0], this.categoryLength, true);
+      }
       this.timeLinesData = data;
+      this.plots[i].series.data = data;
       this.timeLineIndex = i;
     }
     this.updatePlots();
