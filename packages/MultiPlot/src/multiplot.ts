@@ -396,6 +396,9 @@ export class MultiPlotViewer extends DG.JsViewer {
         showContent: false,
         axisPointer: {type: 'shadow'},
       },
+      textStyle: {
+        fontFamily: 'Roboto'
+      },
       grid: createEmptyObjects(this.visiblePlotsCount),
       xAxis: createEmptyObjects(this.visiblePlotsCount),
       yAxis: createEmptyObjects(this.visiblePlotsCount),
@@ -540,6 +543,7 @@ export class MultiPlotViewer extends DG.JsViewer {
       this.updateFilter();
       this.render();
     }));
+
   } // table attached
 
   updateFilter(): void {
