@@ -19,6 +19,7 @@ import { Column, DataFrame } from './src/dataframe';
 
 
 let api = <any>window;
+declare let grok: any;
 
 /**
  * Creates an instance of the element for the specified tag, and optionally assigns it a CSS class.
@@ -576,7 +577,7 @@ export function columnsInput(name: string, table: DataFrame, onValueChanged: Fun
   return new InputBase(api.grok_ColumnsInput(name, table.d), onValueChanged);
 }
 
-export function tableInput(name: string, table: DataFrame, tables: DataFrame[], onValueChanged: Function | null = null): InputBase {
+export function tableInput(name: string, table: DataFrame, tables: DataFrame[] = grok.shell.tables, onValueChanged: Function | null = null): InputBase {
   return new InputBase(api.grok_TableInput(name, table, tables), onValueChanged);
 }
 
