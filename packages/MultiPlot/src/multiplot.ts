@@ -52,6 +52,7 @@ export class MultiPlotViewer extends DG.JsViewer {
   private markerPosition = this.string('markerPosition', 'main line',
       {choices: ['main line', 'above main line', 'scatter']});
   private selectionColor = DG.Color.toRgb(DG.Color.selectedRows);
+  private categoryLength : number = 10;
   private options = {
     series: [
       {
@@ -335,6 +336,8 @@ export class MultiPlotViewer extends DG.JsViewer {
         this.plots[i].timeLinesSeries = this.initTimeLine(visibleIndex, this);
         this.plots[i].subjectCol = this.tables[this.plots[i].table].getCol(this.plots[i].x);
         this.plots[i].subjects = this.plots[i].subjectCol.categories;
+        this.plots[i].subjects = this.plots[i].subjects.map(this.trimCategoryString.bind(this));
+        // this.plots[i].subjects = this.plots[i].subjects.map(e => this.trimCategoryWord(e, this.categoryLength, true));
         this.plots[i].subjBuf = this.plots[i].subjectCol.getRawData();
         currentSeries = this.plots[i].timeLinesSeries;
         currentSeries.xAxisIndex = visibleIndex;
@@ -362,6 +365,21 @@ export class MultiPlotViewer extends DG.JsViewer {
     this.echartOptions.xAxis[visibleIndex - 1].show = true;
     this.echartOptions.xAxis[visibleIndex - 1].type = 'value';
   } // updatePlots
+
+  trimCategoryString(s: string) : string {
+    return s.length > this.categoryLength ? s.substring(0, this.categoryLength) + '...' : s;
+  }
+
+  // trim to keep only entire words
+  trimCategoryWord( str: string, n: number, useWordBoundary : boolean) : string {
+    if (str.length <= n) {
+      return str;
+    }
+    const subString = str.substr(0, n-1); // the original check
+    return (useWordBoundary ?
+      subString.substr(0, subString.lastIndexOf(' ')) + '...' :
+      subString) + '...';
+  }
 
   // only updates heights
   updateHeight() : void {
@@ -397,7 +415,8 @@ export class MultiPlotViewer extends DG.JsViewer {
         axisPointer: {type: 'shadow'},
       },
       textStyle: {
-        fontFamily: 'Roboto'
+        fontFamily: 'Roboto',
+        overflow: 'truncate',
       },
       grid: createEmptyObjects(this.visiblePlotsCount),
       xAxis: createEmptyObjects(this.visiblePlotsCount),
@@ -537,13 +556,12 @@ export class MultiPlotViewer extends DG.JsViewer {
       });
       this.updatePlots();
       this.render();
-    }));   
+    }));
     // @ts-ignore
     this.subs.push(this.dataFrame.filter.onChanged.subscribe((_) => {
       this.updateFilter();
       this.render();
     }));
-
   } // table attached
 
   updateFilter(): void {
@@ -564,7 +582,12 @@ export class MultiPlotViewer extends DG.JsViewer {
       );
       this.plots[i].series.data = data;
       if (this.plots[i].type != 'timeLine') continue;
+      for (let i=0; i<data.length; i++) {
+        data[i][0] = this.trimCategoryString(data[i][0]);
+        //     data[i][0] = this.trimCategoryWord(data[i][0], this.categoryLength, true);
+      }
       this.timeLinesData = data;
+      this.plots[i].series.data = data;
       this.timeLineIndex = i;
     }
     this.updatePlots();
@@ -688,17 +711,18 @@ export class MultiPlotViewer extends DG.JsViewer {
     // create comboboxes to choose plot types
     this.typeComboElements = [];
     for (let i = 0; i < this.plots.length; i++) {
-      const inputPlotType: any = ui.choiceInput('', 'scatter', ['scatter', 'line', 'bar'], ((i) => (event) => {
+      const inputPlotType: any = ui.choiceInput('', 'scatter', ['scatter', 'line', 'bar'], (event) => {
         this.plots[i].series.type = event;
         this.updatePlots();
         this.render();
-      })(i));
+      });
       this.typeComboElements.push(inputPlotType.root);
       this.root.appendChild(inputPlotType.root);
       inputPlotType.root.style.position = 'absolute';
       inputPlotType.root.style.right = '28px';
       inputPlotType.root.style['flex-direction'] = 'row';
       inputPlotType.root.style.top = (40 * i) + 'px';
+      inputPlotType.root.querySelector('select').style.borderBottom = '0px';
     }
 
     // create checkboxes for show/hide plots
@@ -708,7 +732,7 @@ export class MultiPlotViewer extends DG.JsViewer {
       const showHideIcons = inputPlotType.querySelectorAll('i');
       showHideIcons[0].style.display = 'none';
       inputPlotType.showSwitch = 1;
-      inputPlotType.addEventListener('click', ((i) => (e) => {
+      inputPlotType.addEventListener('click', (e) => {
         const div = e.target.parentNode;
         div.showSwitch = 1 - div.showSwitch;
         const displays = ['', 'none'];
@@ -720,7 +744,7 @@ export class MultiPlotViewer extends DG.JsViewer {
         this.updateFilter();
         this.updatePlots();
         this.render();
-      })(i));
+      });
       this.typeComboElements.push(inputPlotType);
       this.root.appendChild(inputPlotType);
       inputPlotType.style.position = 'absolute';
@@ -733,14 +757,13 @@ export class MultiPlotViewer extends DG.JsViewer {
     // create close 'X' icons
     this.closeElements = [];
     for (let i = 0; i < this.plots.length; i++) {
-      const inputClose: any = ui.icons.close(((i) => () => {
-        //    grok.shell.info('click' + i);
+      const inputClose: any = ui.icons.close(() => {
         this.plots.splice(i, 1);
         this.createElements();
         this.updateHeight();
         this.updatePlots();
         this.render();
-      })(i), 'Close');
+      }, 'Close');
       inputClose.style.position = 'absolute';
       inputClose.style.right = '15px';
       inputClose.style.top = (40 * i) + 'px';
