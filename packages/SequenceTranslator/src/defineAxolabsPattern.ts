@@ -96,10 +96,8 @@ export function defineAxolabsPattern() {
 
   function updateAsModification() {
     asModificationItems.innerHTML = '';
-    if (asLength.value > maximalAsLength) {
-      asPtoLinkages = asPtoLinkages.concat(Array(maximalAsLength - asLength.value).fill(fullyPto));
-      asBases = asBases.concat(Array(maximalAsLength - asLength.value).fill(sequenceBase));
-    }
+    asPtoLinkages = asPtoLinkages.concat(Array(maximalAsLength - asBases.length).fill(fullyPto));
+    asBases = asBases.concat(Array(maximalAsLength - asBases.length).fill(sequenceBase));
     let nucleotideCounter = 0;
     for (let i = 0; i < asLength.value; i++) {
       asPtoLinkages[i] = ui.boolInput('', asPtoLinkages[i].value, () => {
@@ -129,10 +127,8 @@ export function defineAxolabsPattern() {
 
   function updateSsModification() {
     ssModificationItems.innerHTML = '';
-    if (ssLength.value > maximalSsLength) {
-      ssPtoLinkages = ssPtoLinkages.concat(Array(maximalSsLength - ssLength.value).fill(fullyPto));
-      ssBases = ssBases.concat(Array(maximalSsLength - ssLength.value).fill(sequenceBase));
-    }
+    ssPtoLinkages = ssPtoLinkages.concat(Array(maximalSsLength - ssBases.length).fill(fullyPto));
+    ssBases = ssBases.concat(Array(maximalSsLength - ssBases.length).fill(sequenceBase));
     let nucleotideCounter = 0;
     for (let i = 0; i < ssLength.value; i++) {
       ssPtoLinkages[i] = ui.boolInput('', ssPtoLinkages[i].value, () => {
