@@ -235,7 +235,7 @@ export function OligoBatchCalculatorApp() {
     const coefficient = (units.value == 'mg' || units.value == 'µmole') ? 1000 : 1;
 
     table = DG.DataFrame.fromColumns([
-      DG.Column.fromList('int', 'Item #', Array(...Array(cleanSequences.length + 1).keys()).slice(1)),
+      DG.Column.fromList('int', 'Item', Array(...Array(cleanSequences.length + 1).keys()).slice(1)),
       DG.Column.fromList('string', 'Sequence', dirtySequences),
       DG.Column.fromList('int', 'Length', normalizedSequences.map((s) => s.length / 2)),
       DG.Column.fromList('double', 'OD 260', od260),

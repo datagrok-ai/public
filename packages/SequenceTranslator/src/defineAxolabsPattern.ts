@@ -96,10 +96,8 @@ export function defineAxolabsPattern() {
 
   function updateAsModification() {
     asModificationItems.innerHTML = '';
-    if (asLength.value > maximalAsLength) {
-      asPtoLinkages = asPtoLinkages.concat(Array(maximalAsLength - asLength.value).fill(fullyPto));
-      asBases = asBases.concat(Array(maximalAsLength - asLength.value).fill(sequenceBase));
-    }
+    asPtoLinkages = asPtoLinkages.concat(Array(maximalAsLength - asBases.length).fill(fullyPto));
+    asBases = asBases.concat(Array(maximalAsLength - asBases.length).fill(sequenceBase));
     let nucleotideCounter = 0;
     for (let i = 0; i < asLength.value; i++) {
       asPtoLinkages[i] = ui.boolInput('', asPtoLinkages[i].value, () => {
@@ -129,10 +127,8 @@ export function defineAxolabsPattern() {
 
   function updateSsModification() {
     ssModificationItems.innerHTML = '';
-    if (ssLength.value > maximalSsLength) {
-      ssPtoLinkages = ssPtoLinkages.concat(Array(maximalSsLength - ssLength.value).fill(fullyPto));
-      ssBases = ssBases.concat(Array(maximalSsLength - ssLength.value).fill(sequenceBase));
-    }
+    ssPtoLinkages = ssPtoLinkages.concat(Array(maximalSsLength - ssBases.length).fill(fullyPto));
+    ssBases = ssBases.concat(Array(maximalSsLength - ssBases.length).fill(sequenceBase));
     let nucleotideCounter = 0;
     for (let i = 0; i < ssLength.value; i++) {
       ssPtoLinkages[i] = ui.boolInput('', ssPtoLinkages[i].value, () => {
@@ -566,7 +562,7 @@ export function defineAxolabsPattern() {
     }
   });
 
-  let ssInputExample = ui.textInput('SS', generateExample(ssLength.value, sequenceBase.value),() => {
+  let ssInputExample = ui.textInput('Sense Strand', generateExample(ssLength.value, sequenceBase.value),() => {
     ssOutputExample.value = translateSequence(ssInputExample.value, ssBases, ssPtoLinkages, ssFiveModification, ssThreeModification, firstSsPto.value)
   });
   let ssOutputExample = ui.textInput(' ', translateSequence(ssInputExample.value, ssBases, ssPtoLinkages, ssThreeModification, ssFiveModification, firstSsPto.value));
@@ -584,7 +580,7 @@ export function defineAxolabsPattern() {
     ], 'ui-input-options')
   );
 
-  let asInputExample = ui.textInput('AS', generateExample(asLength.value, sequenceBase.value),() => {
+  let asInputExample = ui.textInput('Antisense Strand', generateExample(asLength.value, sequenceBase.value),() => {
     asOutputExample.value = translateSequence(asInputExample.value, asBases, asPtoLinkages, asThreeModification, asFiveModification, firstSsPto.value);
   });
   let asOutputExample = ui.textInput(' ', translateSequence(asInputExample.value, asBases, asPtoLinkages, asThreeModification, asFiveModification, firstSsPto.value));
@@ -606,12 +602,34 @@ export function defineAxolabsPattern() {
 
   updateUiForNewSequenceLength();
 
-  let patternDesignSection = ui.panel([
+  let exampleSection = ui.div([
+    ui.h1('Example'),
+    ssInputExample.root,
+    ssOutputExample.root,
+    asExampleDiv
+  ], 'ui-form');
+
+  let inputsSection = ui.div([
+    ui.h1('Inputs'),
+    ui.divH([
+      tables.root,
+      inputSsColumnDiv
+    ]),
+    ui.divH([
+      inputAsColumnDiv,
+      inputIdColumnDiv
+    ]),
+    ui.buttonsInput([
+      convertSequenceButton
+    ])
+  ], 'ui-form');
+
+  let mainSection = ui.panel([
     ui.block([
       svgDiv
     ], {style: {overflowX: 'scroll'}}),
     ui.button('Download', () => svg.saveSvgAsPng(document.getElementById('mySvg'), saveAs.value)),
-    ui.divH([
+    ui.div([
       ui.div([
         ui.divH([
           ui.h1('Pattern'),
@@ -622,41 +640,31 @@ export function defineAxolabsPattern() {
             })
           ], {style: {padding: '2px'}})
         ]),
-        ssLength.root,
-        asLengthDiv,
-        sequenceBase.root,
-        fullyPto.root,
-        firstSsPto.root,
-        firstAsPtoDiv,
-        createAsStrand.root,
-        ssFiveModification.root,
-        ssThreeModification.root,
-        asModificationDiv,
-        comment.root,
-        loadPatternDiv,
-        saveAs.root,
-        ui.buttonsInput([
-          savePatternButton
-        ])
-      ], 'ui-form'),
-      ui.div([
-        ui.div([
-          ui.h1('Inputs'),
-          tables.root,
-          inputSsColumnDiv,
-          inputAsColumnDiv,
-          inputIdColumnDiv,
-          ui.buttonsInput([
-            convertSequenceButton
-          ])
-        ], 'ui-form'),
-        ui.div([
-          ui.h1('Example'),
-          ssInputExample.root,
-          ssOutputExample.root,
-          asExampleDiv
+        ui.divH([
+          ui.div([
+            ssLength.root,
+            asLengthDiv,
+            sequenceBase.root,
+            comment.root,
+            loadPatternDiv,
+            saveAs.root,
+            ui.buttonsInput([
+              savePatternButton
+            ])
+          ], 'ui-form'),
+          ui.div([
+            createAsStrand.root,
+            fullyPto.root,
+            firstSsPto.root,
+            firstAsPtoDiv,
+            ssFiveModification.root,
+            ssThreeModification.root,
+            asModificationDiv,
+          ], 'ui-form')
         ], 'ui-form')
-      ])
+      ], 'ui-form'),
+      inputsSection,
+      exampleSection
     ], {style: {flexWrap: 'wrap'}})
   ]);
 
@@ -695,13 +703,13 @@ export function defineAxolabsPattern() {
   return ui.splitH([
     ui.div([
       appAxolabsDescription,
-      patternDesignSection!
+      mainSection!
     ])!,
     ui.box(
       ui.divH([
         ssModificationSection,
         asModificationSection
-      ]), {style: {maxWidth: '400px'}}
+      ]), {style: {maxWidth: '360px'}}
     )
   ]);
 }
