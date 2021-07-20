@@ -1,6 +1,53 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-07-20 Dev build 0.92.21
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.21`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Add New Column: ColumnGrid Widget 
+* Modified dev documentation 
+* UI: Text Input that can be decorated with an icons 
+* MultiPlot: move timeLines render to external file 
+* Charts: Timelines (WIP)
+* DevTools: generate code for viewers customization 
+* JS API: Added Extended StringInput 
+* Sequence Translator: add possibility to copy sequences from HTML table 
+* DevTools package (WIP)
+* DevTools: annotate API examples (WIP)
+* Sequence Translator: Modify sequence length of saved pattern 
+* UI: GridColumn, bug with double lines at the bottom of searchbox 
+* OligoBatchCalculator: minor changes 
+* JS API: Create ui.searchBox() 
+* Add DB cache invalidation (WIP)
+* (Bug) Line Chart: "axes follow filter" feature does not work 
+* (Bug) Viewers: Inconsistent column selection inside a viewer and its properties panel (WIP)
+* Updated ui.md (ui.stringInput, ui.searchInput) 
+* (Bug) Custom ML: apply function from different ML engine  
+* (Bug) DataQuery with choices throws an exception 
+* (Bug) JS API: Label breaks layout of TextInput with icon 
+* Removed obsolete features. 
+* Code cleanup. 
+* (Bug) Query-driven dashboards: query controls do not show up when a project is open 
+* JS API: DataFrame.mouseOverRow (WIP)
+* MultiPlot: trim long categories 
+* MultiPlot: remove underline from plot type combobox 
+* JS API: tableInput 
+* UI Test: Script View 
+* UI Test: Welcome View (WIP)
+* Sequence Translator: final UI adjustments 
+* Specify return types for dataframe.plot methods 
+* (Bug) JS API: properties cannot be changed in JsViewer (JsViewer.props and JsViewer.setOptions result in errors) 
+
+
 # 2021-07-18 Dev build 0.92.20
 
 ## Latest Docker Images
