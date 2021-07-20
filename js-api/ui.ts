@@ -576,6 +576,10 @@ export function columnsInput(name: string, table: DataFrame, onValueChanged: Fun
   return new InputBase(api.grok_ColumnsInput(name, table.d), onValueChanged);
 }
 
+export function tableInput(name: string, table: DataFrame, tables: DataFrame[], onValueChanged: Function | null = null): InputBase {
+  return new InputBase(api.grok_TableInput(name, table, tables), onValueChanged);
+}
+
 export function textInput(name: string, value: string, onValueChanged: Function | null = null): InputBase {
   return new InputBase(api.grok_TextInput(name, value), onValueChanged);
 }
