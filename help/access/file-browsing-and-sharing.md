@@ -39,13 +39,13 @@ To create a new file share:
 
 1. In the side panel on the left, select the **File** icon > **Files** > **Actions** > **New file share**.
 
-![](./img/1__datagrok__file-browser__creating-new-file-share.png)
+![](file-browsing-and-sharing-1.png)
 
 2. In the **New file share** dialog, select the needed data source, enter a name for the file share, and then select **Ok**.
    >**NOTE**: To verify if Datagrok has established the connection to the selected data source, select **Test**. In the
    > dedicated dialog, the system will show if the connection is created.
 
-![](./img/2__datagrok__file-browser__creating-new-file-share.png)
+![](file-browsing-and-sharing-2.png)
 
 Datagrok will add a new folder with the specified name next to the root **Home** folder, and you can then create
 additional folders in this folder you created.
@@ -72,19 +72,19 @@ To share a file:
 1. In the side panel on the left, select the **File** icon > **Files**, go to the folder where your file is located,
    and then double-click the needed file.
 
-![](./img/3__datagrok__file-browser__selecting-a-file-to-share.png)
+![](file-browsing-and-sharing-3.png)
 
 2. In side panel on the left, select the **Share** icon, and then select **File**.
    > If you need to share your file as a file, select the *File* option.
 
-![](./img/4__datagrok__file-browser__sharing-a-file.png)
+![](file-browsing-and-sharing-4.png)
 
 3. In the **Share file** dialog, select **Share folder as a new connection**, enter the email or name of the user or
    group (1) you will share the file with, select the **Can view** or **Can edit** permission level (2), enter an optional
    description (3), and then select **Ok** (4).
    > You can optionally enter a message that the user or group will receive after you share a connection with them.
 
-![](./img/5__datagrok__file-browser__sharing-a-file.png)
+![](file-browsing-and-sharing-5.png)
 
 ### Sharing a File as Data Frame
 
@@ -93,21 +93,21 @@ To share a file as data:
 1. In the side panel on the left, select the **File** icon > **Files**, open the needed folder, and then select the
    file to share.
 
-![](./img/3__datagrok__file-browser__selecting-a-file-to-share.png)
+![](file-browsing-and-sharing-3.png)
 
 2. In the side panel on the left, select the **Share** icon, and then select **Data**.
    > **Note**: If you need to share your file as a data table, select the *Data* option.
 
-![](./img/6__datagrok__file-browser__sharing-a-file-as-data-frame.png)
+![](file-browsing-and-sharing-6.png)
 
 3. In the **Upload project** dialog, select **Ok**.
    > **Note**: You can also enter an optional description, remove the sheets or pages that you don't need to share, and turn on
    > **Data sync**.
 
-![](./img/7__datagrok__file-browser__sharing-a-file-as-data-frame.png)
+![](file-browsing-and-sharing-7.png)
 
 4. In the **Share {document type}** dialog, enter the email or name of the user or group (1) you will share the file with,
    select the **Can view** or **Can edit** permission level (2), enter an optional description of the file share (3),
    and then select **Ok** (4).
 
-![](./img/8__datagrok__file-browser__sharing-a-file-as-data-frame.png)
+![](file-browsing-and-sharing-8.png)
