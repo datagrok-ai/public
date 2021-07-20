@@ -18,6 +18,8 @@ import {_getIterator, _toIterable, _toJson} from "./utils";
 import {Observable}  from "rxjs";
 import {filter} from "rxjs/operators";
 import {Widget} from "./widgets";
+import {Grid} from "./grid";
+import {ScatterPlotViewer, Viewer} from "./viewer";
 
 declare let grok: any;
 declare let DG: any;
@@ -2096,14 +2098,14 @@ class DataFramePlotHelper {
   fromType(viewerType: ViewerType, options: object | null = null): Promise<Widget> {
     return toJs(api.grok_Viewer_FromType_Async(viewerType, this.df.d, _toJson(options)));
   }
-  scatter(options: object | null = null) { return DG.Viewer.scatterPlot(this.df, options); }
-  grid(options: object | null = null) { return DG.Viewer.grid(this.df, options); }
-  histogram(options: object | null = null) { return DG.Viewer.histogram(this.df, options); }
-  bar(options: object | null = null) { return DG.Viewer.barChart(this.df, options); }
-  heatMap(options: object | null = null) { return DG.Viewer.heatMap(this.df, options); }
-  box(options: object | null = null) { return DG.Viewer.boxPlot(this.df, options); }
-  line(options: object | null = null) { return DG.Viewer.lineChart(this.df, options); }
-  network(options: object | null = null) { return DG.Viewer.network(this.df, options); }
+  scatter(options: object | null = null): ScatterPlotViewer { return DG.Viewer.scatterPlot(this.df, options); }
+  grid(options: object | null = null): Grid { return DG.Viewer.grid(this.df, options); }
+  histogram(options: object | null = null): Viewer { return DG.Viewer.histogram(this.df, options); }
+  bar(options: object | null = null): Viewer { return DG.Viewer.barChart(this.df, options); }
+  heatMap(options: object | null = null): Viewer { return DG.Viewer.heatMap(this.df, options); }
+  box(options: object | null = null): Viewer { return DG.Viewer.boxPlot(this.df, options); }
+  line(options: object | null = null): Viewer { return DG.Viewer.lineChart(this.df, options); }
+  network(options: object | null = null): Viewer { return DG.Viewer.network(this.df, options); }
   
 }
 
