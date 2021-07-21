@@ -472,6 +472,48 @@ makes it available in the top menu and enables common viewer operations, such as
 embedding, and switching to full screen mode. This also means that users can persist this viewer as
 part of a [project](../../overview/project.md).
 
+![](top-menu-add-viewer.gif "Add a viewer")
+
+From a developer's point of view, there are two ways to register a viewer. Here is the one we have seen earlier: 
+
+```js
+import {AwesomeViewer} from './awesome-viewer.js'
+
+//name: AwesomeViewer
+//description: Creates an awesome viewer
+//tags: viewer
+//output: viewer result
+export function awesome() {
+  return new AwesomeViewer();
+}
+```
+
+The above way is typically preferred. There is also a less common form:
+
+```js
+grok.shell.registerViewer('AwesomeViewer', 'Creates an awesome viewer', () => new AwesomeViewer());
+```
+
+The `registerViewer` method performs dynamic registration at runtime. Check out this
+[example](https://public.datagrok.ai/js/samples/scripts/functions/custom-viewers) to see it in action.
+This way works from a package, but is rarely used there. Call `registerViewer` in cases where you need to
+get a registered viewer instance synchronously within your package code. The regular version with function
+annotation returns a viewer asynchronously on the client, as the containing package should be loaded first.
+Read more on these nuances [here](manipulate-viewers.md). If you need to register a viewer with the second
+method, here is an example of doing it in a package:
+
+```js
+import {AwesomeViewer} from './awesome-viewer.js'
+
+//tags: autostart
+export function initPackage() {
+  grok.shell.registerViewer('AwesomeViewer', 'Creates an awesome viewer', () => new AwesomeViewer());
+}
+```
+
+The [`autostart`](../develop.md#pre-run-functions) function prompts the package to initialize,
+which is why a viewer can be obtained synchronously.
+
 ## Examples
 
 You can find more inspiring examples in our [public repository](https://github.com/datagrok-ai/public):
