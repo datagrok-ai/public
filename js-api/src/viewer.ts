@@ -336,6 +336,8 @@ export class JsViewer extends Viewer {
   }
 }
 
+
+/** 2D scatter plot */
 export class ScatterPlotViewer extends Viewer {
   constructor(d: any) {
     super(d);
