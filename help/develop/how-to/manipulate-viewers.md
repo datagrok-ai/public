@@ -50,6 +50,22 @@ view.addViewer(viewer);
 
 Notice that the first parameter to `addViewer` may be either a string with the corresponding name or an instance of the `Viewer` class.
 
+A dataframe on which the view is built has handy plotting methods of its own:
+
+```javascript
+let data = grok.data.demo.demog();
+let view = grok.shell.addTableView(data);
+let viewer = data.plot.scatter({ x: 'weight', y: 'height', color: 'disease' });
+view.addViewer(viewer);
+```
+
+There is a slight difference between native and custom viewers. `DG.Viewer.fromType` is reserved for
+the standard viewer types. When creating an instance of the custom one, use `DataFrame.plot.fromType`
+instead. Instances of `JsViewer`'s subclass are obtained asynchronously on the client, as their package
+should be initialized first. As a rule of thumb, you should wait until a JsViewer object is constructed.
+However, if your plans are limited to adding it to a table view without further adjustments,
+a synchronous call of `addViewer` will do.
+
 Examples:
 
 <ul style="column-count: 2;">
