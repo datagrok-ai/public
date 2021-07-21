@@ -52,7 +52,7 @@ export class AdverseEventsView extends DG.ViewBase {
         ui.block25([ui.h2('Outcome'), outcomePlot]),
         ui.block50([ui.h2('All Events'), scatterPlot]),
       ], { style: { width: '100%' } }),
-      ui.divH([ grid ], { style: { width: '100%' } })
+      ui.divH([ grid.root ], { style: { width: '100%' } })
     ]));
   }
 }
