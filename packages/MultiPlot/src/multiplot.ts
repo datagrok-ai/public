@@ -16,7 +16,7 @@ export class MultiPlotViewer extends DG.JsViewer {
   private timeLineWidth: number = this.int('timeLineWidth', 1);
   private timeLineRadius: number = this.int('timeLineRadius', 3);
 
-  private paramA = this.string('paramA', 'string inside');
+  private paramA : string = this.string('paramA', 'string inside');
   private typeComboElements = [];
   private showHideElements = [];
   private closeElements = [];
@@ -112,6 +112,7 @@ export class MultiPlotViewer extends DG.JsViewer {
     super();
     console.log('------------------------------------- MULTIPLOT ------------------------------');
     console.log('this.root: ', this.root);
+    console.log(this.paramA)
 
     this.categoryColors = DG.Color.categoricalPalette.map(DG.Color.toRgb);
     this.plots = this.options.series;
@@ -436,8 +437,7 @@ export class MultiPlotViewer extends DG.JsViewer {
     }
   } // clearPlots
 
-  onEvent(e: DG.Events): void {
-  }
+  // onEvent(e: DG.Events): void {  }
 
   addMenu(): void {
     grok.events.onContextMenu.subscribe((args) => {
@@ -617,7 +617,7 @@ export class MultiPlotViewer extends DG.JsViewer {
       console.log('zoom ', e);
     });
 
-    this.echart.on('click', (params) => {
+    this.echart.on('click', (params : any) => {
       console.log('click params ', params);
       const iPlot : number = this.visibleIndexes[params.componentIndex];
       const table : DG.DataFrame = this.tables[this.plots[iPlot].table];
@@ -626,6 +626,8 @@ export class MultiPlotViewer extends DG.JsViewer {
       const y = params.event.event.y + this.tooltipOffset;
       const xColName = this.plots[iPlot].x;
       const yColName = this.plots[iPlot].y;
+      const indexes = table.filter.getSelectedIndexes();
+      table.currentRowIdx = indexes[params.dataIndex];
       const colNames = [xColName, yColName];
       table.selection.handleClick( (i) => {
         console.log('params value');
