@@ -919,14 +919,22 @@ export function block(items: HTMLElement[], options: string | ElementOptions | n
   return c;
 }
 
-export function block75(items: HTMLElement[], options: ElementOptions | null = null) {
-  return $(block(items, options)).addClass('ui-block-75')[0];
+export function block75(items: HTMLElement[], options: ElementOptions | null = null): HTMLDivElement {
+  let c = block(items, options);
+  $(c).addClass('ui-block-75');
+  return c;
 }
-export function block25(items: HTMLElement[], options: ElementOptions | null = null) {
-  return $(block(items, options)).addClass('ui-block-25')[0];
+
+export function block25(items: HTMLElement[], options: ElementOptions | null = null): HTMLDivElement {
+  let c = block(items, options);
+  $(c).addClass('ui-block-25');
+  return c;
 }
-export function block50(items: HTMLElement[], options: ElementOptions | null = null) {
-  return $(block(items, options)).addClass('ui-block-50')[0];
+
+export function block50(items: HTMLElement[], options: ElementOptions | null = null): HTMLDivElement {
+  let c = block(items, options);
+  $(c).addClass('ui-block-50');
+  return c;
 }
 
 export function p(text: string, options: any = null): HTMLParagraphElement {
