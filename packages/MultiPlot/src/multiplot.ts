@@ -53,6 +53,8 @@ export class MultiPlotViewer extends DG.JsViewer {
       {choices: ['main line', 'above main line', 'scatter']});
   private selectionColor = DG.Color.toRgb(DG.Color.selectedRows);
   private categoryLength : number = 10;
+  private isEchartHandlers : boolean = false;
+  private paramOptions : string = this.string('paramOptions', '{"series": []}');
   private options = {
     series: [
       {
@@ -112,7 +114,7 @@ export class MultiPlotViewer extends DG.JsViewer {
     super();
     console.log('------------------------------------- MULTIPLOT ------------------------------');
     console.log('this.root: ', this.root);
-    console.log(this.paramA)
+    console.log('ctor paramA', this.paramA);
 
     this.categoryColors = DG.Color.categoricalPalette.map(DG.Color.toRgb);
     this.plots = this.options.series;
@@ -139,9 +141,37 @@ export class MultiPlotViewer extends DG.JsViewer {
     });
   }
 
+  init(): void {
+    this.clearPlots();
+    /*
+    this.plots.map((plot) => {
+      const defaultColor = this.categoryColors[0];
+      const selectionColor = this.categoryColors[1];
+      debugger;
+      plot.series.itemStyle = (e, i) => {
+        let color = defaultColor;
+        if (this.selection.includes(e.dataIndex)) {
+          color = selectionColor;
+        }
+        return color;
+      };
+    });
+*/
+    if (!this.echart) this.echart = echarts.init(this.root, null, {renderer: 'canvas'});
+    this.addEchartHandlers();
+
+    this.createElements();
+    this.updateOptionsPositions();
+    this.updatePlots();
+    //  this.render();
+    this.render();
+  } // init
+
   onPropertyChanged(property: DG.Property): void {
     const name = property.name;
     const val = property.get(this);
+    console.log('property changed: ', name, val);
+    console.log('this.paramA ', this.paramA);
     if (name === 'defaultTitleHeight') {
       this.defaultTitleHeight = val;
       this.updateHeight();
@@ -153,6 +183,14 @@ export class MultiPlotViewer extends DG.JsViewer {
     }
     if (name === 'showControls') {
       this.setControlsVisibility();
+    }
+    if (name === 'paramOptions') {
+      const param = JSON.parse(this.paramOptions);
+      console.error('prop change ', param);
+      // debugger
+      this.plots = param.series;
+      this.init();
+      return;
     }
 
     this.updatePlots();
@@ -331,6 +369,7 @@ export class MultiPlotViewer extends DG.JsViewer {
         data: this.plots[i].series.data,
         //   coordinateSystem: 'cartesian2d',
         encode: {x: 0, y: 1},
+        selectedMode: 'multiple',
       };
 
       if (this.plots[i].type === 'timeLine') {
@@ -524,6 +563,7 @@ export class MultiPlotViewer extends DG.JsViewer {
   }
 
   onTableAttached(): void {
+    console.warn('this.paramA tableAttached', this.paramA);
     this.addMenu();
     const tableArray = grok.shell.tables;
     this.tables = {};
@@ -599,26 +639,19 @@ export class MultiPlotViewer extends DG.JsViewer {
     return true;
   }
 
-  init(): void {
-    this.plots.map((plot) => {
-      const defaultColor = this.categoryColors[0];
-      const selectionColor = this.categoryColors[1];
-      plot.series.itemStyle = (e, i) => {
-        let color = defaultColor;
-        if (this.selection.includes(e.dataIndex)) {
-          color = selectionColor;
-        }
-        return color;
-      };
-    });
-    if (!this.echart) this.echart = echarts.init(this.root, null, {renderer: 'canvas'});
+  addEchartHandlers() : void {
+    if (this.isEchartHandlers) return;
 
     this.echart.on('dataZoom', (e) => {
       console.log('zoom ', e);
     });
 
-    this.echart.on('click', (params : any) => {
-      console.log('click params ', params);
+    this.echart.on('mousedown', {datatype: ''}, (e) => {
+      console.log('mouse down: ', e);
+    });
+
+    this.echart.on('click', {datatype: 'all'}, (params : any) => {
+      console.log('click params1 ', params);
       const iPlot : number = this.visibleIndexes[params.componentIndex];
       const table : DG.DataFrame = this.tables[this.plots[iPlot].table];
       const subjBuf = this.plots[iPlot];
@@ -680,14 +713,8 @@ export class MultiPlotViewer extends DG.JsViewer {
     }); // mouseover
 
     this.echart.on('mouseout', () => ui.tooltip.hide());
-
-    this.clearPlots();
-    this.createElements();
-    this.updateOptionsPositions();
-    //   this.updatePlots();
-    //  this.render();
-    this.render();
-  } // init
+    this.isEchartHandlers = true;
+  }
 
   deleteElements(): void {
     this.typeComboElements.map((e) => e.remove());
