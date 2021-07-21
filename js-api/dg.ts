@@ -2,6 +2,7 @@ import * as _chem from './src/chem';
 import * as _ml from './src/ml';
 import * as _utils from './src/utils';
 import $ from 'cash-dom';
+import dayjs from 'dayjs';
 
 export * from './src/const';
 export * from './src/events';
@@ -26,4 +27,5 @@ export let utils = _utils;
 
 $(function () {
   (<any>window).$ = $;
+  (<any>window).dayjs = dayjs;
 });
