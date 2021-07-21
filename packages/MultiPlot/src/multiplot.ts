@@ -45,6 +45,8 @@ export class MultiPlotViewer extends DG.JsViewer {
   private tables = {};
   private isTablesLoaded: number = 0;
   private tooltipOffset: number = 10;
+  private globalMarginTop: number = 15;
+  private globalMarginBottom: number = 0;
   private visibleIndexes: number[];
   private marker = this.string('marker', 'ring', {choices: ['circle', 'rect', 'ring', 'diamond']});
   private markerSize = this.int('markerSize', 6);
@@ -55,11 +57,12 @@ export class MultiPlotViewer extends DG.JsViewer {
   private categoryLength : number = 10;
   private isEchartHandlers : boolean = false;
   private paramOptions : string = this.string('paramOptions', '{"series": []}');
+  private mode : string = 'none'; // 'brushSelected'
   private options = {
     series: [
       {
         table: 'ae__2__lb__2_',
-        title: 'title1',
+        title: 'title10',
         type: 'scatter',
         x: 'AESTDY',
         //    y: 'LBTEST',
@@ -142,12 +145,12 @@ export class MultiPlotViewer extends DG.JsViewer {
   }
 
   init(): void {
+    console.error('init');
     this.clearPlots();
     /*
     this.plots.map((plot) => {
       const defaultColor = this.categoryColors[0];
       const selectionColor = this.categoryColors[1];
-      debugger;
       plot.series.itemStyle = (e, i) => {
         let color = defaultColor;
         if (this.selection.includes(e.dataIndex)) {
@@ -189,6 +192,7 @@ export class MultiPlotViewer extends DG.JsViewer {
       console.error('prop change ', param);
       // debugger
       this.plots = param.series;
+      // this.plots = this.options.series;
       this.init();
       return;
     }
@@ -215,8 +219,9 @@ export class MultiPlotViewer extends DG.JsViewer {
   // also takes data from this.plots:
   //    [{height: '10px', title: 'title0'},{height: '20%'}, {height: 'free'}]
   // output: [{top: '20px', height: '10px', topTitle: '0px', titleHeight}, ...]
-  parseHeight(height: number): any[] {
+  parseHeight(heightAll: number): any[] {
     const r = [];
+    const height = heightAll - this.globalMarginBottom - this.globalMarginTop;
     let floatHeight = height;
     let totalFlexPoints = 0;
 
@@ -249,7 +254,7 @@ export class MultiPlotViewer extends DG.JsViewer {
     // weight (in pixels) of one flex point
     const flexPointHeight = floatHeight / totalFlexPoints;
 
-    let currentTop = 0;
+    let currentTop = this.globalMarginTop;
     let echartIndex = 0; // index in echarts library
     // second cycle (set positions and height)
     for (let j = 0; j < r.length; j++) {
@@ -469,11 +474,16 @@ export class MultiPlotViewer extends DG.JsViewer {
       }],
       animation: false,
       series: createEmptyObjects(this.visiblePlotsCount),
+      brush: {
+        toolbox: ['rect', 'polygon', 'lineX', 'lineY', 'keep', 'clear'],
+        xAxisIndex: 'all',
+      },
     };
     for (let i = 0; i < this.echartOptions.series.length; i++) {
       this.echartOptions.series[i].type = 'scatter';
       this.echartOptions.series[i].data = [];
     }
+    console.log('clearPlots ', this.echartOptions);
   } // clearPlots
 
   // onEvent(e: DG.Events): void {  }
@@ -575,14 +585,19 @@ export class MultiPlotViewer extends DG.JsViewer {
       return;
     }
     this.isTablesLoaded = 1;
+    this.init();
+    this.updatePlots();
     this.updateFilter();
+
     this.render();
 
     // this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
     // this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()));
     // @ts-ignore
     this.subs.push(this.dataFrame.selection.onChanged.subscribe((_) => {
+      //    return
       this.selection = this.dataFrame.selection.getSelectedIndexes();
+      // console.log('selection event: ', this.selection);
       this.plots.map((plot) => {
         const defaultColor = this.categoryColors[0];
         const selectionColor = this.categoryColors[1];
@@ -594,6 +609,8 @@ export class MultiPlotViewer extends DG.JsViewer {
           return color;
         };
       });
+      this.echart.setOption({title: [{text: 'aaaa'}, {text: 'aaaa'}, {text: 'aaaa'}]});
+      return;
       this.updatePlots();
       this.render();
     }));
@@ -646,12 +663,37 @@ export class MultiPlotViewer extends DG.JsViewer {
       console.log('zoom ', e);
     });
 
+    this.echart.on('brushSelected', (e) => {
+      this.mode = 'brushSelected';
+      console.log('brush selected ', e);
+      if (e.batch.length === 0) return;
+      const selectedIndex : number[] = [];
+      const batchSelected = e.batch[0].selected;
+      const index = batchSelected[0].dataIndex;
+      for (let i=0; i<batchSelected.length; i++) {
+        const table = this.tables[this.plots[i].table];
+        table.selection.setAll(0);
+        for (let j=0; j<index.length; j++) {
+          table.selection.set(index[j], true);
+        }
+      };
+      // this.updatePlots();
+      // this.render();
+    }); // onBrushSelected
+
+    this.echart.on('brushEnd', (e) => {
+      console.error('brushEnd, ', e);
+    });
+
     this.echart.on('mousedown', {datatype: ''}, (e) => {
       console.log('mouse down: ', e);
     });
 
+    this.echart.on('mouseup', {datatype: ''}, (e) => {
+      console.log('mouse up: ', e);
+    });
+
     this.echart.on('click', {datatype: 'all'}, (params : any) => {
-      console.log('click params1 ', params);
       const iPlot : number = this.visibleIndexes[params.componentIndex];
       const table : DG.DataFrame = this.tables[this.plots[iPlot].table];
       const subjBuf = this.plots[iPlot];
@@ -663,7 +705,6 @@ export class MultiPlotViewer extends DG.JsViewer {
       table.currentRowIdx = indexes[params.dataIndex];
       const colNames = [xColName, yColName];
       table.selection.handleClick( (i) => {
-        console.log('params value');
         if (params.componentType === 'yAxis') {
           return this.plots[iPlot].subjects[this.plots[iPlot].subjBuf[i]] === params.value;
         }
