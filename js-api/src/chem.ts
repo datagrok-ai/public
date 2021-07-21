@@ -13,26 +13,26 @@ declare let grok: any;
 /** Cheminformatics-related routines */
 
 
-/** A common interface that all sketchers should implement */
-export interface SketcherBase {
-
-  /** Visual root. */
-  get root(): HTMLElement;
-
-  /** SMILES representation of the molecule */
-  get smiles(): string;
-  set smiles(s: string);
-
-  /** SMARTS query */
-  get smarts(): string;
-  set smarts(s: string);
-
-  /** MolFile representation of the molecule */
-  get molFile(): string;
-  set molFile(s: string);
-
-  get onChanged(): Observable<any>;
-}
+// /** A common interface that all sketchers should implement */
+// export interface SketcherBase {
+//
+//   /** Visual root. */
+//   get root(): HTMLElement;
+//
+//   /** SMILES representation of the molecule */
+//   get smiles(): string;
+//   set smiles(s: string);
+//
+//   /** SMARTS query */
+//   get smarts(): string;
+//   set smarts(s: string);
+//
+//   /** MolFile representation of the molecule */
+//   get molFile(): string;
+//   set molFile(s: string);
+//
+//   get onChanged(): Observable<any>;
+// }
 
 
 /**
