@@ -455,6 +455,14 @@ export class Dialog {
     return new Dialog(api.grok_Dialog(title));
   }
 
+  get helpUrl(): string {
+    return api.grok_Dialog_Get_HelpUrl(this.d);
+  };
+
+  set helpUrl(url: string) {
+    api.grok_Dialog_Set_HelpUrl(this.d, url);
+  };
+
   /**
    * Sets the OK button handler, and shows the OK button
    * @param {Function} handler
