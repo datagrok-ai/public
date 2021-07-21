@@ -1,6 +1,40 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-07-21 Dev build 0.92.22
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.22`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* MultiPlot: select on click 
+* SketcherBase: a common interface for molecular sketchers 
+* Code cleanup 
+* MultiPlot: pass series settings to viewer constructor (WIP)
+* GROK \- 9242 UI Test: Repertoire Browser 
+* Temporary disabled broken code 
+* Updated index 
+* TS: Add DayJs 
+* (Bug) Typescript: Elements Block25 (50 and 75) are of incorrect type 
+* Fixed typo in ui.ts 
+* (Bug) JS Viewers: error: NullError: method not found: 'where$1' on null (WIP)
+* Selenium: Share dialog: Add name attribute for privilege level selector 
+* Query Builder dialog: Add "name" attributes to checkboxes for tables 
+* (Bug) Predictive Models: Model in browser is not displayed on PP after clicking on card 
+* ROK-8325 Data | Open Text: View does not switch to created table view after clicking on "Done" 
+* Add Repository: Add attribute "name" for Source Type selector 
+* (Bug) View Layouts: Error balloon after deleting saved layout 
+* GridColumn: got rid of the Prop() annotations 
+* Wiki: update developer guides to reflect JsViewer API changes (WIP)
+* JS API: Add helpUrl support in ui.dialog 
+
+
 # 2021-07-20 Dev build 0.92.21
 
 ## Latest Docker Images
