@@ -40,7 +40,13 @@ async function loadSnippets(type: string, tag: string | null = null): Promise<DG
 function formSnippetSection(snippets: DG.Script[]): HTMLDivElement[] {
   const snippetNames = snippets.map(s => ui.divText(format(s.friendlyName), { classes: 'd4-link-action' }));
   snippetNames.forEach((el, idx) => el.addEventListener('click', () => {
-    (<HTMLTextAreaElement>document.querySelector('.dt-dev-pane-container > .dt-textarea-box textarea')).value = snippets[idx].script;
+    let s = '';
+    let lines = snippets[idx].script.split(/\r\n|\r|\n/);
+    for (let line of lines) {
+      if (/^\/\/(name|tags|language|help-url):.+/.test(line)) continue;
+      s += line + '\n';
+    }
+    (<HTMLTextAreaElement>document.querySelector('.dt-dev-pane-container > .dt-textarea-box textarea')).value = s;
   }));
   return snippetNames;
 }
