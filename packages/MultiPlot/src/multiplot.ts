@@ -54,7 +54,7 @@ export class MultiPlotViewer extends DG.JsViewer {
   private markerPosition = this.string('markerPosition', 'main line',
       {choices: ['main line', 'above main line', 'scatter']});
   private selectionColor = DG.Color.toRgb(DG.Color.selectedRows);
-  private categoryLength : number = 10;
+  private categoryLength : number = 9;
   private isEchartHandlers : boolean = false;
   private paramOptions : string = this.string('paramOptions', '{"series": []}');
   private mode : string = 'none'; // 'brushSelected'
@@ -122,14 +122,6 @@ export class MultiPlotViewer extends DG.JsViewer {
     this.categoryColors = DG.Color.categoricalPalette.map(DG.Color.toRgb);
     this.plots = this.options.series;
     const allTypes = ['scatter', 'line', 'bar', 'timeLine'];
-    // init plots with some data y=x^2, later can be replaced
-    this.plots.map((e) => {
-      e.series = {
-        type: 'scatter',
-        data: [],
-      };
-    });
-
     this.init();
 
     this.box = this.root.getBoundingClientRect();
@@ -147,7 +139,13 @@ export class MultiPlotViewer extends DG.JsViewer {
   init(): void {
     console.error('init');
     this.clearPlots();
-    /*
+    this.plots.map((e) => {
+      e.series = {
+        type: 'scatter',
+        data: [],
+      };
+    });
+    /*  will be used in status chart
     this.plots.map((plot) => {
       const defaultColor = this.categoryColors[0];
       const selectionColor = this.categoryColors[1];
@@ -159,14 +157,15 @@ export class MultiPlotViewer extends DG.JsViewer {
         return color;
       };
     });
-*/
+    */
     if (!this.echart) this.echart = echarts.init(this.root, null, {renderer: 'canvas'});
     this.addEchartHandlers();
-
     this.createElements();
     this.updateOptionsPositions();
     this.updatePlots();
-    //  this.render();
+    if (this.checkTablesLoaded()) {
+      this.updateFilter();
+    }
     this.render();
   } // init
 
@@ -174,7 +173,6 @@ export class MultiPlotViewer extends DG.JsViewer {
     const name = property.name;
     const val = property.get(this);
     console.log('property changed: ', name, val);
-    console.log('this.paramA ', this.paramA);
     if (name === 'defaultTitleHeight') {
       this.defaultTitleHeight = val;
       this.updateHeight();
@@ -190,9 +188,12 @@ export class MultiPlotViewer extends DG.JsViewer {
     if (name === 'paramOptions') {
       const param = JSON.parse(this.paramOptions);
       console.error('prop change ', param);
-      // debugger
       this.plots = param.series;
-      // this.plots = this.options.series;
+      const tableArray = grok.shell.tables;
+      this.tables = {};
+      for (let i=0; i<tableArray.length; i++) {
+        this.tables[tableArray[i].name] = tableArray[i];
+      }
       this.init();
       return;
     }
@@ -334,6 +335,7 @@ export class MultiPlotViewer extends DG.JsViewer {
     }
     this.clearPlots();
     if (this.isTablesLoaded === 0) return;
+
     this.echartOptions.backgroundColor = toColor(this.backColor);
 
     // update positions
@@ -572,6 +574,14 @@ export class MultiPlotViewer extends DG.JsViewer {
     return r;
   }
 
+  checkTablesLoaded() : boolean {
+    const plotTablesList : string[] = this.plots.map((e) => e.table);
+    const openTablesArray: string[] = Object.keys(this.tables);
+    const notLoaded : string[] = plotTablesList.filter((e) => openTablesArray.indexOf(e) == -1);
+    console.warn('not loaded list', notLoaded);
+    return notLoaded.length == 0;
+  }
+
   onTableAttached(): void {
     console.warn('this.paramA tableAttached', this.paramA);
     this.addMenu();
@@ -580,7 +590,7 @@ export class MultiPlotViewer extends DG.JsViewer {
     for (let i=0; i<tableArray.length; i++) {
       this.tables[tableArray[i].name] = tableArray[i];
     }
-
+    this.checkTablesLoaded();
     if (this.isTablesLoaded) {
       return;
     }
@@ -609,8 +619,8 @@ export class MultiPlotViewer extends DG.JsViewer {
           return color;
         };
       });
-      this.echart.setOption({title: [{text: 'aaaa'}, {text: 'aaaa'}, {text: 'aaaa'}]});
-      return;
+      // this.echart.setOption({title: [{text: 'aaaa'}, {text: 'aaaa'}, {text: 'aaaa'}]});
+      // return;
       this.updatePlots();
       this.render();
     }));
