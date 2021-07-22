@@ -11,7 +11,8 @@ const undefinedInputSequence: string = "Type of input sequence is undefined";
 const smallNumberOfCharacters: string = "Length of input sequence should be at least 10 characters";
 const defaultNucleotidesInput: string = "AGGTCCTCTTGACTTAGGCC";
 const noTranslationTableAvailable: string = "No translation table available";
-const sequenceWasCopied: string = 'Sequence was copied to clipboard';
+const sequenceWasCopied: string = 'Copied!';
+const tooltipSequence: string = 'Copy sequence';
 
 //name: Sequence Translator
 //tags: app
@@ -40,7 +41,7 @@ export function sequenceTranslator(): void {
     let tableRows = [];
     for (let key of Object.keys(outputSequencesObj).slice(1)) {
       // @ts-ignore
-      tableRows.push({'key': key, 'value': outputSequencesObj[key], 'icon': ui.iconFA('copy', () => navigator.clipboard.writeText(outputSequencesObj[key]).then(() => grok.shell.info('Sequence was copied to clipboard')))})
+      tableRows.push({'key': key, 'value': ui.link(outputSequencesObj[key], () => navigator.clipboard.writeText(outputSequencesObj[key]).then(() => grok.shell.info(sequenceWasCopied)), tooltipSequence, '')})
     }
 
     outputTableDiv.innerHTML = "";
@@ -49,8 +50,8 @@ export function sequenceTranslator(): void {
       ui.div([
         DG.HtmlTable.create(
           tableRows,
-          (item: {key: string; value: string; icon: HTMLElement;}) => [item.key, item.value, item.icon],
-          ['Code', 'Sequence', '']
+          (item: {key: string; value: string;}) => [item.key, item.value],
+          ['Code', 'Sequence']
         ).root
       ], 'table')
     );
@@ -72,11 +73,11 @@ export function sequenceTranslator(): void {
 
   let outputTableDiv = ui.div([
     DG.HtmlTable.create([
-      {key: 'Nucleotides', value: defaultNucleotidesInput, icon: ui.iconFA('copy', () => navigator.clipboard.writeText(defaultNucleotidesInput).then(() => grok.shell.info(sequenceWasCopied)))},
-      {key: 'BioSpring', value: asoGapmersNucleotidesToBioSpring(defaultNucleotidesInput), icon: ui.iconFA('copy', () => navigator.clipboard.writeText(asoGapmersNucleotidesToBioSpring(defaultNucleotidesInput)).then(() => grok.shell.info(sequenceWasCopied)))},
-      {key: 'Axolabs', value: noTranslationTableAvailable, icon: ui.iconFA('copy', () => navigator.clipboard.writeText(noTranslationTableAvailable).then(() => grok.shell.info(sequenceWasCopied)))},
-      {key: 'GCRS', value: asoGapmersNucleotidesToGcrs(defaultNucleotidesInput), icon: ui.iconFA('copy', () => navigator.clipboard.writeText(asoGapmersNucleotidesToGcrs(defaultNucleotidesInput)).then(() => grok.shell.info(sequenceWasCopied)))}
-    ], (item: {key: string; value: string; icon: HTMLElement;}) => [item.key, item.value, item.icon], ['Code', 'Sequence', '']).root
+      {key: 'Nucleotides', value: ui.link(defaultNucleotidesInput, () => navigator.clipboard.writeText(defaultNucleotidesInput).then(() => grok.shell.info(sequenceWasCopied)), tooltipSequence, '')},
+      {key: 'BioSpring', value: ui.link(asoGapmersNucleotidesToBioSpring(defaultNucleotidesInput), () => navigator.clipboard.writeText(asoGapmersNucleotidesToBioSpring(defaultNucleotidesInput)).then(() => grok.shell.info(sequenceWasCopied)), tooltipSequence, '')},
+      {key: 'Axolabs', value: ui.link(noTranslationTableAvailable, () => navigator.clipboard.writeText(defaultNucleotidesInput).then(() => grok.shell.info(sequenceWasCopied)), tooltipSequence, '')},
+      {key: 'GCRS', value: ui.link(asoGapmersNucleotidesToGcrs(defaultNucleotidesInput), () => navigator.clipboard.writeText(asoGapmersNucleotidesToGcrs(defaultNucleotidesInput)).then(() => grok.shell.info(sequenceWasCopied)), tooltipSequence, '')}
+    ], (item: {key: string; value: string;}) => [item.key, item.value], ['Code', 'Sequence']).root
   ], 'table');
 
   let accordionWithCmoCodes = ui.accordion();
