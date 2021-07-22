@@ -442,14 +442,14 @@ export function defineAxolabsPattern() {
     }
   }
 
-  let tables = ui.choiceInput('Tables', '', grok.shell.tableNames, () => {
-    inputSsColumn = ui.choiceInput('SS Column', '', grok.shell.table(tables.value).columns.names(), (colName: string) => validateSsColumn(colName));
+  let tables = ui.tableInput('Tables', grok.shell.tables[0], grok.shell.tables, () => {
+    inputSsColumn = ui.choiceInput('SS Column', '', tables.value.columns.names(), (colName: string) => validateSsColumn(colName));
     inputSsColumnDiv.innerHTML = '';
     inputSsColumnDiv.append(inputSsColumn.root);
-    inputAsColumn = ui.choiceInput('AS Column', '', grok.shell.table(tables.value).columns.names(), (colName: string) => validateAsColumn(colName));
+    inputAsColumn = ui.choiceInput('AS Column', '', tables.value.columns.names(), (colName: string) => validateAsColumn(colName));
     inputAsColumnDiv.innerHTML = '';
     inputAsColumnDiv.append(inputAsColumn.root);
-    inputIdColumn = ui.choiceInput('ID Column', '', grok.shell.table(tables.value).columns.names(), (colName: string) => validateIdsColumn(colName));
+    inputIdColumn = ui.choiceInput('ID Column', '', tables.value.columns.names(), (colName: string) => validateIdsColumn(colName));
     inputIdColumnDiv.innerHTML = '';
     inputIdColumnDiv.append(inputIdColumn.root);
   });
