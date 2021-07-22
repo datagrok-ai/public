@@ -1,6 +1,33 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-07-22 Dev build 0.92.23
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.23`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* (Bug) Custom ML: feature names are not available in an apply script 
+* (Bug) Custom ML: don't show dataframe from apply 
+* Wiki: File Browsing and Sharing, tweaks 
+* MultiPlot: rectangle select (WIP)
+* JS API: Add helpUrl support in ui.dialog 
+* MultiPlot: pass series settings to viewer constructor 
+* dayjs: import statement fix 
+* ClinicalCase \- a plugin for analyzing SDTM-based clinical studies data (WIP)
+* Sequence Translator: Drag&Drop file in Axolabs 
+* datagrok-tools: update package template (WIP)
+* DevTools package (WIP)
+* DevTools: annotate API examples (WIP)
+* Updated public 
+
+
 # 2021-07-21 Dev build 0.92.22
 
 ## Latest Docker Images
