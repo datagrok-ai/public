@@ -92,7 +92,7 @@ let options = {
       markerShape: 'square',
       height: '2flex',
       show: 1,
-    }
+    },
   ]
 }
 
