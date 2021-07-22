@@ -1,6 +1,6 @@
 {
 	"name": "dev-tools",
-	"beta": true,
+	"beta": false,
 	"friendlyName": "DevTools",
 	"version": "0.0.1",
 	"description": "",
