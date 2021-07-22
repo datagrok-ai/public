@@ -74,11 +74,12 @@ console.log(await grok.dapi.permissions.get(entity));
 await grok.dapi.permissions.revoke(group, entity);`,
   DataFrame: (ent: DG.DataFrame) =>
 `
-DataFrame snippet
+const df = grok.shell.table("${ent.name}");
 `,
   Column: (ent: DG.Column) =>
 `
-Column snippet
+const df = grok.shell.table("${ent.dataFrame.name}");
+const col = df.col("${ent.name}");
 `,
   Package: (ent: DG.Package) =>
 `// Find package functions
