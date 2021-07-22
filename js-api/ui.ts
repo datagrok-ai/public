@@ -462,8 +462,8 @@ export function link(
 
 /** Creates a [Dialog].
  * @returns {Dialog} */
-export function dialog(title: string = ''): Dialog {
-  return Dialog.create(title);
+export function dialog(options: any = ''): Dialog {
+  return Dialog.create(options);
 }
 
 /** Binds [item] with the [element]. It enables selecting it as a current object, drag-and-drop,

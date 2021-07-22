@@ -451,8 +451,11 @@ export class Dialog {
     this.d = d;
   }
 
-  static create(title: string = ''): Dialog {
-    return new Dialog(api.grok_Dialog(title));
+  static create(options: { title?: string, helpUrl?: string } | string = ''): Dialog {
+    if (typeof options === 'string')
+      return new Dialog(api.grok_Dialog(options, null));
+    else
+      return new Dialog(api.grok_Dialog(options?.title, options?.helpUrl));
   }
 
   get helpUrl(): string {
