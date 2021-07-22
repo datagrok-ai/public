@@ -110,6 +110,19 @@ const res = await grok.functions.call("${ent.nqName}", {});
 
 // Read a script
 grok.shell.info(script.script);`,
+  Func: (ent: DG.Func) =>
+`// Find a function by package, name, tags, or returnType
+const f = DG.Func.find({ name: "${ent.name}" })[0];
+
+// Work with parameters
+const paramDefaults = { num: 1, string: 'a', bool: true };
+const params = f.inputs.reduce((obj, p) => {
+  obj[p.name] = p.defaultValue ?? paramDefaults[p.propertyType];
+  return obj;
+}, {});
+
+// Call a function
+const res = await f.apply(params);`,
   ViewLayout: (ent: DG.ViewLayout) =>
 `// Apply to the original table
 const layout = await grok.dapi.layouts.find("${ent.id}");
