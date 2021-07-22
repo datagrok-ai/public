@@ -47,7 +47,7 @@ export class TypedEventArgs {
    });
  **/
 export class Viewer extends Widget {
-  props: ObjectPropertyBag | undefined;
+  props: ObjectPropertyBag & any | undefined;
 
   /** @constructs Viewer */
   constructor(d: any, root?: HTMLElement) {
@@ -72,7 +72,7 @@ export class Viewer extends Widget {
     return api.grok_Viewer_GetViewerTypes();
   }
 
-  /** 
+  /**
    *  Sets viewer options. See also {@link getOptions}
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/scatter-plot}
    *  @param {object} map */
@@ -80,7 +80,7 @@ export class Viewer extends Widget {
     api.grok_Viewer_Options(this.d, JSON.stringify(map));
   }
 
-  /** 
+  /**
    * Gets the serialized viewer options. [includeDefaults] flag specifies whether the
    * properties with the defaults values should be returned. Not including default
    * properties makes it more clean and efficient for serialization purposes.
