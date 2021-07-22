@@ -4,7 +4,7 @@ import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
 import { ValidationView } from "./validation-view";
-import { event } from "jquery";
+import $ from "cash-dom";
 
 export class StudySummaryView extends DG.ViewBase {
 
