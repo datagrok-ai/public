@@ -9,7 +9,7 @@ import grok_connect.table_query.*;
 
 public class RedshiftDataProvider extends JdbcDataProvider {
     public RedshiftDataProvider() {
-        driverClassName = "com.amazon.redshift.jdbc42.Driver";
+        driverClassName = "com.amazon.redshift.jdbc.Driver";
 
         descriptor = new DataSource();
         descriptor.type = "Redshift";

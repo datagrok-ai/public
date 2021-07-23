@@ -17,7 +17,7 @@ public class OracleDataProvider extends JdbcDataProvider {
             "AND OWNER != 'ORDDATA'";
 
     public OracleDataProvider() {
-        driverClassName = "oracle.jdbc.driver.OracleDriver";
+        driverClassName = "oracle.jdbc.OracleDriver";
 
         descriptor = new DataSource();
         descriptor.type = "Oracle";
