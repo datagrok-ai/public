@@ -26,6 +26,8 @@ public class GrokConnect {
             Logger logger = Logger.getLogger("org.eclipse.jetty");
             logger.setLevel(Level.ERROR);
 
+            CustomDriverManager.printDriverNames();
+
             port(port);
             connectorsModule();
 

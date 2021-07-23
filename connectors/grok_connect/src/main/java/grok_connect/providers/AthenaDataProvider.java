@@ -9,7 +9,7 @@ import grok_connect.connectors_info.*;
 
 public class AthenaDataProvider extends JdbcDataProvider {
     public AthenaDataProvider() {
-        driverClassName = "com.simba.athena.jdbc.Driver";
+        driverClassName = "com.simba.athena.jdbc41.Driver";
 
         Property encode = new Property(Property.STRING_TYPE, "s3OutputEncOption",
                 "The encryption protocol that the driver uses to encrypt your query results before storing them on Amazon S3");
