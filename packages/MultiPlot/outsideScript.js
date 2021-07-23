@@ -80,6 +80,10 @@ let options = {
       markerShape: 'square',
       height: '1flex',
       show: 1,
+   //   itemStyle: {
+     //   color: (e) => e.data[2] > 33 ? 'green' : 'defaultColor',
+//      },
+      symbol: (e) => e[2] > 22 ? 'rect' : 'circle'
     },
     {
       table: 'ae__2__lb__2_',
