@@ -1,6 +1,6 @@
 {
   "name": "datagrok-api",
-  "version": "0.92.26",
+  "version": "0.92.27",
   "description": "",
   "dependencies": {
     "cash-dom": "^8.0.0",
