@@ -4,16 +4,10 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 // @ts-ignore
 import * as svg from 'save-svg-as-png';
+import $ from "cash-dom";
 
 import {drawAxolabsPattern} from "./drawAxolabsPattern";
 import {axolabsMap} from "./axolabsMap";
-/*
-SS - sense strand of DNA;
-AS - antisense strand of DNA;
-base - indicates how to translate input nucleotide;
-PTO - indicates whether oligonucleotide is phosphorothioated (ps linkage);
-SS/AS Modification - sections of dialog for changing base and PTO statuses of one nucleotide at once: for SS or for AS;
-*/
 
 const baseChoices: string[] = Object.keys(axolabsMap);
 const defaultBase: string = baseChoices[0];

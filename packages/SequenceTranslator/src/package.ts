@@ -2,6 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import $ from "cash-dom";
 
 import {defineAxolabsPattern} from "./defineAxolabsPattern";
 
@@ -81,39 +82,42 @@ export function sequenceTranslator(): void {
   ], 'table');
 
   let accordionWithCmoCodes = ui.accordion();
-  accordionWithCmoCodes.addPane('CMO Codes', () => ui.divH([
-    DG.HtmlTable.create(
-      [
-        {name: "2'MOE-5Me-rU", bioSpring: '5', gcrs: 'moeT'},
-        {name: "2'MOE-rA", bioSpring: '6', gcrs: 'moeA'},
-        {name: "2'MOE-5Me-rC", bioSpring: '7', gcrs: 'moe5mC'},
-        {name: "2'MOE-rG", bioSpring: '8', gcrs: 'moeG'},
-        {name: "5-Methyl-dC", bioSpring: '9', gcrs: '5mC'},
-        {name: "ps linkage", bioSpring: '*', gcrs: 'ps'},
-        {name: "dA", bioSpring: 'A', gcrs: 'A'},
-        {name: "dC", bioSpring: 'C', gcrs: 'C'},
-        {name: "dT", bioSpring: 'T', gcrs: 'T'},
-        {name: "dG", bioSpring: 'G', gcrs: 'G'}
-      ],
-      (item: {name: string; bioSpring: string; gcrs: string}) => [item.name, item.bioSpring, item.gcrs],
-      ['For ASO Gapmers', 'BioSpring', 'GCRS']
-    ).root,
-    DG.HtmlTable.create(
-      [
-        {name: "2'-fluoro-U", axolabs: '1', bioSpring: 'Uf', gcrs: 'fU'},
-        {name: "2'-fluoro-A", axolabs: '2', bioSpring: 'Af', gcrs: 'fA'},
-        {name: "2'-fluoro-C", axolabs: '3', bioSpring: 'Cf', gcrs: 'fC'},
-        {name: "2'-fluoro-G", axolabs: '4', bioSpring: 'Gf', gcrs: 'fG'},
-        {name: "OMe-rU", axolabs: '5', bioSpring: 'u', gcrs: 'mU'},
-        {name: "OMe-rA", axolabs: '6', bioSpring: 'a', gcrs: 'mA'},
-        {name: "OMe-rC", axolabs: '7', bioSpring: 'c', gcrs: 'mC'},
-        {name: "OMe-rG", axolabs: '8', bioSpring: 'g', gcrs: 'mG'},
-        {name: "ps linkage", axolabs: '*', bioSpring: 's', gcrs: 'ps'}
-      ],
-      (item: {name: string; axolabs: string, bioSpring: string; gcrs: string}) => [item.name, item.bioSpring, item.axolabs, item.gcrs],
-      ["For 2\'-OMe and 2\'-F modified siRNA", 'BioSpring', 'Axolabs', 'GCRS']
-    ).root
-  ]), false);
+  accordionWithCmoCodes.addPane('CMO Codes', () =>
+    ui.divH([
+      DG.HtmlTable.create(
+        [
+          {name: "2'MOE-5Me-rU", bioSpring: '5', gcrs: 'moeT'},
+          {name: "2'MOE-rA", bioSpring: '6', gcrs: 'moeA'},
+          {name: "2'MOE-5Me-rC", bioSpring: '7', gcrs: 'moe5mC'},
+          {name: "2'MOE-rG", bioSpring: '8', gcrs: 'moeG'},
+          {name: "5-Methyl-dC", bioSpring: '9', gcrs: '5mC'},
+          {name: "ps linkage", bioSpring: '*', gcrs: 'ps'},
+          {name: "dA", bioSpring: 'A', gcrs: 'A'},
+          {name: "dC", bioSpring: 'C', gcrs: 'C'},
+          {name: "dT", bioSpring: 'T', gcrs: 'T'},
+          {name: "dG", bioSpring: 'G', gcrs: 'G'}
+        ],
+        (item: {name: string; bioSpring: string; gcrs: string}) => [item.name, item.bioSpring, item.gcrs],
+        ['For ASO Gapmers', 'BioSpring', 'GCRS']
+      ).root,
+      ui.div([], {style: {width: '50px'}}),
+      DG.HtmlTable.create(
+        [
+          {name: "2'-fluoro-U", axolabs: '1', bioSpring: 'Uf', gcrs: 'fU'},
+          {name: "2'-fluoro-A", axolabs: '2', bioSpring: 'Af', gcrs: 'fA'},
+          {name: "2'-fluoro-C", axolabs: '3', bioSpring: 'Cf', gcrs: 'fC'},
+          {name: "2'-fluoro-G", axolabs: '4', bioSpring: 'Gf', gcrs: 'fG'},
+          {name: "OMe-rU", axolabs: '5', bioSpring: 'u', gcrs: 'mU'},
+          {name: "OMe-rA", axolabs: '6', bioSpring: 'a', gcrs: 'mA'},
+          {name: "OMe-rC", axolabs: '7', bioSpring: 'c', gcrs: 'mC'},
+          {name: "OMe-rG", axolabs: '8', bioSpring: 'g', gcrs: 'mG'},
+          {name: "ps linkage", axolabs: '*', bioSpring: 's', gcrs: 'ps'}
+        ],
+        (item: {name: string; axolabs: string, bioSpring: string; gcrs: string}) => [item.name, item.bioSpring, item.axolabs, item.gcrs],
+        ["For 2\'-OMe and 2\'-F modified siRNA", 'BioSpring', 'Axolabs', 'GCRS']
+      ).root
+    ]), false
+  );
 
   let moleculeSvg = ui.block([
     grok.chem.svgMol('Cc1cn([C@H]2C[C@H](OP(=O)(O)OC[C@H]3O[C@@H](n4ccc(N)nc4=O)C[C@@H]3OP(=O)(O)OC[C@H]3O[C@@H](n' +
