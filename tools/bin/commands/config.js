@@ -15,7 +15,7 @@ const grokDir = path.join(os.homedir(), '.grok');
 const confPath = path.join(grokDir, 'config.yaml');
 
 function validateKey(key) {
-  if (/^([A-Za-z\d-])+$/.test(key)) {
+  if (!key || /^([A-Za-z\d-])+$/.test(key)) {
     return true;
   } else {
     return 'Developer key may only include letters, numbers, or hyphens';
