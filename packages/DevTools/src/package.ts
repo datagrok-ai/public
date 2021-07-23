@@ -20,7 +20,7 @@ function getGroupInput(type: string): HTMLElement {
     const snippets = await loadSnippets(type, tag);
     const container = $('.dt-dev-pane-container > .dt-snippet-section')
     container.empty();
-    formSnippetSection(snippets).forEach(s => container.append(s));
+    container.append(formSnippetSection(snippets));
   });
   return inp.root;
 }
@@ -37,7 +37,7 @@ async function loadSnippets(type: string, tag: string | null = null): Promise<DG
   return snippets;
 }
 
-function formSnippetSection(snippets: DG.Script[]): HTMLDivElement[] {
+function formSnippetSection(snippets: DG.Script[], count: number = 3): HTMLDivElement[] {
   const snippetNames = snippets.map(s => ui.divText(format(s.friendlyName), { classes: 'd4-link-action' }));
   snippetNames.forEach((el, idx) => el.addEventListener('click', () => {
     let s = '';
@@ -48,6 +48,14 @@ function formSnippetSection(snippets: DG.Script[]): HTMLDivElement[] {
     }
     (<HTMLTextAreaElement>document.querySelector('.dt-dev-pane-container > .dt-textarea-box textarea')).value = s;
   }));
+  if (snippetNames.length > count) {
+    const rest = snippetNames.splice(count);
+    const ellipsis = ui.iconFA('ellipsis-h', () => {
+      $(ellipsis.parentElement.parentElement).append(rest);
+      ellipsis.remove();
+    }, 'Show more examples');
+    snippetNames.push(ui.div(ellipsis));
+  }
   return snippetNames;
 }
 
@@ -119,7 +127,7 @@ export function describeCurrentObj(): void {
           ui.divH([ui.divText(`${type} ${ent.name}:`), topEditorBtn, browserLogBtn], { style: { 'align-items': 'baseline' } }),
           ...((type in tags) ? [getGroupInput(type)] : []),
           ...links,
-          ui.div([...formSnippetSection(snippets)], 'dt-snippet-section'),
+          ui.div(formSnippetSection(snippets), 'dt-snippet-section'),
           ui.divV([clipboardBtn, editorBtn, resetBtn, editor.root], 'dt-textarea-box'),
         ], 'dt-dev-pane-container');
       });
