@@ -1,6 +1,26 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-07-23 Dev build 0.92.24
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.24`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* (Bug) JSViewer: TypeError: v.setOptions is not a function 
+* JS API: tableInput 
+* Custom ML: add hyperparameters 
+* Intersection types for props (ObjectPropertyBag & any) 
+* Add sourcemap files to .gitignore 
+* MultiPlot: restore status chart (WIP)
+
+
 # 2021-07-22 Dev build 0.92.23
 
 ## Latest Docker Images
