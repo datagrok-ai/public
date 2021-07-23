@@ -1,6 +1,27 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-07-23 Dev build 0.92.25
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.25`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* (Bug) Grok connect: "No suitable driver found for..." 
+* Updated public token 
+* datagrok-tools: allow skipping questions in `grok config` 
+* JS API: Added util function getUniqueName() 
+* Ability to skip DF reading on server after Grok Connect request 
+* (Bug) JSViewer: TypeError: v.setOptions is not a function 
+* MultiPlot: move scripts according to the structure convention (WIP)
+
+
 # 2021-07-23 Dev build 0.92.24
 
 ## Latest Docker Images
