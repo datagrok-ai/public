@@ -6,9 +6,6 @@ import * as echarts from 'echarts';
 import {initTimeLine} from './timeLinesRender';
 // import * as deb from "./../debug.js";
 
-const INT_NULL = -2147483648;
-const FLOAT_NULL = 2.6789344063684636e-34;
-
 export class MultiPlotViewer extends DG.JsViewer {
   // properties
   private defaultTitleHeight: string = this.string('defaultTitleHeight', '25px');
