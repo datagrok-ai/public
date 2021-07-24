@@ -1,6 +1,21 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-07-25 Dev build 0.92.31
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.31`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Ability to skip DF reading on server after Grok Connect request 
+
+
 # 2021-07-24 Dev build 0.92.30
 
 ## Latest Docker Images
