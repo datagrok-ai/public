@@ -66,18 +66,20 @@ export class MultiPlotViewer extends DG.JsViewer {
         type: 'scatter',
         x: 'LBDY',
         y: ['LBTEST', 'AEENDY'],
-        // y: 'LBSTRESN',
-
         yType: 'category',
-        color: 'red',
         markerShape: 'square',
         height: '1flex',
         show: 1,
-        itemStyle: {
-          color: (e) => e.data[2] > 33 ? 'red' : 'defaultColor',
+        visualMap: {
+          type: 'piecewise',
+          pieces: [
+            {min: 20, max: 50, color: ['red']},
+          ],
+          dimension: 2,
         },
-        symbol: (e) => e[2] > 22 ? 'triangle' : 'circle',
       },
+
+      // timeLines
       {
         table: 'ae__2__lb__2_',
         title: 'title11',
@@ -90,6 +92,7 @@ export class MultiPlotViewer extends DG.JsViewer {
         height: '2flex',
         show: 1,
       },
+
       {
         table: 'ae__2__lb__2_',
         title: 'title2',
@@ -101,8 +104,20 @@ export class MultiPlotViewer extends DG.JsViewer {
         markerShape: 'square',
         height: '20%',
         show: 1,
+        visualMap: {
+          type: 'continuous',
+          min: 0,
+          max: 100,
+          inRange: {
+            color: ['#2F93C8', '#AEC48F', 'blue', 'red'],
+            symbolSize: [3, 10],
+          },
+          dimension: 0,
+          show: false,
+        },
       },
-      /*   {
+
+      /*  {
         table: 'ae__2__lb__2_',
         title: 'title1',
         type: 'timeLine',
@@ -147,7 +162,6 @@ export class MultiPlotViewer extends DG.JsViewer {
       e.series = {
         type: 'scatter',
         data: [],
-      //  itemStyle: (e, i) => 100*i,
       };
       e.selectedIndexes = [];
     });
@@ -352,6 +366,10 @@ export class MultiPlotViewer extends DG.JsViewer {
     this.echartOptions.series = [];
     let visibleIndex = 0;
     this.visibleIndexes = [];
+    const visualMaps = [];
+    const visualMapIndex = 0;
+    this.echartOptions.visualMap = [];
+
     for (let i = 0; i < this.plots.length; i++) {
       const plot = this.plots[i];
       this.echartOptions.title[i].left = '10px';
@@ -374,41 +392,32 @@ export class MultiPlotViewer extends DG.JsViewer {
 
       let currentSeries = {
         type: this.plots[i].series.type,
-        //    show: this.plots[i].show,
+        show: this.plots[i].show,
         large: 'true',
         gridIndex: visibleIndex,
-        symbol: this.plots[i].series.symbol || (() => { }),
-        itemStyle: this.plots[i].series.itemStyle ?
-          {color: this.plots[i].itemStyle} : {},
-        yAxis: {type: this.plots[i].yType || 'value'},
+        // yAxis: {type: this.plots[i].yType || 'value'},
         xAxisIndex: visibleIndex,
         yAxisIndex: visibleIndex,
         data: this.plots[i].series.data,
-        //   coordinateSystem: 'cartesian2d',
+        coordinateSystem: 'cartesian2d',
         encode: {x: 0, y: 1},
         selectedMode: 'multiple',
+        xAxis: {},
+        yAxis: {},
       };
 
-      if (plot.itemStyle) {
-        currentSeries.itemStyle.color = this.getItemStyleColorFunc(
-            plot.itemStyle.color,
-            plot,
-        );
+      if (plot.visualMap) {
+        const map = plot.visualMap;
+        if (map.type === 'piecewise') {
+          const min = map.pieces[0].min;
+          const max = map.pieces[0].max;
+          map.pieces.push({max: min, color: this.categoryColors[0]});
+          map.pieces.push({min: max, color: this.categoryColors[0]});
+        }
+        map.seriesIndex = visibleIndex;
+        this.echartOptions.visualMap.push(map);
+        map.show = false;
       }
-
-      if (plot.symbol) {
-        currentSeries.symbol = this.getMarkerSymbolFunc(plot.symbol, plot);
-      }
-      /*
-      currentSeries.itemStyle.color = this.getItemStyleFunc(
-        this.plots[i].series.itemStyle ?
-          {color: this.plots[i].itemStyle} : () => {},
-        this.plots[i]);
-      currentSeries.itemStyle.color = (e, i) => {
-        if (e.seriesIndex > 0) return 'blue'
-        return (e.data[2]>33) ? "red" : "blue"
-      }        ;
-      */
 
       if (this.plots[i].type === 'timeLine') {
         this.plots[i].timeLinesSeries = this.initTimeLine(visibleIndex, this);
@@ -430,7 +439,7 @@ export class MultiPlotViewer extends DG.JsViewer {
       visibleIndex++;
     } // for i<this.plots.length
 
-    this.echartOptions.responsive = false;
+    // this.echartOptions.responsive = false;
     if (visibleIndex === 0) {
       return;
     }
@@ -536,10 +545,12 @@ export class MultiPlotViewer extends DG.JsViewer {
       }],
       animation: false,
       series: createEmptyObjects(this.visiblePlotsCount),
+      /*
       brush: {
         toolbox: ['rect', 'polygon', 'lineX', 'lineY', 'keep', 'clear'],
         xAxisIndex: 'all',
       },
+      */
     };
     for (let i = 0; i < this.echartOptions.series.length; i++) {
       this.echartOptions.series[i].type = 'scatter';
@@ -613,7 +624,11 @@ export class MultiPlotViewer extends DG.JsViewer {
     function getRowFields(row: DG.Row): any[] {
       const fields = [];
       for (let i = 0; i < fieldsNames.length; i++) {
-        fields.push(row[fieldsNames[i]]);
+        let cell = row[fieldsNames[i]];
+        if (typeof cell === 'number' && cell === DG.INT_NULL) {
+          cell = 0;
+        }
+        fields.push(cell);
       }
       return fields;
     };
@@ -670,6 +685,7 @@ export class MultiPlotViewer extends DG.JsViewer {
       this.selection = this.dataFrame.selection.getSelectedIndexes();
       // console.log('selection event: ', this.selection);
       this.plots.map((plot) => {
+        return;
         const table = this.tables[plot.table];
         console.log('ttttt', this.tables, plot.table);
         if (table) plot.selectedIndexes = table.selection.getSelectedIndexes();
@@ -740,7 +756,7 @@ export class MultiPlotViewer extends DG.JsViewer {
       console.log('zoom ', e);
     });
 
-    this.echart.on('brushSelected', (e) => {
+    this.echart.on('brushSelected2', (e) => {
       this.mode = 'brushSelected';
       console.log('brush selected ', e);
       if (e.batch.length === 0) return;
