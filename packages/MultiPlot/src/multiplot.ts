@@ -4,6 +4,7 @@ import * as grok from 'datagrok-api/grok';
 
 import * as echarts from 'echarts';
 import {initTimeLine} from './timeLinesRender';
+import {ECharts} from 'echarts';
 // import * as deb from "./../debug.js";
 
 export class MultiPlotViewer extends DG.JsViewer {
@@ -15,49 +16,53 @@ export class MultiPlotViewer extends DG.JsViewer {
   private showControls: boolean = this.bool('showControls', true);
   private timeLineWidth: number = this.int('timeLineWidth', 1);
   private timeLineRadius: number = this.int('timeLineRadius', 3);
-
-  private paramA : string = this.string('paramA', 'string inside');
-  private typeComboElements = [];
-  private showHideElements = [];
-  private closeElements = [];
-  private plots = [];
-  private box: any;
-  private echart: any;
-  private echarts: any = echarts;
-  private echartOptions: any;
-  private visiblePlotsCount: number;
-  private initTimeLine = initTimeLine;
-  private timeLineSeries: any;
-  private timeLineIndex: number = 11;
-  private statusChartIndex: number = 10;
-  private timeLineOverlapShift = 4;
-  // private circleRange: number = 3;
-  // private timeLineWidth: number = 1;
-  private timeLinesData: any = [];
-  private statusChartData: any = [];
-  private categoryColors: any = [];
-  private currentRowCount: number = 0;
-  private selection: any = [];
-  private plotTitleHighMargin: number = 10;
-  private plotTitleLowMargin: number = 5;
-  private controlsTopShift: number = -4;
-  private headerHiddenShift: number = -10;
-  private tables = {};
-  private isTablesLoaded: number = 0;
-  private tooltipOffset: number = 10;
-  private globalMarginTop: number = 15;
-  private globalMarginBottom: number = 0;
-  private visibleIndexes: number[];
   private marker = this.string('marker', 'ring', {choices: ['circle', 'rect', 'ring', 'diamond']});
   private markerSize = this.int('markerSize', 6);
   private lineWidth = this.int('lineWidth', 2);
   private markerPosition = this.string('markerPosition', 'main line',
       {choices: ['main line', 'above main line', 'scatter']});
-  private selectionColor = DG.Color.toRgb(DG.Color.selectedRows);
+
+  private echart: echarts.EChartsType;
+  // use 'any' type, because of missing echarts.ECharts type
+  private echarts: any = echarts;
+  // commented and use 'any' because of missing some members in echarts.EChartsOption
+  // private echartOptions: echarts.EChartsOption;
+  private echartOptions: any;
+
+  private paramA : string = this.string('paramA', 'string inside');
+
+  private timeLineSeries: any;
+  private timeLineIndex: number = 11;
+  private statusChartIndex: number = 10;
+  private timeLineOverlapShift = 4;
+  private timeLinesData: any = [];
+
+  private categoryColors: DG.Color = [];
+  private plotTitleHighMargin: number = 10;
+  private plotTitleLowMargin: number = 5;
+  private controlsTopShift: number = -4;
+  private headerHiddenShift: number = -10;
+  private tooltipOffset: number = 10;
+  private globalMarginTop: number = 15;
+  private globalMarginBottom: number = 0;
+  private selectionColor : DG.Color = DG.Color.toRgb(DG.Color.selectedRows);
   private categoryLength : number = 9;
-  private isEchartHandlers : boolean = false;
   private paramOptions : string = this.string('paramOptions', 'none22');
   private mode : string = 'none'; // 'brushSelected'
+
+  typeComboElements : HTMLElement[] = [];
+  showHideElements : HTMLElement[] = [];
+  closeElements : HTMLElement[] = [];
+  plots = [];
+  box: DOMRect;
+  visiblePlotsCount: number;
+  initTimeLine = initTimeLine;
+  visibleIndexes: number[];
+  tables = {};
+  isTablesLoaded: number = 0;
+  isEchartHandlers : boolean = false;
+  selectionIndexes: number[] = [];
+
   private options = {
     series: [
       {
@@ -134,6 +139,8 @@ export class MultiPlotViewer extends DG.JsViewer {
 
   constructor() {
     super();
+    const a = this.echarts;
+    const b = echarts;
     console.log('------------------------------------- MULTIPLOT ------------------------------');
     console.log('this.root: ', this.root);
     console.log('ctor paramA', this.paramA);
@@ -144,15 +151,15 @@ export class MultiPlotViewer extends DG.JsViewer {
     this.init();
 
     this.box = this.root.getBoundingClientRect();
-    ui.onSizeChanged(this.root).subscribe((e) => {
-      if (!this.echartOptions) return 0;
-      this.updateOptionsPositions();
-      if (this.echart) {
-        this.updatePlots();
-        this.render();
-        this.echart.resize();
+    ui.onSizeChanged(this.root).subscribe(((this2) => (e) => {
+      if (!this2.echartOptions) return 0;
+      this2.updateOptionsPositions();
+      if (this2.echart) {
+        this2.updatePlots();
+        this2.render();
+        this2.echart.resize();
       }
-    });
+    })(this));
   }
 
   init(): void {
@@ -310,7 +317,7 @@ export class MultiPlotViewer extends DG.JsViewer {
 
   // output: filled echart options array only for height and position
   updateOptionsPositions(): void {
-    this.box = this.root ? this.root.getBoundingClientRect() : {height: 300};
+    this.box = this.root.getBoundingClientRect();
     const heightData = this.parseHeight(this.box.height - 30);
     let visibleIndex = 0;
     for (let i = 0; i < this.plots.length; i++) {
@@ -393,7 +400,7 @@ export class MultiPlotViewer extends DG.JsViewer {
       let currentSeries = {
         type: this.plots[i].series.type,
         show: this.plots[i].show,
-        large: 'true',
+        large: true,
         gridIndex: visibleIndex,
         // yAxis: {type: this.plots[i].yType || 'value'},
         xAxisIndex: visibleIndex,
@@ -453,9 +460,17 @@ export class MultiPlotViewer extends DG.JsViewer {
     this.echartOptions.xAxis[visibleIndex - 1].type = 'value';
   } // updatePlots
 
+  getBitByIndex32(b: DG.BitSet, index: number) {
+    const i = Math.floor(index / 32);
+    const j = index % 32;
+    const rez = !!(b[~~ (index / 32)] & (1 << (index & 31)));
+    // let rez = a[i] & (Math.pow(2, j));
+    return rez;
+  }
+
   // create function to use as EChart callback with Datagrok mixins
   // get callback function to define color of marker
-  getItemStyleColorFunc(customColorFunc: any, plot: any) : any {
+  getItemStyleColorFuncOld(customColorFunc: any, plot: any) : any {
     const defaultColor = this.categoryColors[0];
     const selectionColor = this.categoryColors[1];
     console.warn('getItemStyleFunc: ', defaultColor, selectionColor);
@@ -465,6 +480,28 @@ export class MultiPlotViewer extends DG.JsViewer {
         return selectionColor;
       }
       return customColor !== 'defaultColor' ? customColor : defaultColor;
+    }
+    return f;
+  }
+
+  // create function to use as EChart callback with Datagrok mixins
+  // get callback function to define color of marker
+  getItemStyleColorFunc(visualMap: any, plot: any) : any {
+    const defaultColor = this.categoryColors[0];
+    const selectionColor = this.categoryColors[1];
+    const min = visualMap.pieces[0].min;
+    const max = visualMap.pieces[0].max;
+    const vMapColor = visualMap.pieces[0].color;
+    function customColorFunc(e) {
+      return e.data[2] > min && e.data[2] < max ? vMapColor : defaultColor;
+    }
+    console.warn('getItemStyleFunc: ', defaultColor, selectionColor);
+    function f(e) {
+      const customColor = customColorFunc(e);
+      if (plot.selectedIndexes.includes(e.dataIndex)) {
+        return selectionColor;
+      }
+      return customColor;
     }
     return f;
   }
@@ -603,20 +640,6 @@ export class MultiPlotViewer extends DG.JsViewer {
     }); // onContextMenu subscribe
   }
 
-  getStatusChartData(table: DG.DataFrame, indexes: Int32Array): any[] {
-    const rez = [];
-    for (let i = 0; i < table.rowCount; i++) {
-      const row = table.row(i);
-
-      const valTestName = row['LBTEST'];
-      const valStartTime = row['AESTDY'];
-
-      rez.push([valStartTime, valTestName]);
-    }
-    this.statusChartData = rez;
-    return rez;
-  }
-
   // build 2d array for series.data of echart
   getUniversalData(table: DG.DataFrame, fieldsNames: string[], indexes: Int32Array): any[] {
     const r = [];
@@ -681,8 +704,9 @@ export class MultiPlotViewer extends DG.JsViewer {
     // this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()));
     // @ts-ignore
     this.subs.push(this.dataFrame.selection.onChanged.subscribe((_) => {
+      /*
       //    return
-      this.selection = this.dataFrame.selection.getSelectedIndexes();
+      //this.selectionIndexes = this.dataFrame.selection.getSelectedIndexes();
       // console.log('selection event: ', this.selection);
       this.plots.map((plot) => {
         return;
@@ -706,6 +730,7 @@ export class MultiPlotViewer extends DG.JsViewer {
       // return;
       this.updatePlots();
       this.render();
+              */
     }));
     // @ts-ignore
     this.subs.push(this.dataFrame.filter.onChanged.subscribe((_) => {
@@ -818,7 +843,12 @@ export class MultiPlotViewer extends DG.JsViewer {
       const iPlot : number = this.visibleIndexes[params.componentIndex];
       const table : DG.DataFrame = this.tables[this.plots[iPlot].table];
       const subjBuf = this.plots[iPlot];
+
+      // this @ts-ignore because of echart library doesn't contain
+      // type describtion of DOM MouseEvent which is placed to params.event.event
+      // @ts-ignore
       const x = params.event.event.x + this.tooltipOffset;
+      // @ts-ignore
       const y = params.event.event.y + this.tooltipOffset;
       const xColName = this.plots[iPlot].x;
       const yColName = this.plots[iPlot].y;
@@ -836,6 +866,9 @@ export class MultiPlotViewer extends DG.JsViewer {
       if (params.componentType === 'series') {
         if (!this.isGroup(params.componentIndex)) {
           ui.tooltip.show(ui.divV(
+              // this @ts-ignore because of echart library uses custom type for
+              // ordinary array and doesn't allow to use .map method
+              // @ts-ignore
               params.data.map((e, i) => ui.div([colNames[i] + ': ' + e + ''])),
           ), x, y);
         } else {
