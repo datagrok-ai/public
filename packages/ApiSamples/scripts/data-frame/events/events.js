@@ -27,3 +27,8 @@ demog.onRowsRemoved.subscribe((_) => info('ddt-rows-removed'));
 demog.onDataChanged.subscribe((_) => info('ddt-data-changed'));
 demog.onFilterChanged.subscribe((_) => info('ddt-filter-changed'));
 demog.onSelectionChanged.subscribe((_) => info('ddt-selection-changed'));
+
+// analyzing event args
+demog.onMetadataChanged
+  .pipe(rxjs.filter( args => args.key === DG.TAGS.COLOR_CODING_CONDITIONAL))
+  .subscribe((args) => info(`${args.change} - ${args.key} - ${args.value}`));
