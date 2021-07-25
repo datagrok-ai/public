@@ -15,7 +15,7 @@ declare let DG: any;
 declare let ui: any;
 let api = <any>window;
 
-export class TypedEventArgs {
+export class TypedEventArgs<TData> {
   d: any;
   constructor(d: any) {
     this.d = d;
@@ -25,7 +25,7 @@ export class TypedEventArgs {
     return api.grok_TypedEventArgs_Get_Type(this.d);
   }
 
-  get data(): any {
+  get data(): TData {
     let data = api.grok_TypedEventArgs_Get_Data(this.d);
     return toJs(data);
   }

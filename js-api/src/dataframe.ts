@@ -11,7 +11,7 @@ import {
   CsvImportOptions,
   IndexPredicate, FLOAT_NULL, ViewerType
 } from "./const";
-import {__obs, observeStream} from "./events";
+import {__obs, EventData, MapChangeArgs, observeStream} from "./events";
 import {toDart, toJs} from "./wrappers";
 import {SIMILARITY_METRIC} from "./const";
 import {_getIterator, _toIterable, _toJson} from "./utils";
@@ -19,7 +19,7 @@ import {Observable}  from "rxjs";
 import {filter} from "rxjs/operators";
 import {Widget} from "./widgets";
 import {Grid} from "./grid";
-import {ScatterPlotViewer, Viewer} from "./viewer";
+import {ScatterPlotViewer, TypedEventArgs, Viewer} from "./viewer";
 
 declare let grok: any;
 declare let DG: any;
@@ -530,7 +530,7 @@ export class DataFrame {
   get onNameChanged(): Observable<any> { return this._event('ddt-table-name-changed'); }
 
   /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/events} */
-  get onMetadataChanged(): Observable<any> { return this._event('ddt-table-metadata-changed'); }
+  get onMetadataChanged(): Observable<EventData<MapChangeArgs<string, string>>> { return this._event('ddt-table-metadata-changed'); }
 
   /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/events} */
   get onColumnNameChanged(): Observable<any> { return this._event('ddt-table-column-name-changed'); }
