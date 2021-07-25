@@ -1,6 +1,26 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-07-25 Dev build 0.92.32
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.32`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* layout templates (update) 
+* add helpUrl example 
+* (Bug) Grid: switching global coloring on / off removes linear color-coding 
+* (Bug) Bar Chart: Unexpected bar color change after filtering 
+* ObservableMap: granular change notification (action, value) 
+* (Bug) Viewers: the legend colors are not synchronized 
+
+
 # 2021-07-25 Dev build 0.92.31
 
 ## Latest Docker Images
