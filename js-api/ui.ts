@@ -157,7 +157,7 @@ export function tabControl(pages: { [key: string]: any; } | null = null, vertica
  * @param {string} text
  * @param {string | ElementOptions | null} options
  * @returns {HTMLDivElement} */
-export function divText(text: string, options: string | ElementOptions | null = null): HTMLDivElement {
+export function divText(text: string, options: string | ElementOptions | any | null = null): HTMLDivElement {
   let e = element('div');
   e.innerText = text;
   _options(e, options);

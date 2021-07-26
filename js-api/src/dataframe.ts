@@ -192,7 +192,7 @@ const ColumnListProxy = new Proxy(class {
  */
 export class DataFrame {
   public readonly d: any;
-  public columns: any;
+  public columns: ColumnList & any;
   public rows: RowList;
   public filter: BitSet;
   public temp: any;
@@ -630,12 +630,21 @@ export class Row {
         return true;
       },
       get(target: any, name) {
-        if (target.hasOwnProperty(name))
+        if (name == 'cells' || target.hasOwnProperty(name))
           return target[<any>name];
         return target.table.get(name, target.idx);
       }
     });
   }
+
+  // /** An iterator over all values in this column. */
+  // * values() {
+  //   for (let i = 0; i < this.length; i++) {
+  //     yield this.get(i);
+  //   }
+  // }
+
+  get cells(): Iterable<Cell> { return _toIterable(api.grok_Row_Get_Cells(this.table.d, this.idx)); }
 
   /** Returns this row's value for the specified column
    * @param {string} columnName
