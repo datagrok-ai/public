@@ -39,6 +39,80 @@ let options = {
     ]
 }
 
+let options2 = {
+  series: [
+    {
+      table: 'ae__2__lb__2_',
+      title: 'title10',
+      type: 'scatter',
+      x: 'LBDY',
+      y: ['LBTEST', 'AEENDY'],
+      yType: 'category',
+      markerShape: 'square',
+      height: '1flex',
+      show: 1,
+      visualMap: {
+        type: 'piecewise',
+        pieces: [
+          {min: 20, max: 50, color: ['red']},
+        ],
+        dimension: 2,
+      },
+    },
+
+    // timeLines
+    {
+      table: 'ae__2__lb__2_',
+      title: 'title11',
+      type: 'timeLine',
+      x: 'LBTEST',
+      y: ['AESTDY', 'AEENDY'],
+      yType: 'category',
+      color: 'red',
+      markerShape: 'square',
+      height: '2flex',
+      show: 1,
+    },
+
+    {
+      table: 'ae__2__lb__2_',
+      title: 'title2',
+      type: 'scatter',
+      x: 'AESTDY',
+      y: 'LBSTRESN',
+      yType: 'value',
+      color: 'red',
+      markerShape: 'square',
+      height: '20%',
+      show: 1,
+      visualMap: {
+        type: 'continuous',
+        min: 0,
+        max: 100,
+        inRange: {
+          color: ['#2F93C8', '#AEC48F', 'blue', 'red'],
+          symbolSize: [3, 10],
+        },
+        dimension: 0,
+        show: false,
+      },
+    },
+
+    /*  {
+      table: 'ae__2__lb__2_',
+      title: 'title1',
+      type: 'timeLine',
+      x: 'AETERM',
+      y: ['AESTDY', 'LBDY'],
+      yType: 'category',
+      color: 'red',
+      markerShape: 'square',
+      height: '2flex',
+      show: 1,
+    },*/
+  ],
+}
+
 async function func1() {
     let tables = grok.shell.tables;
     for (table of tables) {
