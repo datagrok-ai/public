@@ -49,6 +49,7 @@ export class MultiPlotViewer extends DG.JsViewer {
   private categoryLength : number = 9;
   private paramOptions : string = this.string('paramOptions', 'none22');
   private mode : string = 'none'; // 'brushSelected'
+  private options: {series?: any[]};
 
   typeComboElements : HTMLElement[] = [];
   showHideElements : HTMLElement[] = [];
@@ -637,7 +638,6 @@ export class MultiPlotViewer extends DG.JsViewer {
 
     // this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
     // this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()));
-    // @ts-ignore
     this.subs.push(this.dataFrame.selection.onChanged.subscribe((_) => {
       /*
       //    return
@@ -667,7 +667,6 @@ export class MultiPlotViewer extends DG.JsViewer {
       this.render();
               */
     }));
-    // @ts-ignore
     this.subs.push(this.dataFrame.filter.onChanged.subscribe((_) => {
       this.updateFilter();
       this.render();
@@ -779,12 +778,8 @@ export class MultiPlotViewer extends DG.JsViewer {
       const table : DG.DataFrame = this.tables[this.plots[iPlot].table];
       const subjBuf = this.plots[iPlot];
 
-      // this @ts-ignore because of echart library doesn't contain
-      // type describtion of DOM MouseEvent which is placed to params.event.event
-      // @ts-ignore
-      const x = params.event.event.x + this.tooltipOffset;
-      // @ts-ignore
-      const y = params.event.event.y + this.tooltipOffset;
+      const x = (params.event.event as MouseEvent).x + this.tooltipOffset;
+      const y = (params.event.event as MouseEvent).y + this.tooltipOffset;
       const xColName = this.plots[iPlot].x;
       const yColName = this.plots[iPlot].y;
       const colNames = [xColName, yColName];
@@ -801,10 +796,7 @@ export class MultiPlotViewer extends DG.JsViewer {
       if (params.componentType === 'series') {
         if (!this.isGroup(params.componentIndex)) {
           ui.tooltip.show(ui.divV(
-              // this @ts-ignore because of echart library uses custom type for
-              // ordinary array and doesn't allow to use .map method
-              // @ts-ignore
-              params.data.map((e, i) => ui.div([colNames[i] + ': ' + e + ''])),
+              (params.data as any[]).map((e, i) => ui.div([colNames[i] + ': ' + e + ''])),
           ), x, y);
         } else {
           ui.tooltip.showRowGroup(table, (i) => {
