@@ -334,6 +334,11 @@ public class CustomDriverManager {
         return (getConnection(url, info, driverClassName));
     }
 
+    public static void printDriverNames() {
+        for(Driver aDriver : Collections.list(DriverManager.getDrivers())) {
+            System.out.println(aDriver.getClass().getName());
+        }
+    }
 
     //  Worker method called by the public getConnection() methods.
     public static Connection getConnection(

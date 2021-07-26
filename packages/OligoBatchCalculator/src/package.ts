@@ -235,7 +235,7 @@ export function OligoBatchCalculatorApp() {
     const coefficient = (units.value == 'mg' || units.value == 'µmole') ? 1000 : 1;
 
     table = DG.DataFrame.fromColumns([
-      DG.Column.fromList('int', 'Item #', Array(...Array(cleanSequences.length + 1).keys()).slice(1)),
+      DG.Column.fromList('int', 'Item', Array(...Array(cleanSequences.length + 1).keys()).slice(1)),
       DG.Column.fromList('string', 'Sequence', dirtySequences),
       DG.Column.fromList('int', 'Length', normalizedSequences.map((s) => s.length / 2)),
       DG.Column.fromList('double', 'OD 260', od260),
@@ -253,7 +253,7 @@ export function OligoBatchCalculatorApp() {
 
     grid.onCellPrepare(function (gc) {
       if (gc.isTableCell && gc.gridColumn.name == 'Sequence') {
-        let arr = ui.divH([]);
+        let arr = ui.divH([], {style: {margin: '6px 0 0 6px'}});
         for (let i = 0; i < gc.cell.value.length; i++) {
           if (indicesOfWrongSymbols[gc.gridRow].includes(i)) {
             arr.append(ui.divText(gc.cell.value[i], {style: {color: "red"}}));
@@ -267,7 +267,7 @@ export function OligoBatchCalculatorApp() {
     tableDiv.append(grid.root);
     if (indicesOfWrongSymbols.some((e) => e.length > 0))
       removeUnrecognizedSymbolsButtonDiv.append(
-        ui.button('REMOVE UNRECOGNIZED SYMBOLS', () => {
+        ui.button('REMOVE ERRORS', () => {
           inputSequenceField.value = cleanSequences.join('\n');
           updateTable(cleanSequences.join('\n'));
         })

@@ -1,3 +1,4 @@
+//tags: Func
 // Pre-call and post-call actions
 grok.functions.onBeforeRunAction.subscribe((_) => grok.shell.info('Runs before a call'));
 grok.functions.onAfterRunAction.subscribe((_) => grok.shell.info('Runs after a call'));

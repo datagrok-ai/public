@@ -28,7 +28,7 @@ export const helpUrls = {
 
 export const tags = {
   DataFrame: ['construction', 'modification', 'events'],
-  Column: ['creation'],
+  Column: ['construction', 'modification', 'access'],
 };
 
 export const templates = {
@@ -73,13 +73,10 @@ await grok.dapi.permissions.grant(entity, group, canEdit);
 console.log(await grok.dapi.permissions.get(entity));
 await grok.dapi.permissions.revoke(group, entity);`,
   DataFrame: (ent: DG.DataFrame) =>
-`
-DataFrame snippet
-`,
+`const df = grok.shell.table("${ent.name}");`,
   Column: (ent: DG.Column) =>
-`
-Column snippet
-`,
+`const df = grok.shell.table("${ent.dataFrame.name}");
+const col = df.col("${ent.name}");`,
   Package: (ent: DG.Package) =>
 `// Find package functions
 const funcs = DG.Func.find({ package: "${ent.name}" });
@@ -110,6 +107,19 @@ const res = await grok.functions.call("${ent.nqName}", {});
 
 // Read a script
 grok.shell.info(script.script);`,
+  Func: (ent: DG.Func) =>
+`// Find a function by package, name, tags, or returnType
+const f = DG.Func.find({ name: "${ent.name}" })[0];
+
+// Work with parameters
+const paramDefaults = { num: 1, string: 'a', bool: true };
+const params = f.inputs.reduce((obj, p) => {
+  obj[p.name] = p.defaultValue ?? paramDefaults[p.propertyType];
+  return obj;
+}, {});
+
+// Call a function
+const res = await f.apply(params);`,
   ViewLayout: (ent: DG.ViewLayout) =>
 `// Apply to the original table
 const layout = await grok.dapi.layouts.find("${ent.id}");

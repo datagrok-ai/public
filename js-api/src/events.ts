@@ -195,7 +195,7 @@ export class StreamSubscription {
 
 /** Event arguments. {@see args} contains event details.
  *  Sample: {@link https://public.datagrok.ai/js/samples/events/global-events}*/
-export class EventData {
+export class EventData<TArgs = any> {
   public d: any;
 
   constructor(d: any) {
@@ -220,7 +220,7 @@ export class EventData {
   }
 
   /** Event details. */
-  get args(): { [index: string]: any } {
+  get args(): { [index: string]: TArgs } {
     let x = api.grok_EventData_Get_Args(this.d);
     let result: { [index: string]: any } = {};
     for (const property in x)
@@ -264,9 +264,15 @@ export class EventBus {
     let subject = this._getSubject(type);
     subject.next(data);
   }
-
 }
 
 export function _sub(d: any): StreamSubscription {
   return new StreamSubscription(d);
+}
+
+export interface MapChangeArgs<K, V> {
+  sender: any;
+  change: string;
+  key: K;
+  value: V;
 }

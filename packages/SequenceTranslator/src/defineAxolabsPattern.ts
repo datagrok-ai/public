@@ -4,16 +4,10 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 // @ts-ignore
 import * as svg from 'save-svg-as-png';
+import $ from "cash-dom";
 
 import {drawAxolabsPattern} from "./drawAxolabsPattern";
 import {axolabsMap} from "./axolabsMap";
-/*
-SS - sense strand of DNA;
-AS - antisense strand of DNA;
-base - indicates how to translate input nucleotide;
-PTO - indicates whether oligonucleotide is phosphorothioated (ps linkage);
-SS/AS Modification - sections of dialog for changing base and PTO statuses of one nucleotide at once: for SS or for AS;
-*/
 
 const baseChoices: string[] = Object.keys(axolabsMap);
 const defaultBase: string = baseChoices[0];
@@ -91,14 +85,13 @@ function addColumnWithTranslatedSequences(tableName: string, columnName: string,
 
 export function defineAxolabsPattern() {
 
+  let maximalSsLength = defaultSequenceLength;
+  let maximalAsLength = defaultSequenceLength;
+
   function updateAsModification() {
     asModificationItems.innerHTML = '';
-    asPtoLinkages = (asLength.value > asBases.length) ?
-      asPtoLinkages.concat(Array(asLength.value - asBases.length).fill(fullyPto)) :
-      asPtoLinkages.slice(asBases.length - asLength.value);
-    asBases = (asLength.value > asBases.length) ?
-      asBases.concat(Array(asLength.value - asBases.length).fill(sequenceBase)) :
-      asBases.slice(asBases.length - asLength.value);
+    asPtoLinkages = asPtoLinkages.concat(Array(maximalAsLength - asBases.length).fill(fullyPto));
+    asBases = asBases.concat(Array(maximalAsLength - asBases.length).fill(sequenceBase));
     let nucleotideCounter = 0;
     for (let i = 0; i < asLength.value; i++) {
       asPtoLinkages[i] = ui.boolInput('', asPtoLinkages[i].value, () => {
@@ -128,12 +121,8 @@ export function defineAxolabsPattern() {
 
   function updateSsModification() {
     ssModificationItems.innerHTML = '';
-    ssPtoLinkages = (ssLength.value > ssBases.length) ?
-      ssPtoLinkages.concat(Array(ssLength.value - ssBases.length).fill(fullyPto)) :
-      ssPtoLinkages.slice(ssBases.length - ssLength.value);
-    ssBases = (ssLength.value > ssBases.length) ?
-      ssBases.concat(Array(ssLength.value - ssBases.length).fill(sequenceBase)) :
-      ssBases.slice(ssBases.length - ssLength.value);
+    ssPtoLinkages = ssPtoLinkages.concat(Array(maximalSsLength - ssBases.length).fill(fullyPto));
+    ssBases = ssBases.concat(Array(maximalSsLength - ssBases.length).fill(sequenceBase));
     let nucleotideCounter = 0;
     for (let i = 0; i < ssLength.value; i++) {
       ssPtoLinkages[i] = ui.boolInput('', ssPtoLinkages[i].value, () => {
@@ -163,6 +152,10 @@ export function defineAxolabsPattern() {
 
   function updateUiForNewSequenceLength() {
     if (ssLength.value < maximalValidSequenceLength && asLength.value < maximalValidSequenceLength) {
+      if (ssLength.value > maximalSsLength)
+        maximalSsLength = ssLength.value;
+      if (asLength.value > maximalAsLength)
+        maximalAsLength = asLength.value;
       updateSsModification();
       updateAsModification();
       updateSvgScheme();
@@ -229,12 +222,29 @@ export function defineAxolabsPattern() {
     );
   }
 
+  function detectDefaultBasis(array: string[]) {
+    let modeMap: {[index: string]: number} = {};
+    let maxEl = array[0], maxCount = 1;
+    for(let i = 0; i < array.length; i++) {
+      let el = array[i];
+      if (modeMap[el] == null)
+        modeMap[el] = 1;
+      else
+        modeMap[el]++;
+      if (modeMap[el] > maxCount) {
+        maxEl = el;
+        maxCount = modeMap[el];
+      }
+    }
+    return maxEl;
+  }
+
   async function parsePatternAndUpdateUi(newName: string) {
+    let pi = DG.TaskBarProgressIndicator.create('Loading pattern...');
     await grok.dapi.userDataStorage.get(userStorageKey, false).then((entities) => {
       let obj = JSON.parse(entities[newName]);
-      ssLength.value = obj['ssBases'].length;
-      asLength.value = obj['asBases'].length;
-      createAsStrand.value = (asLength.value > 0);
+      sequenceBase.value = detectDefaultBasis(obj['asBases'].concat(obj['ssBases']));
+      createAsStrand.value = (obj['asBases'].length > 0);
       saveAs.value = newName;
 
       ssBases = [];
@@ -255,16 +265,16 @@ export function defineAxolabsPattern() {
       for (let i = 1; i < obj['asPtoLinkages'].length; i++)
         asPtoLinkages.push(ui.boolInput('', obj['asPtoLinkages'][i]));
 
+      ssLength.value = obj['ssBases'].length;
+      asLength.value = obj['asBases'].length;
+
       ssThreeModification.value = obj['ssThreeModification'];
       ssFiveModification.value = obj['ssFiveModification'];
       asThreeModification.value = obj['asThreeModification'];
       asFiveModification.value = obj['asFiveModification'];
       comment.value = obj['comment'];
-
-      updateSvgScheme();
-      updateAsModification();
-      updateSsModification();
     });
+    pi.close();
   }
 
   function checkWhetherAllValuesInColumnHaveTheSameLength(colName: string): boolean {
@@ -286,6 +296,7 @@ export function defineAxolabsPattern() {
           grok.shell.table(tables.value).columns.addNewInt('Sequences lengths in ' + colName).init((j: number) => col.get(j).length);
           grok.shell.info("Column with lengths added to '" + tables.value + "'");
           dialog.close();
+          grok.shell.v = grok.shell.getTableView(tables.value);
         })
         .show();
     }
@@ -418,23 +429,21 @@ export function defineAxolabsPattern() {
         .onOK(() => {
           let selection = grok.shell.table(tables.value).selection;
           selection.init((i) => duplicates.indexOf(col.get(i)) > -1);
-          for (let tv of grok.shell.tableViews)
-            if (tv.name == tables.value)
-              grok.shell.v = tv;
+          grok.shell.v = grok.shell.getTableView(tables.value);
           grok.shell.info("Rows are selected in table '" + tables.value + "'");
         })
         .show();
     }
   }
 
-  let tables = ui.choiceInput('Tables', '', grok.shell.tableNames, () => {
-    inputSsColumn = ui.choiceInput('SS Column', '', grok.shell.table(tables.value).columns.names(), (colName: string) => validateSsColumn(colName));
+  let tables = ui.tableInput('Tables', grok.shell.tables[0], grok.shell.tables, () => {
+    inputSsColumn = ui.choiceInput('SS Column', '', tables.value.columns.names(), (colName: string) => validateSsColumn(colName));
     inputSsColumnDiv.innerHTML = '';
     inputSsColumnDiv.append(inputSsColumn.root);
-    inputAsColumn = ui.choiceInput('AS Column', '', grok.shell.table(tables.value).columns.names(), (colName: string) => validateAsColumn(colName));
+    inputAsColumn = ui.choiceInput('AS Column', '', tables.value.columns.names(), (colName: string) => validateAsColumn(colName));
     inputAsColumnDiv.innerHTML = '';
     inputAsColumnDiv.append(inputAsColumn.root);
-    inputIdColumn = ui.choiceInput('ID Column', '', grok.shell.table(tables.value).columns.names(), (colName: string) => validateIdsColumn(colName));
+    inputIdColumn = ui.choiceInput('ID Column', '', tables.value.columns.names(), (colName: string) => validateIdsColumn(colName));
     inputIdColumnDiv.innerHTML = '';
     inputIdColumnDiv.append(inputIdColumn.root);
   });
@@ -542,11 +551,12 @@ export function defineAxolabsPattern() {
       addColumnWithTranslatedSequences(tables.value, inputSsColumn.value, ssBases, ssPtoLinkages, ssFiveModification, ssThreeModification, firstSsPto.value);
       if (createAsStrand.value)
         addColumnWithTranslatedSequences(tables.value, inputAsColumn.value, asBases, asPtoLinkages, asThreeModification, asFiveModification, firstAsPto.value);
+      grok.shell.v = grok.shell.getTableView(tables.value);
       grok.shell.info(((createAsStrand.value) ? "Columns were" : "Column was") + " added to table '" + tables.value + "'");
     }
   });
 
-  let ssInputExample = ui.textInput('SS', generateExample(ssLength.value, sequenceBase.value),() => {
+  let ssInputExample = ui.textInput('Sense Strand', generateExample(ssLength.value, sequenceBase.value),() => {
     ssOutputExample.value = translateSequence(ssInputExample.value, ssBases, ssPtoLinkages, ssFiveModification, ssThreeModification, firstSsPto.value)
   });
   let ssOutputExample = ui.textInput(' ', translateSequence(ssInputExample.value, ssBases, ssPtoLinkages, ssThreeModification, ssFiveModification, firstSsPto.value));
@@ -564,7 +574,7 @@ export function defineAxolabsPattern() {
     ], 'ui-input-options')
   );
 
-  let asInputExample = ui.textInput('AS', generateExample(asLength.value, sequenceBase.value),() => {
+  let asInputExample = ui.textInput('Antisense Strand', generateExample(asLength.value, sequenceBase.value),() => {
     asOutputExample.value = translateSequence(asInputExample.value, asBases, asPtoLinkages, asThreeModification, asFiveModification, firstSsPto.value);
   });
   let asOutputExample = ui.textInput(' ', translateSequence(asInputExample.value, asBases, asPtoLinkages, asThreeModification, asFiveModification, firstSsPto.value));
@@ -586,12 +596,34 @@ export function defineAxolabsPattern() {
 
   updateUiForNewSequenceLength();
 
-  let patternDesignSection = ui.panel([
+  let exampleSection = ui.div([
+    ui.h1('Example'),
+    ssInputExample.root,
+    ssOutputExample.root,
+    asExampleDiv
+  ], 'ui-form');
+
+  let inputsSection = ui.div([
+    ui.h1('Inputs'),
+    ui.divH([
+      tables.root,
+      inputSsColumnDiv
+    ]),
+    ui.divH([
+      inputAsColumnDiv,
+      inputIdColumnDiv
+    ]),
+    ui.buttonsInput([
+      convertSequenceButton
+    ])
+  ], 'ui-form');
+
+  let mainSection = ui.panel([
     ui.block([
       svgDiv
     ], {style: {overflowX: 'scroll'}}),
     ui.button('Download', () => svg.saveSvgAsPng(document.getElementById('mySvg'), saveAs.value)),
-    ui.divH([
+    ui.div([
       ui.div([
         ui.divH([
           ui.h1('Pattern'),
@@ -602,63 +634,53 @@ export function defineAxolabsPattern() {
             })
           ], {style: {padding: '2px'}})
         ]),
-        ssLength.root,
-        asLengthDiv,
-        sequenceBase.root,
-        fullyPto.root,
-        firstSsPto.root,
-        firstAsPtoDiv,
-        createAsStrand.root,
-        ssFiveModification.root,
-        ssThreeModification.root,
-        asModificationDiv,
-        comment.root,
-        loadPatternDiv,
-        saveAs.root,
-        ui.buttonsInput([
-          savePatternButton
-        ])
-      ], 'ui-form'),
-      ui.div([
-        ui.div([
-          ui.h1('Inputs'),
-          tables.root,
-          inputSsColumnDiv,
-          inputAsColumnDiv,
-          inputIdColumnDiv,
-          ui.buttonsInput([
-            convertSequenceButton
-          ])
-        ], 'ui-form'),
-        ui.div([
-          ui.h1('Example'),
-          ssInputExample.root,
-          ssOutputExample.root,
-          asExampleDiv
+        ui.divH([
+          ui.div([
+            ssLength.root,
+            asLengthDiv,
+            sequenceBase.root,
+            comment.root,
+            loadPatternDiv,
+            saveAs.root,
+            ui.buttonsInput([
+              savePatternButton
+            ])
+          ], 'ui-form'),
+          ui.div([
+            createAsStrand.root,
+            fullyPto.root,
+            firstSsPto.root,
+            firstAsPtoDiv,
+            ssFiveModification.root,
+            ssThreeModification.root,
+            asModificationDiv,
+          ], 'ui-form')
         ], 'ui-form')
-      ])
+      ], 'ui-form'),
+      inputsSection,
+      exampleSection
     ], {style: {flexWrap: 'wrap'}})
   ]);
 
   let ssModificationSection = ui.panel([
-      ui.h1('Sense Strand'),
-      ui.divH([
-        ui.div([ui.divText('#')], {style: {width: '20px'}})!,
-        ui.block75([ui.divText('Modification')])!,
-        ui.div([ui.divText('PTO')], {style: {paddingRight: '8px'}})!
-      ]),
-      ssModificationItems
-    ])!;
+    ui.h1('Sense Strand'),
+    ui.divH([
+      ui.div([ui.divText('#')], {style: {width: '20px'}})!,
+      ui.block75([ui.divText('Modification')])!,
+      ui.div([ui.divText('PTO')], {style: {paddingRight: '8px'}})!
+    ]),
+    ssModificationItems
+  ])!;
 
   let asModificationSection = ui.panel([
-      ui.h1('Antisense Strand'),
-      ui.divH([
-        ui.div([ui.divText('#')], {style: {width: '20px'}})!,
-        ui.block75([ui.divText('Modification')])!,
-        ui.div([ui.divText('PTO')], {style: {paddingRight: '8px'}})!
-      ]),
-      asModificationItems
-    ])!;
+    ui.h1('Antisense Strand'),
+    ui.divH([
+      ui.div([ui.divText('#')], {style: {width: '20px'}})!,
+      ui.block75([ui.divText('Modification')])!,
+      ui.div([ui.divText('PTO')], {style: {paddingRight: '8px'}})!
+    ]),
+    asModificationItems
+  ])!;
 
   let info = ui.info(
     [
@@ -675,13 +697,13 @@ export function defineAxolabsPattern() {
   return ui.splitH([
     ui.div([
       appAxolabsDescription,
-      patternDesignSection!
+      mainSection!
     ])!,
     ui.box(
       ui.divH([
         ssModificationSection,
         asModificationSection
-      ]), {style: {maxWidth: '400px'}}
+      ]), {style: {maxWidth: '360px'}}
     )
   ]);
 }
