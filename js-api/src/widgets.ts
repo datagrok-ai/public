@@ -2,7 +2,7 @@ import {toDart, toJs} from "./wrappers";
 import {__obs, _sub, observeStream, StreamSubscription} from "./events";
 import {Observable, Subscription} from "rxjs";
 import {Func, Property} from "./entities";
-import {DataFrame} from "./dataframe";
+import {Cell, Column, DataFrame} from "./dataframe";
 import {ColorType, Type} from "./const";
 import * as React from "react";
 import * as rxjs from "rxjs";
@@ -884,6 +884,20 @@ export class TagElement {
 
 /** Color-related routines. */
 export class Color {
+
+  static getCellColor(cell: Cell): number {
+    return api.grok_Color_FromCell(cell.d);
+  }
+
+  static getCellColorHtml(cell: Cell): string {
+    return Color.toHtml(Color.getCellColor(cell));
+  }
+
+  static getCategoryColor(column: Column, category: any): number {
+    return api.grok_Color_FromCategory(column.d, category);
+  }
+
+  static toHtml(color: number) { return api.grok_Color_ToHtml(color); }
 
   static r(c: number): number {
     return (c >> 16) & 0xFF;
