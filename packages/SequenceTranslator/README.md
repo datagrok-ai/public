@@ -2,10 +2,14 @@
 
 SequenceTranslator is a [package](https://datagrok.ai/help/develop/develop#packages) for
 the [Datagrok](https://datagrok.ai) platform, used to translate [oligonucleotide](https://en.wikipedia.org/wiki/Oligonucleotide) 
-sequences between [different representations]().
+sequences between [different representations](https://github.com/datagrok-ai/public/tree/master/packages/SequenceTranslator#sequence-representations).
 
-Oligonucleotides are characterized by the sequence of [nucleotide modifications]() that make up the entire molecule. 
+Oligonucleotides are characterized by the sequence of [nucleotide modifications](https://github.com/datagrok-ai/public/tree/master/packages/SequenceTranslator#axolabs-nucleotide-modifications) that make up the entire molecule. 
 The length of the oligonucleotide is usually 13-25 nucleotides long (denoted by "-mer").
+
+Oligonucleotides are chemically synthesized. Chain assembly proceeds in the 3' to 5' direction by following a routine
+procedure referred to as a "synthetic cycle".
+Completion of a single synthetic cycle results in the addition of one nucleotide residue to the growing chain.
 
 # Use Cases
 | Name |  Steps  |
@@ -16,6 +20,12 @@ The length of the oligonucleotide is usually 13-25 nucleotides long (denoted by 
 | Translate sequences using existing Axolabs pattern | 1. Go to `AXOLABS` tab <br/>2. Select your pattern in `Load Pattern` field <br/>3. Do steps #2-5 from previous use case |
 
 # Sequence Representations 
+
+In the modification section on the right side of the screen you can select modification for each base in your input sequence
+and check if PTO after the base is required.
+
+Representations are splitted into categories by synthesizer's sequence format(BioSpring/Axolabs/MerMade) and type of molecule (Gapmers / siRNA). 
+
 | Name | Example | Regular expression |
 |---|---|---|
 | DNA nucleotides | `AGGTCTTCATGACTTCGGCC` | `^[ATGC]{10,}$` |
@@ -26,8 +36,8 @@ The length of the oligonucleotide is usually 13-25 nucleotides long (denoted by 
 | Axolabs / siRNA | `usUfscaaCfuGfcUfuAfcGfucususu` | `^[fsACGUacgu]{20,}$` |
 | GCRS | `mUpsfUpsmCmAmAfCmUfGmCfUmUfAmCfGmUmCmUpsmUpsmU` | `^[fmpsACGU]{30,}$` |
 | OP100 | `ug*aa*uu*ag*ag*ga*ga*cg*ga*cac` | `^[acgu*]{10,}$` |
-| MM12 | `kgKHKGLHIELGJFHKiehK` | `^[IiJjKkLlEeFfGgHhQq]{10,}$` |
-| ABI | `58877TTTACCACGT56788` | `^[5678ATGC]{10,}$` |
+| MerMade (MM) | `kgKHKGLHIELGJFHKiehK` | `^[IiJjKkLlEeFfGgHhQq]{10,}$` |
+| Applied Biosystems Inc. (ABI) | `58877TTTACCACGT56788` | `^[5678ATGC]{10,}$` |
 
 # Axolabs Nucleotide Modifications
 | Name | Description | Symbols |
@@ -52,74 +62,12 @@ The length of the oligonucleotide is usually 13-25 nucleotides long (denoted by 
 | `InvAbasic(o)` | Inverted abasic capped (overhang) | `(invabasic)` |
 | `2'-OMe-U(o)` | Nucleotide Uridine with 2’O-Methyl protection (overhang) | `mU` |
 
+# App Glossary
+
 | Term |  Definition  |
 |---|---|
-| Pattern | Defines rules of translation. Contains: pattern name |
-| PTO | Indicates whether oligonucleotide is phosphorothioated (ps linkage) |
+| Pattern | Defines translation rules. Contains: pattern name, modifications and PTO linkages for both strands, and comment, displayed on image |
+| PTO linkage | Indicates whether oligonucleotide has phosphorothioated bond (ps linkage) after the base |
 | Sense strand (SS) | Contains the exact nucleotide sequence to the mRNA which encodes for a functional protein. Has the information that would be readable on the RNA, and that's called the coding side.
 |
 | Antisense strand (AS) | Non-coding DNA strand of a gene. A cell uses antisense DNA strand as a template for producing messenger RNA (mRNA) that directs the synthesis of a protein. |
-
-Oligonucleotides are chemically synthesized. Chain assembly proceeds in the 3' to 5' direction by following a routine 
-procedure referred to as a "synthetic cycle". 
-Completion of a single synthetic cycle results in the addition of one nucleotide residue to the growing chain.
-
-Uploaded the latest Sequences and Conversion  file , this includes for  information on 4 synthesizers that are listed 
-on ABI, OP100,MerMade tab .
-
-In th modification section on the right side of the screen you can select modification for each base in your input sequence
-and check if PTO after the base is required.
-
-Examples of supported converters:
-
-| CMO Codes |  Example of ASO Gapmers  |
-|---|---|
-| Raw | AGGTCTTCATGACTTCGGCC |
-| BioSpring | 6\*8\*8\*5\*7\*T\*T\*9\*A\*T\*G\*A\*9\*T\*T\*7\*8\*8\*7\*7 |
-| Axolabs | - |
-| GCRS | moeAnpsmoeGnpsmoeGnpsmoeUnpsmoe5mCnpsTpsTpsCpsApsTpsGpsApsCpsTpsTpsmoe5mCnpsmoeGnpsmoeGnpsmoe5mCnpsmoe5mC |
-
-| CMO Codes |  Example of 2'-OMe and 2'-F modified siRNA  |
-|---|---|
-| Raw | UUCAACUGCUUACGUCUUU |
-| BioSpring | 5\*1\*766354715274575\*5\*5 |
-| Axolabs | usUfscaaCfuGfcUfuAfcGfucususu |
-| GCRS | mUpsfUpsmCmAmAfCmUfGmCfUmUfAmCfGmUmCmUpsmUpsmU |
-
-| Function | Input | Output | 
-|---|---|---|
-| classicToBioSpring | TTGTCCAGATGACTTCGGCC | 5\*5\*8\*5\*7\*9\*A\*G\*A\*T\*G\*A\*9\*T\*T\*7\*8\*8\*7\*7 |
-| classicToGCRS | TTGTCCAGATGACTTCGGCC | moeUnpsmoeUnpsmoeGnpsmoeUnpsmoe5mCps5mCpsApsGpsApsTpsGpsAps5mCpsTpsTnpsmoe5mCnpsmoeGnpsmoeGnpsmoe5mCnpsmoe5mC | 
-| bioSpringToClassic | 5\*5\*8\*5\*7\*9\*A\*G\*A\*T\*G\*A\*9\*T\*T\*7\*8\*8\*7\*7 | TTGTCCAGATGACTTCGGCC |
-| bioSpringToGCRS | 5\*5\*8\*5\*7\*9\*A\*G\*A\*T\*G\*A\*9\*T\*T\*7\*8\*8\*7\*7 | moeUnpsmoeUnpsmoeGnpsmoeUnpsmoe5mCps5mCpsApsGpsApsTpsGpsAps5mCpsTpsTnpsmoe5mCnpsmoeGnpsmoeGnpsmoe5mCnpsmoe5mC |
-| GCRSToBioSpring | moeUnpsmoeUnpsmoeGnpsmoeUnpsmoe5mCps5mCpsApsGpsApsTpsGpsAps5mCpsTpsTnpsmoe5mCnpsmoeGnpsmoeGnpsmoe5mCnpsmoe5mC | 5\*5\*8\*5\*7\*9\*A\*G\*A\*T\*G\*A\*9\*T\*T\*7\*8\*8\*7\*7 |
-| GCRSToClassic | moeUnpsmoeUnpsmoeGnpsmoeUnpsmoe5mCps5mCpsApsGpsApsTpsGpsAps5mCpsTpsTnpsmoe5mCnpsmoeGnpsmoeGnpsmoe5mCnpsmoe5mC | TTGTCCAGATGACTTCGGCC | 
-
-Tables of codes accordance:
-
-| CMO Codes For ASO Gapmers | BioSpring Code | Axolabs Code | GCRS code |
-|---|---|---|---|
-| 2'MOE-5Me-rU | 5 | | moeT |
-| 2'MOE-rA     | 6 | | moeA |
-| 2'MOE-5Me-rC | 7 | | moe5mC |
-| 2'MOE-rG     | 8 | | moeG |
-| 5-Methyl-dC  | 9 | | 5mC |
-| ps linkage   | * | | ps |
-| dA           | A | | A |
-| dC           | C | | C |
-| dG           | G | | T |
-| dT           | T | | G |
-
-| CMO Codes For 2'-OMe and 2'-F modified siRNA  | BioSpring Code | Axolabs Code | GCRS code |
-|---|---|---|---|
-| 2'-fluoro-U | 1 | Uf | fU |
-| 2'-fluoro-A | 2 | Af | fA |
-| 2'-fluoro-C | 3 | Cf | fC |
-| 2'-fluoro-G | 4 | Gf | fG |
-| 2'OMe-rU    | 5 | u  | mU |
-| 2'OMe-rA    | 6 | a  | mA |
-| 2'OMe-rC    | 7 | c  | mC |
-| 2'OMe-rG    | 8 | g  | mG |
-| ps linkage  | * | s  | ps |
-
-# Representations / synthesizers
