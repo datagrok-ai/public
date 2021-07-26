@@ -63,80 +63,6 @@ export class MultiPlotViewer extends DG.JsViewer {
   isEchartHandlers : boolean = false;
   selectionIndexes: number[] = [];
 
-  private options = {
-    series: [
-      {
-        table: 'ae__2__lb__2_',
-        title: 'title10',
-        type: 'scatter',
-        x: 'LBDY',
-        y: ['LBTEST', 'AEENDY'],
-        yType: 'category',
-        markerShape: 'square',
-        height: '1flex',
-        show: 1,
-        visualMap: {
-          type: 'piecewise',
-          pieces: [
-            {min: 20, max: 50, color: ['red']},
-          ],
-          dimension: 2,
-        },
-      },
-
-      // timeLines
-      {
-        table: 'ae__2__lb__2_',
-        title: 'title11',
-        type: 'timeLine',
-        x: 'LBTEST',
-        y: ['AESTDY', 'AEENDY'],
-        yType: 'category',
-        color: 'red',
-        markerShape: 'square',
-        height: '2flex',
-        show: 1,
-      },
-
-      {
-        table: 'ae__2__lb__2_',
-        title: 'title2',
-        type: 'scatter',
-        x: 'AESTDY',
-        y: 'LBSTRESN',
-        yType: 'value',
-        color: 'red',
-        markerShape: 'square',
-        height: '20%',
-        show: 1,
-        visualMap: {
-          type: 'continuous',
-          min: 0,
-          max: 100,
-          inRange: {
-            color: ['#2F93C8', '#AEC48F', 'blue', 'red'],
-            symbolSize: [3, 10],
-          },
-          dimension: 0,
-          show: false,
-        },
-      },
-
-      /*  {
-        table: 'ae__2__lb__2_',
-        title: 'title1',
-        type: 'timeLine',
-        x: 'AETERM',
-        y: ['AESTDY', 'LBDY'],
-        yType: 'category',
-        color: 'red',
-        markerShape: 'square',
-        height: '2flex',
-        show: 1,
-      },*/
-    ],
-  }
-
   constructor() {
     super();
     const a = this.echarts;
@@ -411,19 +337,28 @@ export class MultiPlotViewer extends DG.JsViewer {
         selectedMode: 'multiple',
         xAxis: {},
         yAxis: {},
+        itemStyle: {},
       };
 
       if (plot.visualMap) {
-        const map = plot.visualMap;
-        if (map.type === 'piecewise') {
-          const min = map.pieces[0].min;
-          const max = map.pieces[0].max;
-          map.pieces.push({max: min, color: this.categoryColors[0]});
-          map.pieces.push({min: max, color: this.categoryColors[0]});
+        if (plot.visualMap.pieces) {
+          currentSeries.itemStyle = {
+            color: this.getItemStyleColorFunc(plot.visualMap, plot),
+          };
+        } else {
+          if (plot.visualMap) {
+            const map = plot.visualMap;
+            if (map.type === 'piecewise') {
+              const min = map.pieces[0].min;
+              const max = map.pieces[0].max;
+              map.pieces.push({max: min, color: this.categoryColors[0]});
+              map.pieces.push({min: max, color: this.categoryColors[0]});
+            }
+            map.seriesIndex = visibleIndex;
+            this.echartOptions.visualMap.push(map);
+            map.show = false;
+          }
         }
-        map.seriesIndex = visibleIndex;
-        this.echartOptions.visualMap.push(map);
-        map.show = false;
       }
 
       if (this.plots[i].type === 'timeLine') {
