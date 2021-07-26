@@ -1,6 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import $ from 'cash-dom';
 import {
   dfExts,
   entExtract,
@@ -13,12 +14,15 @@ import './styles.css';
 
 export const _package = new DG.Package();
 
-function getTagEditor(type: string): HTMLElement {
-  let t = DG.TagEditor.create();
-  for (let tag of tags[type]) {
-    t.addTag(tag);
-  }
-  return t.root;
+function getGroupInput(type: string): HTMLElement {
+  const items = tags[type];
+  const inp = ui.choiceInput('See snippets:', items.length ? items[0] : null, items, async (tag: string) => {
+    const snippets = await loadSnippets(type, tag);
+    const container = $('.dt-dev-pane-container > .dt-snippet-section')
+    container.empty();
+    container.append(formSnippetSection(snippets));
+  });
+  return inp.root;
 }
 
 function format(s): string {
@@ -26,20 +30,40 @@ function format(s): string {
   return s[0].toUpperCase() + s.slice(1);
 }
 
-async function loadSnippets(ent: any): Promise<DG.Script[]> {
-  const type = ent.constructor.name;
+async function loadSnippets(type: string, tag: string | null = null): Promise<DG.Script[]> {
   let tags = `#demo and #${type}`;
-  if (type === 'FileInfo' && dfExts.includes(ent.extension)) {
-    tags += 'and #dataframe';
-  }
+  if (tag) tags += `and #${tag}`;
   const snippets = (await grok.dapi.scripts.list({ filter: tags }));
-  return snippets.slice(0, 3);
+  return snippets;
+}
+
+function formSnippetSection(snippets: DG.Script[], count: number = 3): HTMLDivElement[] {
+  const snippetNames = snippets.map(s => ui.divText(format(s.friendlyName), { classes: 'd4-link-action' }));
+  snippetNames.forEach((el, idx) => el.addEventListener('click', () => {
+    let s = '';
+    let lines = snippets[idx].script.split(/\r\n|\r|\n/);
+    for (let line of lines) {
+      if (/^\/\/(name|tags|language|help-url):.+/.test(line)) continue;
+      s += line + '\n';
+    }
+    (<HTMLTextAreaElement>document.querySelector('.dt-dev-pane-container > .dt-textarea-box textarea')).value = s;
+  }));
+  if (snippetNames.length > count) {
+    const rest = snippetNames.splice(count);
+    const ellipsis = ui.iconFA('ellipsis-h', () => {
+      $(ellipsis.parentElement.parentElement).append(rest);
+      ellipsis.remove();
+    }, 'Show more examples');
+    snippetNames.push(ui.div(ellipsis));
+  }
+  return snippetNames;
 }
 
 function getViewerScript(viewer: DG.Viewer): string {
   let options = viewer.getOptions(false)['look'];
   delete options['#type'];
-  return `grok.shell.v.addViewer(DG.VIEWER.${viewerConst[viewer.type]}, ${JSON.stringify(options, null, 2)});`;
+  let script = `grok.shell.v.addViewer(DG.VIEWER.${viewerConst[viewer.type]}, ${JSON.stringify(options, null, 2)});`;
+  return `<pre><code>${script}</code></pre>`;
 }
 
 //tags: autostart
@@ -49,21 +73,24 @@ export function describeCurrentObj(): void {
     const type = ent.constructor.name;
 
     if (ent) {
-      const snippets = await loadSnippets(ent);
+      const snippets = await loadSnippets(type,
+        (type === 'FileInfo' && dfExts.includes(ent.extension)) ? 'dataframe'
+        : (type === 'DataFrame' || type === 'Column') ? tags[type][0] 
+        : null);
       const template = (type in templates) ? templates[type](ent) : '';
       if (snippets.length === 0 && !template) return;
 
       let links = helpUrls[type] || [];
       links = Object.keys(links).map(key => ui.link(`${type} ${key}`, links[key], `Open ${key} reference`));
 
-      const snippetNames = snippets.map(s => ui.divText(format(s.friendlyName), { classes: 'd4-link-action' }));
       let editor = ui.textInput('', template);
       (editor.input as HTMLInputElement).style.height = '200px';
       (editor.input as HTMLInputElement).style.overflow = 'hidden';
 
-      snippetNames.forEach((el, idx) => el.addEventListener('click', () => {
-        editor.value = snippets[idx].script;
-      }));
+      const playBtn = ui.button(ui.iconFA('play'), () => {
+        eval(`(async () => {\n${editor.value}\n})()`); // TODO: script approval
+      }, 'Run');
+      $(playBtn).addClass('dt-snippet-editor-icon dt-play-icon');
 
       const clipboardBtn = ui.button(ui.iconFA('copy'), () => {
         (editor.input as HTMLInputElement).select();
@@ -103,11 +130,11 @@ export function describeCurrentObj(): void {
       if (!devPane) devPane = acc.addPane('Dev', () => {
         return ui.divV([
           ui.divH([ui.divText(`${type} ${ent.name}:`), topEditorBtn, browserLogBtn], { style: { 'align-items': 'baseline' } }),
-          ...((type in tags) ? [getTagEditor(type)] : []),
+          ...((type in tags) ? [getGroupInput(type)] : []),
           ...links,
-          ...snippetNames,
-          ui.divV([clipboardBtn, editorBtn, resetBtn, editor.root], 'dt-textarea-box'),
-        ]);
+          ui.div(formSnippetSection(snippets), 'dt-snippet-section'),
+          ui.divV([playBtn, clipboardBtn, editorBtn, resetBtn, editor.root], 'dt-textarea-box'),
+        ], 'dt-dev-pane-container');
       });
     }
   });

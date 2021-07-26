@@ -1,6 +1,328 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-07-25 Dev build 0.92.32
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.32`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* layout templates (update) 
+* add helpUrl example 
+* (Bug) Grid: switching global coloring on / off removes linear color-coding 
+* (Bug) Bar Chart: Unexpected bar color change after filtering 
+* ObservableMap: granular change notification (action, value) 
+* (Bug) Viewers: the legend colors are not synchronized 
+
+
+# 2021-07-25 Dev build 0.92.31
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.31`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Ability to skip DF reading on server after Grok Connect request 
+
+
+# 2021-07-24 Dev build 0.92.30
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.30`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* MultiPlot: restore status chart (WIP)
+* DevTools package (WIP)
+* Ability to skip DF reading on server after Grok Connect request 
+
+
+# 2021-07-24 Dev build 0.92.29
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.29`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Ability to skip DF reading on server after Grok Connect request 
+
+
+# 2021-07-23 Dev build 0.92.28
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.28`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Ability to skip DF reading on server after Grok Connect request 
+
+
+# 2021-07-23 Dev build 0.92.27
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.27`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* DevTools package (WIP)
+* Sequence Translator: README documentation (WIP)
+* Ability to skip DF reading on server after Grok Connect request 
+
+
+# 2021-07-23 Dev build 0.92.26
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.26`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Ability to skip DF reading on server after Grok Connect request 
+* DevTools package (WIP)
+
+
+# 2021-07-23 Dev build 0.92.25
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.25`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* (Bug) Grok connect: "No suitable driver found for..." 
+* Updated public token 
+* datagrok-tools: allow skipping questions in `grok config` 
+* JS API: Added util function getUniqueName() 
+* Ability to skip DF reading on server after Grok Connect request 
+* (Bug) JSViewer: TypeError: v.setOptions is not a function 
+* MultiPlot: move scripts according to the structure convention (WIP)
+
+
+# 2021-07-23 Dev build 0.92.24
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.24`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* (Bug) JSViewer: TypeError: v.setOptions is not a function 
+* JS API: tableInput 
+* Custom ML: add hyperparameters 
+* Intersection types for props (ObjectPropertyBag & any) 
+* Add sourcemap files to .gitignore 
+* MultiPlot: restore status chart (WIP)
+
+
+# 2021-07-22 Dev build 0.92.23
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.23`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* (Bug) Custom ML: feature names are not available in an apply script 
+* (Bug) Custom ML: don't show dataframe from apply 
+* Wiki: File Browsing and Sharing, tweaks 
+* MultiPlot: rectangle select (WIP)
+* JS API: Add helpUrl support in ui.dialog 
+* MultiPlot: pass series settings to viewer constructor 
+* dayjs: import statement fix 
+* ClinicalCase \- a plugin for analyzing SDTM-based clinical studies data (WIP)
+* Sequence Translator: Drag&Drop file in Axolabs 
+* datagrok-tools: update package template (WIP)
+* DevTools package (WIP)
+* DevTools: annotate API examples (WIP)
+* Updated public 
+
+
+# 2021-07-21 Dev build 0.92.22
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.22`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* MultiPlot: select on click 
+* SketcherBase: a common interface for molecular sketchers 
+* Code cleanup 
+* MultiPlot: pass series settings to viewer constructor (WIP)
+* GROK \- 9242 UI Test: Repertoire Browser 
+* Temporary disabled broken code 
+* Updated index 
+* TS: Add DayJs 
+* (Bug) Typescript: Elements Block25 (50 and 75) are of incorrect type 
+* Fixed typo in ui.ts 
+* (Bug) JS Viewers: error: NullError: method not found: 'where$1' on null (WIP)
+* Selenium: Share dialog: Add name attribute for privilege level selector 
+* Query Builder dialog: Add "name" attributes to checkboxes for tables 
+* (Bug) Predictive Models: Model in browser is not displayed on PP after clicking on card 
+* ROK-8325 Data | Open Text: View does not switch to created table view after clicking on "Done" 
+* Add Repository: Add attribute "name" for Source Type selector 
+* (Bug) View Layouts: Error balloon after deleting saved layout 
+* GridColumn: got rid of the Prop() annotations 
+* Wiki: update developer guides to reflect JsViewer API changes (WIP)
+* JS API: Add helpUrl support in ui.dialog 
+
+
+# 2021-07-20 Dev build 0.92.21
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.21`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Add New Column: ColumnGrid Widget 
+* Modified dev documentation 
+* UI: Text Input that can be decorated with an icons 
+* MultiPlot: move timeLines render to external file 
+* Charts: Timelines (WIP)
+* DevTools: generate code for viewers customization 
+* JS API: Added Extended StringInput 
+* Sequence Translator: add possibility to copy sequences from HTML table 
+* DevTools package (WIP)
+* DevTools: annotate API examples (WIP)
+* Sequence Translator: Modify sequence length of saved pattern 
+* UI: GridColumn, bug with double lines at the bottom of searchbox 
+* OligoBatchCalculator: minor changes 
+* JS API: Create ui.searchBox() 
+* Add DB cache invalidation (WIP)
+* (Bug) Line Chart: "axes follow filter" feature does not work 
+* (Bug) Viewers: Inconsistent column selection inside a viewer and its properties panel (WIP)
+* Updated ui.md (ui.stringInput, ui.searchInput) 
+* (Bug) Custom ML: apply function from different ML engine  
+* (Bug) DataQuery with choices throws an exception 
+* (Bug) JS API: Label breaks layout of TextInput with icon 
+* Removed obsolete features. 
+* Code cleanup. 
+* (Bug) Query-driven dashboards: query controls do not show up when a project is open 
+* JS API: DataFrame.mouseOverRow (WIP)
+* MultiPlot: trim long categories 
+* MultiPlot: remove underline from plot type combobox 
+* JS API: tableInput 
+* UI Test: Script View 
+* UI Test: Welcome View (WIP)
+* Sequence Translator: final UI adjustments 
+* Specify return types for dataframe.plot methods 
+* (Bug) JS API: properties cannot be changed in JsViewer (JsViewer.props and JsViewer.setOptions result in errors) 
+
+
+# 2021-07-18 Dev build 0.92.20
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.20`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Line Chart: support for multiple Y axes 
+* Line Chart: MultiAxis: double-click (choosing a primary series) should have no effect 
+* (Bug) Line Chart: point hit-testing doesn't work for points on the right 
+* Scripting: GetFunc: support maps 
+* Removed unnecessary toString() overloads, all column subclasses now simply return column name. 
+* (Bug) Line Chart: NullReferenceError when changing X axis column 
+* UI: Text Input that can be decorated with an icons 
+* CachedComputation: generic way to cache computations on mutable objects (such as columns) 
+* (Bug) DataFrame.onValuesChanged fires twice when user edits a value in the grid 
+* Line Chart: do not show aggregation options if all X points are unique 
+* (Bug) Scatter Plot: "axes follow filter" feature does not work 
+* (Bug) Line Chart: "axes follow filter" feature does not work 
+* (Bug) Filters: clicking on "search" should open search field AND focus on it 
+* Removed custom DataFrame property 
+* Updated public token; Added beta-user 
+
+
+# 2021-07-16 Dev build 0.92.19
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.19`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Added debug prints to  ExternalDataProvider 
+* MultiPlot: add click support 
+* MultiPlot: move timeLines render to external file (WIP)
+* Added a polyfill for Object.entries (won't work in Dartium without it, and did not find a way to specify the relevant target to TypeScript) 
+* (Bug) JS API: Custom object handlers should get inserted after the generic JsObjectMeta in order to have effect 
+* JS API: TableView.syncCurrentObject to control whether current columns/rows should be shown in the property panel 
+* Removed debug printouts. 
+* (Bug) Matcher: matching on multiple criteria ignores the "and/or" option 
+* Clinical Case: Adverse Events: show events preceding the adverse event 
+* Update ui.md 
+* ClinicalCase \- a plugin for analyzing SDTM-based clinical studies data (WIP)
+* updated rules table, implemented opening validation view for specific domain by link 
+* (Bug) Core: Bitset.falseCount returns the number of set bits 
+* Untied dataFrame setter and onFrameAttached 
+* Updated help index, minor changes 
+
+
 # 2021-07-15 Dev build 0.92.18
 
 ## Latest Docker Images

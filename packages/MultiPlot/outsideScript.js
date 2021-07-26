@@ -1,8 +1,13 @@
+/*
+This is sandbox for scripts to use with MultiPlot. Gradually it will grow to documentation page.
+*/
+
+
 //name: Template
 //description: Hello world script
 //language: javascript
 
-const { color } = require("echarts");
+//const { color } = require("echarts");
 
 let tables = grok.shell.tables;
 for (table of tables) {
@@ -11,6 +16,9 @@ for (table of tables) {
 	  let viewer = view.addViewer('MultiPlot', {
           paramA: "string outside", 
           "Param A": "string outside2"
+    }).setOptions({
+      paramA: "string outside", 
+      "Param A": "string outside2"
     });
   }
 }
@@ -52,3 +60,4 @@ let series = [{
     marker: 'status',
     height: '20px'
   }];
+

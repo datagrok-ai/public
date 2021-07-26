@@ -19,6 +19,7 @@ import { Column, DataFrame } from './src/dataframe';
 
 
 let api = <any>window;
+declare let grok: any;
 
 /**
  * Creates an instance of the element for the specified tag, and optionally assigns it a CSS class.
@@ -156,7 +157,7 @@ export function tabControl(pages: { [key: string]: any; } | null = null, vertica
  * @param {string} text
  * @param {string | ElementOptions | null} options
  * @returns {HTMLDivElement} */
-export function divText(text: string, options: string | ElementOptions | null = null): HTMLDivElement {
+export function divText(text: string, options: string | ElementOptions | any | null = null): HTMLDivElement {
   let e = element('div');
   e.innerText = text;
   _options(e, options);
@@ -461,8 +462,8 @@ export function link(
 
 /** Creates a [Dialog].
  * @returns {Dialog} */
-export function dialog(title: string = ''): Dialog {
-  return Dialog.create(title);
+export function dialog(options: any = ''): Dialog {
+  return Dialog.create(options);
 }
 
 /** Binds [item] with the [element]. It enables selecting it as a current object, drag-and-drop,
@@ -544,8 +545,12 @@ export function multiChoiceInput<T>(name: string, value: T, items: T[], onValueC
   return new InputBase(api.grok_MultiChoiceInput(name, value, items), onValueChanged);
 }
 
-export function stringInput(name: string, value: string, onValueChanged: Function | null = null): InputBase {
-  return new InputBase(api.grok_StringInput(name, value), onValueChanged);
+export function stringInput(name: string, value: string, onValueChanged: Function | null = null, options: { icon?: string | HTMLElement, clearIcon?: boolean, escClears?: boolean, placeholder?: String } | null = null): InputBase {
+  return new InputBase(api.grok_StringInput(name, value, options), onValueChanged);
+}
+
+export function searchInput(name: string, value: string, onValueChanged: Function | null = null): InputBase {
+  return new InputBase(api.grok_SearchInput(name, value), onValueChanged);
 }
 
 export function floatInput(name: string, value: number, onValueChanged: Function | null = null): InputBase {
@@ -570,6 +575,10 @@ export function columnInput(name: string, table: DataFrame, value: Column | null
 
 export function columnsInput(name: string, table: DataFrame, onValueChanged: Function | null = null): InputBase {
   return new InputBase(api.grok_ColumnsInput(name, table.d), onValueChanged);
+}
+
+export function tableInput(name: string, table: DataFrame, tables: DataFrame[] = grok.shell.tables, onValueChanged: Function | null = null): InputBase {
+  return new InputBase(api.grok_TableInput(name, table, tables), onValueChanged);
 }
 
 export function textInput(name: string, value: string, onValueChanged: Function | null = null): InputBase {
@@ -910,14 +919,22 @@ export function block(items: HTMLElement[], options: string | ElementOptions | n
   return c;
 }
 
-export function block75(items: HTMLElement[], options: ElementOptions | null = null) {
-  return $(block(items, options)).addClass('ui-block-75')[0];
+export function block75(items: HTMLElement[], options: ElementOptions | null = null): HTMLDivElement {
+  let c = block(items, options);
+  $(c).addClass('ui-block-75');
+  return c;
 }
-export function block25(items: HTMLElement[], options: ElementOptions | null = null) {
-  return $(block(items, options)).addClass('ui-block-25')[0];
+
+export function block25(items: HTMLElement[], options: ElementOptions | null = null): HTMLDivElement {
+  let c = block(items, options);
+  $(c).addClass('ui-block-25');
+  return c;
 }
-export function block50(items: HTMLElement[], options: ElementOptions | null = null) {
-  return $(block(items, options)).addClass('ui-block-50')[0];
+
+export function block50(items: HTMLElement[], options: ElementOptions | null = null): HTMLDivElement {
+  let c = block(items, options);
+  $(c).addClass('ui-block-50');
+  return c;
 }
 
 export function p(text: string, options: any = null): HTMLParagraphElement {

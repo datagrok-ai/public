@@ -15,7 +15,7 @@ declare let DG: any;
 declare let ui: any;
 let api = <any>window;
 
-export class TypedEventArgs {
+export class TypedEventArgs<TData> {
   d: any;
   constructor(d: any) {
     this.d = d;
@@ -25,7 +25,7 @@ export class TypedEventArgs {
     return api.grok_TypedEventArgs_Get_Type(this.d);
   }
 
-  get data(): any {
+  get data(): TData {
     let data = api.grok_TypedEventArgs_Get_Data(this.d);
     return toJs(data);
   }
@@ -47,7 +47,7 @@ export class TypedEventArgs {
    });
  **/
 export class Viewer extends Widget {
-  props: ObjectPropertyBag | undefined;
+  props: ObjectPropertyBag & any | undefined;
 
   /** @constructs Viewer */
   constructor(d: any, root?: HTMLElement) {
@@ -72,7 +72,7 @@ export class Viewer extends Widget {
     return api.grok_Viewer_GetViewerTypes();
   }
 
-  /** 
+  /**
    *  Sets viewer options. See also {@link getOptions}
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/scatter-plot}
    *  @param {object} map */
@@ -80,7 +80,7 @@ export class Viewer extends Widget {
     api.grok_Viewer_Options(this.d, JSON.stringify(map));
   }
 
-  /** 
+  /**
    * Gets the serialized viewer options. [includeDefaults] flag specifies whether the
    * properties with the defaults values should be returned. Not including default
    * properties makes it more clean and efficient for serialization purposes.
@@ -212,15 +212,8 @@ export class TablePlotter {
  *  See an example on github: {@link https://github.com/datagrok-ai/public/tree/master/packages/Leaflet}
  *  */
 export class JsViewer extends Viewer {
-  private _dataFrame: DataFrame | undefined;
   public d: any;
-  public get dataFrame(): DataFrame | undefined {
-        return this._dataFrame;
-    }
-    public set dataFrame(value: DataFrame | undefined) {
-      if (value != undefined)
-        this.onFrameAttached(value);
-    }
+
   subs: Subscription[];
   obs: rxjs.Observable<any>[];
   props: ObjectPropertyBag;
@@ -242,7 +235,6 @@ export class JsViewer extends Viewer {
   }
 
   onFrameAttached(dataFrame: DataFrame): void {
-    this._dataFrame = dataFrame;
     this.onTableAttached();
   }
 
@@ -344,6 +336,8 @@ export class JsViewer extends Viewer {
   }
 }
 
+
+/** 2D scatter plot */
 export class ScatterPlotViewer extends Viewer {
   constructor(d: any) {
     super(d);

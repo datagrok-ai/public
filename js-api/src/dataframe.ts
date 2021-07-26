@@ -11,13 +11,15 @@ import {
   CsvImportOptions,
   IndexPredicate, FLOAT_NULL, ViewerType
 } from "./const";
-import {__obs, observeStream} from "./events";
+import {__obs, EventData, MapChangeArgs, observeStream} from "./events";
 import {toDart, toJs} from "./wrappers";
 import {SIMILARITY_METRIC} from "./const";
 import {_getIterator, _toIterable, _toJson} from "./utils";
 import {Observable}  from "rxjs";
 import {filter} from "rxjs/operators";
 import {Widget} from "./widgets";
+import {Grid} from "./grid";
+import {ScatterPlotViewer, TypedEventArgs, Viewer} from "./viewer";
 
 declare let grok: any;
 declare let DG: any;
@@ -190,7 +192,7 @@ const ColumnListProxy = new Proxy(class {
  */
 export class DataFrame {
   public readonly d: any;
-  public columns: any;
+  public columns: ColumnList & any;
   public rows: RowList;
   public filter: BitSet;
   public temp: any;
@@ -378,6 +380,10 @@ export class DataFrame {
   get currentRowIdx(): number { return api.grok_DataFrame_Get_CurrentRowIdx(this.d); }
   set currentRowIdx(idx) { api.grok_DataFrame_Set_CurrentRowIdx(this.d, idx); }
 
+  /** Index of the mouse-over row. */
+  get mouseOverRowIdx(): number { return api.grok_DataFrame_Get_MouseOverRowIdx(this.d); }
+  set mouseOverRowIdx(idx) { api.grok_DataFrame_Set_MouseOverRowIdx(this.d, idx); }
+
   /** Current column.
    * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/current-elements} */
   get currentCol(): Column {
@@ -524,7 +530,7 @@ export class DataFrame {
   get onNameChanged(): Observable<any> { return this._event('ddt-table-name-changed'); }
 
   /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/events} */
-  get onMetadataChanged(): Observable<any> { return this._event('ddt-table-metadata-changed'); }
+  get onMetadataChanged(): Observable<EventData<MapChangeArgs<string, string>>> { return this._event('ddt-table-metadata-changed'); }
 
   /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/events} */
   get onColumnNameChanged(): Observable<any> { return this._event('ddt-table-column-name-changed'); }
@@ -624,12 +630,21 @@ export class Row {
         return true;
       },
       get(target: any, name) {
-        if (target.hasOwnProperty(name))
+        if (name == 'cells' || target.hasOwnProperty(name))
           return target[<any>name];
         return target.table.get(name, target.idx);
       }
     });
   }
+
+  // /** An iterator over all values in this column. */
+  // * values() {
+  //   for (let i = 0; i < this.length; i++) {
+  //     yield this.get(i);
+  //   }
+  // }
+
+  get cells(): Iterable<Cell> { return _toIterable(api.grok_Row_Get_Cells(this.table.d, this.idx)); }
 
   /** Returns this row's value for the specified column
    * @param {string} columnName
@@ -2092,14 +2107,14 @@ class DataFramePlotHelper {
   fromType(viewerType: ViewerType, options: object | null = null): Promise<Widget> {
     return toJs(api.grok_Viewer_FromType_Async(viewerType, this.df.d, _toJson(options)));
   }
-  scatter(options: object | null = null) { return DG.Viewer.scatterPlot(this.df, options); }
-  grid(options: object | null = null) { return DG.Viewer.grid(this.df, options); }
-  histogram(options: object | null = null) { return DG.Viewer.histogram(this.df, options); }
-  bar(options: object | null = null) { return DG.Viewer.barChart(this.df, options); }
-  heatMap(options: object | null = null) { return DG.Viewer.heatMap(this.df, options); }
-  box(options: object | null = null) { return DG.Viewer.boxPlot(this.df, options); }
-  line(options: object | null = null) { return DG.Viewer.lineChart(this.df, options); }
-  network(options: object | null = null) { return DG.Viewer.network(this.df, options); }
+  scatter(options: object | null = null): ScatterPlotViewer { return DG.Viewer.scatterPlot(this.df, options); }
+  grid(options: object | null = null): Grid { return DG.Viewer.grid(this.df, options); }
+  histogram(options: object | null = null): Viewer { return DG.Viewer.histogram(this.df, options); }
+  bar(options: object | null = null): Viewer { return DG.Viewer.barChart(this.df, options); }
+  heatMap(options: object | null = null): Viewer { return DG.Viewer.heatMap(this.df, options); }
+  box(options: object | null = null): Viewer { return DG.Viewer.boxPlot(this.df, options); }
+  line(options: object | null = null): Viewer { return DG.Viewer.lineChart(this.df, options); }
+  network(options: object | null = null): Viewer { return DG.Viewer.network(this.df, options); }
   
 }
 

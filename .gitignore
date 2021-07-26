@@ -21,6 +21,7 @@ upload.keys.json
 dist/
 
 # js-api
+/js-api/**/*.js.map
 /js-api/src/*.js
 /js-api/grok.js
 /js-api/dg.js
