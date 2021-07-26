@@ -551,6 +551,12 @@ export class Dialog {
     return this;
   }
 
+  /** Initializes default history. */
+  initDefaultHistory(): Dialog {
+    api.grok_Dialog_InitDefaultHistory(this.d);
+    return this;
+  }
+
   /** Clears the content. */
   clear() {
     api.grok_Dialog_Clear(this.d);
