@@ -1,19 +1,21 @@
-import { ClinicalCaseView } from "../clinical-case-view";
 import * as grok from "datagrok-api/grok";
 import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
-import { ValidationView } from "./validation-view";
-import { event } from "jquery";
 
 export class StudySummaryView extends DG.ViewBase {
 
  validationView: DG.View;
+ errorsByDomain: any;
+ errorsByDomainWithLinks: any;
 
  constructor() {
     super();
 
     this.name = study.name;
+    const errorsMap = this.createErrorsMap();
+    this.errorsByDomain = errorsMap.withCount;
+    this.errorsByDomainWithLinks = errorsMap.withLinks;
     this.buildView();
   }
 
@@ -35,7 +37,8 @@ export class StudySummaryView extends DG.ViewBase {
       'sites': study.sitesCount
     });
 
-    let errorsSummary = ui.tableFromMap(this.createErrorsMap());
+
+    let errorsSummary = ui.tableFromMap(this.errorsByDomainWithLinks);
 
     this.root.appendChild(ui.div([
       ui.divH([
@@ -54,19 +57,19 @@ export class StudySummaryView extends DG.ViewBase {
 
   private createErrorsMap() {
     const errorsMap = {};
+    const errorsMapWithCount = {};
     const validationSummary = study.validationResults.groupBy([ 'Domain' ]).count().aggregate();
     for (let i = 0; i < validationSummary.rowCount; ++i) {
       const domain = validationSummary.get('Domain', i);
-      const link = ui.link(validationSummary.get('count', i), {}, '', {id: domain});
+      const errorsCount = validationSummary.get('count', i);
+      const link = ui.link(errorsCount, {}, '', {id: domain});
       link.addEventListener('click', (event) => {
-        this.validationView.close();
-        const filteredView = new ValidationView($(link).attr('id'));
-        this.validationView = grok.shell.newView(`Validation`, [filteredView.root]);
         grok.shell.v = this.validationView;
         event.stopPropagation();
       });
-      errorsMap[ validationSummary.get('Domain', i) ] = link;
+      errorsMap[ domain ] = link;
+      errorsMapWithCount[ domain ] = errorsCount;
     }
-    return errorsMap;
+    return {withCount: errorsMapWithCount, withLinks: errorsMap};
   }
 }

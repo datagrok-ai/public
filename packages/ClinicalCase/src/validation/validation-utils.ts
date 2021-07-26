@@ -13,6 +13,16 @@ export function createValidationDataFrame(){
 }
 
 
+export function createRulesDataFrame(){
+    const rules = DG.DataFrame.create();
+    rules.columns.addNewString('Rule ID');
+    rules.columns.addNewString('Description');
+    rules.columns.addNewString('Category');
+    rules.columns.addNewString('Severity');
+    return rules;
+}
+
+
 export function getColumnNamesWithDomain(df: DG.DataFrame, columns: string[], domain: string) {
     return columns.map(col => `${domain}${col}`);
 }
