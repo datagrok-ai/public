@@ -194,6 +194,9 @@ function timeLinesD(params, api) {
     group.children.push(marker);
   } else {
     // draw line
+    if (!this.echarts) {
+      debugger;
+    }
     const rectShape = this.echarts.graphic.clipRectByRect({
       x: start[0],
       y: start[1] - this.lineWidth / 2,
