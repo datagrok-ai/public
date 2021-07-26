@@ -1,6 +1,30 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-07-26 Dev build 0.92.33
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.33`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* MultiPlot: fix types 
+* JS API: Get color for cell / category 
+* datagrok-tools: update package template (WIP)
+* Disable NGINX logging (and other logging) in DG docker image 
+* MultiPlot: restore status chart (WIP)
+* Sequence Translator: README documentation (WIP)
+* (Bug) Viewers: textColor property misspelling 
+* (Bug) Scatter Plot: Regression line appear without activation (WIP)
+* Ability to skip DF reading on server after Grok Connect request 
+* MultiPlot: type casting 
+
+
 # 2021-07-25 Dev build 0.92.32
 
 ## Latest Docker Images
