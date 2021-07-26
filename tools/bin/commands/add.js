@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const utils = require('../utils.js');
 
 module.exports = {
   add: add
@@ -15,6 +16,7 @@ function add(args) {
   const curFolder = path.basename(curDir);
   const srcDir = path.join(curDir, 'src');
   const jsPath = path.join(srcDir, 'package.js');
+  const detectorsPath = path.join(curDir, 'detectors.js');
   const scriptsDir = path.join(curDir, 'scripts');
   const queryDir = path.join(curDir, 'queries');
   const queryPath = path.join(queryDir, 'queries.sql');
@@ -281,6 +283,32 @@ function add(args) {
       console.log('Read more at https://datagrok.ai/help/develop/how-to/develop-custom-viewer');
       console.log('See examples at https://github.com/datagrok-ai/public/tree/master/packages/Viewers,');
       console.log('https://public.datagrok.ai/js/samples/functions/custom-viewers/viewers');
+      break;
+    case 'detector':
+      if (nArgs !== 3) return false;
+      var name = args['_'][2];
+
+      if (!fs.existsSync(detectorsPath)) {
+        let temp = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
+          'package-template', 'detectors.js'), 'utf8');
+        temp = utils.replacers['PACKAGE_DETECTORS_NAME'](temp, curFolder);
+        fs.writeFileSync(detectorsPath, temp, 'utf8');
+      }
+
+      let detector = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
+        'entity-template', 'sem-type-detector.js'), 'utf8');
+      var contents = fs.readFileSync(detectorsPath, 'utf8');
+      let idx = contents.search(/(?<=PackageDetectors extends DG.Package\s*{\s*(\r\n|\r|\n)).*/);
+      if (idx === -1) return console.log('Detectors class not found'); 
+      contents = contents.slice(0, idx) + detector + contents.slice(idx);
+
+      for (let repl of ['NAME', 'NAME_PREFIX', 'PACKAGE_DETECTORS_NAME']) {
+        contents = utils.replacers[repl](contents, name);
+      }
+
+      fs.writeFileSync(detectorsPath, contents, 'utf8');
+      console.log(`The detector for ${name} has been added successfully\n` +
+      'Read more at https://datagrok.ai/help/develop/how-to/semantic-type-detector');
       break;
     default:
       return false;
