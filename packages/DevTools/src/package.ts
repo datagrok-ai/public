@@ -120,7 +120,6 @@ export function describeCurrentObj(): void {
       $(topEditorBtn).addClass('dt-snippet-inline-icon');
 
       const browserLogBtn = ui.button(ui.iconFA('terminal'), () => {
-        console.clear();
         console.log(grok.shell.o);
         grok.shell.info('The object was printed to console. Press F12 to open the developer tools.');
       }, 'Log to console');
