@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const yaml = require('js-yaml');
+const utils = require('../utils.js');
 
 module.exports = {
   migrate: migrate
@@ -25,14 +26,6 @@ const grokMap = {
 
 const replRegExp = new RegExp(Object.keys(grokMap).join("|"), "g");
 
-function mapURL(conf) {
-  let urls = {};
-  for (let server in conf.servers) {
-    urls[conf['servers'][server]['url']] = server;
-  }
-  return urls;
-}
-
 function migrate(args) {
   const nOptions = Object.keys(args).length - 1;
   const nArgs = args['_'].length;
@@ -49,7 +42,7 @@ function migrate(args) {
   if (fs.existsSync(keysDir)) {
     try {
       const keys = JSON.parse(fs.readFileSync(keysDir));
-      let urls = mapURL(config);
+      let urls = utils.mapURL(config);
       for (const url in keys) {
         try {
           let hostname = (new URL(url)).hostname;

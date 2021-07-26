@@ -5,6 +5,8 @@ const os = require('os');
 const path = require('path');
 const walk = require('ignore-walk');
 const yaml = require('js-yaml');
+const utils = require('../utils.js');
+
 
 module.exports = {
   publish: publish
@@ -132,14 +134,6 @@ async function processPackage(debug, rebuild, host, devKey, packageName, suffix)
   return 0;
 }
 
-function mapURL(conf) {
-  let urls = {};
-  for (let server in conf.servers) {
-    urls[conf['servers'][server]['url']] = server;
-  }
-  return urls;
-}
-
 function publish(args) {
   const nOptions = Object.keys(args).length - 1;
   const nArgs = args['_'].length;
@@ -158,7 +152,7 @@ function publish(args) {
 
   let config = yaml.safeLoad(fs.readFileSync(confPath));
   let host = config.default;
-  let urls = mapURL(config);
+  let urls = utils.mapURL(config);
   if (nArgs === 2) host = args['_'][1];
   let key = '';
   let url = '';

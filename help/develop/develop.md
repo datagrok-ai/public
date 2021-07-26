@@ -587,6 +587,17 @@ command from your package directory:
 grok add function init <packageName>Init
 ```
 
+### Semantic Type Detectors
+
+To get the template for a detector function, use the following `datagrok-tools`
+command from your package directory:
+
+```
+grok add detector <semantic-type-name>
+```
+
+*Details:* [How to Define Semantic Type Detectors](how-to/semantic-type-detector.md)
+
 ### File Viewers
 
 File viewers are used in Datagrok's [file share browser](../access/file-shares.md).
