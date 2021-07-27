@@ -1,6 +1,22 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-07-27 Dev build 0.92.35
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.35`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Disable NGINX logging (and other logging) in DG docker image 
+* Multi linechart (WIP)
+
+
 # 2021-07-27 Dev build 0.92.34
 
 ## Latest Docker Images
