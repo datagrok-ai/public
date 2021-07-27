@@ -50,7 +50,7 @@ export class MultiPlotViewer extends DG.JsViewer {
   private paramOptions : string = this.string('paramOptions', 'none22');
   private mode : string = 'none'; // 'brushSelected'
   private options = {series: [
-  
+
   ]};
 
   typeComboElements : HTMLElement[] = [];
@@ -366,7 +366,7 @@ export class MultiPlotViewer extends DG.JsViewer {
 
       if (this.plots[i].type === 'timeLine') {
         this.plots[i].timeLinesSeries = this.initTimeLine(visibleIndex, this);
-/*
+        /*
         this.plots[i].subjectCol = this.tables[this.plots[i].tableName].getCol(this.plots[i].y);
         this.plots[i].subjects = this.plots[i].subjectCol.categories;
         this.plots[i].subjects = this.plots[i].subjects.map(this.trimCategoryString.bind(this));
@@ -480,12 +480,6 @@ export class MultiPlotViewer extends DG.JsViewer {
 
     this.echartOptions = {
       title: createEmptyObjects(this.plots.length),
-      /*
-      'tooltip2': {
-        trigger: 'axis',
-        axisPointer: {type: 'shadow'},
-      },
-      */
       tooltip: {
         trigger: 'axis',
         showContent: false,
@@ -686,14 +680,18 @@ export class MultiPlotViewer extends DG.JsViewer {
 
       if (plot.type != 'timeLine') continue;
       this.timeLinesData = data;
-      //this.plots[i].series.data = data;
+      // this.plots[i].series.data = data;
       this.timeLineIndex = i;
     }
     this.updatePlots();
   }
 
-  isGroup(componentIndex: number) : boolean {
+  isGroup(componentIndex: number, componentType: string) : boolean {
     const type = this.plots[this.visibleIndexes[componentIndex]].type;
+    const yType = this.plots[this.visibleIndexes[componentIndex]].yType;
+
+    if ((type === 'scatter' || type === 'line') &&
+      yType == 'category' && componentType == 'yAxis') return true;
     if (type === 'scatter' || type === 'line') return false;
     return true;
   }
@@ -753,7 +751,7 @@ export class MultiPlotViewer extends DG.JsViewer {
           return this.plots[iPlot].subjects[this.plots[iPlot].subjBuf[i]] === params.value;
         }
         if (params.componentType === 'series') {
-          if (this.isGroup(params.componentIndex)) {
+          if (this.isGroup(params.componentIndex, '')) {
             return params.value[0] ===
               this.plots[iPlot].subjects[this.plots[iPlot].subjBuf[i]];
           } else {
@@ -776,7 +774,9 @@ export class MultiPlotViewer extends DG.JsViewer {
       const val = params.value[1];
 
       if (params.componentType === 'yAxis') {
-        if (this.isGroup(params.componentIndex)) {
+        console.warn('yaxis');
+        if (this.isGroup(params.componentIndex, params.componentType)) {
+          console.warn('yaxis2');
           ui.tooltip.showRowGroup(table, (i) => {
             return params.value === this.plots[iPlot].subjects[this.plots[iPlot].subjBuf[i]];
           }, x, y);
@@ -784,7 +784,7 @@ export class MultiPlotViewer extends DG.JsViewer {
       }
 
       if (params.componentType === 'series') {
-        if (!this.isGroup(params.componentIndex)) {
+        if (!this.isGroup(params.componentIndex, '')) {
           ui.tooltip.show(ui.divV(
               (params.data as any[]).map((e, i) => ui.div([colNames[i] + ': ' + e + ''])),
           ), x, y);
