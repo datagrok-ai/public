@@ -68,6 +68,5 @@ Representations are splitted into categories by synthesizer's sequence format(Bi
 |---|---|
 | Pattern | Defines translation rules. Contains: pattern name, modifications and PTO linkages for both strands, and comment, displayed on image |
 | PTO linkage | Indicates whether oligonucleotide has phosphorothioated bond (ps linkage) after the base |
-| Sense strand (SS) | Contains the exact nucleotide sequence to the mRNA which encodes for a functional protein. Has the information that would be readable on the RNA, and that's called the coding side.
-|
+| Sense strand (SS) | Contains the exact nucleotide sequence to the mRNA which encodes for a functional protein. Has the information that would be readable on the RNA, and that's called the coding side.|
 | Antisense strand (AS) | Non-coding DNA strand of a gene. A cell uses antisense DNA strand as a template for producing messenger RNA (mRNA) that directs the synthesis of a protein. |
