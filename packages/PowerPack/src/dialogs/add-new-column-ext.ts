@@ -10,7 +10,7 @@ import * as DG from 'datagrok-api/dg';
  * see the preview result.
  */
 export class AddNewColumnDialog {
-  title: string = 'Add New Column';
+  title: string = 'Add New Column Ext';
   helpUrl: string = '/help/transform/add-new-column.md';
   visibleTags: string[] = ['math', 'text', 'date', 'timespan', 'binning', 'logic', 'stats'];
   supportedTypes: string[] = [DG.COLUMN_TYPE.FLOAT, DG.COLUMN_TYPE.INT,
@@ -19,6 +19,7 @@ export class AddNewColumnDialog {
   autoType: string = 'auto';
   plainTextType: string = 'plain text';
   placeholderName: string = 'Name';
+  placeholderType: string = 'Type';  // Used only for uniformity when saving inputs history.
   placeholderExpression: string = 'Expression';
   maxAutoNameLength: number = 25;
   maxPreviwRowCount: number = 100;
@@ -55,16 +56,42 @@ export class AddNewColumnDialog {
   /** Initializes all parameters and opens a Dialog Window. */
   async init(): Promise<void> {
     this.uiDialog = ui.dialog({ title: this.title, helpUrl: this.helpUrl })
-        .initDefaultHistory()
         .add(await this.initUiLayout())
-        .onOK(() => this.addNewColumnAction()).show();
+        .onOK(async () => await this.addNewColumnAction()).show();
+
+    this.uiDialog.history(
+      () => this.saveInputHistory(),
+      (x) => this.loadInputHistory(DG.toJs(x))
+    );
 
     await this.updatePreview();
   }
 
+  /** Returns values of the input fields to be saved in history. */
+  saveInputHistory(): any {
+    let typeForHistory =
+        this.getSelectedType()[0] == this.autoType
+        ? this.resultColumnType
+        : this.inputType!.value;
+
+    return Object.fromEntries([
+      [this.placeholderName, this.inputName!.value],
+      [this.placeholderType, typeForHistory],
+      [this.placeholderExpression, this.inputExpression!.value]
+    ]);
+  }
+
+  /** Loads values of the input fields from the history and applies them. */
+  loadInputHistory(history: any): void {
+    this.inputName!.value = history[this.placeholderName];
+    this.inputType!.value = history[this.placeholderType];
+    this.inputExpression!.value = history[this.placeholderExpression];
+  }
+
   /** Creates and initializes the "Column Name" input field. */
   initInputName(): DG.InputBase {
-    let control = ui.stringInput('', '', async () => await this.updatePreview());
+    let control = ui.stringInput('', '');
+        control.onInput(async () => await this.updatePreview());
         control.setTooltip(this.tooltips['name']);
 
     let input = control.input as HTMLInputElement;
@@ -80,13 +107,15 @@ export class AddNewColumnDialog {
     this.supportedTypes.unshift(defaultChoise);    // The first item of the ChoiceBox will be "Auto".
     this.supportedTypes.push(this.plainTextType);  // The last item of the ChoiceBox will be "Treat As String".
 
-    let control = ui.choiceInput('', defaultChoise, this.supportedTypes, async () => await this.updatePreview());
+    let control = ui.choiceInput('', defaultChoise, this.supportedTypes);
+        control.onInput(async () => await this.updatePreview());
         control.setTooltip(this.tooltips['type']);
 
     let input = control.input as HTMLInputElement;
         input.classList.add('ui-input-addnewcolumn-type');
         input.insertBefore(ui.element('hr'),       // Separator before the last item in the ChoiceBox.
             (input as any)[(input as any).length - 1]);
+
     return control;
   }
 
@@ -96,8 +125,8 @@ export class AddNewColumnDialog {
       // The first characters of the Expression become the default name of the new column:
       (this.inputName!.input as HTMLInputElement).placeholder =
           (!control.value || (control.value.length > this.maxAutoNameLength))
-              ? this.placeholderName
-              : control.value;
+          ? this.placeholderName
+          : control.value;
       await this.updatePreview();
     });
     control.setTooltip(this.tooltips['expression']);
@@ -275,11 +304,9 @@ export class AddNewColumnDialog {
       selectedType.push(DG.COLUMN_TYPE.STRING, true);  // Prepare for AddNewColumn with the treatAsString param.
     else
       selectedType.push(
-          this.inputType!.value == undefined  // Always true only if "Auto" item is selected.
-          ? this.autoType
-          // Any item would have been selected here, and "Auto" item too (only once, when Dialog Window was opened).
-          // So, in general, we discard the second word in the type:
-          : this.inputType!.value.split(' ')[0]
+          this.inputType!.value
+          ? this.inputType!.value.split(' ')[0]
+          : this.autoType
       );
 
     return selectedType;
