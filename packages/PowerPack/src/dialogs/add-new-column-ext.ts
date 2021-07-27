@@ -61,7 +61,7 @@ export class AddNewColumnDialog {
 
     this.uiDialog.history(
       () => this.saveInputHistory(),
-      (x) => this.loadInputHistory(DG.toJs(x))
+      (x) => this.loadInputHistory(x)
     );
 
     await this.updatePreview();
@@ -137,8 +137,8 @@ export class AddNewColumnDialog {
 
     // Columns and functions can be drag-n-dropped into the Expression field:
     ui.makeDroppable(input, {
-      acceptDrop: (x) => this.typeOf(DG.toJs(x), DG.Column, DG.Func),
-      doDrop: (x, _) => this.insertIntoExpression(DG.toJs(x))
+      acceptDrop: (dragObject) => this.typeOf(dragObject, DG.Column, DG.Func),
+      doDrop: (dragObject, _) => this.insertIntoExpression(dragObject)
     });
 
     return control;
