@@ -5,7 +5,7 @@
 let options = {
     series: [
         {
-            table: 'ae__2__lb__2_',
+            tableName: 'ae__2__lb__2_',
             title: 'outside title 0',
             type: 'scatter',
             x: 'LBDY',
@@ -25,7 +25,7 @@ let options = {
 
         // timeLines
         {
-            table: 'ae__2__lb__2_',
+            tableName: 'ae__2__lb__2_',
             title: 'outside title 1',
             type: 'timeLine',
             x: 'LBTEST',
@@ -42,7 +42,7 @@ let options = {
 let options2 = {
   series: [
     {
-      table: 'ae__2__lb__2_',
+      tableName: 'ae__2__lb__2_',
       title: 'title10',
       type: 'scatter',
       x: 'LBDY',
@@ -62,7 +62,7 @@ let options2 = {
 
     // timeLines
     {
-      table: 'ae__2__lb__2_',
+      tableName: 'ae__2__lb__2_',
       title: 'title11',
       type: 'timeLine',
       x: 'LBTEST',
@@ -75,7 +75,7 @@ let options2 = {
     },
 
     {
-      table: 'ae__2__lb__2_',
+      tableName: 'ae__2__lb__2_',
       title: 'title2',
       type: 'scatter',
       x: 'AESTDY',
@@ -99,7 +99,7 @@ let options2 = {
     },
 
     /*  {
-      table: 'ae__2__lb__2_',
+      tableName: 'ae__2__lb__2_',
       title: 'title1',
       type: 'timeLine',
       x: 'AETERM',

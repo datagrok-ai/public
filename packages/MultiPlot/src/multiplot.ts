@@ -49,7 +49,8 @@ export class MultiPlotViewer extends DG.JsViewer {
   private categoryLength : number = 9;
   private paramOptions : string = this.string('paramOptions', 'none22');
   private mode : string = 'none'; // 'brushSelected'
-  private options: {series?: any[]};
+  private options = {series: [
+    ]};
 
   typeComboElements : HTMLElement[] = [];
   showHideElements : HTMLElement[] = [];
@@ -364,7 +365,7 @@ export class MultiPlotViewer extends DG.JsViewer {
 
       if (this.plots[i].type === 'timeLine') {
         this.plots[i].timeLinesSeries = this.initTimeLine(visibleIndex, this);
-        this.plots[i].subjectCol = this.tables[this.plots[i].table].getCol(this.plots[i].x);
+        this.plots[i].subjectCol = this.tables[this.plots[i].tableName].getCol(this.plots[i].x);
         this.plots[i].subjects = this.plots[i].subjectCol.categories;
         this.plots[i].subjects = this.plots[i].subjects.map(this.trimCategoryString.bind(this));
         // this.plots[i].subjects = this.plots[i].subjects.map(e => this.trimCategoryWord(e, this.categoryLength, true));
@@ -373,6 +374,7 @@ export class MultiPlotViewer extends DG.JsViewer {
         currentSeries.xAxisIndex = visibleIndex;
         currentSeries.yAxisIndex = visibleIndex;
         currentSeries.gridIndex = visibleIndex;
+        // currentSeries.encode = {x: [1, 2], y: 0};
         this.echartOptions.xAxis[visibleIndex].type = 'value';
         this.echartOptions.yAxis[visibleIndex].type = 'category';
       }
@@ -396,28 +398,10 @@ export class MultiPlotViewer extends DG.JsViewer {
     this.echartOptions.xAxis[visibleIndex - 1].type = 'value';
   } // updatePlots
 
-  getBitByIndex32(b: DG.BitSet, index: number) {
-    const i = Math.floor(index / 32);
-    const j = index % 32;
-    const rez = !!(b[~~ (index / 32)] & (1 << (index & 31)));
-    // let rez = a[i] & (Math.pow(2, j));
+  getBitByIndex32(b: any, index: number) {
+    const b2 = b.getBuffer();
+    const rez = !!(b2[~~ (index / 32)] & (1 << (index & 31)));
     return rez;
-  }
-
-  // create function to use as EChart callback with Datagrok mixins
-  // get callback function to define color of marker
-  getItemStyleColorFuncOld(customColorFunc: any, plot: any) : any {
-    const defaultColor = this.categoryColors[0];
-    const selectionColor = this.categoryColors[1];
-    console.warn('getItemStyleFunc: ', defaultColor, selectionColor);
-    function f(e) {
-      const customColor = customColorFunc(e);
-      if (plot.selectedIndexes.includes(e.dataIndex)) {
-        return selectionColor;
-      }
-      return customColor !== 'defaultColor' ? customColor : defaultColor;
-    }
-    return f;
   }
 
   // create function to use as EChart callback with Datagrok mixins
@@ -428,18 +412,19 @@ export class MultiPlotViewer extends DG.JsViewer {
     const min = visualMap.pieces[0].min;
     const max = visualMap.pieces[0].max;
     const vMapColor = visualMap.pieces[0].color;
+    const table = this.tables[plot.tableName];
     function customColorFunc(e) {
       return e.data[2] > min && e.data[2] < max ? vMapColor : defaultColor;
     }
-    console.warn('getItemStyleFunc: ', defaultColor, selectionColor);
     function f(e) {
       const customColor = customColorFunc(e);
-      if (plot.selectedIndexes.includes(e.dataIndex)) {
+      // if (plot.selectedIndexes.includes(e.dataIndex)) {
+      if (this.getBitByIndex32(table.selection, e.dataIndex)) {
         return selectionColor;
       }
       return customColor;
     }
-    return f;
+    return f.bind(this);
   }
 
   // shapes provided by ECharts:
@@ -518,12 +503,12 @@ export class MultiPlotViewer extends DG.JsViewer {
       }],
       animation: false,
       series: createEmptyObjects(this.visiblePlotsCount),
-      /*
+
       brush: {
         toolbox: ['rect', 'polygon', 'lineX', 'lineY', 'keep', 'clear'],
         xAxisIndex: 'all',
       },
-      */
+
     };
     for (let i = 0; i < this.echartOptions.series.length; i++) {
       this.echartOptions.series[i].type = 'scatter';
@@ -609,7 +594,7 @@ export class MultiPlotViewer extends DG.JsViewer {
   }
 
   checkTablesLoaded() : boolean {
-    const plotTablesList : string[] = this.plots.map((e) => e.table);
+    const plotTablesList : string[] = this.plots.map((e) => e.tableName);
     const openTablesArray: string[] = Object.keys(this.tables);
     const notLoaded : string[] = plotTablesList.filter((e) => openTablesArray.indexOf(e) == -1);
     console.warn('not loaded list', notLoaded);
@@ -633,20 +618,20 @@ export class MultiPlotViewer extends DG.JsViewer {
     this.init();
     this.updatePlots();
     this.updateFilter();
-
     this.render();
 
     // this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
     // this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()));
     this.subs.push(this.dataFrame.selection.onChanged.subscribe((_) => {
+      // this.render();
       /*
       //    return
       //this.selectionIndexes = this.dataFrame.selection.getSelectedIndexes();
       // console.log('selection event: ', this.selection);
       this.plots.map((plot) => {
         return;
-        const table = this.tables[plot.table];
-        console.log('ttttt', this.tables, plot.table);
+        const table = this.tables[plot.tableName];
+        console.log('ttttt', this.tables, plot.tableName);
         if (table) plot.selectedIndexes = table.selection.getSelectedIndexes();
         return;
 
@@ -675,7 +660,7 @@ export class MultiPlotViewer extends DG.JsViewer {
 
   updateFilter(): void {
     for (let i=0; i< this.plots.length; i++) {
-      const tableName = this.plots[i].table;
+      const tableName = this.plots[i].tableName;
       const table = this.tables[tableName];
       const indexes = table.filter.getSelectedIndexes();
       const x = this.plots[i].x;
@@ -715,7 +700,7 @@ export class MultiPlotViewer extends DG.JsViewer {
       console.log('zoom ', e);
     });
 
-    this.echart.on('brushSelected2', (e) => {
+    this.echart.on('brushSelected', (e) => {
       this.mode = 'brushSelected';
       console.log('brush selected ', e);
       if (e.batch.length === 0) return;
@@ -724,7 +709,7 @@ export class MultiPlotViewer extends DG.JsViewer {
       if (batchSelected.length === 0) return;
       const index = batchSelected[0].dataIndex;
       for (let i=0; i<batchSelected.length; i++) {
-        const table = this.tables[this.plots[i].table];
+        const table = this.tables[this.plots[i].tableName];
         table.selection.setAll(0);
         for (let j=0; j<index.length; j++) {
           table.selection.set(index[j], true);
@@ -749,7 +734,7 @@ export class MultiPlotViewer extends DG.JsViewer {
     this.echart.on('click', {datatype: 'all'}, (params : any) => {
       console.log('echart click', params);
       const iPlot : number = this.visibleIndexes[params.componentIndex];
-      const table : DG.DataFrame = this.tables[this.plots[iPlot].table];
+      const table : DG.DataFrame = this.tables[this.plots[iPlot].tableName];
       const subjBuf = this.plots[iPlot];
       const x = params.event.event.x + this.tooltipOffset;
       const y = params.event.event.y + this.tooltipOffset;
@@ -775,7 +760,7 @@ export class MultiPlotViewer extends DG.JsViewer {
 
     this.echart.on('mouseover', (params) => {
       const iPlot : number = this.visibleIndexes[params.componentIndex];
-      const table : DG.DataFrame = this.tables[this.plots[iPlot].table];
+      const table : DG.DataFrame = this.tables[this.plots[iPlot].tableName];
       const subjBuf = this.plots[iPlot];
 
       const x = (params.event.event as MouseEvent).x + this.tooltipOffset;
@@ -902,8 +887,8 @@ export class MultiPlotViewer extends DG.JsViewer {
     console.log('set echart options: ', this.echartOptions);
     if (this.echart) {
       this.echart.clear();
-      this.echart.setOption(this.echartOptions, true);
-      // setTimeout(() => this.echart.setOption(this.echartOptions, true), 200);
+      // this.echart.setOption(this.echartOptions, true);
+      setTimeout(() => this.echart.setOption(this.echartOptions, true), 200);
     }
   }
 }
