@@ -551,6 +551,14 @@ export class Dialog {
     return this;
   }
 
+  /** Initializes the 'history' feature.
+   * @param {Function} getInput - collects the input from UI into JSON-serializable object
+   * @param {Function} applyInput - refreshes the UI according to input
+   * */
+  history(getInput: () => any, applyInput: (x: any) => void): void {
+    api.grok_Dialog_History(this.d, getInput, applyInput);
+  }
+
   /** Initializes default history. */
   initDefaultHistory(): Dialog {
     api.grok_Dialog_InitDefaultHistory(this.d);
