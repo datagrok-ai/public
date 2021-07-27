@@ -60,7 +60,7 @@ Check out the following spaces for more information about Datagrok:
    patterns, such as a [ChEMBL data repository browser], and plugins, such as [custom cell renderers], [custom viewers],
    [custom filters], and others.
 
-   Finally, you can also find our packages for domains such as [Digital Signal Processing], [Biosignals], Cheminformatics,
+   Finally, you can also find our packages for domains such as [Digital Signal Processing], [Biosignals], [Cheminformatics],
    and [Natural Language Processing].
 
 5. Datagrok User Meetings. We host regular meetings with active Datagrok users. If you want to join such meetings, go
@@ -196,6 +196,7 @@ package. Run `grok publish --release` so others could see your package, too.
 [custom filters]: https://github.com/datagrok-ai/public/blob/master/packages/Widgets/src/filters/radio_button_filter.js
 [Digital Signal Processing]: https://github.com/datagrok-ai/public/tree/master/packages/DSP
 [Biosignals]: https://github.com/datagrok-ai/public/tree/master/packages/BioSignals
+[Cheminformatics]: https://datagrok.ai/help/domains/chem/cheminformatics
 [Natural Language Processing]: https://github.com/datagrok-ai/public/tree/master/packages/NLP
 [Our YouTube channel]: https://www.youtube.com/channel/UCXPHEjOd4gyZ6m6Ji-iOBYg
 [Coffee Company feature demo]: https://www.youtube.com/watch?v=tVwpRB8fikQ
