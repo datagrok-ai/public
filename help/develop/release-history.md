@@ -1,6 +1,32 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-07-27 Dev build 0.92.34
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.34`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* DevTools package (WIP)
+* (Bug) Scatter Plot: Regression line appear without activation (WIP)
+* (Bug) Grok connect: NullPointerException with meta.cache option 
+* JS API: Added ui.makeDroppable() and Dialog.initDefaultHistory() 
+* UI: Corrected Column Grid Widget Mode view 
+* Functions: Corrected some function tags 
+* UI: Corrected Function Grid Widget Mode view 
+* Power Pack: Add New Column (WIP)
+* Updated public token 
+* MultiPlot: run with pure script 
+* Ability to turn on GrokConnect DataFrame recompression 
+* (Bug) DataSync doesn't work with Grok Connect 
+
+
 # 2021-07-26 Dev build 0.92.33
 
 ## Latest Docker Images
