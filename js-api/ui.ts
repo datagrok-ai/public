@@ -525,7 +525,7 @@ export function popupMenu(items: any): void {
 export function makeDroppable<T>(e: Element, options?: {
     acceptDrop?: (dragObject: T) => boolean,
     doDrop?: (dragObject: T, copying: boolean) => void }): void {
-  api.grok_MakeDroppable(e, options?.acceptDrop, options?.doDrop);
+  api.grok_UI_MakeDroppable(e, options?.acceptDrop, options?.doDrop);
 }
 
 export function inputs(inputs: InputBase[], options: any = null) {
