@@ -72,10 +72,12 @@ export function molecularWeight(sequence: string): number {
     "dA": 313.21, "dU": 306.17, "dC": 289.18, "dG": 329.21, "dT": 304.2,
     "rA": 329.21, "rU": 306.17, "rC": 305.18, "rG": 345.21
   };
+  const recognizableSymbols = Object.keys(weights);
   const slicingStep = /^[AUGCT]/g.test(sequence) ? 1 : 2;
   let molecularWeight = 0;
   for (let i = 0; i < sequence.length; i += slicingStep)
-    molecularWeight += weights[sequence.slice(i, i + slicingStep)];
+    if (recognizableSymbols.includes(sequence.slice(i, i + slicingStep)))
+      molecularWeight += weights[sequence.slice(i, i + slicingStep)];
   return (sequence.length > 0) ? molecularWeight - 61.97 : 0;
 }
 
