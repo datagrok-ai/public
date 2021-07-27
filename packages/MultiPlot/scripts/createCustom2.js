@@ -5,7 +5,7 @@
 let options = {
     series: [
         {
-            table: 'ae__2__lb__2_',
+            tableName: 'ae__2__lb__2_',
             title: 'outside title 0',
             type: 'scatter',
             x: 'LBDY',
@@ -25,7 +25,7 @@ let options = {
 
         // timeLines
         {
-            table: 'ae__2__lb__2_',
+            tableName: 'ae__2__lb__2_',
             title: 'outside title 1',
             type: 'timeLine',
             x: 'LBTEST',
