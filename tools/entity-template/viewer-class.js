@@ -1,3 +1,7 @@
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
+
 // See also https://datagrok.ai/help/develop/how-to/develop-custom-viewer
 // This viewer does the following:
 // * listens to changes of filter and selection in the attached table,
