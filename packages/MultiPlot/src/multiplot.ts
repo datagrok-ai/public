@@ -50,7 +50,8 @@ export class MultiPlotViewer extends DG.JsViewer {
   private paramOptions : string = this.string('paramOptions', 'none22');
   private mode : string = 'none'; // 'brushSelected'
   private options = {series: [
-    ]};
+  
+  ]};
 
   typeComboElements : HTMLElement[] = [];
   showHideElements : HTMLElement[] = [];
@@ -100,19 +101,6 @@ export class MultiPlotViewer extends DG.JsViewer {
       };
       e.selectedIndexes = [];
     });
-    /*  will be used in status chart
-    this.plots.map((plot) => {
-      const defaultColor = this.categoryColors[0];
-      const selectionColor = this.categoryColors[1];
-      plot.series.itemStyle = (e, i) => {
-        let color = defaultColor;
-        if (this.selection.includes(e.dataIndex)) {
-          color = selectionColor;
-        }
-        return color;
-      };
-    });
-    */
     if (!this.echart) this.echart = echarts.init(this.root, null, {renderer: 'canvas'});
     this.addEchartHandlers();
     this.createElements();
@@ -144,8 +132,6 @@ export class MultiPlotViewer extends DG.JsViewer {
       if (val === 'none') return;
       const param = JSON.parse(this.paramOptions);
       if (param.series.length === 0) return;
-      console.error('prop change2 ', param);
-
       this.plots = param.series;
       const tableArray = grok.shell.tables;
       this.tables = {};
@@ -338,7 +324,9 @@ export class MultiPlotViewer extends DG.JsViewer {
         encode: {x: 0, y: 1},
         selectedMode: 'multiple',
         xAxis: {},
-        yAxis: {},
+        yAxis: {
+          type: plot.yType,
+        },
         itemStyle: {},
       };
 
@@ -363,13 +351,28 @@ export class MultiPlotViewer extends DG.JsViewer {
         }
       }
 
-      if (this.plots[i].type === 'timeLine') {
-        this.plots[i].timeLinesSeries = this.initTimeLine(visibleIndex, this);
-        this.plots[i].subjectCol = this.tables[this.plots[i].tableName].getCol(this.plots[i].x);
+      if (currentSeries.yAxis &&
+        currentSeries.yAxis.type === 'category') {
+        console.warn('plot ', i, plot);
+        console.log(this.plots[i].y);
+        const xCols = Array.isArray(plot.x) ? plot.x.length : 1;
+        plot.categoryColumnIndex = xCols;
+        this.plots[i].subjectCol = this.tables[this.plots[i].tableName].getCol(this.plots[i].y);
         this.plots[i].subjects = this.plots[i].subjectCol.categories;
         this.plots[i].subjects = this.plots[i].subjects.map(this.trimCategoryString.bind(this));
         // this.plots[i].subjects = this.plots[i].subjects.map(e => this.trimCategoryWord(e, this.categoryLength, true));
         this.plots[i].subjBuf = this.plots[i].subjectCol.getRawData();
+      }
+
+      if (this.plots[i].type === 'timeLine') {
+        this.plots[i].timeLinesSeries = this.initTimeLine(visibleIndex, this);
+/*
+        this.plots[i].subjectCol = this.tables[this.plots[i].tableName].getCol(this.plots[i].y);
+        this.plots[i].subjects = this.plots[i].subjectCol.categories;
+        this.plots[i].subjects = this.plots[i].subjects.map(this.trimCategoryString.bind(this));
+        // this.plots[i].subjects = this.plots[i].subjects.map(e => this.trimCategoryWord(e, this.categoryLength, true));
+        this.plots[i].subjBuf = this.plots[i].subjectCol.getRawData();
+*/
         currentSeries = this.plots[i].timeLinesSeries;
         currentSeries.xAxisIndex = visibleIndex;
         currentSeries.yAxisIndex = visibleIndex;
@@ -444,7 +447,7 @@ export class MultiPlotViewer extends DG.JsViewer {
     return s.length > this.categoryLength ? s.substring(0, this.categoryLength) + '...' : s;
   }
 
-  // trim to keep only entire words
+  // trim to keep only entire words not used right now
   trimCategoryWord( str: string, n: number, useWordBoundary : boolean) : string {
     if (str.length <= n) {
       return str;
@@ -660,28 +663,30 @@ export class MultiPlotViewer extends DG.JsViewer {
 
   updateFilter(): void {
     for (let i=0; i< this.plots.length; i++) {
-      const tableName = this.plots[i].tableName;
+      const plot = this.plots[i];
+      const tableName = plot.tableName;
       const table = this.tables[tableName];
       const indexes = table.filter.getSelectedIndexes();
-      const x = this.plots[i].x;
-      const y = this.plots[i].y;
+      const x = plot.x;
+      const y = plot.y;
       const xArray = Array.isArray(x) ? x : [x];
       const yArray = Array.isArray(y) ? y : [y];
 
       const data = this.getUniversalData(
           table,
-          // [this.plots[i].x, this.plots[i].y],
           xArray.concat(yArray),
           indexes,
       );
-      this.plots[i].series.data = data;
-      if (this.plots[i].type != 'timeLine') continue;
-      for (let i=0; i<data.length; i++) {
-        data[i][0] = this.trimCategoryString(data[i][0]);
-        //     data[i][0] = this.trimCategoryWord(data[i][0], this.categoryLength, true);
+      if (plot.categoryColumnIndex) {
+        for (let i=0; i<data.length; i++) {
+          data[i][plot.categoryColumnIndex] = this.trimCategoryString(data[i][plot.categoryColumnIndex]);
+        }
       }
+      plot.series.data = data;
+
+      if (plot.type != 'timeLine') continue;
       this.timeLinesData = data;
-      this.plots[i].series.data = data;
+      //this.plots[i].series.data = data;
       this.timeLineIndex = i;
     }
     this.updatePlots();
