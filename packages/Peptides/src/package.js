@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 export let _package = new DG.Package();
-
+var alignementModule = null;
 
 function main(tableName, localTables) {
   grok.shell.info(tableName);
@@ -21,6 +21,8 @@ function main(tableName, localTables) {
 //name: Peptides
 //tags: app
 export function Peptides() {
+
+  alignementModule = await Module();
 
   let appDescription = ui.info(
     [
