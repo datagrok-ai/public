@@ -9,14 +9,14 @@ This guide will help you jump-start using Datagrok as an engineer. In short, wha
 with plugins or build your applications on top of Datagrok.
 
 If you have any questions or suggestions after reading this Getting Started guide, go to our [Community Forum] &mdash; 
-typically respond within 24 hours.
+we typically respond within 24 hours.
 
-## Let's start
+## Let's Start
 
 If you already know something about Datagrok (probably thanks to our [YouTube channel]), you can take a fast track:
 
 * Have a look at the [20-minute introduction to a Datagrok application] for a refresher, and then proceed to the
-  [JavaScript programming exercises](exercises.md) that explain how to use Datagrok with JavaScript.
+  [JavaScript programming exercises](exercises.md) that explain how to work with Datagrok using the JavaScript API.
 * Check out the [Daily Sources of Information](#daily-sources-of-information), where you can post questions and get
   information about the platform updates. Return to Daily Sources of Information from time to time to study Datagrok in
   depth.
@@ -24,12 +24,12 @@ If you already know something about Datagrok (probably thanks to our [YouTube ch
 In case you want a clean start, review the following sections one by one, in order:
 
 1. [Daily Sources of Information](#daily-sources-of-information)
-2. [Datagrok video walkthrough](#datagrok-video-walkthrough)
-3. [Before you start: FAQ section](#frequently-asked-questions)
-4. [Datagrok tutorials](#datagrok-tutorials-and-exercises) or [start using the public version of Datagrok]
-5. [Datagrok exercises](#datagrok-tutorials-and-exercises) or [start directly](exercises.md)
+2. [Datagrok Video Walkthrough](#datagrok-video-walkthrough)
+3. [Frequently Asked Questions](#frequently-asked-questions)
+4. [Datagrok Tutorials](#datagrok-tutorials-and-exercises) or [start using the public version of Datagrok]
+5. [Datagrok Exercises](#datagrok-tutorials-and-exercises) or [start directly](exercises.md)
 6. [Datagrok Architecture](#datagrok-architecture) or [start directly](admin/architecture.md)
-7. [Extending and customizing Datagrok](#extending-and-customizing-datagrok) or [start extending and customizing Datagrok]
+7. [Extending and Customizing Datagrok](#extending-and-customizing-datagrok) or [start extending and customizing Datagrok]
 8. [Building Datagrok Applications](#datagrok-application-development) or [start directly](how-to/build-an-app.md)
 
 ## Daily Sources of Information
@@ -135,7 +135,7 @@ We encourage you to go through these two articles:
 Properly accessing data and leveraging the power of our in-memory data store is crucial to make your applications
 and plugins low-latency and smooth in operation.
 
-## Extending and customizing Datagrok
+## Extending and Customizing Datagrok
 
 After some hands-on experience, you might want to learn about rich customization capabilities of Datagrok. Check out
 [the Extending and Customizing Datagrok article] for more information.
@@ -201,10 +201,10 @@ package. Run `grok publish --release` so others could see your package, too.
 [Coffee Company feature demo]: https://www.youtube.com/watch?v=tVwpRB8fikQ
 [Datagrok Tools]: https://www.youtube.com/watch?v=zVVmlRorpjg&t=258s
 [VS Code Integration]: https://www.youtube.com/watch?v=zVVmlRorpjg&t=870s
-[Platform overview]: video-contents.md/#getting-started
-[JS API Overview]: video-contents.md/#java-script-api
-[Data access]: video-contents.md/#data-access
-[Predictive modeling]: video-contents.md/#predictive-modeling
+[Platform overview]: ../video-contents.md/#getting-started
+[JS API Overview]: ../video-contents.md/#java-script-api
+[Data access]: ../video-contents.md/#data-access
+[Predictive modeling]: ../video-contents.md/#predictive-modeling
 [ChaRPy: Converting charts to R and Python scripts]: https://www.youtube.com/watch?v=seAgx5TbrzI&t=162s
 [MedChem Browser (Andrey Santrosyan & Dmitrii Petrov, GNF)]: https://www.youtube.com/watch?v=seAgx5TbrzI&t=970s
 [our Youtube channel]: https://www.youtube.com/channel/UCXPHEjOd4gyZ6m6Ji-iOBYg
@@ -213,5 +213,5 @@ package. Run `grok publish --release` so others could see your package, too.
 [some exercises]: exercises.md
 [the Extending and Customizing Datagrok article]: extending-and-customizing.md
 [Build a Datagrok App]: how-to/build-an-app.md
-[VS Code]: javascript-development.md#one-click-debugging-with-visual-studio-code
-[WebStorm]: javascript-development.md#one-click-debugging-with-jetbrains-ides
+[VS Code]: develop.md#one-click-debugging-with-visual-studio-code
+[WebStorm]: develop.md#one-click-debugging-with-jetbrains-ides
