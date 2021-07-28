@@ -4,7 +4,7 @@ DevTools is a [package](https://datagrok.ai/help/develop/develop#packages) for t
 
 Components:
   - `Dev` [info panel](https://datagrok.ai/help/discover/info-panels)
-  -  The [viewers](https://datagrok.ai/help/visualize/viewers)' context menu command `To JavaScipt`
+  -  The [viewers](https://datagrok.ai/help/visualize/viewers)' context menu command `To JavaScript`
 
 See also:
   - [JavaScript Development](https://datagrok.ai/help/develop/develop) 
