@@ -78,4 +78,5 @@ Read more about package development in [Datagrok's documentation](https://datagr
     visible only to the developer or a release version accessible by all eligible users and user groups
     - `--key`: a string containing a developer key that is not listed in the config file, e.g., the key for a new server
     - `--suffix`: a string containing package version hash
+  
   Running `grok publish` is the same as running `grok publish defaultHost --build --debug`.
