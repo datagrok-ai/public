@@ -2,8 +2,9 @@ import * as grok from "datagrok-api/grok";
 import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
-import { ValidationView } from "./validation-view";
-import $ from "cash-dom";
+import { createKaplanMeierDataframe } from "../data-preparation/data-preparation";
+import { createKaplanMeierScatterPlot } from "../custom-scatter-plots/custom-scatter-plots";
+
 
 export class StudySummaryView extends DG.ViewBase {
 
@@ -42,10 +43,21 @@ export class StudySummaryView extends DG.ViewBase {
 
     let errorsSummary = ui.tableFromMap(this.errorsByDomainWithLinks);
 
+    let kaplanMeierDataframe = createKaplanMeierDataframe();
+    let kaplanMeierPlot = createKaplanMeierScatterPlot(kaplanMeierDataframe, 'SUBJID', 'TIME', 'SURVIVAL', 'GROUP');
+
     this.root.appendChild(ui.div([
       ui.divH([
-        ui.block25([ui.h2('Summary'), summary]),
-        ui.block25([ui.h2('Errors'), errorsSummary]),
+        ui.block50([
+          ui.divH([
+            ui.block50([ui.h2('Summary'), summary]),
+            ui.block50([ui.h2('Errors'), errorsSummary]),
+          ]),
+          ui.divV([
+            ui.h2('Survival chart'),
+            kaplanMeierPlot.root
+          ]),
+        ]),
         ui.block50([ui.h2('Enrollment'), lc.root])
       ]),
       ui.divH([
