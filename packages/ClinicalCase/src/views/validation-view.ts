@@ -4,8 +4,8 @@ import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
 import { validationRulesList } from "../package";
 import { pinnacleRuleIdColumnName, validationResultRuleIdColumn } from "../validation/constants";
-import { createRulesDataFrame, createValidationDataFrame } from '../validation/validation-utils';
-import { View } from 'datagrok-api/dg';
+import { createRulesDataFrame } from '../validation/validation-utils';
+import { getUniqueValues } from '../data-preparation/utils';
 
 export class ValidationView extends DG.ViewBase {
 
@@ -23,10 +23,9 @@ export class ValidationView extends DG.ViewBase {
     this.resultsDataframe = study.validationResults;
     this.domains = study.domains;
 
-    let uniqueViolatedRuleIds = this.getUniqueErrorIds(study.validationResults);
+    let uniqueViolatedRuleIds = getUniqueValues(study.validationResults, validationResultRuleIdColumn);
     this.rulesDataframe = this.getViolatedRulesDataframe(validationRulesList, uniqueViolatedRuleIds);
 
-    //this.resultsGrid = this.resultsDataframe.plot.grid();
     this.rulesGrid = this.rulesDataframe.plot.grid();
 
     grok.data.linkTables(this.rulesDataframe, this.resultsDataframe,
@@ -34,18 +33,10 @@ export class ValidationView extends DG.ViewBase {
       [ DG.SYNC_TYPE.CURRENT_ROW_TO_SELECTION, DG.SYNC_TYPE.CURRENT_ROW_TO_SELECTION ]);
 
 
-
-    // this.rulesGrid.onCellPrepare(function (gc) {
-    //   if (!gc.isTableCell)
-    //     return;
-    //   if (gc.gridColumn.idx === 1 && uniqueViolatedRuleIds.has(gc.cell.value))
-    //     gc.style.backColor = 0xFFFF0000;
-    // });
-
-    this.generateUI(this.resultsGrid, this.rulesGrid);
+    this.generateUI();
   }
 
-  private generateUI(resultsGrid: any, rulesGrid: any) {
+  private generateUI() {
 
     this.root.appendChild(
       ui.splitV([
@@ -89,15 +80,7 @@ export class ValidationView extends DG.ViewBase {
     }
   }
 
-  private getUniqueErrorIds(resultsDataframe: DG.DataFrame) {
-    const uniqueIds = new Set();
-    let column = resultsDataframe.columns.byName(validationResultRuleIdColumn);
-    let rowCount = resultsDataframe.rowCount;
-    for (let i = 0; i < rowCount; i++)
-      uniqueIds.add(column.get(i));
-    return uniqueIds;
-  }
-
+  
   private getViolatedRulesDataframe(rules: DG.DataFrame, uniqueViolatedRuleIds: any) {
     const res = createRulesDataFrame();
     let column = rules.columns.byName(pinnacleRuleIdColumnName);
@@ -106,22 +89,6 @@ export class ValidationView extends DG.ViewBase {
       if (uniqueViolatedRuleIds.has(column.get(i))) {
         const array = [];
         for (let col of rules.columns)
-          array.push(col.get(i));
-        res.rows.addNew(array);
-      }
-    }
-    return res;
-  }
-
-
-  private createFilteredDataframe(resultsDataframe: DG.DataFrame, domain: string) {
-    const res = createValidationDataFrame();
-    let column = resultsDataframe.columns.byName('Domain');
-    let rowCount = resultsDataframe.rowCount;
-    for (let i = 0; i < rowCount; i++) {
-      if (column.get(i) === domain) {
-        const array = [];
-        for (let col of resultsDataframe.columns)
           array.push(col.get(i));
         res.rows.addNew(array);
       }
