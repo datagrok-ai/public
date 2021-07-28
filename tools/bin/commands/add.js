@@ -39,6 +39,7 @@ function add(args) {
   // TypeScript package check
   const ts = fs.existsSync(path.join(curDir, 'tsconfig.json'));
   const packageEntry = ts ? tsPath : jsPath;
+  const ext = ts ? '.ts' : '.js';
 
   function validateName(name) {
     if (!/^([A-Za-z])+([A-Za-z\d])*$/.test(name)) {
@@ -155,8 +156,10 @@ function add(args) {
       createPackageEntryFile();
 
       // Add a function to package.js
-      let func = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)), 'entity-template',
-        (tag === 'panel' ? 'panel.js' : tag === 'init' ? 'init.js' : 'function.js')), 'utf8');
+      let filename = tag === 'panel' ? 'panel' + ext :
+      tag === 'init' ? 'init.js' : 'function' + ext;
+      let func = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
+        'entity-template', filename), 'utf8');
       fs.appendFileSync(packageEntry, insertName(name, func));
 
       console.log(`The function ${name} has been added successfully`);
@@ -233,12 +236,12 @@ function add(args) {
       createPackageEntryFile();
 
       // Add a new JS file with a view class
-      let viewPath = path.join(srcDir, name.toLowerCase() + (ts ? '.ts' : '.js'));
+      let viewPath = path.join(srcDir, name.toLowerCase() + ext);
       if (fs.existsSync(viewPath)) {
         return console.log(`The view file already exists: ${viewPath}`);
       }
       let viewClass = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
-        'entity-template', 'view-class.js'), 'utf8');
+        'entity-template', 'view-class' + ext), 'utf8');
       fs.writeFileSync(viewPath, insertName(name, viewClass), 'utf8');
 
       // Add a view function to package.js
@@ -267,12 +270,12 @@ function add(args) {
       createPackageEntryFile();
 
       // Add a new JS file with a viewer class
-      let viewerPath = path.join(srcDir, name.toLowerCase() + (ts ? '.ts' : '.js'));
+      let viewerPath = path.join(srcDir, name.toLowerCase() + ext);
       if (fs.existsSync(viewerPath)) {
         return console.log(`The viewer file already exists: ${viewerPath}`);
       }
       let viewerClass = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
-        'entity-template', 'viewer-class.js'), 'utf8');
+        'entity-template', 'viewer-class' + ext), 'utf8');
       fs.writeFileSync(viewerPath, insertName(name, viewerClass), 'utf8');
 
 
