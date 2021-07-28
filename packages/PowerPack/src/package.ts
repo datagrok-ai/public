@@ -4,6 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { welcomeView } from "./welcome-view";
 import { compareColumns } from './compare-columns';
+import { AddNewColumnDialog } from './dialogs/add-new-column-ext';
 import { DistributionProfilerViewer } from './distribution-profiler';
 import { SystemStatusWidget } from "./widgets/system-status-widget";
 import { RecentProjectsWidget } from "./widgets/recent-projects-widget";
@@ -22,6 +23,12 @@ export let _package = new DG.Package();
 //top-menu: Data | Compare Columns...
 export function _compareColumns(): void {
   compareColumns();
+}
+
+//name: addNewColumnExt
+//top-menu: Edit | Add New Column Ext...
+export function _addNewColumnDialog(): AddNewColumnDialog {
+  return new AddNewColumnDialog();
 }
 
 //name: distributionProfiler

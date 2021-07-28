@@ -6,10 +6,6 @@
 //output: widget result
 //condition: true
 export function #{NAME}(smiles) {
-  let panels = ui.div([
-    this.createSearchPanel('Exact', smiles),
-    this.createSearchPanel('Similar', smiles),
-    this.createSearchPanel('Substructure', smiles)
-  ]);
-  return DG.Widget.fromRoot(panels);
+  let mol = ui.div(grok.chem.svgMol(smiles));
+  return DG.Widget.fromRoot(mol);
 }

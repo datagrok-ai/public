@@ -16,6 +16,7 @@ function add(args) {
   const curFolder = path.basename(curDir);
   const srcDir = path.join(curDir, 'src');
   const jsPath = path.join(srcDir, 'package.js');
+  const tsPath = path.join(srcDir, 'package.ts');
   const detectorsPath = path.join(curDir, 'detectors.js');
   const scriptsDir = path.join(curDir, 'scripts');
   const queryDir = path.join(curDir, 'queries');
@@ -35,6 +36,10 @@ function add(args) {
     console.error(error);
   }
 
+  // TypeScript package check
+  const ts = fs.existsSync(path.join(curDir, 'tsconfig.json'));
+  const packageEntry = ts ? tsPath : jsPath;
+
   function validateName(name) {
     if (!/^([A-Za-z])+([A-Za-z\d])*$/.test(name)) {
       return console.log('The name may only include letters and numbers. It cannot start with a digit');
@@ -43,19 +48,18 @@ function add(args) {
   }
 
   function insertName(name, data) {
-    data = data.replace(/#{NAME}/g, name)
-      .replace(/#{NAME_TITLECASE}/g,
-        name[0].toUpperCase() + name.slice(1).toLowerCase())
-      .replace(/#{NAME_LOWERCASE}/g, name.toLowerCase())
+    for (let repl of ['NAME', 'NAME_TITLECASE', 'NAME_LOWERCASE']) {
+      data = utils.replacers[repl](data, name);
+    }
     return data;
   }
 
-  function createJsFile() {
+  function createPackageEntryFile() {
     if (!fs.existsSync(srcDir)) fs.mkdirSync(srcDir);
-    if (!fs.existsSync(jsPath)) {
+    if (!fs.existsSync(packageEntry)) {
       var contents = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
         'package-template', 'src', 'package.js'), 'utf8');
-      fs.writeFileSync(jsPath, contents, 'utf8');
+      fs.writeFileSync(packageEntry, contents, 'utf8');
     }
   }
 
@@ -121,12 +125,12 @@ function add(args) {
       if (!validateName(name)) return false;
 
       // Create src/package.js if it doesn't exist yet
-      createJsFile();
+      createPackageEntryFile();
 
       // Add an app template to package.js
       let app = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
         'entity-template', 'app.js'), 'utf8');
-      fs.appendFileSync(jsPath, insertName(name, app));
+      fs.appendFileSync(packageEntry, insertName(name, app));
       console.log(`The application ${name} has been added successfully`);
       console.log('Read more at https://datagrok.ai/help/develop/develop#applications');
       console.log('See application examples at https://public.datagrok.ai/apps');
@@ -148,12 +152,12 @@ function add(args) {
       }
 
       // Create src/package.js if it doesn't exist yet
-      createJsFile();
+      createPackageEntryFile();
 
       // Add a function to package.js
       let func = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)), 'entity-template',
         (tag === 'panel' ? 'panel.js' : tag === 'init' ? 'init.js' : 'function.js')), 'utf8');
-      fs.appendFileSync(jsPath, insertName(name, func));
+      fs.appendFileSync(packageEntry, insertName(name, func));
 
       console.log(`The function ${name} has been added successfully`);
       console.log('Read more at https://datagrok.ai/help/overview/functions/function');
@@ -226,10 +230,10 @@ function add(args) {
       }
 
       // Create src/package.js if it doesn't exist yet
-      createJsFile();
+      createPackageEntryFile();
 
       // Add a new JS file with a view class
-      let viewPath = path.join(srcDir, `${name.toLowerCase()}.js`);
+      let viewPath = path.join(srcDir, name.toLowerCase() + (ts ? '.ts' : '.js'));
       if (fs.existsSync(viewPath)) {
         return console.log(`The view file already exists: ${viewPath}`);
       }
@@ -240,10 +244,10 @@ function add(args) {
       // Add a view function to package.js
       let view = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
         'entity-template', 'view.js'), 'utf8');
-      var contents = insertName(name, "import {#{NAME}} from './#{NAME_LOWERCASE}.js';\n");
-      contents += fs.readFileSync(jsPath, 'utf8');
+      var contents = insertName(name, "import {#{NAME}} from './#{NAME_LOWERCASE}';\n");
+      contents += fs.readFileSync(packageEntry, 'utf8');
       contents += insertName(name, view);
-      fs.writeFileSync(jsPath, contents, 'utf8');
+      fs.writeFileSync(packageEntry, contents, 'utf8');
       console.log(`The view ${name} has been added successfully`);
       console.log('Read more at https://datagrok.ai/help/develop/how-to/custom-views');
       console.log('See examples at https://github.com/datagrok-ai/public/tree/master/packages/Notebooks');
@@ -260,10 +264,10 @@ function add(args) {
       }
 
       // Create src/package.js if it doesn't exist yet
-      createJsFile();
+      createPackageEntryFile();
 
       // Add a new JS file with a viewer class
-      let viewerPath = path.join(srcDir, `${name.toLowerCase()}.js`);
+      let viewerPath = path.join(srcDir, name.toLowerCase() + (ts ? '.ts' : '.js'));
       if (fs.existsSync(viewerPath)) {
         return console.log(`The viewer file already exists: ${viewerPath}`);
       }
@@ -275,10 +279,10 @@ function add(args) {
       // Add a viewer function to package.js
       let viewer = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
         'entity-template', 'viewer.js'), 'utf8');
-      var contents = insertName(name, "import {#{NAME}} from './#{NAME_LOWERCASE}.js';\n");
-      contents += fs.readFileSync(jsPath, 'utf8');
+      var contents = insertName(name, "import {#{NAME}} from './#{NAME_LOWERCASE}';\n");
+      contents += fs.readFileSync(packageEntry, 'utf8');
       contents += insertName(name, viewer);
-      fs.writeFileSync(jsPath, contents, 'utf8');
+      fs.writeFileSync(packageEntry, contents, 'utf8');
       console.log(`The viewer ${name} has been added successfully`);
       console.log('Read more at https://datagrok.ai/help/develop/how-to/develop-custom-viewer');
       console.log('See examples at https://github.com/datagrok-ai/public/tree/master/packages/Viewers,');

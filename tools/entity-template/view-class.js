@@ -1,3 +1,7 @@
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
+
 // A sample class from the Notebooks package:
 // https://github.com/datagrok-ai/public/tree/master/packages/Notebooks
 // This class defines a new view for Jupyter Notebooks.

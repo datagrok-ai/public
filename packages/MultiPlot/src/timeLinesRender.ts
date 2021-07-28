@@ -110,15 +110,19 @@ export function initTimeLineSandBox(visibleIndex: number, viewerThis: any): any 
   return timeLinesSeries;
 } // initTimeLine
 
+const startCol = 0;
+const endCol = 1;
+const categoryCol = 2;
 function timeLinesD(params, api) {
   const overlap = false;
+
   /*
   if (params.dataIndex > 0) {
     const prev = this.data[params.dataIndex - 1];
     const curSubj = this.data[params.dataIndex][0];
     if (curSubj === prev[0] &&
         prev[1] && prev[2] && prev[1] !== prev[2] &&
-        api.value(1) <= prev[2]) {
+        api.value(startCol) <= prev[2]) {
           overlap = true;
           if (prevSubj !== curSubj) {
             this.count = 0;
@@ -128,9 +132,9 @@ function timeLinesD(params, api) {
   }
 */
 
-  const categoryIndex = api.value(0);
-  const start = api.coord([api.value(1), categoryIndex]);
-  const end = api.coord([api.value(2), categoryIndex]);
+  const categoryIndex = api.value(categoryCol);
+  const start = api.coord([api.value(startCol), categoryIndex]);
+  const end = api.coord([api.value(endCol), categoryIndex]);
   const width = end[0] - start[0];
 
   const group = {
@@ -139,7 +143,7 @@ function timeLinesD(params, api) {
   };
 
   // if no reason to draw line
-  if (isNaN(api.value(1)) || isNaN(api.value(2)) || this.markerSize > width) {
+  if (isNaN(api.value(startCol)) || isNaN(api.value(endCol)) || this.markerSize > width) {
     const xPos = (shift) => isNaN(start[0]) ? end[0] : start[0] - shift;
     const yPos = (shift) => end[1] - (this.markerPosition === 'main line' ? shift :
       this.markerPosition === 'above main line' ? Math.max(this.markerSize, this.lineWidth) + shift :
@@ -239,8 +243,8 @@ export function initTimeLine(visibleIndex: number, viewerThis: any) {
     animation: false,
     renderItem: timeLinesD.bind(viewerThis),
     encode: {
-      x: [1, 2],
-      y: 0,
+      x: [startCol, endCol],
+      y: categoryCol,
       tooltip: 3,
     },
     data: this.timeLinesData,
