@@ -1,12 +1,13 @@
 <!-- TITLE: &#8203;Getting Started-->
 <!-- SUBTITLE: -->
 
-# Getting Started with Building on Datagrok
+# Getting started with building on Datagrok
 
 Welcome to Datagrok, the next-generation data platform!
 
 This guide will help you jump-start using Datagrok as an engineer. In short, what you can do with Datagrok is extend it
-with plugins or build your applications on top of Datagrok.
+with plugins, build your applications on top of Datagrok, perform data science tasks, run scripts, retrieve and explore 
+data, and many other things.
 
 If you have any questions or suggestions after reading this Getting Started guide, go to our [Community Forum] &mdash; 
 we typically respond within 24 hours.
@@ -32,7 +33,7 @@ In case you want a clean start, review the following sections one by one, in ord
 7. [Extending and Customizing Datagrok](#extending-and-customizing-datagrok) or [start extending and customizing Datagrok]
 8. [Building Datagrok Applications](#datagrok-application-development) or [start directly](how-to/build-an-app.md)
 
-## Daily Sources of Information
+## Daily sources of information
 
 Check out the following spaces for more information about Datagrok:
 
@@ -66,7 +67,7 @@ Check out the following spaces for more information about Datagrok:
 5. Datagrok User Meetings. We host regular meetings with active Datagrok users. If you want to join such meetings, go
    to the [Community Forum] and ask Andrew or Dan for a Zoom link.
 
-## Datagrok Video Walkthrough
+## Datagrok video walkthrough
 
 [Our YouTube channel] contains a lot of video tutorials and meetings with Datagrok users, so our channel is the best place
 to start learning Datagrok. We've curated a few records that will give you an overall idea of the platform and introduce 
@@ -101,7 +102,7 @@ A little piece of advice: When viewing the videos, skip the Q&A parts. You might
 All the overviews and demos for the Datagrok platform are located on [our YouTube channel] &mdash; subscribe to this
 channel to get updates on the latest Datagrok features.
 
-## Datagrok Tutorials and Exercises
+## Datagrok tutorials and exercises
 
 It's time to get your hands dirty with building on Datagrok!
 
@@ -122,7 +123,7 @@ Here are a few recommendations when you start the exercises:
 Last but not least, you might want to complete one or two exercises per day, not rush through all of them in one day.
 Additional time will help you understand the new concepts.
 
-## Datagrok Architecture
+## Datagrok architecture
 
 The key to efficient development on Datagrok is understanding the Datagrok architecture and performance optimizations that
 you can make to bring the best results to the end user.
@@ -135,16 +136,16 @@ We encourage you to go through these two articles:
 Properly accessing data and leveraging the power of our in-memory data store is crucial to make your applications
 and plugins low-latency and smooth in operation.
 
-## Extending and Customizing Datagrok
+## Extending and customizing datagrok
 
 After some hands-on experience, you might want to learn about rich customization capabilities of Datagrok. Check out
 [the Extending and Customizing Datagrok article] for more information.
 
-## Datagrok Application Development
+## Datagrok application development
 
 [Build a Datagrok App] is the place to start developing your first application on our platform.
 
-## Frequently Asked Questions
+## Frequently asked questions
 
 *Question*
 How do I set up VS Code or WebStorm for debugging on Datagrok? Debugging doesn't work for me now.
@@ -181,7 +182,6 @@ package. Run `grok publish --release` so others could see your package, too.
 [Build an App]: how-to/build-an-app.md
 [start using the public version of Datagrok]: https://public.datagrok.ai/
 [start extending and customizing Datagrok]: https://datagrok.ai/help/develop/extending-and-customizing
-[Community Forum]: https://community.datagrok.ai/
 [JavaScript API Updates]: https://community.datagrok.ai/t/javascript-api-updates/526/9
 [Visualization-related Updates]: https://community.datagrok.ai/t/visualization-related-updates/521/12
 [Cheminformatics Updates]: https://community.datagrok.ai/t/cheminformatics-updates/457/9
