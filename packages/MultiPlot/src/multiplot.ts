@@ -52,38 +52,7 @@ export class MultiPlotViewer extends DG.JsViewer {
   private paramOptions : string = this.string('paramOptions', 'none22');
   private mode : string = 'none'; // 'brushSelected'
   private options = {series: [
-    {
-      tableName: 'ae__2__lb__2_',
-      title: 'outside title 0',
-      type: 'scatter',
-      x: 'LBDY',
-      y: 'LBTEST',
-      yType: 'category',
-      markerShape: 'square',
-      height: '1flex',
-      show: 1,
-      visualMap: {
-        type: 'piecewise',
-        pieces: [
-          {min: 20, max: 250, color: ['red']},
-        ],
-        dimension: 2,
-      },
-    },
-
-    // timeLines
-    {
-      tableName: 'ae__2__lb__2_',
-      title: 'outside title 1',
-      type: 'timeLine',
-      y: 'AETERM',
-      x: ['AESTDY', 'AEENDY'],
-      yType: 'category',
-      color: 'red',
-      markerShape: 'square',
-      height: '2flex',
-      show: 1,
-    },
+ 
   ]};
 
   typeComboElements : HTMLElement[] = [];
