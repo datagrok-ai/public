@@ -52,7 +52,38 @@ export class MultiPlotViewer extends DG.JsViewer {
   private paramOptions : string = this.string('paramOptions', 'none22');
   private mode : string = 'none'; // 'brushSelected'
   private options = {series: [
+    {
+      tableName: 'ae__2__lb__2_',
+      title: 'outside title 0',
+      type: 'scatter',
+      x: 'LBDY',
+      y: 'LBTEST',
+      yType: 'category',
+      markerShape: 'square',
+      height: '1flex',
+      show: 1,
+      visualMap: {
+        type: 'piecewise',
+        pieces: [
+          {min: 20, max: 250, color: ['red']},
+        ],
+        dimension: 2,
+      },
+    },
 
+    // timeLines
+    {
+      tableName: 'ae__2__lb__2_',
+      title: 'outside title 1',
+      type: 'timeLine',
+      y: 'AETERM',
+      x: ['AESTDY', 'AEENDY'],
+      yType: 'category',
+      color: 'red',
+      markerShape: 'square',
+      height: '2flex',
+      show: 1,
+    },
   ]};
 
   typeComboElements : HTMLElement[] = [];
@@ -491,10 +522,18 @@ export class MultiPlotViewer extends DG.JsViewer {
       const y = plot.y;
       const xArray = Array.isArray(x) ? x : [x];
       const yArray = Array.isArray(y) ? y : [y];
+      const visualMapColumnName = [];
+      if (plot.visualMap) {
+        if (plot.visualMap.column) {
+          visualMapColumnName.push(plot.visualMap.column);
+        } else {
+          visualMapColumnName.push(y);
+        }
+      }
 
       const data = this.utils.getUniversalData(
           table,
-          xArray.concat(yArray),
+          xArray.concat(yArray).concat(visualMapColumnName),
           indexes,
           plot.condition,
       );
