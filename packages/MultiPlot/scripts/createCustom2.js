@@ -22,7 +22,7 @@ let options = {
                 dimension: 2,
             },
         },
-
+      
         // timeLines
         {
             tableName: 'ae__2__lb__2_',
@@ -36,6 +36,22 @@ let options = {
             height: '2flex',
             show: 1,
         },
+        // linechart with filter 
+        {
+          tableName: 'ae__2__lb__2_',
+          title: 'outside title 0',
+          type: 'scatter',
+          x: 'AESTDY',
+          y: 'LBTEST',
+          condition: {
+            field: 'USUBJID',
+            value: '01-701-1023'
+          },
+          yType: 'category',
+          markerShape: 'square',
+          height: '1flex',
+          show: 1,
+        }
     ]
 }
 
