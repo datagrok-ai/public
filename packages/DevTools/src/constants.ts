@@ -1,5 +1,8 @@
 import * as DG from 'datagrok-api/dg';
 
+
+export type EntityType = DG.Entity | DG.DataFrame | DG.Column;
+
 export const dfExts = ['csv', 'xlsx'];
 
 export const entExtract = {

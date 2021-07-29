@@ -8,7 +8,8 @@ import {
   templates,
   helpUrls,
   tags,
-  viewerConst
+  viewerConst,
+  EntityType,
 } from './constants';
 import './styles.css';
 
@@ -66,76 +67,78 @@ function getViewerScript(viewer: DG.Viewer): string {
   return `<pre><code>${script}</code></pre>`;
 }
 
+//name: renderDevPanel
+//tags: dev-tools
+//input: object ent
+export async function renderDevPanel(ent: EntityType): Promise<HTMLDivElement> {
+  const type = ent.constructor.name;
+  const snippets = await loadSnippets(type,
+    (ent instanceof DG.FileInfo && dfExts.includes(ent.extension)) ? 'dataframe'
+    : (ent instanceof DG.DataFrame || ent instanceof DG.Column) ? tags[type][0] 
+    : null);
+  const template = (type in templates) ? templates[type](ent) : '';
+  if (snippets.length === 0 && !template) return;
+
+  let links = helpUrls[type] || [];
+  links = Object.keys(links).map(key => ui.link(`${type} ${key}`, links[key], `Open ${key} reference`));
+
+  let editor = ui.textInput('', template);
+  (editor.input as HTMLInputElement).style.height = '200px';
+  (editor.input as HTMLInputElement).style.overflow = 'hidden';
+
+  const playBtn = ui.button(ui.iconFA('play'), () => {
+    eval(`(async () => {\n${editor.value}\n})()`); // TODO: script approval
+  }, 'Run');
+  $(playBtn).addClass('dt-snippet-editor-icon dt-play-icon');
+
+  const clipboardBtn = ui.button(ui.iconFA('copy'), () => {
+    (editor.input as HTMLInputElement).select();
+    const copied = document.execCommand('copy');
+    if (copied) {
+      const copyIcon = clipboardBtn.removeChild(clipboardBtn.firstChild);
+      clipboardBtn.appendChild(ui.iconFA('clipboard-check'));
+      setTimeout(() => {
+        clipboardBtn.removeChild(clipboardBtn.firstChild);
+        clipboardBtn.appendChild(copyIcon);
+      }, 1000);
+    }
+  }, 'Copy');
+  $(clipboardBtn).addClass('dt-snippet-editor-icon dt-clipboard-icon');
+
+  const editorBtn = ui.button(ui.iconFA('external-link-square'), () => {
+    grok.shell.addView(DG.View.createByType(DG.View.JS_EDITOR, { script: editor.value }));
+  }, 'Open in editor');
+  $(editorBtn).addClass('dt-snippet-editor-icon dt-editor-icon');
+
+  const resetBtn = ui.button(ui.iconFA('redo'), () => editor.value = template, 'Reset');
+  $(resetBtn).addClass('dt-snippet-editor-icon dt-reset-icon');
+
+  const topEditorBtn = ui.button(ui.iconFA('edit'), () => {
+    grok.shell.addView(DG.View.createByType(DG.View.JS_EDITOR, { script: entExtract[type](ent) }));
+  }, 'Open in editor');
+  $(topEditorBtn).addClass('dt-snippet-inline-icon');
+
+  const browserLogBtn = ui.button(ui.iconFA('terminal'), () => {
+    console.log(grok.shell.o);
+    grok.shell.info('The object was printed to console. Press F12 to open the developer tools.');
+  }, 'Log to console');
+  $(browserLogBtn).addClass('dt-snippet-inline-icon');
+      
+  return ui.divV([
+    ui.divH([ui.divText(`${type} ${ent.name}:`), topEditorBtn, browserLogBtn], { style: { 'align-items': 'baseline' } }),
+    ...((type in tags) ? [getGroupInput(type)] : []),
+    ...links,
+    ui.div(formSnippetSection(snippets), 'dt-snippet-section'),
+    ui.divV([playBtn, clipboardBtn, editorBtn, resetBtn, editor.root], 'dt-textarea-box'),
+  ], 'dt-dev-pane-container');
+}
+
 //tags: autostart
 export function describeCurrentObj(): void {
-  grok.events.onAccordionConstructed.subscribe(async (acc) => {
+  grok.events.onAccordionConstructed.subscribe((acc: DG.Accordion) => {
     const ent = acc.context;
-    const type = ent.constructor.name;
-
-    if (ent) {
-      const snippets = await loadSnippets(type,
-        (type === 'FileInfo' && dfExts.includes(ent.extension)) ? 'dataframe'
-        : (type === 'DataFrame' || type === 'Column') ? tags[type][0] 
-        : null);
-      const template = (type in templates) ? templates[type](ent) : '';
-      if (snippets.length === 0 && !template) return;
-
-      let links = helpUrls[type] || [];
-      links = Object.keys(links).map(key => ui.link(`${type} ${key}`, links[key], `Open ${key} reference`));
-
-      let editor = ui.textInput('', template);
-      (editor.input as HTMLInputElement).style.height = '200px';
-      (editor.input as HTMLInputElement).style.overflow = 'hidden';
-
-      const playBtn = ui.button(ui.iconFA('play'), () => {
-        eval(`(async () => {\n${editor.value}\n})()`); // TODO: script approval
-      }, 'Run');
-      $(playBtn).addClass('dt-snippet-editor-icon dt-play-icon');
-
-      const clipboardBtn = ui.button(ui.iconFA('copy'), () => {
-        (editor.input as HTMLInputElement).select();
-        const copied = document.execCommand('copy');
-        if (copied) {
-          const copyIcon = clipboardBtn.removeChild(clipboardBtn.firstChild);
-          clipboardBtn.appendChild(ui.iconFA('clipboard-check'));
-          setTimeout(() => {
-            clipboardBtn.removeChild(clipboardBtn.firstChild);
-            clipboardBtn.appendChild(copyIcon);
-          }, 1000);
-        }
-      }, 'Copy');
-      $(clipboardBtn).addClass('dt-snippet-editor-icon dt-clipboard-icon');
-
-      const editorBtn = ui.button(ui.iconFA('external-link-square'), () => {
-        grok.shell.addView(DG.View.createByType(DG.View.JS_EDITOR, { script: editor.value }));
-      }, 'Open in editor');
-      $(editorBtn).addClass('dt-snippet-editor-icon dt-editor-icon');
-
-      const resetBtn = ui.button(ui.iconFA('redo'), () => editor.value = template, 'Reset');
-      $(resetBtn).addClass('dt-snippet-editor-icon dt-reset-icon');
-
-      const topEditorBtn = ui.button(ui.iconFA('edit'), () => {
-        grok.shell.addView(DG.View.createByType(DG.View.JS_EDITOR, { script: entExtract[type](ent) }));
-      }, 'Open in editor');
-      $(topEditorBtn).addClass('dt-snippet-inline-icon');
-
-      const browserLogBtn = ui.button(ui.iconFA('terminal'), () => {
-        console.log(grok.shell.o);
-        grok.shell.info('The object was printed to console. Press F12 to open the developer tools.');
-      }, 'Log to console');
-      $(browserLogBtn).addClass('dt-snippet-inline-icon');
-
-      let devPane = acc.getPane('Dev');      
-      if (!devPane) devPane = acc.addPane('Dev', () => {
-        return ui.divV([
-          ui.divH([ui.divText(`${type} ${ent.name}:`), topEditorBtn, browserLogBtn], { style: { 'align-items': 'baseline' } }),
-          ...((type in tags) ? [getGroupInput(type)] : []),
-          ...links,
-          ui.div(formSnippetSection(snippets), 'dt-snippet-section'),
-          ui.divV([playBtn, clipboardBtn, editorBtn, resetBtn, editor.root], 'dt-textarea-box'),
-        ], 'dt-dev-pane-container');
-      });
-    }
+    let devPane = acc.getPane('Dev');
+    if (!devPane) devPane = acc.addPane('Dev', () => ui.wait(() => renderDevPanel(ent)));
   });
 
   grok.events.onContextMenu.subscribe((args) => {
