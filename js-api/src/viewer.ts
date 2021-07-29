@@ -15,7 +15,7 @@ declare let DG: any;
 declare let ui: any;
 let api = <any>window;
 
-export class TypedEventArgs {
+export class TypedEventArgs<TData> {
   d: any;
   constructor(d: any) {
     this.d = d;
@@ -25,7 +25,7 @@ export class TypedEventArgs {
     return api.grok_TypedEventArgs_Get_Type(this.d);
   }
 
-  get data(): any {
+  get data(): TData {
     let data = api.grok_TypedEventArgs_Get_Data(this.d);
     return toJs(data);
   }
@@ -191,19 +191,6 @@ export class Viewer extends Widget {
         new StreamSubscription(d).cancel();
       }
     );
-  }
-}
-
-
-export class TablePlotter {
-  dataFrame: DataFrame;
-
-  constructor(dataFrame: DataFrame) {
-    this.dataFrame = dataFrame;
-  }
-
-  scatter(x: string, y: string, color?: string, size?: string): ScatterPlotViewer {
-    return Viewer.scatterPlot(this.dataFrame, {x: x, y: y, color: color, size: size});
   }
 }
 

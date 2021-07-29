@@ -157,7 +157,7 @@ export function tabControl(pages: { [key: string]: any; } | null = null, vertica
  * @param {string} text
  * @param {string | ElementOptions | null} options
  * @returns {HTMLDivElement} */
-export function divText(text: string, options: string | ElementOptions | null = null): HTMLDivElement {
+export function divText(text: string, options: string | ElementOptions | any | null = null): HTMLDivElement {
   let e = element('div');
   e.innerText = text;
   _options(e, options);
@@ -520,6 +520,12 @@ export function popupMenu(items: any): void {
   let menu = Menu.popup();
   populate(menu, items);
   menu.show();
+}
+
+export function makeDroppable<T>(e: Element, options?: {
+    acceptDrop?: (dragObject: T) => boolean,
+    doDrop?: (dragObject: T, copying: boolean) => void }): void {
+  api.grok_UI_MakeDroppable(e, options?.acceptDrop, options?.doDrop);
 }
 
 export function inputs(inputs: InputBase[], options: any = null) {

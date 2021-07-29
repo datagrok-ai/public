@@ -120,3 +120,47 @@
 .grok-view:hover .power-pack-widget-host:hover .ui-div::-webkit-scrollbar-thumb {
     background-color: #dbdcdf;
 }
+
+.ui-addnewcolumn-layout {
+  width: 740px;
+  height: 400px;
+}
+
+.ui-input-addnewcolumn-name, .ui-input-addnewcolumn-type {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.ui-input-addnewcolumn-expression {
+  width: 100%;
+  min-width: 100%;
+  min-height: 120px;
+  padding: 0 0 0 6px;
+  font-size: 13px;
+  font-family: 'Roboto', 'Roboto Local', sans-serif;
+}
+
+.ui-addnewcolumn-preview {
+  padding-right: 8px;
+}
+
+.ui-addnewcolumn-preview .d4-grid {
+  width: 100% !important;
+  height: 225px !important;
+  margin-top: 10px !important;
+}
+
+.ui-widget-addnewcolumn-columns, .ui-widget-addnewcolumn-functions {
+  height: 400px !important;
+}
+
+.ui-grid-with-thin-scrollbars > .d4-grid-horz-scroll {
+    height: 8px !important;
+    right: 6px !important;
+}
+
+.ui-grid-with-thin-scrollbars > .d4-grid-vert-scroll {
+    top: 0px !important;
+    width: 6px !important;
+    bottom: 15px !important;
+}
