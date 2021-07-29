@@ -270,7 +270,7 @@ export function div(children: any[] | string | HTMLElement = [], options: string
   return d;
 }
 
-export function info(children: HTMLElement[] | HTMLElement | string, header: string | null = null): HTMLDivElement {
+export function info(children: HTMLElement[] | HTMLElement | string, header: string | null = null, reopenable: boolean = true): HTMLDivElement {
   let root: HTMLDivElement | null;
   let divContent: HTMLElement[] = [];
   let divActual: HTMLDivElement | null = null;
@@ -282,7 +282,7 @@ export function info(children: HTMLElement[] | HTMLElement | string, header: str
   let close = iconFA('times', () => {
     if (divActual) divActual.style.display = 'none';
     close.style.display = 'none';
-    show.style.display = 'block';
+    show.style.display = reopenable ? 'block' : 'none';
   });
   if (header !== null && header !== undefined) {
     divContent.push(h1(header));
