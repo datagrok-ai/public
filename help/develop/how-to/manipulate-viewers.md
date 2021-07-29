@@ -64,7 +64,9 @@ the standard viewer types. When creating an instance of the custom one, use `Dat
 instead. Instances of `JsViewer`'s subclass are obtained asynchronously on the client, as their package
 should be initialized first. As a rule of thumb, you should wait until a JsViewer object is constructed.
 However, if your plans are limited to adding it to a table view without further adjustments,
-a synchronous call of `addViewer` will do.
+a synchronous call of `addViewer` will do (use `setOptions` to specify property values, but have in mind
+that its success depends on your viewer's implementation, and the application of supplied values
+is not guaranteed in synchronous use).
 
 Examples:
 
@@ -148,6 +150,74 @@ Examples:
     <a href="https://public.datagrok.ai/js/samples/ui/viewers/types/word-cloud" target="_blank">Word Cloud</a>
   </li>
 </ul>
+
+## Working with Properties
+
+An essential part of working with visualizations is to customize their appearance.
+As we have seen, our JavaScript API provides multiple methods for this purpose.
+Let's now have a look at how to find out what properties a particular viewer exposes
+and what information you can derive from them.
+
+First, the `setOptions` method has a counterpart `getOptions`, which returns serialized
+viewer options. It takes a flag specifying whether the properties with the defaults values
+should be returned. Not including default properties makes it more clean and efficient
+for serialization purposes, so it is set to `false` by default:
+
+```js
+let data = grok.data.demo.demog();
+let view = grok.shell.addTableView(data);
+grok.shell.info(view.grid.getOptions(true));
+```
+
+If you run this code, the options of the grid viewer will be in the `look` field of the
+returned object. There is also an easier and more user-friendly way to get a list of
+needed properties. If the platform instance you are working on happens to have the
+[DevTools](https://github.com/datagrok-ai/public/tree/master/packages/DevTools) package installed,
+simply open your dataset, add a viewer to it, tweak the settings as they fit, and right-click
+to reach the viewer's context menu. There you can choose the command `To JavaScript` to get a
+snippet that adds an identical viewer to the current view. Another UI-first approach is to save
+the layout of a table view along with its viewers and their positions. Find more detailed
+instructions on the [dedicated page](layouts.md).
+
+![](dev-tools-viewer.gif "Get a snippet with selected viewer properties")
+
+However, in some cases you may want to derive more details about certain viewer properties.
+To access them directly, use the `getProperties` method:
+
+```js
+let data = grok.data.demo.demog();
+let view = grok.shell.addTableView(data);
+let bc = view.barChart();
+
+let descriptions = bc.getProperties()
+  .map((p) => p.propertyType + ' ' + p.name + ': ' + p.description + ' ' + p.columnFilter)
+  .join('<br>');
+grok.shell.info(descriptions);
+```
+
+It returns an array of `Property` objects, which are used to construct descriptions.
+Here is what you can obtain given a property:
+
+  - `choices`: an array of pre-defined values that a property accepts,
+  e.g., all possible aggregation functions you can use for the `Value` column
+  in a bar chart; choices are given in a drop-down list in the property panel
+  - `columnFilter`: an indication of allowed data types, it is only
+  relevant to column properties, e.g., the `Value` column of a box plot
+  has a *numerical* filter; acceptable values are *numerical*, *categorical*,
+  and an individual data type (use `DG.COLUMN_TYPE` to refer to it)
+  - `defaultValue`: a value used by default, often coupled with choices (and
+  should be among the array values for choices if you are developing a custom viewer)
+  - `propertyType`: the type of property values, e.g., margins and colors
+  in a grid expect `int` values
+  - `semType`: the semantic type of a data property, it is used by cell renderers
+  to plot column values according to the nature of the data (for the semantic type
+  `Molecule` strings are rendered as chemical structures)
+
+Examples:
+
+  - [Inspect viewer properties](https://public.datagrok.ai/js/samples/ui/viewers/inspect-viewer-properties)
+  - [Get access to canvas and column selectors](https://public.datagrok.ai/js/samples/ui/viewers/viewer-info)
+  - [Customize scatter plot rendering](https://public.datagrok.ai/js/samples/ui/viewers/custom-scatterplot-rendering)
 
 ## Adding Viewers to Views
 

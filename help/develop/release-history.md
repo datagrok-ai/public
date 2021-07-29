@@ -1,6 +1,154 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-07-27 Dev build 0.92.35
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.35`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Disable NGINX logging (and other logging) in DG docker image 
+* Multi linechart (WIP)
+
+
+# 2021-07-27 Dev build 0.92.34
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.34`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* DevTools package (WIP)
+* (Bug) Scatter Plot: Regression line appear without activation (WIP)
+* (Bug) Grok connect: NullPointerException with meta.cache option 
+* JS API: Added ui.makeDroppable() and Dialog.initDefaultHistory() 
+* UI: Corrected Column Grid Widget Mode view 
+* Functions: Corrected some function tags 
+* UI: Corrected Function Grid Widget Mode view 
+* Power Pack: Add New Column (WIP)
+* Updated public token 
+* MultiPlot: run with pure script 
+* Ability to turn on GrokConnect DataFrame recompression 
+* (Bug) DataSync doesn't work with Grok Connect 
+
+
+# 2021-07-26 Dev build 0.92.33
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.33`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* MultiPlot: fix types 
+* JS API: Get color for cell / category 
+* datagrok-tools: update package template (WIP)
+* Disable NGINX logging (and other logging) in DG docker image 
+* MultiPlot: restore status chart (WIP)
+* Sequence Translator: README documentation (WIP)
+* (Bug) Viewers: textColor property misspelling 
+* (Bug) Scatter Plot: Regression line appear without activation (WIP)
+* Ability to skip DF reading on server after Grok Connect request 
+* MultiPlot: type casting 
+
+
+# 2021-07-25 Dev build 0.92.32
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.32`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* layout templates (update) 
+* add helpUrl example 
+* (Bug) Grid: switching global coloring on / off removes linear color-coding 
+* (Bug) Bar Chart: Unexpected bar color change after filtering 
+* ObservableMap: granular change notification (action, value) 
+* (Bug) Viewers: the legend colors are not synchronized 
+
+
+# 2021-07-25 Dev build 0.92.31
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.31`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Ability to skip DF reading on server after Grok Connect request 
+
+
+# 2021-07-24 Dev build 0.92.30
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.30`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* MultiPlot: restore status chart (WIP)
+* DevTools package (WIP)
+* Ability to skip DF reading on server after Grok Connect request 
+
+
+# 2021-07-24 Dev build 0.92.29
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.29`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Ability to skip DF reading on server after Grok Connect request 
+
+
+# 2021-07-23 Dev build 0.92.28
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.92.28`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Ability to skip DF reading on server after Grok Connect request 
+
+
 # 2021-07-23 Dev build 0.92.27
 
 ## Latest Docker Images

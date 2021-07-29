@@ -87,6 +87,11 @@ export function describeCurrentObj(): void {
       (editor.input as HTMLInputElement).style.height = '200px';
       (editor.input as HTMLInputElement).style.overflow = 'hidden';
 
+      const playBtn = ui.button(ui.iconFA('play'), () => {
+        eval(`(async () => {\n${editor.value}\n})()`); // TODO: script approval
+      }, 'Run');
+      $(playBtn).addClass('dt-snippet-editor-icon dt-play-icon');
+
       const clipboardBtn = ui.button(ui.iconFA('copy'), () => {
         (editor.input as HTMLInputElement).select();
         const copied = document.execCommand('copy');
@@ -115,7 +120,6 @@ export function describeCurrentObj(): void {
       $(topEditorBtn).addClass('dt-snippet-inline-icon');
 
       const browserLogBtn = ui.button(ui.iconFA('terminal'), () => {
-        console.clear();
         console.log(grok.shell.o);
         grok.shell.info('The object was printed to console. Press F12 to open the developer tools.');
       }, 'Log to console');
@@ -128,7 +132,7 @@ export function describeCurrentObj(): void {
           ...((type in tags) ? [getGroupInput(type)] : []),
           ...links,
           ui.div(formSnippetSection(snippets), 'dt-snippet-section'),
-          ui.divV([clipboardBtn, editorBtn, resetBtn, editor.root], 'dt-textarea-box'),
+          ui.divV([playBtn, clipboardBtn, editorBtn, resetBtn, editor.root], 'dt-textarea-box'),
         ], 'dt-dev-pane-container');
       });
     }

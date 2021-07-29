@@ -1,6 +1,7 @@
 import {Balloon} from './widgets';
 import * as rxjs from 'rxjs';
 import {toJs} from './wrappers';
+import { Cell } from './dataframe';
 
 let api = <any>window;
 
@@ -35,10 +36,10 @@ export class Utils {
 // }
 
 
-export function _toIterable(o: any): Iterable<any> {
+export function _toIterable(d: any): Iterable<any> {
   let iterable = {};
   // @ts-ignore
-  iterable[Symbol.iterator] = () => _getIterator(o);
+  iterable[Symbol.iterator] = () => _getIterator(d);
   // @ts-ignore
   return iterable;
 }

@@ -27,3 +27,8 @@ demog.onRowsRemoved.subscribe((_) => info('ddt-rows-removed'));
 demog.onDataChanged.subscribe((_) => info('ddt-data-changed'));
 demog.onFilterChanged.subscribe((_) => info('ddt-filter-changed'));
 demog.onSelectionChanged.subscribe((_) => info('ddt-selection-changed'));
+
+// this will only get fired when a user changes conditional color-coding of a numerical column
+demog.onMetadataChanged
+  .pipe(rxjs.operators.filter(data => data.args.key === DG.TAGS.COLOR_CODING_CONDITIONAL))
+  .subscribe((data) => info(`${data.args.change} - ${data.args.key} - ${data.args.value}`));

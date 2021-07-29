@@ -9,3 +9,6 @@ dlg
   .addButton('HIDE', () => $(dlg.getButton('CANCEL'), 0, null).hide())
   .addContextAction('My Action', () => grok.shell.info('Action!'))
   .show({x: 300, y: 300});
+
+// Set the dialog help url
+dlg.helpUrl = '/help/transform/add-new-column.md';

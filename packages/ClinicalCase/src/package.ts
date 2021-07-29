@@ -10,6 +10,7 @@ import {PatientProfileView} from "./views/patient-profile-view";
 import {AdverseEventsView} from "./views/adverse-events-view";
 import { ValidationView } from './views/validation-view';
 import { AdverseEventHandler } from './panels/adverse-event-handler';
+import { LaboratoryView } from './views/laboratory-view';
 
 export let _package = new DG.Package();
 
@@ -126,8 +127,8 @@ export function sdtmVariablePanel(varCol: DG.Column): DG.Widget {
 //tags: app
 export async function clinicalCaseApp(): Promise<any> {
 
-  if (Object.keys(meta.domains).every((name) => grok.shell.table(name) == null))
-    await grok.dapi.projects.open('clin-demo-files');
+ // if (Object.keys(meta.domains).every((name) => grok.shell.table(name) == null))
+ //   await grok.dapi.projects.open('clin-demo-files');
 
   study.initFromWorkspace();
 
@@ -136,9 +137,9 @@ export async function clinicalCaseApp(): Promise<any> {
   grok.shell.newView(`Timelines`, [new TimelinesView().root]);
   grok.shell.newView(`Patient Profile`, [ new PatientProfileView().root ]);
   grok.shell.newView(`Adverse Events`, [ new AdverseEventsView().root ]);
-  const validationView = grok.shell.newView(`Validation`, [ new ValidationView().root ]);
-
+  const validationView = grok.shell.newView(`Validation`, [ new ValidationView(studySummaryClass.errorsByDomain).root ], true);
   studySummaryClass.validationView = validationView;
+  grok.shell.newView(`Laboratory`, [ new LaboratoryView().root ])
 
   DG.ObjectHandler.register(new AdverseEventHandler());
 
