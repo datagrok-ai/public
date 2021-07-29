@@ -17,7 +17,7 @@ topics to familiarize yourself with Datagrok.
 * [Scripting viewers]
 * [Building dynamic dashboards]
 
-* ## Getting started
+## Getting started
 
 * [Welcome]
 * [Introduction]
@@ -26,11 +26,11 @@ topics to familiarize yourself with Datagrok.
 * [First-class functions]
 * [Cross-language support]
 * [Scripting]
-* [Packages, repositories, and version Control]
+* [Packages, repositories, and version control]
 * [JavaScript API]
 * [Development environment]
 
-* ## JavaScript API
+## JavaScript API
 
 * [Introduction]
 * [JS API Overview]
@@ -168,13 +168,13 @@ topics to familiarize yourself with Datagrok.
 [First-Class Functions]: https://www.youtube.com/watch?v=p7_qOU_IzLM&t=724s
 [Cross-Language Support]: https://www.youtube.com/watch?v=p7_qOU_IzLM&t=954s
 [Scripting]: https://www.youtube.com/watch?v=p7_qOU_IzLM&t=1890s
-[Packages, Repositories and Version Control]: https://www.youtube.com/watch?v=p7_qOU_IzLM&t=2681s
+[Packages, Repositories, and Version Control]: https://www.youtube.com/watch?v=p7_qOU_IzLM&t=2681s
 [JavaScript API]: https://www.youtube.com/watch?v=p7_qOU_IzLM&t=3568s
-[Dev Environment]: https://www.youtube.com/watch?v=p7_qOU_IzM&t=4146s
+[Development Environment]: https://www.youtube.com/watch?v=p7_qOU_IzM&t=4146s
 [JavaScript API]: https://www.youtube.com/watch?v=YR17h4_0Mc8
 [Introduction]: https://www.youtube.com/watch?v=YR17h4_0Mc8&t=0s
 [JS API Overview]: https://www.youtube.com/watch?v=YR17h4_0Mc8&t=536s
-[How does JS API work]: https://www.youtube.com/watch?v=YR17h4_0Mc8&t=596s
+[How does the JS API work?]: https://www.youtube.com/watch?v=YR17h4_0Mc8&t=596s
 [API Design Principles]: https://www.youtube.com/watch?v=YR17h4_0Mc8&t=969s
 [JS API Entry Points]: https://www.youtube.com/watch?v=YR17h4_0Mc8&t=1225s
 [Event Handling]: https://www.youtube.com/watch?v=YR17h4_0Mc8&t=1825s
@@ -191,7 +191,7 @@ topics to familiarize yourself with Datagrok.
 [Data Access]: https://www.youtube.com/watch?v=dKrCk38A1m8
 [Opening Local Files]: https://www.youtube.com/watch?v=dKrCk38A1m8&t=336s
 [File Shares]: https://www.youtube.com/watch?v=dKrCk38A1m8&t=417s
-[File Browsing]: https://www.youtube.com/watch?v=dKrCk38A1m8&t=508s
+[File Browser]: https://www.youtube.com/watch?v=dKrCk38A1m8&t=508s
 [File Metadata]: https://www.youtube.com/watch?v=dKrCk38A1m8&t=710s
 [Exploring File Contents]: https://www.youtube.com/watch?v=dKrCk38A1m8&t=964s
 [Connecting To Databases]: https://www.youtube.com/watch?v=dKrCk38A1m8&t=1048s
@@ -213,10 +213,10 @@ topics to familiarize yourself with Datagrok.
 [Q&A: Colors]: https://www.youtube.com/watch?v=wAfEqAMOZzw&t=1025s
 [Objects Shared Between Viewers]: https://www.youtube.com/watch?v=wAfEqAMOZzw&t=1628s
 [Docking]: https://www.youtube.com/watch?v=wAfEqAMOZzw&t=1726s
-[Full Screen Mode]: https://www.youtube.com/watch?v=wAfEqAMOZzw&t=2608s
+[Full-Screen Mode]: https://www.youtube.com/watch?v=wAfEqAMOZzw&t=2608s
 [Embedding Viewers]: https://www.youtube.com/watch?v=wAfEqAMOZzw&t=2657s
 [Q&A (Embedding, Permissions)]: https://www.youtube.com/watch?v=wAfEqAMOZzw&t=2943s
-[Q&A (Reusing Layouts)]: https://www.youtube.com/watch?v=wAfEqAMOZzw&t=3460s
+[Q&A (Reusing the Layouts)]: https://www.youtube.com/watch?v=wAfEqAMOZzw&t=3460s
 [Selecting and Filtering via Viewers]: https://www.youtube.com/watch?v=wAfEqAMOZzw&t=4201s
 [Q&A (Viewer Mode, Suggestions)]: https://www.youtube.com/watch?v=wAfEqAMOZzw&t=4307s
 [Trellis Plot]: https://www.youtube.com/watch?v=wAfEqAMOZzw&t=4562s
@@ -249,17 +249,17 @@ topics to familiarize yourself with Datagrok.
 [Jupiter Notebooks Support]: https://www.youtube.com/watch?v=7MBXWdC0-I&t=3880s
 [Predictive Modeling]: https://www.youtube.com/watch?v=JaJgxtHAb98
 [Topic Overview]: https://www.youtube.com/watch?v=JaJgxtHAb98&t=0s
-[JS API]: https://www.youtube.com/watch?v=JaJgxtHAb98&t=202s
+[JS API for predictive modelling]: https://www.youtube.com/watch?v=JaJgxtHAb98&t=202s
 [JS-Based Viewer Demo, Arcadia]: https://www.youtube.com/watch?v=JaJgxtHAb98&t=973s
 [Suggesting Applicable Predictive Models]: https://www.youtube.com/watch?v=JaJgxtHAb98&t=1418s
-[Browsing and Comparing Models]: https://www.youtube.com/watch?v=JaJgxtHAb98&t=1857s
+[Browsing and Comparing Predictive Models]: https://www.youtube.com/watch?v=JaJgxtHAb98&t=1857s
 [Predictive Model Engines]: https://www.youtube.com/watch?v=JaJgxtHAb98&t=2003s
-[Training Models (Q&A)]: https://www.youtube.com/watch?v=JaJgxtHAb98&t=2189s
+[Training Predictive Models (Q&A)]: https://www.youtube.com/watch?v=JaJgxtHAb98&t=2189s
 [ChaRPy, MedChem Browser, Octave]: https://www.youtube.com/watch?v=seAgx5TbrzI
 [Topic Overview]: https://www.youtube.com/watch?v=seAgx5TbrzI&t=0s
 [ChaRPy: converting charts to R and Python scripts]: https://www.youtube.com/watch?v=seAgx5TbrzI&t=162s
-[MedChem Browser (Andrey Santrosyan & Dmitrii Petrov, GNF)]: https://www.youtube.com/watch?v=seAgx5TbrzI&t=970s
-[Octave / Matlab Scripting Engine (Dan Skatov, Datagrok)]: https://www.youtube.com/watch?v=seAgx5TbrzI&t=2157s
+[MedChem Browser]: https://www.youtube.com/watch?v=seAgx5TbrzI&t=970s
+[Octave / Matlab Scripting Engine]: https://www.youtube.com/watch?v=seAgx5TbrzI&t=2157s
 [DSP with WASM, Metadata Search Engine, Debugging Packages]: https://www.youtube.com/watch?v=zVVmlRorpjg
 [Topic Overview]: https://www.youtube.com/watch?v=zVVmlRorpjg&t=0s
 [Datagrok Tools]: https://www.youtube.com/watch?v=zVVmlRorpjg&t=258s
