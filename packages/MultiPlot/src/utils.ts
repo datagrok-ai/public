@@ -28,7 +28,7 @@ export class MPUtils {
   }
 
   // build 2d array for series.data of echart
-  getUniversalData(table: DG.DataFrame, fieldsNames: string[], indexes: Int32Array): any[] {
+  getUniversalData(table: DG.DataFrame, fieldsNames: string[], indexes: Int32Array, condition : any): any[] {
     const r = [];
 
     function getRowFields(row: DG.Row): any[] {
@@ -47,7 +47,9 @@ export class MPUtils {
       for (let ind = 0; ind < indexes.length; ind++) {
         const row = table.row(indexes[ind]);
         const fields = getRowFields(row);
-        r.push(fields);
+        if (!condition || row[condition.field] === condition.value) {
+          r.push(fields);
+        }
       }
     } else {
       for (let i = 0; i < table.rowCount; i++) {

@@ -496,6 +496,7 @@ export class MultiPlotViewer extends DG.JsViewer {
           table,
           xArray.concat(yArray),
           indexes,
+          plot.condition,
       );
       if (plot.categoryColumnIndex) {
         for (let i=0; i<data.length; i++) {
