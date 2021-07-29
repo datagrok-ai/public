@@ -195,19 +195,6 @@ export class Viewer extends Widget {
 }
 
 
-export class TablePlotter {
-  dataFrame: DataFrame;
-
-  constructor(dataFrame: DataFrame) {
-    this.dataFrame = dataFrame;
-  }
-
-  scatter(x: string, y: string, color?: string, size?: string): ScatterPlotViewer {
-    return Viewer.scatterPlot(this.dataFrame, {x: x, y: y, color: color, size: size});
-  }
-}
-
-
 /** Subclass JsViewer to implement a DataFrame-bound Datagrok viewer in JavaScript.
  *  See an example on github: {@link https://github.com/datagrok-ai/public/tree/master/packages/Leaflet}
  *  */
