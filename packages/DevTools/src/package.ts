@@ -70,14 +70,22 @@ function getViewerScript(viewer: DG.Viewer): string {
 //name: renderDevPanel
 //tags: dev-tools
 //input: object ent
-export async function renderDevPanel(ent: EntityType): Promise<HTMLDivElement> {
+//output: widget panel
+export async function renderDevPanel(ent: EntityType): Promise<DG.Widget> {
+  if (ent == null) {
+    return DG.Widget.fromRoot(ui.divText('Entity does not exist.', { style: { color: 'var(--failure)' } }));
+  }
+
   const type = ent.constructor.name;
   const snippets = await loadSnippets(type,
     (ent instanceof DG.FileInfo && dfExts.includes(ent.extension)) ? 'dataframe'
     : (ent instanceof DG.DataFrame || ent instanceof DG.Column) ? tags[type][0] 
     : null);
   const template = (type in templates) ? templates[type](ent) : '';
-  if (snippets.length === 0 && !template) return;
+
+  if (snippets.length === 0 && !template) {
+    return DG.Widget.fromRoot(ui.divText(`Unsupported entity: ${type}.`, { style: { color: 'var(--failure)' } }));
+  }
 
   let links = helpUrls[type] || [];
   links = Object.keys(links).map(key => ui.link(`${type} ${key}`, links[key], `Open ${key} reference`));
@@ -124,21 +132,22 @@ export async function renderDevPanel(ent: EntityType): Promise<HTMLDivElement> {
   }, 'Log to console');
   $(browserLogBtn).addClass('dt-snippet-inline-icon');
       
-  return ui.divV([
+  return DG.Widget.fromRoot(ui.divV([
     ui.divH([ui.divText(`${type} ${ent.name}:`), topEditorBtn, browserLogBtn], { style: { 'align-items': 'baseline' } }),
     ...((type in tags) ? [getGroupInput(type)] : []),
     ...links,
     ui.div(formSnippetSection(snippets), 'dt-snippet-section'),
     ui.divV([playBtn, clipboardBtn, editorBtn, resetBtn, editor.root], 'dt-textarea-box'),
-  ], 'dt-dev-pane-container');
+  ], 'dt-dev-pane-container'));
 }
 
 //tags: autostart
 export function describeCurrentObj(): void {
   grok.events.onAccordionConstructed.subscribe((acc: DG.Accordion) => {
     const ent = acc.context;
+    if (ent == null) return; 
     let devPane = acc.getPane('Dev');
-    if (!devPane) devPane = acc.addPane('Dev', () => ui.wait(() => renderDevPanel(ent)));
+    if (!devPane) devPane = acc.addPane('Dev', () => ui.wait(async () => (await renderDevPanel(ent)).root));
   });
 
   grok.events.onContextMenu.subscribe((args) => {
