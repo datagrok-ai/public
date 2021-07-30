@@ -522,14 +522,39 @@ export function popupMenu(items: any): void {
   menu.show();
 }
 
+export function makeDraggable<T>(e: Element,
+    options?: {
+      allowCopy?: () => boolean,
+      check?: () => boolean,
+      getDragObject?: () => any,
+      getDragCaption?: () => any,
+      dragObjectType?: string,
+      getDragHint?: () => string,
+      getDragContext?: () => any,
+      onDragStart?: (me: MouseEvent) => boolean,
+      onDragEnd?: () => void
+    }): Element {
+  return api.grok_UI_MakeDraggable(e,
+      options?.allowCopy,
+      options?.check,
+      options?.getDragObject ? () => toDart(options.getDragObject!()) : null,
+      options?.getDragCaption ? () => toDart(options.getDragCaption!()) : null,
+      options?.dragObjectType,
+      options?.getDragHint,
+      options?.getDragContext ? () => toDart(options.getDragContext!()) : null,
+      options?.onDragStart,
+      options?.onDragEnd
+  );
+}
+
 export function makeDroppable<T>(e: Element,
     options?: {
       acceptDrop?: (dragObject: T) => boolean,
       doDrop?: (dragObject: T, copying: boolean) => void
     }): void {
   api.grok_UI_MakeDroppable(e,
-      (options?.acceptDrop) ? (dragObject: T) => options.acceptDrop!(toJs(dragObject)) : null,
-      (options?.doDrop) ? (dragObject: T, copying: boolean) => options.doDrop!(toJs(dragObject), toJs(copying)) : null,
+      options?.acceptDrop ? (dragObject: T) => options.acceptDrop!(toJs(dragObject)) : null,
+      options?.doDrop ? (dragObject: T, copying: boolean) => options.doDrop!(toJs(dragObject), toJs(copying)) : null,
   );
 }
 
