@@ -55,10 +55,11 @@ function createDirectoryContents(name, config, templateDir, packageDir, ide = ''
       if (file === 'package.js' && ts) copyFilePath = path.join(packageDir, 'package.ts');
       if (file === 'tsconfig.json' && !ts) return false;
       if (file === 'ts.webpack.config.js') return false;
-      // In the next version, we do not need the `upload.keys.json` file
-      if (file === 'upload.keys.json') return false;
       if (file === 'npmignore') copyFilePath = path.join(packageDir, '.npmignore');
-      if (file === 'gitignore') copyFilePath = path.join(packageDir, '.gitignore');
+      if (file === 'gitignore') {
+        copyFilePath = path.join(packageDir, '.gitignore');
+        if (ts) contents += '\n# Emitted *.js files\nsrc/**/*.js\n';
+      }
       fs.writeFileSync(copyFilePath, contents, 'utf8');
     } else if (stats.isDirectory()) {
       if (file === '.vscode' && !(ide == 'vscode' && platform == 'win32')) return;
