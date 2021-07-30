@@ -8,17 +8,16 @@
 * [Security](#security)
 * [Indexing](#indexing)
 * [Adding a File Share](#adding-a-file-share)
-   * [File Share options](#file-share-options)
+    * [File Share options](#file-share-options)
 * [Sharing a file](#sharing-a-file)
-   * [Sharing a file](#sharing-a-file)
-   * [Sharing a file as table (dataframe)](#sharing-a-file-as-a-table-dataframe)
+    * [Sharing a file as table (dataframe)](#sharing-a-file-as-a-table-dataframe)
 
 ## Overview
 
 Datagrok features a File Browser to let you access the files that you uploaded or that were shared with you by other
 users. The File Browser shows a tree view of folders with files.
 
-![](file-browsing-and-sharing-9.png)
+![](file-browser-and-file-shares-9.png)
 
 Datagrok supports file uploading not only from your computer, but also from other data sources:
 
@@ -36,7 +35,7 @@ By default, Datagrok creates the root **Home** folder in the File Browser, but y
 
 ## File Shares
 
-Put simply, a **File Share** is a shared folder in the File Browser. Any folder in the File Browser can become a File 
+Put simply, a **File Share** is a shared folder in the File Browser. Any folder in the File Browser can become a File
 Share.
 
 > **Advanced Info**: In Datagrok, a File Share is a [data connection] &mdash; a set of configurations that define how
@@ -49,8 +48,8 @@ You can create a [dedicated File Share] to let selected users or user groups acc
 
 ## Indexing
 
-Datagrok indexes the files within a File Share every hour to make sure that the files appear in search results, making 
-it easier for Datagrok users to search for datasets. For example, thanks to indexing, users can quickly browse columns 
+Datagrok indexes the files within a File Share every hour to make sure that the files appear in search results, making
+it easier for Datagrok users to search for datasets. For example, thanks to indexing, users can quickly browse columns
 in an Excel file that resides within a .zip file.
 
 ![Files Browser](./connectors/files-browser.gif "Files Browser")
@@ -73,11 +72,11 @@ can also turn on indexing later via the context menu:
 1. In the File Browser, right-click a File Share, and then select **Edit**.
    > **Note**: You can turn on indexing only for a File Share, not for a folder inside a File Share.
 
-![](file-browsing-and-sharing-10.png)
+![](file-browser-and-file-shares-10.png)
 
 2. In the **Edit Connection** dialog, select **Index Files**, and then select **Ok**.
 
-![](file-browsing-and-sharing-11.png)
+![](file-browser-and-file-shares-11.png)
 
 ### Supported tabular formats
 
@@ -115,14 +114,14 @@ To create a new File Share:
 
 1. In the side panel on the left, select the **File** icon > **Files** > **Actions** > **New File Share**.
 
-   ![](file-browsing-and-sharing-1.png)
+   ![](file-browser-and-file-shares-1.png)
 
 2. In the **New File Share** dialog, select the needed data source, enter a name for the File Share, and then select
    **Ok**.
    > **NOTE**: To verify if Datagrok has established the connection to the selected data source, select **Test**. In the
    > dedicated dialog, Datagrok will show if the connection was created.
 
-   ![](file-browsing-and-sharing-2.png)
+   ![](file-browser-and-file-shares-2.png)
 
 Datagrok will add a new folder, and you can then create additional folders in it to structure your files.
 
@@ -152,43 +151,44 @@ To upload a file from your computer to Datagrok:
 
 ## Sharing a file
 
-Datagrok lets you share any file from the File Browser as long as the file is located in a File Share. There are two 
+Datagrok lets you share any file from the File Browser as long as the file is located in a File Share. There are two
 ways to share a file:
 
 * Share a file from the data source.
-  In this case, you need to share a folder (a File Share), where the file is located, then copy the direct link to the 
+  In this case, you need to share a folder, where the file is located, then copy the direct link to the
   file, and send this link to the needed user. The user will obtain access to the file in data source via Datagrok.
-* Share a file as table (a dataframe) from the Datagrok server. 
-  In this case, you only need to share a folder (a File Share) with another user, and Datagrok will send a direct link
+* Share a file as table (a dataframe) from the Datagrok server.
+  In this case, you only need to share a folder with another user, and Datagrok will send a direct link
   to the file in the folder. When the user follows the link, the file data will be loaded from the server.
 
 > **Note**: Datagrok doesn't share a file directly &mdash; you need to share a connection (a File Share or a folder within
 > a File Share) that contains the file. Avoid sharing the root **Home** folder, because the other Datagrok user will be
-> able to access any files that you uploaded to Datagrok. Instead, it's best to create a File Share next to or under the
-> root **Home**, upload files to that File Share, and then share that folder with needed users.
+> able to access any files that you uploaded to Datagrok if you shared at least one file from **Home**.
+> Instead, it's best to create a File Share next to or under the root **Home**, upload files to that File Share, and
+> then share that folder with the users.
 
 To share a file:
 
 1. In the sidebar on the left, select the **File** icon > **Files**, open the needed folder, and then double-click the
    needed file.
 
-![](file-browsing-and-sharing-3.png)
+![](file-browser-and-file-shares-3.png)
 
 2. In the sidebar on the left, select the **Share** icon, and then select **File**.
 
-![](file-browsing-and-sharing-4.png)
+![](file-browser-and-file-shares-4.png)
 
 3. In the **Share file** dialog, select **Share folder as a new connection**, enter the email or name of the user or
    group (1) you will share the file with, select the **Can view** or **Can edit** permission (2), optionally,
    enter a description (3), and then select **Ok** (4).
    > You can optionally select **Send notifications** so that the user or group will receive a message in Datagrok after
-   > you share a connection with them.
+   > you shared a connection with them.
 
-![](file-browsing-and-sharing-5.png)
+![](file-browser-and-file-shares-5.png)
 
 ### Sharing a file as a table (dataframe)
 
-Datagrok saves the files you uploaded to the server. When you share a file as table, Datagrok will send a link to the 
+Datagrok saves the files you uploaded to the server. When you share a file as table, Datagrok will send a link to the
 user. After the user clicks on the link, the data from the file is automatically loaded to the browser from the Datagrok
 server.
 
@@ -197,24 +197,24 @@ To share a file as table:
 1. In the side panel on the left, select the **File** icon > **Files**, open the needed folder, and then select the
    file to share.
 
-![](file-browsing-and-sharing-3.png)
+![](file-browser-and-file-shares-3.png)
 
 2. In the side panel on the left, select the **Share** icon, and then select **Data**.
    > **Note**: If you need to share your file as a data table, select the *Data* option.
 
-![](file-browsing-and-sharing-6.png)
+![](file-browser-and-file-shares-6.png)
 
 3. In the **Upload project** dialog, select **Ok**.
    > **Note**: You can also enter an optional description, remove the sheets or pages that you don't need to share, and
    > turn on **Data sync**.
 
-![](file-browsing-and-sharing-7.png)
+![](file-browser-and-file-shares-7.png)
 
 4. In the **Share {document type}** dialog, enter the email or name of the user or group (1) you will share the file with,
    select the **Can view** or **Can edit** permission (2), enter an optional description of the File Share (3),
    and then select **Ok** (4).
 
-![](file-browsing-and-sharing-8.png)
+![](file-browser-and-file-shares-8.png)
 
 ## Videos
 
