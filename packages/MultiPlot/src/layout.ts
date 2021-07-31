@@ -62,6 +62,7 @@ export class MPLayout {
         };
         currentTop += r[j].height;
         plots[j].i = echartIndex;
+        plots[j].floatHeight = r[j].height;
         echartIndex++;
       };
     }

@@ -52,7 +52,57 @@ export class MultiPlotViewer extends DG.JsViewer {
   private paramOptions : string = this.string('paramOptions', 'none22');
   private mode : string = 'none'; // 'brushSelected'
   private options = {series: [
- 
+    {
+      tableName: 'lb2',
+      title: 'outside title 0',
+      type: 'scatter',
+      x: 'LBDY',
+      y: 'LBTEST',
+      yType: 'category',
+      markerShape: 'square',
+      height: '1flex',
+      show: 1,
+      visualMap: {
+        type: 'piecewise',
+        column: 'LBSEQ',
+        pieces: [
+          {min: 20, max: 250, color: ['red']},
+        ],
+        dimension: 2,
+      },
+    },
+
+    // timeLines
+    {
+      tableName: 'ae__2__lb__2_',
+      title: 'outside title 1',
+      type: 'timeLine',
+      y: 'AETERM',
+      x: ['AESTDY', 'AEENDY'],
+      yType: 'category',
+      color: 'red',
+      markerShape: 'square',
+      height: '2flex',
+      show: 1,
+    },
+
+    // linechart with filter
+    {
+      tableName: 'lb2',
+      title: 'outside title 0',
+      type: 'line',
+      x: 'LBDY',
+      y: 'LBSTRESN',
+      splitByColumnName: 'LBTEST',
+      condition2: {
+        field: 'USUBJID',
+        value: '01-701-1023',
+      },
+      yType: 'value',
+      markerShape: 'square',
+      height: '1flex',
+      show: 1,
+    },
   ]};
 
   typeComboElements : HTMLElement[] = [];
@@ -78,9 +128,9 @@ export class MultiPlotViewer extends DG.JsViewer {
     console.log('this.root: ', this.root);
 
     this.categoryColors = DG.Color.categoricalPalette.map(DG.Color.toRgb);
-    this.plots = this.options.series;
+    // this.plots = this.options.series;
     const allTypes = ['scatter', 'line', 'bar', 'timeLine'];
-    this.init();
+    // this.init();
 
     this.box = this.root.getBoundingClientRect();
     ui.onSizeChanged(this.root).subscribe(((this2) => (e) => {
@@ -96,6 +146,7 @@ export class MultiPlotViewer extends DG.JsViewer {
 
   init(): void {
     console.warn('init');
+    if (!this.isTablesLoaded) return;
     this.clearPlots();
     this.plots.map((e) => {
       e.series = {
@@ -137,11 +188,14 @@ export class MultiPlotViewer extends DG.JsViewer {
       const param = JSON.parse(this.paramOptions);
       if (param.series.length === 0) return;
       this.plots = param.series;
+
       const tableArray = grok.shell.tables;
       this.tables = {};
       for (let i=0; i<tableArray.length; i++) {
         this.tables[tableArray[i].name] = tableArray[i];
       }
+
+      this.plots = this.utils.getPlotsFromParams(this.tables, param.series);
       this.init();
       return;
     }
@@ -203,13 +257,22 @@ export class MultiPlotViewer extends DG.JsViewer {
     const visualMaps = [];
     const visualMapIndex = 0;
     this.echartOptions.visualMap = [];
+    const leftTitles = [];
 
     for (let i = 0; i < this.plots.length; i++) {
       const plot = this.plots[i];
       this.echartOptions.title[i].left = '10px';
       this.echartOptions.title[i].text = this.plots[i].title;
-      if (!this.plots[i].show) continue;
 
+      if (!this.plots[i].show) continue;
+      if (plot.leftTitle) {
+        leftTitles.push({
+          left: '3px',
+          top: parseFloat(this.echartOptions.title[i].top)+ plot.floatHeight / 2 - 6,
+          text: plot.condition.value,
+          textStyle: {fontSize: 12, height: 8},
+        });
+      }
       this.echartOptions.grid[visibleIndex].left = '82px';
       this.echartOptions.grid[visibleIndex].right = '4%';
       this.echartOptions.grid[visibleIndex].show = this.plots[i].show;
@@ -294,6 +357,8 @@ export class MultiPlotViewer extends DG.JsViewer {
       this.visibleIndexes.push(i);
       visibleIndex++;
     } // for i<this.plots.length
+
+    this.echartOptions.title = this.echartOptions.title.concat(leftTitles);
 
     // this.echartOptions.responsive = false;
     if (visibleIndex === 0) {
@@ -465,6 +530,7 @@ export class MultiPlotViewer extends DG.JsViewer {
       return;
     }
     console.warn('all tables loaded');
+    this.plots = this.utils.getPlotsFromParams(this.tables, this.options.series);
     this.isTablesLoaded = 1;
     this.init();
     this.updatePlots();

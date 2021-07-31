@@ -15,6 +15,75 @@ export class MPUtils {
     return 'rgba(' + [r, g, b, a].join(',') + ')';
   }
 
+  // input: 2d array with table, column number to search categories
+  // result: object with unique values as keys and array of rows as values
+  getCategories(ar: any, columnNumber: number) : any {
+    const r = {};
+    for (let i=0; i<ar.length; i++) {
+      const key = ar[i][columnNumber];
+      if (!r[key]) r[key] = [];
+      r[key].push(ar[i]);
+    }
+    return r;
+  }
+
+  // input: object with categories
+  // output: array of categories sorted by number of rows in each category (descending)
+  // ['categ1', 'categ2', ...]
+  getCategoriesArray(categObject: any) : any {
+    const t = [];
+    const keys = Object.keys(categObject);
+    keys.sort((a, b) => categObject[a].length < categObject[b].length ? 1 : -1);
+    return keys;
+  }
+
+  // convert one multiline describtion to the several plots
+  // only objects with field "splitByColumnName"
+  generatePlotsFromDescribtions(descr : any, categs : string[]) : any {
+    const r = [];
+    const categsMax = descr.maxLimit;
+    const fieldsNumber = categs.length < categsMax ? categs.length : categsMax;
+    for (let i = 0; i<fieldsNumber; i++) {
+      const t : any= {};
+      t.type = descr.type;
+      t.x = descr.x;
+      t.y = descr.y;
+      t.condition = {
+        field: descr.splitByColumnName,
+        value: categs[i],
+      };
+      t.leftTitle = t.y;
+      t.height = descr.height;
+      t.show = descr.show;
+      t.tableName = descr.tableName;
+      t.yType = 'value';
+      r.push(t);
+    }
+    return r;
+  }
+
+  getPlotsFromParams(tables, plts : any) : any {
+    let r = [];
+    for (let i=0; i< plts.length; i++) {
+      const p = plts[i];
+
+      if (p.splitByColumnName) {
+        const categColumn = p.splitByColumnName;
+        const table = tables[p.tableName];
+
+        const data = this.getUniversalData(table, [p.x, p.y, p.splitByColumnName]);
+        const cats = this.getCategories(data, 2);
+        const sortedCats = this.getCategoriesArray(cats);
+        const plotsArray = this.generatePlotsFromDescribtions(p, sortedCats);
+        // let t = this.generatePlotsFromDescribtions(p, plotsArray);
+        r = r.concat(plotsArray);
+      } else {
+        r.push(p);
+      }
+    }
+    return r;
+  }
+
   normalize100(column: DG.Column): DG.Row[] {
     const r = [];
     const delta = column.max - column.min;
@@ -28,7 +97,7 @@ export class MPUtils {
   }
 
   // build 2d array for series.data of echart
-  getUniversalData(table: DG.DataFrame, fieldsNames: string[], indexes: Int32Array, condition : any): any[] {
+  getUniversalData(table: DG.DataFrame, fieldsNames: string[], indexes?: Int32Array, condition? : any): any[] {
     const r = [];
 
     function getRowFields(row: DG.Row): any[] {
