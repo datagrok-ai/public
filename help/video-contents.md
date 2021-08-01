@@ -169,31 +169,31 @@ Full video: [link](https://youtu.be/GM3XixUFFUs)
 
 Full video: [link](https://youtu.be/0QxzllnBreI)
 
-* [User meeting 10: Agenda](https://www.youtube.com/watch?v=0QxzllnBreI&list=PLIRnAn2pMh3kvsE5apYXqX0I9bk257_eY&index=10&t=0s)
-* [Cheminformatics Overview](https://www.youtube.com/watch?v=0QxzllnBreI&list=PLIRnAn2pMh3kvsE5apYXqX0I9bk257_eY&index=10&t=103s)
-* [Info panels for Chem domain](https://www.youtube.com/watch?v=0QxzllnBreI&list=PLIRnAn2pMh3kvsE5apYXqX0I9bk257_eY&index=10&t=299s)
-* [Similarity Search with client-Side RDKit](https://www.youtube.com/watch?v=0QxzllnBreI&list=PLIRnAn2pMh3kvsE5apYXqX0I9bk257_eY&index=10&t=516s)
-* [Custom renderers in chemically-aware viewers](https://www.youtube.com/watch?v=0QxzllnBreI&list=PLIRnAn2pMh3kvsE5apYXqX0I9bk257_eY&index=10&t=718s)
-* [Scaffold alignment and highlighting](https://www.youtube.com/watch?v=0QxzllnBreI&list=PLIRnAn2pMh3kvsE5apYXqX0I9bk257_eY&index=10&t=1119s)
-* [Filtering support](https://www.youtube.com/watch?v=0QxzllnBreI&list=PLIRnAn2pMh3kvsE5apYXqX0I9bk257_eY&index=10&t=1312s)
-* [Prospects for further development](https://www.youtube.com/watch?v=0QxzllnBreI&list=PLIRnAn2pMh3kvsE5apYXqX0I9bk257_eY&index=10&t=1603s)
-* [Biosignals package introduction](https://www.youtube.com/watch?v=0QxzllnBreI&list=PLIRnAn2pMh3kvsE5apYXqX0I9bk257_eY&index=10&t=1932s)
-* [Example of a signal processing pipeline](https://www.youtube.com/watch?v=0QxzllnBreI&list=PLIRnAn2pMh3kvsE5apYXqX0I9bk257_eY&index=10&t=2438s)
-* [PhysioNet annotations File Viewer](https://www.youtube.com/watch?v=0QxzllnBreI&list=PLIRnAn2pMh3kvsE5apYXqX0I9bk257_eY&index=10&t=2754s)
-* [Integration of custom filters into pipelines](https://www.youtube.com/watch?v=0QxzllnBreI&list=PLIRnAn2pMh3kvsE5apYXqX0I9bk257_eY&index=10&t=3104s)
-* [Q&A on Signal Processing](https://www.youtube.com/watch?v=0QxzllnBreI&list=PLIRnAn2pMh3kvsE5apYXqX0I9bk257_eY&index=10&t=3310s)
-* [UX features: files and folders sharing](https://www.youtube.com/watch?v=0QxzllnBreI&list=PLIRnAn2pMh3kvsE5apYXqX0I9bk257_eY&index=10&t=3895s)
-* [Dev Tools Updates: TypeScript support, IntelliSense and async in JS Fiddler](https://www.youtube.com/watch?v=0QxzllnBreI&list=PLIRnAn2pMh3kvsE5apYXqX0I9bk257_eY&index=10&t=4657s)
+* [User meeting 10: Agenda](https://www.youtube.com/watch?v=0QxzllnBreI&t=0s)
+* [Cheminformatics Overview](https://www.youtube.com/watch?v=0QxzllnBreI&t=103s)
+* [Info panels for Chem domain](https://www.youtube.com/watch?v=0QxzllnBreI&t=299s)
+* [Similarity Search with client-Side RDKit](https://www.youtube.com/watch?v=0QxzllnBreI&t=516s)
+* [Custom renderers in chemically-aware viewers](https://www.youtube.com/watch?v=0QxzllnBreI&t=718s)
+* [Scaffold alignment and highlighting](https://www.youtube.com/watch?v=0QxzllnBreI&t=1119s)
+* [Filtering support](https://www.youtube.com/watch?v=0QxzllnBreI&t=1312s)
+* [Prospects for further development](https://www.youtube.com/watch?v=0QxzllnBreI&t=1603s)
+* [Biosignals package introduction](https://www.youtube.com/watch?v=0QxzllnBreI&t=1932s)
+* [Example of a signal processing pipeline](https://www.youtube.com/watch?v=0QxzllnBreI&t=2438s)
+* [PhysioNet annotations File Viewer](https://www.youtube.com/watch?v=0QxzllnBreI&t=2754s)
+* [Integration of custom filters into pipelines](https://www.youtube.com/watch?v=0QxzllnBreI&t=3104s)
+* [Q&A on Signal Processing](https://www.youtube.com/watch?v=0QxzllnBreI&t=3310s)
+* [UX features: files and folders sharing](https://www.youtube.com/watch?v=0QxzllnBreI&t=3895s)
+* [Dev Tools Updates: TypeScript support, IntelliSense and async in JS Fiddler](https://www.youtube.com/watch?v=0QxzllnBreI&t=4657s)
 
 ## ClinicalCase, Activity cliffs, Function View, Bioinformatics
 
 Full video: [link](https://youtu.be/2xuxJjpjXi4)
 
-* [ClinicalCase](https://www.youtube.com/watch?v=2xuxJjpjXi4&list=PLIRnAn2pMh3kvsE5apYXqX0I9bk257_eY&index=11&t=95s): working with clinical data in SDTM format
-* [Cheminformatics](https://www.youtube.com/watch?v=2xuxJjpjXi4&list=PLIRnAn2pMh3kvsE5apYXqX0I9bk257_eY&index=11&t=1933s): new features: Activity Cliffs, Curate
-* [Function View & Sensitivity Analysis](https://www.youtube.com/watch?v=2xuxJjpjXi4&list=PLIRnAn2pMh3kvsE5apYXqX0I9bk257_eY&index=11&t=2507s)
-* [Sequence Translator](https://www.youtube.com/watch?v=2xuxJjpjXi4&list=PLIRnAn2pMh3kvsE5apYXqX0I9bk257_eY&index=11&t=3782s): oligonucleotide sequences conversion (BioSpring, Axolabs)
-* [Oligo Batch Calculator](https://www.youtube.com/watch?v=2xuxJjpjXi4&list=PLIRnAn2pMh3kvsE5apYXqX0I9bk257_eY&index=11&t=4902s): extinction coefficient, mass, optical density, Nmole, mol. weight
+* [ClinicalCase](https://www.youtube.com/watch?v=2xuxJjpjXi4&t=95s): working with clinical data in SDTM format
+* [Cheminformatics](https://www.youtube.com/watch?v=2xuxJjpjXi4&t=1933s): new features: Activity Cliffs, Curate
+* [Function View & Sensitivity Analysis](https://www.youtube.com/watch?v=2xuxJjpjXi4&t=2507s)
+* [Sequence Translator](https://www.youtube.com/watch?v=2xuxJjpjXi4&t=3782s): oligonucleotide sequences conversion (BioSpring, Axolabs)
+* [Oligo Batch Calculator](https://www.youtube.com/watch?v=2xuxJjpjXi4&t=4902s): extinction coefficient, mass, optical density, Nmole, mol. weight
 
 
 
