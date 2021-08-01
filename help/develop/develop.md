@@ -596,7 +596,7 @@ command from your package directory:
 grok add detector <semantic-type-name>
 ```
 
-*Details:* [How to Define Semantic Type Detectors](how-to/semantic-type-detector.md)
+*Details:* [How to Define Semantic Type Detectors](how-to/define-semantic-type-detectors.md)
 
 ### File Viewers
 

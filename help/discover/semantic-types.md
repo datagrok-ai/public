@@ -52,11 +52,11 @@ Out of the box, the following semantic types are automatically detected based on
 
 Datagrok has been designed to be as extensible as possible, so naturally it is possible
 to define your own custom semantic types, along with the type auto-detection functions,
-renderers, comparers, and so on. To do that, check out [this article](../develop/how-to/semantic-type-detector.md).
+renderers, comparers, and so on. To do that, check out [this article](../develop/how-to/define-semantic-type-detectors.md).
 
 ![](../develop/how-to/semantic-type-detectors.gif "Custom Semantic Type Magnitude")
 
 See also:
   * [Metadata](metadata.md)
   * [JavaScript Development](../develop/develop.md)
-  * [How to Define Semantic Type Detectors](../develop/how-to/semantic-type-detector.md)
+  * [How to Define Semantic Type Detectors](../develop/how-to/define-semantic-type-detectors.md)
