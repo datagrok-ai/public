@@ -1,4 +1,4 @@
-# Datagrok Videos
+# Datagrok videos
 
 This document provides a list of videos that describe various aspects of using Datagrok.
 View the most interesting  topics to familiarize yourself with Datagrok.
@@ -139,7 +139,7 @@ Full video: [link](https://youtu.be/seAgx5TbrzI)
 * [MedChem Browser]
 * [Octave / Matlab scripting engine]
 
-## DSP with WASM, metadata search engine, and debugging packages
+## DSP with WASM, metadata search, debugging packages
 
 Full video: [link](https://youtu.be/zVVmlRorpjg)
 
@@ -213,6 +213,7 @@ Full video: [link](https://youtu.be/2xuxJjpjXi4)
 [Cross-Language Support]: https://www.youtube.com/watch?v=p7_qOU_IzLM&t=954s
 [Scripting]: https://www.youtube.com/watch?v=p7_qOU_IzLM&t=1890s
 [Packages, Repositories, and Version Control]: https://www.youtube.com/watch?v=p7_qOU_IzLM&t=2681s
+[JavaScript API]: https://www.youtube.com/watch?v=p7_qOU_IzLM&t=3568s
 [Development Environment]: https://www.youtube.com/watch?v=p7_qOU_IzM&t=4146s
 [JS API Overview]: https://www.youtube.com/watch?v=YR17h4_0Mc8&t=536s
 [How does the JS API work?]: https://www.youtube.com/watch?v=YR17h4_0Mc8&t=596s
