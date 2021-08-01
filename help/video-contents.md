@@ -1,9 +1,9 @@
 # Datagrok Videos
 
-This document provides a list of videos that describe various aspects of using Datagrok. View the most interesting 
-topics to familiarize yourself with Datagrok.
+This document provides a list of videos that describe various aspects of using Datagrok.
+View the most interesting  topics to familiarize yourself with Datagrok.
 
-## Demo
+## Demos
 
 * [Interactive predictions for a coffee company]
 * [Interactive data visualization]
@@ -19,9 +19,11 @@ topics to familiarize yourself with Datagrok.
 
 ## Getting started
 
-* [Welcome]
-* [Introduction]
-* [Topic overview]
+Full video: [link](https://youtu.be/p7_qOU_IzLM)
+
+* [Welcome](https://www.youtube.com/watch?v=p7_qOU_IzLM&t=0s)
+* [Introduction](https://www.youtube.com/watch?v=p7_qOU_IzLM&t=363s)
+* [Topic overview](https://www.youtube.com/watch?v=p7_qOU_IzLM&t=546s)
 * [Types of extensions]
 * [First-class functions]
 * [Cross-language support]
@@ -32,12 +34,14 @@ topics to familiarize yourself with Datagrok.
 
 ## JavaScript API
 
-* [Introduction]
+Full video: [link](https://youtu.be/YR17h4_0Mc8)
+
+* [Introduction](https://www.youtube.com/watch?v=YR17h4_0Mc8&t=0s)
 * [JS API Overview]
 * [How does the JS API work?]
 * [API design principles]
 * [JS API entry points]
-* [Event Handling]
+* [Event handling]
 * [User-defined classes]
 * [Q&A part] (can be skipped)
 * [Cheminformatics demo]
@@ -47,16 +51,18 @@ topics to familiarize yourself with Datagrok.
 * [JS API samples]
 * [Q&A part] (can be skipped)
 
-## Data Access
+## Data access
+
+Full video: [link](https://youtu.be/dKrCk38A1m8)
 
 * [Opening local files]
-* [File Shares]
+* [File shares]
 * [File Browser]
 * [File metadata]
 * [Exploring file contents]
 * [Connecting to databases]
-* [Visual queries]
-* [Query builder]
+* [Visual Queries]
+* [Query Builder]
 * [Custom aggregation functions]
 * [Parametrized queries]
 * [Query transformations]
@@ -67,7 +73,9 @@ topics to familiarize yourself with Datagrok.
 
 ## Visualizations
 
-* [Topic overview]
+Full video: [Part 1](https://youtu.be/wAfEqAMOZzw), [Part 2](https://youtu.be/7MBXWzdC0-I)
+
+* [Topic overview](https://www.youtube.com/watch?v=wAfEqAMOZzw&t=0s)
 * [Uploading a dataset]
 * [Views and viewers]
 * [Viewer properties]
@@ -81,38 +89,40 @@ topics to familiarize yourself with Datagrok.
 * [Q&A (reusing the layouts)] (can be skipped)
 * [Selecting and filtering via viewers]
 * [Q&A (viewer mode, suggestions)]
-* [Trellis plot]
+* [Trellis Plot]
 * [Statistical hypothesis testing]
 * [Wrapping up, part 1]
-* [Scatter plot]
+* [Scatter Plot]
 * [Histogram]
-* [Bar chart]
-* [Line chart]
+* [Bar Chart]
+* [Line Chart]
 * [How to share viewers]
-* [Pie chart]
-* [Trellis plot]
-* [Matrix plot]
-* [3D scatter plot]
-* [Density plot]
-* [PC plot]
-* [Word cloud]
-* [Network diagram]
+* [Pie Chart]
+* [Trellis Plot]
+* [Matrix Plot]
+* [3D scatter Plot]
+* [Density Plot]
+* [PC Plot]
+* [Word Cloud]
+* [Network Diagram]
 * [Box plot]
-* [Tree map]
-* [Heat map]
+* [Tree Map]
+* [Heat Map]
 * [Statistics]
 * [Calendar]
-* [Grid viewer]
-* [Markdown viewer]
-* [Tile viewer]
-* [Form viewer]
-* [Google map]
-* [Shape map]
-* [Jupiter notebooks support]
+* [Grid Viewer]
+* [Markdown Viewer]
+* [Tile Viewer]
+* [Form Viewer]
+* [Google Map]
+* [Shape Map]
+* [Jupiter Notebooks support]
 
 ## Predictive modeling
 
-* [Topic overview]
+Full video: [link](https://youtu.be/JaJgxtHAb98)
+
+* [Topic overview](https://www.youtube.com/watch?v=JaJgxtHAb98&t=0s)
 * [JS API for predictive modelling]
 * [JS-based viewer demo, Arcadia]
 * [Suggesting applicable predictive models]
@@ -122,14 +132,18 @@ topics to familiarize yourself with Datagrok.
 
 ## ChaRPy, MedChem Browser, Octave
 
-* [Topic overview]
+Full video: [link](https://youtu.be/seAgx5TbrzI)
+
+* [Topic overview](https://www.youtube.com/watch?v=seAgx5TbrzI&t=0s)
 * [ChaRPy: converting charts to R and Python scripts]
 * [MedChem Browser]
-* [Octave / Matlab Scripting Engine]
+* [Octave / Matlab scripting engine]
 
 ## DSP with WASM, metadata search engine, and debugging packages
 
-* [Topic overview]
+Full video: [link](https://youtu.be/zVVmlRorpjg)
+
+* [Topic overview](https://www.youtube.com/watch?v=zVVmlRorpjg&t=0s)
 * [Datagrok tools]
 * [VS Code integration]
 * [Metadata & unstructured data search engine]
@@ -137,17 +151,51 @@ topics to familiarize yourself with Datagrok.
 
 ## Advanced filtering and Natural Language Processing
 
-* [Introduction]
-* [NLP Overview]
-* [Setting Up]
+Full video: [link](https://youtu.be/GM3XixUFFUs)
+
+* [User Meeting 9: Introduction](https://www.youtube.com/watch?v=GM3XixUFFUs&t=0s)
+* [NLP overview]
+* [Setting up]
 * [File browsing]
 * [Drug review dataset]
 * [Sentiment analysis]
 * [Stohastic proximity embedding]
 * [Predictions for augmented data]
-* [Info panels: Text extraction, statistics, embeddings]
+* [Info panels: text extraction, statistics, embeddings]
 * [New filtering functionality]
 * [Summarization, neural machine translation]
+
+##  Cheminformatics, Biosignals, Files
+
+Full video: [link](https://youtu.be/0QxzllnBreI)
+
+* [User meeting 10: Agenda](https://www.youtube.com/watch?v=0QxzllnBreI&list=PLIRnAn2pMh3kvsE5apYXqX0I9bk257_eY&index=10&t=0s)
+* [Cheminformatics Overview](https://www.youtube.com/watch?v=0QxzllnBreI&list=PLIRnAn2pMh3kvsE5apYXqX0I9bk257_eY&index=10&t=103s)
+* [Info panels for Chem domain](https://www.youtube.com/watch?v=0QxzllnBreI&list=PLIRnAn2pMh3kvsE5apYXqX0I9bk257_eY&index=10&t=299s)
+* [Similarity Search with client-Side RDKit](https://www.youtube.com/watch?v=0QxzllnBreI&list=PLIRnAn2pMh3kvsE5apYXqX0I9bk257_eY&index=10&t=516s)
+* [Custom renderers in chemically-aware viewers](https://www.youtube.com/watch?v=0QxzllnBreI&list=PLIRnAn2pMh3kvsE5apYXqX0I9bk257_eY&index=10&t=718s)
+* [Scaffold alignment and highlighting](https://www.youtube.com/watch?v=0QxzllnBreI&list=PLIRnAn2pMh3kvsE5apYXqX0I9bk257_eY&index=10&t=1119s)
+* [Filtering support](https://www.youtube.com/watch?v=0QxzllnBreI&list=PLIRnAn2pMh3kvsE5apYXqX0I9bk257_eY&index=10&t=1312s)
+* [Prospects for further development](https://www.youtube.com/watch?v=0QxzllnBreI&list=PLIRnAn2pMh3kvsE5apYXqX0I9bk257_eY&index=10&t=1603s)
+* [Biosignals package introduction](https://www.youtube.com/watch?v=0QxzllnBreI&list=PLIRnAn2pMh3kvsE5apYXqX0I9bk257_eY&index=10&t=1932s)
+* [Example of a signal processing pipeline](https://www.youtube.com/watch?v=0QxzllnBreI&list=PLIRnAn2pMh3kvsE5apYXqX0I9bk257_eY&index=10&t=2438s)
+* [PhysioNet annotations File Viewer](https://www.youtube.com/watch?v=0QxzllnBreI&list=PLIRnAn2pMh3kvsE5apYXqX0I9bk257_eY&index=10&t=2754s)
+* [Integration of custom filters into pipelines](https://www.youtube.com/watch?v=0QxzllnBreI&list=PLIRnAn2pMh3kvsE5apYXqX0I9bk257_eY&index=10&t=3104s)
+* [Q&A on Signal Processing](https://www.youtube.com/watch?v=0QxzllnBreI&list=PLIRnAn2pMh3kvsE5apYXqX0I9bk257_eY&index=10&t=3310s)
+* [UX features: files and folders sharing](https://www.youtube.com/watch?v=0QxzllnBreI&list=PLIRnAn2pMh3kvsE5apYXqX0I9bk257_eY&index=10&t=3895s)
+* [Dev Tools Updates: TypeScript support, IntelliSense and async in JS Fiddler](https://www.youtube.com/watch?v=0QxzllnBreI&list=PLIRnAn2pMh3kvsE5apYXqX0I9bk257_eY&index=10&t=4657s)
+
+## ClinicalCase, Activity cliffs, Function View, Bioinformatics
+
+Full video: [link](https://youtu.be/2xuxJjpjXi4)
+
+* [ClinicalCase](https://www.youtube.com/watch?v=2xuxJjpjXi4&list=PLIRnAn2pMh3kvsE5apYXqX0I9bk257_eY&index=11&t=95s): working with clinical data in SDTM format
+* [Cheminformatics](https://www.youtube.com/watch?v=2xuxJjpjXi4&list=PLIRnAn2pMh3kvsE5apYXqX0I9bk257_eY&index=11&t=1933s): new features: Activity Cliffs, Curate
+* [Function View & Sensitivity Analysis](https://www.youtube.com/watch?v=2xuxJjpjXi4&list=PLIRnAn2pMh3kvsE5apYXqX0I9bk257_eY&index=11&t=2507s)
+* [Sequence Translator](https://www.youtube.com/watch?v=2xuxJjpjXi4&list=PLIRnAn2pMh3kvsE5apYXqX0I9bk257_eY&index=11&t=3782s): oligonucleotide sequences conversion (BioSpring, Axolabs)
+* [Oligo Batch Calculator](https://www.youtube.com/watch?v=2xuxJjpjXi4&list=PLIRnAn2pMh3kvsE5apYXqX0I9bk257_eY&index=11&t=4902s): extinction coefficient, mass, optical density, Nmole, mol. weight
+
+
 
 [Interactive Predictions for a Coffee Company]: https://www.youtube.com/watch?v=tVwpRB8fikQ
 [Interactive Data Visualization]: https://www.youtube.com/watch?v=67LzPsdNrEc
@@ -160,26 +208,17 @@ topics to familiarize yourself with Datagrok.
 [Debugging a JS package]: https://www.youtube.com/watch?v=PDcXLMsu6UM
 [Scripting Viewers]: https://www.youtube.com/watch?v=jHRpOnhBAz4
 [Building Dynamic Dashboards]: https://www.youtube.com/watch?v=TtVjvxMj9Ds
-[Getting Started]: https://www.youtube.com/watch?v=p7_qOU_IzLM&
-[Welcome]: https://www.youtube.com/watch?v=p7_qOU_IzLM&t=0s
-[Introduction]: https://www.youtube.com/watch?v=p7_qOU_IzLM&t=363s
-[Topic Overview]: https://www.youtube.com/watch?v=p7_qOU_IzLM&t=546s
 [Types of Extensions]: https://www.youtube.com/watch?v=p7_qOU_IzLM&t=602s
 [First-Class Functions]: https://www.youtube.com/watch?v=p7_qOU_IzLM&t=724s
 [Cross-Language Support]: https://www.youtube.com/watch?v=p7_qOU_IzLM&t=954s
 [Scripting]: https://www.youtube.com/watch?v=p7_qOU_IzLM&t=1890s
 [Packages, Repositories, and Version Control]: https://www.youtube.com/watch?v=p7_qOU_IzLM&t=2681s
-[JavaScript API]: https://www.youtube.com/watch?v=p7_qOU_IzLM&t=3568s
 [Development Environment]: https://www.youtube.com/watch?v=p7_qOU_IzM&t=4146s
-[JavaScript API]: https://www.youtube.com/watch?v=YR17h4_0Mc8
-[Introduction]: https://www.youtube.com/watch?v=YR17h4_0Mc8&t=0s
 [JS API Overview]: https://www.youtube.com/watch?v=YR17h4_0Mc8&t=536s
 [How does the JS API work?]: https://www.youtube.com/watch?v=YR17h4_0Mc8&t=596s
-[API Design Principles]: https://www.youtube.com/watch?v=YR17h4_0Mc8&t=969s
-[JS API Entry Points]: https://www.youtube.com/watch?v=YR17h4_0Mc8&t=1225s
-[Event Handling]: https://www.youtube.com/watch?v=YR17h4_0Mc8&t=1825s
-[JS API Entry Points]: https://www.youtube.com/watch?v=YR17h4_0Mc8&t=1825s
-[Event Handling]: https://www.youtube.com/watch?v=YR17h4_0Mc8&t=1825s
+[API design principles]: https://www.youtube.com/watch?v=YR17h4_0Mc8&t=969s
+[JS API entry points]: https://www.youtube.com/watch?v=YR17h4_0Mc8&t=1825s
+[Event handling]: https://www.youtube.com/watch?v=YR17h4_0Mc8&t=1825s
 [User-Defined Classes]: https://www.youtube.com/watch?v=YR17h4_0Mc8&t=2220s
 [Q&A Part]: https://www.youtube.com/watch?v=YR17h4_0Mc8&t=2506s
 [Cheminformatics Demo]: https://www.youtube.com/watch?v=YR17h4_0Mc8&t=2689s
@@ -188,11 +227,10 @@ topics to familiarize yourself with Datagrok.
 [Package Utilities]: https://www.youtube.com/watch?v=YR17h4_0Mc8&t=3500s
 [JS API Samples]: https://www.youtube.com/watch?v=YR17h4_0Mc8&t=3916s
 [Q&A Part]: https://www.youtube.com/watch?v=YR17h4_0Mc8&t=4445s
-[Data Access]: https://www.youtube.com/watch?v=dKrCk38A1m8
 [Opening Local Files]: https://www.youtube.com/watch?v=dKrCk38A1m8&t=336s
-[File Shares]: https://www.youtube.com/watch?v=dKrCk38A1m8&t=417s
+[File shares]: https://www.youtube.com/watch?v=dKrCk38A1m8&t=417s
 [File Browser]: https://www.youtube.com/watch?v=dKrCk38A1m8&t=508s
-[File Metadata]: https://www.youtube.com/watch?v=dKrCk38A1m8&t=710s
+[File metadata]: https://www.youtube.com/watch?v=dKrCk38A1m8&t=710s
 [Exploring File Contents]: https://www.youtube.com/watch?v=dKrCk38A1m8&t=964s
 [Connecting To Databases]: https://www.youtube.com/watch?v=dKrCk38A1m8&t=1048s
 [Visual Queries]: https://www.youtube.com/watch?v=dKrCk38A1m8&t=1339s
@@ -204,8 +242,6 @@ topics to familiarize yourself with Datagrok.
 [Functions and Scripts]: https://www.youtube.com/watch?v=dKrCk38A1m8&t=3685s
 [Dashboards (Live Data)]: https://www.youtube.com/watch?v=dKrCk38A1m8&t=3972s
 [Developers Session]: https://www.youtube.com/watch?v=dKrCk38A1m8&t=4310s
-[Visualizations]: https://www.youtube.com/watch?v=wAfEqAMOZzw
-[Topic Overview]: https://www.youtube.com/watch?v=wAfEqAMOZzw&t=0s
 [Uploading a Dataset]: https://www.youtube.com/watch?v=wAfEqAMOZzw&t=443s
 [Views and Viewers]: https://www.youtube.com/watch?v=wAfEqAMOZzw&t=589s
 [Viewer Properties]: https://www.youtube.com/watch?v=wAfEqAMOZzw&t=804s
@@ -247,34 +283,27 @@ topics to familiarize yourself with Datagrok.
 [Google Map]: https://www.youtube.com/watch?v=7MBXWzdC0-I&t=3392s
 [Shape Map]: https://www.youtube.com/watch?v=7MBXWzdC0-I&t=3650s
 [Jupiter Notebooks Support]: https://www.youtube.com/watch?v=7MBXWdC0-I&t=3880s
-[Predictive Modeling]: https://www.youtube.com/watch?v=JaJgxtHAb98
-[Topic Overview]: https://www.youtube.com/watch?v=JaJgxtHAb98&t=0s
 [JS API for predictive modelling]: https://www.youtube.com/watch?v=JaJgxtHAb98&t=202s
 [JS-Based Viewer Demo, Arcadia]: https://www.youtube.com/watch?v=JaJgxtHAb98&t=973s
 [Suggesting Applicable Predictive Models]: https://www.youtube.com/watch?v=JaJgxtHAb98&t=1418s
 [Browsing and Comparing Predictive Models]: https://www.youtube.com/watch?v=JaJgxtHAb98&t=1857s
 [Predictive Model Engines]: https://www.youtube.com/watch?v=JaJgxtHAb98&t=2003s
 [Training Predictive Models (Q&A)]: https://www.youtube.com/watch?v=JaJgxtHAb98&t=2189s
-[ChaRPy, MedChem Browser, Octave]: https://www.youtube.com/watch?v=seAgx5TbrzI
-[Topic Overview]: https://www.youtube.com/watch?v=seAgx5TbrzI&t=0s
 [ChaRPy: converting charts to R and Python scripts]: https://www.youtube.com/watch?v=seAgx5TbrzI&t=162s
 [MedChem Browser]: https://www.youtube.com/watch?v=seAgx5TbrzI&t=970s
-[Octave / Matlab Scripting Engine]: https://www.youtube.com/watch?v=seAgx5TbrzI&t=2157s
-[DSP with WASM, Metadata Search Engine, Debugging Packages]: https://www.youtube.com/watch?v=zVVmlRorpjg
-[Topic Overview]: https://www.youtube.com/watch?v=zVVmlRorpjg&t=0s
+[Octave / Matlab scripting engine]: https://www.youtube.com/watch?v=seAgx5TbrzI&t=2157s
 [Datagrok Tools]: https://www.youtube.com/watch?v=zVVmlRorpjg&t=258s
-[VS Code Integration]: https://www.youtube.com/watch?v=zVVmlRorpjg&t=870s
-[Metadata & Unstructured Data Search Engine]: https://www.youtube.com/watch?v=zVVmlRorpjg&t=1585s
+[VS Code integration]: https://www.youtube.com/watch?v=zVVmlRorpjg&t=870s
+[Metadata & unstructured data search engine]: https://www.youtube.com/watch?v=zVVmlRorpjg&t=1585s
 [Digital Signal Processing Using WebAssembly]: https://www.youtube.com/watch?v=zVVmlRorpjg&t=3535s
-[Advanced Filtering, Natural Language Processing]: https://www.youtube.com/watch?v=GM3XixUFFU
-[Introduction]: https://www.youtube.com/watch?v=GM3XixUFFUs&t=0s
+[Advanced filtering, Natural Language Processing]: https://www.youtube.com/watch?v=GM3XixUFFU
 [NLP Overview]: https://www.youtube.com/watch?v=GM3XixUFFUs&t=94s
-[Setting Up]: https://www.youtube.com/watch?v=GM3XixUFFUs&t=216s
-[File Browsing]: https://www.youtube.com/watch?v=GM3XixUFFUs&t=327s
+[Setting up]: https://www.youtube.com/watch?v=GM3XixUFFUs&t=216s
+[File browsing]: https://www.youtube.com/watch?v=GM3XixUFFUs&t=327s
 [Drug Review Dataset]: https://www.youtube.com/watch?v=GM3XixUFFUs&t=476s
 [Sentiment Analysis]: https://www.youtube.com/watch?v=GM3XixUFFUs&t=604s
 [Stohastic Proximity Embedding]: https://www.youtube.com/watch?v=GM3XixUFFUs&t=854s
-[Predictions for Augmented Data]: https://www.youtube.com/watch?v=GM3XixUFFUs&t=1521s
-[Info Panels: Text Extraction, Statistics, Embeddings]: https://www.youtube.com/watch?v=GM3XixUFFUs&t=2098s
-[New Filtering Functionality]: https://www.youtube.com/watch?v=GM3XixUFFUs&t=2688s
+[Predictions for augmented data]: https://www.youtube.com/watch?v=GM3XixUFFUs&t=1521s
+[Info panels: text extraction, statistics, embeddings]: https://www.youtube.com/watch?v=GM3XixUFFUs&t=2098s
+[New filtering functionality]: https://www.youtube.com/watch?v=GM3XixUFFUs&t=2688s
 [Summarization, Neural Machine Translation]: https://www.youtube.com/watch?v=GM3XixUFFUs&t=3836s
