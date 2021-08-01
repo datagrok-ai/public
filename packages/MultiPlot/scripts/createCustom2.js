@@ -15,6 +15,10 @@ let options = {
       markerShape: 'square',
       height: '1flex',
       show: 1,
+      condition2: {
+        field: 'USUBJID',
+        value: '01-701-1023'
+      },
       visualMap: {
         type: 'piecewise',
         column: 'LBSEQ',
@@ -47,7 +51,7 @@ let options = {
       show: 1,
     },
 
-    // linechart with filter 
+    // multi linechart with filter 
     {
       tableName: 'lb2',
       title: 'outside title 0',
@@ -55,11 +59,8 @@ let options = {
       x: 'LBDY',
       y: 'LBSTRESN',
       splitByColumnName: 'LBTEST',
+      categories: ["Basophils", "Urate", "Glucose"],
       maxLimit: 5,
-      condition2: {
-        field: 'USUBJID',
-        value: '01-701-1023'
-      },
       yType: 'value',
       markerShape: 'square',
       height: '1flex',

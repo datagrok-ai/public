@@ -45,7 +45,7 @@ export class MPUtils {
     const fieldsNumber = categs.length < categsMax ? categs.length : categsMax;
     for (let i = 0; i<fieldsNumber; i++) {
       const t : any= {};
-      t.type = descr.type;
+      t.series = {type: descr.type, data: [], descr: 222};
       t.x = descr.x;
       t.y = descr.y;
       t.condition = {
@@ -62,19 +62,31 @@ export class MPUtils {
     return r;
   }
 
+  concatArrayUnique(ar1: string[], ar2: string[], limit: number) : string[] {
+    const r = [];
+    ar1.map((e, i) => (i<limit) ? r.push(e) : '');
+    const stored = r.length;
+    for (let i=0; i<ar2.length; i++) {
+      if (!r.includes(ar2[i])) {
+        r.push(ar2[i]);
+        if (r.length >= limit) break;
+      }
+    }
+    return r;
+  }
+
   getPlotsFromParams(tables, plts : any) : any {
     let r = [];
     for (let i=0; i< plts.length; i++) {
       const p = plts[i];
-
       if (p.splitByColumnName) {
         const categColumn = p.splitByColumnName;
         const table = tables[p.tableName];
-
         const data = this.getUniversalData(table, [p.x, p.y, p.splitByColumnName]);
         const cats = this.getCategories(data, 2);
         const sortedCats = this.getCategoriesArray(cats);
-        const plotsArray = this.generatePlotsFromDescribtions(p, sortedCats);
+        const allCats = this.concatArrayUnique(p.categories ?? [], sortedCats, p.maxLimit);
+        const plotsArray = this.generatePlotsFromDescribtions(p, allCats);
         // let t = this.generatePlotsFromDescribtions(p, plotsArray);
         r = r.concat(plotsArray);
       } else {
