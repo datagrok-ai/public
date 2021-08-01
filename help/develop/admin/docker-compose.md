@@ -76,6 +76,9 @@ If you want to jump-start with Datagrok on your local machine, we recommend this
    docker-compose up
    ```  
    Datagrok will deploy a new database automatically.
+   
+   In case you get an error on Windows running `docker compose up` related to a `WriteFile` function, try running `cmd` in Administrator
+   mode (this is a [known issue](https://github.com/docker/compose/issues/4531) of Docker on some computers).
 
 4. Once the server is up and running, the Login page should be available at [`http://localhost:8080`](http://localhost:8080). For a quick setup, login to Datagrok using a username `admin` and a password `admin`. To change your password, pass a key-value pair `"adminPassword": "yourPassword"` to the JSON string `GROK_PARAMETERS`.
 
