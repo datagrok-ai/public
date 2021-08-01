@@ -10,7 +10,7 @@ View the most interesting  topics to familiarize yourself with Datagrok.
 * [Cheminformatics overview]
 * [Molecular similarity and diversity]
 * [Database exploration]
-* [Table comparer]
+* [Table Comparer]
 * [Using formulas in calculated columns]
 * [Joining tables]
 * [Debugging a JS package]
