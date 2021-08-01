@@ -71,8 +71,8 @@ Prerequisites: basic TypeScript or JavaScript knowledge.
 
 Prerequisites: basic TypeScript or JavaScript knowledge.
 
-Details: [How to Create a Semantic Type Detector](how-to/define-semantic-type-detectors.md),
-[How to Add an Info Panel](how-to/add-info-panel.md).
+Details: [How to define semantic type detectors](how-to/define-semantic-type-detectors.md),
+[How to add an info panel](how-to/add-info-panel.md).
 
 You will learn: how to write semantic type detectors, how to develop context-specific data augmentation.  
 
