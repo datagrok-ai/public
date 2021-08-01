@@ -27,7 +27,7 @@ the `.` prefix.
 
 ### Detectors
 
-Sematic type [detectors](semantic-type-detector.md) are meant to be lightweight,
+Sematic type [detectors](define-semantic-type-detectors.md) are meant to be lightweight,
 simple, and efficient. Keep this fact in mind when designing these functions. If
 columns you are interested in generally contain a lot of unique values, use a
 special sampling method to run your checks on a random subset of column

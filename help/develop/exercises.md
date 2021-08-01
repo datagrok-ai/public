@@ -9,12 +9,16 @@ of increasing complexity built on top of the previously completed steps.
 
 During this course, we will be building support for
 handling DNA nucleotide sequences. Let that not scare you, think of them as regular
-strings that can only contain characters G, A, C, and T (and now you know the origins
+strings that can only contain characters `G`, `A`, `C`, and `T` (and now you know the origins
 of the "Gattaca" movie name). We will start with writing standalone functions, then 
 automatically recognizing nucleotide sequences in the imported data, and then 
-going all the way to custom visualizations, querying relational databases, 
+going all the way to custom visualizations, relational databases querying, 
 predictive models, integration with the external utilities, data augmentation, and 
 custom applications. 
+
+We will be using TypeScript, which gives us safer and simpler code design while keeping
+full power of JavaScript. However, basic JavaScript knowledge is enough for the exercises:
+if you aren't yet into TypeScript, you would catch up fast.
 
 ## Table of contents
 
@@ -52,7 +56,7 @@ custom applications.
 
 ## Setting up the environment
 
-Prerequisites: basic JavaScript knowledge.
+Prerequisites: basic TypeScript or JavaScript knowledge.
 
 1. Install the necessary tools (Node.js, npm, webpack, datagrok-tools) following [these instructions](develop.md#getting-started)
 2. Get a dev key for https://dev.datagrok.ai (you will work with this server) and add it by running `grok config`
@@ -60,19 +64,19 @@ Prerequisites: basic JavaScript knowledge.
 4. Upload it to the server: `grok publish dev --rebuild` (see other options [here](develop.md#deployment-modes))
 5. Launch the platform and run the package's `test` function using different methods: 
     * via the [Functions](https://dev.datagrok.ai/functions?q=test) view
-    * via the [Packages](https://dev.datagrok.ai/packages?) menu (find your package and run `test` from the 'Content' pane in the property panel)
+    * via the [Packages](https://dev.datagrok.ai/packages?) menu (find your package, click on it and run `test` from the `Functions` pane in the property panel on the left)
     * via the [console](overview/navigation.md#console): press `~` key anywhere inside Datagrok, the Console will appear to the right; execute `<yourFirstName>Sequence:test()` there
 
 ## Semantic types
 
-Prerequisites: basic JavaScript knowledge.
+Prerequisites: basic TypeScript or JavaScript knowledge.
 
-Details: [How to Create a Semantic Type Detector](how-to/semantic-type-detector.md),
+Details: [How to Create a Semantic Type Detector](how-to/define-semantic-type-detectors.md),
 [How to Add an Info Panel](how-to/add-info-panel.md).
 
 You will learn: how to write semantic type detectors, how to develop context-specific data augmentation.  
 
-1. Create a `complement` function in `src/package.js` which takes a nucleotide string and returns its complement:
+1. Create a `complement` function in `src/package.ts` which takes a nucleotide string and returns its complement:
    ```javascript
     //name: complement
     //input: string nucleotides
@@ -81,7 +85,7 @@ You will learn: how to write semantic type detectors, how to develop context-spe
         // your code goes here
     }
     ```
-   Essentially, change each character to the complementary one: A<=>T, G<=>C. 
+   Essentially, change each character to the complementary one: `A <=> T`, `G <=> C`. 
    Run it and check whether everything works fine. 
 
 2. Now, let's specify that this function is meant to accept not any string, but nucleotides only,

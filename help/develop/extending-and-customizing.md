@@ -30,7 +30,7 @@ With using our [JavaScript API](js-api.md), you can create your own:
 * [cell renderers](visualize/viewers/grid.md#custom-cell-renderers) — to visualize certain semantic types,
   such as [molecules](https://github.com/datagrok-ai/public/blob/master/packages/Chem/src/rdkit_cell_renderer.js) or [nucleotide sequences](https://github.com/datagrok-ai/public/tree/master/packages/Sequence/web-logo-viewer),
   in their native-looking renders, inside contexts such as a grid cell, a tooltip, or an axis label in a viewer
-* [semantic type detectors](develop/how-to/semantic-type-detector.md) — to attach semantic types to columns of particular data types to later re-use this knowledge
+* [semantic type detectors](develop/how-to/define-semantic-type-detectors.md) — to attach semantic types to columns of particular data types to later re-use this knowledge
 * Web [applications](develop/how-to/build-an-app.md) focused on specific tasks, such as an interactive dashboard
   or a data set browser, as [the one for Chembl](https://github.com/datagrok-ai/public/tree/master/packages/ChemblBrowser)
 * menus, which may be embed into virtually any context inside the Datagrok UI, such as a
