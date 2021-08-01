@@ -149,10 +149,12 @@ export class MultiPlotViewer extends DG.JsViewer {
     if (!this.isTablesLoaded) return;
     this.clearPlots();
     this.plots.map((e) => {
-      e.series = {
-        type: 'scatter',
-        data: [],
-      };
+      if (e.series) {
+        if (!e.series.type) e.series.type = 'scatter';
+      } else {
+        e.series = {type: 'scatter'};
+      }
+      e.series.data = [];
       e.selectedIndexes = [];
     });
     if (!this.echart) this.echart = echarts.init(this.root, null, {renderer: 'canvas'});
