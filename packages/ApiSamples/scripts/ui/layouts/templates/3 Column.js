@@ -5,9 +5,9 @@ windows.showToolbox = false; //*hide tool box
 windows.showProperties = false; //*hide property panel
 
 let view = grok.shell.newView('3 Column', [
-    ui.block(['Column 1 (33%)']),
-    ui.block(['Column 2 (33%)']),
-    ui.block(['Column 2 (33%)'])
+    ui.block50(['Column 1']),
+    ui.block(['Column 2']),
+    ui.block(['Column 3'])
   ],'layout');
   
   view.box = true;

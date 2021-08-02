@@ -11,5 +11,6 @@ grok.shell.newView('Typography',[
     ui.link('link string','https://datagrok.ai','tooltip message'),
     ui.link('Link func',()=>{grok.shell.info('hello')},'tooltip message'),
   ]),
-  ui.divText('div text')   
+  ui.divText('div text'),
+  ui.inlineText(['Inline ',ui.link('text',()=>{grok.shell.info('')},'click me','')])   
 ]);

@@ -104,6 +104,7 @@ Figma Datagrok UIKit avaliable on [Figma Community](https://www.figma.com/@datag
 
 * [Accordions](#accordions)
 * [Await (Loading Indicator)](#await-loading-indicator)
+* [Drag and drop](#Drag-and-drop)
 * [Cards](#cards)
 * [Combo Popup](#combo-popup)
 * [Markdown](#markdown)
@@ -668,6 +669,11 @@ Link is a clickable text element than can be used for navigation or to trigger a
 ui.link('datagrok','https://datagrok.ai','tooltip message'),
 ui.link('Hello',()=>{grok.shell.info('hello')},'tooltip message')
 ```
+### Inline text
+
+```javascript
+  ui.inlineText(['Inline ',ui.link('text',()=>{grok.shell.info('')},'click me','')])
+```
 
 ### Text Blocks
 
@@ -839,6 +845,24 @@ ui.wait(async () => {
   let root = ui.div();
   return root;
 })
+```
+## Drag and drop
+
+Drag and drop is an option for elements in which the user selects the element by "grabbing" it and dragging it to a droppable place.
+
+```javascript
+let dropElement = ui.stringInput('Drop here...', '');
+let dragElement = ui.div('Drag it');
+ui.makeDroppable(dropElement.input, {
+    acceptDrop: (o) => true,
+    doDrop: (o, _) => {
+        dropElement.value = o.innerText;
+    }
+});
+ui.makeDraggable(dragElement, {
+    getDragObject: () => dragElement, 
+    getDragCaption: () => 'Caption when dragging'
+});
 ```
 
 ## Cards
@@ -1023,6 +1047,6 @@ Info bar allows adding assisting information to views, typically at their top ar
 
 ```javascript
 grok.shell.newView('View', [
-  ui.info('Info text', 'Optional header')
+  ui.info('Info text', 'Optional header', false)
 ]);
 ```
