@@ -52,6 +52,10 @@ The `Text Statistics` info panel calculates two common formulas:
 
 ![Calculate text statistics](./gif/nlp-text-statistics.gif)
 
+## Videos
+
+[User Meeting 9: Natural Language Processing](https://www.youtube.com/watch?v=GM3XixUFFUs&t=94s)
+
 ## Developer Notes
 
 The package demonstrates two ways of developing [info panels](https://datagrok.ai/help/discover/info-panels) for Datagrok: with panel scripts and with JavaScript panel functions.
