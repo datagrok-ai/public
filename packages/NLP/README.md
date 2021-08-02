@@ -7,6 +7,38 @@
   * [sentiment analysis](https://en.wikipedia.org/wiki/Sentiment_analysis)
   * [text summarization](https://en.wikipedia.org/wiki/Automatic_summarization)
   * [topic modeling](https://en.wikipedia.org/wiki/Topic_model)
+  * [entity extraction](https://en.wikipedia.org/wiki/Named-entity_recognition)
+
+## Text Extraction
+
+It all starts with extracting text. This is a building block for other, more
+complex tasks. Due to the high demand, it is essential to support as many
+popular text file formats as possible. The platform comes with a built-in
+[file browser](https://datagrok.ai/help/access/file-browser-and-file-shares)
+for easy file management. The package extends it by processing text from
+`pdf`, `doc`, `docx`, `odt`, and other text formats.
+
+![Extract text from PDF](./gif/nlp-text-extraction.gif)
+
+## Language Identification
+
+Determining the language of a document is an important preprocessing step for
+many language-related tasks. Automatic language detection may be part of
+applications that perform machine translation or semantic analysis. Datagrok's
+language identification is powered by Google's [Compact Language Detector v3 (CLD3)](https://github.com/google/cld3) and supports over [100 languages](https://github.com/google/cld3#supported-languages).
+As with text extraction, this functionality is used in the [Translation](#neural-machine-translation) info panel.
+
+## Neural Machine Translation
+
+To translate a text, navigate to the file browser and select one of the demo files (see the `texts` folder). Alternatively, open your personal folder and drag-and-drop your file to the platform. Now, whenever you click
+on the file, you will see a suggestion to translate it in the property panel on the right.
+
+![Translate text files](./gif/nlp-machine-translation.gif)
+
+The language is identified automatically, but you always have a chance to change it manually.
+The default target language is English, so be sure to choose another option if the original text is in English.
+
+## Developer Notes
 
 The package demonstrates two ways of developing [info panels](https://datagrok.ai/help/discover/info-panels) for Datagrok: with panel scripts and with JavaScript panel functions.
 
