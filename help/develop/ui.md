@@ -83,6 +83,7 @@ Figma Datagrok UIKit avaliable on [Figma Community](https://www.figma.com/@datag
   * [Spans](#spans)
   * [Label](#label)
   * [Link](#link)
+  * [Inline text](#inline-text)
   * [Text Blocks](#text-blocks)
 * [Tables](#tables)
 * [Lists](#lists)
