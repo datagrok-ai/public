@@ -2110,7 +2110,7 @@ class DataFramePlotHelper {
   box(options: object | null = null): Viewer { return DG.Viewer.boxPlot(this.df, options); }
   line(options: object | null = null): Viewer { return DG.Viewer.lineChart(this.df, options); }
   network(options: object | null = null): Viewer { return DG.Viewer.network(this.df, options); }
-  
+
 }
 
 class DataFrameDialogHelper {
@@ -2119,7 +2119,7 @@ class DataFrameDialogHelper {
     this.df = df;
   }
 
-  addNewColumn(): void { grok.functions.call('CmdAddNewColumn'); }
+  addNewColumn(): void { grok.functions.eval('AddNewColumn').prepare().edit(); }
 }
 
 class ColumnDialogHelper {
@@ -2135,7 +2135,7 @@ class ColumnDialogHelper {
       return;
     let params = { table: this.column.dataFrame, expression: formula, name: this.column.name, type: this.column.type };
     let call = DG.Func.byName('AddNewColumn').prepare(params);
-    grok.functions.call('CmdAddNewColumn', { call });
+    call.edit();
     let sub = grok.functions.onAfterRunAction.pipe(filter(c => c == call)).subscribe(() => {
       let newCol = call.getOutputParamValue();
       for (let [key, value] of this.column.tags) if (key !== DG.TAGS.FORMULA) newCol.setTag(key, value);

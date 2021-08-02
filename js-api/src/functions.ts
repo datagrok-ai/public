@@ -195,6 +195,10 @@ export class FuncCall {
     return new Promise((resolve, reject) => api.grok_FuncCall_Call(this.d, (out: any) => resolve(toJs(out)), (err: any) => reject(err), showProgress, toDart(progress)));
   }
 
+  edit() {
+    api.grok_FuncCall_Edit(this.d);
+  }
+
   getEditor(condensed?: boolean, showTableSelectors?: boolean): Promise<HTMLElement> {
     return new Promise((resolve, reject) => api.grok_FuncCall_Get_Editor(this.d, condensed, showTableSelectors, (out: any) => resolve(out), (err: any) => reject(err)));
   }
