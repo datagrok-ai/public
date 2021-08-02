@@ -3,14 +3,16 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 /**
- * Class AddNewColumnDialog is a useful method to add a new column to the table.
+ * Class AddNewColumnDialog is a useful method to add a new column to the table
+ * or to edit formula for an existing column.
  *
  * It uses user-friendly and functional Dialog Window that allows to use
  * formulas, functions and other columns to create a new column and immediately
  * see the preview result.
  */
 export class AddNewColumnDialog {
-  title: string = 'Add New Column Ext';
+  addColumnTitle: string = 'Add New Column';
+  editColumnTitle: string = 'Edit Column Formula';
   helpUrl: string = '/help/transform/add-new-column.md';
   visibleTags: string[] = ['math', 'text', 'date', 'timespan', 'binning', 'logic', 'stats'];
   supportedTypes: string[] = [DG.COLUMN_TYPE.FLOAT, DG.COLUMN_TYPE.INT,
@@ -19,45 +21,63 @@ export class AddNewColumnDialog {
   autoType: string = 'auto';
   plainTextType: string = 'plain text';
   placeholderName: string = 'Name';
-  placeholderType: string = 'Type';  // Used only for uniformity when saving inputs history.
+  placeholderType: string = 'Type';       // Used only for uniformity when saving inputs history.
   placeholderExpression: string = 'Expression';
   maxAutoNameLength: number = 25;
   maxPreviwRowCount: number = 100;
   newColumnBgColor: number = 0xFFFDFFE7;  // The same bg-color as the bg-color of tooltips.
   colNamePattern: RegExp = /\${(.+?)}/g;
   tooltips = {
-    name: 'New unique column name.',
+    name: 'Сolumn name.',
     type: 'Column type. When set to "auto", type is determined based on the expression.',
-    expression: `Formula for calculating new column values.<br>Columns and functions can be drag-n-dropped into this field.`,
+    expression: `Formula for calculating column values.<br>Columns and functions can be drag-n-dropped into this field.`,
     preview: 'Preview result columns.'
   };
 
-  sourceDf: DG.DataFrame | null = null;
-  previwDf?: DG.DataFrame;
+  sourceDf: DG.DataFrame | null = null;   // Represents Source Table.
+  previwDf?: DG.DataFrame;                // Represents Preview Table.
+  columnsDf?: DG.DataFrame;               // Represents Columns Widget.
+  gridPreview?: DG.Grid;
+  widgetColumns?: DG.Widget;
+  widgetFunctions?: DG.Widget;
+  resultColumnType?: string;
+  dialogTitle: string = '';
+  call: DG.FuncCall | null = null;
+  edit: boolean = false;
 
   inputName?: DG.InputBase;
   inputType?: DG.InputBase;
   inputExpression?: DG.InputBase;
   uiPreview?: HTMLDivElement;
-  widgetColumns?: HTMLDivElement;
-  widgetFunctions?: HTMLDivElement;
-  previewGrid?: DG.Grid;
+  uiColumns?: HTMLDivElement;
+  uiFunctions?: HTMLDivElement;
   uiDialog?: DG.Dialog;
-  resultColumnType?: string;
 
-  constructor() {
-    this.sourceDf = grok.shell.t;  // An attempt to access the active table.
+  constructor(call: DG.FuncCall | null = null) {
+    let table = call?.getParamValue('table');
+
+    if (table) {
+      this.call = call;
+      this.sourceDf = table;
+      this.edit = table.columns.names().includes(call?.getParamValue('name'));
+    } else {
+      this.sourceDf = grok.shell.t;
+    }
+
     if (this.sourceDf)
       this.init();
     else
-      grok.shell.error('No open tables found');
+      grok.shell.error('Table not found');
   }
 
   /** Initializes all parameters and opens a Dialog Window. */
   async init(): Promise<void> {
-    this.uiDialog = ui.dialog({ title: this.title, helpUrl: this.helpUrl })
+    this.dialogTitle = this.edit ? this.editColumnTitle : this.addColumnTitle;
+
+    this.uiDialog = ui.dialog({ title: this.dialogTitle, helpUrl: this.helpUrl })
         .add(await this.initUiLayout())
-        .onOK(async () => await this.addNewColumnAction()).show();
+        .onOK(async () => await this.addNewColumnAction())
+        .show();
 
     this.uiDialog.history(
       () => this.saveInputHistory(),
@@ -75,9 +95,9 @@ export class AddNewColumnDialog {
         : this.inputType!.value;
 
     return Object.fromEntries([
-      [this.placeholderName, this.inputName!.value],
-      [this.placeholderType, typeForHistory],
-      [this.placeholderExpression, this.inputExpression!.value]
+        [this.placeholderName, this.inputName!.value],
+        [this.placeholderType, typeForHistory],
+        [this.placeholderExpression, this.inputExpression!.value]
     ]);
   }
 
@@ -97,6 +117,9 @@ export class AddNewColumnDialog {
     let input = control.input as HTMLInputElement;
         input.classList.add('ui-input-addnewcolumn-name');
         input.placeholder = this.placeholderName;
+        input.disabled = this.edit;
+        if (this.call)
+          input.value = this.call.getParamValue('name');
 
     return control;
   }
@@ -107,7 +130,7 @@ export class AddNewColumnDialog {
     this.supportedTypes.unshift(defaultChoise);    // The first item of the ChoiceBox will be "Auto".
     this.supportedTypes.push(this.plainTextType);  // The last item of the ChoiceBox will be "Treat As String".
 
-    let control = ui.choiceInput('', defaultChoise, this.supportedTypes);
+    let control = ui.choiceInput('', this.call ? this.call.getParamValue('type') : defaultChoise, this.supportedTypes);
         control.onInput(async () => await this.updatePreview());
         control.setTooltip(this.tooltips['type']);
 
@@ -134,6 +157,8 @@ export class AddNewColumnDialog {
     let input = control.input as HTMLInputElement;
         input.classList.add('ui-input-addnewcolumn-expression');
         input.placeholder = this.placeholderExpression;
+        if (this.call)
+          input.value = this.call.getParamValue('expression');
 
     // Columns and functions can be drag-n-dropped into the Expression field:
     ui.makeDroppable(input, {
@@ -145,15 +170,15 @@ export class AddNewColumnDialog {
   }
 
   /** Creates and initializes the Preview Grid. */
-  initUiPreviewGrid(): HTMLDivElement {
+  initUiPreview(): HTMLDivElement {
     // Limiting the number of rows in the Preview Grid:
     let previewRowCount = Math.min(this.sourceDf!.rowCount, this.maxPreviwRowCount);
     this.previwDf = this.sourceDf!.clone(DG.BitSet.create(previewRowCount, (idx) => idx < previewRowCount));
-    this.previewGrid = DG.Viewer.grid(this.previwDf!);
-    this.previewGrid.root.classList.add('ui-grid-with-thin-scrollbars');
+    this.gridPreview = DG.Viewer.grid(this.previwDf!);
+    this.gridPreview.root.classList.add('ui-grid-with-thin-scrollbars');
 
     // Making the Preview Grid less interactive:
-    let props = this.previewGrid.props;
+    let props = this.gridPreview.props;
         props.showCellTooltip = false;
         props.showCurrentCellOutline = false;
         props.showDefaultPopupMenu = false;
@@ -169,7 +194,7 @@ export class AddNewColumnDialog {
         props.colHeaderFont = props.defaultCellFont;
 
     let control = ui.div();
-        control.append(this.previewGrid.root);
+        control.append(this.gridPreview.root);
         control.classList.add('ui-addnewcolumn-preview');
     ui.tooltip.bind(control, this.tooltips['preview']);
 
@@ -177,24 +202,26 @@ export class AddNewColumnDialog {
   }
 
   /** Creates and initializes the "Column List Widget". */
-  async initWidgetColumns(): Promise<HTMLDivElement> {
-    let widget = await DG.Func.byName('ColumnGridWidget').apply({ df: this.sourceDf });
+  async initUiColumns(): Promise<HTMLDivElement> {
+    this.widgetColumns = await DG.Func.byName('ColumnGridWidget').apply({ df: this.sourceDf });
+
+    this.columnsDf = DG.toJs(this.widgetColumns!.props.dfColumns);
 
     let control = ui.box();
-        control.append(widget.root);
+        control.append(this.widgetColumns!.root);
         control.classList.add('ui-widget-addnewcolumn-columns');
 
     return control;
   }
 
   /** Creates and initializes the "Function List Widget". */
-  async initWidgetFunctions(): Promise<HTMLDivElement> {
-    let widget = await DG.Func.byName('FunctionsWidget').apply();
-        widget.props.visibleTags = this.visibleTags.join(',');
-        widget.props.showSignature = true;
+  async initUiFunctions(): Promise<HTMLDivElement> {
+    this.widgetFunctions = await DG.Func.byName('FunctionsWidget').apply();
+    this.widgetFunctions!.props.visibleTags = this.visibleTags.join(',');
+    this.widgetFunctions!.props.showSignature = true;
 
     let control = ui.box();
-        control.append(widget.root);
+        control.append(this.widgetFunctions!.root);
         control.classList.add('ui-widget-addnewcolumn-functions');
 
     return control;
@@ -205,9 +232,9 @@ export class AddNewColumnDialog {
     this.inputName = this.initInputName();
     this.inputType = this.initInputType();
     this.inputExpression = this.initInputExpression();
-    this.uiPreview = this.initUiPreviewGrid();
-    this.widgetColumns = await this.initWidgetColumns();
-    this.widgetFunctions = await this.initWidgetFunctions();
+    this.uiPreview = this.initUiPreview();
+    this.uiColumns = await this.initUiColumns();
+    this.uiFunctions = await this.initUiFunctions();
 
     let layout =
         ui.div([
@@ -219,11 +246,11 @@ export class AddNewColumnDialog {
             ], { style: { paddingRight: '20px' } }),
 
             ui.block25([
-                ui.block([this.widgetColumns])
+                ui.block([this.uiColumns])
             ], { style: { paddingRight: '20px' } }),
 
             ui.block25([
-                ui.block([this.widgetFunctions])
+                ui.block([this.uiFunctions])
             ])
         ]);
     layout.classList.add('ui-addnewcolumn-layout');
@@ -244,8 +271,8 @@ export class AddNewColumnDialog {
         this.inputExpression!.value,
         ...this.getSelectedType()
     );
-    this.previewGrid!.dataFrame = this.previwDf!.clone(null, columnIds);
-    this.previewGrid!.col(colName)!.backColor = this.newColumnBgColor;
+    this.gridPreview!.dataFrame = this.previwDf!.clone(null, columnIds);
+    this.gridPreview!.col(colName)!.backColor = this.newColumnBgColor;
     this.resultColumnType = this.previwDf!.col(colName)!.type;
     this.previwDf!.columns.remove(colName);
 
@@ -288,12 +315,15 @@ export class AddNewColumnDialog {
   getResultColumnName(): string {
     let input = this.inputName!.input as HTMLInputElement;
 
-    return DG.utils.getUniqueName(
-        input.value
-        ? input.value
-        : input.placeholder,
-        this.sourceDf!.columns.names()
-    );
+    if (this.edit)
+      return input.value;
+    else
+      return DG.utils.getUniqueName(
+          input.value
+          ? input.value
+          : input.placeholder,
+          this.sourceDf!.columns.names()
+      );
   }
 
   /** Detects selected item in the ChoiceBox. */
@@ -306,8 +336,8 @@ export class AddNewColumnDialog {
       selectedType.push(
           this.inputType!.value
           ? this.inputType!.value.split(' ')[0]
-          : this.autoType
-      );
+          : this.autoType,
+          false);
 
     return selectedType;
   }
@@ -327,13 +357,32 @@ export class AddNewColumnDialog {
     return types.some((t) => x instanceof t);
   }
 
-  /** Adds a New Column to the source table. */
+  // Returns types and semtypes of selected items in the Columns Widget.
+  getTypesOfSelectedColumns(): Array<string[]> {
+    let selectedIndexes: Int32Array = this.columnsDf!.selection.getSelectedIndexes();
+    let selectedColumns: DG.Column[] = (this.sourceDf!.columns as DG.ColumnList).toList().filter((v, i) => selectedIndexes.includes(i));
+    let types: string[] = [];
+    let semTypes: string[] = [];
+    selectedColumns.forEach((v) => { types.push(v.type), semTypes.push(v.semType) });
+    types = types.filter((v, i, a) => a.indexOf(v) === i);
+    semTypes = semTypes.filter((v, i, a) => a.indexOf(v) === i && v != null);
+    return [types, semTypes];
+  }
+
+  /** Adds a New Column to the source table or edit formula for an existing column. */
   async addNewColumnAction(): Promise<void> {
-    await this.sourceDf!.columns.addNewCalculated(
-        this.getResultColumnName(),
-        this.inputExpression!.value,
-        ...this.getSelectedType()
-    );
+    if (this.edit) {
+      this.call!.setParamValue('expression', this.inputExpression!.value);
+      this.call!.setParamValue('type', this.getSelectedType()[0]);
+      this.call!.setParamValue('treatAsString', this.getSelectedType()[1]);
+      await this.call!.call();
+    } else {
+      await this.sourceDf!.columns.addNewCalculated(
+          this.getResultColumnName(),
+          this.inputExpression!.value,
+          ...this.getSelectedType()
+      );
+    }
   }
 
   /** Closes Add New Column Dialog Window. */
