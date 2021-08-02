@@ -30,6 +30,8 @@ As with text extraction, this functionality is used in the [Translation](#neural
 
 ## Neural Machine Translation
 
+The package creates a new info panel for text files. It uses [AWS Translate](https://aws.amazon.com/translate/) service, which supports over [70 languages](https://docs.aws.amazon.com/translate/latest/dg/what-is.html#what-is-languages).
+
 To translate a text, navigate to the file browser and select one of the demo files (see the `texts` folder). Alternatively, open your personal folder and drag-and-drop your file to the platform. Now, whenever you click
 on the file, you will see a suggestion to translate it in the property panel on the right.
 
@@ -37,6 +39,18 @@ on the file, you will see a suggestion to translate it in the property panel on 
 
 The language is identified automatically, but you always have a chance to change it manually.
 The default target language is English, so be sure to choose another option if the original text is in English.
+
+## Text Statistics
+
+Increasingly often texts are analyzed for readability. Readability scores take
+into account various parameters: the average number of words per sentence or
+syllables per word, percentage of long words, etc.
+
+The `Text Statistics` info panel calculates two common formulas:
+  * [Flesch reading-ease](https://en.wikipedia.org/wiki/Flesch%E2%80%93Kincaid_readability_tests) test for English
+  * [LIX](https://en.wikipedia.org/wiki/Lix_(readability_test)) formula for other languages
+
+![Calculate text statistics](./gif/nlp-text-statistics.gif)
 
 ## Developer Notes
 
