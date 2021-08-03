@@ -12,13 +12,16 @@ let options = {
       x: 'LBDY',
       y: 'LBTEST',
       yType: 'category',
+      condition: {
+        field: 'LBTEST',
+        value: ["Basophils", "Urate", "Glucose"],
+        splitByColumnName: 'LBTEST',
+        categories: ["Basophils", "Urate", "Glucose"],
+        maxLimit: 5,
+      },
       markerShape: 'square',
       height: '1flex',
       show: 1,
-      condition2: {
-        field: 'USUBJID',
-        value: '01-701-1023'
-      },
       visualMap: {
         type: 'piecewise',
         column: 'LBSEQ',
@@ -27,14 +30,7 @@ let options = {
         ],
         dimension: 2,
       },
-    },
-    {
-      tableName: 'lb2',
-      type: 'scatter',
-      x: 'LBDY',
-      y: 'LBTEST',
-      height: '1flex',
-      show: 1,
+
     },
 
     // timeLines
@@ -51,11 +47,12 @@ let options = {
       show: 1,
     },
 
-    // multi linechart with filter 
+    // linechart with filter 
     {
       tableName: 'lb2',
       title: 'outside title 0',
       type: 'line',
+      multi: true,
       x: 'LBDY',
       y: 'LBSTRESN',
       splitByColumnName: 'LBTEST',
@@ -66,23 +63,6 @@ let options = {
       height: '1flex',
       show: 1,
     },
-    /*
-            {
-        tableName: 'lb2',
-        //title: 'outside title 0',
-        type: 'line',
-        x: 'LBDY',
-        y: 'LBSEQ',
-        condition2: {
-          field: 'USUBJID',
-          value: '01-701-1023'
-        },
-        yType: 'value',
-        markerShape: 'square',
-        height: '1flex',
-        show: 1,
-      }
-      */
   ]
 
 }
@@ -121,9 +101,13 @@ async function func1() {
   console.log(startTable)
   let view = grok.shell.addTableView(startTable);
   let viewer = await startTable.plot.fromType('MultiPlot', {
-    paramA: "string outside",
     paramOptions: JSON.stringify(options),
   })
+  setTimeout((e) => {
+    viewer.setOptions({
+      testField1: 'testValue1',
+    });
+  }, 5000)
   view.addViewer(viewer);
 }
 

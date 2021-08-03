@@ -18,7 +18,7 @@ Types of charts:
 3. Bar chart;
 4. Status markers (shape and color of markers are used for display data status)
 
-EXAMPLES
+##EXAMPLES
 
 To make these examples working please open tables first. Feel free to use tables from 'data' folder or upload your own tables.
 
@@ -71,5 +71,6 @@ async function func1() {
 func1();
 ```
 
-The result of script execution:
+###The result of script execution:
+
 ![image of script result](img/simple_2_plots.png?raw=true "The result")
