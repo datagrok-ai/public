@@ -1,6 +1,56 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-08-03 Dev build 0.93.1
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.1`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* JS API: Some improvements of info-bar 
+* Wiki: File Browsing and Sharing (WIP)
+* Wiki: Simplify Develop and Getting Started (WIP)
+* Wiki: Fix headings, links, and types; remove duplicates 
+* Wiki: Add missing links 
+* DevTools: integration with Inspector (WIP)
+* MultiPlot: switch to several tables 
+* Tooling: Actualize datagrok-tools for the onboarding (WIP)
+* JS API: Moved toJs from grok_api to ui.ts 
+* JS API: Create ui.makeDraggable() 
+* Data on demand (WIP)
+* Sockets diagram 
+* Bar Chart: stack column selector 
+* Multi linechart with variable number of charts 
+* Wiki: a docker compose possible issue. 
+* Wiki: "Defining semantic type detectors" reformatting and links 
+* Updated beta users list. 
+* Wiki: video-contents.md adjustments (cases, links, Dev Session 10, 11) 
+* Wiki: video-contents.md adjustments 
+* Wiki: links adjustments 
+* JS API Examples: Drag and Drop 
+* MultiPlot: manual categories setting in multi linechart 
+* JS API Examples update 
+* Update ui.md 
+* NLP readme.md update 
+* (Bug) JS API: FuncCall.setParamValue() don't work 
+* Set new AddNC Dialog as standart add/edit dialog 
+* (Bug) DDT: Error in determining quarters 
+* MultiPlot: refactor and documenting (WIP)
+* MultiPlot: make status chart to display same data as muli linechart 
+* Add new icons 
+* [Scatter Plot: zoom sliders for axes](https://community.datagrok.ai/t/extensions-to-the-scatter-plot-viewer/481) 
+* Change endpoints to use new divided cvm images (WIP)
+* (Bug) Bar Chart: an exception when a column with missing values is selected as "stack" 
+* Updated index 
+* Create property-panel.js 
+
+
 # 2021-07-29 Stable version 0.93.0
 
 ## Latest Docker Images
