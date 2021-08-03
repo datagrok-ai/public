@@ -90,6 +90,17 @@ export class MPUtils {
         // let t = this.generatePlotsFromDescribtions(p, plotsArray);
         r = r.concat(plotsArray);
       } else {
+        if (p.condition) {
+          if (p.condition.splitByColumnName) {
+            // generate array for the filter in one plot
+            const table = tables[p.tableName];
+            const data = this.getUniversalData(table, [p.x, p.y, p.condition.splitByColumnName]);
+            const cats = this.getCategories(data, 2);
+            const sortedCats = this.getCategoriesArray(cats);
+            const allCats = this.concatArrayUnique(p.condition.categories ?? [], sortedCats, p.condition.maxLimit);
+            p.condition.value = allCats;
+          }
+        }
         r.push(p);
       }
     }
@@ -129,6 +140,9 @@ export class MPUtils {
         const row = table.row(indexes[ind]);
         const fields = getRowFields(row);
         if (!condition || row[condition.field] === condition.value) {
+          r.push(fields);
+        }
+        if (!condition || condition.value.includes(row[condition.field])) {
           r.push(fields);
         }
       }
