@@ -39,7 +39,7 @@ export class MultiPlotViewer extends DG.JsViewer {
   private timeLineOverlapShift = 4;
   private timeLinesData: any = [];
 
-  private categoryColors: DG.Color = [];
+  private paletteColors: string[] = [];
   private plotTitleHighMargin: number = 10;
   private plotTitleLowMargin: number = 5;
   private controlsTopShift: number = -4;
@@ -52,57 +52,7 @@ export class MultiPlotViewer extends DG.JsViewer {
   private paramOptions : string = this.string('paramOptions', 'none22');
   private mode : string = 'none'; // 'brushSelected'
   private options = {series: [
-    {
-      tableName: 'lb2',
-      title: 'outside title 0',
-      type: 'scatter',
-      x: 'LBDY',
-      y: 'LBTEST',
-      yType: 'category',
-      markerShape: 'square',
-      height: '1flex',
-      show: 1,
-      visualMap: {
-        type: 'piecewise',
-        column: 'LBSEQ',
-        pieces: [
-          {min: 20, max: 250, color: ['red']},
-        ],
-        dimension: 2,
-      },
-    },
 
-    // timeLines
-    {
-      tableName: 'ae__2__lb__2_',
-      title: 'outside title 1',
-      type: 'timeLine',
-      y: 'AETERM',
-      x: ['AESTDY', 'AEENDY'],
-      yType: 'category',
-      color: 'red',
-      markerShape: 'square',
-      height: '2flex',
-      show: 1,
-    },
-
-    // linechart with filter
-    {
-      tableName: 'lb2',
-      title: 'outside title 0',
-      type: 'line',
-      x: 'LBDY',
-      y: 'LBSTRESN',
-      splitByColumnName: 'LBTEST',
-      condition2: {
-        field: 'USUBJID',
-        value: '01-701-1023',
-      },
-      yType: 'value',
-      markerShape: 'square',
-      height: '1flex',
-      show: 1,
-    },
   ]};
 
   typeComboElements : HTMLElement[] = [];
@@ -127,7 +77,7 @@ export class MultiPlotViewer extends DG.JsViewer {
     console.log('------------------------------------- MULTIPLOT ------------------------------');
     console.log('this.root: ', this.root);
 
-    this.categoryColors = DG.Color.categoricalPalette.map(DG.Color.toRgb);
+    this.paletteColors = DG.Color.categoricalPalette.map(DG.Color.toRgb);
     // this.plots = this.options.series;
     const allTypes = ['scatter', 'line', 'bar', 'timeLine'];
     // this.init();
@@ -313,19 +263,21 @@ export class MultiPlotViewer extends DG.JsViewer {
             color: this.getItemStyleColorFunc(plot.visualMap, plot),
           };
         } else {
-          if (plot.visualMap) {
-            const map = plot.visualMap;
-            if (map.type === 'piecewise') {
-              const min = map.pieces[0].min;
-              const max = map.pieces[0].max;
-              map.pieces.push({max: min, color: this.categoryColors[0]});
-              map.pieces.push({min: max, color: this.categoryColors[0]});
-            }
-            map.seriesIndex = visibleIndex;
-            this.echartOptions.visualMap.push(map);
-            map.show = false;
+          // if (plot.visualMap) {
+          // keep it to find is any execution ever happens here
+          debugger;
+          const map = plot.visualMap;
+          if (map.type === 'piecewise') {
+            const min = map.pieces[0].min;
+            const max = map.pieces[0].max;
+            map.pieces.push({max: min, color: this.paletteColors[0]});
+            map.pieces.push({min: max, color: this.paletteColors[0]});
           }
-        }
+          map.seriesIndex = visibleIndex;
+          this.echartOptions.visualMap.push(map);
+          map.show = false;
+          // }
+        } // if visualMap.pieces
       }
 
       // trim categories and update trimmed data for plots with categories for Y axis
@@ -379,14 +331,20 @@ export class MultiPlotViewer extends DG.JsViewer {
   // create function to use as EChart callback with Datagrok mixins
   // get callback function to define color of marker
   getItemStyleColorFunc(visualMap: any, plot: any) : any {
-    const defaultColor = this.categoryColors[0];
-    const selectionColor = this.categoryColors[1];
+    const defaultColor = this.paletteColors[0];
+    const selectionColor = this.paletteColors[1];
     const min = visualMap.pieces[0].min;
     const max = visualMap.pieces[0].max;
     const vMapColor = visualMap.pieces[0].color;
     const table = this.tables[plot.tableName];
-    function customColorFunc(e) {
+    let customColorFunc = (e) => {
       return e.data[2] > min && e.data[2] < max ? vMapColor : defaultColor;
+    };
+    if (visualMap.type === 'statusChart') {
+      customColorFunc = (e) => {
+        return e.data[visualMap.column] > e.data[visualMap.minColumn] &&
+        e.data[visualMap.column] < e.data[visualMap.maxColumn] ? defaultColor : visualMap.color;
+      };
     }
     function f(e) {
       const customColor = customColorFunc(e);
@@ -570,7 +528,8 @@ export class MultiPlotViewer extends DG.JsViewer {
 
       const data = this.utils.getUniversalData(
           table,
-          xArray.concat(yArray).concat(visualMapColumnName),
+          // xArray.concat(yArray).concat(visualMapColumnName),
+          xArray.concat(yArray).concat(plot.extraFields ?? []),
           indexes,
           plot.condition,
       );
