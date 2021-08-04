@@ -1,6 +1,32 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-08-04 Dev build 0.93.2
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.2`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* (Bug) Bar chart: null values ​​are not indicated 
+* MultiPlot: change color of marker of the status chart according to value and min and max columns 
+* (Bug) Scatter plot \- showSizeSelector  
+* JS API: ui.image, redirects on the new page when the link doesn't provided 
+* (Bug) AddNC: Column names in formula are case sensitive 
+* Update Index 
+* datagrok-tools: update package template (WIP)
+* (Bug) Bar chart: Exception if reduce sliders when zooming 
+* Ability to adjust socket timeouts 
+* (Bug) View.grid throws an exception if there is no grid in the layout 
+* Datagrok API and system samples, add cross linking to improve connectivity (WIP)
+* Documented the Color class. 
+
+
 # 2021-08-03 Dev build 0.93.1
 
 ## Latest Docker Images
