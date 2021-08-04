@@ -1118,17 +1118,21 @@ export class ColumnList {
     return columns;
   }
 
-  /** @returns {Iterable.<Column>} */
-  byTags(tags: any): Iterable<Column> {
+  /** Finds columns by specified tags and values: {'tag': 'value'}.
+   * Pass null or undefined to match any value of a tag.
+   * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/find-columns} */
+  byTags(tags: object): Iterable<Column> {
     return _toIterable(api.grok_ColumnList_ByTags(this.d, tags));
   }
 
-  /** @returns {Iterable.<Column>} */
+  /** Finds categorical columns.
+   * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/find-columns} */
   get categorical(): Iterable<Column> {
     return _toIterable(api.grok_ColumnList_Categorical(this.d));
   }
 
-  /** @returns {Iterable.<Column>} */
+  /** Finds numerical columns. 
+   * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/find-columns} */
   get numerical(): Iterable<Column> {
     return _toIterable(api.grok_ColumnList_Numerical(this.d));
   }
