@@ -1,7 +1,7 @@
-<!-- TITLE: &#8204;JavaScript Development-->
-<!-- SUBTITLE: -->
+<!-- TITLE: JavaScript Development Overview -->
+<!-- ORDER: 0 -->
 
-# JavaScript development overview
+# JavaScript Development Overview
 
 This document provides a high-level overview of JavaScript development on the Datagrok platform. Using [our feature-rich
 JavaScript API], you can develop packages to perform various tasks on Datagrok, namely:

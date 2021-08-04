@@ -1,3 +1,6 @@
+<!-- TITLE: Debugging -->
+<!-- ORDER: 3 -->
+
 # Debugging
 
 This document discusses debugging of your packages for Datagrok in two popular IDEs &mdash; Visual Studio Code and 
