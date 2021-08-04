@@ -55,7 +55,6 @@ function createDirectoryContents(name, config, templateDir, packageDir, ide = ''
       if (file === 'package.js' && ts) copyFilePath = path.join(packageDir, 'package.ts');
       if (file === 'tsconfig.json' && !ts) return false;
       if (file === 'ts.webpack.config.js') return false;
-      if (file === 'npmignore') copyFilePath = path.join(packageDir, '.npmignore');
       if (file === 'gitignore') {
         copyFilePath = path.join(packageDir, '.gitignore');
         if (ts) contents += '\n# Emitted *.js files\nsrc/**/*.js\n';
