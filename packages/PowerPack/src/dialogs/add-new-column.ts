@@ -286,10 +286,12 @@ export class AddNewColumnDialog {
     if (!names)
       return [];
 
+    let lcSourceColumnNames = (this.sourceDf!.columns.names() as string[]).map((name) => name.toLowerCase());
+
     return names
-        .filter((v, i, a) => a.indexOf(v) === i)                     // Selecting only unique names.
-        .map((name) => name.slice(2, -1))                            // Removing the naming syntax: ${}.
-        .filter((v) => this.sourceDf!.columns.names().includes(v));  // Selecting only real column names.
+        .filter((v, i, a) => a.indexOf(v) === i)                        // Selecting only unique names.
+        .map((name) => name.slice(2, -1))                               // Removing the naming syntax: ${}.
+        .filter((v) => lcSourceColumnNames.includes(v.toLowerCase()));  // Selecting only real column names.
   }
 
   /** Inserts drag-n-dropping object into the Expression input field. */
