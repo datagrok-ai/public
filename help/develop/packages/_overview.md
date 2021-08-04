@@ -70,15 +70,6 @@ and other important aspects of how Datagrok works.
 
 To run the Inspector, on the [Datagrok site](https://dev.datagrok.ai), select **Alt** + **I**.
 
-## Naming conventions
-
-Follow these naming conventions when working on your packages:
-
-* The package name that comply with the [NPM package naming rules]
-* When defining new [views] and [viewers], postfix the classes with `View` and `Viewer` respectively
-* Prefix the names of semantic type detectors with `detect`: `detectNucleotides` or `detectRDSmiles`
-* Use lowercase letters for files, separate words by dashes: `tika-extractor.py` and `chord-viewer.js`
-
 ## Documentation
 
 Here are a few sources that you might want to run through to learn more about Datagrok:

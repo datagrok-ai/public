@@ -222,6 +222,17 @@ module.exports = {
 
 Refer to the [webpack documentation] to modify or extend the provided configuration.
 
+## Naming conventions
+
+Follow these naming conventions when working on your packages:
+
+* Use upper camel case for package names: `ApiSamples` and `OctaveScripts`
+  > **Note**: Package names that comply with the [NPM package naming rules], e.g., `api-samples` and `octave-scripts`,
+  are accepted as well. If you write the desired name in the `friendlyName` field of `package.json`, it will be shown in the UI.
+* When defining new [views] and [viewers], postfix the classes with `View` and `Viewer` respectively
+* Prefix the names of semantic type detectors with `detect`: `detectNucleotides` or `detectRDSmiles`
+* Use lowercase letters for files, separate words by dashes: `tika-extractor.py` and `chord-viewer.js`
+
 ## Structuring your package
 
 Your package might contain the following additional folders, depending on your needs:
@@ -241,6 +252,7 @@ Your package might contain the following additional folders, depending on your n
 [scripting functionality for Cheminformatics]: https://github.com/datagrok-ai/public/tree/master/packages/ChemScripts
 [public repository]: https://github.com/datagrok-ai/public/tree/master/packages
 [Functions]: ../../overview/functions/function.md
+[views]: ../how-to/custom-views.md
 [viewers]: ../../visualize/viewers.md
 [widgets]: ../../visualize/widgets.md
 [applications]: 3__package-function-types.md#applications
@@ -252,6 +264,7 @@ Your package might contain the following additional folders, depending on your n
 [npm]: https://docs.npmjs.com/downloading-and-installing-node-js-and-npm
 [NVM]: https://github.com/nvm-sh/nvm#installing-and-updating
 [NPM instructions]: https://docs.npmjs.com/downloading-and-installing-node-js-and-npm
+[NPM package naming rules]: 
 [Datagrok configuration section]: ./datagrok-configuration.md
 [Grok CLI section]: https://github.com/datagrok-ai/public/tree/master/tools#datagrok-tools
 [a few valuable scripts]: https://github.com/datagrok-ai/public/tree/master/tools#commands
