@@ -264,7 +264,7 @@ Your package might contain the following additional folders, depending on your n
 [npm]: https://docs.npmjs.com/downloading-and-installing-node-js-and-npm
 [NVM]: https://github.com/nvm-sh/nvm#installing-and-updating
 [NPM instructions]: https://docs.npmjs.com/downloading-and-installing-node-js-and-npm
-[NPM package naming rules]: 
+[NPM package naming rules]: https://docs.npmjs.com/cli/v6/configuring-npm/package-json#name
 [Datagrok configuration section]: ./datagrok-configuration.md
 [Grok CLI section]: https://github.com/datagrok-ai/public/tree/master/tools#datagrok-tools
 [a few valuable scripts]: https://github.com/datagrok-ai/public/tree/master/tools#commands
