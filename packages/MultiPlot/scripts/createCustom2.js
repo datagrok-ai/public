@@ -11,18 +11,21 @@ let options = {
       type: 'scatter',
       x: 'LBDY',
       y: 'LBTEST',
+      extraFields: ['LBORRES', 'LBORNRLO', 'LBORNRHI'],
       yType: 'category',
-      condition: {
-        field: 'LBTEST',
+      statusChart: {
+        field: 2,
         value: ["Basophils", "Urate", "Glucose"],
         splitByColumnName: 'LBTEST',
         categories: ["Basophils", "Urate", "Glucose"],
+        minField: 'LBORNRLO',
+        maxField: 'LBORNRHI',
         maxLimit: 5,
       },
       markerShape: 'square',
       height: '1flex',
       show: 1,
-      visualMap: {
+      visualMapOld: {
         type: 'piecewise',
         column: 'LBSEQ',
         pieces: [
@@ -30,7 +33,17 @@ let options = {
         ],
         dimension: 2,
       },
-
+      visualMap: {
+        type: 'statusChart',
+        column: 2,
+        minColumn: 3,
+        maxColumn: 4,
+        color: 'red',
+        pieces: [
+          { min: 20, max: 250, color: ['red'] },
+        ],
+        dimension: 2,
+      },
     },
 
     // timeLines

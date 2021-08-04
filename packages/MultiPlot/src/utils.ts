@@ -90,15 +90,21 @@ export class MPUtils {
         // let t = this.generatePlotsFromDescribtions(p, plotsArray);
         r = r.concat(plotsArray);
       } else {
-        if (p.condition) {
-          if (p.condition.splitByColumnName) {
+        if (p.statusChart) {
+          if (p.statusChart.splitByColumnName) {
             // generate array for the filter in one plot
             const table = tables[p.tableName];
-            const data = this.getUniversalData(table, [p.x, p.y, p.condition.splitByColumnName]);
-            const cats = this.getCategories(data, 2);
+            const fields = [p.x, p.y].concat(p.extraFields ?? []);
+            // const data = this.getUniversalData(table, [p.x, p.y, p.statusChart.splitByColumnName]);
+            const data = this.getUniversalData(table, fields);
+            const cats = this.getCategories(data, 1);
             const sortedCats = this.getCategoriesArray(cats);
-            const allCats = this.concatArrayUnique(p.condition.categories ?? [], sortedCats, p.condition.maxLimit);
-            p.condition.value = allCats;
+            const allCats = this.concatArrayUnique(p.statusChart.categories ?? [], sortedCats, p.statusChart.maxLimit);
+            p.condition = {
+              field: fields[1],
+              value: allCats,
+            };
+            p.statusChart.value = allCats;
           }
         }
         r.push(p);
