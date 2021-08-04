@@ -58,6 +58,7 @@ export class MultiPlotViewer extends DG.JsViewer {
   typeComboElements : HTMLElement[] = [];
   showHideElements : HTMLElement[] = [];
   closeElements : HTMLElement[] = [];
+  categoryCombos : HTMLElement[] = [];
   plots = [];
   box: DOMRect;
   visiblePlotsCount: number;
@@ -109,12 +110,13 @@ export class MultiPlotViewer extends DG.JsViewer {
     });
     if (!this.echart) this.echart = echarts.init(this.root, null, {renderer: 'canvas'});
     this.addEchartHandlers();
-    this.createElements();
     this.updateOptionsPositions();
     this.updatePlots();
     if (this.checkTablesLoaded()) {
       this.updateFilter();
     }
+    this.createElements();
+
     this.render();
   } // init
 
@@ -180,6 +182,10 @@ export class MultiPlotViewer extends DG.JsViewer {
 
       if (this.closeElements[i]) {
         this.closeElements[i].style.top = heightData[i].titleTop + 7 + this.controlsTopShift + 'px';
+      }
+
+      if (this.plots[i].categCombo) {
+        this.plots[i].categCombo.root.style.top = heightData[i].titleTop + 3 + this.controlsTopShift + 'px';
       }
 
       if (!this.plots[i].show) continue;
@@ -748,6 +754,28 @@ export class MultiPlotViewer extends DG.JsViewer {
       inputClose.style.flexDirection = 'row';
       this.closeElements.push(inputClose);
       this.root.appendChild(inputClose);
+    }
+
+    // create combobox with categories
+    this.categoryCombos = [];
+    for (let i=0; i<this.plots.length; i++) {
+      const plot = this.plots[i];
+      if (plot.allCats) {
+        const categCombo: any = ui.choiceInput('', plot.currentCat, plot.allCats, (e) => {
+          plot.currentCat = e;
+          plot.condition.value = e;
+          this.updateFilter();
+          this.render();
+        });
+        this.categoryCombos.push(categCombo);
+        plot.categCombo = categCombo;
+        this.root.appendChild(categCombo.root);
+        categCombo.root.style.position = 'absolute';
+        categCombo.root.style.left = '78px';
+        categCombo.root.style['flex-direction'] = 'row';
+        categCombo.root.style.top = (40 * i) + 'px';
+        categCombo.root.querySelector('select').style.borderBottom = '0px';
+      }
     }
   } // createElements
 
