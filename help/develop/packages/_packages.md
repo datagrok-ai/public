@@ -150,13 +150,13 @@ example:
 
 ```js
 //name: test1
-//output: string a1
+//output: string s1
 export function test1() {
   return 'a';
 }
 //name: test2
 //output: string s1
-//output: string s1
+//output: string s2
 export function test2() {
   return {s1: 'a', s2: 'b'};
 }
@@ -176,17 +176,17 @@ Here's an example from the [Sequence package] that contains the `detectNucleotid
 
 ```js
 class SequencePackageDetectors extends DG.Package {
-    
-    //tags: semTypeDetector
-    //input: column col
-    //output: string semType
-    detectNucleotides(col) {
-        if (col.name.startsWith('nuc')) {
-            col.semType = 'nucleotides';
-            return 'nucleotides';
-        }
-        return null;
+
+  //tags: semTypeDetector
+  //input: column col
+  //output: string semType
+  detectNucleotides(col) {
+    if (col.name.startsWith('nuc')) {
+      col.semType = 'nucleotides';
+      return 'nucleotides';
     }
+    return null;
+  }
 }
 ```
 
