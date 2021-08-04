@@ -424,7 +424,7 @@ function _link(element: HTMLElement, target: string | Function, tooltipMsg?: str
   tooltip.bind(element, tooltipMsg);
 }
 
-export function image(src: string, width: number, height: number, options: {target: string | Function, tooltipMsg?: string}) {
+export function image(src: string, width: number, height: number, options: {target?: string | Function, tooltipMsg?: string}) {
   let image = element('div') as HTMLDivElement;
   image.classList.add('ui-image');
 
@@ -432,7 +432,9 @@ export function image(src: string, width: number, height: number, options: {targ
   image.style.width = `${width}px`;
   image.style.height = `${height}px`;
 
-  _link(image, options?.target, options?.tooltipMsg);
+  if (options?.target)
+    _link(image, options?.target, options?.tooltipMsg);
+
   return image;
 }
 
