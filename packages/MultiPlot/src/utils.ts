@@ -39,7 +39,7 @@ export class MPUtils {
 
   // convert one multiline describtion to the several plots
   // only objects with field "splitByColumnName"
-  generatePlotsFromDescribtions(descr : any, categs : string[]) : any {
+  generatePlotsFromDescribtions(descr : any, categs : string[], allCats: string[]) : any {
     const r = [];
     const categsMax = descr.maxLimit;
     const fieldsNumber = categs.length < categsMax ? categs.length : categsMax;
@@ -55,6 +55,8 @@ export class MPUtils {
       t.leftTitle = t.y;
       t.height = descr.height;
       t.show = descr.show;
+      t.currentCat = categs[i];
+      t.allCats = allCats;
       t.tableName = descr.tableName;
       t.yType = 'value';
       r.push(t);
@@ -80,13 +82,14 @@ export class MPUtils {
     for (let i=0; i< plts.length; i++) {
       const p = plts[i];
       if (p.splitByColumnName) {
-        const categColumn = p.splitByColumnName;
         const table = tables[p.tableName];
         const data = this.getUniversalData(table, [p.x, p.y, p.splitByColumnName]);
         const cats = this.getCategories(data, 2);
         const sortedCats = this.getCategoriesArray(cats);
-        const allCats = this.concatArrayUnique(p.categories ?? [], sortedCats, p.maxLimit);
-        const plotsArray = this.generatePlotsFromDescribtions(p, allCats);
+        p.allCats = sortedCats;
+        const activeCats = this.concatArrayUnique(p.categories ?? [], sortedCats, p.maxLimit);
+        p.activeCats = activeCats;
+        const plotsArray = this.generatePlotsFromDescribtions(p, activeCats, sortedCats);
         // let t = this.generatePlotsFromDescribtions(p, plotsArray);
         r = r.concat(plotsArray);
       } else {
