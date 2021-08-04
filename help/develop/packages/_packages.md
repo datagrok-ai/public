@@ -1,3 +1,6 @@
+<!-- TITLE: Packages -->
+<!-- ORDER: 1 -->
+
 # Packages
 
 You can extend Datagrok with _packages_ that you build using the [JavaScript API]. A Datagrok package is a JavaScript or 
@@ -32,35 +35,35 @@ Follow these steps to create a package template:
 
 1. Install `datagrok-tools` globally to manage your Datagrok packages:
 
-```shell
-npm install datagrok-tools -g
-```
+  ```shell
+  npm install datagrok-tools -g
+  ```
 
 2. Configure your environment:
 
-```shell
-grok config
-```
+  ```shell
+  grok config
+  ```
 
-You will be prompted to enter the developer keys and set the default server. Your credentials will be stored locally
-in `config.yaml`. Check out the [Datagrok configuration section] for more details.
+  You will be prompted to enter the developer keys and set the default server. Your credentials will be stored locally
+  in `config.yaml`. Check out the [Datagrok configuration section] for more details.
 
 3. Go to the folder where you want to create your package and run:
 
-```shell
-grok create <package-name>
-```
+  ```shell
+  grok create <package-name>
+  ```
 
-> **Note**: If you want to create a TypeScript package, pass the `--ts` option to the command.
+  > **Note**: If you want to create a TypeScript package, pass the `--ts` option to the command.
 
-After you complete the work on your Datagrok package, upload it to Datagrok by running the following command:
+4. After you complete the work on your package, upload it to Datagrok by running the following command:
 
-```shell
-grok publish
-```
+  ```shell
+  grok publish
+  ```
 
-Note that by running this command, only you will see the package in Datagrok. For more information about the available
-commands, refer to the [Grok CLI section].
+  Note that by running this command, only you will see the package in Datagrok. For more information about the available
+  commands, refer to the [Grok CLI section].
 
 ## Package structure
 
@@ -198,25 +201,27 @@ The Grok CLI generates a typical webpack configuration for the Datagrok package:
 const path = require('path');
 
 module.exports = {
-    mode: 'development',  // Set to "production" to minify the output and optimize production builds
-    entry: {
-        package: './src/package.js'  // The package is limited to exactly one entry point
-    },
-    devtool: 'inline-source-map',   // Enhances package debugging in browser devtools
-    externals: {                    // The external modules won't be loaded to the output, but taken from the environment
-        'datagrok-api/dg': 'DG',
-        'datagrok-api/grok': 'grok',
-        'datagrok-api/ui': 'ui',
-        'openchemlib/full.js': 'OCL',
-        'rxjs': 'rxjs',
-        'rxjs/operators': 'rxjs.operators'
-    },
-    output: {
-        filename: '[name].js',
-        library: 'sequence',     // Name of the package in lower case
-        libraryTarget: 'var',    // Results will be assigned to a variable sequence`
-        path: path.resolve(__dirname, 'dist'),
-    },
+  mode: 'development',  // Set to "production" to minify the output and optimize production builds
+  entry: {
+    package: './src/package.js'  // The package is limited to exactly one entry point
+  },
+  devtool: 'inline-source-map',   // Enhances package debugging in browser devtools
+  externals: {                    // The external modules won't be loaded to the output, but taken from the environment
+    'datagrok-api/dg': 'DG',
+    'datagrok-api/grok': 'grok',
+    'datagrok-api/ui': 'ui',
+    'openchemlib/full.js': 'OCL',
+    'rxjs': 'rxjs',
+    'rxjs/operators': 'rxjs.operators',
+    'cash-dom': '$',
+    'dayjs': 'dayjs',
+  },
+  output: {
+    filename: '[name].js',
+    library: 'sequence',     // Name of the package in lower case
+    libraryTarget: 'var',    // Results will be assigned to a variable `sequence`
+    path: path.resolve(__dirname, 'dist'),
+  },
 };
 ```
 

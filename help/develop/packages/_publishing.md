@@ -1,3 +1,6 @@
+<!-- TITLE: Publishing -->
+<!-- ORDER: 2 -->
+
 # Publishing
 
 After your package for Datagrok is ready, you might want to publish the package. This document describes various aspects 
