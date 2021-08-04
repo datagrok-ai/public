@@ -899,46 +899,55 @@ export class TagElement {
 /** Color-related routines. */
 export class Color {
 
+  /** Returns a color associated with the specified cell as an ARGB-formatted integer.
+   * To convert to html color, use {@link getCellColorHtml} or {@link toHtml}. */
   static getCellColor(cell: Cell): number {
     return api.grok_Color_FromCell(cell.d);
   }
 
+  /** Returns a string representation of the color associated with the specified cell.
+   * For batch color manipulations, use {@link getCellColor}. */
   static getCellColorHtml(cell: Cell): string {
     return Color.toHtml(Color.getCellColor(cell));
   }
 
+  /** Returns a color associated with the specified category within a column.
+   * Returns ARGB-formatted integer. To convert to html color, use {@link toHtml}. */
   static getCategoryColor(column: Column, category: any): number {
     return api.grok_Color_FromCategory(column.d, category);
   }
 
-  static toHtml(color: number) { return api.grok_Color_ToHtml(color); }
+  /** Returns the Alpha component of the color represented as ARGB-formatted integer. */
+  static a(c: number): number { return (c >> 24) & 0xFF; }
 
-  static r(c: number): number {
-    return (c >> 16) & 0xFF;
-  }
+  /** Returns the Red component of the color represented as ARGB-formatted integer. */
+  static r(c: number): number { return (c >> 16) & 0xFF; }
 
-  static g(c: number): number {
-    return (c >> 8) & 0xFF;
-  }
+  /** Returns the Green component of the color represented as ARGB-formatted integer. */
+  static g(c: number): number { return (c >> 8) & 0xFF; }
 
-  static b(c: number): number {
-    return c & 0xFF;
-  }
+  /** Returns the Blue component of the color represented as ARGB-formatted integer. */
+  static b(c: number): number { return c & 0xFF; }
 
   /** Returns i-th categorical color (looping over the palette if needed) */
   static getCategoricalColor(i: number): ColorType {
     return Color.categoricalPalette[i % Color.categoricalPalette.length];
   }
 
-  /** Returns either black or white color, depending on which one would be most contrast to the specified [color] */
+  /** Returns either black or white color, depending on which one would be most contrast to the specified [color]. */
   static getContrastColor(color: ColorType): ColorType {
     return api.grok_Color_GetContrastColor(color);
   }
 
+  /** Converts ARGB-formatted integer color to a HTML-formatted string (such as `#FF68Gf5T`). See also {@link toRgb}. */
+  static toHtml(color: number) { return api.grok_Color_ToHtml(color); }
+
+  /** Converts ARGB-formatted integer color to a HTML-formatted string (such as `rbg(20, 46, 124)`). See also {@link toHtml. }*/
   static toRgb(color: ColorType): string {
     return color === null ? '' : `rgb(${Color.r(color)},${Color.g(color)},${Color.b(color)})`;
   }
 
+  /** Returns the standard palette of the categorical colors used across all visualizations in Datagrok. */
   static get categoricalPalette(): ColorType[] {
     return api.grok_Color_CategoricalPalette();
   }
