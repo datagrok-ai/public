@@ -11,7 +11,8 @@
   },
   "devDependencies": {
     "webpack": "latest",
-    "webpack-cli": "latest"
+    "webpack-cli": "latest",
+    "webpack-dev-server": "latest"
   },
   "scripts": {
     "install-dependencies": "npm install",
