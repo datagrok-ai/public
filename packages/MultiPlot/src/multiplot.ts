@@ -263,6 +263,12 @@ export class MultiPlotViewer extends DG.JsViewer {
         itemStyle: {},
       };
 
+      if (plot.statusChart) {
+        currentSeries.itemStyle = {
+          color: this.getItemStyleColorFunc(plot.visualMap, plot),
+        };
+      }
+
       if (plot.visualMap) {
         if (plot.visualMap.pieces) {
           currentSeries.itemStyle = {
@@ -337,19 +343,30 @@ export class MultiPlotViewer extends DG.JsViewer {
   // create function to use as EChart callback with Datagrok mixins
   // get callback function to define color of marker
   getItemStyleColorFunc(visualMap: any, plot: any) : any {
+    let customColorFunc : any = () => {};
     const defaultColor = this.paletteColors[0];
     const selectionColor = this.paletteColors[1];
-    const min = visualMap.pieces[0].min;
-    const max = visualMap.pieces[0].max;
-    const vMapColor = visualMap.pieces[0].color;
     const table = this.tables[plot.tableName];
-    let customColorFunc = (e) => {
-      return e.data[2] > min && e.data[2] < max ? vMapColor : defaultColor;
-    };
-    if (visualMap.type === 'statusChart') {
+    if (visualMap) {
+      const min = visualMap.pieces[0].min;
+      const max = visualMap.pieces[0].max;
+      const vMapColor = visualMap.pieces[0].color;
       customColorFunc = (e) => {
-        return e.data[visualMap.column] > e.data[visualMap.minColumn] &&
-        e.data[visualMap.column] < e.data[visualMap.maxColumn] ? defaultColor : visualMap.color;
+        return e.data[2] > min && e.data[2] < max ? vMapColor : defaultColor;
+      };
+    }
+    if (plot.statusChart) {
+      console.error('status chart get color func');
+      customColorFunc = (e) => {
+        let val = e.data[plot.statusChart.valueField];
+        let min = e.data[plot.statusChart.minField];
+        let max = e.data[plot.statusChart.maxField];
+        if (typeof val == 'string') val = parseFloat(val);
+        if (typeof min == 'string') min = parseFloat(min);
+        if (typeof max == 'string') max = parseFloat(max);
+
+        return val > min && val < max ? 'green' : 'red';
+        return val > min && val < max ? defaultColor : plot.statusChart.alertColor;
       };
     }
     function f(e) {
