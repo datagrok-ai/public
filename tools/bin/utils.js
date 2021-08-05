@@ -7,6 +7,10 @@ exports.kebabToCamelCase = (s) => {
   return s[0].toUpperCase() + s.slice(1);
 }
 
+exports.camelCaseToKebab = (s) => {
+  return s.replace(/[A-Z]/g, (char, index) => index == 0 ? char.toLowerCase() : '-'+ char.toLowerCase());
+}
+
 exports.mapURL = (conf) => {
   let urls = {};
   for (let server in conf.servers) {

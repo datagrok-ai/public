@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const help = require('../ent-helpers.js');
 const utils = require('../utils.js');
 
 module.exports = {
@@ -109,13 +110,7 @@ function add(args) {
       fs.writeFileSync(scriptPath, insertName(name, contents), 'utf8');
 
       // Provide a JS wrapper for the script
-      console.log(`The script has been created. To call it from a JavaScript file, use:
-            
-            await grok.functions.call('${curFolder}:${name}', { params })
-            
-            Read more at https://datagrok.ai/help/develop/scripting
-            See examples at https://public.datagrok.ai/scripts,
-            https://public.datagrok.ai/js/samples/scripting/scripting`.replace(/ {4}/g, ''));
+      console.log(help.script(name, curFolder));
       break;
 
     case 'app':
@@ -132,9 +127,7 @@ function add(args) {
       let app = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
         'entity-template', 'app.js'), 'utf8');
       fs.appendFileSync(packageEntry, insertName(name, app));
-      console.log(`The application ${name} has been added successfully`);
-      console.log('Read more at https://datagrok.ai/help/develop/develop#applications');
-      console.log('See application examples at https://public.datagrok.ai/apps');
+      console.log(help.app(name));
       break;
 
     case 'function':
@@ -162,10 +155,7 @@ function add(args) {
         'entity-template', filename), 'utf8');
       fs.appendFileSync(packageEntry, insertName(name, func));
 
-      console.log(`The function ${name} has been added successfully`);
-      console.log('Read more at https://datagrok.ai/help/overview/functions/function');
-      console.log('See examples at https://public.datagrok.ai/functions');
-      if (tag) console.log('https://public.datagrok.ai/js/samples/functions/info-panels/info-panels');
+      console.log(help.func(name, tag === 'panel'));
       break;
     case 'connection':
       if (nArgs !== 3) return false;
@@ -185,9 +175,7 @@ function add(args) {
       var connection = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
         'entity-template', 'connection.json'), 'utf8');
       fs.writeFileSync(connectPath, insertName(name, connection), 'utf8');
-      console.log(`The connection ${name} has been added successfully`);
-      console.log('Read more at https://datagrok.ai/help/access/data-connection');
-      console.log('See examples at https://github.com/datagrok-ai/public/tree/master/packages/Chembl');
+      console.log(help.connection(name));
       break;
 
     case 'query':
@@ -217,9 +205,7 @@ function add(args) {
       }
       contents = contents.replace('#{CONNECTION}', connection);
       fs.appendFileSync(queryPath, contents);
-      console.log(`The query ${name} has been added successfully`);
-      console.log('Read more at https://datagrok.ai/help/access/data-query');
-      console.log('See examples at https://github.com/datagrok-ai/public/tree/master/packages/Chembl');
+      console.log(help.query(name));
       break;
 
     case 'view':
@@ -236,7 +222,7 @@ function add(args) {
       createPackageEntryFile();
 
       // Add a new JS file with a view class
-      let viewPath = path.join(srcDir, name.toLowerCase() + ext);
+      let viewPath = path.join(srcDir, utils.camelCaseToKebab(name) + ext);
       if (fs.existsSync(viewPath)) {
         return console.log(`The view file already exists: ${viewPath}`);
       }
@@ -251,9 +237,7 @@ function add(args) {
       contents += fs.readFileSync(packageEntry, 'utf8');
       contents += insertName(name, view);
       fs.writeFileSync(packageEntry, contents, 'utf8');
-      console.log(`The view ${name} has been added successfully`);
-      console.log('Read more at https://datagrok.ai/help/develop/how-to/custom-views');
-      console.log('See examples at https://github.com/datagrok-ai/public/tree/master/packages/Notebooks');
+      console.log(help.view(name));
       break;
 
     case 'viewer':
@@ -270,7 +254,7 @@ function add(args) {
       createPackageEntryFile();
 
       // Add a new JS file with a viewer class
-      let viewerPath = path.join(srcDir, name.toLowerCase() + ext);
+      let viewerPath = path.join(srcDir, utils.camelCaseToKebab(name) + ext);
       if (fs.existsSync(viewerPath)) {
         return console.log(`The viewer file already exists: ${viewerPath}`);
       }
@@ -286,10 +270,7 @@ function add(args) {
       contents += fs.readFileSync(packageEntry, 'utf8');
       contents += insertName(name, viewer);
       fs.writeFileSync(packageEntry, contents, 'utf8');
-      console.log(`The viewer ${name} has been added successfully`);
-      console.log('Read more at https://datagrok.ai/help/develop/how-to/develop-custom-viewer');
-      console.log('See examples at https://github.com/datagrok-ai/public/tree/master/packages/Viewers,');
-      console.log('https://public.datagrok.ai/js/samples/functions/custom-viewers/viewers');
+      console.log(help.viewer(name));
       break;
     case 'detector':
       if (nArgs !== 3) return false;
@@ -314,8 +295,7 @@ function add(args) {
       }
 
       fs.writeFileSync(detectorsPath, contents, 'utf8');
-      console.log(`The detector for ${name} has been added successfully\n` +
-      'Read more at https://datagrok.ai/help/develop/how-to/semantic-type-detector');
+      console.log(help.detector(name));
       break;
     default:
       return false;
