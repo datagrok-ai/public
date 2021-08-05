@@ -191,4 +191,4 @@ func1();
 
 ### The result of script execution:
 
-![image of script result](img/full_plots_anim?raw=true "The result")
+![image of script result](img/full_plots_anim.gif?raw=true "The result")
