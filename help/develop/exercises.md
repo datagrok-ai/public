@@ -243,9 +243,11 @@ achieved in the last point of the previous exercise, now with more scripting.
    to the client, based on the `join` instruction, `result` will be  _appended_ to the existing input
    dataframe `sequences`. As this is performed purely on the client, we save the bandwidth without needing
    to return a copy of a dataframe which we already passed to the server.  
-   * Use Pandas dataframes to access the input dataframe and create an output dataframe     
-   * You don't need to import `pandas`, Datagrok does this automatically
-   * Note that the `column inputColName` is just a string with a column name, passed to a script    
+   * Use Pandas dataframes as `pd` to access the input dataframe and create an output dataframe     
+   * You don't need to import `pandas`, Datagrok does this automatically: to each Python script it adds a preamble
+     with most popular imports (`os`, `io`, `json`, `pandas as pd`, `requests`, `datetime`, `timedelta`)
+   * Note that the `column inputColName` is just a string with a column name passed to a script, not
+     an actual column content
       
 3. Run the function with a "Play" button on top of the function window. THe dialog will prompt you
    to select a dataframe. Navigate to a "Data" view (first button on the left sidebar) and open
@@ -278,13 +280,11 @@ _You will learn:_ how to create and invoke Datagrok JavaScript scripts.
 3. Run `CountSubsequenceJS` using the `Play` button; using the console. From same console,
    run `CountSubsequencePython` yet again.  You can notice that both Python and JS versions of
    our function, implemented as scripts, are homogeneous functions in Datagrok.
-   It's also possible to call them in a uniform fashion
-   [using our JavaScript API](scripting.md#running-a-script). This is also shown
-   in the ["Composing functions and dataframes"](#composing-functions-and-dataframes) exercise.
+   It's also possible to call them in a uniform fashion [using our JavaScript API](scripting.md#running-a-script).
 4. Don't forget to save these two scripts. We would re-use parts of them in the following exercises.
 
 The difference between the two scripts is that the first, `CountSubsequencePython`, runs on
-our server by a [compute virtual machine](develop/admin/architecture.md#compute-virtual-machine),
+our server by a [compute virtual machine](develop/admin/architecture#compute-virtual-machine),
 whereas the second, `CountSubsequenceJS`, runs directly in the browser. To run `CountSubsequencePython`,
 Datagrok passes the script arguments over the network and fetches back the result to the browser.
 
