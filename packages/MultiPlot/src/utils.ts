@@ -90,7 +90,6 @@ export class MPUtils {
         const activeCats = this.concatArrayUnique(p.categories ?? [], sortedCats, p.maxLimit);
         p.activeCats = activeCats;
         const plotsArray = this.generatePlotsFromDescribtions(p, activeCats, sortedCats);
-        // let t = this.generatePlotsFromDescribtions(p, plotsArray);
         r = r.concat(plotsArray);
       } else {
         if (p.statusChart) {
@@ -98,7 +97,6 @@ export class MPUtils {
             // generate array for the filter in one plot
             const table = tables[p.tableName];
             const fields = [p.x, p.y].concat(p.extraFields ?? []);
-            // const data = this.getUniversalData(table, [p.x, p.y, p.statusChart.splitByColumnName]);
             const data = this.getUniversalData(table, fields);
             const cats = this.getCategories(data, 1);
             const sortedCats = this.getCategoriesArray(cats);
@@ -131,7 +129,6 @@ export class MPUtils {
   // build 2d array for series.data of echart
   getUniversalData(table: DG.DataFrame, fieldsNames: string[], indexes?: Int32Array, condition? : any): any[] {
     const r = [];
-
     function getRowFields(row: DG.Row): any[] {
       const fields = [];
       for (let i = 0; i < fieldsNames.length; i++) {
