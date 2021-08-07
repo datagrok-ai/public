@@ -533,12 +533,12 @@ export class LogEventParameterValue extends Entity {
  * Represents a package, which is a unit of distribution of content in the Datagrok platform.
  */
 export class Package extends Entity {
-  public webRoot: string | String | undefined;
+  public webRoot: string | undefined;
   public version: string;
 
   constructor(d: any | undefined = undefined) {
     super(d);
-    if (typeof d === 'string' || d instanceof String) {
+    if (typeof d === 'string') {
       this.webRoot = d;
       this.d = null;
     }
