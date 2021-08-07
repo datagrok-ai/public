@@ -9,20 +9,14 @@ import ReactDOM from 'react-dom';
 
 export let _package = new DG.Package();
 
-function react(reactComponent: React.DOMElement<any, any> | Array<React.DOMElement<any, any>> | React.CElement<any, any> | Array<React.CElement<any, any>> | React.ReactElement | Array<React.ReactElement>): DG.Widget {
-  let widget = DG.Widget.fromRoot(ui.div());
-  // @ts-ignore
-  ReactDOM.render(reactComponent, widget.root);
-  return widget;
-}
+const structServiceProvider = new RemoteStructServiceProvider(
+  'foo_api_path'
+  //process.env.REACT_APP_API_PATH!
+)
 
 //name: ketch
 export function ketch() {
 
-  const structServiceProvider = new RemoteStructServiceProvider(
-    'foo_api_path'
-    //process.env.REACT_APP_API_PATH!
-  )
 
   let props = {
     //staticResourcesUrl: process.env.PUBLIC_URL,
@@ -30,12 +24,18 @@ export function ketch() {
     structServiceProvider: structServiceProvider
   };
 
-  let sketcherWidget = react(
-    // @ts-ignore
-    React.createElement(Editor, props, null)
-  );
+  let host = ui.div([], { style: {height: '500px', width: '500px'}});
+  // @ts-ignore
+  let component = React.createElement(Editor, props, null);
+  ReactDOM.render(component, host);
 
   ui.dialog()
-    .add(sketcherWidget)
+    .add(host)
     .show();
 }
+
+// function createSketcher() {
+//   return <Editor
+//     staticResourcesUrl={_package.webRoot!}
+//     structServiceProvider={structServiceProvider}/>;
+// }
