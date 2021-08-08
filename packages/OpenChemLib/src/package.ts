@@ -8,7 +8,7 @@ export let _package = new DG.Package();
 
 //name: openChemLibSketch
 //description: Sketches a molecule
-//top-menu: Chem | Marvin Sketch
+//top-menu: Chem | OpenChemLib Sketch
 export function openChemLibSketch() {
   ui.dialog()
     .add(openChemLibSketcher().root)
