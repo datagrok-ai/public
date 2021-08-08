@@ -298,7 +298,7 @@ Your package might contain the following additional folders, depending on your n
 [datagrok tools section]: https://github.com/datagrok-ai/public/tree/master/tools#datagrok-tools
 [debug]: ./_debugging.md
 [deployment with Docker Compose section]: https://datagrok.ai/help/develop/admin/docker-compose
-[development server]: https://dev.datagrok.ai/u
+[development servers]: https://dev.datagrok.ai/u
 [functions]: ../../overview/functions/function.md "A function can be used to query a database, delete a column from a table, applying predictive model to a dataset and other things."
 [function types]: ./_package-function-types.md
 [grok CLI section]: https://github.com/datagrok-ai/public/tree/master/tools#datagrok-tools

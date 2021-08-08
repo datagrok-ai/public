@@ -54,11 +54,10 @@ Check out the following spaces and documents for more information about Datagrok
 1. [Community forum] and [meetings]
    > To join a meeting, go to the [Community Forum] and ask for a Zoom link.
 2. [Release notes]
-7. [Architecture]
-3. [Extending and customizing Datagrok]
-4. [Building an application]
-5. [Building a plugin]
-6. [Building a UI](ui.md)
+3. [Architecture]
+5. [Extending and customizing Datagrok]
+6. [Building an application]
+7. [Building a UI]
 8. [Performance]
 
 ## 6 Videos
@@ -69,13 +68,30 @@ extensions.
 1. [Demo]
 2. [Platform overview]
 3. [JS API overview]
-4. [datagrok-tools (CLI)](https://www.youtube.com/watch?v=zVVmlRorpjg&t=258s)
-     [part 2](https://www.youtube.com/watch?v=0QxzllnBreI&t=4657s)
+4. [datagrok-tools overview (part 1)]
+     * [datagrok-tools overview (part 2)]
 5. [VS Code Integration]
 6. [Data access]
 7. [Visualization and viewers]
 
-[Datagrok demo]: https://www.youtube.com/watch?v=tVwpRB8fikQ
+[community forum]: https://community.datagrok.ai/
+[meetings]: https://www.youtube.com/watch?v=p7_qOU_IzLM
+[Release notes]: https://datagrok.ai/help/develop/release-history
+[architecture]: admin/architecture.md
+[Extending and customizing Datagrok]: extending-and-customizing.md
+[Building an application]: how-to/build-an-app.md
+[Building a UI]: ui.md
+[Performance]: performance.md
+[Demo]: https://www.youtube.com/watch?v=tVwpRB8fikQ
+[Platform overview]: ../video-contents.md#getting-started
+[JS API overview]: ../video-contents.md#javascript-api
+[datagrok-tools overview (part 1)]: https://www.youtube.com/watch?v=zVVmlRorpjg&t=258s
+[datagrok-tools overview (part 2)]: https://www.youtube.com/watch?v=0QxzllnBreI&t=4657s
+[Building a UI]: ./ui.md
+[VS Code Integration]: https://www.youtube.com/watch?v=zVVmlRorpjg&t=870s
+[Data access]: ../video-contents.md#data-access
+[Visualization and viewers]: ../video-contents.md#visualizations
+[datagrok demo]: https://www.youtube.com/watch?v=tVwpRB8fikQ
 [a few JavaScript samples]: https://public.datagrok.ai/js
 [powerful JavaScript API]: https://datagrok.ai/js-api/
 [Digital Signal Processing]: https://github.com/datagrok-ai/public/tree/master/packages/DSP
@@ -85,3 +101,5 @@ extensions.
 [Cell renderers]:https://github.com/datagrok-ai/public/blob/master/packages/Chem/src/rdkit_cell_renderer.js
 [viewers]: https://github.com/datagrok-ai/public/tree/master/packages/Viewers
 [filters]: https://github.com/datagrok-ai/public/blob/master/packages/Widgets/src/filters/radio_button_filter.js
+[datagrok-tools README]: https://github.com/datagrok-ai/public/tree/master/tools#datagrok-tools
+[JavaScript exercises]: ./exercises.md
