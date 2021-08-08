@@ -4,6 +4,9 @@
 	"friendlyName": "Ketcher",
 	"version": "0.0.1",
 	"description": "",
+	"sources": [
+		"css/ketcher.css"
+	],
 	"dependencies": {
 		"@types/react-dom": "^17.0.9",
 		"datagrok-api": "../../js-api",

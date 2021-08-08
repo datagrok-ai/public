@@ -5,7 +5,7 @@
 
 import {BitSet, Column, DataFrame} from './dataframe';
 import {SIMILARITY_METRIC, SimilarityMetric, TYPE} from './const';
-import {Observable, Subject} from "rxjs";
+import {Observable, Subject, Subscription} from "rxjs";
 import {Widget} from "./widgets";
 import {Func} from "./entities";
 import * as ui from "../ui";
@@ -292,4 +292,27 @@ export function convert(s: string, sourceFormat: string, targetFormat: string) {
     let mol = new OCL.Molecule.fromMolfile(s);
     return mol.toSmiles();
   }
+}
+
+export async function showSketcherDialog() {
+  let funcs = Func.find({tags: ['moleculeSketcher']});
+  let host = ui.div([], {style: {width: '600px', height: '600px'}});
+  let changedSub: Subscription | null = null;
+
+  function setSketcher(name: string) {
+    let f = Func.find({name: name})[0];
+    f.apply().then((sketcher: SketcherBase) => {
+      changedSub?.unsubscribe();
+      changedSub = sketcher.onChanged.subscribe((_) => grok.shell.info('changed'));
+      ui.empty(host);
+      host.appendChild(sketcher.root);
+    });
+  }
+
+  setSketcher(funcs[0].name);
+
+  ui.dialog()
+    .add(ui.choiceInput('Sketcher', funcs[0].name, funcs.map((f) => f.name), setSketcher))
+    .add(host)
+    .show();
 }
