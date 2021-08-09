@@ -7,9 +7,16 @@ export class LearningWidget extends DG.Widget {
   caption: string;
 
   constructor() {
-    super(ui.panel());
+    super(ui.box());
+    let list = ui.element('ul');
+    list.style.columns = '2';
+    list.append(ui.div(wikiList.map(renderWiki)));
 
-    this.root.appendChild(ui.divV(playlists.map(renderPlaylist)));
+    this.root.appendChild(ui.tabControl({
+      'VIDEO':ui.panel(playlists.map(renderPlaylist)),
+      'WIKI':ui.panel([list])
+    }).root
+    );
 
     // properties
     this.caption = super.addProperty('caption', DG.TYPE.STRING, 'Learn');
@@ -24,6 +31,12 @@ function renderPlaylist(p: any) {
       ui.h2(ui.link(p.title, url)),
       ui.divText(p.description)
   ]);
+}
+
+function renderWiki (p: any){
+  let listItem = ui.element('li');
+  listItem.append(ui.link(p.title, p.url));
+  return listItem;
 }
 
 // get info on channels:
@@ -59,6 +72,63 @@ let playlists = [
     "title": "Explore",
     "description": "Discover, transform, and explore your data, no matter where it comes from",
     "url": "https://raw.githubusercontent.com/datagrok-ai/public/master/help/uploads/pictures/Explore.png"
+  }
+];
+
+
+
+let wikiList = [
+  {
+    'title': 'Access',
+    'url': 'https://datagrok.ai/help/access/db-exploration'
+  },
+  {
+    'title':'Collaborate',
+    'url': 'https://datagrok.ai/help/collaborate/chat'
+  },
+  {
+    'title': 'Develop',
+    'url': 'https://datagrok.ai/help/develop/getting-started'
+  },
+  {
+    'title': 'Discover',
+    'url': 'https://datagrok.ai/help/discover/data-augmentation'
+  },
+  {
+    'title': 'Domains',
+    'url': 'https://datagrok.ai/help/domains/chem/chemically-aware-viewers'
+  },
+  {
+    'title': 'Explore',
+    'url': 'https://datagrok.ai/help/explore/cluster-data'
+  },
+  {
+    'title': 'Govern',
+    'url': 'https://datagrok.ai/help/govern/audit'
+  },
+  {
+    'title': 'Learn',
+    'url': 'https://datagrok.ai/help/learn/data-science'
+  },
+  {
+    'title': 'Overview',
+    'url': 'https://datagrok.ai/help/overview/create-project'
+  },
+  {
+    'title': 'Stories',
+    'url': 'https://datagrok.ai/help/stories/life-sciences'
+  },
+  {
+    'title': 'Transform',
+    'url': 'https://datagrok.ai/help/transform/add-new-column'
+  },
+  {
+    'title': 'Visualize',
+    'url': 'https://datagrok.ai/help/visualize/add-custom-form'
+  },
+  {
+    'title': 'Acknowledgments',
+    'url': 'https://datagrok.ai/help/acknowledgements'
   }
 ];
 
