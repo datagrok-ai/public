@@ -1,4 +1,4 @@
-import * as chem from "datagrok-api/src/chem";
+import {chem} from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import * as DG from 'datagrok-api/dg';
 import {RemoteStructServiceProvider} from "ketcher-core";
