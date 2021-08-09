@@ -1,11 +1,11 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import * as chem from 'datagrok-api/src/chem';
+import * as OCL from 'openchemlib/full.js';
 
 let sketcherId = 0;
 
-export class OpenChemLibSketcher extends chem.SketcherBase {
+export class OpenChemLibSketcher extends DG.chem.SketcherBase {
   _sketcher: any;
 
   constructor() {
@@ -20,8 +20,7 @@ export class OpenChemLibSketcher extends chem.SketcherBase {
 
     let that = this;
     setTimeout(function() {
-      // @ts-ignore
-      that._sketcher = OCL.StructureEditor.createSVGEditor(id, true, 1);
+      that._sketcher = OCL.StructureEditor.createSVGEditor(id, 1);
       that._sketcher.setChangeListenerCallback(function() {
         that.onChanged.next(null);
       });
