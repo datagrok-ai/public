@@ -13,16 +13,12 @@
     flex-direction: column;
     width: initial!important;
     height: initial!important;
-    grid-column: span 2;
+    grid-column: span 1;
     box-shadow: 0 3px 1px -2px rgb(0 0 0 / 20%), 0 2px 2px 0 rgb(0 0 0 / 14%), 0 1px 5px 0 rgb(0 0 0 / 12%);
 }
 
-.power-pack-widget-host.widget-narrow {
-    grid-column: span 1;
-}
-
 .power-pack-widget-host.widget-wide {
-    grid-column: span 4;
+    grid-column: span 2;
 }
 
 .power-pack-widget-header {
@@ -53,8 +49,8 @@
 
 .power-pack-widgets-host {
     display: grid;
-    grid-gap: 10px;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    grid-gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     grid-template-rows: repeat(auto-fill, 400px);
 }
 
