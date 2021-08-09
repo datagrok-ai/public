@@ -7,7 +7,8 @@ import grok_connect.connectors_info.*;
 
 
 public class DenodoDataProvider extends JdbcDataProvider {
-    public DenodoDataProvider() {
+    public DenodoDataProvider(ProviderManager providerManager) {
+        super(providerManager);
         driverClassName = "com.denodo.vdb.jdbcdriver.VDBJDBCDriver";
 
         descriptor = new DataSource();

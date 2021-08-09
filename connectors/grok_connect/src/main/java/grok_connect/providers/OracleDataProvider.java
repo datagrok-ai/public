@@ -16,7 +16,8 @@ public class OracleDataProvider extends JdbcDataProvider {
             "AND OWNER != 'WMSYS' AND OWNER != 'EXFSYS' AND OWNER != 'ORDSYS' " +
             "AND OWNER != 'ORDDATA'";
 
-    public OracleDataProvider() {
+    public OracleDataProvider(ProviderManager providerManager) {
+        super(providerManager);
         driverClassName = "oracle.jdbc.OracleDriver";
 
         descriptor = new DataSource();

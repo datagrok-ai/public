@@ -11,7 +11,8 @@ public class SQLiteDataProvider extends JdbcDataProvider {
         return false;
     }
 
-    public SQLiteDataProvider() {
+    public SQLiteDataProvider(ProviderManager providerManager) {
+        super(providerManager);
         driverClassName = "org.sqlite.JDBC";
 
         descriptor = new DataSource();
