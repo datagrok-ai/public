@@ -7,7 +7,8 @@ import grok_connect.connectors_info.*;
 
 
 public class VirtuosoDataProvider extends JdbcDataProvider {
-    public VirtuosoDataProvider() {
+    public VirtuosoDataProvider(ProviderManager providerManager) {
+        super(providerManager);
         driverClassName = "virtuoso.jdbc4.Driver";
 
         descriptor = new DataSource();

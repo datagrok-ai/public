@@ -5,9 +5,11 @@ import java.util.*;
 
 public class FuncCall
 {
+    public String id;
     public DataQuery func;
     public Map options;
     public Map<String, Object> parameterValues = new HashMap<>();
+    public Map<String, Object> aux = new HashMap<>();
 
     public void setParamValues() {
         for (String paramName: parameterValues.keySet()) {

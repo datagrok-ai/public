@@ -10,7 +10,9 @@ import grok_connect.connectors_info.*;
 
 
 public class AccessDataProvider extends JdbcDataProvider {
-    public AccessDataProvider() {
+    public AccessDataProvider(ProviderManager providerManager) {
+        super(providerManager);
+
         driverClassName = "net.ucanaccess.jdbc.UcanaccessDriver";
 
         descriptor = new DataSource();
