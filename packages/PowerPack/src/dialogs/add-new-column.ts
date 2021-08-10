@@ -166,6 +166,8 @@ export class AddNewColumnDialog {
       doDrop: (dragObject, _) => this.insertIntoExpression(dragObject)
     });
 
+    ui.initFormulaAccelerators(control, this.sourceDf!);
+
     return control;
   }
 
