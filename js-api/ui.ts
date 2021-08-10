@@ -605,6 +605,10 @@ export function boolInput(name: string, value: boolean, onValueChanged: Function
   return new InputBase(api.grok_BoolInput(name, value), onValueChanged);
 }
 
+export function switchInput(name: string, value: boolean, onValueChanged: Function | null = null): InputBase {
+  return new InputBase(api.grok_SwitchInput(name, value), onValueChanged);
+}
+
 export function moleculeInput(name: string, value: string, onValueChanged: Function | null = null): InputBase {
   return new InputBase(api.grok_MoleculeInput(name, value), onValueChanged);
 }
