@@ -189,6 +189,8 @@ export function iconFA(name: string, handler: ((this: HTMLElement, ev: MouseEven
 export function extract(x: any): any {
   if (x == null)
     return null;
+  if (x instanceof InputBase)
+    return x;
   if (x instanceof Widget)
     return x.root;
   if (typeof x.root !== 'undefined')
