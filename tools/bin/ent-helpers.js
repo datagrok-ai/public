@@ -47,6 +47,11 @@ Read more at https://datagrok.ai/help/develop/how-to/develop-custom-viewer
 See examples at https://github.com/datagrok-ai/public/tree/master/packages/Viewers,
 https://public.datagrok.ai/js/samples/functions/custom-viewers/viewers`;
 
+const package = (name, ts = false) => `
+Successfully created package ${name}${ts ? '' : '\nConsider TypeScript as a language for package development, to start over, run `grok create` with the `--ts` flag'}
+Run \`npm install\` in your package directory to get the required dependencies
+Likely next steps: \`grok add\` to add functionality, \`grok publish\` to upload the package`;
+
 module.exports = {
   app,
   connection,
@@ -56,4 +61,5 @@ module.exports = {
   script,
   view,
   viewer,
+  package,
 };
