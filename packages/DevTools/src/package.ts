@@ -134,8 +134,8 @@ export async function renderDevPanel(ent: EntityType): Promise<DG.Widget> {
       
   return DG.Widget.fromRoot(ui.divV([
     ui.divH([ui.divText(`${type} ${ent.name}:`), topEditorBtn, browserLogBtn], { style: { 'align-items': 'baseline' } }),
-    ...((type in tags) ? [getGroupInput(type)] : []),
     ...links,
+    ...((type in tags) ? [getGroupInput(type)] : []),
     ui.div(formSnippetSection(snippets), 'dt-snippet-section'),
     ui.divV([playBtn, clipboardBtn, editorBtn, resetBtn, editor.root], 'dt-textarea-box'),
   ], 'dt-dev-pane-container'));

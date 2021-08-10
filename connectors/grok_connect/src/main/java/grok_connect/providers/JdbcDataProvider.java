@@ -18,6 +18,12 @@ import serialization.Types;
 public abstract class JdbcDataProvider extends DataProvider {
     protected String driverClassName;
 
+    protected ProviderManager providerManager;
+
+    public JdbcDataProvider(ProviderManager providerManager) {
+        this.providerManager = providerManager;
+    }
+
     public abstract Connection getConnection(DataConnection dataConnection)
             throws ClassNotFoundException, SQLException;
 
@@ -82,6 +88,7 @@ public abstract class JdbcDataProvider extends DataProvider {
 
     public ResultSet executeQuery(String query, FuncCall queryRun, Connection connection, int timeout)  throws ClassNotFoundException, SQLException {
         DataQuery dataQuery = queryRun.func;
+        String mainCallId = queryRun.aux.get("mainCallId").toString();
 
         ResultSet resultSet = null;
         Pattern pattern = Pattern.compile("(?m)@(\\w+)");
@@ -106,6 +113,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                 queryBuffer.append(query, idx, query.length());
                 query = queryBuffer.toString();
                 PreparedStatement statement = connection.prepareStatement(query);
+                providerManager.queryMonitor.addNewStatement(mainCallId, statement);
                 for (int n = 0; n < names.size(); n++) {
                     FuncParam param = dataQuery.getParam(names.get(n));
                     if (param.propertyType.equals(Types.DATE_TIME)) {
@@ -152,6 +160,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                 query = queryBuffer.toString();
 
                 Statement statement = connection.createStatement();
+                providerManager.queryMonitor.addNewStatement(mainCallId, statement);
                 statement.setQueryTimeout(timeout);
                 System.out.println(query);
                 if(statement.execute(query))
@@ -160,6 +169,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         } else {
             // Query without parameters
             Statement statement = connection.createStatement();
+            providerManager.queryMonitor.addNewStatement(mainCallId, statement);
             statement.setQueryTimeout(timeout);
             System.out.println(query);
             if(statement.execute(query))
@@ -183,7 +193,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         DataQuery dataQuery = queryRun.func;
         String query = dataQuery.query;
         Connection connection = getConnection(dataQuery.connection);
-        String commentStart = DataProvider.getByName(dataQuery.connection.dataSource).descriptor.commentStart;
+        String commentStart = providerManager.getByName(dataQuery.connection.dataSource).descriptor.commentStart;
 
         ResultSet resultSet = null;
 
@@ -212,6 +222,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         for (int c = 1; c < columnCount + 1; c++) {
             Column column;
 
+            String label = resultSetMetaData.getColumnLabel(c);
             int type = resultSetMetaData.getColumnType(c);
             String typeName = resultSetMetaData.getColumnTypeName(c);
             supportedType.add(c - 1, true);
@@ -219,6 +230,10 @@ public abstract class JdbcDataProvider extends DataProvider {
 
             int precision = resultSetMetaData.getPrecision(c);
             int scale = resultSetMetaData.getScale(c);
+
+            String logString = String.format("Column label: %s, column type: %d, column type name: %s, precision: %d, scale: %d",
+                    label, type, typeName, precision, scale);
+            providerManager.logger.info(logString);
 
             if (isInteger(type, typeName, precision, scale))
                 column = new IntColumn();
@@ -239,6 +254,8 @@ public abstract class JdbcDataProvider extends DataProvider {
                 supportedType.set(c - 1, false);
                 initColumn.set(c - 1, false);
             }
+
+            providerManager.logger.info(String.format("Java column type: %s", column.getClass().getName()));
 
             column.name = resultSetMetaData.getColumnLabel(c);
             columns.add(c - 1, column);

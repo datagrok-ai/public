@@ -7,7 +7,8 @@ import grok_connect.connectors_info.*;
 
 
 public class Neo4jDataProvider extends JdbcDataProvider {
-    public Neo4jDataProvider() {
+    public Neo4jDataProvider(ProviderManager providerManager) {
+        super(providerManager);
         driverClassName = "org.neo4j.jdbc.Driver";
 
         descriptor = new DataSource();

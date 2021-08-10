@@ -7,6 +7,7 @@ import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
 import grok_connect.utils.CustomDriverManager;
 import grok_connect.utils.Property;
+import grok_connect.utils.ProviderManager;
 import serialization.Types;
 
 import java.sql.Connection;
@@ -17,7 +18,8 @@ import java.util.List;
 
 public class SnowflakeDataProvider extends JdbcDataProvider{
 
-    public SnowflakeDataProvider() {
+    public SnowflakeDataProvider(ProviderManager providerManager) {
+        super(providerManager);
         driverClassName = "com.snowflake.client.jdbc.SnowflakeDriver";
 
         descriptor = new DataSource();

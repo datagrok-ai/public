@@ -1,6 +1,70 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-08-09 Dev build 0.93.4
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.4`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Wiki: Simplify Develop and Getting Started (WIP)
+* Bar Chart: with the `include nulls` property off, the legend should not mention (no value) 
+* Custom ML: show all columns as features and labels  
+* Ability to adjust socket timeouts 
+* MultiPlot: add category selection to the mulit linechart 
+* Tooling: Actualize datagrok-tools for the onboarding (WIP)
+* datagrok-tools: update package template (WIP)
+* Functions: Categories order 
+* (Bug) Conditional Coloring: Empty cells are coloured if all values in this column are empty 
+* Merge branch 'master' of https://bitbucket.org/skalkin/reddata 
+* Simplify info panels example 
+* Viewers: render boolean values as categories on axes 
+* (Bug) Grid: empty cells are colored in gray and cell borders are not visible for categorically and linearly colored columns 
+* Wiki: Dataframe (WIP)
+* (Bug) Bar chart: If you select the area with only the upper bars (by Alt+drag), the scroll bar will not appear 
+* (Bug) Bar Chart: error when a boolean column is selected as a "stack" column 
+* MultiPlot: minor bugs fix and add advanced example to Readme.md 
+* MultiPlot: added file extension 
+* Function parameter editor (WIP)
+* (Bug) Bar chart: null values ​​are not indicated 
+* Bar Chart \- minor code cleanup. 
+* Exercises: Simplify Exercises (WIP)
+* JS API: Focus for opened dialogs 
+* (Bug) Grid: Error after changing the column width 
+* Oligo Batch Calculator: add compatibility with Axolabs sequences 
+* (Bug) Grid: scroll bar should be below the header (does not currently work for tall headers) 
+* Package content validation: function parameters 
+* Usage widget and new for UsageAnalysis queries 
+* (Bug) Bar Chart: vertical scroll bar is visible as soon as you open a bar chart 
+* #49: Ketcher \- initial update 
+* Fixed type annotations 
+* JS API: ability to set current object to SemanticValue 
+* (Bug) Pie Chart: Legend does not react to changes in the table 
+* (Bug) Correlation Plot: When zooming Scatter Plot on the PP table becomes the current object 
+* #49: Ketcher \- work in progress 
+* Chem: ability to switch sketchers (OpenChemLib, Marvin, Ketcher, etc) (WIP)
+* Update the docs 
+* Update the links 
+* #51: OpenChemLib package: initial update 
+* #49, #51: Ketcher and OpenChemLib sketchers: API harmonization 
+* #49, #51: Ketcher and OpenChemLib sketchers: code cleanup and harmonization 
+* Bar Chart: leave the column combobox on the X axis empty when the aggregation is `count` 
+* (Bug) Pie Chart: "Show Inner Percent" property works the other way around 
+* #49 Ketcher: import fix, add emitted js files to .gitignore 
+* #51 OpenChemLib sketcher: fix external modules imports 
+* API: Column's .toString should return a boolean value 
+* Change endpoints to use new divided cvm images (WIP)
+* Fixed a test 
+* Grok Connect: cancelable queries (WIP)
+* Update learning-widget.ts 
+
+
 # 2021-08-04 Dev build 0.93.3
 
 ## Latest Docker Images

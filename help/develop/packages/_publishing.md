@@ -78,3 +78,7 @@ It's possible to manage the access directly from the package. For that, specify 
   ]
 }
 ```
+
+## What's next?
+
+* [Debugging](./_debugging.md)
