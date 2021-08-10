@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const yaml = require('js-yaml');
+const help = require('../ent-helpers.js');
 const utils = require('../utils.js');
 
 module.exports = {
@@ -98,9 +99,7 @@ function create(args) {
       return false;
     }
     createDirectoryContents(name, config, templateDir, packageDir, args.ide, args.ts);
-    console.log('Successfully created package', name);
-    console.log('Run `npm install` in your package directory to get the required dependencies\n' +
-    'Likely next steps: `grok add` to add functionality, `grok publish` to upload the package');
+    console.log(help.package(name, args.ts));
   } else {
     console.log('Package name may only include letters, numbers, underscores, or hyphens');
   }
