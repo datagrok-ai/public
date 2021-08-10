@@ -1046,22 +1046,29 @@ function _icon(type: string, handler: Function, tooltipMsg: string | null = null
   return e;
 }
 
+function _iconFA(type: string, handler: Function, tooltipMsg: string | null = null): HTMLElement {
+  let e = $(`<i class="grok-icon fal fa-${type}"></i>`)[0] as HTMLElement;
+  e?.addEventListener('click', () => handler());
+  tooltip.bind(e, tooltipMsg);
+  return e;
+}
+
 
 export let icons = {
   close: (handler: Function, tooltipMsg: string | null = null) => _icon('close', handler, tooltipMsg),
   help: (handler: Function, tooltipMsg: string | null = null) => _icon('help', handler, tooltipMsg),
   settings: (handler: Function, tooltipMsg: string | null = null) => _icon('settings', handler, tooltipMsg),
-  edit: (handler: Function, tooltipMsg: string | null = null) => _icon('pen', handler, tooltipMsg),
-  save: (handler: Function, tooltipMsg: string | null = null) => _icon('save', handler, tooltipMsg),
-  copy: (handler: Function, tooltipMsg: string | null = null) => _icon('copy', handler, tooltipMsg),
-  add: (handler: Function, tooltipMsg: string | null = null) => _icon('plus', handler, tooltipMsg),
-  remove: (handler: Function, tooltipMsg: string | null = null) => _icon('minus', handler, tooltipMsg),
-  delete: (handler: Function, tooltipMsg: string | null = null) => _icon('trash-alt', handler, tooltipMsg),
-  undo: (handler: Function, tooltipMsg: string | null = null) => _icon('undo', handler, tooltipMsg),
-  sync: (handler: Function, tooltipMsg: string | null = null) => _icon('sync', handler, tooltipMsg),
-  info: (handler: Function, tooltipMsg: string | null = null) => _icon('info-circle', handler, tooltipMsg),
-  search: (handler: Function, tooltipMsg: string | null = null) => _icon('search', handler, tooltipMsg),
-  filter: (handler: Function, tooltipMsg: string | null = null) => _icon('filter', handler, tooltipMsg),
+  edit: (handler: Function, tooltipMsg: string | null = null) => _iconFA('pen', handler, tooltipMsg),
+  save: (handler: Function, tooltipMsg: string | null = null) => _iconFA('save', handler, tooltipMsg),
+  copy: (handler: Function, tooltipMsg: string | null = null) => _iconFA('copy', handler, tooltipMsg),
+  add: (handler: Function, tooltipMsg: string | null = null) => _iconFA('plus', handler, tooltipMsg),
+  remove: (handler: Function, tooltipMsg: string | null = null) => _iconFA('minus', handler, tooltipMsg),
+  delete: (handler: Function, tooltipMsg: string | null = null) => _iconFA('trash-alt', handler, tooltipMsg),
+  undo: (handler: Function, tooltipMsg: string | null = null) => _iconFA('undo', handler, tooltipMsg),
+  sync: (handler: Function, tooltipMsg: string | null = null) => _iconFA('sync', handler, tooltipMsg),
+  info: (handler: Function, tooltipMsg: string | null = null) => _iconFA('info-circle', handler, tooltipMsg),
+  search: (handler: Function, tooltipMsg: string | null = null) => _iconFA('search', handler, tooltipMsg),
+  filter: (handler: Function, tooltipMsg: string | null = null) => _iconFA('filter', handler, tooltipMsg),
 }
 
 export namespace cards {
