@@ -7,7 +7,8 @@ import grok_connect.connectors_info.*;
 
 
 public class HiveDataProvider extends JdbcDataProvider {
-    public HiveDataProvider() {
+    public HiveDataProvider(ProviderManager providerManager) {
+        super(providerManager);
         driverClassName = "org.apache.hive.jdbc.HiveDriver";
 
         descriptor = new DataSource();

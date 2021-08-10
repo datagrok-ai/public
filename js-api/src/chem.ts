@@ -4,8 +4,11 @@
  * */
 
 import {BitSet, Column, DataFrame} from './dataframe';
-import {SIMILARITY_METRIC, SimilarityMetric} from './const';
-import { Observable } from "rxjs";
+import {SIMILARITY_METRIC, SimilarityMetric, TYPE} from './const';
+import {Observable, Subject, Subscription} from "rxjs";
+import {Widget} from "./widgets";
+import {Func} from "./entities";
+import * as ui from "../ui";
 
 let api = <any>window;
 declare let grok: any;
@@ -14,10 +17,16 @@ declare let grok: any;
 
 
 /** A common interface that all sketchers should implement */
-export interface SketcherBase {
+export class SketcherBase extends Widget {
+  onChanged: Subject<any> = new Subject<any>();
 
-  /** Visual root. */
-  root: HTMLElement;
+  constructor() {
+    super(ui.div());
+
+    this.smiles = this.addProperty('smiles', TYPE.STRING);
+    this.smarts = this.addProperty('smarts', TYPE.STRING);
+    this.molFile = this.addProperty('molFile', TYPE.STRING);
+  }
 
   /** SMILES representation of the molecule */
   smiles: string;
@@ -27,8 +36,6 @@ export interface SketcherBase {
 
   /** MolFile representation of the molecule */
   molFile: string;
-
-  //get onChanged(): Observable<any>;
 }
 
 
@@ -272,4 +279,40 @@ export function svgMol(smiles: string, width: number = 300, height: number = 200
  * */
 export function sketcher(onChangedCallback: Function, smiles: string = ''): HTMLElement {
   return api.grok_Chem_Sketcher(onChangedCallback, smiles);
+}
+
+export async function createSketcher(): Promise<SketcherBase> {
+  let func = Func.find({name: 'createMarvinSketcher'})[0];
+  return func.apply();
+}
+
+export function convert(s: string, sourceFormat: string, targetFormat: string) {
+  if (sourceFormat == 'mol' && targetFormat == 'smiles') {
+    // @ts-ignore
+    let mol = new OCL.Molecule.fromMolfile(s);
+    return mol.toSmiles();
+  }
+}
+
+export async function showSketcherDialog() {
+  let funcs = Func.find({tags: ['moleculeSketcher']});
+  let host = ui.div([], {style: {width: '600px', height: '600px'}});
+  let changedSub: Subscription | null = null;
+
+  function setSketcher(name: string) {
+    let f = Func.find({name: name})[0];
+    f.apply().then((sketcher: SketcherBase) => {
+      changedSub?.unsubscribe();
+      changedSub = sketcher.onChanged.subscribe((_) => grok.shell.info('changed'));
+      ui.empty(host);
+      host.appendChild(sketcher.root);
+    });
+  }
+
+  setSketcher(funcs[0].name);
+
+  ui.dialog()
+    .add(ui.choiceInput('Sketcher', funcs[0].name, funcs.map((f) => f.name), setSketcher))
+    .add(host)
+    .show();
 }

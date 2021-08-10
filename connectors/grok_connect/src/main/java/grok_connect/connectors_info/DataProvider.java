@@ -85,55 +85,6 @@ public abstract class DataProvider
 
     public abstract String testConnection(DataConnection conn) throws ClassNotFoundException, SQLException;
 
-    public static DataProvider getByName(String name) {
-        DataProvider provider = Providers.get(0);
-
-        for (ListIterator<DataProvider> providers = Providers.listIterator(); providers.hasNext(); ) {
-            DataProvider tmp = providers.next();
-            if (tmp.descriptor.type.equals(name)) {
-                provider = tmp;
-                break;
-            }
-        }
-
-        return provider;
-    }
-
-    public static List<DataProvider> Providers = new ArrayList<DataProvider>() {{
-        add(new AccessDataProvider());
-        add(new AthenaDataProvider());
-        add(new BigQueryDataProvider());
-        add(new CassandraDataProvider());
-        add(new Db2DataProvider());
-        add(new FirebirdDataProvider());
-        add(new HBaseDataProvider());
-        add(new HiveDataProvider());
-        add(new Hive2DataProvider());
-        add(new MariaDbDataProvider());
-        add(new MongoDbDataProvider());
-        add(new MsSqlDataProvider());
-        add(new MySqlDataProvider());
-        add(new Neo4jDataProvider());
-        add(new OracleDataProvider());
-        add(new PostgresDataProvider());
-        add(new RedshiftDataProvider());
-        add(new SQLiteDataProvider());
-        add(new TeradataDataProvider());
-        add(new VerticaDataProvider());
-        add(new VirtuosoDataProvider());
-        add(new ImpalaDataProvider());
-        add(new DenodoDataProvider());
-        add(new SnowflakeDataProvider());
-    }};
-
-    public static List<String> getAllProvidersTypes() {
-        List<String> types = new ArrayList<>();
-
-        for (DataProvider provider : Providers)
-            types.add(provider.descriptor.type);
-
-        return types;
-    }
 
     public DataFrame queryTable(DataConnection conn, TableQuery query)
             throws ClassNotFoundException, SQLException, ParseException, IOException {

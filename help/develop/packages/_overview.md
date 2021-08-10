@@ -82,6 +82,10 @@ Here are a few sources that you might want to run through to learn more about Da
 * [Datagrok community]
 * [Slack space]
 
+## What's next?
+
+* [Packages](./_packages.md)
+
 [Manipulate data]: https://datagrok.ai/help/develop/js-api#data-manipulation
 [Add views]: https://datagrok.ai/help/develop/js-api#views
 [viewers]: https://datagrok.ai/help/develop/how-to/manipulate-viewers

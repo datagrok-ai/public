@@ -930,8 +930,8 @@ export class Column {
    * @param {string} str
    * @param {boolean} notify
    * @returns {boolean} */
-  setString(i: number, str: string, notify: boolean = true): void {
-    api.grok_Column_SetString(this.d, i, str, notify);
+  setString(i: number, str: string, notify: boolean = true): boolean {
+    return api.grok_Column_SetString(this.d, i, str, notify);
   }
 
   /**

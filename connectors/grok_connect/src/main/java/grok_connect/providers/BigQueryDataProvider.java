@@ -7,7 +7,8 @@ import grok_connect.connectors_info.*;
 
 
 public class BigQueryDataProvider extends JdbcDataProvider {
-    public BigQueryDataProvider() {
+    public BigQueryDataProvider(ProviderManager providerManager) {
+        super(providerManager);
         driverClassName = "net.starschema.clouddb.jdbc.BQDriver";
 
         descriptor = new DataSource();

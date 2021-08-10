@@ -65,19 +65,22 @@ export function molecularMass(sequence: string, amount: number, outputUnits: str
 //output: double molecularWeight
 export function molecularWeight(sequence: string): number {
   const weights: {[index: string]: number} = {
-    "ps":	16.07,
-    "fA":	331.2, "fU":	308.16, "fC":	307.18, "fG":	347.19,
-    "mA":	343.24, "mU":	320.2, "mC":	319.21, "mG":	359.24,
+    "ps":	16.07, "s": 16.07,
+    "fA":	331.2, "fU": 308.16, "fC": 307.18, "fG": 347.19,
+    "mA":	343.24, "mU":	320.2, "mC": 319.21, "mG": 359.24,
     "A": 313.21, "U": 306.17, "C": 289.18, "G": 329.21, "T": 304.2,
     "dA": 313.21, "dU": 306.17, "dC": 289.18, "dG": 329.21, "dT": 304.2,
-    "rA": 329.21, "rU": 306.17, "rC": 305.18, "rG": 345.21
+    "rA": 329.21, "rU": 306.17, "rC": 305.18, "rG": 345.21,
+    "Af": 331.2, "Uf": 308.16, "Gf": 347.19, "Cf": 307.18,
+    "u": 320.2, "a": 343.24, "c": 319.21, "g": 359.24
   };
   const recognizableSymbols = Object.keys(weights);
-  const slicingStep = /^[AUGCT]/g.test(sequence) ? 1 : 2;
   let molecularWeight = 0;
-  for (let i = 0; i < sequence.length; i += slicingStep)
-    if (recognizableSymbols.includes(sequence.slice(i, i + slicingStep)))
-      molecularWeight += weights[sequence.slice(i, i + slicingStep)];
+  for (let i = 0; i < sequence.length; i++)
+    if (recognizableSymbols.includes(sequence.slice(i, i + 2)))
+      molecularWeight += weights[sequence.slice(i, i + 2)];
+    else if (recognizableSymbols.includes(sequence.slice(i, i + 1)))
+      molecularWeight += weights[sequence.slice(i, i + 1)];
   return (sequence.length > 0) ? molecularWeight - 61.97 : 0;
 }
 
@@ -161,32 +164,39 @@ function opticalDensity(extinctionCoefficients: number[], molecularWeights: numb
 function normalizeSequences(sequences: string[]): string[] {
   let normalizedSequences = Array(sequences.length);
   for (let i = 0; i < sequences.length; i++) {
-    const isRna = (/^[AUGC]+$/.test(sequences[i]));
-    const isDna = (/^[ATGC]+$/.test(sequences[i]));
+    const isRna = /^[AUGC]+$/.test(sequences[i]);
+    const isDna = /^[ATGC]+$/.test(sequences[i]);
+    const inSiRnaAxolabs = /^[fAUGCuacgs]+$/.test(sequences[i]);
     const obj: {[index: string]: string} = isRna ?
       {"A": "rA", "U": "rU", "G": "rG", "C": "rC"} :
       isDna ?
         {"A": "dA", "T": "dT", "G": "dG", "C": "dC"} :
+      inSiRnaAxolabs ?
+        {"Af": "rA", "Uf": "rU", "Gf": "rG", "Cf": "rC", "u": "rU", "a": "rA", "c": "rC", "g": "rG", "s": ""} :
         {"U": "rU", "A": "rA", "C": "rC", "G": "rG", "fU": "rU", "fA": "rA", "fC": "rC", "fG": "rG", "mU": "rU", "mA": "rA", "mC": "rC", "mG": "rG", "ps": ""};
     normalizedSequences[i] = isRna ?
       sequences[i].replace(/[AUGC]/g, function (x) {return obj[x]}) :
       isDna ?
         sequences[i].replace(/[ATGC]/g, function (x) {return obj[x]}) :
+      inSiRnaAxolabs ?
+        sequences[i].replace(/(Uf|Af|Cf|Gf|u|a|c|g|s)/g, function (x) {return obj[x]}) :
         sequences[i].replace(/(fU|fA|fC|fG|mU|mA|mC|mG|ps|A|U|G|C)/g, function (x) {return obj[x]});
   }
   return normalizedSequences;
 }
 
 function prepareInputTextField(text: string) {
-  const oneDigitSymbols = ["A", "U", "T", "C", "G"],
-    twoDigitSymbols = ["fA", "fU", "fC", "fG", "mA", "mU", "mC", "mG", "dA", "dU", "dC", "dG", "dT", "rA", "rU", "rC", "rG", "ps"],
-    firstLettersInTwoDigitSymbols = ['m', 'f', 'p', 'd', 'r'];
+  const oneDigitSymbols = ["A", "U", "T", "C", "G", "u", "a", "c", "g", "s"],
+    twoDigitSymbols = ["fA", "fU", "fC", "fG", "mA", "mU", "mC", "mG", "dA", "dU", "dC", "dG", "dT", "rA", "rU", "rC", "rG", "ps",
+      "Uf", "Af", "Cf", "Gf"],
+    firstLettersInTwoDigitSymbols = ["m", "f", "p", "d", "r", "U", "A", "C", "G"];
 
   let dirtySequences = text.split('\n').map((s) => s.replace(/\s/g, '')).filter(item => item);
 
   let indicesOfWrongSymbols: number[][] = [];
   let cleanSequences: string[] = [];
   let c = 0;
+  //todo: detect errors when code table contains one-char and two-chars codes
   for (let sequence of dirtySequences) {
     let arr: number[] = [];
     let i = 0;

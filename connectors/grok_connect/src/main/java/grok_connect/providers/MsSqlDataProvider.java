@@ -12,7 +12,8 @@ import grok_connect.connectors_info.*;
 
 
 public class MsSqlDataProvider extends JdbcDataProvider {
-    public MsSqlDataProvider() {
+    public MsSqlDataProvider(ProviderManager providerManager) {
+        super(providerManager);
         driverClassName = "com.microsoft.sqlserver.jdbc.SQLServerDriver";
 
         descriptor = new DataSource();
