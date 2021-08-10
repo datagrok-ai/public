@@ -63,7 +63,7 @@ acc.addPane('Demo data',()=>ui.buttonsInput([
           gridView.innerHTML = '';
           chartView.innerHTML = '';
           stats.innerHTML = '';
-		  grok.shell.error('Choice data');
+		  grok.shell.error('Select data');
         }  
         gridView.innerHTML = '';
         chartView.innerHTML = '';
