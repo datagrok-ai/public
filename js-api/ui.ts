@@ -562,6 +562,10 @@ export function makeDroppable<T>(e: Element,
   );
 }
 
+export function initFormulaAccelerators(textInput: InputBase, table: DataFrame): void {
+  api.grok_UI_InitFormulaAccelerators(toDart(textInput), table.d);
+}
+
 export function inputs(inputs: InputBase[], options: any = null) {
   return form(inputs, options);
 }
