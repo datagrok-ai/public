@@ -221,19 +221,19 @@ grok.functions.register({
 
 ### Parameter editors
 
-Use parameter editor to set other function output to parameter value. All function parameters will be seamlessly integrated to function call form.
+Use parameter editor to set the output of another function to the parameter value. All function parameters will be seamlessly integrated to the function call form.
 
 ```
 //input: dataframe table {editor: Package:DataQuery}
 //input: dataframe table {editor: Package:DataQuery(1, "France")}
 ```
-Here, Datagrok will execute Package:DataQuery function right before your script and pass output table to script as input parameter.
+Here, Datagrok will execute the `Package:DataQuery` function right before your script and pass the output table to the script as an input parameter.
 
 ```
-/input: dataframe table {editor: PowerPack:DataQuery; editor-button: Outliers...}
+//input: dataframe table {editor: PowerPack:DataQuery; editor-button: Outliers...}
 ```
 
-Specify `editor-button` param to add a button that executes your subfunction separately, and allows user to check the output before starting the script.
+Specify the `editor-button` parameter to add a button that executes your subfunction separately and allows the user to check the output before starting the script.
 
 
 ## Header Parameters
