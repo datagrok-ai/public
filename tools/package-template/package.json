@@ -15,7 +15,6 @@
     "webpack-dev-server": "latest"
   },
   "scripts": {
-    "install-dependencies": "npm install",
     "debug-#{PACKAGE_NAME_LOWERCASE}": "grok publish --rebuild",
     "release-#{PACKAGE_NAME_LOWERCASE}": "grok publish --rebuild --release",
     "build-#{PACKAGE_NAME_LOWERCASE}": "webpack",
