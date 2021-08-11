@@ -24,7 +24,7 @@ module.exports = {
   },
   output: {
     filename: '[name].js',
-    library: 'openchemlib',
+    library: 'grokopenchemlib',
     libraryTarget: 'var',
     path: path.resolve(__dirname, 'dist'),
   },
