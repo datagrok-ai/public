@@ -186,11 +186,9 @@ export function iconFA(name: string, handler: ((this: HTMLElement, ev: MouseEven
   return i;
 }
 
-export function extract(x: any, forDialog: boolean = false): any {
+export function extractRoot(x: any): HTMLElement {
   if (x == null)
     return null;
-  if (x instanceof InputBase && forDialog)
-    return x;
   if (x instanceof Widget)
     return x.root;
   if (typeof x.root !== 'undefined')
@@ -208,7 +206,7 @@ export function extract(x: any, forDialog: boolean = false): any {
  * @param {object} x
  * @returns {HTMLElement} */
 export function render(x: any): HTMLElement {
-  x = extract(x);
+  x = extractRoot(x);
   if (api.grok_UI_Render == null)
     return x;
   return api.grok_UI_Render(x);

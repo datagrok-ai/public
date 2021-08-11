@@ -512,7 +512,7 @@ export class Dialog {
    * @param {HTMLElement | Widget | InputBase} content
    * @returns {Dialog} */
   add(content: HTMLElement | Widget | InputBase): Dialog {
-    api.grok_Dialog_Add(this.d, toDart(ui.extract(content, true)));
+    api.grok_Dialog_Add(this.d, toDart(content));
     return this;
   }
 
