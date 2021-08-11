@@ -49,6 +49,38 @@ export abstract class SketcherBase extends Widget {
 }
 
 
+export class Sketcher extends Widget {
+
+  host: HTMLDivElement = ui.box(null, {style: {width: '500px', height: '500px'}});
+  changedSub: Subscription | null = null;
+  sketcher: SketcherBase | null = null;
+
+  constructor() {
+    super(ui.div());
+
+    let funcs = Func.find({tags: ['moleculeSketcher']});
+    let input = ui.choiceInput('Sketcher', funcs[0].name, funcs.map((f) => f.name), (name: string) => this.setSketcher(name))
+    this.root.appendChild(ui.div([input.root, this.host]));
+
+    this.setSketcher(funcs[0].name);
+  }
+
+  async setSketcher(name: string) {
+    ui.empty(this.host);
+    this.changedSub?.unsubscribe();
+    let molFile = this.sketcher?.molFile;
+    let f = Func.find({name: name})[0];
+    this.sketcher = await f.apply();
+    this.host.appendChild(this.sketcher!.root);
+    await ui.tools.waitForElementInDom(this.root);
+    await this.sketcher!.init();
+    this.changedSub = this.sketcher!.onChanged.subscribe((_) => grok.shell.o = SemanticValue.fromValueType(this.sketcher!.smiles, 'Molecule'));
+    if (molFile != null)
+      this.sketcher!.molFile = molFile;
+  }
+}
+
+
 /**
  * Returns molecules similar to the reference one.
  * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/similarity-search}
@@ -305,6 +337,12 @@ export function convert(s: string, sourceFormat: string, targetFormat: string) {
 }
 
 export async function showSketcherDialog() {
+
+  ui.dialog()
+    .add(new Sketcher().root)
+    .show();
+  return;
+
   let funcs = Func.find({tags: ['moleculeSketcher']});
   let host = ui.box(null, {style: {width: '500px', height: '500px'}});
   let changedSub: Subscription | null = null;
