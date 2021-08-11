@@ -54,33 +54,38 @@ M  END
         mol = null;
       }
     }
-    try {
-      if (mol.is_valid()) {
-        const scaffoldIsMolBlock = this._isMolBlock(scaffoldMolString);
-        if (scaffoldIsMolBlock) {
-          const rdkitScaffoldMol = this._fetchMol(scaffoldMolString, "", molRegenerateCoords, false).mol;
-          substructJson = mol.generate_aligned_coords(rdkitScaffoldMol, true, true, false);
-          if (substructJson === "") {
-            substructJson = "{}";
+    if (mol) {
+      try {
+        if (mol.is_valid()) {
+          const scaffoldIsMolBlock = this._isMolBlock(scaffoldMolString);
+          if (scaffoldIsMolBlock) {
+            const rdkitScaffoldMol = this._fetchMol(scaffoldMolString, "", molRegenerateCoords, false).mol;
+            if (rdkitScaffoldMol && rdkitScaffoldMol.is_valid()) {
+              substructJson = mol.generate_aligned_coords(rdkitScaffoldMol, true, true, false);
+              if (substructJson === "") {
+                substructJson = "{}";
+              }
+            }
+          } else if (molRegenerateCoords) {
+            const molBlock = mol.get_new_coords(true);
+            mol.delete();
+            mol = rdKitModule.get_mol(molBlock);
           }
-        } else if (molRegenerateCoords) {
-          const molBlock = mol.get_new_coords(true);
+          if (!scaffoldIsMolBlock || molRegenerateCoords) {
+            mol.normalize_2d_molblock();
+            mol.straighten_2d_layout();
+          }
+        }
+        if (!mol.is_valid()) {
+          console.error(
+            "In _fetchMolGetOrCreate: RDKit mol is invalid on a molString molecule: `" + molString + "`");
           mol.delete();
-          mol = rdKitModule.get_mol(molBlock);
+          mol = null;
         }
-        if (!scaffoldIsMolBlock || molRegenerateCoords) {
-          mol.normalize_2d_molblock();
-          mol.straighten_2d_layout();
-        }
-      }
-      if (!mol.is_valid()) {
+      } catch (e) {
         console.error(
-          "In _fetchMolGetOrCreate: RDKit mol is invalid on a molString molecule: `" + molString + "`");
-        mol = null;
+          "In _fetchMolGetOrCreate: RDKit crashed, possibly a malformed molString molecule: `" + molString + "`");
       }
-    } catch (e) {
-      console.error(
-        "In _fetchMolGetOrCreate: RDKit crashed, possibly a malformed molString molecule: `" + molString + "`");
     }
     return { mol: mol, substruct: JSON.parse(substructJson) };
   }
