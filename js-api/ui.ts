@@ -186,7 +186,7 @@ export function iconFA(name: string, handler: ((this: HTMLElement, ev: MouseEven
   return i;
 }
 
-export function extractRoot(x: any): HTMLElement {
+export function extractRoot(x: any): HTMLElement | null {
   if (x == null)
     return null;
   if (x instanceof Widget)
@@ -207,6 +207,8 @@ export function extractRoot(x: any): HTMLElement {
  * @returns {HTMLElement} */
 export function render(x: any): HTMLElement {
   x = extractRoot(x);
+  if (x == null)
+    return div();
   if (api.grok_UI_Render == null)
     return x;
   return api.grok_UI_Render(x);
@@ -698,6 +700,35 @@ export class tools {
 
   static initFormulaAccelerators(textInput: InputBase, table: DataFrame): void {
     api.grok_UI_InitFormulaAccelerators(toDart(textInput), table.d);
+  }
+
+  /** Waits until the specified element is in the DOM. */
+  static waitForElementInDom(element: HTMLElement): Promise<HTMLElement> {
+    if (_isDartium()) {
+      return new Promise(resolve => {
+        setInterval(function() {
+          if (document.contains(element))
+            return resolve(element);
+        }, 100);
+      });
+    }
+
+    return new Promise(resolve => {
+      if (document.contains(element))
+        return resolve(element);
+
+      const observer = new MutationObserver(mutations => {
+        if (document.contains(element)) {
+          resolve(element);
+          observer.disconnect();
+        }
+      });
+
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true
+      });
+    });
   }
 }
 
