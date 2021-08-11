@@ -88,7 +88,7 @@ public abstract class JdbcDataProvider extends DataProvider {
 
     public ResultSet executeQuery(String query, FuncCall queryRun, Connection connection, int timeout)  throws ClassNotFoundException, SQLException {
         DataQuery dataQuery = queryRun.func;
-        String mainCallId = queryRun.aux.get("mainCallId").toString();
+        String mainCallId = (String) queryRun.aux.get("mainCallId");
 
         ResultSet resultSet = null;
         Pattern pattern = Pattern.compile("(?m)@(\\w+)");
@@ -126,6 +126,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                 System.out.println(query);
                 if(statement.execute())
                     resultSet = statement.getResultSet();
+                providerManager.queryMonitor.removeStatement(mainCallId);
             } else {
                 // Put parameters into func
                 Matcher matcher = pattern.matcher(query);
@@ -165,6 +166,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                 System.out.println(query);
                 if(statement.execute(query))
                     resultSet = statement.getResultSet();
+                providerManager.queryMonitor.removeStatement(mainCallId);
             }
         } else {
             // Query without parameters
@@ -174,6 +176,7 @@ public abstract class JdbcDataProvider extends DataProvider {
             System.out.println(query);
             if(statement.execute(query))
                 resultSet = statement.getResultSet();
+            providerManager.queryMonitor.removeStatement(mainCallId);
         }
         return resultSet;
     }
