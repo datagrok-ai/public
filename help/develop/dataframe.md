@@ -2,22 +2,22 @@
 
 # Dataframe
 
-Dataframe is a tabular structure with strongly-typed columns of different types. A dataframe class `DG.DataFrame`,
-which is used in virtually any Datagrok extension or application. It operates through a columnar in-memory data engine
+Dataframe is a tabular structure with strongly-typed columns of different types. A dataframe class `DG.DataFrame`
+is used in virtually any Datagrok extension or application. It operates through a columnar in-memory data engine
 which we implemented from scratch to support highly efficient operation with data in a modern browser along
 with fast in-browser data visualizations. 
 
 ## Dataframe JavaScript API
 
 The dataframe's class and its related classes are available at a usual [`DG`]() namespace.
-Use classes [`DG.DataFrame`](/js-api/DataFrame.html) and [`DG.Column`](/js-api/Column.html) for data initialization
-and access, along with instances of [`DG.ColumnList`](/js-api/ColumnList.html), [`DG.Row`](/js-api/Row.html),
-[`DG.Cell`](/js-api/Cell.html) as related properties or return values, for data manipulation and data-related
-event handling.
+Use classes [`DG.DataFrame`](/js-api/DataFrame.html) and [`DG.Column`](/js-api/Column.html) for data initialization,
+accessing, manipulation and event handling, along with instances of [`DG.ColumnList`](/js-api/ColumnList.html),
+[`DG.Row`](/js-api/Row.html), [`DG.Cell`](/js-api/Cell.html) as their related properties or return values.
 
 Since a dataframe stores data as list of columns, the functionality related to
 constructing, modifying and efficiently accessing data is embodied in `DG.Column` class, whereas event handling,
-visual aspects of working with dataframes, handy construction methods and row-based access is provided in `DG.DataFrame`.
+visual aspects of working with dataframes, fast column selection, handy construction methods and row-based access
+are provided in `DG.DataFrame`.
 
 ## Dataframe design
 
@@ -25,48 +25,158 @@ A Datagrok dataframe reminds of functionally similar structures in
 [Python](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html) or
 [R](https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/data.frame).
 
-Compared to these, Datagrok implementation is considerably optimized in numerous ways:
+Compared to these, Datagrok implementation is considerably optimized. While it isn't possible to control the browser
+entirely, the in-memory engine is designed in such way that all data related operations, such as aggregations or
+statistical computations, are performed efficiently on modern machines. Dataframe:
 
-* Made to work entirely in the browser
-* Operates on raw data instead of the JavaScript wrapping objects
-* Doesn't have blocking structures
-* Works well in multithreaded environments
-* Designed to allocate little space in memory
-* Same dataframe code also runs on Datagrok servers (e.g. for serialization)
-* While it isn't possible to control the browser entirely, the in-memory engine is designed in such way that all
-  operations are performed efficiently on modern machines, involving
-  * manual memory management with the column-based layout
-  * adaptive bit storage
-  * custom serialization codecs
+* Designed to allocate little memory space, utilizes adaptive bit storage
+* Operates on raw data instead of JavaScript wrapping objects
+* Utilizes manual memory management with the column-based layout
+* Doesn't have blocking structures, works well in multithreaded environments
+* Made to work entirely in the browser, but same dataframe code also runs on Datagrok servers, e.g. for serialization
+* Uses custom serialization codecs
 
-Datagrok [visualizations]() are fast because they work directly
-with the dataframe data instead of numerous layers of physical abstractions.
+Datagrok [visualizations][102] are fast because they work directly with the dataframe data instead of layers
+of physical objects' abstractions.
 
 ## `DG.Column`
 
-### Column types
+Columns support the types specified in a [`DG.COLUMN_TYPE`][103] enum: `STRING`, `INT`, `FLOAT`, `BOOL`,
+`DATE_TIME`, `BIG_INT`, `QNUM`, `DATA_FRAME` and `OBJECT`. Find the details of handling these types in
+a [corresponding chapter][105] after learning about basic operations with `DG.Column`.
 
-Dataframe's columns support the types specified in a [`DG.COLUMN_TYPE`]() enum, each described below.
+### Column properties
+
+Every column has:
+
+* a `.name`: set it at construction, change at runtime 
+* a .`type`: one of `DG.COLUMN_TYPE`
+* a `.length`: it's a read-only property
+* a parent `.dataFrame`, if part of a dataframe
+* a semantic type — `.semType`: a string value
+* `.temp` and `.tags` provide access to 
+
+### Constructing a column
+
+* The most common way is to use a method `.fromList`, explicitly specifying a type and a column name:  
+  ```let col =  DG.Column.fromList(DG.COLUMN_TYPE.INT, 'Column Name', [1, 2, 3])```
+* The method `.fromStrings` recognizes and automatically assigns a type:  
+  ```let col =  DG.Column.fromStrings('Column Name', ['3.14', '2.71']); // col.type === DG.COLUMN_TYPES.FLOAT```
+* To create a column with NULL-values of a pre-specified length, use `.fromType` or concrete types shortcuts:  
+  ```let col =  DG.Column.fromType(DG.COLUMN_TYPE.INT, 'Name', 3); // col.get(0) === DG.INT_NULL```  
+  ```let col =  DG.Column.string('Name', 5); // col.get(2) === ""```
+  
+The column, once constructed, may later be [added to a dataframe]().
+
+### Manipulating column values
+
+#### Accessing and modifying column values
+
+* A method `.get` is passed an index `i` to return an `i`-th value: `const value = column.get(idx);`  
+* A method `.set` sets `i`-th value to `x`: `column.set(i, x)`
+
+A pair of methods `.getString`/`.setString` work similarly, but with formatting and parsing:
+* `.getString` returns a value converted to a string taking into account a column's
+  [tag `format`]()
+* `.setString` attempts to set an `i`-th value by converting a provided string to the corresponding
+  strongly-typed value, returns `true` if a text was successfully parsed and set, otherwise `false`
+
+```javascript
+const table = grok.data.demo.demog();
+const column = table.columns.byName('weight');
+column.tags.format = '#.0000';
+grok.shell.info(column.getString(217)); // displays '108.7208'
+grok.shell.info(column.setString(15, '3.1415')); // displays 'true'
+grok.shell.info(column.setString(16, 'non-number')); // displays 'false'
+```
+
+Learn [here][108] about various supported formats.
+
+<!-- TODO: Explain `notify` -->
+
+#### Initializing with a function
+
+#### Accessing raw data
+
+If the fastest access is required for numerical columns, which usually happens in computing new values atop a column,
+accessing data with a result of calling `.getRawData()` is advised:
+
+```javascript
+const table = grok.data.demo.demog(100000);
+const column = table.columns.byName('age');
+const array = column.getRawData();
+const rowCount = column.length;
+let sum = 0;
+for (let i = 0; i < rowCount; i++)
+  sum += array[i];
+```
+
+The `.getRawData` returns a `Float32Array` for `DG.COLUMN_TYPE.FLOAT`, `Int32Array` for `DG.COLUMN_TYPE.INT`.
+
+To see the typical times it takes to run various column access patterns, run
+[this example]((https://public.datagrok.ai/js/samples/data-frame/performance/access))
+containing the methods from above.
+
+### Column types
 
 #### Special values
 
-In popular programming languages like JavaScript, Python and R, special values representing missing,
-unset values, or values for the undefined results (such as not valid numbers), are called `None`, `NaN` (not a number),
-`null`, `undefined`, and so forth. Datagrok's dataframe type system implements special handling of such values,
-which is good for performance yet still allows for these kinds of values to be set.
+In popular languages like JavaScript, Python and R, special values representing missing values, unset values,
+or values for the undefined results (such as not valid numbers), are called `None`, `NaN` (Not A Number),
+`null`, `undefined`, and so forth. Datagrok's dataframe type system implements special handling of such values in
+a way great for performance yet still allowing for these kinds of values to be set.
 
-##### `NaN` values
+<!-- TODO: How is this handled when we work with these in server functions? -->
 
-[`NaN`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/NaN)
-in JavaScript represents a value which is not a valid number. If a value of `NaN` is passed as a value
-at the 
+##### `NULL` values for numeric types
 
-##### `null` values
+For performance reasons, Datagrok type system implements an equivalent of an empty value for numeric types
+`DG.COLUMN_TYPE.INT` and `DG.COLUMN_TYPE.FLOAT`. There are [special constants][104] `DG.INT_NULL = -2147483648` and
+`DG.FLOAT_NULL = 2.6789344063684636e-34`, respectively.
 
- For performance reasons,
-Datagrok type system doesn't support JavaScript's `NaN` as a value of
-a column item. Instead, it introduces values reserved for a `None` (null) for
+To set a value be a Datagrok `NULL`, pass either a JavaScript `null` or a corresponding constant:
 
+```javascript
+let col = DG.Column.fromList(DG.COLUMN_TYPE.INT, 'Name', [314, null, DG.INT_NULL, 143]);
+col.set(0, null);
+grok.shell.info(col.get(0)); // shows '-2147483648'
+grok.shell.info(col.get(1)); // shows '-2147483648'
+grok.shell.info(col.get(2)); // shows '-2147483648'
+```
+
+To check if a value is Datagrok `NULL`, be cautious of using `=== null` as the value isn't a JavaScript `null`.
+Instead, use a `DG.Column`'s method `.isNone(i)` to check if the `i`-th element is Datagrok `NULL`. Continuing with
+the previous example:
+
+```javascript
+grok.shell.info(col.isNone(2)); // shows 'true'
+grok.shell.info(col.isNone(3)); // shows 'false'
+```
+
+##### `NULL` values in table views 
+
+* In the [table view][107], Datagrok `NULL` values are seen as empty cells
+* Entering an empty string in a numeric column makes a cell valued to a Datagrok `NULL`
+* If an empty string is passed to a [`.setString`][106], a Datagrok `NULL` value shall be assigned
+
+##### `NULL` values for strings
+
+An empty string is an equivalent of a Datagrok `NULL`:
+
+```javascript
+let col = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'Name', [null, '']);
+grok.shell.info(col.isNone(0)); // shows 'true'
+grok.shell.info(col.isNone(1)); // shows 'true'
+``` 
+
+##### `undefined` and `NaN` values
+
+* Passing `undefined` as a column item value is equivalent to passing a `null`
+* [`NaN`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/NaN)
+in JavaScript represents a value which is not a valid number: this value isn't currently supported
+
+
+<!-- TODO: How's that for other types? -->
 
 #### String
 
@@ -93,76 +203,6 @@ Enum value: `DG.COLUMN_TYPE.BIG_INT`
 The type for working with integers that do not fit into 53 bits.
 
 <!-- TODO: Figure out how to construct -->
-
-### Column properties
-
-Every column has:
-
-* a `.name`: set it at construction, change at runtime 
-* a .`type`: one of `DG.COLUMN_TYPE`
-* a `.length`: it's a read-only property
-* a parent `.dataFrame`, if part of a dataframe
-* a semantic type — `.semType`: a string value
-* `.temp` and `.tags` provide access to 
-
-### Constructing a column
-
-* The most common way is to use a method `.fromList`, explicitly specifying a type and a column name:  
-  ```let col =  DG.Column.fromList(DG.COLUMN_TYPE.INT, 'Column Name', [1, 2, 3])```
-* The method `.fromStrings` recognizes and automatically assigns a type:  
-  ```let col =  DG.Column.fromStrings('Column Name', ['3.14', '2.71']); // col.type === DG.COLUMN_TYPES.FLOAT```
-* To create a column with NULL-values of a pre-specified length, use `.fromType` or concrete types shortcuts:  
-  ```let col =  DG.Column.fromType(DG.COLUMN_TYPE.INT, 'Name', 3); // col.get(0) === DG.INT_NULL```  
-  ```let col =  DG.Column.string('Name', 5); // col.get(2) === ""```
-  
-The column, once constructed, may later be [added to a dataframe]().
-
-### Accessing and modifying column values
-
-#### Accessing and modifying items
-
-* A method `.get` is passed an index `i` to return an `i`-th value: `const value = column.get(idx);`  
-* A method `.set` sets `i`-th value to `x`: `column.set(i, x)`
-
-A pair of methods `.getString`/`.setString` work similarly, but with formatting and parsing:
-* `.getString` returns a value converted to a string taking into account a column's
-  [tag `format`]()
-* `.setString` attempts to set an `i`-th value by converting a provided string to the corresponding
-  strongly-typed value, returns `true` if a text was successfully parsed and set, otherwise `false`
-
-```javascript
-const table = grok.data.demo.demog();
-const column = table.columns.byName('weight');
-column.tags.format = '#.0000';
-grok.shell.info(column.getString(217)); // displays '108.7208'
-grok.shell.info(column.setString(15, '3.1415')); // displays 'true'
-grok.shell.info(column.setString(16, 'non-number')); // displays 'false'
-```
-
-<!-- TODO: Explain `notify` -->
-
-#### Initializing with a function
-
-#### Accessing raw data
-
-If the fastest access is required for numerical columns, which usually happens in computing new values atop a column,
-accessing data with a result of calling `.getRawData()` is advised:
-
-```javascript
-const table = grok.data.demo.demog(100000);
-const column = table.columns.byName('age');
-const array = column.getRawData();
-const rowCount = column.length;
-let sum = 0;
-for (let i = 0; i < rowCount; i++)
-  sum += array[i];
-```
-
-The `.getRawData` returns a `Float32Array` for `DG.COLUMN_TYPE.FLOAT`, `Int32Array` for `DG.COLUMN_TYPE.INT`.
-
-To see the typical times it takes to run various column access patterns, run
-[this example]((https://public.datagrok.ai/js/samples/data-frame/performance/access))
-containing the methods from above.
 
 ## `DG.DataFrame`
 
@@ -285,3 +325,11 @@ JavaScript property setter).
 ### Custom value comparers
 
 ## `.tags` and `.temp`
+
+[102]: visualize/viewers.md "Datagrok Viewers"
+[103]: https://github.com/datagrok-ai/public/blob/c4b913ef931e457144f773b1d8c55430c509657e/js-api/src/const.ts#L50 "DG.COLUMN_TYPE"
+[104]: https://github.com/datagrok-ai/public/blob/c4b913ef931e457144f773b1d8c55430c509657e/js-api/src/const.ts#L39 "NULL constants"
+[105]: #column-types "Column types"
+[106]: #accessing-and-modifying-column-values "Accessing and modifying column values"
+[107]: overview/table-view.md "Table Views"
+[108]: discover/tags.md#format "Values of a format tag"
