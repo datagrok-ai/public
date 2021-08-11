@@ -186,10 +186,10 @@ export function iconFA(name: string, handler: ((this: HTMLElement, ev: MouseEven
   return i;
 }
 
-export function extract(x: any): any {
+export function extract(x: any, forDialog: boolean = false): any {
   if (x == null)
     return null;
-  if (x instanceof InputBase)
+  if (x instanceof InputBase && forDialog)
     return x;
   if (x instanceof Widget)
     return x.root;
