@@ -4,6 +4,7 @@ const os = require('os');
 const yaml = require('js-yaml');
 const help = require('../ent-helpers.js');
 const utils = require('../utils.js');
+const exec = require('child_process').exec;
 
 module.exports = {
   create: create
@@ -100,6 +101,11 @@ function create(args) {
     }
     createDirectoryContents(name, config, templateDir, packageDir, args.ide, args.ts);
     console.log(help.package(name, args.ts));
+    console.log('\nRunning `npm install` to get the required dependencies...\n');
+    exec('npm install', { cwd: packageDir }, (err, stdout, stderr) => {
+      if (err) throw err;
+      else console.log(stderr, stdout);
+    });
   } else {
     console.log('Package name may only include letters, numbers, underscores, or hyphens');
   }
