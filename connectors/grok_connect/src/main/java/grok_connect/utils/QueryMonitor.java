@@ -20,6 +20,8 @@ public class QueryMonitor {
     }
 
     public boolean addNewStatement(String id, Statement statement) {
+        if (id == null)
+            return true;
         if (statementIdsToCancel.contains(id)) {
             statementIdsToCancel.remove(id);
             return false;
@@ -28,11 +30,17 @@ public class QueryMonitor {
         return true;
     }
 
+    public void removeStatement(String id) {
+        if (id != null)
+            runningStatements.removeAll(id);
+    }
+
     public void cancelStatement(String id) {
         if (runningStatements.containsKey(id)) {
             runningStatements.get(id).forEach(s -> {
                 try {
                     s.cancel();
+                    runningStatements.removeAll(id);
                 }
                 catch (SQLException throwables) {
                     throwables.printStackTrace();
