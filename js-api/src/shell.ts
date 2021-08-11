@@ -222,10 +222,9 @@ export class Shell {
     return this.tableByName(tableName);
   }
 
-  /** Returns a first TableView for the specified [tableName], or null if there
-   *  are no such views. */
-  view(tableName: string): View {
-    return this.getTableView(tableName);
+  /** Returns a view with the specified [name], or null if there is no such view. */
+  view(name: string): View | null {
+    return toJs(api.grok_GetView(name));
   }
 
   /** Returns a first TableView for the specified [tableName], or null if there
