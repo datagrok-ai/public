@@ -57,6 +57,7 @@ export enum COLUMN_TYPE {
   BIG_INT = 'bigint',
   QNUM = 'qnum',
   DATA_FRAME = 'dataframe',
+  OBJECT = 'object'
 }
 
 
