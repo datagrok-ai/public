@@ -4,7 +4,7 @@ const os = require('os');
 const yaml = require('js-yaml');
 const help = require('../ent-helpers.js');
 const utils = require('../utils.js');
-var exec = require('child_process').exec;
+const exec = require('child_process').exec;
 
 module.exports = {
   create: create
