@@ -1,6 +1,42 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-08-10 Dev build 0.93.5
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.5`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* (Bug) Pie Chart: If you add Shift, then area when hovering over the segments is displayed incorrectly 
+* (Bug) Pie Chart: Chart is cut-off at the left if you add shift 
+* New PowerPack grid styling 
+* Function parameter editor (WIP)
+* (Bug) Form: Title background remains after disabling the design mode 
+* DevTools package (WIP)
+* (Bug) Line Chart: "Default Line Color" property does not change the chart color 
+* Update scripting.md 
+* JS API: Pass InputBase to Dialog() insted of InpuBase.root 
+* Add "Switch" control to JS API 
+* Tooling: Actualize datagrok-tools for the onboarding (WIP)
+* Add NC: Open column selector when type $ in expression 
+* update ui.icons 
+* Create toolbar.js 
+* Update icons.js 
+* New widgets styling 
+* Update power-pack.css 
+* toolbox example 
+* Update toolbox.js 
+* Change endpoints to use new divided cvm images (WIP)
+* JS API: Move function initFormulaAccelerators from top level ui to tools or misc (WIP)
+* Implement function scheduler 
+
+
 # 2021-08-09 Dev build 0.93.4
 
 ## Latest Docker Images

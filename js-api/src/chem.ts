@@ -9,6 +9,7 @@ import {Observable, Subject, Subscription} from "rxjs";
 import {Widget} from "./widgets";
 import {Func} from "./entities";
 import * as ui from "../ui";
+import {SemanticValue} from "./grid";
 
 let api = <any>window;
 declare let grok: any;
@@ -17,25 +18,34 @@ declare let grok: any;
 
 
 /** A common interface that all sketchers should implement */
-export class SketcherBase extends Widget {
+export abstract class SketcherBase extends Widget {
   onChanged: Subject<any> = new Subject<any>();
+  _smiles: string;
+  _smarts: string;
+  _molFile: string;
 
   constructor() {
-    super(ui.div());
+    super(ui.box());
 
-    this.smiles = this.addProperty('smiles', TYPE.STRING);
-    this.smarts = this.addProperty('smarts', TYPE.STRING);
-    this.molFile = this.addProperty('molFile', TYPE.STRING);
+    this._smiles = this.addProperty('smiles', TYPE.STRING);
+    this._smarts = this.addProperty('smarts', TYPE.STRING);
+    this._molFile = this.addProperty('molFile', TYPE.STRING);
   }
 
   /** SMILES representation of the molecule */
-  smiles: string;
+  get smiles(): string { return this._smiles; }
+  set smiles(s: string) { this._smiles = s; }
 
   /** SMARTS query */
-  smarts: string;
+  get smarts(): string { return this._smarts; }
+  set smarts(s: string) { this._smarts = s; }
 
   /** MolFile representation of the molecule */
-  molFile: string;
+  get molFile(): string { return this._molFile; }
+  set molFile(s: string) { this._molFile = s; }
+
+  /** Override to provide custom initialization. At this point, the root is already in the DOM. */
+  async init() { }
 }
 
 
@@ -296,23 +306,27 @@ export function convert(s: string, sourceFormat: string, targetFormat: string) {
 
 export async function showSketcherDialog() {
   let funcs = Func.find({tags: ['moleculeSketcher']});
-  let host = ui.div([], {style: {width: '600px', height: '600px'}});
+  let host = ui.box(null, {style: {width: '500px', height: '500px'}});
   let changedSub: Subscription | null = null;
+  let sketcher: SketcherBase | null = null;
 
-  function setSketcher(name: string) {
+  async function setSketcher(name: string) {
+    ui.empty(host);
+    changedSub?.unsubscribe();
+    let molFile = sketcher?.molFile;
     let f = Func.find({name: name})[0];
-    f.apply().then((sketcher: SketcherBase) => {
-      changedSub?.unsubscribe();
-      changedSub = sketcher.onChanged.subscribe((_) => grok.shell.info('changed'));
-      ui.empty(host);
-      host.appendChild(sketcher.root);
-    });
+    sketcher = await f.apply();
+    host.appendChild(sketcher!.root);
+    await sketcher!.init();
+    changedSub = sketcher!.onChanged.subscribe((_) => grok.shell.o = SemanticValue.fromValueType(sketcher!.smiles, 'Molecule'));
+    if (molFile != null)
+      sketcher!.molFile = molFile;
   }
-
-  setSketcher(funcs[0].name);
 
   ui.dialog()
     .add(ui.choiceInput('Sketcher', funcs[0].name, funcs.map((f) => f.name), setSketcher))
     .add(host)
     .show();
+
+  await setSketcher(funcs[0].name);
 }
