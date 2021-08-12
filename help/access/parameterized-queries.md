@@ -1,75 +1,91 @@
-<!-- TITLE: Parameterized Queries -->
-<!-- SUBTITLE: -->
+<!-- TITLE: Parameterized queries -->
 
-# Parameterized Queries
+# Parameterized queries
 
 A parameterized query is a query with one or more parameters. When the query is
 executed from the UI, a user is prompted to enter parameters. It is also possible
 to run a query programmatically with the specified parameters 
 (see this [code snippet](https://public.datagrok.ai/js/samples/data-access/parameterized-query)). 
 
-## Creating a Parameterized Query
+## Creating a parameterized query
 
-To create a parameterized query, open `Data | Databases`, right-click
-on a connection, and select `Add Query...`. After that, annotate parameter 
-information in the query header. Below is an example of a simple query that
-defines a "productName" parameter:
+To create a parameterized query, open `Data | Databases`, right-click on a connection, and select `Add query...`.
+After that, annotate parameters in the query header in using SQL/Sparql comments: `--` for SQL, and `#` for Sparql.
+
+Here is an example of a simple SQL query that defines a `productName` input parameter:
 
 ```sql
 --input: string productName
-select * from products where name == '@productName'
+select * from products where productname = @productName
 ```
 
 ## Syntax
 
-The syntax for defining query parameters is based on [scripting](../develop/scripting.md), 
-with some additions specific to queries.
+The syntax for defining query parameters is based on [scripting](../develop/scripting.md) with additions
+specific to queries.
 
-### Header Parameters
+### Query parameters
 
-| Parameter   | Description                        |
-|-------------|------------------------------------|
-| name        | Name                               |
-| description | Description                        |
-| help        | Help URL                           |
-| tags        | Tags                               |
-| input       | Input parameter                    |
-| output      | Output parameter (optional)        |
+| Parameter      | Description            |
+|----------------|------------------------|
+| `name`         | Name                   |
+| `friendlyName` | Friendly name          |
+| `description`  | Description            |
+| `help`         | Help URL               |
+| `tags`         | Tags                   |
+| `input`        | An input parameter     |
+| `output`       | An output parameter    |
 
-### Format Template for 'input':
+All parameters are optional.
+
+#### `input` format template
+
+The following format is used for query input parameters:
 
 ```sql
---input: <type> <name> = <value> {<option tag>:<value>; ...} [<description>]  
+--input: <type> <name> = <value> {<option>: <value>; ...} [<description>]  
 ```
 
-**type** - parameter type:
+#### Supported types
 
-*   **int** \- integer scalar
-*   **double** \- float scalar
-*   **bool** \- boolean scalar
-*   **string** \- string
-*   **datetime** \- datetime
+Is one of:
 
-Comments style can be used '#' for Sparql.
+*   **`int`** – integer scalar
+*   **`double`** – float scalar
+*   **`bool`** – boolean scalar
+*   **`string`** – string
+*   **`datetime`** – [DateTime]() <!-- TODO -->
 
-### Options
+#### Choices and suggestions
 
-Options for supported data typed are described in the [Scripting](../develop/scripting.md) section. 
+Options for supported types are described in the [Scripting](../develop/scripting.md) section. 
 
-| Option      | Description                                                                        |
-|-------------|------------------------------------------------------------------------------------|
-| choices     | Comma-separated list of choices                                                    |
-| suggestions | Name of the query to be called to generate suggestion as the user types the value  |     
-
-"choices" option can be either a list, a name of the query, or the actual SQL query.
+| Option        | Description                                                                        |
+|---------------|------------------------------------------------------------------------------------|
+| `choices`     | A comma-separated list of values,  a name of the query, or the actual SQL query    |
+| `suggestions` | Name of the query to be called to generate suggestion as the user types the value  |     
 
 Examples:
 ```sql
+--input: string shipCountry = France {choices: ['France', 'Italy', 'Germany']}
 --input: string shipCountry = France {choices: Query("SELECT DISTINCT shipCountry FROM Orders")}
---input: string shipCountry = France {choices: northwind:countries}
---input: string shipCountry = France {suggestions: northwind:countries}
+--input: string shipCountry = France {choices: Demo:northwind:countries}
+--input: string shipCountry = France {suggestions: Demo:northwind:countries}
 ```
 
+#### Re-using input parameters
+
+It's possible to re-use one or more existing input parameters as values inside parameters' `choices` queries:
+
+```sql
+--input: string firstLetter = F
+--input: string shipCountry = France {choices: Query("SELECT DISTINCT shipCountry FROM Orders WHERE shipCountry LIKE @firstLetter || '%')}
+SELECT * FROM Orders WHERE (shipCountry = @shipCountry)
+```
+
+This is handy for queries with hierarchical choices, where each following parameter is dependent on the previous.
+
+<!--
 This query can be used as a "suggestion" query. It accepts exactly one parameter,
 which is what a user has typed in the input box so far:
 
@@ -78,56 +94,67 @@ which is what a user has typed in the input box so far:
 --input: string sub
 SELECT DISTINCT shipCountry FROM Orders WHERE shipCountry LIKE '%' || @sub || '%'
 ```
+-->
 
-### Patterns
+#### Patterns
 
-Sometimes, we want to give users the possibility to enter the filtering criteria as 
-a free text. On a server side, this query would be parsed and safely transformed to a proper
-SQL clause. Check out [search patterns](../explore/data-search-patterns.md) for more details.
+Sometimes users need to enter the filtering criteria as free text. On a server side, this query would be parsed
+and safely transformed to a proper SQL clause. Check out [search patterns](../explore/data-search-patterns.md)
+for more details.
 
-In this case, the input type has to be `string`, since the user will be entering 
-free-text query, and the actual data type should be put in the `pattern` option. Then,
-in the query, you would use `@<patternName>(columnName)` to specify a pattern that should
-be evaluated against the specified column, like that:
+To use the feature, the input type has to be `string`, since the user will be entering a free-text query,
+and the actual data type should be put in the `pattern` option. In the dependent query, a reference
+`@<patternName>(columnName)` should be used to specify a pattern that will be evaluated against the specified column.
+In the example below, `@freightValue(freight)` will be transformed into `freight > 200.0` if a value for `freightValue`
+is specified as `> 200.0`: 
+
+```sql
+--input: string freightValue = >= 10.0 {pattern: double}
+select * from Orders where @freightValue(freight)
+```
+
+A `datetime` type is supported as well:
 
 ```sql
 --input: string orderDate = after 1/1/1995 {pattern: datetime}
-select * from orders
-where @orderDate(orderDate)
+select * from orders where @orderDate(orderDate)
 ```
 
-Patterns summary:
+#### Patterns summary
 
-| Type             | Value       | Description/Example      |
-|------------------|-------------|--------------------------| 
-| num, int, double | =           | = 100                    |
-|                  | >           | > 1.02                   |
-|                  | >=          | >= 4.1                   |
-|                  | <           | < 5                      |
-|                  | <=          | <= 2                     |
-|                  | in          | in (1, 3, 10.2)          |
-|                  | min-max     | Range: 1.5-10.0          |
-| string           | contains    | contains ea              |
-|                  | starts with | starts with R            |
-|                  | ends with   | ends with w              |
-|                  | regex       | regex 1(\w+)1            |
-|                  | in          | in (ab, "c d", "e\"f\"") |
-| datetime         | anytime     |                          |
-|                  | today       |                          |
-|                  | this week   |                          |
-|                  | this month  |                          |
-|                  | this year   |                          |
-|                  | yesterday   |                          |
-|                  | last week   |                          |
-|                  | last month  |                          |
-|                  | last year   |                          |
-|                  | before      | before July 1984         |
-|                  | after       | after March 2001         |
-|                  | min-max     | Range: 1941-1945         |
+| Type               | Value         | Description or Example       |
+|--------------------|---------------|------------------------------| 
+| `num, int, double` | `=`           | `= 100`                      |
+|                    | `>`           | `> 1.02`                     |
+|                    | `>=`          | `>= 4.1`                     |
+|                    | `<`           | `< 5`                        |
+|                    | `<=`          | `<= 2`                       |
+|                    | `in`          | `in (1, 3, 10.2)`            |
+|                    | `min-max`     | `Range: 1.5-10.0`            |
+| `string`           | `contains`    | `contains ea`                |
+|                    | `starts with` | `starts with R`              |
+|                    | `ends with`   | `ends with w`                |
+|                    | `regex`       | `regex 1(\w+)1`              |
+|                    | `in`          | `in (ab, "c d", "e\\"f\\"")` |
+| `datetime`         | `anytime`     |                              |
+|                    | `today`       |                              |
+|                    | `this week`   |                              |
+|                    | `this month`  |                              |
+|                    | `this year`   |                              |
+|                    | `yesterday`   |                              |
+|                    | `last week`   |                              |
+|                    | `last month`  |                              |
+|                    | `last year`   |                              |
+|                    | `before`      | `before July 1984`           |
+|                    | `after`       | `after March 2001`           |
+|                    | `min-max`     | `Range: 1941-1945`           |
 
-### Output Parameter
+### Output parameters
 
-Based on the form of statements in a query, the platform automatically determines the type of output. In most cases, the call returns a dataframe. If you plan to obtain a value of different data type, you can explicitly specify it in the output parameter. Below is an example from [Chembl](https://github.com/datagrok-ai/public/tree/master/packages/Chembl) package:
+Looking at the query's statement, the platform automatically determines the type of an output. In most cases,
+the call returns a dataframe, which is a default setting. If you plan to obtain a value of different data type,
+you can explicitly specify it in the output parameter. Below is an example from
+[Chembl](https://github.com/datagrok-ai/public/tree/master/packages/Chembl) package:
 
 ```sql
 --output: string smiles {semType: Molecule}
