@@ -1,3 +1,4 @@
+//tags: View
 // Creating custom ribbons and toolboxes
 
 let v = grok.shell.newView('Custom View', [
