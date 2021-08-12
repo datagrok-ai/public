@@ -1,6 +1,26 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-08-12 Dev build 0.93.7
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.7`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* DevTools: annotate API examples 
+* Wiki: Parameterized queries (WIP)
+* BatchCall function (WIP)
+* (Bug) Data sync doesn't work if table was refreshed 
+* (Bug) Queries: No use of input parameters in simple choice lists 
+* Function parameter editor (WIP)
+
+
 # 2021-08-12 Dev build 0.93.6
 
 ## Latest Docker Images
