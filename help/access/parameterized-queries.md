@@ -151,10 +151,9 @@ select * from orders where @orderDate(orderDate)
 
 ### Output parameters
 
-Looking at the query's statement, the platform automatically determines the type of an output. In most cases,
-the call returns a dataframe, which is a default setting. If you plan to obtain a value of different data type,
-you can explicitly specify it in the output parameter. Below is an example from
-[Chembl](https://github.com/datagrok-ai/public/tree/master/packages/Chembl) package:
+A dataframe is returned by default as a query result. If you plan to obtain a value of different data type
+(for instance, in your JavaScript code), you can explicitly specify it in the output parameter. Below is an example
+from [Chembl](https://github.com/datagrok-ai/public/tree/master/packages/Chembl) package:
 
 ```sql
 --output: string smiles {semType: Molecule}
@@ -170,28 +169,30 @@ Here is an example of the parameterized query applicable to the "Northwind" data
 --input: int employeeId = 5
 --input: string shipVia = = 3 {pattern: int}
 --input: double freight = 10.0
---input: string shipCountry = France {choices: ["France", "Germany", "USA", "Finland"]}
+--input: string shipCountry = France {choices: Query("SELECT DISTINCT shipCountry FROM Orders")}
 --input: string shipCity = starts with r {pattern: string}
 --input: bool freightLess1000 = true
 --input: datetime requiredDate = 1/1/1995
 --input: string orderDate = after 1/1/1995 {pattern: datetime}
 SELECT * FROM Orders WHERE (employeeId = @employeeId)
-   AND (freight >= @freight)
-   AND @shipVia(shipVia)
-   AND ((freight < 1000) OR NOT @freightLess1000)
-   AND (shipCountry = @shipCountry)
-   AND @shipCity(shipCity)
-   AND @orderDate(orderDate)
-   AND (requiredDate >= @requiredDate)
+    AND (freight >= @freight)
+    AND @shipVia(shipVia)
+    AND ((freight < 1000) OR NOT @freightLess1000)
+    AND (shipCountry = @shipCountry)
+    AND @shipCity(shipCity)
+    AND @orderDate(orderDate)
+    AND (requiredDate >= @requiredDate)
 ```
 
-When this query is started, the following dialog with the auto-generated inputs appears.
+Run it on Datagrok: [link](https://public.datagrok.ai/func/Demo.TestJobs.PostgreSQL.Orders).
+
+When this query is run, the following dialog with the auto-generated inputs appears.
 Note that inputs marked as patterns allow users to enter expressions like "> 5" for numbers,
 "after 2019" for dates, and "starts with r" for strings.
 
 ![](parameterized-queries.png)
 
-Behind the scenes, Datagrok will parse the free-text query, and then execute a parameterized, safe, 
+Behind the scenes, Datagrok will parse the free-text query and execute a parameterized, safe, 
 provider-specific SQL query on the backend.
 
 ## Videos
