@@ -1,6 +1,38 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-08-12 Dev build 0.93.6
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.6`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Removed the "shift-drag on axes" action description 
+* (Bug) Scatter Plot: Points are not displayed if you change the markers type from hamburger menu 
+* #49, #51: Ketcher and OpenChemLib sketchers: first working version 
+* JS API: grok.shell.view should look for a view instead of a table view 
+* (Bug) Scatter Plot: Color scheme does not change until you change the viewer size 
+* Exercises: Simplify Exercises (WIP)
+* JS API: Special logic of passing input to the ui.dialog() 
+* Wiki: Dataframe (WIP)
+* (Bug) Package Properties: default values are ignored (WIP)
+* Packages: JavaScript formatting 
+* Grok connect: allow calls without mainCallId 
+* CLI: documentation improvements 
+* (Bug) Color Coding | Conditional: For Scatter Plot inside the Trellis, colors are not turned on instantly, but only if you "pull" the corresponding plot 
+* Fixed the typings. 
+* (Bug) Sequence Translator: additional modifications are on the wrong side of antisense strand 
+* Tooling: Actualize datagrok-tools for the onboarding (WIP)
+* Introduction to cheminformatics 
+* Pie Chart: Auto width for legend 
+
+
 # 2021-08-10 Dev build 0.93.5
 
 ## Latest Docker Images
