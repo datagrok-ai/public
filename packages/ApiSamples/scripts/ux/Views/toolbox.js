@@ -1,3 +1,4 @@
+//tags: View
 //Toolbox
 
 let view = grok.shell.newView('Toolbox simple view');

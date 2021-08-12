@@ -1,3 +1,4 @@
+//tags: View
 // Customize TableView toolbox elements
 
 let t = grok.data.demo.demog();
