@@ -9,7 +9,7 @@ export class LearningWidget extends DG.Widget {
   constructor() {
     super(ui.box());
     let list = ui.element('ul');
-    list.style.columns = '2';
+    list.style.columns = '2'
     list.append(ui.div(wikiList.map(renderWiki)));
 
     this.root.appendChild(ui.tabControl({
