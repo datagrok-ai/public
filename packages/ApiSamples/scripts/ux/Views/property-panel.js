@@ -1,3 +1,4 @@
+//tags: View
 //Property panel
 
 let testData = {
