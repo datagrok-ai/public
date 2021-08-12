@@ -1,3 +1,4 @@
+//tags: View
 //Example of ribbon toolbar, custom header and footer
 
 let header = ui.block([
