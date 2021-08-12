@@ -38,6 +38,8 @@ specific to queries.
 
 All parameters are optional.
 
+### Input parameters
+
 #### `input` format template
 
 The following format is used for query input parameters:
