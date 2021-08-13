@@ -9,15 +9,44 @@ export class LearningWidget extends DG.Widget {
 
   constructor() {
     super(ui.box());
-    let list = ui.element('ul');
-    list.style.columns = '2'
-    list.append(ui.div(wikiList.map(renderWiki)));
+    let wikiList = ui.element('ul');
+    wikiList.style.columns = '2';
+    wikiList.append(ui.div(help.map(renderWiki)));
 
-    this.root.appendChild(ui.tabControl({
-      'VIDEO':ui.panel(playlists.map(renderPlaylist)),
-      'WIKI':ui.panel([list])
-    }).root
-    );
+    let videoList = ui.element('ul');
+    videoList.style.columns = '2';
+    videoList.style.listStyle = 'none';
+    videoList.style.paddingLeft = '0px';
+    videoList.append(ui.div(playlists.map(renderPlaylist)));
+
+    // this.root.appendChild(ui.tabControl({
+    //   'VIDEO':ui.panel(playlists.map(renderPlaylist)),
+    //   'WIKI':ui.panel([list])
+    // }).root
+    // );
+
+    this.root.appendChild(ui.div([
+      ui.panel([
+        ui.divText('Video playlists', {
+          style:{
+            margin:'4px 0px 8px 0px',
+            fontWeight:'bold',
+            color:'var(--grey-5)'
+          }
+        }),
+        videoList,
+      ], {style:{paddingTop: '0px'}}),
+      ui.panel([
+        ui.divText('Wiki help', {
+          style:{
+            margin:'4px 0px 8px 0px',
+            fontWeight:'bold',
+            color:'var(--grey-5)'
+          }
+        }),
+        wikiList
+      ])   
+    ]));
 
     // properties
     this.caption = super.addProperty('caption', DG.TYPE.STRING, 'Learn');
@@ -27,12 +56,28 @@ export class LearningWidget extends DG.Widget {
 
 function renderPlaylist(p: any) {
   let url = `https://www.youtube.com/playlist?list=${p.id}`;
-  return ui.cards.summary(
-    ui.image(p.url, 120, 90, { target: url }),
-    [
-      ui.h2(ui.link(p.title, url)),
-      ui.divText(p.description)
-  ]);
+  let listItem = ui.element('li');
+  listItem.style.breakInside = 'avoid';
+  listItem.style.pageBreakInside = 'avoid';
+  listItem.style.minWidth = '155px';
+
+  let root = ui.divH([]);
+  root.style.alignItems = 'center';
+
+  let img = ui.image(p.url, 35,35,{target:url});
+  img.style.marginRight = '10px';
+
+  let link = ui.link(p.title,url,p.description,'');
+
+  root.append(img, link);
+  listItem.append(root);
+  return listItem
+  // return ui.cards.summary(
+  //   ui.image(p.url, 120, 90, { target: url }),
+  //   [
+  //     ui.h2(ui.link(p.title, url)),
+  //     ui.divText(p.description)
+  // ]);
 }
 
 function renderWiki (p: any){
@@ -49,37 +94,37 @@ let playlists = [
     "id": "PLIRnAn2pMh3kvsE5apYXqX0I9bk257_eY",
     "title": "Meetings",
     "description": "Join us for the regular community meetings",
-    "url": "https://raw.githubusercontent.com/datagrok-ai/public/master/help/uploads/pictures/Meetings.png"
+    "url": "https://raw.githubusercontent.com/datagrok-ai/public/master/help/uploads/pictures/meetings-th.png"
   },
   {
     "id": "PLIRnAn2pMh3ncmRaE4fjmPbDaDvKklh7j",
     "title": "Develop",
     "description": "Extend the platform by developing scripts, functions, and packages",
-    "url": "https://raw.githubusercontent.com/datagrok-ai/public/master/help/uploads/pictures/Develop.png"
+    "url": "https://raw.githubusercontent.com/datagrok-ai/public/master/help/uploads/pictures/develop-th.png"
   },
   {
     "id": "PLIRnAn2pMh3nHUxed6p-uw7If24nGENDa",
     "title": "Cheminformatics",
     "description": "Work with chemical structures using the first-class cheminformatics support provided by the platform",
-    "url": "https://raw.githubusercontent.com/datagrok-ai/public/master/help/uploads/pictures/Cheminformatics.png"
+    "url": "https://raw.githubusercontent.com/datagrok-ai/public/master/help/uploads/pictures/chem-th.png"
   },
   {
     "id": "PLIRnAn2pMh3nLvDs3NLXkLtsyJeX912GG",
     "title": "Visualize",
     "description": "Understand your data by using powerful interactive visualizations",
-    "url": "https://raw.githubusercontent.com/datagrok-ai/public/master/help/uploads/pictures/Visualize.png"
+    "url": "https://raw.githubusercontent.com/datagrok-ai/public/master/help/uploads/pictures/visualize-th.png"
   },
   {
     "id": "PLIRnAn2pMh3nToHhFs3eXpf9xXa195lrN",
     "title": "Explore",
     "description": "Discover, transform, and explore your data, no matter where it comes from",
-    "url": "https://raw.githubusercontent.com/datagrok-ai/public/master/help/uploads/pictures/Explore.png"
+    "url": "https://raw.githubusercontent.com/datagrok-ai/public/master/help/uploads/pictures/explore-th.png"
   }
 ];
 
 
 
-let wikiList = [
+let help = [
   {
     'title': 'Access',
     'url': 'https://datagrok.ai/help/access/db-exploration'
