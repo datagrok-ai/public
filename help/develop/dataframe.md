@@ -9,20 +9,17 @@ with fast in-browser data visualizations.
 
 ## Dataframe JavaScript API
 
-The dataframe's class and its related classes are available at a usual [`DG`]() namespace.
-Use classes [`DG.DataFrame`](/js-api/DataFrame.html) and [`DG.Column`](/js-api/Column.html) for data initialization,
-accessing, manipulation and event handling, along with instances of [`DG.ColumnList`](/js-api/ColumnList.html),
-[`DG.Row`](/js-api/Row.html), [`DG.Cell`](/js-api/Cell.html) as their related properties or return values.
-
-Since a dataframe stores data as list of columns, the functionality related to
-constructing, modifying and efficiently accessing data is embodied in `DG.Column` class, whereas event handling,
-visual aspects of working with dataframes, fast column selection, handy construction methods and row-based access
-are provided in `DG.DataFrame`.
+Dataframe stores data as list of columns, so the functionality related to constructing, modifying and efficiently
+accessing data points is embodied in both [`DG.Column`][101] and [`DG.DataFrame`][100] classes, whereas event
+handling, visual aspects of working with dataframes, fast column selection, handy construction methods and
+row-based access are provided in [`DG.DataFrame`][100]. Instances of [`DG.ColumnList`](/js-api/ColumnList.html),
+[`DG.Row`](/js-api/Row.html) and [`DG.Cell`](/js-api/Cell.html) are used as these two classes' related properties
+or return values.
 
 ## Dataframe design
 
 A Datagrok dataframe reminds of functionally similar structures in
-[Python](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html) or
+[Python](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html) and
 [R](https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/data.frame).
 
 Compared to these, Datagrok implementation is considerably optimized. While it isn't possible to control the browser
@@ -42,19 +39,32 @@ of physical objects' abstractions.
 ## `DG.Column`
 
 Columns support the types specified in a [`DG.COLUMN_TYPE`][103] enum: `STRING`, `INT`, `FLOAT`, `BOOL`,
-`DATE_TIME`, `BIG_INT`, `QNUM`, `DATA_FRAME` and `OBJECT`. Find the details of handling these types in
-a [corresponding chapter][105] after learning about basic operations with `DG.Column`.
+`DATE_TIME`, `BIG_INT`, `QNUM`, `DATA_FRAME` and `OBJECT`. Find the details of handling these types
+[further in this article][105].
 
 ### Column properties
 
 Every column has:
 
-* a `.name`: set it at construction, change at runtime 
-* a .`type`: one of `DG.COLUMN_TYPE`
+* a `.name`: set it at construction, change at runtime
 * a `.length`: it's a read-only property
-* a parent `.dataFrame`, if part of a dataframe
-* a semantic type — `.semType`: a string value
-* `.temp` and `.tags` provide access to 
+* a .`type`: one of `DG.COLUMN_TYPE`, possible to change later via `DG.DataFrame` class
+* a parent `.dataFrame`, if the column is a part of some dataframe
+* `.temp` and `.tags`: provide access to [special proxy classes][114] for named temporary values and named tags
+  which can be associated with any column 
+  
+#### Semantic type
+
+A property `.semType` is a string value representing a tag which associates a column data with a logical type.
+
+While a raw data type of a molecule or a peptide is usually a `string`, semantic typing allows expanding the platform
+with such rich logical types recognition and understanding with a help of 3-rd party Datagrok packages. For example,
+[Chem][112] package adds visualizing and handling molecules, including [detecting][111] that a `string` column is of
+type `Molecule`, computing molecular fingerprints, searching for substructures, ranking by similarity.
+
+The property `.semType` is a getter to a [tag][114] named `quality`.
+
+Learn more about semantic types in this article: [link][109].
 
 ### Constructing a column
 
@@ -62,7 +72,7 @@ Every column has:
   ```let col =  DG.Column.fromList(DG.COLUMN_TYPE.INT, 'Column Name', [1, 2, 3])```
 * The method `.fromStrings` recognizes and automatically assigns a type:  
   ```let col =  DG.Column.fromStrings('Column Name', ['3.14', '2.71']); // col.type === DG.COLUMN_TYPES.FLOAT```
-* To create a column with NULL-values of a pre-specified length, use `.fromType` or concrete types shortcuts:  
+* To create a column with [`NULL` values][] of a pre-specified length, use `.fromType` or concrete types shortcuts:  
   ```let col =  DG.Column.fromType(DG.COLUMN_TYPE.INT, 'Name', 3); // col.get(0) === DG.INT_NULL```  
   ```let col =  DG.Column.string('Name', 5); // col.get(2) === ""```
   
@@ -72,7 +82,7 @@ The column, once constructed, may later be [added to a dataframe]().
 
 #### Accessing and modifying column values
 
-* A method `.get` is passed an index `i` to return an `i`-th value: `const value = column.get(idx);`  
+* A method `.get` is passed an index `i` to return an `i`-th value: `const value = column.get(idx)`  
 * A method `.set` sets `i`-th value to `x`: `column.set(i, x)`
 
 A pair of methods `.getString`/`.setString` work similarly, but with formatting and parsing:
@@ -90,7 +100,7 @@ grok.shell.info(column.setString(15, '3.1415')); // displays 'true'
 grok.shell.info(column.setString(16, 'non-number')); // displays 'false'
 ```
 
-Learn [here][108] about various supported formats.
+Learn more about supported formats in this article: [link][108].
 
 <!-- TODO: Explain `notify` -->
 
@@ -117,7 +127,7 @@ To see the typical times it takes to run various column access patterns, run
 [this example]((https://public.datagrok.ai/js/samples/data-frame/performance/access))
 containing the methods from above.
 
-### Column types
+### Column data types
 
 #### Special values
 
@@ -252,14 +262,13 @@ let newDataframe = DG.DataFrame.fromColumns([
 ### Virtual columns
 
 Consider a person's `weight`, `height` and a derived value of a mass index `BMI`, which is computed as
-`weight / height^2`. It's handy to access a `BMI` value as if it is stored in the dataframe along with
-other column values. However, if access to such computed value only happens at some rows in some occasions,
-it would not be practical to pre-compute them and actually store in the dataframe. It would also be inconvenient
-to maintain these computed values while the dataframe is being modified.
+`weight / height^2`. It is handy to access a `BMI` value as if it is stored in the dataframe along with other
+column values. However, it would not be practical to pre-compute these values and actually store in the dataframe, and
+also be inconvenient to maintain them while the dataframe is being updated.
 
-Virtual columns is a tool to have such computed values of arbitrary type available as if they are stored in
-the dataframe without actually storing them. For their construction, a callback function taking a row index and
-returning a scalar value or an object is passed. The platform would call this function whenever a table cell is accessed
+Virtual columns is a tool to access such computed values of arbitrary type as if they are stored in the dataframe,
+without physically storing them. For their construction, a callback function taking a row index and returning a scalar
+value or an object is passed. The platform would call this function whenever a table cell is accessed
 (for instance, when rendering a grid).
 
 #### Virtual columns for scalar types
@@ -292,7 +301,7 @@ In addition to scalar types, it is possible to store JavaScript objects in colum
 However, if such object is a proxy, domain-specific representation of row's data, most often it is not desired to
 physically store such objects in the dataframe. A virtual column with a type of `DG.COLUMN_TYPE.OBJECT` (it is
 a default value for a type in `.addNewVirtual`) with a callback function returning a new object is a convenient
-alternative to an `Object`-typed `Column`. Origin data still resides in the most efficient way in the
+alternative to an `OBJECT`-typed `Column`. Origin data still resides in the most efficient way in the
 [compressed columnar format](#dataframe-design), at the same time developers have an option to access it using
 custom, domain-specific objects which get constructed on the fly.
 
@@ -311,12 +320,12 @@ class PersonalData {
 }
 
 let table = grok.data.demo.demog();
-table.columns.addNewVirtual('DATA', (i) => new PersonalData(table.row(i).age, 'New York'));
-grok.shell.info(table.row(1).DATA.state); // will emit 'New York'
+table.columns.addNewVirtual('personalData', (i) => new PersonalData(table.row(i).age, 'New York'));
+grok.shell.info(table.row(1).personalData.state); // will emit 'New York'
 grok.shell.add(table);
 ```
 
-The `.toString` method is used to render the column contents by the grid.
+The platform uses `.toString` method to render the virtual column contents by the grid.
 
 As such objects are virtual, a direct modification of their fields won't take any effect on the column's data,
 unless the object class is implemented in such way that it modifies the original dataframe (for example, in a
@@ -326,10 +335,19 @@ JavaScript property setter).
 
 ## `.tags` and `.temp`
 
+[100]: #dg-datagrame "Dataframe"
+[101]: #dg-column "Dataframe column"
 [102]: visualize/viewers.md "Datagrok Viewers"
 [103]: https://github.com/datagrok-ai/public/blob/c4b913ef931e457144f773b1d8c55430c509657e/js-api/src/const.ts#L50 "DG.COLUMN_TYPE"
 [104]: https://github.com/datagrok-ai/public/blob/c4b913ef931e457144f773b1d8c55430c509657e/js-api/src/const.ts#L39 "NULL constants"
-[105]: #column-types "Column types"
+[105]: #column-data-types "Column data types"
 [106]: #accessing-and-modifying-column-values "Accessing and modifying column values"
 [107]: overview/table-view.md "Table Views"
 [108]: discover/tags.md#format "Values of a format tag"
+[109]: discover/semantic-types.md "Semantic types"
+[110]: domains/chem/cheminformatics.md "Cheminformatics overview"
+[111]: https://github.com/datagrok-ai/public/blob/1393df83ef2eea80dc2c19b5e6e541cb35d60f91/packages/Chem/detectors.js#L6 "Chem Molecule detector"
+[112]: https://github.com/datagrok-ai/public/tree/master/packages/Chem "Chem package"
+[113]: develop/how-to/define-semantic-type-detectors.md "Defining semantic types detectors"
+[114]: #tags-and-temp "Tags and Temp collections"
+[115]: #null-values-for-numeric-types "NULL values for numeric types"
