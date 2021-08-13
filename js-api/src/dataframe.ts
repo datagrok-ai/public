@@ -2123,7 +2123,7 @@ class DataFrameDialogHelper {
     this.df = df;
   }
 
-  addNewColumn(): void { grok.functions.eval('AddNewColumn').prepare().edit(); }
+  async addNewColumn(): Promise<void> { (await grok.functions.eval('AddNewColumn')).prepare().edit(); }
 }
 
 class ColumnDialogHelper {
