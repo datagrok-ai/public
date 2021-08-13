@@ -5,12 +5,15 @@ import * as DG from 'datagrok-api/dg';
 
 export class AboutWidget extends DG.Widget {
   caption: string;
+  order: string;
 
   constructor() {
     super(ui.box());
 
     // properties
     this.caption = super.addProperty('caption', DG.TYPE.STRING, 'Why Datagrok?');
+    this.order = super.addProperty('order', DG.TYPE.STRING, '4');
+
     let tabControl = ui.tabControl({
     'PLATFORM' : () => ui.panel([ui.markdown(intro)]),
     'USERS' : () => ui.panel([ui.markdown(introUsers)]),

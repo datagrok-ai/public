@@ -6,6 +6,7 @@ import {divText} from "datagrok-api/ui";
 
 export class SystemStatusWidget extends DG.Widget {
   caption: string;
+  order: string;
 
   constructor() {
     super(ui.panel([], 'welcome-system-widget widget-narrow'));
@@ -21,6 +22,7 @@ export class SystemStatusWidget extends DG.Widget {
 
     // properties
     this.caption = super.addProperty('caption', DG.TYPE.STRING, 'System');
+    this.order = super.addProperty('order', DG.TYPE.STRING, '3');
   }
 }
 function getStatus(d:any){
