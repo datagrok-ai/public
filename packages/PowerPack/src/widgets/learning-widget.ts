@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 export class LearningWidget extends DG.Widget {
   caption: string;
+  order: string;
 
   constructor() {
     super(ui.box());
@@ -20,6 +21,7 @@ export class LearningWidget extends DG.Widget {
 
     // properties
     this.caption = super.addProperty('caption', DG.TYPE.STRING, 'Learn');
+    this.order = super.addProperty('order', DG.TYPE.STRING, '5');
   }
 }
 
