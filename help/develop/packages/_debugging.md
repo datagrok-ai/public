@@ -8,64 +8,28 @@ This document discusses debugging of your packages for Datagrok in two popular I
 
 ## Debugging with Visual Studio Code
 
-To configure VS Code for Datagrok development, when creating a package, run `grok create` with the `--ide=vscode` flag:
+To configure VS Code for Datagrok development when creating a package, run `grok create` with the `--ide=vscode` flag:
 
 ```shell
-grok create my-datagrok-package --ide=vscode
+grok create MyDatagrokPackage --ide=vscode
 ```
 
 > **IMPORTANT**: The `--ide` flag only works on Windows. `grok` doesn't create the VS Code configuration on Linux or 
 > macOS. If you're using Linux or macOS, create a [VS Code configuration manually].
 
-The `grok` command creates a `.vscode/launch.json` and `.vscode/tasks.json` files with some useful configurations:
+The `grok` command creates a `.vscode/launch.json` and `.vscode/tasks.json` files with some useful configurations.
+To later change `public` to `dev` or other Datagrok instance, simply identify `public` in these two files and replace
+them to a desired instance alias, such as `dev`.
 
-- `launch.json`
+You can now run the Datagrok instance with your package in the debugging mode using `F5`. After you hit `F5`,
+Datagrok CLI will build your package using `webpack`, deploy it to the [configured Datagrok instance], and then run
+the Chrome browser in debug mode for VS Code. This special Chrome instance is _separate_ from the default Chrome
+in your OS.
 
-```json
-{
-  "version": "0.2.0",
-  "configurations": [
-    {
-      "preLaunchTask": "rebuild",
-      "type": "chrome",
-      "request": "launch",
-      "name": "Launch Chrome against Dev",
-      "url": "https://dev.datagrok.ai/",
-      "webRoot": "${workspaceFolder}"
-    }
-  ]
-}
-```
-
-- `tasks.json`
-
-```json
-{
-  "version": "2.0.0",
-  "tasks": [
-    {
-      "type": "shell",
-      "command": "cmd.exe /c 'call webpack && call grok publish'",
-      "label": "rebuild"
-    }
-  ]
-}
-```
-
-To extend these configurations, consult the [Visual Studio Code Debugging documentation].
-
-Here are two more steps to configure VS Code for debugging:
-
-* In VS Code, select **Run* > **Install additional debuggers...**, find and install **Debugger for Chrome**, and then 
-  restart VS Code.
-* In VS Code, select **Activate View** > **Appearance** > **Show activity bar** to bring the **Run** button into the view. 
-  You can also select **Ctrl** + **Shift** + **D** to run the application.
-
-After that, in VS Code, click the **Run and Debug** icon > **Run and Debug**. The Grok CLI will build your package using
-webpack, deploy it to the [configured Datagrok instance], and then run the browser in debug mode.
-
-The first time you run debugging, you need to enter your Datagrok credentials into Chrome. After you entered credentials,
-close Chrome and restart debugging to see locals and stack traces.
+The first time you run debugging, you need to enter your Datagrok credentials into Chrome. After you entered them, close
+Chrome and restart debugging with `F5` again to actually hit breakpoints. As these credentials will be saved by this
+debugging version of Chrome for every package separately, you need to re-enter them for each new package at its
+first time of debugging.
 
 **See more**: [Debugging with VS Code video]
 
@@ -143,4 +107,3 @@ Deploying a source-based package locates it to the Datagrok host URI (such as `h
 [video 1]: https://www.youtube.com/watch?v=Qcqnmle6Wu8
 [video 2]: https://www.youtube.com/watch?v=YNNDMpoGV0w
 [IntelliJ IDEA JavaScript debugging]: https://www.jetbrains.com/help/idea/debugging-javascript-in-chrome.html
-[visual studio code debugging documentation]: https://code.visualstudio.com/docs/editor/debugging
