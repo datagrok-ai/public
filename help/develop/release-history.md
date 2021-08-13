@@ -1,6 +1,35 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-08-13 Dev build 0.93.8
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.8`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Widgets update 
+* Pie Chart: Auto determine whether to display labels on small segments 
+* Cheminformatics: prepare an intro for developers (WIP)
+* Minor cleanup 
+* JS API: Fixed logic for "editor-for" annotation 
+* Update README.md 
+* Removed unused file. 
+* Frontend track: WIP 
+* Pie Chart: Sort types for pies 
+* added widget ordering 
+* image thumbnails for learn widget 
+* df.dialogs.addNewColumn fix 
+* Wiki: Dataframe (WIP)
+* update learn widget, add new css 
+* Change endpoints to use new divided cvm images (WIP)
+
+
 # 2021-08-12 Dev build 0.93.7
 
 ## Latest Docker Images
