@@ -207,7 +207,7 @@ public abstract class JdbcDataProvider extends DataProvider {
             resultSet = executeQuery(query, queryRun, connection, timeout);
         }
         else {
-            String[] queries = query.split("\\\n--batch\n");
+            String[] queries = query.replaceAll("\r\n", "\n").split("\n--batch\n");
 
             for (String currentQuery : queries)
                 resultSet = executeQuery(currentQuery, queryRun, connection, timeout);
