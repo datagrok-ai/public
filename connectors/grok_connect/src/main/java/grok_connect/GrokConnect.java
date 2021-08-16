@@ -68,7 +68,9 @@ public class GrokConnect {
 
             try {
                 FuncCall call = gson.fromJson(request.body(), FuncCall.class);
+                call.log = "";
                 call.setParamValues();
+                call.afterDeserialization();
                 System.out.println(call.func.query);
                 DateTime startTime = DateTime.now();
                 DataProvider provider = providerManager.getByName(call.func.connection.dataSource);
@@ -81,7 +83,10 @@ public class GrokConnect {
                 result.execTime = execTime;
                 result.columns = dataFrame.columns.size();
                 result.rows = dataFrame.rowCount;
+                result.log = call.log;
                 // TODO Write to result log there
+
+                result.log += logMemory();
 
                 logger.info(String.format("%s: Execution time: %f s, Columns/Rows: %d/%d, Blob size: %d bytes\n",
                         result.timeStamp,
@@ -108,7 +113,6 @@ public class GrokConnect {
                 buildExceptionResponse(response, printError(ex));
             }
 
-            logMemory();
             return response;
         });
 
@@ -249,7 +253,7 @@ public class GrokConnect {
         long usedMemory = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
         long freeMemory = Runtime.getRuntime().maxMemory() - usedMemory;
 
-        String str = "Free memory: " + freeMemory + ", used memory: " + usedMemory;
+        String str = "Free memory: " + freeMemory + ", used memory: " + usedMemory + "\n";
 
         logger.info(str);
         return str;
