@@ -59,7 +59,7 @@ public abstract class JdbcDataProvider extends DataProvider {
     }
 
     public DataFrame getSchemas(DataConnection connection)
-            throws ClassNotFoundException, SQLException, ParseException, IOException {
+            throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser {
         FuncCall queryRun = new FuncCall();
         queryRun.func = new DataQuery();
         queryRun.func.query = getSchemasSql(connection.getDb());
@@ -69,7 +69,7 @@ public abstract class JdbcDataProvider extends DataProvider {
     }
 
     public DataFrame getSchema(DataConnection connection, String schema, String table)
-            throws ClassNotFoundException, SQLException, ParseException, IOException {
+            throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser {
         FuncCall queryRun = new FuncCall();
         queryRun.func = new DataQuery();
         queryRun.func.query = getSchemaSql(connection.getDb(), schema, table);
@@ -183,7 +183,7 @@ public abstract class JdbcDataProvider extends DataProvider {
 
     @SuppressWarnings("unchecked")
     public DataFrame execute(FuncCall queryRun)
-            throws ClassNotFoundException, SQLException, ParseException, IOException {
+            throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser {
 
         int count = (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_COUNT))
                 ? ((Double)queryRun.options.get(DataProvider.QUERY_COUNT)).intValue() : 0;
@@ -200,17 +200,23 @@ public abstract class JdbcDataProvider extends DataProvider {
 
         ResultSet resultSet = null;
 
-        if (!(queryRun.func.options != null
-                && queryRun.func.options.containsKey("batchMode")
-                && queryRun.func.options.get("batchMode").equals("true"))){
-            query = query.replaceAll("(?m)^" + commentStart + ".*\\n", "");
-            resultSet = executeQuery(query, queryRun, connection, timeout);
-        }
-        else {
-            String[] queries = query.replaceAll("\r\n", "\n").split("\n--batch\n");
+        try {
+            if (!(queryRun.func.options != null
+                    && queryRun.func.options.containsKey("batchMode")
+                    && queryRun.func.options.get("batchMode").equals("true"))) {
+                query = query.replaceAll("(?m)^" + commentStart + ".*\\n", "");
+                resultSet = executeQuery(query, queryRun, connection, timeout);
+            } else {
+                String[] queries = query.replaceAll("\r\n", "\n").split("\n--batch\n");
 
-            for (String currentQuery : queries)
-                resultSet = executeQuery(currentQuery, queryRun, connection, timeout);
+                for (String currentQuery : queries)
+                    resultSet = executeQuery(currentQuery, queryRun, connection, timeout);
+            }
+        }
+        catch (SQLException e) {
+            if (providerManager.queryMonitor.checkCancelledId((String) queryRun.aux.get("mainCallId")))
+                throw new QueryCancelledByUser();
+            else throw e;
         }
 
         if (resultSet == null)
@@ -517,7 +523,7 @@ public abstract class JdbcDataProvider extends DataProvider {
     }
 
     public DataFrame queryTable(DataConnection conn, TableQuery query)
-            throws ClassNotFoundException, SQLException, ParseException, IOException {
+            throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser {
         FuncCall queryRun = new FuncCall();
         queryRun.func = new DataQuery();
         String sql = queryTableSql(conn, query);
