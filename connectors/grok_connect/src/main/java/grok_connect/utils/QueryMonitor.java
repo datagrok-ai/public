@@ -5,18 +5,17 @@ import com.google.common.collect.Multimap;
 
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class QueryMonitor {
     private List<String> statementIdsToCancel;
     private Multimap<String, Statement> runningStatements;
+    private List<String> cancelledStatementIds;
 
     public QueryMonitor() {
-        statementIdsToCancel = new ArrayList<>();
+        statementIdsToCancel = Collections.synchronizedList(new ArrayList<>());
         runningStatements = ArrayListMultimap.create();
+        cancelledStatementIds = Collections.synchronizedList(new ArrayList<>());
     }
 
     public boolean addNewStatement(String id, Statement statement) {
@@ -41,11 +40,16 @@ public class QueryMonitor {
                 try {
                     s.cancel();
                     runningStatements.removeAll(id);
+                    cancelledStatementIds.add(id);
                 }
                 catch (SQLException throwables) {
                     throwables.printStackTrace();
                 }
             });
         }
+    }
+
+    public boolean checkCancelledId(String id) {
+        return cancelledStatementIds.remove(id);
     }
 }
