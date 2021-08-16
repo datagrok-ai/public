@@ -10,6 +10,8 @@ public class FuncCall
     public Map options;
     public Map<String, Object> parameterValues = new HashMap<>();
     public Map<String, Object> aux = new HashMap<>();
+    public String log;
+    public boolean debugQuery;
 
     public void setParamValues() {
         for (String paramName: parameterValues.keySet()) {
@@ -20,5 +22,13 @@ public class FuncCall
                 }
             }
         }
+    }
+
+    public void afterDeserialization() {
+        Boolean debugQuery = (Boolean) aux.get("debugQuery");
+        if (debugQuery == null)
+            debugQuery = false;
+
+        this.debugQuery = debugQuery;
     }
 }

@@ -123,7 +123,10 @@ public abstract class JdbcDataProvider extends DataProvider {
                         statement.setObject(n + 1, param.value);
                 }
                 statement.setQueryTimeout(timeout);
-                System.out.println(query);
+                String logString = String.format("Query: %s \n", statement);
+                providerManager.logger.info(logString);
+                if (queryRun.debugQuery)
+                    queryRun.log += logString;
                 if(statement.execute())
                     resultSet = statement.getResultSet();
                 providerManager.queryMonitor.removeStatement(mainCallId);
@@ -163,7 +166,10 @@ public abstract class JdbcDataProvider extends DataProvider {
                 Statement statement = connection.createStatement();
                 providerManager.queryMonitor.addNewStatement(mainCallId, statement);
                 statement.setQueryTimeout(timeout);
-                System.out.println(query);
+                String logString = String.format("Query: %s \n", statement);
+                providerManager.logger.info(logString);
+                if (queryRun.debugQuery)
+                    queryRun.log += logString;
                 if(statement.execute(query))
                     resultSet = statement.getResultSet();
                 providerManager.queryMonitor.removeStatement(mainCallId);
@@ -173,7 +179,10 @@ public abstract class JdbcDataProvider extends DataProvider {
             Statement statement = connection.createStatement();
             providerManager.queryMonitor.addNewStatement(mainCallId, statement);
             statement.setQueryTimeout(timeout);
-            System.out.println(query);
+            String logString = String.format("Query: %s \n", statement);
+            providerManager.logger.info(logString);
+            if (queryRun.debugQuery)
+                queryRun.log += logString;
             if(statement.execute(query))
                 resultSet = statement.getResultSet();
             providerManager.queryMonitor.removeStatement(mainCallId);
@@ -240,9 +249,11 @@ public abstract class JdbcDataProvider extends DataProvider {
             int precision = resultSetMetaData.getPrecision(c);
             int scale = resultSetMetaData.getScale(c);
 
-            String logString = String.format("Column label: %s, column type: %d, column type name: %s, precision: %d, scale: %d",
+            String logString1 = String.format("Column: %s, type: %d, type name: %s, precision: %d, scale: %d \n",
                     label, type, typeName, precision, scale);
-            providerManager.logger.info(logString);
+            if (queryRun.debugQuery)
+                queryRun.log += logString1;
+            providerManager.logger.info(logString1);
 
             if (isInteger(type, typeName, precision, scale))
                 column = new IntColumn();
@@ -264,7 +275,10 @@ public abstract class JdbcDataProvider extends DataProvider {
                 initColumn.set(c - 1, false);
             }
 
-            providerManager.logger.info(String.format("Java column type: %s", column.getClass().getName()));
+            String logString2 = String.format("Java type: %s \n", column.getClass().getName());
+            if (queryRun.debugQuery)
+                queryRun.log += logString2;
+            providerManager.logger.info(logString2);
 
             column.name = resultSetMetaData.getColumnLabel(c);
             columns.add(c - 1, column);
