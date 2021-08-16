@@ -3,11 +3,17 @@
 
 # Query View
 
-Use this view it to add or edit [data queries](data-query.md).
+An integrated environment for working with [data queries](data-query.md).
 
-To run query press F5, results will appear at the bottom of the screen. Save query to use it later. 
+To run query, press F5. Results will appear at the bottom of the screen.
+Switch to the "Transformations" tab to add post-processing steps if needed.
 
-|                      |            |
+Give it a name, and save the query to use it later. 
+
+Typically, a query is used against a database, however the same concepts
+apply for other data sources that are listed below:
+
+| Data source          | Query      |
 |----------------------|------------|
 | Relational databases | SQL        |
 | File share           | File name  |
