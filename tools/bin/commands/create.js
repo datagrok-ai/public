@@ -1,4 +1,5 @@
 const fs = require('fs');
+const inquirer = require('inquirer');
 const path = require('path');
 const os = require('os');
 const yaml = require('js-yaml');
@@ -21,6 +22,8 @@ const templateDir = path.join(path.dirname(path.dirname(__dirname)), 'package-te
 const confTemplateDir = path.join(path.dirname(path.dirname(__dirname)), 'config-template.yaml');
 
 const confTemplate = yaml.safeLoad(fs.readFileSync(confTemplateDir));
+
+let dependencies = [];
 
 function createDirectoryContents(name, config, templateDir, packageDir, ide = '', ts = false) {
   const filesToCreate = fs.readdirSync(templateDir);
@@ -52,6 +55,9 @@ function createDirectoryContents(name, config, templateDir, packageDir, ide = ''
           package['scripts'][`release-${name.toLowerCase()}-${server}`] = `grok publish ${server} --rebuild --release`;
         }
         if (ts) Object.assign(package.dependencies, { 'ts-loader': 'latest', 'typescript': 'latest' });
+        // Save module names for installation prompt
+        for (let [module, tag] of Object.entries(Object.assign({}, package.dependencies, package.devDependencies)))
+          dependencies.push(`${module}@${tag}`);
         contents = JSON.stringify(package, null, '\t');
       }
       if (file === 'package.js' && ts) copyFilePath = path.join(packageDir, 'package.ts');
@@ -101,11 +107,21 @@ function create(args) {
     }
     createDirectoryContents(name, config, templateDir, packageDir, args.ide, args.ts);
     console.log(help.package(name, args.ts));
-    console.log('\nRunning `npm install` to get the required dependencies...\n');
-    exec('npm install', { cwd: packageDir }, (err, stdout, stderr) => {
-      if (err) throw err;
-      else console.log(stderr, stdout);
-    });
+    console.log(`\nThe package has the following dependencies:\n${dependencies.join(' ')}\n`);
+
+    inquirer.prompt({
+      name: 'run-npm-install',
+      type: 'confirm',
+      message: 'Would you like to install them now with `npm`?',
+      default: false,
+    }).then((answers) => {
+      if (!answers['run-npm-install']) return;
+      console.log('\nRunning `npm install` to get the required dependencies...\n');
+      exec('npm install', { cwd: packageDir }, (err, stdout, stderr) => {
+        if (err) throw err;
+        else console.log(stderr, stdout);
+      });
+    }).catch((err) => console.error(err));
   } else {
     console.log('Package name may only include letters, numbers, underscores, or hyphens');
   }

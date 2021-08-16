@@ -11,8 +11,7 @@
   },
   "devDependencies": {
     "webpack": "latest",
-    "webpack-cli": "latest",
-    "webpack-dev-server": "latest"
+    "webpack-cli": "latest"
   },
   "scripts": {
     "debug-#{PACKAGE_NAME_LOWERCASE}": "grok publish --rebuild",
