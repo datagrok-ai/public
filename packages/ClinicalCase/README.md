@@ -4,6 +4,8 @@ ClinicalCase [package](https://datagrok.ai/help/develop/develop#packages) provid
 support for dealing with clinical data, which is often represented in the
 [SDTM](https://www.cdisc.org/standards/foundational/sdtm) format.
 
+Issue tracker: https://github.com/datagrok-ai/public/milestone/1
+
 The project objectives include:
 
 * Working with either databases or file folders 
