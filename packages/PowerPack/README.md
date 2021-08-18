@@ -2,7 +2,7 @@
 
 Commonly used platform enhancements
 
-Owner: @skalkin
+Owner: @github/skalkin  
 Issues: https://github.com/datagrok-ai/public/projects/2
 
 ## Power Widgets
