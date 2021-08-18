@@ -625,6 +625,12 @@ export class Menu {
     return toJs(api.grok_Menu_Group(this.d, text));
   }
 
+  /** Ends a group of menu items and returns to the higher menu level.
+   * @returns {Menu} */
+  endGroup(): Menu {
+    return toJs(api.grok_Menu_End_Group(this.d));
+  }
+
   /** Adds a menu group with the specified text and handler.
    * @param {string} text
    * @param {Function} onClick - callback with no parameters
