@@ -2,6 +2,9 @@
 
 Commonly used platform enhancements
 
+Owner: @skalkin
+Issues: https://github.com/datagrok-ai/public/projects/2
+
 ## Power Widgets
 
 A start page that contains widgets (annotated with the `dashboard` tag) that are dynamically discovered from the packages available to the current user.
