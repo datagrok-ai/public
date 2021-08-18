@@ -1,6 +1,24 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-08-18 Dev build 0.93.10
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.10`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* PowerPack: Described Power Widgets and Power Search 
+* Document drawing events 
+* Update README.md 
+* (Bug) JSAPI: Can't pass null to the function because of validation 
+
+
 # 2021-08-18 Dev build 0.93.9
 
 ## Latest Docker Images
