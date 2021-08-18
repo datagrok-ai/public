@@ -1,6 +1,51 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-08-18 Dev build 0.93.9
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.9`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* datagrok-tools: update package template (WIP)
+* #53 Tutorials package 
+* Functions: int (WIP)
+* (Bug) Tools: False breakpoints in VS Code debugging (WIP)
+* Pie Chart: improve default layout 
+* (Bug) Grok connect: batch mode sometimes returns the first data frame instead of the last 
+* Viewers: Legend usage refactoring 
+* Wiki: Query View: Updated documentation 
+* Tooling: Actualize datagrok-tools for the onboarding (WIP)
+* Wiki: Switch to a relevant CVM before the new version 
+* Core: Viewers: a mode with grayed-out column names for ColumnComboBox (WIP)
+* Tutorials package (WIP)
+* Grok connect: batch mode sometimes returns the first data frame instead of the last 
+* (Bug) Can't select rows using match() with int  
+* (Bug) "NullError: method not found: '_rowCount'" after query cancel 
+* (Bug) "Throw of null." after query cancel 
+* Grok connect: don't show canceled query as an error 
+* Grok connect: debug queries using inspector and property panel 
+* (Bug) Package Properties: default values are ignored 
+* (Bug) Bar chart: filter fails in a second bar chart  
+* (Bug) onColumnsAdded/onColumnsRemoved args don't have a list of columns 
+* (Bug) Histogram: Show X Axis property hides X and Y axes 
+* AddNewColumn: set the formula tag before adding a column to the dataframe 
+* JS API: corrected layout of ui.switchInput 
+* (Bug) Bar Chart: Loss of zoom upon selection 
+* Datlas: WatchDog timer (WIP)
+* Update tooltip-events.js 
+* Bar Chart: Ability to drag chart after zooming 
+* Update README.md 
+* Fixed markup for some links to videos 
+* Fixed a bug that created two views of the same object 
+
+
 # 2021-08-13 Dev build 0.93.8
 
 ## Latest Docker Images
