@@ -1,7 +1,6 @@
 # OligoBatchCalculator
 
-OligoBatchCalculator is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai)
-platform, used to calculate such oligonucleotide properties:
+OligoBatchCalculator calculates the following oligonucleotide properties:
 1. Length
 2. Optical Density
 3. NMoles
