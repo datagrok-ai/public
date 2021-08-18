@@ -59,7 +59,7 @@ public abstract class JdbcDataProvider extends DataProvider {
     }
 
     public DataFrame getSchemas(DataConnection connection)
-            throws ClassNotFoundException, SQLException, ParseException, IOException {
+            throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser {
         FuncCall queryRun = new FuncCall();
         queryRun.func = new DataQuery();
         queryRun.func.query = getSchemasSql(connection.getDb());
@@ -69,7 +69,7 @@ public abstract class JdbcDataProvider extends DataProvider {
     }
 
     public DataFrame getSchema(DataConnection connection, String schema, String table)
-            throws ClassNotFoundException, SQLException, ParseException, IOException {
+            throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser {
         FuncCall queryRun = new FuncCall();
         queryRun.func = new DataQuery();
         queryRun.func.query = getSchemaSql(connection.getDb(), schema, table);
@@ -123,7 +123,10 @@ public abstract class JdbcDataProvider extends DataProvider {
                         statement.setObject(n + 1, param.value);
                 }
                 statement.setQueryTimeout(timeout);
-                System.out.println(query);
+                String logString = String.format("Query: %s \n", statement);
+                providerManager.logger.info(logString);
+                if (queryRun.debugQuery)
+                    queryRun.log += logString;
                 if(statement.execute())
                     resultSet = statement.getResultSet();
                 providerManager.queryMonitor.removeStatement(mainCallId);
@@ -163,7 +166,10 @@ public abstract class JdbcDataProvider extends DataProvider {
                 Statement statement = connection.createStatement();
                 providerManager.queryMonitor.addNewStatement(mainCallId, statement);
                 statement.setQueryTimeout(timeout);
-                System.out.println(query);
+                String logString = String.format("Query: %s \n", statement);
+                providerManager.logger.info(logString);
+                if (queryRun.debugQuery)
+                    queryRun.log += logString;
                 if(statement.execute(query))
                     resultSet = statement.getResultSet();
                 providerManager.queryMonitor.removeStatement(mainCallId);
@@ -173,7 +179,10 @@ public abstract class JdbcDataProvider extends DataProvider {
             Statement statement = connection.createStatement();
             providerManager.queryMonitor.addNewStatement(mainCallId, statement);
             statement.setQueryTimeout(timeout);
-            System.out.println(query);
+            String logString = String.format("Query: %s \n", statement);
+            providerManager.logger.info(logString);
+            if (queryRun.debugQuery)
+                queryRun.log += logString;
             if(statement.execute(query))
                 resultSet = statement.getResultSet();
             providerManager.queryMonitor.removeStatement(mainCallId);
@@ -183,7 +192,7 @@ public abstract class JdbcDataProvider extends DataProvider {
 
     @SuppressWarnings("unchecked")
     public DataFrame execute(FuncCall queryRun)
-            throws ClassNotFoundException, SQLException, ParseException, IOException {
+            throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser {
 
         int count = (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_COUNT))
                 ? ((Double)queryRun.options.get(DataProvider.QUERY_COUNT)).intValue() : 0;
@@ -200,17 +209,23 @@ public abstract class JdbcDataProvider extends DataProvider {
 
         ResultSet resultSet = null;
 
-        if (!(queryRun.func.options != null
-                && queryRun.func.options.containsKey("batchMode")
-                && queryRun.func.options.get("batchMode").equals("true"))){
-            query = query.replaceAll("(?m)^" + commentStart + ".*\\n", "");
-            resultSet = executeQuery(query, queryRun, connection, timeout);
-        }
-        else {
-            String[] queries = query.replaceAll("\r\n", "\n").split("\n--batch\n");
+        try {
+            if (!(queryRun.func.options != null
+                    && queryRun.func.options.containsKey("batchMode")
+                    && queryRun.func.options.get("batchMode").equals("true"))) {
+                query = query.replaceAll("(?m)^" + commentStart + ".*\\n", "");
+                resultSet = executeQuery(query, queryRun, connection, timeout);
+            } else {
+                String[] queries = query.replaceAll("\r\n", "\n").split("\n--batch\n");
 
-            for (String currentQuery : queries)
-                resultSet = executeQuery(currentQuery, queryRun, connection, timeout);
+                for (String currentQuery : queries)
+                    resultSet = executeQuery(currentQuery, queryRun, connection, timeout);
+            }
+        }
+        catch (SQLException e) {
+            if (providerManager.queryMonitor.checkCancelledId((String) queryRun.aux.get("mainCallId")))
+                throw new QueryCancelledByUser();
+            else throw e;
         }
 
         if (resultSet == null)
@@ -234,9 +249,11 @@ public abstract class JdbcDataProvider extends DataProvider {
             int precision = resultSetMetaData.getPrecision(c);
             int scale = resultSetMetaData.getScale(c);
 
-            String logString = String.format("Column label: %s, column type: %d, column type name: %s, precision: %d, scale: %d",
+            String logString1 = String.format("Column: %s, type: %d, type name: %s, precision: %d, scale: %d \n",
                     label, type, typeName, precision, scale);
-            providerManager.logger.info(logString);
+            if (queryRun.debugQuery)
+                queryRun.log += logString1;
+            providerManager.logger.info(logString1);
 
             if (isInteger(type, typeName, precision, scale))
                 column = new IntColumn();
@@ -258,7 +275,10 @@ public abstract class JdbcDataProvider extends DataProvider {
                 initColumn.set(c - 1, false);
             }
 
-            providerManager.logger.info(String.format("Java column type: %s", column.getClass().getName()));
+            String logString2 = String.format("Java type: %s \n", column.getClass().getName());
+            if (queryRun.debugQuery)
+                queryRun.log += logString2;
+            providerManager.logger.info(logString2);
 
             column.name = resultSetMetaData.getColumnLabel(c);
             columns.add(c - 1, column);
@@ -517,7 +537,7 @@ public abstract class JdbcDataProvider extends DataProvider {
     }
 
     public DataFrame queryTable(DataConnection conn, TableQuery query)
-            throws ClassNotFoundException, SQLException, ParseException, IOException {
+            throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser {
         FuncCall queryRun = new FuncCall();
         queryRun.func = new DataQuery();
         String sql = queryTableSql(conn, query);
