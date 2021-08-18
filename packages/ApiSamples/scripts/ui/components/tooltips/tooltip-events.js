@@ -18,4 +18,12 @@ grok.events.onTooltipShown.subscribe((args) => {
 });
 
 v.append(ui.h3("And show a balloon when tooltip is closed"));
-grok.events.onTooltipClosed.subscribe((args) => grok.shell.info('Tooltip closed.'));
+
+let subs = grok.events.onTooltipClosed.subscribe((args) => {
+  grok.shell.info('Tooltip closed.');
+});
+
+ui.dialog('Stop balloons')
+  .add(ui.span(['Press OK to stop showing balloons']))
+  .onOK(() => { subs.unsubscribe() })
+  .show()
