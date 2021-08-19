@@ -12,6 +12,9 @@ export abstract class Tutorial extends DG.Widget {
   abstract get description(): string;
 
   demoTable: string = 'demog.csv';
+  get t(): DG.DataFrame {
+    return grok.shell.t;
+  }
 
   nextLink: HTMLAnchorElement = ui.link('next',
     '',
