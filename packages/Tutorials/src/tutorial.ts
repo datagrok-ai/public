@@ -45,7 +45,9 @@ export abstract class Tutorial extends DG.Widget {
     }
 
     await this._run();
-    grok.shell.info('Completed!');
+    
+    this.title('Congratulations!');
+    this.describe('You have successfully completed this tutorial.');
   }
 
   title(text: string): void {
@@ -66,7 +68,6 @@ export abstract class Tutorial extends DG.Widget {
     this._scroll();
     await this.firstEvent(completed);
     instructionDiv.classList.add('grok-tutorial-entry-success');
-    this.root.append(ui.divText('Done!', 'grok-tutorial-entry-success'));
     hintSub?.cancel();
     hint?.classList?.remove('grok-tutorial-target-hint');
   }
