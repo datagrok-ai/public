@@ -8,6 +8,7 @@ import java.text.*;
 import java.util.regex.*;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.text.StringEscapeUtils;
+import org.joda.time.DateTime;
 import serialization.*;
 import grok_connect.utils.*;
 import grok_connect.table_query.*;
@@ -209,6 +210,7 @@ public abstract class JdbcDataProvider extends DataProvider {
 
         ResultSet resultSet = null;
 
+        DateTime queryExecutionStart = DateTime.now();
         try {
             if (!(queryRun.func.options != null
                     && queryRun.func.options.containsKey("batchMode")
@@ -227,6 +229,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                 throw new QueryCancelledByUser();
             else throw e;
         }
+        DateTime columnAssignmentStart = DateTime.now();
 
         if (resultSet == null)
             return new DataFrame();
@@ -283,6 +286,8 @@ public abstract class JdbcDataProvider extends DataProvider {
             column.name = resultSetMetaData.getColumnLabel(c);
             columns.add(c - 1, column);
         }
+
+        DateTime fillingDataframeStart = DateTime.now();
 
         BufferedWriter csvWriter = null;
         if (outputCsv != null) {
@@ -410,6 +415,16 @@ public abstract class JdbcDataProvider extends DataProvider {
                 }
             }
         }
+        DateTime finish = DateTime.now();
+
+        String logString = String.format("Execution time by steps: query execution: %s s, column assignment: %s s, dataframe filling: %s s \n",
+                (columnAssignmentStart.getMillis() - queryExecutionStart.getMillis())/ 1000.0,
+                (fillingDataframeStart.getMillis() - columnAssignmentStart.getMillis())/ 1000.0,
+                (finish.getMillis() - fillingDataframeStart.getMillis())/ 1000.0);
+        if (queryRun.debugQuery)
+            queryRun.log += logString;
+        providerManager.logger.info(logString);
+
         if (outputCsv != null)
             csvWriter.close();
 

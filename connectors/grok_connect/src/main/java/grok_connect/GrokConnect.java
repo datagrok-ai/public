@@ -80,14 +80,18 @@ public class GrokConnect {
                 result.log = call.log;
                 // TODO Write to result log there
 
-                result.log += logMemory();
-
-                logger.info(String.format("%s: Execution time: %f s, Columns/Rows: %d/%d, Blob size: %d bytes\n",
+                String logString = String.format("%s: Execution time: %f s, Columns/Rows: %d/%d, Blob size: %d bytes\n",
                         result.timeStamp,
                         result.execTime,
                         result.columns,
                         result.rows,
-                        result.blobLength));
+                        result.blobLength);
+
+                if (call.debugQuery) {
+                    result.log += logMemory();
+                    result.log += logString;
+                }
+                logger.info(logString);
 
                 buffer = new BufferAccessor(result.blob);
                 buffer.bufPos = result.blob.length;
