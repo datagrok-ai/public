@@ -1,6 +1,37 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-08-20 Dev build 0.93.11
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.11`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Top menu and Popup menu. Add ".endgroup()" method for closing the group of items 
+* DevTools package 
+* (Bug) JS API: "combo-popup.js" example doesn't work 
+* Update Tabs 2 column.js 
+* Added local help docs to .gitignore (/xamgle/web/help/) 
+* Adjust tooltip delay 
+* JS API: ScatterPlot.onResetView 
+* #53 Tutorials package: Visualization 
+* #53 Tutorials package: code clean-up 
+* Data on demand (WIP)
+* Package content validation: export statement 
+* JS API: optional parameter in ui.image() 
+* #53 Tutorials package: tutorial runner 
+* JS API: update ScatterPlot event args types 
+* (Bug) Bar chart: filter fails in a second bar chart  (WIP)
+* (Bug) Datlas threads stuck unexpectedly 
+* AddNewColumn: onMetadataChanged 
+
+
 # 2021-08-18 Dev build 0.93.10
 
 ## Latest Docker Images
