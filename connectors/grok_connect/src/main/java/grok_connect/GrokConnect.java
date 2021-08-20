@@ -26,15 +26,9 @@ public class GrokConnect {
         String uri = "http://localhost:" + port;
 
         try {
-//            System.setOut(new PrintStream("C:/Users/don-p/Documents/Out/myoutput.txt"));
-//            System.setErr(new PrintStream("C:/Users/don-p/Documents/Out/myerr.txt"));
-
             BasicConfigurator.configure();
             logger = Logger.getLogger(GrokConnect.class.getName());
             logger.setLevel(Level.INFO);
-
-            logger.error("My error");
-            logger.info("My info");
 
             logMemory();
 
