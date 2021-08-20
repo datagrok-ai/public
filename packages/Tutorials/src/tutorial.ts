@@ -4,6 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import { Observable } from 'rxjs';
 import { filter, first } from 'rxjs/operators';
+import { _package } from './package';
 
 
 /** A base class for tutorials */
@@ -41,7 +42,6 @@ export abstract class Tutorial extends DG.Widget {
   async run(): Promise<void> {
     if (this.demoTable) {
       const v = grok.shell.addTableView(await grok.data.getDemoTable(this.demoTable));
-      v.dockManager.dock(this.root, DG.DOCK_TYPE.LEFT, null, 'tutorial-widget', 0.3);
     }
 
     await this._run();
@@ -112,5 +112,51 @@ export class Track {
   constructor(name: string, ...tutorials: Tutorial[]) {
     this.name = name;
     this.tutorials = tutorials;
+  }
+}
+
+export class TutorialRunner {
+  root: HTMLDivElement = ui.div([], 'grok-tutorial,grok-welcome-panel');
+
+  async run(t: Tutorial): Promise<void> {
+    $(this.root).empty();
+    this.root.append(t.root);
+    await t.run();
+  }
+
+  constructor(track: Track, onStartTutorial?: (t: Tutorial) => Promise<void>) {
+    this.root.append(ui.h1('Tutorials'));
+    this.root.append(ui.divV(track.tutorials.map((t) => {
+        const el = new TutorialCard(t).root;
+        el.addEventListener('click', () => {
+          if (onStartTutorial == null) {
+            this.run(t);
+          } else {
+            onStartTutorial(t);
+          }
+        });
+        return el;
+    })));
+
+  }
+
+}
+
+class TutorialCard {
+  root: HTMLDivElement = ui.div();
+  tutorial: Tutorial;
+
+  constructor(tutorial: Tutorial) {
+    this.tutorial = tutorial;
+
+    this.root = ui.divH([
+      ui.image(
+        `${_package.webRoot}images/${tutorial.name.toLowerCase().replace(/ /g, '-')}.png`,
+        100, 100),
+      ui.divV([
+        ui.h2(tutorial.name),
+        ui.divText(tutorial.description, { id: 'description' }),
+      ])
+    ], 'grok-tutorial-card');
   }
 }
