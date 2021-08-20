@@ -295,11 +295,18 @@ public abstract class JdbcDataProvider extends DataProvider {
         }
 
         int rowCount = 0;
+        List<DebugUtils.NumericColumnStats> numericColumnStats = new ArrayList<>();
+        for (int i = 0; i < columnCount; i++)
+            numericColumnStats.add(new DebugUtils.NumericColumnStats());
+
         while (resultSet.next()) {
             rowCount++;
 
             for (int c = 1; c < columnCount + 1; c++) {
                 Object value = resultSet.getObject(c);
+
+                if (queryRun.debugQuery && value != null)
+                    numericColumnStats.get(c-1).updateStats(value);
 
                 if (outputCsv != null) {
                     if (value != null)
@@ -392,6 +399,15 @@ public abstract class JdbcDataProvider extends DataProvider {
                 if (memoryLimit > 0 && size > memoryLimit)
                     throw new SQLException("Too large query result: " +
                             String.valueOf(size) + " > " + String.valueOf(memoryLimit) + " MB");
+            }
+        }
+        if (queryRun.debugQuery) {
+            for (int i = 0; i < columnCount; i++) {
+                if (!numericColumnStats.get(i).valuesCounter.equals(new BigDecimal(0))) {
+                    String logString = String.format("Column: %s, min: %s, max: %s, mean: %s\n", columns.get(i).name, numericColumnStats.get(i).min, numericColumnStats.get(i).max, numericColumnStats.get(i).mean);
+                    queryRun.log += logString;
+                    providerManager.logger.info(logString);
+                }
             }
         }
         if (outputCsv != null)
