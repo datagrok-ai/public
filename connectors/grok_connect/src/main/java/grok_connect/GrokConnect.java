@@ -244,10 +244,11 @@ public class GrokConnect {
     }
 
     private static String logMemory() {
-        long usedMemory = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
-        long freeMemory = Runtime.getRuntime().maxMemory() - usedMemory;
+        long used = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+        long free = Runtime.getRuntime().maxMemory() - used;
+        long total = Runtime.getRuntime().maxMemory();
 
-        String str = "Free memory: " + freeMemory + ", used memory: " + usedMemory + "\n";
+        String str = String.format("Memory: free: %s(%.2f%%), used: %s", free, 100.0 * free/total, used);
 
         logger.info(str);
         return str;
