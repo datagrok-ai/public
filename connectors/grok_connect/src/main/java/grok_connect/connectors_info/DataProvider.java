@@ -25,15 +25,15 @@ public abstract class DataProvider
     public abstract boolean isParametrized();
 
     public abstract DataFrame execute(FuncCall queryRun)
-            throws ClassNotFoundException, SQLException, ParseException, IOException;
+            throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser;
 
     public DataFrame getSchemas(DataConnection dataConnection)
-            throws ClassNotFoundException, SQLException, ParseException, IOException {
+            throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser {
         throw new UnsupportedOperationException();
     }
 
     public DataFrame getSchema(DataConnection dataConnection, String schema, String table)
-            throws ClassNotFoundException, SQLException, ParseException, IOException {
+            throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser {
         throw new UnsupportedOperationException();
     }
 
@@ -87,7 +87,7 @@ public abstract class DataProvider
 
 
     public DataFrame queryTable(DataConnection conn, TableQuery query)
-            throws ClassNotFoundException, SQLException, ParseException, IOException {
+            throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser {
         throw new UnsupportedOperationException();
     }
 

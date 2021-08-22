@@ -390,7 +390,7 @@ You can use these fields to filter scripts with [smart search](../overview/smart
 
 ## Videos
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/p7_qOU_IzLM?start=954" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+[Dev Meeting 1: Getting Started — Cross Language Support](https://www.youtube.com/watch?v=p7_qOU_IzLM&t=954s)
 
 See also:
 

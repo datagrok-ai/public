@@ -42,11 +42,7 @@ export const templates = {
 const str = await grok.dapi.files.readAsText("${ent.fullPath}");
 
 // Read as dataframe
-const df = await grok.data.files.openTable("${ent.fullPath}");
-
-// Delete
-await grok.dapi.files.delete("${ent.fullPath}");
-grok.shell.info("${ent.fileName} exists: " + (await grok.dapi.files.exists("${ent.fullPath}")));`,
+const df = await grok.data.files.openTable("${ent.fullPath}");`,
   DataQuery: (ent: DG.DataQuery) =>
 `const q = await grok.dapi.queries.find("${ent.id}");
 

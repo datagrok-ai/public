@@ -22,7 +22,8 @@
         "OCL",
         "RDKit"
       ],
-      "defaultValue": "RDKit"
+      "defaultValue": "RDKit",
+      "nullable": false
     }
   ],
   "dependencies": {

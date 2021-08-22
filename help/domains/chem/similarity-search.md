@@ -21,7 +21,7 @@ sketch it manually.
 
 ### Videos
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/wCdzD64plEo" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+[Molecular similarity and diversity](https://www.youtube.com/watch?v=wCdzD64plEo)
 
 See also:
 
