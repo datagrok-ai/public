@@ -354,8 +354,8 @@ export function bigButton(text: string, handler: Function, tooltip: string | nul
  * @param {Function} renderer (item) => {...}
  * @returns {HTMLElement}
  * */
-export function comboPopup(caption: string | HTMLElement, items: string[], handler: (item: any) => void, renderer: ((item: any) => HTMLElement) | null = null): HTMLElement {
-  return api.grok_UI_ComboPopup(caption, items, handler, renderer !== null ? (item: any) => renderer(toJs(item)) : null);
+export function comboPopup(caption: string | HTMLElement, items: string[], handler: (item: any) => void, renderer?: ((item: any) => HTMLElement) | null): HTMLElement {
+  return api.grok_UI_ComboPopup(caption, items, handler, renderer ? (item: any) => renderer(toJs(item)) : null);
 }
 
 /**
@@ -365,7 +365,7 @@ export function comboPopup(caption: string | HTMLElement, items: string[], handl
  * @returns {HTMLElement}
  * */
 export function comboPopupItems(caption: string | HTMLElement, items: { [key: string]: Function }): HTMLElement {
-  return api.grok_UI_ComboPopup(caption, Object.keys(items), (key: string) => items[key]());
+  return api.grok_UI_ComboPopup(caption, Object.keys(items), (key: string) => items[key](), null);
 }
 
 /** Creates a visual table based on [map]. */
@@ -426,7 +426,7 @@ function _link(element: HTMLElement, target: string | Function, tooltipMsg?: str
   tooltip.bind(element, tooltipMsg);
 }
 
-export function image(src: string, width: number, height: number, options: {target?: string | Function, tooltipMsg?: string}) {
+export function image(src: string, width: number, height: number, options?: {target?: string | Function, tooltipMsg?: string}) {
   let image = element('div') as HTMLDivElement;
   image.classList.add('ui-image');
 

@@ -26,15 +26,9 @@ public class GrokConnect {
         String uri = "http://localhost:" + port;
 
         try {
-//            System.setOut(new PrintStream("C:/Users/don-p/Documents/Out/myoutput.txt"));
-//            System.setErr(new PrintStream("C:/Users/don-p/Documents/Out/myerr.txt"));
-
             BasicConfigurator.configure();
             logger = Logger.getLogger(GrokConnect.class.getName());
             logger.setLevel(Level.INFO);
-
-            logger.error("My error");
-            logger.info("My info");
 
             logMemory();
 
@@ -68,7 +62,9 @@ public class GrokConnect {
 
             try {
                 FuncCall call = gson.fromJson(request.body(), FuncCall.class);
+                call.log = "";
                 call.setParamValues();
+                call.afterDeserialization();
                 System.out.println(call.func.query);
                 DateTime startTime = DateTime.now();
                 DataProvider provider = providerManager.getByName(call.func.connection.dataSource);
@@ -81,14 +77,21 @@ public class GrokConnect {
                 result.execTime = execTime;
                 result.columns = dataFrame.columns.size();
                 result.rows = dataFrame.rowCount;
+                result.log = call.log;
                 // TODO Write to result log there
 
-                logger.info(String.format("%s: Execution time: %f s, Columns/Rows: %d/%d, Blob size: %d bytes\n",
+                String logString = String.format("%s: Execution time: %f s, Columns/Rows: %d/%d, Blob size: %d bytes\n",
                         result.timeStamp,
                         result.execTime,
                         result.columns,
                         result.rows,
-                        result.blobLength));
+                        result.blobLength);
+
+                if (call.debugQuery) {
+                    result.log += logMemory();
+                    result.log += logString;
+                }
+                logger.info(logString);
 
                 buffer = new BufferAccessor(result.blob);
                 buffer.bufPos = result.blob.length;
@@ -108,7 +111,6 @@ public class GrokConnect {
                 buildExceptionResponse(response, printError(ex));
             }
 
-            logMemory();
             return response;
         });
 
@@ -246,10 +248,11 @@ public class GrokConnect {
     }
 
     private static String logMemory() {
-        long usedMemory = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
-        long freeMemory = Runtime.getRuntime().maxMemory() - usedMemory;
+        long used = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+        long free = Runtime.getRuntime().maxMemory() - used;
+        long total = Runtime.getRuntime().maxMemory();
 
-        String str = "Free memory: " + freeMemory + ", used memory: " + usedMemory;
+        String str = String.format("Memory: free: %s(%.2f%%), used: %s", free, 100.0 * free/total, used);
 
         logger.info(str);
         return str;
