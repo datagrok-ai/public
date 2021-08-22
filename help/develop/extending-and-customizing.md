@@ -1,7 +1,7 @@
 <!-- TITLE: &#8204;Extending Datagrok -->
 <!-- SUBTITLE: -->
 
-# Extending and Customizing Datagrok
+# Extending and customizing Datagrok
 
 Datagrok is built highly extensible, composable and customizable. Many parts of the Datagrok platform can be
 enhanced by plugins using our [JavaScript API](js-api.md). The plugins are structured and delivered to the platform
@@ -67,35 +67,16 @@ Beside a regular CSS-based customization, here are some of the things which you 
   to provide for completely custom layouts composed inside the Datagrok platform, tailored to your specific use cases. Learn
   more about Datagrok's composable UI [here](develop/ui.md)
 
-## Getting Started
+## Get started
 
-By a super-short guide below, let's now get a taste of plugin development with a simple extension, which embeds to Datagrok as an [info panel](develop/how-to/build-info-panel.md)
-displaying some simple statistics for a text in a selected grid cell.
+Let's get a feel of plugin development with a simple extension which embeds to Datagrok as an
+[info panel](develop/how-to/build-info-panel.md) displaying some simple statistics for a text in a selected grid cell.
 
-### Setting up environment
+### Create a package
 
-Get your [public Datagrok](https://public.datagrok.ai) account, if you haven't created
-one yet, and let's get started! You can simply sign in there with Google, this will set up
-the account for you.
+If you haven't already set up your local development environment, go though the steps described [in this article](develop/develop.md#getting-started).
 
-1. Install vanilla [Node.js](https://nodejs.org/en/) with [npm](https://www.npmjs.com/get-npm),
-   make sure they're on your path, say, by checking `npm --version` in your shell.
-2. Install webpack _globally_, meaning that the `webpack` command shall be callable everywhere:  
-   ```
-   npm install webpack -g
-   ```
-3. Install our `datagrok-tools`, same as with `webpack` — globally:   
-   ```
-   npm install datagrok-tools -g
-   ```
-4. You'll use `grok publish` to upload packages to your Datagrok instance. To let `grok`
-   tool know where these instances are, you'd need to set up a `%USERPROFILE%/.grok/config.yaml`
-   file on Windows (... on Linux / macOS). Go through `grok config` to make this
-   initial setup, the tool will guide you. Get the developer key for public Datagrok at [here](https://public.datagrok.ai/u)) by clicking on `Developer key`.
-   
-### Creating your First Package
-
-Let's create our first package:
+Let's create a package:
  ```
  grok create TextStats
  ```
@@ -105,13 +86,14 @@ The package may contain one or more plugins, such as [info panels](), [viewers](
 [scripts]() and [functions](), [cell renderers](), one or several [Datagrok applications](),
 and so forth.
 
-For the raw package, it's relevant to restore its dependencies, that's typical for any `webpack` package. Get into your `TextStats` folder and do:
+For the newly created package, it's relevant to restore its dependencies, that's typical for any `webpack` package.
+Get into your `TextStats` folder and do:
 
 ```
 npm install
 ```
 
-### The Panel Function
+### The panel function
 
 Add the actual panel's code at `TextStats/src/package.js`:
 
@@ -133,11 +115,11 @@ textStats(str) {
 }
 ```
 
-That's it! What creates a panel is this function plus the annotation contained in the
-comments preceding it. Datagrok recognizes these comments and makes the function
-`textStats` become a `panel` producing a `widget`, taking a `string` as an input.
+That's it! What creates a panel is this function plus the annotation contained in the comments preceding it.
+Datagrok recognizes these comments and makes the function `textStats` become a `panel` producing a `widget`,
+taking a `string` as an input.
 
-### Deploying the Plugin
+### Deploy the plugin
 
 What's left is to deploy the package with your first plugin and see it in action.
 
@@ -151,15 +133,13 @@ grok publish public
 
 The return code should be `0` to indicate a successful deployment.
 
-Now go to Datagrok and open any data file with string columns. This could be a `demog`
-dataset from our demo datasets. Navigate to a text cell and find your freshly added
-panel with text stats on the right side of Datagrok UI.
+Now go to Datagrok and open any data file with string columns. This could be a `demog` dataset from our demo datasets.
+Navigate to a text cell and find your freshly added panel with text stats on the right side of Datagrok UI.
 
-Our task is done! Now let's navigate to `Manage | Packages` and find your package in the 
-list. Note it has your name prefixed with a `v.`, which means it's only published for you.
-This is called a Debug mode. To make it available to the user or a group of interest, you can
-`Share` it to the group via right-click menu on the package. But don't forget to publish
-the package as `grok publish public --release`: this now makes this package _released_
+We have completed the deployment. Let's navigate to `Manage | Packages` and find your package in the list. Note it has
+your name prefixed with a `v.`, which means it's only published for you. This is called a Debug mode. To make it
+available to the user or a group of interest, you can `Share` it to the group via right-click menu on the package.
+Don't forget to publish the package as `grok publish public --release`: this now makes this package _released_
 for these groups of interest.
 
 ### Overview of the API
@@ -167,7 +147,7 @@ for these groups of interest.
 [This document](develop/js-api.md) gives a great overview of our JS API, skim through it
 to get an idea, it isn't long. In general, there are three entry points to the API:  **grok** for easy discoverability of the functionality,  **ui** for building user interfaces, and  **DG** for instantiating classes directly. You'd find them included in `src/package.js`.
 
-### Overview of The Examples
+### Overview of the examples
 
 The great source of what Datagrok can do is available here:
 [https://public.datagrok.ai/js](https://public.datagrok.ai/js) under "JavaScript API Examples".
