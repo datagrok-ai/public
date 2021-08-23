@@ -76,7 +76,7 @@
       "id": "a9f509b4-6dee-46d2-b80a-308a9ba56aa1",
       "comment": "",
       "command": "pause",
-      "target": "2000",
+      "target": "4000",
       "targets": [],
       "value": ""
     }, {
@@ -172,7 +172,7 @@
       "id": "5f2b6bc5-063f-41df-b07c-7defcbe27fe3",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "2000",
       "targets": [],
       "value": ""
     }, {
@@ -211,7 +211,7 @@
       "id": "22b0c181-4d9a-467e-940e-56e175d00979",
       "comment": "",
       "command": "pause",
-      "target": "500",
+      "target": "1000",
       "targets": [],
       "value": ""
     }, {
@@ -256,7 +256,7 @@
       "id": "1de4e59f-d6a1-405a-a3f7-86d5de8c755b",
       "comment": "",
       "command": "click",
-      "target": "name=span-Demog",
+      "target": "name=span-demog",
       "targets": [
         ["css=.d4-link-label:nth-child(4) > label", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div[4]/span[4]/label", "xpath:idRelative"],
@@ -396,7 +396,7 @@
       "id": "9b2a71e3-7fa2-42b7-aed6-011f6f5e16c0",
       "comment": "",
       "command": "pause",
-      "target": "500",
+      "target": "1000",
       "targets": [],
       "value": ""
     }, {
@@ -618,7 +618,7 @@
       "id": "2ca8b4e4-5bd6-4596-88de-234dd651b984",
       "comment": "",
       "command": "pause",
-      "target": "500",
+      "target": "1000",
       "targets": [],
       "value": ""
     }, {

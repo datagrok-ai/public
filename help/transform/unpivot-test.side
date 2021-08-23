@@ -437,18 +437,19 @@
       "id": "f2c50dbd-d7a0-4fda-acc2-364bb2f34f15",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span-RACE-(4-categories)",
+      "target": "name=span-RACE",
       "targets": [
-        ["name=icon-exclamation-triangle", "name"],
-        ["xpath=//i[@name='icon-exclamation-triangle']", "xpath:attributes"],
-        ["xpath=//i", "xpath:position"]
+        ["css=.d4-entity-markup-row:nth-child(1)", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div[2]/div/div/span", "xpath:idRelative"],
+        ["xpath=//div[4]/div[2]/div/div/span", "xpath:position"],
+        ["xpath=//span[contains(.,'RACE')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
       "id": "d45dbd6b-30ad-4a8e-98a6-fe306f5a4628",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span-Category-(2-categories)",
+      "target": "name=span-Category",
       "targets": [
         ["name=icon-exclamation-triangle", "name"],
         ["xpath=//i[@name='icon-exclamation-triangle']", "xpath:attributes"],
@@ -459,7 +460,7 @@
       "id": "d953c193-1b45-49c7-b5bc-54dcfa0584a8",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span-avg(HEIGHT)-(min-157.57,-max-177.16)",
+      "target": "name=span-avg(HEIGHT)",
       "targets": [
         ["name=icon-exclamation-triangle", "name"],
         ["xpath=//i[@name='icon-exclamation-triangle']", "xpath:attributes"],

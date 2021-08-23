@@ -304,7 +304,7 @@
       "id": "23ca7bbd-fb54-4e52-baa1-a35040fbccf2",
       "comment": "",
       "command": "click",
-      "target": "name=span-SEX-(2-categories)",
+      "target": "name=span-SEX",
       "targets": [
         ["css=div:nth-child(1) > .d4-flex-col > .d4-entity-markup-row:nth-child(3)", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[5]/div[2]/div/div/span[3]", "xpath:idRelative"],

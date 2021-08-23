@@ -387,7 +387,7 @@
       "id": "a306eee6-5851-471b-8036-099503c2fa85",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span-category-(2-categories)",
+      "target": "name=span-category",
       "targets": [],
       "value": ""
     }, {
@@ -535,7 +535,7 @@
       "id": "a2e9f52f-2de6-4d65-a0bf-2bb0de527656",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span-category-(2)-(2-categories)",
+      "target": "name=span-category-(2)",
       "targets": [],
       "value": ""
     }, {
