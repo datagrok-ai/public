@@ -3,6 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { Track, TutorialRunner } from './tutorial';
 import { ScatterPlotTutorial } from './tracks/eda/tutorials/scatter-plot';
+import { ScriptingTutorial } from './tracks/ml/tutorials/scripting';
 
 export const _package = new DG.Package();
 

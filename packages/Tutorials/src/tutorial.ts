@@ -23,8 +23,8 @@ export abstract class Tutorial extends DG.Widget {
       classes: 'grok-tutorial-next',
       style: { display: 'none' },
     });
-  header: HTMLHeadingElement = ui.h1('');
-  subheader: HTMLHeadingElement = ui.h2('');
+  header: HTMLHeadingElement = ui.h2('');
+  subheader: HTMLHeadingElement = ui.h3('');
   activity: HTMLDivElement = ui.div([], 'grok-tutorial-description');
 
   static DATA_STORAGE_KEY: string = 'tutorials';
@@ -125,17 +125,17 @@ export class TutorialRunner {
   }
 
   constructor(track: Track, onStartTutorial?: (t: Tutorial) => Promise<void>) {
-    this.root.append(ui.h1('Tutorials'));
+    this.root.append(ui.h2(`${track.name} Tutorials`));
     this.root.append(ui.divV(track.tutorials.map((t) => {
-        const el = new TutorialCard(t).root;
-        el.addEventListener('click', () => {
-          if (onStartTutorial == null) {
-            this.run(t);
-          } else {
-            onStartTutorial(t);
-          }
-        });
-        return el;
+      const el = new TutorialCard(t).root;
+      el.addEventListener('click', () => {
+        if (onStartTutorial == null) {
+          this.run(t);
+        } else {
+          onStartTutorial(t);
+        }
+      });
+      return el;
     })));
 
   }
