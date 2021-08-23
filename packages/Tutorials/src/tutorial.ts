@@ -51,7 +51,7 @@ export abstract class Tutorial extends DG.Widget {
   }
 
   title(text: string): void {
-    this.activity.append(ui.h1(text));
+    this.activity.append(ui.h2(text));
   }
 
   describe(text: string): void {
