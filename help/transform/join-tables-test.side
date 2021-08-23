@@ -663,7 +663,7 @@
       "id": "615f1014-04a0-4c5e-856b-6f383b0e9bb3",
       "comment": "",
       "command": "click",
-      "target": "name=span-name-(11-categories)",
+      "target": "name=span-name",
       "targets": [
         ["css=div:nth-child(1) > .d4-flex-col > .d4-entity-markup-row:nth-child(2)", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div[2]/div/div/span[2]", "xpath:idRelative"],

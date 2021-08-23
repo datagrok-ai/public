@@ -873,7 +873,7 @@
       "id": "2a092bc9-0b72-4ae5-a04d-4b35d3749593",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "css=span[name=\"span-PCA0-(4)-(min-148.14,-max-259.69)\"]",
+      "target": "css=span[name=\"span-PCA0-(4)",
       "targets": [
         ["css=span[name=\"span-PCA0 (4)-(min-148.14,-max-259.69)\"]", "css"],
         ["css=tr:nth-child(16) .markup", "css:finder"],
@@ -886,7 +886,7 @@
       "id": "bc5d3914-0a6d-4eb8-b260-bd6248c93bb7",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span-PCA1-(4)-(min--37.46,-max-88.91)",
+      "target": "name=span-PCA1-(4)",
       "targets": [
         ["css=span[name=\"span-PCA1 (4)-(min--37.46,-max-88.91)\"]", "css"],
         ["css=tr:nth-child(17) .markup", "css:finder"],

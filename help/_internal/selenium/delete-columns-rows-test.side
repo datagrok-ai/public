@@ -73,7 +73,7 @@
       "id": "fa061379-28dd-4cbf-806d-e27867995104",
       "comment": "",
       "command": "pause",
-      "target": "2000",
+      "target": "4000",
       "targets": [],
       "value": ""
     }, {
@@ -369,7 +369,7 @@
       "id": "ad239210-6a3e-494b-a72c-04a9b2bc4a49",
       "comment": "",
       "command": "click",
-      "target": "name=span-USUBJID-(3291-categories)",
+      "target": "name=span-USUBJID",
       "targets": [
         ["css=.d4-entity-markup-row:nth-child(1) > .d4-link-label > label", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div[2]/div/div/span/span/label", "xpath:idRelative"],
@@ -463,7 +463,7 @@
       "id": "a900ba4f-7ce1-44e3-9e19-0b59f8c38b76",
       "comment": "",
       "command": "click",
-      "target": "name=span-HEIGHT-(min-127.60,-max-203.34)",
+      "target": "name=span-HEIGHT",
       "targets": [],
       "value": ""
     }, {

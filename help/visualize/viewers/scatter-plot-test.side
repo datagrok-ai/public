@@ -1605,6 +1605,24 @@
       "targets": [],
       "value": ""
     }, {
+      "id": "0095b8f5-5375-484f-ad7c-ef1f8a9843cd",
+      "comment": "",
+      "command": "click",
+      "target": "css=tbody:nth-child(13) td",
+      "targets": [
+        ["css=tbody:nth-child(13) td", "css:finder"],
+        ["xpath=//div[@id='elementContent']/div/div/div/div/div/div/table/tbody[13]/tr/td", "xpath:idRelative"],
+        ["xpath=//tbody[13]/tr/td", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "90f021b3-454e-4fea-99d8-503ece904f06",
+      "comment": "",
+      "command": "pause",
+      "target": "2000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "3d91d163-e052-40e6-be5d-56a5d2e446bf",
       "comment": "",
       "command": "verifyText",
