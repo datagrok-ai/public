@@ -1337,6 +1337,9 @@ export class RowList {
     this.d = d;
   }
 
+  /** List of textual descriptions of currently applied filters */
+  get filters(): string[] { return api.grok_RowList_Get_Filters(this.d); }
+
   /** Removes specified rows
    * @param {number} idx
    * @param {number} [count=1] - Number of rows to remove.
