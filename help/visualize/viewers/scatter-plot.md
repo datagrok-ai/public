@@ -20,7 +20,8 @@ General:
 | Mouse Wheel Down or Minus | Zoom out               |
 | Double-click              | Reset view             |
 | Shift+Mouse Drag          | Select                 |
-| Ctrl+Mouse Click          | Invert selected        | 
+| Ctrl+Mouse Click          | Invert selected        |
+| L                         | Toggle lasso tool      |
 | Up, Down, Left, Right     | Scroll                 |
 | R                         | Toggle regression line |
 
