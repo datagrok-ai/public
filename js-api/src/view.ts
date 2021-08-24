@@ -354,7 +354,7 @@ export class TableView extends View {
 
   /** @type {Grid} */
   get grid(): Grid {
-    return new Grid(api.grok_View_Get_Grid(this.d));
+    return toJs(api.grok_View_Get_Grid(this.d));
   }
 
   /** @type {DataFrame} */

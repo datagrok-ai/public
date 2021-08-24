@@ -7,8 +7,8 @@ import grok_connect.connectors_info.*;
 
 
 public class MariaDbDataProvider extends MySqlDataProvider {
-    public MariaDbDataProvider() {
-        super();
+    public MariaDbDataProvider(ProviderManager providerManager) {
+        super(providerManager);
         driverClassName = "org.mariadb.jdbc.Driver";
 
         descriptor.type = "MariaDB";

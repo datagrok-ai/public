@@ -6,7 +6,8 @@ import grok_connect.connectors_info.*;
 
 
 public class Hive2DataProvider extends HiveDataProvider {
-    public Hive2DataProvider() {
+    public Hive2DataProvider(ProviderManager providerManager) {
+        super(providerManager);
         descriptor = new DataSource();
         descriptor.type = "Hive2";
         descriptor.description = "Query Hive2 database";

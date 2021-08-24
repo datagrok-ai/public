@@ -3,6 +3,10 @@ package grok_connect;
 import java.io.*;
 import java.nio.file.*;
 import java.nio.charset.*;
+
+import org.apache.log4j.BasicConfigurator;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 import org.joda.time.*;
 import com.google.gson.*;
 import java.sql.SQLException;
@@ -15,7 +19,7 @@ import grok_connect.connectors_info.*;
 
 public class GrokConnectShell {
     public static void main(String[] args) throws ParseException, IOException, SQLException,
-            java.text.ParseException, ClassNotFoundException {
+            java.text.ParseException, ClassNotFoundException, QueryCancelledByUser {
 
         Options options = new Options();
 
@@ -55,7 +59,10 @@ public class GrokConnectShell {
         FuncCall call = gson.fromJson(new String(Files.readAllBytes(Paths.get(cmd.getOptionValue("query"))), StandardCharsets.UTF_8), FuncCall.class);
         call.setParamValues();
         DateTime startTime = DateTime.now();
-        DataProvider provider = DataProvider.getByName(call.func.connection.dataSource);
+        BasicConfigurator.configure();
+        Logger logger = Logger.getLogger(GrokConnect.class.getName());
+        logger.setLevel(Level.INFO);
+        DataProvider provider = new ProviderManager(logger).getByName(call.func.connection.dataSource);
         provider.outputCsv = cmd.getOptionValue("original_csv");
         DataFrame table = provider.execute(call);
         double execTime = (DateTime.now().getMillis() - startTime.getMillis()) / 1000.0;

@@ -8,7 +8,8 @@ import serialization.Types;
 import grok_connect.table_query.*;
 
 public class RedshiftDataProvider extends JdbcDataProvider {
-    public RedshiftDataProvider() {
+    public RedshiftDataProvider(ProviderManager providerManager) {
+        super(providerManager);
         driverClassName = "com.amazon.redshift.jdbc.Driver";
 
         descriptor = new DataSource();

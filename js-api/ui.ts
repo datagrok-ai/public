@@ -186,7 +186,7 @@ export function iconFA(name: string, handler: ((this: HTMLElement, ev: MouseEven
   return i;
 }
 
-export function extract(x: any): any {
+export function extractRoot(x: any): HTMLElement | null {
   if (x == null)
     return null;
   if (x instanceof Widget)
@@ -206,7 +206,9 @@ export function extract(x: any): any {
  * @param {object} x
  * @returns {HTMLElement} */
 export function render(x: any): HTMLElement {
-  x = extract(x);
+  x = extractRoot(x);
+  if (x == null)
+    return div();
   if (api.grok_UI_Render == null)
     return x;
   return api.grok_UI_Render(x);
@@ -352,8 +354,8 @@ export function bigButton(text: string, handler: Function, tooltip: string | nul
  * @param {Function} renderer (item) => {...}
  * @returns {HTMLElement}
  * */
-export function comboPopup(caption: string | HTMLElement, items: string[], handler: (item: any) => void, renderer: ((item: any) => HTMLElement) | null = null): HTMLElement {
-  return api.grok_UI_ComboPopup(caption, items, handler, renderer !== null ? (item: any) => renderer(toJs(item)) : null);
+export function comboPopup(caption: string | HTMLElement, items: string[], handler: (item: any) => void, renderer?: ((item: any) => HTMLElement) | null): HTMLElement {
+  return api.grok_UI_ComboPopup(caption, items, handler, renderer ? (item: any) => renderer(toJs(item)) : null);
 }
 
 /**
@@ -363,7 +365,7 @@ export function comboPopup(caption: string | HTMLElement, items: string[], handl
  * @returns {HTMLElement}
  * */
 export function comboPopupItems(caption: string | HTMLElement, items: { [key: string]: Function }): HTMLElement {
-  return api.grok_UI_ComboPopup(caption, Object.keys(items), (key: string) => items[key]());
+  return api.grok_UI_ComboPopup(caption, Object.keys(items), (key: string) => items[key](), null);
 }
 
 /** Creates a visual table based on [map]. */
@@ -424,7 +426,7 @@ function _link(element: HTMLElement, target: string | Function, tooltipMsg?: str
   tooltip.bind(element, tooltipMsg);
 }
 
-export function image(src: string, width: number, height: number, options: {target: string | Function, tooltipMsg?: string}) {
+export function image(src: string, width: number, height: number, options?: {target?: string | Function, tooltipMsg?: string}) {
   let image = element('div') as HTMLDivElement;
   image.classList.add('ui-image');
 
@@ -432,7 +434,9 @@ export function image(src: string, width: number, height: number, options: {targ
   image.style.width = `${width}px`;
   image.style.height = `${height}px`;
 
-  _link(image, options?.target, options?.tooltipMsg);
+  if (options?.target)
+    _link(image, options?.target, options?.tooltipMsg);
+
   return image;
 }
 
@@ -601,6 +605,10 @@ export function boolInput(name: string, value: boolean, onValueChanged: Function
   return new InputBase(api.grok_BoolInput(name, value), onValueChanged);
 }
 
+export function switchInput(name: string, value: boolean, onValueChanged: Function | null = null): InputBase {
+  return new InputBase(api.grok_SwitchInput(name, value), onValueChanged);
+}
+
 export function moleculeInput(name: string, value: string, onValueChanged: Function | null = null): InputBase {
   return new InputBase(api.grok_MoleculeInput(name, value), onValueChanged);
 }
@@ -688,6 +696,39 @@ export class tools {
     let host = div([]);
     host.innerHTML = htmlString.trim();
     return host;
+  }
+
+  static initFormulaAccelerators(textInput: InputBase, table: DataFrame): void {
+    api.grok_UI_InitFormulaAccelerators(toDart(textInput), table.d);
+  }
+
+  /** Waits until the specified element is in the DOM. */
+  static waitForElementInDom(element: HTMLElement): Promise<HTMLElement> {
+    if (_isDartium()) {
+      return new Promise(resolve => {
+        setInterval(function() {
+          if (document.contains(element))
+            return resolve(element);
+        }, 100);
+      });
+    }
+
+    return new Promise(resolve => {
+      if (document.contains(element))
+        return resolve(element);
+
+      const observer = new MutationObserver(mutations => {
+        if (document.contains(element)) {
+          resolve(element);
+          observer.disconnect();
+        }
+      });
+
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true
+      });
+    });
   }
 }
 
@@ -1034,22 +1075,29 @@ function _icon(type: string, handler: Function, tooltipMsg: string | null = null
   return e;
 }
 
+function _iconFA(type: string, handler: Function, tooltipMsg: string | null = null): HTMLElement {
+  let e = $(`<i class="grok-icon fal fa-${type}"></i>`)[0] as HTMLElement;
+  e?.addEventListener('click', () => handler());
+  tooltip.bind(e, tooltipMsg);
+  return e;
+}
+
 
 export let icons = {
   close: (handler: Function, tooltipMsg: string | null = null) => _icon('close', handler, tooltipMsg),
   help: (handler: Function, tooltipMsg: string | null = null) => _icon('help', handler, tooltipMsg),
   settings: (handler: Function, tooltipMsg: string | null = null) => _icon('settings', handler, tooltipMsg),
-  edit: (handler: Function, tooltipMsg: string | null = null) => _icon('pen', handler, tooltipMsg),
-  save: (handler: Function, tooltipMsg: string | null = null) => _icon('save', handler, tooltipMsg),
-  copy: (handler: Function, tooltipMsg: string | null = null) => _icon('copy', handler, tooltipMsg),
-  add: (handler: Function, tooltipMsg: string | null = null) => _icon('plus', handler, tooltipMsg),
-  remove: (handler: Function, tooltipMsg: string | null = null) => _icon('minus', handler, tooltipMsg),
-  delete: (handler: Function, tooltipMsg: string | null = null) => _icon('trash-alt', handler, tooltipMsg),
-  undo: (handler: Function, tooltipMsg: string | null = null) => _icon('undo', handler, tooltipMsg),
-  sync: (handler: Function, tooltipMsg: string | null = null) => _icon('sync', handler, tooltipMsg),
-  info: (handler: Function, tooltipMsg: string | null = null) => _icon('info-circle', handler, tooltipMsg),
-  search: (handler: Function, tooltipMsg: string | null = null) => _icon('search', handler, tooltipMsg),
-  filter: (handler: Function, tooltipMsg: string | null = null) => _icon('filter', handler, tooltipMsg),
+  edit: (handler: Function, tooltipMsg: string | null = null) => _iconFA('pen', handler, tooltipMsg),
+  save: (handler: Function, tooltipMsg: string | null = null) => _iconFA('save', handler, tooltipMsg),
+  copy: (handler: Function, tooltipMsg: string | null = null) => _iconFA('copy', handler, tooltipMsg),
+  add: (handler: Function, tooltipMsg: string | null = null) => _iconFA('plus', handler, tooltipMsg),
+  remove: (handler: Function, tooltipMsg: string | null = null) => _iconFA('minus', handler, tooltipMsg),
+  delete: (handler: Function, tooltipMsg: string | null = null) => _iconFA('trash-alt', handler, tooltipMsg),
+  undo: (handler: Function, tooltipMsg: string | null = null) => _iconFA('undo', handler, tooltipMsg),
+  sync: (handler: Function, tooltipMsg: string | null = null) => _iconFA('sync', handler, tooltipMsg),
+  info: (handler: Function, tooltipMsg: string | null = null) => _iconFA('info-circle', handler, tooltipMsg),
+  search: (handler: Function, tooltipMsg: string | null = null) => _iconFA('search', handler, tooltipMsg),
+  filter: (handler: Function, tooltipMsg: string | null = null) => _iconFA('filter', handler, tooltipMsg),
 }
 
 export namespace cards {

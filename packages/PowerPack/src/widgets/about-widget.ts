@@ -5,18 +5,21 @@ import * as DG from 'datagrok-api/dg';
 
 export class AboutWidget extends DG.Widget {
   caption: string;
+  order: string;
 
   constructor() {
-    super(ui.div());
+    super(ui.box());
 
     // properties
     this.caption = super.addProperty('caption', DG.TYPE.STRING, 'Why Datagrok?');
+    this.order = super.addProperty('order', DG.TYPE.STRING, '4');
+
     let tabControl = ui.tabControl({
-    'Overview' : () => ui.panel([ui.markdown(intro)]),
-    'Users' : () => ui.panel([ui.markdown(introUsers)]),
+    'PLATFORM' : () => ui.panel([ui.markdown(intro)]),
+    'USERS' : () => ui.panel([ui.markdown(introUsers)]),
     'IT' : () => ui.panel([ui.markdown(introIT)]),
-    'Data Scientists' : () => ui.panel([ui.markdown(introDS)]),
-    'Chemists' : () => ui.panel([
+    'DATA SCIENCE' : () => ui.panel([ui.markdown(introDS)]),
+    'CHEMISTRY' : () => ui.panel([
       ui.markdown(introChem),
       ui.div([
         ui.link('Go ahead, sketch a molecule!', async () => 
@@ -27,11 +30,39 @@ export class AboutWidget extends DG.Widget {
         })
       )], {style:{marginTop:'10px'}})
     ]),
-    'Developers' : () => ui.panel([ui.markdown(introDev)]),
-    'Leaders' : () => ui.panel([ui.markdown(introLeaders)]),
+    'DEVELOPMENT' : () => ui.panel([ui.markdown(introDev)]),
+    'BUSINESS' : () => ui.panel([ui.markdown(introLeaders)]),
     //
-    }, true)
-    tabControl.root.className = 'd4-tab-host d4-tab-vertical';
+    })
+    let currentPane = 0;
+    let tabControlButtonLeft = ui.div([
+      ui.button(ui.iconFA('chevron-left'), ()=>{
+        if (currentPane != 0){
+          currentPane--;
+          console.log(currentPane);
+          tabControl.currentPane = tabControl.panes[currentPane];
+        }
+      })]);
+      let tabControlButtonRight = ui.div([
+      ui.button(ui.iconFA('chevron-right'), ()=>{
+        if (currentPane<6){
+          currentPane++;
+          console.log(currentPane);
+          tabControl.currentPane = tabControl.panes[currentPane];
+        }
+      })
+    ]);
+    tabControlButtonRight.style.float = 'Right';
+    tabControlButtonRight.style.margin = '0px 10px 0px 0px';
+    tabControlButtonRight.style.color = 'var(--blue-1)';
+    tabControlButtonLeft.style.float = 'Left';
+    tabControlButtonLeft.style.margin = '0px 0px 0px 10px';
+    tabControlButtonLeft.style.color = 'var(--blue-1)';
+
+    tabControl.header.className = 'd4-tab-header-stripe about-widget';
+    tabControl.header.prepend(tabControlButtonLeft);
+    tabControl.header.append(tabControlButtonRight);
+    //tabControl.root.className = 'd4-tab-host d4-tab-vertical';
     this.root.appendChild(tabControl.root);
   }
 }
@@ -42,11 +73,11 @@ non-technical users to
 [cleanse](/help/transform/data-wrangling), 
 [visualize](/help/visualize/viewers), 
 [explore](/help/#explore) data, 
-build and deploy [predictive models](/help/learn/predictive-modeling), and collaborate with others.
+build and deploy [predictive models](/help/learn/predictive-modeling), and collaborate with others. \n
 Datagrok's [performance](/help/develop/performance) is unmatched 
 due to our technology that allows to work with tens of millions of data points interactively
 right in the web browser. The platform is flexible and extensible, and integrates easily with existing systems. If anything
-is missing, extend the platform with  [plugins and applications](/help/develop/develop).
+is missing, extend the platform with  [plugins and applications](/help/develop/develop). \n
 The platform is a lot more than a tool for data analysis - it is an ecosystem designed
 for users, IT, data scientists, chemists, and developers not only to collaborate, but to 
 create value for other types of users as well. Click on the tabs to the left to see how 
@@ -69,7 +100,8 @@ providing the following:
 var introDS = `
 Datagrok lets you easily connect to data, visualize and explore it, build predictive models, 
 and deploy your work to production at a speed previously unheard of. Unlike other platforms,
-"deployment" in Datagrok is not simply exposing an endpoint API. Instead, it is an integrated 
+"deployment" in Datagrok is not simply exposing an endpoint API. \n 
+Instead, it is an integrated 
 experience, involving data discovery, visualization, and augmentation. See our
 [YouTube channel](https://www.youtube.com/watch?v=tVwpRB8fikQ) where we would start from scratch
 and end up training a predictive model and producing a rich application using it.
@@ -90,10 +122,10 @@ by handling low-level stuff and introducing high-level concepts like processes, 
 does the same for data. By leveraging our proprietary high-performance [data engine](/help/develop/performance), we provide
 efficient solutions for [data connectivity](/help/access/db-exploration), [visualization](/help/visualize/viewers), 
 [scientific computations](/help/compute/scripting), and
-[predictive modeling](/help/learn/predictive-modeling).
+[predictive modeling](/help/learn/predictive-modeling). \n
 Extend the platform by [writing functions](/help/compute/scripting) in SQL, R, Python, or Julia. 
 This lightweight process will take you a long way; some applications that take months to develop could 
-now be [done in a matter of days](https://www.youtube.com/watch?v=tVwpRB8fikQ).
+now be [done in a matter of days](https://www.youtube.com/watch?v=tVwpRB8fikQ). \n
 For deeper integration and customization, use our [JS API](/help/develop/develop) to take full control
 of the platform.`;
 var introLeaders = `Connect business areas with IT, data science, and application developers.

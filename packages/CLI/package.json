@@ -3,7 +3,7 @@
   "beta": true,
   "version": "0.1",
   "fullName": "CLI",
-  "description": "Package contains CLI tools integration",
+  "description": "Demonstrates integration with command-line tools",
   "sources": [
   ]
 }

@@ -7,7 +7,8 @@ import grok_connect.connectors_info.*;
 
 
 public class Db2DataProvider extends JdbcDataProvider {
-    public Db2DataProvider() {
+    public Db2DataProvider(ProviderManager providerManager) {
+        super(providerManager);
         driverClassName = "com.ibm.db2.jcc.DB2Driver";
 
         descriptor = new DataSource();

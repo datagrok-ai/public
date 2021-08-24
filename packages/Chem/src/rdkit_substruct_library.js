@@ -46,10 +46,22 @@ class RdKitSubstructLibrary {
 
   search(query) {
 
-    if (this.library == null) { return "[]"; }
-    const queryMol = this.rdKitModule.get_mol(query, "{\"mergeQueryHs\":true}");
-    const matches = this.library.get_matches(queryMol, false, 1, -1);
-    queryMol.delete();
+    let matches = "[]";
+    if (this.library) {
+      try {
+        const queryMol = this.rdKitModule.get_mol(query, "{\"mergeQueryHs\":true}");
+        if (queryMol) {
+          if (queryMol.is_valid()) {
+            matches = this.library.get_matches(queryMol, false, 1, -1);
+          }
+          queryMol.delete();
+        }
+      } catch (e) {
+        console.error(
+          "Possibly a malformed query: `" + query + "`");
+        // Won't rethrow
+      }
+    }
     return matches;
 
   }

@@ -1,0 +1,39 @@
+{
+	"name": "ketcher",
+	"beta": true,
+	"friendlyName": "Ketcher",
+	"version": "0.0.1",
+	"description": "",
+	"sources": [
+		"css/ketcher.css"
+	],
+	"dependencies": {
+		"@types/react-dom": "^17.0.9",
+		"datagrok-api": "../../js-api",
+		"ketcher-core": "^1.1.0",
+		"ketcher-react": "^2.1.0",
+		"ketcher-standalone": "^1.1.0",
+		"miew": "^0.9.0",
+		"react": "^16.13.1",
+		"react-app-polyfill": "^2.0.0",
+		"react-dom": "^16.13.1",
+		"ts-loader": "latest",
+		"typescript": "latest"
+	},
+	"devDependencies": {
+		"webpack": "latest",
+		"webpack-cli": "latest",
+		"css-loader": "latest",
+		"style-loader": "latest"
+	},
+	"scripts": {
+		"debug-ketcher": "grok publish --rebuild",
+		"release-ketcher": "grok publish --rebuild --release",
+		"build-ketcher": "webpack",
+		"build": "webpack",
+		"debug-ketcher-dev": "grok publish dev --rebuild",
+		"release-ketcher-dev": "grok publish dev --rebuild --release",
+		"debug-ketcher-public": "grok publish public --rebuild",
+		"release-ketcher-public": "grok publish public --rebuild --release"
+	}
+}

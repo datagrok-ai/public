@@ -8,7 +8,8 @@ import serialization.Types;
 
 
 public class TeradataDataProvider extends JdbcDataProvider {
-    public TeradataDataProvider() {
+    public TeradataDataProvider(ProviderManager providerManager) {
+        super(providerManager);
         driverClassName = "com.teradata.jdbc.TeraDriver";
 
         descriptor = new DataSource();

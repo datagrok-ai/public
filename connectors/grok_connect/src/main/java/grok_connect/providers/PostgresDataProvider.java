@@ -9,7 +9,8 @@ import grok_connect.connectors_info.*;
 
 
 public class PostgresDataProvider extends JdbcDataProvider {
-    public PostgresDataProvider() {
+    public PostgresDataProvider(ProviderManager providerManager) {
+        super(providerManager);
         driverClassName = "org.postgresql.Driver";
 
         descriptor = new DataSource();

@@ -1,6 +1,7 @@
 package grok_connect.providers;
 
 import grok_connect.utils.CustomDriverManager;
+import grok_connect.utils.ProviderManager;
 import serialization.Types;
 import org.bson.*;
 import java.sql.*;
@@ -10,7 +11,8 @@ import grok_connect.connectors_info.*;
 
 
 public class MongoDbDataProvider extends JdbcDataProvider {
-    public MongoDbDataProvider() {
+    public MongoDbDataProvider(ProviderManager providerManager) {
+        super(providerManager);
         driverClassName = "com.dbschema.MongoJdbcDriver";
 
         descriptor = new DataSource();

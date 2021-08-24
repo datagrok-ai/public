@@ -52,7 +52,7 @@
       "id": "ab8f2726-12a0-40e3-ac90-4730f3344006",
       "comment": "",
       "command": "pause",
-      "target": "4000",
+      "target": "5000",
       "targets": [],
       "value": ""
     }, {
@@ -71,7 +71,7 @@
       "id": "51aa01d0-3fc4-4514-a689-11010a41cbbd",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "2000",
       "targets": [],
       "value": ""
     }, {
@@ -727,7 +727,7 @@
       "id": "e184990d-f038-4da2-924b-3fba7a716c7a",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span-shipcountry-(2-categories)",
+      "target": "name=span-shipcountry",
       "targets": [],
       "value": ""
     }, {

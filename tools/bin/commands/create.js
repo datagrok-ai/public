@@ -1,8 +1,11 @@
 const fs = require('fs');
+const inquirer = require('inquirer');
 const path = require('path');
 const os = require('os');
 const yaml = require('js-yaml');
+const help = require('../ent-helpers.js');
 const utils = require('../utils.js');
+const exec = require('child_process').exec;
 
 module.exports = {
   create: create
@@ -19,6 +22,8 @@ const templateDir = path.join(path.dirname(path.dirname(__dirname)), 'package-te
 const confTemplateDir = path.join(path.dirname(path.dirname(__dirname)), 'config-template.yaml');
 
 const confTemplate = yaml.safeLoad(fs.readFileSync(confTemplateDir));
+
+let dependencies = [];
 
 function createDirectoryContents(name, config, templateDir, packageDir, ide = '', ts = false) {
   const filesToCreate = fs.readdirSync(templateDir);
@@ -50,12 +55,14 @@ function createDirectoryContents(name, config, templateDir, packageDir, ide = ''
           package['scripts'][`release-${name.toLowerCase()}-${server}`] = `grok publish ${server} --rebuild --release`;
         }
         if (ts) Object.assign(package.dependencies, { 'ts-loader': 'latest', 'typescript': 'latest' });
+        // Save module names for installation prompt
+        for (let [module, tag] of Object.entries(Object.assign({}, package.dependencies, package.devDependencies)))
+          dependencies.push(`${module}@${tag}`);
         contents = JSON.stringify(package, null, '\t');
       }
       if (file === 'package.js' && ts) copyFilePath = path.join(packageDir, 'package.ts');
       if (file === 'tsconfig.json' && !ts) return false;
       if (file === 'ts.webpack.config.js') return false;
-      if (file === 'npmignore') copyFilePath = path.join(packageDir, '.npmignore');
       if (file === 'gitignore') {
         copyFilePath = path.join(packageDir, '.gitignore');
         if (ts) contents += '\n# Emitted *.js files\nsrc/**/*.js\n';
@@ -99,9 +106,22 @@ function create(args) {
       return false;
     }
     createDirectoryContents(name, config, templateDir, packageDir, args.ide, args.ts);
-    console.log('Successfully created package', name);
-    console.log('Run `npm install` in your package directory to get the required dependencies\n' +
-    'Likely next steps: `grok add` to add functionality, `grok publish` to upload the package');
+    console.log(help.package(name, args.ts));
+    console.log(`\nThe package has the following dependencies:\n${dependencies.join(' ')}\n`);
+
+    inquirer.prompt({
+      name: 'run-npm-install',
+      type: 'confirm',
+      message: 'Would you like to install them now with `npm`?',
+      default: false,
+    }).then((answers) => {
+      if (!answers['run-npm-install']) return;
+      console.log('\nRunning `npm install` to get the required dependencies...\n');
+      exec('npm install', { cwd: packageDir }, (err, stdout, stderr) => {
+        if (err) throw err;
+        else console.log(stderr, stdout);
+      });
+    }).catch((err) => console.error(err));
   } else {
     console.log('Package name may only include letters, numbers, underscores, or hyphens');
   }

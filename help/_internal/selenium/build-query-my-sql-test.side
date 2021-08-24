@@ -115,12 +115,12 @@
       "id": "fe846fa6-ad8a-41c8-a0b9-ab4667a9fd32",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='tree-expander-MySQL---northwind']",
+      "target": "xpath=//div[@name='tree-expander-MySQL---Northwind']",
       "targets": [
-        ["css=.d4-tree-view-group:nth-child(16) .d4-tree-view-group:nth-child(2) .d4-tree-view-tri", "css:finder"],
-        ["xpath=//div[@name='tree-expander-MySQL---northwind']", "xpath:attributes"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div[16]/div[2]/div[2]/div/div", "xpath:idRelative"],
-        ["xpath=//div[16]/div[2]/div[2]/div/div", "xpath:position"]
+        ["css=.d4-tree-view-group:nth-child(20) .d4-tree-view-group:nth-child(2) .d4-tree-view-tri", "css:finder"],
+        ["xpath=//div[@name='tree-expander-MySQL---Northwind']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div[2]/div[20]/div[2]/div[2]/div/div", "xpath:idRelative"],
+        ["xpath=//div[20]/div[2]/div[2]/div/div", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -134,7 +134,7 @@
       "id": "97462d15-7f15-429d-8341-667038db0fc1",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//div[@name='tree-expander-MySQL---northwind'])[2]",
+      "target": "xpath=(//div[@name='tree-expander-MySQL---Northwind'])[2]",
       "targets": [
         ["css=.d4-tree-view-group-host > .d4-tree-view-group:nth-child(2) .d4-tree-view-group:nth-child(1) .d4-tree-view-tri", "css:finder"],
         ["xpath=(//div[@name='tree-expander-MySQL---northwind'])[2]", "xpath:attributes"],
@@ -153,7 +153,7 @@
       "id": "4e033ecb-a600-4164-992f-fa67ea69b7a9",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='tree-MySQL---northwind---Tables---Orders']",
+      "target": "xpath=//div[@name='tree-MySQL---Northwind---Tables---Orders']",
       "targets": [
         ["css=.d4-tree-view-group:nth-child(1) .d4-tree-view-group:nth-child(15) > .d4-tree-view-node", "css:finder"],
         ["xpath=//div[@name='tree-MySQL---northwind---Tables---Orders']", "xpath:attributes"],

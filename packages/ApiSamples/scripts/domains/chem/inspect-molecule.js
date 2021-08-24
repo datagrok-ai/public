@@ -1,0 +1,1 @@
+grok.shell.o = DG.SemanticValue.fromValueType('Fc1cc(Cl)ccc1Br', 'Molecule')

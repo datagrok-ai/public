@@ -12,7 +12,8 @@ import grok_connect.connectors_info.*;
 
 
 public class MsSqlDataProvider extends JdbcDataProvider {
-    public MsSqlDataProvider() {
+    public MsSqlDataProvider(ProviderManager providerManager) {
+        super(providerManager);
         driverClassName = "com.microsoft.sqlserver.jdbc.SQLServerDriver";
 
         descriptor = new DataSource();
@@ -68,7 +69,7 @@ public class MsSqlDataProvider extends JdbcDataProvider {
     }
 
     public DataFrame getSchema(DataConnection connection, String schema, String table)
-            throws ClassNotFoundException, SQLException, ParseException, IOException {
+            throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser {
         FuncCall queryRun = new FuncCall();
         queryRun.func = new DataQuery();
         String db = connection.getDb();

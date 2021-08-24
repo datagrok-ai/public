@@ -1,0 +1,27 @@
+{
+	"name": "grokopenchemlib",
+	"beta": true,
+	"friendlyName": "OpenChemLib",
+	"version": "0.0.1",
+	"description": "",
+	"dependencies": {
+		"datagrok-api": "../../js-api",
+		"openchemlib": "6.0.1",
+		"ts-loader": "latest",
+		"typescript": "latest"
+	},
+	"devDependencies": {
+		"webpack": "latest",
+		"webpack-cli": "latest"
+	},
+	"scripts": {
+		"debug-openchemlib": "grok publish --rebuild",
+		"release-openchemlib": "grok publish --rebuild --release",
+		"build-openchemlib": "webpack",
+		"build": "webpack",
+		"debug-openchemlib-dev": "grok publish dev --rebuild",
+		"release-openchemlib-dev": "grok publish dev --rebuild --release",
+		"debug-openchemlib-public": "grok publish public --rebuild",
+		"release-openchemlib-public": "grok publish public --rebuild --release"
+	}
+}

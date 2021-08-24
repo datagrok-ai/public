@@ -46,4 +46,3 @@ content.appendChild(ui.bigButton('Toggle enabled', function () {
 content.appendChild(ui.bigButton('Reset', reset));
 
 v.root.appendChild(content);
-grok.shell.addView(v);

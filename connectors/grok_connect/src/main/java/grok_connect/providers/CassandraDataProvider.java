@@ -8,7 +8,8 @@ import grok_connect.connectors_info.*;
 
 
 public class CassandraDataProvider extends JdbcDataProvider {
-    public CassandraDataProvider() {
+    public CassandraDataProvider(ProviderManager providerManager) {
+        super(providerManager);
         driverClassName = "com.github.cassandra.jdbc.CassandraDriver";
 
         descriptor = new DataSource();

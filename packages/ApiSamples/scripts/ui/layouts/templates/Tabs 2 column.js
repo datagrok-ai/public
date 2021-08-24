@@ -16,4 +16,4 @@ let view = grok.shell.newView('Tabs 2 Column', [
   
   view.box = true;
   
-$('.layout .ui-div').css('border','1px dashed var(--grey-2)');
+$('.layout .ui-box').css('border','1px dashed var(--grey-2)');

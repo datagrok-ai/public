@@ -3,74 +3,57 @@
 //language: javascript
 
 let options = {
-  id: '01-701-1015',
   series: [
     {
       tableName: 'lb2',
-      title: 'outside title 0',
+      title: 'statusChart',
       type: 'scatter',
       x: 'LBDY',
       y: 'LBTEST',
+      // extraFields is an array to load into echart data arrays
+      // all fields later combined into one array [x, y, extraFields]
+      // user can address fields by index, for instance index 3 means field "LBORNRLO"
       extraFields: ['LBORRES', 'LBORNRLO', 'LBORNRHI'],
-      yType: 'category',
+      yType: 'category',                // can be 'value' or 'category'
       statusChart: {
-        field: 2,
-        value: ["Basophils", "Urate", "Glucose"],
-        splitByColumnName: 'LBTEST',
-        categories: ["Basophils", "Urate", "Glucose"],
-        minField: 'LBORNRLO',
-        maxField: 'LBORNRHI',
-        maxLimit: 5,
+        valueField: 2,                  // index of field with test value
+        splitByColumnName: 'LBTEST',    // column to get categories
+        categories: ["Basophils", "Urate", "Glucose"], // fixed categories
+        minField: 3,                    // min and max normal value 
+        maxField: 4,                    // will be displayed with default color, otherwises "red"
+        maxLimit: 5,                    // max number of categories
+        alertColor: 'red',
       },
-      markerShape: 'square',
-      height: '1flex',
+      markerShape: 'circle',
+      height: '1flex',                  // height can be '30px', '20%', '3flex'
       show: 1,
-      visualMapOld: {
-        type: 'piecewise',
-        column: 'LBSEQ',
-        pieces: [
-          { min: 20, max: 250, color: ['red'] },
-        ],
-        dimension: 2,
-      },
-      visualMap: {
-        type: 'statusChart',
-        column: 2,
-        minColumn: 3,
-        maxColumn: 4,
-        color: 'red',
-        pieces: [
-          { min: 20, max: 250, color: ['red'] },
-        ],
-        dimension: 2,
-      },
     },
 
     // timeLines
     {
       tableName: 'ae__2__lb__2_',
-      title: 'outside title 1',
+      title: 'Timelines',
       type: 'timeLine',
-      y: 'AETERM',
-      x: ['AESTDY', 'AEENDY'],
+      y: 'AETERM',                      // category column
+      x: ['AESTDY', 'AEENDY'],          // [startTime, endTime]
       yType: 'category',
-      color: 'red',
-      markerShape: 'square',
+      color: 'red',                     // color of marker
+      markerShape: 'circle',
       height: '2flex',
       show: 1,
     },
 
-    // linechart with filter 
+    // multi linechart 
     {
       tableName: 'lb2',
-      title: 'outside title 0',
+      title: 'Multi Linechat',
       type: 'line',
       multi: true,
       x: 'LBDY',
       y: 'LBSTRESN',
-      splitByColumnName: 'LBTEST',
-      categories: ["Basophils", "Urate", "Glucose"],
-      maxLimit: 5,
+      splitByColumnName: 'LBTEST',                    // get categories from this column
+      categories: ["Basophils", "Urate", "Glucose"],  // fixed categories
+      maxLimit: 5,                                    // max number of linecharts 
       yType: 'value',
       markerShape: 'square',
       height: '1flex',
@@ -92,6 +75,7 @@ async function func1() {
     console.log('Table found: ', table.name);
     if (table.name == 'ae__2__lb__2_') {
       table.filter.init(e => {
+        return 1; // no filter to show all lines
         let row = table.row(e);
         return row["USUBJID"] === myId;
       })

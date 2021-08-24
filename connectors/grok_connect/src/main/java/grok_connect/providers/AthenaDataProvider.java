@@ -8,7 +8,8 @@ import grok_connect.connectors_info.*;
 
 
 public class AthenaDataProvider extends JdbcDataProvider {
-    public AthenaDataProvider() {
+    public AthenaDataProvider(ProviderManager providerManager) {
+        super(providerManager);
         driverClassName = "com.simba.athena.jdbc41.Driver";
 
         Property encode = new Property(Property.STRING_TYPE, "s3OutputEncOption",

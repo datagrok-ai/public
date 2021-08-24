@@ -198,7 +198,7 @@ export function defineAxolabsPattern() {
   function updateOutputExamples() {
     ssOutputExample.value = translateSequence(ssInputExample.value, ssBases, ssPtoLinkages, ssFiveModification, ssThreeModification, firstSsPto.value);
     if (createAsStrand.value)
-      asOutputExample.value = translateSequence(asInputExample.value, asBases, asPtoLinkages, asThreeModification, asFiveModification, firstAsPto.value);
+      asOutputExample.value = translateSequence(asInputExample.value, asBases, asPtoLinkages, asFiveModification, asThreeModification, firstAsPto.value);
   }
 
   function updateSvgScheme() {
@@ -550,7 +550,7 @@ export function defineAxolabsPattern() {
         addColumnWithIds(tables.value, inputIdColumn.value, getShortName(saveAs.value));
       addColumnWithTranslatedSequences(tables.value, inputSsColumn.value, ssBases, ssPtoLinkages, ssFiveModification, ssThreeModification, firstSsPto.value);
       if (createAsStrand.value)
-        addColumnWithTranslatedSequences(tables.value, inputAsColumn.value, asBases, asPtoLinkages, asThreeModification, asFiveModification, firstAsPto.value);
+        addColumnWithTranslatedSequences(tables.value, inputAsColumn.value, asBases, asPtoLinkages, asFiveModification, asThreeModification, firstAsPto.value);
       grok.shell.v = grok.shell.getTableView(tables.value);
       grok.shell.info(((createAsStrand.value) ? "Columns were" : "Column was") + " added to table '" + tables.value + "'");
     }
@@ -575,9 +575,9 @@ export function defineAxolabsPattern() {
   );
 
   let asInputExample = ui.textInput('Antisense Strand', generateExample(asLength.value, sequenceBase.value),() => {
-    asOutputExample.value = translateSequence(asInputExample.value, asBases, asPtoLinkages, asThreeModification, asFiveModification, firstSsPto.value);
+    asOutputExample.value = translateSequence(asInputExample.value, asBases, asPtoLinkages, asFiveModification, asThreeModification, firstSsPto.value);
   });
-  let asOutputExample = ui.textInput(' ', translateSequence(asInputExample.value, asBases, asPtoLinkages, asThreeModification, asFiveModification, firstSsPto.value));
+  let asOutputExample = ui.textInput(' ', translateSequence(asInputExample.value, asBases, asPtoLinkages, asFiveModification, asThreeModification, firstSsPto.value));
   (asInputExample.input as HTMLElement).style.resize = 'none';
   (asInputExample.input as HTMLElement).style.minWidth = exampleMinWidth;
   (asOutputExample.input as HTMLElement).style.resize = 'none';

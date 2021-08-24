@@ -1,6 +1,322 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-08-20 Dev build 0.93.11
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.11`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Top menu and Popup menu. Add ".endgroup()" method for closing the group of items 
+* DevTools package 
+* (Bug) JS API: "combo-popup.js" example doesn't work 
+* Update Tabs 2 column.js 
+* Added local help docs to .gitignore (/xamgle/web/help/) 
+* Adjust tooltip delay 
+* JS API: ScatterPlot.onResetView 
+* #53 Tutorials package: Visualization 
+* #53 Tutorials package: code clean-up 
+* Data on demand (WIP)
+* Package content validation: export statement 
+* JS API: optional parameter in ui.image() 
+* #53 Tutorials package: tutorial runner 
+* JS API: update ScatterPlot event args types 
+* (Bug) Bar chart: filter fails in a second bar chart  (WIP)
+* (Bug) Datlas threads stuck unexpectedly 
+* AddNewColumn: onMetadataChanged 
+
+
+# 2021-08-18 Dev build 0.93.10
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.10`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* PowerPack: Described Power Widgets and Power Search 
+* Document drawing events 
+* Update README.md 
+* (Bug) JSAPI: Can't pass null to the function because of validation 
+
+
+# 2021-08-18 Dev build 0.93.9
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.9`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* datagrok-tools: update package template (WIP)
+* #53 Tutorials package 
+* Functions: int (WIP)
+* (Bug) Tools: False breakpoints in VS Code debugging (WIP)
+* Pie Chart: improve default layout 
+* (Bug) Grok connect: batch mode sometimes returns the first data frame instead of the last 
+* Viewers: Legend usage refactoring 
+* Wiki: Query View: Updated documentation 
+* Tooling: Actualize datagrok-tools for the onboarding (WIP)
+* Wiki: Switch to a relevant CVM before the new version 
+* Core: Viewers: a mode with grayed-out column names for ColumnComboBox (WIP)
+* Tutorials package (WIP)
+* Grok connect: batch mode sometimes returns the first data frame instead of the last 
+* (Bug) Can't select rows using match() with int  
+* (Bug) "NullError: method not found: '_rowCount'" after query cancel 
+* (Bug) "Throw of null." after query cancel 
+* Grok connect: don't show canceled query as an error 
+* Grok connect: debug queries using inspector and property panel 
+* (Bug) Package Properties: default values are ignored 
+* (Bug) Bar chart: filter fails in a second bar chart  
+* (Bug) onColumnsAdded/onColumnsRemoved args don't have a list of columns 
+* (Bug) Histogram: Show X Axis property hides X and Y axes 
+* AddNewColumn: set the formula tag before adding a column to the dataframe 
+* JS API: corrected layout of ui.switchInput 
+* (Bug) Bar Chart: Loss of zoom upon selection 
+* Datlas: WatchDog timer (WIP)
+* Update tooltip-events.js 
+* Bar Chart: Ability to drag chart after zooming 
+* Update README.md 
+* Fixed markup for some links to videos 
+* Fixed a bug that created two views of the same object 
+
+
+# 2021-08-13 Dev build 0.93.8
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.8`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Widgets update 
+* Pie Chart: Auto determine whether to display labels on small segments 
+* Cheminformatics: prepare an intro for developers (WIP)
+* Minor cleanup 
+* JS API: Fixed logic for "editor-for" annotation 
+* Update README.md 
+* Removed unused file. 
+* Frontend track: WIP 
+* Pie Chart: Sort types for pies 
+* added widget ordering 
+* image thumbnails for learn widget 
+* df.dialogs.addNewColumn fix 
+* Wiki: Dataframe (WIP)
+* update learn widget, add new css 
+* Change endpoints to use new divided cvm images (WIP)
+
+
+# 2021-08-12 Dev build 0.93.7
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.7`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* DevTools: annotate API examples 
+* Wiki: Parameterized queries (WIP)
+* BatchCall function (WIP)
+* (Bug) Data sync doesn't work if table was refreshed 
+* (Bug) Queries: No use of input parameters in simple choice lists 
+* Function parameter editor (WIP)
+
+
+# 2021-08-12 Dev build 0.93.6
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.6`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Removed the "shift-drag on axes" action description 
+* (Bug) Scatter Plot: Points are not displayed if you change the markers type from hamburger menu 
+* #49, #51: Ketcher and OpenChemLib sketchers: first working version 
+* JS API: grok.shell.view should look for a view instead of a table view 
+* (Bug) Scatter Plot: Color scheme does not change until you change the viewer size 
+* Exercises: Simplify Exercises (WIP)
+* JS API: Special logic of passing input to the ui.dialog() 
+* Wiki: Dataframe (WIP)
+* (Bug) Package Properties: default values are ignored (WIP)
+* Packages: JavaScript formatting 
+* Grok connect: allow calls without mainCallId 
+* CLI: documentation improvements 
+* (Bug) Color Coding | Conditional: For Scatter Plot inside the Trellis, colors are not turned on instantly, but only if you "pull" the corresponding plot 
+* Fixed the typings. 
+* (Bug) Sequence Translator: additional modifications are on the wrong side of antisense strand 
+* Tooling: Actualize datagrok-tools for the onboarding (WIP)
+* Introduction to cheminformatics 
+* Pie Chart: Auto width for legend 
+
+
+# 2021-08-10 Dev build 0.93.5
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.5`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* (Bug) Pie Chart: If you add Shift, then area when hovering over the segments is displayed incorrectly 
+* (Bug) Pie Chart: Chart is cut-off at the left if you add shift 
+* New PowerPack grid styling 
+* Function parameter editor (WIP)
+* (Bug) Form: Title background remains after disabling the design mode 
+* DevTools package (WIP)
+* (Bug) Line Chart: "Default Line Color" property does not change the chart color 
+* Update scripting.md 
+* JS API: Pass InputBase to Dialog() insted of InpuBase.root 
+* Add "Switch" control to JS API 
+* Tooling: Actualize datagrok-tools for the onboarding (WIP)
+* Add NC: Open column selector when type $ in expression 
+* update ui.icons 
+* Create toolbar.js 
+* Update icons.js 
+* New widgets styling 
+* Update power-pack.css 
+* toolbox example 
+* Update toolbox.js 
+* Change endpoints to use new divided cvm images (WIP)
+* JS API: Move function initFormulaAccelerators from top level ui to tools or misc (WIP)
+* Implement function scheduler 
+
+
+# 2021-08-09 Dev build 0.93.4
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.4`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Wiki: Simplify Develop and Getting Started (WIP)
+* Bar Chart: with the `include nulls` property off, the legend should not mention (no value) 
+* Custom ML: show all columns as features and labels  
+* Ability to adjust socket timeouts 
+* MultiPlot: add category selection to the mulit linechart 
+* Tooling: Actualize datagrok-tools for the onboarding (WIP)
+* datagrok-tools: update package template (WIP)
+* Functions: Categories order 
+* (Bug) Conditional Coloring: Empty cells are coloured if all values in this column are empty 
+* Merge branch 'master' of https://bitbucket.org/skalkin/reddata 
+* Simplify info panels example 
+* Viewers: render boolean values as categories on axes 
+* (Bug) Grid: empty cells are colored in gray and cell borders are not visible for categorically and linearly colored columns 
+* Wiki: Dataframe (WIP)
+* (Bug) Bar chart: If you select the area with only the upper bars (by Alt+drag), the scroll bar will not appear 
+* (Bug) Bar Chart: error when a boolean column is selected as a "stack" column 
+* MultiPlot: minor bugs fix and add advanced example to Readme.md 
+* MultiPlot: added file extension 
+* Function parameter editor (WIP)
+* (Bug) Bar chart: null values ​​are not indicated 
+* Bar Chart \- minor code cleanup. 
+* Exercises: Simplify Exercises (WIP)
+* JS API: Focus for opened dialogs 
+* (Bug) Grid: Error after changing the column width 
+* Oligo Batch Calculator: add compatibility with Axolabs sequences 
+* (Bug) Grid: scroll bar should be below the header (does not currently work for tall headers) 
+* Package content validation: function parameters 
+* Usage widget and new for UsageAnalysis queries 
+* (Bug) Bar Chart: vertical scroll bar is visible as soon as you open a bar chart 
+* #49: Ketcher \- initial update 
+* Fixed type annotations 
+* JS API: ability to set current object to SemanticValue 
+* (Bug) Pie Chart: Legend does not react to changes in the table 
+* (Bug) Correlation Plot: When zooming Scatter Plot on the PP table becomes the current object 
+* #49: Ketcher \- work in progress 
+* Chem: ability to switch sketchers (OpenChemLib, Marvin, Ketcher, etc) (WIP)
+* Update the docs 
+* Update the links 
+* #51: OpenChemLib package: initial update 
+* #49, #51: Ketcher and OpenChemLib sketchers: API harmonization 
+* #49, #51: Ketcher and OpenChemLib sketchers: code cleanup and harmonization 
+* Bar Chart: leave the column combobox on the X axis empty when the aggregation is `count` 
+* (Bug) Pie Chart: "Show Inner Percent" property works the other way around 
+* #49 Ketcher: import fix, add emitted js files to .gitignore 
+* #51 OpenChemLib sketcher: fix external modules imports 
+* API: Column's .toString should return a boolean value 
+* Change endpoints to use new divided cvm images (WIP)
+* Fixed a test 
+* Grok Connect: cancelable queries (WIP)
+* Update learning-widget.ts 
+
+
+# 2021-08-04 Dev build 0.93.3
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.3`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* (Bug) View.grid throws an exception if there is no grid in the layout 
+
+
+# 2021-08-04 Dev build 0.93.2
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.2`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* (Bug) Bar chart: null values ​​are not indicated 
+* MultiPlot: change color of marker of the status chart according to value and min and max columns 
+* (Bug) Scatter plot \- showSizeSelector  
+* JS API: ui.image, redirects on the new page when the link doesn't provided 
+* (Bug) AddNC: Column names in formula are case sensitive 
+* Update Index 
+* datagrok-tools: update package template (WIP)
+* (Bug) Bar chart: Exception if reduce sliders when zooming 
+* Ability to adjust socket timeouts 
+* (Bug) View.grid throws an exception if there is no grid in the layout 
+* Datagrok API and system samples, add cross linking to improve connectivity (WIP)
+* Documented the Color class. 
+
+
 # 2021-08-03 Dev build 0.93.1
 
 ## Latest Docker Images

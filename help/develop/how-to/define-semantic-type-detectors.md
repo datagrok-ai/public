@@ -39,6 +39,12 @@ Notice how the column properties are used. Such properties as `col.name` help
 determine a semantic type, but `col.semType` actually assigns the detected
 type to the column.
 
+To get a template for a detector function, run this command from your package directory:
+
+```shell
+grok add detector <semantic-type-name>
+```
+
 A column can have only one semantic type. In cases when several detectors
 match a column, its semantic type depends on the order in which the detectors
 were triggered. Standard platform detectors do not necessarily get

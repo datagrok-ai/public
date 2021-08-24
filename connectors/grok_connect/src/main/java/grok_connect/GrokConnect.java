@@ -17,14 +17,22 @@ import grok_connect.connectors_info.*;
 
 
 public class GrokConnect {
+
+    private static ProviderManager providerManager;
+    private static Logger logger;
+
     public static void main(String[] args) {
         int port = 1234;
         String uri = "http://localhost:" + port;
 
         try {
             BasicConfigurator.configure();
-            Logger logger = Logger.getLogger("org.eclipse.jetty");
-            logger.setLevel(Level.ERROR);
+            logger = Logger.getLogger(GrokConnect.class.getName());
+            logger.setLevel(Level.INFO);
+
+            logMemory();
+
+            providerManager = new ProviderManager(logger);
 
             CustomDriverManager.printDriverNames();
 
@@ -33,7 +41,7 @@ public class GrokConnect {
 
             System.out.printf("grok_connect: Running on %s\n", uri);
             System.out.println("grok_connect: Connectors: " + String.join(", ",
-                    DataProvider.getAllProvidersTypes()));
+                    providerManager.getAllProvidersTypes()));
         } catch (Throwable ex) {
             System.out.println("ERROR: " + ex.toString());
             System.out.print("STACK TRACE: ");
@@ -47,16 +55,19 @@ public class GrokConnect {
                 .create();
 
         post("/query", (request, response) -> {
+            logMemory();
 
             BufferAccessor buffer;
             DataQueryRunResult result = new DataQueryRunResult();
 
             try {
                 FuncCall call = gson.fromJson(request.body(), FuncCall.class);
+                call.log = "";
                 call.setParamValues();
+                call.afterDeserialization();
                 System.out.println(call.func.query);
                 DateTime startTime = DateTime.now();
-                DataProvider provider = DataProvider.getByName(call.func.connection.dataSource);
+                DataProvider provider = providerManager.getByName(call.func.connection.dataSource);
                 DataFrame dataFrame = provider.execute(call);
                 double execTime = (DateTime.now().getMillis() - startTime.getMillis()) / 1000.0;
 
@@ -66,14 +77,21 @@ public class GrokConnect {
                 result.execTime = execTime;
                 result.columns = dataFrame.columns.size();
                 result.rows = dataFrame.rowCount;
+                result.log = call.log;
                 // TODO Write to result log there
 
-                System.out.printf("%s: Execution time: %f s, Columns/Rows: %d/%d, Blob size: %d bytes\n",
+                String logString = String.format("%s: Execution time: %f s, Columns/Rows: %d/%d, Blob size: %d bytes\n",
                         result.timeStamp,
                         result.execTime,
                         result.columns,
                         result.rows,
                         result.blobLength);
+
+                if (call.debugQuery) {
+                    result.log += logMemory();
+                    result.log += logString;
+                }
+                logger.info(logString);
 
                 buffer = new BufferAccessor(result.blob);
                 buffer.bufPos = result.blob.length;
@@ -98,68 +116,76 @@ public class GrokConnect {
 
         post("/test", (request, response) -> {
             DataConnection connection = gson.fromJson(request.body(), DataConnection.class);
-            DataProvider provider = DataProvider.getByName(connection.dataSource);
+            DataProvider provider = providerManager.getByName(connection.dataSource);
             response.type(MediaType.TEXT_PLAIN);
             return provider.testConnection(connection);
         });
 
         post("/query_table", (request, response) -> {
+            logMemory();
             try {
                 DataConnection connection = gson.fromJson(request.body(), DataConnection.class);
                 TableQuery query = gson.fromJson((String)connection.parameters.get("queryTable"), TableQuery.class);
-                DataProvider provider = DataProvider.getByName(connection.dataSource);
+                DataProvider provider = providerManager.getByName(connection.dataSource);
                 DataFrame result = provider.queryTable(connection, query);
                 buildResponse(response, result.toByteArray());
             } catch (Throwable ex) {
                 buildExceptionResponse(response, printError(ex));
             }
 
+            logMemory();
             return response;
         });
 
         post("/query_table_sql", (request, response) -> {
+            logMemory();
             String result = "";
             try {
                 DataConnection connection = gson.fromJson(request.body(), DataConnection.class);
                 TableQuery query = gson.fromJson(connection.get("queryTable"), TableQuery.class);
-                DataProvider provider = DataProvider.getByName(connection.dataSource);
+                DataProvider provider = providerManager.getByName(connection.dataSource);
                 result = provider.queryTableSql(connection, query);
             } catch (Throwable ex) {
                 buildExceptionResponse(response, printError(ex));
             }
 
+            logMemory();
             return result;
         });
 
         post("/schemas", (request, response) -> {
+            logMemory();
             try {
                 DataConnection connection = gson.fromJson(request.body(), DataConnection.class);
-                DataProvider provider = DataProvider.getByName(connection.dataSource);
+                DataProvider provider = providerManager.getByName(connection.dataSource);
                 DataFrame result = provider.getSchemas(connection);
                 buildResponse(response, result.toByteArray());
             } catch (Throwable ex) {
                 buildExceptionResponse(response, printError(ex));
             }
 
+            logMemory();
             return response;
         });
 
         post("/schema", (request, response) -> {
+            logMemory();
             try {
                 DataConnection connection = gson.fromJson(request.body(), DataConnection.class);
-                DataProvider provider = DataProvider.getByName(connection.dataSource);
+                DataProvider provider = providerManager.getByName(connection.dataSource);
                 DataFrame result = provider.getSchema(connection, connection.get("schema"), connection.get("table"));
                 buildResponse(response, result.toByteArray());
             } catch (Throwable ex) {
                 buildExceptionResponse(response, printError(ex));
             }
 
+            logMemory();
             return response;
         });
 
         get("/conn", (request, response) -> {
             List<DataSource> dataSources = new ArrayList<>();
-            for (DataProvider provider : DataProvider.Providers)
+            for (DataProvider provider : providerManager.Providers)
                 dataSources.add(provider.descriptor);
             response.type(MediaType.APPLICATION_JSON);
             return gson.toJson(dataSources);
@@ -179,6 +205,14 @@ public class GrokConnect {
                     "    \"name\": \"GrokConnect server\",\n" +
                     "    \"version\": \"1.0.3\"\n" +
                     "}";
+        });
+
+        get("/log_memory", (request, response) -> logMemory());
+
+        post("/cancel", (request, response) -> {
+            FuncCall call = gson.fromJson(request.body(), FuncCall.class);
+            providerManager.queryMonitor.cancelStatement(call.id);
+            return null;
         });
     }
 
@@ -211,5 +245,16 @@ public class GrokConnect {
             put("errorMessage", errorMessage);
             put("errorStackTrace", errorStackTrace);
         }};
+    }
+
+    private static String logMemory() {
+        long used = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+        long free = Runtime.getRuntime().maxMemory() - used;
+        long total = Runtime.getRuntime().maxMemory();
+
+        String str = String.format("Memory: free: %s(%.2f%%), used: %s", free, 100.0 * free/total, used);
+
+        logger.info(str);
+        return str;
     }
 }

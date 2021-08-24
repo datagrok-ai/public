@@ -58,6 +58,7 @@ export class MultiPlotViewer extends DG.JsViewer {
   typeComboElements : HTMLElement[] = [];
   showHideElements : HTMLElement[] = [];
   closeElements : HTMLElement[] = [];
+  categoryCombos : HTMLElement[] = [];
   plots = [];
   box: DOMRect;
   visiblePlotsCount: number;
@@ -109,12 +110,13 @@ export class MultiPlotViewer extends DG.JsViewer {
     });
     if (!this.echart) this.echart = echarts.init(this.root, null, {renderer: 'canvas'});
     this.addEchartHandlers();
-    this.createElements();
     this.updateOptionsPositions();
     this.updatePlots();
     if (this.checkTablesLoaded()) {
       this.updateFilter();
     }
+    this.createElements();
+
     this.render();
   } // init
 
@@ -180,6 +182,10 @@ export class MultiPlotViewer extends DG.JsViewer {
 
       if (this.closeElements[i]) {
         this.closeElements[i].style.top = heightData[i].titleTop + 7 + this.controlsTopShift + 'px';
+      }
+
+      if (this.plots[i].categCombo) {
+        this.plots[i].categCombo.root.style.top = heightData[i].titleTop + 3 + this.controlsTopShift + 'px';
       }
 
       if (!this.plots[i].show) continue;
@@ -257,6 +263,12 @@ export class MultiPlotViewer extends DG.JsViewer {
         itemStyle: {},
       };
 
+      if (plot.statusChart) {
+        currentSeries.itemStyle = {
+          color: this.getItemStyleColorFunc(plot.visualMap, plot),
+        };
+      }
+
       if (plot.visualMap) {
         if (plot.visualMap.pieces) {
           currentSeries.itemStyle = {
@@ -331,19 +343,30 @@ export class MultiPlotViewer extends DG.JsViewer {
   // create function to use as EChart callback with Datagrok mixins
   // get callback function to define color of marker
   getItemStyleColorFunc(visualMap: any, plot: any) : any {
+    let customColorFunc : any = () => {};
     const defaultColor = this.paletteColors[0];
     const selectionColor = this.paletteColors[1];
-    const min = visualMap.pieces[0].min;
-    const max = visualMap.pieces[0].max;
-    const vMapColor = visualMap.pieces[0].color;
     const table = this.tables[plot.tableName];
-    let customColorFunc = (e) => {
-      return e.data[2] > min && e.data[2] < max ? vMapColor : defaultColor;
-    };
-    if (visualMap.type === 'statusChart') {
+    if (visualMap) {
+      const min = visualMap.pieces[0].min;
+      const max = visualMap.pieces[0].max;
+      const vMapColor = visualMap.pieces[0].color;
       customColorFunc = (e) => {
-        return e.data[visualMap.column] > e.data[visualMap.minColumn] &&
-        e.data[visualMap.column] < e.data[visualMap.maxColumn] ? defaultColor : visualMap.color;
+        return e.data[2] > min && e.data[2] < max ? vMapColor : defaultColor;
+      };
+    }
+    if (plot.statusChart) {
+      console.error('status chart get color func');
+      customColorFunc = (e) => {
+        let val = e.data[plot.statusChart.valueField];
+        let min = e.data[plot.statusChart.minField];
+        let max = e.data[plot.statusChart.maxField];
+        if (typeof val == 'string') val = parseFloat(val);
+        if (typeof min == 'string') min = parseFloat(min);
+        if (typeof max == 'string') max = parseFloat(max);
+
+        return val > min && val < max ? 'green' : 'red';
+        return val > min && val < max ? defaultColor : plot.statusChart.alertColor;
       };
     }
     function f(e) {
@@ -748,6 +771,28 @@ export class MultiPlotViewer extends DG.JsViewer {
       inputClose.style.flexDirection = 'row';
       this.closeElements.push(inputClose);
       this.root.appendChild(inputClose);
+    }
+
+    // create combobox with categories
+    this.categoryCombos = [];
+    for (let i=0; i<this.plots.length; i++) {
+      const plot = this.plots[i];
+      if (plot.allCats) {
+        const categCombo: any = ui.choiceInput('', plot.currentCat, plot.allCats, (e) => {
+          plot.currentCat = e;
+          plot.condition.value = e;
+          this.updateFilter();
+          this.render();
+        });
+        this.categoryCombos.push(categCombo);
+        plot.categCombo = categCombo;
+        this.root.appendChild(categCombo.root);
+        categCombo.root.style.position = 'absolute';
+        categCombo.root.style.left = '78px';
+        categCombo.root.style['flex-direction'] = 'row';
+        categCombo.root.style.top = (40 * i) + 'px';
+        categCombo.root.querySelector('select').style.borderBottom = '0px';
+      }
     }
   } // createElements
 

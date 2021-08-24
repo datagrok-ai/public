@@ -1,7 +1,9 @@
 CLI is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.
-It showcases the ability to execute custom CLI tools. 
+It showcases the ability to wrap CLI (command-line interface) tools. 
 
-Here are the files and directories of particular interest:
+**Usage**: run the "STR Tool" function
+
+Implementation notes:
 
 * [str-tool.c](https://github.com/datagrok-ai/public/blob/master/packages/CLI/src/str-tool.c)
   : "str-tool" CLI tool source code

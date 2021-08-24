@@ -7,7 +7,8 @@ import grok_connect.connectors_info.*;
 
 
 public class VerticaDataProvider extends JdbcDataProvider {
-    public VerticaDataProvider() {
+    public VerticaDataProvider(ProviderManager providerManager) {
+        super(providerManager);
         driverClassName = "com.vertica.jdbc.Driver";
 
         descriptor = new DataSource();
