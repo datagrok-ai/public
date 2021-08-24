@@ -11,7 +11,7 @@ let sp = DG.Viewer.scatterPlot(table, {
   markerDefaultSize: 5,
   markerType: 'circle',
   colorColumnName: 'site',
-  legendVisibilityMode: 'Never'
+  legendVisibility: 'Never'
 });
 
 let hist = DG.Viewer.histogram(table, {

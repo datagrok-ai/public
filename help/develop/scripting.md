@@ -219,6 +219,23 @@ grok.functions.register({
 ![Script Parameter Suggestions](../uploads/features/script-param-suggestions.gif "Script Parameter Suggestions") 
 
 
+### Parameter editors
+
+Use parameter editor to set the output of another function to the parameter value. All function parameters will be seamlessly integrated to the function call form.
+
+```
+//input: dataframe table {editor: Package:DataQuery}
+//input: dataframe table {editor: Package:DataQuery(1, "France")}
+```
+Here, Datagrok will execute the `Package:DataQuery` function right before your script and pass the output table to the script as an input parameter.
+
+```
+//input: dataframe table {editor: PowerPack:DataQuery; editor-button: Outliers...}
+```
+
+Specify the `editor-button` parameter to add a button that executes your subfunction separately and allows the user to check the output before starting the script.
+
+
 ## Header Parameters
 
 | Parameter   | Description                        |
@@ -373,7 +390,7 @@ You can use these fields to filter scripts with [smart search](../overview/smart
 
 ## Videos
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/p7_qOU_IzLM?start=954" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+[Dev Meeting 1: Getting Started — Cross Language Support](https://www.youtube.com/watch?v=p7_qOU_IzLM&t=954s)
 
 See also:
 

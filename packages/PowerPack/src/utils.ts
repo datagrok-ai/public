@@ -39,6 +39,10 @@ export function widgetHost(w: DG.Widget): HTMLElement {
     }
   }
 
+  if (w.props.hasProperty('order')){
+    host.style.order = w.props.order
+  }
+
   let header = ui.div([
     ui.divText(w.props.hasProperty('caption') ? w.props.caption : '', 'd4-dialog-title'),
     ui.icons.settings(() => { grok.shell.o = w}, 'Edit settings'),

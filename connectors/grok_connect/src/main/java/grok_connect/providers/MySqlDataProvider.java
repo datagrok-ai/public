@@ -9,7 +9,8 @@ import grok_connect.connectors_info.*;
 
 
 public class MySqlDataProvider extends JdbcDataProvider {
-    public MySqlDataProvider() {
+    public MySqlDataProvider(ProviderManager providerManager) {
+        super(providerManager);
         driverClassName = "com.mysql.cj.jdbc.Driver";
 
         descriptor = new DataSource();

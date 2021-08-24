@@ -7,7 +7,8 @@ import grok_connect.connectors_info.*;
 
 
 public class HBaseDataProvider extends JdbcDataProvider {
-    public HBaseDataProvider() {
+    public HBaseDataProvider(ProviderManager providerManager) {
+        super(providerManager);
         driverClassName = "org.apache.phoenix.queryserver.client.Driver";
 
         descriptor = new DataSource();

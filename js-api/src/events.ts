@@ -4,7 +4,7 @@ import { toJs } from './wrappers';
 import { Observable } from "rxjs";
 import { Package } from './entities';
 import { Accordion } from "./widgets";
-import { ViewLayout } from './view';
+import { View, ViewLayout } from './view';
 
 let api = <any>window;
 
@@ -110,11 +110,11 @@ export class Events {
 
   get onViewChanged(): rxjs.Observable<any> { return __obs('grok-view-changed'); }
 
-  get onViewAdded(): rxjs.Observable<any> { return __obs('grok-view-added'); }
+  get onViewAdded(): rxjs.Observable<View> { return __obs('grok-view-added'); }
 
-  get onViewRemoved(): rxjs.Observable<any> { return __obs('grok-view-removed'); }
+  get onViewRemoved(): rxjs.Observable<View> { return __obs('grok-view-removed'); }
 
-  get onViewRenamed(): rxjs.Observable<any> { return __obs('grok-view-renamed'); }
+  get onViewRenamed(): rxjs.Observable<View> { return __obs('grok-view-renamed'); }
 
   /** Sample: {@link https://public.datagrok.ai/js/samples/events/layout-events} */
   get onViewLayoutGenerated(): rxjs.Observable<ViewLayout> { return __obs('d4-view-layout-generated'); }

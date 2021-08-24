@@ -233,7 +233,7 @@
       "id": "88a265d7-c3e7-4fe5-9db9-ea806569ee2b",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span-model-(5-categories)",
+      "target": "name=span-model",
       "targets": [
         ["css=.d4-entity-markup-row:nth-child(1)", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div[2]/div/div/span", "xpath:idRelative"],
@@ -245,7 +245,7 @@
       "id": "98525c19-cd7e-48a6-bac9-6b5b02482c3d",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span-mpg-(min-18.70,-max-22.80)",
+      "target": "name=span-mpg",
       "targets": [
         ["css=.d4-entity-markup-row:nth-child(1)", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div[2]/div/div/span", "xpath:idRelative"],
@@ -257,7 +257,7 @@
       "id": "483b5cf9-3139-4acf-a651-1fc3d0e5faf4",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span-cyl-(min-4,-max-8)",
+      "target": "name=span-cyl",
       "targets": [
         ["css=.d4-entity-markup-row:nth-child(1)", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div[2]/div/div/span", "xpath:idRelative"],
@@ -269,7 +269,7 @@
       "id": "65748861-fe1a-499c-81f9-5a5fc3cfd717",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span-disp-(min-108,-max-360)",
+      "target": "name=span-disp",
       "targets": [
         ["css=.d4-entity-markup-row:nth-child(1)", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div[2]/div/div/span", "xpath:idRelative"],
@@ -281,7 +281,7 @@
       "id": "443ce558-5860-49b2-8364-fbeec228693c",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span-hp-(min-93,-max-175)",
+      "target": "name=span-hp",
       "targets": [
         ["css=.d4-entity-markup-row:nth-child(1)", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div[2]/div/div/span", "xpath:idRelative"],
@@ -293,7 +293,7 @@
       "id": "c21827dd-8142-4c12-9809-51a0d4864c94",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span-drat-(min-3.08,-max-3.90)",
+      "target": "name=span-drat",
       "targets": [
         ["css=.d4-entity-markup-row:nth-child(1)", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div[2]/div/div/span", "xpath:idRelative"],
@@ -305,7 +305,7 @@
       "id": "553f0aa4-e237-4ab4-b24f-a8caad18db26",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span-wt-(min-2.32,-max-3.44)",
+      "target": "name=span-wt",
       "targets": [
         ["css=.d4-entity-markup-row:nth-child(1)", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div[2]/div/div/span", "xpath:idRelative"],
@@ -317,7 +317,7 @@
       "id": "2046249d-46cb-4f62-a455-c19e7048ca15",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span-qsec-(min-16.46,-max-19.44)",
+      "target": "name=span-qsec",
       "targets": [
         ["css=.d4-entity-markup-row:nth-child(1)", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div[2]/div/div/span", "xpath:idRelative"],
@@ -329,7 +329,7 @@
       "id": "2bdf4236-1bb1-452e-9d7d-ec34094412cd",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span-vs-(min-0,-max-1)",
+      "target": "name=span-vs",
       "targets": [
         ["css=.d4-entity-markup-row:nth-child(1)", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div[2]/div/div/span", "xpath:idRelative"],
@@ -341,7 +341,7 @@
       "id": "8b7d4856-f3be-4d07-9ce6-c5ba1ff330a6",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span-am-(min-0,-max-1)",
+      "target": "name=span-am",
       "targets": [
         ["css=.d4-entity-markup-row:nth-child(1)", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div[2]/div/div/span", "xpath:idRelative"],
@@ -353,7 +353,7 @@
       "id": "a4c73f38-e001-46ed-ac3c-3a286e3dd97a",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span-gear-(min-3,-max-4)",
+      "target": "name=span-gear",
       "targets": [
         ["css=.d4-entity-markup-row:nth-child(1)", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div[2]/div/div/span", "xpath:idRelative"],
@@ -365,7 +365,7 @@
       "id": "2896fc3f-05b7-4f23-9e49-6eeb444d8cd7",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span-gear-(min-3,-max-4)",
+      "target": "name=span-gear",
       "targets": [
         ["css=.d4-entity-markup-row:nth-child(1)", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div[2]/div/div/span", "xpath:idRelative"],
@@ -377,7 +377,7 @@
       "id": "d12c5c56-a020-44c8-9466-a8c50121d5d3",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span-carb-(min-1,-max-4)",
+      "target": "name=span-carb",
       "targets": [
         ["css=.d4-entity-markup-row:nth-child(1)", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div[2]/div/div/span", "xpath:idRelative"],

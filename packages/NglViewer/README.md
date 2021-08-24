@@ -1,5 +1,4 @@
-FileEditors is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.
-It provides rich 3D visualization of the molecules. The package is based on the excellent
+NglViewer is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform that provides rich 3D visualization of the molecules. It is based on the excellent
 [NGL Viewer](https://nglviewer.org/) library developed by Alexander Rose.
 
 The following file formats are supported:

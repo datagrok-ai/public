@@ -483,7 +483,7 @@
       "id": "41857aec-2b1c-4f49-ab14-e51fa0185e4d",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span-r-(69-categories)",
+      "target": "name=span-r",
       "targets": [
         ["css=.fa-exclamation-circle", "css:finder"],
         ["xpath=//i[@name='icon-exclamation-circle']", "xpath:attributes"],
@@ -495,14 +495,14 @@
       "id": "cad4ac31-6457-44f7-b74f-bb6a76277ff4",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span-r-(2)-(4-categories)",
+      "target": "name=span-r-(2)",
       "targets": [],
       "value": ""
     }, {
       "id": "db60db67-e027-45b0-a1aa-773b4e35bdd1",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span-r-(3)-(2-categories)",
+      "target": "name=span-r-(3)",
       "targets": [],
       "value": ""
     }, {
@@ -513,17 +513,10 @@
       "targets": [],
       "value": ""
     }, {
-      "id": "3950a428-72a2-4876-955d-8b8bc5b8fe84",
-      "comment": "",
-      "command": "pause",
-      "target": "500",
-      "targets": [],
-      "value": ""
-    }, {
       "id": "8c661836-dc06-416d-8b14-9d50abd26ac6",
       "comment": "",
       "command": "pause",
-      "target": "500",
+      "target": "1000",
       "targets": [],
       "value": ""
     }, {

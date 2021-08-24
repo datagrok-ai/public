@@ -17,6 +17,7 @@ export const entExtract = {
   Script: (ent: DG.Script) => `let script = await grok.dapi.scripts.find("${ent.id}");`,
   Func: (ent: DG.Func) => `let func = DG.Func.find({ name: "${ent.name}" })[0];`,
   ViewLayout: (ent: DG.ViewLayout) => `let layout = await grok.dapi.layouts.find("${ent.id}");`,
+  View: (ent: DG.View) => `let view = grok.shell.view("${ent.name}");`,
 };
 
 export const helpUrls = {
@@ -27,6 +28,7 @@ export const helpUrls = {
   FileInfo: { wiki: 'https://datagrok.ai/help/develop/how-to/access-data', class: 'https://datagrok.ai/js-api/FileInfo' },
   Script: { wiki: 'https://datagrok.ai/help/develop/scripting', class: 'https://datagrok.ai/js-api/Script' },
   ViewLayout: { wiki: 'https://datagrok.ai/help/develop/how-to/layouts', class: 'https://datagrok.ai/js-api/ViewLayout' },
+  View: { wiki: 'https://datagrok.ai/help/develop/ui#views', class: 'https://datagrok.ai/js-api/View' },
 };
 
 export const tags = {
@@ -40,11 +42,7 @@ export const templates = {
 const str = await grok.dapi.files.readAsText("${ent.fullPath}");
 
 // Read as dataframe
-const df = await grok.data.files.openTable("${ent.fullPath}");
-
-// Delete
-await grok.dapi.files.delete("${ent.fullPath}");
-grok.shell.info("${ent.fileName} exists: " + (await grok.dapi.files.exists("${ent.fullPath}")));`,
+const df = await grok.data.files.openTable("${ent.fullPath}");`,
   DataQuery: (ent: DG.DataQuery) =>
 `const q = await grok.dapi.queries.find("${ent.id}");
 
@@ -137,7 +135,16 @@ grok.shell.info("Layouts found: " + layouts.length);
 
 // Save and serialize
 const savedLayout = view.saveLayout();
-console.log(savedLayout.toJson());`
+console.log(savedLayout.toJson());`,
+  View: (ent: DG.View) =>
+`// Get a view by its name
+const view = grok.shell.view("${ent.name}");
+
+// Set the current view
+grok.shell.v = view
+
+// Append new elements
+view.append(ui.h1('New fascinating content'))`,
 };
 
 export const viewerConst = Object.entries(DG.VIEWER)

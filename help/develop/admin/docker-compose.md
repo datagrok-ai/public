@@ -52,7 +52,7 @@ If you want to jump-start with Datagrok on your local machine, we recommend this
           - datagrok_data:/home/grok/data
           - datagrok_cfg:/home/grok/cfg
       cvm:
-        image: datagrok/cvm:latest
+        image: datagrok/cvm:1.0.X-5babeb5
         environment:
           GROK_COMPUTE_NUM_CORES: 4
         ports:

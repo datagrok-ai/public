@@ -930,8 +930,8 @@ export class Column {
    * @param {string} str
    * @param {boolean} notify
    * @returns {boolean} */
-  setString(i: number, str: string, notify: boolean = true): void {
-    api.grok_Column_SetString(this.d, i, str, notify);
+  setString(i: number, str: string, notify: boolean = true): boolean {
+    return api.grok_Column_SetString(this.d, i, str, notify);
   }
 
   /**
@@ -1118,17 +1118,21 @@ export class ColumnList {
     return columns;
   }
 
-  /** @returns {Iterable.<Column>} */
-  byTags(tags: any): Iterable<Column> {
+  /** Finds columns by specified tags and values: {'tag': 'value'}.
+   * Pass null or undefined to match any value of a tag.
+   * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/find-columns} */
+  byTags(tags: object): Iterable<Column> {
     return _toIterable(api.grok_ColumnList_ByTags(this.d, tags));
   }
 
-  /** @returns {Iterable.<Column>} */
+  /** Finds categorical columns.
+   * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/find-columns} */
   get categorical(): Iterable<Column> {
     return _toIterable(api.grok_ColumnList_Categorical(this.d));
   }
 
-  /** @returns {Iterable.<Column>} */
+  /** Finds numerical columns. 
+   * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/find-columns} */
   get numerical(): Iterable<Column> {
     return _toIterable(api.grok_ColumnList_Numerical(this.d));
   }
@@ -1332,6 +1336,9 @@ export class RowList {
     this.table = table;
     this.d = d;
   }
+
+  /** List of textual descriptions of currently applied filters */
+  get filters(): string[] { return api.grok_RowList_Get_Filters(this.d); }
 
   /** Removes specified rows
    * @param {number} idx
@@ -2119,7 +2126,7 @@ class DataFrameDialogHelper {
     this.df = df;
   }
 
-  addNewColumn(): void { grok.functions.eval('AddNewColumn').prepare().edit(); }
+  async addNewColumn(): Promise<void> { (await grok.functions.eval('AddNewColumn')).prepare().edit(); }
 }
 
 class ColumnDialogHelper {

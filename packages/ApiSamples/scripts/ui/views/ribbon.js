@@ -1,3 +1,4 @@
+//tags: View
 // Creating custom views
 
 let v = DG.View.create();

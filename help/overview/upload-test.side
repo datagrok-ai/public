@@ -472,11 +472,11 @@
       "id": "d4dd909a-2a01-4f0e-81ac-dbb9aa152e13",
       "comment": "",
       "command": "select",
-      "target": "xpath=//select[@id='108']",
+      "target": "name=div-share-selector",
       "targets": [
-        ["id=108", "id"],
-        ["css=#\\31 08", "css:finder"],
-        ["xpath=//select[@id='108']", "xpath:attributes"],
+        ["id=65", "id"],
+        ["css=#\\36 5", "css:finder"],
+        ["xpath=//select[@id='65']", "xpath:attributes"],
         ["xpath=//select", "xpath:position"]
       ],
       "value": "label=Can edit"

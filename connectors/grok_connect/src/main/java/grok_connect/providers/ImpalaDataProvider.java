@@ -7,7 +7,8 @@ import grok_connect.connectors_info.*;
 
 
 public class ImpalaDataProvider extends JdbcDataProvider {
-    public ImpalaDataProvider() {
+    public ImpalaDataProvider(ProviderManager providerManager) {
+        super(providerManager);
         driverClassName = "com.cloudera.impala.jdbc41.Driver";
 
         descriptor = new DataSource();

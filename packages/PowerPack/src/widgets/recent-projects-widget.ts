@@ -4,10 +4,12 @@ import * as ui from "datagrok-api/ui";
 
 export class RecentProjectsWidget extends DG.Widget {
   caption: string;
+  order: string;
 
   constructor() {
     super(ui.panel());
     this.caption = super.addProperty('caption', DG.TYPE.STRING, 'Recent projects');
+    this.order = super.addProperty('order', DG.TYPE.STRING, '1');
     this.getProjects();
   }
 

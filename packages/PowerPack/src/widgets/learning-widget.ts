@@ -5,25 +5,85 @@ import * as DG from 'datagrok-api/dg';
 
 export class LearningWidget extends DG.Widget {
   caption: string;
+  order: string;
 
   constructor() {
-    super(ui.panel());
+    super(ui.box());
+    let wikiList = ui.element('ul');
+    wikiList.style.columns = '2';
+    wikiList.append(ui.div(help.map(renderWiki)));
 
-    this.root.appendChild(ui.divV(playlists.map(renderPlaylist)));
+    let videoList = ui.element('ul');
+    videoList.style.columns = '2';
+    videoList.style.listStyle = 'none';
+    videoList.style.paddingLeft = '0px';
+    videoList.append(ui.div(playlists.map(renderPlaylist)));
+
+    // this.root.appendChild(ui.tabControl({
+    //   'VIDEO':ui.panel(playlists.map(renderPlaylist)),
+    //   'WIKI':ui.panel([list])
+    // }).root
+    // );
+
+    this.root.appendChild(ui.div([
+      ui.panel([
+        ui.divText('Video playlists', {
+          style:{
+            margin:'4px 0px 8px 0px',
+            fontWeight:'bold',
+            color:'var(--grey-5)'
+          }
+        }),
+        videoList,
+      ], {style:{paddingTop: '0px'}}),
+      ui.panel([
+        ui.divText('Wiki help', {
+          style:{
+            margin:'4px 0px 8px 0px',
+            fontWeight:'bold',
+            color:'var(--grey-5)'
+          }
+        }),
+        wikiList
+      ])   
+    ]));
 
     // properties
     this.caption = super.addProperty('caption', DG.TYPE.STRING, 'Learn');
+    this.order = super.addProperty('order', DG.TYPE.STRING, '5');
   }
 }
 
 function renderPlaylist(p: any) {
   let url = `https://www.youtube.com/playlist?list=${p.id}`;
-  return ui.cards.summary(
-    ui.image(p.url, 120, 90, { target: url }),
-    [
-      ui.h2(ui.link(p.title, url)),
-      ui.divText(p.description)
-  ]);
+  let listItem = ui.element('li');
+  listItem.style.breakInside = 'avoid';
+  listItem.style.pageBreakInside = 'avoid';
+  listItem.style.minWidth = '155px';
+
+  let root = ui.divH([]);
+  root.style.alignItems = 'center';
+
+  let img = ui.image(p.url, 35,35,{target:url});
+  img.style.marginRight = '10px';
+
+  let link = ui.link(p.title,url,p.description,'');
+
+  root.append(img, link);
+  listItem.append(root);
+  return listItem
+  // return ui.cards.summary(
+  //   ui.image(p.url, 120, 90, { target: url }),
+  //   [
+  //     ui.h2(ui.link(p.title, url)),
+  //     ui.divText(p.description)
+  // ]);
+}
+
+function renderWiki (p: any){
+  let listItem = ui.element('li');
+  listItem.append(ui.link(p.title, p.url));
+  return listItem;
 }
 
 // get info on channels:
@@ -34,31 +94,88 @@ let playlists = [
     "id": "PLIRnAn2pMh3kvsE5apYXqX0I9bk257_eY",
     "title": "Meetings",
     "description": "Join us for the regular community meetings",
-    "url": "https://raw.githubusercontent.com/datagrok-ai/public/master/help/uploads/pictures/Meetings.png"
+    "url": "https://raw.githubusercontent.com/datagrok-ai/public/master/help/uploads/pictures/meetings-th.png"
   },
   {
     "id": "PLIRnAn2pMh3ncmRaE4fjmPbDaDvKklh7j",
     "title": "Develop",
     "description": "Extend the platform by developing scripts, functions, and packages",
-    "url": "https://raw.githubusercontent.com/datagrok-ai/public/master/help/uploads/pictures/Develop.png"
+    "url": "https://raw.githubusercontent.com/datagrok-ai/public/master/help/uploads/pictures/develop-th.png"
   },
   {
     "id": "PLIRnAn2pMh3nHUxed6p-uw7If24nGENDa",
     "title": "Cheminformatics",
     "description": "Work with chemical structures using the first-class cheminformatics support provided by the platform",
-    "url": "https://raw.githubusercontent.com/datagrok-ai/public/master/help/uploads/pictures/Cheminformatics.png"
+    "url": "https://raw.githubusercontent.com/datagrok-ai/public/master/help/uploads/pictures/chem-th.png"
   },
   {
     "id": "PLIRnAn2pMh3nLvDs3NLXkLtsyJeX912GG",
     "title": "Visualize",
     "description": "Understand your data by using powerful interactive visualizations",
-    "url": "https://raw.githubusercontent.com/datagrok-ai/public/master/help/uploads/pictures/Visualize.png"
+    "url": "https://raw.githubusercontent.com/datagrok-ai/public/master/help/uploads/pictures/visualize-th.png"
   },
   {
     "id": "PLIRnAn2pMh3nToHhFs3eXpf9xXa195lrN",
     "title": "Explore",
     "description": "Discover, transform, and explore your data, no matter where it comes from",
-    "url": "https://raw.githubusercontent.com/datagrok-ai/public/master/help/uploads/pictures/Explore.png"
+    "url": "https://raw.githubusercontent.com/datagrok-ai/public/master/help/uploads/pictures/explore-th.png"
+  }
+];
+
+
+
+let help = [
+  {
+    'title': 'Access',
+    'url': 'https://datagrok.ai/help/access/db-exploration'
+  },
+  {
+    'title':'Collaborate',
+    'url': 'https://datagrok.ai/help/collaborate/chat'
+  },
+  {
+    'title': 'Develop',
+    'url': 'https://datagrok.ai/help/develop/getting-started'
+  },
+  {
+    'title': 'Discover',
+    'url': 'https://datagrok.ai/help/discover/data-augmentation'
+  },
+  {
+    'title': 'Domains',
+    'url': 'https://datagrok.ai/help/domains/chem/chemically-aware-viewers'
+  },
+  {
+    'title': 'Explore',
+    'url': 'https://datagrok.ai/help/explore/cluster-data'
+  },
+  {
+    'title': 'Govern',
+    'url': 'https://datagrok.ai/help/govern/audit'
+  },
+  {
+    'title': 'Learn',
+    'url': 'https://datagrok.ai/help/learn/data-science'
+  },
+  {
+    'title': 'Overview',
+    'url': 'https://datagrok.ai/help/overview/create-project'
+  },
+  {
+    'title': 'Stories',
+    'url': 'https://datagrok.ai/help/stories/life-sciences'
+  },
+  {
+    'title': 'Transform',
+    'url': 'https://datagrok.ai/help/transform/add-new-column'
+  },
+  {
+    'title': 'Visualize',
+    'url': 'https://datagrok.ai/help/visualize/add-custom-form'
+  },
+  {
+    'title': 'Acknowledgments',
+    'url': 'https://datagrok.ai/help/acknowledgements'
   }
 ];
 
