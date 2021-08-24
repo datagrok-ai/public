@@ -84,8 +84,8 @@ export class LaboratoryView extends DG.ViewBase {
           blVisitChoices.root,
           epVisitChoices.root
           ]),
-          baselineEndpointDiv ]),
-      ], { style: { width: '100%' } }),
+          baselineEndpointDiv ], { style: { 'padding-left': '20px' } }),
+      ]),
       ui.divH([
         ui.block50([ ui.h2('Laboratory results'), grid.root ]),
         ui.block50([
@@ -93,8 +93,8 @@ export class LaboratoryView extends DG.ViewBase {
           labValueChoicesBoxPlot.root,
           treatmentArmsChoices.root
           ]),
-          distributionDiv ])
-      ], { style: { width: '100%' } })
+          distributionDiv ], { style: { 'padding-left': '20px' } })
+      ])
     ]));
 
   }
@@ -126,6 +126,9 @@ export class LaboratoryView extends DG.ViewBase {
       grok.data.linkTables(lb, hysLawDataframe,
         [ `USUBJID` ], [ `USUBJID` ],
         [ DG.SYNC_TYPE.CURRENT_ROW_TO_ROW, DG.SYNC_TYPE.CURRENT_ROW_TO_SELECTION ]);
+        grok.data.linkTables(hysLawDataframe, lb, 
+          [ `USUBJID` ], [ `USUBJID` ],
+          [ DG.SYNC_TYPE.SELECTION_TO_SELECTION, DG.SYNC_TYPE.SELECTION_TO_SELECTION ]);
       let hysLawScatterPlot = createHysLawScatterPlot(hysLawDataframe, ALT, BILIRUBIN, TREATMENT_ARM, AP);
       return hysLawScatterPlot;
     }
