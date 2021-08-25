@@ -13,7 +13,6 @@ This document covers the following areas:
   * [Data Manipulation](#data-manipulation)
   * [Views](#views)
   * [Registering Functions](#registering-functions)
-  * [File Handlers](#file-handlers)
   * [Events](#events)
   * [User-defined Types](#user-defined-types)
   * [Docking](#docking)
