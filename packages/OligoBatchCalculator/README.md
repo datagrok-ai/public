@@ -1,6 +1,8 @@
-# OligoBatchCalculator
+# [Oligo Batch Calculator](https://public.datagrok.ai/apps/Oligobatchcalculator/)
 
-Calculates the following oligonucleotide properties:
+![Oligo Batch Calculator](img/screen.jpg)
+
+**Calculates the following oligonucleotide properties:**
 1. Length
 2. Optical Density
 3. NMoles
@@ -8,7 +10,7 @@ Calculates the following oligonucleotide properties:
 5. Molecular Weight
 6. Extinction Coefficient (using nearest neighbour method)
 
-To calculate these properties:
+**To calculate these properties:**
 1. Paste your sequences into input text field
 2. Specify amount and units
 3. Click "SAVE AS CSV" to export calculations.
