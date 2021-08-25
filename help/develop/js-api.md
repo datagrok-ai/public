@@ -183,7 +183,8 @@ opens a file with the "fasta" extension:
 ```js
 //input: string content
 //output: list tables
-//tags: file-handler-fasta
+//tags: file-handler
+//meta.ext: fasta
 function fastaFileHandler(content) {
     // ... processing files ...
     return tables;
