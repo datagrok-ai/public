@@ -19,6 +19,10 @@ declare let grok: any;
 
 /** A common interface that all sketchers should implement */
 export abstract class SketcherBase extends Widget {
+  readonly SMILES: string = 'smiles';
+  readonly SMARTS = 'smarts';
+  readonly MOL = 'mol';
+
   onChanged: Subject<any> = new Subject<any>();
   _smiles: string;
   _smarts: string;
@@ -36,9 +40,17 @@ export abstract class SketcherBase extends Widget {
   get smiles(): string { return this._smiles; }
   set smiles(s: string) { this._smiles = s; }
 
+  get supportedExportFormats(): string[] {
+    return [];
+  }
+
+  async exportStructure(format: string): Promise<string> {
+    return 'dummy';
+  }
+
   /** SMARTS query */
-  get smarts(): string { return this._smarts; }
-  set smarts(s: string) { this._smarts = s; }
+  async getSmarts(): Promise<string> { return this.exportStructure('smarts'); }
+  setSmarts(s: string) { this._smarts = s; }
 
   /** MolFile representation of the molecule */
   get molFile(): string { return this._molFile; }
@@ -54,6 +66,20 @@ export class Sketcher extends Widget {
   host: HTMLDivElement = ui.box(null, {style: {width: '500px', height: '500px'}});
   changedSub: Subscription | null = null;
   sketcher: SketcherBase | null = null;
+  listeners: Function[] = [];
+
+  getSmiles(): string { return this.sketcher!.smiles; }
+  setSmiles(x: string) { this.sketcher!.smiles = x; }
+
+  getMolFile(): string { return this.sketcher!.molFile; }
+  setMolFile(x: string) { this.sketcher!.molFile = x; }
+
+  async getSmarts(): Promise<string> { return this.sketcher!.getSmarts(); }
+
+  setChangeListenerCallback(callback: () => void) {
+    this.listeners.push(callback);
+    this.sketcher!.onChanged.subscribe((_) => callback());
+  }
 
   constructor() {
     super(ui.div());
@@ -74,7 +100,10 @@ export class Sketcher extends Widget {
     this.host.appendChild(this.sketcher!.root);
     await ui.tools.waitForElementInDom(this.root);
     await this.sketcher!.init();
-    this.changedSub = this.sketcher!.onChanged.subscribe((_) => grok.shell.o = SemanticValue.fromValueType(this.sketcher!.smiles, 'Molecule'));
+    this.changedSub = this.sketcher!.onChanged.subscribe((_) => {
+      this.listeners.forEach((callback) => callback());
+      grok.shell.o = SemanticValue.fromValueType(this.sketcher!.smiles, 'Molecule');
+    });
     if (molFile != null)
       this.sketcher!.molFile = molFile;
   }
