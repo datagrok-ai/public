@@ -2,8 +2,8 @@
 
 ## File Handlers
 
-To handle custom file formats, simply register a function with
-the "file-handler-<extension>" tag (you can specify more than one).
+To handle custom file formats, register a function with
+the `file-handler` tag, and specify the comma-separated extensions in the `meta.ext` parameter.
 Function's input is either a string or a list of bytes, the output is list of
 [tables](../overview/table.md).
 
