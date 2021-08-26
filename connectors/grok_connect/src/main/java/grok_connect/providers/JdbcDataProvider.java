@@ -120,6 +120,10 @@ public abstract class JdbcDataProvider extends DataProvider {
                     if (param.propertyType.equals(Types.DATE_TIME)) {
                         Calendar calendar = javax.xml.bind.DatatypeConverter.parseDateTime((String)param.value);
                         statement.setTimestamp(n + 1, new Timestamp(calendar.getTime().getTime()));
+                    } if (param.propertyType.equals(Types.LIST) && param.propertySubType.equals(Types.STRING)) {
+                     ArrayList values = (ArrayList)param.value;
+                     Array array = statement.getConnection().createArrayOf("VARCHAR", values.toArray());
+                     statement.setArray(n + 1, array);
                     } else
                         statement.setObject(n + 1, param.value);
                 }
