@@ -13,7 +13,6 @@ This document covers the following areas:
   * [Data Manipulation](#data-manipulation)
   * [Views](#views)
   * [Registering Functions](#registering-functions)
-  * [File Handlers](#file-handlers)
   * [Events](#events)
   * [User-defined Types](#user-defined-types)
   * [Docking](#docking)
@@ -169,26 +168,6 @@ Code snippets:
 * [Functions: Info panels](https://public.datagrok.ai/js/samples/functions/info-panels/info-panels)
 * [Functions: Custom viewers](https://public.datagrok.ai/js/samples/functions/custom-viewers/viewers)
 
-
-## File Handlers
-
-To handle custom file formats, simply register a function with 
-the "file-handler-<extension>" tag (you can specify more than one).
-Function's input is either a string or a list of bytes, the output is list of 
-[tables](../overview/table.md).  
-
-For example, the following function will get executed whenever a user
-opens a file with the "fasta" extension:
-
-```js
-//input: string content
-//output: list tables
-//tags: file-handler-fasta
-function fastaFileHandler(content) {
-    // ... processing files ...
-    return tables;
-}
-```
 
 ## Events
 

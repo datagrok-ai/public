@@ -8,8 +8,8 @@
 #input: column col {type:text} [Name of column contains text data]
 #output: dataframe emotion {action:join(data)} [Column with distribution of emotions]
 #output: dataframe polarity {action:join(data)} [Column with distribution of polarity]
-#output: graphics [Plot with distribution of emotions]
-#output: graphics [Plot with distribution of polarity]
+#output: graphics plotEmo [Plot with distribution of emotions]
+#output: graphics plotPol [Plot with distribution of polarity]
 
 require(sentiment)
 require(ggplot2)
