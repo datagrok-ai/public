@@ -121,6 +121,9 @@ export class MultiPlotViewer extends DG.JsViewer {
   } // init
 
   onPropertyChanged(property: DG.Property): void {
+    if(!Object.keys(this.tables).length) {
+      return;
+    };
     const name = property.name;
     const val = property.get(this);
     console.log('property changed: ', name, val);
@@ -143,11 +146,6 @@ export class MultiPlotViewer extends DG.JsViewer {
       if (param.series.length === 0) return;
       this.plots = param.series;
 
-      const tableArray = grok.shell.tables;
-      this.tables = {};
-      for (let i=0; i<tableArray.length; i++) {
-        this.tables[tableArray[i].name] = tableArray[i];
-      }
 
       this.plots = this.utils.getPlotsFromParams(this.tables, param.series);
       this.init();
@@ -309,7 +307,7 @@ export class MultiPlotViewer extends DG.JsViewer {
       }
 
       if (this.plots[i].type === 'timeLine') {
-        this.plots[i].timeLinesSeries = this.initTimeLine(visibleIndex, this);
+        this.plots[i].timeLinesSeries = this.initTimeLine(i, this);
         currentSeries = this.plots[i].timeLinesSeries;
         currentSeries.xAxisIndex = visibleIndex;
         currentSeries.yAxisIndex = visibleIndex;
@@ -451,14 +449,16 @@ export class MultiPlotViewer extends DG.JsViewer {
   // onEvent(e: DG.Events): void {  }
 
   addContextMenu(): void {
+    if(!Object.keys(this.tables).length) {
+      return;
+    };
     grok.events.onContextMenu.subscribe((args) => {
       //    if (!(args.args.context instanceof DG.Viewer)) { return 0; };
-
       // get opened tables (names, tabs);
       const tabs = {};
-      const names = grok.shell.tables.map((t) => t.name);
+      const names = Object.keys(this.tables);
       for (let i = 0; i < names.length; i++) {
-        tabs[names[i]] = grok.shell.tables[i];
+        tabs[names[i]] = this.tables[i];
       }
 
       const callback = (item) => {
@@ -501,15 +501,8 @@ export class MultiPlotViewer extends DG.JsViewer {
   }
 
   onTableAttached(): void {
-    console.warn('tableAttached', this.dataFrame.name);
     this.addContextMenu();
-    const tableArray = grok.shell.tables;
-    this.tables = {};
-    for (let i=0; i<tableArray.length; i++) {
-      this.tables[tableArray[i].name] = tableArray[i];
-    }
-
-    if (!this.checkTablesLoaded()) {
+    if (!this.checkTablesLoaded() || Object.keys(this.tables).length === 0) {
       return;
     }
     console.warn('all tables loaded');
@@ -531,6 +524,7 @@ export class MultiPlotViewer extends DG.JsViewer {
   } // table attached
 
   updateFilter(): void {
+    this.timeLinesData = [];
     for (let i=0; i< this.plots.length; i++) {
       const plot = this.plots[i];
       const tableName = plot.tableName;
@@ -566,8 +560,11 @@ export class MultiPlotViewer extends DG.JsViewer {
       }
       plot.series.data = data;
 
-      if (plot.type != 'timeLine') continue;
-      this.timeLinesData = data;
+      if (plot.type != 'timeLine') {
+        this.timeLinesData.push([])
+        continue;
+      };
+      this.timeLinesData.push(data);
       // this.plots[i].series.data = data;
       this.timeLineIndex = i;
     }
