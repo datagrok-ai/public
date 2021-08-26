@@ -96,9 +96,9 @@ class SequencePackage extends DG.Package {
     }
     sequences.push(content.substring(index));
     return [DG.DataFrame.fromColumns([
-      DG.Column.fromStrings('description', descriptions).d,
-      DG.Column.fromStrings('sequence', sequences).d
-    ]).d];
+      DG.Column.fromStrings('description', descriptions),
+      DG.Column.fromStrings('sequence', sequences)
+    ])];
   }
 */
 
@@ -135,7 +135,7 @@ class SequencePackage extends DG.Package {
     for (let [key, value] of frc) {
       t.columns.add(DG.Column.fromStrings(key, value));
     }
-    return [t.d]; // .d and [] are important!
+    return [t];
   }
 
   //input: string content

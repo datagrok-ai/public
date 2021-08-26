@@ -1,6 +1,57 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-08-25 Dev build 0.93.12
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.12`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* (Bug) Filters: Empty value filter option is missing 
+* Scatter Plot: allow using multiple marker shapes 
+* (Bug) Heat Map: Zooming out changes custom colors 
+* (Bug) Grok connect: log min, max, mean values for column 
+* (Bug) Filters: Clicking the reset button does not remove filtering in the table 
+* Grok connect: add logging of memory and column type 
+* Grok connect: log query execution time by steps  
+* Wiki: Extending and customizing Datagrok, simplifications 
+* Scatter Plot: lasso selector 
+* #53 Tutorials package: scripting tutorial (WIP) 
+* JS API: correct event args types 
+* #53 Tutorials package: EDA track (WIP) 
+* [Scatter Plot: Add lasso info into help and to community](https://community.datagrok.ai/t/extensions-to-the-scatter-plot-viewer/481) 
+* Canceled previous commit fe4817c (commited by mistake) 
+* JS API: textual descriptions of currently applied filters (RowList.filters) 
+* Create Custom-Machine-Learning.md 
+* (Bug) Grid: Sometimes the horizontal scroll bar does not show 
+* Fix UI tests (WIP)
+* Updated public token 
+* (Bug) Send a stack from Datlas and Grok Connect exceptions  
+* Update beta users list 
+* (Bug) Line chart: Overview | Stacked Area Chart throws an exception 
+* (Bug) Form: input highlighting is missing in the editing mode 
+* Rename d4-input-editor class 
+* SketchView: add missing tooltips 
+* (Bug) Color coding: custom colors are not persisted 
+* Update and rename Custom-Machine-Learning.md to custom-ml-models.md 
+* (Bug) Scatter Plot: Marker Types in popup menu don't stay marked 
+* (Bug) Bar chart: "Index out of range: index should be less than 1" when split by quarter 
+* JS API: file importers 
+* (Bug) Scatter plot: Row Source == All: non-filtered markers are rendered as "missing" 
+* Add file handlers to function types 
+* Fixed js-doc 
+* Data on demand (WIP)
+* resolves #80 Charts: WordCloud 
+* OligoBatchCalculator: README.md 
+* Scatter Plot: adjust current row / mouse over row appearance when the marker shape changes 
+
+
 # 2021-08-20 Dev build 0.93.11
 
 ## Latest Docker Images

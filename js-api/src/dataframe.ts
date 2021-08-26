@@ -2100,7 +2100,7 @@ export class Qnum {
   }
 }
 
-class DataFramePlotHelper {
+export class DataFramePlotHelper {
   private readonly df: DataFrame;
   constructor(df: DataFrame) {
     this.df = df;
@@ -2120,7 +2120,7 @@ class DataFramePlotHelper {
 
 }
 
-class DataFrameDialogHelper {
+export class DataFrameDialogHelper {
   private readonly df: DataFrame;
   constructor(df: DataFrame) {
     this.df = df;
@@ -2129,7 +2129,7 @@ class DataFrameDialogHelper {
   async addNewColumn(): Promise<void> { (await grok.functions.eval('AddNewColumn')).prepare().edit(); }
 }
 
-class ColumnDialogHelper {
+export class ColumnDialogHelper {
   private readonly column: Column;
   constructor(column: Column) {
     this.column = column;

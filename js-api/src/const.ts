@@ -237,6 +237,11 @@ export const FUNC_TYPES = {
    *  Signature: fileExporter() */
   FILE_EXPORTER: 'fileExporter',
 
+  /** Handles custom file formats.
+   * The `meta.ext` parameter should contain a comma-separated list of extensions.
+   * Signature: fileImporter(x: string | TypedArray): DataFrame[] */
+  FILE_IMPORTER: 'file-handler',
+
   /** Creates a cell renderer that is used for rendering cells for specific semantic types.
    *  Semantic type is derived from the `cellRenderer-<semType>` tag.
    *  Signature: cellRenderer(): GridCellRenderer */

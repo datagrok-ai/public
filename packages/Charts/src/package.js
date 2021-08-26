@@ -5,6 +5,7 @@ import {RadarViewer} from './radar-viewer.js';
 import {TimelinesViewer} from './timelines-viewer.js';
 import {SankeyViewer} from './sankey-viewer.js';
 import {ChordViewer} from './chord-viewer.js';
+import { WordCloudViewer } from './word-cloud-viewer.js';
 
 /* Do not change these import lines. Datagrok will import API library in exactly the same manner */
 import * as grok from 'datagrok-api/grok';
@@ -79,6 +80,13 @@ export function _SankeyViewer() {
 //output: viewer result
 export function _ChordViewer() {
   return new ChordViewer();
+}
+
+//name: WordCloudViewer
+//tags: viewer
+//output: viewer result
+export function _WordCloudViewer() {
+  return new WordCloudViewer();
 }
 
 //tags: autostart
