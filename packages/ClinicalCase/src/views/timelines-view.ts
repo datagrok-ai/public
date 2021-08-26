@@ -7,7 +7,7 @@ import { study } from "../clinical-study";
 let links = {
   ae: { key: 'USUBJID', start: 'AESTDY', end: 'AEENDY', event: 'AETERM' },
   cm: { key: 'USUBJID', start: 'CMSTDY', event: 'CMTRT' },
-  ex: { key: 'USUBJID', start: 'EXDY', event: 'EXTRT' },
+  ex: { key: 'USUBJID', start: 'EXSTDY', event: 'EXTRT' },
   //ex: { key: 'USUBJID', start: 'EXSTDY', end: 'EXENDY', event: 'EXTRT' },
   lb: { key: 'USUBJID', start: 'LBDY', event: 'LBTEST' }
 };
