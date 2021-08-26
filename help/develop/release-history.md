@@ -1,6 +1,41 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-08-26 Dev build 0.93.13
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.13`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* (Bug) Scatter Plot: Dot style chart stay on the top left corner of the canvas 
+* AddNewColumn editor: allow changing the column name during editing 
+* (Bug) Custom ML: task bar disappears when model applied 
+* #53 Tutorials package: Predictive Modeling tutorial (WIP) 
+* Custom ML: apply the newly trained model 
+* Wiki: JS API table of contents update 
+* Typedoc installed 
+* Merge commits 
+* Typedoc instead of JsDoc 
+* Custom ML: add custom engines from JS functions 
+* Change endpoints to use new divided cvm images (WIP)
+* Typedoc styling 
+* (Bug) Custom ML: duplicate accordion parameters 
+* Custom ML: use column name provided by apply function 
+* Added customization options to wordcloud 
+* Enabled the word cloud viewer in Charts 
+* Fixed output variable names 
+* Modified Patient Profele View, added AE Risk Assessment View 
+* modified multiplot to use custom tables instead of tables frm grok.shell, added ability to use multiple timelins plots 
+* Connectors: Support Array input parameters #90 
+* updated clinical demo files project 
+
+
 # 2021-08-25 Dev build 0.93.12
 
 ## Latest Docker Images
