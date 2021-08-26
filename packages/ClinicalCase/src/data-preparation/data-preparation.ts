@@ -89,7 +89,14 @@ export function createUniqueCountDataframe(df: DG.DataFrame, groupCol: string[],
 }
 
 
-export function createAERiskAssessmentDataframe(dm: DG.DataFrame, ae: DG.DataFrame, ex: DG.DataFrame) {
+export function addColumnWithDrugPlusDosage(df: DG.DataFrame, drugCol: string, dosageCol: string, unitsCol: string, newCol: string){
+  df.columns.addNewString(newCol)
+    .init((i) => `${df.get(drugCol, i).toString()} ${df.get(dosageCol, i).toString()}${df.get(unitsCol, i).toString()}` );
+  return df;
+}
+
+
+export function createAERiskAssessmentDataframe(ae: DG.DataFrame, ex: DG.DataFrame) {
 
   let subjArm = createUniqueCountDataframe(ex, [ 'EXTRT' ], 'USUBJID', 'TOTALSUBJ');
   let joinedAeEX = grok.data.joinTables(ae, ex, [ 'USUBJID' ], [ 'USUBJID' ], [ 'USUBJID', 'AETERM' ], [ 'EXTRT' ], DG.JOIN_TYPE.LEFT, false);
@@ -159,6 +166,11 @@ export function createAERiskAssessmentDataframe(dm: DG.DataFrame, ae: DG.DataFra
 
   tj2.columns.addNewFloat('ODDS RATIO').init((i) => (parseFloat(tj2.get('null.AECOUNT', i)) * (totalExposed2 - parseFloat(tj2.get('null.AECOUNT (2)', i)))) /
     (parseFloat(tj2.get('null.AECOUNT (2)', i)) * (totalExposed1 - parseFloat(tj2.get('null.AECOUNT', i)))));
+
+  tj2.getCol(`null.AETERM`).name = 'AETERM';
+
+  return tj2.groupBy([ 'AETERM', 'RELATIVE RISK', 'RISK DIFF', 'ODDS RATIO'])
+    .aggregate();
 
 }
 
