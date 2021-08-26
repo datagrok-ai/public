@@ -53,7 +53,7 @@ export class PredictiveModelingTutorial extends Tutorial {
       await viewInputAction(`Set "Method" to "${method}"`, 'Method', method);
     };
 
-    this.title('Train model');
+    this.title('Train a model');
     await trainModel('Distributed Random Forest');
 
     const browseModels = async () => {
