@@ -6,6 +6,7 @@ import serialization.Types;
 
 public class FuncParam {
     public String propertyType;
+    public String propertySubType;
     public String name;
     public Object value;
     public boolean isInput;
