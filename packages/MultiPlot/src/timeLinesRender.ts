@@ -137,7 +137,7 @@ export function initTimeLine(visibleIndex: number, viewerThis: any) {
       y: categoryCol,
       tooltip: 3,
     },
-    data: this.timeLinesData,
+    data: this.timeLinesData[visibleIndex],
   };
   return r;
 }
