@@ -128,14 +128,14 @@ export function sdtmVariablePanel(varCol: DG.Column): DG.Widget {
 //tags: app
 export async function clinicalCaseApp(): Promise<any> {
 
- // if (Object.keys(meta.domains).every((name) => grok.shell.table(name) == null))
- //   await grok.dapi.projects.open('clin-demo-files');
+  if (Object.keys(meta.domains).every((name) => grok.shell.table(name) == null))
+    await grok.dapi.projects.open('clin-demo-files-2');
 
   study.initFromWorkspace();
 
   const studySummaryClass = new StudySummaryView();
   grok.shell.newView(`Summary`, [ studySummaryClass.root ]);
-  grok.shell.newView(`Timelines`, [new TimelinesView().root]);
+  grok.shell.newView(`Timelines`, [ new TimelinesView().root ]);
   grok.shell.newView(`Patient Profile`, [ new PatientProfileView().root ]);
   grok.shell.newView(`Adverse Events`, [ new AdverseEventsView().root ]);
   const validationView = grok.shell.newView(`Validation`, [ new ValidationView(studySummaryClass.errorsByDomain).root ], true);
