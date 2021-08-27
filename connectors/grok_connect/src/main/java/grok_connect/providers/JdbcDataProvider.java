@@ -115,20 +115,28 @@ public abstract class JdbcDataProvider extends DataProvider {
                 query = queryBuffer.toString();
                 PreparedStatement statement = connection.prepareStatement(query);
                 providerManager.queryMonitor.addNewStatement(mainCallId, statement);
+                List<String> stringValues = new ArrayList<>();
                 for (int n = 0; n < names.size(); n++) {
                     FuncParam param = dataQuery.getParam(names.get(n));
+                    String stringValue;
                     if (param.propertyType.equals(Types.DATE_TIME)) {
                         Calendar calendar = javax.xml.bind.DatatypeConverter.parseDateTime((String)param.value);
-                        statement.setTimestamp(n + 1, new Timestamp(calendar.getTime().getTime()));
+                        Timestamp ts = new Timestamp(calendar.getTime().getTime());
+                        stringValue = ts.toString();
+                        statement.setTimestamp(n + 1, ts);
                     } if (param.propertyType.equals(Types.LIST) && param.propertySubType.equals(Types.STRING)) {
-                     ArrayList values = (ArrayList)param.value;
-                     Array array = statement.getConnection().createArrayOf("VARCHAR", values.toArray());
-                     statement.setArray(n + 1, array);
-                    } else
+                        ArrayList values = (ArrayList)param.value;
+                        Array array = statement.getConnection().createArrayOf("VARCHAR", values.toArray());
+                        stringValue = array.toString();
+                        statement.setArray(n + 1, array);
+                    } else {
+                        stringValue = param.value.toString();
                         statement.setObject(n + 1, param.value);
+                    }
+                    stringValues.add(stringValue);
                 }
                 statement.setQueryTimeout(timeout);
-                String logString = String.format("Query: %s \n", statement);
+                String logString = String.format("Query: %s; \nParams array: %s \n", statement, stringValues);
                 providerManager.logger.info(logString);
                 if (queryRun.debugQuery)
                     queryRun.log += logString;
