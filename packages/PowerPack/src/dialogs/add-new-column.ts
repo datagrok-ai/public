@@ -74,7 +74,19 @@ export class AddNewColumnDialog {
   async init(): Promise<void> {
     this.dialogTitle = this.edit ? this.editColumnTitle : this.addColumnTitle;
 
-    this.uiDialog = ui.dialog({ title: this.dialogTitle, helpUrl: this.helpUrl })
+    this.uiDialog = ui.dialog({ title: this.dialogTitle, helpUrl: this.helpUrl });
+
+    this.inputName = this.initInputName();
+    this.inputType = this.initInputType();
+    this.inputExpression = this.initInputExpression();
+
+    // Not necessary, but if the Dialog knows about inputs, then it can implement extra-logic:
+    this.uiDialog
+        .add(this.inputName)
+        .add(this.inputType)
+        .add(this.inputExpression);
+        
+    this.uiDialog
         .add(await this.initUiLayout())
         .onOK(async () => await this.addNewColumnAction())
         .show();
@@ -231,9 +243,6 @@ export class AddNewColumnDialog {
 
   /** Creates the Global UI Layout for the Dialog Window. */
   async initUiLayout(): Promise<HTMLDivElement> {
-    this.inputName = this.initInputName();
-    this.inputType = this.initInputType();
-    this.inputExpression = this.initInputExpression();
     this.uiPreview = this.initUiPreview();
     this.uiColumns = await this.initUiColumns();
     this.uiFunctions = await this.initUiFunctions();
@@ -241,9 +250,9 @@ export class AddNewColumnDialog {
     let layout =
         ui.div([
             ui.block50([
-                ui.block([this.inputName.root], { style: { width: '65%' } }),
-                ui.block([this.inputType.root], { style: { width: '35%' } }),
-                ui.block([this.inputExpression.root]),
+                ui.block([this.inputName!.root], { style: { width: '65%' } }),
+                ui.block([this.inputType!.root], { style: { width: '35%' } }),
+                ui.block([this.inputExpression!.root]),
                 ui.block([this.uiPreview])
             ], { style: { paddingRight: '20px' } }),
 

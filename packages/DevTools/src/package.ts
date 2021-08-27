@@ -1,6 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import { scriptEditor } from "./script-editor";
 import $ from 'cash-dom';
 import {
   dfExts,
@@ -158,5 +159,14 @@ export function describeCurrentObj(): void {
       let toJsScript = toScriptGroup.find('To JavaScript');
       if (!toJsScript) toScriptGroup.item('To JavaScript', () => grok.shell.info(getViewerScript(ent)));
     }
+  });
+}
+
+//description: ScriptEditor
+//tags: autostart
+export function _scriptEditor(): void { 
+  grok.events.onViewAdded.subscribe((view) => {
+    if (view.type == 'ScriptView')
+    scriptEditor(view);
   });
 }
