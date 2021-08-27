@@ -171,7 +171,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                 Statement statement = connection.createStatement();
                 providerManager.queryMonitor.addNewStatement(mainCallId, statement);
                 statement.setQueryTimeout(timeout);
-                String logString = String.format("Query: %s \n", statement);
+                String logString = String.format("Query: %s \n", query);
                 providerManager.logger.info(logString);
                 if (queryRun.debugQuery)
                     queryRun.log += logString;
@@ -184,7 +184,7 @@ public abstract class JdbcDataProvider extends DataProvider {
             Statement statement = connection.createStatement();
             providerManager.queryMonitor.addNewStatement(mainCallId, statement);
             statement.setQueryTimeout(timeout);
-            String logString = String.format("Query: %s \n", statement);
+            String logString = String.format("Query: %s \n", query);
             providerManager.logger.info(logString);
             if (queryRun.debugQuery)
                 queryRun.log += logString;
