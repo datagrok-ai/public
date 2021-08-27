@@ -445,10 +445,10 @@ export class ToolboxPage {
  *   .onOK(() => { grok.shell.info('OK!'); })
  *   .show();
  * */
-export class Dialog {
-  d: any;
+export class Dialog extends DartWidget {
+
   constructor(d: any) {
-    this.d = d;
+    super(d);
   }
 
   static create(options: { title?: string, helpUrl?: string } | string = ''): Dialog {

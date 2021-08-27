@@ -3,6 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import { filter } from 'rxjs/operators';
 import { Tutorial } from "../../../tutorial";
 
+
 export class ScriptingTutorial extends Tutorial {
   get name() { return 'Scripting'; }
   get description() {
