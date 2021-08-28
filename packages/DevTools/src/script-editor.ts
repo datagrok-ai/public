@@ -321,7 +321,35 @@ function setScriptRibbon(v:DG.View, doc:any){
           .group('Special Icons')
           .items(['Add', 'Close', 'Copy', 'Delete', 'Edit', 'Filter', 'Help', 'Info', 'Remove', 'Save', 'Search', 'Settings', 'Sync', 'Undo'], addElementContent)
           .endGroup();
-          
+
+          // @ts-ignore
+          elementsPopup.group('Special Icons').find('Add')._check.append(ui.icons.add(()=>{},''));
+          // @ts-ignore
+          elementsPopup.group('Special Icons').find('Close')._check.append(ui.icons.close(()=>{},''));
+          // @ts-ignore
+          elementsPopup.group('Special Icons').find('Copy')._check.append(ui.icons.copy(()=>{},''));
+          // @ts-ignore
+          elementsPopup.group('Special Icons').find('Delete')._check.append(ui.icons.delete(()=>{},''));
+          // @ts-ignore
+          elementsPopup.group('Special Icons').find('Edit')._check.append(ui.icons.edit(()=>{},''));
+          // @ts-ignore
+          elementsPopup.group('Special Icons').find('Filter')._check.append(ui.icons.filter(()=>{},''));
+          // @ts-ignore
+          elementsPopup.group('Special Icons').find('Help')._check.append(ui.icons.help(()=>{},''));
+          // @ts-ignore
+          elementsPopup.group('Special Icons').find('Info')._check.append(ui.icons.info(()=>{},''));
+          // @ts-ignore
+          elementsPopup.group('Special Icons').find('Remove')._check.append(ui.icons.remove(()=>{},''));
+          // @ts-ignore
+          elementsPopup.group('Special Icons').find('Save')._check.append(ui.icons.save(()=>{},''));
+          // @ts-ignore
+          elementsPopup.group('Special Icons').find('Search')._check.append(ui.icons.search(()=>{},''));
+          // @ts-ignore
+          elementsPopup.group('Special Icons').find('Settings')._check.append(ui.icons.settings(()=>{},''));
+          // @ts-ignore
+          elementsPopup.group('Special Icons').find('Sync')._check.append(ui.icons.sync(()=>{},''));
+          // @ts-ignore
+          elementsPopup.group('Special Icons').find('Undo')._check.append(ui.icons.undo(()=>{},''));
       elementsPopup.show();
     };
     let componentsMenu = () => {
