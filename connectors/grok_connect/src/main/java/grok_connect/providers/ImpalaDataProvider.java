@@ -35,9 +35,17 @@ public class ImpalaDataProvider extends JdbcDataProvider {
         //if list -- append all items
         FuncParam param = dataQuery.getParam(paramName);
         if (param.propertyType.equals(Types.LIST)) {
+            if (param.value == null) {
+                queryBuffer.append("?");
+                return;
+            }
             @SuppressWarnings (value="unchecked")
             ArrayList<Object> lst = (ArrayList<Object>)param.value;
             int size = lst.size();
+            if (size == 0) {
+                queryBuffer.append("?");
+                return;
+            }
             for (int i = 0; i < size; i++) {
                 queryBuffer.append("?");
                 if (i < size - 1)
@@ -48,13 +56,19 @@ public class ImpalaDataProvider extends JdbcDataProvider {
         }
     }
 
-    protected void setArrayParamValue(PreparedStatement statement, int n, FuncParam param) throws SQLException {
+    protected int setArrayParamValue(PreparedStatement statement, int n, FuncParam param) throws SQLException {
         //iterate ist and add all the parameters
         @SuppressWarnings (value="unchecked")
         ArrayList<Object> lst = (ArrayList<Object>)param.value;
-        for (int i = 0; i < lst.size(); i++) {
-            statement.setObject(n + 1 + i, lst.get(i));
+        if (lst == null || lst.size() == 0) {
+            statement.setObject(n, null);
+            return 0;
         }
+        for (int i = 0; i < lst.size(); i++) {
+            System.out.println(n + i);
+            statement.setObject(n + i, lst.get(i));
+        }
+        return lst.size() - 1;
     }
 
     public String getConnectionStringImpl(DataConnection conn) {
