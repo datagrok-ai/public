@@ -1039,7 +1039,7 @@ export class Column {
    * @param {string} formula
    * @returns {Column} */
   async applyFormula(formula: string): Promise<Column | null> {
-    if (this.getTag('formula') == null || !(this.name && this.dataFrame?.columns.contains(this.name)))
+    if (!(this.name && this.dataFrame?.columns.contains(this.name)))
       return null;
     let newCol = await this.dataFrame.columns.addNewCalculated(this.name, formula);
     for (let [key, value] of this.tags) if (key !== DG.TAGS.FORMULA) newCol.setTag(key, value);
