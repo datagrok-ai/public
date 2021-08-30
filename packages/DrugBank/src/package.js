@@ -53,7 +53,7 @@ export async function drugBankSimilaritySearch(molecule, limit, cutoff) {
         }
         let index = DG.Column.fromInt32Array('index', Int32Array.from(new Array(dbdf.rowCount), (x, i) => i))
         dbdf.columns.add(index)
-        return searchdf.join(dbdf, ['index'], ['index'], ['score'], dbdf.columns.names, JOIN_TYPE.INNER, false)
+        return dbdf.join(searchdf, ['index'], ['index'], ['molecule'], ['molecule'], JOIN_TYPE.INNER, true)
 
 
     } catch (e) {
@@ -69,9 +69,8 @@ export async function drugBankSimilaritySearch(molecule, limit, cutoff) {
 //input: string searchType
 //output: widget result
 export function DrugBankSearchWidget(mol, searchType) {
-    let headerHost = ui.divH([ui.h2("DrugBank " + searchType + " Search")], 'chemspace-panel-header');
     let compsHost = ui.divH([ui.loader()]);
-    let panel = ui.divV([headerHost, compsHost]);
+    let panel = ui.divV([ compsHost]);
     let search = {
         'similarity': async () => drugBankSimilaritySearch(mol, 20, 0),
         'substructure': async () => drugBankSubstructureSearch(mol, false)
@@ -84,7 +83,7 @@ export function DrugBankSearchWidget(mol, searchType) {
     search[searchType]().then(t => {
             console.warn(t);
             compsHost.removeChild(compsHost.firstChild);
-            if (t == null || t.filter.findNext(0,true) === t.rowCount) {
+            if (t == null || t.filter.trueCount === 0) {
 
                 compsHost.appendChild(ui.divText('No matches'));
                 return;
@@ -96,25 +95,31 @@ export function DrugBankSearchWidget(mol, searchType) {
                 };
                 return ui.divV([ui.tableFromMap(props), ui.divText('Click to open in the store.')]);
             }
+
             let piv = -1;
-            for (let n = 0; n < Math.min(t.rowCount, 20); n++) {
-                piv = t.filter.findNext(piv+1,true)
-                if (piv<0 || piv >t.rowCount)
-                {
-                    break;
-                }
-                let smiles = t.get('molecule', piv);
-                let molecule = document.createElement('div');
-                import('openchemlib/full.js').then((OCL) => {
+            import('openchemlib/full.js').then((OCL) => {
+                for (let n = 0; n < Math.min(t.rowCount, 20); n++) {
+                    piv = t.filter.findNext(piv + 1, true)
+
+
+                    if (piv < 0) {
+                        break;
+                    }
+                    console.warn(t);
+                    let smiles = t.get('molecule', piv);
+                    console.warn(t);
+                    let molecule = document.createElement('div');
+
                     let m = OCL.Molecule.fromMolfile(smiles);
                     molecule.innerHTML = m.toSVG(250, 150);
-                });
-                ui.tooltip.bind(molecule, () => getTooltip(n));
-                molecule.addEventListener('click', function () {
-                    window.open(t.get('link', n), '_blank');
-                });
-                compsHost.appendChild(molecule);
-            }
+
+                    ui.tooltip.bind(molecule, () => getTooltip(n));
+                    molecule.addEventListener('click', function () {
+                        window.open(t.get('link', piv), '_blank');
+                    });
+                    compsHost.appendChild(molecule);
+                }
+            });
             headerHost.appendChild(ui.iconFA('arrow-square-down', () => {
                 t.name = `"DrugBank Similarity Search"`;
                 grok.shell.addTableView(t);
@@ -123,7 +128,7 @@ export function DrugBankSearchWidget(mol, searchType) {
         }
     )
         .catch(err => {
-            if (compsHost.children.length > 0){
+            if (compsHost.children.length > 0) {
                 compsHost.removeChild(compsHost.firstChild);
             }
             let div = ui.divText('No matches');
@@ -152,7 +157,4 @@ export function DrugBankSimilaritySearchPanel(mol) {
 
     return DrugBankSearchWidget(mol, 'similarity');
 }
-
-
-
 
