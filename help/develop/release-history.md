@@ -1,6 +1,44 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-08-30 Dev build 0.93.14
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.14`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Script Editor, snippets menu 
+* Form: Column Selector 
+* #53 Tutorials package: EDA track (WIP) 
+* (Bug) Grid: Sometimes the horizontal scroll bar does not show 
+* Selenium: Add attributes "name" to elements of the new AddNewColumn dialog 
+* JS API: corrected layout of ui.switchInput 
+* (Bug) Core: JavaScript wrapper for Dialog cannot be constructed 
+* JS API: onDialogShown event 
+* Rename d4-input-editor class 
+* Add superclass to the Dialog widget 
+* (Bug) Grok connect: non-parameterized query is not logged 
+* Grok connect: log params in parameterized query 
+* Grok connect: tests for logging 
+* Update README.md 
+* Wiki: Peptides 
+* Update script-editor.ts 
+* Fiexed misinformation in data access tutorial 
+* Fixe unit test URL 
+* Modal: update named parameters 
+* (Bug) Connectors: 'Add new connection' returns a dialog for editing 
+* JS API: add dialog's title 
+* (Bug) Scatter Plot: marker bugs \- dont work caches, borders width, borders display, borders on other shapes (not circles), choices in popup menu, shapes are cut off, wrong hittests, wrong mouseover shapes, wrong sizes, bugs in Markercol functionality, 
+* Connectors: Support Array input parameters #90 
+* Data on demand (WIP)
+
+
 # 2021-08-26 Dev build 0.93.13
 
 ## Latest Docker Images
