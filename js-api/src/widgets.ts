@@ -470,6 +470,9 @@ export class Dialog extends DartWidget {
   get title(): string { return api.grok_Dialog_Get_Title(this.d); };
   set title(t: string) { api.grok_Dialog_Set_Title(this.d, t); };
 
+  /** Returns a list of the dialog's inputs. */
+  get inputs(): InputBase[] { return api.grok_Dialog_Get_Inputs(this.d); }
+
   /**
    * Sets the OK button handler, and shows the OK button
    * @param {Function} handler
