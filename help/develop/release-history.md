@@ -1,6 +1,26 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-08-30 Dev build 0.93.16
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.16`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Scatter Plot: Change caption for Markers in popup menu (Type -> Shape) 
+* #53 Tutorials package: Data connectors tutorial 
+* DrugBank package -> excessive header removed 
+* Added cache checkbox 
+* Grid: horizontal scroll bar jumps to the left as the data frame is filtered 
+* Updatd public token 
+
+
 # 2021-08-30 Dev build 0.93.15
 
 ## Latest Docker Images
