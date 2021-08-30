@@ -356,7 +356,7 @@ export namespace chem {
   /**
    * Renders a molecule to SVG
    * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/mol-rendering}
-   * @param {string} smiles
+   * @param {string} smiles - accepts smiles/molfile format
    * @param {number} width
    * @param {number} height
    * @returns {HTMLDivElement}
@@ -364,7 +364,7 @@ export namespace chem {
   export function svgMol(smiles: string, width: number = 300, height: number = 200): HTMLDivElement {
     let root = document.createElement('div');
     import('openchemlib/full.js').then((OCL) => {
-      let m = OCL.Molecule.fromSmiles(smiles);
+      let m = smiles.endsWith("M END") ? OCL.Molecule.fromMolfile(smiles): OCL.Molecule.fromSmiles(smiles);
       root.innerHTML = m.toSVG(width, height);
     });
     return root;
