@@ -1,6 +1,25 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-08-30 Dev build 0.93.15
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.15`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* JS API: Dialog.inputs 
+* Can't execute .applyFormula on column without formula tag #95 
+* chem:svgMol function -> molfile format support added 
+* DrugBank package -> search functions and widgets added 
+* Data on demand (WIP)
+
+
 # 2021-08-30 Dev build 0.93.14
 
 ## Latest Docker Images
