@@ -32,9 +32,9 @@ export class ScatterPlotTutorial extends Tutorial {
     this.describe("To zoom in, hold Alt key, and drag a rectangle that you want to zoom in to. Try it now.");
     await this.action('Zoom in', plot.onZoomed);
 
-    // this.describe("As in most viewers, double-clicking on an empty area resets the view. Alternatively, " +
-    //   "this option is always available in the context menu.");
-    // await this.action('Double-click to unzoom', plot.onResetView);
+    this.describe("As in most viewers, double-clicking on an empty area resets the view. Alternatively, " +
+      "this option is always available in the context menu.");
+    await this.action('Double-click to unzoom', plot.onResetView);
 
     this.describe("Click on a point. Note that it becomes the current point in a spreadsheet, too.");
     await this.action('Click on a point', this.t.onCurrentRowChanged);
