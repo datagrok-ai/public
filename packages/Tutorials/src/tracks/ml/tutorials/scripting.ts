@@ -15,7 +15,7 @@ export class ScriptingTutorial extends Tutorial {
     let sv: DG.View;
 
     await this.action('Click on "Functions | Scripts | New Script" to open a script editor',
-      grok.events.onViewAdded.pipe(filter((v) => {
+      grok.events.onViewAdded.pipe(filter((v: DG.View) => {
         if (v.type === 'ScriptView') {
           sv = v;
           return true;

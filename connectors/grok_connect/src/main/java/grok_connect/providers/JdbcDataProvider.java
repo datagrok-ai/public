@@ -100,10 +100,12 @@ public abstract class JdbcDataProvider extends DataProvider {
                 StringBuilder queryBuffer = new StringBuilder();
                 List<String> names = getParameterNames(query, dataQuery, queryBuffer);
                 query = queryBuffer.toString();
-
+                System.out.println(query);
                 PreparedStatement statement = connection.prepareStatement(query);
                 providerManager.queryMonitor.addNewStatement(mainCallId, statement);
                 List<String> stringValues = new ArrayList<>();
+                System.out.println(names);
+                int i = 0;
                 for (int n = 0; n < names.size(); n++) {
                     FuncParam param = dataQuery.getParam(names.get(n));
                     String stringValue;
@@ -111,13 +113,19 @@ public abstract class JdbcDataProvider extends DataProvider {
                         Calendar calendar = javax.xml.bind.DatatypeConverter.parseDateTime((String)param.value);
                         Timestamp ts = new Timestamp(calendar.getTime().getTime());
                         stringValue = ts.toString();
-                        statement.setTimestamp(n + 1, ts);
+                        statement.setTimestamp(n + i + 1, ts);
                     } else if (param.propertyType.equals(Types.LIST) && param.propertySubType.equals(Types.STRING)) {
-                        stringValue = param.value.toString();
-                        setArrayParamValue(statement, n, param);
+                        if (param.value == null)
+                            stringValue = "null";
+                        else
+                           stringValue = param.value.toString();
+                        i = i + setArrayParamValue(statement, n + i + 1, param);
                     } else {
-                        stringValue = param.value.toString();
-                        statement.setObject(n + 1, param.value);
+                        if (param.value == null)
+                            stringValue = "null";
+                        else
+                            stringValue = param.value.toString();
+                        statement.setObject(n + i + 1, param.value);
                     }
                     stringValues.add(stringValue);
                 }
@@ -208,11 +216,12 @@ public abstract class JdbcDataProvider extends DataProvider {
         return resultSet;
     }
 
-    protected void setArrayParamValue(PreparedStatement statement, int n, FuncParam param) throws SQLException {
+    protected int setArrayParamValue(PreparedStatement statement, int n, FuncParam param) throws SQLException {
         @SuppressWarnings (value="unchecked")
         ArrayList<String> values = (ArrayList<String>) param.value;
         Array array = statement.getConnection().createArrayOf("VARCHAR", values.toArray());
-        statement.setArray(n + 1, array);
+        statement.setArray(n, array);
+        return 0;
     }
 
     protected List<String> getParameterNames(String query, DataQuery dataQuery, StringBuilder queryBuffer) {
