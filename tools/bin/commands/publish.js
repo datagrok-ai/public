@@ -66,6 +66,8 @@ async function processPackage(debug, rebuild, host, devKey, packageName, suffix)
     }
   }
 
+  let contentValidationLog = '';
+
   files.forEach((file) => {
     let fullPath = file;
     let relativePath = path.relative(curDir, fullPath);
@@ -82,6 +84,10 @@ async function processPackage(debug, rebuild, host, devKey, packageName, suffix)
       return;
     if (relativePath === 'zip')
       return;
+    if (!utils.checkScriptLocation(canonicalRelativePath)) {
+      contentValidationLog += `Warning: file \`${canonicalRelativePath}\`` +
+        ` should be in directory \`${path.basename(curDir)}/scripts/\`\n`;
+    }
     let t = fs.statSync(fullPath).mtime.toUTCString();
     localTimestamps[canonicalRelativePath] = t;
     if (debug && timestamps[canonicalRelativePath] === t) {
@@ -89,7 +95,7 @@ async function processPackage(debug, rebuild, host, devKey, packageName, suffix)
       return;
     }
     zip.append(fs.createReadStream(fullPath), {name: relativePath});
-    console.log(`Adding ${relativePath}...`);
+    console.log(`Adding ${canonicalRelativePath}...`);
   });
   zip.append(JSON.stringify(localTimestamps), {name: 'timestamps.json'});
 
@@ -126,6 +132,7 @@ async function processPackage(debug, rebuild, host, devKey, packageName, suffix)
       return 1;
     } else {
       console.log(log);
+      console.log(contentValidationLog);
     }
   } catch (error) {
     console.error(error);
