@@ -372,4 +372,21 @@ class ChemPackage extends DG.Package {
     element.setAttribute('download', table.name + '.sdf');
     element.click();
   }
+
+  //input: string content
+  //output: list tables
+  //tags: file-handler
+  //meta.ext: sdf
+  sdfFileHandler(content) {
+
+    let sr = new SDFReader();
+    let jsn = sr.read_colls(content);
+    let df = DG.DataFrame.create(jsn['molecule'].length);
+    for (const [key, value] of Object.entries(jsn)) {
+      df.columns.add(DG.Column.fromStrings(key,value));
+    }
+    return [df];
+  }
+
+
 }
