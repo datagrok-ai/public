@@ -179,4 +179,4 @@ section to learn the syntax for rules.
 See also:
   * [Grid](../../visualize/viewers/grid.md)
   * [Table View](../../overview/table-view.md)
-  * [JavaScript API: Grid](https://datagrok.ai/js-api/Grid)
+  * [JavaScript API: Grid](https://datagrok.ai/js-api/classes/dg.grid)
