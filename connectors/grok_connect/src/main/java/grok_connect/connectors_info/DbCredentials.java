@@ -16,7 +16,7 @@ public class DbCredentials
     public static final String SSL = "ssl";
     public static final String CACHE_SCHEMA = "cacheSchema";
     public static final String CACHE_RESULTS = "cacheResults";
-    public static final String CACHE_DATE = "cacheDate";
+    public static final String CACHE_INVALIDATE_SCHEDULE = "cacheInvalidateSchedule";
 
     public static final String DB_DESCRIPTION = "Database name";
     public static final String CONNECTION_STRING_DESCRIPTION = "This string will be used for connection. " +
@@ -47,7 +47,7 @@ public class DbCredentials
                 DbCredentials.CONNECTION_STRING_DESCRIPTION, new Prop("textarea")));
         add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_SCHEMA));
         add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_RESULTS));
-        add(new Property(Property.DATETIME_TYPE, DbCredentials.CACHE_DATE, new Prop("", true)));
+        add(new Property(Property.STRING_TYPE, DbCredentials.CACHE_INVALIDATE_SCHEDULE));
     }};
 
     public static List<Property> dbCredentialsTemplate = new ArrayList<Property>() {{

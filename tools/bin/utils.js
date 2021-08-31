@@ -26,3 +26,21 @@ exports.replacers = {
   NAME_PREFIX: (s, name) => s.replace(/#{NAME_PREFIX}/g, name.slice(0, 3)),
   PACKAGE_DETECTORS_NAME: (s, name) => s.replace(/#{PACKAGE_DETECTORS_NAME}/g, this.kebabToCamelCase(name)),
 };
+
+exports.scriptLangExtMap = {
+  javascript: 'js',
+  julia: 'jl',
+  node: 'js',
+  octave: 'm',
+  python: 'py',
+  r: 'R',
+};
+
+exports.scriptExtensions = ['.jl', '.m', '.py', '.R'];
+exports.checkScriptLocation = (filepath) => {
+  if (!filepath.startsWith('scripts/') &&
+  this.scriptExtensions.some((ext) => filepath.endsWith(ext))) {
+    return false;
+  }
+  return true;
+};
