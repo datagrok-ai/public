@@ -148,7 +148,7 @@
       "id": "e0ed0735-58a6-44ff-8567-90e1db2a9164",
       "comment": "",
       "command": "click",
-      "target": "name=span-SEX-(2-categories)",
+      "target": "name=span-SEX",
       "targets": [
         ["css=.d4-entity-markup-row:nth-child(1)", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div[2]/div/div/span", "xpath:idRelative"],
@@ -433,7 +433,7 @@
       "id": "4698b706-d86f-4648-83a1-61e618a5e253",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span-NewName-(2-categories)",
+      "target": "name=span-NewName",
       "targets": [
         ["css=.d4-entity-markup-row:nth-child(3)", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div[2]/div/div/span[3]", "xpath:idRelative"],
@@ -445,7 +445,7 @@
       "id": "82d1851b-99bc-42f8-9be3-1d7e56f365ec",
       "comment": "",
       "command": "verifyElementNotPresent",
-      "target": "name=span-SEX-(2-categories)",
+      "target": "name=span-SEX",
       "targets": [
         ["css=.d4-entity-markup-row:nth-child(3)", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div[2]/div/div/span[3]", "xpath:idRelative"],
@@ -457,7 +457,7 @@
       "id": "e7eb9a4f-15db-4f92-b2d7-06333c7b96d3",
       "comment": "",
       "command": "click",
-      "target": "name=span-HEIGHT-(min-127.60,-max-203.34)",
+      "target": "name=span-HEIGHT",
       "targets": [],
       "value": ""
     }, {
@@ -522,7 +522,7 @@
       "id": "397c1c47-f00e-4494-92e6-2b92e843a09b",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span-HEIGHT-(min-127.60,-max-203.34)",
+      "target": "name=span-HEIGHT",
       "targets": [],
       "value": ""
     }, {
@@ -567,7 +567,7 @@
       "id": "e35587b8-fd01-4c89-ad68-41f1c8938acc",
       "comment": "",
       "command": "click",
-      "target": "name=span-USUBJID-(5850-categories)",
+      "target": "name=span-USUBJID",
       "targets": [
         ["css=.d4-entity-markup-row:nth-child(1)", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div[2]/div/div/span", "xpath:idRelative"],
@@ -671,7 +671,7 @@
       "id": "4c9b471e-4cce-46ff-a38d-c85acebc1e04",
       "comment": "",
       "command": "click",
-      "target": "name=span-WEIGHT-(min-37.50,-max-184.20)",
+      "target": "name=span-WEIGHT",
       "targets": [
         ["css=.d4-entity-markup-row:nth-child(6)", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div[2]/div/div/span[6]", "xpath:idRelative"],

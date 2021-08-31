@@ -387,15 +387,22 @@
       ],
       "value": ""
     }, {
+      "id": "4800a91b-4bff-4a96-a369-bc340afc49a4",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "cc7ac58b-fcb6-41c4-9351-90ca53b54960",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='tree-expander-PostgreSQL---northwind']",
+      "target": "xpath=//div[@name='tree-expander-PostgreSQL---Northwind']",
       "targets": [
-        ["css=.d4-tree-view-group:nth-child(23) .d4-tree-view-group:nth-child(4) .d4-tree-view-tri", "css:finder"],
-        ["xpath=//div[@name='tree-expander-PostgreSQL---northwind']", "xpath:attributes"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div[23]/div[2]/div[4]/div/div", "xpath:idRelative"],
-        ["xpath=//div[23]/div[2]/div[4]/div/div", "xpath:position"]
+        ["css=.d4-tree-view-group:nth-child(7) > .d4-tree-view-node > .d4-tree-view-tri-expanded", "css:finder"],
+        ["xpath=//div[@name='tree-expander-PostgreSQL---Northwind']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div[2]/div[24]/div[2]/div[7]/div/div", "xpath:idRelative"],
+        ["xpath=//div[24]/div[2]/div[7]/div/div", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -409,12 +416,12 @@
       "id": "e58c2bca-17b8-4508-ac5d-17ace3af3303",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='tree-PostgreSQL---northwind---Orders']",
+      "target": "xpath=//div[@name='tree-PostgreSQL---Northwind---Orders']",
       "targets": [
-        ["css=.d4-tree-view-group:nth-child(4) .d4-tree-view-group:nth-child(7) > .d4-tree-view-node", "css:finder"],
-        ["xpath=//div[@name='tree-PostgreSQL---northwind---Orders']", "xpath:attributes"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div[23]/div[2]/div[4]/div[2]/div[7]/div", "xpath:idRelative"],
-        ["xpath=//div[4]/div[2]/div[7]/div", "xpath:position"]
+        ["css=.d4-tree-view-group:nth-child(7) .d4-tree-view-group:nth-child(2) > .d4-tree-view-node", "css:finder"],
+        ["xpath=//div[@name='tree-PostgreSQL---Northwind---Orders']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div[2]/div[24]/div[2]/div[7]/div[2]/div[2]/div", "xpath:idRelative"],
+        ["xpath=//div[7]/div[2]/div[2]/div", "xpath:position"]
       ],
       "value": ""
     }, {

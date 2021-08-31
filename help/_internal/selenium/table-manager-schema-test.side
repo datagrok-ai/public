@@ -73,7 +73,7 @@
       "id": "fa061379-28dd-4cbf-806d-e27867995104",
       "comment": "",
       "command": "pause",
-      "target": "2000",
+      "target": "4000",
       "targets": [],
       "value": ""
     }, {
@@ -293,32 +293,6 @@
         ["name=icon-exclamation-triangle", "name"],
         ["xpath=//i[@name='icon-exclamation-triangle']", "xpath:attributes"],
         ["xpath=//i", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "e3d2d604-1bfc-4fcd-b3b0-28f9a693524b",
-      "comment": "",
-      "command": "executeScript",
-      "target": "element = document.querySelector(\".splitter-container-vertical:nth-child(3) .panel-content div[name=viewer-Grid] canvas:nth-child(4)\");  event = new MouseEvent(\"click\", {     bubbles: true,     cancelable: false,     view: window,     button: 2,     buttons: 0,     clientX: element.getBoundingClientRect().x+30,     clientY: element.getBoundingClientRect().y+100}); element.dispatchEvent(event);",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "d2744b53-4e8d-4a94-aff5-406a17c6445a",
-      "comment": "",
-      "command": "pause",
-      "target": "1000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "6fc81737-90cb-413e-8d7b-a5e65c5de404",
-      "comment": "",
-      "command": "verifyElementPresent",
-      "target": "xpath=//label[contains(.,'rowCount')]",
-      "targets": [
-        ["css=.d4-accordion-title label", "css:finder"],
-        ["xpath=//div[@id='elementContent']/div/div/div/div/span/label", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/span/label", "xpath:position"],
-        ["xpath=//label[contains(.,'rowCount')]", "xpath:innerText"]
       ],
       "value": ""
     }, {

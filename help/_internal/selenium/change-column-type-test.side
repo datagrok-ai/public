@@ -299,7 +299,7 @@
       "id": "c9002f10-0e76-486c-99ec-6dfc3189ba61",
       "comment": "",
       "command": "click",
-      "target": "name=span-AGE-(min-null,-max-null)",
+      "target": "name=span-AGE",
       "targets": [],
       "value": ""
     }, {
@@ -356,7 +356,7 @@
       "id": "070a4fc0-b380-41b0-afd0-039702346c7e",
       "comment": "",
       "command": "click",
-      "target": "name=span-USUBJID-(5850-categories)",
+      "target": "name=span-USUBJID",
       "targets": [],
       "value": ""
     }, {
@@ -474,7 +474,7 @@
       "id": "e23cc227-14a9-46bb-bb0d-eea2cade6ecd",
       "comment": "",
       "command": "click",
-      "target": "name=span-USUBJID-(min-null,-max-null)",
+      "target": "name=span-USUBJID",
       "targets": [],
       "value": ""
     }, {
@@ -526,7 +526,7 @@
       "id": "5f360eb6-e3df-4605-9f05-72a73a894da8",
       "comment": "",
       "command": "click",
-      "target": "name=span-HEIGHT-(min-127.60,-max-203.34)",
+      "target": "name=span-HEIGHT",
       "targets": [],
       "value": ""
     }, {
