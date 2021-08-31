@@ -59,7 +59,7 @@ Identically to the convention of `searchSubstructure`, a `column` is a column of
 
   The default settings are `{ limit: Number.MAX_VALUE, cutoff: 0.0 }`, thus the function ranks and sorts all molecules by similarity.
 
-  Produces a Datagrok [`FataFrame`](https://datagrok.ai/js-api/classes/dg.dataframe) of three columns ([code sample](https://public.datagrok.ai/js/samples/domains/chem/similarity-scoring-sorted)):
+  Produces a Datagrok [`DataFrame`](https://datagrok.ai/js-api/classes/dg.dataframe) of three columns ([code sample](https://public.datagrok.ai/js/samples/domains/chem/similarity-scoring-sorted)):
     * The 1-st column, named `molecule`, contains the original molecules string representation from the input `column`
     * The 2-nd column, named `score`, contains the corresponding similarity scores of the range from 0.0 to 1.0, and the DataFrame is sorted descending by this column
     * The 3-rd column, named `index`, contains indices of the molecules in the original input `column`
