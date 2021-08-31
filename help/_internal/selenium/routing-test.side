@@ -227,7 +227,7 @@
       "id": "d881c620-f665-45bd-b96a-6ca3a1a6b3bf",
       "comment": "",
       "command": "open",
-      "target": "/js/samples/ui/menu?selenium=true",
+      "target": "/js/samples/ui/components/menu?selenium=true",
       "targets": [],
       "value": ""
     }, {

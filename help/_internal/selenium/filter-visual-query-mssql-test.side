@@ -52,7 +52,7 @@
       "id": "ab8f2726-12a0-40e3-ac90-4730f3344006",
       "comment": "",
       "command": "pause",
-      "target": "3000",
+      "target": "4000",
       "targets": [],
       "value": ""
     }, {
@@ -106,10 +106,17 @@
       ],
       "value": ""
     }, {
+      "id": "a4c90863-7663-4599-98e2-0ea8060edec9",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "191404ee-3315-4be2-aa1a-bc918908f364",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='tree-expander-MS-SQL---northwind']",
+      "target": "xpath=//div[@name='tree-expander-MS-SQL---Northwind']",
       "targets": [
         ["css=.d4-tree-view-group:nth-child(18) > .d4-tree-view-group-host .d4-tree-view-tri", "css:finder"],
         ["xpath=//div[@name='tree-expander-MS-SQL---northwind']", "xpath:attributes"],
@@ -128,7 +135,7 @@
       "id": "a27d3c1c-118d-4080-936d-c0c128e1e1a2",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//div[@name='tree-expander-MS-SQL---northwind'])[2]",
+      "target": "xpath=(//div[@name='tree-expander-MS-SQL---Northwind'])[2]",
       "targets": [
         ["css=.d4-tree-view-group:nth-child(1) .d4-tree-view-group:nth-child(1) .d4-tree-view-tri", "css:finder"],
         ["xpath=(//div[@name='tree-expander-MS-SQL---northwind'])[2]", "xpath:attributes"],
@@ -144,15 +151,34 @@
       "targets": [],
       "value": ""
     }, {
+      "id": "6860f613-1e77-41b6-89ba-9846eff874a6",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='tree-expander-MS-SQL---Northwind---Schemas---dbo']",
+      "targets": [
+        ["css=.d4-tree-view-group-host > .d4-tree-view-group:nth-child(1) .d4-tree-view-group .d4-tree-view-group:nth-child(1) .d4-tree-view-tri", "css:finder"],
+        ["xpath=//div[@name='tree-expander-MS-SQL---Northwind---Schemas---dbo']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div[2]/div[17]/div[2]/div/div[2]/div/div[2]/div/div/div", "xpath:idRelative"],
+        ["xpath=//div[17]/div[2]/div/div[2]/div/div[2]/div/div/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "7bb6d352-92fd-4c64-9e6d-de0a3fadcfdc",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "5bc94d6c-d75a-469b-bf67-a1bb549cb76c",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='tree-MS-SQL---northwind---Tables---Products']",
+      "target": "xpath=//div[@name='tree-MS-SQL---Northwind---Schemas---dbo---Products']",
       "targets": [
-        ["css=.d4-tree-view-group:nth-child(1) .d4-tree-view-group:nth-child(19) > .d4-tree-view-node", "css:finder"],
-        ["xpath=//div[@name='tree-MS-SQL---northwind---Tables---Products']", "xpath:attributes"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div[18]/div[2]/div/div[2]/div/div[2]/div[19]/div", "xpath:idRelative"],
-        ["xpath=//div[19]/div", "xpath:position"]
+        ["css=.d4-tree-view-group-host > .d4-tree-view-group .d4-tree-view-group:nth-child(19) > .d4-tree-view-node", "css:finder"],
+        ["xpath=//div[@name='tree-MS-SQL---Northwind---Schemas---dbo---Products']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div[2]/div[17]/div[2]/div/div[2]/div/div[2]/div/div[2]/div[19]/div", "xpath:idRelative"],
+        ["xpath=//div[2]/div[19]/div", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -461,12 +487,12 @@
       "id": "761ee1da-e697-44c1-a545-c52a7c650d03",
       "comment": "",
       "command": "click",
-      "target": "id=editor",
+      "target": "name=input-Name",
       "targets": [
-        ["id=editor", "id"],
+        ["id=62", "id"],
         ["name=input-Name", "name"],
-        ["css=#editor", "css:finder"],
-        ["xpath=//input[@id='editor']", "xpath:attributes"],
+        ["css=#\\36 2", "css:finder"],
+        ["xpath=//input[@id='62']", "xpath:attributes"],
         ["xpath=//div[@id='elementContent']/div[2]/div/div/div/div/input", "xpath:idRelative"],
         ["xpath=//div[2]/div/div/div/div/input", "xpath:position"]
       ],
@@ -475,7 +501,7 @@
       "id": "0febabcf-3d39-463f-84dc-bd8067796684",
       "comment": "",
       "command": "type",
-      "target": "id=editor",
+      "target": "name=input-Name",
       "targets": [
         ["id=editor", "id"],
         ["name=input-Name", "name"],
@@ -533,15 +559,34 @@
       "targets": [],
       "value": ""
     }, {
+      "id": "68a31e53-9d53-45f3-8339-ffd5a0bef89d",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='tree-expander-MS-SQL---Northwind---Schemas---dbo']",
+      "targets": [
+        ["css=.d4-tree-view-group:nth-child(1) > .d4-tree-view-group-host > .d4-tree-view-group:nth-child(1) > .d4-tree-view-group-host .d4-tree-view-tri-expanded", "css:finder"],
+        ["xpath=//div[@name='tree-expander-MS-SQL---Northwind---Schemas---dbo']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div[2]/div[17]/div[2]/div/div[2]/div/div[2]/div/div/div", "xpath:idRelative"],
+        ["xpath=//div[17]/div[2]/div/div[2]/div/div[2]/div/div/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "a4e69e8f-7fd3-4097-9911-307aca9e0459",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "cd0ca9c2-e2a3-4f65-b4d0-912032df6c53",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//div[@name='tree-MS-SQL---northwind---visual-query-filters-test']",
+      "target": "xpath=//div[@name='tree-MS-SQL---Northwind---visual-query-filters-test']",
       "targets": [
-        ["css=.d4-tree-view-group:nth-child(1) .d4-tree-view-group:nth-child(4) > .d4-tree-view-node", "css:finder"],
-        ["xpath=//div[@name='tree-MS-SQL---northwind---visual-query-filters-test']", "xpath:attributes"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div[18]/div[2]/div/div[2]/div[4]/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div[2]/div[4]/div", "xpath:position"]
+        ["css=.d4-tree-view-group:nth-child(17) > .d4-tree-view-group-host > .d4-tree-view-group > .d4-tree-view-group-host > .d4-tree-view-group:nth-child(12) > .d4-tree-view-node", "css:finder"],
+        ["xpath=//div[@name='tree-MS-SQL---Northwind---visual-query-filters-test']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div[2]/div[17]/div[2]/div/div[2]/div[12]/div", "xpath:idRelative"],
+        ["xpath=//div[17]/div[2]/div/div[2]/div[12]/div", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -555,7 +600,7 @@
       "id": "5a716513-bb66-4836-9ec2-781cb20ddfc0",
       "comment": "",
       "command": "doubleClick",
-      "target": "name=tree-MS-SQL---northwind---visual-query-filters-test",
+      "target": "xpath=//div[@name='tree-MS-SQL---Northwind---visual-query-filters-test']",
       "targets": [
         ["css=.d4-tree-view-group-host > .d4-tree-view-group:nth-child(1) .d4-tree-view-group:nth-child(4) > .d4-tree-view-node", "css:finder"],
         ["xpath=//div[@name='tree-MS-SQL---northwind---visual-query-filters-test']", "xpath:attributes"],
@@ -567,7 +612,7 @@
       "id": "02ed8863-3aad-407e-a2a4-41e0aefab40b",
       "comment": "",
       "command": "pause",
-      "target": "2000",
+      "target": "4000",
       "targets": [],
       "value": ""
     }, {
@@ -586,7 +631,7 @@
       "id": "d8db347a-28ee-49ee-a563-42090da46309",
       "comment": "",
       "command": "pause",
-      "target": "3000",
+      "target": "2000",
       "targets": [],
       "value": ""
     }, {
@@ -664,14 +709,14 @@
       "id": "e184990d-f038-4da2-924b-3fba7a716c7a",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span-ProductName-(34-categories)",
+      "target": "name=span-ProductName",
       "targets": [],
       "value": ""
     }, {
       "id": "207a9a45-ea39-417d-b167-372c01058e78",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span-sum(UnitsInStock)-(min-0,-max-123)",
+      "target": "name=span-sum(UnitsInStock)",
       "targets": [],
       "value": ""
     }, {
@@ -704,12 +749,12 @@
       "id": "c266a396-e10f-4e2b-961f-e86a5e9d396c",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='tree-MS-SQL---northwind---visual-query-filters-test']",
+      "target": "xpath=//div[@name='tree-MS-SQL---Northwind---visual-query-filters-test']",
       "targets": [
         ["css=.d4-tree-view-node-selected", "css:finder"],
-        ["xpath=//div[@name='tree-MS-SQL---northwind---visual-query-filters-test']", "xpath:attributes"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div[18]/div[2]/div/div[2]/div[4]/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div[2]/div[4]/div", "xpath:position"]
+        ["xpath=//div[@name='tree-MS-SQL---Northwind---visual-query-filters-test']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div[2]/div[17]/div[2]/div/div[2]/div[12]/div", "xpath:idRelative"],
+        ["xpath=//div[17]/div[2]/div/div[2]/div[12]/div", "xpath:position"]
       ],
       "value": ""
     }, {

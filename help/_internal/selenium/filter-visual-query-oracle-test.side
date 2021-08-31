@@ -461,7 +461,7 @@
       "id": "761ee1da-e697-44c1-a545-c52a7c650d03",
       "comment": "",
       "command": "click",
-      "target": "id=editor",
+      "target": "name=input-Name",
       "targets": [
         ["id=editor", "id"],
         ["name=input-Name", "name"],
@@ -662,7 +662,7 @@
       "id": "e184990d-f038-4da2-924b-3fba7a716c7a",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//i[@name='CATEGORY-ID-(min-1.00,-max-4.00)']",
+      "target": "xpath=//i[@name='CATEGORY-ID",
       "targets": [
         ["css=.d4-entity-markup-row:nth-child(1) > .grok-icon", "css:finder"],
         ["xpath=//i[@name='CATEGORY-ID-(min-1.00,-max-4.00)']", "xpath:attributes"],
@@ -674,7 +674,7 @@
       "id": "207a9a45-ea39-417d-b167-372c01058e78",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span-sum(UNIT-PRICE)-(min-266.75,-max-418.75)",
+      "target": "name=span-sum(UNIT-PRICE)",
       "targets": [
         ["css=div:nth-child(1) > .d4-flex-col > .d4-entity-markup-row:nth-child(2)", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div[2]/div/div/span[2]", "xpath:idRelative"],

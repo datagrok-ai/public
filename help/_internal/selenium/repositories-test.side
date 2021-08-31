@@ -162,54 +162,48 @@
       ],
       "value": "DG Repository by Selenium"
     }, {
+      "id": "00fdcf1d-89a9-44b2-8912-8a3328d3fc79",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "9569b2d6-26f6-4c05-966b-05847441678d",
       "comment": "",
       "command": "click",
-      "target": "css=.d4-input-choice > #editor",
+      "target": "name=input-Add-new-package-repository---Source-type",
       "targets": [
-        ["css=.d4-input-choice > #editor", "css:finder"],
-        ["xpath=//select[@id='editor']", "xpath:attributes"],
+        ["id=29", "id"],
+        ["name=input-Add-new-package-repository---Source-type", "name"],
+        ["css=#\\32 9", "css:finder"],
+        ["xpath=//select[@id='29']", "xpath:attributes"],
         ["xpath=//select", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "7d3f50fd-dbbd-4575-8db6-377a1e6cffe4",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "ba5d5f16-fee9-43c3-bd0e-1fcd9a9928ab",
       "comment": "",
       "command": "select",
-      "target": "css=.d4-input-choice > #editor",
+      "target": "name=input-Add-new-package-repository---Source-type",
       "targets": [],
       "value": "label=Git"
     }, {
       "id": "fb201818-72c3-4f3f-b760-fba1f78afbf1",
       "comment": "",
       "command": "executeScript",
-      "target": "document.querySelector(\".d4-input-choice > #editor\").dispatchEvent(new Event('input'))",
+      "target": "document.querySelector(\"select[name=input-Add-new-package-repository---Source-type]\").dispatchEvent(new Event('input'))",
       "targets": [],
       "value": ""
     }, {
-      "id": "f93a9b81-4bfd-4630-a874-c9b020992326",
-      "comment": "",
-      "command": "click",
-      "target": "css=.d4-input-choice > #editor",
-      "targets": [
-        ["css=.d4-input-choice > #editor", "css:finder"],
-        ["xpath=//select[@id='editor']", "xpath:attributes"],
-        ["xpath=//select", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "8ed598e3-4938-4322-b3be-f74d787d158f",
-      "comment": "",
-      "command": "click",
-      "target": "css=.dlg-add-new-package-repository .d4-input-choice > #editor",
-      "targets": [
-        ["css=.dlg-add-new-package-repository .d4-input-choice > #editor", "css:finder"],
-        ["xpath=//select[@id='editor']", "xpath:attributes"],
-        ["xpath=//select", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "cf7da6a0-f3d3-48b4-aebe-5146c76a7591",
+      "id": "790088a0-aadc-472b-a276-a38eba1c2a3c",
       "comment": "",
       "command": "pause",
       "target": "1000",

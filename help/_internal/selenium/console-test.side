@@ -483,61 +483,11 @@
       ],
       "value": ""
     }, {
-      "id": "4eaba0e1-e382-4ad9-934f-24c2e963948f",
-      "comment": "",
-      "command": "type",
-      "target": "css=.d4-console-input > input",
-      "targets": [
-        ["css=.d4-console-input > input", "css:finder"],
-        ["xpath=(//input[@type='text'])[3]", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div[3]/input", "xpath:idRelative"],
-        ["xpath=//div[3]/input", "xpath:position"]
-      ],
-      "value": "SelectRows(, HasNulls(Named([\"USUBJID\", \"AGE\", \"SEX\", \"RACE\", \"DIS_POP\", \"HEIGHT\", \"WEIGHT\", \"DEMOG\", \"CONTROL\", \"STARTED\"])))"
-    }, {
       "id": "e754711e-ed9c-4440-8f6f-279317e42af2",
       "comment": "",
       "command": "pause",
       "target": "1000",
       "targets": [],
-      "value": ""
-    }, {
-      "id": "e39bb9fb-312d-4338-ad9e-b892ae23a625",
-      "comment": "",
-      "command": "sendKeys",
-      "target": "css=.d4-console-input > input",
-      "targets": [
-        ["css=.d4-console-input > input", "css:finder"],
-        ["xpath=(//input[@type='text'])[3]", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/div[3]/input", "xpath:idRelative"],
-        ["xpath=//div[3]/input", "xpath:position"]
-      ],
-      "value": "${KEY_ENTER}"
-    }, {
-      "id": "eacd2eb2-a19d-4dcd-8d99-7e5a6ae3674c",
-      "comment": "",
-      "command": "pause",
-      "target": "1500",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "fc22ce69-2313-4c05-bf19-84c6eb7d3c84",
-      "comment": "",
-      "command": "verifyText",
-      "target": "name=span-selected",
-      "targets": [],
-      "value": "753 selected rows"
-    }, {
-      "id": "604695b2-85d6-48fc-891c-5d35b754d9bf",
-      "comment": "",
-      "command": "verifyElementNotPresent",
-      "target": "xpath=//i[@name='icon-exclamation-circle']",
-      "targets": [
-        ["css=.fa-exclamation-circle", "css:finder"],
-        ["xpath=//i[@name='icon-exclamation-circle']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[2]/i", "xpath:idRelative"],
-        ["xpath=//div[2]/i", "xpath:position"]
-      ],
       "value": ""
     }, {
       "id": "1c1cf9c4-cbb9-457a-9fac-e1fae7f5595c",
