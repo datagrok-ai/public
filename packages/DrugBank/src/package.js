@@ -69,8 +69,9 @@ export async function drugBankSimilaritySearch(molecule, limit, cutoff) {
 //input: string searchType
 //output: widget result
 export function DrugBankSearchWidget(mol, searchType) {
+    let headerHost = ui.divH([]);
     let compsHost = ui.divH([ui.loader()]);
-    let panel = ui.divV([ compsHost]);
+    let panel = ui.divV([compsHost]);
     let search = {
         'similarity': async () => drugBankSimilaritySearch(mol, 20, 0),
         'substructure': async () => drugBankSubstructureSearch(mol, false)
@@ -81,7 +82,6 @@ export function DrugBankSearchWidget(mol, searchType) {
     }
 
     search[searchType]().then(t => {
-            console.warn(t);
             compsHost.removeChild(compsHost.firstChild);
             if (t == null || t.filter.trueCount === 0) {
 
@@ -105,9 +105,9 @@ export function DrugBankSearchWidget(mol, searchType) {
                     if (piv < 0) {
                         break;
                     }
-                    console.warn(t);
+
                     let smiles = t.get('molecule', piv);
-                    console.warn(t);
+
                     let molecule = document.createElement('div');
 
                     let m = OCL.Molecule.fromMolfile(smiles);
@@ -157,4 +157,7 @@ export function DrugBankSimilaritySearchPanel(mol) {
 
     return DrugBankSearchWidget(mol, 'similarity');
 }
+
+
+
 
