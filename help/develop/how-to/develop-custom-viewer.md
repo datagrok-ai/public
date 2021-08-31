@@ -71,7 +71,7 @@ started. Also, visit our JavaScript API Samples, there you can run this [code
 snippet](https://public.datagrok.ai/js/samples/functions/custom-viewers/viewers) to get a simple
 working example right away and see how it functions within the platform. Finally, if you would like
 to explore the methods discussed in the article on your own, jump right to our [JavaScript API
-documentation](https://datagrok.ai/js-api/JsViewer).
+documentation](https://datagrok.ai/js-api/classes/dg.jsviewer).
 
 ### External Dependencies
 

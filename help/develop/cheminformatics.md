@@ -59,7 +59,7 @@ Identically to the convention of `searchSubstructure`, a `column` is a column of
 
   The default settings are `{ limit: Number.MAX_VALUE, cutoff: 0.0 }`, thus the function ranks and sorts all molecules by similarity.
 
-  Produces a Datagrok [`FataFrame`](https://datagrok.ai/js-api/DataFrame) of three columns ([code sample](https://public.datagrok.ai/js/samples/domains/chem/similarity-scoring-sorted)):
+  Produces a Datagrok [`FataFrame`](https://datagrok.ai/js-api/classes/dg.dataframe) of three columns ([code sample](https://public.datagrok.ai/js/samples/domains/chem/similarity-scoring-sorted)):
     * The 1-st column, named `molecule`, contains the original molecules string representation from the input `column`
     * The 2-nd column, named `score`, contains the corresponding similarity scores of the range from 0.0 to 1.0, and the DataFrame is sorted descending by this column
     * The 3-rd column, named `index`, contains indices of the molecules in the original input `column`
@@ -68,7 +68,7 @@ Identically to the convention of `searchSubstructure`, a `column` is a column of
 
   `getSimilarities(column, molecule = null, settings = { sorted: false });`
 
-  Produces a Datagrok [`DataFrame`](https://datagrok.ai/js-api/DataFrame) with a single [`Column`](https://datagrok.ai/js-api/Column), where the i-th element contains a similarity score for the i-th element of the input `Column` ([code sample](https://public.datagrok.ai/js/samples/domains/chem/similarity-scoring-scores)). 
+  Produces a Datagrok [`DataFrame`](https://datagrok.ai/js-api/classes/dg.dataframe) with a single [`Column`](https://datagrok.ai/js-api/classes/dg.column), where the i-th element contains a similarity score for the i-th element of the input `Column` ([code sample](https://public.datagrok.ai/js/samples/domains/chem/similarity-scoring-scores)). 
 
 Similarly to the substructure-library based method of `searchSubstructure`, these functions maintain a cache of pre-computed fingerprints. Once the function `findSimilar` or `getSimilarities` meets the `column` previously unmet, it builds the cache of computed fingerprints for the molecules of this `column`, and later uses it to compute similarity scores as long as the function is invoked for the same `column`.
 
