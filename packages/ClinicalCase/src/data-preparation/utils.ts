@@ -30,3 +30,19 @@ export function addTreatmentArm(df: DG.DataFrame, dm: DG.DataFrame, columnsToExt
     changeEmptyStringsToUnknown(withArm, TREATMENT_ARM);
     return withArm;
 }
+
+
+export function createFilteredTable(df: DG.DataFrame, groupCols: string[], condition: string){
+    return df
+    .groupBy(groupCols)
+    .where(condition)
+    .aggregate();    
+  }
+
+export function getColNames(df: DG.DataFrame) {
+    const colNames = [];
+    for (let column of df.columns) {
+        colNames.push(column.name);
+    }
+    return colNames;
+}

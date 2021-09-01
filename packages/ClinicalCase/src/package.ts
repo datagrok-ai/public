@@ -12,6 +12,7 @@ import { ValidationView } from './views/validation-view';
 import { AdverseEventHandler } from './panels/adverse-event-handler';
 import { LaboratoryView } from './views/laboratory-view';
 import { AERiskAssessmentView } from './views/ae-risk-assessment-view';
+import { SurvivalAnalysisView } from './views/survival-analysis-view';
 
 export let _package = new DG.Package();
 
@@ -142,6 +143,7 @@ export async function clinicalCaseApp(): Promise<any> {
   studySummaryClass.validationView = validationView;
   grok.shell.newView(`Laboratory`, [ new LaboratoryView().root ]);
   grok.shell.newView(`AE Risk Assessent`, [ new AERiskAssessmentView().root ])
+  grok.shell.newView(`Survival Analysis`, [ new SurvivalAnalysisView().root ])
 
   DG.ObjectHandler.register(new AdverseEventHandler());
 
