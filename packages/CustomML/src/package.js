@@ -4,8 +4,3 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 export let _package = new DG.Package();
-
-//name: test
-export function test() {
-  grok.shell.info(_package.webRoot);
-}
