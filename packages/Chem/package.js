@@ -380,7 +380,7 @@ class ChemPackage extends DG.Package {
   sdfFileHandler(content) {
 
     let sr = new SDFReader();
-    let jsn = sr.read_colls(content);
+    let jsn = sr.get_colls(content);
     let df = DG.DataFrame.create(jsn['molecule'].length);
     for (const [key, value] of Object.entries(jsn)) {
       df.columns.add(DG.Column.fromStrings(key,value));
