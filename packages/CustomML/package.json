@@ -1,0 +1,23 @@
+{
+	"name": "customml",
+	"friendlyName": "CustomML",
+	"version": "0.0.1",
+	"description": "",
+	"dependencies": {
+		"datagrok-api": "latest"
+	},
+	"devDependencies": {
+		"webpack": "latest",
+		"webpack-cli": "latest"
+	},
+	"scripts": {
+		"debug-customml": "grok publish --rebuild",
+		"release-customml": "grok publish --rebuild --release",
+		"build-customml": "webpack",
+		"build": "webpack",
+		"debug-customml-dev": "grok publish dev --rebuild",
+		"release-customml-dev": "grok publish dev --rebuild --release",
+		"debug-customml-local": "grok publish local --rebuild",
+		"release-customml-local": "grok publish local --rebuild --release"
+	}
+}
