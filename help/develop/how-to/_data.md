@@ -28,7 +28,7 @@ on the flight for aggregations.
 
 Dataframes are comprised of [columns](). Columns may be used as Datagrok functions arguments. For columns, it's
 possible to get its underlying dataframe. In return, columns are comprised of cells, and it's possible to get a cell's
-underlying column. There is also a diverse [system of events](https://datagrok.ai/js-api/DataFrame) one can
+underlying column. There is also a diverse [system of events](https://datagrok.ai/js-api/classes/dg.dataframe) one can
 subscribe on a dataframe.
 
 ### Data types
@@ -37,8 +37,8 @@ subscribe on a dataframe.
 ---------------------------------------------
 
 
-Use [DataFrame](/js-api/DataFrame.html), [Column](/js-api/Column.html), [ColumnList](/js-api/ColumnList.html), 
-and [Row](/js-api/Row.html) classes for table manipulation.
+Use [DataFrame](/js-api/classes/dg.dataframe), [Column](/js-api/classes/dg.column), [ColumnList](/js-api/classes/dg.columnlist), 
+and [Row](/js-api/classes/dg.row) classes for table manipulation.
 
 ```javascript
 demog = grok.testData('demog', 5000);

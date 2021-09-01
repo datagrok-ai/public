@@ -273,7 +273,7 @@ on the flight for aggregations.
 
 Dataframes are comprised of [columns](). Columns may be used as Datagrok functions arguments. For columns, it's
 possible to get its underlying dataframe. In return, columns are comprised of cells, and it's possible to get a cell's
-underlying column. There is also a diverse [system of events](https://datagrok.ai/js-api/DataFrame) one can
+underlying column. There is also a diverse [system of events](https://datagrok.ai/js-api/classes/dg.dataframe) one can
 subscribe on a dataframe.
 
 Let's create a dataframe and check what we can do with it.
@@ -302,12 +302,12 @@ in a table view.
 
 A good overview of dataframes capabilities is available in our
 [API Samples](https://dev.datagrok.ai/js/samples/data-frame/).
-Also check the API reference at [this link](https://datagrok.ai/js-api/DataFrame).
+Also check the API reference at [this link](https://datagrok.ai/js-api/classes/dg.dataframe).
 
 *References:*
 
 * [Dataframe API samples](https://dev.datagrok.ai/js/samples/data-frame/)
-* [Dataframe API reference](https://datagrok.ai/js-api/DataFrame)
+* [Dataframe API reference](https://datagrok.ai/js-api/classes/dg.dataframe)
 * [Datagrok JavaScript playground](https://public.datagrok.ai/js)
 
 ### Iterating over a dataframe

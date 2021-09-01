@@ -19,7 +19,7 @@ export class PredictiveModelingTutorial extends Tutorial {
       let pmv: DG.View;
 
       await this.action('Click on "ML | Train Model..." to open a dialog for training models',
-        grok.events.onViewAdded.pipe(filter((v) => {
+        grok.events.onViewAdded.pipe(filter((v: DG.View) => {
           if (v.type === 'PredictiveModel') {
             pmv = v;
             return true;
@@ -45,7 +45,7 @@ export class PredictiveModelingTutorial extends Tutorial {
         });
         const source = fromEvent(select!, 'change');
         await this.action(instructions,
-          source.pipe(map((event) => select.value), filter((v) => v === value)),
+          source.pipe(map((event: any) => select.value), filter((v: string) => v === value)),
           inputRoot!);
       }
 
@@ -53,12 +53,12 @@ export class PredictiveModelingTutorial extends Tutorial {
       await viewInputAction(`Set "Method" to "${method}"`, 'Method', method);
     };
 
-    this.title('Train model');
+    this.title('Train a model');
     await trainModel('Distributed Random Forest');
 
     const browseModels = async () => {
       await this.action('Click on "ML | Browse Models" to open the Models Browser',
-        grok.events.onViewAdded.pipe(filter((v) => v.type === DG.View.MODELS)));
+        grok.events.onViewAdded.pipe(filter((v: DG.View) => v.type === DG.View.MODELS)));
     };
 
     this.title('Model performance');

@@ -79,7 +79,7 @@
       "id": "2c95eb9a-2816-4974-b0f3-404e75214d9f",
       "comment": "",
       "command": "pause",
-      "target": "500",
+      "target": "1000",
       "targets": [],
       "value": ""
     }, {
@@ -93,6 +93,13 @@
         ["xpath=//div[2]/span", "xpath:position"],
         ["xpath=//span[contains(.,'Databases')]", "xpath:innerText"]
       ],
+      "value": ""
+    }, {
+      "id": "20ee226a-4d7b-4299-b847-ed26e1f0e7d1",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "143f1446-1bc1-4b97-8cc3-3bee36311261",
@@ -117,19 +124,26 @@
       "id": "b6e44068-ce53-4ac8-9ae2-815127a68770",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='tree-expander-MongoDB---northwind']",
+      "target": "xpath=//div[@name='tree-expander-MongoDB---Northwind']",
       "targets": [
-        ["css=.d4-tree-view-group:nth-child(19) > .d4-tree-view-group-host > .d4-tree-view-group > .d4-tree-view-node > .d4-tree-view-tri", "css:finder"],
-        ["xpath=//div[@name='tree-expander-MongoDB---northwind']", "xpath:attributes"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div[19]/div[2]/div/div/div", "xpath:idRelative"],
+        ["css=.d4-tree-view-group:nth-child(19) > .d4-tree-view-group-host .d4-tree-view-tri", "css:finder"],
+        ["xpath=//div[@name='tree-expander-MongoDB---Northwind']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div[2]/div[19]/div[2]/div/div/div", "xpath:idRelative"],
         ["xpath=//div[19]/div[2]/div/div/div", "xpath:position"]
       ],
+      "value": ""
+    }, {
+      "id": "45969622-6f36-43a7-84a7-009e5863c75b",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }, {
       "id": "c18f1a9c-7f26-46a4-967f-bdda74168bd2",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='tree-MongoDB---northwind']",
+      "target": "xpath=//div[@name='tree-expander-MongoDB---Northwind']",
       "targets": [
         ["css=.d4-tree-view-node-selected", "css:finder"],
         ["xpath=//div[@name='tree-MongoDB---northwind']", "xpath:attributes"],
@@ -196,10 +210,10 @@
       "command": "type",
       "target": "name=input-Name",
       "targets": [
-        ["id=82", "id"],
+        ["id=62", "id"],
         ["name=input-Name", "name"],
-        ["css=#\\38 2", "css:finder"],
-        ["xpath=//input[@id='82']", "xpath:attributes"],
+        ["css=#\\36 2", "css:finder"],
+        ["xpath=//input[@id='62']", "xpath:attributes"],
         ["xpath=//div[@id='elementContent']/div[2]/div/div/div/div/input", "xpath:idRelative"],
         ["xpath=//div[2]/div/div/div/div/input", "xpath:position"]
       ],
@@ -296,12 +310,12 @@
       "id": "6caebaa1-63cc-451f-a187-54034057a4e0",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='tree-MongoDB---northwind---Test-Query-By-Selenium-MongoDB']",
+      "target": "xpath=//div[@name='tree-MongoDB---Northwind---Test-Query-By-Selenium-MongoDB']",
       "targets": [
-        ["css=.d4-tree-view-group:nth-child(19) .d4-tree-view-group:nth-child(2) > .d4-tree-view-node", "css:finder"],
-        ["xpath=//div[@name='tree-MongoDB---northwind---Test-Query-By-Selenium-Cassandra']", "xpath:attributes"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div[19]/div[2]/div/div[2]/div[2]/div", "xpath:idRelative"],
-        ["xpath=//div[19]/div[2]/div/div[2]/div[2]/div", "xpath:position"]
+        ["css=.d4-tree-view-group:nth-child(19) > .d4-tree-view-group-host .d4-tree-view-group-host .d4-tree-view-node", "css:finder"],
+        ["xpath=//div[@name='tree-MongoDB---Northwind---Test-Query-By-Selenium-MongoDB']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div[2]/div[19]/div[2]/div/div[2]/div/div", "xpath:idRelative"],
+        ["xpath=//div[19]/div[2]/div/div[2]/div/div", "xpath:position"]
       ],
       "value": ""
     }, {

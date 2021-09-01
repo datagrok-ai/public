@@ -17,7 +17,7 @@ let view = grok.shell.newView('Custom View', [ui.divText('Hi!')]);
 
 In just one line of code we have created a view instance that you can later fill with new visual components, such as icons, buttons, or side panels. See how it works (and looks!) in the [full example](https://public.datagrok.ai/js/samples/ui/views/views).
 
-As simple and easy as this method may seem, it is still more suitable for ad-hoc experiments. To implement a view from a package, you would need to extend the [ViewBase](/js-api/ViewBase.html) class. For instance, the following part of code defines a new view for Jupyter Notebooks:
+As simple and easy as this method may seem, it is still more suitable for ad-hoc experiments. To implement a view from a package, you would need to extend the [ViewBase](/js-api/classes/dg.viewbase.html) class. For instance, the following part of code defines a new view for Jupyter Notebooks:
     
 ```javascript
 class NotebookView extends DG.ViewBase {
@@ -82,8 +82,8 @@ These are the fragments of real code from the public [Notebooks](https://github.
 See also:
 
   * [JavaScript API](../js-api.md)
-  * [JavaScript API: View](https://datagrok.ai/js-api/View)
-  * [JavaScript API: ViewBase](https://datagrok.ai/js-api/ViewBase)
+  * [JavaScript API: View](https://datagrok.ai/js-api/classes/dg.view)
+  * [JavaScript API: ViewBase](https://datagrok.ai/js-api/classes/dg.viewbase)
   * [JavaScript API Samples: Custom View](https://public.datagrok.ai/js/samples/ui/views/views)
   * [JavaScript API Samples: Virtual View](https://public.datagrok.ai/js/samples/ui/virtual-view)
   * [Table View](../../overview/table-view.md)

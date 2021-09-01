@@ -117,7 +117,7 @@
       "id": "df328e6c-240f-4ab2-8c2c-a00284a4adde",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"tree-expander-MS-SQL---northwind\"]",
+      "target": "css=div[name=\"tree-expander-MS-SQL---Northwind\"]",
       "targets": [
         ["css=div[name=\"tree-expander-MS-SQL---northwind\"]", "css"],
         ["css=.d4-tree-view-group:nth-child(13) > .d4-tree-view-group-host > .d4-tree-view-group > .d4-tree-view-node > .d4-tree-view-tri", "css:finder"],
@@ -137,7 +137,7 @@
       "id": "3bab5a57-06ea-456d-b822-7df7621a018c",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//div[@name='tree-expander-MS-SQL---northwind'])[2]",
+      "target": "xpath=(//div[@name='tree-expander-MS-SQL---Northwind'])[2]",
       "targets": [
         ["css=.d4-tree-view-group:nth-child(18) .d4-tree-view-group .d4-tree-view-group:nth-child(1) .d4-tree-view-tri", "css:finder"],
         ["xpath=(//div[@name='tree-expander-MS-SQL---northwind'])[2]", "xpath:attributes"],
@@ -153,14 +153,33 @@
       "targets": [],
       "value": ""
     }, {
+      "id": "dc14888e-68d7-4d1a-a8ff-4b7d38b10b54",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='tree-expander-MS-SQL---Northwind---Schemas---dbo']",
+      "targets": [
+        ["css=.d4-tree-view-group-host > .d4-tree-view-group:nth-child(1) .d4-tree-view-group .d4-tree-view-group:nth-child(1) .d4-tree-view-tri", "css:finder"],
+        ["xpath=//div[@name='tree-expander-MS-SQL---Northwind---Schemas---dbo']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div[2]/div[17]/div[2]/div/div[2]/div/div[2]/div/div/div", "xpath:idRelative"],
+        ["xpath=//div[17]/div[2]/div/div[2]/div/div[2]/div/div/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "d828675c-42d8-4d70-b4ea-3e57a96d5fd1",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "b899a8fb-32e3-4807-ae23-bd3ad91b0e4d",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='tree-MS-SQL---northwind---Tables---Orders']",
+      "target": "xpath=//div[@name='tree-MS-SQL---Northwind---Schemas---dbo---Orders']",
       "targets": [
-        ["css=.d4-tree-view-node-selected", "css:finder"],
-        ["xpath=//div[@name='tree-MS-SQL---northwind---Tables---Orders']", "xpath:attributes"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div[18]/div[2]/div/div[2]/div/div[2]/div[16]/div", "xpath:idRelative"],
+        ["css=.d4-tree-view-group-host > .d4-tree-view-group .d4-tree-view-group:nth-child(16) > .d4-tree-view-node", "css:finder"],
+        ["xpath=//div[@name='tree-MS-SQL---Northwind---Schemas---dbo---Orders']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div[2]/div[17]/div[2]/div/div[2]/div/div[2]/div/div[2]/div[16]/div", "xpath:idRelative"],
         ["xpath=//div[2]/div/div[2]/div[16]/div", "xpath:position"]
       ],
       "value": ""
@@ -314,10 +333,17 @@
       ],
       "value": ""
     }, {
+      "id": "16b084dc-36a5-4a14-9d55-dc2e54324446",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "b993d42c-e569-4b2e-8ff5-2476dc08627e",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"tree-expander-MariaDB---northwind\"]",
+      "target": "css=div[name=\"tree-expander-MariaDB---Northwind\"]",
       "targets": [
         ["css=div[name=\"tree-expander-MariaDB---northwind\"]", "css"],
         ["css=.d4-tree-view-group:nth-child(14) > .d4-tree-view-group-host .d4-tree-view-tri", "css:finder"],
@@ -327,10 +353,17 @@
       ],
       "value": ""
     }, {
+      "id": "8ee32ea5-a4f1-4b63-bac7-38b0d7daab20",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "4ba69ad7-9767-4955-844a-1b5cbf768364",
       "comment": "",
       "command": "click",
-      "target": "xpath=(//div[@name='tree-expander-MariaDB---northwind'])[2]",
+      "target": "xpath=(//div[@name='tree-expander-MariaDB---Northwind'])[2]",
       "targets": [
         ["css=.d4-tree-view-group:nth-child(19) .d4-tree-view-group .d4-tree-view-group:nth-child(1) .d4-tree-view-tri", "css:finder"],
         ["xpath=(//div[@name='tree-expander-MariaDB---northwind'])[2]", "xpath:attributes"],
@@ -346,15 +379,34 @@
       "targets": [],
       "value": ""
     }, {
+      "id": "ecebb21b-6ecd-489c-9795-5a7bcf394948",
+      "comment": "",
+      "command": "click",
+      "target": "xpath=//div[@name='tree-expander-MariaDB---Northwind---Schemas---Northwind']",
+      "targets": [
+        ["css=.d4-tree-view-group:nth-child(18) .d4-tree-view-group:nth-child(4) .d4-tree-view-tri", "css:finder"],
+        ["xpath=//div[@name='tree-expander-MariaDB---Northwind---Schemas---Northwind']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div[2]/div[18]/div[2]/div/div[2]/div/div[2]/div[4]/div/div", "xpath:idRelative"],
+        ["xpath=//div[18]/div[2]/div/div[2]/div/div[2]/div[4]/div/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "1fd7ced7-58e8-424d-a3ad-371d0a116b12",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "9004f3af-2624-467e-b9a8-1ecff92ff1b9",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='tree-MariaDB---northwind---Tables---Orders']",
+      "target": "xpath=//div[@name='tree-MariaDB---Northwind---Schemas---Northwind---Orders']",
       "targets": [
-        ["css=.d4-tree-view-group:nth-child(1) .d4-tree-view-group:nth-child(15) > .d4-tree-view-node", "css:finder"],
-        ["xpath=//div[@name='tree-MariaDB---northwind---Tables---Orders']", "xpath:attributes"],
-        ["xpath=//div[@id='data-sources']/div/div[2]/div[18]/div[2]/div/div[2]/div/div[2]/div[15]/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div[2]/div[15]/div", "xpath:position"]
+        ["css=.d4-tree-view-group:nth-child(4) .d4-tree-view-group:nth-child(15) > .d4-tree-view-node", "css:finder"],
+        ["xpath=//div[@name='tree-MariaDB---Northwind---Schemas---Northwind---Orders']", "xpath:attributes"],
+        ["xpath=//div[@id='elementContent']/div/div/div[2]/div[18]/div[2]/div/div[2]/div/div[2]/div[4]/div[2]/div[15]/div", "xpath:idRelative"],
+        ["xpath=//div[4]/div[2]/div[15]/div", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -504,10 +556,17 @@
       ],
       "value": ""
     }, {
+      "id": "00d963bc-16f1-4aac-86d0-aae8f8804f3d",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "b993d42c-e569-4b2e-8ff5-2476dc086270",
       "comment": "",
       "command": "click",
-      "target": "css=div[name=\"tree-expander-MySQL---northwind\"]",
+      "target": "css=div[name=\"tree-expander-MySQL---Northwind\"]",
       "targets": [
         ["css=div[name=\"tree-expander-MySQL---northwind\"]", "css"],
         ["css=.d4-tree-view-group:nth-child(16) > .d4-tree-view-group-host > .d4-tree-view-group:nth-child(2) > .d4-tree-view-node > .d4-tree-view-tri", "css:finder"],

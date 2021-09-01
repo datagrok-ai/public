@@ -472,7 +472,7 @@
       "id": "d4dd909a-2a01-4f0e-81ac-dbb9aa152e13",
       "comment": "",
       "command": "select",
-      "target": "name=div-share-selector",
+      "target": "css=[name=\"div-share-selector\"] > select",
       "targets": [
         ["id=65", "id"],
         ["css=#\\36 5", "css:finder"],

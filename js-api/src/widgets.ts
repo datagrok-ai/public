@@ -445,10 +445,10 @@ export class ToolboxPage {
  *   .onOK(() => { grok.shell.info('OK!'); })
  *   .show();
  * */
-export class Dialog {
-  d: any;
+export class Dialog extends DartWidget {
+
   constructor(d: any) {
-    this.d = d;
+    super(d);
   }
 
   static create(options: { title?: string, helpUrl?: string } | string = ''): Dialog {
@@ -465,6 +465,13 @@ export class Dialog {
   set helpUrl(url: string) {
     api.grok_Dialog_Set_HelpUrl(this.d, url);
   };
+
+  /** Returns the title of a dialog. */
+  get title(): string { return api.grok_Dialog_Get_Title(this.d); };
+  set title(t: string) { api.grok_Dialog_Set_Title(this.d, t); };
+
+  /** Returns a list of the dialog's inputs. */
+  get inputs(): InputBase[] { return api.grok_Dialog_Get_Inputs(this.d); }
 
   /**
    * Sets the OK button handler, and shows the OK button

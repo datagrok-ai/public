@@ -3,7 +3,7 @@ import * as rxjsOperators from 'rxjs/operators';
 import { toJs } from './wrappers';
 import { Observable } from "rxjs";
 import { Package } from './entities';
-import { Accordion } from "./widgets";
+import { Accordion, Dialog } from "./widgets";
 import { View, ViewLayout } from './view';
 
 let api = <any>window;
@@ -98,6 +98,8 @@ export class Events {
   get onCurrentViewChanged(): rxjs.Observable<any> { return __obs('d4-current-view-changed'); }
 
   get onCurrentCellChanged(): rxjs.Observable<any> { return __obs('d4-current-cell-changed'); }
+
+  get onDialogShown(): rxjs.Observable<Dialog> { return __obs('d4-dialog-showed'); }
 
   /** Sample: {@link https://public.datagrok.ai/js/samples/events/global-events} */
   get onTableAdded(): rxjs.Observable<any> { return __obs('d4-table-added'); }

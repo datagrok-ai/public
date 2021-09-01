@@ -92,43 +92,45 @@ public abstract class JdbcDataProvider extends DataProvider {
         String mainCallId = (String) queryRun.aux.get("mainCallId");
 
         ResultSet resultSet = null;
-        Pattern pattern = Pattern.compile("(?m)@(\\w+)");
         if (dataQuery.inputParamsCount() > 0) {
             query = convertPatternParamsToQueryParams(queryRun, query);
 
             if (isParametrized()) {
                 // Parametrized func
-                List<String> names = new ArrayList<>();
-                Matcher matcher = pattern.matcher(query);
                 StringBuilder queryBuffer = new StringBuilder();
-                int idx = 0;
-                while (matcher.find()) {
-                    String name = matcher.group(1);
-                    if (dataQuery.existsParam(name)) {
-                        queryBuffer.append(query, idx, matcher.start());
-                        queryBuffer.append("?");
-                        idx = matcher.end();
-                        names.add(name);
-                    }
-                }
-                queryBuffer.append(query, idx, query.length());
+                List<String> names = getParameterNames(query, dataQuery, queryBuffer);
                 query = queryBuffer.toString();
+                System.out.println(query);
                 PreparedStatement statement = connection.prepareStatement(query);
                 providerManager.queryMonitor.addNewStatement(mainCallId, statement);
+                List<String> stringValues = new ArrayList<>();
+                System.out.println(names);
+                int i = 0;
                 for (int n = 0; n < names.size(); n++) {
                     FuncParam param = dataQuery.getParam(names.get(n));
+                    String stringValue;
                     if (param.propertyType.equals(Types.DATE_TIME)) {
                         Calendar calendar = javax.xml.bind.DatatypeConverter.parseDateTime((String)param.value);
-                        statement.setTimestamp(n + 1, new Timestamp(calendar.getTime().getTime()));
-                    } if (param.propertyType.equals(Types.LIST) && param.propertySubType.equals(Types.STRING)) {
-                     ArrayList values = (ArrayList)param.value;
-                     Array array = statement.getConnection().createArrayOf("VARCHAR", values.toArray());
-                     statement.setArray(n + 1, array);
-                    } else
-                        statement.setObject(n + 1, param.value);
+                        Timestamp ts = new Timestamp(calendar.getTime().getTime());
+                        stringValue = ts.toString();
+                        statement.setTimestamp(n + i + 1, ts);
+                    } else if (param.propertyType.equals(Types.LIST) && param.propertySubType.equals(Types.STRING)) {
+                        if (param.value == null)
+                            stringValue = "null";
+                        else
+                           stringValue = param.value.toString();
+                        i = i + setArrayParamValue(statement, n + i + 1, param);
+                    } else {
+                        if (param.value == null)
+                            stringValue = "null";
+                        else
+                            stringValue = param.value.toString();
+                        statement.setObject(n + i + 1, param.value);
+                    }
+                    stringValues.add(stringValue);
                 }
                 statement.setQueryTimeout(timeout);
-                String logString = String.format("Query: %s \n", statement);
+                String logString = String.format("Query: %s; \nParams array: %s \n", statement, stringValues);
                 providerManager.logger.info(logString);
                 if (queryRun.debugQuery)
                     queryRun.log += logString;
@@ -136,6 +138,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                     resultSet = statement.getResultSet();
                 providerManager.queryMonitor.removeStatement(mainCallId);
             } else {
+                Pattern pattern = Pattern.compile("(?m)@(\\w+)");
                 // Put parameters into func
                 Matcher matcher = pattern.matcher(query);
                 StringBuilder queryBuffer = new StringBuilder();
@@ -145,6 +148,8 @@ public abstract class JdbcDataProvider extends DataProvider {
                     queryBuffer.append(query.substring(idx, matcher.start()));
                     for (FuncParam param: dataQuery.getInputParams()) {
                         if (param.name.equals(name)) {
+                        System.out.println(param.propertyType);
+                        System.out.println(param.propertySubType);
                             switch (param.propertyType) {
                                 case Types.DATE_TIME:
                                     queryBuffer.append(castParamValueToSqlDateTime(param));
@@ -152,10 +157,26 @@ public abstract class JdbcDataProvider extends DataProvider {
                                 case Types.BOOL:
                                     queryBuffer.append(((boolean) param.value) ? "1=1" : "1=0");
                                     break;
-                                case Types.STRING:
+                                case Types.STRING: //todo: support escaping
                                     queryBuffer.append("'");
                                     queryBuffer.append(param.value.toString());
                                     queryBuffer.append("'");
+                                    break;
+                                case Types.LIST: //todo: extract submethod
+                                    Object[] value = ((Object[])param.value);
+                                     for (int i = 0; i < value.length; i++) {
+                                      switch (param.propertySubType) {
+                                        case Types.STRING:
+                                            queryBuffer.append("'");
+                                            queryBuffer.append(value[i].toString());
+                                            queryBuffer.append("'");
+                                            break;
+                                        default:
+                                            queryBuffer.append(value[i].toString());
+                                        }
+                                        if (i < value.length - 1)
+                                            queryBuffer.append(",");
+                                      }
                                     break;
                                 default:
                                     queryBuffer.append(param.value.toString());
@@ -171,7 +192,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                 Statement statement = connection.createStatement();
                 providerManager.queryMonitor.addNewStatement(mainCallId, statement);
                 statement.setQueryTimeout(timeout);
-                String logString = String.format("Query: %s \n", statement);
+                String logString = String.format("Query: %s \n", query);
                 providerManager.logger.info(logString);
                 if (queryRun.debugQuery)
                     queryRun.log += logString;
@@ -184,7 +205,7 @@ public abstract class JdbcDataProvider extends DataProvider {
             Statement statement = connection.createStatement();
             providerManager.queryMonitor.addNewStatement(mainCallId, statement);
             statement.setQueryTimeout(timeout);
-            String logString = String.format("Query: %s \n", statement);
+            String logString = String.format("Query: %s \n", query);
             providerManager.logger.info(logString);
             if (queryRun.debugQuery)
                 queryRun.log += logString;
@@ -193,6 +214,36 @@ public abstract class JdbcDataProvider extends DataProvider {
             providerManager.queryMonitor.removeStatement(mainCallId);
         }
         return resultSet;
+    }
+
+    protected int setArrayParamValue(PreparedStatement statement, int n, FuncParam param) throws SQLException {
+        @SuppressWarnings (value="unchecked")
+        ArrayList<String> values = (ArrayList<String>) param.value;
+        Array array = statement.getConnection().createArrayOf("VARCHAR", values.toArray());
+        statement.setArray(n, array);
+        return 0;
+    }
+
+    protected List<String> getParameterNames(String query, DataQuery dataQuery, StringBuilder queryBuffer) {
+        Pattern pattern = Pattern.compile("(?m)@(\\w+)");
+        List<String> names = new ArrayList<>();
+        Matcher matcher = pattern.matcher(query);
+        int idx = 0;
+        while (matcher.find()) {
+            String name = matcher.group(1);
+            if (dataQuery.existsParam(name)) {
+                queryBuffer.append(query, idx, matcher.start());
+                appendQueryParam(dataQuery, name, queryBuffer);
+                idx = matcher.end();
+                names.add(name);
+            }
+        }
+        queryBuffer.append(query, idx, query.length());
+        return names;
+    }
+
+    protected void appendQueryParam(DataQuery dataQuery, String paramName, StringBuilder queryBuffer) {
+        queryBuffer.append("?");
     }
 
     @SuppressWarnings("unchecked")
@@ -220,6 +271,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                     && queryRun.func.options.containsKey("batchMode")
                     && queryRun.func.options.get("batchMode").equals("true"))) {
                 query = query.replaceAll("(?m)^" + commentStart + ".*\\n", "");
+                System.out.println(query);
                 resultSet = executeQuery(query, queryRun, connection, timeout);
             } else {
                 String[] queries = query.replaceAll("\r\n", "\n").split("\n--batch\n");
