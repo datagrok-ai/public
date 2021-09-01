@@ -107,9 +107,12 @@ export abstract class Tutorial extends DG.Widget {
   async dlgInputAction(dlg: DG.Dialog, instructions: string, caption: string, value: string) {
     const inp = dlg.inputs.filter((input: DG.InputBase) => input.caption == caption)[0];
     await this.action(instructions,
-      new Observable((subscriber: any) => inp.onChanged(() => {
+      new Observable((subscriber: any) => {
         if (inp.stringValue === value) subscriber.next(inp.stringValue);
-      })),
+        inp.onChanged(() => {
+          if (inp.stringValue === value) subscriber.next(inp.stringValue);
+        });
+      }),
       inp.root,
     );
   }

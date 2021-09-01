@@ -36,6 +36,7 @@ export class MultivariateAnalysisTutorial extends Tutorial {
     this.describe('In the following example, we will predict a car price by its attributes, and see ' +
       'how different measures are related to each other and to the outcome.');
 
+    await this.dlgInputAction(dlg!, 'Set "Table" to "cars"', 'Table', 'cars');
     await this.dlgInputAction(dlg!,'Set "Predict" to "price"', 'Predict', 'price');
 
     // TODO: transform into actions
@@ -50,7 +51,23 @@ export class MultivariateAnalysisTutorial extends Tutorial {
       <li><code>Regression coefficients</code> is a bar chart with regression coefficients</li>
     </ul>`);
 
-    this.describe('Look into these findings to figure out which features correlate with each other ' +
+    const captions = [
+      'Show scores',
+      'Show explained variance',
+      'Show correlation loadings',
+      'Show predicted vs. reference',
+      'Show regression coefficients'
+    ];
+
+    for (let caption of captions) {
+      await this.dlgInputAction(dlg!, '', caption, 'true');
+    }
+
+    await this.action('Click "OK" and wait for the analysis to complete.',
+      grok.functions.onAfterRunAction.pipe(filter((call: DG.FuncCall) => call.func.name === 'MultivariateAnalysis')),
+    );
+
+    this.describe('Look into these findings to figure out which variables correlate with each other ' +
       'and which of them have a greater impact on the outcome.');
     this.describe('See the context help on the right to learn more about multivariate analysis, ' +
       'or navigate to a documentation page by clicking the "Open in new tab" button.');
