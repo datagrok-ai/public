@@ -55,7 +55,9 @@ export abstract class Tutorial extends DG.Widget {
   }
 
   describe(text: string): void {
-    this.activity.append(ui.divText(text, 'grok-tutorial-description-entry'));
+    const div = ui.div([], 'grok-tutorial-description-entry');
+    div.innerHTML = text;
+    this.activity.append(div);
     this._scroll();
   }
 

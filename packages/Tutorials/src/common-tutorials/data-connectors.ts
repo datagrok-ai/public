@@ -52,7 +52,7 @@ export class DataConnectorsTutorial extends Tutorial {
     this.describe('Set "Name" to "Get Starbucks US"');
     this.describe('Write the following text to the editor: "select * from starbucks_us"');
 
-    this.action('Click on the "Play" button to run this query',
+    await this.action('Click on the "Play" button to run this query',
       grok.functions.onBeforeRunAction.pipe(filter((call: DG.FuncCall) => call.func.name === 'GetStarbucksUS')),
     );
   }
