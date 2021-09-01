@@ -12,8 +12,8 @@ with fast in-browser data visualizations.
 Dataframe stores data as list of columns, so the functionality related to constructing, modifying and efficiently
 accessing data points is embodied in both [`DG.Column`][101] and [`DG.DataFrame`][100] classes, whereas event
 handling, visual aspects of working with dataframes, fast column selection, handy construction methods and
-row-based access are provided in [`DG.DataFrame`][100]. Instances of [`DG.ColumnList`](/js-api/ColumnList.html),
-[`DG.Row`](/js-api/Row.html) and [`DG.Cell`](/js-api/Cell.html) are used as these two classes' related properties
+row-based access are provided in [`DG.DataFrame`][100]. Instances of [`DG.ColumnList`](/js-api/classes/dg.columnlist),
+[`DG.Row`](/js-api/classes/dg.row) and [`DG.Cell`](/js-api/classes/dg.cell) are used as these two classes' related properties
 or return values.
 
 ## Dataframe design

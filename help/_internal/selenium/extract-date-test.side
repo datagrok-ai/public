@@ -298,11 +298,11 @@
       "id": "50427af5-2804-4750-8e38-be3888995f75",
       "comment": "",
       "command": "click",
-      "target": "xpath=//div[@name='div-Current-column---Extract---month-string']",
+      "target": "xpath=//div[@name='div-Current-column---Extract---month']",
       "targets": [
-        ["css=.d4-menu-item-vert:nth-child(2) .d4-menu-item:nth-child(11)", "css:finder"],
-        ["xpath=//div[@name='div-Current-column---Extract---month-string']", "xpath:attributes"],
-        ["xpath=//div[6]/div/div/div[2]/div/div/div[11]", "xpath:position"]
+        ["css=.d4-menu-item-vert:nth-child(2) .d4-menu-item:nth-child(12)", "css:finder"],
+        ["xpath=//div[@name='div-Current-column---Extract---month']", "xpath:attributes"],
+        ["xpath=//div[6]/div/div/div[2]/div/div/div[12]", "xpath:position"]
       ],
       "value": ""
     }, {
@@ -335,7 +335,7 @@
       "id": "0b7ddffb-c17b-4491-9fbb-3a139490c03d",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "name=span-month-string(STARTED)-(12-categories)",
+      "target": "name=span-month(STARTED)",
       "targets": [
         ["css=.d4-entity-markup-row:nth-child(12) label", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div/div/div[4]/div[2]/div/div/span[12]/span/label", "xpath:idRelative"],
@@ -486,6 +486,13 @@
         ["xpath=//tr[8]/td[2]/span", "xpath:position"],
         ["xpath=//span[contains(.,'38301')]", "xpath:innerText"]
       ],
+      "value": ""
+    }, {
+      "id": "466b6597-6461-4219-9ddd-309985659179",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
       "value": ""
     }]
   }],

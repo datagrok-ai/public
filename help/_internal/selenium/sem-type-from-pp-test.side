@@ -95,6 +95,13 @@
       ],
       "value": ""
     }, {
+      "id": "ca0d6333-3e41-4646-ac7f-5cf3593d7fc2",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "e33a864b-7af1-40f8-bc0f-859ed3ecfce7",
       "comment": "",
       "command": "click",

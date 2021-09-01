@@ -310,7 +310,7 @@ Your package might contain the following additional folders, depending on your n
 [npm package naming rules]: https://docs.npmjs.com/cli/v6/configuring-npm/package-json#name
 [npm]: https://docs.npmjs.com/downloading-and-installing-node-js-and-npm
 [nvm]: https://github.com/nvm-sh/nvm#installing-and-updating
-[package section]: https://datagrok.ai/js-api/Package
+[package section]: https://datagrok.ai/js-api/classes/dg.package
 [public repository]: https://github.com/datagrok-ai/public/tree/master/packages
 [public]: https://public.datagrok.ai/u
 [publish the package]: _publishing.md

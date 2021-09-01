@@ -75,14 +75,10 @@ function add(args) {
         lang = args['_'][3];
         name = args['_'][4];
       }
-      const langs = {
-        javascript: 'js', julia: 'jl',
-        node: 'js', octave: 'm', python: 'py', r: 'R'
-      };
-      if (!Object.keys(langs).includes(lang)) {
-        console.log('Unsupported language');
+      if (!Object.keys(utils.scriptLangExtMap).includes(lang)) {
+        console.log('Unsupported language:', lang);
         console.log('You can add a script in one of the following languages:');
-        console.log(Object.keys(langs).join(', '));
+        console.log(Object.keys(utils.scriptLangExtMap).join(', '));
         return false;
       }
 
@@ -94,14 +90,14 @@ function add(args) {
       // Create the folder `scripts` if it doesn't exist yet
       if (!fs.existsSync(scriptsDir)) fs.mkdirSync(scriptsDir);
 
-      let scriptPath = path.join(scriptsDir, name + '.' + langs[lang]);
+      let scriptPath = path.join(scriptsDir, name + '.' + utils.scriptLangExtMap[lang]);
       if (fs.existsSync(scriptPath)) {
         return console.log(`The file with the script already exists: ${scriptPath}`);
       }
 
       // Copy the script template
       let templatePath = path.join(path.dirname(path.dirname(__dirname)), 'script-template')
-      templatePath = path.join(templatePath, lang + '.' + langs[lang]);
+      templatePath = path.join(templatePath, lang + '.' + utils.scriptLangExtMap[lang]);
       var contents = fs.readFileSync(templatePath, 'utf8');
       if (tag) {
         let ind = contents.indexOf('tags: ') + 6;

@@ -1,0 +1,27 @@
+{
+	"name": "drugbank",
+	"beta": false,
+	"friendlyName": "DrugBank",
+	"version": "0.0.1",
+	"description": "",
+	"dependencies": {
+		"datagrok-api": "latest",
+		"cash-dom": "latest",
+		"dayjs": "latest"
+	},
+	"devDependencies": {
+		"webpack": "latest",
+		"webpack-cli": "latest"
+	},
+	"scripts": {
+		"install-dependencies": "npm install",
+		"debug-drugbank": "grok publish --rebuild",
+		"release-drugbank": "grok publish --rebuild --release",
+		"build-drugbank": "webpack",
+		"build": "webpack",
+		"debug-drugbank-dev": "grok publish dev --rebuild",
+		"release-drugbank-dev": "grok publish dev --rebuild --release",
+		"debug-drugbank-local": "grok publish local --rebuild",
+		"release-drugbank-local": "grok publish local --rebuild --release"
+	}
+}

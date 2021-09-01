@@ -60,7 +60,7 @@
       "id": "80c19751-26fa-46eb-a3f3-ebd920f00e74",
       "comment": "",
       "command": "pause",
-      "target": "1000",
+      "target": "4000",
       "targets": [],
       "value": ""
     }, {
@@ -92,7 +92,7 @@
       "id": "64b1edcf-a37b-40a2-ad53-54820e5b601a",
       "comment": "",
       "command": "pause",
-      "target": "2000",
+      "target": "3000",
       "targets": [],
       "value": ""
     }, {
@@ -136,7 +136,7 @@
       "command": "verify",
       "target": "tmp",
       "targets": [],
-      "value": "display: initial; left: 359px; top: 102px; pointer-events: none; position: fixed;"
+      "value": "display: none;"
     }, {
       "id": "13845771-c501-4e9d-bfa2-8ff0f3709e14",
       "comment": "",
@@ -172,7 +172,7 @@
       "id": "7729b5a2-d18e-4887-8fca-42fd797d2597",
       "comment": "",
       "command": "pause",
-      "target": "500",
+      "target": "1000",
       "targets": [],
       "value": ""
     }, {
@@ -254,7 +254,7 @@
       "id": "615cf97e-4be7-4944-aa60-d318f78ccb81",
       "comment": "",
       "command": "pause",
-      "target": "500",
+      "target": "1000",
       "targets": [],
       "value": ""
     }, {
@@ -270,7 +270,7 @@
       "command": "verify",
       "target": "tmp",
       "targets": [],
-      "value": "display: none; left: 359px; top: 102px; pointer-events: none; position: fixed;"
+      "value": "display: none;"
     }, {
       "id": "71b6e129-7e5a-430d-84e4-38087dfd2ec1",
       "comment": "",

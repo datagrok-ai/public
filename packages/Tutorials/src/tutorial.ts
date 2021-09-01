@@ -55,7 +55,9 @@ export abstract class Tutorial extends DG.Widget {
   }
 
   describe(text: string): void {
-    this.activity.append(ui.divText(text, 'grok-tutorial-description-entry'));
+    const div = ui.div([], 'grok-tutorial-description-entry');
+    div.innerHTML = text;
+    this.activity.append(div);
     this._scroll();
   }
 
@@ -78,7 +80,7 @@ export abstract class Tutorial extends DG.Widget {
 
   firstEvent(eventStream: Observable<any>): Promise<void> {
     return new Promise<void>((resolve, reject) => {
-      eventStream.pipe(first()).subscribe((_) => resolve());
+      eventStream.pipe(first()).subscribe((_: any) => resolve());
     });
   }
 
@@ -89,7 +91,7 @@ export abstract class Tutorial extends DG.Widget {
     let viewer: DG.Viewer;
 
     await this.action(`Open ${name}`,
-      grok.events.onViewerAdded.pipe(filter((data) => {
+      grok.events.onViewerAdded.pipe(filter((data: DG.EventData) => {
         const found = check(data.args.viewer);
         if (found) {
           viewer = data.args.viewer;
@@ -100,6 +102,19 @@ export abstract class Tutorial extends DG.Widget {
     );
 
     return viewer!;
+  }
+
+  async dlgInputAction(dlg: DG.Dialog, instructions: string, caption: string, value: string) {
+    const inp = dlg.inputs.filter((input: DG.InputBase) => input.caption == caption)[0];
+    await this.action(instructions,
+      new Observable((subscriber: any) => {
+        if (inp.stringValue === value) subscriber.next(inp.stringValue);
+        inp.onChanged(() => {
+          if (inp.stringValue === value) subscriber.next(inp.stringValue);
+        });
+      }),
+      inp.root,
+    );
   }
 }
 

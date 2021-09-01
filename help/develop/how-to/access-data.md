@@ -191,7 +191,7 @@ In addition to connections and queries, it is useful to look at methods for read
 If you want to access data that resides within your package (e.g. open a `csv` table), load it from URL, as you would do with other [external files](https://public.datagrok.ai/js/samples/data-access/external/stock-prices). The package root for client side can be found with `webRoot` property. The example shown below gets the `test.csv` table from the `data-samples` subdirectory and opens a table view for it:
 
 ```javascript
-let _package = new DG.Package();
+export let _package = new DG.Package();
 
 grok.data.loadTable(`${_package.webRoot}data-samples/test.csv`)
   .then(t => grok.shell.addTableView(t));

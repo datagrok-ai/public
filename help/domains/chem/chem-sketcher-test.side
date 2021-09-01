@@ -177,7 +177,7 @@
       "id": "276edd93-377c-451b-b824-9fa41b1aa567",
       "comment": "",
       "command": "pause",
-      "target": "500",
+      "target": "1000",
       "targets": [],
       "value": ""
     }, {
@@ -194,7 +194,7 @@
       "id": "0b8f2957-a05a-4da3-bd68-084b8c6e14ce",
       "comment": "",
       "command": "pause",
-      "target": "500",
+      "target": "1000",
       "targets": [],
       "value": ""
     }, {
@@ -214,7 +214,7 @@
       "id": "e932dcb9-5a7c-4d5e-b254-fd9c9954e714",
       "comment": "",
       "command": "pause",
-      "target": "500",
+      "target": "1000",
       "targets": [],
       "value": ""
     }, {
@@ -252,7 +252,7 @@
       "id": "639ce2f5-8dd5-488d-8780-b89ca38a756b",
       "comment": "",
       "command": "pause",
-      "target": "500",
+      "target": "1000",
       "targets": [],
       "value": ""
     }, {

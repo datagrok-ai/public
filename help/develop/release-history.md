@@ -1,6 +1,145 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-08-31 Dev build 0.93.17
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.17`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Package content validation: refine missing export statement check 
+* Custom ML: add blob support for JS engines 
+* Histogram: Default values for filter slider 
+* Grid: horizontal scroll bar jumps to the left as the data frame is filtered 
+* resolves #97 datagrok-tools: package content validation: check scripts location 
+* DrugBank package -> excessive header removed 
+* Histogram: reference distributions (GitHub #91) (WIP)
+* Fix UI tests (WIP)
+* Fixed js-api links 
+* sdf file-reader 
+* Fix a typo 
+* #53 Tutorials package: lock `rxjs` version 
+* Histogram: Display bands (WIP)
+
+
+# 2021-08-30 Dev build 0.93.16
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.16`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Scatter Plot: Change caption for Markers in popup menu (Type -> Shape) 
+* #53 Tutorials package: Data connectors tutorial 
+* DrugBank package -> excessive header removed 
+* Added cache checkbox 
+* Grid: horizontal scroll bar jumps to the left as the data frame is filtered 
+* Updatd public token 
+
+
+# 2021-08-30 Dev build 0.93.15
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.15`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* JS API: Dialog.inputs 
+* Can't execute .applyFormula on column without formula tag #95 
+* chem:svgMol function -> molfile format support added 
+* DrugBank package -> search functions and widgets added 
+* Data on demand (WIP)
+
+
+# 2021-08-30 Dev build 0.93.14
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.14`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Script Editor, snippets menu 
+* Form: Column Selector 
+* #53 Tutorials package: EDA track (WIP) 
+* (Bug) Grid: Sometimes the horizontal scroll bar does not show 
+* Selenium: Add attributes "name" to elements of the new AddNewColumn dialog 
+* JS API: corrected layout of ui.switchInput 
+* (Bug) Core: JavaScript wrapper for Dialog cannot be constructed 
+* JS API: onDialogShown event 
+* Rename d4-input-editor class 
+* Add superclass to the Dialog widget 
+* (Bug) Grok connect: non-parameterized query is not logged 
+* Grok connect: log params in parameterized query 
+* Grok connect: tests for logging 
+* Update README.md 
+* Wiki: Peptides 
+* Update script-editor.ts 
+* Fiexed misinformation in data access tutorial 
+* Fixe unit test URL 
+* Modal: update named parameters 
+* (Bug) Connectors: 'Add new connection' returns a dialog for editing 
+* JS API: add dialog's title 
+* (Bug) Scatter Plot: marker bugs \- dont work caches, borders width, borders display, borders on other shapes (not circles), choices in popup menu, shapes are cut off, wrong hittests, wrong mouseover shapes, wrong sizes, bugs in Markercol functionality, 
+* Connectors: Support Array input parameters #90 
+* Data on demand (WIP)
+
+
+# 2021-08-26 Dev build 0.93.13
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.13`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* (Bug) Scatter Plot: Dot style chart stay on the top left corner of the canvas 
+* AddNewColumn editor: allow changing the column name during editing 
+* (Bug) Custom ML: task bar disappears when model applied 
+* #53 Tutorials package: Predictive Modeling tutorial (WIP) 
+* Custom ML: apply the newly trained model 
+* Wiki: JS API table of contents update 
+* Typedoc installed 
+* Merge commits 
+* Typedoc instead of JsDoc 
+* Custom ML: add custom engines from JS functions 
+* Change endpoints to use new divided cvm images (WIP)
+* Typedoc styling 
+* (Bug) Custom ML: duplicate accordion parameters 
+* Custom ML: use column name provided by apply function 
+* Added customization options to wordcloud 
+* Enabled the word cloud viewer in Charts 
+* Fixed output variable names 
+* Modified Patient Profele View, added AE Risk Assessment View 
+* modified multiplot to use custom tables instead of tables frm grok.shell, added ability to use multiple timelins plots 
+* Connectors: Support Array input parameters #90 
+* updated clinical demo files project 
+
+
 # 2021-08-25 Dev build 0.93.12
 
 ## Latest Docker Images
