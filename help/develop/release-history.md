@@ -1,6 +1,33 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-08-31 Dev build 0.93.17
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.17`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Package content validation: refine missing export statement check 
+* Custom ML: add blob support for JS engines 
+* Histogram: Default values for filter slider 
+* Grid: horizontal scroll bar jumps to the left as the data frame is filtered 
+* resolves #97 datagrok-tools: package content validation: check scripts location 
+* DrugBank package -> excessive header removed 
+* Histogram: reference distributions (GitHub #91) (WIP)
+* Fix UI tests (WIP)
+* Fixed js-api links 
+* sdf file-reader 
+* Fix a typo 
+* #53 Tutorials package: lock `rxjs` version 
+* Histogram: Display bands (WIP)
+
+
 # 2021-08-30 Dev build 0.93.16
 
 ## Latest Docker Images
