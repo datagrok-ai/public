@@ -1,8 +1,28 @@
+# Future release
+
+Multiple marker shapes https://community.datagrok.ai/t/visualization-related-updates/521/20
+JS API making drag-and-droppable objects https://community.datagrok.ai/t/visualization-related-updates/521/15?u=dskatov
+
+## Highlights
+
+## Major features and improvements
+
+## Bugs
+
 # 2021-07-29 Build 0.93.0
 
 We've released a [new version](https://public.datagrok.ai/) of the Datagrok platform (0.93.0). It is a large release with many new features and stability improvements.
 
 ## Highlights
+
+Relative values in Bar Charts https://community.datagrok.ai/t/bar-chart-updates/580
+Multi-axis line chart https://community.datagrok.ai/t/visualization-related-updates/521/18
+Dragging columns with drop zones https://community.datagrok.ai/t/visualization-related-updates/521/17
+Cleaner columns summary in tooltips https://community.datagrok.ai/t/visualization-related-updates/521/16
+Filtering multivalue cells
+https://community.datagrok.ai/t/visualization-related-updates/521/15?u=dskatov
+More granular event handling for metadata https://community.datagrok.ai/t/visualization-related-updates/521/15?u=dskatov
+New customizations in Scatter Plot https://community.datagrok.ai/t/javascript-api-updates/526/11?u=dskatov
 
 ## Major features and improvements
 
@@ -75,6 +95,18 @@ We've released a [new version](https://public.datagrok.ai/) of the Datagrok plat
 * Bar Chart: make scrolling smoother 
 * ScatterPlot: changed back marker color 
 * ScatterPlot: set default marker size to 10 
+* Adde pubspec to speed-up packages resolving 
+
+* Line Chart: support for multiple Y axes 
+* Line Chart: MultiAxis: double-click (choosing a primary series) should have no effect 
+
+* Add New Column: ColumnGrid Widget 
+* Add Repository: Add attribute "name" for Source Type selector 
+
+* datagrok-tools: allow skipping questions in `grok config`
+* Ability to skip DF reading on server after Grok Connect request 
+
+* Query Builder dialog: Add "name" attributes to checkboxes for tables 
 
 
 ## Bugs
@@ -144,6 +176,47 @@ We've released a [new version](https://public.datagrok.ai/) of the Datagrok plat
 * (Bug) Filters: multi-value filters have no square indicator on top to toggle category selection 
 * (Bug) Filters: There are no icons for sorting and searching on hover for Multi-value filters 
 * (Bug) Filters: clicking on "search" should open search field AND focus on it 
+
+* (Bug) Grok connect: "The method execute() cannot take arguments" error with query parameters
+* (Bug) Grok connect: DriverManager returns wrong driver 
+* (Bug) Matcher: matching on multiple criteria ignores the "and/or" option 
+* (Bug) Core: Bitset.falseCount returns the number of set bits 
+
+* (Bug) Line Chart: point hit-testing doesn't work for points on the right 
+* (Bug) Line Chart: NullReferenceError when changing X axis column 
+* (Bug) Scatter Plot: "axes follow filter" feature does not work 
+* (Bug) Line Chart: "axes follow filter" feature does not work 
+* (Bug) Filters: clicking on "search" should open search field AND focus on it 
+
+* (Bug) Line Chart: "axes follow filter" feature does not work 
+* (Bug) Viewers: Inconsistent column selection inside a viewer and its properties panel (WIP)
+* Updated ui.md (ui.stringInput, ui.searchInput) 
+* (Bug) Custom ML: apply function from different ML engine  
+* (Bug) DataQuery with choices throws an exception 
+* (Bug) JS API: Label breaks layout of TextInput with icon 
+* (Bug) JS API: properties cannot be changed in JsViewer (JsViewer.props and JsViewer.setOptions result in errors) 
+* (Bug) Grok connect: "No suitable driver found for..." 
+* (Bug) Viewers: textColor property misspelling 
+* (Bug) Scatter Plot: Regression line appear without activation (WIP)
+* (Bug) Scatter Plot: Regression line appear without activation (WIP)
+* (Bug) Grok connect: NullPointerException with meta.cache option 
+* (Bug) Datagrok to Python skips blank lines 
+* Add New Column: History bug \- inputs are not filled with history 
+* Add New Column: Dragging functions opens a drop-area for the table 
+* (Bug) Viewers: textColor property misspelling 
+* (Bug) Scatter Plot: Regression line appear without activation 
+* (Bug) Viewers: the legend colors are not synchronized 
+* (Bug) Grid: switching global coloring on / off removes linear color-coding 
+* (Bug) Bar Chart: Unexpected bar color change after filtering 
+* (Bug) Grok connect: "No suitable driver found for..." 
+* (Bug) View Layouts: Error balloon after deleting saved layout 
+* (Bug) JS Viewers: error: NullError: method not found: 'where$1' on null 
+* (Bug) Query-driven dashboards: query controls do not show up when a project is open
+* (Bug) Viewers: Inconsistent column selection inside a viewer and its properties panel (WIP)
+* Updated ui.md (ui.stringInput, ui.searchInput) 
+* (Bug) Custom ML: apply function from different ML engine  
+* (Bug) DataQuery with choices throws an exception 
+* (Bug) JS API: Label breaks layout of TextInput with icon 
 
 
 # 2021-05-06 Build 0.91.10
