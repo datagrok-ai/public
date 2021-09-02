@@ -1,30 +1,19 @@
-# Future release
-
-Multiple marker shapes https://community.datagrok.ai/t/visualization-related-updates/521/20
-JS API making drag-and-droppable objects https://community.datagrok.ai/t/visualization-related-updates/521/15?u=dskatov
+# 2021-07-29 Build 0.93.0
 
 ## Highlights
 
-* A new "Add New Column"
-* Custom ML
-* Function View and Sensitivity Analysis https://www.youtube.com/watch?v=2xuxJjpjXi4&t=2507s
+We've released a [new version](https://public.datagrok.ai/) of the Datagrok platform (0.93.0). It's a large release with many new features and stability improvements, addressing both user experience and flexibility for developers.
 
-## Major features and improvements
-
-## Bugs
-
-# 2021-07-29 Build 0.93.0
-
-## Short note
-
-We've released a [new version](https://public.datagrok.ai/) of the Datagrok platform (0.93.0). It is a large release with many new features and stability improvements, addressing both user experience and flexibility for developers. 
-
-Here are a few of interesting areas in the platform updates:
+Here are few interesting areas in the platform updates:
 
 * Viewers improvements, such as [relative values in Bar Charts] (https://community.datagrok.ai/t/bar-chart-updates/580) or [multi-axis Line Chart](https://community.datagrok.ai/t/visualization-related-updates/521/18)
 * Visual improvements like [dragging columns with drop zones](https://community.datagrok.ai/t/visualization-related-updates/521/17) and [cleaner columns summaries in tooltips]( https://community.datagrok.ai/t/visualization-related-updates/521/16)
 * Functional features, such as [filtering multivalue cells](https://community.datagrok.ai/t/visualization-related-updates/521/15)
 * Improvements in [sharing files and folders](https://www.youtube.com/watch?v=0QxzllnBreI&t=3895s)
+* Better programmatic operations, such as [more granular event handling for metadata](https://community.datagrok.ai/t/visualization-related-updates/521/15) and
+[new customizations in Scatter Plot](https://community.datagrok.ai/t/javascript-api-updates/526/11)
+* Numerous improvements in database connectors stability and performance
+* Additional built-in functions and improved [documentation on them](https://datagrok.ai/help/transform/functions/datetime-functions)
 
 We also worked intensively on our [public packages](https://github.com/datagrok-ai/public), presenting a few new of them:
 
@@ -37,211 +26,143 @@ dynamic scripting capabilities for constructing signal processing pipelines: [ov
 
 Check [Release Notes]() for details, and try new version a try at [https://public.datagrok.ai](https://public.datagrok.ai/).
 
-## Highlights
-
-Relative values in Bar Charts https://community.datagrok.ai/t/bar-chart-updates/580
-Multi-axis line chart https://community.datagrok.ai/t/visualization-related-updates/521/18
-Dragging columns with drop zones https://community.datagrok.ai/t/visualization-related-updates/521/17
-Cleaner columns summary in tooltips https://community.datagrok.ai/t/visualization-related-updates/521/16
-Filtering multivalue cells
-https://community.datagrok.ai/t/visualization-related-updates/521/15?u=dskatov
-More granular event handling for metadata https://community.datagrok.ai/t/visualization-related-updates/521/15?u=dskatov
-New customizations in Scatter Plot https://community.datagrok.ai/t/javascript-api-updates/526/11?u=dskatov
-
 ## Major features and improvements
 
-* Ability to share files 
-* Connectors: Redshift: Schema browsing
-* Trellis Plot: ability to enlarge individual in-trellis viewers 
-* Join tables: Don't include key fields by default 
-* Multi-value filters 
-* Connectors: add default schema to providers and use as condition for schema browsing 
-* Table View: Columns pane: add search 
-* JS API: DG.TAGS.FORMAT tag as a preferred way to set the column format 
-* JS API: add event onAccordionConstructed and Accordion.context getter  
-* Grid: ShowVisibleColumnsInTooltip property 
-
-* Scripting: Ability to set custom name for parameter 
-* Scripting: Ability to set postfix for parameter 
-* UI: Ability to set dialog background
-* JS API: add grok.shell.views and grok.shell.tableViews 
-* JS API: ScatterPlot: add viewport 
-
-* Grid: automatically pick up cell type from data frame
-* JS API: Stats.histogramsByCategories
+* Serialization info panel for columns
+* Ability to share files
+* Ability to skip DF reading on server after Grok Connect request
+* Add New Column: ColumnGrid Widget, minor performance improvements
+* Add Repository: Add attribute "name" for Source Type selector
+* Add string name indexing for columns
+* Adde pubspec to speed-up packages resolving
+* Bar Chart: adaptive font size; automatically zoom in to a reasonable number of categories in case of many categories; make scrolling smoother
+* Binning Functions: BinBySpecificLimits
+* Box Plot: better border color; showCategorySelector and showValueSelector properties
+* Conditional color-coding: bring options from the property panel to column context menu
+* Connectors: Redshift: Schema browsing; default schema to providers and use as condition for schema browsing
 * Correlation plot: on cell click, show the corresponding scatter plot in the property panel 
-
-* ScatterPlot custom renderer: disable overlay dot rendering on categories hover  
-
-* JS API: Func.find(package, name, tags, returnType) 
-* JS API: Func.appy(params): Promise<TResult> 
-* JS API: toDart(): ability for JS classes to define custom conversion 
-* JS API: ui.icons for commonly used icons 
-* JS API: ui.tools.setHoverVisibility(host, elements) 
-* JS API: ui.image 
-* Scripting: interactivity: show execution results in the property panel 
+* Grid: ShowVisibleColumnsInTooltip property; automatically pick up cell type from dataframe
+* Histogram and BarChart: improved washed-out default colors
+* JS API: Added grok.shell.startUri
+* JS API: DG.TAGS.FORMAT tag as a preferred way to set the column format
+* JS API: Func.appy(params): Promise<TResult>
+* JS API: Func.find(package, name, tags, returnType)
+* JS API: GridColumn.getVisibleCells()
+* JS API: ScatterPlot: add viewport
+* JS API: Stats.histogramsByCategories
+* JS API: TabPane: new properties: root, content, parent
+* JS API: Viewer.onContextMenu event 
+* JS API: add event onAccordionConstructed and Accordion.context getter 
+* JS API: add grok.shell.views and grok.shell.tableViews
+* JS API: dialog.clear()
+* JS API: toDart(): ability for JS classes to define custom conversion
+* JS API: ui.icons for commonly used icons
+* JS API: ui.image
+* JS API: ui.tools.setHoverVisibility(host, elements)
+* Join tables: Don't include key fields by default
+* Line Chart: MultiAxis: double-click (choosing a primary series) should have no effect; move hit-testing functionality to series renderers; support for multiple Y axes
+* Math Functions: Log(arg1, arg2), Log10(), Median(), RandBetween(), Round10(), etc.
+* Multi-value filters
+* Query Builder dialog: Add "name" attributes to checkboxes for tables
+* ScatterPlot custom renderer: disable overlay dot rendering on categories hover; changed back marker color; set default marker size to 10
+* Scripting: Ability to set custom name for parameter; ability to set postfix for parameter; show execution results in the property panel
+* Table View: Columns pane: add search
+* Text Functions: RegExpExtract(), RegExpReplace(), StrFind(), etc.
+* Trellis Plot: ability to enlarge individual in-trellis viewers
+* UI: Ability to set dialog background
 * UTC support in the datetime parser
-* JS API: dialog.clear() 
-* Add string name indexing for columns 
-
-* Conditional color-coding: bring options from the property panel to column context menu 
-
-* Binning Functions: BinBySpecificLimits 
-* DateTime extractor functions (year, month, day, etc) 
-
-* Math Functions: Log(arg1, arg2) 
-* Math Functions: Log10() 
-* Math Functions: Round10() 
-* Math Functions: RandBetween() 
-
-* JS API: Added grok.shell.startUri 
-* JS API: TabPane: new properties: root, content, parent 
-* Math Functions: Median() 
-* Text Functions: StrFind() 
-* Text Functions: StrLeft() 
-* Text Functions: StrRight() 
-* Text Functions: StrRepeat() 
-* Text Functions: RegExpReplace() 
-* Text Functions: RegExpExtract()
-* JS API: Viewer.onContextMenu event  
-
-* 'Serialization' info panel for columns 
-* Add New Column: minor performance improvements 
-* JS API: GridColumn.getVisibleCells() 
-* Functions: Parameter categories 
-* Viewers: support for styles 
-* Viewers: implement 'dashboard' style for all standard viewers 
-* Histogram and BarChart: washed-out default colors 
-* Line Chart: move hit-testing functionality to series renderers 
-* Introduced Color.textColor 
-* Bar Chart: adaptive font size 
-* Bar Chart: in case of many categories, automatically zoom in to a reasonable number of categories 
-* Bar Chart: make scrolling smoother 
-* ScatterPlot: changed back marker color 
-* ScatterPlot: set default marker size to 10 
-* Adde pubspec to speed-up packages resolving 
-
-* Line Chart: support for multiple Y axes 
-* Line Chart: MultiAxis: double-click (choosing a primary series) should have no effect 
-
-* Add New Column: ColumnGrid Widget 
-* Add Repository: Add attribute "name" for Source Type selector 
-
+* Viewers: implement 'dashboard' style for all standard viewers; support for styles
 * datagrok-tools: allow skipping questions in `grok config`
-* Ability to skip DF reading on server after Grok Connect request 
-
-* Query Builder dialog: Add "name" attributes to checkboxes for tables 
-
 
 ## Bugs
 
-* (Bug) Chem: R-Groups Analysis with client RDKit 
-* (Bug) Incorrect QNum parsing 
-* (Bug) JS API: Columns.byTags does not work 
-* (Bug) Queries: "Converting object to an encodable object failed" with dataframe as parameter 
-* (Bug) Excel import: an empty column is created as part of the dataframe 
-* (Bug) Grid: html cells are not re-rendered after sorting a column
-* Prevent socket memory consuming
-* JS API: ui.info for a yellow info bar
-* (Bug) Core: default tooltip config is no longer saved with layout 
-* (Bug) JS Viewer: Incorrect height calculation 
-* (Bug) Bar Chart: coloring cannot be disabled 
-* (Bug) Filters: adding returns a filter for the column added previously instead of the currently selected one 
-* (Bug) Bar Chart: coloring gets only applied when editing colors in a grid column 
-* Packages: beta flag 
-* (Bug) UI: new view appears below the current 
+* Add New Column: Dragging functions opens a drop-area for the table
+* Add New Column: History bug \- inputs are not filled with history
+* Add new column: Strings in functions cannot be enclosed in single quotes
+* Bar Chart: Unexpected bar color change after filtering
+* Bar Chart: Viewer coloring settings should take precedence over the grid coloring settings (WIP)
+* Bar Chart: coloring cannot be disabled; coloring gets only applied when editing colors in a grid column
+* Box Plot: an exception when stdev(value) = 0
+* Box Plot: improve initial choice of value column (stdev > 0 if possible)
+* Chem: R-Groups Analysis with client RDKit
+* Column format changes are not persisted in layouts
+* Connectors: Impala: int32max instead of real values
+* Connectors: Oracle: NullPointerException in DB table content
+* Core: Bitset.falseCount returns the number of set bits
+* Core: default tooltip config is no longer saved with layout
+* Current user is system while deploying
+* Custom ML: apply function from different ML engine
+* Custom ML: apply function from different ML engine
+* Data | Unpivot does not work
+* DataQuery with choices throws an exception
+* DataQuery with choices throws an exception
 * Dataframe: Detect column max significant digits in CSV loading
-* (Bug) Viewers: the menu item `Viewer` is not visible in uploaded projects 
-* (Bug) Grid: drag-and-drop column reordering: provide drop zones 
-
-* fixes regression in 2D layout alignment of unknown origin 
-* (Bug) Events: onViewerAdded and onViewerClosed are sent twice 
-* (Bug) Filters: if multi-value filters are present in the panel, the reset button doesn't work 
-* (Bug) Radiobutton throws exception when created 
-
-* (Bug) Pie Chart: unnecessary datetime aggregation 
-* (Bug) JS API: toJs won't work on GrokPackage 
-* (Bug) JS API: JsViewerHostCore is returned instead of Viewer instance 
-
-* (Bug) Current user is system while deploying 
-* (Bug) Hide function deselects the selected columns from the tooltip  
-* (Bug) Bar Chart: Viewer coloring settings should take precedence over the grid coloring settings (WIP)
-* (Bug) Data | Unpivot does not work 
-* (Bug) Column format changes are not persisted in layouts 
-
-* (Bug) Connectors: Oracle: NullPointerException in DB table content  
-* (Bug) IntColumn.fromList(values) does not work with values outside of the int32 range 
-* (Bug) Query runs forever 
-
-* (Bug) Grid: empty space on the right 
-* (Bug) Filters: filter component state is different across pages 
-* (Bug) Connectors: Impala: int32max instead of real values 
-
-* (Bug) Filters: range slider filters out nulls 
-* (Bug) OnDialogClosed event fires twice 
-* (Bug) File Sharing doesn't work 
-* (Bug) JS Editor: exception when ApiSamples package is not there 
-* (Bug) Functions: function search won't work on packages 
-* (Bug) Share button doesn't work for projects 
-
-* Fixed scrollbars hover 
-* (Bug) Grok connect: can't browse scheme of CompoundLookup  
-* (Bug) Add new column: Strings in functions cannot be enclosed in single quotes 
-* Box Plot: showCategorySelector and showValueSelector properties 
-* (Bug) Box Plot: an exception when stdev(value) = 0 
-* (Bug) Box Plot: improve initial choice of value column (stdev > 0 if possible) 
-* Box Plot: better border color 
-* (Bug) Functions View: Click on the selected category does not remove the check mark 
-* JS: grok.functions.call should return JS object for multiple output parameters 
-* (Bug) Extra space breaks function annotation 
-* (Bug) grok.dapi.projects.where('bad filter').first() returns a Project instance with d == null 
-* (Bug) Layouts: Grid looses event handlers after layout restore 
-* (Bug) Filters: Multi-value filters does not turn off when corresponding checkbox is off 
-* (Bug) Filters: multi-value filters have no square indicator on top to toggle category selection 
-* (Bug) Filters: There are no icons for sorting and searching on hover for Multi-value filters 
-* (Bug) Filters: clicking on "search" should open search field AND focus on it 
-
-* (Bug) Grok connect: "The method execute() cannot take arguments" error with query parameters
-* (Bug) Grok connect: DriverManager returns wrong driver 
-* (Bug) Matcher: matching on multiple criteria ignores the "and/or" option 
-* (Bug) Core: Bitset.falseCount returns the number of set bits 
-
-* (Bug) Line Chart: point hit-testing doesn't work for points on the right 
-* (Bug) Line Chart: NullReferenceError when changing X axis column 
-* (Bug) Scatter Plot: "axes follow filter" feature does not work 
-* (Bug) Line Chart: "axes follow filter" feature does not work 
-* (Bug) Filters: clicking on "search" should open search field AND focus on it 
-
-* (Bug) Line Chart: "axes follow filter" feature does not work 
-* (Bug) Viewers: Inconsistent column selection inside a viewer and its properties panel (WIP)
-* Updated ui.md (ui.stringInput, ui.searchInput) 
-* (Bug) Custom ML: apply function from different ML engine  
-* (Bug) DataQuery with choices throws an exception 
-* (Bug) JS API: Label breaks layout of TextInput with icon 
-* (Bug) JS API: properties cannot be changed in JsViewer (JsViewer.props and JsViewer.setOptions result in errors) 
-* (Bug) Grok connect: "No suitable driver found for..." 
-* (Bug) Viewers: textColor property misspelling 
-* (Bug) Scatter Plot: Regression line appear without activation (WIP)
-* (Bug) Scatter Plot: Regression line appear without activation (WIP)
-* (Bug) Grok connect: NullPointerException with meta.cache option 
-* (Bug) Datagrok to Python skips blank lines 
-* Add New Column: History bug \- inputs are not filled with history 
-* Add New Column: Dragging functions opens a drop-area for the table 
-* (Bug) Viewers: textColor property misspelling 
-* (Bug) Scatter Plot: Regression line appear without activation 
-* (Bug) Viewers: the legend colors are not synchronized 
-* (Bug) Grid: switching global coloring on / off removes linear color-coding 
-* (Bug) Bar Chart: Unexpected bar color change after filtering 
-* (Bug) Grok connect: "No suitable driver found for..." 
-* (Bug) View Layouts: Error balloon after deleting saved layout 
-* (Bug) JS Viewers: error: NullError: method not found: 'where$1' on null 
-* (Bug) Query-driven dashboards: query controls do not show up when a project is open
-* (Bug) Viewers: Inconsistent column selection inside a viewer and its properties panel (WIP)
-* Updated ui.md (ui.stringInput, ui.searchInput) 
-* (Bug) Custom ML: apply function from different ML engine  
-* (Bug) DataQuery with choices throws an exception 
-* (Bug) JS API: Label breaks layout of TextInput with icon 
-
+* Datagrok to Python skips blank lines
+* Events: onViewerAdded and onViewerClosed are sent twice
+* Excel import: an empty column is created as part of the dataframe
+* Extra space breaks function annotation
+* File Sharing doesn't work
+* Filters: Multi-value filters does not turn off when corresponding checkbox is off
+* Filters: There are no icons for sorting and searching on hover for Multi-value filters
+* Filters: adding returns a filter for the column added previously instead of the currently selected one
+* Filters: clicking on "search" should open search field AND focus on it
+* Filters: clicking on "search" should open search field AND focus on it
+* Filters: filter component state is different across pages
+* Filters: if multi-value filters are present in the panel, the reset button doesn't work
+* Filters: multi-value filters have no square indicator on top to toggle category selection
+* Filters: range slider filters out nulls
+* Fixed scrollbars hover
+* Functions View: Click on the selected category does not remove the check mark
+* Functions: function search won't work on packages
+* Grid: drag-and-drop column reordering: provide drop zones
+* Grid: empty space on the right
+* Grid: html cells are not re-rendered after sorting a column
+* Grid: switching global coloring on / off removes linear color-coding
+* Grok connect: "No suitable driver found for..."
+* Grok connect: "The method execute() cannot take arguments" error with query parameters
+* Grok connect: DriverManager returns wrong driver
+* Grok connect: NullPointerException with meta.cache option
+* Grok connect: can't browse scheme of CompoundLookup
+* Hide function deselects the selected columns from the tooltip
+* Incorrect QNum parsing
+* IntColumn.fromList(values) does not work with values outside of the int32 range
+* JS API: Columns.byTags does not work
+* JS API: JsViewerHostCore is returned instead of Viewer instance
+* JS API: Label breaks layout of TextInput with icon
+* JS API: Label breaks layout of TextInput with icon
+* JS API: OnDialogClosed event fires twice
+* JS API: Properties cannot be changed in JsViewer (JsViewer.props and JsViewer.setOptions result in errors)
+* JS API: toJs won't work on GrokPackage
+* JS API: ui.info for a yellow info bar
+* JS Editor: exception when ApiSamples package is not there
+* JS Viewer: Incorrect height calculation
+* JS Viewers: error: NullError: method not found: 'where$1' on null
+* JS: grok.functions.call should return JS object for multiple output parameters
+* Layouts: Grid looses event handlers after layout restore
+* Line Chart: "axes follow filter" feature does not work
+* Line Chart: NullReferenceError when changing X axis column
+* Line Chart: point hit-testing doesn't work for points on the right
+* Matcher: matching on multiple criteria ignores the "and/or" option
+* Packages: beta flag
+* Pie Chart: unnecessary datetime aggregation
+* Prevent socket memory consuming
+* Queries: "Converting object to an encodable object failed" with dataframe as parameter
+* Query runs forever
+* Query-driven dashboards: query controls do not show up when a project is open
+* Radiobutton throws exception when created
+* Scatter Plot: "axes follow filter" feature does not work
+* Scatter Plot: Regression line appear without activation
+* Share button doesn't work for projects
+* UI: new view appears below the current
+* Updated ui.md (ui.stringInput, ui.searchInput)
+* Updated ui.md (ui.stringInput, ui.searchInput)
+* View Layouts: Error balloon after deleting saved layout
+* Viewers: Inconsistent column selection inside a viewer and its properties panel
+* Viewers: textColor property misspelling
+* Viewers: the legend colors are not synchronized
+* Viewers: the menu item `Viewer` is not visible in uploaded projects
+* Viewers: Fixes regression in 2D layout alignment of unknown origin
+* grok.dapi.projects.where('bad filter').first() returns a Project instance with d == null
 
 # 2021-05-06 Build 0.91.10
 
@@ -281,7 +202,7 @@ In this release, we've focused on enriching both the experience of the platform 
 * JS API: [dynamic resolution of object handlers](https://dev.datagrok.ai/js/samples/ui/handlers/dynamic-resolving)
 * JS API: Logging: New API for collecting telemetry [logging](https://datagrok.ai/help/govern/audit#javascript-api)
 * JS Fiddle: Added IntelliSense [dynamic resolution of object handlers](https://dev.datagrok.ai/js/samples/ui/handlers/dynamic-resolving)
-* JS fiddle: Use async/await inside 
+* JS fiddle: Use async/await inside
 * Color coding improvements: categorical color coding with values binning, [conditional color coding](https://dev.datagrok.ai/js/samples/grid/color-coding-conditional) for the grid, scatter plot, box plot
 * [`.tags` and `.temp` now support JS-native Map-like iteration and modification](https://community.datagrok.ai/t/javascript-api-updates/526/5)
 * [New](https://community.datagrok.ai/t/javascript-api-updates/526/7) [`ValueMatcher`](https://dev.datagrok.ai/js/samples/data-frame/value-matching/value-matcher)
@@ -309,9 +230,9 @@ In this release, we've focused on enriching both the experience of the platform 
 * error: NullError: method not found: '_ddt$_name' on null
 * Visual Query does not work for all supported providers
 * Fixed the bool input debouncing issue
-* Heat Map: columns do not resize 
-* Exception after adding filters on Table View 
-* Column format changes are not persisted in layouts 
+* Heat Map: columns do not resize
+* Exception after adding filters on Table View
+* Column format changes are not persisted in layouts
 * S3 AES: Cant post a file
 * Ability to disable routing
 * UI boolInput: onChange event executes code twice
@@ -337,15 +258,30 @@ In this release, we've focused on enriching both the experience of the platform 
 * Query View: Incorrect display of line numbering
 * UX: Flickering of scroll bars fixed
 * Added missing react import
-* Heat Map: automatically adjust header font size as column width gets smaller 
+* Heat Map: automatically adjust header font size as column width gets smaller
 * JS API: onPackageLoaded event
-* Ability to discover and choose JS-based grid cell renderers based on a sem type 
+* Ability to discover and choose JS-based grid cell renderers based on a sem type
 * Optimization: faster BitSet construction based on logical function and two arguments
 * Grid: make the color of selected rows lighter
-* Bar Chart: ability to select categories by clicking on the category label 
-* Bar Chart: tooltips on category labels 
+* Bar Chart: ability to select categories by clicking on the category label
+* Bar Chart: tooltips on category labels
 * Bar Chart: disable zoom on the X axis
 * [Filters: split categories containing a list of values by pipes](https://community.datagrok.ai/t/visualization-related-updates/521/11)
 * Conditional Color Coding: Ranges "20-30" and ">40" are always automatically determined for any numeric columns
 
 *Note:* this summary accumulates updates after 0.89.27.
+
+# Future release
+
+Multiple marker shapes https://community.datagrok.ai/t/visualization-related-updates/521/20
+JS API making drag-and-droppable objects https://community.datagrok.ai/t/visualization-related-updates/521/15?u=dskatov
+
+## Highlights
+
+* A new "Add New Column"
+* Custom ML
+* Function View and Sensitivity Analysis https://www.youtube.com/watch?v=2xuxJjpjXi4&t=2507s
+
+## Major features and improvements
+
+## Bugs
