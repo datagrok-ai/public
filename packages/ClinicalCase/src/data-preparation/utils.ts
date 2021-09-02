@@ -30,3 +30,23 @@ export function addTreatmentArm(df: DG.DataFrame, dm: DG.DataFrame, columnsToExt
     changeEmptyStringsToUnknown(withArm, TREATMENT_ARM);
     return withArm;
 }
+
+
+export function createFilteredTable(df: DG.DataFrame, groupCols: string[], condition: string) {
+    return df
+        .groupBy(groupCols)
+        .where(condition)
+        .aggregate();
+}
+
+export function dataframeContentToRow(df: DG.DataFrame) {
+    let content = '';
+    let rowCount = df.rowCount;
+    for (let i = 0; i < rowCount; i++) {
+        for (let column of df.columns) {
+            content = `${content}${df.get(column.name, i)} `
+        }
+        content = `${content}; `;
+    }
+    return content;
+}
