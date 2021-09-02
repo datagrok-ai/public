@@ -26,11 +26,13 @@ grid2.onCellRender.subscribe(function (args) {
   }
   if (args.cell.isRowHeader){
     args.g.fillStyle = 'green';
+    args.g.font = "italic bold 15px Arial";
     args.g.fillText(`${args.cell.tableRowIndex}`, args.bounds.x + args.bounds.width / 2, args.bounds.y + args.bounds.height / 2);
  	args.preventDefault();
   }
   if (args.cell.isTableCell){
-    args.g.fillStyle = 'blue'
+    args.g.fillStyle = 'blue';
+    args.g.font = "10px Comic Sans MS";
     args.g.fillText(`${args.cell.tableRowIndex}`, args.bounds.x + args.bounds.width / 2, args.bounds.y + args.bounds.height / 2);
  	args.preventDefault();
   }
