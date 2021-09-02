@@ -129,6 +129,8 @@ export function sdtmVariablePanel(varCol: DG.Column): DG.Widget {
 //tags: app
 export async function clinicalCaseApp(): Promise<any> {
 
+  validationRulesList = await grok.data.loadTable(`${_package.webRoot}tables/validation-rules.csv`);
+
   if (Object.keys(meta.domains).every((name) => grok.shell.table(name) == null))
     await grok.dapi.projects.open('clin-demo-files-2');
 
@@ -154,7 +156,6 @@ export async function clinicalCaseApp(): Promise<any> {
 //tags: autostart
 export async function clinicalCaseInit(): Promise<void> {
   terminology = await grok.data.loadTable(`${_package.webRoot}tables/sdtm-terminology.csv`);
-  validationRulesList = await grok.data.loadTable(`${_package.webRoot}tables/validation-rules.csv`);
   submissionValueCol = terminology.getCol('CDISC Submission Value');
   submissionValues = submissionValueCol.categories;
 
