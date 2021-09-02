@@ -4,7 +4,7 @@
 
 We've released a [new version](https://public.datagrok.ai/) of the Datagrok platform (0.93.0). It's a large release with many new features and stability improvements, addressing both user experience and flexibility for developers.
 
-Here are few interesting areas in the platform updates:
+Here are some interesting areas in the platform updates:
 
 * Viewers improvements, such as [relative values in Bar Charts] (https://community.datagrok.ai/t/bar-chart-updates/580) or [multi-axis Line Chart](https://community.datagrok.ai/t/visualization-related-updates/521/18)
 * Visual improvements like [dragging columns with drop zones](https://community.datagrok.ai/t/visualization-related-updates/521/17) and [cleaner columns summaries in tooltips]( https://community.datagrok.ai/t/visualization-related-updates/521/16)
@@ -23,8 +23,6 @@ dynamic scripting capabilities for constructing signal processing pipelines: [ov
 * Sequence Translator — oligonucleotide sequences conversion (BioSpring, Axolabs): [overview](https://github.com/datagrok-ai/public/tree/master/packages/SequenceTranslator#readme), [video](https://www.youtube.com/watch?v=2xuxJjpjXi4&t=3782s)
 * Oligo Batch Calculator — extinction coefficient, mass, optical density, Nmole, mol. weight: [overview](https://github.com/datagrok-ai/public/tree/master/packages/OligoBatchCalculator#readme), [video](https://www.youtube.com/watch?v=2xuxJjpjXi4&t=4902s)
 * Cheminformatics features: [chemical dataset curation](https://community.datagrok.ai/t/cheminformatics-updates/457/11), [activity cliffs](https://www.youtube.com/watch?v=2xuxJjpjXi4&t=1933s), [save as SDF](https://community.datagrok.ai/t/cheminformatics-updates/457/10)
-
-Check [Release Notes]() for details, and try new version a try at [https://public.datagrok.ai](https://public.datagrok.ai/).
 
 ## Major features and improvements
 
