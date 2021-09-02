@@ -1,5 +1,4 @@
-<!-- TITLE: Semantic Types -->
-<!-- SUBTITLE: -->
+<!-- TITLE: Semantic types -->
 
 # Data Types vs Semantic Types
 
