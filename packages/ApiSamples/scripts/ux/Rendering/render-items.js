@@ -17,9 +17,23 @@ grid1.onCellRender.subscribe(function (args) {
 });
 
 grid2.onCellRender.subscribe(function (args) {
-  args.g.fillStyle = (args.cell.isColHeader ? 'red' : (args.cell.isRowHeader ? 'green' : 'blue'));
-  args.g.fillText(`${args.cell.tableRowIndex}`, args.bounds.x + args.bounds.width / 2, args.bounds.y + args.bounds.height / 2);
-  args.preventDefault();
+  if(args.cell.isColHeader){
+    let textSize = args.g.measureText(args.cell.gridColumn.name);
+    args.g.fillText(args.cell.gridColumn.name, args.bounds.x + (args.bounds.width - textSize.width)/2, args.bounds.y + (textSize.fontBoundingBoxAscent+textSize.fontBoundingBoxDescent));
+    args.g.font = "10px";
+    args.g.fillStyle = 'red';
+    args.preventDefault();
+  }
+  if (args.cell.isRowHeader){
+    args.g.fillStyle = 'green';
+    args.g.fillText(`${args.cell.tableRowIndex}`, args.bounds.x + args.bounds.width / 2, args.bounds.y + args.bounds.height / 2);
+ 	args.preventDefault();
+  }
+  if (args.cell.isTableCell){
+    args.g.fillStyle = 'blue'
+    args.g.fillText(`${args.cell.tableRowIndex}`, args.bounds.x + args.bounds.width / 2, args.bounds.y + args.bounds.height / 2);
+ 	args.preventDefault();
+  }
 });
 
 // Render card
