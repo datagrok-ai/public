@@ -4,8 +4,6 @@ We've released a [new version](https://public.datagrok.ai/) of the Datagrok plat
 
 ## Highlights
 
-
-
 ## Major features and improvements
 
 * Ability to share files 
@@ -18,6 +16,12 @@ We've released a [new version](https://public.datagrok.ai/) of the Datagrok plat
 * JS API: DG.TAGS.FORMAT tag as a preferred way to set the column format 
 * JS API: add event onAccordionConstructed and Accordion.context getter  
 * Grid: ShowVisibleColumnsInTooltip property 
+
+* Scripting: Ability to set custom name for parameter 
+* Scripting: Ability to set postfix for parameter 
+* UI: Ability to set dialog background
+* JS API: add grok.shell.views and grok.shell.tableViews 
+* JS API: ScatterPlot: add viewport 
 
 ## Bugs
 
@@ -39,6 +43,11 @@ We've released a [new version](https://public.datagrok.ai/) of the Datagrok plat
 * Dataframe: Detect column max significant digits in CSV loading
 * (Bug) Viewers: the menu item `Viewer` is not visible in uploaded projects 
 * (Bug) Grid: drag-and-drop column reordering: provide drop zones 
+
+* fixes regression in 2D layout alignment of unknown origin 
+* (Bug) Events: onViewerAdded and onViewerClosed are sent twice 
+* (Bug) Filters: if multi-value filters are present in the panel, the reset button doesn't work 
+
 
 
 # 2021-05-06 Build 0.91.10
