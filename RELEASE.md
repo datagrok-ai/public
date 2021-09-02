@@ -42,6 +42,40 @@ We've released a [new version](https://public.datagrok.ai/) of the Datagrok plat
 
 * Conditional color-coding: bring options from the property panel to column context menu 
 
+* Binning Functions: BinBySpecificLimits 
+* DateTime extractor functions (year, month, day, etc) 
+
+* Math Functions: Log(arg1, arg2) 
+* Math Functions: Log10() 
+* Math Functions: Round10() 
+* Math Functions: RandBetween() 
+
+* JS API: Added grok.shell.startUri 
+* JS API: TabPane: new properties: root, content, parent 
+* Math Functions: Median() 
+* Text Functions: StrFind() 
+* Text Functions: StrLeft() 
+* Text Functions: StrRight() 
+* Text Functions: StrRepeat() 
+* Text Functions: RegExpReplace() 
+* Text Functions: RegExpExtract()
+* JS API: Viewer.onContextMenu event  
+
+* 'Serialization' info panel for columns 
+* Add New Column: minor performance improvements 
+* JS API: GridColumn.getVisibleCells() 
+* Functions: Parameter categories 
+* Viewers: support for styles 
+* Viewers: implement 'dashboard' style for all standard viewers 
+* Histogram and BarChart: washed-out default colors 
+* Line Chart: move hit-testing functionality to series renderers 
+* Introduced Color.textColor 
+* Bar Chart: adaptive font size 
+* Bar Chart: in case of many categories, automatically zoom in to a reasonable number of categories 
+* Bar Chart: make scrolling smoother 
+* ScatterPlot: changed back marker color 
+* ScatterPlot: set default marker size to 10 
+
 
 ## Bugs
 
@@ -78,6 +112,38 @@ We've released a [new version](https://public.datagrok.ai/) of the Datagrok plat
 * (Bug) Bar Chart: Viewer coloring settings should take precedence over the grid coloring settings (WIP)
 * (Bug) Data | Unpivot does not work 
 * (Bug) Column format changes are not persisted in layouts 
+
+* (Bug) Connectors: Oracle: NullPointerException in DB table content  
+* (Bug) IntColumn.fromList(values) does not work with values outside of the int32 range 
+* (Bug) Query runs forever 
+
+* (Bug) Grid: empty space on the right 
+* (Bug) Filters: filter component state is different across pages 
+* (Bug) Connectors: Impala: int32max instead of real values 
+
+* (Bug) Filters: range slider filters out nulls 
+* (Bug) OnDialogClosed event fires twice 
+* (Bug) File Sharing doesn't work 
+* (Bug) JS Editor: exception when ApiSamples package is not there 
+* (Bug) Functions: function search won't work on packages 
+* (Bug) Share button doesn't work for projects 
+
+* Fixed scrollbars hover 
+* (Bug) Grok connect: can't browse scheme of CompoundLookup  
+* (Bug) Add new column: Strings in functions cannot be enclosed in single quotes 
+* Box Plot: showCategorySelector and showValueSelector properties 
+* (Bug) Box Plot: an exception when stdev(value) = 0 
+* (Bug) Box Plot: improve initial choice of value column (stdev > 0 if possible) 
+* Box Plot: better border color 
+* (Bug) Functions View: Click on the selected category does not remove the check mark 
+* JS: grok.functions.call should return JS object for multiple output parameters 
+* (Bug) Extra space breaks function annotation 
+* (Bug) grok.dapi.projects.where('bad filter').first() returns a Project instance with d == null 
+* (Bug) Layouts: Grid looses event handlers after layout restore 
+* (Bug) Filters: Multi-value filters does not turn off when corresponding checkbox is off 
+* (Bug) Filters: multi-value filters have no square indicator on top to toggle category selection 
+* (Bug) Filters: There are no icons for sorting and searching on hover for Multi-value filters 
+* (Bug) Filters: clicking on "search" should open search field AND focus on it 
 
 
 # 2021-05-06 Build 0.91.10
