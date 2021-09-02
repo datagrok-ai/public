@@ -5,13 +5,37 @@ JS API making drag-and-droppable objects https://community.datagrok.ai/t/visuali
 
 ## Highlights
 
+* A new "Add New Column"
+* Custom ML
+* Function View and Sensitivity Analysis https://www.youtube.com/watch?v=2xuxJjpjXi4&t=2507s
+
 ## Major features and improvements
 
 ## Bugs
 
 # 2021-07-29 Build 0.93.0
 
-We've released a [new version](https://public.datagrok.ai/) of the Datagrok platform (0.93.0). It is a large release with many new features and stability improvements.
+## Short note
+
+We've released a [new version](https://public.datagrok.ai/) of the Datagrok platform (0.93.0). It is a large release with many new features and stability improvements, addressing both user experience and flexibility for developers. 
+
+Here are a few of interesting areas in the platform updates:
+
+* Viewers improvements, such as [relative values in Bar Charts] (https://community.datagrok.ai/t/bar-chart-updates/580) or [multi-axis Line Chart](https://community.datagrok.ai/t/visualization-related-updates/521/18)
+* Visual improvements like [dragging columns with drop zones](https://community.datagrok.ai/t/visualization-related-updates/521/17) and [cleaner columns summaries in tooltips]( https://community.datagrok.ai/t/visualization-related-updates/521/16)
+* Functional features, such as [filtering multivalue cells](https://community.datagrok.ai/t/visualization-related-updates/521/15)
+* Improvements in [sharing files and folders](https://www.youtube.com/watch?v=0QxzllnBreI&t=3895s)
+
+We also worked intensively on our [public packages](https://github.com/datagrok-ai/public), presenting a few new of them:
+
+* Biosignals – Physionet annotations file viewer,
+dynamic scripting capabilities for constructing signal processing pipelines: [overview](https://github.com/datagrok-ai/public/tree/master/packages/BioSignals#readme), [video](https://www.youtube.com/watch?v=0QxzllnBreI&t=1932s)
+* ClinicalCase — working with clinical data in SDTM format: [overview](https://github.com/datagrok-ai/public/tree/master/packages/ClinicalCase#readme), [video](https://www.youtube.com/watch?v=2xuxJjpjXi4&t=95s)
+* Sequence Translator — oligonucleotide sequences conversion (BioSpring, Axolabs): [overview](https://github.com/datagrok-ai/public/tree/master/packages/SequenceTranslator#readme), [video](https://www.youtube.com/watch?v=2xuxJjpjXi4&t=3782s)
+* Oligo Batch Calculator — extinction coefficient, mass, optical density, Nmole, mol. weight: [overview](https://github.com/datagrok-ai/public/tree/master/packages/OligoBatchCalculator#readme), [video](https://www.youtube.com/watch?v=2xuxJjpjXi4&t=4902s)
+* Cheminformatics features: [chemical dataset curation](https://community.datagrok.ai/t/cheminformatics-updates/457/11), [activity cliffs](https://www.youtube.com/watch?v=2xuxJjpjXi4&t=1933s), [save as SDF](https://community.datagrok.ai/t/cheminformatics-updates/457/10)
+
+Check [Release Notes]() for details, and try new version a try at [https://public.datagrok.ai](https://public.datagrok.ai/).
 
 ## Highlights
 
