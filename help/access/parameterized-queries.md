@@ -153,7 +153,7 @@ select * from orders where @orderDate(orderDate)
 
 ### Output parameters
 
-A dataframe is returned by default as a query result. If you plan to obtain a value of different data type
+A [dataframe]() is returned by default as a query result. If you plan to obtain a value of a different data type
 (for instance, in your JavaScript code), you can explicitly specify it in the output parameter. Below is an example
 from [Chembl](https://github.com/datagrok-ai/public/tree/master/packages/Chembl) package:
 
