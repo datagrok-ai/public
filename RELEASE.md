@@ -1,3 +1,46 @@
+# 2021-07-29 Build 0.93.0
+
+We've released a [new version](https://public.datagrok.ai/) of the Datagrok platform (0.93.0). It is a large release with many new features and stability improvements.
+
+## Highlights
+
+
+
+## Major features and improvements
+
+* Ability to share files 
+* Connectors: Redshift: Schema browsing
+* Trellis Plot: ability to enlarge individual in-trellis viewers 
+* Join tables: Don't include key fields by default 
+* Multi-value filters 
+* Connectors: add default schema to providers and use as condition for schema browsing 
+* Table View: Columns pane: add search 
+* JS API: DG.TAGS.FORMAT tag as a preferred way to set the column format 
+* JS API: add event onAccordionConstructed and Accordion.context getter  
+* Grid: ShowVisibleColumnsInTooltip property 
+
+## Bugs
+
+* (Bug) Chem: R-Groups Analysis with client RDKit 
+* (Bug) Incorrect QNum parsing 
+* (Bug) JS API: Columns.byTags does not work 
+* (Bug) Queries: "Converting object to an encodable object failed" with dataframe as parameter 
+* (Bug) Excel import: an empty column is created as part of the dataframe 
+* (Bug) Grid: html cells are not re-rendered after sorting a column
+* Prevent socket memory consuming
+* JS API: ui.info for a yellow info bar
+* (Bug) Core: default tooltip config is no longer saved with layout 
+* (Bug) JS Viewer: Incorrect height calculation 
+* (Bug) Bar Chart: coloring cannot be disabled 
+* (Bug) Filters: adding returns a filter for the column added previously instead of the currently selected one 
+* (Bug) Bar Chart: coloring gets only applied when editing colors in a grid column 
+* Packages: beta flag 
+* (Bug) UI: new view appears below the current 
+* Dataframe: Detect column max significant digits in CSV loading
+* (Bug) Viewers: the menu item `Viewer` is not visible in uploaded projects 
+* (Bug) Grid: drag-and-drop column reordering: provide drop zones 
+
+
 # 2021-05-06 Build 0.91.10
 
 We've just released a [new version]([https://public.datagrok.ai](https://public.datagrok.ai/)) of the Datagrok platform (0.91.10). It is a major release with multiple stability and performance improvements, many new features, and new APIs for developers. Here are some of the notable advances:
@@ -11,7 +54,7 @@ We've just released a [new version]([https://public.datagrok.ai](https://public.
 
 Check [release notes](https://datagrok.ai/help/develop/release-history) for more details, and give the new version a try at [https://public.datagrok.ai](https://public.datagrok.ai/)!
 
-# 2021-04-14 Dev build 0.89.36
+# 2021-04-14 Build 0.89.36
 
 In this release, we've focused on enriching both the experience of the platform end-users and on-platform developers, as well as on connecting these two groups. For instance, custom-built cell renderers, useful for displaying molecules, nucleotide sequences or experiments results, now expand the platform in many places such as [tooltips and tile viewers](https://community.datagrok.ai/t/cheminformatics-updates/457/8). There are also [new viewers](https://community.datagrok.ai/t/visualization-related-updates/521/4), [several bar chart](https://community.datagrok.ai/t/bar-chart-color-by-category/516) [features](https://community.datagrok.ai/t/visualization-related-updates/521/10), [color coding features](https://dev.datagrok.ai/js/samples/grid/color-coding-conditional), and a few dozen of [JS API]((https://datagrok.ai/help/govern/audit#javascript-api)) [enhancements](https://community.datagrok.ai/t/javascript-api-updates/526/8) and [bug fixes](##bug-fixes).
 
@@ -24,7 +67,7 @@ In this release, we've focused on enriching both the experience of the platform 
 * JS API improvements: Typescript support, new [events](https://community.datagrok.ai/t/javascript-api-updates/526/8) and [methods](https://community.datagrok.ai/t/javascript-api-updates/526/5)
 * Better JS editing in the [JS fiddle](https://public.datagrok.ai/js) with IntelliSense and `async/await`
 
-## Major features and Improvements
+## Major features and improvements
 
 * Grid: Custom cell renderers, including RDKit molecules, [in several contexts](https://community.datagrok.ai/t/cheminformatics-updates/457/8): tooltips, tile viewer, form, other viewers' axes
 * Bar Chart: [categorizes DateTime columns using functions of Year, Month, Quarter, Year - Quarter, etc.](https://community.datagrok.ai/t/visualization-related-updates/521/10)
