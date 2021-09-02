@@ -12,6 +12,7 @@ import { ValidationView } from './views/validation-view';
 import { AdverseEventHandler } from './panels/adverse-event-handler';
 import { LaboratoryView } from './views/laboratory-view';
 import { AERiskAssessmentView } from './views/ae-risk-assessment-view';
+import { SurvivalAnalysisView } from './views/survival-analysis-view';
 
 export let _package = new DG.Package();
 
@@ -128,6 +129,8 @@ export function sdtmVariablePanel(varCol: DG.Column): DG.Widget {
 //tags: app
 export async function clinicalCaseApp(): Promise<any> {
 
+  validationRulesList = await grok.data.loadTable(`${_package.webRoot}tables/validation-rules.csv`);
+
   if (Object.keys(meta.domains).every((name) => grok.shell.table(name) == null))
     await grok.dapi.projects.open('clin-demo-files-2');
 
@@ -142,6 +145,7 @@ export async function clinicalCaseApp(): Promise<any> {
   studySummaryClass.validationView = validationView;
   grok.shell.newView(`Laboratory`, [ new LaboratoryView().root ]);
   grok.shell.newView(`AE Risk Assessent`, [ new AERiskAssessmentView().root ])
+  grok.shell.newView(`Survival Analysis`, [ new SurvivalAnalysisView().root ])
 
   DG.ObjectHandler.register(new AdverseEventHandler());
 
@@ -152,7 +156,6 @@ export async function clinicalCaseApp(): Promise<any> {
 //tags: autostart
 export async function clinicalCaseInit(): Promise<void> {
   terminology = await grok.data.loadTable(`${_package.webRoot}tables/sdtm-terminology.csv`);
-  validationRulesList = await grok.data.loadTable(`${_package.webRoot}tables/validation-rules.csv`);
   submissionValueCol = terminology.getCol('CDISC Submission Value');
   submissionValues = submissionValueCol.categories;
 
