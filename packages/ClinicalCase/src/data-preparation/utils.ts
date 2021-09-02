@@ -32,17 +32,21 @@ export function addTreatmentArm(df: DG.DataFrame, dm: DG.DataFrame, columnsToExt
 }
 
 
-export function createFilteredTable(df: DG.DataFrame, groupCols: string[], condition: string){
+export function createFilteredTable(df: DG.DataFrame, groupCols: string[], condition: string) {
     return df
-    .groupBy(groupCols)
-    .where(condition)
-    .aggregate();    
-  }
+        .groupBy(groupCols)
+        .where(condition)
+        .aggregate();
+}
 
-export function getColNames(df: DG.DataFrame) {
-    const colNames = [];
-    for (let column of df.columns) {
-        colNames.push(column.name);
+export function dataframeContentToRow(df: DG.DataFrame) {
+    let content = '';
+    let rowCount = df.rowCount;
+    for (let i = 0; i < rowCount; i++) {
+        for (let column of df.columns) {
+            content = `${content}${df.get(column.name, i)} `
+        }
+        content = `${content}; `;
     }
-    return colNames;
+    return content;
 }

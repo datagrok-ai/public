@@ -1,22 +1,23 @@
 #name: covariates
 #language: r
 #input: string coVariates
-#output: graphics
+#input: dataframe covariatesDf
+#output: graphics plot
+#output: dataframe diagnostics
 
 renv::init()
 renv::install("ggfortify")
 
 require("ggfortify")
-require("tidyverse")
 require("survival")
 require("ggplot2")
-require("dplyr")
-require("ggplot")
 
-data(veteran)
+diagnostics = as.data.frame(installed.packages()[,c(1,3:4)])
 
 modform <- as.formula(paste("Surv(time, status)", coVariates, sep = " ~ "))
 
-aa_fit <- aareg(modform, data = veteran)
-autoplot(aa_fit) + 
+aa_fit <- aareg(modform, data = covariatesDf)
+
+autoplot(aa_fit) +
   theme_bw()
+
