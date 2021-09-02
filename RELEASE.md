@@ -23,6 +23,26 @@ We've released a [new version](https://public.datagrok.ai/) of the Datagrok plat
 * JS API: add grok.shell.views and grok.shell.tableViews 
 * JS API: ScatterPlot: add viewport 
 
+* Grid: automatically pick up cell type from data frame
+* JS API: Stats.histogramsByCategories
+* Correlation plot: on cell click, show the corresponding scatter plot in the property panel 
+
+* ScatterPlot custom renderer: disable overlay dot rendering on categories hover  
+
+* JS API: Func.find(package, name, tags, returnType) 
+* JS API: Func.appy(params): Promise<TResult> 
+* JS API: toDart(): ability for JS classes to define custom conversion 
+* JS API: ui.icons for commonly used icons 
+* JS API: ui.tools.setHoverVisibility(host, elements) 
+* JS API: ui.image 
+* Scripting: interactivity: show execution results in the property panel 
+* UTC support in the datetime parser
+* JS API: dialog.clear() 
+* Add string name indexing for columns 
+
+* Conditional color-coding: bring options from the property panel to column context menu 
+
+
 ## Bugs
 
 * (Bug) Chem: R-Groups Analysis with client RDKit 
@@ -47,7 +67,17 @@ We've released a [new version](https://public.datagrok.ai/) of the Datagrok plat
 * fixes regression in 2D layout alignment of unknown origin 
 * (Bug) Events: onViewerAdded and onViewerClosed are sent twice 
 * (Bug) Filters: if multi-value filters are present in the panel, the reset button doesn't work 
+* (Bug) Radiobutton throws exception when created 
 
+* (Bug) Pie Chart: unnecessary datetime aggregation 
+* (Bug) JS API: toJs won't work on GrokPackage 
+* (Bug) JS API: JsViewerHostCore is returned instead of Viewer instance 
+
+* (Bug) Current user is system while deploying 
+* (Bug) Hide function deselects the selected columns from the tooltip  
+* (Bug) Bar Chart: Viewer coloring settings should take precedence over the grid coloring settings (WIP)
+* (Bug) Data | Unpivot does not work 
+* (Bug) Column format changes are not persisted in layouts 
 
 
 # 2021-05-06 Build 0.91.10
