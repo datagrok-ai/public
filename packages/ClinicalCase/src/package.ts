@@ -145,7 +145,8 @@ export async function clinicalCaseApp(): Promise<any> {
   studySummaryClass.validationView = validationView;
   grok.shell.newView(`Laboratory`, [ new LaboratoryView().root ]);
   grok.shell.newView(`AE Risk Assessent`, [ new AERiskAssessmentView().root ])
-  grok.shell.newView(`Survival Analysis`, [ new SurvivalAnalysisView().root ])
+  let survivalView = grok.shell.newView(`Survival Analysis`, [ new SurvivalAnalysisView().root ])
+  survivalView.box = true;
 
   DG.ObjectHandler.register(new AdverseEventHandler());
 
