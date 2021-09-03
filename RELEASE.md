@@ -33,19 +33,18 @@ dynamic scripting capabilities for constructing signal processing pipelines: [ov
 * Add Repository: Add attribute "name" for Source Type selector
 * Add string name indexing for columns
 * Adde pubspec to speed-up packages resolving
-* Bar Chart: adaptive font size; automatically zoom in to a reasonable number of categories in case of many categories; make scrolling smoother
+* Bar Chart: adaptive font size
+* Bar Chart: automatically zoom in to a reasonable number of categories in case of many categories
+* Bar Chart: make scrolling smoother
 * Binning Functions: BinBySpecificLimits
 * Box Plot: better border color; showCategorySelector and showValueSelector properties
 * Conditional color-coding: bring options from the property panel to column context menu
-* Connectors: Redshift: Schema browsing; default schema to providers and use as condition for schema browsing
+* Connectors: Redshift: Schema browsing
+* Connectors: default schema to providers and use as condition for schema browsing
 * Correlation plot: on cell click, show the corresponding scatter plot in the property panel 
 * Grid: ShowVisibleColumnsInTooltip property; automatically pick up cell type from dataframe
 * Histogram and BarChart: improved washed-out default colors
 * JS API: Added grok.shell.startUri
-* JS API: DG.TAGS.FORMAT tag as a preferred way to set the column format
-* JS API: Func.appy(params): Promise<TResult>
-* JS API: Func.find(package, name, tags, returnType)
-* JS API: GridColumn.getVisibleCells()
 * JS API: ScatterPlot: add viewport
 * JS API: Stats.histogramsByCategories
 * JS API: TabPane: new properties: root, content, parent
@@ -53,17 +52,21 @@ dynamic scripting capabilities for constructing signal processing pipelines: [ov
 * JS API: add event onAccordionConstructed and Accordion.context getter 
 * JS API: add grok.shell.views and grok.shell.tableViews
 * JS API: dialog.clear()
-* JS API: toDart(): ability for JS classes to define custom conversion
 * JS API: ui.icons for commonly used icons
 * JS API: ui.image
 * JS API: ui.tools.setHoverVisibility(host, elements)
 * Join tables: Don't include key fields by default
-* Line Chart: MultiAxis: double-click (choosing a primary series) should have no effect; move hit-testing functionality to series renderers; support for multiple Y axes
+* Line Chart: MultiAxis: double-click (choosing a primary series) should have no effect
+* Line Chart: move hit-testing functionality to series renderers
+* Line Chart: support for multiple Y axes
 * Math Functions: Log(arg1, arg2), Log10(), Median(), RandBetween(), Round10(), etc.
 * Multi-value filters
 * Query Builder dialog: Add "name" attributes to checkboxes for tables
-* ScatterPlot custom renderer: disable overlay dot rendering on categories hover; changed back marker color; set default marker size to 10
-* Scripting: Ability to set custom name for parameter; ability to set postfix for parameter; show execution results in the property panel
+* ScatterPlot custom renderer: disable overlay dot rendering on categories hover
+* ScatterPlot custom renderer: changed back marker color; set default marker size to 10
+* Scripting: Ability to set custom name for parameter
+* Scripting: Ability to set postfix for parameter
+* Scripting: Show execution results in the property panel
 * Table View: Columns pane: add search
 * Text Functions: RegExpExtract(), RegExpReplace(), StrFind(), etc.
 * Trellis Plot: ability to enlarge individual in-trellis viewers
@@ -75,35 +78,27 @@ dynamic scripting capabilities for constructing signal processing pipelines: [ov
 ## Bugs
 
 * Add New Column: Dragging functions opens a drop-area for the table
-* Add New Column: History bug \- inputs are not filled with history
 * Add new column: Strings in functions cannot be enclosed in single quotes
 * Bar Chart: Unexpected bar color change after filtering
 * Bar Chart: Viewer coloring settings should take precedence over the grid coloring settings (WIP)
 * Bar Chart: coloring cannot be disabled; coloring gets only applied when editing colors in a grid column
 * Box Plot: an exception when stdev(value) = 0
 * Box Plot: improve initial choice of value column (stdev > 0 if possible)
-* Chem: R-Groups Analysis with client RDKit
 * Column format changes are not persisted in layouts
 * Connectors: Impala: int32max instead of real values
 * Connectors: Oracle: NullPointerException in DB table content
 * Core: Bitset.falseCount returns the number of set bits
 * Core: default tooltip config is no longer saved with layout
-* Current user is system while deploying
-* Custom ML: apply function from different ML engine
 * Custom ML: apply function from different ML engine
 * Data | Unpivot does not work
 * DataQuery with choices throws an exception
-* DataQuery with choices throws an exception
 * Dataframe: Detect column max significant digits in CSV loading
-* Datagrok to Python skips blank lines
 * Events: onViewerAdded and onViewerClosed are sent twice
 * Excel import: an empty column is created as part of the dataframe
 * Extra space breaks function annotation
-* File Sharing doesn't work
 * Filters: Multi-value filters does not turn off when corresponding checkbox is off
 * Filters: There are no icons for sorting and searching on hover for Multi-value filters
 * Filters: adding returns a filter for the column added previously instead of the currently selected one
-* Filters: clicking on "search" should open search field AND focus on it
 * Filters: clicking on "search" should open search field AND focus on it
 * Filters: filter component state is different across pages
 * Filters: if multi-value filters are present in the panel, the reset button doesn't work
@@ -127,10 +122,8 @@ dynamic scripting capabilities for constructing signal processing pipelines: [ov
 * JS API: Columns.byTags does not work
 * JS API: JsViewerHostCore is returned instead of Viewer instance
 * JS API: Label breaks layout of TextInput with icon
-* JS API: Label breaks layout of TextInput with icon
 * JS API: OnDialogClosed event fires twice
 * JS API: Properties cannot be changed in JsViewer (JsViewer.props and JsViewer.setOptions result in errors)
-* JS API: toJs won't work on GrokPackage
 * JS API: ui.info for a yellow info bar
 * JS Editor: exception when ApiSamples package is not there
 * JS Viewer: Incorrect height calculation
@@ -145,15 +138,11 @@ dynamic scripting capabilities for constructing signal processing pipelines: [ov
 * Pie Chart: unnecessary datetime aggregation
 * Prevent socket memory consuming
 * Queries: "Converting object to an encodable object failed" with dataframe as parameter
-* Query runs forever
 * Query-driven dashboards: query controls do not show up when a project is open
 * Radiobutton throws exception when created
 * Scatter Plot: "axes follow filter" feature does not work
 * Scatter Plot: Regression line appear without activation
 * Share button doesn't work for projects
-* UI: new view appears below the current
-* Updated ui.md (ui.stringInput, ui.searchInput)
-* Updated ui.md (ui.stringInput, ui.searchInput)
 * View Layouts: Error balloon after deleting saved layout
 * Viewers: Inconsistent column selection inside a viewer and its properties panel
 * Viewers: textColor property misspelling
