@@ -41,11 +41,11 @@ export abstract class Tutorial extends DG.Widget {
 
   async run(): Promise<void> {
     if (this.demoTable) {
-      const v = grok.shell.addTableView(await grok.data.getDemoTable(this.demoTable));
+      grok.shell.addTableView(await grok.data.getDemoTable(this.demoTable));
     }
 
     await this._run();
-    
+
     this.title('Congratulations!');
     this.describe('You have successfully completed this tutorial.');
   }
@@ -107,6 +107,7 @@ export abstract class Tutorial extends DG.Widget {
   async dlgInputAction(dlg: DG.Dialog, instructions: string, caption: string, value: string) {
     // @ts-ignore
     const inp = dlg.inputs.filter((input: DG.InputBase) => input.caption == caption)[0];
+    if (inp == null) return;
     await this.action(instructions,
       new Observable((subscriber: any) => {
         if (inp.stringValue === value) subscriber.next(inp.stringValue);
@@ -172,7 +173,7 @@ class TutorialCard {
       ui.divV([
         ui.h2(tutorial.name),
         ui.divText(tutorial.description, { id: 'description' }),
-      ])
+      ]),
     ], 'grok-tutorial-card');
   }
 }
