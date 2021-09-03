@@ -5,12 +5,13 @@ import { dataframeContentToRow } from "../data-preparation/utils";
 
 export class SurvivalAnalysisView extends DG.ViewBase {
 
-  survivalPlotDiv = ui.div();
-  covariatesPlotDiv = ui.div();
+  survivalPlotDiv = ui.box();
+  covariatesPlotDiv = ui.box();
   survivalColumns: string[];
   confIntervals = [ 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 0.99 ];
   confInterval = 0.7;
   strata = '';
+  endpoint = '';
   survivalDataframe: DG.DataFrame;
   selectedCovariates: string[];
 
@@ -43,18 +44,17 @@ export class SurvivalAnalysisView extends DG.ViewBase {
 
     let filters = DG.Viewer.fromType('Filters', this.survivalDataframe, {
       'columnNames': this.survivalColumns,
-      'showContextMenu':false,
+      'showContextMenu': false,
     });
 
-    let applyFilters = ui.button('Apply to curves', () => { });
+    let applyFilters = ui.bigButton('Apply to curves', () => { });
     applyFilters.addEventListener('click', (event) => {
-      let test = this.survivalDataframe;
       this.updateSurvivalPlot();
       if (this.selectedCovariates) {
         this.updateCovariatesPlot();
       }
     });
-    
+
     grok.functions.call(
       "Clinicalcase:survivalPlot", {
       "survivalDf": this.survivalDataframe,
@@ -63,42 +63,40 @@ export class SurvivalAnalysisView extends DG.ViewBase {
 
     }).then((survivalResult) => {
 
-      this.root.appendChild(
-        ui.splitV([
-          ui.tabControl({
-            'Survival data':
-              ui.splitV([
-                ui.divH([
-                  this.survivalDataframe.plot.grid().root,
-                  applyFilters
-                ]),
-                filters.root
-              ], { style: { width: '100%' } }),
-            'Survival chart':
-              ui.divH([
-                ui.divV([
-                  confIntChoices.root,
-                  strataChoices.root,
-                ]),
-                this.survivalPlotDiv ]),
-            'Co-variates':
-              ui.divH([
-                ui.divV([
-                  covariatesChoices.root
-                ]),
-                this.covariatesPlotDiv ])
-          }).root
-        ], { style: { width: '100%', height: '100%' } })
+      this.root.className = 'grok-view ui-box';
+      this.root.append(
+        ui.tabControl({
+          'Survival data':
+            ui.splitV([
+              filters.root,
+              ui.box(ui.div([ applyFilters ]), { style: { maxHeight: '40px' } }),
+              this.survivalDataframe.plot.grid().root,
+            ]),
+          'Survival chart':
+            ui.splitV([
+              ui.box(ui.panel([
+                ui.divH([ confIntChoices.root,
+                strataChoices.root ])
+              ]), { style: { maxHeight: '80px' } }),
+              this.survivalPlotDiv ]),
+          'Co-variates':
+            ui.splitH([
+              ui.panel([
+                covariatesChoices.root
+              ], { style: { maxWidth: '150px' } }),
+              this.covariatesPlotDiv ])
+        }).root
       );
-      this.updatePlotDiv(survivalResult['plot'], this.survivalPlotDiv);
-      console.warn(dataframeContentToRow(survivalResult['diagnostics']));
+      this.updatePlotDiv(survivalResult[ 'plot' ], this.survivalPlotDiv);
+      console.warn(dataframeContentToRow(survivalResult[ 'diagnostics' ]));
     });
 
   }
 
   private updatePlotDiv(img: string, div: HTMLDivElement) {
     div.innerHTML = '';
-    div.append(ui.image(`data:image/png;base64,${img}`, 700, 700));
+    //@ts-ignore
+    div.append(ui.image(`data:image/png;base64,${img}`));
   }
 
   private updateSurvivalPlot() {
@@ -108,8 +106,8 @@ export class SurvivalAnalysisView extends DG.ViewBase {
       "inputStrata": this.strata,
       "confInt": this.confInterval.toString()
     }).then((result) => {
-      this.updatePlotDiv(result['plot'], this.survivalPlotDiv);
-      console.warn(dataframeContentToRow(result['diagnostics']));
+      this.updatePlotDiv(result[ 'plot' ], this.survivalPlotDiv);
+      console.warn(dataframeContentToRow(result[ 'diagnostics' ]));
     });
   }
 
@@ -119,8 +117,8 @@ export class SurvivalAnalysisView extends DG.ViewBase {
       "covariatesDf": this.survivalDataframe,
       "coVariates": this.selectedCovariates.join(' + ')
     }).then((result) => {
-      this.updatePlotDiv(result['plot'], this.covariatesPlotDiv);
-      console.warn(dataframeContentToRow(result['diagnostics']));
+      this.updatePlotDiv(result[ 'plot' ], this.covariatesPlotDiv);
+      console.warn(dataframeContentToRow(result[ 'diagnostics' ]));
     });
   }
 }
