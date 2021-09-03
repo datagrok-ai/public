@@ -39,10 +39,11 @@ export class MultivariateAnalysisTutorial extends Tutorial {
     await this.dlgInputAction(dlg!, 'Set "Table" to "cars"', 'Table', 'cars');
     await this.dlgInputAction(dlg!,'Set "Predict" to "price"', 'Predict', 'price');
 
-    // TODO: transform into actions
     this.describe('Set "Features" to "all". Click "All" in the column selection dialog.');
-    this.describe("Let's keep the preset number of components equal to `3`");
-    this.describe(`At the bottom of the dialog, check all the checkboxes to render visualizations:
+      // await this.dlgInputAction(dlg!, 'Set "Features" to "all". Click "All" in the column selection dialog',
+    //   'Features', this.t.columns.names().join(','));
+    await this.dlgInputAction(dlg!,'Set the number of components to "3"', 'Components', '3');
+    this.describe(`Once you run the analysis, the following visualizations will appear:
     <ul style="list-style-type:disc">
       <li><code>Scores</code> is a scatter plot that shows correlation between observations</li>
       <li><code>Explained variance</code> is a bar chart with variable variance explained</li>
@@ -50,18 +51,6 @@ export class MultivariateAnalysisTutorial extends Tutorial {
       <li><code>Predicted vs. reference</code> is a scatter plot with a regression line comparing predicted vs reference outcomes</li>
       <li><code>Regression coefficients</code> is a bar chart with regression coefficients</li>
     </ul>`);
-
-    const captions = [
-      'Show scores',
-      'Show explained variance',
-      'Show correlation loadings',
-      'Show predicted vs. reference',
-      'Show regression coefficients'
-    ];
-
-    for (let caption of captions) {
-      await this.dlgInputAction(dlg!, '', caption, 'true');
-    }
 
     await this.action('Click "OK" and wait for the analysis to complete.',
       grok.functions.onAfterRunAction.pipe(filter((call: DG.FuncCall) => call.func.name === 'MultivariateAnalysis')),
@@ -72,5 +61,4 @@ export class MultivariateAnalysisTutorial extends Tutorial {
     this.describe('See the context help on the right to learn more about multivariate analysis, ' +
       'or navigate to a documentation page by clicking the "Open in new tab" button.');
   }
-
 }

@@ -1,6 +1,59 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-09-03 Dev build 0.93.18
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.18`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Datlas: add deploy logging 
+* sdf reader fix 
+* Update package.js 
+* #53 Tutorials package: Multivariate analysis tutorial 
+* (Bug) Scatter Plot | Markers: "Gradient" type does not work 
+* (Bug) Scatter Plot | Markers: When "Pie Bar Chart" type selected, an exception is thrown and the Scatter Plot starts to slow down 
+* (Bug) Form: Ellipsis truncation is missing after applying a layout 
+* (Bug) App's git URL is not well-formed 
+* added survival analisys view 
+* Form: Allow editing labels (WIP)
+* Minor code cleanup 
+* Filters: Allow to paste a list of values to a filter 
+* #53 Tutorials package: temporary ts-ignore for new functionality 
+* Histogram: Add ability to set bands transparency 
+* Wiki: misc small fixes. 
+* ApiSamples: a case typo in a sketcher sample. 
+* (Bug) Jobs are not saved correctly 
+* Histogram: ability to using column stats in band rules 
+* (Bug) Query Builder: Exception when deselecting table in the dialog (WIP)
+* Wiki: initial Style Guide for Help contributors. 
+* Release: adding a versioned hand-crafted Release Notes. 
+* updated survival analysis view and r scripts 
+* moved reading of validation rules table to clinicalCaseApp() function 
+* Ability to define job output parameters 
+* Release Notes: 2021-05-10, accumulating. wip 
+* Release Notes: 2021-05-21, accumulating. wip 
+* Release Notes: 2021-06-10, accumulating. wip 
+* Update render-items.js 
+* Update custom-cell-rendering-indexes.js 
+* Release Notes: 2021-07-14, accumulating. wip 
+* Release Notes: 2021-07-29, accumulating. wip 
+* Release Notes: 2021-07-29, short annotation. wip 
+* Bar chart: add collaborative filtering #85 
+* Release Notes: 2021-07-29 Build 0.93.0 
+* Multivariate Analysis -\- always show plots 
+* #53 Tutorials package: adjustments to new UI, code clean-up 
+* Release Notes: cleanup. 
+* Wiki: Update filter help 
+* Revert "Bar chart: add collaborative filtering #85" 
+
+
 # 2021-08-31 Dev build 0.93.17
 
 ## Latest Docker Images
