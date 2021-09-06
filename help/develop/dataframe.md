@@ -3,18 +3,18 @@
 # Dataframe
 
 Dataframe is a tabular structure with strongly-typed columns of different types. A dataframe class `DG.DataFrame`
-is used in virtually any Datagrok extension or application. It operates through a columnar in-memory data engine
-which we implemented from scratch to support highly efficient operation with data in a modern browser along
-with fast in-browser data visualizations. 
+is used in virtually any Datagrok extension or application. It operates via a columnar in-memory data engine
+which Datagrok implemented from scratch to support highly efficient operation with data in a modern browser
+together with fast in-browser data visualizations. 
 
 ## Dataframe JavaScript API
 
-Dataframe stores data as list of columns, so the functionality related to constructing, modifying and efficiently
-accessing data points is embodied in both [`DG.Column`][101] and [`DG.DataFrame`][100] classes, whereas event
-handling, visual aspects of working with dataframes, fast column selection, handy construction methods and
-row-based access are provided in [`DG.DataFrame`][100]. Instances of [`DG.ColumnList`](/js-api/classes/dg.columnlist),
-[`DG.Row`](/js-api/classes/dg.row) and [`DG.Cell`](/js-api/classes/dg.cell) are used as these two classes' related properties
-or return values.
+Dataframe stores data as list of columns. Constructing, modifying and efficiently accessing data points are
+embodied in both [`DG.Column`][101] and [`DG.DataFrame`][100] classes. Event handling, visual aspects of working
+with dataframes, fast column selection, handy construction methods and row-based access are provided in
+[`DG.DataFrame`][100]. Instances of [`DG.ColumnList`](/js-api/classes/dg.columnlist),
+[`DG.Row`](/js-api/classes/dg.row) and [`DG.Cell`](/js-api/classes/dg.cell) are used as related properties
+or functions return values of `DG.Column` and `DG.DataFrame`.
 
 ## Dataframe design
 
@@ -22,25 +22,27 @@ A Datagrok dataframe reminds of functionally similar structures in
 [Python](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html) and
 [R](https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/data.frame).
 
-Compared to these, Datagrok implementation is considerably optimized. While it isn't possible to control the browser
-entirely, the in-memory engine is designed in such way that all data related operations, such as aggregations or
-statistical computations, are performed efficiently on modern machines. Dataframe:
+In comparison, Datagrok implementation is considerably optimized. While it isn't possible to control the browser
+entirely, Datagrok in-memory engine is designed in such way that all data-related operations, such as aggregations
+or statistical computations, are performed efficiently on modern machines.
 
-* Designed to allocate little memory space, utilizes adaptive bit storage
+Here are a few of unique dataframe design features:
+
+* Built to allocate little memory space, utilizes adaptive bit storage
 * Operates on raw data instead of JavaScript wrapping objects
 * Utilizes manual memory management with the column-based layout
 * Doesn't have blocking structures, works well in multithreaded environments
 * Made to work entirely in the browser, but same dataframe code also runs on Datagrok servers, e.g. for serialization
-* Uses custom serialization codecs
+* Uses custom serialization codecs for efficiency
 
 Datagrok [visualizations][102] are fast because they work directly with the dataframe data instead of layers
-of physical objects' abstractions.
+of language abstractions.
 
 ## `DG.Column`
 
-Columns support the types specified in a [`DG.COLUMN_TYPE`][103] enum: `STRING`, `INT`, `FLOAT`, `BOOL`,
+Columns support the types specified in [`DG.COLUMN_TYPE`][103] enum: `STRING`, `INT`, `FLOAT`, `BOOL`,
 `DATE_TIME`, `BIG_INT`, `QNUM`, `DATA_FRAME` and `OBJECT`. Find the details of handling these types
-[further in this article][105].
+[further][105].
 
 ### Column properties
 
@@ -51,36 +53,44 @@ Every column has:
 * a .`type`: one of `DG.COLUMN_TYPE`, possible to change later via `DG.DataFrame` class
 * a parent `.dataFrame`, if the column is a part of some dataframe
 * `.temp` and `.tags`: provide access to [special proxy classes][114] for named temporary values and named tags
-  which can be associated with any column 
+  which can be associated with any column
+  
+`.tags` play key role in platform extensibility, allowing to introduce custom behavior and new data types.
+
+A column which is already constructed, either by an [initialization from a list][117], or as being part of some
+dataframe from the beginning, isn't a subject to changing its length without going through an instance of
+`DG.DataFrame` embodying it. This is due to its memory-optimized nature. However, the length of columns
+is changed with [adding rows][] to the dataframe.
   
 #### Semantic type
 
 A property `.semType` is a string value representing a tag which associates a column data with a logical type.
 
-While a raw data type of a molecule or a peptide is usually a `string`, semantic typing allows expanding the platform
-with such rich logical types recognition and understanding with a help of 3-rd party Datagrok packages. For example,
-[Chem][112] package adds visualizing and handling molecules, including [detecting][111] that a `string` column is of
-type `Molecule`, computing molecular fingerprints, searching for substructures, ranking by similarity.
+An underlying raw data type of a molecule or a peptide is usually just a `string`. Semantic typing allows expanding
+the platform with such rich logical types recognition and understanding with a help of 3-rd party Datagrok packages.
+For example, [Chem][112] package adds visualizing and handling molecules, including [detecting][111] that a `string`
+column is of type `Molecule`, computing molecular fingerprints, searching for substructures, ranking by similarity.
 
-The property `.semType` is a getter to a [tag][114] named `quality`.
+The property `.semType` is a getter to a [tag][114] named `quality`. This distinct getter is there due to a key
+role of this tag.
 
 Learn more about semantic types in this article: [link][109].
 
-### Constructing a column
+### Construct a column
 
 * The most common way is to use a method `.fromList`, explicitly specifying a type and a column name:  
   ```let col =  DG.Column.fromList(DG.COLUMN_TYPE.INT, 'Column Name', [1, 2, 3])```
 * The method `.fromStrings` recognizes and automatically assigns a type:  
   ```let col =  DG.Column.fromStrings('Column Name', ['3.14', '2.71']); // col.type === DG.COLUMN_TYPES.FLOAT```
-* To create a column with [`NULL` values][] of a pre-specified length, use `.fromType` or concrete types shortcuts:  
+* To create a column with [`NULL` values][116] of a pre-specified length, use `.fromType` or concrete types shortcuts:  
   ```let col =  DG.Column.fromType(DG.COLUMN_TYPE.INT, 'Name', 3); // col.get(0) === DG.INT_NULL```  
   ```let col =  DG.Column.string('Name', 5); // col.get(2) === ""```
   
 The column, once constructed, may later be [added to a dataframe]().
 
-### Manipulating column values
+### Manipulate column values
 
-#### Accessing and modifying column values
+#### Access and modifying column values
 
 * A method `.get` is passed an index `i` to return an `i`-th value: `const value = column.get(idx)`  
 * A method `.set` sets `i`-th value to `x`: `column.set(i, x)`
@@ -104,9 +114,40 @@ Learn more about supported formats in this article: [link][108].
 
 <!-- TODO: Explain `notify` -->
 
-#### Initializing with a function
+#### Initialize values with a function
 
-#### Accessing raw data
+It's handy to set all column values in a single batch. This is possile with `.init` function:
+
+```javascript
+let df = DG.DataFrame.fromCsv(
+  `x, y, s
+   1, 2, Point A
+   3, 5, Point B
+`);
+df.col('x').init(2); // df.col('x').get(1) === 2
+df.col('s').init('No comment'); // df.col('s').get(0) === 'No comment'
+df.columns.addNewInt('counter').init((i) => i * 3); // df.col('counter').get(1) === 3
+grok.shell.addTableView(df);
+```
+
+#### Performance access
+
+To learn the typical times it takes to run various column access patterns, run
+[this example]((https://public.datagrok.ai/js/samples/data-frame/performance/access))
+containing the methods from above. In summary, it is advised to explicitly get a column and its length 
+as separate variables:
+
+```javascript
+const t = grok.data.demo.demog(100000);
+const column = t.columns.byName('age');
+const rowCount = t.rowCount;
+let sum = 0;
+for (let i = 0; i < rowCount; i++)
+  sum += column.get(i);
+```
+
+Doing a `.byName` or a `t.rowCount` call as part of the loop shall incurs up to 20x overhead.
+`column.values()` iterator is 2-3 times slower than this snippet.
 
 If the fastest access is required for numerical columns, which usually happens in computing new values atop a column,
 accessing data with a result of calling `.getRawData()` is advised:
@@ -121,11 +162,9 @@ for (let i = 0; i < rowCount; i++)
   sum += array[i];
 ```
 
-The `.getRawData` returns a `Float32Array` for `DG.COLUMN_TYPE.FLOAT`, `Int32Array` for `DG.COLUMN_TYPE.INT`.
+It is 4-6 times faster than a snippet with explicit `column` and `rowCount`.
 
-To see the typical times it takes to run various column access patterns, run
-[this example]((https://public.datagrok.ai/js/samples/data-frame/performance/access))
-containing the methods from above.
+`.getRawData` returns a `Float32Array` for `DG.COLUMN_TYPE.FLOAT`, `Int32Array` for `DG.COLUMN_TYPE.INT`.
 
 ### Column data types
 
@@ -133,7 +172,7 @@ containing the methods from above.
 
 In popular languages like JavaScript, Python and R, special values representing missing values, unset values,
 or values for the undefined results (such as not valid numbers), are called `None`, `NaN` (Not A Number),
-`null`, `undefined`, and so forth. Datagrok's dataframe type system implements special handling of such values in
+`null`, `undefined`, and so forth. Dataframe's type system implements special handling of such values in
 a way great for performance yet still allowing for these kinds of values to be set.
 
 <!-- TODO: How is this handled when we work with these in server functions? -->
@@ -154,7 +193,7 @@ grok.shell.info(col.get(1)); // shows '-2147483648'
 grok.shell.info(col.get(2)); // shows '-2147483648'
 ```
 
-To check if a value is Datagrok `NULL`, be cautious of using `=== null` as the value isn't a JavaScript `null`.
+When checking if a value is a Datagrok `NULL`, be cautious of using `=== null`, as the value isn't a JavaScript `null`.
 Instead, use a `DG.Column`'s method `.isNone(i)` to check if the `i`-th element is Datagrok `NULL`. Continuing with
 the previous example:
 
@@ -188,78 +227,137 @@ in JavaScript represents a value which is not a valid number: this value isn't c
 
 <!-- TODO: How's that for other types? -->
 
-#### String
+#### String, Integer, Float, Boolean
 
-<!-- In particular, describe a behavior with nulls -->
+These are naturally regular JavaScript types.
 
-#### Integer
-
-#### Float
-
-#### Boolean
+The only difference is handling `NULL`-values, as described above.
 
 #### Datetime
 
-
+In future releases, `DateTime` type becomes a wrapper around a [dayJs][118] value.
 
 #### BigInt
-
-#### Qualified number
-
-#### Object
-
-<!-- Add the type to the enum -->
 
 Enum value: `DG.COLUMN_TYPE.BIG_INT`
 
 The type for working with integers that do not fit into 53 bits.
 
-<!-- TODO: Figure out how to construct -->
+`BIG_INT` won't be rendered by a [grid viewer][119] and won't become part of [aggregations][120]. It is introduced
+for compatibility with `BIG_INT` types in databases.
+
+#### Qualified number
+
+Qualified numbers, or QNums, are typically used to represent measurements when the exact value is not known,
+but it is known that it is either less or greater than some value. The examples of such values are `<3.5` or `>5E-6`.
+
+To keep the performance of this data type on par with `INTEGER` and `FLOAT`, `QNUM` was based on the 64-bit floating
+point number where two least significant bits of mantissa are reserved for the qualifier. This storage structure
+comes with ability to efficiently store the numbers and perform arithmetic operations on them without having to incur
+costly packing/unpacking. The qualifier part is valued to one of: `1` (`LESS`), `2` (`EXACT`), or `3` (`GREATER`).
+This way, `QNums` are compared using regular floating point number comparison.
+
+There is no special internal data type, as the values are 64-bit IEEE754 floats. In most cases the isn't need to
+check whether the value is qualified or not, since the result for the most operations (rendering, using for
+visualization, arithmetic operations) will be the same. However, in cases it does matter the programmer
+has to keep track of whether the values are qualified, and pack/unpack accordingly. This is 
+achieved with [`Qnum` class][[] class containing helper methods:
+
+```javascript
+let col = DG.Column.qnum('col', 3);
+col.set(0, DG.Qnum.greater(5));
+col.set(1, DG.Qnum.exact(5));
+col.set(1, DG.Qnum.less(5));
+grok.shell.info(DG.Qnum.getQ(col.get(0)) == DG.QNUM_GREATER); // shows `true`
+```
+
+#### Object
+
+This may be any JavaScript object. Pass it as usual.
 
 ## `DG.DataFrame`
 
-### Constructing a dataframe
+### Construct
 
 Dataframes may be obtained through the JavaSript or TypeScript code in various ways:
 
-* a new dataframe constructed from a list columns
+* a new dataframe constructed from predefined data
+* a new dataframe from precreated Datagrok columns
 * a table already being rendered by a table view
 * a dataframe constructed from a file in a file share
 * a CSV file uploaded to a browser
 * a dataframe returned by a script
 * as calculated on the flight for aggregations
 
-#### Constructing columns
+#### Construct from in-place content
 
-#### Construct from columns
+A variety of construction methods is available:
 
-Dataframe's data resides in a list of columns. The fastest way to construct a new dataframe in-place is to
-construct a list of columns in-place (specifying their types and names also and pass it to the `DataFrame`
-method `fromColumns`):
+* Construct from array of explicitly created columns, all same length: [link](
+  https://public.datagrok.ai/js/samples/data-frame/construction/create-from-arrays)
+* Specify number of rows in a dataframe at creation and later adding columns of this number of items: [link](
+  https://public.datagrok.ai/js/samples/data-frame/construction/create-from-columns)
+* Create from a string containing a CSV: [link](
+  https://public.datagrok.ai/js/samples/data-frame/construction/create-from-csv-format)
+* Create from a string containing a JSON: [link](
+  https://public.datagrok.ai/js/samples/data-frame/construction/create-from-json)
+* Create from JavaScript objects: [link](
+  https://public.datagrok.ai/js/samples/data-frame/construction/create-from-objects)
+* Create from JavaScript typed arrays: [link](
+  https://public.datagrok.ai/js/samples/data-frame/construction/create-from-typed-arrays)
+
+#### Load a demo dataset
+
+Datagrok comes with a hundred demo datasets [available as a folder][] in the platform interface. It's possible
+to load these datasets programmatically using Datagrok API methods:
+
+* `let table = grok.data.demo.demog()` loads the first `10'000` rows of the celebrated demographic dataset
+  we used a lot in this article. It's possible to specify a desired number of rows as a parameter, and
+  use one of `.biosensor`/`.wells`/`.geo` functions instead of `.demog` to load corresponding data
+* `let data = grok.data.demo.randomWalk(rows, cols)` generates random walk data
+* `await table = grok.data.getDemoTable('geo/earthquakes.csv')` loads any demo dataset from the specified
+  demo datasets file share by its path (the method is asynchronous)
+
+### Access columns
+
+An object `.columns` of `DG.DataFrame` provides handy access to everything related to columns of a dataframe:
 
 ```javascript
-let newDataframe = DG.DataFrame.fromColumns([
-  DG.Column.fromList(DG.COLUMN_TYPE.INT, 'Sequence of integers', [1, 2, 3]),
-  DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'Floats below one', [0.1, 0.2, 0.3]),
-  DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'String sequences', ["ABC", "CDE", "EFG"])
-]);
+let d = grok.data.demo.demog();
+let len = d.columns.length;
+ageColumn = d.columns.byName('age');
+ageColumn = d.columns['age'];
+ageColumn = d.columns.byIndex(3);
+ageColumn = d.columns[3];
+ageColumn = d.columns.age;
 ```
 
-<!-- TODO: adapt the samples accordingly — with a better naming -->
+Note that access by name is case-insensitive.
 
-### Manipulating dataframes
+There are also two shortcuts to get the column by name:
 
-#### Extending
+```javascript
+ageColumn = d.col('age');    // won't throw if column isn't found
+ageColumn = d.getCol('age'); // will throw if column isn't found
+```
 
-#### Joining
+Technically, `.columns` object is an instance of a special JavaScript wrapper around an instance of a `ColumnList`.
+While the `ColumnList` class provides for the access methods, such as `.byIndex` or `.length`, the wrapper
+adds support for square brackets and access by explicit column name.
 
-#### Aggregating
+### Manipulate
 
-#### Pivoting
+#### Extend
 
-### Versioning dataframes
+#### Join
 
-### Syncing dataframes
+#### Aggregate
+
+#### Pivot
+
+### Version dataframes
+
+### Sync dataframes
 
 ### Virtual columns
 
@@ -353,3 +451,8 @@ JavaScript property setter).
 [113]: develop/how-to/define-semantic-type-detectors.md "Defining semantic types detectors"
 [114]: #tags-and-temp "Tags and Temp collections"
 [115]: #null-values-for-numeric-types "NULL values for numeric types"
+[116]: #null-values-for-numeric-types
+[117]: #constructing-a-column
+[118]: https://day.js.org/
+[119]: visualize/viewers/grid.md
+[120]: link
