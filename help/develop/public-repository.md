@@ -26,7 +26,7 @@ can also access the public repository.
 
 ## How to Contribute
 
-We are interested in other fields, such as NLP, bionformatics, GIS, and others. We are looking for experts (PhD is a plus) 
+We are interested in other fields, such as NLP, bioinformatics, GIS, and others. We are looking for experts (PhD is a plus) 
 who would be able to both identify these popular methods, and integrate them into the platform.
 They should be proficient in R or Python, and enjoy working with and contributing to open-source projects.
 
