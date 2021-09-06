@@ -40,14 +40,15 @@ export let _package = new DG.Package();
 //input: int epochs=10 {category: Parameters}
 //input: double validationSplit=0.2 {category: Parameters}
 //input: int seed=42
-//input: string constraint {choices: ["maxNorm", "minMaxNorm", "nonNeg", "unitNorm", ]}
+//input: string constraint=maxNorm {choices: ["maxNorm", "minMaxNorm", "nonNeg", "unitNorm"]}
 //input: string monitor=val_loss {category: EarlyStopping}
 //input: double minDelta=0.001 {category: EarlyStopping}
 //input: int patience=5 {category: EarlyStopping}
 //input: string mode=auto {category: EarlyStopping; choices: ["auto", "min", "max"]}
 //input: double baseline=0.5 {category: EarlyStopping}
 //output: dynamic model
-export async function trainNN(df, predict_column, activationFunc = 'relu', hiddenLayersSizes = '128,128', initializer = 'randomUniform', constantValue = 0.5, normalMean = 0.5, normalStddev = 0.1, minValue = 0.0, maxValue = 1.0, varianceScale = 0.5, varianceFanningMode = "fanIn", varianceDistribution = "normal", hiddenRepresentationNormalization = "batchNorm", normalizationAxis = -1, normalizationMomentum = 0.99, normalizationEpsilon = 0.001, normalizationCenter = true, normalizationScale = true, droputRate = 0.2, regularizationL1 = 0.01, regularizationL2 = 0.01, kernelRegularization = true, biasRegularization = true, activityRegularization = false, finalActivation = 'relu', optimizer = 'Adam', learningRate = 0.001, lossFunc = 'meanSquaredError', metrics = 'MSE', batchSize = 1, epochs = 1, validationSplit, seed = 42, monitor, minDelta, patience, mode, baseline) {
+export async function trainNN(df, predict_column, activationFunc = 'relu', hiddenLayersSizes = '128,128', initializer = 'randomUniform', constantValue = 0.5, normalMean = 0.5, normalStddev = 0.1, minValue = 0.0, maxValue = 1.0, varianceScale = 0.5, varianceFanningMode = "fanIn", varianceDistribution = "normal", hiddenRepresentationNormalization = "batchNorm", normalizationAxis = -1, normalizationMomentum = 0.99, normalizationEpsilon = 0.001, normalizationCenter = true, normalizationScale = true, droputRate = 0.2, regularizationL1 = 0.01, regularizationL2 = 0.01, kernelRegularization = true, biasRegularization = true, activityRegularization = false, finalActivation = 'relu', optimizer = 'Adam', learningRate = 0.001, lossFunc = 'meanSquaredError', metrics = 'MSE', batchSize = 1, epochs = 1, validationSplit, seed = 42, constraint, monitor, minDelta, patience, mode, baseline) {
+    //TODO: reorganize
     // let columnsObject: object = {};
     // df.columns.toList().forEach((col: DG.Column) => {columnsObject[col.name] = {type: col.type, data: col.toList() } });
     let result = await prepareAndTrainNN(df, predict_column, activationFunc, hiddenLayersSizes, initializer, constantValue, normalMean, normalStddev, minValue, maxValue, varianceScale, varianceFanningMode, varianceDistribution, hiddenRepresentationNormalization, normalizationAxis, normalizationMomentum, normalizationEpsilon, normalizationCenter, normalizationScale, droputRate, regularizationL1, regularizationL2, kernelRegularization, biasRegularization, activityRegularization, finalActivation, optimizer, learningRate, lossFunc, metrics, batchSize, epochs, validationSplit, seed, monitor, minDelta, patience, mode, baseline);
@@ -62,6 +63,11 @@ export async function trainNN(df, predict_column, activationFunc = 'relu', hidde
 export async function applyNN(df, model) {
     let loadedModel = await loadModel(model);
     let testX = processFeatures(df);
-    let predictions = loadedModel.predict(testX).arraySync().flat();
+    let predictions;
+    // if (prediction is not category) {
+    predictions = loadedModel.predict(testX).arraySync().flat();
+    // } else { // is category
+    // predictions = predictions.map((vector) => oneHotToCategory(vector, categoryArray));
+    // }
     return DG.DataFrame.fromColumns([DG.Column.fromList(DG.TYPE.FLOAT, "pred", predictions)]);
 }

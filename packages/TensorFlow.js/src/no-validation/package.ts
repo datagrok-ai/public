@@ -20,9 +20,9 @@ export let _package = new DG.Package();
 //input: double normalStddev=0.1 {category: Initializer} [Random & Truancated Normal: Standard deviation of the random values to generate.]
 //input: double minValue=0.0 {category: Initializer} [Random Uniform: Lower bound of the range of random values to generate.]
 //input: double maxValue=1.0 {category: Initializer} [Random Uniform: Upper bound of the range of random values to generate.]
-//input: double varianceScale=0.5 {category: Initializaer} [Variance Scaling: Scaling factor (positive float).]
+//input: double varianceScale=0.5 {category: Initializer} [Variance Scaling: Scaling factor (positive float).]
 //input: string varianceFanningMode=fanIn {category: Initializer; choices: ["fanIn", "fanOut", "fanAvg"]} [Variance Scaling: Fanning mode for inputs and outputs.]
-//input: string varianceDistribution=normal {category: Initializer; choices: ["nomral", "uniform", "truncatedNormal"]} [Variance Scaling: Probabilistic distribution of the values.]
+//input: string varianceDistribution=normal {category: Initializer; choices: ["normal", "uniform", "truncatedNormal"]} [Variance Scaling: Probabilistic distribution of the values.]
 //input: string normalization=batchNorm {category: LayersNormalization; choices: ["none", "batchNorm", "layerNorm"]} [Normalization method to use.]
 //input: int axis=-1 {category: LayersNormalization} [The integer axis that should be normalized (typically the features axis).]
 //input: double momentum=0.99 {category: LayersNormalization} [Momentum of the moving average.]
@@ -44,7 +44,7 @@ export let _package = new DG.Package();
 //input: int epochs=10 {category: Parameters}
 //input: double validationSplit=0.2 {category: Parameters}
 //input: int seed=42
-//input: string constraint {choices: ["maxNorm", "minMaxNorm", "nonNeg", "unitNorm", ]}
+//input: string constraint=maxNorm {choices: ["maxNorm", "minMaxNorm", "nonNeg", "unitNorm"]}
 //input: string monitor=val_loss {category: EarlyStopping}
 //input: double minDelta=0.001 {category: EarlyStopping}
 //input: int patience=5 {category: EarlyStopping}
@@ -86,6 +86,7 @@ export async function trainNN(
     epochs: number = 1,
     validationSplit: number,
     seed: number = 42,
+    constraint,
     monitor?: string,
     minDelta?: number,
     patience?: number,
