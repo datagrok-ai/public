@@ -17,7 +17,7 @@ come from, create your own CSS classes, and apply selectors.
 
 **Explore the collection of standard code snippets**. Go to [JS API examples](https://public.datagrok.ai/js),
 and browse and run each snippet (F5, or '>' icon on top) under the following folders:
-* `/ui`: components. Ppay attention to the code, it is short and canonical, this is how you want to write your UI code.
+* `/ui`: components. Pay attention to the code, it is short and canonical, this is how you want to write your UI code.
 * `/ux`: common templates for layouts, dialogs, input blocks, interactivity, navigation, etc. 
   Pay attention to the results of the snippet. 
 
