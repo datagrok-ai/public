@@ -59,9 +59,11 @@ public class GrokConnect {
 
             BufferAccessor buffer;
             DataQueryRunResult result = new DataQueryRunResult();
+            result.log = "";
 
+            FuncCall call = null;
             try {
-                FuncCall call = gson.fromJson(request.body(), FuncCall.class);
+                call = gson.fromJson(request.body(), FuncCall.class);
                 call.log = "";
                 call.setParamValues();
                 call.afterDeserialization();
@@ -77,7 +79,6 @@ public class GrokConnect {
                 result.execTime = execTime;
                 result.columns = dataFrame.columns.size();
                 result.rows = dataFrame.rowCount;
-                result.log = call.log;
                 // TODO Write to result log there
 
                 String logString = String.format("%s: Execution time: %f s, Columns/Rows: %d/%d, Blob size: %d bytes\n",
@@ -102,6 +103,10 @@ public class GrokConnect {
                 result.errorStackTrace = exception.get("errorStackTrace");
 
                 buffer = new BufferAccessor();
+            }
+            finally {
+                if (call != null)
+                    result.log += call.log;
             }
 
             try {
