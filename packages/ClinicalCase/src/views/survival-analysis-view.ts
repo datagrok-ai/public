@@ -1,6 +1,8 @@
 import * as DG from "datagrok-api/dg";
 import * as grok from 'datagrok-api/grok';
 import * as ui from "datagrok-api/ui";
+import { study } from "../clinical-study";
+import { createSurvivalData } from "../data-preparation/data-preparation";
 import { dataframeContentToRow } from "../data-preparation/utils";
 
 export class SurvivalAnalysisView extends DG.ViewBase {
@@ -9,20 +11,33 @@ export class SurvivalAnalysisView extends DG.ViewBase {
   covariatesPlotDiv = ui.box();
   survivalColumns: string[];
   confIntervals = [ 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 0.99 ];
+  covariatesOptions = [ 'AGE', 'SEX', 'RACE', 'ACTARM' ];
+  endpointOptions = { 'DEATH': 'DTHDTC', 'TIME TO FIRST AE': 'DTHDTC' };
   confInterval = 0.7;
   strata = '';
   endpoint = '';
+  covariates = [];
   survivalDataframe: DG.DataFrame;
-  selectedCovariates: string[];
+  plotCovariates: string[];
 
   constructor() {
     super();
 
     this.survivalDataframe = grok.shell.table('survival');
     this.survivalColumns = this.survivalDataframe.columns.names();
+    this.endpoint = Object.keys(this.endpointOptions)[ 0 ];
     let survivalOpions = [ '' ].concat(this.survivalColumns);
-    let covariatesOptions = this.survivalColumns.filter(it => it !== 'time' && it !== 'status');
+    let plotCovariatesOptions = this.survivalColumns.filter(it => it !== 'time' && it !== 'status');
 
+    let endpointChoices = ui.choiceInput('Endpoint', Object.keys(this.endpointOptions)[ 0 ], Object.keys(this.endpointOptions));
+    endpointChoices.onChanged((v) => {
+      this.endpoint = this.endpointOptions[endpointChoices.value];
+    });
+
+    let covariatesChoices = ui.multiChoiceInput('Covariates', null, this.covariatesOptions);
+    covariatesChoices.onChanged((v) => {
+      this.covariates = covariatesChoices.value;
+    });
 
     let confIntChoices = ui.choiceInput('Confidence Intreval', this.confIntervals[ 0 ], this.confIntervals);
     confIntChoices.onChanged((v) => {
@@ -36,9 +51,9 @@ export class SurvivalAnalysisView extends DG.ViewBase {
       this.updateSurvivalPlot();
     });
 
-    let covariatesChoices = ui.multiChoiceInput('Covariates', null, covariatesOptions);
-    covariatesChoices.onChanged((v) => {
-      this.selectedCovariates = covariatesChoices.value;
+    let plotCovariatesChoices = ui.multiChoiceInput('Covariates', null, plotCovariatesOptions);
+    plotCovariatesChoices.onChanged((v) => {
+      this.plotCovariates = plotCovariatesChoices.value;
       this.updateCovariatesPlot();
     });
 
@@ -50,9 +65,14 @@ export class SurvivalAnalysisView extends DG.ViewBase {
     let applyFilters = ui.bigButton('Apply to curves', () => { });
     applyFilters.addEventListener('click', (event) => {
       this.updateSurvivalPlot();
-      if (this.selectedCovariates) {
+      if (this.plotCovariates) {
         this.updateCovariatesPlot();
       }
+    });
+
+    let createSurvivalDataframe = ui.bigButton('Create dataframe', () => { });
+    createSurvivalDataframe.addEventListener('click', (event) => {
+     this.survivalDataframe = createSurvivalData(study.domains.dm.clone(), this.endpointOptions[this.endpoint], this.covariates);
     });
 
     grok.functions.call(
@@ -66,11 +86,19 @@ export class SurvivalAnalysisView extends DG.ViewBase {
       this.root.className = 'grok-view ui-box';
       this.root.append(
         ui.tabControl({
+          'Create dataset':
+            ui.splitV([
+              ui.box(ui.panel([
+                ui.divH([ endpointChoices.root,
+                covariatesChoices.root ])
+              ]), { style: { maxHeight: '150px' } }),
+              ui.box(ui.div([ createSurvivalDataframe ]), { style: { maxHeight: '40px' } }),
+              this.survivalDataframe ? this.survivalDataframe.plot.grid().root : null, ]),
           'Survival data':
             ui.splitV([
               filters.root,
               ui.box(ui.div([ applyFilters ]), { style: { maxHeight: '40px' } }),
-              this.survivalDataframe.plot.grid().root,
+              this.survivalDataframe ? this.survivalDataframe.plot.grid().root : null,
             ]),
           'Survival chart':
             ui.splitV([
@@ -82,7 +110,7 @@ export class SurvivalAnalysisView extends DG.ViewBase {
           'Co-variates':
             ui.splitH([
               ui.panel([
-                covariatesChoices.root
+                plotCovariatesChoices.root
               ], { style: { maxWidth: '150px' } }),
               this.covariatesPlotDiv ])
         }).root
@@ -115,7 +143,7 @@ export class SurvivalAnalysisView extends DG.ViewBase {
     grok.functions.call(
       "Clinicalcase:covariates", {
       "covariatesDf": this.survivalDataframe,
-      "coVariates": this.selectedCovariates.join(' + ')
+      "coVariates": this.plotCovariates.join(' + ')
     }).then((result) => {
       this.updatePlotDiv(result[ 'plot' ], this.covariatesPlotDiv);
       console.warn(dataframeContentToRow(result[ 'diagnostics' ]));

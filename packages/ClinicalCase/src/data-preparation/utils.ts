@@ -24,6 +24,24 @@ export function getUniqueValues(df: DG.DataFrame, colName: string) {
     }
   }
 
+  export function filterNulls(df: DG.DataFrame, colName: string) {
+    let column = df.columns.byName(colName);
+    let rowCount = df.rowCount;
+    for (let i = 0; i < rowCount; i++){
+        if(column.isNone(i)){
+            df.rows.removeAt(i);
+        }
+    }
+  }
+
+
+  export function dateDifferenceInDays(start: string, end: string) {
+    const startDate = new Date(start) as any;
+    const endDate = new Date(end) as any;
+    const diffTime = Math.abs(endDate - startDate);
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+  }
+
 
 export function addTreatmentArm(df: DG.DataFrame, dm: DG.DataFrame, columnsToExtract: string[]) {
     let withArm = grok.data.joinTables(df, dm, [ 'USUBJID' ], [ 'USUBJID' ], columnsToExtract, [ TREATMENT_ARM ], DG.JOIN_TYPE.LEFT, false);

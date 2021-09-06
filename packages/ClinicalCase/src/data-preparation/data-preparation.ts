@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import { ALT, AP, AST, BILIRUBIN, TREATMENT_ARM } from '../constants';
-import { addTreatmentArm } from './utils';
+import { addTreatmentArm, dateDifferenceInDays, filterNulls } from './utils';
 
 export function createMaxValuesData(dataframe, aggregatedColName, filerValue){ 
 	let condition = `LBTEST = ${filerValue}`; 
@@ -95,6 +95,29 @@ export function addColumnWithDrugPlusDosage(df: DG.DataFrame, drugCol: string, d
   return df;
 }
 
+export function createSurvivalData(df: DG.DataFrame, endpoint: string, covariates: string[]) {
+  filterNulls(df, 'RFENDTC');
+  df.columns.addNewInt('time')
+    .init((i) => getSurvivalTime(df.columns.byName(endpoint), df.columns.byName('RFSTDTC'), df.columns.byName('RFENDTC'), i));
+  df.columns.addNewInt('status')
+    .init((i) => getSurvivalStatus(df.columns.byName(endpoint), i));
+  return df;
+}
+
+export function getSurvivalTime(eventColumn: DG.Column, startColumn: DG.Column, endColumn: DG.Column, i: number) {
+  const test = startColumn.get(i);
+  const test1 = eventColumn.get(i);
+  const test2 = endColumn.get(i);
+  if (eventColumn.isNone(i)) {
+    return dateDifferenceInDays(startColumn.get(i).toString(), endColumn.get(i).toString());
+  } else {
+    return dateDifferenceInDays(startColumn.get(i).toString(), eventColumn.get(i).toString());
+  }
+}
+
+export function getSurvivalStatus(eventColumn: DG.Column, i: number) {
+  return eventColumn.isNone(i) ? 0 : 1;
+}
 
 export function createAERiskAssessmentDataframe(ae: DG.DataFrame, ex: DG.DataFrame) {
 
