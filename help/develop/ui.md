@@ -94,6 +94,7 @@ Figma Datagrok UIKit avaliable on [Figma Community](https://www.figma.com/@datag
   * [Dropdown Selection](#dropdown-selection)
   * [Selection](#selection)
   * [Group Selection](#group-selection)
+  * [Switch](#group-selection)
   * [Range Slider](#range-slider)
 * [Icons](#icons)
 * [Image](#image)
@@ -796,6 +797,14 @@ Group selection is commonly used to select one or more option from the predefine
 
 ```javascript
 ui.multiChoiceInput('Group label', ['Value 1', 'Value 2'], ['Value 3', 'Value 4']);
+```
+
+### Switch
+
+The toggle switch allows users to set individual features to either active or inactive.
+
+```javascript
+ui.switchInput('Active', true);
 ```
 
 ### Range Slider
