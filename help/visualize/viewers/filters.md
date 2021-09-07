@@ -25,6 +25,8 @@ If you start typing text in the field, the filter will show all values ​​tha
 
 It is also allowed to paste multi-line text from the clipboard into the search field. In this case, the filter will also display those values ​​that exactly match each word. To select or deselect only the found values ​​of the category - click the checkbox to the left of the search field. Note that other (not displayed) values ​​of the categories do not change their choice.
 
+![Filter](../../uploads/gifs/filter-search.gif "Filter")
+
 See also: 
   
   * [Viewers](../viewers.md)
