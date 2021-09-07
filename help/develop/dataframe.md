@@ -245,12 +245,6 @@ The type for working with integers that do not fit into 53 bits.
 `BIG_INT` won't be rendered by a [grid viewer][119] and won't become part of [aggregations][120]. It is introduced
 for compatibility with `BIG_INT` types in databases.
 
-### Versioning
-
-A column increments an integer version number whenever its contents are changed. The `.version` property
-returning this number is useful when invalidating cached computation results stored as columns or dataframes. Check
-[this example][126] to see how column versioning works.
-
 #### Dataframe
 
 Enum value: `DG.COLUMN_TYPE.DATA_FRAME`
@@ -291,9 +285,7 @@ Enum value: `DG.COLUMN_TYPE.OBJECT`
 
 This may be any JavaScript object. Pass it as usual.
 
-### Other properties
-
-#### Numerical and categotical columns
+### Numerical and categotical columns
 
 Currently, columns of types `BOOL` and `STRING` are considered as categorical, s.t. they represent values from a
 discrete set. Columns of types `INT` and `FLOAT` are considered as numerical, s.t. they represent values from
@@ -302,6 +294,20 @@ detected based on its content analysis.
 
 This property mostly affects the way columns are treated in the UI. For instance, this property affects how
 [color coding][124] works.
+
+### Work with categories
+
+For a `string` column, the column collection `.categories` returns a list of categories in an alphabetical sort.
+For instance, for a column of strings `['a', 'b', 'b', 'c']` the categories list will be `['a', 'b', 'c']`.
+
+It is possible to introduce a custom category order, as [this example][127] demonstrates. That is useful if
+the alphabetical order does not reflect a natural order, for example in `['Low', 'Medium', 'High']`.
+
+### Versioning
+
+A column increments an integer version number whenever its contents are changed. The `.version` property
+returning this number is useful when invalidating cached computation results stored as columns or dataframes. Check
+[this example][126] to see how column versioning works.
 
 ## `DG.DataFrame`
 
@@ -390,9 +396,7 @@ In addition to regular access to columns by index and name, there's a group of m
   for (let column of demog.columns.categorical) grok.shell.info(column.name);
   for (let column of demog.columns.numerical) grok.shell.info(column.name);
   ```
-
-
-
+  
 ### Manipulate
 
 ### Add and remove columns
@@ -427,7 +431,7 @@ In the example below we are expanding a `demog` table with the two virtual colum
 * `idx`, which only depends on a row's index
 * `BMI`, which depends on two values of the row
 
-Property `.isVirtual` indicates if the column is virtual.
+Property `.isVirtual` indicates if a column is virtual.
 
 ```js
 let table = grok.data.demo.demog();
@@ -514,3 +518,4 @@ JavaScript property setter).
 [124]: how-to/customize-grid.md#color-coding "Color coding"
 [125]: #numerical-and-categotical-columns "Numerical and categorical columns"
 [126]: https://public.datagrok.ai/js/samples/data-frame/modification/manipulate "Manipulating dataframes"
+[127]: https://public.datagrok.ai/js/samples/data-frame/advanced/custom-category-order "Custom categories order"
