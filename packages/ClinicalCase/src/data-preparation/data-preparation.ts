@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import { ALT, AP, AST, BILIRUBIN, TREATMENT_ARM } from '../constants';
 import { addTreatmentArm, dateDifferenceInDays, filterNulls } from './utils';
+import { study } from '../clinical-study';
 
 export function createMaxValuesData(dataframe, aggregatedColName, filerValue){ 
 	let condition = `LBTEST = ${filerValue}`; 
@@ -95,19 +96,28 @@ export function addColumnWithDrugPlusDosage(df: DG.DataFrame, drugCol: string, d
   return df;
 }
 
-export function createSurvivalData(df: DG.DataFrame, endpoint: string, covariates: string[]) {
-  filterNulls(df, 'RFENDTC');
-  df.columns.addNewInt('time')
-    .init((i) => getSurvivalTime(df.columns.byName(endpoint), df.columns.byName('RFSTDTC'), df.columns.byName('RFENDTC'), i));
-  df.columns.addNewInt('status')
-    .init((i) => getSurvivalStatus(df.columns.byName(endpoint), i));
-  return df;
+export function createSurvivalData(endpoint: string, covariates: string[]) {
+  let dm = study.domains.dm.clone();
+  filterNulls(dm, 'RFENDTC');
+  if (endpoint === 'AESTDTC') {
+    const ae = study.domains.ae;
+    const aeGrouped = ae.groupBy([ 'USUBJID' ]).
+      min('AESEQ').
+      where('AESEV = SEVERE').
+      aggregate();
+    const aeJoined = grok.data.joinTables(ae, aeGrouped, [ 'USUBJID', 'AESEQ' ],
+      [ 'USUBJID', 'min(AESEQ)' ], [ 'USUBJID', 'AESTDTC' ], [ 'min(AESEQ)' ], DG.JOIN_TYPE.LEFT, false);
+    filterNulls(aeJoined, 'min(AESEQ)');
+    dm = grok.data.joinTables(dm, aeJoined, [ 'USUBJID' ], [ 'USUBJID' ], dm.columns.names(), [ 'AESTDTC' ], DG.JOIN_TYPE.LEFT, false);
+  }
+  dm.columns.addNewInt('time')
+    .init((i) => getSurvivalTime(dm.columns.byName(endpoint), dm.columns.byName('RFSTDTC'), dm.columns.byName('RFENDTC'), i));
+  dm.columns.addNewInt('status')
+    .init((i) => getSurvivalStatus(dm.columns.byName(endpoint), i));
+  return dm.groupBy([ 'USUBJID', 'time', 'status' ].concat(covariates)).aggregate();
 }
 
 export function getSurvivalTime(eventColumn: DG.Column, startColumn: DG.Column, endColumn: DG.Column, i: number) {
-  const test = startColumn.get(i);
-  const test1 = eventColumn.get(i);
-  const test2 = endColumn.get(i);
   if (eventColumn.isNone(i)) {
     return dateDifferenceInDays(startColumn.get(i).toString(), endColumn.get(i).toString());
   } else {
