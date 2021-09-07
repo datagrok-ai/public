@@ -80,12 +80,12 @@ export class SurvivalAnalysisView extends DG.ViewBase {
       this.root.append(
         ui.tabControl({
           'Create dataset':
-            ui.splitV([
+            ui.splitH([
               ui.box(ui.panel([
-                ui.divH([ endpointChoices.root,
-                covariatesChoices.root ])
-              ]), { style: { maxHeight: '150px' } }),
-              ui.box(ui.div([ createSurvivalDataframe ]), { style: { maxHeight: '40px' } }),
+                ui.divV([ endpointChoices.root,
+                covariatesChoices.root,
+                ui.box(ui.div([ createSurvivalDataframe ]), { style: { maxHeight: '40px' } })])
+              ]), { style: { maxWidth: '250px' } }),
               this.survivalGridDivCreate ]),
           'Survival data':
             ui.splitV([
