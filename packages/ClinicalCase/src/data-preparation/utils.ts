@@ -30,6 +30,8 @@ export function getUniqueValues(df: DG.DataFrame, colName: string) {
     for (let i = 0; i < rowCount; i++){
         if(column.isNone(i)){
             df.rows.removeAt(i);
+            i--;
+            rowCount-=1;
         }
     }
   }
