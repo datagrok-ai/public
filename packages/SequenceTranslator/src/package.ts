@@ -56,7 +56,7 @@ export function sequenceTranslator(): void {
         ).root
       ], 'table')
     );
-
+    grok.shell.v
     semTypeOfInputSequence.textContent = 'Detected input type: ' + outputSequencesObj.type;
 
     if (!(outputSequencesObj.type == undefinedInputSequence || outputSequencesObj.type == smallNumberOfCharacters)) {
@@ -146,10 +146,23 @@ export function sequenceTranslator(): void {
         semTypeOfInputSequence,
         ui.block([
           ui.h1('Output'),
+          ui.h1('Output'),
           outputTableDiv
         ]),
         accordionWithCmoCodes.root,
-        moleculeSvg
+        moleculeSvg,
+        ui.button('SAVE SD FILE', async() => {
+          let outputSequenceObj = convertSequence(inputSequenceField.value);
+          let flavor: string = outputSequenceObj.Nucleotides.includes('U') ? "RNA_both_caps" : "DNA_both_caps";
+          let smiles = await nucleotidesToSmiles(outputSequenceObj.Nucleotides, flavor);
+          //@ts-ignore
+          let mol = new OCL.Molecule.fromSmiles(smiles);
+          let result = `\n${mol.toMolfile()}\n` + '$$$$';
+          var element = document.createElement('a');
+          element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(result));
+          element.setAttribute('download', outputSequenceObj.Nucleotides + '.sdf');
+          element.click();
+        })
       ], 'sequence')!
     ]),
     'AXOLABS': _defineAxolabsPattern()
@@ -438,9 +451,9 @@ export function siRnaAxolabsToNucleotides(nucleotides: string) {
 //output: string result {semType: RNA nucleotides}
 export function siRnaGcrsToNucleotides(nucleotides: string) {
   const obj: {[index: string]: string} = {
-    "fU": "U", "fA": "A", "fC": "C", "fG": "G", "mU": "U", "mA": "A", "mC": "C", "mG": "G", "ps": ""
+    "fU": "U", "fA": "A", "fC": "C", "fG": "G", "mU": "U", "mA": "A", "mC": "C", "mG": "G", "ps": "", "s": ""
   };
-  return nucleotides.replace(/(fU|fA|fC|fG|mU|mA|mC|mG|ps)/g, function (x: string) {return obj[x];});
+  return nucleotides.replace(/(fU|fA|fC|fG|mU|mA|mC|mG|ps|s)/g, function (x: string) {return obj[x];});
 }
 
 //name: siRnaGcrsToBioSpring
