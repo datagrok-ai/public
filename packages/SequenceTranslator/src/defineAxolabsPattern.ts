@@ -278,7 +278,7 @@ export function defineAxolabsPattern() {
   }
 
   function checkWhetherAllValuesInColumnHaveTheSameLength(colName: string): boolean {
-    let col = grok.shell.table(tables.value).columns.byName(colName);
+    let col = tables.value.columns.byName(colName);
     let allLengthsAreTheSame = true;
     for (let i = 1; i < col.length; i++) {
       if (col.get(i - 1).length != col.get(i).length) {
@@ -293,10 +293,10 @@ export function defineAxolabsPattern() {
         .add(ui.divText('The sequence length should match the number of Raw sequences in the input file'))
         .add(ui.divText("'ADD COLUMN' to see sequences lengths"))
         .addButton('ADD COLUMN', () => {
-          grok.shell.table(tables.value).columns.addNewInt('Sequences lengths in ' + colName).init((j: number) => col.get(j).length);
-          grok.shell.info("Column with lengths added to '" + tables.value + "'");
+          tables.value.columns.addNewInt('Sequences lengths in ' + colName).init((j: number) => col.get(j).length);
+          grok.shell.info("Column with lengths added to '" + tables.value.name + "'");
           dialog.close();
-          grok.shell.v = grok.shell.getTableView(tables.value);
+          grok.shell.v = grok.shell.getTableView(tables.value.name);
         })
         .show();
     }
@@ -402,24 +402,24 @@ export function defineAxolabsPattern() {
 
   function validateSsColumn(colName: string) {
     let allLengthsAreTheSame: boolean = checkWhetherAllValuesInColumnHaveTheSameLength(colName);
-    const firstSequence = grok.shell.table(tables.value).columns.byName(colName).get(0);
+    const firstSequence = tables.value.columns.byName(colName).get(0);
     if (allLengthsAreTheSame && firstSequence.length != ssLength.value)
-      ssLength.value = grok.shell.table(tables.value).columns.byName(colName).get(0).length;
+      ssLength.value = tables.value.columns.byName(colName).get(0).length;
     ssInputExample.value = firstSequence;
   }
 
   function validateAsColumn(colName: string) {
     let allLengthsAreTheSame: boolean = checkWhetherAllValuesInColumnHaveTheSameLength(colName);
-    const firstSequence = grok.shell.table(tables.value).columns.byName(colName).get(0);
+    const firstSequence = tables.value.columns.byName(colName).get(0);
     if (allLengthsAreTheSame && firstSequence.length != asLength.value)
-      asLength.value = grok.shell.table(tables.value).columns.byName(colName).get(0).length;
+      asLength.value = tables.value.columns.byName(colName).get(0).length;
     asLengthDiv.innerHTML = '';
     asLengthDiv.append(asLength.root);
     asInputExample.value = firstSequence;
   }
 
   function validateIdsColumn(colName: string) {
-    const col = grok.shell.table(tables.value).columns.byName(colName);
+    const col = tables.value.columns.byName(colName);
     if (col.type != DG.TYPE.INT)
       grok.shell.error('Column should contain integers only');
     else if (col.categories.length < col.length) {
@@ -427,23 +427,24 @@ export function defineAxolabsPattern() {
       ui.dialog('Non-unique IDs')
         .add(ui.divText("Press 'OK' to select rows with non-unique values"))
         .onOK(() => {
-          let selection = grok.shell.table(tables.value).selection;
-          selection.init((i) => duplicates.indexOf(col.get(i)) > -1);
-          grok.shell.v = grok.shell.getTableView(tables.value);
-          grok.shell.info("Rows are selected in table '" + tables.value + "'");
+          let selection = tables.value.selection;
+          selection.init((i: number) => duplicates.indexOf(col.get(i)) > -1);
+          grok.shell.v = grok.shell.getTableView(tables.value.name);
+          grok.shell.info("Rows are selected in table '" + tables.value.name + "'");
         })
         .show();
     }
   }
 
-  let tables = ui.tableInput('Tables', grok.shell.tables[0], grok.shell.tables, () => {
-    inputSsColumn = ui.choiceInput('SS Column', '', tables.value.columns.names(), (colName: string) => validateSsColumn(colName));
+  // let variable = ;
+  let tables = ui.tableInput('Tables', grok.shell.tables[0], grok.shell.tables, (t: DG.DataFrame) => {
+    inputSsColumn = ui.choiceInput('SS Column', '', t.columns.names(), (colName: string) => validateSsColumn(colName));
     inputSsColumnDiv.innerHTML = '';
     inputSsColumnDiv.append(inputSsColumn.root);
-    inputAsColumn = ui.choiceInput('AS Column', '', tables.value.columns.names(), (colName: string) => validateAsColumn(colName));
+    inputAsColumn = ui.choiceInput('AS Column', '', t.columns.names(), (colName: string) => validateAsColumn(colName));
     inputAsColumnDiv.innerHTML = '';
     inputAsColumnDiv.append(inputAsColumn.root);
-    inputIdColumn = ui.choiceInput('ID Column', '', tables.value.columns.names(), (colName: string) => validateIdsColumn(colName));
+    inputIdColumn = ui.choiceInput('ID Column', '', t.columns.names(), (colName: string) => validateIdsColumn(colName));
     inputIdColumnDiv.innerHTML = '';
     inputIdColumnDiv.append(inputIdColumn.root);
   });
@@ -540,19 +541,19 @@ export function defineAxolabsPattern() {
       dialog
         .add(ui.divText("Length of sequences in columns doesn't match entered length. Update length value?"))
         .addButton('YES', () => {
-          ssLength.value = grok.shell.table(tables.value).columns.byName(inputSsColumn.value).getString(0).length;
-          asLength.value = grok.shell.table(tables.value).columns.byName(inputAsColumn.value).getString(0).length;
+          ssLength.value = tables.value.columns.byName(inputSsColumn.value).getString(0).length;
+          asLength.value = tables.value.columns.byName(inputAsColumn.value).getString(0).length;
           dialog.close();
         })
         .show();
     } else {
       if (inputIdColumn.value != null)
-        addColumnWithIds(tables.value, inputIdColumn.value, getShortName(saveAs.value));
-      addColumnWithTranslatedSequences(tables.value, inputSsColumn.value, ssBases, ssPtoLinkages, ssFiveModification, ssThreeModification, firstSsPto.value);
+        addColumnWithIds(tables.value.name, inputIdColumn.value, getShortName(saveAs.value));
+      addColumnWithTranslatedSequences(tables.value.name, inputSsColumn.value, ssBases, ssPtoLinkages, ssFiveModification, ssThreeModification, firstSsPto.value);
       if (createAsStrand.value)
-        addColumnWithTranslatedSequences(tables.value, inputAsColumn.value, asBases, asPtoLinkages, asFiveModification, asThreeModification, firstAsPto.value);
-      grok.shell.v = grok.shell.getTableView(tables.value);
-      grok.shell.info(((createAsStrand.value) ? "Columns were" : "Column was") + " added to table '" + tables.value + "'");
+        addColumnWithTranslatedSequences(tables.value.name, inputAsColumn.value, asBases, asPtoLinkages, asFiveModification, asThreeModification, firstAsPto.value);
+      grok.shell.v = grok.shell.getTableView(tables.value.name);
+      grok.shell.info(((createAsStrand.value) ? "Columns were" : "Column was") + " added to table '" + tables.value.name + "'");
     }
   });
 
