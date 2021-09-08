@@ -1,6 +1,33 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-09-08 Dev build 0.93.20
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.20`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Charts: fix a package publication error 
+* JS API: update MapChangeArgs interface 
+* #53 Tutorials package: change node placement 
+* #53 Tutorials package: EDA: viewers (WIP) 
+* JS API: add event args types to onViewerAdded/onViewerClosed 
+* Selenium: Add attributes "name" to elements of the new AddNewColumn dialog 
+* Oligo Batch Calculator: detect errors when code table contains one-char and two-chars codes 
+* Sequence Translator: Creating a mol file from the landing page 
+* Pairwise sequences alignment 
+* Change endpoints to use new divided cvm images (WIP)
+* Fixed warning 
+* (Bug) Functions cannot be cached if called from server-side 
+* Histogram: Ability to add x-values of splines 
+
+
 # 2021-09-07 Dev build 0.93.19
 
 ## Latest Docker Images
