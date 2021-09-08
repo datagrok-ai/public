@@ -273,7 +273,7 @@ export function _sub(d: any): StreamSubscription {
 }
 
 export interface MapChangeArgs<K, V> {
-  sender: any;
+  source: any;
   change: string;
   key: K;
   value: V;
