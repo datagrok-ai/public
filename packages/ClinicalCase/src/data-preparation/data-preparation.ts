@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import { ALT, AP, AST, BILIRUBIN, TREATMENT_ARM } from '../constants';
-import { addTreatmentArm, dateDifferenceInDays, filterNulls } from './utils';
+import { addTreatmentArm, dateDifferenceInDays, filterBooleanColumn, filterNulls } from './utils';
 import { study } from '../clinical-study';
 
 export function createMaxValuesData(dataframe, aggregatedColName, filerValue){ 
@@ -96,14 +96,18 @@ export function addColumnWithDrugPlusDosage(df: DG.DataFrame, drugCol: string, d
   return df;
 }
 
-export function createSurvivalData(endpoint: string, covariates: string[]) {
+export function createSurvivalData(endpoint: string, SDTMendpoint: string, covariates: string[]) {
   let dm = study.domains.dm.clone();
   filterNulls(dm, 'RFENDTC');
-  if (endpoint === 'AESTDTC') {
-    const ae = study.domains.ae;
+  if (SDTMendpoint === 'AESTDTC') {
+    const ae = study.domains.ae.clone();
+    if(endpoint == 'HOSPITALIZATION'){
+      filterBooleanColumn(ae, 'AESHOSP', false);
+    }
+    const condition = endpoint == 'DRUG RELATED AE' ? 'AEREL not in (NONE, NOT RELATED)' : 'AESEV = SEVERE';
     const aeGrouped = ae.groupBy([ 'USUBJID' ]).
       min('AESEQ').
-      where('AESEV = SEVERE').
+      where(condition).
       aggregate();
     const aeJoined = grok.data.joinTables(ae, aeGrouped, [ 'USUBJID', 'AESEQ' ],
       [ 'USUBJID', 'min(AESEQ)' ], [ 'USUBJID', 'AESTDTC' ], [ 'min(AESEQ)' ], DG.JOIN_TYPE.LEFT, false);
@@ -111,9 +115,9 @@ export function createSurvivalData(endpoint: string, covariates: string[]) {
     dm = grok.data.joinTables(dm, aeJoined, [ 'USUBJID' ], [ 'USUBJID' ], dm.columns.names(), [ 'AESTDTC' ], DG.JOIN_TYPE.LEFT, false);
   }
   dm.columns.addNewInt('time')
-    .init((i) => getSurvivalTime(dm.columns.byName(endpoint), dm.columns.byName('RFSTDTC'), dm.columns.byName('RFENDTC'), i));
+    .init((i) => getSurvivalTime(dm.columns.byName(SDTMendpoint), dm.columns.byName('RFSTDTC'), dm.columns.byName('RFENDTC'), i));
   dm.columns.addNewInt('status')
-    .init((i) => getSurvivalStatus(dm.columns.byName(endpoint), i));
+    .init((i) => getSurvivalStatus(dm.columns.byName(SDTMendpoint), i));
   return dm.groupBy([ 'USUBJID', 'time', 'status' ].concat(covariates)).aggregate();
 }
 
