@@ -67,6 +67,14 @@ export function wordcloud() {
   return new WordCloudViewer();
 }
 
+//name: StackedBarChart
+//description: Creates an awesome viewer
+//tags: viewer
+//output: viewer result
+export function barchart() {
+  return new StackedBarChart();
+}
+
 //name: flagCellRenderer
 //tags: cellRenderer, cellRenderer-flag
 //meta-cell-renderer-sem-type: flag
@@ -74,3 +82,5 @@ export function wordcloud() {
 export function flagCellRenderer() {
   return new FlagCellRenderer();
 }
+
+
