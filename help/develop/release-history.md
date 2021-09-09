@@ -1,6 +1,23 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-09-09 Dev build 0.93.21
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.21`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* JS API: Create percentile calculation function 
+* Clarified what the percentile function is. 
+* Histogram: Ability to add x-values of splines 
+
+
 # 2021-09-08 Dev build 0.93.20
 
 ## Latest Docker Images
