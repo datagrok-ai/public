@@ -302,9 +302,9 @@ Or(true, false)        // true
 Or(5 == 6, 20 < 10)    // false
 ```
 
-## <a name="percentile"></a>Percentile(`nums`, `part`)
+## <a name="percentile"></a>Percentile(`nums`, `percentage`)
 
-Returns the percentile of the numbers; `nums` are a set of numbers enclosed in square brackets; `part` is in the range 0..1
+Returns a value from `nums` below which a given `percentage` of values fall. `percentage` is in the range 0..1
 
 ```javascript
 Percentile(([1, 2, 3, 4], 0.25))     // 2
