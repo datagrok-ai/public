@@ -5,6 +5,7 @@ import { Observable } from "rxjs";
 import { Package } from './entities';
 import { Accordion, Dialog } from "./widgets";
 import { View, ViewLayout } from './view';
+import { Viewer } from "./viewer";
 
 let api = <any>window;
 
@@ -145,9 +146,10 @@ export class Events {
 
   get onTooltipClosed(): rxjs.Observable<any> { return __obs('d4-tooltip-closed'); }
 
-  get onViewerAdded(): rxjs.Observable<any> { return __obs('d4-viewer-added'); }
+  get onViewerAdded(): rxjs.Observable<EventData<ViewerArgs>> { return __obs('d4-viewer-added'); }
 
-  get onViewerClosed(): rxjs.Observable<any> { return __obs('d4-viewer-closed'); }
+  get onViewerClosed(): rxjs.Observable<EventData<ViewerArgs>> { return __obs('d4-viewer-closed'); }
+
 
   get onAccordionConstructed(): rxjs.Observable<Accordion> { return __obs('d4-accordion-constructed'); }
 
@@ -273,8 +275,12 @@ export function _sub(d: any): StreamSubscription {
 }
 
 export interface MapChangeArgs<K, V> {
-  sender: any;
+  source: any;
   change: string;
   key: K;
   value: V;
+}
+
+export interface ViewerArgs {
+  viewer: Viewer;
 }

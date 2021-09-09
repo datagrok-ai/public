@@ -3,8 +3,8 @@
 
 let demog = grok.data.demo.demog();
 demog.columns.remove('sex');
-foo = demog.columns.addNew('foo', 'int');
-bar = demog.columns.byName('weight');
+let foo = demog.columns.addNew('foo', 'int');
+let bar = demog.columns.byName('weight');
 // Column's version is used to track changes of the column
 demog.rows.removeAt(1, 3);
 grok.shell.info(`bar was changed ${bar.version} times`);
