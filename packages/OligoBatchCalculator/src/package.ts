@@ -72,15 +72,25 @@ export function molecularWeight(sequence: string): number {
     "dA": 313.21, "dU": 306.17, "dC": 289.18, "dG": 329.21, "dT": 304.2,
     "rA": 329.21, "rU": 306.17, "rC": 305.18, "rG": 345.21,
     "Af": 331.2, "Uf": 308.16, "Gf": 347.19, "Cf": 307.18,
-    "u": 320.2, "a": 343.24, "c": 319.21, "g": 359.24
+    "u": 320.2, "a": 343.24, "c": 319.21, "g": 359.24,
+    "moeT": 378.27, "moeA": 387.29, "moe5mC": 377.29, "moeG": 403.28, "5mC": 303.28, "(5m)moeC": 377.29, "(5m)C": 303.28
   };
   const recognizableSymbols = Object.keys(weights);
   let molecularWeight = 0;
-  for (let i = 0; i < sequence.length; i++)
-    if (recognizableSymbols.includes(sequence.slice(i, i + 2)))
+  let i = 0;
+  const manyDigitSymbols = ["moeA", "moe5mC", "(5m)moeC", "moeG", "moeT", "5mC", "(5m)C"];
+  while (i < sequence.length)
+    if (manyDigitSymbols.some((s) => s == sequence.slice(i, i + s.length))) {
+      let matchedString = manyDigitSymbols.find((s) => s == sequence.slice(i, i + s.length));
+      molecularWeight += weights[sequence.slice(i, i + matchedString!.length)];
+      i += matchedString!.length;
+    } else if (recognizableSymbols.includes(sequence.slice(i, i + 2))) {
       molecularWeight += weights[sequence.slice(i, i + 2)];
-    else if (recognizableSymbols.includes(sequence.slice(i, i + 1)))
-      molecularWeight += weights[sequence.slice(i, i + 1)];
+      i += 2;
+    } else if (recognizableSymbols.includes(sequence[i])) {
+      molecularWeight += weights[sequence[i]];
+      i++;
+    }
   return (sequence.length > 0) ? molecularWeight - 61.97 : 0;
 }
 
@@ -164,22 +174,35 @@ function opticalDensity(extinctionCoefficients: number[], molecularWeights: numb
 function normalizeSequences(sequences: string[]): string[] {
   let normalizedSequences = Array(sequences.length);
   for (let i = 0; i < sequences.length; i++) {
+    const isNormalized = /^[rdAUGCT]+$/.test(sequences[i]);
     const isRna = /^[AUGC]+$/.test(sequences[i]);
     const isDna = /^[ATGC]+$/.test(sequences[i]);
-    const inSiRnaAxolabs = /^[fAUGCuacgs]+$/.test(sequences[i]);
+    const isSiRnaAxolabs = /^[fAUGCuacgs]+$/.test(sequences[i]);
+    const isGCRS = /^[fmpsACGU]+$/.test(sequences[i]);
+    const isGcrsGapmers = /^.*moe.+$/.test(sequences[i]);
     const obj: {[index: string]: string} = isRna ?
       {"A": "rA", "U": "rU", "G": "rG", "C": "rC"} :
       isDna ?
         {"A": "dA", "T": "dT", "G": "dG", "C": "dC"} :
-      inSiRnaAxolabs ?
-        {"Af": "rA", "Uf": "rU", "Gf": "rG", "Cf": "rC", "u": "rU", "a": "rA", "c": "rC", "g": "rG", "s": ""} :
-        {"U": "rU", "A": "rA", "C": "rC", "G": "rG", "fU": "rU", "fA": "rA", "fC": "rC", "fG": "rG", "mU": "rU", "mA": "rA", "mC": "rC", "mG": "rG", "ps": ""};
+      isSiRnaAxolabs ?
+        {"Af": "rA", "Uf": "rU", "Gf": "rG", "Cf": "rC", "u": "rU", "a": "rA", "c": "rC", "g": "rG", "s": "", "fU": "rU", "fA": "rA", "fC": "rC", "fG": "rG"} :
+      isGCRS ?
+        {"fU": "rU", "fA": "rA", "fC": "rC", "fG": "rG", "mU": "rU", "mA": "rA", "mC": "rC", "mG": "rG", "ps": "", "s": ""} :
+      isGcrsGapmers ?
+        {"moeA": "rA", "(5m)moeC": "rC", "moe5mC": "rC", "moeG": "rG", "moeT": "rU", "(5m)C": "rC", "5mC": "rC", "U": "rU", "T": "rU", "A": "rA", "C": "rC", "G": "rG", "fU": "rU", "fA": "rA", "fC": "rC", "fG": "rG", "mU": "rU", "mA": "rA", "mC": "rC", "mG": "rG", "ps": "", "s": ""} :
+        {"ps": "", "mA": "rA", "mU": "rU", "mG": "rG", "mC": "rC", "fA": "rA", "fU": "rU", "fG": "rG", "fC": "rC"};
+    if (isNormalized && !isDna && !isRna)
+      return sequences;
     normalizedSequences[i] = isRna ?
       sequences[i].replace(/[AUGC]/g, function (x) {return obj[x]}) :
       isDna ?
         sequences[i].replace(/[ATGC]/g, function (x) {return obj[x]}) :
-      inSiRnaAxolabs ?
-        sequences[i].replace(/(Uf|Af|Cf|Gf|u|a|c|g|s)/g, function (x) {return obj[x]}) :
+      isSiRnaAxolabs ?
+        sequences[i].replace(/(Uf|Af|Cf|Gf|fU|fA|fC|fG|u|a|c|g|s)/g, function (x) {return obj[x]}) :
+      isGCRS ?
+        sequences[i].replace(/(fU|fA|fC|fG|mU|mA|mC|mG|ps|s)/g, function (x) {return obj[x]}) :
+      isGcrsGapmers ?
+        sequences[i].replace(/(moeA|\(5m\)moeC|moe5mC|moeG|moeT|A|T|\(5m\)C|5mC|G|ps|s)/g, function (x) {return obj[x]}) :
         sequences[i].replace(/(fU|fA|fC|fG|mU|mA|mC|mG|ps|A|U|G|C)/g, function (x) {return obj[x]});
   }
   return normalizedSequences;
@@ -189,6 +212,7 @@ function prepareInputTextField(text: string) {
   const oneDigitSymbols = ["A", "U", "T", "C", "G", "u", "a", "c", "g", "s"],
     twoDigitSymbols = ["fA", "fU", "fC", "fG", "mA", "mU", "mC", "mG", "dA", "dU", "dC", "dG", "dT", "rA", "rU", "rC", "rG", "ps",
       "Uf", "Af", "Cf", "Gf"],
+    manyDigitSymbols = ["moeA", "moe5mC", "(5m)moeC", "moeG", "moeT", "5mC", "(5m)C"],
     firstLettersInTwoDigitSymbols = ["m", "f", "p", "d", "r", "U", "A", "C", "G"];
 
   let dirtySequences = text.split('\n').map((s) => s.replace(/\s/g, '')).filter(item => item);
@@ -196,13 +220,16 @@ function prepareInputTextField(text: string) {
   let indicesOfWrongSymbols: number[][] = [];
   let cleanSequences: string[] = [];
   let c = 0;
-  //todo: detect errors when code table contains one-char and two-chars codes
   for (let sequence of dirtySequences) {
     let arr: number[] = [];
     let i = 0;
     cleanSequences[indicesOfWrongSymbols.length] = '';
     while (i < sequence.length) {
-      if (twoDigitSymbols.includes(sequence.slice(i, i + 2))) {
+      if (manyDigitSymbols.some((s) => s == sequence.slice(i, i + s.length))) {
+        let matchedString = manyDigitSymbols.find((s) => s == sequence.slice(i, i + s.length));
+        cleanSequences[indicesOfWrongSymbols.length] += sequence.slice(i, i + matchedString!.length);
+        i += matchedString!.length;
+      } else if (twoDigitSymbols.includes(sequence.slice(i, i + 2))) {
         cleanSequences[indicesOfWrongSymbols.length] += sequence.slice(i, i + 2);
         i += 2;
       } else if (oneDigitSymbols.includes(sequence[i])) {

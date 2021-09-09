@@ -40,6 +40,7 @@ As parameters of the function, you can pass numeric scalars, numeric functions, 
 - [NotGreater](#notgreater)
 - [NotSmaller](#notsmaller)
 - [Or](#or)
+- [Percentile](#percentile)
 - [Pow](#pow)
 - [RandBetween](#randbetween)
 - [Rnd](#rnd)
@@ -299,6 +300,15 @@ Returns logical disjunction of boolean `a` and `b`.
 ```javascript
 Or(true, false)        // true
 Or(5 == 6, 20 < 10)    // false
+```
+
+## <a name="percentile"></a>Percentile(`nums`, `percentage`)
+
+Returns a value from `nums` below which a given `percentage` of values fall. `percentage` is in the range 0..1
+
+```javascript
+Percentile(([1, 2, 3, 4], 0.25))     // 2
+Percentile(([1, 2, 3, 4], 0.75))     // 4
 ```
 
 ## <a name="pow"></a>Pow(`x`, `exponent`)

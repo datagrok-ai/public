@@ -1,0 +1,95 @@
+ version: "3"
+ services:
+   db:
+     image: postgres:latest
+     environment:
+       POSTGRES_USER: postgres
+       POSTGRES_PASSWORD: postgres
+     ports:
+       - "5432:5432/tcp"
+     networks:
+       datagrok:
+         aliases:
+           - database
+     volumes:
+       - datagrok_db:/var/lib/postgresql/data
+     profiles: ["localhost", "db"]
+     restart: on-failure
+
+   datagrok:
+     image: datagrok/datagrok:0.93.10
+     environment:
+       GROK_PARAMETERS: "{\"deployDemo\": false, \"dbServer\": \"database\", \"db\": \"datagrok\", \"dbAdminLogin\": \"postgres\", \"dbAdminPassword\": \"postgres\", \"dbLogin\": \"dg\", \"dbPassword\": \"dg\"}"
+     ports:
+       - "8080:8080/tcp"
+     networks:
+       datagrok:
+         aliases:
+           - datagrok
+     volumes:
+       - datagrok_data:/home/grok/data
+       - datagrok_cfg:/home/grok/cfg
+     profiles: ["localhost", "datagrok"]
+     restart: unless-stopped
+
+   grok_compute:
+     image: datagrok/grok_compute:0.0.1-d9a48ce99
+     environment:
+       GROK_COMPUTE_NUM_CORES: 4
+     networks:
+       datagrok:
+         aliases:
+           - grok_compute
+     profiles: ["localhost", "cvm"]
+     restart: unless-stopped
+   cvm_nginx:
+     image: datagrok/cvm_nginx:0.0.1-d9a48ce99
+     ports:
+       - "8090:8090/tcp"
+     networks:
+       datagrok:
+         aliases:
+           - cvm
+           - nginx_cvm
+     profiles: ["localhost", "cvm"]
+     restart: unless-stopped
+     depends_on:
+       - jupyter_notebook
+       - jupyter_kernel_gateway
+       - grok_compute
+   jupyter_notebook:
+     image: datagrok/jupyter_notebook:0.0.1-d9a48ce99
+     networks:
+       datagrok:
+         aliases:
+           - jupyter_notebook
+     volumes:
+       - jupyter_notebooks:/home/grok/notebooks
+     profiles: ["localhost", "cvm"]
+     restart: unless-stopped
+   jupyter_kernel_gateway:
+     image: datagrok/jupyter_kernel_gateway:0.0.1-7e4ad6a12
+     networks:
+       datagrok:
+         aliases:
+           - jupyter_notebook
+     profiles: ["localhost", "cvm"]
+     restart: unless-stopped
+   h2o:
+     image: datagrok/h2o:0.0.1-d9a48ce99
+     ports:
+       - "54321:54321/tcp"
+       - "5005:5005/tcp"
+     networks:
+       datagrok:
+         aliases:
+           - h2o
+     profiles: ["localhost", "cvm"]
+     restart: unless-stopped
+ volumes:
+   datagrok_db:
+   datagrok_data:
+   datagrok_cfg:
+   jupyter_notebooks:
+ networks:
+   datagrok:
