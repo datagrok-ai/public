@@ -36,6 +36,18 @@ export function getUniqueValues(df: DG.DataFrame, colName: string) {
     }
   }
 
+  export function filterBooleanColumn(df: DG.DataFrame, colName: string, value: boolean) {
+    let column = df.columns.byName(colName);
+    let rowCount = df.rowCount;
+    for (let i = 0; i < rowCount; i++){
+        if(column.get(i) === value){
+            df.rows.removeAt(i);
+            i--;
+            rowCount-=1;
+        }
+    }
+  }
+
 
   export function dateDifferenceInDays(start: string, end: string) {
     const startDate = new Date(start) as any;

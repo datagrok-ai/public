@@ -15,7 +15,7 @@ export class PatientProfileView extends DG.ViewBase {
     series: [
       {
         tableName: 'patient_lb',
-        title: 'Lab values',
+        title: 'Lab values scatter plot',
         type: 'scatter',
         x: 'LBDY',
         y: 'LBTEST',
@@ -27,31 +27,35 @@ export class PatientProfileView extends DG.ViewBase {
         statusChart: {
           valueField: 2,                  // index of field with test value
           splitByColumnName: 'LBTEST',    // column to get categories
-          categories: [ "Basophils", "Urate", "Glucose" ], // fixed categories
+          categories: [''], // fixed categories
           minField: 3,                    // min and max normal value 
           maxField: 4,                    // will be displayed with default color, otherwises "red"
-          maxLimit: 5,                    // max number of categories
           alertColor: 'red',
         },
         markerShape: 'circle',
         height: '1flex',                  // height can be '30px', '20%', '3flex'
         show: 1,
+        yLabelWidth: 50, 
+        yLabelOverflow: 'truncate'
       },
 
       // multi linechart 
       {
         tableName: 'patient_lb',
+        title: 'Lab values line chart',
         type: 'line',
         multi: true,
         x: 'LBDY',
         y: 'LBSTRESN',
         splitByColumnName: 'LBTEST',                    // get categories from this column
-        categories: [ "Basophils", "Urate", "Glucose" ],  // fixed categories
+        categories: [ '' ],  // fixed categories
         maxLimit: 1,                                    // max number of linecharts 
-        yType: 'value',
+        yType: 'category',
         markerShape: 'square',
         height: '1flex',
         show: 1,
+        yLabelWidth: 50, 
+        yLabelOverflow: 'truncate'
       },
 
       // timeLines
@@ -66,6 +70,8 @@ export class PatientProfileView extends DG.ViewBase {
         markerShape: 'circle',
         height: '2flex',
         show: 1,
+        yLabelWidth: 50, 
+        yLabelOverflow: 'truncate'
       },
 
     ]
@@ -80,11 +86,13 @@ export class PatientProfileView extends DG.ViewBase {
         type: 'timeLine',
         y: 'EXTRT_WITH_DOSE',
         x: [ 'EXSTDY', 'EXENDY' ],
-        yType: 'value',
+        yType: 'category',
         color: 'red',
         markerShape: 'circle',
         height: '2flex',
         show: 1,
+        yLabelWidth: 50, 
+        yLabelOverflow: 'truncate'
       },
 
       {
@@ -93,15 +101,15 @@ export class PatientProfileView extends DG.ViewBase {
         type: 'timeLine',
         y: 'CMTRT',
         x: [ 'CMSTDY', 'CMENDY' ],
-        yType: 'value',
+        yType: 'category',
         color: 'red',
         markerShape: 'circle',
         height: '2flex',
         show: 1,
+        yLabelWidth: 50, 
+        yLabelOverflow: 'truncate'
       },
-
     ]
-
   }
 
 
@@ -109,9 +117,27 @@ export class PatientProfileView extends DG.ViewBase {
   tables = {};
   multiplot_lb_ae: any;
   multiplot_ex_cm: any;
+  linechartLabValue = '';
+  scatterLabValues = [];
 
   constructor() {
     super();
+
+    let labValues = Array.from(getUniqueValues(study.domains.lb, 'LBTEST'));
+    let labValuesChoices = ui.choiceInput('Line chart lab value', '', labValues);
+    labValuesChoices.onChanged((v) => {
+      this.linechartLabValue = labValuesChoices.value
+      this.multiplot_lb_ae.updatePlotByCategory(1, this.linechartLabValue);
+    });
+
+    let labValuesMultiChoices = ui.multiChoiceInput('', null, labValues)
+    labValuesMultiChoices.onChanged((v) => {
+      this.scatterLabValues = labValuesMultiChoices.value;
+    });
+    //@ts-ignore
+    labValuesMultiChoices.input.style.maxWidth='100%';
+    //@ts-ignore
+    labValuesMultiChoices.input.style.maxHeight='100%';
 
     let patientIds = Array.from(getUniqueValues(study.domains.dm, 'USUBJID'));
     let patienIdBoxPlot = ui.choiceInput('Patient Id', patientIds[ 0 ], patientIds);
@@ -119,6 +145,19 @@ export class PatientProfileView extends DG.ViewBase {
       this.createTablesToAttach(patienIdBoxPlot.value);
       this.attachTablesToMultiplot(this.multiplot_lb_ae, this.options_lb_ae, [ 'lb', 'ae' ]);
       this.attachTablesToMultiplot(this.multiplot_ex_cm, this.options_ex_cm, [ 'ex', 'cm' ]);
+      this.multiplot_lb_ae.updatePlotByCategory(1, this.linechartLabValue);
+      this.multiplot_lb_ae.updatePlotByCategory(0, this.scatterLabValues);
+
+    });
+
+    let scatterLabValues = ui.button('Lab values for scatter', () => {
+      ui.dialog({ title: 'Lab values for scatter'})
+        .add(ui.div([labValuesMultiChoices], {style:{width:'400px', height:'300px'}}))
+        .onOK(() => {
+          this.multiplot_lb_ae.updatePlotByCategory(0, this.scatterLabValues);
+        })
+        .show();
+
     });
 
     this.createTablesToAttach(patientIds[ 0 ]);
@@ -129,6 +168,7 @@ export class PatientProfileView extends DG.ViewBase {
 
       this.multiplot_lb_ae = v;
       this.attachTablesToMultiplot(this.multiplot_lb_ae, this.options_lb_ae, [ 'lb', 'ae' ]);
+      this.multiplot_lb_ae.updatePlotByCategory(0, this.scatterLabValues); //to clear scattr plot after creation
       this.tables[ 'ex' ].plot.fromType('MultiPlot', {
         paramOptions: JSON.stringify(this.options_ex_cm),
       }).then((v1: any) => {
@@ -136,19 +176,15 @@ export class PatientProfileView extends DG.ViewBase {
         this.multiplot_ex_cm = v1;
         this.attachTablesToMultiplot(this.multiplot_ex_cm, this.options_ex_cm, [ 'ex', 'cm' ]);
         this.root.appendChild(
-          ui.divV([ patienIdBoxPlot.root,
+          ui.divV([ ui.divH([ patienIdBoxPlot.root, labValuesChoices.root, scatterLabValues ]),
           ui.splitH([
             this.multiplot_lb_ae.root,
             this.multiplot_ex_cm.root
           ], { style: { width: '100%', height: '100%' } })
           ], { style: { width: '100%', height: '100%' } })
-
         );
-
       });
-
     });
-
   }
 
   private attachTablesToMultiplot(plot: any, options: any, tableNames: string[]) {
