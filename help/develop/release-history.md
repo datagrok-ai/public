@@ -1,6 +1,25 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-09-09 Dev build 0.93.22
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.22`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* added hospitalization and drug related ae to Kaplan-Meier endpoints, added ability to choose lab values on Patient profile 
+* fized tooltips, yAxesLabels and linechart title in multiplot 
+* Update package.ts 
+* (Bug) Functions cannot be cached if called from server-side 
+* Fixed tests 
+
+
 # 2021-09-09 Dev build 0.93.21
 
 ## Latest Docker Images
