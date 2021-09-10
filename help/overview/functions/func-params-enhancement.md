@@ -28,11 +28,11 @@ Let's start with Python script and it's parameters:
   * now you can run script using "Run" button on toolbar
 
 ```python
-# Name: example
-# Language: python
-# Input: string country
-# Input: string vegetable
-# Input: double saltiness
+# name: example
+# language: python
+# input: string country
+# input: string vegetable
+# input: double saltiness
 ```
 
 This is how parameters dialog looks like:
@@ -50,11 +50,11 @@ the parameter value falls in the specified range. Also, we want to add the defau
 Here is the modified script:
 
 ```python
-# Name: example
-# Language: python
-# Input: string country {suggestions: jssuggestcountryname}
-# Input: string vegetable {choices: jsveggies}
-# Input: double saltiness {validators: ["jssaltinessrange"]}
+# name: example
+# language: python
+# input: string country {suggestions: jssuggestcountryname}
+# input: string vegetable {choices: jsveggies}
+# input: double saltiness {validators: ["jssaltinessrange"]}
 ```
 
 Next step is registering functions. To do that, we are going to use [JS API](../../develop/js-api.md).  

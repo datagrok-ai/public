@@ -20,17 +20,17 @@ description, it instructs the platform what the input and output parameters are,
 and semantic types:   
 
 ```
-# Name: detect steps
-# Description: detects positions of steps based on accelerometer data
-# Language: python
-# Tags: template, demo, accelerometer
-# Sample: sensors/accelerometer.csv
-# Input: dataframe accel [accelerometry data table]
-# Input: column x {semtype: accelerometer-x} [x axis]
-# Input: column y {semtype: accelerometer-y} [y axis]
-# Input: column z {semtype: accelerometer-z} [z axis]
-# Input: double sample_rate = 32 [sample rate, in hz]
-# Output: dataframe steps {action:join(accel)} [steps positions]
+# name: detect steps
+# description: detects positions of steps based on accelerometer data
+# language: python
+# tags: template, demo, accelerometer
+# sample: sensors/accelerometer.csv
+# input: dataframe accel [accelerometry data table]
+# input: column x {semtype: accelerometer-x} [x axis]
+# input: column y {semtype: accelerometer-y} [y axis]
+# input: column z {semtype: accelerometer-z} [z axis]
+# input: double sample_rate = 32 [sample rate, in hz]
+# output: dataframe steps {action:join(accel)} [steps positions]
 ```
 
 ## Javascript

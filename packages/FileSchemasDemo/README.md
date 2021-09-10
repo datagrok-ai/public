@@ -28,13 +28,13 @@ Once a folder is associated with the schema, file properties will show up in the
 ## Scripting
 
 ```python
-# Name: detect car plate numbers
-# Description: detect car plate numbers
-# Language: python
-# Input: file file { condition: entity:domain == "auto" }
-# Output: bool hasnumbers { set: file.auto:hastags }
-# Tags: demo, files, panel, ml, opencv
-# Condition: file.isfile && file.size < 1e6 && (file.name.endswith("jpg") || file.name.endswith("jpeg"))
+# name: detect car plate numbers
+# description: detect car plate numbers
+# language: python
+# input: file file { condition: entity:domain == "auto" }
+# output: bool hasnumbers { set: file.auto:hastags }
+# tags: demo, files, panel, ml, opencv
+# condition: file.isfile && file.size < 1e6 && (file.name.endswith("jpg") || file.name.endswith("jpeg"))
 
 import cv2
 
@@ -47,8 +47,8 @@ hasNumbers = len(detector.detectMultiScale(gray, scaleFactor=1.3, minNeighbors=3
 Let's take a closer look at the following two lines:
 
 ```python
-# Input: file file { condition: file.schema == auto }
-# Output: bool hasnumbers { set: file.auto:hastags }
+# input: file file { condition: file.schema == auto }
+# output: bool hasnumbers { set: file.auto:hastags }
 ```
 
 The first one imposes a condition on the input parameter that the object (file) has to have the "auto" schema associated with it. This means that the info panel will only be shown when user clicks on images in the "cars" folder.

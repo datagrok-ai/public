@@ -42,9 +42,9 @@ the script, or set externally in the [global permissions](../govern/global-permi
 
 To specify the condition in the script, use the 'user' variable in the following way: 
 ```
-# Condition: user.name == "john doe" || user.name == "jack smith" 
-# Condition: user.hasrole("chemist") 
-# Condition: user.inteam("high-throuput screening") 
+# condition: user.name == "john doe" || user.name == "jack smith" 
+# condition: user.hasrole("chemist") 
+# condition: user.inteam("high-throuput screening") 
 ```
 
 ### Dataset condition
@@ -54,7 +54,7 @@ a particular data source.
 
 To specify the condition in the script, use the 'table' variable in the following way: 
 ```
-# Condition: table.gettag("database") == "northwind" 
+# condition: table.gettag("database") == "northwind" 
 ```
 
 ### Context condition
@@ -64,8 +64,8 @@ cell, or any other [object](../overview/objects.md). A condition might perform c
 against that object by using the parameter name ("x" in the example below):
 
 ```
-# Input: column x
-# Condition: x.isnumerical && x.name == "f3" && x.stats.missingvaluecount > 0 
+# input: column x
+# condition: x.isnumerical && x.name == "f3" && x.stats.missingvaluecount > 0 
 ```
 
 ### User preferences
@@ -95,13 +95,13 @@ by opening (project:demog). It creates a [Scatter Plot](../visualize/viewers/sca
 sets the axes to the pre-defined columns, and adds a regression line.
 
 ```
-# Name: scatter plot
-# Description: panel that contains an interactive scatter plot
-# Language: grok
-# Tags: panel
-# Input: dataframe table
-# Condition: table.name == "demog" && table.columns.containsall(["height", "weight", "age", "sex"])
-# Output: viewer plot
+# name: scatter plot
+# description: panel that contains an interactive scatter plot
+# language: grok
+# tags: panel
+# input: dataframe table
+# condition: table.name == "demog" && table.columns.containsall(["height", "weight", "age", "sex"])
+# output: viewer plot
 
 plot = table.ScatterPlot("height", "weight", "age", "sex")
 plot.showRegressionLine = true
@@ -130,13 +130,13 @@ See the following info panel (spectrogram-panel.grok) in action
 by opening (project:eeg)
 
 ```
-# Name: spectrogram info panel
-# Description: panel that contains graphics produced by the r script
-# Language: grok
-# Tags: panel,dsp
-# Input: column signal {type:numerical}
-# Output: graphics pic
-# Condition: "f3" == signal.name
+# name: spectrogram info panel
+# description: panel that contains graphics produced by the r script
+# language: grok
+# tags: panel,dsp
+# input: column signal {type:numerical}
+# output: graphics pic
+# condition: "f3" == signal.name
 
 pic = Spectrogram("eeg", signal, 256.0, 1024, 0.1, true)
 ``` 
@@ -149,13 +149,13 @@ current context. For instance, you might want to send an email to a user, or upd
 a record in the database.
 
 ```
-# Name: transaction review panel
-# Description: actions available for the credit card transaction
-# Language: grok
-# Tags: panel
-# Input: row activity
-# Output: string actions {action: markup}
-# Condition: activity.table.name = "credit card transactions"
+# name: transaction review panel
+# description: actions available for the credit card transaction
+# language: grok
+# tags: panel
+# input: row activity
+# output: string actions {action: markup}
+# condition: activity.table.name = "credit card transactions"
 
 actions = "#{button("Flag as suspicious", "http.Post(myserver, row.transactionId)")}"
 ```
@@ -169,14 +169,14 @@ chemical structure. It appears whenever user clicks on a structure.
 #{x.ChemScripts:SolubilityPrediction}
 
 ```
-# Name: solubility prediction
-# Description: predicts solubility by molecule descriptors ("ipc", "molwt", "numvalenceelectrons", "mollogp", "labuteasa", "tpsa", "heavyatomcount", "numhacceptors", "numhdonors", "numrotatablebonds", "ringcount")
-# Language: grok
-# Tags: panel, prediction, chem
-# Condition: smiles.semtype == "molecule"
-# Input: dataframe table
-# Input: column smiles {semtype: molecule} [column with molecules, in smiles format]
-# Output: dataframe predictions {action: join(table)}
+# name: solubility prediction
+# description: predicts solubility by molecule descriptors ("ipc", "molwt", "numvalenceelectrons", "mollogp", "labuteasa", "tpsa", "heavyatomcount", "numhacceptors", "numhdonors", "numrotatablebonds", "ringcount")
+# language: grok
+# tags: panel, prediction, chem
+# condition: smiles.semtype == "molecule"
+# input: dataframe table
+# input: column smiles {semtype: molecule} [column with molecules, in smiles format]
+# output: dataframe predictions {action: join(table)}
 featureNames = ["TPSA", "Ipc", "NumHAcceptors", "NumHDonors", "LabuteASA", "RingCount", "MolWt", "NumValenceElectrons", "HeavyAtomCount", "MolLogP", "NumRotatableBonds"]
 ChemDescriptors(table, smiles, featureNames)
 MissingValuesImputation(table, featureNames, featureNames, 5)
@@ -193,14 +193,14 @@ behind the scenes when user clicks on a row that contains store address:
 * using extracted statistics, predict yearly sales of a franchise store if it opens at that address 
 
 ```
-# Name: predicted sales
-# Description: predicting yearly sales of the franchise store by using previously trained predictive model
-# Language: grok
-# Tags: panel
-# Sample: stores.csv
-# Input: cell address
-# Output: double predictedsales
-# Condition: cell.table.name == "stores" && cell.column.name == "address"
+# name: predicted sales
+# description: predicting yearly sales of the franchise store by using previously trained predictive model
+# language: grok
+# tags: panel
+# sample: stores.csv
+# input: cell address
+# output: double predictedsales
+# condition: cell.table.name == "stores" && cell.column.name == "address"
 
 //todo Vasiliy: implement
 statistics = AddressToStatistics()

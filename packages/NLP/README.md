@@ -63,12 +63,12 @@ The package demonstrates two ways of developing [info panels](https://datagrok.a
 To write a panel script in any of the [languages supported by the platform](https://datagrok.ai/help/develop/scripting#supported-languages), you should indicate the `panel` tag and specify conditions for the panel to be shown (in the `condition` [header parameter](https://datagrok.ai/help/develop/scripting#header-parameters)):
 
 ```python
-# Name: language detection
-# Language: python
-# Input: file file {semtype: text} [a text to analyze]
-# Output: string language {semtype: lang} [detected language]
-# Tags: nlp, panel
-# Condition: file.isfile && file.size < 1e6 && supportedext(file.name)
+# name: language detection
+# language: python
+# input: file file {semtype: text} [a text to analyze]
+# output: string language {semtype: lang} [detected language]
+# tags: nlp, panel
+# condition: file.isfile && file.size < 1e6 && supportedext(file.name)
 ```
 
 The [scripts](https://github.com/datagrok-ai/public/tree/master/packages/NLP/scripts) folder contains more examples of such panel scripts, which are written in Python and work specifically on text files.

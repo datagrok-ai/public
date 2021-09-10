@@ -14,13 +14,13 @@ Info panels are meant to be easily developed by the users of the platform, and s
 
 # Example
 ```
-# Name: scatter plot
-# Description: panel that contains an interactive scatter plot
-# Language: grok
-# Tags: panel
-# Input: dataframe table
-# Condition: table.name == "demog" && table.columns.containsall(["height", "weight", "age", "sex"])
-# Output: viewer plot
+# name: scatter plot
+# description: panel that contains an interactive scatter plot
+# language: grok
+# tags: panel
+# input: dataframe table
+# condition: table.name == "demog" && table.columns.containsall(["height", "weight", "age", "sex"])
+# output: viewer plot
 
 plot = table.ScatterPlot("height", "weight", "age", "sex")
 plot.showRegressionLine = true
