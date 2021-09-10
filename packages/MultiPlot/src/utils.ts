@@ -182,4 +182,8 @@ export class MPUtils {
       subString.substr(0, subString.lastIndexOf(' ')) + '...' :
       subString) + '...';
   }
+
+  getArrayOfColumnNames(colNames: any){
+    return Array.isArray(colNames) ? colNames : [colNames]
+  }
 }

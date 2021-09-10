@@ -96,7 +96,18 @@ export class AddNewColumnDialog {
       (x) => this.loadInputHistory(x)
     );
 
+    this.prepareForSeleniumTests();
+
     await this.updatePreview();
+  }
+
+  /** Prepares form inputs for Selenium tests by given them unique names. */
+  prepareForSeleniumTests() {
+    (this.inputName!.input as HTMLInputElement).name = 'input-Add-New-Column---Name';
+    (this.inputType!.input as HTMLInputElement).name = 'input-Add-New-Column---Type';
+    (this.inputExpression!.input as HTMLInputElement).name = 'input-Add-New-Column---Expression';
+    this.uiDialog!.getButton('OK').name = 'button-Add-New-Column---OK';
+    this.uiDialog!.getButton('CANCEL').name = 'button-Add-New-Column---CANCEL';
   }
 
   /** Returns values of the input fields to be saved in history. */

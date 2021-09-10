@@ -1,7 +1,9 @@
 import * as DG from "datagrok-api/dg";
+import { InputBase } from "datagrok-api/dg";
 import * as grok from 'datagrok-api/grok';
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
+import { TREATMENT_ARM } from "../constants";
 import { createSurvivalData } from "../data-preparation/data-preparation";
 import { dataframeContentToRow } from "../data-preparation/utils";
 
@@ -19,8 +21,8 @@ export class SurvivalAnalysisView extends DG.ViewBase {
   survivalColumns = [];
   confIntervals = [ 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 0.99 ];
   survivalOptions = [''];
-  covariatesOptions = [ 'AGE', 'SEX', 'RACE', 'ACTARM' ];
-  endpointOptions = { 'TIME TO FIRST SAE': 'AESTDTC', 'DEATH': 'DTHDTC' };
+  covariatesOptions = [ 'AGE', 'SEX', 'RACE', TREATMENT_ARM ];
+  endpointOptions = { 'SAE': 'AESTDTC', 'DEATH': 'DTHDTC', 'HOSPITALIZATION': 'AESTDTC', 'DRUG RELATED AE': 'AESTDTC' };
   confInterval = 0.7;
   strata = '';
   endpoint = 'TIME TO FIRST SAE';
@@ -52,29 +54,16 @@ export class SurvivalAnalysisView extends DG.ViewBase {
     this.updateStrataChoices();
     this.updatePlotCovariatesChoices();
 
-    let applyFilters = ui.bigButton('Apply to curves', () => { });
-    applyFilters.addEventListener('click', (event) => {
+    let applyFilters = ui.bigButton('Apply to curves', () => { 
       this.updateSurvivalPlot();
       if (this.plotCovariates) {
         this.updateCovariatesPlot();
       }
     });
 
-    let createSurvivalDataframe = ui.bigButton('Create dataframe', () => { });
-    createSurvivalDataframe.addEventListener('click', (event) => {
-     this.survivalDataframe = createSurvivalData(this.endpointOptions[this.endpoint], this.covariates);
-     this.survivalColumns = this.survivalDataframe.columns.names();
-     this.survivalOptions = [''].concat(this.survivalColumns.filter(it => it !== 'time' && it !== 'status' && it !== 'USUBJID'));
-     this.updateStrataChoices();
-     this.updatePlotCovariatesChoices();
-     this.updateDivInnerHTML(this.strataChoicesDiv, this.strataChoices.root);
-     this.updateDivInnerHTML(this.plotCovariatesChoicesDiv, this.plotCovariatesChoices.root);
-     this.updateDivInnerHTML(this.survivalGridDivCreate, this.survivalDataframe.plot.grid().root);
-     this.updateDivInnerHTML(this.survivalGridDivFilter, this.survivalDataframe.plot.grid().root);
-     this.updateDivInnerHTML(this.survivalFilterDiv, this.getFilters());
-     this.updateSurvivalPlot();
+    let createSurvivalDataframe = ui.bigButton('Create', () => { 
+     this.refreshDataframe();
     });
-
 
       this.root.className = 'grok-view ui-box';
       this.root.append(
@@ -82,10 +71,12 @@ export class SurvivalAnalysisView extends DG.ViewBase {
           'Create dataset':
             ui.splitH([
               ui.box(ui.panel([
-                ui.divV([ endpointChoices.root,
-                covariatesChoices.root,
-                ui.box(ui.div([ createSurvivalDataframe ]), { style: { maxHeight: '40px' } })])
-              ]), { style: { maxWidth: '250px' } }),
+                ui.inputs([ endpointChoices,
+                covariatesChoices,
+                //@ts-ignore
+                ui.buttonsInput([ createSurvivalDataframe ])
+              ])
+              ]), { style: { maxWidth: '300px' } }),
               this.survivalGridDivCreate ]),
           'Survival data':
             ui.splitV([
@@ -102,9 +93,9 @@ export class SurvivalAnalysisView extends DG.ViewBase {
               this.survivalPlotDiv ]),
           'Co-variates':
             ui.splitH([
-              ui.panel([
+              ui.box(ui.panel([
                 this.plotCovariatesChoicesDiv
-              ], { style: { maxWidth: '180px' } }),
+              ]), { style: { maxWidth: '180px' } }),
               this.covariatesPlotDiv ])
         }).root
       );
@@ -162,5 +153,20 @@ export class SurvivalAnalysisView extends DG.ViewBase {
       this.plotCovariates = this.plotCovariatesChoices.value;
       this.updateCovariatesPlot();
     });
+  }
+
+  private refreshDataframe(){
+    this.survivalDataframe = createSurvivalData(this.endpoint, this.endpointOptions[this.endpoint], this.covariates);
+     this.survivalColumns = this.survivalDataframe.columns.names();
+     this.survivalOptions = [''].concat(this.survivalColumns.filter(it => it !== 'time' && it !== 'status' && it !== 'USUBJID'));
+     this.strata = '';
+     this.updateStrataChoices();
+     this.updatePlotCovariatesChoices();
+     this.updateDivInnerHTML(this.strataChoicesDiv, this.strataChoices.root);
+     this.updateDivInnerHTML(this.plotCovariatesChoicesDiv, this.plotCovariatesChoices.root);
+     this.updateDivInnerHTML(this.survivalGridDivCreate, this.survivalDataframe.plot.grid().root);
+     this.updateDivInnerHTML(this.survivalGridDivFilter, this.survivalDataframe.plot.grid().root);
+     this.updateDivInnerHTML(this.survivalFilterDiv, this.getFilters());
+     this.updateSurvivalPlot();
   }
 }

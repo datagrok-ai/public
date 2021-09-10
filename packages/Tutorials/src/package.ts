@@ -23,5 +23,5 @@ export async function trackOverview() {
   });
   grok.shell.newView('Tracks', [timelines.root]);
   const runner = new TutorialRunner(eda);
-  grok.shell.dockManager.dock(runner.root, DG.DOCK_TYPE.LEFT, null, '', 0.3);
+  grok.shell.dockManager.dock(runner.root, DG.DOCK_TYPE.RIGHT, null, '', 0.3);
 }
