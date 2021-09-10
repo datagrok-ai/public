@@ -1,6 +1,6 @@
-<!-- TITLE: Develop Custom File Viewers -->
+<!-- TITLE: Develop custom file viewers -->
 
-# File Viewers
+# File viewers
 
 Datagrok provides a way to define custom file viewers that are used by the 
 [file share browser](../../access/file-shares.md).
@@ -38,6 +38,6 @@ specified extension. Here's how it looks:
 
 See also:
 
-  * [File Shares](../../access/file-shares.md)
-  * [JavaScript Development](../develop.md)
-  * [How to Create File Exporters](file-exporters.md)
+  * [File shares](../../access/file-shares.md)
+  * [JavaScript development](../develop.md)
+  * [How to create file exporters](file-exporters.md)

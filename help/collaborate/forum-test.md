@@ -1,7 +1,7 @@
-<!-- TITLE: Tests: Community Forum -->
+<!-- TITLE: Tests: Community forum -->
 <!-- SUBTITLE: -->
 
-# Tests: Community Forum
+# Tests: Community forum
 
 A place to socialize and ask either generic questions, or questions related to particular entities, such as 
 [queries](../access/data-query.md) or [projects](../overview/project.md). 
@@ -35,6 +35,7 @@ In the latter case, entity owner will get notified that someone asked for help.
 1. Click on "Back to threads" button.
    * You are back to the list of threads.
 
-See also: 
+See also:
+
   * [Forum](forum.md)
  

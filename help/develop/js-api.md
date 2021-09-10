@@ -20,14 +20,14 @@ This document covers the following areas:
   * [Machine Learning](#machine-learning)
   * [Cheminformatics](#cheminformatics)
 
-## API Structure
+## API structure
 
 There are three entry points to the API: 
 **grok** for easy discoverability of the functionality, 
 **ui** for building user interfaces, and 
 **DG** for instantiating classes directly.
 
-### grok
+### Grok
 
 `grok` is the entry point for most of the commonly used functionality in the platform. 
 It is structured in a way to make the discovery of the capabilities very easy, especially 
@@ -42,7 +42,7 @@ and more complex development, since the resulting code is streamlined and easily
 However, in cases where the fluent API does not cover your particular use case, or sometimes
 for performance reasons, you will need to work with classes from the DG namespace.
 
-### ui
+### Ui
 
 Building a UI is a special form of programming, and many languages were invented for that
 purpose only (HTML, XAML, JSX). We have prioritized the following aspects when choosing 
@@ -55,14 +55,13 @@ ui.dialog('Windows')
   .show();
 ``` 
 
-### DG
+### Dg
 
 Check out [JS API Class Reference](https://datagrok.ai/js-api/) 
 
+## Data manipulation
 
-## Data Manipulation
-
-### DataFrame
+### Dataframe
 
 Use [DataFrame](/js-api/classes/dg.dataframe), [Column](/js-api/classes/dg.column), [ColumnList](/js-api/classes/dg.columnlist), 
 and [Row](/js-api/classes/dg.row) classes for table manipulation.
@@ -82,7 +81,7 @@ demog.set('age', 1, 44);
 
 ``` 
 
-### BitSet
+### Bitset
 
 Each [DataFrame](/js-api/classes/dg.dataframe) is associated with two [bitsets](/js-api/classes/dg.bitset): selection and filter.
 
@@ -113,8 +112,7 @@ e.innerText = 'This element has been created in JavaScript';
 grok.shell.dockElement(e, 'JS', 'left', 0.5);
 ```
 
-
-## Registering Functions
+## Registering functions
 
 Pretty much anything in Grok is a [function](../overview/functions/function.md), it is a concept that
 connects together [scripts](scripting.md) written in different languages, predictive models, statistical
@@ -198,7 +196,7 @@ property panel into your code if needed.
 
 ![](inspector-events.png)
 
-## User-defined Types
+## User-defined types
 
 Define your own classes, and integrate them easily by providing a meta-class
 that extends `DG.EntityMeta`. This will provide native support for 
@@ -232,7 +230,7 @@ Code snippets:
 * [List of projects](https://public.datagrok.ai/js/samples/dapi/projects-list)
 * [Who am I](https://public.datagrok.ai/js/samples/dapi/who-am-i)
 
-## Machine Learning
+## Machine learning
 
 Use `grok.ml` entry point for machine learning-related routines.
 
@@ -265,5 +263,5 @@ Code snippets:
 
 See also:
 
-  * [JavaScript Development](develop.md) 
+  * [JavaScript development](develop.md) 
   * [JavaScript API Samples](https://public.datagrok.ai/js)

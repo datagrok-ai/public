@@ -1,27 +1,28 @@
-<!-- TITLE: Create Project -->
+<!-- TITLE: Create project -->
 <!-- SUBTITLE: -->
 
-# Create Project
+# Create project
 
 A project is a collection of different objects that you want to use together. A project can 
 contain tables, views, queries, connections, data jobs, Jupyter notebooks, predictive models,
 and resources such as files. 
 
-## Sharing Projects
+## Sharing projects
 
 When a project is shared, recipients get access to all objects contained within the project.
 To control the privileges, use sharing settings.
 
-## Editing Project Settings
+## Editing project settings
   
-### Project Logo
+### Project logo
+
 Right-click on the project picture to see available options.   
  
 
 See also: 
   
   * [Project](project.md)
-  * [Data Connection](../access/data-connection.md)
-  * [Data Query](../access/data-query.md)
-  * [Data Job](../access/data-job.md)
-  * [Function Call](functions/function-call.md)
+  * [Data connection](../access/data-connection.md)
+  * [Data query](../access/data-query.md)
+  * [Data job](../access/data-job.md)
+  * [Function call](functions/function-call.md)

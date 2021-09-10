@@ -1,7 +1,7 @@
-<!-- TITLE: Use Cases: Data Manipulation -->
+<!-- TITLE: Use Cases: Data manipulation -->
 <!-- SUBTITLE: -->
 
-# Use Cases: Data Manipulation
+# Use cases: Data manipulation
 
 Owner: Andrey
 
@@ -18,4 +18,4 @@ Features: selecting rows/cols, deleting, find & replace, aggregation, console, m
 TODO: write
 
 See also:
-* [Data Manipulation](../../transform/data-wrangling.md)
+* [Data manipulation](../../transform/data-wrangling.md)

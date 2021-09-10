@@ -1,7 +1,7 @@
-<!-- TITLE: Use Cases: Selecting Franchise Locations -->
+<!-- TITLE: Use Cases: Selecting franchise locations -->
 <!-- SUBTITLE: -->
 
-# Use Cases: Selecting Franchise Locations
+# Use cases: Selecting franchise locations
 
 Owner: Vasiliy
 
@@ -53,13 +53,13 @@ Features: creating project, accessing data, creating query, post-processing, Jup
    * Paste following code: 
 
     ```
-    #name: t-test
-    #description: Welch's t-test
-    #language: r
-    #input: dataframe data [Input data table]
-    #input: column x {type:numerical} [X axis column name]
-    #input: column y {type:numerical} [Y axis column name]
-    #output: double pValue {action:show} [P-value of t-statistics]
+# Name: t-test
+# Description: welch's t-test
+# Language: r
+# Input: dataframe data [input data table]
+# Input: column x {type:numerical} [x axis column name]
+# Input: column y {type:numerical} [y axis column name]
+# Output: double pvalue {action:show} [p-value of t-statistics]
     require(stats)
     ttest = t.test(data[[x]], data[[y]])
     pValue = ttest$p.value

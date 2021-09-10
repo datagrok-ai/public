@@ -47,7 +47,7 @@ development server.
 To gain more experience with the Datagrok JavaScript API, you might want to work on a series of [JavaScript exercises]. 
 They will introduce a more advanced usage of the API and help better understand the development process with Datagrok.
 
-## 5 Useful links
+## 5 useful links
 
 Check out the following spaces and documents for more information about Datagrok:
 
@@ -60,7 +60,7 @@ Check out the following spaces and documents for more information about Datagrok
 7. [Building a UI]
 8. [Performance]
 
-## 6 Videos
+## 6 videos
 
 We've curated a few video records that introduce the platform, show the usage of the JavaScript API, and talk about
 extensions.
@@ -91,7 +91,7 @@ extensions.
 [VS Code Integration]: https://www.youtube.com/watch?v=zVVmlRorpjg&t=870s
 [Data access]: ../video-contents.md#data-access
 [Visualization and viewers]: ../video-contents.md#visualizations
-[datagrok demo]: https://www.youtube.com/watch?v=tVwpRB8fikQ
+[Datagrok demo]: https://www.youtube.com/watch?v=tVwpRB8fikQ
 [a few JavaScript samples]: https://public.datagrok.ai/js
 [powerful JavaScript API]: https://datagrok.ai/js-api/
 [Digital Signal Processing]: https://github.com/datagrok-ai/public/tree/master/packages/DSP

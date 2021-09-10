@@ -1,6 +1,6 @@
-<!-- TITLE: Develop Custom File Handlers -->
+<!-- TITLE: Develop custom file handlers -->
 
-## File Handlers
+## File handlers
 
 To handle custom file formats, register a function with
 the `file-handler` tag, and specify the comma-separated extensions in the `meta.ext` parameter.

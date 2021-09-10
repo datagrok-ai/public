@@ -5,7 +5,7 @@
 
 Project is a collection of entities along with the applied visualizations. Projects are used to group and share data and other assets with other users.
 
-## Projects Browser
+## Projects browser
 
 1. Open **Admin | Projects**
    * "Card" is default view for Projects Browser

@@ -1,7 +1,7 @@
-<!-- TITLE: Molecular Descriptors -->
+<!-- TITLE: Molecular descriptors -->
 <!-- SUBTITLE: -->
 
-# Molecular Descriptors
+# Molecular descriptors
 
 The molecular descriptor is the final result of a logic and mathematical procedure which 
 transforms chemical information encoded within a symbolic representation of a molecule 
@@ -302,5 +302,5 @@ Lipinski parameters for molecules
 
 See also:
 
-  * [Molecular Descriptor](https://en.wikipedia.org/wiki/Molecular_descriptor)
+  * [Molecular descriptor](https://en.wikipedia.org/wiki/Molecular_descriptor)
   * [RDKit](http://rdkit.org)

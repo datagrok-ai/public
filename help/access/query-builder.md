@@ -15,5 +15,5 @@ The preview of results is generated on the fly. To save them to your workspace, 
 
 See also:
 
-  * [Data Query](data-query.md)
-  * [Visual Query](db-visual-query.md)
+  * [Data query](data-query.md)
+  * [Visual query](db-visual-query.md)

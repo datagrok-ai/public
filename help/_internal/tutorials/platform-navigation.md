@@ -1,7 +1,8 @@
-<!-- TITLE: Use Cases: Navigating the Platform -->
+<!-- TITLE: Use Cases: Navigating the platform -->
 <!-- SUBTITLE: -->
 
-# Navigating the Platform
+# Navigating the platform
+
 Owner: Andrey
 
 Goal: to demonstrate different ways of working with the platform

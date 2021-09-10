@@ -38,9 +38,9 @@ You can use these fields to filter tables with [smart search](smart-search.md):
 
 See also:
 
-  * [JS API: DataFrame](https://datagrok.ai/js-api/classes/dg.dataframe)
+  * [JS API: Dataframe](https://datagrok.ai/js-api/classes/dg.dataframe)
   * [Project](project.md)
-  * [Table View](table-view.md)
-  * [View Layout](../visualize/view-layout.md)
+  * [Table view](table-view.md)
+  * [View layout](../visualize/view-layout.md)
   * [Tags](../discover/tags.md)
   * [Grid](../visualize/viewers/grid.md)

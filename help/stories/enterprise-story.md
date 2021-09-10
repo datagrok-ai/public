@@ -47,7 +47,7 @@ exploratory analysis capabilities. From there, you can grow the ecosystem by add
 connections, pipelines, transformations, publishing dashboards, training predictive models, 
 connecting with scripts developed in R, Python, and Julia, building applications, and a lot more. 
 
-## Data Retrieval and Governance
+## Data retrieval and governance
 
 If your organization already has ten different databases, the last thing you want is another, 
 all-encompassing database #11. Instead, Grok serves as an intelligence layer, and seamlessly 
@@ -60,7 +60,7 @@ and alerts can be set up. User-defined functions can be used anywhere. We suppor
 popular file formats, including scientific formats like sdf, edf, and mat; files can simply be 
 dragged-and-dropped into the system.
 
-## Data Visualization and Exploration
+## Data visualization and exploration
 
 Our unique technology lets you explore datasets faster and more efficiently than ever, allowing
 you to find patterns that were previously impossible to spot, resulting in the acceleration of 
@@ -87,7 +87,7 @@ For instance, when looking at a molecule medicinal chemists will see predictions
 compound solubility (also generated on the fly), while people from the legal department will 
 see patents related to that molecule. 
  
-## Machine Learning and Data Science
+## Machine learning and data science
 
 It is estimated that data scientists spend about 80% of their time finding, cleaning, and 
 organizing data - and this is exactly what our platform excels at. It is also easy to use scripts 
@@ -131,7 +131,7 @@ new chemical functions are now available for use in data transformations,
 new molecule-related information panels will show up when user clicks on a 
 molecule in the grid, etc.
 
-## Application Development
+## Application development
 
 The platform provides all necessary building blocks for developing modern data-driven
 solutions, and a way for a non-developer users to put it all together. However, in terms
@@ -149,7 +149,7 @@ In addition to video lessons, samples gallery, and tutorials available to everyo
 we offer few other ways to help companies with the custom development, including 
 on-site training for developers, or developing solutions in-house.  
 
-## Enterprise Customizations
+## Enterprise customizations
 
 We offer different hosting options, including on-prem, cloud, or hybrid. A flexible role-based 
 privilege mechanism lets IT set up corresponding roles for users, and tweak the UI accordingly. 

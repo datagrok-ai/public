@@ -1,6 +1,6 @@
-<!-- TITLE: Create File Exporters -->
+<!-- TITLE: Create file exporters -->
 
-# File Exporters
+# File exporters
 
 Part of Datagrok's functionality is built for easy file management. File
 exporters, along with [file viewers](custom-file-viewers.md), provide an example
@@ -60,5 +60,5 @@ anything from the exporter. After the package publication, the registered functi
 will get attached to the file export menu at the platform's startup.
 
 See also:
-  * [JavaScript Development](../develop.md)
-  * [How to Develop Custom File Viewers](custom-file-viewers.md)
+  * [JavaScript development](../develop.md)
+  * [How to develop custom file viewers](custom-file-viewers.md)

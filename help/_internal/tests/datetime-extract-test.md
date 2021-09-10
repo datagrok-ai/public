@@ -1,7 +1,7 @@
 <!-- TITLE: Tests: Datetime Extract -->
 <!-- SUBTITLE: -->
 
-# Tests: Datetime Extract
+# Tests: Datetime extract
 
 Platform allows to extract individual parts of the datetimes values into a separate 
 column (day, month, year, hour, etc.). The tool is available under the "Extract" submenu

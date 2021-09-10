@@ -1,7 +1,7 @@
-<!-- TITLE: Edit Group Members -->
+<!-- TITLE: Edit group members -->
 <!-- SUBTITLE: -->
 
-# Group Members
+# Group members
 
 Type group name to find groups or users you want to add to group, and use "plus" icon to add.
 

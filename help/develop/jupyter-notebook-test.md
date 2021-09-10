@@ -52,7 +52,7 @@ share documents that contain live code, equations, visualizations and narrative 
 
 1. Repeat steps 12-15 to check Notebook save changes
 
-## Notebooks Browser
+## Notebooks browser
 
 1. Open table "smiles_cordinates"   
 

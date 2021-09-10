@@ -1,4 +1,4 @@
-# datagrok-tools
+# Datagrok-tools
 
 Utility to upload and publish [packages](https://datagrok.ai/help/develop/develop#packages) to Datagrok.
 

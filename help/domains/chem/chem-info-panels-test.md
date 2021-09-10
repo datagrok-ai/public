@@ -1,7 +1,7 @@
-<!-- TITLE: Tests: Chem Info Panels -->
+<!-- TITLE: Tests: Chem info panels -->
 <!-- SUBTITLE: -->
 
-# Tests: Chem Info Panels 
+# Tests: Chem info panels
 
 Platform supports special info-panels for chemical data that are displayed on [Property Panel](../overview/navigation.md#properties) for specific smiles value.
 
@@ -86,5 +86,5 @@ Platform supports special info-panels for chemical data that are displayed on [P
 
    
 See also:
-  * [Get R Groups Test](../tests/get-r-groups-test.md)
-  * [Chem Descriptors Test](../tests/chem-descriptors-test.md)
+  * [Get R-Groups test](../tests/get-r-groups-test.md)
+  * [Chem descriptors test](../tests/chem-descriptors-test.md)

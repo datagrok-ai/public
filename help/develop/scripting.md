@@ -18,10 +18,10 @@ Each line starts with a comment.
 Let's take a look at a simple R script that returns a square of the input parameter:   
 
 ```
-#name: RSquare
-#language: r
-#input: double x
-#output: double result
+# Name: rsquare
+# Language: r
+# Input: double x
+# Output: double result
 
 result = x * x
 ```
@@ -38,7 +38,7 @@ Use [Console](../overview/navigation.md#console) to execute it. Simply type "RSq
 The syntax for invoking the scripts is the same, regardless of the language used. In the same way, you can
 call Grok Functions. See [Grok Scripting](../overview/grok-script.md) for more details.
 
-## Running a Script
+## Running a script
 
 First of all, a script can be executed right from the script editor (see picture below).
 
@@ -78,7 +78,7 @@ In the first line we evaluate an expression and get the function that correspond
 
 ## Environments
 
-### Conda Environments
+### Conda environments
 
 Each script can be associated with the specific package configuration that it depends on. 
 [Conda](https://docs.conda.io/en/latest/) is used as the environment management system. Environment configuration 
@@ -98,17 +98,17 @@ defined in the `default.yaml`.
 This is how to define the "chemprop" environment in the script header: 
 
 ```
-#environment: chemprop
+# Environment: chemprop
 ```
 
-### renv Environments
+### Renv environments
 
 [_Renv_](https://rstudio.github.io/renv/articles/renv.html) environments are natively supported. Datagrok runs each R script in a temporary folder with a unique name. This folder becomes an _renv_ project folder for the current run of the script.
 
 Start using _renv_ by initializing it and installing packages (see a [full example](https://github.com/datagrok-ai/public/tree/master/packages/RScripts/scripts/renv_spelling.R)):
 
 ```
-#language: r
+# Language: r
 ...
 renv::init()
 renv::install("hunspell@3.0.1")
@@ -125,7 +125,7 @@ We are planning to support [_renv_ lockfiles](https://rstudio.github.io/renv/art
 
 ## Parameters
 
-### Parameter Validators
+### Parameter validators
 
 Validators check whether the value falls in the expected range, and provide visual cue if it does not.
 To add a validator to a parameter, provide a comma-separated list of functions that will be invoked
@@ -138,8 +138,8 @@ are applicable only to string parameters.
 The following example adds a "containsLettersOnly" function to the "col" parameter:
 
 ```
-#input: string s {validators: ["containsLettersOnly"]}
-#input: column col {validators: ["containsMissingValues"]}
+# Input: string s {validators: ["containslettersonly"]}
+# Input: column col {validators: ["containsmissingvalues"]}
 ```
 
 ```js
@@ -153,17 +153,17 @@ grok.functions.register({
 ```
 
 ```python
-#name: Numbers
-#language: python
-#input: int count1 {validators: ["jsVal1", "jsVal2"]} [Number of cells in table]
-#input: int count2 {validators: ["jsVal1"]} [Number of cells in table]
-#input: int count3 {validators: ["jsVal2"]} [Number of cells in table]
+# Name: numbers
+# Language: python
+# Input: int count1 {validators: ["jsval1", "jsval2"]} [number of cells in table]
+# Input: int count2 {validators: ["jsval1"]} [number of cells in table]
+# Input: int count3 {validators: ["jsval2"]} [number of cells in table]
 ```
 
 ![Script Parameter Validators](../uploads/features/script-param-validators.gif "Script Parameter Validators") 
 
 
-### Parameter Choices
+### Parameter choices
 
 Use choices to provide the editor a list of values to choose from. When choices are provided,
 the editor becomes a combo box. Choices can be either a fixed list, or a function that returns a list.
@@ -173,8 +173,8 @@ A choice provider is a function with no parameters that returns a list of string
 The following example demonstrates two ways of defining choices:
 
 ```
-#input: string fruit {choices: ["Apple", "Banana"]}
-#input: string vegetable {choices: jsVeggies}
+# Input: string fruit {choices: ["apple", "banana"]}
+# Input: string vegetable {choices: jsveggies}
 ```
 
 Here is a possible implementation of the "jsTypes" function used in the example:
@@ -187,7 +187,7 @@ grok.functions.register({
 ![Script Parameter Choices](../uploads/features/script-param-choices.gif "Script Parameter Choices") 
 
 
-### Parameter Suggestions
+### Parameter suggestions
 
 Use parameter suggestions to help users enter a correct value. For instance, when entering
 a product name, it might make sense to dynamically query a database for values starting with
@@ -200,9 +200,9 @@ The following example helps user enter a country name by dynamically retrieving 
 from a web service: 
 
 ```python
-#name: Sales by country
-#language: python
-#input: string country = uk {suggestions: jsSuggestCountryName}
+# Name: sales by country
+# Language: python
+# Input: string country = uk {suggestions: jssuggestcountryname}
 ```
 
 ```js
@@ -236,7 +236,7 @@ Here, Datagrok will execute the `Package:DataQuery` function right before your s
 Specify the `editor-button` parameter to add a button that executes your subfunction separately and allows the user to check the output before starting the script.
 
 
-## Header Parameters
+## Header parameters
 
 | Parameter   | Description                        |
 |-------------|------------------------------------|
@@ -266,7 +266,7 @@ Also it is possible to add custom parameter using "meta." prefix.
 | grok                     | Grok Scripting |
 | javascript               | JavaScript     |
 
-### Format Template for 'input' and 'output':
+### Format template for 'input' and 'output':
 
 ```
 #<direction>: <type> <name> = <value> {<option tag>:<value>; ...} [<description>]  
@@ -320,14 +320,14 @@ Validator also can be any function that that returns "null" if validation is rig
 otherwise.
 
 
-#### For "dataframe" Type
+#### For "dataframe" type
 
 | Option      | Value       | Description                             |
 |-------------|-------------|-----------------------------------------|
 | columns     | numerical   | Only numerical columns will be loaded   |
 | categorical | categorical | Only categorical columns will be loaded |
 
-#### For "column" and "column_list" Types
+#### For "column" and "column_list" types
 
 | Option     | Value                           | Description                                                  |
 |------------|---------------------------------|--------------------------------------------------------------|
@@ -340,7 +340,7 @@ otherwise.
 | action     | replace("table parameter name") | Replaces result with columns in specified table, for output parameters only | 
 
 
-#### For "string" Type
+#### For "string" type
 
 | Option      | Value                     | Description                          |
 |-------------|---------------------------|--------------------------------------|
@@ -349,27 +349,27 @@ otherwise.
  
 Header line examples: 
 ```
-#input: string choices = int {choices: ["string", "int", "bool"]}
-#input: string choices = int {choices: JsTypes}
+# Input: string choices = int {choices: ["string", "int", "bool"]}
+# Input: string choices = int {choices: jstypes}
 
-#input: string option = int {suggestions: JsSuggestType}
+# Input: string option = int {suggestions: jssuggesttype}
 ```
 
 
 ### Examples:
 
 ```
-#input: dataframe t1 {columns:numerical} [First input data table]
-#input: dataframe t2 {columns:numerical} [Second input data table]
-#input: column x {type:numerical; table:T1} [X axis column name]
-#input: column y {type:numerical} [Y axis column name]
-#input: column date {type:dateTime; format:MM/dd/yyyy} [Date column name]
-#input: column_list numData {type:numerical; table:T1} [Numerical columns names]
-#input: int numComp = 2 {range:2-7} [Number of components]
-#input: bool center = TRUE [Number of components]
-#input: string type = high {choices: ["high", "low"]} [Type of filter]
-#output: dataframe result {action:join(t1)} [PCA components]
-#output: graphics scatter [Scatter plot]
+# Input: dataframe t1 {columns:numerical} [first input data table]
+# Input: dataframe t2 {columns:numerical} [second input data table]
+# Input: column x {type:numerical; table:t1} [x axis column name]
+# Input: column y {type:numerical} [y axis column name]
+# Input: column date {type:datetime; format:mm/dd/yyyy} [date column name]
+# Input: column_list numdata {type:numerical; table:t1} [numerical columns names]
+# Input: int numcomp = 2 {range:2-7} [number of components]
+# Input: bool center = true [number of components]
+# Input: string type = high {choices: ["high", "low"]} [type of filter]
+# Output: dataframe result {action:join(t1)} [pca components]
+# Output: graphics scatter [scatter plot]
 ```
 
 ## Filtering
@@ -394,7 +394,7 @@ You can use these fields to filter scripts with [smart search](../overview/smart
 
 See also:
 
-  * [Grok Scripting](../overview/grok-script.md)
+  * [Grok scripting](../overview/grok-script.md)
   * [R](https://www.r-project.org/about.html)
   * [Python](https://www.python.org)
   * [Octave](https://octave.org/)
@@ -403,4 +403,4 @@ See also:
   * [Packages](develop.md#packages)
   * [JavaScript API](js-api.md)
   * [Functions](../overview/functions/function.md)
-  * [Function Call](../overview/functions/function-call.md)
+  * [Function call](../overview/functions/function-call.md)

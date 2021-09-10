@@ -5,7 +5,7 @@
 
 Provides access to [Dropbox](https://www.dropbox.com) storage as [file share](files.md).
 
-## Connection Parameters
+## Connection parameters
 
 ```json
 {
@@ -22,6 +22,6 @@ Provides access to [Dropbox](https://www.dropbox.com) storage as [file share](fi
 
 See also:
 
-  * [Data Connection](../data-connection.md)
+  * [Data connection](../data-connection.md)
   * [Dropbox](https://www.dropbox.com)
   * [Files](files.md)

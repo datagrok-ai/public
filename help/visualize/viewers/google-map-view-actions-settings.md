@@ -1,7 +1,7 @@
-<!-- TITLE: Google Map View Action Settings -->
+<!-- TITLE: Google Map view action settings -->
 <!-- SUBTITLE: -->
 
-# Google Map View Action Settings
+# Google Map view action settings
 
 Allows to link actions to map and show estimated parameters on cursor. 
 

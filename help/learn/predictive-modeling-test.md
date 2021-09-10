@@ -1,7 +1,7 @@
-<!-- TITLE: Tests: Predictive Models -->
+<!-- TITLE: Tests: Predictive models -->
 <!-- SUBTITLE: -->
 
-# Tests: Predictive Models
+# Tests: predictive models
 
 You can train [models](predictive-modeling.md) using different methods and servers 
 "[H2o](http://h2o.ai)" or "[OpenCPU](https://topepo.github.io/caret/index.html)". 

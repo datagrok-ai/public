@@ -1,9 +1,9 @@
-<!-- TITLE: Build an Application -->
+<!-- TITLE: Build an application -->
 <!-- SUBTITLE: -->
 
 <!-- This is a developer's view on the Datagrok applications -->
 
-# Building Datagrok Applications
+# Building Datagrok applications
 
 Applications are built on top of the Datagrok platform. The Datagrok application serves a targeted
 need around a particular problem or an area. This may be a bioreactor modeling application,
@@ -19,7 +19,7 @@ Technically, applications are [functions](../../overview/functions/function.md) 
 In this function, you take control over what the platform will let the user do and see next, after the app is
 launched. Think of it as of the application's entry point, such as a `Main` function in a C# console app.
 
-## The Entry Point
+## The entry point
 
 The Datagrok platform is highly extensible. New functionality is delivered to a Datagrok instance as packages.
 A Datagrok [package](../develop.md#packages) might contain zero, one, or more Datagrok applications. These come along with other
@@ -66,7 +66,7 @@ is simply `https://public.datagrok.ai/apps/<APP>`, but has the form of
 This simple example concludes on the entry point. Yet, trivial popups aren't
 something one typically builds as an application. Let's look at a more UI-rich side of things.
 
-## The Main View
+## The main view
 
 Most applications built on Datagrok start with a Datagrok's [view](custom-views.md). A view is a set of visualizations and
 controls grouped together. Typically, the view is associated with a particular [dataframe](#dataframes),
@@ -89,7 +89,7 @@ Read more on creating custom views [here](custom-views.md).
 [This example](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/ui/viewers/create-viewers.js)
 shows how to add a [viewer](#visualizations) to a view.
 
-## Working with IntelliSense
+## Working with intellisense
 
 We recommend restoring the package dependencies before starting development with an IDE.
 After the package is created, simply invoke `npm install` inside the package folder. This
@@ -102,7 +102,7 @@ a [part](https://github.com/datagrok-ai/public/tree/master/packages) of our publ
 The folder `js-api` in the root of the public repo is a source of our JS API, that's how
 IDE discovers needed IntelliSense information.
 
-# Application Development
+# Application development
 
 Starting with the above, there is pretty much anything you can further do inside the application,
 leveraging a full scale of platform capabilities. However, there are certain aspects of interest
@@ -119,7 +119,7 @@ The following chapter guides through these key development topics. Take it as a 
 application development area, grasp the major building blocks, and proceed to the articles and samples
 referenced in the guide for the further details.
 
-## Code Samples
+## Code samples
 
 We provide a diverse set of code snippets of the API use, and sample packages with viewers, applications, and so forth.
 
@@ -139,7 +139,7 @@ daily work with the platform. We recommend you to use these locations in resolvi
 in addition to posting questions and suggestions on our [Community Forum](https://community.datagrok.ai/)
 at https://community.datagrok.ai/.
 
-## Data Access
+## Data access
 
 There's a variety of data sources which Datagrok can handle out of the box:
 
@@ -157,7 +157,7 @@ accessing files from file shares and servers is made by `grok.functions.eval('Op
 When it comes to connections, we encourage you not to store their credentials directly inside your application
 packages. The chapter ["Managing privileges"](#managing-privileges) discusses credentials management in detail.
 
-### Accessing REST endpoints outside the host
+### Accessing rest endpoints outside the host
 
 Web services provide endpoints that you can programmatically connect to.
 There are two main options for this: the first is to use
@@ -250,7 +250,7 @@ as part of the package deployment process.
 
 ## Dataframes
 
-### Creating and working with Dataframes
+### Creating and working with dataframes
 
 Dataframes are at the heart of Datagrok. Dataframe is a high-performance, easy to use tabular structure with
 strongly-typed columns of different types. Supported types are: string, int, float, bool, DateTime, bigint and
@@ -397,7 +397,7 @@ The whole set of functions available for `.add` is located [here](../../transfor
 
 * [Aggregation functions](../../transform/aggregation-functions.md)
 
-## Persisting Data
+## Persisting data
 
 ### User data storage
 
@@ -455,10 +455,10 @@ the `Data` pane opened by the "folder" button on the left side of the Datagrok's
 the below:
 
 ```python
-#name: SimpleTestPython
-#language: python
-#input: dataframe table [Data table]
-#output: int count [Number of cells in table]
+# Name: simpletestpython
+# Language: python
+# Input: dataframe table [data table]
+# Output: int count [number of cells in table]
 count = table.shape[0] * table.shape[1]
 ```
 
@@ -621,7 +621,7 @@ if one stores credentials for a database or a service from public domain (for in
 of publicly available datasets like Chembl) right inside the package in a connection file.
 For other types of credentials, there are suitable means in Datagrok described below.
 
-#### Pushing credentials by the Datagrok Server API
+#### Pushing credentials by the Server API
 
 It's possible to programmatically push credentials to Datagrok and deliver them to the package
 of interest. In such scenario, credentials are stored on a secured machine and delivered
@@ -638,7 +638,7 @@ memorized by the platform and sustain package versions updates.
 
 * [Database connection credentials](manage-credentials.md#database-connection-credentials)
 
-#### Storing credentials in the Datagrok Credentials Store
+#### Storing credentials in Credentials Store
 
 This is useful for credentials which are not part of Datagrok's OpenAPI web connection,
 database or file share connection, but instead are used programmatically in JavaScript code of
@@ -654,7 +654,7 @@ same way as discussed in the previous section.
 * [Package credentials](manage-credentials.md#package-credentials)
 * [Managing credentials](develop/how-to/manage-credentials.md)
 
-## UI and UX
+## Ui and ux
 
 Most of the UI capabilities Datagrok offers are described as samples in our [ApiSamples package](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples).
 You may view them all conveniently by the following link: [https://public.datagrok.ai/js](https://public.datagrok.ai/js).
@@ -821,10 +821,9 @@ IDE directly to the URL of your application: `https://<HOST_NAME>/apps/<APP_NAME
 and `https://<HOST_NAME>/apps/<PACKAGE_NAME>/<APP_NAME>` for more than 1 app in the package. For VS Code,
 this is done in `launch.json`.
 
-
 See also:
 
-  * [Datagrok JS Development](../develop.md)
-  * [Developing Datagrok Applications](../develop.md#applications)
+  * [Datagrok JS development](../develop.md)
+  * [Developing Datagrok applications](../develop.md#applications)
   * [Applications on Datagrok Public](https://public.datagrok.ai/apps)
   * [Development Samples Gallery](https://public.datagrok.ai/js)

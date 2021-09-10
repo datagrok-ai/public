@@ -1,7 +1,7 @@
-<!-- TITLE: Edit Group Memberships -->
+<!-- TITLE: Edit group memberships -->
 <!-- SUBTITLE: -->
 
-# Group Memberships
+# Group memberships
 
 Users or groups can be added to any another group.
 Type group name to find groups you want your group or user to belong, and use "plus" icon to add.

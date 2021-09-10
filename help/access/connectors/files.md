@@ -41,7 +41,7 @@ across all (or specified) data providers (including relational databases, etc) a
 
 ![Files Browser](files-browser.gif "Files Browser")
 
-## Connection Parameters
+## Connection parameters
 
 ```json
 {
@@ -60,5 +60,5 @@ across all (or specified) data providers (including relational databases, etc) a
 
 See also:
 
-  * [Data Connection](../data-connection.md)
+  * [Data connection](../data-connection.md)
   * [Files Indexer](../../access/files-indexer.md)

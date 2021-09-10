@@ -8,5 +8,5 @@ using SQL queries via JDBC driver .
 
 See also:
 
-  * [Data Connection](../data-connection.md)
+  * [Data connection](../data-connection.md)
   * [Apache Cassandra](http://cassandra.apache.org/)

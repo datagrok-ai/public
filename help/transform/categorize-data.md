@@ -1,7 +1,7 @@
-<!-- TITLE: Categorize Data -->
+<!-- TITLE: Categorize data -->
 <!-- SUBTITLE: -->
 
-# Categorize Data
+# Categorize data
 
 Evaluate multiple patterns against the dataset, and assign categories to the rows, based on the
 conditions (patterns).

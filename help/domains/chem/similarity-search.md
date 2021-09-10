@@ -1,7 +1,7 @@
-<!-- TITLE: Similarity Search -->
+<!-- TITLE: Similarity search -->
 <!-- SUBTITLE: -->
 
-# Similarity Search
+# Similarity search
 
 We have implemented few tools that help scientists analyze a collection of molecules in 
 terms of molecular similarity. Both tools are based on applying different distance metrics 
@@ -27,5 +27,5 @@ See also:
 
 * [Diversity search](diversity-search.md)
 * [Descriptors](descriptors.md)
-* [Molecular Fingerprints](fingerprints.md)
-* JS API: [Similarity Search](https://public.datagrok.ai/js/samples/domains/chem/similarity-search)
+* [Molecular fingerprints](fingerprints.md)
+* JS API: [Similarity search](https://public.datagrok.ai/js/samples/domains/chem/similarity-search)

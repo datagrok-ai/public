@@ -5,7 +5,7 @@
 
 Provides access to [OData](https://www.odata.org/) based service. 
 
-## Connection Parameters
+## Connection parameters
 
 ```json
 {
@@ -16,5 +16,5 @@ Provides access to [OData](https://www.odata.org/) based service.
 
 See also:
 
-  * [Data Connection](../data-connection.md)
+  * [Data connection](../data-connection.md)
   * [OData](https://www.odata.org/)

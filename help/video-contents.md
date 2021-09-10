@@ -130,7 +130,7 @@ Full video: [link](https://youtu.be/JaJgxtHAb98)
 * [Predictive model engines]
 * [Training predictive models (Q&A)] (can be skipped)
 
-## ChaRPy, MedChem Browser, Octave
+## Charpy, medchem browser, octave
 
 Full video: [link](https://youtu.be/seAgx5TbrzI)
 
@@ -139,7 +139,7 @@ Full video: [link](https://youtu.be/seAgx5TbrzI)
 * [MedChem Browser]
 * [Octave / Matlab scripting engine]
 
-## DSP with WASM, metadata search, debugging packages
+## Dsp with wasm, metadata search, debugging packages
 
 Full video: [link](https://youtu.be/zVVmlRorpjg)
 
@@ -149,7 +149,7 @@ Full video: [link](https://youtu.be/zVVmlRorpjg)
 * [Metadata & unstructured data search engine]
 * [Digital Signal Processing using WebAssembly]
 
-## Advanced filtering and Natural Language Processing
+## Advanced filtering and natural language processing
 
 Full video: [link](https://youtu.be/GM3XixUFFUs)
 
@@ -165,7 +165,7 @@ Full video: [link](https://youtu.be/GM3XixUFFUs)
 * [New filtering functionality]
 * [Summarization, neural machine translation]
 
-##  Cheminformatics, Biosignals, Files
+## Cheminformatics, BioSignals, Files
 
 Full video: [link](https://youtu.be/0QxzllnBreI)
 
@@ -185,7 +185,7 @@ Full video: [link](https://youtu.be/0QxzllnBreI)
 * [UX features: files and folders sharing](https://www.youtube.com/watch?v=0QxzllnBreI&t=3895s)
 * [Dev Tools Updates: TypeScript support, IntelliSense and async in JS Fiddler](https://www.youtube.com/watch?v=0QxzllnBreI&t=4657s)
 
-## ClinicalCase, Activity cliffs, Function View, Bioinformatics
+## ClinicalCase, Activity Cliffs, Function View, BioInformatics
 
 Full video: [link](https://youtu.be/2xuxJjpjXi4)
 

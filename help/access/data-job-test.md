@@ -1,7 +1,7 @@
-<!-- TITLE: Tests: Data Job -->
+<!-- TITLE: Tests: Data job -->
 <!-- SUBTITLE: -->
 
-# Tests: Data Job
+# Tests: Data job
 
 [Data job](data-job.md) defines all actions that are needed to produce a dashboard. 
 Each [data job](data-job.md) consists of the following parts that are executed to produce a dataset.
@@ -51,8 +51,9 @@ Each [data job](data-job.md) consists of the following parts that are executed t
    * Display users and users groups which this job is available 
 
 See also:
- * [Data Connections test](../tests/data-connection-test.md)
- * [Data Query test](data-query-test.md)
- * [Data Sourse test](../tests/data-source-test.md)
- * [Data Job](data-job.md)
+
+ * [Data connections test](../tests/data-connection-test.md)
+ * [Data query test](data-query-test.md)
+ * [Data source test](../tests/data-source-test.md)
+ * [Data job](data-job.md)
  

@@ -84,7 +84,7 @@ Turn your data into actionable insights by using state-of-the art machine learni
   * [Digital signal processing](https://github.com/datagrok-ai/public/tree/master/packages/DSP)
   * [Biosignal Processing](https://github.com/datagrok-ai/public/tree/master/packages/BioSignals)
 
-## Deploy and Integrate
+## Deploy and integrate
 
   * Different [hosting options](develop/admin/hosting-options.md)
   * [Roles, groups and privileges](govern/security.md)

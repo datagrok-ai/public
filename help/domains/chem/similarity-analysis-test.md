@@ -1,4 +1,4 @@
-<!-- TITLE: Tests: Similarity Analysis -->
+<!-- TITLE: Tests: Similarity analysis -->
 <!-- SUBTITLE: -->
 
 ## Testing scenarios
@@ -25,6 +25,6 @@
    * Special column "~ RDKFingerprint" added to table
 
 See also:
- * [Substructure Search Test](../tests/substructure-search-test.md)
- * [Chem Descriptors Test](../tests/chem-descriptors-test.md)
+ * [Substructure search test](../tests/substructure-search-test.md)
+ * [Chem descriptors test](../tests/chem-descriptors-test.md)
  * [Chem Sketcher Test](../tests/chem-scetcher-test.md)

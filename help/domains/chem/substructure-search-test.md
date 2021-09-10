@@ -1,7 +1,7 @@
-<!-- TITLE: Tests: Substructure Search -->
+<!-- TITLE: Tests: Substructure search -->
 <!-- SUBTITLE: -->
 
-# Tests: Substructure Search
+# Tests: substructure search
 
 Substructure Search Performs substructure pattern search in list of SMILES.
 
@@ -45,5 +45,5 @@ Substructure Search Performs substructure pattern search in list of SMILES.
 1. Test non-functional modules (UI, help, navigation, console)
 
 See also:
-  * [Get R Groups Test](../tests/get-r-groups-test.md)
-  * [Chem Descriptors Test](../tests/chem-descriptors-test.md)
+  * [Get R-Groups test](../tests/get-r-groups-test.md)
+  * [Chem descriptors test](../tests/chem-descriptors-test.md)

@@ -1,7 +1,7 @@
-<!-- TITLE: Tests: Shape Map -->
+<!-- TITLE: Tests: Shape map -->
 <!-- SUBTITLE: -->
 
-# Tests: Shape Map
+# Tests: shape map
 
 Shows a map that is applicable for the specified dataset. Typically, it would 
 represent a geographical area (countries, states, counties, etc), but also
@@ -31,4 +31,4 @@ or EEG electrodes).
 1. Test common features for viewers ([viewers-test](../visualize/viewers/viewers-test.md))   
    
 See also:
- * [Shape Map](../visualize/viewers/shape-map.md)  
+ * [Shape map](../visualize/viewers/shape-map.md)  

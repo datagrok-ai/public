@@ -7,27 +7,27 @@ A [viewer](../viewers.md) is a visual component associated with a table.
 
 List of viewers available for testing:
 
-* [Scatter Plot](../visualize/viewers/scatter-plot.md)
+* [Scatter plot](../visualize/viewers/scatter-plot.md)
 * [Histogram](../visualize/viewers/shistogram.md)
-* [Line Chart](../visualize/viewers/sline-chart.md)
+* [Line chart](../visualize/viewers/sline-chart.md)
 * [Bar chart](../visualize/viewers/sbar-chart.md)
 * [Box plot](../visualize/viewers/sbox-plot.md)
 * [Filters](../visualize/viewers/sfilters.md)
-* [Trellis Plot](../visualize/viewers/strellis-plot.md)
-* [Tree Map](../visualize/viewers/stree-map.md)
+* [Trellis plot](../visualize/viewers/strellis-plot.md)
+* [Tree map](../visualize/viewers/stree-map.md)
 * [Calendar](../visualize/viewers/scalendar.md)
-* [Google Map](../visualize/viewers/sgoogle-map.md)
+* [Google map](../visualize/viewers/sgoogle-map.md)
 * [Grid](../visualize/viewers/sgrid.md)
-* [3D Scatter Plot](../visualize/viewers/3d-scatter-plot.md)
-* [Matrix Plot](../visualize/viewers/smatrix-plot.md)
-* [Network Diagram](../visualize/viewers/snetwork-diagram.md)
-* [Parallel Coordinates Plot](../visualize/viewers/spc-plot.md)
-* [Pie Chart](../visualize/viewers/spie-chart.md)
-* [Scripting Viewer](../visualize/viewers/scripting-viewer.md)
+* [3D Scatter plot](../visualize/viewers/3d-scatter-plot.md)
+* [Matrix plot](../visualize/viewers/smatrix-plot.md)
+* [Network diagram](../visualize/viewers/snetwork-diagram.md)
+* [Parallel coordinates plot](../visualize/viewers/spc-plot.md)
+* [Pie chart](../visualize/viewers/spie-chart.md)
+* [Scripting viewer](../visualize/viewers/scripting-viewer.md)
 * [Statistics](../visualize/viewers/sstatistics.md)
-* [Markup Viewer](../visualize/viewers/smarkup-viewer.md)
-* [Word Cloud](../visualize/viewers/sword-cloud.md)
-* [Scripting Viewer](../visualize/viewers/scripting-viewer.md)
+* [Markup viewer](../visualize/viewers/smarkup-viewer.md)
+* [Word cloud](../visualize/viewers/sword-cloud.md)
+* [Scripting viewer](../visualize/viewers/scripting-viewer.md)
 
 Approaches to testing, Testing scenarios, test items in general are similar for all viewers. Categories of testing scenarios common to all viewers were identified:
 
@@ -93,7 +93,7 @@ Here we look at the correspondence of the chosen viewer type, correctness of con
    * Full and non-full (with nulls or empty tables) data
    * Selected rows should be highlighted on the viewer
 
-## Sample test-case for testing viewers on example of "Scatter Plot"
+## Sample test-case for testing viewers on example of "scatter plot"
 
 1. Open *"demog"* table
 

@@ -1,7 +1,7 @@
-<!-- TITLE: Anonymize Data -->
+<!-- TITLE: Anonymize data -->
 <!-- SUBTITLE: -->
 
-# Anonymize Data
+# Anonymize data
 
 Sometimes, a need arises to prepare a dataset that conveys an idea of the structure in the data along
 with the patterns in it, but does not contain the real data points. This is what 'Anonymize Data' functionality
@@ -21,4 +21,4 @@ the column type, as well as on the old value:
     ``` 
 
 For selecting a random subset of the (possibly already anonymized) dataset, 
-see [Selecting Random Rows](../explore/select-random-rows.md).
+see [Selecting random rows](../explore/select-random-rows.md).

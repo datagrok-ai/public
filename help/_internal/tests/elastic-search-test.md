@@ -1,7 +1,7 @@
 <!-- TITLE: Tests: Elastic search -->
 <!-- SUBTITLE: -->
 
-# Tests: Elastic search
+# Tests: Elastic Search
 
 Elastic search allows search for functions and other main menu items, as well as looking for search query inside help pages.
 

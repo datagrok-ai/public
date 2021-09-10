@@ -1,7 +1,7 @@
-<!-- TITLE: Random Data -->
+<!-- TITLE: Random data -->
 <!-- SUBTITLE: -->
 
-# Random Data
+# Random data
 
 Adds a numerical column with random data with the specified distribution with initial seed. 
 Parameters of the distribution can be edited as well.
@@ -21,4 +21,4 @@ Supported distributions and parameters:
 See also:
   * [Randomness](https://en.wikipedia.org/wiki/Randomness)
   * [List of probability distributions](https://en.wikipedia.org/wiki/List_of_probability_distributions)
-  * JS API: [Random Data](https://public.datagrok.ai/js/samples/domains/data-science/random-data)
+  * JS API: [Random data](https://public.datagrok.ai/js/samples/domains/data-science/random-data)

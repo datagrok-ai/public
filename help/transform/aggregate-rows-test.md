@@ -1,4 +1,4 @@
-<!-- TITLE: Tests: Aggregate Rows -->
+<!-- TITLE: Tests: Aggregate rows -->
 <!-- SUBTITLE: -->
 
 # Test: Aggregate rows

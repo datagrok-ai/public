@@ -1,7 +1,7 @@
-<!-- TITLE: DB Exploration -->
+<!-- TITLE: DB exploration -->
 <!-- SUBTITLE: -->
 
-# DB Exploration
+# DB exploration
 
 Grok supports visual exploration of relational databases for some of the database providers, including
 PostgreSQL, MySQL, MS SQL, Maria DB, and Oracle. If a provider supports it, you'll see 'Browse schema'
@@ -38,4 +38,4 @@ use context actions that appear in the property panel
 <iframe width="560" height="315" src="https://www.youtube.com/embed/YJmSvh3_uCM" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
 See also:
-* [DB Visual Query](db-visual-query.md)
+* [DB visual query](db-visual-query.md)

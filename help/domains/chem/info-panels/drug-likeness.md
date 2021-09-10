@@ -1,6 +1,6 @@
-<!-- TITLE: Drug Likeness -->
+<!-- TITLE: Drug likeness -->
 
-## Drug Likeness
+## Drug likeness
 
 From [openmolecules](http://www.openmolecules.org/properties/properties.html#druglikeness): 
 _There are many approaches around that assess a compound's druglikeness partially based on 

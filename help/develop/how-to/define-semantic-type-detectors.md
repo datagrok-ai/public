@@ -98,7 +98,7 @@ solely of nulls, which won't add any helpful insights to the data profile.
 See also:
 
   * [JavaScript Development](../develop.md)
-  * [Semantic Types](../../discover/semantic-types.md)
-  * [JavaScript API Samples: Override Standard Semantic Types](https://public.datagrok.ai/js/samples/data-frame/advanced/semantic-type-detection)
-  * [JavaScript API Samples: Column Statistics](https://public.datagrok.ai/js/samples/data-frame/stats)
-  * [How to Add an Info Panel](add-info-panel.md)
+  * [Semantic types](../../discover/semantic-types.md)
+  * [JavaScript API Samples: Override standard semantic types](https://public.datagrok.ai/js/samples/data-frame/advanced/semantic-type-detection)
+  * [JavaScript API Samples: Column statistics](https://public.datagrok.ai/js/samples/data-frame/stats)
+  * [How to add an info panel](add-info-panel.md)

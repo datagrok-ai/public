@@ -1,7 +1,7 @@
 <!-- TITLE: Tests: Hide Menus -->
 <!-- SUBTITLE: -->
 
-# Test: Hide Menus
+# Test: Hide menus
 
 Platform flexibility allows to hide unused items of various menus (top menu, context menu for objects, etc.)
 

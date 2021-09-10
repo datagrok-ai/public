@@ -61,4 +61,4 @@ See also:
   * [Search](data-search.md)
   * [Search patterns](data-search-patterns.md)
   * [Smart search](../overview/smart-search.md)
-  * [Search Auto Test](../selenium/data-search-test.side)
+  * [Search auto test](../selenium/data-search-test.side)

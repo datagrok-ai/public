@@ -1,7 +1,7 @@
 <!-- TITLE: JavaScript Development Overview -->
 <!-- ORDER: 0 -->
 
-# JavaScript Development Overview
+# Javascript development overview
 
 This document provides a high-level overview of JavaScript development on the Datagrok platform. Using [our feature-rich
 JavaScript API], you can develop packages to perform various tasks on Datagrok, namely:
@@ -60,7 +60,7 @@ To configure the Datagrok servers that you use, refer to the [Datagrok configura
 After you configure the development server, use the `dev` scripts in your `package.json` to run the package on the
 **Dev** environment.
 
-### Datagrok Inspector
+### Datagrok inspector
 
 To simplify development, Datagrok provides an Inspector, a tool that helps you peek under the hood of the platform and
 see which events get fired and when, how views and viewers are serialized, what widgets are registered by the platform,

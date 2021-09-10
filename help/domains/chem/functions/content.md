@@ -3,14 +3,14 @@
 
 # Content
 
-* [Butina Cluster](butina_cluster.md)
-* [Filter by Catalogs](filter-catalogs.md)
-* [Gasteiger Partial Charges](gasteiger-charges.md)
-* [Murcko Scaffolds](murcko-scaffolds.md)
+* [Butina cluster](butina_cluster.md)
+* [Filter by catalogs](filter-catalogs.md)
+* [Gasteiger partial charges](gasteiger-charges.md)
+* [Murcko scaffolds](murcko-scaffolds.md)
 * [Mutate](mutate.md)
 * [Reactions](reactions.md)
-* [Similarity Maps Using Fingerprints](sim-maps.md)
-* [Solubility Prediction](solubility-prediction.md)
-* [Chemical Space Using tSNE](tsne.md)
-* [Chemical Space Using UMAP](umap.md)
+* [Similarity maps using fingerprints](sim-maps.md)
+* [Solubility prediction](solubility-prediction.md)
+* [Chemical space using tSNE](tsne.md)
+* [Chemical space using UMAP](umap.md)
 * [USRCAT](usrcat.md)

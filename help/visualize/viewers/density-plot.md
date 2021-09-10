@@ -1,7 +1,7 @@
-<!-- TITLE: Density Plot -->
+<!-- TITLE: Density plot -->
 <!-- SUBTITLE: -->
 
-# Density Plot
+# Density plot
 
 Unlike [scatter plot](scatter-plot.md) that visualizes each individual data point,
 density plot splits 2D area by bins, and color-codes it depending on the number of points

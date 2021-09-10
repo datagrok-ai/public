@@ -1,4 +1,4 @@
-# Contributor's guide to Help
+# Contributor's guide to help
 
 We are following [Microsoft Style Guide](https://docs.microsoft.com/en-us/style-guide/welcome/). Points to pay most attention to are provided in this document.
 

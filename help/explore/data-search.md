@@ -1,14 +1,14 @@
-<!-- TITLE: Search Data -->
+<!-- TITLE: Search data -->
 <!-- SUBTITLE: -->
 
-# Search Data
+# Search data
 
 Press Ctrl+F to search data. Additional controls appear once search gets focus.
   
 Click on the gear icon to control whether the matching rows get selected or filtered
 automatically as the search string changes.
 
-##  Shortcuts
+## Shortcuts
 
 | []()        |                        |
 |-------------|------------------------|
@@ -35,4 +35,4 @@ See [search patterns](data-search-patterns.md) for all supported queries
 | open yesterday              | "open" column: yesterday  |
 
 See also:
-* [Search Patterns](data-search-patterns.md)
+* [Search patterns](data-search-patterns.md)

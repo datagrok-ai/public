@@ -1,7 +1,7 @@
-<!-- TITLE: Markup Viewer -->
+<!-- TITLE: Markup viewer -->
 <!-- SUBTITLE: -->
 
-# Markup Viewer
+# Markup viewer
 
 Use this viewer to host any text, arbitrary HTML content, or [markdown-formatted text](../../overview/markdown.md). In most casees,
 the viewer will auto-detect content type. Use the "mode" property to explicitly specify it.
@@ -34,6 +34,6 @@ Here is how to embed iframes:
 See also: 
   
   * [Viewers](../viewers.md)
-  * [Table View](../../overview/table-view.md)
-  * [Flex View](../../overview/flex-view.md)
+  * [Table view](../../overview/table-view.md)
+  * [Flex view](../../overview/flex-view.md)
   * [JS API: Markup](https://public.datagrok.ai/js/samples/ui/viewers/types/markup)

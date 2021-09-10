@@ -1,4 +1,4 @@
-<!-- TITLE: Use Cases: Accessing Databases -->
+<!-- TITLE: Use Cases: Accessing databases -->
 <!-- SUBTITLE: -->
 
 # Navigating the platform
@@ -8,7 +8,7 @@ Owner: Andrey
 Features: navigation, connections/queries concepts, saved queries, creating connection, creating query, executing, sharing
 
 See also:
-* [Data Import](../../access/importing-data.md)
-* [Data Connection](../../access/data-connection.md)
-* [Data Query](../../access/data-query.md)
-* [Function Call](../../overview/functions/function-call.md)
+* [Data import](../../access/importing-data.md)
+* [Data connection](../../access/data-connection.md)
+* [Data query](../../access/data-query.md)
+* [Function call](../../overview/functions/function-call.md)

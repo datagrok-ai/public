@@ -1,7 +1,7 @@
-<!-- TITLE: Data Export -->
+<!-- TITLE: Data export -->
 <!-- SUBTITLE: -->
 
-# Data Export
+# Data export
 
 When working on the Datagrok platform, you can always save the currently open data to a file or a set of files in your local environment.
 

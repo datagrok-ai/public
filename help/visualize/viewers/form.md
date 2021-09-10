@@ -35,5 +35,5 @@ and presentation modes:
 
 See also:
 
-* [Tile Viewer](tile-viewer.md)
+* [Tile viewer](tile-viewer.md)
 * [JS API: Form](https://public.datagrok.ai/js/samples/ui/viewers/types/form)

@@ -19,4 +19,4 @@ Shortcuts:
 Click **Help | Community Forums** to see list of all topics.
 
 See also:
-* [Community Forums](forum.md)
+* [Community forums](forum.md)

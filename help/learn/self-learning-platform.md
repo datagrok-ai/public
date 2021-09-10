@@ -1,7 +1,7 @@
-<!-- TITLE: Self-Learning Platform -->
+<!-- TITLE: Self-learning platform -->
 <!-- SUBTITLE: -->
 
-# Self-Learning Platform
+# Self-learning platform
 
 One of the Datagrok's unique features is the ability to perform most of the operations
 on the data from within the platform. Besides the obvious convenience of keeping everything

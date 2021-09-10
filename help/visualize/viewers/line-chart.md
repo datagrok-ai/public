@@ -1,7 +1,7 @@
-<!-- TITLE: Line Chart -->
+<!-- TITLE: Line chart -->
 <!-- SUBTITLE: -->
 
-# Line Chart
+# Line chart
 
 General:
 

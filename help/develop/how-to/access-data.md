@@ -1,7 +1,7 @@
-<!-- TITLE: Access Data -->
+<!-- TITLE: Access data -->
 <!-- SUBTITLE: -->
 
-# Data Access
+# Data access
 
 This article will walk you through different ways of data extraction, from [managing connections](#connections) to data sources and running queries, to [using REST APIs](#rest-endpoints), and to [reading files](#reading-files) into dataframe objects in your application.
 
@@ -17,7 +17,7 @@ In the Datagrok platform, you can retrieve data from a variety of sources, be it
 
 Let's outline a general workflow for accessing data using connections. You will add a connection to your package, use it to query the database, and get a dataframe after running the query in JavaScript code. This is how you obtain the data for further work.
 
-### Adding Connections
+### Adding connections
 
 As with everything else, development starts with a [package](../develop.md#packages). Packages may contain one or more data connections under the `connections` folder. For each connection, you need to create a separate `json` file with the required parameters. Here is an example:
 
@@ -106,7 +106,7 @@ When providing a connection string, you do not have to pass other parameters, as
 }
 ```
 
-### Managing Credentials
+### Managing credentials
 
 Private information is always a special case. Datagrok has a built-in credentials management system that protects such data (for more details, see the [Security](../../govern/security.md#credentials-storage) article). For this reason, parameters of a connection that regulate access to the resource are processed independently. Therefore, you should not include these parameters to a custom connection string. However, pushing them in a `json` file to your project's repository is not a good idea either:
 
@@ -125,7 +125,7 @@ What you can do instead is to deploy a connection and send a POST request to `$(
 
 ### Queries
 
-#### Creating Queries
+#### Creating queries
 
 Once the connection is established, the next step is to extract data. This can be done by sending a [query](../../access/data-query.md) to the data source. In a package, queries are typically placed in the `queries` folder. Let's start with a simple example for your `queries.sql` file:
 
@@ -142,7 +142,7 @@ To use an existing connection in a query, specify its name along with the namesp
 
 You can find a list of header parameters and other details related to the query annotation in [this article](../../access/parameterized-queries.md). In addition to this, examples of data queries are available in the [Chembl](https://github.com/datagrok-ai/public/tree/master/packages/Chembl/queries) package. To quickly insert a query template into your package, type `grok add query <name>` in the terminal.
 
-#### Executing Queries
+#### Executing queries
 
 There are several ways in which queries can be run in Datagrok. The first and most natural way is to launch a query from the interface, which will be equivalent to the line `$(PACKAGE_NAME):$(QUERY_NAME)()` in the console, for example, `Chembl:ProteinClassification()`. As you might know, it is possible to call any function that can be run in the console through Datagrok's JS API. Thus, the fact that a query behaves like a regular function allows us to use the corresponding method in JavaScript:
 
@@ -159,15 +159,15 @@ grok.data.query(`${PACKAGE_NAME}:${QUERY_NAME}`, {'parameter': 'value'}, true, 1
 
 See how this method works in the [example](https://public.datagrok.ai/js/samples/data-access/parameterized-query) on Datagrok.
 
-### Sharing Connections
+### Sharing connections
 
 Data connections can be shared as part of a [project](../../overview/project.md), [package](../develop.md#packages) (and [repository](../../access/connectors/git.md) containing this package), or as an independent [entity](../../overview/objects.md). Access rights of a database connection inherit access rights of a query. However, access rights of the query don't inherit access rights of the database connection. Thus, if one shares a query, the associated database connection shall automatically be shared. At the same time, when you are sharing a connection, your queries aren't going to be shared automatically. As for web queries, they are automatically shared along with sharing the corresponding connection.
 
-### Database Connection Caching
+### Database connection caching
 
 Caching query results is quite straightforward — all you need to do is setting the `cacheResults` parameter to `true`. Saving relies on the current connection parameters and the query name, if those remain unchanged, you will get the cached results. A similar setting exists at the query level as well: `--meta.cache: true`.
 
-## REST Endpoints
+## Rest endpoints
 
 Web services provide endpoints that you can programmatically connect to. There are two main options for this: the first is to use [OpenAPI/Swagger](https://swagger.io/docs/specification/about/) format supported by Datagrok, the second one involves the [use of the platform's server](https://dev.datagrok.ai/js/samples/dapi/fetch) to send a network request. The details of Swagger-based connections are further explained in the [dedicated article](../../access/open-api.md). The method used to proxy requests has an interface similar to the standard `fetch` API and can be applied as follows:
 
@@ -182,11 +182,11 @@ grok.dapi.fetchProxy(url, {
 }).then(response => grok.shell.info(response.ok));
 ```
 
-## Reading Files
+## Reading files
 
 In addition to connections and queries, it is useful to look at methods for reading files. In our [JavaScript API examples](https://public.datagrok.ai/js), you can find methods that provide data for demonstration (`grok.data.demo` or `grok.data.getDemoTable`) and testing purposes (`grok.data.testData`). However, here we will cover the part that you will often use to deliver data to your applications.
 
-### Package Files
+### Package files
 
 If you want to access data that resides within your package (e.g. open a `csv` table), load it from URL, as you would do with other [external files](https://public.datagrok.ai/js/samples/data-access/external/stock-prices). The package root for client side can be found with `webRoot` property. The example shown below gets the `test.csv` table from the `data-samples` subdirectory and opens a table view for it:
 
@@ -197,7 +197,7 @@ grok.data.loadTable(`${_package.webRoot}data-samples/test.csv`)
   .then(t => grok.shell.addTableView(t));
 ```
 
-### File Shares
+### File shares
 
 Connecting to [file shares](../../access/file-shares.md) offers you more opportunities: files form a hierarchy, which you can browse naturally from the interface. Let's start with an existing file share — the user's home directory. In Datagrok's [file browser](https://public.datagrok.ai/files), each user has a special `HOME` folder to store their files, which makes it a perfect example. Here is how you can work with your files located there:
 
@@ -251,7 +251,7 @@ All the `dapi.files` methods are asynchronous.
 This [example](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/dapi/files.js) provides
 a full understanding of the `files` API.
 
-### Other Ways for Reading Files
+### Other ways for reading files
 
 Finally, let's walk through other methods that can be used to open files from JavaScript:
 
@@ -260,9 +260,9 @@ Finally, let's walk through other methods that can be used to open files from Ja
 
 See also:
   * [JavaScript Development](../develop.md)
-  * [Data Connection](../../access/data-connection.md)
-  * [Data Query](../../access/data-query.md)
-  * [Data Job](../../access/data-job.md)
-  * [File Shares](../../access/file-shares.md)
+  * [Data connection](../../access/data-connection.md)
+  * [Data query](../../access/data-query.md)
+  * [Data job](../../access/data-job.md)
+  * [File shares](../../access/file-shares.md)
   * [Functions](../../overview/functions/function.md)
-  * [Parameterized Queries](../../access/parameterized-queries.md)
+  * [Parameterized queries](../../access/parameterized-queries.md)

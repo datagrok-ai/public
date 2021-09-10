@@ -1,7 +1,7 @@
-<!-- TITLE: Text to Columns -->
+<!-- TITLE: Text to columns -->
 <!-- SUBTITLE: -->
 
-# Text to Columns
+# Text to columns
 
 Splits textual data from the specified column into other columns, based on the specified delimiter.
 

@@ -1,14 +1,14 @@
-<!-- TITLE: File Shares -->
+<!-- TITLE: File shares -->
 <!-- SUBTITLE: -->
 
-# Connecting to File Shares
+# Connecting to file shares
 
 File shares are a popular choice for storing datasets due to its 
 ubiquitousness, ease of use, and hierarchical structure. Datagrok 
 provides an easy way to connect to it and use files in a secure,
 manageable way.
 
-## Adding a File Share
+## Adding a file share
 
 In Datagrok, file share is a [data connection](data-connection.md), 
 and as such inherits all its properties and features, such as privileges.
@@ -27,7 +27,7 @@ To share it with others, right-click on the connection, and select "Share...".
 
 Expand the connection node to browse files.
 
-## Browsing Files
+## Browsing files
 
 There are multiple ways to browse file shares. Open `File | Connect to Data...`,
 and expand the corresponding connection under the 'Files' section.
@@ -58,6 +58,6 @@ To enable indexing, set the `Index files` flag in the
 
 See also:
 
-  * [Data Connection](data-connection.md)
-  * [Indexing File Shares](files-indexer.md)
-  * [Data Job](data-job.md)
+  * [Data connection](data-connection.md)
+  * [Indexing file shares](files-indexer.md)
+  * [Data job](data-job.md)
