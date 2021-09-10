@@ -226,7 +226,7 @@ export class MultiPlotViewer extends DG.JsViewer {
           left: '3px',
           top: parseFloat(this.echartOptions.title[i].top)+ plot.floatHeight / 2 - 6,
           text: plot.condition.value,
-          textStyle: {fontSize: 12, height: 8},
+          textStyle: {fontSize: 12, height: 8, width: 50, overflow: 'truncate'},
         });
       }
       this.echartOptions.grid[visibleIndex].left = '82px';
@@ -242,6 +242,8 @@ export class MultiPlotViewer extends DG.JsViewer {
       this.echartOptions.yAxis[visibleIndex].type = this.plots[i].yType || 'value';
       this.echartOptions.yAxis[visibleIndex].show = this.plots[i].show;
       this.echartOptions.yAxis[visibleIndex].triggerEvent = true;
+      this.echartOptions.yAxis[visibleIndex].axisLabel = {width: plot.yLabelWidth};
+      this.echartOptions.yAxis[visibleIndex].axisLabel.overflow = plot.yLabelOverflow;
 
       let currentSeries = {
         type: this.plots[i].series.type,
@@ -298,11 +300,11 @@ export class MultiPlotViewer extends DG.JsViewer {
         plot.categoryColumnIndex = xCols;
         this.plots[i].subjectCol = this.tables[this.plots[i].tableName].getCol(this.plots[i].y);
         this.plots[i].subjects = this.plots[i].subjectCol.categories;
-        this.plots[i].subjects = this.plots[i].subjects.map(
+       /*  this.plots[i].subjects = this.plots[i].subjects.map(
             ((s : string) => {
               return s.length > this.categoryLength ? s.substring(0, this.categoryLength) + '...' : s;
             }),
-        );
+        ); */
         this.plots[i].subjBuf = this.plots[i].subjectCol.getRawData();
       }
 
@@ -550,14 +552,14 @@ export class MultiPlotViewer extends DG.JsViewer {
           indexes,
           plot.condition,
       );
-      if (plot.categoryColumnIndex) {
+/*       if (plot.categoryColumnIndex) {
         for (let i=0; i<data.length; i++) {
           data[i][plot.categoryColumnIndex] = this.utils.trimCategoryString(
               data[i][plot.categoryColumnIndex],
               this.categoryLength,
           );
         }
-      }
+      } */
       plot.series.data = data;
 
       if (plot.type != 'timeLine') {
@@ -588,7 +590,7 @@ export class MultiPlotViewer extends DG.JsViewer {
       console.log('zoom ', e);
     });
 
-    this.echart.on('brushSelected', (e) => {
+    this.echart.on('brushSelected', (e: any) => {
       this.mode = 'brushSelected';
       console.log('brush selected ', e);
       if (e.batch.length === 0) return;
@@ -650,19 +652,20 @@ export class MultiPlotViewer extends DG.JsViewer {
       const iPlot : number = this.visibleIndexes[params.componentIndex];
       const table : DG.DataFrame = this.tables[this.plots[iPlot].tableName];
       const subjBuf = this.plots[iPlot];
-
       const x = (params.event.event as MouseEvent).x + this.tooltipOffset;
       const y = (params.event.event as MouseEvent).y + this.tooltipOffset;
-      const xColName = this.plots[iPlot].x;
-      const yColName = this.plots[iPlot].y;
-      const colNames = [xColName, yColName];
+      const xColName = this.utils.getArrayOfColumnNames(this.plots[iPlot].x);
+      const yColName = this.utils.getArrayOfColumnNames(this.plots[iPlot].y);
+      let colNames = xColName.concat(yColName);
+      if (this.plots[iPlot].extraFields) colNames = colNames.concat(this.plots[iPlot].extraFields);
       const val = params.value[1];
 
       if (params.componentType === 'yAxis') {
         if (this.isGroup(params.componentIndex, params.componentType)) {
-          ui.tooltip.showRowGroup(table, (i) => {
+          /* ui.tooltip.showRowGroup(table, (i) => {
             return params.value === this.plots[iPlot].subjects[this.plots[iPlot].subjBuf[i]];
-          }, x, y);
+          }, x, y); */
+          ui.tooltip.show(ui.div([params.value as string]), x, y);
         }
       }
 
@@ -672,11 +675,14 @@ export class MultiPlotViewer extends DG.JsViewer {
               (params.data as any[]).map((e, i) => ui.div([colNames[i] + ': ' + e + ''])),
           ), x, y);
         } else {
-          ui.tooltip.showRowGroup(table, (i) => {
+         /*  ui.tooltip.showRowGroup(table, (i) => {
             return params.value[0] === this.plots[iPlot].subjects[this.plots[iPlot].subjBuf[i]]; // &&
             //            params.value[1] === (this.startCol.isNone(i) ? null : this.startBuf[i]) &&
             //          params.value[2] === (this.endCol.isNone(i) ? null : this.endBuf[i]);
-          }, x, y);
+          }, x, y); */
+          ui.tooltip.show(ui.divV(
+            (params.data as any[]).map((e, i) => ui.div([colNames[i] + ': ' + e + ''])),
+        ), x, y);
         }
       } // series
     }); // mouseover
@@ -770,7 +776,7 @@ export class MultiPlotViewer extends DG.JsViewer {
       this.root.appendChild(inputClose);
     }
 
-    // create combobox with categories
+/*      // create combobox with categories
     this.categoryCombos = [];
     for (let i=0; i<this.plots.length; i++) {
       const plot = this.plots[i];
@@ -790,8 +796,17 @@ export class MultiPlotViewer extends DG.JsViewer {
         categCombo.root.style.top = (40 * i) + 'px';
         categCombo.root.querySelector('select').style.borderBottom = '0px';
       }
-    }
+    }  */
   } // createElements
+
+
+  updatePlotByCategory(plotIndex: number, category: string){
+    this.plots[plotIndex].currentCat = category;
+    this.plots[plotIndex].condition.value = category;
+    this.updateFilter();
+    this.render();
+  }
+
 
   render(): void {
     console.log('set echart options: ', this.echartOptions);

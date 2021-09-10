@@ -6,7 +6,8 @@
 	"dependencies": {
 		"datagrok-api": "latest",
 		"wu": "latest",
-		"echarts": "^5.0.0"
+		"echarts": "^5.0.0",
+		"echarts-wordcloud": "^2.0.0"
 	},
 	"scripts": {
 		"charts-local": "webpack && grok publish local --rebuild --release",

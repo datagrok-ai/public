@@ -1,9 +1,115 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
-# 2021-09-03 dev build 0.93.18
+# 2021-09-09 Dev build 0.93.22
 
-## Latest docker images
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.22`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* added hospitalization and drug related ae to Kaplan-Meier endpoints, added ability to choose lab values on Patient profile 
+* fized tooltips, yAxesLabels and linechart title in multiplot 
+* Update package.ts 
+* (Bug) Functions cannot be cached if called from server-side 
+* Fixed tests 
+
+
+# 2021-09-09 Dev build 0.93.21
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.21`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* JS API: Create percentile calculation function 
+* Clarified what the percentile function is. 
+* Histogram: Ability to add x-values of splines 
+
+
+# 2021-09-08 Dev build 0.93.20
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.20`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Charts: fix a package publication error 
+* JS API: update MapChangeArgs interface 
+* #53 Tutorials package: change node placement 
+* #53 Tutorials package: EDA: viewers (WIP) 
+* JS API: add event args types to onViewerAdded/onViewerClosed 
+* Selenium: Add attributes "name" to elements of the new AddNewColumn dialog 
+* Oligo Batch Calculator: detect errors when code table contains one-char and two-chars codes 
+* Sequence Translator: Creating a mol file from the landing page 
+* Pairwise sequences alignment 
+* Change endpoints to use new divided cvm images (WIP)
+* Fixed warning 
+* (Bug) Functions cannot be cached if called from server-side 
+* Histogram: Ability to add x-values of splines 
+
+
+# 2021-09-07 Dev build 0.93.19
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.19`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* corrections of ui for survival view 
+* Form: Allow editing labels 
+* Peptides: generate a dataset for further analysis 
+* (Bug) Grok connect: query isn't logged on exception 
+* #101: Charts: Trellis plot: category slider width is suboptimal sometimes when rendering molecules 
+* #102: Remember window settings visibility (toolbox, property panel, etc) between sessions 
+* Providing function name when throwing a function call validation error 
+* Filters wiki page update 
+* Wiki: Dataframe (WIP)
+* updated survival analysis view 
+* Defaulted showPropeties to true. 
+* Css fix 
+* (Bug) New “marker-by” scatterplot feature fails rendering with many data points 
+* Fixed typos 
+* #104 Wiki: Library tour 
+* (Bug) Job: CallFunc processing error 
+* Wiki: Update filter help 
+* Add ui.switch to examples and docs 
+* added creation of survival dataset (for first SAE occurance), updated survival analisys view 
+* UI improvements in survival analysis view 
+* ApiSamples: fixed a typo. 
+* Popup Menu: Ability to add icon groups 
+* Scatter Plot: Icons for Marker Shapes in Popup menu 
+* Docker Compose: a new CVM yaml file. 
+* Docker Compose: adding an old yaml for history. 
+* Docker Compose: removing the old yaml. 
+* Docker Compose: linkified the Docker yaml. 
+* Wiki: Custom machine learning models. Cleanup 
+* Wiki: Custom machine learning models. Links 
+
+
+# 2021-09-03 Dev build 0.93.18
+
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.93.18`
@@ -11,7 +117,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * Datlas: add deploy logging 
 * sdf reader fix 
@@ -54,9 +160,9 @@
 * Revert "Bar chart: add collaborative filtering #85" 
 
 
-# 2021-08-31 dev build 0.93.17
+# 2021-08-31 Dev build 0.93.17
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.93.17`
@@ -64,7 +170,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * Package content validation: refine missing export statement check 
 * Custom ML: add blob support for JS engines 
@@ -81,9 +187,9 @@
 * Histogram: Display bands (WIP)
 
 
-# 2021-08-30 dev build 0.93.16
+# 2021-08-30 Dev build 0.93.16
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.93.16`
@@ -91,7 +197,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * Scatter Plot: Change caption for Markers in popup menu (Type -> Shape) 
 * #53 Tutorials package: Data connectors tutorial 
@@ -101,9 +207,9 @@
 * Updatd public token 
 
 
-# 2021-08-30 dev build 0.93.15
+# 2021-08-30 Dev build 0.93.15
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.93.15`
@@ -111,7 +217,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * JS API: Dialog.inputs 
 * Can't execute .applyFormula on column without formula tag #95 
@@ -120,9 +226,9 @@
 * Data on demand (WIP)
 
 
-# 2021-08-30 dev build 0.93.14
+# 2021-08-30 Dev build 0.93.14
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.93.14`
@@ -130,7 +236,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * Script Editor, snippets menu 
 * Form: Column Selector 
@@ -158,9 +264,9 @@
 * Data on demand (WIP)
 
 
-# 2021-08-26 dev build 0.93.13
+# 2021-08-26 Dev build 0.93.13
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.93.13`
@@ -168,7 +274,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * (Bug) Scatter Plot: Dot style chart stay on the top left corner of the canvas 
 * AddNewColumn editor: allow changing the column name during editing 
@@ -193,9 +299,9 @@
 * updated clinical demo files project 
 
 
-# 2021-08-25 dev build 0.93.12
+# 2021-08-25 Dev build 0.93.12
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.93.12`
@@ -203,7 +309,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * (Bug) Filters: Empty value filter option is missing 
 * Scatter Plot: allow using multiple marker shapes 
@@ -244,9 +350,9 @@
 * Scatter Plot: adjust current row / mouse over row appearance when the marker shape changes 
 
 
-# 2021-08-20 dev build 0.93.11
+# 2021-08-20 Dev build 0.93.11
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.93.11`
@@ -254,7 +360,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * Top menu and Popup menu. Add ".endgroup()" method for closing the group of items 
 * DevTools package 
@@ -275,9 +381,9 @@
 * AddNewColumn: onMetadataChanged 
 
 
-# 2021-08-18 dev build 0.93.10
+# 2021-08-18 Dev build 0.93.10
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.93.10`
@@ -285,7 +391,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * PowerPack: Described Power Widgets and Power Search 
 * Document drawing events 
@@ -293,9 +399,9 @@
 * (Bug) JSAPI: Can't pass null to the function because of validation 
 
 
-# 2021-08-18 dev build 0.93.9
+# 2021-08-18 Dev build 0.93.9
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.93.9`
@@ -303,7 +409,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * datagrok-tools: update package template (WIP)
 * #53 Tutorials package 
@@ -338,9 +444,9 @@
 * Fixed a bug that created two views of the same object 
 
 
-# 2021-08-13 dev build 0.93.8
+# 2021-08-13 Dev build 0.93.8
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.93.8`
@@ -348,7 +454,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * Widgets update 
 * Pie Chart: Auto determine whether to display labels on small segments 
@@ -367,9 +473,9 @@
 * Change endpoints to use new divided cvm images (WIP)
 
 
-# 2021-08-12 dev build 0.93.7
+# 2021-08-12 Dev build 0.93.7
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.93.7`
@@ -377,7 +483,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * DevTools: annotate API examples 
 * Wiki: Parameterized queries (WIP)
@@ -387,9 +493,9 @@
 * Function parameter editor (WIP)
 
 
-# 2021-08-12 dev build 0.93.6
+# 2021-08-12 Dev build 0.93.6
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.93.6`
@@ -397,7 +503,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * Removed the "shift-drag on axes" action description 
 * (Bug) Scatter Plot: Points are not displayed if you change the markers type from hamburger menu 
@@ -419,9 +525,9 @@
 * Pie Chart: Auto width for legend 
 
 
-# 2021-08-10 dev build 0.93.5
+# 2021-08-10 Dev build 0.93.5
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.93.5`
@@ -429,7 +535,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * (Bug) Pie Chart: If you add Shift, then area when hovering over the segments is displayed incorrectly 
 * (Bug) Pie Chart: Chart is cut-off at the left if you add shift 
@@ -455,9 +561,9 @@
 * Implement function scheduler 
 
 
-# 2021-08-09 dev build 0.93.4
+# 2021-08-09 Dev build 0.93.4
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.93.4`
@@ -465,7 +571,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * Wiki: Simplify Develop and Getting Started (WIP)
 * Bar Chart: with the `include nulls` property off, the legend should not mention (no value) 
@@ -519,9 +625,9 @@
 * Update learning-widget.ts 
 
 
-# 2021-08-04 dev build 0.93.3
+# 2021-08-04 Dev build 0.93.3
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.93.3`
@@ -529,14 +635,14 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * (Bug) View.grid throws an exception if there is no grid in the layout 
 
 
-# 2021-08-04 dev build 0.93.2
+# 2021-08-04 Dev build 0.93.2
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.93.2`
@@ -544,7 +650,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * (Bug) Bar chart: null values ​​are not indicated 
 * MultiPlot: change color of marker of the status chart according to value and min and max columns 
@@ -560,9 +666,9 @@
 * Documented the Color class. 
 
 
-# 2021-08-03 dev build 0.93.1
+# 2021-08-03 Dev build 0.93.1
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.93.1`
@@ -570,7 +676,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * JS API: Some improvements of info-bar 
 * Wiki: File Browsing and Sharing (WIP)
@@ -610,9 +716,9 @@
 * Create property-panel.js 
 
 
-# 2021-07-29 stable version 0.93.0
+# 2021-07-29 Stable version 0.93.0
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.93.0`
@@ -623,7 +729,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * fixes regression in 2D layout alignment of unknown origin 
 * Chem package version 0.9.8, bump. 
@@ -780,7 +886,7 @@
 * Renamed "UsageAnalysisUI" to "UsageAnalysis" 
 * AutoGen code rebuild (pub get and build execution) 
 * Renamed PowerPack to meet both npm and DG conventions 
-* Simplified Datagrok installation instructions 
+* Simplified datagrok installation instructions 
 * [(Bug) JS API: df.replace won't work on a column with the same name](https://community.datagrok.ai/t/annot-replace-a-column-with-a-column-with-the-same-name/528) 
 * (Bug) Connectors: output table files for debug 
 * JS API: Advanced Func API (WIP)
@@ -1205,9 +1311,9 @@
 * Remove unused code 
 
 
-# 2021-07-27 dev build 0.92.35
+# 2021-07-27 Dev build 0.92.35
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.92.35`
@@ -1215,15 +1321,15 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * Disable NGINX logging (and other logging) in DG docker image 
 * Multi linechart (WIP)
 
 
-# 2021-07-27 dev build 0.92.34
+# 2021-07-27 Dev build 0.92.34
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.92.34`
@@ -1231,7 +1337,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * DevTools package (WIP)
 * (Bug) Scatter Plot: Regression line appear without activation (WIP)
@@ -1247,9 +1353,9 @@
 * (Bug) DataSync doesn't work with Grok Connect 
 
 
-# 2021-07-26 dev build 0.92.33
+# 2021-07-26 Dev build 0.92.33
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.92.33`
@@ -1257,7 +1363,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * MultiPlot: fix types 
 * JS API: Get color for cell / category 
@@ -1271,9 +1377,9 @@
 * MultiPlot: type casting 
 
 
-# 2021-07-25 dev build 0.92.32
+# 2021-07-25 Dev build 0.92.32
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.92.32`
@@ -1281,7 +1387,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * layout templates (update) 
 * add helpUrl example 
@@ -1291,9 +1397,9 @@
 * (Bug) Viewers: the legend colors are not synchronized 
 
 
-# 2021-07-25 dev build 0.92.31
+# 2021-07-25 Dev build 0.92.31
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.92.31`
@@ -1301,14 +1407,14 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * Ability to skip DF reading on server after Grok Connect request 
 
 
-# 2021-07-24 dev build 0.92.30
+# 2021-07-24 Dev build 0.92.30
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.92.30`
@@ -1316,16 +1422,16 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * MultiPlot: restore status chart (WIP)
 * DevTools package (WIP)
 * Ability to skip DF reading on server after Grok Connect request 
 
 
-# 2021-07-24 dev build 0.92.29
+# 2021-07-24 Dev build 0.92.29
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.92.29`
@@ -1333,14 +1439,14 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * Ability to skip DF reading on server after Grok Connect request 
 
 
-# 2021-07-23 dev build 0.92.28
+# 2021-07-23 Dev build 0.92.28
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.92.28`
@@ -1348,14 +1454,14 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * Ability to skip DF reading on server after Grok Connect request 
 
 
-# 2021-07-23 dev build 0.92.27
+# 2021-07-23 Dev build 0.92.27
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.92.27`
@@ -1363,16 +1469,16 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * DevTools package (WIP)
 * Sequence Translator: README documentation (WIP)
 * Ability to skip DF reading on server after Grok Connect request 
 
 
-# 2021-07-23 dev build 0.92.26
+# 2021-07-23 Dev build 0.92.26
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.92.26`
@@ -1380,15 +1486,15 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * Ability to skip DF reading on server after Grok Connect request 
 * DevTools package (WIP)
 
 
-# 2021-07-23 dev build 0.92.25
+# 2021-07-23 Dev build 0.92.25
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.92.25`
@@ -1396,7 +1502,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * (Bug) Grok connect: "No suitable driver found for..." 
 * Updated public token 
@@ -1407,9 +1513,9 @@
 * MultiPlot: move scripts according to the structure convention (WIP)
 
 
-# 2021-07-23 dev build 0.92.24
+# 2021-07-23 Dev build 0.92.24
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.92.24`
@@ -1417,7 +1523,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * (Bug) JSViewer: TypeError: v.setOptions is not a function 
 * JS API: tableInput 
@@ -1427,9 +1533,9 @@
 * MultiPlot: restore status chart (WIP)
 
 
-# 2021-07-22 dev build 0.92.23
+# 2021-07-22 Dev build 0.92.23
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.92.23`
@@ -1437,7 +1543,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * (Bug) Custom ML: feature names are not available in an apply script 
 * (Bug) Custom ML: don't show dataframe from apply 
@@ -1454,9 +1560,9 @@
 * Updated public 
 
 
-# 2021-07-21 dev build 0.92.22
+# 2021-07-21 Dev build 0.92.22
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.92.22`
@@ -1464,7 +1570,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * MultiPlot: select on click 
 * SketcherBase: a common interface for molecular sketchers 
@@ -1488,9 +1594,9 @@
 * JS API: Add helpUrl support in ui.dialog 
 
 
-# 2021-07-20 dev build 0.92.21
+# 2021-07-20 Dev build 0.92.21
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.92.21`
@@ -1498,7 +1604,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * Add New Column: ColumnGrid Widget 
 * Modified dev documentation 
@@ -1535,9 +1641,9 @@
 * (Bug) JS API: properties cannot be changed in JsViewer (JsViewer.props and JsViewer.setOptions result in errors) 
 
 
-# 2021-07-18 dev build 0.92.20
+# 2021-07-18 Dev build 0.92.20
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.92.20`
@@ -1545,7 +1651,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * Line Chart: support for multiple Y axes 
 * Line Chart: MultiAxis: double-click (choosing a primary series) should have no effect 
@@ -1564,9 +1670,9 @@
 * Updated public token; Added beta-user 
 
 
-# 2021-07-16 dev build 0.92.19
+# 2021-07-16 Dev build 0.92.19
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.92.19`
@@ -1574,7 +1680,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * Added debug prints to  ExternalDataProvider 
 * MultiPlot: add click support 
@@ -1593,9 +1699,9 @@
 * Updated help index, minor changes 
 
 
-# 2021-07-15 dev build 0.92.18
+# 2021-07-15 Dev build 0.92.18
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.92.18`
@@ -1603,7 +1709,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * (Bug) Grok connect: "The method execute() cannot take arguments" error with query parameters  (WIP)
 * ClinicalCase \- a plugin for analyzing SDTM-based clinical studies data (WIP)
@@ -1611,9 +1717,9 @@
 * (Bug) MS SQL: Schemas are empty (WIP)
 
 
-# 2021-07-15 dev build 0.92.17
+# 2021-07-15 Dev build 0.92.17
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.92.17`
@@ -1621,7 +1727,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * Adde pubspec to speed-up packages resolving 
 * Custom ML functions (WIP)
@@ -1631,9 +1737,9 @@
 * PowerPack: Removed Function widget from Welcome screen 
 
 
-# 2021-07-15 dev build 0.92.16
+# 2021-07-15 Dev build 0.92.16
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.92.16`
@@ -1641,7 +1747,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * Revert "Normalize and prettify 2D layouts" 
 * Same as #PR 39 but with a bug fix for failures in reduce 
@@ -1649,9 +1755,9 @@
 * Updated public token 
 
 
-# 2021-07-14 dev build 0.92.15
+# 2021-07-14 Dev build 0.92.15
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.92.15`
@@ -1659,7 +1765,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * Sequence Translator: set default translation examples 
 * Oligo Batch Calculator: normalize UI 
@@ -1855,9 +1961,9 @@
 * Oligo Batch Calculator: check for characters/words outside of allowed set, distinguish rows (WIP)
 
 
-# 2021-06-24 dev build 0.92.14
+# 2021-06-24 Dev build 0.92.14
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.92.14`
@@ -1865,14 +1971,14 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * (Bug) Share button doesn't work for projects 
 
 
-# 2021-06-24 dev build 0.92.13
+# 2021-06-24 Dev build 0.92.13
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.92.13`
@@ -1880,15 +1986,15 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * (Bug) JS API: JsViewerLoader.instance sometimes returns null instead of jsViewer  
 * (Bug) Notebook sharing doesn't work 
 
 
-# 2021-06-24 dev build 0.92.12
+# 2021-06-24 Dev build 0.92.12
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.92.12`
@@ -1896,7 +2002,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * Fixed project deploy 
 * Connections: add system connections  
@@ -1959,9 +2065,9 @@
 * Line-height fix 
 
 
-# 2021-06-18 dev build 0.92.11
+# 2021-06-18 Dev build 0.92.11
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.92.11`
@@ -1969,14 +2075,14 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * (Bug) Grid: empty space on the right 
 * (Bug) Filters: filter component state is different across pages 
 * Update ui.md 
 * SequenceTranslator: svg color adjustments 
 * Oligo Batch Calculator: create initial version and test on files 
-* Create Datagrok installation instructions (v.2) 
+* Create datagrok installation instructions (v.2) 
 * Correct Markdown view of instructions 
 * Deploy: test connections migration (WIP)
 * Connections: add system connections  
@@ -1989,7 +2095,7 @@
 * Renamed "UsageAnalysisUI" to "UsageAnalysis" 
 * AutoGen code rebuild (pub get and build execution) 
 * Renamed PowerPack to meet both npm and DG conventions 
-* Simplified Datagrok installation instructions 
+* Simplified datagrok installation instructions 
 * [(Bug) JS API: df.replace won't work on a column with the same name](https://community.datagrok.ai/t/annot-replace-a-column-with-a-column-with-the-same-name/528) 
 * (Bug) Connectors: output table files for debug 
 * JS API: Advanced Func API (WIP)
@@ -2016,9 +2122,9 @@
 * Updated public token 
 
 
-# 2021-06-15 dev build 0.92.10
+# 2021-06-15 Dev build 0.92.10
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.92.10`
@@ -2026,7 +2132,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * Update generate-html-help.side 
 * Handling the case when an existing column is being replaced 
@@ -2054,9 +2160,9 @@
 * (Bug) Log export hangs 
 
 
-# 2021-06-14 dev build 0.92.9
+# 2021-06-14 Dev build 0.92.9
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.92.9`
@@ -2064,7 +2170,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * Sequence Translator | AXOLABS: Add tooltips for field headers which do not fit completely (WIP)
 * Fixed int to double type mismatch 
@@ -2091,9 +2197,9 @@
 * Updated public token 
 
 
-# 2021-06-10 dev build 0.92.8
+# 2021-06-10 Dev build 0.92.8
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.92.8`
@@ -2101,7 +2207,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * (Bug) Func: not handled exception 
 * Grok connect: tests (WIP)
@@ -2141,9 +2247,9 @@
 * Timelines: toggle zoom sliders 
 
 
-# 2021-06-07 dev build 0.92.7
+# 2021-06-07 Dev build 0.92.7
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.92.7`
@@ -2151,7 +2257,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * SequenceTranslator: flexible Axolabs sequence conversion (WIP)
 * Function View (WIP)
@@ -2199,9 +2305,9 @@
 * Fixed indentation 
 
 
-# 2021-06-01 dev build 0.92.6
+# 2021-06-01 Dev build 0.92.6
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.92.6`
@@ -2209,7 +2315,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * chem curation description added 
 * SequenceTranslator: flexible Axolabs sequence conversion (WIP)
@@ -2267,9 +2373,9 @@
 * CVM: Octave to Matlab compliance (WIP)
 
 
-# 2021-05-27 dev build 0.92.5
+# 2021-05-27 Dev build 0.92.5
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.92.5`
@@ -2277,7 +2383,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * Help: Ordering in chapters 
 * DevTools: add the `Snippets` pane (WIP)
@@ -2298,9 +2404,9 @@
 * Fixed analyzer warning 
 
 
-# 2021-05-24 dev build 0.92.4
+# 2021-05-24 Dev build 0.92.4
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.92.4`
@@ -2308,7 +2414,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * PivotViewer 
 * (Bug) Miniconda hangs CVM builds (WIP)
@@ -2316,9 +2422,9 @@
 * PowerPack: Compare Columns fixes 
 
 
-# 2021-05-22 dev build 0.92.3
+# 2021-05-22 Dev build 0.92.3
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.92.3`
@@ -2326,7 +2432,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * (Bug) Miniconda hangs CVM builds (WIP)
 * Dataframe: Detect column max significant digits in CSV loading (WIP)
@@ -2341,9 +2447,9 @@
 * Dialog should have ui-panel class 
 
 
-# 2021-05-21 dev build 0.92.2
+# 2021-05-21 Dev build 0.92.2
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.92.2`
@@ -2351,7 +2457,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * PowerPack: rewrite Compare Columns to TypeScript 
 * (Bug) Log export hands 
@@ -2361,9 +2467,9 @@
 * Dataframe: Detect column max significant digits in CSV loading (WIP)
 
 
-# 2021-05-21 dev build 0.92.1
+# 2021-05-21 Dev build 0.92.1
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.92.1`
@@ -2371,7 +2477,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * fixes regression in 2D layout alignment of unknown origin 
 * Chem package version 0.9.8, bump. 
@@ -2444,9 +2550,9 @@
 * JS API: ScatterPlot: add viewport 
 
 
-# 2021-05-10 stable version 0.92.0
+# 2021-05-10 Stable version 0.92.0
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.92.0`
@@ -2457,7 +2563,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * (Bug) Chem: R-Groups Analysis with client RDKit 
 * Ability to share files 
@@ -2569,9 +2675,9 @@
 * Biosignals: parallel zoom for lineCharts (WIP)
 
 
-# 2021-05-05 dev build 0.91.10
+# 2021-05-05 Dev build 0.91.10
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.91.10`
@@ -2579,7 +2685,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * Chord Diagram (WIP)
 * datagrok-tools version 4.1.2, bump 
@@ -2592,9 +2698,9 @@
 * sequenceTranslator: MM12 Sequence Conversion (WIP)
 
 
-# 2021-05-04 dev build 0.91.9
+# 2021-05-04 Dev build 0.91.9
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.91.9`
@@ -2602,14 +2708,14 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * BarChart categories error 
 
 
-# 2021-05-04 dev build 0.91.8
+# 2021-05-04 Dev build 0.91.8
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.91.8`
@@ -2617,7 +2723,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * PhyloTreeViewer: JS-based phylogenetic tree visualisation (WIP)
 * Packages: beta flag (WIP)
@@ -2628,9 +2734,9 @@
 * sequenceTranslator: use functions to display default translations 
 
 
-# 2021-05-04 dev build 0.91.7
+# 2021-05-04 Dev build 0.91.7
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.91.7`
@@ -2638,7 +2744,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * (Bug) Core: default tooltip config is no longer saved with layout (WIP)
 * (Bug) JS Viewer: Incorrect height calculation 
@@ -2651,9 +2757,9 @@
 * (Bug) Bar Chart: coloring gets only applied when editing colors in a grid column 
 
 
-# 2021-05-03 dev build 0.91.6
+# 2021-05-03 Dev build 0.91.6
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.91.6`
@@ -2661,7 +2767,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * BioSignals: option to delete accordion pane 
 * (Bug) Grok connect: can't connect to MsSQL using TLS10 (WIP)
@@ -2679,9 +2785,9 @@
 * (Bug) Chem: several molecule filters won't work together (WIP)
 
 
-# 2021-04-30 dev build 0.91.5
+# 2021-04-30 Dev build 0.91.5
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.91.5`
@@ -2689,7 +2795,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * RepertoireBrowser: gff annotations 
 * BioSignals: rename input variables of scripts to camelCase to show them properly in the UI (split into words) 
@@ -2702,9 +2808,9 @@
 * (Bug) Queries: "Converting object to an encodable object failed" with dataframe as parameter 
 
 
-# 2021-04-29 dev build 0.91.4
+# 2021-04-29 Dev build 0.91.4
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.91.4`
@@ -2712,7 +2818,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * Update package.png 
 * (Bug) Grid: html cells are not re-rendered after sorting a column 
@@ -2720,9 +2826,9 @@
 * Prevent socket memory consuming (WIP)
 
 
-# 2021-04-29 dev build 0.91.3
+# 2021-04-29 Dev build 0.91.3
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.91.3`
@@ -2730,7 +2836,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * BioSignals: choose input signal from context 
 * do not crash on an empty substructure library 
@@ -2769,9 +2875,9 @@
 * BioSignals: add possibility to enter sampling frequency for local files 
 
 
-# 2021-04-26 dev build 0.91.2
+# 2021-04-26 Dev build 0.91.2
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.91.2`
@@ -2779,7 +2885,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * Chem: renderer selection checks. 
 * BioSignals: add possibility to change previously chosen filter script 
@@ -2791,9 +2897,9 @@
 * (Bug) Incorrect QNum parsing 
 
 
-# 2021-04-23 dev build 0.91.1
+# 2021-04-23 Dev build 0.91.1
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.91.1`
@@ -2801,16 +2907,16 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * (Bug) Chem: R-Groups Analysis with client RDKit 
 * Ability to share files 
 * StringColumn: batch editing: copying existing values 
 
 
-# 2021-04-23 stable version 0.91.0
+# 2021-04-23 Stable version 0.91.0
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.91.0`
@@ -2821,13 +2927,13 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 
 
-# 2021-04-23 stable version 0.90.0
+# 2021-04-23 Stable version 0.90.0
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.90.0`
@@ -2838,7 +2944,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * JS snippets: Viewer.property and Viewer.getInfo() 
 * JS API: bitset.handleClick: a helper function that selects rows by passing a row predicate and a mouse event 
@@ -3273,9 +3379,9 @@
 * sequenceTranslator: use HTML tables for sequences and CMO codes 
 
 
-# 2021-04-22 dev build 0.89.40
+# 2021-04-22 Dev build 0.89.40
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.89.40`
@@ -3283,7 +3389,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * changed text "To bring a row..." 
 * sequenceTranslator: expand the column to see whole sequence 
@@ -3295,9 +3401,9 @@
 * labs token 
 
 
-# 2021-04-22 dev build 0.89.39
+# 2021-04-22 Dev build 0.89.39
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.89.39`
@@ -3305,7 +3411,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * DataGrok API and system samples, add cross linking to improve connectivity (WIP)
 * (Bug) Scatter Plot: Filtered-out current row still visible in plot (WIP)
@@ -3331,9 +3437,9 @@
 * Trellis Plot: do not create empty plots 
 
 
-# 2021-04-20 dev build 0.89.38
+# 2021-04-20 Dev build 0.89.38
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.89.38`
@@ -3341,7 +3447,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * (Bug) Filters: Saved filters do not filter rows in table after applying 
 * Ability to share files 
@@ -3365,9 +3471,9 @@
 * NGL viewer (WIP)
 
 
-# 2021-04-16 dev build 0.89.37
+# 2021-04-16 Dev build 0.89.37
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.89.37`
@@ -3375,7 +3481,7 @@
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * Create sequenceTranslator app with instructions (WIP)
 * (Bug) Bar chart: Error after opening project with bar chart 
@@ -3421,7 +3527,7 @@
 * (Bug) Vertical scrolling won't appear on vertical growth 
 
 
-# 2021-04-14 dev build 0.89.36
+# 2021-04-14 Dev build 0.89.36
 
 In this release, we've focused on enriching both the experience of the platform end-users and on-platform developers, as well as on connecting these two groups. For instance, custom-built cell renderers, useful for displaying molecules, nucleotide sequences or experiments results, now expand the platform in many places such as [tooltips and tile viewers](https://community.datagrok.ai/t/cheminformatics-updates/457/8). There are also [new viewers](https://community.datagrok.ai/t/visualization-related-updates/521/4), [several bar chart](https://community.datagrok.ai/t/bar-chart-color-by-category/516) [features](https://community.datagrok.ai/t/visualization-related-updates/521/10), [color coding features](https://dev.datagrok.ai/js/samples/grid/color-coding-conditional), and a few dozen of [JS API]((https://datagrok.ai/help/govern/audit#javascript-api)) [enhancements](https://community.datagrok.ai/t/javascript-api-updates/526/8) and [bug fixes](##bug-fixes).
 
@@ -3434,7 +3540,7 @@ In this release, we've focused on enriching both the experience of the platform 
 * JS API improvements: Typescript support, new [events](https://community.datagrok.ai/t/javascript-api-updates/526/8) and [methods](https://community.datagrok.ai/t/javascript-api-updates/526/5)
 * Better JS editing in the [JS fiddle](https://public.datagrok.ai/js) with IntelliSense and `async/await`
 
-## Major features and improvements
+## Major features and Improvements
 
 * Grid: Custom cell renderers, including RDKit molecules, [in several contexts](https://community.datagrok.ai/t/cheminformatics-updates/457/8): tooltips, tile viewer, form, other viewers' axes
 * Bar Chart: [categorizes DateTime columns using functions of Year, Month, Quarter, Year - Quarter, etc.](https://community.datagrok.ai/t/visualization-related-updates/521/10)
@@ -3515,7 +3621,7 @@ In this release, we've focused on enriching both the experience of the platform 
 
 *Note:* this summary accumulates updates after 0.89.27.
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.89.36`
@@ -3523,9 +3629,9 @@ In this release, we've focused on enriching both the experience of the platform 
   
 * [Docker-Compose](admin/docker-compose.md)
 
-# 2021-04-08 dev build 0.89.35
+# 2021-04-08 Dev build 0.89.35
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.89.35`
@@ -3533,7 +3639,7 @@ In this release, we've focused on enriching both the experience of the platform 
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * Demo data: added Chembl-4000 csv. 
 * JS API: Migrate to Typescript 
@@ -3547,9 +3653,9 @@ In this release, we've focused on enriching both the experience of the platform 
 * Updated public token 
 
 
-# 2021-04-07 dev build 0.89.34
+# 2021-04-07 Dev build 0.89.34
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.89.34`
@@ -3557,7 +3663,7 @@ In this release, we've focused on enriching both the experience of the platform 
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * JS API: Migrate to Typescript 
 * JS: Ability to get HTML editor for function 
@@ -3571,9 +3677,9 @@ In this release, we've focused on enriching both the experience of the platform 
 * Fixed a typo 
 
 
-# 2021-04-06 dev build 0.89.33
+# 2021-04-06 Dev build 0.89.33
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.89.33`
@@ -3581,7 +3687,7 @@ In this release, we've focused on enriching both the experience of the platform 
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * (Bug) Bar Chart: cannot plot date columns on a categorical axis (WIP)
 * (Bug) Trellis Plot: error rendering empty molecules (empty strings) 
@@ -3589,9 +3695,9 @@ In this release, we've focused on enriching both the experience of the platform 
 * CVM: NLOpt temporarily off to investigate the resulting image first. 
 
 
-# 2021-04-06 dev build 0.89.32
+# 2021-04-06 Dev build 0.89.32
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.89.32`
@@ -3599,7 +3705,7 @@ In this release, we've focused on enriching both the experience of the platform 
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * JS API: Migrate to Typescript 
 * Wiki: Onboarding Content (WIP)
@@ -3623,9 +3729,9 @@ In this release, we've focused on enriching both the experience of the platform 
 * Added TypeScript build before publish to NPM 
 
 
-# 2021-04-02 dev build 0.89.31
+# 2021-04-02 Dev build 0.89.31
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.89.31`
@@ -3633,7 +3739,7 @@ In this release, we've focused on enriching both the experience of the platform 
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * (Bug) DockManager: the viewer size reduces on resize 
 * (Bug) View | Tooltip: After turning off all columns, the tooltip is still displayed (WIP)
@@ -3655,9 +3761,9 @@ In this release, we've focused on enriching both the experience of the platform 
 * Fixed warning 
 
 
-# 2021-03-31 dev build 0.89.30
+# 2021-03-31 Dev build 0.89.30
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.89.30`
@@ -3665,15 +3771,15 @@ In this release, we've focused on enriching both the experience of the platform 
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * Fixed warnings 
 * Updated public token 
 
 
-# 2021-03-31 dev build 0.89.29
+# 2021-03-31 Dev build 0.89.29
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.89.29`
@@ -3681,7 +3787,7 @@ In this release, we've focused on enriching both the experience of the platform 
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * Add annotator functionality (WIP)
 * GROK: new sequence viewer added 
@@ -3768,9 +3874,9 @@ In this release, we've focused on enriching both the experience of the platform 
 * (Bug) UX: Flickering scroll bars (WIP)
 
 
-# 2021-03-18 dev build 0.89.28
+# 2021-03-18 Dev build 0.89.28
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.89.28`
@@ -3778,7 +3884,7 @@ In this release, we've focused on enriching both the experience of the platform 
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * Add to selenium test for Filters check for deleting rows 
 * (Bug) Detectors load on each table open 
@@ -3840,9 +3946,9 @@ In this release, we've focused on enriching both the experience of the platform 
 * JSDoc fix 
 
 
-# 2021-03-10 dev build 0.89.27
+# 2021-03-10 Dev build 0.89.27
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.89.27`
@@ -3850,7 +3956,7 @@ In this release, we've focused on enriching both the experience of the platform 
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * Release notes fix 
 * Add annotator functionality (WIP)
@@ -3859,9 +3965,9 @@ In this release, we've focused on enriching both the experience of the platform 
 * /info/packages route 
 
 
-# 2021-03-10 dev build 0.89.26
+# 2021-03-10 Dev build 0.89.26
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.89.26`
@@ -3869,7 +3975,7 @@ In this release, we've focused on enriching both the experience of the platform 
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * Wiki: BioSignals types update 
 * Wiki: Harmonization (WIP)
@@ -3892,9 +3998,9 @@ In this release, we've focused on enriching both the experience of the platform 
 * Trellis Plot: show more granular X and Y axis ticks on line charts 
 
 
-# 2021-03-07 dev build 0.89.25
+# 2021-03-07 Dev build 0.89.25
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.89.25`
@@ -3902,16 +4008,16 @@ In this release, we've focused on enriching both the experience of the platform 
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * JS API: onValueChanged for all controls 
 * Create Physionet records fileViewer (WIP)
 * Harmonize ui framework (WIP)
 
 
-# 2021-03-07 dev build 0.89.24
+# 2021-03-07 Dev build 0.89.24
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.89.24`
@@ -3919,7 +4025,7 @@ In this release, we've focused on enriching both the experience of the platform 
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * fixes RDKit GitHub issue #3852 
 * Functions: minor performance improvements 
@@ -3948,9 +4054,9 @@ In this release, we've focused on enriching both the experience of the platform 
 * Fixed analyzer warning 
 
 
-# 2021-03-02 dev build 0.89.23
+# 2021-03-02 Dev build 0.89.23
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.89.23`
@@ -3958,15 +4064,15 @@ In this release, we've focused on enriching both the experience of the platform 
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * Harmonize ui framework (WIP)
 * (Bug) DG throws error on startup 
 
 
-# 2021-03-02 dev build 0.89.22
+# 2021-03-02 Dev build 0.89.22
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.89.22`
@@ -3974,7 +4080,7 @@ In this release, we've focused on enriching both the experience of the platform 
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * JS API: files 
 * Added new users to Developers team 
@@ -4057,9 +4163,9 @@ In this release, we've focused on enriching both the experience of the platform 
 * Improved script error handling 
 
 
-# 2021-02-15 dev build 0.89.21
+# 2021-02-15 Dev build 0.89.21
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.89.21`
@@ -4067,7 +4173,7 @@ In this release, we've focused on enriching both the experience of the platform 
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * Charts: Timelines (WIP)
 * Fixed release history 
@@ -4115,9 +4221,9 @@ Trellis Plot: show only filtered data for linked dataframes (type: selection to 
 * GROK 7836 JS API: Dapi_UserFiles_WriteAsText added 
 
 
-# 2021-02-10 dev build 0.89.20
+# 2021-02-10 Dev build 0.89.20
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.89.20`
@@ -4125,7 +4231,7 @@ Trellis Plot: show only filtered data for linked dataframes (type: selection to 
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * Charts: Timelines (WIP)
 * JS API: Ability to insert columns (WIP)
@@ -4210,9 +4316,9 @@ Trellis Plot: show only filtered data for linked dataframes (type: selection to 
 * Charts: Timelines (WIP)
 
 
-# 2021-01-27 dev build 0.89.16
+# 2021-01-27 Dev build 0.89.16
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.89.16`
@@ -4220,7 +4326,7 @@ Trellis Plot: show only filtered data for linked dataframes (type: selection to 
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * Converted to ui.onSizeChanged 
 * (Bug) Parser grammar: Power operation goes before multiplication 
@@ -4237,9 +4343,9 @@ Trellis Plot: show only filtered data for linked dataframes (type: selection to 
 * Chem, RDKit-based (WIP)
 
 
-# 2021-01-26 dev build 0.89.15
+# 2021-01-26 Dev build 0.89.15
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok: 
   *  `docker pull datagrok/datagrok:0.89.15`
@@ -4247,14 +4353,14 @@ Trellis Plot: show only filtered data for linked dataframes (type: selection to 
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * [Ability to call the table variable from "Add new column"](https://community.datagrok.ai/t/test-topic-for-integration-testing/426) 
 * Auto generated release-notes 
 * Molecules rendering in TableViews (WIP)
 
 
-# 2020.12.03 stable version
+# 2020.12.03 Stable Version
 
 In this release, we have introduced new [filtering functionality](https://www.youtube.com/watch?v=GM3XixUFFUs&t=2688s) 
 and exposed plenty of methods to our JavaScript API. In addition to general improvements of the platform's core, 
@@ -4263,7 +4369,7 @@ from [cheminformatics](https://community.datagrok.ai/t/cheminformatics/457)
 to [biosignal processing](https://community.datagrok.ai/t/biosignals-package/443) and
  [natural language processing](https://www.youtube.com/watch?v=GM3XixUFFUs&t=94s)
 
-## Latest docker images
+## Latest Docker Images
 
 * Datagrok (new): 
   *  `docker pull datagrok/datagrok:1.0.88-451665c`
@@ -4275,7 +4381,7 @@ to [biosignal processing](https://community.datagrok.ai/t/biosignals-package/443
   
 * [Docker-Compose](admin/docker-compose.md)
 
-## Addressed issues
+## Addressed Issues
 
 * [Form viewer is now available in tooltips](https://community.datagrok.ai/t/using-tile-viewer-for-tooltip/424)
 * [Qualified numbers support for forms](https://community.datagrok.ai/t/some-viewers-cant-be-added/470)
@@ -4416,7 +4522,7 @@ to [biosignal processing](https://community.datagrok.ai/t/biosignals-package/443
 * JS API: Support FileInfo & file type
 
 
-# 2020.08.11 stable version
+# 2020.08.11 Stable version
 
 ## Latest docker images
 
@@ -4503,7 +4609,7 @@ to [biosignal processing](https://community.datagrok.ai/t/biosignals-package/443
 * Improve table reading in Jupyter Notebooks
 
 
-# 2020.07.15 stable version
+# 2020.07.15 Stable version
 
 ## Latest docker images
 * Datagrok (new): 
@@ -4649,7 +4755,7 @@ to [biosignal processing](https://community.datagrok.ai/t/biosignals-package/443
 * JupyterLab integration
 
 
-# 2020.06.16 stable version
+# 2020.06.16 Stable version
 
 ## Latest docker images
 * Datagrok (new): 
@@ -4661,11 +4767,11 @@ to [biosignal processing](https://community.datagrok.ai/t/biosignals-package/443
   *  `docker pull datagrok/cvm:1.0.79-93dc7bd`
   *  [download](https://dev.datagrok.ai/docker_images/cvm-1.0.79-93dc7bd.tar)
 
-# 2020.05.27 stable version
+# 2020.05.27 Stable version
 
 ## What's new
 
-### JavaScript API changed. use `datagrok-api` npm package as a code reference.
+### JavaScript API changed. Use `datagrok-api` NPM package as a code reference.
 
 Now API have 3 entry points: 
 * `DG` contains complete API code
@@ -4692,12 +4798,12 @@ See also:
   * [image classification](https://github.com/datagrok-ai/public/blob/master/packages/PythonScripts/scripts/image_classification.py)
   * [cell imaging segmentation](https://github.com/datagrok-ai/public/blob/master/packages/PythonScripts/scripts/cell_imaging_segmentation.py)
 
-### File metadata extractors
+###File metadata extractors
 
   * [Tika](https://github.com/datagrok-ai/public/tree/master/packages/Tika)
   * [EXIF](https://github.com/datagrok-ai/public/blob/master/packages/PythonScripts/scripts/exif.py)
   
-### First class support of command line interface tools for linux in scripting:
+### First class support of Command Line Interface tools for Linux in scripting:
   * [CLI](https://github.com/datagrok-ai/public/tree/master/packages/CLI)
   * [Tika](https://github.com/datagrok-ai/public/tree/master/packages/Tika)
   
@@ -4794,7 +4900,7 @@ See also:
 * MVA: Layout is broken
 
 
-# 2020.05.06 stable version
+# 2020.05.06 Stable Version
 
 * HTTP ports changed. Datagrok is now listening on 8080 port and CVM port is 8090
 
@@ -4916,7 +5022,7 @@ See also:
 * Share to unregistered user is broken
 * Move CVM to 8090 port.
 
-# 2020.04.07 stable version
+# 2020.04.07 Stable Version
 
 
 ## Latest docker images
@@ -4951,7 +5057,7 @@ See also:
 * SetValues works incorrectly with optional parameters
 
 
-# 2020.03.30 stable version
+# 2020.03.30 Stable Version
 
 
 ## Latest docker images
@@ -5011,7 +5117,7 @@ See also:
 * Ability to select port with Docker
 * Db Exception on signup: insert or update on table "projects" violates foreign key constraint "projects_author_id_fkey"
 
-# 2020.03.13 stable version
+# 2020.03.13 Stable version
 
 ## Latest docker images
 * Datagrok (new): `766822877060.dkr.ecr.us-east-2.amazonaws.com/datagrok:1.0.71-d0b9043` [download](https://dev.datagrok.ai/docker_images/datagrok-1.0.71-d0b9043.tar)
@@ -5079,7 +5185,7 @@ See also:
 * Renamed "AmazonS3Cloud" to "S3"
 
 
-# 2020.02.25 stable version
+# 2020.02.25 Stable version
 
 ## Latest docker images
 * Datagrok (new): `766822877060.dkr.ecr.us-east-2.amazonaws.com/datagrok:1.0.69-83c6f08` [download](https://dev.datagrok.ai/docker_images/datagrok-1.0.69-83c6f08.tar)
@@ -5196,7 +5302,7 @@ See also:
 * Scripting fails with https request with self-signed certificate
 * Select Missing Values: Dialog has fixed size
 * Semantic type detector: text - added a very simplistic detector based on a number of words and max word length
-* Set SSL attribute in Datagrok connection on deploy
+* Set SSL attribute in datagrok connection on deploy
 * Setting view.path should modify currently shown URL
 * Store users_data_storage in DB
 * Support schemas for PostgreSql provider
@@ -5222,7 +5328,7 @@ See also:
 * When uploading package - check if package with same name was uploaded and permissions were not granted
 
 
-# 2020.01.15 stable version
+# 2020.01.15 Stable version
 
 ## Latest docker images
 * Datagrok (new): `7766822877060.dkr.ecr.us-east-2.amazonaws.com/datagrok:1.0.65-8dc0463`
@@ -5289,7 +5395,7 @@ See also:
 * Exclude system schemas in Oracle provider
 
 
-# 2020.01.07: service update
+# 2020.01.07: Service Update
 
 ## Latest docker images
 * Datagrok (new): `766822877060.dkr.ecr.us-east-2.amazonaws.com/datagrok:1.0.X-0dc9ba6`
@@ -5327,7 +5433,7 @@ See also:
 * LDAP authentication
 * GrokConnect: Oracle timestamp and clob column types cause errors
 
-# 2019.12.23: stable version
+# 2019.12.23: Stable version
 ## Latest docker images
 * Datagrok (new): `766822877060.dkr.ecr.us-east-2.amazonaws.com/datagrok:1.0.48-5791556`
 * CVM (new): `766822877060.dkr.ecr.us-east-2.amazonaws.com/grok_cvm:1.0.31-6261445`
@@ -5358,7 +5464,7 @@ See also:
 * View | Tooltip: 'all on' doesn't set all on after the first click
 
 
-# 2019.12.18: service update
+# 2019.12.18: Service Update
 
 Addresses a number of issues identified during the technical evaluation. 
 
@@ -5375,7 +5481,7 @@ Addresses a number of issues identified during the technical evaluation.
 * Postgres provider: bugs fixed
 * Notebooks: bugs fixed
 
-# 2019.12.05: service update
+# 2019.12.05: Service Update
 
 Addresses a number of issues identified during the technical evaluation.
 
