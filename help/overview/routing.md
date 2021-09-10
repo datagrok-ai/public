@@ -5,7 +5,7 @@
 
 In this article, we will consider in which cases the Datagrok platform retains the state in which it was before refreshing the browser page. Routing allows you to quickly share something by simply copying a URL and sending it to another person to whom you want to show a particular view, project, application, etc. We will find out which actions Datagrok can perform under the hood as the user goes to a specific URL (for example, executing a query with given parameters).
 
-## Entity Browsers
+## Entity browsers
 
 Entity browsers are special platform views that display a set of certain entities to the user. Each such browser is available by a URL.
 
@@ -87,4 +87,4 @@ See also:
 
   * [Navigation](navigation.md)
   * [Entities](objects.md)
-  * [Smart Search](smart-search.md)
+  * [Smart search](smart-search.md)

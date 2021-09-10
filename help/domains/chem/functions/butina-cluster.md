@@ -1,7 +1,7 @@
-<!-- TITLE: Butina Cluster -->
+<!-- TITLE: Butina cluster -->
 <!-- SUBTITLE: -->
 
-# Butina Cluster
+# Butina cluster
 
 Clustering has been described as 'the art of finding groups in data' and is widely used within the pharmaceutical
 industry to design different representative sets. Most common uses of representative sets could be as training sets in the

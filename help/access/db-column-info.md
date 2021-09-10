@@ -1,13 +1,13 @@
-<!-- TITLE: Database Table Column -->
+<!-- TITLE: Database table column -->
 <!-- SUBTITLE: -->
 
-# Database Table Column
+# Database table column
 
 This column resides in the database. To see quick summary of this column, 
 expand the 'Inspect' pane in the [property panel](../overview/navigation.md#properties).
   
 See also:
 
-* [Database Table](db-table-info.md)
-* [Database Column](db-column-info.md)
-* [Data Query](data-query.md)
+* [Database table](db-table-info.md)
+* [Database column](db-column-info.md)
+* [Data query](data-query.md)

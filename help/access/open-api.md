@@ -186,7 +186,7 @@ Datagrok works great with all types of secret access that the Swagger format sup
 
 - OAuth 2 common flows (authorization code, implicit, resource owner password credentials, client credentials)
 
-After you have imported the Swagger file into Datagrok, you need to specify your access in the settings of a corresponding [Data connection](data-connection.md). To do this, find your connection in the connections tree (or in connection browser, special "Web Services" view, etc.) and open settings dialog for it:
+After you have imported the Swagger file into Datagrok, you need to specify your access in the settings of a corresponding [data connection](data-connection.md). To do this, find your connection in the connections tree (or in connection browser, special "Web Services" view, etc.) and open settings dialog for it:
 
 ![AirNow connection](../uploads/features/swagger-security-definitions.png "AirNow")
 
@@ -265,6 +265,6 @@ If you encounter import errors, the following two steps can help.
 
 See also:
 
-  * [Public Datasets](public-datasets.md)
-  * [OpenAPI Collection](https://apis.guru/browse-apis/)
-  * [Data Query](data-query.md)
+  * [Public datasets](public-datasets.md)
+  * [OpenAPI collection](https://apis.guru/browse-apis/)
+  * [Data query](data-query.md)

@@ -1,7 +1,7 @@
-<!-- TITLE: Select Random Rows -->
+<!-- TITLE: Select random rows -->
 <!-- SUBTITLE: -->
 
-# Select Random Rows
+# Select random rows
 
 Selects the specified number of rows randomly.
 

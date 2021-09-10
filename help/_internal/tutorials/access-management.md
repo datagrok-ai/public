@@ -1,7 +1,7 @@
-<!-- TITLE: Use Cases: Access Management -->
+<!-- TITLE: Use Cases: Access management -->
 <!-- SUBTITLE: -->
 
-# Use Cases: Access Management
+# Use cases: Aaccess management
 
 Owner: Alexander
 
@@ -10,8 +10,8 @@ membership request system, audit, membership editor
 
 TODO: write
 
-
 ## Creating and sharing a project
+
 1. Open demog.csv
 2. Add and customize a scatter plot
 3. Click ‘Share’
@@ -24,6 +24,7 @@ Expected:
 * There should be an audit record 
 
 ## Creating and sharing a script
+
 1. Open demog.csv
 2. Tools | Scripting | New Script
 3. Edit script (TODO)

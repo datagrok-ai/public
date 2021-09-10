@@ -1,7 +1,7 @@
-<!-- TITLE: Compare Tables -->
+<!-- TITLE: Compare tables -->
 <!-- SUBTITLE: -->
 
-# Compare Tables
+# Compare tables
 
 Compares the content of two tables.
 

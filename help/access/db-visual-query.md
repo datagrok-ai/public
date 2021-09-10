@@ -1,7 +1,7 @@
-<!-- TITLE: DB Visual Query -->
+<!-- TITLE: DB visual query -->
 <!-- SUBTITLE: -->
 
-# DB Visual Query
+# DB visual query
 
 Use the standard [data aggregation tool](../transform/aggregate-rows.md) it to visually query 
 datasets that reside in a database. Note that the actual data aggregation will be performed
@@ -13,7 +13,7 @@ on a server. This feature is supported for all relational [data connectors](data
 
 See also:
 
-  * [Data Query](data-query.md)
+  * [Data query](data-query.md)
   * [Query Builder](query-builder.md)
-  * [DB Exploration](db-exploration.md)
+  * [DB exploration](db-exploration.md)
   * [DB Schema Browser](db-exploration.md#schema-browser)

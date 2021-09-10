@@ -1,7 +1,7 @@
-<!-- TITLE: Data Science -->
+<!-- TITLE: Data science -->
 <!-- SUBTITLE: -->
 
-# Data Science
+# Data science
 
 Datagrok was built for data scientists, by data scientists. Our goal is to let scientist focus 
 on science, not infrastructure. 
@@ -39,7 +39,7 @@ define  jobs that would get data from disparate data sources, clean or merge the
 run transformations, build interactive dashboards based on the retrieved data, and publish 
 these dashboards.
 
-## Statistical Hypothesis Testing
+## Statistical hypothesis testing
 
 Available hypothesis tests:
 * [Welch's t-test](https://en.wikipedia.org/wiki/Welch%27s_t-test): #{x.TTest}
@@ -73,7 +73,7 @@ Allows to do fast and simple missing values imputation using k-nearest neighbour
 Generate columns with random data with different distributions (Normal, Log-Normal, Binomial, Poisson, Uniform),
 using the specified parameters.
 
-### Multivariate Analysis 
+### Multivariate analysis 
 [Multivariate Analysis](../explore/multivariate-analysis/pls.md) plugin implements partial 
 least squares (PLS) algorithm. It is an easy-to-interpret, commonly used approach for multidimensional 
 data analysis. It shows the following on the interactive viewers: scores, explained variance, 
@@ -102,4 +102,4 @@ might also [suggest applying models to the datasets](self-learning-platform.md) 
 other users) when it deduces that the input dataset is of the same structure as the dataset the model was trained on.
 
 See also:
-* [Life Sciences](../stories/life-sciences.md)
+* [Life sciences](../stories/life-sciences.md)

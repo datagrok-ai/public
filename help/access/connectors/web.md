@@ -6,8 +6,7 @@
 Provides access to data sources via REST API based on 
 [OpenAPI 2.0 (Swagger API)](https://swagger.io/).
 
-## Connection Parameters
-
+## Connection parameters
 
 ```json
 {
@@ -18,6 +17,6 @@ Provides access to data sources via REST API based on
 
 See also:
 
-  * [Data Connection](../data-connection.md)
+  * [Data connection](../data-connection.md)
   * [Swagger](https://swagger.io/)
   * [OpenAPI](https://swagger.io/docs/specification/about/)

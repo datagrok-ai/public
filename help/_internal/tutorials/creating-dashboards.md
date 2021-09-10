@@ -1,7 +1,7 @@
-<!-- TITLE: Use Cases: Creating Dashboards -->
+<!-- TITLE: Use Cases: Creating dashboards -->
 <!-- SUBTITLE: -->
 
-# Use Cases: Creating Dashboards
+# Use cases: Creating dashboards
 
 Owner: Andrey
 

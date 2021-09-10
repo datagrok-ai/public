@@ -1,6 +1,6 @@
-<!-- TITLE: Predicted vs. Reference -->
+<!-- TITLE: Predicted vs. reference -->
 <!-- SUBTITLE: -->
 
-# Predicted vs. Reference
+# Predicted vs. reference
 
 Scatter plot of predicted vs. reference outcome.

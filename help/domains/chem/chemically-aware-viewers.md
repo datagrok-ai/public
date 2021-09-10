@@ -1,7 +1,7 @@
-<!-- TITLE: Chemically-Aware Viewers -->
+<!-- TITLE: Chemically-aware viewers -->
 <!-- SUBTITLE: -->
 
-# Chemically-Aware Viewers
+# Chemically-aware viewers
 
 Many of the viewers on the Datagrok platform are capable of recognizing and rendering chemical structures.
 
@@ -11,17 +11,17 @@ Molecules in the [grid](../../visualize/viewers/grid.md)
 
 ![Grid](../../uploads/viewers/grid-molecules.png "Grid: molecules")
 
-## Scatter Plot
+## Scatter plot
 
 ![Scatter plot](../../uploads/viewers/scatter-plot-molecules.png "Scatter plot: molecules")
 
-## Bar Chart
+## Bar chart
 
 Molecules in [bar chart](../../visualize/viewers/bar-chart.md)
 
 ![Bar chart](../../uploads/viewers/bar-chart-molecules.png "Bar chart: molecules")
 
-## Trellis Plot
+## Trellis plot
 
 R-group analysis done using [trellis plot](../../visualize/viewers/trellis-plot.md).
 
@@ -33,11 +33,11 @@ Molecules in the [form](../../visualize/viewers/form.md).
 
 ![Form](../../uploads/viewers/form-molecules.png "Form: molecules")
 
-## Tile Viewer
+## Tile viewer
 
 ![Tile viewer](../../uploads/viewers/tile-viewer-molecules.png "Tile viewer: molecules")
  
-## Network Diagram
+## Network diagram
 
 ![Network diagram](../../uploads/viewers/network-diagram-molecules.png "Network diagram: molecules")
  

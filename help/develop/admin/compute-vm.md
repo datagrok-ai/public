@@ -19,7 +19,7 @@ Server is easy scalable using [Amazon ECS](https://aws.amazon.com/ecs/) or [Kube
 | [H2O](https://www.h2o.ai/products/h2o/)                             | 3.26.0.5 | 54321 |
 
 
-## Programming Languages
+## Programming languages
 
 | Service                                      | Version  |
 |----------------------------------------------|----------|

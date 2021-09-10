@@ -1,6 +1,6 @@
-<!-- TITLE: Regression Coefficients -->
+<!-- TITLE: Regression coefficients -->
 <!-- SUBTITLE: -->
 
-# Regression Coefficients
+# Regression coefficients
 
 Bar chart with regression coefficients (used with the original data scale).

@@ -1,7 +1,7 @@
-<!-- TITLE: Tests: Cluster Data -->
+<!-- TITLE: Tests: Cluster data -->
 <!-- SUBTITLE: -->
 
-# Tests: Cluster Data
+# Tests: Cluster data
 
 [Clustering](cluster-data.md) is the task of grouping a set of objects in such a way that objects in the same group
 (called a cluster) are more similar (in some sense or another) to each other than to those in other

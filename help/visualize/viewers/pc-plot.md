@@ -1,7 +1,7 @@
-<!-- TITLE: Parallel Coordinates Plot -->
+<!-- TITLE: Parallel coordinates plot -->
 <!-- SUBTITLE: -->
 
-# Parallel Coordinates Plot
+# Parallel coordinates plot
 
 Parallel coordinates is a common way of visualizing high-dimensional geometry and analyzing
 multivariate data.  
@@ -33,5 +33,5 @@ General:
 See also: 
   
   * [Viewers](../viewers.md)
-  * [Table View](../../overview/table-view.md)
-  * [JS API: PC Plot](https://public.datagrok.ai/js/samples/ui/viewers/types/pc-plot)
+  * [Table view](../../overview/table-view.md)
+  * [JS API: PC plot](https://public.datagrok.ai/js/samples/ui/viewers/types/pc-plot)

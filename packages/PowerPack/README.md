@@ -5,11 +5,11 @@ Commonly used platform enhancements
 Owner: [Andrew Skalkin](https://github.com/skalkin)  
 Issues: https://github.com/datagrok-ai/public/projects/2
 
-## Power Widgets
+## Power widgets
 
 A start page that contains widgets (annotated with the `dashboard` tag) that are dynamically discovered from the packages available to the current user.
 
-## Power Search
+## Power search
 
 Ability to search for anything from the start screen, with the special support for the following:
 * Widgets

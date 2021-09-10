@@ -1,7 +1,7 @@
 <!-- TITLE: Tests: Data connection -->
 <!-- SUBTITLE: -->
 
-# Tests: Data Connection
+# Tests: Data connection
 
 [Data connection](data-connection.md) defines a way to connect to a particular data source.
 
@@ -133,7 +133,7 @@
    
    
 See also:
- * [Data Source test](../tests/data-source-test.md)
- * [Data Job test](../tests/data-job-test.md)
- * [Data Queries test](../tests/data-query-test.md)
- * [Data Connection](data-connection.md)
+ * [Data source test](../tests/data-source-test.md)
+ * [Data job test](../tests/data-job-test.md)
+ * [Data queries test](../tests/data-query-test.md)
+ * [Data connection](data-connection.md)

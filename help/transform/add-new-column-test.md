@@ -1,7 +1,7 @@
-<!-- TITLE: Tests: Add New Column -->
+<!-- TITLE: Tests: Add new column -->
 <!-- SUBTITLE: -->
 
-# Tests: Add New Column
+# Tests: Add new column
 
 [Adds a column](add-new-column.md) of the specified type to the current table, and 
 initializes it using the specified expression (mathematical function, constants, platform objects 

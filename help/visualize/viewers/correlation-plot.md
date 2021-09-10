@@ -1,7 +1,7 @@
-<!-- TITLE: Correlation Plot -->
+<!-- TITLE: Correlation plot -->
 <!-- SUBTITLE: -->
 
-# Correlation Plot
+# Correlation plot
 
 A quick way to assess correlations between all columns at once. Cells are color-coded by the
 [Pearson correlation coefficient](https://en.wikipedia.org/wiki/Pearson_product-moment_correlation_coefficient). 

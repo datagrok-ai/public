@@ -1,6 +1,6 @@
-<!-- TITLE: Create a Custom View -->
+<!-- TITLE: Create a custom view -->
 
-# Custom Views
+# Custom views
 
 A view is a set of visualizations grouped together. Typically it is associated with a particular dataframe (then it is called a [table view](../../overview/table-view.md)). However, essentially a view can contain pretty much anything, that's what we will discuss in a while. When a view is registered on the platform, you can do the following:
 
@@ -84,8 +84,8 @@ See also:
   * [JavaScript API](../js-api.md)
   * [JavaScript API: View](https://datagrok.ai/js-api/classes/dg.view)
   * [JavaScript API: ViewBase](https://datagrok.ai/js-api/classes/dg.viewbase)
-  * [JavaScript API Samples: Custom View](https://public.datagrok.ai/js/samples/ui/views/views)
-  * [JavaScript API Samples: Virtual View](https://public.datagrok.ai/js/samples/ui/virtual-view)
-  * [Table View](../../overview/table-view.md)
-  * [View Layout](../../visualize/view-layout.md)
+  * [JavaScript API Samples: Custom view](https://public.datagrok.ai/js/samples/ui/views/views)
+  * [JavaScript API Samples: Virtual view](https://public.datagrok.ai/js/samples/ui/virtual-view)
+  * [Table view](../../overview/table-view.md)
+  * [View layout](../../visualize/view-layout.md)
   * [Routing](../../overview/routing.md)

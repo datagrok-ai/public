@@ -1,7 +1,7 @@
-<!-- TITLE: Add New Column -->
+<!-- TITLE: Add new column -->
 <!-- SUBTITLE: -->
 
-# Adding New Columns
+# Adding new columns
 
 Adds a column of the specified type to the current table, and initializes it using the specified expression (mathematical function, constants, platform objects properties and functions).
 
@@ -45,6 +45,6 @@ The platform supports a large number of functions, constants and operators. You 
 
 See also:
 
-- [Grok Scripting](../overview/grok-script.md)
+- [Scripting](../overview/grok-script.md)
 - [Function](../overview/functions/function.md)
 - [Column selectors](../visualize/viewers/column-selectors.md)

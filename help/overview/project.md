@@ -8,7 +8,7 @@ Projects are used to group and share data and other assets with other users. One
 common applications of projects are dashboards that consist of tables (with either
 static or dynamic data), and visualizations applied to them.
 
-## Uploading a Project
+## Uploading a project
 
 Creating a project is easy. After getting the data of interest in the scratchpad project in [workspace](workspace.md),
 click on the `UPLOAD` button. After the project gets uploaded to the server, a separate 
@@ -20,7 +20,7 @@ Or, if you are editing an existing project, click `SAVE` to save your changes.
 Use `Share` context action to edit access permissions. Sharing a project will 
 automatically share all entities and data inside.
 
-### Dynamic Data
+### Dynamic data
 
 Whenever a table is created by executing a [function](../overview/functions) 
 (such as a [database query](../access/data-query.md)), this information gets stored 
@@ -36,7 +36,7 @@ In the latter case, the function will be re-executed whenever the project is ope
 
 ![](project-upload-data-sync.png)
 
-## Project Types
+## Project types
 
 Projects are organized in a tree structure. Rights on particular [entities](objects.md) are
 inherited based on this hierarchy. There are two main types of projects: _root_ and _regular_. Root
@@ -54,7 +54,7 @@ gets saved to their namespace. However, the existing entities will be available 
 project via link. As for packages, each version has its own project, which allows sharing packages
 on a version level.
 
-## Project Gallery
+## Project gallery
 
 Browse projects that are available to you. 
 Use [Smart search](smart-search.md) for powerful
@@ -88,9 +88,9 @@ The following fields could be used to filter projects with [smart search](smart-
 
 See also:
 
-  * [Create Project](create-project.md)
-  * [Data Pipeline](../access/data-pipeline.md)
-  * [Data Connection](../access/data-connection.md)
-  * [Data Query](../access/data-query.md)
-  * [Data Job](../access/data-job.md)
-  * [Function Call](functions/function-call.md)
+  * [Create project](create-project.md)
+  * [Data pipeline](../access/data-pipeline.md)
+  * [Data connection](../access/data-connection.md)
+  * [Data query](../access/data-query.md)
+  * [Data job](../access/data-job.md)
+  * [Function call](functions/function-call.md)

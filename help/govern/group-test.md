@@ -1,7 +1,7 @@
-<!-- TITLE: Tests: Group Management -->
+<!-- TITLE: Tests: Group management -->
 <!-- SUBTITLE: -->
 
-# Tests: Group Management
+# Tests: group management
 
 User [group](../govern/group.md) allow you to flexible configure user rights. [Users](user.md) can request membership 
 in [groups](../govern/group.md), start chat with other members, view [group](../govern/group.md) members and etc.

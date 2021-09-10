@@ -1,7 +1,7 @@
-<!-- TITLE: Predictive Model Information -->
+<!-- TITLE: Predictive model information -->
 <!-- SUBTITLE: -->
 
-# Predictive Model Information
+# Predictive model information
 
 Predictive model parameters description.
 
@@ -33,22 +33,22 @@ For H2O:
 | Principal Component Analysis | PCA                             |
 
 
-## MSE
+## Mse
 
 The mean squared error (MSE) or mean squared deviation (MSD) of an estimator measures the average of the 
 squares of the errors or deviations—that is, the difference between the estimator and what is estimated.
 
-## RMSE
+## Rmse
 
 The root-mean-square error (RMSE) is a frequently used measure of the differences between values (sample 
 and population values) predicted by a model or an estimator and the values actually observed. The RMSE 
 represents the sample standard deviation of the differences between predicted values and observed values.
 
-## NOBS
+## Nobs
 
 Number of observations.
 
-## Correlation (Corr or r2)
+## Correlation (corr or r2)
 
 Correlation is any of a broad class of statistical relationships involving dependence, though in common 
 usage it most often refers to the extent to which two variables have a linear relationship with each other. 
@@ -56,7 +56,7 @@ The most familiar measure of dependence between two quantities is the Pearson pr
 coefficient, or "Pearson's correlation coefficient", commonly called simply "the correlation coefficient". 
 It is obtained by dividing the covariance of the two variables by the product of their standard deviations.  
 
-## Log Loss
+## Log loss
 
 Logarithmic loss measures the performance of a classification model where the
 prediction input is a probability value between 0 and 1. The goal of our machine learning models is to minimize 
@@ -64,7 +64,7 @@ this value. A perfect model would have a log loss of 0. Log loss increases as th
 from the actual label. So predicting a probability of .012 when the actual observation label is 1 would be
 bad and result in a high log loss.
 
-## AUC
+## Auc
 
 The area under the ROC curve (AUC) is equal to the probability that a classifier will rank a randomly chosen
 positive instance higher than a randomly chosen negative one (assuming 'positive' ranks higher than 'negative').
@@ -75,7 +75,7 @@ The Gini coefficient (sometimes expressed as a Gini ratio or a normalized Gini i
 among values of a frequency distribution. A Gini coefficient of zero expresses perfect equality, 
 where all values are the same.
 
-## ROC curve
+## Roc curve
 
 Receiver operating characteristic curve, i.e. ROC curve, is a graphical plot that illustrates the diagnostic 
 ability of a binary classifier system as its discrimination threshold is varied.  

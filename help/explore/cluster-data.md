@@ -1,4 +1,4 @@
-<!-- TITLE: Cluster Data -->
+<!-- TITLE: Cluster data -->
 <!-- SUBTITLE: -->
 
 # Clustering
@@ -40,6 +40,3 @@ See also:
   
 Sample: 
   * [Cluster](https://public.datagrok.ai/js/samples/domains/data-science/cluster)
-
-  
-

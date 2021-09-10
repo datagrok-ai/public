@@ -1,7 +1,7 @@
 <!-- TITLE: TimeSpan functions -->
 <!-- SUBTITLE: -->
 
-# TimeSpan functions
+# Timespan functions
 
 TimeSpan (or duration) functions work with time intervals. The internal representation of time intervals is the amount of time in milliseconds. For example, an interval of 1 hour would be stored as the number 3600000 (the number of milliseconds in one hour). Time spans incliude days, hours, minutes, seconds and milliseconds.
 

@@ -1,7 +1,7 @@
-<!-- TITLE: Tests: Split Columns by RegExp -->
+<!-- TITLE: Tests: Split columns by RegExp -->
 <!-- SUBTITLE: -->
 
-# Tests: Split Columns by RegExp
+# Tests: Split columns by RegExp
 
 Matches the specified regular expression against the content of the specified column. Matched groups are added as new columns.
 

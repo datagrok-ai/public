@@ -1,6 +1,6 @@
-# Contributor's Guide
+# Contributor's guide
 
-## Code Style
+## Code style
 
 In this public repo we follow the [Google JavaScript Style Guide](https://google.github.io/styleguide/jsguide.html).
 

@@ -158,11 +158,11 @@ In this exercise, we will count occurrences of a given subsequence in a nucleoti
 5. Let's modify the script to solve the task of counting sequence occurrences. Add a new preamble:
    (use any `#description` you like):
    ```python
-   #name: CountSubsequencePython
-   #language: python
-   #input: string sequence
-   #input: string subsequence
-   #output: int count
+# Name: countsubsequencepython
+# Language: python
+# Input: string sequence
+# Input: string subsequence
+# Output: int count
    ```
    In the body, implement a Python function counting all occurrences of a given `subsequence` in a `sequence`.
    Return a `count` the same way as in the default script from p. 2.
@@ -199,12 +199,12 @@ Let's repeat what we've achieved in the last point of the previous exercise, now
    While the original function could only operate on a single row, the new function shall operate on the entire
    dataframe. To start with, the function's Datagrok signature should look as follows:  
    ```python
-   #name: CountSubsequencePythonDataframe
-   #language: python
-   #input: dataframe sequences
-   #input: column columnName
-   #input: string subsequence = "ACC"
-   #output: dataframe result {action:join(sequences)}
+# Name: countsubsequencepythondataframe
+# Language: python
+# Input: dataframe sequences
+# Input: column columnname
+# Input: string subsequence = "acc"
+# Output: dataframe result {action:join(sequences)}
    ```  
    This function takes as an input a dataframe with a column containing nucleotide sequences, named as a value of
    `columnName`, a nucleotide subsequence `subsequence` being sought, and outputs an input dataframe with a new column
@@ -331,16 +331,16 @@ _You will learn:_ how to invoke arbitrary Datagrok functions in JavaScript and a
    As this is a common action in many scenarios, the same result in Datagrok can be achieved with setting
    `{action:join(inputDf)}` on the output dataframe:  
    ```
-   #output: dataframe aDfWithANewColumn {action:join(inputDf)}
+# Output: dataframe adfwithanewcolumn {action:join(inputdf)}
    ```  
    This is useful not only for brevity, but also for saving bandwidth: the resulting dataframe will be joined with
    the origin dataframe on the client side, only the necessary new data shall be passed over to the client.  
    For example, this is how to convert an existing column into a new one and add it to the original dataframe:  
    
    ```
-    #language: python
-    #input: dataframe inputDf
-    #output: dataframe outputDf {action:join(inputDf)}
+# Language: python
+# Input: dataframe inputdf
+# Output: dataframe outputdf {action:join(inputdf)}
 
     outputDf = inputDf[['someColumn']]
     outputDf['newColumn'] = 2 * outputDf['someColumn']
@@ -460,7 +460,7 @@ is accessible from our server.
     There is another way to pass a country name to the query: you can provide a default value for the input parameter
     (see examples in the article [Parameterized Queries](../access/parameterized-queries.md)).
 
-## Creating a Scripting Viewer
+## Creating a scripting viewer
 
 _Prerequisites:_ basic Python knowledge, [matplotlib](https://matplotlib.org/) or a similar library
 
@@ -559,7 +559,7 @@ _You will learn:_ how to join and union dataframes using the knowledge of semant
 
 <!--- TODO: add linked dataframes demo here --->
 
-## Custom cell renderers with 3-rd party JS libraries
+## Custom cell renderers with 3-rd party js libraries
 
 _You will learn:_ reuse 3-rd party JavaScript libraries in your Datagrok packages; render cells by semantic types.
 
@@ -621,7 +621,7 @@ _Prerequisites:_ exercises ["Setting up the environment"](#setting-up-the-enviro
    Choose one of the popular coloring conventions, following [this link](https://www.biostars.org/p/171056/).
    
    
-## Accessing web services with OpenAPI
+## Accessing web services with openapi
 
 _Details:_ [OpenAPI access](../access/open-api.md)
 
@@ -668,7 +668,7 @@ fetch some nucleotide data regarding coronavirus.
 We provide a handful of demo Swaggers, check their source JSON files [here][021] and see in action in Datagrok
 at the [`Web Services`](https://public.datagrok.ai/webservices) section of the Datagrok UI.
 
-## Creating an info panel with a REST web service
+## Creating an info panel with a rest web service
 
 We will use the ENA REST API to output sequences and associated data in the info panel,
 based on the ENA sequence ID contained in a currently selected grid cell.

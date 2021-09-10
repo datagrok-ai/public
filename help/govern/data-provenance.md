@@ -1,7 +1,7 @@
-<!-- TITLE: Data Provenance -->
+<!-- TITLE: Data provenance -->
 <!-- SUBTITLE: -->
 
-## Data Provenance
+## Data provenance
 
 Data provenance is the ability to fully understand everything that the result depends upon. This
 includes queries that were used to retrieve the initial raw data, transformations applied to the
@@ -12,7 +12,7 @@ Data provenance enables data scientists to reason about results, especially when
 not work in isolation. It also makes debugging the pipelines a lot easier, since you can go back
 and see how a particular change impacted the result.
 
-## Self-Documented Data Flows
+## Self-documented data flows
 
 Since Grok already has a lot of information related to the data flows, in many cases there is no need 
 to create and maintain documentation for the data flows. Grok offers several out-of-the-box 
@@ -22,4 +22,4 @@ jobs that build visual representations of the data flows. They answer the follow
 * Which algorithms and visualizations are used on the data retrieved from the particular query? 
 
 See also:
-* [Data Pipelines](../access/data-pipeline.md)
+* [Data pipelines](../access/data-pipeline.md)

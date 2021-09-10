@@ -34,7 +34,7 @@ _Links:_
   - [webpack-cli](https://www.npmjs.com/package/webpack-cli)
   - [webpack-dev-server](https://www.npmjs.com/package/webpack-dev-server)
 
-## TypeScript
+## Typescript
 
 As we recommend [TypeScript](https://www.typescriptlang.org/) as a language for
 package development, there's an option to [create a package](../develop.md#getting-started)

@@ -1,4 +1,4 @@
-## Frequently Asked Questions
+## Frequently asked questions
 
 *Question*
 How do I set up VS Code or WebStorm for debugging on Datagrok? Debugging doesn't work for me now.
@@ -17,7 +17,7 @@ It's likely that the `datagrok-tools` library wasn't installed globally. Install
 # First, remove the locally installed package...
 npm uninstall datagrok-tools
 
-# and then install datagrok-tools globally using the -g flag
+# And then install datagrok-tools globally using the -g flag
 npm install -g datagrok-tools
 ```
 

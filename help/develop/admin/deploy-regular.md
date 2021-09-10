@@ -1,8 +1,7 @@
-
-<!-- TITLE: Deployment on a Regular Machine -->
+<!-- TITLE: Deployment on a regular machine -->
 <!-- SUBTITLE: -->
 
-# Deployment on a Regular Machine
+# Deployment on a regular machine
 
 This document contains instructions to deploy Datagrok on a regular machine without cloud-based hosting.
 
@@ -13,7 +12,7 @@ In case you want to jump-start using Datagrok with minimum manual effort on a lo
 1. [Install Docker](https://phoenixnap.com/kb/how-to-install-docker-on-ubuntu-18-04).
 2. Install PostgreSQL, allow port 5432 in the firewall.
 
-## Setup Datagrok Virtual Machine
+## Setup Datagrok virtual machine
 
 Requirements: 2 vCPU and 4 GiB RAM.
 

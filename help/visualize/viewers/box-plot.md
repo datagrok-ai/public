@@ -1,7 +1,7 @@
-<!-- TITLE: Box Plot-->
+<!-- TITLE: Box plot-->
 <!-- SUBTITLE: -->
 
-# Box Plot
+# Box plot
 
 The box plot (a.k.a. box and whisker diagram) is a standardized way of displaying the distribution
 of data based on the five number summary: minimum, first quartile, median, third quartile, and
@@ -15,7 +15,7 @@ General:
 
 ![Box Plot](../../uploads/viewers/box-plot.png "Box Plot")
 
-### T-Test
+### T-test
 
 When the "category" column contains exactly two categories, press "T" to perform
 [Welch's t-test](https://en.wikipedia.org/wiki/Welch%27s_t-test). The resulting p-value 

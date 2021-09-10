@@ -10,7 +10,7 @@ with existing systems.
 In short, if anything can be integrated or automated in some way, chances are we have a mechanism 
 for doing that already; if not, let us know and we'll come up with a solution! 
 
-## Custom Scripts
+## Custom scripts
 
 [Scripting](../develop/scripting.md) is an integration mechanism with different languages,
 mostly used for statistical computing and machine learning. 
@@ -21,7 +21,7 @@ with thousands of statistical packages and visualizations available in
 
 Note that other languages, such as Java, C#, or Node.js can be integrated in a similar way.
 
-## Custom Data Connectors
+## Custom data connectors
 
 Out of the box, the platform comes with the data connectors for [30+ popular databases](../access/data-connection.md#connectors), and the list is constantly growing. In addition to that, it is possible to develop your own data connectors, and seamlessly integrate them
 into the platform.
@@ -44,7 +44,7 @@ All Datagrok connectors are open-sourced under the MIT license and reside in the
 A command-line ["GrokConnectTest"](https://github.com/datagrok-ai/public/tree/master/connectors/grok_connect/src/test/java/grok_connect) 
 application could be useful for testing and debug purposes. 
 
-## OpenAPI
+## Openapi
 
 Datagrok integrates with [OpenAPI](../access/open-api.md) really well, automatically mapping
 OpenAPI's [paths](https://swagger.io/docs/specification/basic-structure/) to Grok's [functions](../overview/functions/function.md).
@@ -56,14 +56,14 @@ This has many benefits:
 * Audit
 * Data lineage
 
-## Grok JavaScript API
+## JavaScript API
 
 JavaScript is the lingua franca of the web, and naturally it is a first-class language in the Grok ecosystem. 
 We expose a [JavaScript API](../develop/js-api.md) that allows you to control most of the platform, including
 data manipulation, handling platform events, creating custom viewers, controlling window docking,
 customizing the platform, etc.  
 
-## Grok Web API
+## Web API
 
 Datagrok's server provides a REST API that lets you programmatically invoke server-side methods. 
 (OpenAPI is work in progress)
@@ -72,11 +72,11 @@ Datagrok's server provides a REST API that lets you programmatically invoke serv
 
 A number of command-line utilities for server management. (Work in progress)
 
-## Client-Side Settings
+## Client-side settings
 
 [Client-side settings](../overview/navigation.md#settings) are specific to the user, and are controlled by the user (unless 
 the organization's IT policy overrides it).
 
-## Server-Side Settings
+## Server-side settings
 
 [Server settings](../overview/settings-server.md) are controlled by the platform's [administrators](../govern/security.md).

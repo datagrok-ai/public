@@ -31,7 +31,7 @@ the assistance of IDE, including using breakpoints and code completion.
 * [JS API examples](https://public.datagrok.ai/js)
 * [JS API documentation](https://datagrok.ai/js-api)
 
-## Exercise 1: ChEMBL browser
+## Exercise 1: chembl browser
 
 ... to be continued...
 

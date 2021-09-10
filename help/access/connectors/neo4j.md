@@ -43,8 +43,7 @@ multiple purposes in many different contexts. Here are some of them:
 * As an [info panel](../../discover/info-panels.md)
 * From [JS API](../../develop/js-api.md)
 
- 
 See also:
 
-* [Data Connection](../data-connection.md)
+* [Data connection](../data-connection.md)
 * [Neo4j](https://neo4j.com/)

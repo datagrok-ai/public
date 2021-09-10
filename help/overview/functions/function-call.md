@@ -1,7 +1,7 @@
-<!-- TITLE: Function Call -->
+<!-- TITLE: Function call -->
 <!-- SUBTITLE: -->
 
-# Function Call
+# Function call
 
 Function Call is a result of executing a [Data Job](../../access/data-job.md), [Data Query](../../access/data-query.md), 
 [Script](../../develop/scripting.md) or any other [Function](function.md).
@@ -48,7 +48,7 @@ You can use these fields to filter action runs with [smart search](../smart-sear
 
 See also:
 
-  * [Data Pipeline](../../access/data-pipeline.md)
-  * [Data Connection](../../access/data-connection.md)
-  * [Data Query](../../access/data-query.md)
-  * [Data Job](../../access/data-job.md)
+  * [Data pipeline](../../access/data-pipeline.md)
+  * [Data connection](../../access/data-connection.md)
+  * [Data query](../../access/data-query.md)
+  * [Data job](../../access/data-job.md)

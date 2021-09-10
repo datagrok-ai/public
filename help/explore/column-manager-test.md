@@ -59,4 +59,4 @@ The implementation is based on the [grid](../visualize/viewers/grid.md), so many
 
 See also: 
   * ["Column Manager"](column-manager.md)
-  * [Table Manager Test](../overview/table-manager-test.md)
+  * [Table Manager test](../overview/table-manager-test.md)

@@ -5,7 +5,7 @@
 We are using a number of great open-source projects in our platform. Here 
 they are, in no particular order:
 
-## Data Science
+## Data science
 
 * [OpenCPU](https://www.opencpu.org/) - integration with R
 * [Jupyter](https://jupyter.org/) - R, Python, Julia [scripting](develop/scripting.md), and [notebooks](develop/jupyter-notebook.md)

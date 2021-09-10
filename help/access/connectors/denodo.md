@@ -7,5 +7,5 @@ Provides access to [Denodo](https://www.denodo.com/) database virtualization pla
 
 See also:
 
-  * [Data Connection](../data-connection.md)
+  * [Data connection](../data-connection.md)
   * [Denodo](https://www.denodo.com/)

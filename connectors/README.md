@@ -1,4 +1,4 @@
-# Datagrok Database Connectors
+# Datagrok database connectors
 
 Out of the box, the platform comes with the data connectors for [30+ popular databases](../help/access/data-connection.md#connectors), and the list is constantly growing.
 In addition to that, it is possible to develop your own data connectors, and seamlessly integrate them

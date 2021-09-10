@@ -1,7 +1,7 @@
-<!-- TITLE: Heat Map -->
+<!-- TITLE: Heat map -->
 <!-- SUBTITLE: -->
 
-# Heat Map
+# Heat map
 
 A Heat Map is a graphical representation of table where each cell value is represented as color.
 It is based on [grid](grid.md), so all of the grid's features are applicable to the heat map as well.

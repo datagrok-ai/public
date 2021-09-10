@@ -1,7 +1,7 @@
-<!-- TITLE: Tests: Data Source -->
+<!-- TITLE: Tests: Data source -->
 <!-- SUBTITLE: -->
 
-# Tests: Data Source
+# Tests: Data source
 
 [User](../govern/user.md) in system can connect to data from different sources. 
 
@@ -31,6 +31,6 @@
    * Query Runs list is open. Display start time, status and name
 
 See also:
- * [Data Connections test](../tests/data-connection-test.md)
- * [Data Job test](../tests/data-job-test.md)
- * [Data Queries test](../tests/data-query-test.md)
+ * [Data connections test](../tests/data-connection-test.md)
+ * [Data job test](../tests/data-job-test.md)
+ * [Data queries test](../tests/data-query-test.md)

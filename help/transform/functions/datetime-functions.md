@@ -1,7 +1,7 @@
 <!-- TITLE: Date and Time functions -->
 <!-- SUBTITLE: -->
 
-# Date and Time functions
+# Date and time functions
 
 *Function List:*
 

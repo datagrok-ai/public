@@ -10,7 +10,7 @@ This document contains instructions to deploy Datagrok on AWS EC2 instance.
 1. Configure S3 bucket and RDS database
 2. Create t2.medium EC2 instance for Datagrok VM and c5.xlarge from CVM.
 
-## Setup Datagrok Virtual Machine
+## Setup Datagrok virtual machine
 
 1. Pull Datagrok image to docker `docker pull datagrok/datagrok:latest`
 2. Prepare string `GROK_START_PARAMETERS`:

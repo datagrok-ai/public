@@ -1,4 +1,4 @@
-<!-- TITLE: Cheminformatics Chemical Structures Curation -->
+<!-- TITLE: Cheminformatics chemical structures curation -->
 <!-- SUBTITLE: -->
 
 Curation tools could be used for a wide spectrum of purposes and propose different ways which one can use in a preferred combination.

@@ -224,7 +224,7 @@ in JavaScript represents a value which is not a valid number: this value isn't c
 
 <!-- TODO: How's that for other types? -->
 
-#### String, Integer, Float, Boolean
+#### String, integer, float, boolean
 
 Enum values: `DG.COLUMN_TYPE.STRING`, `DG.COLUMN_TYPE.INT`, `DG.COLUMN_TYPE.FLOAT`, `DG.COLUMN_TYPE.BOOL`
 
@@ -236,7 +236,7 @@ Enum value: `DG.COLUMN_TYPE.DATE_TIME`
 
 In future releases, `DateTime` type becomes a wrapper around a [dayJs][118] value.
 
-#### BigInt
+#### Bigint
 
 Enum value: `DG.COLUMN_TYPE.BIG_INT`
 

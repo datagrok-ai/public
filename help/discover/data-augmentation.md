@@ -1,7 +1,7 @@
-<!-- TITLE: Data Augmentation -->
+<!-- TITLE: Data augmentation -->
 <!-- SUBTITLE: -->
 
-# Data Augmentation
+# Data augmentation
 
 _Data augmentation adds value to base data by adding information derived from internal and external 
 sources within an enterprise. Data is one of the core assets for an enterprise, making data management 

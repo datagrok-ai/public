@@ -1,7 +1,7 @@
 <!-- TITLE: Cheminformatics -->
 <!-- SUBTITLE: -->
  
-# Cheminformatics Development
+# Cheminformatics development
 
 As a general-purpose extensible platform for scientific computing, Datagrok provides multiple options for developing custom cheminformatics-related functionality. Depending on your needs, use one or more of the following ones, or come up with your own solution.
 For performing one of the typical tasks such as calculating descriptors, substructure or similarity search, finding MCS or performing an R-group analysis, consider using [Grok JS API](#grok-js-api).
@@ -27,7 +27,7 @@ descriptors(table, column, descriptors);
 
 The three first functions, `searchSubstructure`, `getSimilarities` and `findSimilar`, are currently made client-based, using [RDKit-JS](https://github.com/rdkit/RDKitjs) library. We are planning to support both server-side and browser-side modes for these functions in the future, while the API remains as described below.
 
-### Substructure Search
+### Substructure search
 
 `searchSubstructure(column, pattern = null, settings = { substructLibrary: true })`
 
@@ -47,13 +47,13 @@ It is possible to call `searchSubstructure` solely for initializing the library,
 
 Sometimes it happens that the molecule strings aren't supported by RDKit-JS. These inputs are skipped when indexing, but an error log entry is added for each such entry to the browser's console together with the actual molecule string. For such unsupported molecule, the corresponding bit in the bitset remains as 0. Thus, the bitset is *always* of the input `column`'s length.  
 
-### Similarity Scoring
+### Similarity scoring
 
 The two similarity scoring functions use [Morgan fingerprints](https://www.rdkit.org/docs/GettingStartedInPython.html#morgan-fingerprints-circular-fingerprints) and [Tanimoto similarity](https://en.wikipedia.org/wiki/Chemical_similarity) (also known as Jaccard similarity) on these computed fingerprints to rank molecules from a `column` by their similarity to a given `molecule`.
 
 Identically to the convention of `searchSubstructure`, a `column` is a column of type String containing molecules, each in any notation RDKit-JS [supports](https://github.com/rdkit/rdkit/blob/master/Code/MinimalLib/minilib.h): smiles, cxsmiles, molblock, v3Kmolblock, and inchi. Same applies to a `molecule`: this is a string representation of a molecule in any of the previous notations.
 
-  #### Find most similar molecules sorted by similarity
+#### Find most similar molecules sorted by similarity
 
   `findSimilar(column, molecule, settings = { limit: ..., cutoff: ... })`
 
@@ -64,7 +64,7 @@ Identically to the convention of `searchSubstructure`, a `column` is a column of
     * The 2-nd column, named `score`, contains the corresponding similarity scores of the range from 0.0 to 1.0, and the DataFrame is sorted descending by this column
     * The 3-rd column, named `index`, contains indices of the molecules in the original input `column`
 
-  #### Scoring each molecule against a given molecule
+#### Scoring each molecule against a given molecule
 
   `getSimilarities(column, molecule = null, settings = { sorted: false });`
 
@@ -84,7 +84,7 @@ Examples (see on [github](https://github.com/datagrok-ai/public/tree/master/pack
 * [Maximum common substructure](https://public.datagrok.ai/js/samples/domains/chem/mcs)
 * [R-Group analysis](https://public.datagrok.ai/js/samples/domains/chem/r-group)
 
-## OpenChemLib.JS
+## Openchemlib.js
 
 [OpenChemLib.JS](https://github.com/cheminfo/openchemlib-js) is a JavaScript port of the 
 [OpenChemLib](https://github.com/actelion/openchemlib) Java library. Datagrok currently uses it
@@ -93,7 +93,7 @@ rendering of the molecules, and performing in-memory substructure search.
 
 Here is an [example of manipulating atoms in a molecule](https://public.datagrok.ai/js/samples/domains/chem/mol-atoms-bonds) using openchemlib.js.
 
-## RDKit in Python
+## Rdkit in python
 
 [RDKit in Python](https://www.rdkit.org/docs/GettingStartedInPython.html) are Python wrappers for 
 RDKit, one of the best open-source toolkits for cheminformatics. While Python scripts get executed
@@ -102,7 +102,7 @@ on a server, they can be seamlessly embedded into Datagrok via [Scripting](scrip
 Here are some RDKit in Python-based [cheminformatics-related scripts](https://github.com/datagrok-ai/public/tree/master/packages/ChemScripts/scripts/python)
 in the public repository.
 
-## RDKit in WebAssembly
+## Rdkit in webassembly
 
 Recently, Greg Landrum, the author of RDKit, has introduced 
 [a way to compile its C++ code to WebAssembly](http://rdkit.blogspot.com/2019/11/introducing-new-rdkit-javascript.html),
@@ -119,4 +119,4 @@ contains the structure that gets rendered as SVG using the RDKit library.
 
 See also:
 * [Cheminformatics](../domains/chem/cheminformatics.md)
-* [JavaScript Development](develop.md)
+* [JavaScript development](develop.md)

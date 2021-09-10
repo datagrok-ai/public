@@ -7,7 +7,7 @@ Provides access to [Microsoft Access](https://en.wikipedia.org/wiki/Microsoft_Ac
 DB file using SQL queries via JDBC driver. 
 The file should be stored in Datagrok's file share for Access DBs.
 
-## Connection Parameters
+## Connection parameters
 
 ```json
 {
@@ -17,6 +17,6 @@ The file should be stored in Datagrok's file share for Access DBs.
 ```
 
 See also:
-  * [Data Connection](../data-connection.md)
+  * [Data connection](../data-connection.md)
   * [Microsoft Access](https://en.wikipedia.org/wiki/Microsoft_Access)
  

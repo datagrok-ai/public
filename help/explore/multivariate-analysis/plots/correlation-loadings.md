@@ -1,7 +1,7 @@
-<!-- TITLE: Correlation Loadings -->
+<!-- TITLE: Correlation loadings -->
 <!-- SUBTITLE: -->
 
-# Correlation Loadings
+# Correlation loadings
 
 Scatter plot of correlations between the variables and the PLS components.
 

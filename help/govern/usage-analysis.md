@@ -1,7 +1,7 @@
 <!-- TITLE: Usage Analysis -->
 <!-- SUBTITLE: -->
 
-# Usage Analysis
+# Usage analysis
 
 Datagrok is a universal data platform that enables users to perform broad range of tasks, ranging from the
 self-service data analytics to using custom applications on top of the platform. In this environment,

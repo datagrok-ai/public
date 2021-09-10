@@ -1,7 +1,7 @@
 <!-- TITLE: Tests: Help -->
 <!-- SUBTITLE: -->
 
-## Help View
+## Help view
 
 1. Open "Welcome" view
 
@@ -42,7 +42,7 @@
    
 1. Repeat steps 9-11 for help view from **Help | About**
    
-## Context Help
+## Context help
 
 1. Close context help by clicking ```X``` (by default it is open)
    * Context help no longer shows

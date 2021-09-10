@@ -1,7 +1,7 @@
-<!-- TITLE: Public Repository -->
+<!-- TITLE: Public repository -->
 <!-- SUBTITLE: -->
 
-# Public Repository
+# Public repository
 
 Datagrok is an extensible data-agnostic data analysis platform. It can be extended 
 with different scientific methods (functions) that are automatically discovered and suggested to user
@@ -24,7 +24,7 @@ there are some restrictions related to the server compute capacities.
 Enterprises with the platform deployed [on-premises](../develop/admin/architecture.md#deployment) 
 can also access the public repository.  
 
-## How to Contribute
+## How to contribute
 
 We are interested in other fields, such as NLP, bioinformatics, GIS, and others. We are looking for experts (PhD is a plus) 
 who would be able to both identify these popular methods, and integrate them into the platform.
@@ -32,7 +32,7 @@ They should be proficient in R or Python, and enjoy working with and contributin
 
 If you are interested in contributing to the public repository, please reach out to us: [info@datagrok.ai](mailto:info@datagrok.ai)
 
-## Academic License
+## Academic license
 
 Combined with the provision of a special license to academic institutions, it stands to incentivize academicians to use
 the tool, and in the process of doing so, publish new methods in an auto-discoverable and machine-consumable format.

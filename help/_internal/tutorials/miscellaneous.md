@@ -1,7 +1,7 @@
 <!-- TITLE: Use Cases: Miscellaneous -->
 <!-- SUBTITLE: -->
 
-# Use Cases: Miscelleneous
+# Use cases: Miscelleneous
 
 ## Auto-named selections 
 

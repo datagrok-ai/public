@@ -1,7 +1,7 @@
-<!-- TITLE: Tests: Find and Replace -->
+<!-- TITLE: Tests: Find and replace -->
 <!-- SUBTITLE: -->
 
-# Tests: Find and Replace
+# Tests: find and replace
 
 This typical ["Find and Replace"](find-and-replace-test.md) dialog that you see in every text editor, except that
 it supports specifying the columns to run against, and \[search patterns\] for matching non-textual columns.
@@ -102,4 +102,4 @@ it supports specifying the columns to run against, and \[search patterns\] for m
 
 
 See also:
- * [Find and Replace](find-and-replace.md)
+ * [Find and replace](find-and-replace.md)

@@ -1,7 +1,7 @@
 <!-- TITLE: Tests: Workspace -->
 <!-- SUBTITLE: -->
 
-# Tests: Workspace
+# Tests: workspace
 
 [Workspace](workspace.md) is a collection of currently opened [projects](project.md).
 

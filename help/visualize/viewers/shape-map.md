@@ -1,7 +1,7 @@
-<!-- TITLE: Shape Map -->
+<!-- TITLE: Shape map -->
 <!-- SUBTITLE: -->
 
-# Shape Map
+# Shape map
 
 Shows a map that is applicable for the specified dataset. Typically, it would 
 represent a geographical area (countries, states, counties, etc), but it also
@@ -27,4 +27,4 @@ sometimes it can't map names to the regions. To identify these records, select
 See also:
 * Applicable tables: #{x.demo:germany_grp_by_state}, #{x.demo:pa_income_by_county}, #{x.demo:ua_population}  
 * [Viewers](../viewers.md)
-* [JS API: Shape Map](https://public.datagrok.ai/js/samples/ui/viewers/types/shape-map)
+* [JS API: Shape map](https://public.datagrok.ai/js/samples/ui/viewers/types/shape-map)

@@ -25,5 +25,6 @@ If a context menu is open when multiple columns are selected, user will be prese
 choice to apply commands to either current table, or all selected tables.
 
 See also:
+
 * [Column Manager](../explore/column-manager.md)
 * [Grid](../visualize/viewers/grid.md)

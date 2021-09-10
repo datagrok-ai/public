@@ -60,4 +60,4 @@ See also:
   * [Scripting](scripting.md)
   * [Scripting tutorial](../_internal/tutorials/scripting.md)
   * [Script browser test](../tests/script-browser-test.md)
-  * [Scripting Auto Test](scripting-test.side)
+  * [Scripting auto test](scripting-test.side)

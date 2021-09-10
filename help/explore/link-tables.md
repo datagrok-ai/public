@@ -1,7 +1,7 @@
-<!-- TITLE: Link Tables -->
+<!-- TITLE: Link tables -->
 <!-- SUBTITLE: -->
 
-# Link Tables
+# Link tables
 
 Links two tables based on the key columns. 
 The link type determines which records should be synchronized between the datasets (current record,
@@ -24,4 +24,4 @@ fact that selection in the first table controls the filter in the second one.
 See also:
 
   * [JavaScript API Samples: Linking Tables](https://public.datagrok.ai/js/samples/data-frame/link-tables)
-  * [Join Tables](../transform/join-tables.md)
+  * [Join tables](../transform/join-tables.md)

@@ -1,7 +1,7 @@
 <!-- TITLE: Security -->
 <!-- SUBTITLE: -->
 
-# Security Overview
+# Security overview
 
 Datagrok uses a flexible mechanism for setting up privileges and access rights for all [entities](../overview/objects.md),
 largely based on [RBAC](https://en.wikipedia.org/wiki/Role-based_access_control). 
@@ -58,7 +58,7 @@ Encrypted credentials are stored in the special [storage](#credentials-storage).
 ![Entities diagram](../uploads/security/credentials-entities-diagram.png "Entities diagram")
 [Entities diagram.drawio](../uploads/security/credentials-entities-diagram.drawio)
 
-### Credentials Storage
+### Credentials storage
 
 For security reasons, all external credentials are stored in a separate database and encrypted with 
 the platform key generated during deployment. By compromising only one of the systems, the attacker still

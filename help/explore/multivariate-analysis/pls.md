@@ -1,7 +1,7 @@
-<!-- TITLE: Multivariate Analysis Based on Partial Least Squares (PLS) -->
+<!-- TITLE: Multivariate analysis based on partial least squares (PLS) -->
 <!-- SUBTITLE: -->
 
-# Multivariate Analysis Based on Partial Least Squares (PLS)
+# Multivariate analysis based on partial least squares (pls)
 
 Multivariate analysis (MVA) is based on the statistical principle of multivariate statistics, 
 which involves observation and analysis of more than one statistical outcome variable at a time.  
@@ -12,7 +12,7 @@ between the response and independent variables, it finds a linear regression mod
 the predicted variables and the observable variables to a new space. Because both the X and Y 
 data are projected to new spaces, the PLS family of methods are known as bilinear factor models.
 
-## Regress and Analyse
+## Regress and analyse
 
   * Open a table
   * Run from the top menu: `ML | Multivariate Analysis (PLS)...`
@@ -35,13 +35,13 @@ Scatter plot of PLS components (T-components) vs. scores of the response variabl
 
 ![Scores](../../uploads/features/stats/scores.png "Scores Scatter Plot") 
 
-### [Explained Variance](plots/explained-variance.md)
+### [Explained variance](plots/explained-variance.md)
 
 Bar chart with explained variance of variables by PLS-components, cumulative sum by each of components.
 
 ![Explained Variance](../../uploads/features/stats/explained-variance.png "Explained Variance Bar Chart") 
 
-### [Correlation Loadings](plots/correlation-loadings.md)
+### [Correlation loadings](plots/correlation-loadings.md)
 
 Scatter plot of correlations between the variables and the PLS components.
 
@@ -50,7 +50,7 @@ scores shows how the variables relate to the observations.
 
 ![Correlation Loadings](../../uploads/features/stats/correlation-loadings.png "Correlation Loadings Scatter Plot") 
 
-### [Predicted vs. Reference](plots/predicted-vs-reference.md)
+### [Predicted vs. reference](plots/predicted-vs-reference.md)
 
 Scatter plot of PLS components (T-components) vs. scores of the response variable (U-components).
 
@@ -59,7 +59,7 @@ occurrence groups or trends).
 
 ![Predicted vs. Reference](../../uploads/features/stats/predicted-vs-reference.png "Predicted vs. Reference Scatter Plot") 
 
-### [Regression Coefficients](plots/regression-coefficients.md)
+### [Regression coefficients](plots/regression-coefficients.md)
 
 Bar chart with regression coefficients (used with the original data scale).  
   

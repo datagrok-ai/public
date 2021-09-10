@@ -1,7 +1,7 @@
 <!-- TITLE: Tests: Recently Open Views -->
 <!-- SUBTITLE: -->
 
-# Tests: Recently Open Views
+# Tests: Recently open views
 
 History of open views is saved in platform. This history is available on "Welcome" view in "Recently opened" section.
 
