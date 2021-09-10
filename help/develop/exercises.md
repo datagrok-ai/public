@@ -158,11 +158,11 @@ In this exercise, we will count occurrences of a given subsequence in a nucleoti
 5. Let's modify the script to solve the task of counting sequence occurrences. Add a new preamble:
    (use any `#description` you like):
    ```python
-# Name: countsubsequencepython
-# Language: python
-# Input: string sequence
-# Input: string subsequence
-# Output: int count
+    # name: countsubsequencepython
+    # language: python
+    # input: string sequence
+    # input: string subsequence
+    # output: int count
    ```
    In the body, implement a Python function counting all occurrences of a given `subsequence` in a `sequence`.
    Return a `count` the same way as in the default script from p. 2.
@@ -199,12 +199,12 @@ Let's repeat what we've achieved in the last point of the previous exercise, now
    While the original function could only operate on a single row, the new function shall operate on the entire
    dataframe. To start with, the function's Datagrok signature should look as follows:  
    ```python
-# Name: countsubsequencepythondataframe
-# Language: python
-# Input: dataframe sequences
-# Input: column columnname
-# Input: string subsequence = "acc"
-# Output: dataframe result {action:join(sequences)}
+    # name: countsubsequencepythondataframe
+    # language: python
+    # input: dataframe sequences
+    # input: column columnname
+    # input: string subsequence = "acc"
+    # output: dataframe result {action:join(sequences)}
    ```  
    This function takes as an input a dataframe with a column containing nucleotide sequences, named as a value of
    `columnName`, a nucleotide subsequence `subsequence` being sought, and outputs an input dataframe with a new column
@@ -331,16 +331,16 @@ _You will learn:_ how to invoke arbitrary Datagrok functions in JavaScript and a
    As this is a common action in many scenarios, the same result in Datagrok can be achieved with setting
    `{action:join(inputDf)}` on the output dataframe:  
    ```
-# Output: dataframe adfwithanewcolumn {action:join(inputdf)}
+   # Output: dataframe adfwithanewcolumn {action:join(inputdf)}
    ```  
    This is useful not only for brevity, but also for saving bandwidth: the resulting dataframe will be joined with
    the origin dataframe on the client side, only the necessary new data shall be passed over to the client.  
    For example, this is how to convert an existing column into a new one and add it to the original dataframe:  
    
    ```
-# Language: python
-# Input: dataframe inputdf
-# Output: dataframe outputdf {action:join(inputdf)}
+    # language: python
+    # input: dataframe inputdf
+    # output: dataframe outputdf {action:join(inputdf)}
 
     outputDf = inputDf[['someColumn']]
     outputDf['newColumn'] = 2 * outputDf['someColumn']

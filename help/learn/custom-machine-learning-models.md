@@ -70,20 +70,20 @@ Once implemented, custom models can be chosen from the list of model engines.
 ### `Train` function
 
 ```python
-# Name: pyknntrain
-# Meta.mlname: pyknn
-# Meta.mlrole: train
-# Description: custom python train func for knn
-# Language: python
-# Input: dataframe df
-# Input: string predict_column
-# Input: int n_neighbors {category: firstparm}
-# Input: string weights=uniform {category: parameters; choices: ["uniform", "distance"]}
-# Input: int leaf_size=30 {category: parameters}
-# Input: int p=1 {category: parameters; range:1-2}
-# Input: string metric=minkowski {category: parameters; choices: ["euclidean", "manhattan", "chebyshev", "minkowski"]}
-# Input: string algorithm = auto {category: parameters; choices: ["auto","ball_tree", "kd_tree", "brute"]}
-# Output: blob model
+# name: pyknntrain
+# meta.mlname: pyknn
+# meta.mlrole: train
+# description: custom python train func for knn
+# language: python
+# input: dataframe df
+# input: string predict_column
+# input: int n_neighbors {category: firstparm}
+# input: string weights=uniform {category: parameters; choices: ["uniform", "distance"]}
+# input: int leaf_size=30 {category: parameters}
+# input: int p=1 {category: parameters; range:1-2}
+# input: string metric=minkowski {category: parameters; choices: ["euclidean", "manhattan", "chebyshev", "minkowski"]}
+# input: string algorithm = auto {category: parameters; choices: ["auto","ball_tree", "kd_tree", "brute"]}
+# output: blob model
  
 # Import necessary packages
 import numpy as np
@@ -112,16 +112,16 @@ pickle.dump(trained_model, open(model, 'wb'))
 ### `Apply` function
 
 ```python
-# Name: pyknnapply
-# Meta.mlname: pyknn
-# Meta.mlrole: apply
-# Description: custom python apply for knn
-# Language: python
-# Input: blob model
-# Input: dataframe df
-# Input: string nameskeys [original features' names]
-# Input: string namesvalues [new features' names]
-# Output: dataframe data_out
+# name: pyknnapply
+# meta.mlname: pyknn
+# meta.mlrole: apply
+# description: custom python apply for knn
+# language: python
+# input: blob model
+# input: dataframe df
+# input: string nameskeys [original features' names]
+# input: string namesvalues [new features' names]
+# output: dataframe data_out
 
 # Load necessary packages
 import numpy as np

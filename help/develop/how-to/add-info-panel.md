@@ -16,12 +16,12 @@ Info panels are added as part of a [package](../develop.md). There are two ways 
 Sometimes it is desirable to show an info panel only for data of a specific [semantic type](../../discover/semantic-types.md). To make use of detectors available out of the box, simply specify a relevant semantic type either from a script or from a panel function written in JavaScript.
 
 ```python
-# Name: string length
-# Language: python
-# Tags: panel
-# Input: string s {semtype: text}
-# Output: int length
-# Condition: true
+# name: string length
+# language: python
+# tags: panel
+# input: string s {semtype: text}
+# output: int length
+# condition: true
 
 length = len(s)
 ```
@@ -41,13 +41,13 @@ It is possible to define your own semantic types. To apply a custom detector, fi
 To create a panel script, you should tag it as `panel` and specify conditions for the panel to be shown in the `condition` header parameter:
 
 ```python
-# Name: detect cats
-# Description: detects cats on image
-# Language: python
-# Input: file file
-# Output: bool hascats
-# Tags: demo, files, panel, ml, opencv
-# Condition: file.isfile && file.size < 1e6 && file.path.contains("/cats/") && (file.name.endswith("jpg") || file.name.endswith("jpeg"))
+# name: detect cats
+# description: detects cats on image
+# language: python
+# input: file file
+# output: bool hascats
+# tags: demo, files, panel, ml, opencv
+# condition: file.isfile && file.size < 1e6 && file.path.contains("/cats/") && (file.name.endswith("jpg") || file.name.endswith("jpeg"))
 
 import cv2
 

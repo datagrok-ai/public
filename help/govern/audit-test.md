@@ -292,15 +292,15 @@ See also:
  
  (**):
  ```#name: t-test
-# Description: welch's t-test
-# Help-url: https://en.wikipedia.org/wiki/welch%27s_t-test
-# Language: r
-# Tags: demo
-# Sample: tsla.csv
-# Input: dataframe data [input data table]
-# Input: column x {type:numerical} [x axis column name]
-# Input: column y {type:numerical} [y axis column name]
-# Output: double pvalue [p-value of t-statistics]
+# description: welch's t-test
+# help-url: https://en.wikipedia.org/wiki/welch%27s_t-test
+# language: r
+# tags: demo
+# sample: tsla.csv
+# input: dataframe data [input data table]
+# input: column x {type:numerical} [x axis column name]
+# input: column y {type:numerical} [y axis column name]
+# output: double pvalue [p-value of t-statistics]
     
     require(stats)
     

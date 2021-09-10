@@ -18,10 +18,10 @@ Each line starts with a comment.
 Let's take a look at a simple R script that returns a square of the input parameter:   
 
 ```
-# Name: rsquare
-# Language: r
-# Input: double x
-# Output: double result
+# name: rsquare
+# language: r
+# input: double x
+# output: double result
 
 result = x * x
 ```
@@ -108,7 +108,7 @@ This is how to define the "chemprop" environment in the script header:
 Start using _renv_ by initializing it and installing packages (see a [full example](https://github.com/datagrok-ai/public/tree/master/packages/RScripts/scripts/renv_spelling.R)):
 
 ```
-# Language: r
+# language: r
 ...
 renv::init()
 renv::install("hunspell@3.0.1")
@@ -138,8 +138,8 @@ are applicable only to string parameters.
 The following example adds a "containsLettersOnly" function to the "col" parameter:
 
 ```
-# Input: string s {validators: ["containslettersonly"]}
-# Input: column col {validators: ["containsmissingvalues"]}
+# input: string s {validators: ["containslettersonly"]}
+# input: column col {validators: ["containsmissingvalues"]}
 ```
 
 ```js
@@ -153,11 +153,11 @@ grok.functions.register({
 ```
 
 ```python
-# Name: numbers
-# Language: python
-# Input: int count1 {validators: ["jsval1", "jsval2"]} [number of cells in table]
-# Input: int count2 {validators: ["jsval1"]} [number of cells in table]
-# Input: int count3 {validators: ["jsval2"]} [number of cells in table]
+# name: numbers
+# language: python
+# input: int count1 {validators: ["jsval1", "jsval2"]} [number of cells in table]
+# input: int count2 {validators: ["jsval1"]} [number of cells in table]
+# input: int count3 {validators: ["jsval2"]} [number of cells in table]
 ```
 
 ![Script Parameter Validators](../uploads/features/script-param-validators.gif "Script Parameter Validators") 
@@ -173,8 +173,8 @@ A choice provider is a function with no parameters that returns a list of string
 The following example demonstrates two ways of defining choices:
 
 ```
-# Input: string fruit {choices: ["apple", "banana"]}
-# Input: string vegetable {choices: jsveggies}
+# input: string fruit {choices: ["apple", "banana"]}
+# input: string vegetable {choices: jsveggies}
 ```
 
 Here is a possible implementation of the "jsTypes" function used in the example:
@@ -200,9 +200,9 @@ The following example helps user enter a country name by dynamically retrieving 
 from a web service: 
 
 ```python
-# Name: sales by country
-# Language: python
-# Input: string country = uk {suggestions: jssuggestcountryname}
+# name: sales by country
+# language: python
+# input: string country = uk {suggestions: jssuggestcountryname}
 ```
 
 ```js
@@ -349,27 +349,27 @@ otherwise.
  
 Header line examples: 
 ```
-# Input: string choices = int {choices: ["string", "int", "bool"]}
-# Input: string choices = int {choices: jstypes}
+# input: string choices = int {choices: ["string", "int", "bool"]}
+# input: string choices = int {choices: jstypes}
 
-# Input: string option = int {suggestions: jssuggesttype}
+# input: string option = int {suggestions: jssuggesttype}
 ```
 
 
 ### Examples:
 
 ```
-# Input: dataframe t1 {columns:numerical} [first input data table]
-# Input: dataframe t2 {columns:numerical} [second input data table]
-# Input: column x {type:numerical; table:t1} [x axis column name]
-# Input: column y {type:numerical} [y axis column name]
-# Input: column date {type:datetime; format:mm/dd/yyyy} [date column name]
-# Input: column_list numdata {type:numerical; table:t1} [numerical columns names]
-# Input: int numcomp = 2 {range:2-7} [number of components]
-# Input: bool center = true [number of components]
-# Input: string type = high {choices: ["high", "low"]} [type of filter]
-# Output: dataframe result {action:join(t1)} [pca components]
-# Output: graphics scatter [scatter plot]
+# input: dataframe t1 {columns:numerical} [first input data table]
+# input: dataframe t2 {columns:numerical} [second input data table]
+# input: column x {type:numerical; table:t1} [x axis column name]
+# input: column y {type:numerical} [y axis column name]
+# input: column date {type:datetime; format:mm/dd/yyyy} [date column name]
+# input: column_list numdata {type:numerical; table:t1} [numerical columns names]
+# input: int numcomp = 2 {range:2-7} [number of components]
+# input: bool center = true [number of components]
+# input: string type = high {choices: ["high", "low"]} [type of filter]
+# output: dataframe result {action:join(t1)} [pca components]
+# output: graphics scatter [scatter plot]
 ```
 
 ## Filtering
