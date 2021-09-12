@@ -27,7 +27,7 @@ declare let grok: any;
  * @param {string | null} className
  * @returns {HTMLElement}
  */
-export function element(tagName: string, className: string | null = null): HTMLElement {
+export function element(tagName: string, className: string | null = null): HTMLElement & any {
   let x = document.createElement(tagName);
   if (className !== null)
     _class(x, className);
