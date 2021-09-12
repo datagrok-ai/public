@@ -64,8 +64,8 @@ cell, or any other [object](../overview/objects.md). A condition might perform c
 against that object by using the parameter name ("x" in the example below):
 
 ```
-# input: column x
-# condition: x.isnumerical && x.name == "f3" && x.stats.missingvaluecount > 0 
+#input: column x
+#condition: x.isnumerical && x.name == "f3" && x.stats.missingvaluecount > 0 
 ```
 
 ### User preferences
@@ -95,13 +95,13 @@ by opening (project:demog). It creates a [Scatter Plot](../visualize/viewers/sca
 sets the axes to the pre-defined columns, and adds a regression line.
 
 ```
-# name: scatter plot
-# description: panel that contains an interactive scatter plot
-# language: grok
-# tags: panel
-# input: dataframe table
-# condition: table.name == "demog" && table.columns.containsall(["height", "weight", "age", "sex"])
-# output: viewer plot
+#name: scatter plot
+#description: panel that contains an interactive scatter plot
+#language: grok
+#tags: panel
+#input: dataframe table
+#condition: table.name == "demog" && table.columns.containsall(["height", "weight", "age", "sex"])
+#output: viewer plot
 
 plot = table.ScatterPlot("height", "weight", "age", "sex")
 plot.showRegressionLine = true
@@ -130,13 +130,13 @@ See the following info panel (spectrogram-panel.grok) in action
 by opening (project:eeg)
 
 ```
-# name: spectrogram info panel
-# description: panel that contains graphics produced by the r script
-# language: grok
-# tags: panel,dsp
-# input: column signal {type:numerical}
-# output: graphics pic
-# condition: "f3" == signal.name
+#name: spectrogram info panel
+#description: panel that contains graphics produced by the r script
+#language: grok
+#tags: panel,dsp
+#input: column signal {type:numerical}
+#output: graphics pic
+#condition: "f3" == signal.name
 
 pic = Spectrogram("eeg", signal, 256.0, 1024, 0.1, true)
 ``` 
@@ -149,13 +149,13 @@ current context. For instance, you might want to send an email to a user, or upd
 a record in the database.
 
 ```
-# name: transaction review panel
-# description: actions available for the credit card transaction
-# language: grok
-# tags: panel
-# input: row activity
-# output: string actions {action: markup}
-# condition: activity.table.name = "credit card transactions"
+#name: transaction review panel
+#description: actions available for the credit card transaction
+#language: grok
+#tags: panel
+#input: row activity
+#output: string actions {action: markup}
+#condition: activity.table.name = "credit card transactions"
 
 actions = "#{button("Flag as suspicious", "http.Post(myserver, row.transactionId)")}"
 ```
@@ -169,14 +169,14 @@ chemical structure. It appears whenever user clicks on a structure.
 #{x.ChemScripts:SolubilityPrediction}
 
 ```
-# name: solubility prediction
-# description: predicts solubility by molecule descriptors ("ipc", "molwt", "numvalenceelectrons", "mollogp", "labuteasa", "tpsa", "heavyatomcount", "numhacceptors", "numhdonors", "numrotatablebonds", "ringcount")
-# language: grok
-# tags: panel, prediction, chem
-# condition: smiles.semtype == "molecule"
-# input: dataframe table
-# input: column smiles {semtype: molecule} [column with molecules, in smiles format]
-# output: dataframe predictions {action: join(table)}
+#name: solubility prediction
+#description: predicts solubility by molecule descriptors ("ipc", "molwt", "numvalenceelectrons", "mollogp", "labuteasa", "tpsa", "heavyatomcount", "numhacceptors", "numhdonors", "numrotatablebonds", "ringcount")
+#language: grok
+#tags: panel, prediction, chem
+#condition: smiles.semtype == "molecule"
+#input: dataframe table
+#input: column smiles {semtype: molecule} [column with molecules, in smiles format]
+#output: dataframe predictions {action: join(table)}
 featureNames = ["TPSA", "Ipc", "NumHAcceptors", "NumHDonors", "LabuteASA", "RingCount", "MolWt", "NumValenceElectrons", "HeavyAtomCount", "MolLogP", "NumRotatableBonds"]
 ChemDescriptors(table, smiles, featureNames)
 MissingValuesImputation(table, featureNames, featureNames, 5)
@@ -193,14 +193,14 @@ behind the scenes when user clicks on a row that contains store address:
 * using extracted statistics, predict yearly sales of a franchise store if it opens at that address 
 
 ```
-# name: predicted sales
-# description: predicting yearly sales of the franchise store by using previously trained predictive model
-# language: grok
-# tags: panel
-# sample: stores.csv
-# input: cell address
-# output: double predictedsales
-# condition: cell.table.name == "stores" && cell.column.name == "address"
+#name: predicted sales
+#description: predicting yearly sales of the franchise store by using previously trained predictive model
+#language: grok
+#tags: panel
+#sample: stores.csv
+#input: cell address
+#output: double predictedsales
+#condition: cell.table.name == "stores" && cell.column.name == "address"
 
 //todo Vasiliy: implement
 statistics = AddressToStatistics()

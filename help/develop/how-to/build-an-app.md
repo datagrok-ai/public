@@ -455,10 +455,10 @@ the `Data` pane opened by the "folder" button on the left side of the Datagrok's
 the below:
 
 ```python
-# name: simpletestpython
-# language: python
-# input: dataframe table [data table]
-# output: int count [number of cells in table]
+#name: simpletestpython
+#language: python
+#input: dataframe table [data table]
+#output: int count [number of cells in table]
 count = table.shape[0] * table.shape[1]
 ```
 

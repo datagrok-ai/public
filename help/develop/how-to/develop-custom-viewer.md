@@ -395,15 +395,15 @@ your package and name it `scripts`. Then add a new file with `.py` extension to 
 paste the following script:
 
 ```python
-# name: bar chart
-# language: python
-# tags: demo, viewers
-# input: dataframe df
-# input: column splitcolumnname {type: categorical}
-# input: column valuecolumnname {type: numerical}
-# input: string valueaggrtype = mean {choices: ["mean", "count", "sum"]}
-# input: string color = steelblue {choices: ["darkcyan", "seagreen", "steelblue"]} 
-# output: graphics
+#name: bar chart
+#language: python
+#tags: demo, viewers
+#input: dataframe df
+#input: column splitcolumnname {type: categorical}
+#input: column valuecolumnname {type: numerical}
+#input: string valueaggrtype = mean {choices: ["mean", "count", "sum"]}
+#input: string color = steelblue {choices: ["darkcyan", "seagreen", "steelblue"]} 
+#output: graphics
 
 import matplotlib.pyplot as plt
 
