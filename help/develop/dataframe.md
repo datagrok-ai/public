@@ -72,7 +72,7 @@ column is of type `Molecule`, computing molecular fingerprints, searching for su
 The property `.semType` is a getter to a [tag][114] named `'quality'`. This distinct getter is there due to a key
 role of this tag.
 
-Learn more about semantic types in this article: [link][109].
+Learn more about semantic types in this article: [Link][109].
 
 ### Construct a column
 
@@ -108,7 +108,7 @@ grok.shell.info(column.setString(15, '3.1415')); // displays 'true'
 grok.shell.info(column.setString(16, 'non-number')); // displays 'false'
 ```
 
-Learn more about supported formats in this article: [link][108].
+Learn more about supported formats in this article: [Link][108].
 
 <!-- TODO: Explain `notify` -->
 
@@ -144,7 +144,7 @@ for (let i = 0; i < rowCount; i++)
 ```
 
 Doing a `.byName` or a `t.rowCount` call as part of the loop shall incur up to 20x overhead.
-Using a `column.values()` iterator is 2-3 times slower than this snippet.
+A `column.values()` iterator is also available, it is 2-3 times slower than this snippet.
 
 If the fastest access is required for numerical columns, which usually happens in computing new values atop a column,
 accessing data with a result of calling `.getRawData()` is advised:
@@ -285,6 +285,18 @@ Enum value: `DG.COLUMN_TYPE.OBJECT`
 
 This may be any JavaScript object. Pass it as usual.
 
+### Statistics
+
+The properties `.min` and `.max` of `Column` return and cache the minimum and maximum numeric values. Using
+the internal [version][128] of the column, the caches for `.min` and for `.max` are automatically invalidated
+whenever the column is modified.
+
+Computing popular statistics, such as average `.avg`, median `.med` or standard deviation `.stdev`,
+is more efficient when done altogether. If that's the case you need, it's possible to get all such statistics
+using a `.`, which returns an istance of [`Stats`][130] class.
+
+Run `Stats` example: [Link][129].
+
 ### Numerical and categotical columns
 
 Currently, columns of types `BOOL` and `STRING` are considered as categorical, s.t. they represent values from a
@@ -315,13 +327,13 @@ returning this number is useful when invalidating cached computation results sto
 
 Dataframes may be obtained through the JavaSript or TypeScript code in various ways:
 
-* a new dataframe constructed from predefined data: [link][122]
-* a new dataframe from precreated Datagrok columns: [link][122]
-* a table already being rendered by a table view: [link][]
-* a dataframe constructed from a file in a file share: [link][]
+* a new dataframe constructed from predefined data: [Link][122]
+* a new dataframe from precreated Datagrok columns: [Link][122]
+* a table already being rendered by a table view: [Link][]
+* a dataframe constructed from a file in a file share: [Link][]
 * a CSV file uploaded to a browser
-* a dataframe returned by a script: [link][]
-* as calculated on the flight for aggregations: [link][]
+* a dataframe returned by a script: [Link][]
+* as calculated on the flight for aggregations: [Link][]
 
 #### Construct from in-place content
 
@@ -390,7 +402,7 @@ In addition to regular access to columns by index and name, there's a group of m
   for (let column of demog.columns.byTags({'tag1': 'value1', 'tag2': undefined}))
     grok.shell.info(column.name);
   ```
-* With a [categorical or numerical][125] columns:
+* With [categorical or numerical][125] columns:
   ```javascript
   let demog = grok.data.demo.demog();
   for (let column of demog.columns.categorical) grok.shell.info(column.name);
@@ -399,9 +411,43 @@ In addition to regular access to columns by index and name, there's a group of m
   
 ### Manipulate
 
-### Add and remove columns
+#### Add or remove columns 
 
-The `.columns` property provides for manipulation
+To add new columns to a dataframe, use:
+* for an existing instance `column` of `Column`:
+  * `.add(column)` adds it as a last column of the dataframe
+  * `.insert(column, index)` adds it _before_ the column which is currently at position `index`,
+    starting count from `0`
+  * 
+  
+
+  /** Adds an empty column of the specified type.
+   * @param {string} name
+   * @param {ColumnType} type
+   * @returns {Column} */
+  addNew(name: string, type: ColumnType): Column {
+    return toJs(api.grok_ColumnList_AddNew(this.d, name, type));
+  }
+
+[133]
+
+#### Add a column by a formula
+
+The `.columns` property of `DataFrame` provides for a method to create a column by a mathematical formula,
+specified with a string, which may also involve any [function][132] registered within the platform.
+For example, in a dataframe `df` with columns `X` and `Y` it's possible to add a new column `Z`, specified as follows:
+
+```javascript
+df.columns.addNewCalculated('Z', 'Sin({X} + ${Y}) / 2');
+```
+
+The column type shall be deduced automatically.
+
+Run "Add calculated columns" example: [Link][131].
+
+#### Add or remove rows
+
+
 
 #### Extend
 
@@ -519,3 +565,10 @@ JavaScript property setter).
 [125]: #numerical-and-categotical-columns "Numerical and categorical columns"
 [126]: https://public.datagrok.ai/js/samples/data-frame/modification/manipulate "Manipulating dataframes"
 [127]: https://public.datagrok.ai/js/samples/data-frame/advanced/custom-category-order "Custom categories order"
+[128]: #versioning
+[129]: https://public.datagrok.ai/js/samples/data-frame/stats
+[130]: https://github.com/datagrok-ai/public/blob/be5486c9c761947bd916202343fad0adb2deaef3/js-api/src/dataframe.ts#L1669
+[131]: https://public.datagrok.ai/js/samples/data-frame/modification/calculated-columns
+[132]: overview/functions.md
+[133]: https://public.datagrok.ai/js/samples/data-frame/modification/add-columns
+[134]: https://dev.datagrok.ai/js/samples/data-frame/modification/manipulate

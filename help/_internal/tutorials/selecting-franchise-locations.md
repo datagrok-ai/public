@@ -53,13 +53,13 @@ Features: creating project, accessing data, creating query, post-processing, Jup
    * Paste following code: 
 
     ```
-    # name: t-test
-    # description: welch's t-test
-    # language: r
-    # input: dataframe data [input data table]
-    # input: column x {type:numerical} [x axis column name]
-    # input: column y {type:numerical} [y axis column name]
-    # output: double pvalue {action:show} [p-value of t-statistics]
+    #name: t-test
+    #description: welch's t-test
+    #language: r
+    #input: dataframe data [input data table]
+    #input: column x {type:numerical} [x axis column name]
+    #input: column y {type:numerical} [y axis column name]
+    #output: double pvalue {action:show} [p-value of t-statistics]
     require(stats)
     ttest = t.test(data[[x]], data[[y]])
     pValue = ttest$p.value
