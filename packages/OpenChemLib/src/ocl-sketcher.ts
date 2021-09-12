@@ -5,7 +5,7 @@ import * as OCL from 'openchemlib/full.js';
 
 let sketcherId = 0;
 
-export class OpenChemLibSketcher extends DG.chem.SketcherBase {
+export class OpenChemLibSketcher extends grok.chem.SketcherBase {
   // @ts-ignore
   _sketcher: OCL.StructureEditor;
 
