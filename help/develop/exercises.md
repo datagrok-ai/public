@@ -175,7 +175,7 @@ In this exercise, we will count occurrences of a given subsequence in a nucleoti
    Open a table — say, let's go for `sequences.csv`. Navigate to `Data | Files` and open
    `Demo Files / bio / sequences.csv`. Navigate to a menu item `Edit | Add New Column...`
    and click it. Type in your expression using the function you've just previously created:  
-   ![](exercises-add-new-column.png) <!-- TODO: Update the dialog -->
+   ![](exercises-add-new-column.png)
    Observe how the `Preview Result Columns` change while you are modifying the expression. 
    There, notice a namespace `<yourLogin>` as part of a qualified function name `<yourLogin>:<functionName>`,
    `JDoe:CountSubseqnecePython` in this case. Namepaces are used through Datagrok very commonly.
@@ -183,6 +183,8 @@ In this exercise, we will count occurrences of a given subsequence in a nucleoti
    Datagrok namespaces originate from the names of packages, projects, and users, and always
    qualify a resource name, be it a package, a function, a connection or a query.  
    Now hit "Ok" and have the new column inserted to the dataframe.
+   
+<!-- TODO: Update the dialog -->
    
 ### Modifying dataframes with scripts
 
@@ -621,7 +623,7 @@ _Prerequisites:_ exercises ["Setting up the environment"](#setting-up-the-enviro
    Choose one of the popular coloring conventions, following [this link](https://www.biostars.org/p/171056/).
    
    
-## Accessing web services with openapi
+## Accessing web services with OpenAPI
 
 _Details:_ [OpenAPI access](../access/open-api.md)
 
@@ -668,7 +670,7 @@ fetch some nucleotide data regarding coronavirus.
 We provide a handful of demo Swaggers, check their source JSON files [here][021] and see in action in Datagrok
 at the [`Web Services`](https://public.datagrok.ai/webservices) section of the Datagrok UI.
 
-## Creating an info panel with a rest web service
+## Creating an info panel with a REST web service
 
 We will use the ENA REST API to output sequences and associated data in the info panel,
 based on the ENA sequence ID contained in a currently selected grid cell.
