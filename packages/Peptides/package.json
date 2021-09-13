@@ -1,6 +1,5 @@
 {
 	"name": "peptides",
-	"beta": true,
 	"friendlyName": "Peptides",
 	"version": "0.0.1",
 	"description": "",
@@ -14,7 +13,7 @@
 		"webpack-cli": "latest"
 	},
 	"sources": [
-		"files/data.csv"
+		"files/aligned.csv"
 	],
 	"scripts": {
 		"install-dependencies": "npm install",
