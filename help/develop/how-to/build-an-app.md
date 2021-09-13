@@ -157,7 +157,7 @@ accessing files from file shares and servers is made by `grok.functions.eval('Op
 When it comes to connections, we encourage you not to store their credentials directly inside your application
 packages. The chapter ["Managing privileges"](#managing-privileges) discusses credentials management in detail.
 
-### Accessing rest endpoints outside the host
+### Accessing REST endpoints outside the host
 
 Web services provide endpoints that you can programmatically connect to.
 There are two main options for this: the first is to use
