@@ -413,23 +413,17 @@ In addition to regular access to columns by index and name, there's a group of m
 
 #### Add or remove columns 
 
-To add new columns to a dataframe, use:
+To add new columns to a dataframe:
 * for an existing instance `column` of `Column`:
   * `.add(column)` adds it as a last column of the dataframe
   * `.insert(column, index)` adds it _before_ the column position which is currently at position `index`,
-    starting count from `0`
-  * 
-  
+    starting count from `0`. The default value of `index` is `null`, which corresponds to adding the column
+    at the end of the columns list
+* `.addNew` adds a new empty column to the end of the column list
 
-  /** Adds an empty column of the specified type.
-   * @param {string} name
-   * @param {ColumnType} type
-   * @returns {Column} */
-  addNew(name: string, type: ColumnType): Column {
-    return toJs(api.grok_ColumnList_AddNew(this.d, name, type));
-  }
-
-[133]
+Examples:
+* run "Add columns": [Link][133]
+* run "Manipulate columns": [Link][134]
 
 #### Add a column by a formula
 
