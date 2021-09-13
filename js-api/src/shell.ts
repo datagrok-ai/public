@@ -375,6 +375,10 @@ export class Windows {
     api.grok_Windows_Set_ShowColumns(x);
   }
 
+  /** Controls the visibility of the top menu ribbon. */
+  get showRibbon(): boolean { return api.grok_Windows_Get_ShowRibbon(); }
+  set showRibbon(x: boolean) { api.grok_Windows_Set_ShowRibbon(x); }
+
   /** Hide dock tabs in presentation mode **/
   get hideTabsInPresentationMode(): boolean {
     return api.grok_Get_HideTabsInPresentationMode();
