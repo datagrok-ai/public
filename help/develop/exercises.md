@@ -158,7 +158,7 @@ In this exercise, we will count occurrences of a given subsequence in a nucleoti
 5. Let's modify the script to solve the task of counting sequence occurrences. Add a new preamble:
    (use any `#description` you like):
    ```python
-   #name: countsubsequencepython
+   #name: CountSubsequencePython
    #language: python
    #input: string sequence
    #input: string subsequence
@@ -199,11 +199,11 @@ Let's repeat what we've achieved in the last point of the previous exercise, now
    While the original function could only operate on a single row, the new function shall operate on the entire
    dataframe. To start with, the function's Datagrok signature should look as follows:  
    ```python
-   #name: countsubsequencepythondataframe
+   #name: CountSubsequencePythonDataframe
    #language: python
    #input: dataframe sequences
-   #input: column columnname
-   #input: string subsequence = "acc"
+   #input: column columnName
+   #input: string subsequence = "ACC"
    #output: dataframe result {action:join(sequences)}
    ```  
    This function takes as an input a dataframe with a column containing nucleotide sequences, named as a value of

@@ -41,13 +41,13 @@ It is possible to define your own semantic types. To apply a custom detector, fi
 To create a panel script, you should tag it as `panel` and specify conditions for the panel to be shown in the `condition` header parameter:
 
 ```python
-#name: detect cats
-#description: detects cats on image
+#name: DetectCats
+#description: Detects cats on image
 #language: python
 #input: file file
 #output: bool hascats
 #tags: demo, files, panel, ml, opencv
-#condition: file.isfile && file.size < 1e6 && file.path.contains("/cats/") && (file.name.endswith("jpg") || file.name.endswith("jpeg"))
+#condition: file.isfile && file.size < 1e6 && file.path.contains("/cats/") && (file.name.endsWith("jpg") || file.name.endswith("jpeg"))
 
 import cv2
 

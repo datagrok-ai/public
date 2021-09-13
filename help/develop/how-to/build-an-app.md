@@ -455,7 +455,7 @@ the `Data` pane opened by the "folder" button on the left side of the Datagrok's
 the below:
 
 ```python
-#name: simpletestpython
+#name: SimpleTestPython
 #language: python
 #input: dataframe table [data table]
 #output: int count [number of cells in table]

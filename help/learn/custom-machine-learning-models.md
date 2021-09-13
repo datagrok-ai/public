@@ -70,19 +70,19 @@ Once implemented, custom models can be chosen from the list of model engines.
 ### `Train` function
 
 ```python
-#name: pyknntrain
-#meta.mlname: pyknn
+#name: PyKNNTrain
+#meta.mlname: PyKNN
 #meta.mlrole: train
-#description: custom python train func for knn
+#description: Custom Python train function for KNN
 #language: python
 #input: dataframe df
 #input: string predict_column
-#input: int n_neighbors {category: firstparm}
-#input: string weights=uniform {category: parameters; choices: ["uniform", "distance"]}
-#input: int leaf_size=30 {category: parameters}
-#input: int p=1 {category: parameters; range:1-2}
-#input: string metric=minkowski {category: parameters; choices: ["euclidean", "manhattan", "chebyshev", "minkowski"]}
-#input: string algorithm = auto {category: parameters; choices: ["auto","ball_tree", "kd_tree", "brute"]}
+#input: int n_neighbors {category: FirstParm}
+#input: string weights=uniform {category: Parameters; choices: ["uniform", "distance"]}
+#input: int leaf_size=30 {category: Parameters}
+#input: int p=1 {category: Parameters; range:1-2}
+#input: string metric = minkowski {category: Parameters; choices: ["euclidean", "manhattan", "chebyshev", "minkowski"]}
+#input: string algorithm = auto {category: Parameters; choices: ["auto","ball_tree", "kd_tree", "brute"]}
 #output: blob model
  
 # Import necessary packages
@@ -112,15 +112,15 @@ pickle.dump(trained_model, open(model, 'wb'))
 ### `Apply` function
 
 ```python
-#name: pyknnapply
-#meta.mlname: pyknn
+#name: PyKNNApply
+#meta.mlname: PyKNN
 #meta.mlrole: apply
-#description: custom python apply for knn
+#description: Custom Python apply function for KNN
 #language: python
 #input: blob model
 #input: dataframe df
-#input: string nameskeys [original features' names]
-#input: string namesvalues [new features' names]
+#input: string nameskeys [Original features' names]
+#input: string namesvalues [New features' names]
 #output: dataframe data_out
 
 # Load necessary packages
