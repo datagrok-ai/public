@@ -18,7 +18,7 @@ Each line starts with a comment.
 Let's take a look at a simple R script that returns a square of the input parameter:   
 
 ```
-#name: rsquare
+#name: RSquare
 #language: r
 #input: double x
 #output: double result
@@ -153,11 +153,11 @@ grok.functions.register({
 ```
 
 ```python
-#name: numbers
+#name: Numbers
 #language: python
-#input: int count1 {validators: ["jsval1", "jsval2"]} [number of cells in table]
-#input: int count2 {validators: ["jsval1"]} [number of cells in table]
-#input: int count3 {validators: ["jsval2"]} [number of cells in table]
+#input: int count1 {validators: ["jsval1", "jsval2"]} [Number of cells in table]
+#input: int count2 {validators: ["jsval1"]} [Number of cells in table]
+#input: int count3 {validators: ["jsval2"]} [Number of cells in table]
 ```
 
 ![Script Parameter Validators](../uploads/features/script-param-validators.gif "Script Parameter Validators") 
@@ -200,9 +200,9 @@ The following example helps user enter a country name by dynamically retrieving 
 from a web service: 
 
 ```python
-#name: sales by country
+#name: Sales by country
 #language: python
-#input: string country = uk {suggestions: jssuggestcountryname}
+#input: string country = uk {suggestions: jsSuggestCountryName}
 ```
 
 ```js

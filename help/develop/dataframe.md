@@ -416,7 +416,7 @@ In addition to regular access to columns by index and name, there's a group of m
 To add new columns to a dataframe, use:
 * for an existing instance `column` of `Column`:
   * `.add(column)` adds it as a last column of the dataframe
-  * `.insert(column, index)` adds it _before_ the column which is currently at position `index`,
+  * `.insert(column, index)` adds it _before_ the column position which is currently at position `index`,
     starting count from `0`
   * 
   

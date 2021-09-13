@@ -27,13 +27,13 @@ tag to the script header.
 The following example shows code for a simple scatter plot written on R, using the `ggplot2` library.
 
 ```r
-#name: scatter plot
+#name: Scatter plot
 #language: r
 #tags: demo, viewers
 #input: dataframe t
-#input: column xcolumnname
-#input: column ycolumnname
-#input: column colorcolumnname
+#input: column xColumnName
+#input: column yColumnName
+#input: column colorColumnName
 #output: graphics
 
 require(ggplot2)

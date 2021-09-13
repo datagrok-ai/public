@@ -54,7 +54,7 @@ Features: creating project, accessing data, creating query, post-processing, Jup
 
     ```
     #name: t-test
-    #description: welch's t-test
+    #description: Welch's t-test
     #language: r
     #input: dataframe data [input data table]
     #input: column x {type:numerical} [x axis column name]
