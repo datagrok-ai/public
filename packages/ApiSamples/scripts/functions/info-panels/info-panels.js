@@ -9,5 +9,5 @@ grok.functions.register({
 });
 
 // To see the panel, click on a cell with a molecule
-let df = await grok.data.files.openTable("Demo:TestJobs:Files:DemoFiles/chem/smiles.csv");
+let df = await grok.data.getDemoTable('chem/smiles.csv');
 grok.shell.addTableView(df);
