@@ -96,10 +96,7 @@ const MapProxy = new Proxy(class {
             return function (...args :string[]) {
               return val.apply(target, args);
             };
-          } /* else if (typeof val === 'number') {
-            // for the case of a getter like name
-            return val;
-          } */ else {
+          } else {
             return DG.toJs(api.grok_Map_Get(target.d, prop));
           }
         },
@@ -133,7 +130,8 @@ const MapProxy = new Proxy(class {
   }
 );
 
-// Proxy wrapper for ColumnList
+/** Proxy wrapper for ColumnList
+ */
 const ColumnListProxy = new Proxy(class {
       columnList: ColumnList;
       constructor(columnList: any) {
@@ -205,17 +203,8 @@ export class DataFrame {
     this.columns = new ColumnListProxy(toJs(api.grok_DataFrame_Columns(this.d)));
     this.rows = new RowList(this, api.grok_DataFrame_Rows(this.d));
     this.filter = new BitSet(api.grok_DataFrame_Get_Filter(this.d));
-
     this.temp = new MapProxy(api.grok_DataFrame_Get_Temp(this.d), 'temp');
     this.tags = new MapProxy(api.grok_DataFrame_Get_Tags(this.d), 'tags', 'string');
-
-    // return new Proxy(this, {
-    //     get(target, name) {
-    //         if (target.hasOwnProperty(name))
-    //             return target[name];
-    //         return target.table.get(name, target.idx);
-    //     }
-    // });
   }
 
   /** Creates a {@link DataFrame} with the specified number of rows and no columns.
@@ -632,13 +621,6 @@ export class Row {
     });
   }
 
-  // /** An iterator over all values in this column. */
-  // * values() {
-  //   for (let i = 0; i < this.length; i++) {
-  //     yield this.get(i);
-  //   }
-  // }
-
   get cells(): Iterable<Cell> { return _toIterable(api.grok_Row_Get_Cells(this.table.d, this.idx)); }
 
   /** Returns this row's value for the specified column
@@ -784,7 +766,6 @@ export class Column {
         let val = values[i] === undefined || values[i] === null ? FLOAT_NULL : values[i];
         buffer[i] = exact ? Qnum.exact(val) : val;
       }
-     // console.log(buffer);
       col.setRawData(buffer);
     }
     return col;
@@ -893,26 +874,6 @@ export class Column {
   get(row: number): any {
     return api.grok_Column_GetValue(this.d, row);
   }
-
-  // /** Returns i-th value as integer. Throws exception if column's type is not TYPE_INT or TYPE_DATE_TIME.
-  //  * @param {number} i
-  //  * @returns {number} */
-  // getInt(i);
-  //
-  // /** Returns i-th value as a integer. Works for IntColumns only.
-  //  * @param {number} i
-  //  * @returns {number} */
-  // getFloat(i)
-  //
-  // /** Returns i-th value as boolean. Works for IntColumns only.
-  //  * @param {number} i
-  //  * @returns {number} */
-  // getBool(i)
-  //
-  // /** Returns i-th value as integer. Works for IntColumns only.
-  //  * @param {number} i
-  //  * @returns {number} */
-  // getDateTime(i)
 
   /** Returns i-th value as string, taking into account value format defined for the column.
    *  An empty string is returned if there is no value.
@@ -2153,50 +2114,3 @@ export class ColumnDialogHelper {
     });
   }
 }
-
-//static const int None = -2147483648;
-//static const double None = 2.6789344063684636e-34;
-//
-// class JsColumn {
-//
-//   /// init
-//   void init(Int32Array values);
-//
-//   /// Removes [count] element at position [idx]. Returns the element at idx-th position.
-//   TValue removeAt(int idx, [int count = 1]);
-//
-//   /// Inserts [count] elements, initialized to the empty value, at position [idx].
-//   void insertAt(int idx, [int count = 1]);
-//
-//   /// Compares elements at positions [idx1] and [idx2].
-//   int compare(int idx1, int idx2);
-//
-//   /// Compares values.
-//   int compareValues(TValue v1, TValue v2);
-//
-//   /// Sets [idx]-th element to None.
-//   void setNone(int idx);
-//
-//   /// Is [idx]-th None?
-//   bool isNone(int idx);
-//
-//   /// Returns whether i-th element exists and is not +-Infinity.
-//   /// Applicable for numerical columns only.
-//   bool isFinite(int idx) => !isNone(idx);
-//
-//   /// String representation of the [idx]-th element.
-//   /// The result depends on the column formatting options, and therefore might lose precision.
-//   String toStr(int idx);
-//
-//   /// Returns a [double] representation of [idx]-th element.
-//   double toDouble(int idx);
-//
-//   TValue getItem(int pos) => isNone(pos) ? null:  this[pos];
-//   void   setItem(int pos, TValue value)
-//
-//   /// Minimum value of a column.
-//   double get min
-//
-//   /// Maximum value of a column.
-//   double get max
-// }
