@@ -1163,8 +1163,8 @@ export class ColumnList {
    * @param {boolean} notify
    * @param {int} index
    * @returns {Column} */
-  insert(column: Column, notify: boolean = true, index: number): Column {
-    api.grok_ColumnList_Insert(this.d, column.d, notify, index);
+  insert(column: Column, index: number = null, notify: boolean = true): Column {
+    api.grok_ColumnList_Insert(this.d, column.d, index, notify);
     return column;
   }
 
