@@ -1,9 +1,11 @@
+import * as DG from 'datagrok-api/dg';
+
 class PeptidesPackageDetectors extends DG.Package {
 
   //tags: semTypeDetector
   //input: column col
   //output: string semType
-  detectAligned(col) {
+  detectAligned(col: DG.Column) {
 
     if (col.type === DG.TYPE.STRING) {
       for (let i = 0; i != col.categories.length; i++) {
