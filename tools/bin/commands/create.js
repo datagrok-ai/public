@@ -25,7 +25,7 @@ const confTemplate = yaml.safeLoad(fs.readFileSync(confTemplateDir));
 
 let dependencies = [];
 
-function createDirectoryContents(name, config, templateDir, packageDir, ide = '', ts = false) {
+function createDirectoryContents(name, config, templateDir, packageDir, ide = '', ts = false, eslint = false) {
   const filesToCreate = fs.readdirSync(templateDir);
 
   filesToCreate.forEach(file => {
@@ -55,6 +55,19 @@ function createDirectoryContents(name, config, templateDir, packageDir, ide = ''
           package['scripts'][`release-${name.toLowerCase()}-${server}`] = `grok publish ${server} --rebuild --release`;
         }
         if (ts) Object.assign(package.dependencies, { 'ts-loader': 'latest', 'typescript': 'latest' });
+        if (eslint) {
+          Object.assign(package.devDependencies, {
+            'eslint': 'latest',
+            'eslint-config-google': 'latest',
+          }, ts ? {
+            '@typescript-eslint/eslint-plugin': 'latest',
+            '@typescript-eslint/parser': 'latest',
+          } : {});
+          Object.assign(package.scripts, {
+            'lint': `eslint ./src/*.${ts ? 'ts' : 'js'}`,
+            'lint-fix': `eslint ./src/*.${ts ? 'ts' : 'js'} --fix`,
+          });
+        }
         // Save module names for installation prompt
         for (let [module, tag] of Object.entries(Object.assign({}, package.dependencies, package.devDependencies)))
           dependencies.push(`${module}@${tag}`);
@@ -63,6 +76,15 @@ function createDirectoryContents(name, config, templateDir, packageDir, ide = ''
       if (file === 'package.js' && ts) copyFilePath = path.join(packageDir, 'package.ts');
       if (file === 'tsconfig.json' && !ts) return false;
       if (file === 'ts.webpack.config.js') return false;
+      if (file === '.eslintrc.json') {
+        if (!eslint) return false;
+        if (ts) {
+          let eslintConf = JSON.parse(contents);
+          eslintConf.parser = '@typescript-eslint/parser';
+          eslintConf.plugins = ['@typescript-eslint'];
+          contents = JSON.stringify(eslintConf, null, '\t');
+        }
+      }
       if (file === 'gitignore') {
         copyFilePath = path.join(packageDir, '.gitignore');
         if (ts) contents += '\n# Emitted *.js files\nsrc/**/*.js\n';
@@ -80,8 +102,8 @@ function createDirectoryContents(name, config, templateDir, packageDir, ide = ''
 function create(args) {
   const nOptions = Object.keys(args).length - 1;
   const nArgs = args['_'].length;
-  if (nArgs > 2 || nOptions > 2) return false;
-  if (nOptions && !Object.keys(args).slice(1).every(op => op == 'ide' || op == 'ts')) return false;
+  if (nArgs > 2 || nOptions > 3) return false;
+  if (nOptions && !Object.keys(args).slice(1).every(op => ['ide', 'ts', 'eslint'].includes(op))) return false;
 
   // Create `config.yaml` if it doesn't exist yet
   if (!fs.existsSync(grokDir)) fs.mkdirSync(grokDir);
@@ -105,7 +127,7 @@ function create(args) {
       console.log('The package directory should be empty');
       return false;
     }
-    createDirectoryContents(name, config, templateDir, packageDir, args.ide, args.ts);
+    createDirectoryContents(name, config, templateDir, packageDir, args.ide, args.ts, args.eslint);
     console.log(help.package(name, args.ts));
     console.log(`\nThe package has the following dependencies:\n${dependencies.join(' ')}\n`);
 
