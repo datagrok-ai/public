@@ -2,9 +2,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { splitAlignedPeptides } from './splitAligned';
+import {splitAlignedPeptides} from './splitAligned';
 
-export let _package = new DG.Package();
+export const _package = new DG.Package();
 
 
 // function main(tableName, localTables) {
@@ -15,10 +15,10 @@ export let _package = new DG.Package();
 // }
 
 async function main() {
-  let pi = DG.TaskBarProgressIndicator.create('Loading Peptides');
+  const pi = DG.TaskBarProgressIndicator.create('Loading Peptides');
   //let peptides = await grok.data.loadTable('https://datagrok.jnj.com/p/ejaeger.il23peptideidp5562/il-23_peptide_idp-5562')
-  let path = _package.webRoot + 'files/' + 'aligned.csv';
-  let peptides = (await grok.data.loadTable(path));
+  const path = _package.webRoot + 'files/' + 'aligned.csv';
+  const peptides = (await grok.data.loadTable(path));
 
 
   // let names = [
@@ -33,8 +33,8 @@ async function main() {
   //   "a11", "a12", "a13", "a14",
   //   "a15", "a16", "a17"
   // ];
-  
-  let view = grok.shell.addTableView(peptides);
+
+  const view = grok.shell.addTableView(peptides);
 
   // for(let i = 0; i < names.length; i++){
   //   if(htmlNames.includes(names[i])){
@@ -72,7 +72,7 @@ async function main() {
   // let amRgx = new RegExp("^[G|L|Y|S|E|Q|D|N|F|A|K|R|H|C|V|P|W|I|M|T|]{1}\\(.+\\)$");
   // let admRgx = new RegExp("^d[G|L|Y|S|E|Q|D|N|F|A|K|R|H|C|V|P|W|I|M|T|]{1}\\(.+\\)$$");
   // let aNameRgx = new RegExp("^a\\d.*$");
-  
+
   // view.grid.onCellPrepare(function (gc) {
   //   if (gc.isTableCell && gc.gridColumn.name === 'N'){
   //     gc.style.backColor = 0xff1f77b4;
@@ -108,93 +108,89 @@ async function main() {
 //name: Peptides
 //tags: app
 export function Peptides() {
-
-  let appDescription = ui.info(
+  const appDescription = ui.info(
     [
       ui.span(['For more deatails see LINK ']),
       ui.divText('\n To start the application :', {style: {'font-weight': 'bolder'}}),
-      ui.divText('Select the corresponding .csv table with peptide sequences')
+      ui.divText('Select the corresponding .csv table with peptide sequences'),
     ], 'Transform peptide sequence data to research insights'
   );
-  let annotationViewerDiv = ui.div();
+  const annotationViewerDiv = ui.div();
 
-  let windows = grok.shell.windows;
+  const windows = grok.shell.windows;
   windows.showToolbox = false;
   windows.showHelp = false;
   windows.showProperties = false;
 
-  let localTables = grok.shell.tables;
-  let namesOfLocalTables = localTables.map((df) => df.name);
+  // const localTables = grok.shell.tables;
+  // const namesOfLocalTables = localTables.map((df) => df.name);
 
   // let chosenFile = ui.choiceInput('File', '', namesOfLocalTables, () => {
   //   main(chosenFile.stringValue, localTables);
   // });
 
-  let chosenFile = ui.button('Open demo', ()=> main());
+  const chosenFile = ui.button('Open demo', ()=> main());
 
-  let mainDiv = ui.div();
+  const mainDiv = ui.div();
   grok.shell.newView('Peptides', [
     appDescription,
     ui.h2('Choose .csv file'),
     ui.div([
       ui.block25([
         ui.inputs([
-          chosenFile
-        ])
+          chosenFile,
+        ]),
       ]),
-      ui.block75([annotationViewerDiv])
+      ui.block75([annotationViewerDiv]),
     ]),
-    mainDiv
+    mainDiv,
   ]);
 
   //let table = DG.DataFrame.create();
   //table.name = 'Peptides';
   //let view = grok.shell.addTableView(table);
-
 }
 
 
-  //name: peptidesSAR
-  //tags: demo, peptides 
-  //description: 
-  //top-menu: Chem | peptides
-  //input: dataframe df {semType: alignedSequence}
-  export function peptidesSAR(df) {
-    
-    grok.shell.warning(df.getCol('Activity').toList().length);
+//name: peptidesSAR
+//tags: demo, peptides
+//description:
+//top-menu: Chem | peptides
+//input: dataframe df {semType: alignedSequence}
+export function peptidesSAR(df: DG.DataFrame) {
+  grok.shell.warning(df.getCol('Activity').toList().length.toString());
 
-    //let colSmiles = DG.Column.fromList("string", "smiles", smiles.toList());
-    //let dfSmiles = DG.DataFrame.fromColumns([colSmiles]);
+  //let colSmiles = DG.Column.fromList("string", "smiles", smiles.toList());
+  //let dfSmiles = DG.DataFrame.fromColumns([colSmiles]);
 
-  
-    //df.columns.insert(x_coord);
-    // df.columns.insert(y_coord);
-    // df.columns.insert(sali);
-    
-    // df.columns.byName('x_coord').name = '~x_coord';
-    // df.columns.byName('y_coord').name = '~y_coord';
 
-    // let view = grok.shell.getTableView(df.name);
-    // let sp = view.addViewer(DG.Viewer.scatterPlot(df, {
-    //   xColumnName: '~x_coord',
-    //   yColumnName: '~y_coord',
-    //   size: 'sali'
-    // }));
+  //df.columns.insert(x_coord);
+  // df.columns.insert(y_coord);
+  // df.columns.insert(sali);
 
-    // sp.props.showXSelector = false;
-    // sp.props.showYSelector = false;
-    // sp.props.showSizeSelector = false;
-    // sp.props.showColorSelector = false;
-    // sp.props.markerMinSize = 5;
-    // sp.props.markerMaxSize = 25;
-    // sp.props.colorColumnName = 'activity';
+  // df.columns.byName('x_coord').name = '~x_coord';
+  // df.columns.byName('y_coord').name = '~y_coord';
 
-  }  
+  // let view = grok.shell.getTableView(df.name);
+  // let sp = view.addViewer(DG.Viewer.scatterPlot(df, {
+  //   xColumnName: '~x_coord',
+  //   yColumnName: '~y_coord',
+  //   size: 'sali'
+  // }));
+
+  // sp.props.showXSelector = false;
+  // sp.props.showYSelector = false;
+  // sp.props.showSizeSelector = false;
+  // sp.props.showColorSelector = false;
+  // sp.props.markerMinSize = 5;
+  // sp.props.markerMaxSize = 25;
+  // sp.props.colorColumnName = 'activity';
+}
 
 //name: Split Sequence
 //input: column peptideColumn {semType: alignedSequence}
 //tags: panel
 //output: widget result
-export function splitAlignedSequence(peptideColumn) {
+export function splitAlignedSequence(peptideColumn: DG.Column) {
   grok.shell.addTableView(splitAlignedPeptides(peptideColumn));
 }
