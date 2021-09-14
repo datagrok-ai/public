@@ -2,6 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import { splitAlignedPeptides } from './splitAligned';
 
 export let _package = new DG.Package();
 
@@ -189,3 +190,11 @@ export function Peptides() {
     // sp.props.colorColumnName = 'activity';
 
   }  
+
+//name: Split Sequence
+//input: column peptideColumn {semType: alignedSequence}
+//tags: panel
+//output: widget result
+export function splitAlignedSequence(peptideColumn) {
+  grok.shell.addTableView(splitAlignedPeptides(peptideColumn));
+}
