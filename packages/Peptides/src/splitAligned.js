@@ -1,7 +1,3 @@
-//name: Split Sequence
-//input: column peptideColumn {semType: alignedSequence}
-//tags: panel
-//output: widget result
 export function splitAlignedPeptides(peptideColumn) {
   let splitPeptidesArray = [];
   let flag = true;
@@ -20,8 +16,9 @@ export function splitAlignedPeptides(peptideColumn) {
     })
   }
 
-  let columnsArray = splitPeptidesArray.map((v, i) => { return DG.Column.fromList('string', `a${i+3}`, v) });
+  let columnsArray = splitPeptidesArray.map((v, i) => { return DG.Column.fromList('string', `a${i+1 < 10 ? 0 : ""}${i+1}`, v) });
 
   //FIXME: Show it in a different way/save it somewhere? 
-  grok.shell.addTableView(DG.DataFrame.fromColumns(columnsArray));
+  // grok.shell.addTableView(DG.DataFrame.fromColumns(columnsArray));
+  return DG.DataFrame.fromColumns(columnsArray);
 }
