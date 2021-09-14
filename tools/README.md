@@ -48,6 +48,7 @@ Read more about package development in [Datagrok's documentation](https://datagr
   Package name may only include letters, numbers, underscores, or hyphens.
   Read more about naming conventions [here](https://datagrok.ai/help/develop/develop#naming-conventions).
   Options:
+    - `--eslint` adds a basic configuration for `eslint`
     - `--ide` adds an IDE-specific configuration for debugging (vscode)
     - `--ts` creates a TypeScript package template
 - `add` puts an object template to your package:
