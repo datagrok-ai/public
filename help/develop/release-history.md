@@ -1,6 +1,55 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-09-14 Dev build 0.93.23
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.23`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Stacked barchart added 
+* Histogram: Add legend feature 
+* Wiki: Capitalization 
+* Wiki: Capitalization. Adjustments for source codes with # 
+* (Bug) Color coding: custom colors are not persisted (WIP)
+* Functions: Tabs in functions markup 
+* Cron: support @reboot schedule (WIP)
+* Decompose the calculated columns example 
+* API Samples: a few additional links 
+* #110: Chem: dynamic sketchers 
+* Legend: Ability to add elements to the legend associated with additional charts (splines) 
+* GROK-GitHub-109 JS API: DataFrame.insert wrong order of optional argument 
+* Fix typos in function registration 
+* Fix misspelled class names 
+* Check package content at the publishing step (WIP)
+* GROK-GitHub-109 JS API: DataFrame.insert wrong order of optional argument. Type fix 
+* API Samples: simplify an info panel example 
+* Wiki: Dataframe (WIP)
+* Wiki: Small rendering adjustments 
+* JS API: grok.shell.windows.showRibbon flag 
+* JS API: dataframe.ts cleanup. 
+* Update package.ts 
+* null 
+* Bar chart: add collaborative filtering #85 
+* (Bug) Filters: Histogram: synchronization issue 
+* Scatter Plot: Legend for markers 
+* Updated public token 
+* aligned sequence split function 
+* fixed splitAlignedPeptides function 
+* added splitAlignedSequence panel function 
+* closes #113 datagrok-tools: package template: add eslint config file 
+* Update CONTRIB.md 
+* Peptides: compile the initial dataset, detect sequence, split   
+* Added a demo file with peptide sequences. 
+* (Bug) Form, Tile: rendering error 
+
+
 # 2021-09-09 Dev build 0.93.22
 
 ## Latest Docker Images
