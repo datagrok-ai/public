@@ -3,11 +3,30 @@ class StackedBarChart extends DG.JsViewer {
         super();
         this.dataColumnPrefix = this.string('dataColumnPrefix', 'a');
         this.dataEmptyAA = this.string('dataEmptyAA', '-');
+        this.valueAggrType = this.string('valueAggrType', 'avg', {choices: ['avg', 'count', 'sum']});
         this.initialized = false;
     }
 
+    // Additional chart settings
     init() {
-        this.margin = {top: 40, right: 10, bottom: 40, left: 10};
+        let groups = [
+            [['C', 'U'], 'yellow'],
+            [['G', 'P'], 'red'],
+            [['A', 'V', 'I', 'L', 'M', 'F', 'Y', 'W'], 'all_green'],
+            [['R', 'H', 'K'], 'light_blue'],
+            [['D', 'E'], 'dark_blue'],
+            [['S', 'T', 'N', 'Q'], 'orange']]
+        this.ord = {}
+
+        let i = 0
+        for (const g in groups) {
+            i++
+            for (const obj in groups[g][0]) {
+                this.ord[groups[g][0][obj]] = i
+            }
+        }
+
+        this.margin = {top: 10, right: 10, bottom: 50, left: 10};
         this.yScale = scaleLinear();
         this.xScale = scaleBand();
         this.data = {};
@@ -15,10 +34,18 @@ class StackedBarChart extends DG.JsViewer {
         this.palete = DG.Color.categoricalPalette.slice()
         this.palete.splice(this.palete.indexOf(4286545791), 1);
         this.colorScale = scaleOrdinal(this.palete);
+        this.selection_mode = false
+        this.aminoColumnNames = []
+        let cp = ChemPalette.get_datagrock()
         this.getColor = (c = null) => {
-            return c ? DG.Color.toRgb(this.colorScale(c)) : 'rgb(127,127,127)'
+            //return c ? DG.Color.toRgb(this.colorScale(c)) : 'rgb(127,127,127)'
+            return c in cp ? cp[c] : 'rgb(0,0,0)'
         }
+        console.error(this.palete)
         this.initialized = true;
+        for (let i = 0; i < 100; i++) {
+            console.error(this.getColor(i))
+        }
     }
 
     // Stream subscriptions
@@ -36,15 +63,16 @@ class StackedBarChart extends DG.JsViewer {
     }
 
     render(computeData = true) {
+        let selection_mode = false
         if (computeData) {
             this.colors[this.dataEmptyAA] = "#f0f0f0"
             // Empty the data array
             this.data = {};
-            let aminoColumnNames = []
+            this.aminoColumnNames = []
             this.dataFrame.columns.names().forEach((name) => {
                 if (name.startsWith(this.dataColumnPrefix)) {
                     if (/^\d+$/.test(name.slice(this.dataColumnPrefix.length))) {
-                        aminoColumnNames.push(name)
+                        this.aminoColumnNames.push(name)
                     }
                 }
             })
@@ -52,24 +80,30 @@ class StackedBarChart extends DG.JsViewer {
             this.aggregatedTables = {}
             this.aggregatedTablesUnselected = {}
             if (this.dataFrame.selection.trueCount > 0) {
-                aminoColumnNames.forEach(name => {
+                this.selection_mode = true
+                this.aminoColumnNames.forEach(name => {
                     this.aggregatedTables[name] = this.dataFrame
                         .groupBy([name])
                         .whereRowMask(this.dataFrame.filter)
                         .add('count', name, `${name}_count`)
                         .aggregate();
-
-                    this.aggregatedTablesUnselected[name] =
-                        this.dataFrame.groupBy([name])
-                            .whereRowMask(this.dataFrame.filter)
-                            .whereRowMask(this.dataFrame.selection.invert())
-                            .add('count', name, `${name}_count`)
-                            .aggregate();
-                    this.dataFrame.selection.invert()
+                    let buf1 = this.dataFrame.selection.clone().invert().getBuffer()
+                    let buf2 = this.dataFrame.filter.getBuffer()
+                    let resbuf = new ArrayBuffer(this.dataFrame.rowCount);
+                    for (const i in buf2) {
+                        resbuf[i] = buf2[i] & buf1[i]
+                    }
+                    let mask = DG.BitSet.fromBytes(resbuf, this.dataFrame.rowCount)
+                    this.aggregatedTablesUnselected[name] = this.dataFrame
+                        .groupBy([name])
+                        .whereRowMask(mask)
+                        .add('count', name, `${name}_count`)
+                        .aggregate();
                 });
 
             } else {
-                aminoColumnNames.forEach(name => {
+                this.selection_mode = false
+                this.aminoColumnNames.forEach(name => {
                         this.aggregatedTables[name] = this.dataFrame
                             .groupBy([name])
                             .whereRowMask(this.dataFrame.filter)
@@ -84,32 +118,37 @@ class StackedBarChart extends DG.JsViewer {
             let colobj = {}
             let empty_aa = null;
 
+
             for (const [name, df] of Object.entries(this.aggregatedTables)) {
-                colobj = {"name": name, "data": []}
+                colobj = {"name": name.substring(1), "data": []}
                 this.data["colls"].push(colobj)
                 let unselected_row_index = 0
 
                 for (let i = 0; i < df.rowCount; i++) {
                     let amino = df.getCol(name).get(i);
                     let amino_count = df.getCol(`${name}_count`).get(i)
-                    if (amino === this.dataEmptyAA) {
+                    if ((!amino) || amino in [this.dataEmptyAA]) {
                         //empty_aa = {"name": amino, "count": amino_count}
                         continue;
                     }
-                    colobj["data"].push({"name": amino, "count": amino_count})
+                    colobj["data"].push({"name": amino, "count": amino_count, "isSelected": this.selection_mode})
                     let unselected_amino_count = 0
                     let unselected_amino = ''
 
-                    if ((name in this.aggregatedTablesUnselected) && (df.rowCount > unselected_row_index)) {
+                    if ((name in this.aggregatedTablesUnselected) && (this.aggregatedTablesUnselected[name].rowCount > unselected_row_index)) {
                         unselected_amino = this.aggregatedTablesUnselected[name]
                             .getCol(name)
                             .get(unselected_row_index)
 
-                        if (unselected_amino === this.dataEmptyAA && (df.rowCount > unselected_row_index + 1)) {
+                        if (((!unselected_amino) || unselected_amino in [this.dataEmptyAA, ''])) {
                             unselected_row_index += 1
-                            unselected_amino = this.aggregatedTablesUnselected[name]
-                                .getCol(name)
-                                .get(unselected_row_index)
+                            if (this.aggregatedTablesUnselected[name].rowCount > unselected_row_index) {
+                                unselected_amino = this.aggregatedTablesUnselected[name]
+                                    .getCol(name)
+                                    .get(unselected_row_index)
+                            }
+
+
                         }
 
                         if (unselected_amino === amino) {
@@ -117,7 +156,11 @@ class StackedBarChart extends DG.JsViewer {
                                 .getCol(`${name}_count`)
                                 .get(unselected_row_index)
                             colobj["data"].slice(-1)[0]['count'] -= unselected_amino_count
-                            colobj["data"].push({"name": `${amino}_unselected`, "count": unselected_amino_count})
+                            colobj["data"].push({
+                                "name": `${amino}`,
+                                "count": unselected_amino_count,
+                                "isSelected": false
+                            })
                             unselected_row_index += 1
                         }
                     }
@@ -135,6 +178,18 @@ class StackedBarChart extends DG.JsViewer {
                             -= unselected_amino_count
                     }
                 }
+                colobj['data'] = colobj['data'].sort((o1, o2) => {
+                    if (this.ord[o1['name']] > this.ord[o2['name']]) {
+                        return -1
+                    }
+                    if (this.ord[o1['name']] < this.ord[o2['name']]) {
+                        return 1
+                    }
+
+                    return 0
+                })
+
+
             }
 
             if (empty_aa) {
@@ -149,6 +204,8 @@ class StackedBarChart extends DG.JsViewer {
         let height = this.root.parentElement.clientHeight;
         let innerWidth = width - this.margin.left - this.margin.right;
         let innerHeight = height - this.margin.top - this.margin.bottom;
+        let colors = this.colors
+        let scope = this
 
         $(this.root).empty();
         let svg = select(this.root).append("svg")
@@ -166,19 +223,39 @@ class StackedBarChart extends DG.JsViewer {
             .domain([0, this.data["max"]]).nice()
             .rangeRound([innerHeight, 0]);
 
-        const aminoScale = scaleBand().domain(Object.entries(this.data[`amino_count`])
-            .map((d) => (`${d[0]}:${d[1]}`)))
-            .rangeRound([0, innerWidth]);
+        // const aminoScale = scaleBand().domain(Object.entries(this.data[`amino_count`])
+        //     .map((d) => (`${d[0]}:${d[1]}`)))
+        //     .rangeRound([0, innerHeight]);
 
-
-        let colAxis = g.append("g").call(axisTop(x))
+        let cAxis = axisBottom(x);
+        cAxis.tickSize(0);
+        let colAxis = g.append("g").call(cAxis)
+            .attr("transform", `translate(0, ${innerHeight + 10})`);
+        colAxis.attr("font-family", "common sans")
+            .attr("fill", "black")
         colAxis.select(".domain").remove();
 
-        let aminoAxis = g.append("g").call(axisBottom(aminoScale))
-            .attr("transform", `translate(0, ${innerHeight})`);
-        aminoAxis.select(".domain").remove();
-        let colors = this.colors
-        let scope = this
+
+        // let aAxis = axisLeft(aminoScale)
+        // aAxis.tickSize(0);
+        //
+        // let aminoAxis = g.append("g").call(aAxis)
+        // aminoAxis.select(".domain").remove();
+        // aminoAxis.attr("font-family", "common sans")
+        //     .attr("fill", "black")
+        // aminoAxis.selectAll('.tick')
+        //     .on('click', (event) => {
+        //         scope.dataFrame.selection.handleClick(i => {
+        //             let amino_name = event.srcElement.textContent.split(':')[0]
+        //             let res = false
+        //             this.aminoColumnNames.forEach(name => {
+        //                 if (scope.dataFrame.getCol(name).get(i) === amino_name) {
+        //                     res = true;
+        //                 }
+        //             })
+        //             return res;
+        //         }, event)
+        //     });
 
         g.selectAll('.group')
             .data(this.data["colls"])
@@ -189,24 +266,52 @@ class StackedBarChart extends DG.JsViewer {
                     let that = select(this)
                         .append('rect')
 
-                    that.attr('class', 'bar')
+                    that = that.attr('class', 'bar')
                         .attr('data-index', j)
+
                         .attr('x', function (e) {
                             return x(d['name']);
                         })
-                        .attr('width', x.bandwidth())
-                        .style('fill', function (e) {
-                            return (obj['name'] in colors) ? colors[obj['name']] : `rgb(127, 127, 127)`
-                        })
-                        .attr('y', function (e) {
-                            let sum = 0;
-                            arr.map((obj_1, k) => {
-                                if (k < j) {
-                                    sum = sum + obj_1['count'];
-                                }
-                            });
-                            return y(obj['count'] + sum);
-                        })
+                        .attr('width', x.bandwidth());
+                    that = obj['isSelected'] ?
+                        that.style("stroke", "black")
+                            .style("stroke-width", Math.min(y(obj['count']), x.bandwidth()) / 13) : that.lower();
+
+                    that.style('fill', function (e) {
+                        return (obj['name'] in colors) ? colors[obj['name']] : `rgb(127, 127, 127)`
+                    })
+
+                    if (innerHeight - y(obj['count']) > Math.min(x.bandwidth(), 10)) {
+                        select(this).append("text")
+                            .text(function (e) {
+                                return obj['name'];
+                            })
+                            .attr("x", function (e) {
+                                return x(d['name']) + x.bandwidth() / 2;
+                            })
+                            .attr("y", function (e) {
+                                let sum = 0;
+                                arr.map((obj_1, k) => {
+                                    if (k < j) {
+                                        sum = sum + obj_1['count'];
+                                    }
+                                });
+                                return y(obj['count'] + sum) + Math.min(x.bandwidth(), 15) / 2 - 2 + (innerHeight - y(obj['count'])) / 2;
+                            })
+                            .attr("font-family", "common sans")
+                            .attr("font-size", `${Math.min(x.bandwidth(), 15)}px`)
+                            .attr("fill", "black")
+                            .attr("text-anchor", "middle");
+                    }
+                    that.attr('y', function (e) {
+                        let sum = 0;
+                        arr.map((obj_1, k) => {
+                            if (k < j) {
+                                sum = sum + obj_1['count'];
+                            }
+                        });
+                        return y(obj['count'] + sum);
+                    })
                         .attr('height', function (e) {
                             return innerHeight - y(obj['count']);
                         })
@@ -230,7 +335,7 @@ class StackedBarChart extends DG.JsViewer {
                                     amino_name = obj['name'].substring(0, obj['name'].length - 11)
                                     selected = false
                                 }
-                                let res = (amino_name === (scope.dataFrame.getCol(d['name']).get(i)))
+                                let res = (amino_name === (scope.dataFrame.getCol(`a${d['name']}`).get(i)))
                                 return res
                                 //&& (scope.dataFrame.selection.get(i) === selected);
                             }, event);
