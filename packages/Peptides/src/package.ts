@@ -3,6 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {splitAlignedPeptides} from './splitAligned';
+import {describe} from './SARViewer/describe';
 
 export const _package = new DG.Package();
 
@@ -35,6 +36,12 @@ async function main() {
   // ];
 
   const view = grok.shell.addTableView(peptides);
+
+  const grid = await describe(peptides, 'Activity');
+
+  if (grid !== null) {
+    view.addViewer(grid);
+  }
 
   // for(let i = 0; i < names.length; i++){
   //   if(htmlNames.includes(names[i])){
