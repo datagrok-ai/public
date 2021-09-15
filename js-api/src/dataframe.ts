@@ -1366,6 +1366,7 @@ export class RowList {
    * */
   select(rowPredicate: RowPredicate): void {
     this._applyPredicate(this.table.selection, rowPredicate);
+    this.table.selection.fireChanged();
   }
 
   /** Filters rows by predicate.
@@ -1374,8 +1375,8 @@ export class RowList {
    * */
   filter(rowPredicate: RowPredicate): void {
     this._applyPredicate(this.table.filter, rowPredicate);
+    this.table.filter.fireChanged();
   }
-
   /** Viewers that filter rows should subscribe to DataFrame.onRowsFiltering event.
    * When filtering conditions are changed, viewers should call requestFilter(). */
   requestFilter(): void {
