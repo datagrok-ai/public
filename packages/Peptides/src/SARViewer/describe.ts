@@ -225,5 +225,17 @@ export async function describe(df: DG.DataFrame, activityColumn: string, activit
     }
   });
 
+  // Select columns in source table that correspond to the currently clicked cell
+  grid.table.onCurrentCellChanged.subscribe((_: any) => {
+    if (grid.table.currentCell.value !== null && grid.table.currentCol.name !== aminoAcidResidue) {
+      const currentAAR = grid.table.get(aminoAcidResidue, grid.table.currentCell.rowIndex);
+      const currentPosition = grid.table.currentCol.name;
+      
+      // @ts-ignore: I'd love to use row.get(), but unfortunately there's no column 'get' :(
+      splitSeqDf!.rows.select((row) => row[currentPosition] === currentAAR);
+      df.selection.init((i) => splitSeqDf!.selection.get(i));
+    }
+  })
+
   return grid;
 }
