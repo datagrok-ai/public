@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import { splitAlignedPeptides } from '../splitAligned';
 
 
-function decimalAdjust(type: 'floor' | 'ceil', value: number, exp: number) {
+function decimalAdjust(type: 'floor' | 'ceil' | 'round', value: number, exp: number) {
   // If the exp is undefined or zero...
   if (typeof exp === 'undefined' || +exp === 0) {
     return Math[type](value);
@@ -39,8 +39,11 @@ export async function describe(df: DG.DataFrame, activityColumn: string) {
 
   splitSeqDf.columns.add(df.getCol(activityColumn));
 
-  let positionColName = 'position';
-  let aminoAcidResidue = 'aminoAcidResidue';
+  
+
+  const positionColName = 'position';
+  const aminoAcidResidue = 'aminoAcidResidue';
+  const medianColName = 'med';
 
   //unpivot a table and handle duplicates
   let matrixDf = splitSeqDf.groupBy(positionColumns)
@@ -52,12 +55,12 @@ export async function describe(df: DG.DataFrame, activityColumn: string) {
 
   //this table contains overall statistics on activity
   let totalStats = matrixDf.groupBy()
-    .add('med', activityColumn, 'med')
+    .add('med', activityColumn, medianColName)
     .aggregate()
 
   //statistics for specific AAR at a specific position
   matrixDf = matrixDf.groupBy([positionColName, aminoAcidResidue])
-    .add('med', activityColumn, 'med')
+    .add('med', activityColumn, medianColName)
     .add('avg', activityColumn, 'avg')
     .add('min', activityColumn, 'min')
     .add('max', activityColumn, 'max')
@@ -73,10 +76,10 @@ export async function describe(df: DG.DataFrame, activityColumn: string) {
     .aggregate()
 
   // calculate additional stats
-  await matrixDf.columns.addNewCalculated('ratio', '100*${count}/'.concat(`${peptidesCount}`));
+  await matrixDf.columns.addNewCalculated('ratio', '${count}/'.concat(`${peptidesCount}`));
   await matrixDf.columns.addNewCalculated('cv', '${stdev}/${avg}');
   await matrixDf.columns.addNewCalculated('iqr', '${q3}-${q1}');
-  await matrixDf.getCol('med').applyFormula('${med}-'.concat(`${totalStats.get('med', 0)}`));
+  await matrixDf.getCol(medianColName).applyFormula('${med}-'.concat(`${totalStats.get(medianColName, 0)}`));
 
   let statsDf = matrixDf.clone();
 
@@ -88,62 +91,59 @@ export async function describe(df: DG.DataFrame, activityColumn: string) {
   matrixDf.name = 'SAR';
 
   // !!! DRAWING PHASE !!!
-  let medianColName = 'med';
   
-  //find min and max across all of the dataframe
-  let dfMin = Infinity;
-  let dfMax = -Infinity;
-  for (let col of matrixDf.columns) {
-    if (col.name === aminoAcidResidue) { continue; }
-    dfMin = dfMin > col.min ? col.min : dfMin;
-    dfMax = dfMax < col.max ? col.max : dfMax;
-  }
+  //find min and max median difference across all of the dataframe
+  const dfMinMedian = statsDf.getCol(medianColName).min;
+  const dfMaxMedian = statsDf.getCol(medianColName).max;
+  //find min and max ratio across all of the dataframe
+  // const dfMinRatio = statsDf.getCol('ratio').min;
+  // const dfMaxRatio = statsDf.getCol('ratio').max;
 
   // color-coding cells based on the entire dataframe
   // colors are hard-coded and can be either white, light-green or green
-  for (let col of matrixDf.columns) {
-    if (col.name === aminoAcidResidue) { continue; }
-    let parts = 3;
-    let colPartLength = (dfMax - dfMin) / parts;
-    let range;
-    let color;
+  // for (let col of matrixDf.columns) {
+  //   if (col.name === aminoAcidResidue) { continue; }
+  //   let parts = 3;
+  //   let colPartLength = (dfMax - dfMin) / parts;
+  //   let range;
+  //   let color;
     
-    let condition = '{';
-    for (let part = 0; part < parts; part++) {
-      if (part !== 0) { condition = condition.concat(',') }
-      // add to upper boundary a bit so it colors the highest values too
-      range = `"${dfMin+colPartLength*part}-${dfMin+colPartLength*(part+1) + (part === (parts-1) ? 1 : 0)}"`;
-      color = `"rgb(${Math.floor(255-part*(255/(parts-1)))},${Math.floor(255-part*((255-122)/(parts-1)))},${Math.floor(255-part*(255/(parts-1)))})"`
-      condition = condition.concat(`${range}:${color}`);
-    }
-    condition = condition.concat('}');
+  //   let condition = '{';
+  //   for (let part = 0; part < parts; part++) {
+  //     if (part !== 0) { condition = condition.concat(',') }
+  //     // add to upper boundary a bit so it colors the highest values too
+  //     range = `"${dfMin+colPartLength*part}-${dfMin+colPartLength*(part+1) + (part === (parts-1) ? 1 : 0)}"`;
+  //     color = `"rgb(${Math.floor(255-part*(255/(parts-1)))},${Math.floor(255-part*((255-122)/(parts-1)))},${Math.floor(255-part*(255/(parts-1)))})"`
+  //     condition = condition.concat(`${range}:${color}`);
+  //   }
+  //   condition = condition.concat('}');
 
-    // Unable to choose custom colors for linear                               ?
-    // col.tags[DG.TAGS.COLOR_CODING_TYPE] = 'Linear';
-    col.tags[DG.TAGS.COLOR_CODING_TYPE] = 'Conditional';
+  //   // Unable to choose custom colors for linear                               ?
+  //   // col.tags[DG.TAGS.COLOR_CODING_TYPE] = 'Linear';
+  //   col.tags[DG.TAGS.COLOR_CODING_TYPE] = 'Conditional';
 
-    col.tags[DG.TAGS.COLOR_CODING_CONDITIONAL] = condition;
-  }
+  //   col.tags[DG.TAGS.COLOR_CODING_CONDITIONAL] = condition;
+  // }
 
   let grid = matrixDf.plot.grid();
 
   // set custom text and color in cells
-  grid.onCellPrepare(function (gc) {
-    if (
-        gc.isTableCell
-        && gc.tableColumn !== null
-        && gc.tableColumn.name !== aminoAcidResidue
-        && gc.tableRowIndex !== null
-        && gc.cell.value !== null
-      ) {
-      let cellColor = DG.Color.getCellColor(gc.cell!);
-      gc.style.backColor = cellColor;
+  // grid.onCellPrepare(function (gc) {
+  //   if (
+  //       gc.isTableCell
+  //       && gc.tableColumn !== null
+  //       && gc.tableColumn.name !== aminoAcidResidue
+  //       && gc.tableRowIndex !== null
+  //       && gc.cell.value !== null
+  //     ) {
+  //     let cellColor = DG.Color.getCellColor(gc.cell!);
+  //     gc.style.backColor = cellColor;
       
-      gc.style.textColor = DG.Color.getContrastColor(cellColor);
-      let query = `${aminoAcidResidue} = ${matrixDf.get(aminoAcidResidue, gc.tableRowIndex)} and ${positionColName} = ${gc.tableColumn.name}`;
-      gc.customText = `${decimalAdjust('floor', statsDf.groupBy([medianColName]).where(query).aggregate().get(medianColName, 0), -2)}`;
-    }
-  });
+  //     gc.style.textColor = DG.Color.getContrastColor(cellColor);
+  //     let query = `${aminoAcidResidue} = ${matrixDf.get(aminoAcidResidue, gc.tableRowIndex)} and ${positionColName} = ${gc.tableColumn.name}`;
+  //     gc.customText = `${decimalAdjust('floor', statsDf.groupBy([medianColName]).where(query).aggregate().get(medianColName, 0), -2)}`;
+  //   }
+  // });
 
   // render column headers and AAR symbols centered
   grid.onCellRender.subscribe(function (args) {
@@ -151,22 +151,32 @@ export async function describe(df: DG.DataFrame, activityColumn: string) {
       let textSize = args.g.measureText(args.cell.gridColumn.name);
       args.g.fillText(
         args.cell.gridColumn.name,
-        args.bounds.x + (args.bounds.width - textSize.width)/2,
+        args.bounds.x + (args.bounds.width - textSize.width) / 2,
         args.bounds.y + (textSize.fontBoundingBoxAscent+textSize.fontBoundingBoxDescent)
       );
       args.g.fillStyle = '#4b4b4a';
       args.preventDefault();
     }
 
-    if (args.cell.isTableCell && args.cell.tableColumn !== null && args.cell.tableColumn.name === aminoAcidResidue) {
-      let textSize = args.g.measureText(args.cell.cell.value);
-      args.g.fillText(
-        args.cell.cell.value,
-        args.bounds.x + (args.bounds.width - textSize.width)/2,
-        args.bounds.y + (textSize.fontBoundingBoxAscent+textSize.fontBoundingBoxDescent)
-      );
-      args.g.fillStyle = '#4b4b4a';
-      args.preventDefault();
+    if (args.cell.isTableCell && args.cell.tableRowIndex !== null && args.cell.tableColumn !== null) {
+      if (args.cell.tableColumn.name === aminoAcidResidue) {
+        let textSize = args.g.measureText(args.cell.cell.value);
+        args.g.fillText(
+          args.cell.cell.value,
+          args.bounds.x + (args.bounds.width - textSize.width) / 2,
+          args.bounds.y + (textSize.fontBoundingBoxAscent+textSize.fontBoundingBoxDescent)
+        );
+        args.g.fillStyle = '#4b4b4a';
+        args.preventDefault();
+      } else {
+        args.g.beginPath();
+        args.g.arc(args.bounds.x + args.bounds.width / 2, args.bounds.y + args.bounds.height / 2, Math.ceil(10 * args.cell.cell.value), 0, Math.PI * 2, true);
+        args.g.closePath();
+        //TODO: set color based on activity medians
+        args.g.fillStyle = 'green';
+        args.g.fill();
+        args.preventDefault();
+      }
     }
   });
 
