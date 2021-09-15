@@ -1366,6 +1366,7 @@ export class RowList {
    * */
   select(rowPredicate: RowPredicate): void {
     this._applyPredicate(this.table.selection, rowPredicate);
+    this.table.selection.fireChanged();
   }
 
   /** Filters rows by predicate.
@@ -1374,8 +1375,8 @@ export class RowList {
    * */
   filter(rowPredicate: RowPredicate): void {
     this._applyPredicate(this.table.filter, rowPredicate);
+    this.table.filter.fireChanged();
   }
-
   /** Viewers that filter rows should subscribe to DataFrame.onRowsFiltering event.
    * When filtering conditions are changed, viewers should call requestFilter(). */
   requestFilter(): void {
@@ -1508,6 +1509,34 @@ export class BitSet {
    * @returns {BitSet} */
   invert(): BitSet {
     api.grok_BitSet_Invert(this.d);
+    return this;
+  }
+
+  /** Modifies this bitset by performing the bitwise AND operation against the
+   *  specified bitset. Returns this. */
+  and(other: BitSet, notify: boolean = true): BitSet {
+    api.grok_BitSet_And(this.d, other.d, notify);
+    return this;
+  }
+
+  /** Modifies this bitset by performing the bitwise OR operation against the
+   *  specified bitset. Returns this. */
+  or(other: BitSet, notify: boolean = true): BitSet {
+    api.grok_BitSet_Or(this.d, other.d, notify);
+    return this;
+  }
+
+  /** Modifies this bitset by performing the bitwise XOR operation against the
+   *  specified bitset. Returns this. */
+  xor(other: BitSet, notify: boolean = true): BitSet {
+    api.grok_BitSet_Xor(this.d, other.d, notify);
+    return this;
+  }
+
+  /** Modifies this bitset by performing the bitwise AND_NOT operation against the
+   *  specified bitset. Returns this. */
+  andNot(other: BitSet, notify: boolean = true): BitSet {
+    api.grok_BitSet_AndNot(this.d, other.d, notify);
     return this;
   }
 
