@@ -9,6 +9,7 @@
     "feature-viewer/feature-viewer.bundle.js",
     "msa/msa.min.gz.js",
     "common/ngl_viewer/ngl.js",
-    "web-logo-viewer/web-logo-viewer.js"
+    "web-logo-viewer/web-logo-viewer.js",
+    "sequence-cell-renderer/sequence-cell-renderer.js"
   ]
 }
