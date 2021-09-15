@@ -4,6 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {splitAlignedPeptides} from './splitAligned';
 import {describe} from './SARViewer/describe';
+import { SARViewer } from './SARViewer/sar-viewer';
 
 export const _package = new DG.Package();
 
@@ -15,11 +16,11 @@ async function main() {
 
   const view = grok.shell.addTableView(peptides);
 
-  const grid = await describe(peptides, 'Activity');
+  // const grid = await describe(peptides, 'Activity');
 
-  if (grid !== null) {
-    view.addViewer(grid);
-  }
+  // if (grid !== null) {
+  //   view.addViewer(grid);
+  // }
   pi.close();
 }
 
@@ -58,6 +59,14 @@ export function Peptides() {
 //input: column peptideColumn {semType: alignedSequence}
 //tags: panel
 //output: widget result
-export function splitAlignedSequence(peptideColumn: DG.Column) {
-  grok.shell.addTableView(splitAlignedPeptides(peptideColumn));
+// export function splitAlignedSequence(peptideColumn: DG.Column) {
+//   grok.shell.addTableView(splitAlignedPeptides(peptideColumn));
+// }
+
+//name: SARViewer
+//description: Peptides SAR Viewer
+//tags: viewer, panel
+//output: viewer result
+export function sar() {
+  return new SARViewer();
 }
