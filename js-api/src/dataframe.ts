@@ -1511,6 +1511,34 @@ export class BitSet {
     return this;
   }
 
+  /** Modifies this bitset by performing the bitwise AND operation against the
+   *  specified bitset. Returns this. */
+  and(other: BitSet, notify: boolean = true): BitSet {
+    api.grok_BitSet_And(this.d, other.d, notify);
+    return this;
+  }
+
+  /** Modifies this bitset by performing the bitwise OR operation against the
+   *  specified bitset. Returns this. */
+  or(other: BitSet, notify: boolean = true): BitSet {
+    api.grok_BitSet_Or(this.d, other.d, notify);
+    return this;
+  }
+
+  /** Modifies this bitset by performing the bitwise XOR operation against the
+   *  specified bitset. Returns this. */
+  xor(other: BitSet, notify: boolean = true): BitSet {
+    api.grok_BitSet_Xor(this.d, other.d, notify);
+    return this;
+  }
+
+  /** Modifies this bitset by performing the bitwise AND_NOT operation against the
+   *  specified bitset. Returns this. */
+  andNot(other: BitSet, notify: boolean = true): BitSet {
+    api.grok_BitSet_AndNot(this.d, other.d, notify);
+    return this;
+  }
+
   /** Sets all bits to x
    * @param {boolean} x
    * @param {boolean} notify
