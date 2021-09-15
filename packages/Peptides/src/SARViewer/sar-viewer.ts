@@ -1,7 +1,5 @@
-import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { describe } from './describe';
+import {describe} from './describe';
 
 export class SARViewer extends DG.JsViewer {
   initialized: boolean;
