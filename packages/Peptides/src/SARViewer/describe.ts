@@ -22,9 +22,9 @@ function decimalAdjust(type: 'floor' | 'ceil' | 'round', value: number, exp: num
   return +(valueArr[0] + 'e' + (valueArr[1] ? (+valueArr[1] + exp) : exp));
 }
 
-export async function describe(df: DG.DataFrame, activityColumn: string) {
+export async function describe(df: DG.DataFrame, activityColumn: string, activityScaling: string) {
   //Split the aligned sequence into separate AARs
-  let splitSeqDf;
+  let splitSeqDf: DG.DataFrame | undefined;
   for (let col of df.columns) {
     //FIXME: semType is still undefined at this point                          ?
     if (col.semType === 'alignedSequence' || col.name === 'AlignedSequence') {
@@ -35,11 +35,24 @@ export async function describe(df: DG.DataFrame, activityColumn: string) {
 
   if (typeof splitSeqDf === 'undefined') { return null; }
 
-  let positionColumns = splitSeqDf.columns.names();
+  const positionColumns = splitSeqDf.columns.names();
 
   splitSeqDf.columns.add(df.getCol(activityColumn));
 
-  
+  switch (activityScaling) {
+    case 'ln':
+      await splitSeqDf.columns.addNewCalculated('ln', 'Ln(${' + activityColumn + '})');
+      splitSeqDf.columns.remove(activityColumn);
+      splitSeqDf.getCol('ln').name = activityColumn;
+      break;
+    case '-ln':
+      await splitSeqDf.columns.addNewCalculated('-ln', '-1*Ln(${' + activityColumn + '})');
+      splitSeqDf.columns.remove(activityColumn);
+      splitSeqDf.getCol('-ln').name = activityColumn;
+      break;
+    default:
+      break;
+  }
 
   const positionColName = 'position';
   const aminoAcidResidue = 'aminoAcidResidue';
@@ -146,13 +159,13 @@ export async function describe(df: DG.DataFrame, activityColumn: string) {
   // });
 
   // render column headers and AAR symbols centered
-  grid.onCellRender.subscribe(function (args) {
+  grid.onCellRender.subscribe(function (args: DG.GridCellRenderArgs) {
     if(args.cell.isColHeader){
       let textSize = args.g.measureText(args.cell.gridColumn.name);
       args.g.fillText(
         args.cell.gridColumn.name,
         args.bounds.x + (args.bounds.width - textSize.width) / 2,
-        args.bounds.y + (textSize.fontBoundingBoxAscent+textSize.fontBoundingBoxDescent)
+        args.bounds.y + (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent)
       );
       args.g.fillStyle = '#4b4b4a';
       args.preventDefault();
@@ -164,13 +177,20 @@ export async function describe(df: DG.DataFrame, activityColumn: string) {
         args.g.fillText(
           args.cell.cell.value,
           args.bounds.x + (args.bounds.width - textSize.width) / 2,
-          args.bounds.y + (textSize.fontBoundingBoxAscent+textSize.fontBoundingBoxDescent)
+          args.bounds.y + (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent)
         );
         args.g.fillStyle = '#4b4b4a';
         args.preventDefault();
       } else {
         args.g.beginPath();
-        args.g.arc(args.bounds.x + args.bounds.width / 2, args.bounds.y + args.bounds.height / 2, Math.ceil(10 * args.cell.cell.value), 0, Math.PI * 2, true);
+        args.g.arc(
+          args.bounds.x + args.bounds.width / 2,
+          args.bounds.y + args.bounds.height / 2,
+          Math.ceil(10 * args.cell.cell.value),
+          0,
+          Math.PI * 2,
+          true
+        );
         args.g.closePath();
         //TODO: set color based on activity medians
         args.g.fillStyle = 'green';
@@ -183,7 +203,8 @@ export async function describe(df: DG.DataFrame, activityColumn: string) {
   // show all the statistics in a tooltip over cell
   grid.onCellTooltip(function (cell, x, y) {
     if (
-        !cell.isRowHeader && !cell.isColHeader 
+        !cell.isRowHeader 
+        && !cell.isColHeader 
         && cell.tableColumn !== null 
         && cell.tableColumn.name !== aminoAcidResidue 
         && cell.cell.value !== null 
