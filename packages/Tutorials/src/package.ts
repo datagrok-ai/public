@@ -3,6 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { Track, TutorialRunner } from './tutorial';
 import { eda } from './tracks/eda';
+import { ml } from './tracks/ml';
 
 
 export const _package = new DG.Package();
@@ -11,7 +12,6 @@ export const _package = new DG.Package();
 //tags: app
 export async function trackOverview() {
   const chem = new Track('Cheminformatics');
-  const ml = new Track('Machine Learning');
   const tracks = DG.DataFrame.fromColumns([
     DG.Column.fromList('string', 'track', [chem, eda, ml].map((t) => t.name)),
     DG.Column.fromList('int', 'start', [10, 1, 15]),

@@ -41,7 +41,7 @@ export class LaboratoryView extends DG.ViewBase {
     disributionBoxPlot: DG.Viewer) {
 
 
-    let baselineEndpointDiv = ui.div(baselineEndpointPlot ? baselineEndpointPlot.root : null);
+    let baselineEndpointDiv = ui.box(baselineEndpointPlot ? baselineEndpointPlot.root : null);
     let labValue = labValues[ 0 ];
     let bl = visits[ 0 ];
     let ep = visits[ 1 ];
@@ -75,6 +75,65 @@ export class LaboratoryView extends DG.ViewBase {
       this.updateDistributionBoxPlot(disributionBoxPlot, distributionDiv, dm, lb, labValBoxPlot, trArm);
     });
 
+    let viewerTitle = {style:{
+      'color':'var(--grey-6)',
+      'margin':'8px 6px 8px 12px',
+      'font-size':'16px',
+    }};
+
+    //hysLawScatterPlot.root.prepend(ui.divText('Hy\'s Law Chart', viewerTitle));
+
+
+    this.root.className = 'grok-view ui-box';
+    this.root.append(ui.splitV([
+      ui.splitH([
+
+        ui.divV([
+          ui.divText('Hy\'s Law Chart', viewerTitle)
+        ],{style:{justifyContent:'flex-end'}}),
+        ui.divV([
+          ui.divH([
+            ui.divText('Baseline Endpoint with LLN/ULN', viewerTitle),
+            ui.iconFA('cog',()=>{
+              let dlg = ui.dialog('Parameters').add(ui.inputs([labValueChoices,blVisitChoices,epVisitChoices]));
+              //@ts-ignore
+              dlg.show({centerAt:baselineEndpointDiv});
+              //dlg.root.lastChild.remove();
+            })
+          ],{style:{alignItems:'center'}})
+        ],{style:{justifyContent:'flex-end'}})  
+
+      ], {style:{maxHeight:'50px'}}),
+
+      ui.splitH([
+        hysLawScatterPlot.root,
+        baselineEndpointDiv
+      ]),
+
+      ui.splitH([
+        ui.divV([
+          ui.divText('Laboratory results', viewerTitle)
+        ],{style:{justifyContent:'flex-end'}}),
+        ui.divV([
+          ui.divH([
+            ui.divText('Laboratory results distribution', viewerTitle),
+            ui.iconFA('cog',()=>{
+              let dlg = ui.dialog('Parameters').add(ui.inputs([labValueChoicesBoxPlot,treatmentArmsChoices]));
+              //@ts-ignore
+              dlg.show({centerAt:distributionDiv});
+              //dlg.root.lastChild.remove();
+            })
+          ],{style:{alignItems:'center'}})
+        ],{style:{justifyContent:'flex-end'}})  
+
+      ], {style:{maxHeight:'50px'}}),
+
+      ui.splitH([
+        grid.root,
+        distributionDiv
+      ]),
+    ]))
+    /*
     this.root.appendChild(ui.div([
       ui.divH([
         ui.block50([ ui.h2('Hy\'s Law Chart'), hysLawScatterPlot ? hysLawScatterPlot.root : null ]),
@@ -96,7 +155,7 @@ export class LaboratoryView extends DG.ViewBase {
           distributionDiv ], { style: { 'padding-left': '20px' } })
       ])
     ]));
-
+    */
   }
 
 
