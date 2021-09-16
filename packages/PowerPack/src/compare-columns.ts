@@ -18,9 +18,9 @@ function showOutputs(t1: { value: string; }, t2: { value: string; }, c1: DG.Inpu
       if (col1.getString(i) == col2.getString(i))
         counter++;
 
-    let selectButton = ui.element('a');
-    selectButton.textContent = 'Select';
-    selectButton.onclick = (ev) => {selection.init((i) => col1.getString(i) != col2.getString(i))};
+    let selectButton = ui.link(
+      'Select',
+      () => selection.init((i) => col1.getString(i) != col2.getString(i)));
 
     let addColumnButton = ui.button('Add Column', () => {
       grok.shell.table(t1.value).columns.addNewCalculated(
