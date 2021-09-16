@@ -635,7 +635,7 @@ export class Menu {
   /** Ends a group of menu items and returns to the higher menu level.
    * @returns {Menu} */
   endGroup(): Menu {
-    return toJs(api.grok_Menu_End_Group(this.d));
+    return toJs(api.grok_Menu_EndGroup(this.d));
   }
 
   /** Adds a menu group with the specified text and handler.
