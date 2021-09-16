@@ -2,9 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {splitAlignedPeptides} from './splitAligned';
-import {describe} from './SARViewer/describe';
-import { SARViewer } from './SARViewer/sar-viewer';
+import {SARViewer} from './SARViewer/sar-viewer';
 
 export const _package = new DG.Package();
 
@@ -14,13 +12,8 @@ async function main() {
   const path = _package.webRoot + 'files/' + 'aligned.csv';
   const peptides = (await grok.data.loadTable(path));
 
-  const view = grok.shell.addTableView(peptides);
+  grok.shell.addTableView(peptides);
 
-  // const grid = await describe(peptides, 'Activity');
-
-  // if (grid !== null) {
-  //   view.addViewer(grid);
-  // }
   pi.close();
 }
 
@@ -32,7 +25,7 @@ export function Peptides() {
       ui.span(['For more deatails see LINK ']),
       ui.divText('\n To start the application :', {style: {'font-weight': 'bolder'}}),
       ui.divText('Select the corresponding .csv table with peptide sequences'),
-    ], 'Transform peptide sequence data to research insights'
+    ], 'Transform peptide sequence data to research insights',
   );
   const annotationViewerDiv = ui.div();
 
@@ -47,21 +40,13 @@ export function Peptides() {
     ui.h2('Choose .csv file'),
     ui.div([
       ui.block25([
-        ui.button('Open demo', () => main(), '')
+        ui.button('Open demo', () => main(), ''),
       ]),
       ui.block75([annotationViewerDiv]),
     ]),
     mainDiv,
   ]);
 }
-
-//name: Split Sequence
-//input: column peptideColumn {semType: alignedSequence}
-//tags: panel
-//output: widget result
-// export function splitAlignedSequence(peptideColumn: DG.Column) {
-//   grok.shell.addTableView(splitAlignedPeptides(peptideColumn));
-// }
 
 //name: SARViewer
 //description: Peptides SAR Viewer

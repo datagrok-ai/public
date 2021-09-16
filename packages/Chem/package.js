@@ -116,7 +116,7 @@ class ChemPackage extends DG.Package {
   }
   
   //name: getMorganFingerprints
-  //input: column molColumn
+  //input: column molColumn {semType: Molecule}
   //output: column result [fingerprints]
   getMorganFingerprints(molColumn) {
     return _moleculesToFingerprints(molColumn);

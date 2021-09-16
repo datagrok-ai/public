@@ -370,6 +370,7 @@ export type SimilarityMetric = `${SIMILARITY_METRIC}`;
 export type ColorType = number;
 export type DemoDatasetName = `${DEMO_DATASET}`;
 export type DockType = `${DOCK_TYPE}`;
+export type PropertyOptions = { choices?: string[], semType?: string, description?: string, defaultValue?: any };
 export type ElementOptions = { id?: string, classes?: string, style?: object };
 export type CsvImportOptions = { delimiter?: string, decimalSeparator?: string, thousandSeparator?: string };
 export type IndexPredicate = (ind: number) => boolean;
