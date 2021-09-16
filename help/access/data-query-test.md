@@ -1,7 +1,7 @@
 <!-- TITLE: Tests: Data query -->
 <!-- SUBTITLE: -->
 
-# Tests: Data Query
+# Tests: Data query
 
 [Data query](data-query.md) defines which data should be extracted from the 
 [data source](data-connection.md#connectors).
@@ -102,7 +102,8 @@ SELECT * FROM Orders WHERE (employeeId = @employeeId)
    AND (requiredDate >= @requiredDate)*
 ```
 See also:
- * [Data Connections test](../tests/data-connection-test.md)
- * [Data Job test](../tests/data-job-test.md)
- * [Data Sourse test](../tests/data-source-test.md)
- * [Data Query](data-query.md)
+
+ * [Data connections test](../tests/data-connection-test.md)
+ * [Data job test](../tests/data-job-test.md)
+ * [Data source test](../tests/data-source-test.md)
+ * [Data query](data-query.md)

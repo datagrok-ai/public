@@ -1,7 +1,7 @@
 <!-- TITLE: Use Cases: Projects -->
 <!-- SUBTITLE: -->
 
-# Use Cases: Projects
+# Use cases: Projects
 
 Owner: Alexander
 

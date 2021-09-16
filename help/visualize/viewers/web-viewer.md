@@ -1,6 +1,6 @@
-<!-- TITLE: Web Viewer -->
+<!-- TITLE: Web viewer -->
 <!-- SUBTITLE: -->
 
-# Web Viewer
+# Web viewer
 
 Allows to embed any web page in viewer.

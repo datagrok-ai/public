@@ -1,7 +1,7 @@
-<!-- TITLE: Selection to Column -->
+<!-- TITLE: Selection to column -->
 <!-- SUBTITLE: -->
 
-# Selection to Column
+# Selection to column
 
 Saves currently selected rows as a column.
 

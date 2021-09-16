@@ -1,7 +1,7 @@
 <!-- TITLE: Tests: Color Coding -->
 <!-- SUBTITLE: -->
 
-# Tests: Color Coding
+# Tests: Color coding
 
 Platform provide ability to display different columns values in different colors. This is called color coding.
 

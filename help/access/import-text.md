@@ -1,7 +1,7 @@
-<!-- TITLE: Import Text -->
+<!-- TITLE: Import text -->
 <!-- SUBTITLE: -->
 
-# Import Text
+# Import text
 
 Use this feature for finer control of the import options, as well as text editing.
 

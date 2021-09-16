@@ -1,7 +1,7 @@
-<!-- TITLE: SPARQL Query -->
+<!-- TITLE: SPARQL query -->
 <!-- SUBTITLE: -->
 
-# SPARQL Query
+# SPARQL query
 
 **SPARQL** (pronounced "sparkle", a recursive acronym for **SPARQL** Protocol and RDF Query Language) is 
 an RDF query language, that is, a semantic query language for databases, able to retrieve and manipulate 

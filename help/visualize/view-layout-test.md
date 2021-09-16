@@ -1,7 +1,7 @@
-<!-- TITLE: Tests: View Layout -->
+<!-- TITLE: Tests: View layout -->
 <!-- SUBTITLE: -->
 
-# Tests: View Layout
+# Tests: View layout
 
 [View Layout](view-layout.md) contains relative positions of [viewers](../visualize/viewers.md) in a [table view](../overview/table-view.md),
 along with the viewers' properties. By separating layouts from the actual data displayed, we now can
@@ -85,6 +85,6 @@ and choose **Clone**.
    
 
 See also:
-* [View Layout](view-layout.md)
+* [View layout](view-layout.md)
 * [Table view](../overview/table-view.md)
 * [Self-learning platform](../learn/self-learning-platform.md)

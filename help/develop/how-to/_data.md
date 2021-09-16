@@ -1,14 +1,10 @@
-<!-- TITLE: Efficiently Work with Data -->
+<!-- TITLE: Efficiently work with data -->
 
 # Efficiently work with data
 
 As Datagrok is centralized around data, it's pivotal to know key means and best practices for
 working with data programmatically on the platform. This document addresses various topics related
 to that.
-
-
-
-
 
 Datagrok dataframes are highly optimized. They are implemented with our proprietary technology allowing
 to efficiently work with huge datasets in the browser. Essentially, it is a columnar in-memory database that was
@@ -56,7 +52,7 @@ demog.set('age', 1, 44);
 ``` 
 
 
-## Best Practices
+## Best practices
 
 <!--
 - use special data structures for high-performance tasks

@@ -240,6 +240,15 @@ const templates = [
     }]
   },
   {
+    id: 'jtest',
+    name: 'Observability',
+    widget: 'webWidget',
+    templates: [{
+      template: 'observability',
+      url: 'https://test.jrd-observability.apps.jnj.com/'
+    }]
+  },
+  {
     id: 'chembl-id-representations',
     name: 'Representations',
     widget: 'webWidget',

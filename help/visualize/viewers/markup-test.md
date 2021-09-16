@@ -1,4 +1,4 @@
-<!-- TITLE: Tests: Markup Viewer -->
+<!-- TITLE: Tests: Markup viewer -->
 <!-- SUBTITLE: -->
 
 # Tests: Markup

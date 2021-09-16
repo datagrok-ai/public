@@ -294,8 +294,8 @@ Your package might contain the following additional folders, depending on your n
 [connections]: ../../access/data-connection.md "A data connection is a configuration in Datagrok that lets you access data in a data source such as GitHub repository or local file system."
 [custom viewer built with D3.js]: https://github.com/datagrok-ai/public/tree/master/packages/Viewers
 [database queries]: ../../access/data-query.md "A data query extract data from a source. A data query can be an SQL query or a query to an Excel file."
-[datagrok configuration section]: ./datagrok-configuration.md
-[datagrok tools section]: https://github.com/datagrok-ai/public/tree/master/tools#datagrok-tools
+[Datagrok configuration section]: ./datagrok-configuration.md
+[Datagrok tools section]: https://github.com/datagrok-ai/public/tree/master/tools#datagrok-tools
 [debug]: ./_debugging.md
 [deployment with Docker Compose section]: https://datagrok.ai/help/develop/admin/docker-compose
 [development servers]: https://dev.datagrok.ai/u

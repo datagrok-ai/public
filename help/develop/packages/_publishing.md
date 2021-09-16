@@ -52,7 +52,7 @@ To publish a package from your repository:
 
 ![](../git-publishing.png)
 
-## Continuous Integration
+## Continuous integration
 
 Package publication is compatible with automation tools. You can pass your server URL and developer key to the `grok`
 command without additional configuring:
@@ -61,7 +61,7 @@ command without additional configuring:
 grok publish <url> -k <dev-key>
 ```
 
-## Sharing a Package
+## Sharing a package
 
 Just like other entities on the platform, packages are subject to [privileges](../../govern/security.md#privileges). You
 can specify the viewing or editing rights for a developer and, optionally, notify them.

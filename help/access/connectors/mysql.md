@@ -8,6 +8,6 @@ using SQL queries via JDBC driver.
 
 See also:
 
-  * [Data Connection](../data-connection.md)
+  * [Data connection](../data-connection.md)
   * [MySQL](https://www.mysql.com/)
   * [MySQL Wiki](https://ru.wikipedia.org/wiki/MySQL)

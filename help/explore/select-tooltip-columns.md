@@ -1,13 +1,13 @@
-<!-- TITLE: Select Tooltip Columns -->
+<!-- TITLE: Select tooltip columns -->
 <!-- SUBTITLE: -->
 
-# Select Tooltip Columns
+# Select tooltip columns
 
 Select columns that should be put on a tooltip when the mouse cursor is over a data point. By default,
 all columns are shown, if the table contains less than 21 columns, and no columns are shown, if a table
 contains 21 columns or more.
 
-## Viewer Tooltips
+## Viewer tooltips
 
 One of the unique [exploratory data analysis](exploratory-data-analysis.md)-related 
  features of Datagrok is the ability to interactively visualize

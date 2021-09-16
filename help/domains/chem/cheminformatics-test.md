@@ -1,7 +1,7 @@
-<!-- TITLE: Tests: Chem Informatics -->
+<!-- TITLE: Tests: Cheminformatics -->
 <!-- SUBTITLE: -->
 
-# Tests: To InChi (InChi key)
+# Tests: To inchi (inchi key)
 
 Performs conversion from smiles to InChi and InChi key formats
 
@@ -22,7 +22,7 @@ Performs conversion from smiles to InChi and InChi key formats
    * New column *InChI Key* added to table
    * *InChI Key* column contains values ​​in InChi respectively values ​​in smiles for each row
 
-# Tests: Map Identifiers
+# Tests: map identifiers
 
 Retrieves chemical identifiers for the specified source, using UniChem database.
 
@@ -53,5 +53,5 @@ Retrieves chemical identifiers for the specified source, using UniChem database.
    
 See also:
  * [Cheminformatics](../domains/chem/cheminformatics.md)  
- * [Chem Info Panels Test](../domains/chem/chem-info-panels-test.md)
+ * [Chem info panels test](../domains/chem/chem-info-panels-test.md)
   

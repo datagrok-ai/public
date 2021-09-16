@@ -1,7 +1,7 @@
-<!-- TITLE: Google Map Viewer -->
+<!-- TITLE: Google Map viewer -->
 <!-- SUBTITLE: -->
 
-# Google Map Viewer
+# Google Map viewer
 
 Google Map Viewer overlays latitude/longitude data from the corresponding table
 on top of the Google Map. 

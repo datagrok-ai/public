@@ -1,7 +1,7 @@
 <!-- TITLE: Tests: Console -->
 <!-- SUBTITLE: -->
 
-# Tests: Console
+# Tests: console
 
 [Console](../overview/navigation.md#console) is used to execute commands and record macros.
 
@@ -54,4 +54,4 @@
    
 See also:
  * [Console](../overview/navigation.md#console)
- * [Grok Scripting](../scripting.md)
+ * [Scripting](../scripting.md)

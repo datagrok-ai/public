@@ -1,7 +1,7 @@
-<!-- TITLE: Datagrok for Life Sciences -->
+<!-- TITLE: Datagrok for life sciences -->
 <!-- SUBTITLE: -->
 
-# Datagrok for Life Sciences
+# Datagrok for life sciences
 
 Datagrok is a great tool for working with tabular data of any origin. It will retrieve, analyze, 
 visualize and transform traditional business data, such as sales, inventory, or marketing data as well 
@@ -41,7 +41,7 @@ Scientific data has a complex, multidimensional structure. Fortunately, the plat
 * Instrument data
 * Incomplete data
 
-## Data Discovery
+## Data discovery
 
 Given the volume, variety, and complexity of the scientific data available to companies, 
 being able to efficiently discover relevant datasets is essential.
@@ -104,6 +104,6 @@ In addition to commonly used data formats, such as csv, txt, xsls, xml, and json
 * LIMS systems
 
 ## References
-* [FAIR Principles](https://www.go-fair.org/fair-principles/)
+* [FAIR principles](https://www.go-fair.org/fair-principles/)
 * [Software Engineering for Machine Learning: A Case Study](https://www.microsoft.com/en-us/research/publication/software-engineering-for-machine-learning-a-case-study/)
 * [Insight into complex scientific data using a graph data store](https://medium.com/blackfynn/insight-into-complex-scientific-data-using-a-graph-data-store-f2b540684c84)

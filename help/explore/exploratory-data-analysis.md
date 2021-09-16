@@ -1,7 +1,7 @@
-<!-- TITLE: Exploratory Data Analysis -->
+<!-- TITLE: Exploratory data analysis -->
 <!-- SUBTITLE: -->
 
-# Exploratory Data Analysis
+# Exploratory data analysis
 
 *From [Wikipedia](https://en.wikipedia.org/wiki/Exploratory_data_analysis): 
 In statistics, exploratory data analysis (EDA) is an approach 
@@ -33,4 +33,4 @@ interactively or through a pipeline, is easy and [secure](../govern/security.md)
 See also:
 * [Viewers](../visualize/viewers.md)
 * [Performance](../develop/performance.md) 
-* [Wikipedia: Exploratory Data Analysis](https://en.wikipedia.org/wiki/Exploratory_data_analysis)
+* [Wikipedia: Exploratory data analysis](https://en.wikipedia.org/wiki/Exploratory_data_analysis)

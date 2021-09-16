@@ -1,6 +1,6 @@
 <!-- TITLE: FAIR Principles -->
 
-# FAIR Principles
+# FAIR principles
 
 Datagrok's mission is to connect data, algorithms, models, analysis, and visualizations all together.
 
@@ -20,7 +20,7 @@ so this is an essential component of the FAIRification process.
 
 ### F1. (Meta)data are assigned a globally unique and persistent identifier
 
-### F2. Data are described with rich metadata (defined by R1 below)
+### F2. Data are described with rich metadata (defined by r1 below)
 
 ### F3. Metadata clearly and explicitly include the identifier of the data they describe
 
@@ -41,7 +41,7 @@ or workflows for analysis, storage, and processing.
 
 ### I1. (Meta)data use a formal, accessible, shared, and broadly applicable language for knowledge representation.
 
-### I2. (Meta)data use vocabularies that follow FAIR principles
+### I2. (Meta)data use vocabularies that follow fair principles
 
 ### I3. (Meta)data include qualified references to other (meta)data
 

@@ -15,16 +15,16 @@ share with teammates) later on.
 * [Creating](#creating)
 * [Docking](#docking)
 * [Selection](#selection)
-* [Current Rows](#current-rows)
+* [Current rows](#current-rows)
 * [Filter](#filter)
-* [Viewers as Filters](#viewers-as-filters)
+* [Viewers as filters](#viewers-as-filters)
 * [Embedding](#embedding)
 * [Interaction](#interaction)
 * [Properties](#properties)
-* [Common Actions](#common-actions)
-* [Group Tooltips](#group-tooltips)
+* [Common actions](#common-actions)
+* [Group tooltips](#group-tooltips)
 * [Trellis](#trellis)
-* [Statistical Hypothesis Testing](#statistical-hypothesis-testing)
+* [Statistical hypothesis testing](#statistical-hypothesis-testing)
 * [Layouts](#layouts)
 
 ## Creating
@@ -73,7 +73,7 @@ To select rows in the [grid](viewers/grid.md):
 
 ![](viewers-selection.gif)
 
-## Current Rows
+## Current rows
 
 Rows in a grid can not only be selected or filtered, in addition to that, the grid keeps track of a current row and highlights it in green. This indication is a neat and lightweight way to update information related to the current value and lets users explore and compare rows with ease.
 
@@ -93,7 +93,7 @@ Alternatively, click on the column's "hamburger icon" to filter by the individua
 
 ![](viewers/grid-column-filter.png)
 
-## Viewers as Filters
+## Viewers as filters
 
 By default, clicking on a segment that represents multiple rows will select these rows. However,
 some viewers, such as [Bar Chart](viewers/bar-chart.md) and [Pie Chart](viewers/pie-chart.md),
@@ -142,7 +142,7 @@ or press F4 when the viewer has focus, or right-click and select `Viewer | Prope
 
 ![](viewers/viewer-property-panel.gif)
 
-## Common Actions
+## Common actions
 
 Many viewers support the following:
 
@@ -204,7 +204,7 @@ The commands from the **To Script** submenu produce code that can be used to bui
 | to Python            | Open the visualization preview and get the code snippet in Python |
 
 
-## Group Tooltips
+## Group tooltips
 
 One of the unique features of the Datagrok platform is the ability to quickly visualize multiple rows
 in a tooltip, using the settings of another viewer.  
@@ -233,7 +233,7 @@ See [Trellis Plot](viewers/trellis-plot.md) for more details.
 
 ![](viewers-as-trellis.gif)
 
-## Statistical Hypothesis Testing
+## Statistical hypothesis testing
 
 To help users analyze their data in depth, our visualizations include a number of statistical features:
 
@@ -260,14 +260,14 @@ and choose **Clone**.
 
 ![](layout-suggestions.gif)
 
-## Scatter Plot
+## Scatter plot
 
 |                           |                        |
 |---------------------------|------------------------|
 | ![Scatter Plot](../uploads/gifs/scatter-plot.gif "Scatter plot")             | A scatter plot (also called a scatter graph, scatter chart, scattergram, or scatter diagram) is a type of plot or mathematical diagram using Cartesian coordinates to display values for typically two variables for a set of data. If the points are color-coded you can increase the number of displayed variables to three. The data is displayed as a collection of points, each having the value of one variable determining the position on the horizontal axis and the value of the other variable determining the position on the vertical axis. <br> [Scatter Plot](viewers/scatter-plot.md) |
 
 
-## 3D Scatter Plot
+## 3d scatter plot
 
 |                           |                        |
 |---------------------------|------------------------|
@@ -280,19 +280,19 @@ and choose **Clone**.
 |---------------------------|------------------------|
 | ![Histogram](../uploads/gifs/histogram.gif "Histogram")           | A histogram is a graphical representation of the distribution of numerical data. <br> [Histogram](viewers/histogram.md) |
 
-## Line Chart
+## Line chart
 
 |                           |                        |
 |---------------------------|------------------------|
 | ![Line Chart](../uploads/gifs/line-chart.gif "Line chart")      | A line chart or line graph is a type of chart which displays information as a series of data points called 'markers' connected by straight line segments. It is a basic type of chart common in many fields. It is similar to a scatter plot except that the measurement points are ordered (typically by their x-axis value) and joined with straight line segments.<br>[Line Chart](viewers/line-chart.md) |
 
-## Bar Chart
+## Bar chart
 
 |                           |                        |
 |---------------------------|------------------------|
 | ![Bar Chart](../uploads/viewers/bar-chart.png "Bar Chart")        | A bar chart presents grouped data with rectangular bars with lengths proportional to the values that they represent. The bars can be plotted vertically or horizontally.<br>[Bar Chart](viewers/bar-chart.md) |
 
-## Box Plot
+## Box plot
 
 |                           |                        |
 |---------------------------|------------------------|
@@ -304,13 +304,13 @@ and choose **Clone**.
 |---------------------------|------------------------|
 | ![Filter](../uploads/gifs/filter.gif "Filter")    | A set of controls for quick filtering, selection, and visual assessment of column values.<br>[Filters](viewers/filters.md) |
 
-## Trellis Plot
+## Trellis plot
 
 |                           |                        |
 |---------------------------|------------------------|
 | ![Trellis Plot](../uploads/viewers/trellis-plot-2.png "Trellis Plot")    | A Trellis Chart is a layout of smaller charts in a grid with consistent scales. Each smaller chart represents rows that belong to a corresponding category. Trellis Charts are useful for finding the structure and patterns in complex data. The grid layout looks similar to a garden trellis, hence the name Trellis Chart.<br>[Trellis Plot](viewers/trellis-plot.md) |
 
-## Tree Map
+## Tree map
 
 |                           |                        |
 |---------------------------|------------------------|
@@ -329,7 +329,7 @@ and choose **Clone**.
 |---------------------------|------------------------|
 | ![Calendar](../uploads/viewers/calendar.png "Calendar")  | Calendar lets you analyze longitudinal data. It needs at least one column of type DateTime.<br>[Calendar](viewers/calendar.md) |
 
-## Google Map
+## Google map
 
 |                           |                        |
 |---------------------------|------------------------|
@@ -337,7 +337,7 @@ and choose **Clone**.
 
 
 
-## Shape Map
+## Shape map
 
 |                           |                        |
 |---------------------------|------------------------|
@@ -349,62 +349,62 @@ and choose **Clone**.
 |---------------------------|------------------------|
 | ![Grid](../uploads/viewers/grid.png "Grid")          | A default view for the interactive exploration of tables that might contain multiple different viewers all sharing the same row filter and row selection.<br>[Grid](viewers/grid.md) |
 
-## Matrix Plot
+## Matrix plot
 
 |                           |                        |
 |---------------------------|------------------------|
 | ![Matrix Plot](../uploads/viewers/matrix-plot.png "Matrix Plot")         | Use Matrix Plot to assess the relationship among many pairs of columns at the same time.<br>[Matrix Plot](viewers/matrix-plot.md) |
 
-## Network Diagram
+## Network diagram
 
 |                           |                        |
 |---------------------------|------------------------|
 | ![Network Diagram](../uploads/viewers/network-diagram.png "Network Diagram")  | Network diagram is used to visualize graphs, where values of the specified two columns become nodes, and rows become edges. It is possible to color-code and size-code nodes and columns by choosing the aggregate function that would apply to the values that represent an edge or a node.<br>[Network Diagram](viewers/network-diagram.md) |
 
-## Parallel Coordinates Plot
+## Parallel coordinates plot
 
 |                           |                        |
 |---------------------------|------------------------|
 | ![PC Plot](../uploads/gifs/pc-plot.gif "PC Plot")        | Parallel coordinates is a common way of visualizing high-dimensional geometry and analyzing multivariate data.<br>[Parallel Coordinates Plot](viewers/pc-plot.md) |
 
-## Pie Chart
+## Pie chart
 
 |                           |                        |
 |---------------------------|------------------------|
 | ![Pie Chart](../uploads/viewers/pie-chart.png "Pie Chart")        | Pie chart is useful for reflecting numerical proportions.<br>[Pie Chart](viewers/pie-chart.md) |
 
 
-## Word Cloud
+## Word cloud
 
 |                           |                        |
 |---------------------------|------------------------|
 | ![Word Cloud](../uploads/viewers/word-cloud.png "Word Cloud")  | A word cloud is a graphical representation of word frequency. Any other aggregation function can be used as well for representing size or color of the particular word.<br>[Word Cloud](viewers/word-cloud.md)  |
 
-## Correlation Plot
+## Correlation plot
 
 |                           |                        |
 |---------------------------|------------------------|
 | ![Correlation Plot](../uploads/gifs/correlation-plot.gif "Correlation plot")  | A quick way to assess correlations between all columns at once. Cells are color-coded by the [Pearsson correlation coefficient](https://en.wikipedia.org/wiki/Pearson_product-moment_correlation_coefficient). Histograms along the diagonal show the corresponding distribution. Hover over the cell to see the corresponding scatter plot. The grid is sortable. Select columns in the view by selecting corresponding rows.<br>[Correlation Plot](viewers/correlation-plot.md)  |
 
-## Density Plot
+## Density plot
 
 |                           |                        |
 |---------------------------|------------------------|
 | ![Density Plot](../uploads/viewers/density-plot.png "Density Plot")  | Unlike [scatter plot](viewers/scatter-plot.md) that visualizes each individual data point, density plot splits 2D area by bins, and color-codes it depending on the number of points that fall within this bin. The darker the color, the more points it contains.<br>[Density Plot](viewers/density-plot.md)  |
 
-## Heat Map
+## Heat map
 
 |                           |                        |
 |---------------------------|------------------------|
 | ![Heat Map](../uploads/gifs/heat-map.gif "Heat Map")  | A Heat Map is a graphical representation of table where each cell value is represented as color. It is based on grid, so all of the grid's features are applicable to the heat map as well.<br>[Heat Map](viewers/heat-map.md)  |
 
-## Markup Viewer
+## Markup viewer
 
 |                           |                        |
 |---------------------------|------------------------|
 | ![Markup](viewers/markup-viewer.png "Markup")  | Use [Markup Viewer](viewers/markup.md) to host any text, arbitrary HTML content, or [markdown-formatted text](../features/markdown.md). In most cases, the viewer will auto-detect content type. Use the "Content Type" property to explicitly specify it.  |
 
-## Tile Viewer
+## Tile viewer
 
 |                           |                        |
 |---------------------------|------------------------|
@@ -423,6 +423,6 @@ Visualizes magnitude and color for data on 3D globe using: latitude, longitude. 
 
 See also:
 
-* [Table View](../overview/table-view.md)
-* [Column Selectors](viewers/column-selectors.md)
-* [Chemically-Aware Viewers](../domains/chem/chemically-aware-viewers.md)
+* [Table view](../overview/table-view.md)
+* [Column selectors](viewers/column-selectors.md)
+* [Chemically-aware viewers](../domains/chem/chemically-aware-viewers.md)

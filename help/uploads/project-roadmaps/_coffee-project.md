@@ -1,10 +1,10 @@
-# Coffee Place Project
+# Coffee Place project
 
 ## [Introduction](https://www.youtube.com/watch?v=tVwpRB8fikQ&t=0s)
 
 Welcome to the Coffee Place Project! Right now, there is sales data in front of your eyes, and based on it, we will be selecting a new spot for the coffee franchise. To repeat these steps on your data, check out [these instructions](https://datagrok.ai/help/access/data-connection), or watch [this video](https://www.youtube.com/watch?v=tVwpRB8fikQ&t=23s). Now, let's get started!
 
-## [Data Exploration](https://www.youtube.com/watch?v=tVwpRB8fikQ&t=60s)
+## [Data exploration](https://www.youtube.com/watch?v=tVwpRB8fikQ&t=60s)
 
 First, take your time to explore the data. Hover your mouse over the table name to see general information.
 
@@ -27,7 +27,7 @@ Let's create a column containing the full address of a coffee place for future u
 
 Voilà! As we change the formula, we get a preview of the results on the fly, which are refreshed interactively. Save your work and proceed to the next section.
 
-## [Geocoding and Visualization](https://www.youtube.com/watch?v=tVwpRB8fikQ&t=233s)
+## [Geocoding and visualization](https://www.youtube.com/watch?v=tVwpRB8fikQ&t=233s)
 
 Now that you have the `Address` column, you might wonder what to do with it. Fortunately, the platform recognizes addresses in the column. Click on its name to see the suggested action `Address to coordinates`. It converts a given address to `latitude` and `longitude`, which is called **geocoding**. After applying this function, two corresponding columns should appear in your table.
 
@@ -35,17 +35,17 @@ Check if you managed to locate all of the addresses. Again, just hover the mouse
 
 Finally, let's visualize the data! Open the `Google Map` viewer in the left pane. On the map, you can see coffeehouse locations in New York State. To start with, let's color-code sales so that a warmer color would represent a larger value, and vice versa. Find `Marker settings` in the hamburger menu of your `Map` viewer and select column `Sales` for marker `Color`. This sort of visual representation sheds light on general trends, e.g., coffee shops in Manhattan did remarkably well. Yet, based on that alone, it is difficult to predict sales. So our next step is to map demographic data to the given coordinates.
 
-## [Mapping U.S. Census Data to Coordinates](https://www.youtube.com/watch?v=tVwpRB8fikQ&t=371s)
+## [Mapping U.S. Census Data to coordinates](https://www.youtube.com/watch?v=tVwpRB8fikQ&t=371s)
 
 Now that the table contains `latitude` and `longitude`, the platform suggests converting `Coordinates To Statistics`. Click on the table name, find this function in the `Algorithms` section on the right, and give it a try. The conversion will take some time, normally, less than a minute. Once the data is retrieved, explore new columns by browsing the `Columns` list under the `Viewers` section on the left. The data includes population density, number of housing units, landscapes and elevation, age and education, etc. Just to check, point your cursor on the table name: you should have `44` columns.
 
-## [Missing Values Imputation](https://www.youtube.com/watch?v=tVwpRB8fikQ&t=506s)
+## [Missing values imputation](https://www.youtube.com/watch?v=tVwpRB8fikQ&t=506s)
 
 To make use of the diverse data, we can apply a technique called **multivariate analysis**. Go to the top menu and select `ML > Multivariate Analysis (PLS)`. We are going to predict `sales` based on all numerical values, except for `latitude` and `longitude`. To do that, open `Features` and select `All`, then uncheck the first two columns (`latitude`, `longitude`). As the platform warns you, there are missing values in the dataset. First, we should deal with it by either removing the rows or imputing these values. As this section name suggests, we decide on the second option.
 
 Select `Missing Values Imputation` from the end of the system warning. This should open a new window. Then you can open `Impute` and sort the columns by the number of empty values (double-click on `nulls`). Select all columns where the number of nulls is greater than `0` (around `31` columns). Concerning the `Data` used for imputation, select all columns, except for `Street Address`, `City`, `State/Province`, `Address`, `latitude`, `longitude`, and `Sales` (`37` columns in total). Then impute the data using the `Nearest Neighbors` algorithm with a default value of `5`. Simply put, a missing value is computed as the average of the corresponding values of `5` records closest to it. At last, we no longer have missing values in the dataset.
 
-## [Multivariate Analysis](https://www.youtube.com/watch?v=tVwpRB8fikQ&t=679s)
+## [Multivariate analysis](https://www.youtube.com/watch?v=tVwpRB8fikQ&t=679s)
 
 Coming back to the multivariate analysis, repeat the steps we performed earlier:
 
@@ -72,7 +72,7 @@ Later in this example, we will use the following features:
 
 After **feature selection**, it's time to train your first predictive model!
 
-## [Predictive Modeling](https://www.youtube.com/watch?v=tVwpRB8fikQ&t=779s)
+## [Predictive modeling](https://www.youtube.com/watch?v=tVwpRB8fikQ&t=779s)
 
 To train a model, go to the `Models` section in the left pane and click on the `Train` button. Above it, sometimes you can see other models trained on the same data. This comes in handy if you want to compare them with your model's performance. Besides, you can manage the available models right from this panel (should you choose to run a model, edit it, or share).
 
@@ -100,13 +100,13 @@ So, assuming you have applied your model in one of the mentioned ways, now your 
 
 Thus, you have a model that predicts coffee sales based on demographics. We can visualize this on the map now.
 
-## [Predicting Sales on Interactive Map](https://www.youtube.com/watch?v=tVwpRB8fikQ&t=1050s)
+## [Predicting sales on interactive map](https://www.youtube.com/watch?v=tVwpRB8fikQ&t=1050s)
 
 Let's go back to the `Google Map` viewer and find `Actions settings` in the viewer's menu. By adjusting them, we can switch the viewer to a special mode and bind our actions to the model. For example, when we double-click, we want to show a prediction. Select this option in the settings and pick your model from the list.
 
 Now, take some time to explore the map. For convenience, select `Full screen` in the viewer settings or press `Alt + F`. Double-click on locations to see if it's worth building a new coffee place there. Find the profitable spots, such as in Times Square, and, perhaps, the underrated ones (by the water).
 
-## [Deploying Models into Apps](https://www.youtube.com/watch?v=tVwpRB8fikQ&t=1141s)
+## [Deploying models into apps](https://www.youtube.com/watch?v=tVwpRB8fikQ&t=1141s)
 
 What a great job you have done thus far! Would you like to share this with the community? If so, follow these steps:
 

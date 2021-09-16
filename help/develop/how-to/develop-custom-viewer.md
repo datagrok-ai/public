@@ -1,7 +1,7 @@
-<!-- TITLE: Develop Custom Viewers -->
+<!-- TITLE: Develop custom viewers -->
 <!-- SUBTITLE: -->
 
-# Custom Viewers
+# Custom viewers
 
 Developers can extend Datagrok with special visual components bound to data, which are called
 [viewers](../../visualize/viewers.md). There are two major alternatives for developing viewers on
@@ -28,7 +28,7 @@ Table of contents
   * [Registering Viewers](#registering-viewers)
   * [Examples](#examples)
 
-## JavaScript-Based Viewers
+## Javascript-based viewers
 
 Let's create an `Awesome` viewer for your package. This can be done in two simple steps. First, we
 need to define a subclass of `JsViewer` in a separate file:
@@ -73,7 +73,7 @@ working example right away and see how it functions within the platform. Finally
 to explore the methods discussed in the article on your own, jump right to our [JavaScript API
 documentation](https://datagrok.ai/js-api/classes/dg.jsviewer).
 
-### External Dependencies
+### External dependencies
 
 Just like regular `npm` packages, Datagrok packages may have dependencies. Typically you would list
 them in your [package.json](../develop.md#package.json) file and get them locally via `npm install`.
@@ -215,7 +215,7 @@ class AwesomeViewer extends DG.JsViewer {
   }
 }
 ```
-### Preparing Data
+### Preparing data
 
 When rendering a visualization, it is important to draw a distinction between cases when the
 underlying data changes and when it does not (e.g., resizing). To deal with this, it is common to
@@ -386,7 +386,7 @@ export function showChart() {
 
 Now run `AwesomePackage:showChart()` and explore all the features our viewer has, and customize it further if you like.
 
-## Scripting Viewers
+## Scripting viewers
 
 People keen on creating visualizations in popular data science languages can bring this
 functionality to the platform in a form of scripting viewers. To illustrate that, let's
@@ -395,7 +395,7 @@ your package and name it `scripts`. Then add a new file with `.py` extension to 
 paste the following script:
 
 ```python
-#name: Bar Chart
+#name: Bar chart
 #language: python
 #tags: demo, viewers
 #input: dataframe df
@@ -456,7 +456,7 @@ Now let's invoke the viewer from the interface. Add the dataset we are working o
 parameters:
 
 ```python
-#sample: demog.csv
+# Sample: demog.csv
 ```
 
 Scripts with specified sample files have an extra `Star` icon in the top menu, which finds and opens
@@ -465,7 +465,7 @@ find your chart there. Now if you open the script and hit the icon (or use any o
 instead), the code can be executed on the data. Tweak the input parameters in a dialog, if you like,
 and run your script. As a result, you will see a table view with your bar chart pinned to the right.
 
-## Registering Viewers
+## Registering viewers
 
 Tagging scripts or functions as `viewers` registers them within the platform. Registering a viewer
 makes it available in the top menu and enables common viewer operations, such as cloning, docking,
@@ -539,6 +539,6 @@ See also:
 
   * [Datagrok JavaScript API](../js-api.md)
   * [JavaScript API Samples](https://public.datagrok.ai/js/samples/functions/custom-viewers/viewers)
-  * [JavaScript Development](../develop.md)
+  * [JavaScript development](../develop.md)
   * [Viewers](../../visualize/viewers.md)
-  * [Scripting Viewers](../../visualize/viewers/scripting-viewer.md)
+  * [Scripting viewers](../../visualize/viewers/scripting-viewer.md)

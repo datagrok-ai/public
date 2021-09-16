@@ -1,4 +1,4 @@
-<!-- TITLE: Cheminformatics Predictive Modeling -->
+<!-- TITLE: Cheminformatics predictive modeling -->
 <!-- SUBTITLE: -->
 
 Grok is a perfect platform for building, applying, deploying, and managing predictive models
@@ -33,4 +33,4 @@ one of the panels.
 
 See also:
 
-* [Molecular Descriptor](https://en.wikipedia.org/wiki/Molecular_descriptor)
+* [Molecular descriptor](https://en.wikipedia.org/wiki/Molecular_descriptor)

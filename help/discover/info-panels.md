@@ -1,7 +1,7 @@
-<!-- TITLE: Info Panels -->
+<!-- TITLE: Info panels -->
 <!-- SUBTITLE: -->
 
-# Info Panels
+# Info panels
 
 Info panels provide additional information about the 
 current context (which can be a table, a column, or pretty much
@@ -42,9 +42,9 @@ the script, or set externally in the [global permissions](../govern/global-permi
 
 To specify the condition in the script, use the 'user' variable in the following way: 
 ```
-#condition: user.name == "John Doe" || user.name == "Jack Smith" 
-#condition: user.hasRole("Chemist") 
-#condition: user.inTeam("High-throuput screening") 
+# condition: user.name == "john doe" || user.name == "jack smith" 
+# condition: user.hasrole("chemist") 
+# condition: user.inteam("high-throuput screening") 
 ```
 
 ### Dataset condition
@@ -54,7 +54,7 @@ a particular data source.
 
 To specify the condition in the script, use the 'table' variable in the following way: 
 ```
-#condition: table.getTag("database") == "Northwind" 
+# condition: table.gettag("database") == "northwind" 
 ```
 
 ### Context condition
@@ -65,7 +65,7 @@ against that object by using the parameter name ("x" in the example below):
 
 ```
 #input: column x
-#condition: x.isNumerical && x.name == "F3" && x.stats.missingValueCount > 0 
+#condition: x.isnumerical && x.name == "f3" && x.stats.missingvaluecount > 0 
 ```
 
 ### User preferences
@@ -95,8 +95,8 @@ by opening (project:demog). It creates a [Scatter Plot](../visualize/viewers/sca
 sets the axes to the pre-defined columns, and adds a regression line.
 
 ```
-#name: Scatter Plot
-#description: Panel that contains an interactive scatter plot
+#name: Scatter plot
+#description: Panel that contains an interactive Scatter plot
 #language: grok
 #tags: panel
 #input: dataframe table
@@ -170,12 +170,12 @@ chemical structure. It appears whenever user clicks on a structure.
 
 ```
 #name: Solubility prediction
-#description: Predicts solubility by molecule descriptors ("Ipc", "MolWt", "NumValenceElectrons", "MolLogP", "LabuteASA", "TPSA", "HeavyAtomCount", "NumHAcceptors", "NumHDonors", "NumRotatableBonds", "RingCount")
+#description: Predicts solubility by molecule descriptors ("Ipc", "MolWt", "NumValenceElectrons", "MolLogP", "LabuteASA", "TPSA", "HeavyAtomCount", "NumhAcceptors", "NumHDonors", "NumRotatableBonds", "RingCount")
 #language: grok
 #tags: panel, prediction, chem
-#condition: smiles.semType == "Molecule"
+#condition: smiles.semtype == "Molecule"
 #input: dataframe table
-#input: column smiles {semType: Molecule} [Column with molecules, in SMILES format]
+#input: column smiles {semtype: Molecule} [Column with molecules, in smiles format]
 #output: dataframe predictions {action: join(table)}
 featureNames = ["TPSA", "Ipc", "NumHAcceptors", "NumHDonors", "LabuteASA", "RingCount", "MolWt", "NumValenceElectrons", "HeavyAtomCount", "MolLogP", "NumRotatableBonds"]
 ChemDescriptors(table, smiles, featureNames)
@@ -199,7 +199,7 @@ behind the scenes when user clicks on a row that contains store address:
 #tags: panel
 #sample: stores.csv
 #input: cell address
-#output: double predictedSales
+#output: double predictedsales
 #condition: cell.table.name == "stores" && cell.column.name == "address"
 
 //todo Vasiliy: implement
@@ -209,7 +209,7 @@ predictedSales = PredictSalesByStatistics(statistics)
 
 See also:
 
-* [Data Augmentation](data-augmentation.md) 
+* [Data augmentation](data-augmentation.md) 
 * [Scripting](../develop/scripting.md)
-* [Semantic Types](semantic-types.md)
+* [Semantic types](semantic-types.md)
 * [Cheminformatics: info panels](../domains/chem/cheminformatics.md#info-panels)

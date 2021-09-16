@@ -6,7 +6,7 @@
 This document discusses debugging of your packages for Datagrok in two popular IDEs &mdash; [Visual Studio Code] and 
 [JetBrains WebStorm].
 
-## Debugging with Visual Studio Code
+## Debugging with visual studio code
 
 To configure VS Code for Datagrok development when creating a package, run `grok create` with the `--ide=vscode` flag:
 
@@ -33,7 +33,7 @@ first time of debugging.
 
 **See more**: [Debugging with VS Code video]
 
-## Debugging with JetBrains IDEs
+## Debugging with jetbrains ides
 
 ### Debugging with a shell script
 
@@ -54,7 +54,7 @@ To configure debugging with a shell script on WebStorm:
 This script publishes your package to the development server. To publish the package to the public server or run the 
 package locally in a Docker container, configure additional scripts.
 
-### JavaScript debug configuration
+### Javascript debug configuration
 
 To configure JS Debug on WebStorm:
 

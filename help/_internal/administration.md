@@ -53,7 +53,7 @@ server plugin folders are located.
 
 On the standard Datagrok AMI image, this folder is /home/datagrok/data
 
-## Instance Configuration
+## Instance configuration
 
 It is possible to run more than one instance of Datagrok, each one associated with its own database,
 storage, users, configurations, etc. These instances are completely isolated from each other. 

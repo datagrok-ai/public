@@ -1,7 +1,7 @@
-<!-- TITLE: Manipulate Viewers -->
+<!-- TITLE: Manipulate viewers -->
 <!-- SUBTITLE: -->
 
-# API for Manipulating Viewers
+# API for manipulating viewers
 
 [Viewers](../../visualize/viewers.md) are main visual components of the Datagrok platform. Our JavaScript API exposes functionality for manipulating native viewers, such as [scatter plot](../../visualize/viewers/scatter-plot.md) or [histogram](../../visualize/viewers/histogram.md), as well as for [developing custom viewers](develop-custom-viewer.md).
 
@@ -11,7 +11,7 @@ Table of contents:
   - [Working with Properties](#working-with-properties)
   - [Docking Viewers](#docking-viewers)
 
-## Adding Viewers to Table Views
+## Adding viewers to table views
 
 There are several options for attaching a viewer instance to your layout. First of all, you can add it directly to a table view:
 
@@ -151,7 +151,7 @@ Examples:
   </li>
 </ul>
 
-## Working with Properties
+## Working with properties
 
 An essential part of working with visualizations is to customize their appearance.
 As we have seen, our JavaScript API provides multiple methods for this purpose.
@@ -219,7 +219,7 @@ Examples:
   - [Get access to canvas and column selectors](https://public.datagrok.ai/js/samples/ui/viewers/viewer-info)
   - [Customize scatter plot rendering](https://public.datagrok.ai/js/samples/ui/viewers/custom-scatterplot-rendering)
 
-## Adding Viewers to Views
+## Adding viewers to views
 
 You can add a viewer to any container, such as a [main application view](/develop/how-to/build-an-app.md#the-main-view) or a [dialog window](https://public.datagrok.ai/js/samples/ui/dialogs/dialogs).
 
@@ -243,7 +243,7 @@ ui.dialog()
 
 Check the [ChaRPy](https://github.com/datagrok-ai/public/blob/master/packages/ChaRPy/src/package.js) package for a similar example.
 
-## Docking Viewers
+## Docking viewers
 
 Just like other visual components that occupy a window of their own, viewers can be docked to a particular position:
 
@@ -262,8 +262,8 @@ grok.shell.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT);
 ```
 
 Examples:
-  * [Docking Viewers](https://public.datagrok.ai/js/samples/ui/docking/docking-table-view)
+  * [Docking viewers](https://public.datagrok.ai/js/samples/ui/docking/docking-table-view)
 
 See also:
   * [Viewers](../../visualize/viewers.md)
-  * [How to Develop Custom Viewer](develop-custom-viewer.md)
+  * [How to develop a custom viewer](develop-custom-viewer.md)

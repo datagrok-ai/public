@@ -1,7 +1,7 @@
-<!-- TITLE: Database Table -->
+<!-- TITLE: Database table -->
 <!-- SUBTITLE: -->
 
-# Database Table
+# Database table
 
 Because this table resides in an external database, the analysis is less interactive
 compared to the already imported tables. There are few options for working with it:
@@ -17,6 +17,6 @@ Uses foreign keys information for building the UI.
 See also:
 
 * [Table](../overview/table.md)
-* [Visual Query](db-visual-query.md)
-* [Database Column](db-column-info.md)
-* [Data Query](data-query.md)
+* [Visual query](db-visual-query.md)
+* [Database column](db-column-info.md)
+* [Data query](data-query.md)

@@ -24,7 +24,7 @@ These goals heavily influenced the design. On a surface, the platform appears qu
 traditional, as it consists of two parts - client and server. However, the way these parts
 work and connect is quite unusual.  
 
-### Design Philosophy
+### Design philosophy
 
 A traditional approach to building such a system would be to commit to a widely used technology such as 
 JavaScript, select a bunch of widely used libraries and frameworks, including a UI framework, a 
@@ -66,7 +66,7 @@ and export the data. By using the server-based capabilities, it gets to another 
 data connections, enabling data governance and data provenance, enabling scripting, providing data modeling
 capabilities, and dozens of other features outlined in our [knowledge base](../../home.md).
 
-## In-Memory Database
+## In-memory database
 
 At the heart of the platform is the proprietary, unique technology that lets us 
 efficiently work with huge datasets in the browser. Essentially, it is a columnar
@@ -249,7 +249,7 @@ Also it needs [database](#database) and [persistent file storage](#storage).
 Both of the virtual machines can be deployed as Docker containers in [AWS EC2](deploy-amazon-ec2.md), 
 [AWS ESC](deploy-amazon-ecs.md) or [regular host machine](deploy-regular.md).
 
-## Datagrok Virtual Machine
+## Datagrok virtual machine
 
 This machine is the heart of the platform, and is required for all activities. 
 
@@ -269,12 +269,12 @@ by the IT department).
 * Customizable storage
 * Supports SSL 
 
-### Full-Text Search
+### Full-text search
 
 Datagrok's full-text search (press Alt+Q to search) is backed by the Elastic search. It 
 searches in Wiki, forums, and datasets. Read more in the [Elastic Search](#full-text-search) article.
 
-### ORM
+### Orm
 
 In order to efficiently work with the database, we have built a custom object-relational mapper library (ORM).
 It takes advantage of our coding conventions, is fit and tuned for our goals, and lets us do the following:
@@ -294,7 +294,7 @@ Also Datagrok Virtual machine components are:
 * Nginx server
   
 
-## Compute Virtual Machine
+## Compute virtual machine
 
 Grok Compute is used for performing on-server computations. It is used for
 scripting, training and applying predictive models, and cheminformatics. You might not need it
@@ -318,7 +318,7 @@ Scripting works by sending code along with data to the Jupyter kernel (that resi
 
 Also, there is an ability to invoke R scripts using the OpenCPU endpoint (which is also installed on ComputeVM)
 
-### Predictive Modeling
+### Predictive modeling
 
 Datagrok utilizes few different backends for predictive modeling, while providing users the
 same look and feel. Training and applying models for either of the backends is performed on
@@ -428,4 +428,4 @@ See [Datagrok deploy on AWS EC2](deploy-amazon-ec2.md),
 [Datagrok deploy on AWS ECS](deploy-amazon-ecs.md),
 [Running Datagrok docker container](deploy-regular.md) for details.
 
-See [Enterprise Evaluation FAQ](enterprise-evaluation-faq.md) for more details.
+See [Enterprise evaluation FAQ](enterprise-evaluation-faq.md) for more details.

@@ -1,4 +1,4 @@
-<!-- TITLE: Database Substructure and Similarity Search -->
+<!-- TITLE: Database substructure and similarity search -->
 <!-- SUBTITLE: -->
 
 # Database substructure and similarity search
@@ -11,7 +11,7 @@ these operations are functions that can be used as part of the SQL query.
 
 ![DB Substructure and Similarity Search](../../uploads/gifs/db-substructure-similarity-search.gif "DB Substructure and Similarity Search")
 
-## Chemical Cartridge
+## Chemical cartridge
 
 Datagrok provides mechanisms for the automated translation of queries into SQL statements for several commonly
 used chemical cartridges. We support the following ones:     

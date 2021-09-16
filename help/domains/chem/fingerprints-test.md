@@ -36,5 +36,5 @@ of a molecule.
 
 See also:
  * [Molecular descriptor](../domains/chem/descriptors.md)
- * [Substructure Search Test](../tests/substructure-search-test.md)
- * [Get R Groups Test](../tests/get-r-groups-test.md)
+ * [Substructure search test](../tests/substructure-search-test.md)
+ * [Get R-Groups test](../tests/get-r-groups-test.md)

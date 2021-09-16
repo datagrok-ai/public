@@ -1,7 +1,7 @@
-<!-- TITLE: Trellis Plot -->
+<!-- TITLE: Trellis plot -->
 <!-- SUBTITLE: -->
 
-# Trellis Plot
+# Trellis plot
 
 Trellis Charts are useful for finding the structure and patterns in complex data.
 A Trellis Chart is a layout of smaller charts in a grid with consistent scales. Each smaller chart
@@ -38,6 +38,6 @@ this is how it looks for chemical structures after performing [R-Group Analysis]
 See also: 
   
   * [Viewers](../viewers.md)
-  * [Table View](../../overview/table-view.md)
-  * [R-Group Analysis](../../domains/chem/r-group-analysis.md)
-  * [JS API: Trellis Plot](https://public.datagrok.ai/js/samples/ui/viewers/types/trellis-plot)
+  * [Table view](../../overview/table-view.md)
+  * [R-Group analysis](../../domains/chem/r-group-analysis.md)
+  * [JS API: Trellis plot](https://public.datagrok.ai/js/samples/ui/viewers/types/trellis-plot)

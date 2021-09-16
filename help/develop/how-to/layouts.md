@@ -15,7 +15,7 @@ Table of contents:
   - [Applying Layouts to New Data](#applying-layouts-to-new-data)
   - [Storing Metadata in Layouts](#storing-metadata)
 
-## Creating Layouts
+## Creating layouts
 
 Layouts are created from views, and views, in turn, can be restored from layouts. When you save a
 layout to a server repository (by choosing `View | Layout | Save to Gallery` in the top menu or
@@ -93,7 +93,7 @@ according to [certain criteria](../../overview/smart-search.md), and so on.
 grok.dapi.layouts.list().then(layouts => grok.shell.info(`Total: ${layouts.length}`));
 ```
 
-## Applying Layouts to New Data
+## Applying layouts to new data
 
 Since layouts are designed to be reusable, it is essential to determine whether they can be applied
 to a new dataset. There is a special method that finds a list of appropriate layouts for a given table:
@@ -111,7 +111,7 @@ to the columns of the specified table. The matching mechanism consists of the fo
   2. Both columns have the same [layout-id](../../discover/tags.md#layout-id)
   3. Both columns have the same [semantic type](../../discover/tags.md#quality)
 
-## Storing Metadata
+## Storing metadata
 
 Layouts remember the columns they were constructed from (the field `columns`) and the metadata
 associated with those columns so that they can be applied to the original or similar data. In
@@ -120,8 +120,9 @@ This is what the mapping rules described above rely on. Apart from that, layouts
 [entities](../../overview/objects.md) are capable of storing metadata in a form of properties.
 
 See also:
-  - [View Layout](../../visualize/view-layout.md)
-  - [Table View](../../overview/table-view.md)
-  - [User Data Storage](../user-data-storage.md)
-  - [JavaScript API Samples: Layout Permissions and Metadata](https://public.datagrok.ai/js/samples/dapi/layouts-and-permissions)
-  - [JavaScript API Samples: Saving Layouts to User Data Storage](https://public.datagrok.ai/js/samples/ui/views/layouts)
+
+  - [View layout](../../visualize/view-layout.md)
+  - [Table view](../../overview/table-view.md)
+  - [User data storage](../user-data-storage.md)
+  - [JavaScript API Samples: Layout permissions and metadata](https://public.datagrok.ai/js/samples/dapi/layouts-and-permissions)
+  - [JavaScript API Samples: Saving layouts to user data storage](https://public.datagrok.ai/js/samples/ui/views/layouts)

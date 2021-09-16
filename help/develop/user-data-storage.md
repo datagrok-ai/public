@@ -1,7 +1,7 @@
-<!-- TITLE: User Storage -->
+<!-- TITLE: User storage -->
 <!-- SUBTITLE: -->
 
-# User Storage
+# User storage
 
 It is often the case that certain settings or inputs/outputs need to be shared between different applications or 
 different instances of the same application. This functionality is implemented in the form of user data storage — a virtual
@@ -16,7 +16,7 @@ Table of contents:
     * [Deleting](#deleting)
 * [Examples and Use Cases](#examples-and-use-cases)
 
-## General Structure
+## General structure
 
 The main class `grok.dapi.userDataStorage` is extended by the following 6 methods:
 
@@ -75,6 +75,7 @@ grok.dapi.userDataStorage.getValue('coordinate-storage','coordinates').then((ent
 ```
 
 ### Exploring
+
 Unfortunately we can't explore the content of user storage without first retrieving it from the memory.
 Once retrieved, we can use a standard `for` loop or a `forEach()` method to scroll through the entries:
 
@@ -97,7 +98,7 @@ or wipe the storage completely by running:
 await grok.dapi.userDataStorage.remove('coordinate-storage', null);
 ```
 
-## Examples and Use Cases
+## Examples and use cases
 User storage is especially handy when we want to save sets of input parameters, e.g. if a user wishes to reproduce
 their previous calculations in following sessions. All of the above snippets are summarized in the example below: 
 
@@ -151,5 +152,5 @@ Please note: here the `await` operator is not used with `remove()` and `postValu
 to buttons, i.e the order of execution is controlled manually.
 
 See also:
-  * [JavaScript API Samples: User Data Storage](https://public.datagrok.ai/js/samples/misc/user-data-storage)
-  * [JavaScript API Samples: Dataframe Upload](https://dev.datagrok.ai/js/samples/data-access/save-and-load-df)
+  * [JavaScript API Samples: User data storage](https://public.datagrok.ai/js/samples/misc/user-data-storage)
+  * [JavaScript API Samples: Dataframe upload](https://dev.datagrok.ai/js/samples/data-access/save-and-load-df)

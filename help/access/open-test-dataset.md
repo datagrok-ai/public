@@ -1,7 +1,7 @@
-<!-- TITLE: Open Test Dataset -->
+<!-- TITLE: Open test dataset -->
 <!-- SUBTITLE: -->
 
-# Open Test Dataset
+# Open test dataset
 
 Generates a synthetic dataset that might be useful for test or demo purposes. The resulting dataset will have
 the specified number of rows, however, only "random walk" method will produce specified numbers of columns.

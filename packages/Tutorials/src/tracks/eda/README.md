@@ -1,1 +1,1 @@
-# Exploratory Data Analysis Track
+# Exploratory data analysis track

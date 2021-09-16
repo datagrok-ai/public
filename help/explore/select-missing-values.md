@@ -1,7 +1,7 @@
-<!-- TITLE: Select Missing Values -->
+<!-- TITLE: Select missing values -->
 <!-- SUBTITLE: -->
 
-# Select Missing Values
+# Select missing values
 
 Selects missing values in the specified columns.
 

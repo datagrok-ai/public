@@ -1,7 +1,7 @@
-<!-- TITLE: Bar Chart -->
+<!-- TITLE: Bar chart -->
 <!-- SUBTITLE: -->
 
-# Bar Chart
+# Bar chart
 
 A bar chart presents grouped data as rectangular bars with lengths proportional to the values that
 they represent. Unlike histograms which you can apply to display the distribution of numerical data, bar charts are primarily designed for categorical values.
@@ -18,7 +18,7 @@ they represent. Unlike histograms which you can apply to display the distributio
 
 ## Features
 
-### DateTime support
+### Datetime support
 
 You can categorize DateTime columns using special functions, such as 'Year', 'Month', 'Quarter', 'Year - Month' and 'Year - Quarter':
 
@@ -36,8 +36,8 @@ Use the 'Relative Values' property in combination with the 'Stack' property to a
 
 See also: 
   
-* [Column Selectors](column-selectors.md)
+* [Column selectors](column-selectors.md)
 * [Table View](../../overview/table-view.md)
 * [Viewers](../viewers.md)
 * [JS API: Bar Chart](https://public.datagrok.ai/js/samples/ui/viewers/types/bar-chart)
-  
+ 

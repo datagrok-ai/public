@@ -62,8 +62,9 @@ grok create <name>  Create a package in a folder with the specified name
 Please note that the package name may only include letters, numbers, underscores, or hyphens
 
 Options:
-[--ide] [--ts]
+[--eslint] [--ide] [--ts]
 
+--eslint    Add a configuration for eslint
 --ide       Add an IDE-specific configuration for debugging (vscode)
 --ts        Create a TypeScript package
 `;

@@ -1,7 +1,7 @@
 <!-- TITLE: Function Types -->
 <!-- ORDER: 4 -->
 
-# Function Types
+# Function types
 
 A package can contain various functions, and each function is annotated with a tag that defines what this function does:
 

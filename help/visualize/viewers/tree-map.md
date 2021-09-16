@@ -1,7 +1,7 @@
-<!-- TITLE: Tree Map -->
+<!-- TITLE: Tree map -->
 <!-- SUBTITLE: -->
 
-# Tree Map
+# Tree map
 
 Tree maps display hierarchical (tree-structured) data as a set of nested rectangles. Each branch of
 the tree is given a rectangle, which is then tiled with smaller rectangles representing sub-
@@ -22,5 +22,5 @@ General:
 See also: 
   
   * [Viewers](../viewers.md)
-  * [Table View](../../overview/table-view.md)
-  * [JS API: Tree Map](https://public.datagrok.ai/js/samples/ui/viewers/types/tree-map)
+  * [Table view](../../overview/table-view.md)
+  * [JS API: Tree map](https://public.datagrok.ai/js/samples/ui/viewers/types/tree-map)

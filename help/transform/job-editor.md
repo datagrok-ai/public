@@ -1,4 +1,4 @@
-<!-- TITLE: Job Editor -->
+<!-- TITLE: Job editor -->
 <!-- SUBTITLE: -->
 
 # Job Editor

@@ -6,7 +6,7 @@
 Provides access to [Impala](https://impala.apache.org/) database
 using SQL queries via JDBC driver. 
 
-## Connection Parameters
+## Connection parameters
 
 ```json
 {
@@ -28,5 +28,5 @@ using SQL queries via JDBC driver.
 
 See also:
 
-  * [Data Connection](../data-connection.md)
+  * [Data connection](../data-connection.md)
   * [Impala](https://impala.apache.org/)

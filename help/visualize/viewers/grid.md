@@ -48,7 +48,7 @@
 | Ctrl+click   | Invert column selection |
 | ≡            | Open column filter      |
 
-### Resizing and Reordering
+### Resizing and reordering
 
 | []()         |                         |
 |--------------|-------------------------|
@@ -67,7 +67,7 @@
 
 ![](grid-formatting.gif "Date and number formatting")
 
-### Color-Coding
+### Color-coding
 
 |              |                         |
 |--------------|-------------------------|
@@ -76,7 +76,7 @@
 
 ![](grid-color-coding.gif "Color-coding")
 
-### Row Summary Columns
+### Row summary columns
 
 Summary columns is a way to visualize multiple values numerical across
 the row. This feature is useful for quick visual profiling of values.
@@ -104,11 +104,11 @@ in each row.
 To add a default form: **Menu | Add | Forms | Default**
 To add a custom form: **Menu | Add | Forms | Custom...**
 
-### Custom Cell Renderers
+### Custom cell renderers
 
 ![Molecules](../../uploads/viewers/grid-molecules.png "Molecule renderer")
 
-### Current Rows
+### Current rows
 
 Rows in a grid can not only be selected or filtered, in addition to that, the grid keeps track of a current row and highlights it in green. This indication is a neat and lightweight way to update information related to the current value and lets users explore and compare rows with ease.
 

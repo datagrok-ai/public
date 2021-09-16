@@ -8,6 +8,6 @@ using SQL queries via JDBC driver .
 
 See also:
 
-  * [Data Connection](../data-connection.md)
+  * [Data connection](../data-connection.md)
   * [Apache HBase](https://hbase.apache.org/)
   * [Apache HBase Wiki](https://en.wikipedia.org/wiki/Apache_HBase)

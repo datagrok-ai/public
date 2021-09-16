@@ -1,7 +1,7 @@
-<!-- TITLE: Importing Data -->
+<!-- TITLE: Importing data -->
 <!-- SUBTITLE: -->
 
-# Importing Data
+# Importing data
 
 Datagrok lets you easily ingest virtually any kind of data from almost anywhere. 
 It supports dozens of file types and can connect to [30+ popular databases](data-connection.md#connectors) and
@@ -11,7 +11,7 @@ To import a local file, drag-and-drop it into the browser. The important thing
 to understand is that the data will stay in the browser. It won't get sent to 
 the server, unless you explicitly do that by [uploading a project](../overview/project.md#uploading-a-project).
 
-## Supported File Types
+## Supported file types
 
 | Extension     | Description          | 
 |---------------|----------------------|
@@ -34,7 +34,7 @@ the server, unless you explicitly do that by [uploading a project](../overview/p
 | ipynb         | Jupyter Notebook     |
 
 
-## Supported Data Sources
+## Supported data sources
 
 | Data Source                      |
 |----------------------------------|
@@ -70,6 +70,6 @@ the server, unless you explicitly do that by [uploading a project](../overview/p
 <iframe width="560" height="315" src="https://www.youtube.com/embed/dKrCk38A1m8?start=336" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
 See also:
-  * [Import Text](import-text.md)
-  * [Data Query](data-query.md)
+  * [Import text](import-text.md)
+  * [Data query](data-query.md)
   * [JS API: Load CSV](https://public.datagrok.ai/js/samples/data-access/load-csv)

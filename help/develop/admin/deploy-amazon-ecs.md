@@ -9,7 +9,7 @@ This document contains instructions to deploy Datagrok on AWS ECS cluster.
 
 1. Configure S3 bucket and RDS database
 
-## Setup Datagrok Virtual Machine
+## Setup Datagrok virtual machine
 
 1. Download latest Datagrok Virtual Machine docker image from [dev.datagrok.ai/docker_images](https://dev.datagrok.ai/docker_images) and upload it to your ECR
 2. Create "Task Definition" with parameters:

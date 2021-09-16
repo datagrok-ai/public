@@ -1,7 +1,7 @@
-<!-- TITLE: Add an Info Panel -->
+<!-- TITLE: Add an info panel -->
 <!-- SUBTITLE: -->
 
-# Info Panels
+# Info panels
 
 [Info panels](../../discover/info-panels.md) are a powerful tool for bringing new context-specific data to the sight. You can inform users about an object they see through these panels, which is why they have such a name. New details typically appear along with the rest of the information in the [property panel](../../overview/navigation.md#properties) and [visibility conditions](#visibility-conditions) will be re-evaluated whenever the object changes.
 
@@ -9,17 +9,17 @@
 
 Info panels are added as part of a [package](../develop.md). There are two ways of developing them for Datagrok: either as panel [scripts](../scripting.md) or as JavaScript panel [functions](../overview/functions/function.md). Panel scripts can be written in any language supported by the platform (the full list of supported languages is available [here](../scripting.md#supported-languages)). In this case, the main difference between the two implementations pertains to where the code is executed. Panel functions defined in the package entry point will run on the client side, whereas panel scripts get executed on the server.
 
-### Visibility Conditions
+### Visibility conditions
 
-#### Semantic Types
+#### Semantic types
 
 Sometimes it is desirable to show an info panel only for data of a specific [semantic type](../../discover/semantic-types.md). To make use of detectors available out of the box, simply specify a relevant semantic type either from a script or from a panel function written in JavaScript.
 
 ```python
-#name: String Length
+#name: string length
 #language: python
 #tags: panel
-#input: string s {semType: Text}
+#input: string s {semtype: text}
 #output: int length
 #condition: true
 
@@ -41,13 +41,13 @@ It is possible to define your own semantic types. To apply a custom detector, fi
 To create a panel script, you should tag it as `panel` and specify conditions for the panel to be shown in the `condition` header parameter:
 
 ```python
-#name: Detect Cats
+#name: DetectCats
 #description: Detects cats on image
 #language: python
 #input: file file
-#output: bool hasCats
+#output: bool hascats
 #tags: demo, files, panel, ml, opencv
-#condition: file.isFile && file.size < 1e6 && file.path.contains("/cats/") && (file.name.endsWith("jpg") || file.name.endsWith("jpeg"))
+#condition: file.isfile && file.size < 1e6 && file.path.contains("/cats/") && (file.name.endsWith("jpg") || file.name.endswith("jpeg"))
 
 import cv2
 
@@ -74,14 +74,14 @@ export function translationPanel(file) {
 }
 ```
 
-## Domain Examples
+## Domain examples
 
 See also:
 
-  * [Info Panels](../../discover/info-panels.md)
+  * [Info panels](../../discover/info-panels.md)
   * [Datagrok JavaScript API](../js-api.md)
   * [JavaScript API Samples](https://public.datagrok.ai/js/samples/functions/info-panels/info-panels)
-  * [JavaScript Development](../develop.md)
+  * [JavaScript development](../develop.md)
   * [Scripting](../scripting.md)
   * [Functions](../overview/functions/function.md)
-  * [Semantic Types](../../discover/semantic-types.md)
+  * [Semantic types](../../discover/semantic-types.md)

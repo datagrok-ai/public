@@ -10,18 +10,18 @@ effect at all, except that you can search objects by metadata.
 Below are some of the standard tags related to tables or columns. To edit 
 column's metadata, right-click on it and select "Properties..." (or press F2 in the grid).
 
-## quality
+## Quality
 
 Applicable to columns. Determines column's [semantic type](semantic-types.md); used for
 making automatic suggestions on functions, layouts, and predictive models
 applicable to the current context. Also, see [units](#units).
 
-## units
+## Units
 
 Applicable to columns. Determines units in which the values are stored. 
 Also, see [quality](#quality).
 
-## format
+## Format
 
 Applicable to numeric or datetime columns. Determines the way values should 
 be represented.
@@ -100,12 +100,12 @@ Indicates on what basis the columns are colored. Numerical columns have the opti
 
 Applies conditional formatting to numeric and categorical columns. See an [example](https://public.datagrok.ai/js/samples/grid/color-coding-conditional).
 
-## formula
+## Formula
 
 Formula used for creating a derived column. Edit it in the "Formula" section on the property panel
 to recalculate. Note that changing the `formula` tag does not cause recalculation.
 
-## layout-id
+## Layout-id
 
 Applicable to columns. Used for matching layout columns with table columns when a layout is applied.
 See [layout suggestions](../visualize/view-layout.md#layout-suggestions) for details.
@@ -141,56 +141,56 @@ from a list of already existing values in the column.
 See also [choices](#.choices).
 Applicable for string columns.
 
-## cell-renderer
+## Cell-renderer
 
 Column cell renderer.
 
-## query
+## Query
 
 A [query](../access/data-query.md) that was used to produce this table.
 Applicable to tables.
 
-## import-time
+## Import-time
 
 When was the table created.
 Applicable to tables.
 
-## db
+## Db
 
 Applicable to columns. A database the content of this column was retrieved from.
 Used for data augmentation and impact analysis.
 See also [db-schema](#db-schema), [db-table](#db-table), [db-column](#db-column), [db-path](#db-path). 
 
-## db-schema
+## Db-schema
 
 Applicable to columns. A database schema the content of this column was retrieved from.
 Used for data augmentation and impact analysis.
 See also [db](#db), [db-table](#db-table), [db-column](#db-column), [db-path](#db-path). 
 
-## db-table
+## Db-table
 
 Applicable to columns. A database table the content of this column was retrieved from.
 Used for data augmentation and impact analysis.
 See also [db](#db), [db-schema](#db-schema), [db-column](#db-column), [db-path](#db-path). 
 
-## db-column
+## Db-column
 
 Applicable to columns. A database column the content of this column was retrieved from.
 Used for data augmentation and impact analysis.
 See also [db](#db), [db-schema](#db-schema), [db-table](#db-table), [db-path](#db-path). 
 
-## db-path
+## Db-path
 
 Applicable to columns. A database column, in the form on "db.schema.table.column", that 
 the content of this column was retrieved from. Used for data augmentation and impact analysis.
 See also [db](#db), [db-schema](#db-schema), [db-table](#db-table), [db-column](#db-column). 
 
-## id
+## Id
 
 Entity id, as it is stored in the database.
 Applicable to tables, columnms, and other entities.
 
-## data-connection-id
+## Data-connection-id
 
 Id of the [data connection](../access/data-connection.md) that was used to populate the table.
 Applicable to tables. 
@@ -212,11 +212,11 @@ the script will get re-executed when user opens this project next time.
 
 Applies to tables. 
 
-## chem-descriptor
+## Chem-descriptor
 
 A [molecular descriptor](../domains/chem/descriptors.md) used for calculating the values of that column.
 
-## chem-fingerprinter
+## Chem-fingerprinter
 
 A [molecular fingerprinter](../domains/chem/fingerprints.md) used for calculating the values of that column.
 

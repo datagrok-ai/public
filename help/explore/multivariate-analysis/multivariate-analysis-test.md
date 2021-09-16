@@ -1,7 +1,7 @@
-<!-- TITLE: Tests: Multivariate Analysis -->
+<!-- TITLE: Tests: multivariate analysis -->
 <!-- SUBTITLE: -->
 
-# Tests: Multivariate Analysis
+# Tests: Multivariate analysis
 
 [Multivariate analysis (MVA)](../plugins/multivariate-analysis/pls.md) is based on the statistical principle of multivariate statistics.
 
@@ -41,8 +41,8 @@ Use ["MissingValuesImputation"](../dialogs/missing-values-imputation.md) instrum
 
 See also: 
   * [PLS](../plugins/multivariate-analysis/pls.md)
-  * [Correlation Loadings plot](../plugins/multivariate-analysis/plots/correlation-loadings.md)
-  * [Explained Variance plot](../plugins/multivariate-analysis/plots/explained-variance.md)
-  * [Regression Coefficients plot](../plugins/multivariate-analysis/plots/regression-coefficients.md)
-  * [Predicted vs. Reference plot](../plugins/multivariate-analysis/plots/predicted-vs-reference.md)
+  * [Correlation loadings plot](../plugins/multivariate-analysis/plots/correlation-loadings.md)
+  * [Explained variance plot](../plugins/multivariate-analysis/plots/explained-variance.md)
+  * [Regression coefficients plot](../plugins/multivariate-analysis/plots/regression-coefficients.md)
+  * [Predicted vs. reference plot](../plugins/multivariate-analysis/plots/predicted-vs-reference.md)
   * [Multivariate analysis Auto Test](multivariate-analysis-test.side)

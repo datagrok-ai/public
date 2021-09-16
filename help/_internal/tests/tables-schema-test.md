@@ -1,7 +1,7 @@
 <!-- TITLE: Tests: Tables Schema -->
 <!-- SUBTITLE: -->
 
-# Tests: Tables Schema
+# Tests: Tables schema
 
 The table schema is a data model (table-columns)
 

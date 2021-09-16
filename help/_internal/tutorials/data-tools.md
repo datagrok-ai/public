@@ -1,7 +1,7 @@
-<!-- TITLE: Use Cases: Data Tools -->
+<!-- TITLE: Use Cases: Data tools -->
 <!-- SUBTITLE: -->
 
-# Use Cases: Data Tools
+# Use cases: Data tools
 
 Owner: Andrey
 
@@ -13,4 +13,4 @@ Features: Table Comparer, Table Linker, Data Categorizer, Batch Data Editor
 TODO: write
 
 See also:
-* [Data Manipulation](../../transform/data-wrangling.md)
+* [Data manipulation](../../transform/data-wrangling.md)

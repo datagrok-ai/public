@@ -25,9 +25,9 @@ apply for other data sources that are listed below:
 
 See also:
 
-  * [Data Pipeline](data-pipeline.md)
-  * [Data Connection](data-connection.md)
-  * [Data Query](data-query.md)
-  * [Data Job](data-job.md)
-  * [Function Call](../overview/functions/function-call.md)
+  * [Data pipeline](data-pipeline.md)
+  * [Data connection](data-connection.md)
+  * [Data query](data-query.md)
+  * [Data job](data-job.md)
+  * [Function call](../overview/functions/function-call.md)
   * [Recipe Editor](../transform/recipe-editor.md)

@@ -15,11 +15,6 @@ export let _package = new DG.Package();
 //output: object res 
 export function sequenceAlignment(alignType:string, alignTable:string, gap:number, seq1:string, seq2:string){
     let toAlign = new SequenceAlignment(seq1,seq2,gap,alignTable);
-    let res;
-    if(alignType == 'Local alignment'){
-        res = toAlign.smithWaterman();
-    }else{
-        res =  toAlign.needlemanWunch();
-    }
+    let res = alignType == 'Local alignment' ? toAlign.smithWaterman() : toAlign.needlemanWunch();
     return res
 }

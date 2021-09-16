@@ -1,7 +1,7 @@
-<!-- TITLE: Scripting Viewer -->
+<!-- TITLE: Scripting viewer -->
 <!-- SUBTITLE: -->
 
-# Scripting Viewer
+# Scripting viewer
 
 **Scripting viewers** are viewers implemented in R, Python, or Julia. Internally, they
 use [scripting](../../develop/scripting.md) for integration with the Datagrok platform.
@@ -15,19 +15,19 @@ To add an existing viewer to a table view, select it from the
 To edit the rest of the properties, either click on the `gear` icon on top of the viewer,
 or press F4 when the viewer has focus, or open the hamburger menu and select `Viewer | Properties`.
 
-## Customize Scripting Viewer Scripts
+## Customize scripting viewer scripts
 
 Since all scripting viewers are based on [scripts](../../develop/scripting.md), it is easy to customize 
 the existing ones or create your own viewer. To customize the script's code, open it by clicking
 on `Edit script` in the hamburger menu. To add a new scripting viewer to the main menu, add the `viewers` 
 tag to the script header.
 
-## Scripting Viewer code example
+## Scripting viewer code example
 
 The following example shows code for a simple scatter plot written on R, using the `ggplot2` library.
 
 ```r
-#name: Scatter Plot
+#name: Scatter plot
 #language: r
 #tags: demo, viewers
 #input: dataframe t

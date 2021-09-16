@@ -1,7 +1,7 @@
-<!-- TITLE: Data Preparation Pipeline -->
+<!-- TITLE: Data preparation pipeline -->
 <!-- SUBTITLE: -->
 
-# Data Preparation Pipeline
+# Data preparation pipeline
 
 DPP is a core component of the Datagrok platform designed to let end users define 
 jobs that would get data from disparate data sources, clean or merge the data if needed, 
@@ -60,7 +60,7 @@ dashboards, but would not have access to the underlying connection. See
 
 See also:
 
-  * [Data Connection](data-connection.md)
-  * [Data Query](data-query.md)
-  * [Data Job](data-job.md)
-  * [Function Call](../overview/functions/function-call.md)
+  * [Data connection](data-connection.md)
+  * [Data query](data-query.md)
+  * [Data job](data-job.md)
+  * [Function call](../overview/functions/function-call.md)

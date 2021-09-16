@@ -1,7 +1,7 @@
 <!-- TITLE: Tests: Chem Sketcher -->
 <!-- SUBTITLE: -->
 
-# Tests: Chem Sketcher
+# Tests: chem sketcher
 
 Sketcher is tool for drawing molecule structure or describing it in form of smiles, InCHI, InCHI key, etc.
 

@@ -86,15 +86,15 @@ All errors are automatically logged to Datagrok, but you can log store them expl
 logger.log('Error!', {'stackTrace': '...'}, 'error');
 ```
 
-## Amazon Cloud Watch export 
+## Amazon cloud watch export 
 
 Configure automated export Amazon Cloud Watch Log in `Settings -> Log`.
 
 Specify settings:
 
-### Cloud Watch Log Group  
+### Cloud watch log group  
 Fill with AWS CWL log group name
-### Events To Cloud Watch Streams Map
+### Events to cloud watch streams map
 Choose which audit types go to log streams. For example `log => datagrok_log`, `error => datagrok_errors`, etc. 
-### Cloud Watch Access Key,  Cloud Watch Secret Key, Cloud Watch Region
+### Cloud watch access key,  cloud watch secret key, cloud watch region
 Amazon Access and secret keys and region

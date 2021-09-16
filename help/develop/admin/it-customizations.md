@@ -1,7 +1,7 @@
-<!-- TITLE: IT Customizations -->
+<!-- TITLE: IT customizations -->
 <!-- SUBTITLE: -->
 
-# IT Customizations
+# It customizations
 
 We understand the need to comply to the organization's standards, so we made the platform 
 easily customizable. Here are some of the features that can be controlled by the IT:

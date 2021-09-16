@@ -53,20 +53,20 @@ class SequencePackage extends DG.Package {
     return new DG.Widget(e);
   }
 
+  //name: sequenceCellRenderer
+  //tags: cellRenderer, cellRenderer-nucleotides
+  //meta-cell-renderer-sem-type: nucleotides
+  //output: grid_cell_renderer result
+  sequenceCellRenderer() {
+    return new SequenceCellRenderer();
+  }
+
   //name: Sequence
   //description: creates a sequence viewer
   //tags: viewer
   //output: viewer result
   sequenceViewer() {
     return new SequenceViewer();
-  }
-
-  //name: SeqDemo
-  //description: creates a sequence viewer
-  //tags: viewer
-  //output: viewer result
-  seqDemoViewer() {
-    return new SeqDemoViewer();
   }
 
   //name: WebLogoViewer
@@ -148,7 +148,7 @@ class SequencePackage extends DG.Package {
 
 }
 
-_seq = new SequencePackage(null);
+let _seq = new SequencePackage();
 
 class SequenceViewer extends DG.JsViewer {
   onTableAttached() {
@@ -169,37 +169,5 @@ class SequenceViewer extends DG.JsViewer {
 
   // reflect changes made to filter/selection
   render() {
-  }
-}
-
-
-// This viewer does the following:
-// * defines two properties, "question" and "answer". Properties are persistable and editable.
-// * listens to changes in properties, attached table's selection and filter, and updates accordingly.
-class SeqDemoViewer extends DG.JsViewer {
-
-  constructor() {
-    super();
-
-    this.question = this.string('question', 'life');
-    this.answer = this.int('answer', 42);
-  }
-
-
-  onTableAttached() {
-    this.dataFrame.selection.onChanged(() => this.render());
-    this.dataFrame.filter.onChanged(() => this.render());
-
-    this.render();
-  }
-
-  render() {
-
-    this.root.innerHTML =
-      `${this.dataFrame.toString()}<br>
-            Question: ${this.question}<br>
-            Answer: ${this.answer}<br>
-            Selected: ${this.dataFrame.selection.trueCount}<br>
-            Filtered: ${this.dataFrame.filter.trueCount}`;
   }
 }

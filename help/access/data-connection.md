@@ -1,7 +1,7 @@
-<!-- TITLE: Data Connection -->
+<!-- TITLE: Data connection -->
 <!-- SUBTITLE: -->
 
-# Data Connection
+# Data connection
 
 Data connection is used for accessing data in a particular data source. 
 Connection parameters depend on the data source. Typically, you would need to provide 
@@ -52,7 +52,7 @@ connectors, and the list is quickly growing. Most of our data connectors are ope
 | [Web](connectors/web.md)                 |       |
 
 
-## Creating a Connection
+## Creating a connection
 
 To create a new data connection, open the "Databases" pane (Open | Databases), right-click on the appropriate 
 connector in the tree, and choose "Add connection...". Alternatively, click on "New Connection" under the
@@ -70,7 +70,7 @@ be picked up from the corresponding fields).
 Once a connection is set up, you are ready to start creating queries. There are multiple ways to 
 do so: manually or programmatically.
         
-## Access Control
+## Access control
 
 Connections are first-class entities in the Datagrok platform, and as such are subjects to the standard 
 checks and routines performed against them whenever they are used in the specific context. Some of the 
@@ -102,7 +102,7 @@ You can use these fields to filter connections with [smart search](../overview/s
 | commentedBy | [User](../govern/user.md) object            |
 | usedBy      | [User](../govern/user.md) object            |
 
-## JDBC Connection
+## JDBC connection
 
 For some cases connection may require custom JDBC connection string. For this case, JDBC-based data connection has 
 parameter "Conn. string". If filled, it will be used for connection, and all other parameters will be ignored except for "Login" and "Password". 
@@ -113,7 +113,7 @@ parameter "Conn. string". If filled, it will be used for connection, and all oth
 
 See also:
 
-  * [Data Pipeline](data-pipeline.md)
-  * [Data Query](data-query.md)
-  * [Data Job](data-job.md)
-  * [Function Call](../overview/functions/function-call.md)
+  * [Data pipeline](data-pipeline.md)
+  * [Data query](data-query.md)
+  * [Data job](data-job.md)
+  * [Function call](../overview/functions/function-call.md)

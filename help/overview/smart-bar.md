@@ -1,12 +1,12 @@
-<!-- TITLE: Smart Bar -->
+<!-- TITLE: Smart bar -->
 <!-- SUBTITLE: -->
 
-# Smart Bar
+# Smart bar
 
 Search for available commands and help pages. Start typing, and suggestions will appear. 
 Search in data by preceding a query with '?'. 
 
-##  Shortcuts
+## Shortcuts
 
 | []()        |              |
 |-------------|--------------|
@@ -15,7 +15,7 @@ Search in data by preceding a query with '?'.
 | Enter       | Run command (command search mode) |
 | Enter       | Select rows (data search mode) |
 
-##  Search in Data
+## Search in data
 
 Start the query with '?' to query data.
 
@@ -24,7 +24,7 @@ Start the query with '?' to query data.
 | ? > 5      | Any values > 5 |
 | age > 30      | 'Age' values > 30 |
 
-![Search Commands](../uploads/gifs/search-commands.gif "Search commands")
+![Search commands](../uploads/gifs/search-commands.gif "Search commands")
 
-![Search Data](../uploads/gifs/search-data.gif "Search data")
+![Search data](../uploads/gifs/search-data.gif "Search data")
 

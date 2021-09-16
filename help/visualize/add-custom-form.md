@@ -1,7 +1,7 @@
-<!-- TITLE: Add Custom Form -->
+<!-- TITLE: Add custom form -->
 <!-- SUBTITLE: -->
 
-# Add Custom Form
+# Add custom form
 
 Adds new column with forms based on [Markup](../overview/markup.md).
 

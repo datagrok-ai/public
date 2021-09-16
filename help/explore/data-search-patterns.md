@@ -1,7 +1,7 @@
-<!-- TITLE: Search Patterns -->
+<!-- TITLE: Search patterns -->
 <!-- SUBTITLE: -->
 
-# Search Patterns
+# Search patterns
 
 Search patterns let you use a commonly accepted notation to specify conditions in free text. Use the same
 syntax to query in-memory datasets via the [search mechanism](data-search.md), and to query external 
@@ -13,7 +13,7 @@ For searching within the in-memory table, patterns can be preceded with column n
 (example: "age > 21"). External query patterns do not allow the column name to be specified, as 
 the column name is already specified at the query level.
 
-## Numerical Patterns
+## Numerical patterns
 
 | Pattern                | Example    |
 |------------------------|------------|
@@ -27,7 +27,7 @@ the column name is already specified at the query level.
 
 If the input does not match above-mentioned patterns, 'exact value' search is used.
 
-## String Patterns
+## String patterns
 
 | Pattern                | Example             |
 |------------------------|---------------------|
@@ -40,7 +40,7 @@ If the input does not match above-mentioned patterns, 'exact value' search is us
 String matching is case-insensitive.
 If the input does not match above-mentioned patterns, 'exact value' search is used.
 
-## DateTime Patterns
+## Datetime patterns
 
 | Pattern                | Example                                       |
 |------------------------|-----------------------------------------------|
@@ -60,7 +60,7 @@ If the input does not match above-mentioned patterns, 'exact value' search is us
 | last month             |                                               |
 | last year              |                                               |
 
-## Provider Compatibility
+## Provider compatibility
 
 | Source                 | Support |
 |------------------------|---------|
@@ -89,5 +89,5 @@ If the input does not match above-mentioned patterns, 'exact value' search is us
  
 
 See also:
-  * [Data Search](data-search.md)
-  * [Parameterized Queries](../access/parameterized-queries.md)
+  * [Data search](data-search.md)
+  * [Parameterized queries](../access/parameterized-queries.md)

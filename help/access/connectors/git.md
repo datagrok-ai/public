@@ -6,7 +6,7 @@
 Provides access to [Git](https://git-scm.com/) repository as [file share](files.md).
 Works with any Git repository.
 
-## Connection Parameters
+## Connection parameters
 
 ```json
 {
@@ -19,6 +19,6 @@ Works with any Git repository.
 
 See also:
 
-  * [Data Connection](../data-connection.md)
+  * [Data connection](../data-connection.md)
   * [Git](https://git-scm.com/)
   * [Files](files.md)

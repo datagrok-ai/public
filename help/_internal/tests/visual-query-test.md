@@ -1,7 +1,7 @@
 <!-- TITLE: Tests: Build Query -->
 <!-- SUBTITLE: -->
 
-# Tests: Data Query
+# Tests: Data query
 
 Visual Query allows you to get table with aggregated values ​​by columns from DB table.
 

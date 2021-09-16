@@ -1,10 +1,10 @@
-<!-- TITLE: Manage Credentials -->
+<!-- TITLE: Manage credentials -->
 
-# Working with Credentials
+# Working with credentials
 
 [Security credentials](../../govern/security.md#credentials) are used to gain access to external resources. For example, database connections typically require a pair of login and password, whereas web services normally expect a token or an access key. You can associate such data with two types of [entities](../../overview/objects.md) within the platform: [packages](../develop.md#packages) and [connections](../../access/data-connection.md). This article describes how to transfer this information to the platform and common practices to keep it secure.
 
-## Package Credentials
+## Package credentials
 
 You can store text information bound to a package in a secure manner. The easiest way to do that comes with the user interface. Right-click on a package in Datagrok's [Packages](https://public.datagrok.ai/packages) view and select the `Credentials...` command from the package context menu. This will open a dialog where you can add credentials as key-value pairs. Pay attention to the `Credentials owner` field: it may include a user or a user group, such as the current user or all users respectively. Once added, these key-value pairs can only be read by members of the owner group.
 
@@ -49,7 +49,7 @@ _package.getCredentials().then(c => grok.shell.info(c.parameters['test']));
 
 Check out this example in our [API samples](https://public.datagrok.ai/js/samples/misc/package-credentials). And to see the full cycle of adding and reading credentials, have a look at the public [NLP](https://github.com/datagrok-ai/public/tree/master/packages/NLP) package. It illustrates how to set new credentials, e.g. access keys, in a [Python script](https://github.com/datagrok-ai/public/blob/master/packages/NLP/aws/nlp-user.py) and reach them later from the [main file](https://github.com/datagrok-ai/public/blob/master/packages/NLP/src/package.js) of the package.
 
-## Database Connection Credentials
+## Database connection credentials
 
 There are many ways to specify credentials for a database connection, namely:
 
@@ -69,6 +69,6 @@ There are many ways to specify credentials for a database connection, namely:
 
 See also:
   * [Security](../../govern/security.md#credentials)
-  * [How to Access Data](access-data.md)
+  * [How to access data](access-data.md)
   * [Packages](../develop.md)
-  * [Data Connection](../../access/data-connection.md)
+  * [Data connection](../../access/data-connection.md)

@@ -1,7 +1,7 @@
-<!-- TITLE: Predictive Modeling -->
+<!-- TITLE: Predictive modeling -->
 <!-- SUBTITLE: -->
 
-# Predictive Modeling
+# Predictive modeling
 
 Predictive modeling uses statistics to predict outcomes.
 
@@ -84,7 +84,7 @@ or as suggested models in table properties in [Toolbox](../overview/navigation.m
 
 Result of modelling (train or apply) will be concatenated to source table as column with name "Outcome".
 
-### ROC curve
+### Roc curve
 
 Receiver operating characteristic curve, i.e. ROC curve, is a graphical plot that illustrates the diagnostic 
 ability of a binary classifier system as its discrimination threshold is varied.  
@@ -128,6 +128,7 @@ and [info panels](../discover/info-panels.md#predicting-molecule-solubility).
 <iframe width="560" height="315" src="https://www.youtube.com/embed/JaJgxtHAb98?start=1418" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
   
 See also: 
+
 * [Cheminformatics predictive modeling](../domains/chem/chem-predictive-modeling.md) 
 * [Predictive modeling](https://en.wikipedia.org/wiki/Predictive_modelling)
 * [Statistical classification](https://en.wikipedia.org/wiki/Statistical_classification)

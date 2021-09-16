@@ -1,7 +1,7 @@
-<!-- TITLE: Stress Testing Results -->
+<!-- TITLE: Stress testing results -->
 <!-- SUBTITLE: -->
 
-# Stress Testing
+# Stress testing
 
 Stress testing is an important part of the [Quality Assurance](quality-assurance.md#stress-testing) process.
 To make sure the platform is stable under heavy load (either many users working simultaneously, 
@@ -41,7 +41,7 @@ The **test client** is the same for all environments. It is a Docker image conta
 Chrome browser with the [Selenium IDE CL Runner](https://selenium.dev/selenium-ide/docs/en/introduction/command-line-runner)
 that we use for running stress tests. 
 
-### Environment: Medium
+### Environment: medium
 
 This environment is a single mid-range server, no auto scaling.
 It is designed to demonstrate the platform's performance when running on a single server, and 
@@ -59,7 +59,7 @@ The **database server** is a c5.xlarge AWS RDS Postgres
 Tests are designed how the platform works under different kind of loads. Some of the
 tests are parameterized (quite often, the parameter is a size of the dataset the test works with)
 
-### Test: db-query-N
+### Test: db-query-n
 
 This test queries the chembl database (ligand_eff table) for the first N rows. It uses three pre-created
 queries called "10K_query", "100K_query", and "1M_query".

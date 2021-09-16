@@ -1,7 +1,7 @@
 <!-- TITLE: Tests: Dialogs Input Fields -->
 <!-- SUBTITLE: -->
 
-# Tests: Dialogs Input Fields
+# Tests: Dialogs input fields
 
 Most platform dialogs have input fields for data of different types. Testing the behavior of such places of the 
 system when entering valid and non-valid ones is very important.
@@ -24,7 +24,7 @@ When testing in this direction, it is necessary to check the behavior when inser
 If you enter invalid data in dialog field, then after clicking ```Enter```, dialog should not be executed, and 
 corresponding fields should be highlighted in red with a tooltip.
 
-## Input Type "Column" 
+## Input type "column" 
 
 Some dialog of platform use input fields with a column type.
 
