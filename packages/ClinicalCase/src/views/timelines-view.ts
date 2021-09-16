@@ -31,9 +31,10 @@ export class TimelinesView extends DG.ViewBase {
   filtersDiv = ui.box();
   resultTables: DG.DataFrame;
 
-  constructor() {
-    super();
+  constructor(name) {
+    super(name);
 
+    this.name = name;
     let multiChoiceOptions = ui.multiChoiceInput('', [ this.selectedOptions[ 0 ] ] as any, Object.keys(multichoiceTableOptions))
     multiChoiceOptions.onChanged((v) => {
       this.selectedOptions = multiChoiceOptions.value;
@@ -47,15 +48,23 @@ export class TimelinesView extends DG.ViewBase {
       'font-size':'16px',
     }};
 
+    let viewerTitle = {style:{
+      'color':'var(--grey-6)',
+      'margin':'12px 0px 6px 12px',
+      'font-size':'16px',
+    }};
+
     this.root.className = 'grok-view ui-box';
     this.append(ui.splitH([
       ui.splitV([
         ui.box(ui.panel([
           ui.divText('Events',customTitle),
           multiChoiceOptions.root
-        ]), {style:{maxHeight:'150px'}}),
+        ]), {style:{maxHeight:'130px'}}),
+        ui.box(
+          ui.divText('Filters',viewerTitle), {style:{maxHeight:'40px'}}),
         this.filtersDiv
-      ], {style:{maxWidth:'250px'}}),
+      ], {style:{maxWidth:'250px',}}),
       this.timelinesDiv
     ]))
 
@@ -115,18 +124,12 @@ export class TimelinesView extends DG.ViewBase {
   }
 
   private getFilters() {
-    let viewerTitle = {style:{
-      'color':'var(--grey-6)',
-      'margin':'12px 0px 6px 12px',
-      'font-size':'16px',
-    }};
     let filterColumns = [];
     Object.keys(filters).forEach(domain => filterColumns = filterColumns.concat(Object.keys(filters[ domain ])))
     let chart = DG.Viewer.fromType('Filters', this.resultTables, {
       'columnNames': filterColumns,
       'showContextMenu': false,
     }).root;
-    chart.prepend(ui.divText('Filters',viewerTitle))
     chart.style.overflowY = 'scroll';
     return chart
   }
