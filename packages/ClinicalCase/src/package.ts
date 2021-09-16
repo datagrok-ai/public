@@ -164,6 +164,7 @@ export async function clinicalCaseApp(): Promise<any> {
 
   DG.ObjectHandler.register(new AdverseEventHandler());
 
+  grok.shell.v = summary;
   // showStudySummary();
   // showLabs();
 }
