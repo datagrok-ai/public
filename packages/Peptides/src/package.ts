@@ -48,10 +48,38 @@ export function Peptides() {
   ]);
 }
 
+//name: SAR Viewer Help
+//tags: panel, widget
+//input: column _ {semType: alignedSequence}
+//output: widget result
+export function SARViewerHelp(_: DG.Column): DG.Widget {
+  const helpStr = 
+  "med - Difference of activity medians of the currently selected AAR on the current position and total median;\n\
+  avg - Mean activity of the currently selected AAR on the current position;\n\
+  min - Min activity of the currently selected AAR on the current position;\n\
+  max - Max activity of the currently selected AAR on the current position;\n\
+  q1 - First quartile of activities for the currently selected AAR on the current position;\n\
+  q2 - Second quartile of activities for the currently selected AAR on the current position;\n\
+  q3 - Third Quartile of activities for the currently selected AAR on the current position;\n\
+  count - Amount of the current AARs found on the current position;\n\
+  variance - Variance of activities for the currently selected AAR on the current position;\n\
+  skew - Skew of activities for the currently selected AAR on the current position;\n\
+  kurt - Kurtosis of activities for the currently selected AAR on the current position;\n\
+  stdev - Standard deviation for the currently selected AAR on the current position;\n\
+  sum - Sum of activities for the currently selected AAR on the current position;\n\
+  ratio - Ratio of the selected AAR on the current position;\n\
+  cv - Coefficient of variation for the currently selected AAR on the current position;\n\
+  iqr - Interquartile range of activities for the currently selected AAR on the current position";
+  const div = ui.divV(helpStr.split("\n").map((line) => {
+    return ui.divText(line);
+  }))
+  return new DG.Widget(div);
+}
+
 //name: SARViewer
 //description: Peptides SAR Viewer
-//tags: viewer, panel
+//tags: viewer
 //output: viewer result
-export function sar() {
+export function sar(): SARViewer {
   return new SARViewer();
 }
