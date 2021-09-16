@@ -6,11 +6,12 @@ import {DockNode, DockManager} from './docking';
 import {Grid} from './grid';
 import {Menu, ToolboxPage} from './widgets';
 import {Entity, Script} from './entities';
-import {toJs} from './wrappers';
+import {toDart, toJs} from './wrappers';
 import {_options, _toIterable} from './utils';
 import { StreamSubscription } from './events';
 import $ from "cash-dom";
 import {Subscription} from "rxjs";
+import {FuncCall} from "./functions";
 
 
 let api = <any>window;
@@ -33,7 +34,7 @@ export class ViewBase {
     if (createHost)
       this.d = api.grok_View_CreateJsViewHost(this);
 
-    this._root = ui.div([], 'grok-view');
+    this._root = ui.panel([], 'grok-view');
     this._root.tabIndex = 0;
 
     /** @type {StreamSubscription[]} */
@@ -47,6 +48,16 @@ export class ViewBase {
     return this._root;
   }
 
+  get box(): boolean {
+    return $(this.root).hasClass('ui-box');
+  }
+
+  set box(b: boolean) {
+    let r = $(this.root);
+    r.removeClass('ui-panel').removeClass('ui-box');
+    r.addClass(b ? 'ui-box' : 'ui-panel');
+  }
+
   /** View type
    * @type {string} */
   get type(): string {
@@ -58,19 +69,23 @@ export class ViewBase {
     return null;
   }
 
-  /** View name. It gets shown in the tab handle.
-   * @type {string} */
+  private _name: string;
+
+  /** @type {string} */
   get name(): string {
-    // @ts-ignore
-    return api.grok_View_Get_Name == null ? this._name : api.grok_View_Get_Name(this.d);
+    return this._name;
   }
 
   set name(s: string) {
-    if (api.grok_View_Set_Name == null)
-    // @ts-ignore
-      this._name = s;
-    else
-      api.grok_View_Set_Name(this.d, s);
+    this._name = s;
+  }
+
+  get parentCall(): FuncCall {
+    return api.grok_View_Get_ParentCall(this.d);
+  }
+
+  set parentCall(s: FuncCall) {
+    api.grok_View_Set_ParentCall(this.d, toDart(s));
   }
 
   /** @type {string} */
@@ -97,7 +112,7 @@ export class ViewBase {
   }
 
   set toolbox(x: HTMLElement) {
-    api.grok_View_Set_Toolbox(this.d, x);
+    api.grok_View_Set_Toolbox(this.d, toDart(x));
   }
 
   /** View menu.
@@ -226,16 +241,6 @@ export class View extends ViewBase {
     return new View(api.grok_View_CreateByType(viewType, options));
   }
 
-  get box(): boolean {
-    return $(this.root).hasClass('ui-box');
-  }
-
-  set box(b: boolean) {
-    let r = $(this.root);
-    r.removeClass('ui-panel').removeClass('ui-box');
-    r.addClass(b ? 'ui-box' : 'ui-panel');
-  }
-
   get root(): HTMLElement {
     if (api.grok_View_Get_Root == null)
       return this._root;
@@ -287,6 +292,21 @@ export class View extends ViewBase {
    *  @returns {ViewLayout} */
   saveLayout(): ViewLayout {
     return new ViewLayout(api.grok_View_Save_Layout(this.d));
+  }
+
+  /** View name. It gets shown in the tab handle.
+   * @type {string} */
+  get name(): string {
+    // @ts-ignore
+    return api.grok_View_Get_Name == null ? this._name : api.grok_View_Get_Name(this.d);
+  }
+
+  set name(s: string) {
+    if (api.grok_View_Set_Name == null)
+      // @ts-ignore
+      this._name = s;
+    else
+      api.grok_View_Set_Name(this.d, s);
   }
 
   // to be used in [createByType].

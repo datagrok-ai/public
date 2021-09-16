@@ -38,21 +38,28 @@ export class ValidationView extends DG.ViewBase {
 
   private generateUI() {
 
+    let viewerTitle = {style:{
+      'color':'var(--grey-6)',
+      'margin':'12px 0px 6px 12px',
+      'font-size':'16px',
+      'justify-content':'center'
+    }};
+
+
+    let violatedRules = DG.Viewer.grid(this.rulesDataframe);
+    violatedRules.root.prepend();
+
+    let tabs = ui.tabControl(this.createErrorsTabControl());
+    console.log(tabs)
+
+    this.root.className = 'grok-view ui-box';
     this.root.appendChild(
       ui.splitV([
-
-        ui.box(ui.panel([
-          ui.h1('Violated Rules')
-        ]), { style: { maxHeight: '30px' } }),
-
-        DG.Viewer.grid(this.rulesDataframe).root,
-
-        ui.box(ui.panel([
-          ui.h1('Errors')
-        ]), { style: { maxHeight: '30px' } }),
-
-        ui.tabControl(this.createErrorsTabControl()).root
-      ], { style: { width: '100%', height: '100%' } })
+        ui.box(ui.divText('Violated Rules', viewerTitle), { style: { maxHeight: '45px' } }),
+        violatedRules.root,
+        ui.box(ui.divText('Errors', viewerTitle), { style: { maxHeight: '45px' } }),
+        tabs.root
+      ])
     );
 
   }
