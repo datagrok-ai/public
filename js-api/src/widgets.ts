@@ -3,7 +3,7 @@ import {__obs, _sub, observeStream, StreamSubscription} from "./events";
 import {Observable, Subscription} from "rxjs";
 import {Func, Property} from "./entities";
 import {Cell, Column, DataFrame} from "./dataframe";
-import {ColorType, Type} from "./const";
+import {ColorType, PropertyOptions, Type} from "./const";
 import * as React from "react";
 import * as rxjs from "rxjs";
 import {Rect} from "./grid";
@@ -199,7 +199,7 @@ export class Widget {
    * @returns {*}
    * @private
    */
-  addProperty(propertyName: string, propertyType: Type, defaultValue: any = null, options: { [key: string]: string } | null = null): any {
+  addProperty(propertyName: string, propertyType: Type, defaultValue: any = null, options: { [key: string]: string } & PropertyOptions | null = null): any {
     let obj = this;
     // @ts-ignore
     let p = Property.create(propertyName, propertyType, () => obj[propertyName], null, defaultValue);
@@ -635,7 +635,7 @@ export class Menu {
   /** Ends a group of menu items and returns to the higher menu level.
    * @returns {Menu} */
   endGroup(): Menu {
-    return toJs(api.grok_Menu_End_Group(this.d));
+    return toJs(api.grok_Menu_EndGroup(this.d));
   }
 
   /** Adds a menu group with the specified text and handler.
