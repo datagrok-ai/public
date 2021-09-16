@@ -1,5 +1,5 @@
 import * as DG from 'datagrok-api/dg';
-class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
+export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
     get name() {
         return 'alignedSequenceCR';
     }
