@@ -39,26 +39,27 @@ export class MPUtils {
 
   // convert one multiline describtion to the several plots
   // only objects with field "splitByColumnName"
-  generatePlotsFromDescribtions(descr : any, categs : string[], allCats: string[]) : any {
+  generatePlotsFromDescribtions(descr: any, categs: string[], allCats: string[]): any {
     const r = [];
     const categsMax = descr.maxLimit;
     const fieldsNumber = categs.length < categsMax ? categs.length : categsMax;
-    for (let i = 0; i<fieldsNumber; i++) {
-      const t : any= {};
-      t.series = {type: descr.type, data: [], descr: 222};
+    for (let i = 0; i < fieldsNumber; i++) {
+      const t: any = {};
+      t.series = { type: descr.type, data: [], descr: 222 };
       t.x = descr.x;
       t.y = descr.y;
       t.condition = {
         field: descr.splitByColumnName,
-        value: categs[i],
+        value: categs[ i ],
       };
-      t.leftTitle = t.y;
+      t.title = descr.title ?? categs[ i ]
       t.height = descr.height;
       t.show = descr.show;
-      t.currentCat = categs[i];
+      t.currentCat = categs[ i ];
       t.allCats = allCats;
       t.tableName = descr.tableName;
       t.yType = 'value';
+      t.edit = descr.edit;
       r.push(t);
     }
     return r;

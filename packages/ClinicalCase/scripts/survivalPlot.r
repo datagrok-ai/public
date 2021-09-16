@@ -6,9 +6,6 @@
 #output: graphics plot
 #output: dataframe diagnostics
 
-renv::init()
-renv::install("ggfortify")
-
 require("ggfortify")
 require("survival")
 require("ggplot2")
