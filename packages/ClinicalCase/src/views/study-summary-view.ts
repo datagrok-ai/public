@@ -8,7 +8,7 @@ import { createKaplanMeierScatterPlot } from "../custom-scatter-plots/custom-sca
 
 export class StudySummaryView extends DG.ViewBase {
 
- validationView: DG.View;
+ validationView: DG.ViewBase;
  errorsByDomain: any;
  errorsByDomainWithLinks: any;
 
