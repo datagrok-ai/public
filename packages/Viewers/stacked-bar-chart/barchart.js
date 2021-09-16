@@ -79,7 +79,18 @@ class StackedBarChart extends DG.JsViewer {
 
             this.aggregatedTables = {}
             this.aggregatedTablesUnselected = {}
-            if (this.dataFrame.selection.trueCount > 0) {
+            let buf1 = this.dataFrame.selection.getBuffer()
+            let buf2 = this.dataFrame.filter.getBuffer()
+            let resbuf = new Int32Array(this.dataFrame.rowCount)
+
+            for (var i=0; i<buf2.length; i++) {
+                resbuf[i] = buf1[i] & buf2[i];
+            }
+
+
+
+            let mask = DG.BitSet.fromBytes(resbuf.buffer,this.dataFrame.rowCount)
+            if (mask.trueCount !== this.dataFrame.filter.trueCount) {
                 this.selection_mode = true
                 this.aminoColumnNames.forEach(name => {
                     this.aggregatedTables[name] = this.dataFrame
@@ -87,14 +98,18 @@ class StackedBarChart extends DG.JsViewer {
                         .whereRowMask(this.dataFrame.filter)
                         .add('count', name, `${name}_count`)
                         .aggregate();
-                    let buf1 = this.dataFrame.selection.clone().invert().getBuffer()
+                    let buf1 =  this.dataFrame.selection.clone().invert().getBuffer()
                     let buf2 = this.dataFrame.filter.getBuffer()
-                    let resbuf = new ArrayBuffer(this.dataFrame.rowCount);
-                    for (const i in buf2) {
-                        resbuf[i] = buf2[i] & buf1[i]
+                    let resbuf = new Int32Array(this.dataFrame.rowCount)
+
+                    for (var i=0; i<buf2.length; i++) {
+                        resbuf[i] = buf1[i] & buf2[i];
                     }
-                    let mask = DG.BitSet.fromBytes(resbuf, this.dataFrame.rowCount)
-                    this.aggregatedTablesUnselected[name] = this.dataFrame
+
+
+
+                    let mask = DG.BitSet.fromBytes(resbuf.buffer,this.dataFrame.rowCount)
+                    this.aggregatedTablesUnselected[name] =  this.dataFrame
                         .groupBy([name])
                         .whereRowMask(mask)
                         .add('count', name, `${name}_count`)

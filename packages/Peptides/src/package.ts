@@ -3,6 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {SARViewer} from './SARViewer/sar-viewer';
+import  {AlignedSequenceCellRenderer} from './utills/cellRenderer';
 
 export const _package = new DG.Package();
 
@@ -82,4 +83,12 @@ export function SARViewerHelp(_: DG.Column): DG.Widget {
 //output: viewer result
 export function sar(): SARViewer {
   return new SARViewer();
+}
+
+//name: alignedSequenceCellRenderer
+//tags: cellRenderer, cellRenderer-alignedSequence
+//meta-cell-renderer-sem-type: alignedSequence
+//output: grid_cell_renderer result
+export function alignedSequenceCellRenderer() {
+  return new AlignedSequenceCellRenderer();
 }

@@ -49,7 +49,35 @@ export class PredictiveModelingTutorial extends Tutorial {
           inputRoot!);
       }
 
+      // TODO: transform to actions
       //await viewInputAction('Set "Table" to "demog"', 'Table', 'demog');
+      this.describe('Set "Predict" to "SEX"');
+      this.describe('Set "Features" to ["AGE", "WEIGHT", "HEIGHT"]');
+
+      this.describe('You will now see that the column names are highlighted in red. ' +
+        'Click on the question mark to the right of the input to see a warning message. ' +
+        'It says that some of the columns contain missing values, and suggests two ways to address this.');
+
+      let dlg: DG.Dialog;
+      await this.action("Let's use missing values imputation.",
+        grok.events.onDialogShown.pipe(filter((dialog: any) => {
+          if (dialog.title === 'Missing Values Imputation') {
+            dlg = dialog;
+            return true;
+          }
+          return false;
+      })));
+
+      await this.dlgInputAction(dlg!, 'Set "Table" to "demog"', 'Table', 'demog');
+      await this.dlgInputAction(dlg!, 'Choose [AGE, WEIGHT, HEIGHT] for "Impute"', 'Impute', 'AGE,HEIGHT,WEIGHT');
+      await this.dlgInputAction(dlg!, 'Set "Data" to DIS_POP', 'Data', 'DIS_POP');
+      await this.dlgInputAction(dlg!, 'Set the number of nearest neighbors to "5"', 'Nearest Neighbours', '5');
+
+      await this.action('Click "OK" and wait for the values to be calculated.',
+        grok.functions.onAfterRunAction.pipe(
+          filter((call: DG.FuncCall) => call.func.name === 'MissingValuesImputation')
+        ));
+
       await viewInputAction(`Set "Method" to "${method}"`, 'Method', method);
     };
 

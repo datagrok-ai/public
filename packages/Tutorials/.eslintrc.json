@@ -15,7 +15,10 @@
     "@typescript-eslint"
   ],
   "rules": {
-    "indent": ["error", 2],
+    "indent": [
+      "error",
+      2
+    ],
     "max-len": "warn",
     // Disabled due to function annotation
     "spaced-comment": "off",

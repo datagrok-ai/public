@@ -7,6 +7,7 @@ import {initTimeLine} from './timeLinesRender';
 import {MPUtils} from './utils';
 import {ECharts} from 'echarts';
 import {MPLayout} from './layout';
+import { BAR, LINE, SCATTER, TIMELINES } from './constants';
 // import * as deb from "./../debug.js";
 
 export class MultiPlotViewer extends DG.JsViewer {
@@ -58,6 +59,7 @@ export class MultiPlotViewer extends DG.JsViewer {
   typeComboElements : HTMLElement[] = [];
   showHideElements : HTMLElement[] = [];
   closeElements : HTMLElement[] = [];
+  editElements: HTMLElement[] = [];
   categoryCombos : HTMLElement[] = [];
   plots = [];
   box: DOMRect;
@@ -179,7 +181,15 @@ export class MultiPlotViewer extends DG.JsViewer {
       }
 
       if (this.closeElements[i]) {
-        this.closeElements[i].style.top = heightData[i].titleTop + 7 + this.controlsTopShift + 'px';
+        this.closeElements[i].style.top = heightData[i].titleTop + 10 + this.controlsTopShift + 'px';
+      }
+
+      if (this.editElements[i]) {
+        if(this.plots[i].edit.multi){
+          this.editElements[i].style.top = heightData[i].titleTop + 7 + this.controlsTopShift + 'px';
+        } else {
+          this.editElements[i].style.top = heightData[i].titleTop + this.controlsTopShift + 'px';
+        }
       }
 
       if (this.plots[i].categCombo) {
@@ -692,20 +702,28 @@ export class MultiPlotViewer extends DG.JsViewer {
   }
 
   deleteElements(): void {
-    this.typeComboElements.map((e) => e.remove());
+    this.typeComboElements.map((e) => { if (e) e.remove(); });
     this.showHideElements.map((e) => e.remove());
     this.closeElements.map((e) => e.remove());
+    this.editElements.map((e) => { if (e) e.remove(); });
   }
 
   setControlsVisibility() : void {
     this.typeComboElements.map((e) => {
-      e.style.visibility = this.showControls ? 'visible' : 'hidden';
+      if(e){
+        e.style.visibility = this.showControls ? 'visible' : 'hidden';
+      }
     });
     this.showHideElements.map((e) => {
       e.style.visibility = this.showControls ? 'visible' : 'hidden';
     });
     this.closeElements.map((e) => {
       e.style.visibility = this.showControls ? 'visible' : 'hidden';
+    });
+    this.editElements.map((e) => {
+      if(e){
+        e.style.visibility = this.showControls ? 'visible' : 'hidden';
+      }
     });
   }
 
@@ -715,36 +733,40 @@ export class MultiPlotViewer extends DG.JsViewer {
     // create comboboxes to choose plot types
     this.typeComboElements = [];
     for (let i = 0; i < this.plots.length; i++) {
-      const inputPlotType: any = ui.choiceInput('', 'scatter', ['scatter', 'line', 'bar'], (event) => {
-        this.plots[i].series.type = event;
-        this.updatePlots();
-        this.render();
-      });
-      this.typeComboElements.push(inputPlotType.root);
-      this.root.appendChild(inputPlotType.root);
-      inputPlotType.root.style.position = 'absolute';
-      inputPlotType.root.style.right = '28px';
-      inputPlotType.root.style['flex-direction'] = 'row';
-      inputPlotType.root.style.top = (40 * i) + 'px';
-      inputPlotType.root.querySelector('select').style.borderBottom = '0px';
+      if (this.plots[ i ].type !== TIMELINES) {
+        const inputPlotType: any = ui.choiceInput('', this.plots[ i ].series.type, [ SCATTER, LINE, BAR ], (event) => {
+          this.plots[ i ].series.type = event;
+          this.updatePlots();
+          this.render();
+        });
+        this.typeComboElements.push(inputPlotType.root);
+        this.root.appendChild(inputPlotType.root);
+        inputPlotType.root.style.position = 'absolute';
+        inputPlotType.root.style.right = '28px';
+        inputPlotType.root.style[ 'flex-direction' ] = 'row';
+        inputPlotType.root.style.top = (40 * i) + 'px';
+        inputPlotType.root.querySelector('select').style.borderBottom = '0px';
+      } else {
+        this.typeComboElements.push(null);
+      }
     }
 
     // create checkboxes for show/hide plots
     this.showHideElements = [];
     for (let i = 0; i < this.plots.length; i++) {
-      const inputPlotType: any = ui.div([ui.iconFA('angle-right'), ui.iconFA('angle-down')]);
+      const inputPlotType: any = ui.div([ ui.iconFA('angle-right'), ui.iconFA('angle-down') ]);
       const showHideIcons = inputPlotType.querySelectorAll('i');
-      showHideIcons[0].style.display = 'none';
+      showHideIcons[ 0 ].style.display = 'none';
       inputPlotType.showSwitch = 1;
       inputPlotType.addEventListener('click', (e) => {
         const div = e.target.parentNode;
         div.showSwitch = 1 - div.showSwitch;
-        const displays = ['', 'none'];
+        const displays = [ '', 'none' ];
         const els = div.querySelectorAll('i');
         const isShown = div.showSwitch;
-        els[0].style.display = displays[isShown];
-        els[1].style.display = displays[1 - isShown];
-        this.plots[i].show = isShown;
+        els[ 0 ].style.display = displays[ isShown ];
+        els[ 1 ].style.display = displays[ 1 - isShown ];
+        this.plots[ i ].show = isShown;
         this.updateFilter();
         this.updatePlots();
         this.render();
@@ -753,7 +775,7 @@ export class MultiPlotViewer extends DG.JsViewer {
       this.root.appendChild(inputPlotType);
       inputPlotType.style.position = 'absolute';
       inputPlotType.style.left = '3px';
-      inputPlotType.style['flex-direction'] = 'row';
+      inputPlotType.style[ 'flex-direction' ] = 'row';
       inputPlotType.style.top = (40 * i) + 'px';
       this.showHideElements.push(inputPlotType);
     }
@@ -776,8 +798,55 @@ export class MultiPlotViewer extends DG.JsViewer {
       this.root.appendChild(inputClose);
     }
 
-/*      // create combobox with categories
-    this.categoryCombos = [];
+    // create edit icons
+    this.editElements = [];
+    for (let i = 0; i < this.plots.length; i++) {
+      if (this.plots[ i ].edit) {
+        if (this.plots[ i ].edit.multi) {
+          const inputEdit = ui.icons.settings(() => {
+            let labValuesMultiChoices = ui.multiChoiceInput('', this.plots[ i ].edit.selectedValues, this.plots[ i ].edit.values)
+            labValuesMultiChoices.onChanged((v) => {
+              this.plots[ i ].edit.selectedValues = labValuesMultiChoices.value;
+            });
+            //@ts-ignore
+            labValuesMultiChoices.input.style.maxWidth = '100%';
+            //@ts-ignore
+            labValuesMultiChoices.input.style.maxHeight = '100%';
+            ui.dialog({ title: 'Lab values for scatter' })
+              .add(ui.div([ labValuesMultiChoices ], { style: { width: '400px', height: '300px' } }))
+              .onOK(() => {
+                this.updatePlotByCategory(i, this.plots[ i ].edit.selectedValues, false);
+              })
+              .show();
+          }, 'Edit values')
+          inputEdit.style.right = '100px';
+          inputEdit.style.position = 'absolute';
+          inputEdit.style.top = (40 * i) + 'px';
+          inputEdit.style.flexDirection = 'row';
+          this.root.appendChild(inputEdit);
+          this.editElements.push(inputEdit);
+         // this.updatePlotByCategory(i, this.plots[ i ].edit.selectedValues, false);
+        } else {
+          const inputEdit = ui.choiceInput('Value', this.plots[ i ].edit.selectedValues, this.plots[ i ].edit.values);
+          inputEdit.onChanged((v) => {
+            this.plots[ i ].edit.selectedValues = inputEdit.value;
+            this.updatePlotByCategory(i, this.plots[ i ].edit.selectedValues, true);
+          });
+          inputEdit.root.style.right = '100px';
+          inputEdit.root.style.position = 'absolute';
+          inputEdit.root.style.top = (40 * i) + 'px';
+          inputEdit.root.style.flexDirection = 'row';
+          this.root.appendChild(inputEdit.root);
+          this.editElements.push(inputEdit.root);
+        //  this.updatePlotByCategory(i, this.plots[ i ].edit.selectedValues, true);
+        }
+      } else {
+        this.editElements.push(null);
+      }
+    }
+
+    // create combobox with categories
+/*     this.categoryCombos = [];
     for (let i=0; i<this.plots.length; i++) {
       const plot = this.plots[i];
       if (plot.allCats) {
@@ -791,18 +860,19 @@ export class MultiPlotViewer extends DG.JsViewer {
         plot.categCombo = categCombo;
         this.root.appendChild(categCombo.root);
         categCombo.root.style.position = 'absolute';
-        categCombo.root.style.left = '78px';
+        categCombo.root.style.right = '78px';
         categCombo.root.style['flex-direction'] = 'row';
         categCombo.root.style.top = (40 * i) + 'px';
         categCombo.root.querySelector('select').style.borderBottom = '0px';
       }
-    }  */
+    } */
   } // createElements
 
 
-  updatePlotByCategory(plotIndex: number, category: string){
+  updatePlotByCategory(plotIndex: number, category: string, updateTitle: boolean){
     this.plots[plotIndex].currentCat = category;
     this.plots[plotIndex].condition.value = category;
+    if (updateTitle){ this.plots[plotIndex].title = category; }
     this.updateFilter();
     this.render();
   }
