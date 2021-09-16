@@ -6,7 +6,7 @@
 Provides ability to run search via [Twitter](https://twitter.com/) posts by 
 search key and geocode parameters and return results in tabular form.
 
-## Connection Parameters
+## Connection parameters
 
 ```json
 {
@@ -19,5 +19,5 @@ search key and geocode parameters and return results in tabular form.
 
 See also:
 
-  * [Data Connection](../data-connection.md)
+  * [Data connection](../data-connection.md)
   * [Twitter](https://twitter.com/)

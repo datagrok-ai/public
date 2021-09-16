@@ -25,7 +25,7 @@ than other systems.
 
 The recommended metadata engine for enterprises is RDS. 
 
-### Application Server
+### Application server
 
 Our application server is written in Dart, and uses asynchronous coding techniques
 similar to Node.js. It serves a lot of clients simultaneously 
@@ -40,7 +40,7 @@ As can be seen from the [stress testing](stress-testing-results.md), app server 
 won't be needed for most of the workloads in the enterprise. However, this still could
 be done if such a need arises.    
 
-### Data Storage
+### Data storage
 
 The recommended data storage engine for enterprises is S3, which is inherently
 scalable. 
@@ -58,7 +58,7 @@ of tens of millions of rows, or millions of columns, completely on the client,
 in the browser. In order to do that, a radical break from the traditional web-based
 applications was required.
 
-### Big Datasets
+### Big datasets
 
 In order to work with big datasets right in the browser, we developed our
 proprietary [in-memory database](architecture.md#in-memory-database).

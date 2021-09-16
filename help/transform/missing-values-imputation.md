@@ -1,7 +1,7 @@
-<!-- TITLE: Missing Values Imputation -->
+<!-- TITLE: Missing values imputation -->
 <!-- SUBTITLE: -->
 
-# Missing Values Imputation
+# Missing values imputation
 
 Imputation is the process of replacing missing data with substituted values.  
   
@@ -29,4 +29,4 @@ See also:
   * [k-nearest neighbors algorithm](https://en.wikipedia.org/wiki/K-nearest_neighbors_algorithm)
   
 Sample: 
-  * [Missing Values Imputation](https://public.datagrok.ai/js/samples/domains/data-science/missing-values-imputation)
+  * [Missing values imputation](https://public.datagrok.ai/js/samples/domains/data-science/missing-values-imputation)

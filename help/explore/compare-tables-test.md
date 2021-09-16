@@ -1,7 +1,7 @@
-<!-- TITLE: Tests: Compare Tables -->
+<!-- TITLE: Tests: Compare tables -->
 <!-- SUBTITLE: -->
 
-# Tests: Compare Tables
+# Tests: Compare tables
 
 Instrument to compare the content of two tables
 

@@ -1,7 +1,7 @@
-<!-- TITLE: Tile Viewer -->
+<!-- TITLE: Tile viewer -->
 <!-- SUBTITLE: -->
 
-# Tile Viewer
+# Tile viewer
 
 Visualizes rows as a collection of forms that are positioned as tiles.
 
@@ -16,4 +16,4 @@ To edit the form, right-click and select "Edit form...".
 See also:
 
 * [Form](form.md)
-* [JS API: Tile Viewer](https://public.datagrok.ai/js/samples/ui/viewers/types/tile-viewer)
+* [JS API: Tile viewer](https://public.datagrok.ai/js/samples/ui/viewers/types/tile-viewer)

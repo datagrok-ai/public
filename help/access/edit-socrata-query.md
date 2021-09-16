@@ -1,7 +1,7 @@
-<!-- TITLE: Edit Socrata Query -->
+<!-- TITLE: Edit Socrata query -->
 <!-- SUBTITLE: -->
 
-# Edit Socrata Query
+# Edit Socrata query
 
 Edit attributes of data SoQL query.
 
@@ -28,10 +28,10 @@ name as the query parameter.
 
 See also:
 
-  * [Data Query](data-query.md)
+  * [Data query](data-query.md)
   * [Queries using SODA](https://dev.socrata.com/docs/queries)
-  * [Data Pipeline](data-pipeline.md)
-  * [Data Connection](data-connection.md)
-  * [Data Query](data-query.md)
-  * [Data Job](data-job.md)
-  * [Function Call](../overview/functions/function-call.md)
+  * [Data pipeline](data-pipeline.md)
+  * [Data connection](data-connection.md)
+  * [Data query](data-query.md)
+  * [Data job](data-job.md)
+  * [Function call](../overview/functions/function-call.md)

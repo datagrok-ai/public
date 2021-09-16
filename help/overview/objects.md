@@ -37,5 +37,5 @@ See also:
 
   * [Privileges](../govern/authorization.md)
   * [Sharing](../collaborate/sharing.md)
-  * [Self-Learning Platform](../learn/self-learning-platform.md)
+  * [Self-Learning platform](../learn/self-learning-platform.md)
   * [Audit](../govern/audit.md)

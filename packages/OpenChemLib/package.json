@@ -1,6 +1,6 @@
 {
 	"name": "grokopenchemlib",
-	"beta": true,
+	"beta": false,
 	"friendlyName": "OpenChemLib",
 	"version": "0.0.1",
 	"description": "",

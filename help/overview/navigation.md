@@ -46,7 +46,7 @@ in which you can work with data in Datagrok: from a full in-browser experience t
 connections, deploying interactive applications, running data jobs, building pipelines. It all
 starts with a simple step of [importing data](../access/importing-data.md).
 
-### Local Files
+### Local files
 
 Take a local file to begin with. To open it on the platform, drag-and-drop it into the browser.
 Other options include file dialog interaction: double-click on the `Data` icon or press `Ctrl + O`.
@@ -55,7 +55,7 @@ note that the data resides in the browser up until the moment you choose to uplo
 This is always done explicitly. See the list of [supported file formats](../access/importing-data.md#supported-file-types)
 and read more about [saving data to the server](../overview/project.md#uploading-a-project).
 
-### File Browser
+### File browser
 
 [File shares](../access/file-shares.md) are arguably an even more popular choice for working with
 data. Files form a hierarchy, which you can browse naturally from the interface. The
@@ -198,7 +198,7 @@ Press the tilde key `~` to open the console or enable it from the toolbox (`Wind
 Two icons on the top left let you clear the console, or open the [variables view](#variables).
 Clicking on the function name will bring up its details in the [property panel](#properties).
 
-#### Command Examples
+#### Command examples
 
 Run the `Mul` command (multiply two numbers) with the specified parameters:
 ```
@@ -225,7 +225,7 @@ Extract rows with empty values in the `HEIGHT` column into a new dataframe:
 ExtractRows("demog", IsNull("HEIGHT"))
 ```
 
-#### Recording Macros
+#### Recording macros
 
 Every visual transformation within the platform is backed by a corresponding function, which
 provides for automatic logging. Whenever a function is executed, the call gets logged in the
@@ -237,7 +237,7 @@ The second use case is a common practice for debugging custom functions defined 
 
 ![Recording Macros](console-macros.gif "Console Macros")
 
-### Context Help
+### Context help
 
 Context help appears at the bottom right and shows additional information about objects you are
 currently working with. You can toggle this pane with the `F1` hot key or manage it from
@@ -264,7 +264,7 @@ To edit client settings, open `Settings` from the sidebar.
 
 ![Settings](settings.png "Settings")
 
-## User Profile
+## User profile
 
 Click on your user image on the sidebar to open the [user profile](../govern/user.md#profile).
 Here you can find a summary of your data, read notifications, change your password,retrieve API and
@@ -286,5 +286,5 @@ links, as well as other useful resources, is provided in the toolbox of the help
 See also:
 
   * [Functions](functions/function.md)
-  * [Info Panels](../discover/info-panels.md)
+  * [Info panels](../discover/info-panels.md)
   * [Entities](objects.md)

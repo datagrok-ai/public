@@ -2,6 +2,7 @@
 <!-- SUBTITLE: -->
 
 <!-- This is a user-centric view on the Datagrok applications UI development-->
+
 # Datagrok UI
 
 This article describes the routines for building a user interface in Datagrok.
@@ -84,18 +85,18 @@ Figma Datagrok UIKit avaliable on [Figma Community](https://www.figma.com/@datag
   * [Label](#label)
   * [Link](#link)
   * [Inline text](#inline-text)
-  * [Text Blocks](#text-blocks)
+  * [Text blocks](#text-blocks)
 * [Tables](#tables)
 * [Lists](#lists)
 * [Buttons](#buttons)
 * [Forms](#forms)
   * [Inputs](#inputs)
-  * [Text Area](#text-area)
-  * [Dropdown Selection](#dropdown-selection)
+  * [Text area](#text-area)
+  * [Dropdown selection](#dropdown-selection)
   * [Selection](#selection)
-  * [Group Selection](#group-selection)
+  * [Group selection](#group-selection)
   * [Switch](#group-selection)
-  * [Range Slider](#range-slider)
+  * [Range slider](#range-slider)
 * [Icons](#icons)
 * [Image](#image)
 
@@ -125,7 +126,7 @@ Figma Datagrok UIKit avaliable on [Figma Community](https://www.figma.com/@datag
 
 # Layouts
 
-## Starting Point
+## Starting point
 
  To start building a layout you need either a [View](#simple-view) (in most cases) or a [Dialog](#dialogs).
  Every View or Dialog is a [panel container](#panels).
@@ -213,7 +214,7 @@ ui.div([ui.h1('Header'), box])
  ui.block25([ui.h1('Block 25%')]);
  ```
 
-## FlexBox Grid
+## Flexbox grid
 
  Flexbox grid allow to divide a layout into multiple columns and rows. The Flexbox container take the full available width, and their height is determined by their inner content. A Flexbox layout has a direction in which child elements are laid out. The main axis is defined by rows or columns.
 
@@ -245,7 +246,7 @@ ui.div([ui.h1('Header'), box])
 
 # Views
 
-## Table View
+## Table view
 
 Table view - a view container with a grid table that contains a set of data that is structured in rows and columns. It allows the user to scroll in both directions and can contain large numbers of items and columns.
 
@@ -254,7 +255,7 @@ let table = grok.data.demo.demog();
 let view = grok.shell.addTableView(table);
 ```
 
-## Simple View
+## Simple view
 
 Simple view is an empty view container that can contain any kind of elements.
 
@@ -266,7 +267,7 @@ let view = grok.shell.newView('Simple View');
 
 A viewer is a visual component associated with a table.Viewers belonging to the same view all share the same row selection and filter. Viewers are saved as part of the project. Also, it is possible to save viewers and views individually, and reuse them.
 
-### Bar Chart
+### Bar chart
 
 A bar chart presents grouped data as rectangular bars with lengths proportional to the values that they represent. Unlike histograms which you can apply to display the distribution of numerical data, bar charts are primarily designed for categorical values.
 
@@ -279,7 +280,7 @@ valueAggrType: 'avg'
 });
 ```
 
-### Box Plot
+### Box plot
 
 The box plot (a.k.a. box and whisker diagram) is a standardized way of displaying the distribution of data based on the five number summary: minimum, first quartile, median, third quartile, and maximum.
 
@@ -297,7 +298,7 @@ let view = grok.shell.addTableView(grok.data.demo.demog());
 view.calendar();
 ```
 
-### Correlation Plot
+### Correlation plot
 
 A quick way to assess correlations between all columns at once. Cells are color-coded by the Pearson correlation coefficient. Histograms along the diagonal show the corresponding distribution. Hover over the cell to see the corresponding scatter plot. The grid is sortable. Select columns in the view by selecting corresponding rows.
 
@@ -309,7 +310,7 @@ view.corrPlot({
 });
 ```
 
-### Density Plot
+### Density plot
 
 Unlike [Scatter plot](#scatter-plot) that visualizes each individual data point, density plot splits 2D area by bins, and color-codes it depending on the number of points that fall within this bin. The darker the color, the more points it contains.
 
@@ -346,7 +347,7 @@ grok.data.getDemoTable('geo/world_pop_1990.csv').then((t) => {
 });
 ```
 
-### Google Map Viewer
+### Google map viewer
 
 Google Map Viewer overlays latitude/longitude data from the corresponding table on top of the Google Map.
 
@@ -366,7 +367,7 @@ view.grid.setOptions({
 });
 ```
 
-### Heat Map
+### Heat map
 
 A Heat Map is a graphical representation of table where each cell value is represented as color. It is based on grid, so all of the grid's features are applicable to the heat map as well.
 
@@ -387,7 +388,7 @@ view.histogram({
 });
 ```
 
-### Line Chart
+### Line chart
 
 Line chart displays information as a series of data points connected by a line.
 
@@ -396,7 +397,7 @@ let view = grok.shell.addTableView(grok.data.demo.demog());
 view.lineChart();
 ```
 
-### Markup Viewer
+### Markup viewer
 
 Use this viewer to host any text, arbitrary HTML content, or markdown-formatted text. In most casees, the viewer will auto-detect content type. Use the "mode" property to explicitly specify it.
 
@@ -414,7 +415,7 @@ examples that illustrate most important concepts:
 view.markup({content: markup});
 ```
 
-### Matrix Plot
+### Matrix plot
 
 Use Matrix Plot to assess the relationship among many pairs of columns at the same time.
 
@@ -423,7 +424,7 @@ let view = grok.shell.addTableView(grok.data.demo.demog());
 view.matrixPlot();
 ```
 
-### Network Diagram
+### Network diagram
 
 Network diagram is used to visualize graphs, where values of the specified two columns become nodes, and rows become edges. It is possible to color-code and size-code nodes and columns by choosing the aggregate function that would apply to the values that represent an edge or a node.
 
@@ -432,7 +433,7 @@ let view = grok.shell.addTableView(grok.data.demo.demog());
 view.networkDiagram();
 ```
 
-### Parallel Coordinates Plot
+### Parallel coordinates plot
 
 Parallel coordinates is a common way of visualizing high-dimensional geometry and analyzing multivariate data.
 
@@ -445,7 +446,7 @@ let view = grok.shell.addTableView(grok.data.demo.demog());
 view.pcPlot();
 ```
 
-### Scatter Plot 3D
+### Scatter plot 3d
 
 Use 3D scatter plot to plot data points on three axes to show the relationship between three variables. Each row in the data table is represented by a marker whose position depends on its values in the columns set on the X, Y, and Z axes. Additionally, you can color-code and size-code points, as well as display labels next to markers.
 
@@ -454,7 +455,7 @@ let view = grok.shell.addTableView(grok.data.demo.demog());
 view.scatterPlot3d();
 ```
 
-### Scatter Plot
+### Scatter plot
 
 A scatter plot (also called a scatter graph, scatter chart, scattergram, or scatter diagram) is a type of plot or mathematical diagram using Cartesian coordinates to display values for typically two variables for a set of data. If the points are color-coded you can increase the number of displayed variables to three. The data is displayed as a collection of points, each having the value of one variable determining the position on the horizontal axis and the value of the other variable determining the position on the vertical axis.
 
@@ -473,7 +474,7 @@ plot.setOptions({
 });
 ```
 
-### Shape Map
+### Shape map
 
 Shows a map that is applicable for the specified dataset. Typically, it would represent a geographical area (countries, states, counties, etc), but it also supports arbitrary shapes (such as a store floor plan, brain regions, or EEG electrodes).
 
@@ -495,7 +496,7 @@ let view = grok.shell.addTableView(grok.data.demo.demog());
 view.statistics();
 ```
 
-### Tile Viewer
+### Tile viewer
 
 Visualizes rows as a collection of forms that are positioned as tiles.
 
@@ -504,7 +505,7 @@ let view = grok.shell.addTableView(grok.data.demo.demog());
 view.tileViewer();
 ```
 
-### Tree Map
+### Tree map
 
 Tree maps display hierarchical (tree-structured) data as a set of nested rectangles. Each branch of the tree is given a rectangle, which is then tiled with smaller rectangles representing sub- branches. A leaf node's rectangle has an area proportional to a specified dimension of the data.
 
@@ -513,7 +514,7 @@ let view = grok.shell.addTableView(grok.data.demo.demog());
 view.treeMap();
 ```
 
-### Word Cloud
+### Word cloud
 
 A word cloud is a graphical representation of word frequency. Any other aggregation function can be used as well for representing size or color of the particular word. On the example of the demographics dataset, to visualize races by indicating size as number of subjects, and color as average age.
 
@@ -575,7 +576,7 @@ There are three types of dialogs:
 
 For each dialog, you can set the position by viewport by x and y-asix.
 
-## Standard Dialog
+## Standard dialog
 
 ```javascript
 // Standart dialog
@@ -587,7 +588,7 @@ ui.dialog('Standart dialog')
   .show({x: 300, y: 300});
 ```
 
-## Modal Dialog
+## Modal dialog
 
 ```javascript
 // Modal dialog
@@ -597,7 +598,7 @@ ui.dialog('Modal dialog')
   .showModal();
 ```
 
-## Fullscreen Modal Dialog
+## Fullscreen modal dialog
 
 ```javascript
 // Fullscreen modal dialog
@@ -677,7 +678,7 @@ ui.link('Hello',()=>{grok.shell.info('hello')},'tooltip message')
   ui.inlineText(['Inline ',ui.link('text',()=>{grok.shell.info('')},'click me','')])
 ```
 
-### Text Blocks
+### Text blocks
 
 ```javascript
 ui.divText('Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industrys standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book.');
@@ -767,7 +768,7 @@ let myIcon = ui.iconFA('');
 ui.stringInput('', '', null, {icon: myIcon, clearIcon: true});
 ```
 
-### Text Area
+### Text area
 
 The text area is an input control that allows the user to enter several lines of text.
 
@@ -775,7 +776,7 @@ The text area is an input control that allows the user to enter several lines of
 ui.textInput('Lable','Text area text data');
 ```
 
-### Dropdown Selection
+### Dropdown selection
 
 The select control is used to select an item from a predefined list.
 
@@ -791,7 +792,7 @@ The select control let's option to set a binary value (true/false). When the use
 ui.boolInput('Name', false);
 ```
 
-### Group Selection
+### Group selection
 
 Group selection is commonly used to select one or more option from the predefined list.
 
@@ -807,7 +808,7 @@ The toggle switch allows users to set individual features to either active or in
 ui.switchInput('Active', true);
 ```
 
-### Range Slider
+### Range slider
 
 Range slider is a UI control that enables to select a value range within a predefined interval.
 
@@ -846,7 +847,7 @@ acc.addPane('Pane label', () => ui.div([
 );
 ```
 
-## Await (Loading Indicator)
+## Await (loading indicator)
 
 Await informs the user about an ongoing operation.
 
@@ -888,7 +889,7 @@ ui.card(
   ]))
 ```
 
-## Combo Popup
+## Combo popup
 
 The combo box control allows users to select an item from a predefined list.
 
@@ -919,7 +920,7 @@ grok.shell.newView('Markdown example',[
 ]);
 ```
 
-## Popup Menu (context menu)
+## Popup menu (context menu)
 
 Menus appear upon interaction with a button, action, or other control. They display a list of choices, with one choice per lin. Menu can also have a multilevel list of choices.
 
@@ -936,7 +937,7 @@ let text = ui.divText("Clickable element");
 text.addEventListener("click", showMenu);
 ```
 
-## Property Panel
+## Property panel
 
 Property panel is the right sidebar panel that used for showing the active item properties.
 
@@ -963,7 +964,7 @@ ui.tabControl({
   })
 ```
 
-## Tag Editor
+## Tag editor
 
 Tag editor is control that are small tag items that mainly serve to visualize selected items. Tags can be added, removed.
 
@@ -974,7 +975,7 @@ editor.addTag('test');
 editor.addTag(1234);
 ```
 
-## Taskbar Progress
+## Taskbar progress
 
 Taskbar informs the user about loading progress at the bottom bar.
 
@@ -999,7 +1000,7 @@ grok.shell.warning('Warning message');
 grok.shell.error('Error message');
 ```
 
-## Top Menu (Ribbon menu)
+## Top menu (ribbon menu)
 
 ```javascript
 let view = grok.shell.newView('Demo View');
@@ -1016,7 +1017,7 @@ Tooltip control display informative text when user hover over an element.
 ui.tooltip.bind(ui.label('Label'), 'Tooltip message');
 ```
 
-## Tree View
+## Tree view
 
 A tree view control  presents a hierarchical view of information. Each item can have a number of subitems. One of the main use case is to display the hierarchically structured and to selecting one or more items out of a set of hierarchically structured items.
 

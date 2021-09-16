@@ -85,7 +85,7 @@ KeepRows(t, Selected())
 t.KeepRows(Selected())
 ```
 
-### Table and Column names convention
+### Table and column names convention
 
 Symbols '"', '{' and '}' should be replaced as '^^', '<\[' and ']>'.
 

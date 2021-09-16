@@ -1,7 +1,7 @@
-<!-- TITLE: Tests: Chem Descriptors -->
+<!-- TITLE: Tests: Chem descriptors -->
 <!-- SUBTITLE: -->
 
-# Tests: Chem Descriptors
+# Tests: Chem descriptors
 
 [Molecular descriptor](../domains/chem/descriptors.md) is the final result of a logic and mathematical procedure which
 transforms chemical information encoded within a symbolic representation of a molecule
@@ -49,5 +49,5 @@ into a useful number or the result of some standardized experiment.
 
 See also:
  * [Molecular descriptor](../domains/chem/descriptors.md)
- * [Substructure Search Test](../tests/substructure-search-test.md)
- * [Get R Groups Test](../tests/get-r-groups-test.md)
+ * [Substructure search test](../tests/substructure-search-test.md)
+ * [Get R-Groups test](../tests/get-r-groups-test.md)

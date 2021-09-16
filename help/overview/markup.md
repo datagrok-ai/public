@@ -243,6 +243,7 @@ chart{"type":"<chart type>","look":{<chart parameters>}}
 ```
 
 Chart types:
+
   * Scatter plot
   * Line chart
   * Bar chart
@@ -277,4 +278,4 @@ Chart types:
 
 See also: 
 
-  * [Markup Viewer](../visualize/viewers/markup.md)
+  * [Markup viewer](../visualize/viewers/markup.md)

@@ -1,7 +1,7 @@
 <!-- TITLE: Use Cases: Functions -->
 <!-- SUBTITLE: -->
 
-# Use Cases: Functions
+# Use cases: Functions
 
 Owner: Andrey
 

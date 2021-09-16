@@ -1,7 +1,7 @@
-<!-- TITLE: Use Cases: Importing Data -->
+<!-- TITLE: Use Cases: Importing data -->
 <!-- SUBTITLE: -->
 
-# Use Cases: Importing data
+# Use cases: Importing data
 
 Owner: Andrey
 

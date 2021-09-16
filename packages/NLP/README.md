@@ -9,7 +9,7 @@
   * [topic modeling](https://en.wikipedia.org/wiki/Topic_model)
   * [entity extraction](https://en.wikipedia.org/wiki/Named-entity_recognition)
 
-## Text Extraction
+## Text extraction
 
 It all starts with extracting text. This is a building block for other, more
 complex tasks. Due to the high demand, it is essential to support as many
@@ -20,7 +20,7 @@ for easy file management. The package extends it by processing text from
 
 ![Extract text from PDF](./gif/nlp-text-extraction.gif)
 
-## Language Identification
+## Language identification
 
 Determining the language of a document is an important preprocessing step for
 many language-related tasks. Automatic language detection may be part of
@@ -28,7 +28,7 @@ applications that perform machine translation or semantic analysis. Datagrok's
 language identification is powered by Google's [Compact Language Detector v3 (CLD3)](https://github.com/google/cld3) and supports over [100 languages](https://github.com/google/cld3#supported-languages).
 As with text extraction, this functionality is used in the [Translation](#neural-machine-translation) info panel.
 
-## Neural Machine Translation
+## Neural machine translation
 
 The package creates a new info panel for text files. It uses [AWS Translate](https://aws.amazon.com/translate/) service, which supports over [70 languages](https://docs.aws.amazon.com/translate/latest/dg/what-is.html#what-is-languages).
 
@@ -40,7 +40,7 @@ on the file, you will see a suggestion to translate it in the property panel on 
 The language is identified automatically, but you always have a chance to change it manually.
 The default target language is English, so be sure to choose another option if the original text is in English.
 
-## Text Statistics
+## Text statistics
 
 Increasingly often texts are analyzed for readability. Readability scores take
 into account various parameters: the average number of words per sentence or
@@ -56,19 +56,19 @@ The `Text Statistics` info panel calculates two common formulas:
 
 [User Meeting 9: Natural Language Processing](https://www.youtube.com/watch?v=GM3XixUFFUs&t=94s)
 
-## Developer Notes
+## Developer notes
 
 The package demonstrates two ways of developing [info panels](https://datagrok.ai/help/discover/info-panels) for Datagrok: with panel scripts and with JavaScript panel functions.
 
 To write a panel script in any of the [languages supported by the platform](https://datagrok.ai/help/develop/scripting#supported-languages), you should indicate the `panel` tag and specify conditions for the panel to be shown (in the `condition` [header parameter](https://datagrok.ai/help/develop/scripting#header-parameters)):
 
 ```python
-#name: Language Detection
-#language: python
-#input: file file {semType: text} [A text to analyze]
-#output: string language {semType: lang} [Detected language]
-#tags: nlp, panel
-#condition: file.isFile && file.size < 1e6 && supportedExt(file.name)
+# name: language detection
+# language: python
+# input: file file {semtype: text} [a text to analyze]
+# output: string language {semtype: lang} [detected language]
+# tags: nlp, panel
+# condition: file.isfile && file.size < 1e6 && supportedext(file.name)
 ```
 
 The [scripts](https://github.com/datagrok-ai/public/tree/master/packages/NLP/scripts) folder contains more examples of such panel scripts, which are written in Python and work specifically on text files.
@@ -90,6 +90,6 @@ Refer to [src/package.js](https://github.com/datagrok-ai/public/blob/master/pack
 
 See also:
 
-  * [Natural Language Processing](https://en.wikipedia.org/wiki/Natural_language_processing)
+  * [Natural language processing](https://en.wikipedia.org/wiki/Natural_language_processing)
   * [Scripting](https://datagrok.ai/help/develop/scripting)
-  * [Info Panels](https://datagrok.ai/help/discover/info-panels)
+  * [Info panels](https://datagrok.ai/help/discover/info-panels)

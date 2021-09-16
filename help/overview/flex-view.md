@@ -1,7 +1,7 @@
 <!-- TITLE: Flex View -->
 <!-- SUBTITLE: -->
 
-# Flex view
+# Flex View
 
 Use this view to reference data, viewers, summary statistics, and other things from disparate tables. 
 This view is a good way to provide [project](project.md) summary. The content is stored

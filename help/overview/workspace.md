@@ -5,7 +5,7 @@
 
 Workspace is a collection of currently opened projects.
 
-## Workspace Tree 
+## Workspace tree 
 
 Workspace Tree is a hierarchical viewer that is used for navigating and managing [projects](project.md),
 [tables](table.md), [connections](../access/data-connection.md), and other entitites.

@@ -1,7 +1,7 @@
-<!-- TITLE: Tests: Anonymize Data -->
+<!-- TITLE: Tests: Anonymize data -->
 <!-- SUBTITLE: -->
 
-# Tests: Anonymize Data
+# Tests: Anonymize data
 
 Sometimes, it is needed to prepare a dataset that conveys an idea of the structure in the data along
 with the patterns in it, but does not contain the real data points. "[Anonymize Data](anonymize-data.md)" functionality

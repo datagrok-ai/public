@@ -14,7 +14,7 @@ Many options are available under the context menu.
 | Context menu \| Statistics              | Choose descriptive statistics to show                     |
 | Context menu \| Save as table           | Add statistics table to the workspace                     |
 
-## Statistical Measures
+## Statistical measures
 
 The results include a set of frequently used statistics, among them the measures of central tendency and dispersion:
 
@@ -31,5 +31,5 @@ The results include a set of frequently used statistics, among them the measures
 See also: 
   
   * [Viewers](../viewers.md)
-  * [Table View](../../overview/table-view.md)
+  * [Table view](../../overview/table-view.md)
   * [JS API: Statistics](https://public.datagrok.ai/js/samples/ui/viewers/types/statistics)

@@ -3,8 +3,6 @@
 
 # Tests: Export
 
-
-
 ## Testing scenario
 
 Platform provides feature for saving data in various formats (*csv*, *json*, *xlsx*).

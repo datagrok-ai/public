@@ -1,6 +1,6 @@
-<!-- TITLE: Structural Alerts -->
+<!-- TITLE: Structural alerts -->
 
-# Structural Alerts
+# Structural alerts
 
 Structural alerts are widely accepted in chemical toxicology and regulatory decision 
 support as a simple and transparent means to flag potential chemical hazards or group 

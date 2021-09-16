@@ -1,4 +1,4 @@
-# Datagrok Demo Packages
+# Datagrok demo packages
 
 | Package | Demonstrates |
 |----|----|

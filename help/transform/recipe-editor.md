@@ -1,7 +1,7 @@
 <!-- TITLE: Recipe Editor -->
 <!-- SUBTITLE: -->
 
-# Recipe Editor
+# Recipe editor
 
 Recipe editor lets you define data transformations. A Recipe can be used as a post-run steps for data
 queries.

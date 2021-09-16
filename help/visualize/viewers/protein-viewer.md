@@ -1,6 +1,6 @@
-<!-- TITLE: Protein Viewer -->
+<!-- TITLE: Protein viewer -->
 <!-- SUBTITLE: -->
 
-# Protein Viewer
+# Protein viewer
 
 Visualizes protein structure from PDB codes.

@@ -1,4 +1,4 @@
-# 2021-07-29 Build 0.93.0
+# 2021-07-29 build 0.93.0
 
 ## Highlights
 
@@ -151,7 +151,7 @@ dynamic scripting capabilities for constructing signal processing pipelines: [ov
 * Viewers: Fixes regression in 2D layout alignment of unknown origin
 * grok.dapi.projects.where('bad filter').first() returns a Project instance with d == null
 
-# 2021-05-06 Build 0.91.10
+# 2021-05-06 build 0.91.10
 
 We've just released a [new version]([https://public.datagrok.ai](https://public.datagrok.ai/)) of the Datagrok platform (0.91.10). It is a major release with multiple stability and performance improvements, many new features, and new APIs for developers. Here are some of the notable advances:
 * Viewers improvements, including [trellis plot](https://datagrok.ai/help/visualize/viewers/trellis-plot) usability and performance, [bar chart](https://datagrok.ai/help/visualize/viewers/bar-chart) with DateTime categorization, [conditional color coding](https://community.datagrok.ai/t/table-visualization-options/333/9)
@@ -164,7 +164,7 @@ We've just released a [new version]([https://public.datagrok.ai](https://public.
 
 Check [release notes](https://datagrok.ai/help/develop/release-history) for more details, and give the new version a try at [https://public.datagrok.ai](https://public.datagrok.ai/)!
 
-# 2021-04-14 Build 0.89.36
+# 2021-04-14 build 0.89.36
 
 In this release, we've focused on enriching both the experience of the platform end-users and on-platform developers, as well as on connecting these two groups. For instance, custom-built cell renderers, useful for displaying molecules, nucleotide sequences or experiments results, now expand the platform in many places such as [tooltips and tile viewers](https://community.datagrok.ai/t/cheminformatics-updates/457/8). There are also [new viewers](https://community.datagrok.ai/t/visualization-related-updates/521/4), [several bar chart](https://community.datagrok.ai/t/bar-chart-color-by-category/516) [features](https://community.datagrok.ai/t/visualization-related-updates/521/10), [color coding features](https://dev.datagrok.ai/js/samples/grid/color-coding-conditional), and a few dozen of [JS API]((https://datagrok.ai/help/govern/audit#javascript-api)) [enhancements](https://community.datagrok.ai/t/javascript-api-updates/526/8) and [bug fixes](##bug-fixes).
 

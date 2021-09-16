@@ -73,7 +73,7 @@ Once implemented, custom models can be chosen from the list of model engines.
 #name: PyKNNTrain
 #meta.mlname: PyKNN
 #meta.mlrole: train
-#description: Custom Python train func for KNN
+#description: Custom Python train function for KNN
 #language: python
 #input: dataframe df
 #input: string predict_column
@@ -81,7 +81,7 @@ Once implemented, custom models can be chosen from the list of model engines.
 #input: string weights=uniform {category: Parameters; choices: ["uniform", "distance"]}
 #input: int leaf_size=30 {category: Parameters}
 #input: int p=1 {category: Parameters; range:1-2}
-#input: string metric=minkowski {category: Parameters; choices: ["euclidean", "manhattan", "chebyshev", "minkowski"]}
+#input: string metric = minkowski {category: Parameters; choices: ["euclidean", "manhattan", "chebyshev", "minkowski"]}
 #input: string algorithm = auto {category: Parameters; choices: ["auto","ball_tree", "kd_tree", "brute"]}
 #output: blob model
  
@@ -90,7 +90,7 @@ import numpy as np
 import pickle
 from sklearn.neighbors import KNeighborsClassifier
 
-# Extract/Prepare train features and target variable
+# Extract/prepare train features and target variable
 trainX = df.loc[ :,df.columns != predict_column]
 trainY = np.asarray (df[predict_column])
 
@@ -115,19 +115,19 @@ pickle.dump(trained_model, open(model, 'wb'))
 #name: PyKNNApply
 #meta.mlname: PyKNN
 #meta.mlrole: apply
-#description: Custom Python Apply for KNN
+#description: Custom Python apply function for KNN
 #language: python
 #input: blob model
 #input: dataframe df
-#input: string namesKeys [original features' names]
-#input: string namesValues [new features' names]
+#input: string nameskeys [Original features' names]
+#input: string namesvalues [New features' names]
 #output: dataframe data_out
 
 # Load necessary packages
 import numpy as np
 import pickle
 
-# If original(namesKeys) and new(namesValues) passed, map original names to new
+# If original(nameskeys) and new(namesvalues) passed, map original names to new
 namesKeys = namesKeys.split(",")
 namesValues = namesValues.split(",")
 if len(namesKeys) > 0:

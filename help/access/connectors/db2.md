@@ -8,6 +8,6 @@ using SQL queries via JDBC driver .
 
 See also:
 
-  * [Data Connection](../data-connection.md)
+  * [Data connection](../data-connection.md)
   * [IBM Db2](https://www.ibm.com/analytics/db2)
   * [IBM Db2 Family](https://en.wikipedia.org/wiki/IBM_Db2_Family)

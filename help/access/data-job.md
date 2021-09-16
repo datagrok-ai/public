@@ -1,7 +1,7 @@
-<!-- TITLE: Data Job -->
+<!-- TITLE: Data job -->
 <!-- SUBTITLE: -->
 
-# Data Job
+# Data job
 
 Data job defines all actions that are needed to produce a dashboard.
 
@@ -59,7 +59,7 @@ You can use these fields to filter jobs using [smart search](../overview/smart-s
 
 See also:
 
-  * [Data Pipeline](data-pipeline.md)
-  * [Data Connection](data-connection.md)
-  * [Data Query](data-query.md)
-  * [Function Call](../overview/functions/function-call.md)
+  * [Data pipeline](data-pipeline.md)
+  * [Data connection](data-connection.md)
+  * [Data query](data-query.md)
+  * [Function call](../overview/functions/function-call.md)

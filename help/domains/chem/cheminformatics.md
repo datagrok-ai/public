@@ -208,7 +208,7 @@ similar compounds.
 To find MCS for the column with molecules, run `Chem | Find MCS` command from column's context menu. To execute 
 it from the [console](), use `chem:findMCS(tableName, columnName)` command. 
 
-## R-Group analysis
+## R-group analysis
 
 [R-Group Analysis](r-group-analysis.md) is a common function in chemistry. Typically, it involves R-group decomposition, 
 followed by the visual analysis of the obtained R-groups. Grok's chemically-aware 
@@ -316,11 +316,11 @@ See [DB Substructure and similarity search](db-substructure-similarity-search.md
 See also:
 
 * [Descriptors](descriptors.md)
-* [Diversity Search](diversity-search.md)
-* [Similarity Search](similarity-search.md)
+* [Diversity search](diversity-search.md)
+* [Similarity search](similarity-search.md)
 * [Fingerprints](fingerprints.md)
 * [Similarity SPE](similarity-spe.md)
-* [Info Panels](../../discover/info-panels.md)
+* [Info panels](../../discover/info-panels.md)
 * [GrokCompute](../../develop/admin/grok-compute.md)
 
 References:

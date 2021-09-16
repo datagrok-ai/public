@@ -5,7 +5,7 @@
 
 Provides access to [Google Cloud](https://cloud.google.com/) service as [file share](files.md).
 
-## Connection Parameters
+## Connection parameters
 
 ```json
 {
@@ -18,6 +18,6 @@ Provides access to [Google Cloud](https://cloud.google.com/) service as [file sh
 
 See also:
 
-  * [Data Connection](../data-connection.md)
+  * [Data connection](../data-connection.md)
   * [Google Cloud](https://cloud.google.com/)
   * [Files](files.md)

@@ -5,7 +5,7 @@
 
 A semantic query language for databases.
 
-## Connection Parameters
+## Connection parameters
 
 ```json
 {
@@ -17,7 +17,7 @@ A semantic query language for databases.
 
 See also:
 
-  * [Data Connection](../data-connection.md)
+  * [Data connection](../data-connection.md)
   * [SPARQL](https://en.wikipedia.org/wiki/SPARQL)
-  * [SPARQL Query](../sparql-query.md)
-  * [SPARQL Endpoints](https://www.w3.org/wiki/SparqlEndpoints)
+  * [SPARQL query](../sparql-query.md)
+  * [SPARQL endpoints](https://www.w3.org/wiki/SparqlEndpoints)

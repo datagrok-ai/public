@@ -1,4 +1,4 @@
-<!-- TITLE: Tests: Split Columns -->
+<!-- TITLE: Tests: Split columns -->
 <!-- SUBTITLE: -->
 
 # Tests: Split columns

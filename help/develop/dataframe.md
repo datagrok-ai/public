@@ -12,7 +12,7 @@ together with fast in-browser data visualizations.
 Dataframe stores data as list of columns. Constructing, modifying and efficiently accessing data points are
 embodied in both [`DG.Column`][101] and [`DG.DataFrame`][100] classes. Event handling, visual aspects of working
 with dataframes, fast column selection, handy construction methods and row-based access are provided in
-[`DG.DataFrame`][100]. Instances of [`DG.ColumnList`](/js-api/classes/dg.columnlist),
+[`DG.DataFrame`][100]. Instances of [`DG.ColumnList`][099], [`DG.RowList`][098],
 [`DG.Row`](/js-api/classes/dg.row) and [`DG.Cell`](/js-api/classes/dg.cell) are used as related properties
 or functions return values of `DG.Column` and `DG.DataFrame`.
 
@@ -72,7 +72,7 @@ column is of type `Molecule`, computing molecular fingerprints, searching for su
 The property `.semType` is a getter to a [tag][114] named `'quality'`. This distinct getter is there due to a key
 role of this tag.
 
-Learn more about semantic types in this article: [link][109].
+Learn more about semantic types in this article: [Link][109].
 
 ### Construct a column
 
@@ -108,7 +108,7 @@ grok.shell.info(column.setString(15, '3.1415')); // displays 'true'
 grok.shell.info(column.setString(16, 'non-number')); // displays 'false'
 ```
 
-Learn more about supported formats in this article: [link][108].
+Learn more about supported formats in this article: [Link][108].
 
 <!-- TODO: Explain `notify` -->
 
@@ -144,10 +144,10 @@ for (let i = 0; i < rowCount; i++)
 ```
 
 Doing a `.byName` or a `t.rowCount` call as part of the loop shall incur up to 20x overhead.
-Using a `column.values()` iterator is 2-3 times slower than this snippet.
+A `column.values()` iterator is also available, it is 2-3 times slower than this snippet.
 
-If the fastest access is required for numerical columns, which usually happens in computing new values atop a column,
-accessing data with a result of calling `.getRawData()` is advised:
+If the fastest access is required for numerical column data, which usually happens in computing new values
+atop a column, accessing data with a result of calling `.getRawData()` is advised:
 
 ```javascript
 const table = grok.data.demo.demog(100000);
@@ -224,7 +224,7 @@ in JavaScript represents a value which is not a valid number: this value isn't c
 
 <!-- TODO: How's that for other types? -->
 
-#### String, Integer, Float, Boolean
+#### String, integer, float, boolean
 
 Enum values: `DG.COLUMN_TYPE.STRING`, `DG.COLUMN_TYPE.INT`, `DG.COLUMN_TYPE.FLOAT`, `DG.COLUMN_TYPE.BOOL`
 
@@ -236,7 +236,7 @@ Enum value: `DG.COLUMN_TYPE.DATE_TIME`
 
 In future releases, `DateTime` type becomes a wrapper around a [dayJs][118] value.
 
-#### BigInt
+#### Bigint
 
 Enum value: `DG.COLUMN_TYPE.BIG_INT`
 
@@ -285,6 +285,18 @@ Enum value: `DG.COLUMN_TYPE.OBJECT`
 
 This may be any JavaScript object. Pass it as usual.
 
+### Statistics
+
+The properties `.min` and `.max` of `Column` return and cache the minimum and maximum numeric values. Using
+the internal [version][128] of the column, the caches for `.min` and for `.max` are automatically invalidated
+whenever the column is modified.
+
+Computing popular statistics, such as average `.avg`, median `.med` or standard deviation `.stdev`,
+is more efficient when done altogether. If that's the case you need, it's possible to get all such statistics
+using a `.`, which returns an istance of [`Stats`][130] class.
+
+Run `Stats` example: [Link][129].
+
 ### Numerical and categotical columns
 
 Currently, columns of types `BOOL` and `STRING` are considered as categorical, s.t. they represent values from a
@@ -315,13 +327,13 @@ returning this number is useful when invalidating cached computation results sto
 
 Dataframes may be obtained through the JavaSript or TypeScript code in various ways:
 
-* a new dataframe constructed from predefined data: [link][122]
-* a new dataframe from precreated Datagrok columns: [link][122]
-* a table already being rendered by a table view: [link][]
-* a dataframe constructed from a file in a file share: [link][]
+* a new dataframe constructed from predefined data: [Link][122]
+* a new dataframe from precreated Datagrok columns: [Link][122]
+* a table already being rendered by a table view: [Link][]
+* a dataframe constructed from a file in a file share: [Link][]
 * a CSV file uploaded to a browser
-* a dataframe returned by a script: [link][]
-* as calculated on the flight for aggregations: [link][]
+* a dataframe returned by a script: [Link][]
+* as calculated on the flight for aggregations: [Link][]
 
 #### Construct from in-place content
 
@@ -352,9 +364,12 @@ to load these datasets programmatically using Datagrok API methods:
 * `await table = grok.data.getDemoTable('geo/earthquakes.csv')` allows loading any demo dataset from the specified
   demo datasets file share by its path (the method is asynchronous)
 
-### Access columns
+### Access
 
-An object `.columns` of `DG.DataFrame` provides handy access to everything related to columns of a dataframe:
+#### Access columns
+
+Dataframes' columns are accessed and manipulated as a collection by an instance of [`DG.ColumnList`][099] class
+called `.columns`. Calling `.columns` methods is often a starting point to doing anything with a given dataframe:
 
 ```javascript
 let d = grok.data.demo.demog();
@@ -376,8 +391,16 @@ ageColumn = d.getCol('age'); // will throw if column isn't found
 ```
 
 Technically, `.columns` object is an instance of a special JavaScript wrapper around an instance of `ColumnList`.
-While the `ColumnList` class provides for the access methods such as `.byIndex` or `.length`, this wrapper
-adds support for square brackets and access by explicit column name, like `.d.columns.age`.
+While the `ColumnList` class itself provides for the access methods such as `.byIndex` or `.length`, this wrapper
+adds support for square brackets, access by explicit column name, like `.d.columns.age`, and other syntactic
+sugaring of JavaScript such as iterating columns with a `for (... of ...)` loop:
+
+```javascript
+let df = grok.data.demo.demog();
+for (let col of df.columns) {
+  grok.shell.info(col.name);
+}
+```
 
 In addition to regular access to columns by index and name, there's a group of methods covered in
 [this example][123] for retrieving columns `Iterable` by a specific property:
@@ -390,18 +413,99 @@ In addition to regular access to columns by index and name, there's a group of m
   for (let column of demog.columns.byTags({'tag1': 'value1', 'tag2': undefined}))
     grok.shell.info(column.name);
   ```
-* With a [categorical or numerical][125] columns:
+* With [categorical or numerical][125] columns:
   ```javascript
   let demog = grok.data.demo.demog();
   for (let column of demog.columns.categorical) grok.shell.info(column.name);
   for (let column of demog.columns.numerical) grok.shell.info(column.name);
   ```
   
+#### Access rows
+
+As [`DG.ColumnList`][099] provides for column access and manipulation through a `.columns` property, its counterpart
+[`DG.RowList`][098] with an instance called `.rows` allows for rows access and manipulation.
+
+As dataframe is columnar-optimized, it is preferred to work with it in columns-then-rows rather than
+rows-then-columns fashion. Typically, accessing a dataframe value is based on a column and then row,
+simply by obtaining a reference to a relevant column and then accessing its elements by their indices.
+This won't create any intermediate objects besides the ones already existing as part of the dataframe.
+
+If a row-by-row access is desired, that is possible with additional rows materialization. This brings memory
+and performance overheads, though it may be a convenient tool in cases where dataframes are small — no more than
+a 100 of rows. An example of iterating through a dataframe row-by-row:
+
+```javascript
+const df = grok.data.demo.demog(5);
+for (let row of df.rows) {
+  grok.shell.info(row.idx);
+}
+```
+
+To access rows' values in such iteration, use a collection of [`DG.Cell`][097] named `.cells`, which is
+another wrapper around a values stored at a columns' offset:
+
+```javascript
+const df = grok.data.demo.demog(10);
+for (const row of df.rows) {
+  for (const cell of row.cells) {
+    grok.shell.info(cell.value);
+  }
+}
+```
+
+<!-- TODO: Get a row at an index? -->
+
 ### Manipulate
 
-### Add and remove columns
+#### Manipulate columns
 
-The `.columns` property provides for manipulation
+To add, remove or replace columns in a dataframe:
+* for an existing instance `column` of `Column`:
+  * `.add(column)` adds it as a last column of the dataframe
+  * `.insert(column, index)` adds it _before_ the column position which is currently at position `index`,
+    starting count from `0`. The default value of `index` is `null`, which corresponds to adding the column
+    at the end of the columns list
+* `.addNew` adds a new empty column at the end of the column list
+* `.addNew<TypeName>(name)` (`.addNewInt`, `.addNewString` etc) adds a new empty column of a [type][105]
+  `<TypeName>` at the end of the column list
+* `.addNewVirtual` adds a new [virtual column][135] at the end of the column list
+* `.replace(oldColumn, newColumn)`  substitutes inside a dataframe an `oldColumn` passed as an object
+  with a `newColumn`. The column remains avaialble by `oldColumn`, but it is no longer part of the dataframe
+* 
+
+Examples:
+* run "Add columns": [Link][133]
+* run "Manipulate columns": [Link][134]
+
+#### Add a column by a formula
+
+The `.columns` property of `DataFrame` provides for a method to create a column by a mathematical formula,
+specified with a string, which may also involve any [function][132] registered within the platform.
+For example, in a dataframe `df` with columns `X` and `Y` it's possible to add a new column `Z`, specified as follows:
+
+```javascript
+df.columns.addNewCalculated('Z', 'Sin({X}+${Y})/2');
+```
+
+The column type shall be deduced automatically, or may be specified explicitly as one of this method arguments.
+
+Run "Add calculated columns" example: [Link][131].
+
+#### Manipulate rows
+
+While it is not generally advised to access the dataframe values row-by-row rather than column-then-offset,
+it is often useful to expand or shrink dataframes row-by-row. The `.rows` property enables a set of methods for this:
+
+* `addNew([value1, ..., valueN])` appends a row to the end of the dataframe, filling it with values
+  specified in the passed array, there should be as many values as there are columns. If a null value
+  is passed as an array, an empty row shall be created with the values of [Datagrok `None`][116]
+
+* `.setValues(rowIdx, [value1, ..., valueN])` will set values in the row at the specified offset according
+  to the values in the array
+ 
+* `.insertAt(idx, count)` inserts `count` new empty rows _before_ a row `idx`
+
+* `.removeAt(idx, count)` removes `count` rows, _starting_ from a row `idx` and further
 
 #### Extend
 
@@ -410,8 +514,6 @@ The `.columns` property provides for manipulation
 #### Aggregate
 
 #### Pivot
-
-### Sync dataframes
 
 ### Virtual columns
 
@@ -487,10 +589,17 @@ As such objects are virtual, a direct modification of their fields won't take an
 unless the object class is implemented in such way that it modifies the original dataframe (for example, in a
 JavaScript property setter).
 
+### Filter
+
+### Syncing
+
 ### Custom value comparers
 
 ## `.tags` and `.temp` collections
 
+[097]: https://github.com/datagrok-ai/public/blob/e444332f49d6672c0fc93ad54dcbc601d3f332a1/js-api/src/dataframe.ts#L1431 "Class Cell"
+[098]: https://github.com/datagrok-ai/public/blob/e444332f49d6672c0fc93ad54dcbc601d3f332a1/js-api/src/dataframe.ts#L1330 "Class RowList"
+[099]: https://github.com/datagrok-ai/public/blob/e444332f49d6672c0fc93ad54dcbc601d3f332a1/js-api/src/dataframe.ts#L136 "Class ColumnList"
 [100]: #dg-datagrame "Dataframe"
 [101]: #dg-column "Dataframe column"
 [102]: visualize/viewers.md "Datagrok Viewers"
@@ -519,3 +628,11 @@ JavaScript property setter).
 [125]: #numerical-and-categotical-columns "Numerical and categorical columns"
 [126]: https://public.datagrok.ai/js/samples/data-frame/modification/manipulate "Manipulating dataframes"
 [127]: https://public.datagrok.ai/js/samples/data-frame/advanced/custom-category-order "Custom categories order"
+[128]: #versioning
+[129]: https://public.datagrok.ai/js/samples/data-frame/stats
+[130]: https://github.com/datagrok-ai/public/blob/be5486c9c761947bd916202343fad0adb2deaef3/js-api/src/dataframe.ts#L1669
+[131]: https://public.datagrok.ai/js/samples/data-frame/modification/calculated-columns
+[132]: overview/functions.md
+[133]: https://public.datagrok.ai/js/samples/data-frame/modification/add-columns
+[134]: https://dev.datagrok.ai/js/samples/data-frame/modification/manipulate
+[135]: #virtual-columns

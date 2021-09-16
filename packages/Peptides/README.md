@@ -9,7 +9,7 @@ Owner: Leonid
 
 Once a dataframe is opened with Datagrok, the column(s) containing peptides are detected automatically. Each amino acid is rendered with a different color, which helps to visually identify patterns. Clicking on the column header brings up the options to launch peptide-specific tools, such as [SAR](#SAR) and [Peptide space](#Peptides_space).
 
-## SAR
+## Sar
 
 Wiki: _Structure-Activity Relationship (SAR) is an approach designed to find relationships between chemical structure (or structural-related properties) and biological activity (or target property) of studied compounds._
 

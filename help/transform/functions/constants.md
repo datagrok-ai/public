@@ -1,4 +1,4 @@
-<!-- TITLE: Сonstants -->
+<!-- TITLE: Constants -->
 <!-- SUBTITLE: -->
 
 # Constants

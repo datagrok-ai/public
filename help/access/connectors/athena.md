@@ -6,7 +6,7 @@
 Provides access to [Amazon Athena](https://docs.aws.amazon.com/athena/latest/ug/what-is.html) service
 using SQL queries via a JDBC driver.
 
-## Link CSVs from S3 with Athena
+## Link csvs from s3 with athena
 
 Simple steps to link CSVs with Athena and get results in Datagrok:
 
@@ -82,7 +82,7 @@ Simple steps to link CSVs with Athena and get results in Datagrok:
        
 See also:
 
-  * [Data Connection](../data-connection.md)
-  * [Data Query](../data-query.md)
+  * [Data connection](../data-connection.md)
+  * [Data query](../data-query.md)
   * [Amazon Athena](https://docs.aws.amazon.com/athena/latest/ug/what-is.html)
  

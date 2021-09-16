@@ -1,7 +1,7 @@
-<!-- TITLE: Molecular Fingerprints -->
+<!-- TITLE: Molecular fingerprints -->
 <!-- SUBTITLE: -->
 
-# Molecular Fingerprints
+# Molecular fingerprints
 
 Fingerprints are a very abstract representation of certain structural features 
 of a molecule. 
@@ -23,7 +23,7 @@ that use fingerprints.
 
 See also:
 
-  * [Fingerprints - Screening and Similarity](http://www.daylight.com/dayhtml/doc/theory/theory.finger.html)
+  * [Fingerprints - Screening and similarity](http://www.daylight.com/dayhtml/doc/theory/theory.finger.html)
   * [RDKFingerprint](https://www.rdkit.org/docs/GettingStartedInPython.html#fingerprinting-and-molecular-similarity)
   * [MACCSKeys](https://pdfs.semanticscholar.org/ad40/b25e38314f39a82f193dc4806e6a1c2c6b69.pdf)
   * [AtomPair](https://pubs.acs.org/doi/abs/10.1021/ci00046a002)

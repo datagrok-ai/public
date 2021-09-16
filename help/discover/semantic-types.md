@@ -1,6 +1,6 @@
 <!-- TITLE: Semantic types -->
 
-# Data Types vs Semantic Types
+# Data types vs semantic types
 
 Unlike Excel, table columns in Datagrok are strongly-typed, meaning all cells are of 
 one of the pre-defined data types (`string`, `int`, `bigint`, `qnum`, `double`, `datetime`, `bool`).
@@ -22,14 +22,14 @@ Semantic types are used in several ways:
 
 A column can have only one semantic type. It is stored in the [column tags](tags.md#quality) and can be either detected automatically by semantic type detectors or set manually.
                
-## Manually Setting Semantic Types
+## Manually setting semantic types
 
 Open column properties (click on a column and press F2, or right-click and select Properties), 
 see 'Semantics' field.
 
 ![](semantic-properties.gif "Column Properties")
 
-## Automatic Semantic Type Detection
+## Automatic semantic type detection
 
 Out of the box, the following semantic types are automatically detected based on the content:
 
@@ -47,7 +47,7 @@ Out of the box, the following semantic types are automatically detected based on
 * US City
 * Stock ticker
 
-## Custom Semantic Types
+## Custom semantic types
 
 Datagrok has been designed to be as extensible as possible, so naturally it is possible
 to define your own custom semantic types, along with the type auto-detection functions,
@@ -57,5 +57,5 @@ renderers, comparers, and so on. To do that, check out [this article](../develop
 
 See also:
   * [Metadata](metadata.md)
-  * [JavaScript Development](../develop/develop.md)
-  * [How to Define Semantic Type Detectors](../develop/how-to/define-semantic-type-detectors.md)
+  * [JavaScript development](../develop/develop.md)
+  * [How to define semantic type detectors](../develop/how-to/define-semantic-type-detectors.md)

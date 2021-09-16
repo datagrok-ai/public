@@ -8,5 +8,5 @@ using SQL queries via a JDBC driver.
 
 See also:
 
-  * [Data Connection](../data-connection.md)
+  * [Data connection](../data-connection.md)
   * [Snowflake](https://www.snowflake.com/)

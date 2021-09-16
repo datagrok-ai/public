@@ -1,7 +1,7 @@
 <!-- TITLE: Tests: Audit -->
 <!-- SUBTITLE: -->
 
-# Tests: Audit
+# Tests: audit
 
 Audit system is intended to store all meaningful user activity for future analysis. 
 
@@ -11,7 +11,7 @@ Audit records can be posted both from client and server.
 
 The implementation is based on the [grid](../visualize/viewers/grid.md), so many of the grid's features apply.
 
-## Data Connection
+## Data connection
 
 1. Open *"Connect to data"* view on *"Welcome"* tab
 
@@ -32,7 +32,7 @@ The implementation is based on the [grid](../visualize/viewers/grid.md), so many
    * (expected result is presented in "Results" section of this document)
 
 
-## Data Query
+## Data query
 
 1. Open *"Connect to data"* view on *"Welcome"* tab
 
@@ -65,7 +65,7 @@ The implementation is based on the [grid](../visualize/viewers/grid.md), so many
 1. Delete *"audit-test-query"*
    * (expected result is presented in "Results" section of this document)
    
-## Data Job
+## Data job
 
 1. Open **Admin | Data Jobs**
 
@@ -126,7 +126,7 @@ The implementation is based on the [grid](../visualize/viewers/grid.md), so many
 1. Delete *"audit-test-script"*
    * (expected result is presented in "Results" section of this document)
    
-## Predictive Models
+## Predictive models
 
 1. Open *demog* table
 
@@ -220,7 +220,7 @@ The implementation is based on the [grid](../visualize/viewers/grid.md), so many
 1. Delete *"audit-test-project"*
    * (expected result is presented in "Results" section of this document)
 
-## Main Menu, Dialogs and Functions
+## Main menu, dialogs and functions
 
 1. Open "demog" table from local file using **File | Open**
 
@@ -292,15 +292,15 @@ See also:
  
  (**):
  ```#name: t-test
-    #description: Welch's t-test
-    #help-url: https://en.wikipedia.org/wiki/Welch%27s_t-test
-    #language: r
-    #tags: demo
-    #sample: TSLA.csv
-    #input: dataframe data [Input data table]
-    #input: column x {type:numerical} [X axis column name]
-    #input: column y {type:numerical} [Y axis column name]
-    #output: double pValue [P-value of t-statistics]
+#description: Welch's t-test
+#help-url: https://en.wikipedia.org/wiki/welch%27s_t-test
+#language: r
+#tags: demo
+#sample: TSLA.csv
+#input: dataframe data [Input data table]
+#input: column x {type:numerical} [X axis column name]
+#input: column y {type:numerical} [Y axis column name]
+#output: double pvalue [P-value of t-statistics]
     
     require(stats)
     

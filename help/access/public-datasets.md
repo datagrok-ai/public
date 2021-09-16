@@ -1,7 +1,7 @@
-<!-- TITLE: Public Datasets -->
+<!-- TITLE: Public datasets -->
 <!-- SUBTITLE: -->
 
-# Public Datasets
+# Public datasets
 
 Recently, there has been an explosion of publicly available datasets, as
 organizations and governments realize that having the data in 
@@ -50,7 +50,7 @@ Grok provides an easy way to discover, retrieve, and analyze any open dataset
 hosted on the Socrata platform. Look for available datasets under the
 [Socrata](/connections?q=dataSource%3D%22socrata%22) connection in the 'Connect to Data' window.
 
-## Public databases hosted on Grok
+## Public databases hosted on grok
 
 In addition to accessing external datasets, there are a number of publicly available
 databases that we mirror and host on our platform. Some example of these databases

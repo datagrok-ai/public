@@ -6,10 +6,12 @@
 import {BitSet, Column, DataFrame} from './dataframe';
 import {SIMILARITY_METRIC, SimilarityMetric, TYPE} from './const';
 import {Observable, Subject, Subscription} from "rxjs";
-import {Widget} from "./widgets";
+import {Menu, Widget} from "./widgets";
 import {Func} from "./entities";
 import * as ui from "../ui";
 import {SemanticValue} from "./grid";
+import $ from "cash-dom";
+import {element} from "../ui";
 
 let api = <any>window;
 declare let grok: any;
@@ -79,25 +81,37 @@ export namespace chem {
 
   export class Sketcher extends Widget {
 
-    host: HTMLDivElement = ui.box(null, {style: {width: '500px', height: '500px'}});
+    host: HTMLDivElement = ui.box(null, 'grok-sketcher');
     changedSub: Subscription | null = null;
     sketcher: SketcherBase | null = null;
     listeners: Function[] = [];
 
-    getSmiles(): string {
-      return this.sketcher!.smiles;
+    _smiles: string | null = null;
+    _molFile: string | null = null;
+    _smarts: string | null = null;
+
+    getSmiles(): string | null {
+      return this.sketcher ? this.sketcher.smiles : this._smiles;
     }
 
     setSmiles(x: string) {
-      this.sketcher!.smiles = x;
+      this._smiles = x;
+      if (this.sketcher != null)
+        this.sketcher!.smiles = x;
     }
 
-    getMolFile(): string {
-      return this.sketcher!.molFile;
+    getMolFile(): string | null {
+      return this.sketcher ? this.sketcher.molFile : this._molFile;
     }
 
     setMolFile(x: string) {
-      this.sketcher!.molFile = x;
+      this._molFile = x;
+      if (this.sketcher != null)
+        this.sketcher!.molFile = x;
+    }
+
+    get supportedExportFormats(): string[] {
+      return this.sketcher ? this.sketcher.supportedExportFormats : [];
     }
 
     async getSmarts(): Promise<string> {
@@ -106,15 +120,37 @@ export namespace chem {
 
     setChangeListenerCallback(callback: () => void) {
       this.listeners.push(callback);
-      this.sketcher!.onChanged.subscribe((_) => callback());
+      if (this.sketcher)
+        this.sketcher.onChanged.subscribe((_) => callback());
     }
 
     constructor() {
       super(ui.div());
 
       let funcs = Func.find({tags: ['moleculeSketcher']});
-      let input = ui.choiceInput('Sketcher', funcs[0].name, funcs.map((f) => f.name), (name: string) => this.setSketcher(name))
-      this.root.appendChild(ui.div([input.root, this.host]));
+      if (funcs.length == 0)
+        throw 'Sketcher functions not found. Please install Chem, OpenChemLib, or MarvinJS package.';
+
+      let molInput: HTMLInputElement = ui.element('input');
+      $(molInput).attr('placeholder', 'SMILES, Inchi, Inchi keys, ChEMBL id, etc');
+
+      let optionsIcon = ui.iconFA('bars', () => {
+        Menu
+          .popup()
+          .item('Add to favorites', () => console.log(this.sketcher!.molFile))
+          .separator()
+          .items(funcs.map((f) => f.name), (name: string) => this.setSketcher(name))
+          .show();
+      });
+      $(optionsIcon).addClass('d4-input-options');
+
+      let molInputDiv = ui.div([molInput, optionsIcon], 'grok-sketcher-input');
+
+      //let sketcherChoice = ui.choiceInput('Sketcher', funcs[0].name, funcs.map((f) => f.name), (name: string) => this.setSketcher(name))
+      this.root.appendChild(ui.div([
+        molInputDiv,
+        //sketcherChoice.root,
+        this.host]));
 
       this.setSketcher(funcs[0].name);
     }
@@ -122,18 +158,25 @@ export namespace chem {
     async setSketcher(name: string) {
       ui.empty(this.host);
       this.changedSub?.unsubscribe();
-      let molFile = this.sketcher?.molFile;
+
+      let molFile = this.sketcher?.molFile ?? this._molFile;
+      let smiles = this.sketcher?.smiles ?? this._smiles;
+
       let f = Func.find({name: name})[0];
       this.sketcher = await f.apply();
       this.host.appendChild(this.sketcher!.root);
       await ui.tools.waitForElementInDom(this.root);
       await this.sketcher!.init();
       this.changedSub = this.sketcher!.onChanged.subscribe((_) => {
-        this.listeners.forEach((callback) => callback());
+        for (let callback of this.listeners)
+          callback();
         grok.shell.o = SemanticValue.fromValueType(this.sketcher!.smiles, 'Molecule');
       });
+
       if (molFile != null)
         this.sketcher!.molFile = molFile;
+      else if (smiles != null)
+        this.sketcher!.smiles = smiles;
     }
   }
 

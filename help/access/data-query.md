@@ -1,7 +1,7 @@
-<!-- TITLE: Data Query -->
+<!-- TITLE: Data query -->
 <!-- SUBTITLE: -->
 
-# Data Query
+# Data query
 
 Data query defines which data should be extracted from the data source. For databases, that would 
 typically be the SQL query; for Excel file, that would be sheet name, etc.
@@ -9,7 +9,7 @@ typically be the SQL query; for Excel file, that would be sheet name, etc.
 Queries can be executed either manually, or as part of the [Data Job](data-job.md). The result of 
 executing a query is represented by the [Function Call](../overview/functions/function-call.md).
 
-## Parameterized Queries
+## Parameterized queries
 
 Queries can be parameterized. In the following example, the we are introducing 'employeeId' parameter: 
 
@@ -20,7 +20,7 @@ SELECT * FROM Orders WHERE (employeeId = @employeeId)
 
 For more details, see [Parameterized queries](parameterized-queries.md) section.
 
-## Access Control
+## Access control
 
 Data queries are first-class entities in the Datagrok platform, and as such are subjects to the 
 standard checks and routines performed against them whenever they are used in the specific context. 
@@ -56,10 +56,10 @@ You can use these fields to filter queries with [smart search](../overview/smart
 See also:
 
   * [Query View](data-query-view.md)
-  * [Data Pipeline](data-pipeline.md)
-  * [Data Connection](data-connection.md)
-  * [Data Job](data-job.md)
-  * [Function Call](../overview/functions/function-call.md)
-  * [Parameterized Queries](parameterized-queries.md)
+  * [Data pipeline](data-pipeline.md)
+  * [Data connection](data-connection.md)
+  * [Data job](data-job.md)
+  * [Function call](../overview/functions/function-call.md)
+  * [Parameterized queries](parameterized-queries.md)
   * [Query Builder](query-builder.md)
-  * [Visual Query](db-visual-query.md)
+  * [Visual query](db-visual-query.md)

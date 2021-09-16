@@ -1,7 +1,7 @@
-<!-- TITLE: Tests: R-Group Analysis Test -->
+<!-- TITLE: Tests: R-group analysis test -->
 <!-- SUBTITLE: -->
 
-# Tests: R-Group Analysis
+# Tests: R-group analysis
 
 Gets R-groups of each molecule from input list in SMILES format around core.
 
@@ -26,6 +26,6 @@ Gets R-groups of each molecule from input list in SMILES format around core.
       * Column "test0" is added to table, which corresponds to R-group "R0"
 
 See also:
- * [Substructure Search Test](../tests/substructure-search-test.md)
- * [Chem Descriptors Test](../tests/chem-descriptors-test.md)
- * [Chem Sketcher Test](../tests/chem-scetcher-test.md)
+ * [Substructure search test](../tests/substructure-search-test.md)
+ * [Chem descriptors test](../tests/chem-descriptors-test.md)
+ * [Chem Sketcher test](../tests/chem-scetcher-test.md)

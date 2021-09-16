@@ -1,7 +1,7 @@
-<!-- TITLE: Tests: Random Data -->
+<!-- TITLE: Tests: Random data -->
 <!-- SUBTITLE: -->
 
-# Tests: Random Data
+# Tests: Random data
 
 Adds a numerical column with [random data](random-data.md) with the specified distribution. Parameters of the 
 distribution can be edited as well.

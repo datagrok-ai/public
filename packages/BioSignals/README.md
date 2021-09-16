@@ -1,4 +1,4 @@
-# BioSignals
+# Biosignals
 
 BioSignals is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai)
 platfrom. The goal of the project is to offer an efficient and automated biosignal processing routine. The initial

@@ -1,7 +1,7 @@
-<!-- TITLE: Tests: Join Tables -->
+<!-- TITLE: Tests: Join tables -->
 <!-- SUBTITLE: -->
 
-# Tests: Join Tables
+# Tests: Join tables
 
 Joins two tables, using the specified key columns. 
 Сan be used inner join, outer join, left and right joins
@@ -27,4 +27,4 @@ Joins two tables, using the specified key columns.
 See also:
  * [Join tables](join-tables.md)
  * [Compare tables test](../tests/compare-tables-test.md)
- * [Join Tables Auto Test](../selenium/join-tables-test.side)
+ * [Join tables Auto Test](../selenium/join-tables-test.side)

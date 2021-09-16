@@ -7,7 +7,7 @@ The importance of performance cannot be overstated. A modern system should be ca
 working with hundreds of millions of data points, and every bit of performance counts. 
 Memory consumption and latency fall in the same category.
 
-## In-Memory Database
+## In-memory database
 
 At the heart of the platform is the proprietary, unique technology that lets us 
 efficiently work with huge datasets in the browser. Essentially, it is a columnar
@@ -179,5 +179,5 @@ have the same look and feel and usage patterns, and cooperate in certain tasks.
 
 See also:
 
-  * [Exploratory Data Analysis](../explore/exploratory-data-analysis.md) 
+  * [Exploratory data analysis](../explore/exploratory-data-analysis.md) 
   * [Viewers](../visualize/viewers.md)

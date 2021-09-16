@@ -9,5 +9,5 @@ File should be stored on Datagrok files share for SQLite DBs.
 
 See also:
 
-  * [Data Connection](../data-connection.md)
+  * [Data connection](../data-connection.md)
   * [SQLite](https://www.sqlite.org/index.html)

@@ -11,7 +11,7 @@ Oligonucleotides are chemically synthesized. Chain assembly proceeds in the 3' t
 procedure referred to as a "synthetic cycle".
 Completion of a single synthetic cycle results in the addition of one nucleotide residue to the growing chain.
 
-# Use Cases
+# Use cases
 | Name |  Steps  |
 |---|---|
 | Translate one sequence of types list | Paste sequence into the text field in `MAIN` tab of App |
@@ -19,7 +19,7 @@ Completion of a single synthetic cycle results in the addition of one nucleotide
 | Translate sequences using new Axolabs pattern | 1. Go to `AXOLABS` tab <br/>2. Drag & drop an Excel or CSV file with sequences into Datagrok <br/>3. Choose your table in the `Table` field <br/>4. Choose `SS Column`, and, if needed, `AS Column` and `ID Column`(needed to add column with concatenated ID and pattern name) <br/>5. Press `Convert Sequences` button  <br/>This will add the result column(s) to the right of the table. Save pattern, if needed|
 | Translate sequences using existing Axolabs pattern | 1. Go to `AXOLABS` tab <br/>2. Select your pattern in `Load Pattern` field <br/>3. Do steps #2-5 from previous use case |
 
-# Sequence Representations 
+# Sequence representations 
 
 In the modification section on the right side of the screen you can select modification for each base in your input sequence
 and check if PTO after the base is required.
@@ -39,7 +39,7 @@ Representations are splitted into categories by synthesizer's sequence format(Bi
 | MerMade (MM) | `kgKHKGLHIELGJFHKiehK` | `^[IiJjKkLlEeFfGgHhQq]{10,}$` |
 | Applied Biosystems Inc. (ABI) | `58877TTTACCACGT56788` | `^[5678ATGC]{10,}$` |
 
-# Axolabs Nucleotide Modifications
+# Axolabs nucleotide modifications
 | Name | Description | Symbols |
 |---|---|---|
 | `RNA` | RNA nucleotides | `A, C, G, U` |
@@ -62,7 +62,7 @@ Representations are splitted into categories by synthesizer's sequence format(Bi
 | `InvAbasic(o)` | Inverted abasic capped (overhang) | `(invabasic)` |
 | `2'-OMe-U(o)` | Nucleotide Uridine with 2’O-Methyl protection (overhang) | `mU` |
 
-# App Glossary
+# App glossary
 
 | Term |  Definition  |
 |---|---|

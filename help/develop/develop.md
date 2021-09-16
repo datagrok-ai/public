@@ -1,7 +1,7 @@
-<!-- TITLE: &#8204;JavaScript Development-->
+<!-- TITLE: &#8204;JavaScript development-->
 <!-- SUBTITLE: -->
 
-# JavaScript Development
+# JavaScript development
 
 Datagrok was designed to be as extensible as possible, so naturally JavaScript-based development
 is the preferred way to develop user-facing applications on top of the platform. 
@@ -40,7 +40,7 @@ a folder with files in it. A package might contain different things:
 
 See our [GitHub repository](https://github.com/datagrok-ai/public/tree/master/packages) for examples.
 
-## Getting Started
+## Getting started
 
 To develop a package on the Datagrok platform, you will need [Node.js](https://nodejs.org/en/) and [npm](https://www.npmjs.com/get-npm) installed. Also, install [Webpack](https://webpack.js.org/guides/installation/) to be able to build your package locally and debug it using `Webpack DevServer`. Optionally, you can use `Babel`, `React` as well as other advanced JavaScript frameworks.
 
@@ -71,7 +71,7 @@ Here are the first steps to get you started:
 
 Run `grok` for instructions and `grok <command> --help` to get help on a particular command.
 
-## Package Structure
+## Package structure
 
 A simplest JavaScript package consists of the following files:
 
@@ -201,7 +201,7 @@ module.exports = {
 
 Have a look at the [Webpack documentation](https://webpack.js.org/configuration/) in case you need to modify or extend the provided options. For instance, you can add CSS and other file [loaders](https://webpack.js.org/loaders/) to `module.rules`. When the package is loaded, the output gets assigned to a variable (type `window.<package_name>`, e.g. `window.sequence`, in the browser's console just to check). Finally, note that the package name have reoccurred in multiple files, including this one. This might become important if you are going to introduce changes to the code or, for example, rename the package without creating it from scratch. In this case, make sure the name is accurately substituted: set the `name` field in `package.json` and `library` in `webpack.config.js` to the desired name in lower case, and rename a class `<package_name>PackageDetectors` using camel case in `detectors.js`.
 
-### Naming Conventions
+### Naming conventions
 
 Continuing the topic we have just touched on, here are naming guidelines and general recommendations that you might consider:
 
@@ -210,7 +210,7 @@ Continuing the topic we have just touched on, here are naming guidelines and gen
   * The names of semantic type detectors typically start with the `detect` prefix, e.g., `detectNucleotides` or `detectRDSmiles`
   * File names can be written in lower case, with dashes between words: `tika-extractor.py` and `chord-viewer.js`
 
-### Structuring Package Sources
+### Structuring package sources
 
 Apart from the files included in the standard template, let's briefly consider what else can be distributed as part of a package. Depending on your needs, the package may contain some of the following additional folders:
 
@@ -239,7 +239,7 @@ and then start the platform.
 Packages deployed in the development mode are visible only to the authors. This ensures that multiple
 people can simultaneously work on the same package.    
 
-### General Notes on Package Development
+### General notes on package development
 
 Our approach to extending the system is providing one canonical, convenient way for 
 developers to achieve the task, at the same time exposing enough extension points
@@ -259,7 +259,7 @@ them against the `dev` instance, if possible. To change Datagrok's server, add a
 
 ## Publishing
 
-### Version Control
+### Version control
 
 Each package has a version number. All objects inside the package are being deployed according to the package version. 
 When a package gets published, a "published package" entity gets created. It is associated with the 
@@ -275,7 +275,7 @@ will only see objects that belong to the current package version.
 There is a special `debug` version that can be deployed for each package. If the developer applies it, it becomes 
 active for the current package until the developer deletes it or changes their developer key. In this case, the developer can see objects from their version of package, and changes will not affect other users package representation. This version will no longer exist after the developer releases their package.
 
-### Deployment Modes
+### Deployment modes
 
 You can use the following flags to specify who can access your package:
 
@@ -308,7 +308,7 @@ grok publish https://dev.datagrok.ai/api --key <dev-key>
 
 Make sure to specify the developer key for a new server.
 
-### Source Control
+### Source control
 
 Packages can be deployed from `Git` as well as other resources, which allows for convenient team collaboration and version management. See the full list of source types in the [Package Browser](https://public.datagrok.ai/packages) (`Manage | Packages | Add new package`).
 
@@ -320,7 +320,7 @@ To publish a package from the repository, you need to open `Manage | Packages | 
 
 If necessary, you can specify additional settings and then publish the package.
 
-### Continuous Integration
+### Continuous integration
 
 `Webpack` is required for your package source code to work successfully in the browser. The Datagrok platform can build a package on the server side, in which case, you need to specify `--rebuild` option in scripts from `package.json`. The script `"build": "webpack"` is reserved for server build.
 
@@ -500,30 +500,30 @@ _See also:_
 [2](https://www.youtube.com/watch?v=YNNDMpoGV0w))
 * IntelliJ IJEA JavaScript debugging ([link](https://www.jetbrains.com/help/idea/debugging-javascript-in-chrome.html))
 
-### Debugging through the Browser
+### Debugging through the browser
 
 Open Chrome Developers Console (hit `F12`) and go to `Sources` tab. 
 
-#### Webpack-Based Packages
+#### Webpack-based packages
 
 If you deploy package in debug mode (`--release` isn't passed to `grok publish`) and source maps are
 properly generated (thus, the setting [devtool](https://webpack.js.org/configuration/devtool/) of
 `module.exports =` section in `webpack.config.js` is present), you'd find your package sources in
 the `top` (root) section of the source tree by its decapitalized name.
 
-#### Source-Based Packages
+#### Source-based packages
 
 Deploying such package locates it to the Datagrok host URI (such as `https://dev.datagrok.ai`) under
 `api → packages/published/flies → <PACKAGE_NAME>/<VERSION>/_/<DIGIT>`, where you'd set breakpoints. 
 
-### Troubleshooting Debugging
+### Troubleshooting debugging
 
 1. For webpack-based packages, make sure there is `devtool: 'inline-source-map'` in `module.exports =` section of
 `webpack.config.js`. Otherwise, source maps aren't generated and the IDE won't get source code locations.
 
 2. Make sure the required plugins / debuggers for Chrome debugging are installed in your IDE.
 
-## Function Types
+## Function types
 
 A package can contain a variety of functions, so it will be appropriate to give
 an overview of the most common ones. Typically, each function type has a special
@@ -560,7 +560,7 @@ grok add app <name>
 
 *Details:* [How to Build an Application](how-to/build-an-app.md)
 
-### Pre-run Functions
+### Pre-run functions
 
 The purpose of pre-run functions is to prepare the main package code for
 execution. This includes fetching specific pieces of data, subscribing to global
@@ -587,7 +587,7 @@ command from your package directory:
 grok add function init <packageName>Init
 ```
 
-### Semantic Type Detectors
+### Semantic type detectors
 
 To get the template for a detector function, use the following `datagrok-tools`
 command from your package directory:
@@ -598,7 +598,7 @@ grok add detector <semantic-type-name>
 
 *Details:* [How to Define Semantic Type Detectors](how-to/define-semantic-type-detectors.md)
 
-### File Viewers
+### File viewers
 
 File viewers are used in Datagrok's [file share browser](../access/file-shares.md).
 The platform provides a way to define custom viewers (or editors) in addition to the native ones.
@@ -606,7 +606,7 @@ These functions work on files with a specific extension, which is derived from t
 
 *Details:* [How to Develop Custom File Viewers](how-to/custom-file-viewers.md)
 
-### File Exporters
+### File exporters
 
 A file exporter is a function used for loading data from the platform. It is annotated
 with the `#fileExporter` tag. Exporters reside in the platform's top menu "export" section.

@@ -1,7 +1,7 @@
-<!-- TITLE: R-Group Analysis -->
+<!-- TITLE: R-group analysis -->
 <!-- SUBTITLE: -->
 
-# R-Group Analysis
+# R-group analysis
 
 R-Group Analysis is a common function in chemistry. Typically, it involves R-group decomposition, 
 followed by the visual analysis of the obtained R-groups. Grok's chemically-aware 
@@ -33,5 +33,5 @@ Related functions:
 
 See also:
   * [Cheminformatics](cheminformatics.md)
-  * [Murcko Scaffolds](functions/murcko-scaffolds.md)
+  * [Murcko scaffolds](functions/murcko-scaffolds.md)
   * JS API: [R-Group](https://public.datagrok.ai/js/samples/domains/chem/r-group)

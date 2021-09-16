@@ -1,7 +1,7 @@
 <!-- TITLE: Tests: Build Query -->
 <!-- SUBTITLE: -->
 
-# Tests: Data Query
+# Tests: Data query
 
 [Query Builder](../dialogs/query-builder.md) allows to build query using visual interface.
 

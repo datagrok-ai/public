@@ -1,7 +1,7 @@
-<!-- TITLE: Solubility Prediction -->
+<!-- TITLE: Solubility prediction -->
 <!-- SUBTITLE: -->
 
-# Solubility Prediction
+# Solubility prediction
 
 Solubility is one of basic physical chemistry properties important for understanding how molecules 
 interact with solvents. Following script allows to predict solubility by molecular descriptors.
@@ -29,4 +29,4 @@ See also:
 References:
 
 * [RDKit](https://www.rdkit.org)
-* [MoleculeNet: A Benchmark for Molecular Machine Learning](https://arxiv.org/abs/1703.00564)        
+* [MoleculeNet: A benchmark for molecular machine learning](https://arxiv.org/abs/1703.00564)        

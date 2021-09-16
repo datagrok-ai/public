@@ -2,7 +2,7 @@ GrokScripts is a [package](https://datagrok.ai/help/develop/develop#packages) fo
 
 [Grok script](https://datagrok.ai/help/overview/grok-script) language is used to control or automate everything within the [Datagrok](https://datagrok.ai/) platform. Use it to transform data, automate workflows, run queries, evaluate numerical expressions, execute commands, record macros, perform statistical computations, execute other scripts, etc.
 
-# Info-panel
+# Info panel
 
 Separately, here are [samples](https://github.com/datagrok-ai/public/tree/master/packages/GrokScripts/scripts/info_panels) of using [Grok script](https://datagrok.ai/help/overview/grok-script) to create [Info Panels](https://datagrok.ai/help/discover/info-panels).
 
@@ -14,13 +14,13 @@ Info panels are meant to be easily developed by the users of the platform, and s
 
 # Example
 ```
-#name: Scatter Plot
-#description: Panel that contains an interactive scatter plot
-#language: grok
-#tags: panel
-#input: dataframe table
-#condition: table.name == "demog" && table.columns.containsAll(["height", "weight", "age", "sex"])
-#output: viewer plot
+# name: scatter plot
+# description: panel that contains an interactive scatter plot
+# language: grok
+# tags: panel
+# input: dataframe table
+# condition: table.name == "demog" && table.columns.containsall(["height", "weight", "age", "sex"])
+# output: viewer plot
 
 plot = table.ScatterPlot("height", "weight", "age", "sex")
 plot.showRegressionLine = true

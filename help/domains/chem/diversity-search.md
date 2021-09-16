@@ -1,7 +1,7 @@
-<!-- TITLE: Diversity Search -->
+<!-- TITLE: Diversity search -->
 <!-- SUBTITLE: -->
 
-# Diversity Search
+# Diversity search
 
 We have implemented few tools that help scientists analyze a collection of molecules in 
 terms of molecular similarity. Both tools are based on applying different distance metrics 
@@ -19,5 +19,5 @@ molecules will be shown in the 'Similar structures' window.
 See also:
 
 * [Descriptors](descriptors.md)
-* [Molecular Fingerprints](fingerprints.md)
-* JS API: [Diversity Search](https://public.datagrok.ai/js/samples/domains/chem/diversity-search)
+* [Molecular fingerprints](fingerprints.md)
+* JS API: [Diversity search](https://public.datagrok.ai/js/samples/domains/chem/diversity-search)

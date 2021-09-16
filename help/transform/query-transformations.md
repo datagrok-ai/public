@@ -1,4 +1,4 @@
-<!-- TITLE: Query Transformations -->
+<!-- TITLE: Query transformations -->
 <!-- SUBTITLE: -->
 
 # Transformations
@@ -28,10 +28,10 @@ You can add steps manually and switch between steps to view results of each step
 
 See also:
 
-  * [Data Pipeline](../access/data-pipeline.md)
-  * [Data Connection](../access/data-connection.md)
-  * [Data Query](../access/data-query.md)
-  * [Data Job](../access/data-job.md)
-  * [Function Call](../overview/functions/function-call.md)
-  * [Aggregate Rows](aggregate-rows.md)
+  * [Data pipeline](../access/data-pipeline.md)
+  * [Data connection](../access/data-connection.md)
+  * [Data query](../access/data-query.md)
+  * [Data job](../access/data-job.md)
+  * [Function call](../overview/functions/function-call.md)
+  * [Aggregate rows](aggregate-rows.md)
   * [Recipe Editor](recipe-editor.md)

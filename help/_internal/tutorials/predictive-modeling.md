@@ -1,7 +1,7 @@
-<!-- TITLE: Use Cases: Predictive Modeling -->
+<!-- TITLE: Use Cases: Predictive modeling -->
 <!-- SUBTITLE: -->
 
-# Use Cases: Predictive Modeling
+# Use cases: Predictive modeling
 
 Owner: Vasiliy
 
@@ -44,8 +44,8 @@ Features: model browser, building new models, performance assessment, model comp
    * Set “Use Open Cpu For Predictive Modelling” flag to use OpenCPU as modelling engine, H2O will be used instead
 
 See also:
-* [Predictive Modeling](../../learn/predictive-modeling.md)
-* [Predictive Modeling Info](../../learn/predictive-modeling-info.md)
-* [Data Connection](../../access/data-connection.md)
-* [Data Query](../../access/data-query.md)
-* [Function Call](../../overview/functions/function-call.md)
+* [Predictive modeling](../../learn/predictive-modeling.md)
+* [Predictive modeling Info](../../learn/predictive-modeling-info.md)
+* [Data connection](../../access/data-connection.md)
+* [Data query](../../access/data-query.md)
+* [Function call](../../overview/functions/function-call.md)

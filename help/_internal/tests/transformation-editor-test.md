@@ -1,7 +1,7 @@
 <!-- TITLE: Tests: Transformation Editor -->
 <!-- SUBTITLE: -->
 
-# Tests: Transformation Editor
+# Tests: Transformation editor
 
 [Recipe Editor](../features/recipe-editor) lets you define data transformations. [Transformations](../features/recipe-editor.md) can be used as a post-run step for data
 queries and data jobs, or can be executed separately. You can also share [Transformations](../features/recipe-editor.md) with other users.

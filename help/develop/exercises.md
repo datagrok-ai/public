@@ -175,7 +175,7 @@ In this exercise, we will count occurrences of a given subsequence in a nucleoti
    Open a table — say, let's go for `sequences.csv`. Navigate to `Data | Files` and open
    `Demo Files / bio / sequences.csv`. Navigate to a menu item `Edit | Add New Column...`
    and click it. Type in your expression using the function you've just previously created:  
-   ![](exercises-add-new-column.png) <!-- TODO: Update the dialog -->
+   ![](exercises-add-new-column.png)
    Observe how the `Preview Result Columns` change while you are modifying the expression. 
    There, notice a namespace `<yourLogin>` as part of a qualified function name `<yourLogin>:<functionName>`,
    `JDoe:CountSubseqnecePython` in this case. Namepaces are used through Datagrok very commonly.
@@ -183,6 +183,8 @@ In this exercise, we will count occurrences of a given subsequence in a nucleoti
    Datagrok namespaces originate from the names of packages, projects, and users, and always
    qualify a resource name, be it a package, a function, a connection or a query.  
    Now hit "Ok" and have the new column inserted to the dataframe.
+   
+<!-- TODO: Update the dialog -->
    
 ### Modifying dataframes with scripts
 
@@ -331,7 +333,7 @@ _You will learn:_ how to invoke arbitrary Datagrok functions in JavaScript and a
    As this is a common action in many scenarios, the same result in Datagrok can be achieved with setting
    `{action:join(inputDf)}` on the output dataframe:  
    ```
-   #output: dataframe aDfWithANewColumn {action:join(inputDf)}
+   # Output: dataframe adfwithanewcolumn {action:join(inputdf)}
    ```  
    This is useful not only for brevity, but also for saving bandwidth: the resulting dataframe will be joined with
    the origin dataframe on the client side, only the necessary new data shall be passed over to the client.  
@@ -339,8 +341,8 @@ _You will learn:_ how to invoke arbitrary Datagrok functions in JavaScript and a
    
    ```
     #language: python
-    #input: dataframe inputDf
-    #output: dataframe outputDf {action:join(inputDf)}
+    #input: dataframe inputdf
+    #output: dataframe outputdf {action:join(inputdf)}
 
     outputDf = inputDf[['someColumn']]
     outputDf['newColumn'] = 2 * outputDf['someColumn']
@@ -460,7 +462,7 @@ is accessible from our server.
     There is another way to pass a country name to the query: you can provide a default value for the input parameter
     (see examples in the article [Parameterized Queries](../access/parameterized-queries.md)).
 
-## Creating a Scripting Viewer
+## Creating a scripting viewer
 
 _Prerequisites:_ basic Python knowledge, [matplotlib](https://matplotlib.org/) or a similar library
 
@@ -559,7 +561,7 @@ _You will learn:_ how to join and union dataframes using the knowledge of semant
 
 <!--- TODO: add linked dataframes demo here --->
 
-## Custom cell renderers with 3-rd party JS libraries
+## Custom cell renderers with 3-rd party js libraries
 
 _You will learn:_ reuse 3-rd party JavaScript libraries in your Datagrok packages; render cells by semantic types.
 

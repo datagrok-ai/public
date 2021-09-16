@@ -15,5 +15,5 @@ See also:
 
 References:
 
-* [RDKit Chemical Reaction Handling](https://rdkit.org/docs/RDKit_Book.html#chemical-reaction-handling)
+* [RDKit Chemical reaction handling](https://rdkit.org/docs/RDKit_Book.html#chemical-reaction-handling)
 * [SMARTS](http://www.daylight.com/dayhtml/doc/theory/theory.smarts.html)

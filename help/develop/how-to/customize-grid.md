@@ -1,6 +1,6 @@
-<!-- TITLE: Customize a Grid -->
+<!-- TITLE: Customize a grid -->
 
-# Grid Customization
+# Grid customization
 
 Whenever users open a spreadsheet on the platform, they see it presented in a [grid](../../visualize/viewers/grid.md). This view can be altered in many ways, both from the user interface and programmatically. The aspects subject to change include:
 
@@ -100,7 +100,7 @@ properly sorted categories:
 ![Custom sorting](custom-column-sorting.png "Custom sorting")
 
 
-## Column Visibility
+## Column visibility
 
 It is possible to hide parts of data in a grid without actually removing them (see an [example](https://public.datagrok.ai/js/samples/grid/hide-columns)). To achieve this, either explicitly specify the columns you intend to show:
 
@@ -136,7 +136,7 @@ view.grid.columns.rowHeader.width = 100;
 The row header counts as the first grid column, so calling `view.grid.columns.rowHeader` returns the same result as `view.grid.columns.byIndex(0)`. You can test this by running the above [example](https://public.datagrok.ai/js/samples/grid/resize-columns) on the platform.
 
 
-## Color-Coding
+## Color-coding
 
 A grid can encode column categories with color. For instance, assigning custom category colors looks as follows:
 
@@ -177,6 +177,7 @@ generated automatically. See the [patterns](../../access/parameterized-queries.m
 section to learn the syntax for rules.
 
 See also:
+
   * [Grid](../../visualize/viewers/grid.md)
-  * [Table View](../../overview/table-view.md)
+  * [Table view](../../overview/table-view.md)
   * [JavaScript API: Grid](https://datagrok.ai/js-api/classes/dg.grid)

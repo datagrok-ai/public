@@ -1,10 +1,10 @@
-<!-- TITLE: Hosting Options -->
+<!-- TITLE: Hosting options -->
 <!-- SUBTITLE: -->
 
-# Hosting Options
+# Hosting options
 Depending on the needs of your organizations, choose the option that works best for your organization.
 
-## SAAS
+## Saas
 We take care of everything!
 
 ## On-premise

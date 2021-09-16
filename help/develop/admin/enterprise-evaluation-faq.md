@@ -1,4 +1,4 @@
-<!-- TITLE: Enterprise Evaluation FAQ -->
+<!-- TITLE: Enterprise evaluation FAQ -->
 <!-- SUBTITLE: -->
 
 * [Architecture](architecture.md)
@@ -67,7 +67,7 @@
     * Ability to plugin non-native Datagrok pieces (e.g. react containers) and interact with Datagrok frontend (eg react containers) 
     * Scalability of frontend scripting functionality
 
-## Encryption at Rest
+## Encryption at rest
 
 For AWS deployment, we rely on Amazon's built-in encryption for 
 [RDS](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Overview.Encryption.html) 
@@ -79,20 +79,20 @@ and
 Datagrok client side uses HTTP rest API to interact with server side. Authentication token must be passed to access all features.
 [Proof of concept video](https://www.youtube.com/watch?v=TjApCwd_3hw)
   
-## Encryption in Transit
+## Encryption in transit
 
 All client-server communications use the [HTTPS](https://en.wikipedia.org/wiki/HTTPS) protocol, 
 which means it is secure and encrypted.
 
-## Logging and Monitoring
+## Logging and monitoring
 
-## Backup and Restore
+## Backup and restore
 
 Amazon has scheduled backup for RDS and S3, but you can backup and restore RDS database as usual Postgres database.
 
-## Disaster Recovery
+## Disaster recovery
 
 Datagrok supports Docker installation, Amazon cluster will immediately restart failed instance 
 https://www.youtube.com/watch?v=oFs9RShkHT8
 
-## Infrastructure as Code
+## Infrastructure as code
