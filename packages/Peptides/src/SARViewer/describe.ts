@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import {splitAlignedPeptides} from '../splitAligned';
 
 
-function decimalAdjust(type: 'floor' | 'ceil' | 'round', value: number, exp: number) {
+function decimalAdjust(type: 'floor' | 'ceil' | 'round', value: number, exp: number): number {
   // If the exp is undefined or zero...
   if (typeof exp === 'undefined' || +exp === 0) {
     return Math[type](value);
@@ -22,7 +22,11 @@ function decimalAdjust(type: 'floor' | 'ceil' | 'round', value: number, exp: num
   return +(valueArr[0] + 'e' + (valueArr[1] ? (+valueArr[1] + exp) : exp));
 }
 
-export async function describe(df: DG.DataFrame, activityColumn: string, activityScaling: string) {
+export async function describe(
+  df: DG.DataFrame,
+  activityColumn: string,
+  activityScaling: string
+  ): Promise<DG.Grid | null> {
   //Split the aligned sequence into separate AARs
   let splitSeqDf: DG.DataFrame | undefined;
   for (const col of df.columns) {

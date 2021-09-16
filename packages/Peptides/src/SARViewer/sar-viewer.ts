@@ -1,24 +1,41 @@
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {describe} from './describe';
 
 export class SARViewer extends DG.JsViewer {
   initialized: boolean;
-  activityColumnName: string;
+  activityColumnColumnName: string;
   activityScalingMethod: string;
   // duplicatesHandingMethod: string;
   constructor() {
     super();
 
-    this.activityColumnName = this.string('activityColumnColumnName', 'Activity');
+    //TODO: find a way to restrict activityColumnColumnName to accept only numerical columns (double even better)
+    this.activityColumnColumnName = this.string('activityColumnColumnName');
     this.activityScalingMethod = this.string('activityScalingMethod', 'none', {choices: ['none', 'ln', '-ln']});
     // this.duplicatesHandingMethod = this.string('duplicatesHandlingMethod', 'median', {choices: ['median']});
 
     this.initialized = false;
   }
 
+  init() {
+    this.initialized = true;
+
+    // activity column is likely of double type, so finding the first column with double is better than nothing
+    for (const col of this.dataFrame!.columns.numerical) {
+      if (col.type === DG.TYPE.FLOAT) {
+        this.activityColumnColumnName = col.name;
+        break;
+      }
+    }
+  }
 
   onTableAttached() {
     if (typeof this.dataFrame !== 'undefined') {
+      if (!this.initialized) {
+        this.init();
+      }
+
       // this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_: any) => this.render()));
       this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_: any) => this.render()));
       // this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_: any) => this.render()));
@@ -35,8 +52,10 @@ export class SARViewer extends DG.JsViewer {
 
   async render() {
     $(this.root).empty();
+
     if (typeof this.dataFrame !== 'undefined') {
-      const grid = await describe(this.dataFrame, this.activityColumnName, this.activityScalingMethod);
+      const grid = await describe(this.dataFrame, this.activityColumnColumnName, this.activityScalingMethod);
+
       if (grid !== null) {
         this.root.appendChild(grid.root);
       }
