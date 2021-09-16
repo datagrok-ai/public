@@ -3,16 +3,16 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as meta from './sdtm-meta';
-import { study } from "./clinical-study";
+import {study} from "./clinical-study";
 import {StudySummaryView} from "./views/study-summary-view";
 import {TimelinesView} from "./views/timelines-view";
 import {PatientProfileView} from "./views/patient-profile-view";
 import {AdverseEventsView} from "./views/adverse-events-view";
-import { ValidationView } from './views/validation-view';
-import { AdverseEventHandler } from './panels/adverse-event-handler';
-import { LaboratoryView } from './views/laboratory-view';
-import { AERiskAssessmentView } from './views/ae-risk-assessment-view';
-import { SurvivalAnalysisView } from './views/survival-analysis-view';
+import {ValidationView} from './views/validation-view';
+import {AdverseEventHandler} from './panels/adverse-event-handler';
+import {LaboratoryView} from './views/laboratory-view';
+import {AERiskAssessmentView} from './views/ae-risk-assessment-view';
+import {SurvivalAnalysisView} from './views/survival-analysis-view';
 
 export let _package = new DG.Package();
 
@@ -124,11 +124,10 @@ export function sdtmVariablePanel(varCol: DG.Column): DG.Widget {
   return new DG.Widget(ui.divV(container));
 }
 
-
 //name: Clinical Case
 //tags: app
 export async function clinicalCaseApp(): Promise<any> {
-
+  let c: DG.FuncCall = grok.functions.getCurrentCall();
   validationRulesList = await grok.data.loadTable(`${_package.webRoot}tables/validation-rules.csv`);
 
   if (Object.keys(meta.domains).every((name) => grok.shell.table(name) == null))
@@ -136,32 +135,21 @@ export async function clinicalCaseApp(): Promise<any> {
 
   study.initFromWorkspace();
 
-  const studySummaryClass = new StudySummaryView();
-  let summary = grok.shell.newView(`Summary`, [ studySummaryClass.root ]);
-  summary.box = true;
-
-  let timelines = grok.shell.newView(`Timelines`, [ new TimelinesView().root ]);
-  timelines.box = true;
-
-  let patient = grok.shell.newView(`Patient Profile`, [ new PatientProfileView().root]);
-  patient.box = true;
- 
-  let ae = grok.shell.newView(`Adverse Events`, [ new AdverseEventsView().root ]);
-  ae.box =true;
-
-  let validationView = grok.shell.newView(`Validation`, [ new ValidationView(studySummaryClass.errorsByDomain).root ], true);
-  studySummaryClass.validationView = validationView;
-  validationView.box = true;
-
-  let laboratory = grok.shell.newView(`Laboratory`, [ new LaboratoryView().root ]);
-  laboratory.box = true;
-
-  let aerisk = grok.shell.newView(`AE Risk Assessent`, [ new AERiskAssessmentView().root ]);
-  aerisk.box = true;
-
-  let survivalView = grok.shell.newView(`Survival Analysis`, [ new SurvivalAnalysisView().root ])
-  survivalView.box = true;
-
+  function addView(view: DG.ViewBase): DG.ViewBase {
+    view.box = true;
+    view.parentCall = c;
+    grok.shell.addView(view);
+    return view;
+  }
+  let summary = <StudySummaryView>addView(new StudySummaryView());
+  addView(new TimelinesView());
+  addView(new PatientProfileView());
+  addView(new AdverseEventsView());
+  summary.validationView = addView(new ValidationView(summary.errorsByDomain));
+  addView(new LaboratoryView());
+  addView(new AERiskAssessmentView());
+  addView(new SurvivalAnalysisView());
+  addView(new AdverseEventsView());
   DG.ObjectHandler.register(new AdverseEventHandler());
 
   grok.shell.v = summary;
@@ -193,7 +181,7 @@ export async function clinicalCaseInit(): Promise<void> {
       if (!clinMenu.find('Timelines'))
         clinMenu.item('Timelines', () => clinicalCaseTimelines());
       if (!clinMenu.find('Study Summary'))
-        clinMenu.item('Study Summary', () => grok.shell.newView('foo', [new StudySummaryView().root]));
+        clinMenu.item('Study Summary', () => grok.shell.addView(new StudySummaryView()));
     }
   });
 }
