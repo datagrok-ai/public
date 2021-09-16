@@ -136,12 +136,13 @@ export class PatientProfileView extends DG.ViewBase {
       this.multiplot_lb_ae_ex_cm = v;
       this.attachTablesToMultiplot(this.multiplot_lb_ae_ex_cm, this.options_lb_ae_ex_cm, [ 'lb', 'ae', 'ex', 'cm' ]);
       this.multiplot_lb_ae_ex_cm.updatePlotByCategory(0, this.options_lb_ae_ex_cm.series[0].edit.selectedValues, false); //to clear scattr plot after creation
+      
+      this.root.className = 'grok-view ui-box';
       this.root.appendChild(
-        ui.divV([  patienIdBoxPlot.root,
-        ui.splitH([
+        ui.splitV([
+          ui.box(ui.panel([patienIdBoxPlot.root]), {style:{maxHeight:'45px'}}),
           this.multiplot_lb_ae_ex_cm.root,
-        ], { style: { width: '100%', height: '100%' } })
-        ], { style: { width: '100%', height: '100%' } })
+        ])
       );
 
     });

@@ -13,9 +13,9 @@ export class AERiskAssessmentView extends DG.ViewBase {
 
     this.riskAssessmentDataframe = createAERiskAssessmentDataframe(study.domains.ae, study.domains.ex);
     let grid = this.riskAssessmentDataframe.plot.grid();
-
-    this.root.appendChild(
-        ui.divH([ grid.root ], { style: { height: '100%', width: '100%' } }));
+   
+    this.root.className = 'grok-view ui-box';
+    this.root.appendChild(grid.root);
 
   } 
 }

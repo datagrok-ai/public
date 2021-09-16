@@ -41,18 +41,24 @@ export class TimelinesView extends DG.ViewBase {
       this.updateTimelinesPlot();
     });
 
+    let customTitle = {style:{
+      'color':'var(--grey-6)',
+      'margin-top':'8px',
+      'font-size':'16px',
+    }};
+
     this.root.className = 'grok-view ui-box';
-    this.root.appendChild(
-      ui.splitH([ 
-        ui.box(
-          ui.splitV([
-            ui.h1('Event'),
-            ui.box(multiChoiceOptions.root, {style:{maxHeight: '150px'}}), 
-            ui.h1('Filters'),
-            this.filtersDiv
-          ]), {style:{maxWidth: '250px'}}), this.timelinesDiv 
-        ])
-    );
+    this.append(ui.splitH([
+      ui.splitV([
+        ui.box(ui.panel([
+          ui.divText('Events',customTitle),
+          multiChoiceOptions.root
+        ]), {style:{maxHeight:'150px'}}),
+        this.filtersDiv
+      ], {style:{maxWidth:'250px'}}),
+      this.timelinesDiv
+    ]))
+
     this.updateTimelinesPlot();
   }
 
@@ -109,12 +115,20 @@ export class TimelinesView extends DG.ViewBase {
   }
 
   private getFilters() {
+    let viewerTitle = {style:{
+      'color':'var(--grey-6)',
+      'margin':'12px 0px 6px 12px',
+      'font-size':'16px',
+    }};
     let filterColumns = [];
     Object.keys(filters).forEach(domain => filterColumns = filterColumns.concat(Object.keys(filters[ domain ])))
-    return DG.Viewer.fromType('Filters', this.resultTables, {
+    let chart = DG.Viewer.fromType('Filters', this.resultTables, {
       'columnNames': filterColumns,
       'showContextMenu': false,
     }).root;
+    chart.prepend(ui.divText('Filters',viewerTitle))
+    chart.style.overflowY = 'scroll';
+    return chart
   }
 
   private updateTimelinesDivs(timelinesContent: any, filtersContent: any) {
