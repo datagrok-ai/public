@@ -8,16 +8,24 @@ export class AdverseEventsView extends DG.ViewBase {
   constructor() {
     super();
 
-    function bar(categoryColumn: string) {
-      return study.domains.ae.plot.bar( {
+    let viewerTitle = {style:{
+      'color':'var(--grey-6)',
+      'margin':'12px 0px 6px 12px',
+      'font-size':'16px',
+    }};
+
+    function bar(categoryColumn: string, title:string) {
+      let chart = study.domains.ae.plot.bar( {
         split: categoryColumn,
-        style: 'dashboard' }).root
+        style: 'dashboard' }).root;
+      chart.prepend(ui.divText(title, viewerTitle))
+      return chart
     }
 
-    let typesPlot = bar('AEDECOD');
-    let bodySystemsPlot = bar('AEBODSYS');
-    let causalityPlot = bar('AEREL');
-    let outcomePlot = bar('AEOUT');
+    let typesPlot = bar('AEDECOD','Types');
+    let bodySystemsPlot = bar('AEBODSYS', 'Body System');
+    let causalityPlot = bar('AEREL', 'Causality');
+    let outcomePlot = bar('AEOUT', 'Outcome');
 
     let timelinesPlot = study.domains.ae.plot.line({
       x: 'week',
@@ -26,6 +34,8 @@ export class AdverseEventsView extends DG.ViewBase {
       yAggrTypes: [DG.STATS.TOTAL_COUNT],
       split: 'AESEV',
       style: 'dashboard' }).root;
+
+    timelinesPlot.prepend(ui.divText('Events per Week', viewerTitle));
 
     let scatterPlot = study.domains.ae.plot.scatter({
       x: 'AESTDY',
@@ -36,23 +46,29 @@ export class AdverseEventsView extends DG.ViewBase {
       style: 'dashboard'
     }).root;
 
+    scatterPlot.prepend(ui.divText('All Events', viewerTitle))
+
     let grid = study.domains.ae.plot.grid();
     study.domains.ae.onCurrentRowChanged.subscribe((_) => {
       grok.shell.o = new ClinRow(study.domains.ae.currentRow);
     });
 
-    this.root.appendChild(ui.div([
-      ui.divH([
-        ui.block25([ui.h2('Types'), typesPlot]),
-        ui.block25([ui.h2('Body System'), bodySystemsPlot]),
-        ui.block50([ui.h2('Events per Week'), timelinesPlot]),
-      ], { style: { width: '100%' } }),
-      ui.divH([
-        ui.block25([ui.h2('Causality'), causalityPlot]),
-        ui.block25([ui.h2('Outcome'), outcomePlot]),
-        ui.block50([ui.h2('All Events'), scatterPlot]),
-      ], { style: { width: '100%' } }),
-      ui.divH([ grid.root ], { style: { width: '100%' } })
+    this.root.className = 'grok-view ui-box';
+    this.root.append(ui.splitV([
+      ui.splitH([timelinesPlot, scatterPlot]),
+      ui.splitH([typesPlot,bodySystemsPlot,causalityPlot,outcomePlot]),
+      ui.splitH([grid.root])
+    ]))
+    /*
+    this.root.appendChild(ui.block([
+        ui.block25([typesPlot]),
+        ui.block25([bodySystemsPlot]),
+        ui.block50([timelinesPlot]),
+        ui.block25([causalityPlot]),
+        ui.block25([outcomePlot]),
+        ui.block50([scatterPlot]),
+        ui.block([grid.root])
     ]));
+    */
   }
 }
