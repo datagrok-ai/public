@@ -7,6 +7,7 @@ import { DockManager } from "./docking";
 import { DockType, DOCK_TYPE } from "./const";
 import { JsViewer } from "./viewer";
 import {_toIterable} from "./utils";
+import {FuncCall} from "./functions";
 
 declare let ui: any;
 let api = <any>window;
@@ -37,12 +38,12 @@ export class Shell {
   }
 
   /** Current view
-   *  @type {View} */
-  get v(): View {
+   *  @type {ViewBase} */
+  get v(): ViewBase {
     return View.fromDart(api.grok_Get_CurrentView());
   }
 
-  set v(view: View) {
+  set v(view: ViewBase) {
     api.grok_Set_CurrentView(view.d);
   }
 
@@ -149,13 +150,16 @@ export class Shell {
   }
 
   /** Adds a view. */
-  addView(v: ViewBase, dockType: DockType = DOCK_TYPE.FILL, width: number | null = null): ViewBase {
+  addView(v: ViewBase, dockType: DockType = DOCK_TYPE.FILL, width: number | null = null, context: FuncCall | null = null): ViewBase {
     if (api.grok_AddView == null) {
       document.body.append(v.root);
       v.root.style.width = '100vw';
       v.root.style.height = '100vh';
-    } else
+    } else {
+      if (context != null)
+        v.parentCall = context;
       api.grok_AddView(v.d, dockType, width);
+    }
     return v;
   }
 

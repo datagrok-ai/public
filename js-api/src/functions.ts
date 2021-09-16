@@ -129,6 +129,10 @@ export class Functions {
     return toJs(api.grok_ScriptSync(s));
   }
 
+  getCurrentCall(): FuncCall {
+    return toJs(api.grok_GetCurrentCall());
+  }
+
   get onBeforeRunAction(): Observable<any> { return __obs('d4-before-run-action'); }
   get onAfterRunAction(): Observable<any> { return __obs('d4-after-run-action'); }
 }
