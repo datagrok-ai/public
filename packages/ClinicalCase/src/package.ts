@@ -137,17 +137,31 @@ export async function clinicalCaseApp(): Promise<any> {
   study.initFromWorkspace();
 
   const studySummaryClass = new StudySummaryView();
-  grok.shell.newView(`Summary`, [ studySummaryClass.root ]);
-  let timelinesView = grok.shell.newView(`Timelines`, [ new TimelinesView().root ]);
-  grok.shell.newView(`Patient Profile`, [ new PatientProfileView().root ]);
-  grok.shell.newView(`Adverse Events`, [ new AdverseEventsView().root ]);
-  const validationView = grok.shell.newView(`Validation`, [ new ValidationView(studySummaryClass.errorsByDomain).root ], true);
+  let summary = grok.shell.newView(`Summary`, [ studySummaryClass.root ]);
+  summary.box = true;
+
+  let timelines = grok.shell.newView(`Timelines`, [ new TimelinesView().root ]);
+  timelines.box = true;
+
+  let patient = grok.shell.newView(`Patient Profile`, [ new PatientProfileView().root]);
+  patient.box = true;
+ 
+  let ae = grok.shell.newView(`Adverse Events`, [ new AdverseEventsView().root ]);
+  ae.box =true;
+
+  let validationView = grok.shell.newView(`Validation`, [ new ValidationView(studySummaryClass.errorsByDomain).root ], true);
   studySummaryClass.validationView = validationView;
-  grok.shell.newView(`Laboratory`, [ new LaboratoryView().root ]);
-  grok.shell.newView(`AE Risk Assessent`, [ new AERiskAssessmentView().root ])
+  validationView.box = true;
+
+  let laboratory = grok.shell.newView(`Laboratory`, [ new LaboratoryView().root ]);
+  laboratory.box = true;
+
+  let aerisk = grok.shell.newView(`AE Risk Assessent`, [ new AERiskAssessmentView().root ]);
+  aerisk.box = true;
+
   let survivalView = grok.shell.newView(`Survival Analysis`, [ new SurvivalAnalysisView().root ])
   survivalView.box = true;
-  timelinesView.box = true;
+
   DG.ObjectHandler.register(new AdverseEventHandler());
 
   // showStudySummary();

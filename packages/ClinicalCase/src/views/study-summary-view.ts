@@ -46,6 +46,60 @@ export class StudySummaryView extends DG.ViewBase {
     let kaplanMeierDataframe = createKaplanMeierDataframe();
     let kaplanMeierPlot = createKaplanMeierScatterPlot(kaplanMeierDataframe, 'SUBJID', 'TIME', 'SURVIVAL', 'GROUP');
 
+    let summaryStyle = {style:{
+      'color':'var(--grey-6)',
+      'margin-top':'8px',
+      'font-size':'16px',
+    }};
+    let viewerTitle = {style:{
+      'color':'var(--grey-6)',
+      'margin':'12px 0px 6px 12px',
+      'font-size':'16px',
+    }};
+    
+    lc.root.prepend(ui.divText('Enrollment', viewerTitle));
+
+    let arm = study.domains.dm.plot.bar( { split: 'arm', style: 'dashboard' });
+    arm.root.prepend(ui.divText('Arm', viewerTitle));
+
+    let sex = DG.Viewer.barChart(study.domains.dm, { split: 'sex', style: 'dashboard' });
+    sex.root.prepend(ui.divText('Sex', viewerTitle));
+
+    let race = DG.Viewer.barChart(study.domains.dm, { split: 'race', style: 'dashboard' });
+    race.root.prepend(ui.divText('Race', viewerTitle));
+
+    let age = DG.Viewer.histogram(study.domains.dm, { value: 'age', style: 'dashboard' });
+    age.root.prepend(ui.divText('Age', viewerTitle));
+
+    this.root.className = 'grok-view ui-box';
+    this.root.append(ui.splitV([
+      ui.splitH([
+        ui.panel([
+          ui.divText('Subjects',{style:{color:'var(--grey-4)'}}),
+          ui.divText(study.subjectsCount.toString(), summaryStyle)
+        ]),
+        ui.panel([
+          ui.divText('Sites',{style:{color:'var(--grey-4)'}}),
+          ui.divText(study.sitesCount.toString(), summaryStyle)
+        ]),
+        ui.panel([
+          ui.divText('Errors AE',{style:{color:'var(--grey-4)'}}),
+          ui.div(this.errorsByDomainWithLinks.ae, summaryStyle)
+        ]),
+        ui.panel([
+          ui.divText('Errors DM',{style:{color:'var(--grey-4)'}}),
+          ui.div(this.errorsByDomainWithLinks.dm, summaryStyle)
+        ]),
+      ], {style:{maxHeight:'70px'}}),
+      lc.root,
+      ui.splitH([
+        arm.root,
+        sex.root,
+        race.root,
+        age.root
+      ])
+    ]))
+    /*
     this.root.appendChild(ui.div([
       ui.divH([
         ui.block50([
@@ -66,7 +120,7 @@ export class StudySummaryView extends DG.ViewBase {
         ui.block25([ui.h2('Race'), DG.Viewer.barChart(study.domains.dm, { split: 'race', style: 'dashboard' }).root]),
         ui.block25([ui.h2('Age'), DG.Viewer.histogram(study.domains.dm, { value: 'age', style: 'dashboard' }).root]),
       ], { style: { width: '100%' } }),
-    ]));
+    ]));*/
   }
 
   private createErrorsMap() {
