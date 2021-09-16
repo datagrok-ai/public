@@ -55,3 +55,11 @@ export function Peptides() {
 export function sar() {
   return new SARViewer();
 }
+
+//name: alignedSequenceCellRenderer
+//tags: cellRenderer, cellRenderer-alignedSequence
+//meta-cell-renderer-sem-type: alignedSequence
+//output: grid_cell_renderer result
+export function alignedSequenceCellRenderer() {
+  return new AlignedSequenceCellRenderer();
+}
