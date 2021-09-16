@@ -1,6 +1,58 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-09-16 Dev build 0.93.24
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.24`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* (Bug) Form, Tile: rendering error 
+* rewrite Peptides package in TypeScript 
+* Add SAR viewer 
+* JS API: fix type warnings 
+* Peptides: refactor 
+* Peptides: simplified the aligned sequence detector 
+* Stacked barchart: Selection style changed, datagrok palette added, axis display simplified, unreadable bar labeles removed, trying to fix escaping bars bug. 
+* #114: Bio: grid cell renderer for sequences 
+* Sequence: made it work again; code cleanup. 
+* Wiki: Restructure. Access (WIP)
+* escaping bar bug is fixed 
+* JS API: BitSet.and, or, xor, andNot 
+* Peptides: drawing circles in a grid instead of numbers 
+* Peptides: viewer rework 
+* (Bug) JS API: Table.rows.filter() doesn't work if called after opening the table 
+* Form: move setReadOnly implementation into SketchHtmlElementHandler 
+* Minor improvements 
+* JS API: a type for property options 
+* Peptides: added activity scaling options 
+* Peptides: source table selection based on viewer select 
+* Peptides: refactor according to coding guidlines 
+* (Bug) Filters: Range sliders don't always appear on hover 
+* JS API: Minor harmonization 
+* Peptides: dataset fix 
+* AppsViews and PackagesView: make cards smaller 
+* (Bug) Histogram: Change position of the checkbox "Filter out missing values" 
+* added ability to select values for y axe in multiplot, updated patient profile and timelines views 
+* Peptide Cell renderer 
+* #53 Tutorials package: ML (predictive modeling tutorial): missing values imputation 
+* PackageView and Package PP: show github URL (WIP)
+* Clinical Cases UI update 
+* Update package.ts 
+* (Bug) Add new package: impossible to add a package without description 
+* (Bug) Apps: App button goes to common heap instead of separate tab (WIP)
+* Rollback 
+* Peptides: added help to property panel, minor improvements 
+* Fixed views creation 
+* Fixed typing 
+
+
 # 2021-09-14 Dev build 0.93.23
 
 ## Latest Docker Images
