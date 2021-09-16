@@ -42,7 +42,7 @@ export class MultivariateAnalysisTutorial extends Tutorial {
     this.describe('Set "Features" to "all". Click "All" in the column selection dialog.');
       // await this.dlgInputAction(dlg!, 'Set "Features" to "all". Click "All" in the column selection dialog',
     //   'Features', this.t.columns.names().join(','));
-    await this.dlgInputAction(dlg!,'Set the number of components to "3"', 'Components', '3');
+    await this.dlgInputAction(dlg!, 'Set the number of components to "3"', 'Components', '3');
     this.describe(`Once you run the analysis, the following visualizations will appear:
     <ul style="list-style-type:disc">
       <li><code>Scores</code> is a scatter plot that shows correlation between observations</li>
