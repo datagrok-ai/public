@@ -16,8 +16,9 @@ export class ValidationView extends DG.ViewBase {
   errorsByDomain: any;
   domains: any;
 
-  constructor(errorsMap: any) {
-    super();
+  constructor(errorsMap: any, name) {
+    super(name);
+    this.name = name;
 
     this.errorsByDomain = errorsMap;
     this.resultsDataframe = study.validationResults;
@@ -55,7 +56,7 @@ export class ValidationView extends DG.ViewBase {
     this.root.className = 'grok-view ui-box';
     this.root.appendChild(
       ui.splitV([
-        ui.box(ui.divText('Violated Rules', viewerTitle), { style: { maxHeight: '45px' } }),
+        ui.box(ui.divText('Violated rules', viewerTitle), { style: { maxHeight: '45px' } }),
         violatedRules.root,
         ui.box(ui.divText('Errors', viewerTitle), { style: { maxHeight: '45px' } }),
         tabs.root
