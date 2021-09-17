@@ -585,11 +585,10 @@ export class Package extends Entity {
     }, (e: any) => reject(e)));
   }
 
-  /** Returns properties for package
-   * @returns {Promise<object>} */
+  /** Returns properties for a package. */
   getProperties(): Promise<Map<string, any>> {
-    return new Promise((resolve, reject) => api.grok_Package_Get_Properties(this.name, (c: any) => {
-      resolve(c);
+    return new Promise((resolve, reject) => api.grok_Package_Get_Properties(this.name, (props: any) => {
+      resolve(toJs(props));
     }, (e: any) => reject(e)));
   }
 }
