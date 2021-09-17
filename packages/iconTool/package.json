@@ -5,7 +5,7 @@
 	"version": "0.0.1",
 	"description": "Icon generation tool for Datagrok packages",
 	"dependencies": {
-		"datagrok-api": "latest"
+		"datagrok-api": "../../js-api"
 	},
 	"scripts": {
 		"debug-icontool": "grok publish --rebuild",
