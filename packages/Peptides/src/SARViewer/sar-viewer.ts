@@ -2,10 +2,10 @@ import * as DG from 'datagrok-api/dg';
 import {describe} from './describe';
 
 export class SARViewer extends DG.JsViewer {
-  initialized: boolean;
-  activityColumnColumnName: string;
-  activityScalingMethod: string;
-  showHistogram: boolean;
+  protected initialized: boolean;
+  protected activityColumnColumnName: string;
+  protected activityScalingMethod: string;
+  protected showHistogram: boolean;
   // duplicatesHandingMethod: string;
   constructor() {
     super();
@@ -21,40 +21,29 @@ export class SARViewer extends DG.JsViewer {
 
   init() {
     this.initialized = true;
-
-    // activity column is likely of double type, so finding the first column with double is better than nothing
-    for (const col of this.dataFrame!.columns.numerical) {
-      if (col.type === DG.TYPE.FLOAT) {
-        this.activityColumnColumnName = col.name;
-        break;
-      }
-    }
   }
 
-  onTableAttached() {
+  async onTableAttached() {
     if (typeof this.dataFrame !== 'undefined') {
-      if (!this.initialized) {
-        this.init();
-      }
-
+      this.init();
       // this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_: any) => this.render()));
       this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_: any) => this.render()));
       // this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_: any) => this.render()));
     }
 
-    this.render();
+    await this.render();
   }
 
-  onPropertyChanged(property: DG.Property) {
+  async onPropertyChanged(property: DG.Property) {
     super.onPropertyChanged(property);
 
-    this.render();
+    await this.render();
   }
 
   async render() {
     $(this.root).empty();
 
-    if (typeof this.dataFrame !== 'undefined') {
+    if (typeof this.dataFrame !== 'undefined' && this.activityColumnColumnName !== null) {
       const grid = await describe(this.dataFrame, this.activityColumnColumnName, this.activityScalingMethod);
 
       if (grid !== null) {

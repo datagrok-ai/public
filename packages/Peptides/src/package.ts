@@ -13,7 +13,8 @@ async function main() {
   const path = _package.webRoot + 'files/' + 'aligned.csv';
   const peptides = (await grok.data.loadTable(path));
 
-  grok.shell.addTableView(peptides);
+  const view = grok.shell.addTableView(peptides);
+  view.name = 'PeptidesView';
 
   pi.close();
 }
@@ -77,6 +78,32 @@ export function SARViewerHelp(_: DG.Column): DG.Widget {
   return new DG.Widget(div);
 }
 
+//name: Analyze Peptides
+//tags: panel, widget
+//input: column col {semType: alignedSequence}
+//output: widget result
+export function analyzePeptides(col: DG.Column): DG.Widget {
+  const activityColumnChoice = ui.columnInput('Activity column', col.dataFrame, col);
+  const activityScalingMethod = ui.choiceInput('Activity scaling', 'none', ['none', 'lg', '-lg']);
+  const showHistogram = ui.boolInput('Show histogram', false);
+  const startBtn = ui.button('Start', async () => {
+    const peptidesView = grok.shell.v;
+    if (peptidesView.type === DG.VIEW_TYPE.TABLE_VIEW) {
+      const options = {
+        'activityColumnColumnName': activityColumnChoice.value.name,
+        'activityScalingMethod': activityScalingMethod.value,
+        'showHistogram': showHistogram.value
+      };
+      // @ts-ignore: I know what I'm doing!
+      // peptidesView.addViewer('SARViewer', options);
+
+      const sarViewer = await col.dataFrame.plot.fromType('SARViewer', options);
+      (<DG.TableView>peptidesView).addViewer(<DG.Viewer>sarViewer);
+    }
+  });
+  return new DG.Widget(ui.divV([activityColumnChoice.root, activityScalingMethod.root, showHistogram.root, startBtn]));
+}
+
 //name: SARViewer
 //description: Peptides SAR Viewer
 //tags: viewer
@@ -92,5 +119,3 @@ export function sar(): SARViewer {
 export function alignedSequenceCellRenderer() {
   return new AlignedSequenceCellRenderer();
 }
-
-
