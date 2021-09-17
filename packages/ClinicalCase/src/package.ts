@@ -138,18 +138,18 @@ export async function clinicalCaseApp(): Promise<any> {
   function addView(view: DG.ViewBase): DG.ViewBase {
     view.box = true;
     view.parentCall = c;
+    view.path = '/'+view.name;
     grok.shell.addView(view);
     return view;
   }
-  let summary = <StudySummaryView>addView(new StudySummaryView());
-  addView(new TimelinesView());
-  addView(new PatientProfileView());
-  addView(new AdverseEventsView());
-  summary.validationView = addView(new ValidationView(summary.errorsByDomain));
-  addView(new LaboratoryView());
-  addView(new AERiskAssessmentView());
-  addView(new SurvivalAnalysisView());
-  addView(new AdverseEventsView());
+  let summary = <StudySummaryView>addView(new StudySummaryView('Summary'));
+  addView(new TimelinesView('Timelines'));
+  addView(new PatientProfileView('Patient Profile'));
+  addView(new AdverseEventsView('Adverse Events'));
+  summary.validationView = addView(new ValidationView(summary.errorsByDomain, 'Validation'));
+  addView(new LaboratoryView('Laboratory'));
+  addView(new AERiskAssessmentView('AE Risk Assessment'));
+  addView(new SurvivalAnalysisView('Survival Analysis'));
   DG.ObjectHandler.register(new AdverseEventHandler());
 
   grok.shell.v = summary;
@@ -181,7 +181,7 @@ export async function clinicalCaseInit(): Promise<void> {
       if (!clinMenu.find('Timelines'))
         clinMenu.item('Timelines', () => clinicalCaseTimelines());
       if (!clinMenu.find('Study Summary'))
-        clinMenu.item('Study Summary', () => grok.shell.addView(new StudySummaryView()));
+        clinMenu.item('Study Summary', () => grok.shell.addView(new StudySummaryView('Summary')));
     }
   });
 }

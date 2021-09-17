@@ -9,11 +9,11 @@ import { dataframeContentToRow } from "../data-preparation/utils";
 
 export class SurvivalAnalysisView extends DG.ViewBase {
 
-  survivalPlotDiv = ui.box();
-  covariatesPlotDiv = ui.box();
+  survivalPlotDiv = ui.box(ui.divText('Create dataset',{style:{color:'var(--grey-3)',marginTop:'30px', alignItems:'center'}}));
+  covariatesPlotDiv = ui.box(ui.divText('Create dataset',{style:{color:'var(--grey-3)',marginTop:'30px', alignItems:'center'}}));
   survivalGridDivCreate = ui.box();
   survivalGridDivFilter = ui.box();
-  survivalFilterDiv = ui.box();
+  survivalFilterDiv = ui.box(ui.divText('Create dataset',{style:{color:'var(--grey-3)',marginTop:'30px', alignItems:'center'}}));
   strataChoicesDiv = ui.div();
   plotCovariatesChoicesDiv = ui.div();
   strataChoices: DG.InputBase;
@@ -30,9 +30,10 @@ export class SurvivalAnalysisView extends DG.ViewBase {
   survivalDataframe: DG.DataFrame;
   plotCovariates: string[];
 
-  constructor() {
-    super();
+  constructor(name) {
+    super(name);
 
+    this.name = name;
     this.endpoint = Object.keys(this.endpointOptions)[ 0 ];
 
     let endpointChoices = ui.choiceInput('Endpoint', Object.keys(this.endpointOptions)[ 0 ], Object.keys(this.endpointOptions));
@@ -45,7 +46,7 @@ export class SurvivalAnalysisView extends DG.ViewBase {
       this.covariates = covariatesChoices.value;
     });
 
-    let confIntChoices = ui.choiceInput('Confidence Interval', this.confIntervals[ 0 ], this.confIntervals);
+    let confIntChoices = ui.choiceInput('Confidence', this.confIntervals[ 0 ], this.confIntervals);
     confIntChoices.onChanged((v) => {
       this.confInterval = confIntChoices.value;
       this.updateSurvivalPlot();
@@ -54,18 +55,124 @@ export class SurvivalAnalysisView extends DG.ViewBase {
     this.updateStrataChoices();
     this.updatePlotCovariatesChoices();
 
-    let applyFilters = ui.bigButton('Apply to curves', () => { 
+    let applyFilters = ui.button('Apply to curves', () => { 
       this.updateSurvivalPlot();
       if (this.plotCovariates) {
         this.updateCovariatesPlot();
       }
     });
 
-    let createSurvivalDataframe = ui.bigButton('Create', () => { 
+    let createSurvivalDataframe = ui.bigButton('Create dataset', () => { 
      this.refreshDataframe();
     });
 
+    let customTitle = {style:{
+      'color':'var(--grey-6)',
+      'margin-top':'8px',
+      'font-size':'16px',
+    }};
+
       this.root.className = 'grok-view ui-box';
+      this.setRibbonPanels([
+        [
+          ui.icons.info(()=>{
+            guide.innerHTML = '';
+            guide.append(ui.info(`1. Select dataset paramenters and click 'Create dataset'
+            2. Filter data and apply them to curves. Click on 'Apply to curves',
+            3. Set the survival chart parameters. To see the chart clicn on 'Survival Chart' tab on right.
+            4. Set the co-variates. On the right click on 'Co-Variates' tab for see them.
+            `,'Survival Analysis Quick Guide', false))
+          })
+        ]
+      ])
+
+      let guide = ui.info(`1. Select dataset paramenters and click 'Create dataset'
+      2. Filter data and apply them to curves. Click on 'Apply to curves',
+      3. Set the survival chart parameters. To see the chart clicn on 'Survival Chart' tab on right.
+      4. Set the co-variates. On the right click on 'Co-Variates' tab for see them.
+      `,'Survival Analysis Quick Guide', false);
+      this.root.append(ui.splitV([
+        guide,
+        ui.splitH([
+          ui.box(ui.div([
+            ui.panel([
+              ui.divText('Dataset', customTitle),
+              ui.inputs([ 
+                endpointChoices,
+                covariatesChoices,
+                //@ts-ignore
+                ui.buttonsInput([createSurvivalDataframe])
+              ])
+            ]),
+            ui.panel([
+              ui.divText('Survival Parameters', customTitle),
+              ui.inputs([ 
+                confIntChoices,
+                //@ts-ignore
+                this.strataChoicesDiv,
+              ])
+            ]),
+            ui.panel([
+              ui.divText('Co-Variates', customTitle),
+              ui.inputs([ 
+                //@ts-ignore
+                this.plotCovariatesChoicesDiv
+              ])
+            ])
+          ]), { style: { maxWidth: '300px' }}),
+          ui.tabControl({
+            'Dataset': ui.splitV([this.survivalFilterDiv, this.survivalGridDivCreate]),
+            'Survival Chart': ()=>{
+              return this.survivalPlotDiv
+            },
+            'Co-Variates': ()=>{
+              return this.covariatesPlotDiv
+            }
+          }).root
+        ])
+      ]))
+      //@ts-ignore
+      guide.parentNode.style.flexGrow = '0';
+      //@ts-ignore
+      guide.parentNode.classList = 'ui-div';
+
+      /*
+      this.root.append( ui.tabControl({
+        '1. Dataset': ui.splitH([
+          ui.box(ui.panel([
+            ui.inputs([ 
+              endpointChoices,
+              covariatesChoices,
+              //@ts-ignore
+              ui.buttonsInput([createSurvivalDataframe, applyFilters])
+            ])
+          ]), { style: { maxWidth: '300px' }}),
+          this.survivalGridDivCreate,
+          this.survivalFilterDiv,
+        ]),
+        '2. Results': ui.splitV([
+          ui.splitH([
+            ui.box(ui.panel([
+              ui.h1('Survival data'),
+              ui.inputs([ 
+                confIntChoices,
+                //@ts-ignore
+                this.strataChoicesDiv
+              ])
+            ])),
+            ui.box(ui.panel([
+              ui.h1('Co-variates'),
+              this.plotCovariatesChoicesDiv
+            ])),
+         ] , { style: { maxHeight: '150px' } }),
+          ui.splitH([
+            this.survivalPlotDiv,
+            this.covariatesPlotDiv 
+          ])
+        ]),
+      }).root)
+      */
+      /*
       this.root.append(
         ui.tabControl({
           'Create dataset':
@@ -98,7 +205,7 @@ export class SurvivalAnalysisView extends DG.ViewBase {
               ]), { style: { maxWidth: '180px' } }),
               this.covariatesPlotDiv ])
         }).root
-      );
+      );*/
 
   }
 
@@ -115,7 +222,9 @@ export class SurvivalAnalysisView extends DG.ViewBase {
       "confInt": this.confInterval.toString()
     }).then((result) => {
       //@ts-ignore
-      this.updateDivInnerHTML(this.survivalPlotDiv, ui.image(`data:image/png;base64,${result[ 'plot' ]}`));
+      let img = ui.image(`data:image/png;base64,${result[ 'plot' ]}`);
+      //img.style.backgroundPosition = 'top'
+      this.updateDivInnerHTML(this.survivalPlotDiv, img);
       console.warn(dataframeContentToRow(result[ 'diagnostics' ]));
     });
   }
@@ -127,7 +236,9 @@ export class SurvivalAnalysisView extends DG.ViewBase {
       "coVariates": this.plotCovariates.join(' + ')
     }).then((result) => {
       //@ts-ignore
-      this.updateDivInnerHTML(this.covariatesPlotDiv, ui.image(`data:image/png;base64,${result[ 'plot' ]}`));
+      let img = ui.image(`data:image/png;base64,${result[ 'plot' ]}`);
+      //img.style.backgroundPosition = 'top'
+      this.updateDivInnerHTML(this.covariatesPlotDiv, img);
       console.warn(dataframeContentToRow(result[ 'diagnostics' ]));
     });
   }

@@ -5,8 +5,9 @@ import { study, ClinRow } from "../clinical-study";
 
 export class AdverseEventsView extends DG.ViewBase {
 
-  constructor() {
-    super();
+  constructor(name) {
+    super(name);
+    this.name = name;
 
     let viewerTitle = {style:{
       'color':'var(--grey-6)',
@@ -23,7 +24,7 @@ export class AdverseEventsView extends DG.ViewBase {
     }
 
     let typesPlot = bar('AEDECOD','Types');
-    let bodySystemsPlot = bar('AEBODSYS', 'Body System');
+    let bodySystemsPlot = bar('AEBODSYS', 'Body system');
     let causalityPlot = bar('AEREL', 'Causality');
     let outcomePlot = bar('AEOUT', 'Outcome');
 
@@ -35,7 +36,7 @@ export class AdverseEventsView extends DG.ViewBase {
       split: 'AESEV',
       style: 'dashboard' }).root;
 
-    timelinesPlot.prepend(ui.divText('Events per Week', viewerTitle));
+    timelinesPlot.prepend(ui.divText('Events per week', viewerTitle));
 
     let scatterPlot = study.domains.ae.plot.scatter({
       x: 'AESTDY',
@@ -46,7 +47,7 @@ export class AdverseEventsView extends DG.ViewBase {
       style: 'dashboard'
     }).root;
 
-    scatterPlot.prepend(ui.divText('All Events', viewerTitle))
+    scatterPlot.prepend(ui.divText('All events', viewerTitle))
 
     let grid = study.domains.ae.plot.grid();
     study.domains.ae.onCurrentRowChanged.subscribe((_) => {

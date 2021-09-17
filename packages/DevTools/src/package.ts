@@ -27,8 +27,8 @@ function getGroupInput(type: string): HTMLElement {
   return inp.root;
 }
 
-function format(s): string {
-  s = s.replaceAll('-', ' ');
+function format(s: string): string {
+  s = s.replace(/-/g, ' ');
   return s[0].toUpperCase() + s.slice(1);
 }
 

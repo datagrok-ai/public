@@ -8,9 +8,9 @@ export class AERiskAssessmentView extends DG.ViewBase {
 
   riskAssessmentDataframe: DG.DataFrame;
 
-  constructor() {
-    super();
-
+  constructor(name) {
+    super(name);
+    this.name = name;
     this.riskAssessmentDataframe = createAERiskAssessmentDataframe(study.domains.ae, study.domains.ex);
     let grid = this.riskAssessmentDataframe.plot.grid();
    
