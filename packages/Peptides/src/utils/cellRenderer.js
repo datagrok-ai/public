@@ -1,3 +1,5 @@
+import {ChemPalette} from './chemPalette';
+
 export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
   get name() {
     return 'alignedSequenceCR';
@@ -12,7 +14,7 @@ export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
     g.textBaseline = 'top';
     let s = gridCell.cell.value;
 
-    let cp = ChemPalette.get_datagrock()
+    let cp = ChemPalette.get_datagrok()
     console.error(cp)
     g.font = '13px monospace';
     for (let i = 0; i < Math.max(s.length, 3); i++) {
