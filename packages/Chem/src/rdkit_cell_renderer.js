@@ -19,12 +19,11 @@ class RDKitCellRenderer extends DG.GridCellRenderer {
       obj.canvas = null;
       obj = null;
     }
-    this.WHITE_MOLBLOCK = `
-Actelion Java MolfileCreator 1.0
-
+    this.WHITE_MOLBLOCK_SUFFIX = `
   0  0  0  0  0  0  0  0  0  0999 V2000
 M  END
 `;
+
   }
 
   get name() { return 'RDKit cell renderer'; }
@@ -87,7 +86,7 @@ M  END
           "In _fetchMolGetOrCreate: RDKit crashed, possibly a malformed molString molecule: `" + molString + "`");
       }
     }
-    return { mol: mol, substruct: JSON.parse(substructJson) };
+    return { mol: mol, substruct: JSON.parse(substructJson), molString: molString, scaffoldMolString: scaffoldMolString };
   }
 
   _fetchMol(molString, scaffoldMolString, molRegenerateCoords, scaffoldRegenerateCoords) {
@@ -163,6 +162,7 @@ M  END
                 molString, scaffoldMolString, highlightScaffold,
                 molRegenerateCoords, scaffoldRegenerateCoords) {
 
+
     const r = window.devicePixelRatio;
     x = r * x; y = r * y;
     w = r * w; h = r * h;
@@ -177,8 +177,8 @@ M  END
   _initScaffoldString(colTags, tagName) {
 
     let scaffoldString = colTags ? colTags[tagName] : null;
-    if (scaffoldString  === this.WHITE_MOLBLOCK) {
-      scaffoldString  = null;
+    if (scaffoldString?.endsWith(this.WHITE_MOLBLOCK_SUFFIX)) {
+      scaffoldString = null;
       if (colTags[tagName]) {
         delete colTags[tagName];
       }
@@ -202,7 +202,7 @@ M  END
     let colTags = gridCell.cell.column.tags;
 
     const singleScaffoldHighlightMolString = this._initScaffoldString(colTags, 'chem-scaffold');
-    const singleScaffoldFilterMolString = this._initScaffoldString(colTags, 'chem-scaffold-filter');
+    const singleScaffoldFilterMolString = this._initScaffoldString(colTags, 'chem-scaffold-filter'); // expected a molBlock
     const singleScaffoldMolString = singleScaffoldFilterMolString ?? singleScaffoldHighlightMolString;
     // TODO: make both filtering scaffold and single highlight scaffold appear
     

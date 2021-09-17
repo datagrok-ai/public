@@ -22,10 +22,16 @@ export class OpenChemLibSketcher extends grok.chem.SketcherBase {
       this.onChanged.next(null);
     });
   }
+  
+  get supportedExportFormats() {
+    return ['smiles', 'mol'];
+  }
 
   get smiles() { return this._sketcher.getSmiles(); }
   set smiles(s) { this._sketcher.setSmiles(s); }
 
   get molFile() { return this._sketcher.getMolFile(); }
   set molFile(s) { this._sketcher.setMolFile(s); }
+  
+  
 }
