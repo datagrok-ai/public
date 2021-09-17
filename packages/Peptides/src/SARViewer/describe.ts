@@ -26,7 +26,7 @@ export async function describe(
   df: DG.DataFrame,
   activityColumn: string,
   activityScaling: string
-  ): Promise<DG.Grid | null> {
+  ): Promise<DG.Viewer | null> {
   //Split the aligned sequence into separate AARs
   let splitSeqDf: DG.DataFrame | undefined;
   for (const col of df.columns) {
@@ -47,14 +47,14 @@ export async function describe(
 
   switch (activityScaling) {
   case 'ln':
-    await splitSeqDf.columns.addNewCalculated('ln', 'Ln(${' + activityColumn + '})');
+    await splitSeqDf.columns.addNewCalculated('lg', 'Log10(${' + activityColumn + '})');
     splitSeqDf.columns.remove(activityColumn);
-    splitSeqDf.getCol('ln').name = activityColumn;
+    splitSeqDf.getCol('lg').name = activityColumn;
     break;
   case '-ln':
-    await splitSeqDf.columns.addNewCalculated('-ln', '-1*Ln(${' + activityColumn + '})');
+    await splitSeqDf.columns.addNewCalculated('-lg', '-1*Log10(${' + activityColumn + '})');
     splitSeqDf.columns.remove(activityColumn);
-    splitSeqDf.getCol('-ln').name = activityColumn;
+    splitSeqDf.getCol('-lg').name = activityColumn;
     break;
   default:
     break;
@@ -103,6 +103,7 @@ export async function describe(
   const statsDf = matrixDf.clone();
 
   //pivot a table to make it matrix-like
+  //TODO: contain medians so that it's easier to draw histogram and query ratio for circle sizes
   matrixDf = matrixDf.groupBy([aminoAcidResidue])
     .pivot(positionColName)
     .add('first', 'ratio', '')
