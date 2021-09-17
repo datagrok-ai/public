@@ -86,6 +86,7 @@ export function analyzePeptides(col: DG.Column): DG.Widget {
   const activityColumnChoice = ui.columnInput('Activity column', col.dataFrame, col);
   const activityScalingMethod = ui.choiceInput('Activity scaling', 'none', ['none', 'lg', '-lg']);
   const showHistogram = ui.boolInput('Show histogram', false);
+  
   const startBtn = ui.button('Start', async () => {
     const peptidesView = grok.shell.v;
     if (peptidesView.type === DG.VIEW_TYPE.TABLE_VIEW) {
@@ -94,11 +95,7 @@ export function analyzePeptides(col: DG.Column): DG.Widget {
         'activityScalingMethod': activityScalingMethod.value,
         'showHistogram': showHistogram.value
       };
-      // @ts-ignore: I know what I'm doing!
-      // peptidesView.addViewer('SARViewer', options);
-
-      const sarViewer = await col.dataFrame.plot.fromType('SARViewer', options);
-      (<DG.TableView>peptidesView).addViewer(<DG.Viewer>sarViewer);
+      (<DG.TableView>peptidesView).addViewer('SARViewer', options);
     }
   });
   return new DG.Widget(ui.divV([activityColumnChoice.root, activityScalingMethod.root, showHistogram.root, startBtn]));
