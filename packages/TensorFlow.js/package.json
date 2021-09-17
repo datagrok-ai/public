@@ -7,7 +7,7 @@
 	"dependencies": {
 		"@tensorflow/tfjs": "latest",
 		"cash-dom": "latest",
-		"datagrok-api": "latest",
+		"datagrok-api": "../../js-api",
 		"dayjs": "latest",
 		"jszip": "latest",
 		"jszip-sync": "^3.2.1-sync"
