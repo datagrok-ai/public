@@ -6,13 +6,15 @@ export class SARViewer extends DG.JsViewer {
   initialized: boolean;
   activityColumnColumnName: string;
   activityScalingMethod: string;
+  // showHistogram: boolean;
   // duplicatesHandingMethod: string;
   constructor() {
     super();
 
     //TODO: find a way to restrict activityColumnColumnName to accept only numerical columns (double even better)
     this.activityColumnColumnName = this.string('activityColumnColumnName');
-    this.activityScalingMethod = this.string('activityScalingMethod', 'none', {choices: ['none', 'ln', '-ln']});
+    this.activityScalingMethod = this.string('activityScalingMethod', 'none', {choices: ['none', 'lg', '-lg']});
+    // this.showHistogram = this.bool('showHistogram', false);
     // this.duplicatesHandingMethod = this.string('duplicatesHandlingMethod', 'median', {choices: ['median']});
 
     this.initialized = false;
