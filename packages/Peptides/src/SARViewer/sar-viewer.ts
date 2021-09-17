@@ -1,4 +1,3 @@
-import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {describe} from './describe';
 
@@ -6,7 +5,7 @@ export class SARViewer extends DG.JsViewer {
   initialized: boolean;
   activityColumnColumnName: string;
   activityScalingMethod: string;
-  // showHistogram: boolean;
+  showHistogram: boolean;
   // duplicatesHandingMethod: string;
   constructor() {
     super();
@@ -14,7 +13,7 @@ export class SARViewer extends DG.JsViewer {
     //TODO: find a way to restrict activityColumnColumnName to accept only numerical columns (double even better)
     this.activityColumnColumnName = this.string('activityColumnColumnName');
     this.activityScalingMethod = this.string('activityScalingMethod', 'none', {choices: ['none', 'lg', '-lg']});
-    // this.showHistogram = this.bool('showHistogram', false);
+    this.showHistogram = this.bool('showHistogram', false);
     // this.duplicatesHandingMethod = this.string('duplicatesHandlingMethod', 'median', {choices: ['median']});
 
     this.initialized = false;
@@ -60,6 +59,10 @@ export class SARViewer extends DG.JsViewer {
 
       if (grid !== null) {
         this.root.appendChild(grid.root);
+
+        if (this.showHistogram) {
+          this.root.appendChild(grid.table.plot.histogram().root);
+        }
       }
     }
   }
