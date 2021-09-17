@@ -34,6 +34,7 @@ export class ViewBase {
     if (createHost)
       this.d = api.grok_View_CreateJsViewHost(this);
 
+    this._name = 'New view';
     this._root = ui.panel([], 'grok-view');
     this._root.tabIndex = 0;
 
