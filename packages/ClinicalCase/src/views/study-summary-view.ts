@@ -12,10 +12,11 @@ export class StudySummaryView extends DG.ViewBase {
  errorsByDomain: any;
  errorsByDomainWithLinks: any;
 
- constructor() {
-    super();
+ constructor(name) {
+    super(name);
 
-    this.name = study.name;
+    this.name = name;
+
     const errorsMap = this.createErrorsMap();
     this.errorsByDomain = errorsMap.withCount;
     this.errorsByDomainWithLinks = errorsMap.withLinks;
@@ -57,10 +58,10 @@ export class StudySummaryView extends DG.ViewBase {
       'font-size':'16px',
     }};
     
-    lc.root.prepend(ui.divText('Enrollment', viewerTitle));
+    lc.root.prepend(ui.divText('Enrollment by day', viewerTitle));
 
     let arm = study.domains.dm.plot.bar( { split: 'arm', style: 'dashboard' });
-    arm.root.prepend(ui.divText('Arm', viewerTitle));
+    arm.root.prepend(ui.divText('Arm treatment', viewerTitle));
 
     let sex = DG.Viewer.barChart(study.domains.dm, { split: 'sex', style: 'dashboard' });
     sex.root.prepend(ui.divText('Sex', viewerTitle));
@@ -75,22 +76,14 @@ export class StudySummaryView extends DG.ViewBase {
     this.root.append(ui.splitV([
       ui.splitH([
         ui.panel([
-          ui.divText('Subjects',{style:{color:'var(--grey-4)'}}),
-          ui.divText(study.subjectsCount.toString(), summaryStyle)
+          ui.divText('Summary', summaryStyle),
+          summary
         ]),
         ui.panel([
-          ui.divText('Sites',{style:{color:'var(--grey-4)'}}),
-          ui.divText(study.sitesCount.toString(), summaryStyle)
+          ui.divText('Errors', summaryStyle),
+          errorsSummary
         ]),
-        ui.panel([
-          ui.divText('Errors AE',{style:{color:'var(--grey-4)'}}),
-          ui.div(this.errorsByDomainWithLinks.ae, summaryStyle)
-        ]),
-        ui.panel([
-          ui.divText('Errors DM',{style:{color:'var(--grey-4)'}}),
-          ui.div(this.errorsByDomainWithLinks.dm, summaryStyle)
-        ]),
-      ], {style:{maxHeight:'70px'}}),
+      ], {style:{maxHeight:'105px'}}),
       lc.root,
       ui.splitH([
         arm.root,
@@ -99,28 +92,6 @@ export class StudySummaryView extends DG.ViewBase {
         age.root
       ])
     ]))
-    /*
-    this.root.appendChild(ui.div([
-      ui.divH([
-        ui.block50([
-          ui.divH([
-            ui.block50([ui.h2('Summary'), summary]),
-            ui.block50([ui.h2('Errors'), errorsSummary]),
-          ]),
-          ui.divV([
-            ui.h2('Survival chart'),
-            kaplanMeierPlot.root
-          ]),
-        ]),
-        ui.block50([ui.h2('Enrollment'), lc.root])
-      ]),
-      ui.divH([
-        ui.block25([ui.h2('ARM'), study.domains.dm.plot.bar( { split: 'arm', style: 'dashboard' }).root]),
-        ui.block25([ui.h2('Sex'), DG.Viewer.barChart(study.domains.dm, { split: 'sex', style: 'dashboard' }).root]),
-        ui.block25([ui.h2('Race'), DG.Viewer.barChart(study.domains.dm, { split: 'race', style: 'dashboard' }).root]),
-        ui.block25([ui.h2('Age'), DG.Viewer.histogram(study.domains.dm, { value: 'age', style: 'dashboard' }).root]),
-      ], { style: { width: '100%' } }),
-    ]));*/
   }
 
   private createErrorsMap() {

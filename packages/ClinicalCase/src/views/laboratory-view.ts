@@ -9,8 +9,9 @@ import { getUniqueValues } from '../data-preparation/utils';
 
 export class LaboratoryView extends DG.ViewBase {
 
-  constructor() {
-    super();
+  constructor(name) {
+    super(name);
+    this.name = name;
     let lb = study.domains.lb;
     let dm = study.domains.dm;
 
@@ -89,17 +90,17 @@ export class LaboratoryView extends DG.ViewBase {
       ui.splitH([
 
         ui.divV([
-          ui.divText('Hy\'s Law Chart', viewerTitle)
+          ui.divText('Hy\'s law chart', viewerTitle)
         ],{style:{justifyContent:'flex-end'}}),
         ui.divV([
           ui.divH([
-            ui.divText('Baseline Endpoint with LLN/ULN', viewerTitle),
-            ui.iconFA('cog',()=>{
+            ui.divText('Baseline endpoint with LLN/ULN', viewerTitle),
+            ui.icons.settings(()=>{
               let dlg = ui.dialog('Parameters').add(ui.inputs([labValueChoices,blVisitChoices,epVisitChoices]));
               //@ts-ignore
               dlg.show({centerAt:baselineEndpointDiv});
-              //dlg.root.lastChild.remove();
-            })
+              dlg.root.lastChild.remove();
+            },'Set the parameters')
           ],{style:{alignItems:'center'}})
         ],{style:{justifyContent:'flex-end'}})  
 
@@ -117,12 +118,12 @@ export class LaboratoryView extends DG.ViewBase {
         ui.divV([
           ui.divH([
             ui.divText('Laboratory results distribution', viewerTitle),
-            ui.iconFA('cog',()=>{
+            ui.icons.settings(()=>{
               let dlg = ui.dialog('Parameters').add(ui.inputs([labValueChoicesBoxPlot,treatmentArmsChoices]));
               //@ts-ignore
               dlg.show({centerAt:distributionDiv});
-              //dlg.root.lastChild.remove();
-            })
+              dlg.root.lastChild.remove();
+            }, 'Set the parameters')
           ],{style:{alignItems:'center'}})
         ],{style:{justifyContent:'flex-end'}})  
 

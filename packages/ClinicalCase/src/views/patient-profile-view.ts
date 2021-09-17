@@ -114,11 +114,13 @@ export class PatientProfileView extends DG.ViewBase {
   tables = {};
   multiplot_lb_ae_ex_cm: any;
 
-  constructor() {
-    super();
+  constructor(name) {
+    super(name);
+
+    this.name = name;
 
     let patientIds = Array.from(getUniqueValues(study.domains.dm, 'USUBJID'));
-    let patienIdBoxPlot = ui.choiceInput('Patient Id', patientIds[ 0 ], patientIds);
+    let patienIdBoxPlot = ui.choiceInput('', patientIds[ 0 ], patientIds);
     patienIdBoxPlot.onChanged((v) => {
       this.createTablesToAttach(patienIdBoxPlot.value);
       this.attachTablesToMultiplot(this.multiplot_lb_ae_ex_cm, this.options_lb_ae_ex_cm, [ 'lb', 'ae', 'ex', 'cm' ]);
@@ -136,14 +138,43 @@ export class PatientProfileView extends DG.ViewBase {
       this.multiplot_lb_ae_ex_cm = v;
       this.attachTablesToMultiplot(this.multiplot_lb_ae_ex_cm, this.options_lb_ae_ex_cm, [ 'lb', 'ae', 'ex', 'cm' ]);
       this.multiplot_lb_ae_ex_cm.updatePlotByCategory(0, this.options_lb_ae_ex_cm.series[0].edit.selectedValues, false); //to clear scattr plot after creation
-      
-      this.root.className = 'grok-view ui-box';
-      this.root.appendChild(
-        ui.splitV([
-          ui.box(ui.panel([patienIdBoxPlot.root]), {style:{maxHeight:'45px'}}),
-          this.multiplot_lb_ae_ex_cm.root,
-        ])
-      );
+      this.setRibbonPanels([
+        [
+          ui.iconFA('chevron-left',()=>{
+            //@ts-ignore
+            let current = patienIdBoxPlot.input.selectedIndex;
+            if (current!=0){
+              current--;
+              //@ts-ignore
+              patienIdBoxPlot.value = patienIdBoxPlot.input.options[current].value;
+              //@ts-ignore
+              patienIdBoxPlot.input.selectedIndex = current
+              patienIdBoxPlot.fireChanged();
+            }
+          }),
+        ],
+        [
+          patienIdBoxPlot.root
+        ],
+        [
+          ui.iconFA('chevron-right',()=>{
+            //@ts-ignore
+            let current = patienIdBoxPlot.input.selectedIndex;
+            //@ts-ignore
+            let length = patienIdBoxPlot.input.length;
+            if (current!=length){
+              current++;
+              //@ts-ignore
+              patienIdBoxPlot.value = patienIdBoxPlot.input.options[current].value;
+              //@ts-ignore
+              patienIdBoxPlot.input.selectedIndex = current
+              patienIdBoxPlot.fireChanged();
+            }
+          })  
+        ]
+      ]);
+      this.root.className = 'grok-view ui-box';  
+      this.root.appendChild(this.multiplot_lb_ae_ex_cm.root);
 
     });
   }
