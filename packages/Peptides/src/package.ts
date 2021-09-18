@@ -2,8 +2,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {SARViewer} from './SARViewer/sar-viewer';
-import {AlignedSequenceCellRenderer} from './utils/cellRenderer'
+import {SARViewer} from './peptide-sar-viewer/sar-viewer';
+import {AlignedSequenceCellRenderer} from './utils/cell-renderer'
 
 export const _package = new DG.Package();
 
@@ -95,7 +95,7 @@ export function analyzePeptides(col: DG.Column): DG.Widget {
         'showHistogram': showHistogram.value
       };
       // @ts-ignore: I know what I'm doing!
-      // peptidesView.addViewer('SARViewer', options);
+      // peptidesView.addViewer('peptide-sar-viewer', options);
 
       const sarViewer = await col.dataFrame.plot.fromType('SARViewer', options);
       (<DG.TableView>peptidesView).addViewer(<DG.Viewer>sarViewer);
@@ -104,7 +104,7 @@ export function analyzePeptides(col: DG.Column): DG.Widget {
   return new DG.Widget(ui.divV([activityColumnChoice.root, activityScalingMethod.root, showHistogram.root, startBtn]));
 }
 
-//name: SARViewer
+//name: peptide-sar-viewer
 //description: Peptides SAR Viewer
 //tags: viewer
 //output: viewer result
