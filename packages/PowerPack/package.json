@@ -29,7 +29,7 @@
 		{
 			"name": "searchTemplatesPath",
 			"propertyType": "string",
-			"defaultValue": "RDKit",
+			"defaultValue": "Admin:Home/templates",
 			"nullable": false
 		}
 	]
