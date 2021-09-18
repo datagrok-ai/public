@@ -15,6 +15,10 @@
       "error",
       2
     ],
+    "max-len": [
+      "error",
+      120
+    ],
     "require-jsdoc": "off",
     "spaced-comment": "off"
   }
