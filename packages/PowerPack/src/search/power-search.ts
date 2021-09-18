@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {WebWidget} from "../widgets/web-widget";
 import {DataQuery} from "datagrok-api/dg";
 import {widgetHost} from "../utils";
-import {_package} from "../../../Peptides/src/package";
+import {_package} from "../package";
 
 // Power Search: community-curated, template-based, widget-driven search engine
 
@@ -125,15 +125,21 @@ function specificWidgetsSearch(s: string, host: HTMLDivElement): void {
 }
 
 async function initTemplates(): Promise<void> {
-  //let templatesPath = (await _package.getProperties()).get('searchTemplatesPath');
-  let templatesPath = `${grok.shell.user.name}:Home/templates`;
+  let templatesPath = (await _package.getProperties()).get('searchTemplatesPath');
+  //let templatesPath = `${grok.shell.user.name}:Home/templates`;
 
-  let files = await grok.dapi.files.list(templatesPath, false, null);
-  for (let file of files) {
-    let s = await file.readAsString();
-    let collection: any = JSON.parse(s);
-    for (let template of collection.templates)
-      templates.push(template);
+  for (let path in templatesPath.split(';')) {
+    //if (await grok.dapi.files.exists(path)) {
+    if (true) {
+      let files = await grok.dapi.files.list(templatesPath, false, null);
+
+      for (let file of files) {
+        let s = await file.readAsString();
+        let collection: any = JSON.parse(s);
+        for (let template of collection.templates)
+          templates.push(template);
+      }
+    }
   }
 
   console.log(templates);
