@@ -671,7 +671,7 @@ export class MultiPlotViewer extends DG.JsViewer {
     });
 
     this.echart.on('mouseover', (params) => {
-      const iPlot : number = this.visibleIndexes[params.componentIndex];
+      const iPlot : number = this.echartOptions.series[params.componentIndex].gridIndex;
       const table : DG.DataFrame = this.tables[this.plots[iPlot].tableName];
       const subjBuf = this.plots[iPlot];
       const x = (params.event.event as MouseEvent).x + this.tooltipOffset;
@@ -683,7 +683,7 @@ export class MultiPlotViewer extends DG.JsViewer {
       const val = params.value[1];
 
       if (params.componentType === 'yAxis') {
-        if (this.isGroup(params.componentIndex, params.componentType)) {
+        if (this.isGroup(iPlot, params.componentType)) {
           /* ui.tooltip.showRowGroup(table, (i) => {
             return params.value === this.plots[iPlot].subjects[this.plots[iPlot].subjBuf[i]];
           }, x, y); */
@@ -692,7 +692,7 @@ export class MultiPlotViewer extends DG.JsViewer {
       }
 
       if (params.componentType === 'series') {
-        if (!this.isGroup(params.componentIndex, '')) {
+        if (!this.isGroup(iPlot, '')) {
           ui.tooltip.show(ui.divV(
               (params.data as any[]).map((e, i) => ui.div([colNames[i] + ': ' + e + ''])),
           ), x, y);
