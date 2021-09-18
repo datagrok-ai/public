@@ -2,7 +2,6 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as grok from "datagrok-api/grok";
-import {divText} from "datagrok-api/ui";
 
 export class UsageWidget extends DG.Widget {
   caption: string;
@@ -11,7 +10,7 @@ export class UsageWidget extends DG.Widget {
   constructor() {
     super(ui.box());
    
-    let Summary = {
+    let Summary: any = {
       users: {
         today:'',
         week:'',
@@ -29,112 +28,79 @@ export class UsageWidget extends DG.Widget {
       }
     };
 
-    grok.data.query('UsageAnalysis:NewUsersEventsErrors')
-    .then((t) => {
-      for (let i = 0; i<3; i++){
-        if (t.get('counter_type', i) == 'users_count'){
-          Summary.users.today = t.get('day', i);
-          Summary.users.week = t.get('week', i);
-          Summary.users.month = t.get('month', i)
+    grok.data
+      .query('UsageAnalysis:NewUsersEventsErrors')
+      .then((t) => {
+        for (let i = 0; i < 3; i++) {
+          if (t.get('counter_type', i) == 'users_count') {
+            Summary.users.today = t.get('day', i);
+            Summary.users.week = t.get('week', i);
+            Summary.users.month = t.get('month', i)
+          }
+          if (t.get('counter_type', i) == 'events_count') {
+            Summary.events.today = t.get('day', i);
+            Summary.events.week = t.get('week', i);
+            Summary.events.month = t.get('month', i)
+          }
+          if (t.get('counter_type', i) == 'errors_count') {
+            Summary.errors.today = t.get('day', i);
+            Summary.errors.week = t.get('week', i);
+            Summary.errors.month = t.get('month', i)
+          }
         }
-        if (t.get('counter_type', i) == 'events_count'){
-          Summary.events.today = t.get('day', i);
-          Summary.events.week = t.get('week', i);
-          Summary.events.month = t.get('month', i)
-        }
-        if (t.get('counter_type', i) == 'errors_count'){
-          Summary.errors.today = t.get('day', i);
-          Summary.errors.week = t.get('week', i);
-          Summary.errors.month = t.get('month', i)
-        }
-      }
-      userStats.append(Summary.users.month);
-      eventsStats.append(Summary.events.month);
-      errorsStats.append(Summary.errors.month);
-    })
+        userStats.append(Summary.users.month);
+        eventsStats.append(Summary.events.month);
+        errorsStats.append(Summary.errors.month);
+      });
 
-    let period = ui.choiceInput('', 'Month', ['Today','Week','Month'], (v:string) => {
-      switch (v){
-        case 'Today':
-          console.log('Today');
-          usersChart.innerHTML = '';
-          usersChart.append(getNewUsers('2'));
-          eventsChart.innerHTML = '';
-          eventsChart.append(getNewEvents('2'));
-          errorsChart.innerHTML = '';
-          errorsChart.append(getNewErrors('2'));
-          userStats.innerHTML = '';
-          userStats.append(Summary.users.today)
-          eventsStats.innerHTML = '';
-          eventsStats.append(Summary.events.today)
-          errorsStats.innerHTML = '';
-          errorsStats.append(Summary.errors.today)
-          break;
-        case 'Week':
-          console.log('Week');
-          usersChart.innerHTML = '';
-          usersChart.append(getNewUsers('7'));
-          eventsChart.innerHTML = '';
-          eventsChart.append(getNewEvents('7'));
-          errorsChart.innerHTML = '';
-          errorsChart.append(getNewErrors('7'));
-          userStats.innerHTML = '';
-          userStats.append(Summary.users.week)
-          eventsStats.innerHTML = '';
-          eventsStats.append(Summary.events.week)
-          errorsStats.innerHTML = '';
-          errorsStats.append(Summary.errors.week)
-          break;
-        case 'Month':
-          console.log('Month');
-          usersChart.innerHTML = '';
-          usersChart.append(getNewUsers('30'));
-          eventsChart.innerHTML = '';
-          eventsChart.append(getNewEvents('30'));
-          errorsChart.innerHTML = '';
-          errorsChart.append(getNewErrors('30'));
-          userStats.innerHTML = '';
-          userStats.append(Summary.users.month)
-          eventsStats.innerHTML = '';
-          eventsStats.append(Summary.events.month)
-          errorsStats.innerHTML = '';
-          errorsStats.append(Summary.errors.month)
-          break;
+    let period = ui.choiceInput('', 'Month', ['Today','Week','Month'], (v: string) => {
+      const charts = [usersChart, eventsChart, errorsChart, userStats, eventsStats, errorsStats];
+      let days: Record<string, string> = {
+        'Today': '2',
+        'Week': '7',
+        'Month': '31'
       }
-        
-    })
+
+      charts.forEach((c) => c.innerHTML = '');
+      usersChart.append(getNewUsers(days[v]));
+      eventsChart.append(getNewEvents(days[v]));
+      errorsChart.append(getNewErrors(days[v]));
+      userStats.append(Summary.users[v.toLowerCase()])
+      eventsStats.append(Summary.events[v.toLowerCase()])
+      errorsStats.append(Summary.errors[v.toLowerCase()])
+    });
 
     let usersChart = ui.box();
     usersChart.style.margin = '0px 12px';
-    let userStats = ui.div([],{style:{color:'var(--grey-4)'}});
+    let userStats = ui.div([], {style: {color: 'var(--grey-4)'}});
     let users = ui.splitH([
       ui.box(ui.panel([
-        ui.divText('Users', {style:{marginBottom:'8px', fontWeight:'bold'}}),
+        ui.divText('Users', {style: {marginBottom: '8px', fontWeight: 'bold'}}),
         userStats
-      ]), {style:{maxWidth:'80px'}}),
-        usersChart
+      ]), {style: {maxWidth: '80px'}}),
+      usersChart
     ]);
 
     let eventsChart = ui.box();
     eventsChart.style.margin = '0px 12px';
-    let eventsStats = ui.div([],{style:{color:'var(--grey-4)'}});
+    let eventsStats = ui.div([], {style: {color: 'var(--grey-4)'}});
     let events = ui.splitH([
       ui.box(ui.panel([
-        ui.divText('Events', {style:{marginBottom:'8px', fontWeight:'bold'}}),
+        ui.divText('Events', {style: {marginBottom: '8px', fontWeight: 'bold'}}),
         eventsStats
-      ]), {style:{maxWidth:'80px'}}),
-        eventsChart
+      ]), {style: {maxWidth: '80px'}}),
+      eventsChart
     ]);
 
     let errorsChart = ui.box();
     errorsChart.style.margin = '0px 12px';
-    let errorsStats = ui.div([],{style:{color:'var(--grey-4)'}});
+    let errorsStats = ui.div([], {style: {color: 'var(--grey-4)'}});
     let errors = ui.splitH([
       ui.box(ui.panel([
-        ui.divText('Errors', {style:{marginBottom:'8px', fontWeight:'bold'}}),
+        ui.divText('Errors', {style: {marginBottom: '8px', fontWeight: 'bold'}}),
         errorsStats
-      ]), {style:{maxWidth:'80px'}}),
-        errorsChart
+      ]), {style: {maxWidth: '80px'}}),
+      errorsChart
     ]);
 
   
