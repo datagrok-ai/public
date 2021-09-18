@@ -211,4 +211,14 @@ export function createAERiskAssessmentDataframe(ae: DG.DataFrame, ex: DG.DataFra
 
 }
 
+export function addLabOutOfReferenceColumn(df: DG.DataFrame, lowerLimitCol: string, upperLimitCol: string, resCol: string, newColName: string) {
+  df.columns.addNewFloat(newColName)
+    .init((i) => {
+      if (df.getCol(lowerLimitCol).isNone(i) || df.getCol(upperLimitCol).isNone(i))
+        return null;
+      return parseFloat(df.get(resCol, i)) / ((parseFloat(df.get(lowerLimitCol, i) + parseFloat(df.get(upperLimitCol, i))) / 2));
+    });
+    return df;
+}
+
 

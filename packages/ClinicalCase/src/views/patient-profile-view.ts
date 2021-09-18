@@ -1,7 +1,7 @@
 import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
-import { addColumnWithDrugPlusDosage } from "../data-preparation/data-preparation";
+import { addColumnWithDrugPlusDosage, addLabOutOfReferenceColumn } from "../data-preparation/data-preparation";
 import { getUniqueValues } from "../data-preparation/utils";
 
 
@@ -41,9 +41,10 @@ export class PatientProfileView extends DG.ViewBase {
         tableName: 'patient_lb',
         title: 'Lab values line chart',
         type: 'line',
-        multi: true,
+        multiLineFieldIndex: 2,
         x: 'LBDY',
-        y: 'LBORRES',
+        y: 'LAB_DEVIATION',
+        extraFields: [ 'LBTEST', 'LBORRES', 'LBORNRLO', 'LBORNRHI' ],
         splitByColumnName: 'LBTEST',                    // get categories from this column
         categories: [ '' ],  // fixed categories
         maxLimit: 1,                                    // max number of linecharts 
@@ -53,7 +54,7 @@ export class PatientProfileView extends DG.ViewBase {
         show: 1,
         yLabelWidth: 50,
         yLabelOverflow: 'truncate',
-        edit: {values: Array.from(getUniqueValues(study.domains.lb, 'LBTEST')), selectedValues: ''}
+        edit: {multi: true, values: Array.from(getUniqueValues(study.domains.lb, 'LBTEST')), selectedValues: []}
       }, 
 
       // timeLines
@@ -202,6 +203,7 @@ export class PatientProfileView extends DG.ViewBase {
       })
     })
     this.tables[ 'ex' ] = addColumnWithDrugPlusDosage(this.tables[ 'ex' ], 'EXTRT', 'EXDOSE', 'EXDOSU', 'EXTRT_WITH_DOSE');
+    this.tables[ 'lb' ] = addLabOutOfReferenceColumn(this.tables[ 'lb' ], 'LBSTNRLO', 'LBSTNRHI', 'LBSTRESN', 'LAB_DEVIATION');
   }
 
   private extractMinAndMaxValuesForXAxis() {
