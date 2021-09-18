@@ -6,6 +6,7 @@ import { study } from "../clinical-study";
 import { TREATMENT_ARM } from "../constants";
 import { createSurvivalData } from "../data-preparation/data-preparation";
 import { dataframeContentToRow } from "../data-preparation/utils";
+import { updateDivInnerHTML } from "./utils";
 
 export class SurvivalAnalysisView extends DG.ViewBase {
 
@@ -209,11 +210,6 @@ export class SurvivalAnalysisView extends DG.ViewBase {
 
   }
 
-  private updateDivInnerHTML(div: HTMLDivElement, content: any){
-    div.innerHTML = '';
-    div.append(content);
-  }
-
   private updateSurvivalPlot() {
     grok.functions.call(
       "Clinicalcase:survivalPlot", {
@@ -222,9 +218,7 @@ export class SurvivalAnalysisView extends DG.ViewBase {
       "confInt": this.confInterval.toString()
     }).then((result) => {
       //@ts-ignore
-      let img = ui.image(`data:image/png;base64,${result[ 'plot' ]}`);
-      //img.style.backgroundPosition = 'top'
-      this.updateDivInnerHTML(this.survivalPlotDiv, img);
+      updateDivInnerHTML(this.survivalPlotDiv, ui.image(`data:image/png;base64,${result[ 'plot' ]}`));
       console.warn(dataframeContentToRow(result[ 'diagnostics' ]));
     });
   }
@@ -236,9 +230,7 @@ export class SurvivalAnalysisView extends DG.ViewBase {
       "coVariates": this.plotCovariates.join(' + ')
     }).then((result) => {
       //@ts-ignore
-      let img = ui.image(`data:image/png;base64,${result[ 'plot' ]}`);
-      //img.style.backgroundPosition = 'top'
-      this.updateDivInnerHTML(this.covariatesPlotDiv, img);
+      updateDivInnerHTML(this.covariatesPlotDiv, ui.image(`data:image/png;base64,${result[ 'plot' ]}`));
       console.warn(dataframeContentToRow(result[ 'diagnostics' ]));
     });
   }
@@ -273,11 +265,11 @@ export class SurvivalAnalysisView extends DG.ViewBase {
      this.strata = '';
      this.updateStrataChoices();
      this.updatePlotCovariatesChoices();
-     this.updateDivInnerHTML(this.strataChoicesDiv, this.strataChoices.root);
-     this.updateDivInnerHTML(this.plotCovariatesChoicesDiv, this.plotCovariatesChoices.root);
-     this.updateDivInnerHTML(this.survivalGridDivCreate, this.survivalDataframe.plot.grid().root);
-     this.updateDivInnerHTML(this.survivalGridDivFilter, this.survivalDataframe.plot.grid().root);
-     this.updateDivInnerHTML(this.survivalFilterDiv, this.getFilters());
+     updateDivInnerHTML(this.strataChoicesDiv, this.strataChoices.root);
+     updateDivInnerHTML(this.plotCovariatesChoicesDiv, this.plotCovariatesChoices.root);
+     updateDivInnerHTML(this.survivalGridDivCreate, this.survivalDataframe.plot.grid().root);
+     updateDivInnerHTML(this.survivalGridDivFilter, this.survivalDataframe.plot.grid().root);
+     updateDivInnerHTML(this.survivalFilterDiv, this.getFilters());
      this.updateSurvivalPlot();
   }
 }

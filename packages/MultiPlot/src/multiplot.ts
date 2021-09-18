@@ -52,9 +52,7 @@ export class MultiPlotViewer extends DG.JsViewer {
   private categoryLength : number = 9;
   private paramOptions : string = this.string('paramOptions', 'none22');
   private mode : string = 'none'; // 'brushSelected'
-  private options = {series: [
-
-  ]};
+  private options = {series: [], xAxisMinMax: {}};
 
   typeComboElements : HTMLElement[] = [];
   showHideElements : HTMLElement[] = [];
@@ -246,14 +244,16 @@ export class MultiPlotViewer extends DG.JsViewer {
       this.echartOptions.xAxis[visibleIndex].type = 'value';
       //    this.echartOptions.xAxis[i].axisTick = { inside: true, length: 1000 };
       this.echartOptions.xAxis[visibleIndex].show = false;
-      this.echartOptions.xAxis[visibleIndex].min = 0;
-      this.echartOptions.xAxis[visibleIndex].max = 200;
+      this.echartOptions.xAxis[visibleIndex].min = this.options.xAxisMinMax['minX'];
+      this.echartOptions.xAxis[visibleIndex].max = this.options.xAxisMinMax['maxX'];
       this.echartOptions.yAxis[visibleIndex].gridIndex = visibleIndex;
       this.echartOptions.yAxis[visibleIndex].type = this.plots[i].yType || 'value';
       this.echartOptions.yAxis[visibleIndex].show = this.plots[i].show;
       this.echartOptions.yAxis[visibleIndex].triggerEvent = true;
       this.echartOptions.yAxis[visibleIndex].axisLabel = {width: plot.yLabelWidth};
       this.echartOptions.yAxis[visibleIndex].axisLabel.overflow = plot.yLabelOverflow;
+      this.echartOptions.yAxis[visibleIndex].axisLine = {onZero: false};
+      this.echartOptions.yAxis[visibleIndex].axisTick = {alignWithLabel: true};
 
       let currentSeries = {
         type: this.plots[i].series.type,
