@@ -175,7 +175,7 @@ export function queriesSearch(s: string, host: HTMLDivElement): void {
   const varRegExp = new RegExp(varRegExpStr);
   const idRegExp = new RegExp('([a-zA-Z0-9_]+)');
   const byRegExp = new RegExp('by ([a-zA-Z0-9_]+)$');
-g
+
   let byColumn: string | null = null;
   if (byRegExp.test(s)) {
     let byMatches = byRegExp.exec(s);
