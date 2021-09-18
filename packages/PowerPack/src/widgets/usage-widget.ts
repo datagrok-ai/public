@@ -48,9 +48,9 @@ export class UsageWidget extends DG.Widget {
             Summary.errors.month = t.get('month', i)
           }
         }
-        userStats.append(Summary.users.month);
-        eventsStats.append(Summary.events.month);
-        errorsStats.append(Summary.errors.month);
+        userStats.appendChild(Summary.users.month);
+        eventsStats.appendChild(Summary.events.month);
+        errorsStats.appendChild(Summary.errors.month);
       });
 
     let period = ui.choiceInput('', 'Month', ['Today','Week','Month'], (v: string) => {
@@ -62,12 +62,12 @@ export class UsageWidget extends DG.Widget {
       }
 
       charts.forEach((c) => c.innerHTML = '');
-      usersChart.append(getNewUsers(days[v]));
-      eventsChart.append(getNewEvents(days[v]));
-      errorsChart.append(getNewErrors(days[v]));
-      userStats.append(Summary.users[v.toLowerCase()])
-      eventsStats.append(Summary.events[v.toLowerCase()])
-      errorsStats.append(Summary.errors[v.toLowerCase()])
+      usersChart.appendChild(getNewUsers(days[v]));
+      eventsChart.appendChild(getNewEvents(days[v]));
+      errorsChart.appendChild(getNewErrors(days[v]));
+      userStats.appendChild(Summary.users[v.toLowerCase()])
+      eventsStats.appendChild(Summary.events[v.toLowerCase()])
+      errorsStats.appendChild(Summary.errors[v.toLowerCase()])
     });
 
     let usersChart = ui.box();
@@ -104,11 +104,11 @@ export class UsageWidget extends DG.Widget {
     ]);
 
   
-    usersChart.append(getNewUsers('30'));
-    eventsChart.append(getNewEvents('30'));
-    errorsChart.append(getNewErrors('30'));
+    usersChart.appendChild(getNewUsers('30'));
+    eventsChart.appendChild(getNewEvents('30'));
+    errorsChart.appendChild(getNewErrors('30'));
 
-    this.root.append(ui.splitV([
+    this.root.appendChild(ui.splitV([
       ui.box(
         ui.divH([
           period.root,
@@ -184,7 +184,7 @@ function getNewUsers(days:string){
         .then((t) => {
           let chart1 = DG.Viewer.fromType('Line chart', t, usersChartStyle);
           chart1.root.style.maxHeight = '85px';
-          root.append(chart1.root)
+          root.appendChild(chart1.root)
         });
   return root;      
 }
@@ -195,7 +195,7 @@ function getNewEvents(days:string){
     .then((t) => {
         let chart2 = DG.Viewer.fromType('Line chart', t, eventsChartStyle);
         chart2.root.style.maxHeight = '85px';
-        root.append(chart2.root)
+        root.appendChild(chart2.root)
       }); 
   return root;      
 }
@@ -206,7 +206,7 @@ function getNewErrors(days:string){
     .then((t) => {
         let chart3 = DG.Viewer.fromType('Line chart', t, errorsChartStyle);
         chart3.root.style.maxHeight = '85px';
-        root.append(chart3.root)
+        root.appendChild(chart3.root)
       });
   return root;      
 }

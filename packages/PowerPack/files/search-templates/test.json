@@ -1,0 +1,45 @@
+{
+  "name": "Test",
+  "templates": [
+    {
+      "id": "kpi-test",
+      "name": "KPI Test",
+      "widget": "kpiWidget",
+      "templates": [
+        {
+          "template": "kpi ([0-9]+)",
+          "caption": "${1}"
+        }
+      ]
+    },
+    {
+      "id": "ticket-stock-price",
+      "name": "Stock Price",
+      "widget": "webWidget",
+      "templates": [
+        {
+          "template": "kpi ([0-9]+)",
+          "caption": "${1}"
+        }
+      ]
+    },
+    {
+      "id": "chembl-id-report-card",
+      "name": "Report card",
+      "widget": "webWidget",
+      "templates": [{
+        "template": "(CHEMBL[0-9]+)",
+        "url": "https://www.ebi.ac.uk/chembl/embed/#compound_report_card/${1}/name_and_classification"
+      }]
+    },
+    {
+      "id": "jtest",
+      "name": "Observability",
+      "widget": "webWidget",
+      "templates": [{
+        "template": "observability",
+        "url": "https://test.jrd-observability.apps.jnj.com/"
+      }]
+    }
+  ]
+}
