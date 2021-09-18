@@ -1,6 +1,43 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-09-17 Dev build 0.93.25
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.25`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Peptide cell renderer 
+* Peptides: color scheme for sequences (WIP)
+* Cron: support @reboot schedule 
+* (Bug) Bar Chart: "by category" sorting throws an exception 
+* update clinical cases UI 
+* Column context actions: take semantic types into account 
+* Packages: change the API source 
+* DevTools: a polyfill for replaceAll 
+* Peptides: scaling method replace ln -> lg 
+* Fixed Analyzer warning 
+* Fixed typo 
+* Removed old dependency 
+* lock files 
+* Barchart: Font changed to serif-sans, column numeration changed, current row highlighting added 
+* Peptides: renderer fix 
+* Updated public token 
+* Package Settings: don't show the settings editor when there are no properties to edit 
+* Peptides: added histogram and updated stats, scaling fix 
+* (Bug) Chem: External sketcher, filtering and SMARTS (WIP)
+* JS API: add missing toJs in package.getProperties() 
+* Wiki: package settings 
+* Peptides: AA sem type detector 
+* (Bug) DataSync: Do not set .query tag if no query was loaded 
+
+
 # 2021-09-16 Dev build 0.93.24
 
 ## Latest Docker Images
