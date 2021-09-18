@@ -97,12 +97,6 @@ export function kpiWidget(): DG.Widget {
   return new KpiWidget();
 }
 
-//output: widget kpi
-//tags: packageSettingsEditor
-export function powerPackSettingsEditor(): DG.Widget {
-  return new PowerPackSettingsEditor();
-}
-
 //description: Functions
 //tags: search
 //input: string s
