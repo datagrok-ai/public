@@ -1,6 +1,6 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {splitAlignedPeptides} from '../splitAligned';
+import {splitAlignedPeptides} from '../split-aligned';
 
 
 function decimalAdjust(type: 'floor' | 'ceil' | 'round', value: number, exp: number): number {
@@ -26,7 +26,7 @@ export async function describe(
   df: DG.DataFrame,
   activityColumn: string,
   activityScaling: string
-  ): Promise<DG.Grid | null> {
+  ): Promise<DG.Viewer | null> {
   //Split the aligned sequence into separate AARs
   let splitSeqDf: DG.DataFrame | undefined;
   for (const col of df.columns) {
@@ -45,16 +45,17 @@ export async function describe(
 
   splitSeqDf.columns.add(df.getCol(activityColumn));
 
+  // scale activity
   switch (activityScaling) {
-  case 'ln':
-    await splitSeqDf.columns.addNewCalculated('ln', 'Ln(${' + activityColumn + '})');
+  case 'lg':
+    await splitSeqDf.columns.addNewCalculated('lg', 'Log10(${' + activityColumn + '})');
     splitSeqDf.columns.remove(activityColumn);
-    splitSeqDf.getCol('ln').name = activityColumn;
+    splitSeqDf.getCol('lg').name = activityColumn;
     break;
-  case '-ln':
-    await splitSeqDf.columns.addNewCalculated('-ln', '-1*Ln(${' + activityColumn + '})');
+  case '-lg':
+    await splitSeqDf.columns.addNewCalculated('-lg', '-1*Log10(${' + activityColumn + '})');
     splitSeqDf.columns.remove(activityColumn);
-    splitSeqDf.getCol('-ln').name = activityColumn;
+    splitSeqDf.getCol('-lg').name = activityColumn;
     break;
   default:
     break;
@@ -62,7 +63,7 @@ export async function describe(
 
   const positionColName = 'position';
   const aminoAcidResidue = 'aminoAcidResidue';
-  const medianColName = 'med';
+  const medianColName = 'MAD';
 
   //unpivot a table and handle duplicates
   let matrixDf = splitSeqDf.groupBy(positionColumns)
@@ -74,38 +75,34 @@ export async function describe(
 
   //this table contains overall statistics on activity
   const totalStats = matrixDf.groupBy()
-    .add('med', activityColumn, medianColName)
+    .add('med', activityColumn, 'med')
     .aggregate();
+
+  //preparing for mad
+  await matrixDf.columns.addNewCalculated('innerMAD', 'Abs(${' + activityColumn + '}-' + totalStats.get('med', 0) + ')');
 
   //statistics for specific AAR at a specific position
   matrixDf = matrixDf.groupBy([positionColName, aminoAcidResidue])
-    .add('med', activityColumn, medianColName)
-    .add('avg', activityColumn, 'avg')
-    .add('min', activityColumn, 'min')
-    .add('max', activityColumn, 'max')
-    .add('q1', activityColumn, 'q1')
-    .add('q2', activityColumn, 'q2')
-    .add('q3', activityColumn, 'q3')
-    .add('count', activityColumn, 'count')
-    .add('variance', activityColumn, 'variance')
-    .add('skew', activityColumn, 'skew')
-    .add('kurt', activityColumn, 'kurt')
-    .add('stdev', activityColumn, 'stdev')
-    .add('sum', activityColumn, 'sum')
+    .add('count', activityColumn, 'Count')
+    .add('med', 'innerMAD', medianColName)
+    .add('q1', activityColumn, 'Q1')
+    .add('q2', activityColumn, 'Median')
+    .add('q3', activityColumn, 'Q3')
     .aggregate();
 
   // calculate additional stats
-  await matrixDf.columns.addNewCalculated('ratio', '${count}/'.concat(`${peptidesCount}`));
-  await matrixDf.columns.addNewCalculated('cv', '${stdev}/${avg}');
-  await matrixDf.columns.addNewCalculated('iqr', '${q3}-${q1}');
-  await matrixDf.getCol(medianColName).applyFormula('${med}-'.concat(`${totalStats.get(medianColName, 0)}`));
+  await matrixDf.columns.addNewCalculated('IQR', '${q3}-${q1}');
+  await matrixDf.columns.addNewCalculated('QD', '${iqr}/2');
+  await matrixDf.columns.addNewCalculated('CQV', '(${q3}-${q1})/(${q3}+${q1})');
+  await matrixDf.columns.addNewCalculated('Ratio', '${count}/'.concat(`${peptidesCount}`));
+  // await matrixDf.getCol(medianColName).applyFormula('${med}-'.concat(`${totalStats.get('med', 0)}`));
 
   const statsDf = matrixDf.clone();
 
   //pivot a table to make it matrix-like
   matrixDf = matrixDf.groupBy([aminoAcidResidue])
     .pivot(positionColName)
-    .add('first', 'ratio', '')
+    .add('first', medianColName, '')
     .aggregate();
   matrixDf.name = 'SAR';
 
@@ -119,7 +116,7 @@ export async function describe(
       args.g.fillText(
         args.cell.gridColumn.name,
         args.bounds.x + (args.bounds.width - textSize.width) / 2,
-        args.bounds.y + (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent),
+        args.bounds.y + (textSize.actualBoundingBoxAscent + textSize.actualBoundingBoxDescent),
       );
       args.g.fillStyle = '#4b4b4a';
       args.preventDefault();
@@ -131,16 +128,19 @@ export async function describe(
         args.g.fillText(
           args.cell.cell.value,
           args.bounds.x + (args.bounds.width - textSize.width) / 2,
-          args.bounds.y + (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent),
+          args.bounds.y + (textSize.actualBoundingBoxAscent + textSize.actualBoundingBoxDescent),
         );
         args.g.fillStyle = '#4b4b4a';
         args.preventDefault();
-      } else {
+      } else if (args.cell.cell.value !== null) {
+        const query = `${aminoAcidResidue} = ${matrixDf.get(aminoAcidResidue, args.cell.tableRowIndex)} and ${positionColName} = ${args.cell.tableColumn.name}`;
+        const ratio = statsDf.groupBy(['ratio']).where(query).aggregate().get('ratio', 0);
+
         args.g.beginPath();
         args.g.arc(
           args.bounds.x + args.bounds.width / 2,
           args.bounds.y + args.bounds.height / 2,
-          Math.ceil(10 * args.cell.cell.value),
+          Math.ceil(10 * ratio),
           0,
           Math.PI * 2,
           true,

@@ -1,4 +1,4 @@
-class ChemPalette {
+export class ChemPalette {
   static colourPalette: { [key: string]: string[] } = {
     "orange": ['rgb(255,187,120)', 'rgb(245,167,100)', 'rgb(235,137,70)', 'rgb(205, 111, 71)'],
     "all_green": ['rgb(44,160,44)', 'rgb(74,160,74)', 'rgb(23,103,57)', 'rgb(30,110,96)', 'rgb(60,131,95)', 'rgb(24,110,79)', 'rgb(152,223,138)', 'rgb(182, 223, 138)', 'rgb(152, 193, 138)'],
@@ -34,7 +34,7 @@ class ChemPalette {
     return palette;
   }
 
-  static get_datagrock = () => ChemPalette.make_palette([
+  static get_datagrok = () => ChemPalette.make_palette([
     [['C', 'U'], 'yellow'],
     [['G', 'P'], 'red'],
     [['A', 'V', 'I', 'L', 'M', 'F', 'Y', 'W'], 'all_green'],
