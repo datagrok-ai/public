@@ -255,81 +255,15 @@ export class MultiPlotViewer extends DG.JsViewer {
       this.echartOptions.yAxis[visibleIndex].axisLine = {onZero: false};
       this.echartOptions.yAxis[visibleIndex].axisTick = {alignWithLabel: true};
 
-      let currentSeries = {
-        type: this.plots[i].series.type,
-        show: this.plots[i].show,
-        large: true,
-        gridIndex: visibleIndex,
-        xAxisIndex: visibleIndex,
-        yAxisIndex: visibleIndex,
-        data: this.plots[i].series.data,
-        coordinateSystem: 'cartesian2d',
-        encode: {x: 0, y: 1},
-        selectedMode: 'multiple',
-        xAxis: {},
-        yAxis: {
-          type: plot.yType,
-        },
-        itemStyle: {},
-      };
 
-      if (plot.statusChart) {
-        currentSeries.itemStyle = {
-          color: this.getItemStyleColorFunc(plot.visualMap, plot),
-        };
+      if(plot.multiLineFieldIndex && plot.series.data.length){
+        plot.series.data.forEach(item => {
+          this.echartOptions.series.push(this.getCurrentSeries(plot, visibleIndex, i, plot.series.type, item))
+        })
+      } else {
+        this.echartOptions.series.push(this.getCurrentSeries(plot, visibleIndex, i, plot.series.type, plot.series.data));
       }
 
-      if (plot.visualMap) {
-        if (plot.visualMap.pieces) {
-          currentSeries.itemStyle = {
-            color: this.getItemStyleColorFunc(plot.visualMap, plot),
-          };
-        } else {
-          // if (plot.visualMap) {
-          // keep it to find is any execution ever happens here
-          debugger;
-          const map = plot.visualMap;
-          if (map.type === 'piecewise') {
-            const min = map.pieces[0].min;
-            const max = map.pieces[0].max;
-            map.pieces.push({max: min, color: this.paletteColors[0]});
-            map.pieces.push({min: max, color: this.paletteColors[0]});
-          }
-          map.seriesIndex = visibleIndex;
-          this.echartOptions.visualMap.push(map);
-          map.show = false;
-          // }
-        } // if visualMap.pieces
-      }
-
-      // trim categories and update trimmed data for plots with categories for Y axis
-      if (currentSeries.yAxis && currentSeries.yAxis.type === 'category') {
-        console.warn('plot with category ', i, plot);
-        console.log(this.plots[i].y);
-        const xCols = Array.isArray(plot.x) ? plot.x.length : 1;
-        plot.categoryColumnIndex = xCols;
-        this.plots[i].subjectCol = this.tables[this.plots[i].tableName].getCol(this.plots[i].y);
-        this.plots[i].subjects = this.plots[i].subjectCol.categories;
-       /*  this.plots[i].subjects = this.plots[i].subjects.map(
-            ((s : string) => {
-              return s.length > this.categoryLength ? s.substring(0, this.categoryLength) + '...' : s;
-            }),
-        ); */
-        this.plots[i].subjBuf = this.plots[i].subjectCol.getRawData();
-      }
-
-      if (this.plots[i].type === 'timeLine') {
-        this.plots[i].timeLinesSeries = this.initTimeLine(i, this);
-        currentSeries = this.plots[i].timeLinesSeries;
-        currentSeries.xAxisIndex = visibleIndex;
-        currentSeries.yAxisIndex = visibleIndex;
-        currentSeries.gridIndex = visibleIndex;
-        // currentSeries.encode = {x: [1, 2], y: 0};
-        this.echartOptions.xAxis[visibleIndex].type = 'value';
-        this.echartOptions.yAxis[visibleIndex].type = 'category';
-      }
-
-      this.echartOptions.series.push(currentSeries);
       this.visibleIndexes.push(i);
       visibleIndex++;
     } // for i<this.plots.length
@@ -349,6 +283,70 @@ export class MultiPlotViewer extends DG.JsViewer {
     this.echartOptions.xAxis[visibleIndex - 1].show = true;
     this.echartOptions.xAxis[visibleIndex - 1].type = 'value';
   } // updatePlots
+
+
+  getCurrentSeries(plot: any, visibleIndex: number, i: number, type: string, data: any) {
+    let currentSeries = {
+      type: type,
+      show: plot.show,
+      large: true,
+      gridIndex: visibleIndex,
+      xAxisIndex: visibleIndex,
+      yAxisIndex: visibleIndex,
+      data: data,
+      coordinateSystem: 'cartesian2d',
+      encode: { x: 0, y: 1 },
+      selectedMode: 'multiple',
+      xAxis: {},
+      yAxis: {
+        type: plot.yType,
+      },
+      itemStyle: {},
+    };
+
+    if (plot.statusChart) {
+      currentSeries.itemStyle = {
+        color: this.getItemStyleColorFunc(plot.visualMap, plot),
+      };
+    }
+
+    if (plot.visualMap) {
+      if (plot.visualMap.pieces) {
+        currentSeries.itemStyle = {
+          color: this.getItemStyleColorFunc(plot.visualMap, plot),
+        };
+      } else {
+        // if (plot.visualMap) {
+        // keep it to find is any execution ever happens here
+        debugger;
+        const map = plot.visualMap;
+        if (map.type === 'piecewise') {
+          const min = map.pieces[ 0 ].min;
+          const max = map.pieces[ 0 ].max;
+          map.pieces.push({ max: min, color: this.paletteColors[ 0 ] });
+          map.pieces.push({ min: max, color: this.paletteColors[ 0 ] });
+        }
+        map.seriesIndex = visibleIndex;
+        this.echartOptions.visualMap.push(map);
+        map.show = false;
+        // }
+      } // if visualMap.pieces
+    }
+
+    if (plot.type === 'timeLine') {
+      plot.timeLinesSeries = this.initTimeLine(i, this);
+      currentSeries = plot.timeLinesSeries;
+      currentSeries.xAxisIndex = visibleIndex;
+      currentSeries.yAxisIndex = visibleIndex;
+      currentSeries.gridIndex = visibleIndex;
+      // currentSeries.encode = {x: [1, 2], y: 0};
+      this.echartOptions.xAxis[ visibleIndex ].type = 'value';
+      this.echartOptions.yAxis[ visibleIndex ].type = 'category';
+    }
+
+    return currentSeries;
+  }
+
 
   // create function to use as EChart callback with Datagrok mixins
   // get callback function to define color of marker
@@ -570,7 +568,21 @@ export class MultiPlotViewer extends DG.JsViewer {
           );
         }
       } */
-      plot.series.data = data;
+      if (plot.multiLineFieldIndex && plot.currentCat){  //break data into several arrays according to category(required to draw multiple lines on linechart)
+        const multipleData = [];
+        plot.currentCat.forEach(cat => {
+          let catData = [];
+          data.forEach((item) =>{
+            if(item[plot.multiLineFieldIndex] === cat){
+              catData.push(item);
+            }
+          })
+          multipleData.push(catData);
+        });
+        plot.series.data = multipleData;
+      } else {
+        plot.series.data = data;
+      }
 
       if (plot.type != 'timeLine') {
         this.timeLinesData.push([])
