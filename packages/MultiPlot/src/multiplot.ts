@@ -881,7 +881,10 @@ export class MultiPlotViewer extends DG.JsViewer {
   } // createElements
 
 
-  updatePlotByCategory(plotIndex: number, category: string, updateTitle: boolean){
+  updatePlotByCategory(plotIndex: number, category: any, updateTitle: boolean){
+    if(this.plots[plotIndex].type === 'scatter' && category.length){
+      this.plots[plotIndex].height = `${category.length*20}px`;
+    }
     this.plots[plotIndex].currentCat = category;
     this.plots[plotIndex].condition.value = category;
     if (updateTitle){ this.plots[plotIndex].title = category; }

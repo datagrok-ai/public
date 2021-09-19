@@ -12,7 +12,7 @@ export class PatientProfileView extends DG.ViewBase {
       {
         tableName: 'patient_lb',
         title: 'Lab values',
-        type: 'line',
+        type: 'scatter',
         x: 'LBDY',
         y: 'LBTEST',
         // extraFields is an array to load into echart data arrays
@@ -41,7 +41,7 @@ export class PatientProfileView extends DG.ViewBase {
         tableName: 'patient_lb',
         title: 'Lab values line chart',
         type: 'line',
-        multiLineFieldIndex: 2,
+        multiLineFieldIndex: 2, //index of field by which to split multiple graphs
         x: 'LBDY',
         y: 'LAB_DEVIATION',
         extraFields: [ 'LBTEST', 'LBORRES', 'LBORNRLO', 'LBORNRHI' ],
@@ -133,7 +133,7 @@ export class PatientProfileView extends DG.ViewBase {
 
     this.createTablesToAttach(patientIds[ 0 ]);
 
-    this.options_lb_ae_ex_cm['xAxisMinMax'] = this.extractMinAndMaxValuesForXAxis()
+    this.options_lb_ae_ex_cm['xAxisMinMax'] = this.extractMinAndMaxValuesForXAxis();
 
     this.tables[ 'ae' ].plot.fromType('MultiPlot', {
       paramOptions: JSON.stringify(this.options_lb_ae_ex_cm),
