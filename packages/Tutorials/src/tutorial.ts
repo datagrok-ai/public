@@ -87,7 +87,7 @@ export abstract class Tutorial extends DG.Widget {
   async openPlot(name: string, check: (viewer: DG.Viewer) => boolean): Promise<DG.Viewer> {
     // TODO: Expand toolbox / accordion API coverage
     const getViewerIcon = (el: HTMLElement) => $(el).find(`i.svg-${name.replace(' ', '-')}`).get()[0];
-    const view: DG.View = grok.shell.v;
+    const view = grok.shell.v as DG.View;
     let viewer: DG.Viewer;
 
     await this.action(`Open ${name}`,
