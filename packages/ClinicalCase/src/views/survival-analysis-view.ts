@@ -3,7 +3,7 @@ import { InputBase } from "datagrok-api/dg";
 import * as grok from 'datagrok-api/grok';
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
-import { TREATMENT_ARM } from "../constants";
+import { SURVIVAL_ANALYSIS_GUIDE, TREATMENT_ARM } from "../constants";
 import { createSurvivalData } from "../data-preparation/data-preparation";
 import { dataframeContentToRow } from "../data-preparation/utils";
 import { updateDivInnerHTML } from "./utils";
@@ -30,6 +30,7 @@ export class SurvivalAnalysisView extends DG.ViewBase {
   covariates = [];
   survivalDataframe: DG.DataFrame;
   plotCovariates: string[];
+  filterChanged = false;
 
   constructor(name) {
     super(name);
@@ -56,15 +57,23 @@ export class SurvivalAnalysisView extends DG.ViewBase {
     this.updateStrataChoices();
     this.updatePlotCovariatesChoices();
 
-    let applyFilters = ui.button('Apply to curves', () => { 
-      this.updateSurvivalPlot();
-      if (this.plotCovariates) {
-        this.updateCovariatesPlot();
-      }
-    });
-
     let createSurvivalDataframe = ui.bigButton('Create dataset', () => { 
      this.refreshDataframe();
+     this.filterChanged = true;
+     this.survivalDataframe.onFilterChanged.subscribe((_) => {
+       this.filterChanged = true;
+      });
+    });
+
+    let tabControl = ui.tabControl(null, false);
+    tabControl.addPane('Dataset', () => ui.splitV([this.survivalFilterDiv, this.survivalGridDivCreate]));
+    tabControl.addPane('Survival Chart', () => {
+      this.updateChartsAfterFiltering();
+      this.survivalPlotDiv;
+    });
+    tabControl.addPane('Covariates', () => {
+      this.updateChartsAfterFiltering();
+      this.covariatesPlotDiv;
     });
 
     let customTitle = {style:{
@@ -77,21 +86,12 @@ export class SurvivalAnalysisView extends DG.ViewBase {
       this.setRibbonPanels([
         [
           ui.icons.info(()=>{
-            guide.innerHTML = '';
-            guide.append(ui.info(`1. Select dataset paramenters and click 'Create dataset'
-            2. Filter data and apply them to curves. Click on 'Apply to curves',
-            3. Set the survival chart parameters. To see the chart clicn on 'Survival Chart' tab on right.
-            4. Set the co-variates. On the right click on 'Co-Variates' tab for see them.
-            `,'Survival Analysis Quick Guide', false))
+            updateDivInnerHTML(guide, ui.info(SURVIVAL_ANALYSIS_GUIDE,'Survival Analysis Quick Guide', false));
           })
         ]
       ])
 
-      let guide = ui.info(`1. Select dataset paramenters and click 'Create dataset'
-      2. Filter data and apply them to curves. Click on 'Apply to curves',
-      3. Set the survival chart parameters. To see the chart clicn on 'Survival Chart' tab on right.
-      4. Set the co-variates. On the right click on 'Co-Variates' tab for see them.
-      `,'Survival Analysis Quick Guide', false);
+      let guide = ui.info(SURVIVAL_ANALYSIS_GUIDE,'Survival Analysis Quick Guide', false);
       this.root.append(ui.splitV([
         guide,
         ui.splitH([
@@ -121,92 +121,13 @@ export class SurvivalAnalysisView extends DG.ViewBase {
               ])
             ])
           ]), { style: { maxWidth: '300px' }}),
-          ui.tabControl({
-            'Dataset': ui.splitV([this.survivalFilterDiv, this.survivalGridDivCreate]),
-            'Survival Chart': ()=>{
-              return this.survivalPlotDiv
-            },
-            'Co-Variates': ()=>{
-              return this.covariatesPlotDiv
-            }
-          }).root
+          tabControl.root
         ])
       ]))
       //@ts-ignore
       guide.parentNode.style.flexGrow = '0';
       //@ts-ignore
       guide.parentNode.classList = 'ui-div';
-
-      /*
-      this.root.append( ui.tabControl({
-        '1. Dataset': ui.splitH([
-          ui.box(ui.panel([
-            ui.inputs([ 
-              endpointChoices,
-              covariatesChoices,
-              //@ts-ignore
-              ui.buttonsInput([createSurvivalDataframe, applyFilters])
-            ])
-          ]), { style: { maxWidth: '300px' }}),
-          this.survivalGridDivCreate,
-          this.survivalFilterDiv,
-        ]),
-        '2. Results': ui.splitV([
-          ui.splitH([
-            ui.box(ui.panel([
-              ui.h1('Survival data'),
-              ui.inputs([ 
-                confIntChoices,
-                //@ts-ignore
-                this.strataChoicesDiv
-              ])
-            ])),
-            ui.box(ui.panel([
-              ui.h1('Co-variates'),
-              this.plotCovariatesChoicesDiv
-            ])),
-         ] , { style: { maxHeight: '150px' } }),
-          ui.splitH([
-            this.survivalPlotDiv,
-            this.covariatesPlotDiv 
-          ])
-        ]),
-      }).root)
-      */
-      /*
-      this.root.append(
-        ui.tabControl({
-          'Create dataset':
-            ui.splitH([
-              ui.box(ui.panel([
-                ui.inputs([ endpointChoices,
-                covariatesChoices,
-                //@ts-ignore
-                ui.buttonsInput([ createSurvivalDataframe ])
-              ])
-              ]), { style: { maxWidth: '300px' } }),
-              this.survivalGridDivCreate ]),
-          'Survival data':
-            ui.splitV([
-              this.survivalFilterDiv,
-              ui.box(ui.div([ applyFilters ]), { style: { maxHeight: '40px' } }),
-              this.survivalGridDivFilter
-            ]),
-          'Survival chart':
-            ui.splitV([
-              ui.box(ui.panel([
-                ui.divH([ confIntChoices.root,
-                this.strataChoicesDiv ])
-              ]), { style: { maxHeight: '80px' } }),
-              this.survivalPlotDiv ]),
-          'Co-variates':
-            ui.splitH([
-              ui.box(ui.panel([
-                this.plotCovariatesChoicesDiv
-              ]), { style: { maxWidth: '180px' } }),
-              this.covariatesPlotDiv ])
-        }).root
-      );*/
 
   }
 
@@ -271,5 +192,15 @@ export class SurvivalAnalysisView extends DG.ViewBase {
      updateDivInnerHTML(this.survivalGridDivFilter, this.survivalDataframe.plot.grid().root);
      updateDivInnerHTML(this.survivalFilterDiv, this.getFilters());
      this.updateSurvivalPlot();
+  }
+
+  private updateChartsAfterFiltering(){
+    if(this.filterChanged){
+      this.updateSurvivalPlot();
+      if (this.plotCovariates) {
+        this.updateCovariatesPlot();
+      }
+      this.filterChanged = false;
+    }
   }
 }
