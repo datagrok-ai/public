@@ -2,8 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import { Observable } from 'rxjs';
-import { filter, first } from 'rxjs/operators';
+import { fromEvent, Observable } from 'rxjs';
+import { filter, first, map } from 'rxjs/operators';
 import { _package } from './package';
 
 
@@ -121,6 +121,17 @@ export abstract class Tutorial extends DG.Widget {
       inp.root,
     );
   }
+
+  /** A helper method to access text inputs in a view. */
+  protected async textInpAction(root: HTMLElement, instructions: string, caption: string, value: string) {
+    const inputRoot = $(root)
+      .find('div.ui-input-text.ui-input-root')
+      .filter((idx, inp) => $(inp).find('label.ui-label.ui-input-label')[0]?.textContent === caption)[0];
+    if (inputRoot == null) return;
+    const input = $(inputRoot).find('input.ui-input-editor')[0] as HTMLInputElement;
+    const source = fromEvent(input, 'input').pipe(map((_) => input.value), filter((val) => val === value));
+    await this.action(instructions, source, inputRoot);
+  }
 }
 
 
@@ -140,7 +151,7 @@ export class TutorialRunner {
 
   async run(t: Tutorial): Promise<void> {
     $(this.root).empty();
-    t.clearRoot();
+    //t.clearRoot();
     this.root.append(t.root);
     await t.run();
   }
