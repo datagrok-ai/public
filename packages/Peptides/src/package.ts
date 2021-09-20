@@ -95,11 +95,7 @@ export function analyzePeptides(col: DG.Column): DG.Widget {
         'activityScalingMethod': activityScalingMethod.value,
         'showHistogram': showHistogram.value
       };
-      // @ts-ignore: I know what I'm doing!
-      // peptidesView.addViewer('peptide-sar-viewer', options);
-
-      const sarViewer = await col.dataFrame.plot.fromType('SARViewer', options);
-      (<DG.TableView>peptidesView).addViewer(<DG.Viewer>sarViewer);
+      (<DG.TableView>peptidesView).addViewer('peptide-sar-viewer', options);
     }
   });
   return new DG.Widget(ui.divV([activityColumnChoice.root, activityScalingMethod.root, showHistogram.root, startBtn]));
