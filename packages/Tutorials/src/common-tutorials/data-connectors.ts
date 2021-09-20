@@ -15,8 +15,10 @@ export class DataConnectorsTutorial extends Tutorial {
   protected async _run() {
     this.title('Connect to Data');
 
-    await this.action('Find "Data | Databases" in the sidebar to open the tree of connections.',
-      grok.events.onViewAdded.pipe(filter((v: DG.View) => v.type == DG.View.DATABASES)));
+    await this.openViewByType(
+      'Find "Data | Databases" in the sidebar to open the tree of connections.',
+      DG.View.DATABASES
+    );
 
     this.describe('In this view, you can create queries to data connectors from the list. Each ' +
       'tree branch corresponds to a provider and shows connections to the given data source');
@@ -43,17 +45,8 @@ export class DataConnectorsTutorial extends Tutorial {
 
     this.title('Create a new data query');
 
-    let dqv: DG.View;
-    await this.action('Create a data query to the "Starbucks" data connection: ' +
-      'Open context menu on PostgreSQL | Starbucks and click "Add query..."',
-      grok.events.onViewAdded.pipe(filter((v: DG.View) => {
-        if (v.type === 'DataQueryView') {
-          dqv = v;
-          return true;
-        }
-        return false;
-      })),
-    );
+    const dqv = await this.openViewByType('Create a data query to the "Starbucks" data connection: ' +
+      'Open context menu on PostgreSQL | Starbucks and click "Add query..."', 'DataQueryView');
 
     // UI generation delay
     await new Promise((resolve) => setTimeout(resolve, 1500));
