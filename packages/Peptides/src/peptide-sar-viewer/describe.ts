@@ -1,6 +1,6 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {splitAlignedPeptides} from '../splitAligned';
+import {splitAlignedPeptides} from '../split-aligned';
 
 
 function decimalAdjust(type: 'floor' | 'ceil' | 'round', value: number, exp: number): number {
@@ -116,7 +116,7 @@ export async function describe(
       args.g.fillText(
         args.cell.gridColumn.name,
         args.bounds.x + (args.bounds.width - textSize.width) / 2,
-        args.bounds.y + (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent),
+        args.bounds.y + (textSize.actualBoundingBoxAscent + textSize.actualBoundingBoxDescent),
       );
       args.g.fillStyle = '#4b4b4a';
       args.preventDefault();
@@ -128,7 +128,7 @@ export async function describe(
         args.g.fillText(
           args.cell.cell.value,
           args.bounds.x + (args.bounds.width - textSize.width) / 2,
-          args.bounds.y + (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent),
+          args.bounds.y + (textSize.actualBoundingBoxAscent + textSize.actualBoundingBoxDescent),
         );
         args.g.fillStyle = '#4b4b4a';
         args.preventDefault();

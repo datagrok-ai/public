@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {WebWidget} from "../widgets/web-widget";
 import {DataQuery} from "datagrok-api/dg";
 import {widgetHost} from "../utils";
+import {_package} from "../package";
 
 // Power Search: community-curated, template-based, widget-driven search engine
 
@@ -28,6 +29,7 @@ let searchWidgetFunctions = DG.Func.find({tags: ['search'], returnType: 'widget'
 
 export function initSearch() {
   grok.dapi.queries.list().then((qs) => queries = qs);
+  initTemplates();
 }
 
 export function powerSearch(s: string, host: HTMLDivElement): void {
@@ -122,16 +124,39 @@ function specificWidgetsSearch(s: string, host: HTMLDivElement): void {
       wf.apply().then((w: DG.Widget) => host.appendChild(ui.div([widgetHost(w)])));
 }
 
+async function initTemplates(): Promise<void> {
+  let templatesPath = (await _package.getProperties()).get('searchTemplatesPath');
+  //let templatesPath = `${grok.shell.user.name}:Home/templates`;
+
+  for (let path in templatesPath.split(';')) {
+    //if (await grok.dapi.files.exists(path)) {
+    if (true) {
+      let files = await grok.dapi.files.list(templatesPath, false, null);
+
+      for (let file of files) {
+        let s = await file.readAsString();
+        let collection: any = JSON.parse(s);
+        for (let template of collection.templates)
+          templates.push(template);
+      }
+    }
+  }
+
+  console.log(templates);
+}
+
 /// Community-curated template collection
 function templatesSearch(s: string, host: HTMLDivElement): void {
   for (let p of templates)
     for (let t of p.templates) {
       let x = <any>t;
       if (x.regexp == null)
-        x.regexp = new RegExp(t.template);
+        x.regexp = new RegExp(t.template, 'i');
       let matches = x.regexp.exec(s);
 
       if (matches !== null) {
+        console.log(`match! ${p.name}`)
+
         let widgetProperties: any = {};
         for (let [k, v] of Object.entries(t))
           if (k != 'template' && k != 'regexp') {
@@ -209,81 +234,16 @@ const semTypes = [
 
 const templates = [
   {
-    id: 'kpi-test',
-    name: 'KPI Test',
+    id: 'foo-test',
+    name: 'Foo Test',
     widget: 'kpiWidget',
     templates: [
       {
-        template: 'kpi ([0-9]+)',
+        template: 'foo ([0-9]+)',
         caption: '${1}'
       }
     ]
-  },
-  {
-    id: 'ticket-stock-price',
-    name: 'Stock Price',
-    widget: 'webWidget',
-    templates: [
-      {
-        template: 'kpi ([0-9]+)',
-        caption: '${1}'
-      }
-    ]
-  },
-  {
-    id: 'chembl-id-report-card',
-    name: 'Report card',
-    widget: 'webWidget',
-    templates: [{
-      template: '(CHEMBL[0-9]+)',
-      url: 'https://www.ebi.ac.uk/chembl/embed/#compound_report_card/${1}/name_and_classification'
-    }]
-  },
-  {
-    id: 'jtest',
-    name: 'Observability',
-    widget: 'webWidget',
-    templates: [{
-      template: 'observability',
-      url: 'https://test.jrd-observability.apps.jnj.com/'
-    }]
-  },
-  {
-    id: 'chembl-id-representations',
-    name: 'Representations',
-    widget: 'webWidget',
-    templates: [{
-      template: '(CHEMBL[0-9]+)',
-      url: 'https://www.ebi.ac.uk/chembl/embed/#compound_report_card/${1}/representations'
-    }]
-  },
-  {
-    id: 'chembl-id-alternative-forms',
-    name: 'Alternative forms',
-    widget: 'webWidget',
-    templates: [{
-      template: '(CHEMBL[0-9]+)',
-      url: 'https://www.ebi.ac.uk/chembl/embed/#compound_report_card/${1}/alternate_forms'
-    }]
-  },
-  {
-    id: 'chembl-id-calculated-properties',
-    name: 'Calculated properties',
-    widget: 'webWidget',
-    templates: [{
-      template: '(CHEMBL[0-9]+)',
-      url: 'https://www.ebi.ac.uk/chembl/embed/#compound_report_card/${1}/calculated_properties'
-    }]
-  },
-  {
-    id: 'chembl-id-cross-refs',
-    name: 'Cross references',
-    widget: 'webWidget',
-    templates: [{
-      template: '(CHEMBL[0-9]+)',
-      url: 'https://www.ebi.ac.uk/chembl/embed/#compound_report_card/${1}/cross_refs'
-    }]
-  },
+  }
 ]
 
 const widgetTemplates = [

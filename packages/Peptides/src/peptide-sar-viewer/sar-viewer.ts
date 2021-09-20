@@ -1,5 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {describe} from './describe';
+import $ from "cash-dom";
 
 export class SARViewer extends DG.JsViewer {
   protected activityColumnColumnName: string;

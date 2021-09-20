@@ -1,11 +1,7 @@
-import { ClinicalCaseView } from "../clinical-case-view";
-import * as grok from "datagrok-api/grok";
 import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
-import { Filter, InputBase } from "datagrok-api/dg";
-import $ from "cash-dom";
-import { addColumnWithDrugPlusDosage } from "../data-preparation/data-preparation";
+import { addColumnWithDrugPlusDosage, addLabOutOfReferenceColumn } from "../data-preparation/data-preparation";
 import { getUniqueValues } from "../data-preparation/utils";
 
 
@@ -16,7 +12,7 @@ export class PatientProfileView extends DG.ViewBase {
       {
         tableName: 'patient_lb',
         title: 'Lab values',
-        type: 'line',
+        type: 'scatter',
         x: 'LBDY',
         y: 'LBTEST',
         // extraFields is an array to load into echart data arrays
@@ -45,9 +41,10 @@ export class PatientProfileView extends DG.ViewBase {
         tableName: 'patient_lb',
         title: 'Lab values line chart',
         type: 'line',
-        multi: true,
+        multiLineFieldIndex: 2, //index of field by which to split multiple graphs
         x: 'LBDY',
-        y: 'LBORRES',
+        y: 'LAB_DEVIATION',
+        extraFields: [ 'LBTEST', 'LBORRES', 'LBORNRLO', 'LBORNRHI' ],
         splitByColumnName: 'LBTEST',                    // get categories from this column
         categories: [ '' ],  // fixed categories
         maxLimit: 1,                                    // max number of linecharts 
@@ -57,7 +54,7 @@ export class PatientProfileView extends DG.ViewBase {
         show: 1,
         yLabelWidth: 50,
         yLabelOverflow: 'truncate',
-        edit: {values: Array.from(getUniqueValues(study.domains.lb, 'LBTEST')), selectedValues: ''}
+        edit: {multi: true, values: Array.from(getUniqueValues(study.domains.lb, 'LBTEST')), selectedValues: []}
       }, 
 
       // timeLines
@@ -110,7 +107,12 @@ export class PatientProfileView extends DG.ViewBase {
 
   }
 
-  tableNames = [ 'lb', 'ae', 'ex', 'cm' ];
+  tableNamesAndFields =  {
+    'lb': {'start': 'LBDY'}, 
+    'ae': {'start': 'AESTDY', 'end': 'AEENDY'}, 
+    'ex': {'start': 'EXSTDY', 'end': 'EXENDY'},
+    'cm': {'start': 'CMSTDY', 'end': 'CMENDY'}
+  };
   tables = {};
   multiplot_lb_ae_ex_cm: any;
 
@@ -130,6 +132,8 @@ export class PatientProfileView extends DG.ViewBase {
 
 
     this.createTablesToAttach(patientIds[ 0 ]);
+
+    this.options_lb_ae_ex_cm['xAxisMinMax'] = this.extractMinAndMaxValuesForXAxis();
 
     this.tables[ 'ae' ].plot.fromType('MultiPlot', {
       paramOptions: JSON.stringify(this.options_lb_ae_ex_cm),
@@ -190,7 +194,7 @@ export class PatientProfileView extends DG.ViewBase {
   }
 
   private createTablesToAttach(myId: any) {
-    this.tableNames.forEach(name => {
+    Object.keys(this.tableNamesAndFields).forEach(name => {
       this.tables[ name ] = study.domains[ name ].clone();
       this.tables[ name ].name = `patient_${name}`;
       this.tables[ name ].filter.init((i) => {
@@ -199,6 +203,21 @@ export class PatientProfileView extends DG.ViewBase {
       })
     })
     this.tables[ 'ex' ] = addColumnWithDrugPlusDosage(this.tables[ 'ex' ], 'EXTRT', 'EXDOSE', 'EXDOSU', 'EXTRT_WITH_DOSE');
+    this.tables[ 'lb' ] = addLabOutOfReferenceColumn(this.tables[ 'lb' ], 'LBSTNRLO', 'LBSTNRHI', 'LBSTRESN', 'LAB_DEVIATION');
+  }
+
+  private extractMinAndMaxValuesForXAxis() {
+    let min = null;
+    let max = null;
+    Object.keys(this.tables).forEach(table => {
+      let minColName = this.tableNamesAndFields[ table ][ 'start' ];
+      let maxColName = this.tableNamesAndFields[ table ][ 'end' ] ?? this.tableNamesAndFields[ table ][ 'start' ];
+      let newMin = this.tables[ table ].getCol(minColName).stats[ 'min' ];
+      min = min !== null || newMin > min ? min : newMin;
+      let newMax = this.tables[ table ].getCol(maxColName).stats[ 'max' ];
+      max = max !== null || newMax < max ? max : newMax;
+    })
+    return {minX: min, maxX: max};
   }
 
 }

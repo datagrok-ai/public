@@ -60,6 +60,8 @@ export class MPUtils {
       t.tableName = descr.tableName;
       t.yType = 'value';
       t.edit = descr.edit;
+      t.extraFields = descr.extraFields;
+      t.multiLineFieldIndex = descr.multiLineFieldIndex;
       r.push(t);
     }
     return r;
@@ -186,5 +188,8 @@ export class MPUtils {
 
   getArrayOfColumnNames(colNames: any){
     return Array.isArray(colNames) ? colNames : [colNames]
+  }
+
+  splitToMultipleSeries(colIndex: number){
   }
 }

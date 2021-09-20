@@ -19,7 +19,10 @@
       "error",
       2
     ],
-    "max-len": "warn",
+    "max-len": [
+      "error",
+      120
+    ],
     // Disabled due to function annotation
     "spaced-comment": "off",
     "require-jsdoc": "off",

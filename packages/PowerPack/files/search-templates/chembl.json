@@ -1,0 +1,41 @@
+{
+  "name": "ChEMBL",
+  "templates": [
+     {
+      "id": "chembl-id-representations",
+      "name": "Representations",
+      "widget": "webWidget",
+      "templates": [{
+        "template": "(CHEMBL[0-9]+)",
+        "url": "https://www.ebi.ac.uk/chembl/embed/#compound_report_card/${1}/representations"
+      }]
+    },
+    {
+      "id": "chembl-id-alternative-forms",
+      "name": "Alternative forms",
+      "widget": "webWidget",
+      "templates": [{
+        "template": "(CHEMBL[0-9]+)",
+        "url": "https://www.ebi.ac.uk/chembl/embed/#compound_report_card/${1}/alternate_forms"
+      }]
+    },
+    {
+      "id": "chembl-id-calculated-properties",
+      "name": "Calculated properties",
+      "widget": "webWidget",
+      "templates": [{
+        "template": "(CHEMBL[0-9]+)",
+        "url": "https://www.ebi.ac.uk/chembl/embed/#compound_report_card/${1}/calculated_properties"
+      }]
+    },
+    {
+      "id": "chembl-id-cross-refs",
+      "name": "Cross references",
+      "widget": "webWidget",
+      "templates": [{
+        "template": "(CHEMBL[0-9]+)",
+        "url": "https://www.ebi.ac.uk/chembl/embed/#compound_report_card/${1}/cross_refs"
+      }]
+    }
+  ]
+}

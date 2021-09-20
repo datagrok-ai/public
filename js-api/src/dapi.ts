@@ -733,7 +733,7 @@ export class FileSource {
    * @param {boolean} recursive
    * @param {string} searchPattern
    * @returns {Promise<FileInfo[]>} */
-  list(file: FileInfo | string, recursive: boolean, searchPattern: string): Promise<FileInfo[]> {
+  list(file: FileInfo | string, recursive: boolean, searchPattern: string | null = null): Promise<FileInfo[]> {
     return new Promise((resolve, reject) =>
         api.grok_Dapi_UserFiles_List(file, recursive, searchPattern, (data: any) => resolve(toJs(data)), (e: any) => reject(e)));
   }
