@@ -78,13 +78,17 @@ export abstract class Tutorial extends DG.Widget {
     this.root.scrollTop = this.root.scrollHeight;
   }
 
+  clearRoot(): void {
+    $(this.root).children().each((idx, el) => $(el).empty());
+  }
+
   firstEvent(eventStream: Observable<any>): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       eventStream.pipe(first()).subscribe((_: any) => resolve());
     });
   }
 
-  async openPlot(name: string, check: (viewer: DG.Viewer) => boolean): Promise<DG.Viewer> {
+  protected async openPlot(name: string, check: (viewer: DG.Viewer) => boolean): Promise<DG.Viewer> {
     // TODO: Expand toolbox / accordion API coverage
     const getViewerIcon = (el: HTMLElement) => $(el).find(`i.svg-${name.replace(' ', '-')}`).get()[0];
     const view = grok.shell.v as DG.View;
@@ -104,8 +108,7 @@ export abstract class Tutorial extends DG.Widget {
     return viewer!;
   }
 
-  async dlgInputAction(dlg: DG.Dialog, instructions: string, caption: string, value: string) {
-    // @ts-ignore
+  protected async dlgInputAction(dlg: DG.Dialog, instructions: string, caption: string, value: string) {
     const inp = dlg.inputs.filter((input: DG.InputBase) => input.caption == caption)[0];
     if (inp == null) return;
     await this.action(instructions,
@@ -137,6 +140,7 @@ export class TutorialRunner {
 
   async run(t: Tutorial): Promise<void> {
     $(this.root).empty();
+    t.clearRoot();
     this.root.append(t.root);
     await t.run();
   }
