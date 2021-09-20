@@ -107,6 +107,36 @@ export async function describe(
   matrixDf.name = 'SAR';
 
   // !!! DRAWING PHASE !!!
+  //find min and max median difference across all of the dataframe
+  const dfMinMedian = statsDf.getCol(medianColName).min;
+  const dfMaxMedian = statsDf.getCol(medianColName).max;
+
+  // color-coding cells based on the entire dataframe
+  // colors are hard-coded and can be either gray, light-green or green
+  for (const col of matrixDf.columns) {
+    if (col.name === aminoAcidResidue) { continue; }
+    const parts = 3;
+    const colPartLength = (dfMaxMedian - dfMinMedian) / parts;
+    // Green, LightGreen, Gray - the lesser MAD, the better                    ?
+    const colors = ['#008000', '#90EE90', '#808080'];
+
+    let range;
+    let condition = '{';
+    for (let part = 0; part < parts; part++) {
+      if (part !== 0) { condition = condition.concat(',') }
+      // add to upper boundary a bit so it colors the highest values too
+      range = `"${dfMinMedian+colPartLength*part}-${dfMinMedian+colPartLength*(part+1)+(part === (parts-1) ? 1 : 0)}"`;
+      condition = condition.concat(`${range}:"${colors[part]}"`);
+    }
+    condition = condition.concat('}');
+
+    // Unable to choose custom colors for linear                               ?
+    // col.tags[DG.TAGS.COLOR_CODING_TYPE] = 'Linear';
+    col.tags[DG.TAGS.COLOR_CODING_TYPE] = 'Conditional';
+
+    col.tags[DG.TAGS.COLOR_CODING_CONDITIONAL] = condition;
+  }
+
   const grid = matrixDf.plot.grid();
 
   // render column headers and AAR symbols centered
@@ -148,7 +178,7 @@ export async function describe(
         );
         args.g.closePath();
         //TODO: set color based on activity medians
-        args.g.fillStyle = 'green';
+        args.g.fillStyle = DG.Color.getCellColorHtml(args.cell.cell);
         args.g.fill();
         args.preventDefault();
       }
