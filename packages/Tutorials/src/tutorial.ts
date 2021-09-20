@@ -132,6 +132,21 @@ export abstract class Tutorial extends DG.Widget {
     const source = fromEvent(input, 'input').pipe(map((_) => input.value), filter((val) => val === value));
     await this.action(instructions, source, inputRoot);
   }
+
+  /** Prompts the user to open a view of the specified type, waits for it to open and returns it. */
+  protected async openViewByType(instructions: string, type: string): Promise<DG.View> {
+    let view: DG.View;
+
+    await this.action(instructions, grok.events.onViewAdded.pipe(filter((v) => {
+      if (v.type === type) {
+        view = v;
+        return true;
+      }
+      return false;
+    })));
+
+    return view!;
+  }
 }
 
 

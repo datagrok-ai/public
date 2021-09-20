@@ -12,16 +12,9 @@ export class ScriptingTutorial extends Tutorial {
 
   protected async _run() {
     this.header.textContent = 'Create and run a script';
-    let sv: DG.View;
-
-    await this.action('Click on "Functions | Scripts | New Script" to open a script editor',
-      grok.events.onViewAdded.pipe(filter((v: DG.View) => {
-        if (v.type === 'ScriptView') {
-          sv = v;
-          return true;
-        }
-        return false;
-      })));
+    const sv = await this.openViewByType(
+      'Click on "Functions | Scripts | New Script" to open a script editor',
+      'ScriptView');
 
     this.describe('This is a script editor. Here, you write code and bind the parameters to ' +
       'the sample dataset (press F1 to get help on parameter format). Also, the editor ' +
