@@ -1,6 +1,45 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-09-20 Dev build 0.93.26
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.26`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Peptides: property panel WIP 
+* Add "iconTool" to devTools 
+* Peptides: property panel fix 
+* Peptides: finished converting to TS, code cleanup 
+* Linter rules update 
+* Removed an unused dependency 
+* UsageWidget: code cleanup 
+* (Bug) Core: FileInfo.readAsString returns undefined 
+* #117: PowerPack: PowerSearch: search templates \- added server-based collections of templates 
+* implemented ability to set min and max values in multiplot 
+* #117: PowerPack: PowerSearch: build fix 
+* #117: PowerPack: PowerSearch: search templates \- added package settings for templates paths 
+* implmented multiple lines on linechart using eChart graphs 
+* fixed multiplot tooltips bug 
+* Charts on viewers: Universal ability to show them with interactive legend 
+* implemented changing height of scatter plot with categories multiselect in multiplot 
+* #53 Tutorials package: ML (predictive modeling tutorial): actions for the model training view 
+* updating survival plots on tab click in case filters changed 
+* Peptides: Aligned sequence cell renderer text properly aligned, readability increased 
+* Peptides: analyzePeptides fix 
+* Funcs: Function cache for scripts and data sync 
+* Peptides: color coding circles based on MAD 
+* Peptides: help fix 
+* DevTools: add data connection examples 
+* Bar chart: add int column as split column 
+
+
 # 2021-09-17 Dev build 0.93.25
 
 ## Latest Docker Images
