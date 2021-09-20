@@ -128,6 +128,7 @@ export async function describe(
         args.g.fillText(
           args.cell.cell.value,
           args.bounds.x + (args.bounds.width - textSize.width) / 2,
+          //FIXME: the text is too high in the cell
           args.bounds.y + (textSize.actualBoundingBoxAscent + textSize.actualBoundingBoxDescent),
         );
         args.g.fillStyle = '#4b4b4a';
