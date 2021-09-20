@@ -43,13 +43,21 @@ export class DataConnectorsTutorial extends Tutorial {
 
     this.title('Create a new data query');
 
+    let dqv: DG.View;
     await this.action('Create a data query to the "Starbucks" data connection: ' +
       'Open context menu on PostgreSQL | Starbucks and click "Add query..."',
-      grok.events.onViewAdded.pipe(filter((v: DG.View) => v.type === 'DataQueryView')),
+      grok.events.onViewAdded.pipe(filter((v: DG.View) => {
+        if (v.type === 'DataQueryView') {
+          dqv = v;
+          return true;
+        }
+        return false;
+      })),
     );
 
-    // TODO: transform into actions
-    this.describe('Set "Name" to "Get Starbucks US"');
+    // UI generation delay
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    await this.textInpAction(dqv!.root, 'Set "Name" to "Get Starbucks US"', 'Name', 'Get Starbucks US');
     this.describe('Write the following text to the editor: "select * from starbucks_us"');
 
     await this.action('Click on the "Play" button to run this query',
