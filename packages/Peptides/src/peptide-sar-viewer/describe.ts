@@ -113,27 +113,28 @@ export async function describe(
 
   // color-coding cells based on the entire dataframe
   // colors are hard-coded and can be either gray, light-green or green
+  const parts = 3;
+  const colPartLength = (dfMaxMedian - dfMinMedian) / parts;
+  // Green, LightGreen, Gray - the lesser MAD, the better                      ?
+  const colors = ['#008000', '#90EE90', '#808080'];
+
+  let range;
+  let condition = '{';
+  for (let part = 0; part < parts; part++) {
+    if (part !== 0) { condition = condition.concat(',') }
+    // add to upper boundary a bit so it colors the highest values too
+    range = `"${dfMinMedian+colPartLength*part}-${dfMinMedian+colPartLength*(part+1)+(part === (parts-1) ? 1 : 0)}"`;
+    condition = condition.concat(`${range}:"${colors[part]}"`);
+  }
+  condition = condition.concat('}');
+
+  //setting color coding tags
   for (const col of matrixDf.columns) {
     if (col.name === aminoAcidResidue) { continue; }
-    const parts = 3;
-    const colPartLength = (dfMaxMedian - dfMinMedian) / parts;
-    // Green, LightGreen, Gray - the lesser MAD, the better                    ?
-    const colors = ['#008000', '#90EE90', '#808080'];
-
-    let range;
-    let condition = '{';
-    for (let part = 0; part < parts; part++) {
-      if (part !== 0) { condition = condition.concat(',') }
-      // add to upper boundary a bit so it colors the highest values too
-      range = `"${dfMinMedian+colPartLength*part}-${dfMinMedian+colPartLength*(part+1)+(part === (parts-1) ? 1 : 0)}"`;
-      condition = condition.concat(`${range}:"${colors[part]}"`);
-    }
-    condition = condition.concat('}');
-
+    
     // Unable to choose custom colors for linear                               ?
     // col.tags[DG.TAGS.COLOR_CODING_TYPE] = 'Linear';
     col.tags[DG.TAGS.COLOR_CODING_TYPE] = 'Conditional';
-
     col.tags[DG.TAGS.COLOR_CODING_CONDITIONAL] = condition;
   }
 
