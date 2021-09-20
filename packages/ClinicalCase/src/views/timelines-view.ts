@@ -106,7 +106,7 @@ export class TimelinesView extends DG.ViewBase {
           colorByColumnName: 'domain',
         });
         $(v.root).css('position', 'relative')
-        //v.zoomState = [[0, 10], [0, 10], [90, 100], [90, 100]];
+        v.zoomState = [[0, 10], [0, 10], [90, 100], [90, 100]];
         v.render();
         this.updateTimelinesDivs(v.root, this.getFilters());
       });

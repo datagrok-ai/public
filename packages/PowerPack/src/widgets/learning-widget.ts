@@ -11,13 +11,13 @@ export class LearningWidget extends DG.Widget {
     super(ui.box());
     let wikiList = ui.element('ul');
     wikiList.style.columns = '2';
-    wikiList.append(ui.div(help.map(renderWiki)));
+    wikiList.appendChild(ui.div(help.map(renderWiki)));
 
     let videoList = ui.element('ul');
     videoList.style.columns = '2';
     videoList.style.listStyle = 'none';
     videoList.style.paddingLeft = '0px';
-    videoList.append(ui.div(playlists.map(renderPlaylist)));
+    videoList.appendChild(ui.div(playlists.map(renderPlaylist)));
 
     // this.root.appendChild(ui.tabControl({
     //   'VIDEO':ui.panel(playlists.map(renderPlaylist)),
@@ -69,8 +69,9 @@ function renderPlaylist(p: any) {
 
   let link = ui.link(p.title,url,p.description,'');
 
-  root.append(img, link);
-  listItem.append(root);
+  root.appendChild(img);
+  root.appendChild(link);
+  listItem.appendChild(root);
   return listItem
   // return ui.cards.summary(
   //   ui.image(p.url, 120, 90, { target: url }),
@@ -82,7 +83,7 @@ function renderPlaylist(p: any) {
 
 function renderWiki (p: any){
   let listItem = ui.element('li');
-  listItem.append(ui.link(p.title, p.url));
+  listItem.appendChild(ui.link(p.title, p.url));
   return listItem;
 }
 

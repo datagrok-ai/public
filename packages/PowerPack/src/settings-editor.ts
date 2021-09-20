@@ -3,6 +3,12 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {getSettings, saveSettings} from "./utils";
 
+// //output: widget kpi
+// //tags: packageSettingsEditor
+// export function powerPackSettingsEditor(): DG.Widget {
+//   return new PowerPackSettingsEditor();
+// }
+
 export class PowerPackSettingsEditor extends DG.Widget {
   constructor() {
     super(ui.div());

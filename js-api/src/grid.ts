@@ -562,11 +562,11 @@ export class GridCellRenderArgs extends EventData {
 
 
 export class CanvasRenderer {
-  get defaultWidth(): null {
+  get defaultWidth(): number | null {
     return null;
   }
 
-  get defaultHeight(): null {
+  get defaultHeight(): number | null {
     return null;
   }
 
@@ -579,26 +579,26 @@ export class CanvasRenderer {
    * @param {Object} value
    * @param {Object} context
    **/
-  render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, value: object, context: object) {
+  render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, value: object, context: object): void {
     throw 'Not implemented';
   }
 }
 
 
 export class GridCellRenderer extends CanvasRenderer {
-  get name() {
+  get name(): string {
     throw 'Not implemented';
   }
 
-  get cellType() {
+  get cellType(): string {
     throw 'Not implemented';
   }
 
-  renderInternal(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: any, cellStyle: any) {
+  renderInternal(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: any, cellStyle: any): void {
     this.render(g, x, y, w, h, new GridCell(gridCell), new GridCellStyle(cellStyle));
   }
 
-  static register(renderer: any) {
+  static register(renderer: any): void {
     api.grok_GridCellRenderer_Register(renderer);
   }
 }
