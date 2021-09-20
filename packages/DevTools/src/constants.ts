@@ -7,6 +7,7 @@ export const dfExts = ['csv', 'xlsx'];
 
 export const entExtract = {
   FileInfo: (ent: DG.FileInfo) => dfExts.includes(ent.extension) ? `let df = await grok.data.files.openTable("${ent.fullPath}");` : ``,
+  DataConnection: (ent: DG.DataConnection) => `let connection = await grok.dapi.connections.find('${ent.id}');`,
   DataQuery: (ent: DG.DataQuery) => `let query = await grok.dapi.queries.find("${ent.id}");`,
   User: (ent: DG.User) => `let user = await grok.dapi.users.find("${ent.id}");`,
   Group: (ent: DG.Group) => `let group = await grok.dapi.groups.find("${ent.id}");`,
@@ -43,6 +44,15 @@ const str = await grok.dapi.files.readAsText("${ent.fullPath}");
 
 // Read as dataframe
 const df = await grok.data.files.openTable("${ent.fullPath}");`,
+  DataConnection: (ent: DG.DataConnection) =>
+`const connection = await grok.dapi.connections.find('${ent.id}');
+
+// Get the connection's parameters
+grok.shell.info(JSON.stringify(connection.parameters));
+
+// Find the connection's queries
+const queries = await grok.dapi.queries.filter(\`connection.id = "\${connection.id}"\`).list();
+grok.shell.info('Found queries: ' + queries.length);`,
   DataQuery: (ent: DG.DataQuery) =>
 `const q = await grok.dapi.queries.find("${ent.id}");
 
