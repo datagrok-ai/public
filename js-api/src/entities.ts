@@ -2,6 +2,7 @@ import {ColumnType, SemType, Type, TYPE} from "./const";
 import { FuncCall } from "./functions";
 import {toJs} from "./wrappers";
 import {DataFrame} from "./dataframe";
+import {FileSource} from "./dapi";
 
 declare var grok: any;
 let api = <any>window;
@@ -590,6 +591,13 @@ export class Package extends Entity {
     return new Promise((resolve, reject) => api.grok_Package_Get_Properties(this.name, (props: any) => {
       resolve(toJs(props));
     }, (e: any) => reject(e)));
+  }
+
+  private _files: FileSource;
+  get files(): FileSource {
+    if (this._files == null)
+      this._files = new FileSource(`System:PackageData/${this.name}`);
+    return this._files;
   }
 }
 
