@@ -60,7 +60,7 @@ export class AboutWidget extends DG.Widget {
     tabControlButtonLeft.style.color = 'var(--blue-1)';
 
     tabControl.header.className = 'd4-tab-header-stripe about-widget';
-    tabControl.header.insertAdjacentElement("beforebegin", tabControlButtonLeft);
+    tabControl.header.prepend(tabControlButtonLeft);
     tabControl.header.appendChild(tabControlButtonRight);
     //tabControl.root.className = 'd4-tab-host d4-tab-vertical';
     this.root.appendChild(tabControl.root);
