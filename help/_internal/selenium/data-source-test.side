@@ -193,7 +193,7 @@
       "command": "verifyText",
       "target": "css=.d4-dialog-header",
       "targets": [],
-      "value": "Edit Connection"
+      "value": "Add new connection"
     }, {
       "id": "832ce22e-2ec9-44cf-b03c-b5b3ca15d542",
       "comment": "",
