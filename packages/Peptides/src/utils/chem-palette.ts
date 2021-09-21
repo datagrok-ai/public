@@ -22,15 +22,14 @@ export class ChemPalette {
 
 
   static make_palette(dt: [string[], string][], simplified = false) {
-    let palette: { [key: string]: string } = {}
+    const palette: { [key: string]: string } = {};
     dt.forEach((cp) => {
-      let obj_list = cp[0];
-      let colour = cp[1];
+      const obj_list = cp[0];
+      const colour = cp[1];
       obj_list.forEach((obj, ind) => {
-
-        palette[obj] = ChemPalette.colourPalette[colour][simplified ? 0 : ind]
-      })
-    })
+        palette[obj] = ChemPalette.colourPalette[colour][simplified ? 0 : ind];
+      });
+    });
     return palette;
   }
 
@@ -43,8 +42,8 @@ export class ChemPalette {
     [['S', 'T', 'N', 'Q'], 'orange']]);
   static get_lesk = () => ChemPalette.make_palette([
     [['G', 'A', 'S', 'T'], 'orange'],
-    [['C', 'V', 'I', 'L', 'P', 'F', 'Y', 'M', 'W'], "all_green"],
-    [['N', 'Q', 'H'], "magenta"],
-    [['D', 'E'], "red"],
-    [['K', 'R'], "all_blue"]])
+    [['C', 'V', 'I', 'L', 'P', 'F', 'Y', 'M', 'W'], 'all_green'],
+    [['N', 'Q', 'H'], 'magenta'],
+    [['D', 'E'], 'red'],
+    [['K', 'R'], 'all_blue']])
 }
