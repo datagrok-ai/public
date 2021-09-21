@@ -638,8 +638,8 @@ export class Column {
   public d: any;
   private temp: any;
   public tags: any;
-  private _dialogs: ColumnDialogHelper;
-  private _colors: ColumnColorHelper;
+  private _dialogs: ColumnDialogHelper | undefined;
+  private _colors: ColumnColorHelper | undefined;
 
   constructor(d: any) {
     this.d = d;
