@@ -9,7 +9,7 @@ import {
   SimilarityMetric,
   AggregationType,
   CsvImportOptions,
-  IndexPredicate, FLOAT_NULL, ViewerType
+  IndexPredicate, FLOAT_NULL, ViewerType, ColorCodingType, ColorType
 } from "./const";
 import {__obs, EventData, MapChangeArgs, observeStream} from "./events";
 import {toDart, toJs} from "./wrappers";
@@ -638,7 +638,8 @@ export class Column {
   public d: any;
   private temp: any;
   public tags: any;
-  private _dialogs: ColumnDialogHelper | undefined;
+  private _dialogs: ColumnDialogHelper;
+  private _colors: ColumnColorHelper;
 
   constructor(d: any) {
     this.d = d;
@@ -834,6 +835,12 @@ export class Column {
     if (this._dialogs == undefined)
       this._dialogs = new ColumnDialogHelper(this);
     return this._dialogs;
+  }
+
+  get colors(): ColumnColorHelper {
+    if (this._colors == undefined)
+      this._colors = new ColumnColorHelper(this);
+    return this._colors;
   }
 
   /**
@@ -2141,5 +2148,43 @@ export class ColumnDialogHelper {
       newCol.name = this.column.name;
       sub.unsubscribe();
     });
+  }
+}
+
+export class ColumnColorHelper {
+  private readonly column: Column;
+  constructor(column: Column) {
+    this.column = column;
+  }
+
+  getType(): ColorCodingType {
+    if (this.column.tags.has(DG.TAGS.COLOR_CODING_TYPE))
+      return this.column.tags[DG.TAGS.COLOR_CODING_TYPE];
+    else if (this.column.tags.has(DG.TAGS.COLOR_CODING_CATEGORICAL))
+      return DG.COLOR_CODING_TYPE.CATEGORICAL;
+    return DG.COLOR_CODING_TYPE.OFF;
+  }
+
+  setLinear(range: ColorType[] | null = null): void {
+    this.column.tags[DG.TAGS.COLOR_CODING_TYPE] = DG.COLOR_CODING_TYPE.LINEAR;
+    if (range != null)
+      this.column.tags[DG.TAGS.COLOR_CODING_LINEAR] = JSON.stringify(range);
+  }
+
+  setCategorical(colorMap: {} | null = null): void {
+    this.column.tags[DG.TAGS.COLOR_CODING_TYPE] = DG.COLOR_CODING_TYPE.CATEGORICAL;
+    if (colorMap != null)
+      this.column.tags[DG.TAGS.COLOR_CODING_CATEGORICAL] = JSON.stringify(colorMap);
+  }
+
+  setConditional(rules: {[index: string]: number | string}  | null = null): void {
+    this.column.tags[DG.TAGS.COLOR_CODING_TYPE] = DG.COLOR_CODING_TYPE.CONDITIONAL;
+    if (rules != null) {
+      for (let [rule, color] of Object.entries(rules)) {
+        if (typeof color === 'number')
+          rules[rule] = DG.Color.toHtml(color);
+      }
+      this.column.tags[DG.TAGS.COLOR_CODING_CONDITIONAL] = JSON.stringify(rules);
+    }
   }
 }
