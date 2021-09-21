@@ -593,7 +593,7 @@ export class Package extends Entity {
     }, (e: any) => reject(e)));
   }
 
-  private _files: FileSource;
+  private _files: FileSource | null = null;
   get files(): FileSource {
     if (this._files == null)
       this._files = new FileSource(`System:PackageData/${this.name}`);
