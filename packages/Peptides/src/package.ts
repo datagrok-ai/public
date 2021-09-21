@@ -65,7 +65,6 @@ export function SARViewerHelp(_: DG.Column): DG.Widget {
   Median - median of activity\n\
   Q3 - third quartile of activity\n\
   IQR - interquartile range\n\
-  QD - quartile deviation\n\
   CQV - coefficient of quartile variation (quartile coefficient of dispersion)\n\
   Ratio - share of peptides containing AAR at position\n";
   const div = ui.divV(helpStr.split("\n").map((line) => {
