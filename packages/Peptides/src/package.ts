@@ -3,7 +3,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {SARViewer} from './peptide-sar-viewer/sar-viewer';
-import {AlignedSequenceCellRenderer} from './utils/cell-renderer'
+import {StackedBarChart} from './stacked-barchart/stacked-barchart-viewer';
+import {AlignedSequenceCellRenderer} from './utils/cell-renderer';
 
 export const _package = new DG.Package();
 
@@ -55,8 +56,8 @@ export function Peptides() {
 //input: column _ {semType: alignedSequence}
 //output: widget result
 export function SARViewerHelp(_: DG.Column): DG.Widget {
-  const helpStr = 
-  "Circle size in the viewer is based on ratio and color is based on MAD.\n\
+  const helpStr =
+  'Circle size in the viewer is based on ratio and color is based on MAD.\n\
   \n\
   Statistics:\n\
   Count - number of peptides containing AAR at position\n\
@@ -66,10 +67,10 @@ export function SARViewerHelp(_: DG.Column): DG.Widget {
   Q3 - third quartile of activity\n\
   IQR - interquartile range\n\
   CQV - coefficient of quartile variation (quartile coefficient of dispersion)\n\
-  Ratio - share of peptides containing AAR at position\n";
-  const div = ui.divV(helpStr.split("\n").map((line) => {
+  Ratio - share of peptides containing AAR at position\n';
+  const div = ui.divV(helpStr.split('\n').map((line) => {
     return ui.divText(line);
-  }))
+  }));
   return new DG.Widget(div);
 }
 
@@ -81,7 +82,7 @@ export function analyzePeptides(col: DG.Column): DG.Widget {
   const activityColumnChoice = ui.columnInput('Activity column', col.dataFrame, col);
   const activityScalingMethod = ui.choiceInput('Activity scaling', 'none', ['none', 'lg', '-lg']);
   const showHistogram = ui.boolInput('Show histogram', false);
-  
+
   const startBtn = ui.button('Start', async () => {
     if (activityColumnChoice.value.type === DG.TYPE.FLOAT) {
       const peptidesView = grok.shell.v;
@@ -89,12 +90,12 @@ export function analyzePeptides(col: DG.Column): DG.Widget {
         const options = {
           'activityColumnColumnName': activityColumnChoice.value.name,
           'activityScalingMethod': activityScalingMethod.value,
-          'showHistogram': showHistogram.value
+          'showHistogram': showHistogram.value,
         };
         (<DG.TableView>peptidesView).addViewer('peptide-sar-viewer', options);
       }
     } else {
-      grok.shell.error("The activity column must be of double type!");
+      grok.shell.error('The activity column must be of double type!');
     }
   });
   return new DG.Widget(ui.divV([activityColumnChoice.root, activityScalingMethod.root, showHistogram.root, startBtn]));
@@ -106,6 +107,26 @@ export function analyzePeptides(col: DG.Column): DG.Widget {
 //output: viewer result
 export function sar(): SARViewer {
   return new SARViewer();
+}
+
+//name: StackedBarchart Widget
+//tags: panel, widgets
+//input: column col {semType: aminoAcids}
+//output: widget result
+
+export async function stackedBarchartWidget(col:DG.Column):Promise<DG.Widget> {
+  console.error('eppÈ');
+  const viewer = await col.dataFrame.plot.fromType('StackedBarChartAA');
+  const panel = ui.divH([viewer.root]);
+  return new DG.Widget(panel);
+}
+
+//name: StackedBarChartAA
+//description: Creates an awesome viewer
+//tags: viewer
+//output: viewer result
+export function stackedBarChart():DG.JsViewer {
+  return new StackedBarChart();
 }
 
 //name: alignedSequenceCellRenderer
