@@ -1,6 +1,30 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-09-21 Dev build 0.93.27
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.27`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Funcs: Function cache for scripts and data sync 
+* #53 Tutorials package: code clean-up 
+* #53 Tutorials package: helpers for working with view inputs 
+* Update icons for packages 
+* Update package.png 
+* Update Laboratory view 
+* Peptides: color coding optimization 
+* #53 Tutorials package: openViewByType method 
+* JS API: add examples with the linear color-coding 
+* Bar chart: add int column as split and stack column 
+
+
 # 2021-09-20 Dev build 0.93.26
 
 ## Latest Docker Images
