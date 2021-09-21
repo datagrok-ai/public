@@ -30,8 +30,7 @@ export async function describe(
   //Split the aligned sequence into separate AARs
   let splitSeqDf: DG.DataFrame | undefined;
   for (const col of df.columns) {
-    //FIXME: semType is still undefined at this point                          ?
-    if (col.semType === 'alignedSequence' || col.name === 'AlignedSequence') {
+    if (col.semType === 'alignedSequence') {
       splitSeqDf = splitAlignedPeptides(col);
       break;
     }
@@ -44,6 +43,12 @@ export async function describe(
   const positionColumns = splitSeqDf.columns.names();
 
   splitSeqDf.columns.add(df.getCol(activityColumn));
+
+  // make sure columns are not added more than once
+  const dfColsSet = new Set(df.columns.names());
+  if (!positionColumns.every((col: string) => dfColsSet.has(col))) {
+    df.join(splitSeqDf, [activityColumn], [activityColumn], df.columns.names(), positionColumns, 'inner', true);
+  }
 
   // scale activity
   switch (activityScaling) {
@@ -92,7 +97,6 @@ export async function describe(
 
   // calculate additional stats
   await matrixDf.columns.addNewCalculated('IQR', '${q3}-${q1}');
-  await matrixDf.columns.addNewCalculated('QD', '${iqr}/2');
   await matrixDf.columns.addNewCalculated('CQV', '(${q3}-${q1})/(${q3}+${q1})');
   await matrixDf.columns.addNewCalculated('Ratio', '${count}/'.concat(`${peptidesCount}`));
   // await matrixDf.getCol(medianColName).applyFormula('${med}-'.concat(`${totalStats.get('med', 0)}`));
@@ -115,8 +119,8 @@ export async function describe(
   // colors are hard-coded and can be either gray, light-green or green
   const parts = 3;
   const colPartLength = (dfMaxMedian - dfMinMedian) / parts;
-  // Green, LightGreen, Gray - the lesser MAD, the better                      ?
-  const colors = ['#008000', '#90EE90', '#808080'];
+  // Gray, LightGreen, Green
+  const colors = ['#808080', '#90EE90', '#008000'];
 
   let range;
   let condition = '{';
@@ -178,7 +182,7 @@ export async function describe(
           true,
         );
         args.g.closePath();
-        //TODO: set color based on activity medians
+
         args.g.fillStyle = DG.Color.getCellColorHtml(args.cell.cell);
         args.g.fill();
         args.preventDefault();
