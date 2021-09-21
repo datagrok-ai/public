@@ -689,7 +689,9 @@ export class TablesDataSource extends HttpDataSource<TableInfo> {
 }
 
 export class FileSource {
-  constructor() {
+  private readonly root: string;
+  constructor(root: string = '') {
+    this.root = root;
   };
 
   /** Checks if a file exists.
@@ -697,8 +699,16 @@ export class FileSource {
    * @param {FileInfo | string} file
    * @returns {Promise<Boolean>} */
   exists(file: FileInfo | string): Promise<boolean> {
+    file = this.setRoot(file);
+
     return new Promise((resolve, reject) =>
         api.grok_Dapi_UserFiles_Exists(file, (data: boolean | PromiseLike<boolean>) => resolve(data), (e: any) => reject(e)));
+  }
+
+  private setRoot(file: FileInfo | string): string {
+    if (typeof (file) == 'string')
+      file = `${this.root}${this.root != '' ? '/' : ''}${file}`;
+    return <string>file;
   }
 
   /** Deletes a file.
@@ -706,6 +716,7 @@ export class FileSource {
    * @param {FileInfo | string} file
    * @returns {Promise} */
   delete(file: FileInfo | string): Promise<void> {
+    file = this.setRoot(file);
     return new Promise((resolve, reject) => api.grok_Dapi_UserFiles_Delete(file, () => resolve(), (e: any) => reject(e)));
   }
 
@@ -715,6 +726,10 @@ export class FileSource {
    * @param {string} newPath
    * @returns {Promise} */
   move(files: FileInfo[] | string[], newPath: string): Promise<void> {
+    for (let i = 0; i < files.length; i++)
+      files[i] = this.setRoot(files[i]);
+    newPath = this.setRoot(newPath);
+
     return new Promise((resolve, reject) => api.grok_Dapi_UserFiles_Move(files, newPath, () => resolve(), (e: any) => reject(e)));
   }
 
@@ -724,6 +739,9 @@ export class FileSource {
    * @param {string} newName
    * @returns {Promise} */
   rename(file: FileInfo | string, newName: string): Promise<void> {
+    file = this.setRoot(file);
+    newName = this.setRoot(newName);
+
     return new Promise((resolve, reject) => api.grok_Dapi_UserFiles_Rename(file, newName, () => resolve(), (e: any) => reject(e)));
   }
 
@@ -734,6 +752,7 @@ export class FileSource {
    * @param {string} searchPattern
    * @returns {Promise<FileInfo[]>} */
   list(file: FileInfo | string, recursive: boolean, searchPattern: string | null = null): Promise<FileInfo[]> {
+    file = this.setRoot(file);
     return new Promise((resolve, reject) =>
         api.grok_Dapi_UserFiles_List(file, recursive, searchPattern, (data: any) => resolve(toJs(data)), (e: any) => reject(e)));
   }
@@ -743,6 +762,8 @@ export class FileSource {
    * @param {FileInfo | string} file
    * @returns {Promise<String>} */
   readAsText(file: FileInfo | string): Promise<string> {
+    file = this.setRoot(file);
+
     return new Promise((resolve, reject) => 
         api.grok_Dapi_UserFiles_ReadAsText(file, (data: string | PromiseLike<string>) => resolve(data), (e: any) => reject(e)));
   }
@@ -752,6 +773,8 @@ export class FileSource {
    * @param {FileInfo | string} file
    * @returns {Promise<Uint8Array>} */
   readAsBytes(file: FileInfo | string): Promise<Uint8Array> {
+    file = this.setRoot(file);
+
     return new Promise((resolve, reject) =>
         api.grok_Dapi_UserFiles_ReadAsBytes(file, (data: any) => resolve(toJs(data)), (e: any) => reject(e)));
   }
@@ -771,6 +794,8 @@ export class FileSource {
    * @param {string} data
    * @returns {Promise} */
   writeAsText(file: FileInfo | string, data: string): Promise<void> {
+    file = this.setRoot(file);
+
     return new Promise((resolve, reject) => api.grok_Dapi_UserFiles_WriteAsText(file, data, () => resolve(), (e: any) => reject(e)));
   }
 }
