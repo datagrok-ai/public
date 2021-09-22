@@ -26,7 +26,7 @@ export async function describe(
   df: DG.DataFrame,
   activityColumn: string,
   activityScaling: string
-  ): Promise<DG.Viewer | null> {
+  ): Promise<DG.Grid | null> {
   //Split the aligned sequence into separate AARs
   let splitSeqDf: DG.DataFrame | undefined;
   for (const col of df.columns) {
@@ -44,7 +44,7 @@ export async function describe(
 
   splitSeqDf.columns.add(df.getCol(activityColumn));
 
-  // make sure columns are not added more than once
+  // append splitSeqDf columns to source table and make sure columns are not added more than once
   const dfColsSet = new Set(df.columns.names());
   if (!positionColumns.every((col: string) => dfColsSet.has(col))) {
     df.join(splitSeqDf, [activityColumn], [activityColumn], df.columns.names(), positionColumns, 'inner', true);
@@ -89,7 +89,7 @@ export async function describe(
   //statistics for specific AAR at a specific position
   matrixDf = matrixDf.groupBy([positionColName, aminoAcidResidue])
     .add('count', activityColumn, 'Count')
-    .add('med', 'innerMAD', medianColName)
+    .add('med', 'innerMAD', medianColName)  //final step of MAD calculation
     .add('q1', activityColumn, 'Q1')
     .add('q2', activityColumn, 'Median')
     .add('q3', activityColumn, 'Q3')
@@ -99,7 +99,6 @@ export async function describe(
   await matrixDf.columns.addNewCalculated('IQR', '${q3}-${q1}');
   await matrixDf.columns.addNewCalculated('CQV', '(${q3}-${q1})/(${q3}+${q1})');
   await matrixDf.columns.addNewCalculated('Ratio', '${count}/'.concat(`${peptidesCount}`));
-  // await matrixDf.getCol(medianColName).applyFormula('${med}-'.concat(`${totalStats.get('med', 0)}`));
 
   const statsDf = matrixDf.clone();
 
@@ -111,7 +110,7 @@ export async function describe(
   matrixDf.name = 'SAR';
 
   // !!! DRAWING PHASE !!!
-  //find min and max median difference across all of the dataframe
+  //find min and max MAD across all of the dataframe
   const dfMinMedian = statsDf.getCol(medianColName).min;
   const dfMaxMedian = statsDf.getCol(medianColName).max;
 
@@ -119,8 +118,8 @@ export async function describe(
   // colors are hard-coded and can be either gray, light-green or green
   const parts = 3;
   const colPartLength = (dfMaxMedian - dfMinMedian) / parts;
-  // Gray, LightGreen, Green
-  const colors = ['#808080', '#90EE90', '#008000'];
+  // LightGray, LightGreen, Green
+  const colors = ['#D3D3D3', '#90EE90', '#008000'];
 
   let range;
   let condition = '{';
@@ -135,16 +134,16 @@ export async function describe(
   //setting color coding tags
   for (const col of matrixDf.columns) {
     if (col.name === aminoAcidResidue) { continue; }
-    
-    // Unable to choose custom colors for linear                               ?
-    // col.tags[DG.TAGS.COLOR_CODING_TYPE] = 'Linear';
+
     col.tags[DG.TAGS.COLOR_CODING_TYPE] = 'Conditional';
     col.tags[DG.TAGS.COLOR_CODING_CONDITIONAL] = condition;
   }
 
   const grid = matrixDf.plot.grid();
 
-  // render column headers and AAR symbols centered
+  grid.columns.setOrder([aminoAcidResidue].concat(positionColumns));
+
+  // // render column headers and AAR symbols centered
   grid.onCellRender.subscribe(function(args: DG.GridCellRenderArgs) {
     if (args.cell.isColHeader) {
       const textSize = args.g.measureText(args.cell.gridColumn.name);
@@ -164,7 +163,7 @@ export async function describe(
           args.cell.cell.value,
           args.bounds.x + (args.bounds.width - textSize.width) / 2,
           //FIXME: the text is too high in the cell
-          args.bounds.y + (textSize.actualBoundingBoxAscent + textSize.actualBoundingBoxDescent),
+          args.bounds.y + (textSize.actualBoundingBoxAscent + textSize.actualBoundingBoxDescent + args.bounds.height) / 2,
         );
         args.g.fillStyle = '#4b4b4a';
         args.preventDefault();
@@ -173,10 +172,12 @@ export async function describe(
         const ratio = statsDf.groupBy(['ratio']).where(query).aggregate().get('ratio', 0);
 
         args.g.beginPath();
+        const maxRadius = 0.95 * (args.bounds.width > args.bounds.height ? args.bounds.height : args.bounds.width) / 2;
+        const radius = Math.ceil(maxRadius * ratio);
         args.g.arc(
           args.bounds.x + args.bounds.width / 2,
           args.bounds.y + args.bounds.height / 2,
-          Math.ceil(10 * ratio),
+          radius < 3 ? 3 : radius,
           0,
           Math.PI * 2,
           true,
@@ -200,17 +201,18 @@ export async function describe(
       cell.cell.value !== null &&
       cell.tableRowIndex !== null
     ) {
-      const textDivs = [];
+      const tooltipMap = {};
 
       for (const col of statsDf.columns.names()) {
         if (col !== aminoAcidResidue && col !== positionColName) {
           const query = `${aminoAcidResidue} = ${matrixDf.get(aminoAcidResidue, cell.tableRowIndex)} and ${positionColName} = ${cell.tableColumn.name}`;
           const text = `${decimalAdjust('floor', statsDf.groupBy([col]).where(query).aggregate().get(col, 0), -5)}`;
-          textDivs.push(ui.divText(`${col}: ${text}`));
+          // textDivs.push(ui.divText(`${col}: ${text}`));
+          tooltipMap[<string>col] = text;
         }
       }
 
-      ui.tooltip.show(ui.divV(textDivs), x, y);
+      ui.tooltip.show(ui.tableFromMap(tooltipMap), x, y);
       return true;
     }
   });

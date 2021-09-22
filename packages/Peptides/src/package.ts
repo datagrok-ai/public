@@ -66,10 +66,8 @@ export function SARViewerHelp(_: DG.Column): DG.Widget {
   \n\
   Statistics:\n\
   Count - number of peptides containing AAR at position\n\
-  MAD - mean absolute deviation\n\
-  Q1 - first quartile of activity\n\
+  MAD - Median absolute deviation\n\
   Median - median of activity\n\
-  Q3 - third quartile of activity\n\
   IQR - interquartile range\n\
   CQV - coefficient of quartile variation (quartile coefficient of dispersion)\n\
   Ratio - share of peptides containing AAR at position\n";
@@ -86,7 +84,7 @@ export function SARViewerHelp(_: DG.Column): DG.Widget {
 export function analyzePeptides(col: DG.Column): DG.Widget {
   const activityColumnChoice = ui.columnInput('Activity column', col.dataFrame, col);
   const activityScalingMethod = ui.choiceInput('Activity scaling', 'none', ['none', 'lg', '-lg']);
-  const showHistogram = ui.boolInput('Show histogram', false);
+  // const showHistogram = ui.boolInput('Show histogram', false);
   
   const startBtn = ui.button('Start', async () => {
     if (activityColumnChoice.value.type === DG.TYPE.FLOAT) {
@@ -95,7 +93,7 @@ export function analyzePeptides(col: DG.Column): DG.Widget {
         const options = {
           'activityColumnColumnName': activityColumnChoice.value.name,
           'activityScalingMethod': activityScalingMethod.value,
-          'showHistogram': showHistogram.value
+          // 'showHistogram': showHistogram.value
         };
         (<DG.TableView>peptidesView).addViewer('peptide-sar-viewer', options);
       }
@@ -103,7 +101,8 @@ export function analyzePeptides(col: DG.Column): DG.Widget {
       grok.shell.error("The activity column must be of double type!");
     }
   });
-  return new DG.Widget(ui.divV([activityColumnChoice.root, activityScalingMethod.root, showHistogram.root, startBtn]));
+  //showHistogram removed
+  return new DG.Widget(ui.divV([ui.inputs([activityColumnChoice, activityScalingMethod]), startBtn]));
 }
 
 //name: peptide-sar-viewer
