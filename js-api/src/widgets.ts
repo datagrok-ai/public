@@ -965,8 +965,8 @@ export class Color {
     return api.grok_Color_CategoricalPalette();
   }
 
-  static linear(column: Column, start?: number, end?: number): number[] {
-    return api.grok_Color_Linear(column.d, start ? start : null, end ? end : null);
+  static scaleColor(x: number, min: number, max: number, alpha?: number, colorScheme?: number[]): number {
+    return api.grok_Color_ScaleColor(x, min, max, alpha ? alpha : null, colorScheme ? colorScheme : null);
   }
 
   static scale(x: number, min: number, max: number): number {
